@@ -126,3 +126,7 @@ Alur ini tidak menganggap dashboard analytics, streaming penuh, atau semua strat
 - [Quality gates](scrypts/gates/)
 
 Dokumentasi ini menjelaskan struktur dan rancangan alur; bukan pernyataan bahwa build, lint, atau seluruh pengujian telah lulus.
+
+## Author
+
+Dibangun oleh [rusmanadodi2598](https://github.com/rusmanadodi2598).
