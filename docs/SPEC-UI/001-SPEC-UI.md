@@ -1,0 +1,1114 @@
+# SPEC-UI-001: pannelAI Panel (`app-ui`) v1
+
+| | |
+|---|---|
+| **Spec ID** | 001-SPEC-UI |
+| **Status** | Draft to Review |
+| **Date** | 2026-09-16 |
+| **Organization** | KENTANG TECH |
+| **Author** | Dodi Rusmana <rusmanadodi@kentangtech.com> |
+| **GitHub** | https://github.com/rusmanadodi2598 |
+| **Source Rewrite (Reference)** | `/home/rusmanadodi/ai-gateway` (9Router, Next.js monolith) |
+| **Target** | `pannelAI/app-ui/` (Svelte panel, Bun toolchain and runtime) |
+| **Runtime** | Bun for dev, build, test, and the production server process (owner requirement, §10.1) |
+| **Contract of record** | [`docs/SPEC-API/001-SPEC-API.md`](../SPEC-API/001-SPEC-API.md) |
+| **Governance (mandatory)** | [`docs/RULLES/TDD.md`](../RULLES/TDD.md) for the strict test-first protocol (§10.2). [`AGENTS.md`](../../AGENTS.md) is present at the repository root and scopes itself to Go services under `app-*/**`, so it does not govern this panel. Its language and typing rules are mirrored here in §7.1.5 and §8.10 so the two apps cannot quietly diverge. |
+| **Companion spec** | `docs/SPEC-API/002-SPEC-API-openapi.md` is referenced by the API spec but is **not** in the repository. See §14 Q3. |
+| **Design direction** | `DESIGN.md` is **not** in the repository. Owner-stated direction: legacy panel parity with a fresher component layer. See §9 and §14 Q1. |
+
+> **SPEC FIRST.** This document is the contract of record for the panel. A screen, control, or field
+> that is not written here is not built. Any deviation requires editing this spec in the same pull
+> request. Wire shapes and semantics come from `docs/SPEC-API/001-SPEC-API.md` (cited as **SPEC-API §N**
+> below); this document never restates a wire shape, it cites one.
+
+---
+
+## 1. Purpose
+
+Give the gateway an operator panel that is a **thin, strict client** of the management API:
+
+- `app-ui` consumes `/api/v1/*` only. It never opens a PostgreSQL or Redis connection (SPEC-API §11.5).
+- Every screen exists to operate one feature the owner kept. Nothing is ported for completeness.
+- The panel validates and sanitizes every input and every response at its own boundary with **Zod**
+  (§7), so malformed data fails at the edge with a field-level message instead of corrupting a view.
+- All copy is English (SPEC-API §2.1 `English`), including validation messages and error states.
+- Work obeys [`docs/RULLES/TDD.md`](../RULLES/TDD.md), the mandatory strict test-first protocol (§10.2). [`AGENTS.md`](../../AGENTS.md) is read for cross-app consistency, and it governs the Go services rather than this panel.
+
+## 2. Scope
+
+### 2.1 KEEP to screen mapping
+
+Each row is an owner decision. The reference column names the legacy surface that informed the screen,
+not code to copy.
+
+| # | KEEP feature (owner list) | Panel screen | API surface | Phase |
+|---|---|---|---|---|
+| 1 | Endpoint & Key | `/endpoint-keys` (Gateway keys tab, Upstream endpoints tab) | SPEC-API §7.3, §7.5 | U0, U1 |
+| 2 | Providers | `/providers`, `/providers/[provider_id]` | SPEC-API §7.4, §7.6 | U1, U2 |
+| 3 | Combo & Vision Adapter | `/combos` (Combos tab, Vision Adapter tab) | SPEC-API §7.7, §7.8 | U1, U2 |
+| 4 | Usage | `/usage` (Overview tab, Records tab) | SPEC-API §7.12 | U1 |
+| 5 | Quota Tracker | `/quota` | SPEC-API §7.12 | U1, U2 |
+| 6 | Token Saver | `/token-saver` | SPEC-API §7.9 | U2 |
+| 7 | Media Provider | `/media-providers/[kind]` | SPEC-API §7.10 | U2 |
+| 8 | Proxy Pools | `/proxy-pools` | SPEC-API §7.11 | U2 |
+| 9 | Skills (`/antislop` AI, SuperPowers) | `/skills` | Content source not yet in a repository. See §14 Q2. | U3 |
+| 10 | API Docs | `/api-docs` | SPEC-API §7 (read-only rendering) | U1 |
+| 11 | Logs | `/logs` (Requests tab, Console tab) | SPEC-API §7.13 | U1 |
+| 12 | Settings | `/settings` (Security, Routing, Network, Logging tabs) | SPEC-API §7.14 | U1, U2 |
+| 13 | English | Cross-cutting copy contract, no screen | SPEC-API §4 | U0 |
+| 14 | Authentication (session) | `/login` | SPEC-API §7.2 | U0 |
+
+Ledger:
+- **Multi Provider.** The Providers screen renders whatever `GET /api/v1/providers` returns and holds
+  no provider allowlist in panel code. A provider that exists in the embedded registry is selectable the
+  same day it ships, with no panel release.
+- **1 upstream endpoint, N API keys.** `/endpoint-keys` treats keys as a child collection of an endpoint
+  (SPEC-API §7.5). The old 1 connection to 1 key model is not represented anywhere in the panel.
+
+### 2.2 NOT PORTED (left out on purpose, do not spec, do not build)
+
+Carried from SPEC-API §2.2, plus what the UI audit of the reference shows. Each exclusion has a reason.
+
+| Excluded surface | Reason |
+|---|---|
+| Basic chat page | Not in the owner KEEP list. The data plane is consumed by CLI tools. |
+| CLI tools config writers (18 route files under `src/app/api/cli-tools/` in the reference) | SPEC-API §2.2. |
+| Translator playground | SPEC-API §2.2. Also a developer sandbox, not an operator screen. |
+| MITM router, pxpipe, tunnels (Cloudflare, Tailscale) | SPEC-API §2.2. |
+| Cloud sync, updater and shutdown controls | SPEC-API §2.2. |
+| MCP marketplace and MCP tool pages | SPEC-API §2.2. |
+| SAML and OIDC login pages | SPEC-API §2.2. Password login only (SPEC-API §7.2). |
+| Language switcher and the i18n framework | SPEC-API §2.2 excludes the i18n framework; the KEEP item is English copy. A switcher with one locale is a dead control (R-26). |
+| Profile page | Not in the owner KEEP list. |
+| Media providers page for web fetch | No data-plane endpoint exists for web fetch (SPEC-API §7.10 lists `search`, not fetch, and §2.2 drops anything unlisted). The nav item is **Web Search**. |
+| Media combo sub-page | No backing endpoint in SPEC-API §7.10. A screen without an endpoint cannot be built (R-26). |
+| Cloud relay deployers for proxy pools (Cloudflare, Deno, Vercel) | SPEC-API §2.2. Self-hosted proxy rows and tests remain. |
+| Headroom process manager (start, stop, restart) | SPEC-API §2.2 keeps only the external URL call. The panel renders configuration, not process control. |
+| Stats banners, download counters, promo modals from the reference dashboard | Presentation for a different product. Not in the KEEP list. |
+| Interactive element without an endpoint behind it | Rule of the spec: no control ships dead (R-26). |
+
+## 3. Architecture and data flow
+
+```
+Browser (app-ui, SvelteKit)
+   │  fetch /api/v1/*  (session cookie, same origin)
+   ▼
+Reverse proxy (same origin in dev and prod: /api/v1 -> app-serv:8080)
+   ▼
+app-serv (Go)  ──►  PostgreSQL (state)   Redis (sessions, limits, circuit state)
+```
+
+Rules:
+
+1. **One origin.** The panel and the API are served from the same origin so the HttpOnly session cookie
+   stays `SameSite=Lax`. The panel's own Bun server hosts that origin and forwards `/api/v1/*` to
+   `app-serv` in both dev and production, so a separate reverse proxy is optional rather than required
+   (§10.1). This avoids credentialed cross-origin requests, which is the class of setup that silently drops
+   cookies.
+2. **No direct storage access.** No PostgreSQL driver, no Redis client, no connection string in the panel
+   bundle. A string like `DATABASE_URL` must never appear in `app-ui`.
+3. **One client module.** All HTTP lives in `src/lib/api/` (§10). Components never call `fetch` directly,
+   so validation, error mapping, and drift reporting have exactly one home.
+4. **Stateless shell.** Session truth comes from `GET /api/v1/auth/status` on load, not from a token in
+   `localStorage`.
+
+## 4. Stack and conventions
+
+| Topic | Decision |
+|---|---|
+| Framework | SvelteKit with Svelte 5 (runes), client-side rendering for panel screens. `ssr = false` on authenticated routes, so no session state is rendered server-side. |
+| Toolchain and runtime | **Bun** for install, scripts, build, tests, and the production server process; the application runs on Bun, not on Node (owner requirement). Lockfile committed. See §10.1. |
+| Styling | Tailwind CSS with the shadcn-svelte CSS variable token layer (owner decision, §13.4). |
+| Components | shadcn-svelte (built on Bits UI and Tailwind CSS) as the primitive layer, extended in `src/lib/components/`. Baseline primitives are a starting point, never a shipped default (§9). |
+| Validation | **`zod`**, the v4 line, latest at pin time with the exact version recorded in the lockfile, as the only strict validation and sanitization layer at the panel boundary (§7). No second validator, and no hand-rolled regex in a component. |
+| Charts | shadcn-svelte's chart component, which is built on LayerChart. One chart library only. |
+| Icons | `lucide-svelte` (the set shadcn-svelte ships with), one set, no emoji glyphs in UI strings (owner decision, §13.4). |
+| Language | English only. No i18n framework, no switcher. |
+| API base | `/api/v1`, relative path in the browser. A build-time env var may override the origin for split deployments, with the same `SameSite` caveat in §3.1. |
+| Naming | Panel names mirror the API: `endpoint`, `gateway_key`, `combo`, `quota_window`, `proxy`, `token_saver`. No second vocabulary in the UI layer. |
+| IDs | Rendered as returned by the API (ULID with type prefix, SPEC-API §4). Truncated in tables with the full value on hover and in the detail view. |
+| Time | API sends RFC3339 UTC. Display converts to the browser timezone and shows the zone label. Relative time ("3m ago") is allowed in list rows with the absolute value in a tooltip. |
+| Numbers | Token counts are integers with grouped separators. Cost arrives as a decimal string (SPEC-API §4) and is displayed as a string with 4 to 6 decimals. The panel never converts a cost to a float for display or arithmetic. |
+| Pagination | `page` and `per_page` per SPEC-API §4, `per_page` default 25, panel selector offers 25, 50, 100 and never exceeds 100. |
+| Caching | No service worker, no HTTP cache for management reads. Each screen refetches on mount and on explicit refresh. |
+| Secret display | Gateway key plaintext appears exactly once, in a modal that states it will not be shown again. Upstream key values and proxy passwords are write-only and render only as `key_hint`. |
+
+## 5. Route map and navigation
+
+### 5.1 Route table
+
+| Route | Purpose | Auth | Phase |
+|---|---|---|---|
+| `/login` | Password login (SPEC-API §7.2) | Public | U0 |
+| `/` | Redirects to `/endpoint-keys` | Session | U0 |
+| `/endpoint-keys` | Gateway keys and upstream endpoints with their keys | Session | U0, U1 |
+| `/providers` | Registry list, category filter, search, status summary | Session | U1 |
+| `/providers/[provider_id]` | Provider detail, model catalog, provider-scoped endpoints, OAuth actions | Session | U1, U2 |
+| `/combos` | Combos and the vision adapter | Session | U1, U2 |
+| `/usage` | Usage overview and raw records | Session | U1 |
+| `/quota` | Quota windows per endpoint, budget caps | Session | U1, U2 |
+| `/token-saver` | RTK, Headroom, Ponytail configuration | Session | U2 |
+| `/media-providers/[kind]` | Media providers by kind | Session | U2 |
+| `/proxy-pools` | Proxy rows, tests, and outbound proxy settings | Session | U2 |
+| `/skills` | `/antislop` AI and SuperPowers install entries | Session | U3 |
+| `/logs` | Request logs and the console ring buffer | Session | U1 |
+| `/api-docs` | API v1 reference rendered from SPEC-API §7 | Session | U1 |
+| `/settings` | Security, Routing, Network, Logging | Session | U1, U2 |
+| Unknown path | Not-found view with a link back to `/endpoint-keys` | Session | U0 |
+
+### 5.2 Navigation contract
+
+1. The sidebar lists exactly these items, in this order, matching the owner KEEP list: Endpoint & Key,
+   Providers, Combo & Vision Adapter, Usage, Quota Tracker, Token Saver, Media Providers (grouped
+   sub-items for each kind), Proxy Pools, Skills, Logs, API Docs, Settings.
+2. **Every nav item has a route in §5.1 that exists at the time the item ships.** An item whose screen is
+   not built yet is absent, not disabled (R-24).
+3. Nav items whose screen is planned for a later phase appear in the sidebar only when that phase ships,
+   or with a visible "Planned" label in the item when the owner asks for the full structure up front.
+4. The header holds the theme toggle, the session identity (no profile page, so it is a label plus a
+   logout action), and a global "API base URL" copy control. No search box in the header: search is
+   per-screen and server-side.
+5. Media kinds render as sub-items under one Media Providers group: Embedding, Image, Video, TTS, STT,
+   Web Search. Kinds with no configured provider still open and show the empty state with the reason.
+
+## 6. Screen specifications
+
+Conventions for every screen: each view has empty, loading, and error states (R-27); each table is
+server-paginated; each destructive action confirms; each control maps to an endpoint in SPEC-API §7 or is
+absent.
+
+### 6.1 `/login`
+
+- **Data:** `GET /api/v1/auth/status` on load (renders the form only when `require_login` is true),
+  `POST /api/v1/auth/login`.
+- **Form:** single password field. No username. Submit disabled while the request is in flight.
+- **Errors:** `UNAUTHORIZED` renders "Wrong password. Try again."; `RATE_LIMITED` renders
+  "Too many attempts. Try again in 15 minutes." with the retry window from the response when present.
+  The lockout message states the rule (5 failures, 15 minutes, SPEC-API §7.2) rather than a vague error.
+- **Post-login:** redirect to the requested route, else `/endpoint-keys`.
+- **Empty state:** not applicable, the form is the only content.
+
+### 6.2 `/endpoint-keys`
+
+**Tab 1: Gateway keys** (SPEC-API §7.3)
+
+- **Table:** name, `key_hint`, status, last used, request count, created. Row actions: rename, enable or
+  disable, revoke.
+- **Create:** a name field, then a response modal that shows the full key once with a copy control and
+  the sentence: "This key is shown once. Store it now." The modal cannot be dismissed by
+  clicking the backdrop; it closes with an explicit control or Escape after the copy control is used or
+  the acknowledgement checkbox is ticked.
+- **Constraint surfaced in the UI:** revoking is a soft delete and the row leaves the active list.
+- **Empty state:** "No gateway keys yet. Create one to let a CLI tool reach the gateway."
+
+**Tab 2: Upstream endpoints** (SPEC-API §7.5)
+
+- **Table:** provider name, endpoint label, auth type, priority, status, key count with healthy count,
+  last test result. Filters: provider, status. Sort: priority.
+- **Detail drawer** for one endpoint:
+  - Endpoint fields: label, priority, status. Priority edits reorder siblings, so the UI refreshes the
+    list after a successful save and shows the new order rather than assuming it.
+  - **Keys table:** label, `key_hint`, priority, status, last used, consecutive errors, `rate_limited_until`
+    countdown. Row actions: edit (label, value, priority, status), test this key, delete.
+  - **Which key would route now:** the key the router would pick, computed from priority plus health, and
+    labelled as such. This is the panel's answer to "why did my request fail over", and it is derived from
+    the fields the API returns, not re-simulated in the panel.
+  - **Add key:** one form, plus a repeatable row mode for adding several keys in one submit loop, since
+    multi-key per endpoint is the point of this screen.
+- **Delete endpoint:** confirmation states that its keys are deleted with it.
+- **Delete last active key:** the API returns `CONFLICT` (SPEC-API §7.5). The panel disables the delete
+  control with an inline note when the endpoint has one active key and `auth_type = api_key`, and still
+  handles a `CONFLICT` response if the state changed under it.
+- **Test:** `POST /endpoints/{id}/test` with an optional key target. Result renders pass or fail with the
+  upstream status and latency, and refreshes `test_status`.
+- **Empty state:** "No upstream endpoints yet. Add a provider connection to start routing."
+
+### 6.3 `/providers` and `/providers/[provider_id]`
+
+**List** (SPEC-API §7.4)
+
+- **Table:** provider name, category, auth type, endpoint count, status summary. Filters: category
+  (`apikey`, `oauth`, `free`, `media`, `local`), search over name and ID.
+- **Pagination discipline:** the registry is a data set the API owns. The screen renders
+  `GET /api/v1/providers` with the server's paging and never loads the whole registry into a client filter.
+- **Row action:** open detail. A provider with zero endpoints shows "No endpoint configured" and links to
+  the create form pre-filled with that provider.
+
+**Detail**
+
+- **Header:** provider name, category, auth type, transport defaults, model count summary.
+- **Model catalog** (SPEC-API §7.6): searchable list with capability filters (`vision`, `tools`), a
+  "suggested" toggle, and per-model enable or disable state. Enable and disable write through
+  `PUT /api/v1/models/disabled` (phase U2).
+- **Custom models** (U2): add and remove rows through `POST /api/v1/models/custom` and its delete route.
+- **Aliases** (U2): the alias to target table, edited as a full set per `PUT /api/v1/models/aliases`. The
+  target picker draws from the model catalog and from combo names, because a target may be either.
+- **Provider-scoped endpoints:** the endpoint list filtered by `provider_id`, with the same drawer as §6.2.
+- **OAuth section (U2, OAuth providers only):** `POST /providers/{id}/oauth/start` opens the authorize URL
+  in the same tab; the callback lands on the API and redirects back to the provider detail page. The panel
+  then polls `GET /providers/{id}/oauth/status` once to show token state and offers a manual refresh
+  through `POST /providers/{id}/oauth/refresh`.
+- **OAuth failure states:** expired token, refresh failed, and state mismatch each have distinct copy. A
+  state mismatch message names the cause (the authorization attempt expired) instead of saying "error".
+- **Empty state (catalog):** "No models found for this filter." with a control that clears filters.
+
+### 6.4 `/combos`
+
+**Tab 1: Combos** (SPEC-API §7.7)
+
+- **Table:** name, strategy, model count, sticky limit, judge model, updated. Actions: edit, test (U2),
+  delete.
+- **Editor:**
+  - Model list is ordered and drag-reorderable, each row a `ref` with a priority. The `ref` field accepts
+    `provider/model`, an existing combo name, or an alias, with a picker over the catalog and combos.
+  - `strategy` select: `fallback`, `round_robin`, `fusion`. Explaining copy per strategy comes from the
+    SPEC-API §7.7 semantics table, so the panel explains the same behavior the router implements:
+    - `fallback`: try models in order until one succeeds.
+    - `round_robin`: distribute across models, keep `sticky_limit` requests on one model first.
+    - `fusion`: send to several models and let `judge_model` write the final answer.
+  - `sticky_limit` renders only for `round_robin`; `judge_model` renders only for `fusion`. A field that
+    the strategy ignores is hidden, not disabled.
+  - Validation blocks saving a `fusion` combo with no `judge_model`, and a combo with zero models.
+- **Delete:** `CONFLICT` when a combo is referenced by an alias (SPEC-API §7.7). The message names the
+  alias and links to the fixed set on the provider detail screen.
+- **Test (U2):** runs the one-token ping and renders a per-model result list in the order the strategy
+  would try, including the model that answered.
+- **Empty state:** "No combos yet. A combo is a model string that resolves to several upstream models."
+
+**Tab 2: Vision Adapter** (SPEC-API §7.8)
+
+- **Form:** enabled toggle, `round_robin` toggle, and a model multi-select limited to catalog models with
+  the `vision` capability.
+- **Scope note shown on screen:** v1 covers vision only. The pdf, audio-input, and video-input adapters
+  from the reference are not ported, and the screen does not render controls for them.
+- **Empty state:** enabled with no models selected renders a warning that image requests will not be
+  adapted until at least one model is chosen.
+
+### 6.5 `/usage`
+
+**Tab 1: Overview** (SPEC-API §7.12)
+
+- **Period selector:** `today`, `24h`, `7d`, `30d`, `60d`, mapped to `from` and `to`.
+- **Group-by selector:** provider, model, endpoint, gateway key, mapped to `group_by`.
+- **Totals:** requests, tokens in, tokens out, cache read, cache write, cost (string), error rate, p50 and
+  p95 latency. Every one of these comes from `GET /api/v1/usage/summary`; the panel computes nothing it
+  cannot cite, and a figure the API does not return is not displayed.
+- **Chart:** requests and tokens over time from `GET /api/v1/usage/timeseries`, granularity `hour` or
+  `day`. The chart has a text summary line and an accessible table fallback, so the numbers are readable
+  without the graphic.
+- **Cost caveat:** SPEC-API §7.12 states cost figures are estimates. The cost tile carries that note.
+
+**Tab 2: Records**
+
+- **Table:** timestamp, request ID, model, provider, endpoint, gateway key, tokens, cost, latency, status,
+  error code. Filters: date range, status, endpoint, model, free-text `q`.
+- **Row action:** open the request detail, which is `GET /api/v1/usage/records/{request_id}` joined with
+  the captured log when capture is on. When capture is off, the detail view says so instead of showing an
+  empty body area.
+- **Empty state:** "No requests in this window." plus a link to API Docs, because the likely cause is that
+  no client has called the gateway yet.
+
+### 6.6 `/quota`
+
+- **Data:** `GET /api/v1/quotas`, `GET /api/v1/quotas/{endpoint_id}`,
+  `PUT /api/v1/quotas/{endpoint_id}` (caps, U2).
+- **Table:** provider, endpoint label, window (`5h`, `daily`, `weekly`, `monthly`), used, limit, percent
+  used, resets at with a countdown, source badge.
+- **Source badge:** `computed` or `reported` (SPEC-API §7.12). The badge is functional, not decorative: it
+  tells the operator whether the number came from local accounting or from the provider.
+- **Budget caps (U2):** monthly cost in USD and monthly tokens per endpoint. Saving a cap warns that the
+  router stops picking an exhausted endpoint.
+- **Empty state:** "No quota windows yet. Quota tracking starts after the first routed request."
+- **Refresh:** the countdown ticks locally; the data refetches on an interval (§8.6).
+
+### 6.7 `/token-saver`
+
+- **Data:** `GET /api/v1/token-saver`, `PUT /api/v1/token-saver` (SPEC-API §7.9).
+- **Sections, in this order:**
+  1. **RTK:** enabled toggle and its filter list.
+  2. **Headroom:** enabled toggle, external URL, `compress_user_messages` toggle. The copy states the
+     service is external, is called with a 5 second timeout, and fails open, which is what SPEC-API §7.9
+     specifies. No start, stop, or restart control: process management is not ported.
+  3. **Ponytail:** enabled toggle and level.
+- **`caveman` is DEPRECATED (owner, 2026-09-16):** this screen renders no section, no control, no label,
+  and no upgrade hint for it. The API keeps the key frozen for round-trip compatibility (SPEC-API §7.9), so
+  the panel's schema parses the field and ignores it. When `/api/v2` removes the key, the schema field is
+  dropped with it.
+- **Native engine:** reserved area labelled "Planned" that names the later spec
+  (`002-TOKEN-SAVER`, per SPEC-API §12 and §10 P3). It is text, not a disabled control.
+- **Per-request bypass:** the screen documents the `X-Token-Saver: off` header with a copy control, so an
+  operator can hand the header to a client author (SPEC-API §4).
+- **Save behavior:** partial update per section. Saving one section never rewrites another, and the form
+  re-reads the full config after a successful write.
+
+### 6.8 `/media-providers/[kind]`
+
+- **Kinds:** `embedding`, `image`, `video`, `tts`, `stt`, `web`. `web` maps to the API kind `search`.
+- **Data:** `GET /api/v1/media-providers?kind=`, `GET /api/v1/media-providers/{provider_id}`,
+  `PATCH /api/v1/media-providers/{provider_id}` (SPEC-API §7.10).
+- **Each kind page:** provider cards with configured endpoints, a default model selector, and a `base_url`
+  field for self-hosted providers.
+- **Self-hosted rule displayed on the field:** a self-hosted provider without `base_url` fails validation
+  (SPEC-API §7.10). The form blocks the save with that exact message instead of letting the server reject
+  it, and the server still validates.
+- **No cloud fallback claim:** the screen never implies a fallback path that the API does not implement.
+- **Empty state per kind:** "No provider configured for this kind." with a link to Providers.
+
+### 6.9 `/proxy-pools`
+
+- **Data:** SPEC-API §7.11.
+- **Table:** label, protocol, host, port, username, enabled, last test state and latency. Actions: edit,
+  test, delete.
+- **Form:** label, protocol (`http`, `https`, `socks5`), host, port, username, password. Password is
+  write-only; after save the row shows no password, only that one is set.
+- **Batch add:** multi-line paste of proxy URLs, parsed in the panel, previewed as a table, then submitted
+  one row at a time. Raw text is not submitted; the parsed and validated rows are (§7).
+- **Test:** per row and for a candidate before saving (`POST /api/v1/proxies/test`). The result shows
+  state, latency, and checked time.
+- **Outbound assignment:** the global settings from SPEC-API §7.14 (`network.outbound_proxy_enabled`,
+  `outbound_proxy_url`, `outbound_no_proxy`) are edited on this screen, and they are marked as global.
+  Per-endpoint binding is deferred by SPEC-API §7.11 and the screen says so, so nobody hunts for a
+  control that does not exist.
+- **Empty state:** "No proxies yet. Add one to route upstream calls through it."
+
+### 6.10 `/skills`
+
+- **Purpose:** give an operator the install line for the two owner-selected skills so they can paste it
+  into an AI client. This mirrors the reference skills surface, which hands out copyable skill URLs.
+- **Entries:** `/antislop` AI and SuperPowers. Two entries, no directory of extras.
+- **Per entry:** name, one-line description, source link, and a copy control with the install instruction
+  line.
+- **Blocking dependency:** the source location of both skills in the new repository is not decided (§14 Q2).
+  Until a source exists, each entry renders an explicit unavailable state naming the missing source. A copy
+  control that copies a broken link is not shipped.
+- **No invented metadata:** no download counts, no version numbers, no user ratings. There is no such data
+  (R-17).
+
+### 6.11 `/logs`
+
+**Tab 1: Requests** (SPEC-API §7.13)
+
+- **Table:** timestamp, request ID, gateway key, model, endpoint, status, latency, error. Filters: date
+  range, status, endpoint, model, free-text `q`.
+- **Detail:** the captured request and response bodies when
+  `settings.logging.request_capture_enabled` is true, rendered verbatim in read-only blocks with escaping
+  and a byte-size note. The viewer shows the recorded payload, including anything unexpected in it; it
+  does not rewrite or prettify the stored text into something else (§7.5).
+- **Capture off:** the screen states capture is off and links to Settings.
+- **Purge:** `DELETE /api/v1/logs/requests`, with a confirmation that names the retention setting and
+  requires the operator to type `purge` when the selected range would delete more than 1000 rows.
+- **Truncation notice:** when the API truncates a body at `capture_body_max_bytes`, the viewer says so at
+  the truncation point instead of ending silently.
+
+**Tab 2: Console**
+
+- **Data:** `GET /api/v1/logs/console`, `DELETE /api/v1/logs/console`.
+- **View:** ring buffer lines in a monospace block, newest last, with a pause and resume control, a
+  follow toggle, and a clear action.
+- **Honesty rule:** the buffer is polled, because management API v1 exposes no stream (SPEC-API §7.13). The
+  control is labelled "Auto refresh", not "Live", and shows the poll interval.
+- **Empty state:** "Console buffer is empty."
+
+### 6.12 `/api-docs`
+
+- **Purpose:** one in-panel reference for the v1 contract, so an operator can wire a client without leaving
+  the panel.
+- **Content:** base URL, the session versus gateway key distinction (SPEC-API §4), the endpoint catalog
+  grouped exactly as SPEC-API §7 groups it (System, Auth, Gateway Keys, Providers, Endpoints, Models,
+  Combos, Vision Adapter, Token Saver, Media Providers, Proxy Pools, Usage and Quota, Logs, Settings, Data
+  Plane), the error code table from SPEC-API §8, and one curl example per endpoint group.
+- **Source of truth:** the content is generated from `docs/SPEC-API/001-SPEC-API.md`. A hand-written second
+  copy of the contract is a defect (it drifts), so the page either consumes a machine-readable artifact or
+  a build step that extracts the tables. §14 Q3 covers the missing OpenAPI artifact.
+- **Copy controls:** copy base URL, copy a curl example with a `sk-...` placeholder, never a real key.
+- **No claims:** the page states the phase of each endpoint group, using SPEC-API §10, so nobody tests a P2
+  route that is not built.
+
+### 6.13 `/settings`
+
+Tabs, each mapping to one group of keys in SPEC-API §7.14.
+
+| Tab | Fields | Notes |
+|---|---|---|
+| Security | `security.require_login`, `security.require_api_key`, change password, logout all sessions if the API exposes it | Turning `require_login` off shows a warning that the panel becomes open on the network. Change password asks for current and new password. |
+| Routing | `routing.combo_strategy`, `routing.combo_sticky_limit`, `routing.sticky_limit` | Defaults for new combos and routing; per-combo values win, and the tab says so. |
+| Network | `network.outbound_proxy_enabled`, `network.outbound_proxy_url`, `network.outbound_no_proxy` | Shared surface with `/proxy-pools`; both read the same endpoint, and the tab links there instead of duplicating the form. |
+| Logging | `logging.request_capture_enabled`, `logging.retention_days`, `logging.capture_body_max_bytes`, `logging.observability_max_records` | Capture sets a privacy cost, so the toggle carries the warning that request bodies will be stored. |
+| Token Saver | Read-only summary plus a link to `/token-saver` | One editor for one config. A second editor is how configs drift. |
+
+- **Save behavior:** `PATCH /api/v1/settings` per changed field group, with a dirty indicator and a
+  discard action. Secrets are never returned by the API, so no field renders an existing secret value.
+- **Password rules:** current password, new password, confirm. Trimming is not applied to password fields
+  (§7.2).
+
+## 7. Validation and sanitization (Zod)
+
+Zod is the panel's only validation and sanitization mechanism (owner decision, §13.5). It runs on four
+boundaries:
+
+1. **Form input**, parsed on submit and on blur, with field-level issues rendered next to the field.
+2. **Route and search parameters**, parsed before any fetch is issued, so a hand-edited URL cannot reach
+the API.
+3. **API responses**, parsed before any value reaches a component, so a contract change is reported instead
+of rendered.
+4. **Panel environment configuration**, parsed at build time, so a missing or malformed base URL fails the
+build instead of producing silent `undefined` requests at runtime.
+
+One package, one version, one direction: schemas are authored once in `src/lib/schemas/` and imported by
+the API client, by forms, and by route loaders. There is no second validation path in the panel.
+
+### 7.1 Role and limits
+
+1. **Strict by default on input.** Form schemas parse with `.strict()` semantics: an unknown key is a
+   validation failure, not a silent drop. Route params and search params are parsed the same way, so a
+   hand-edited URL with `?per_page=100000` fails into the clamped value with a visible notice.
+2. **Responses are validated, not trusted.** Every response body is parsed by a response schema before it
+   reaches a component. A shape mismatch is surfaced as a screen-level error with the offending path, not
+   as `undefined` rendered into a table cell.
+3. **The panel is not a security boundary.** Zod here protects the view and the operator's intent.
+   `app-serv` remains authoritative and re-validates every request (SPEC-API §4, §8). The panel never
+   claims to sanitize for security; it claims to validate for correctness. Config values are the API's
+   business to enforce.
+4. **One schema module.** Schemas live in `src/lib/schemas/`, one file per API resource, exported as
+   `schemaXxx` plus `type Xxx = z.infer<typeof schemaXxx>`. A form schema and a response schema may differ,
+   but the field list is shared and a drift test asserts that the form schema's keys are a subset of the
+   response schema's keys.
+5. **No `any` at the boundary.** The only place untyped data exists is the moment before `parse`. After
+   that, every value crossing into a component is a typed inference. This matches the no-`any` rule in
+   SPEC-API §9.3 for the Go side, applied to the panel.
+6. **Version policy.** The panel takes the latest published Zod at install time and pins the exact version
+   in the lockfile. The version is recorded in `app-ui/README.md` when it changes, and a major upgrade is
+   its own pull request, because schema semantics are the panel's contract surface.
+7. **No ad hoc validation.** A component may not call `trim`, run a regex, or test a shape on its own. If a
+   rule is needed, it is added to a schema in `src/lib/schemas/` and reused, so one rule has one home and
+   one message.
+8. **Messages live in the schema.** Each check carries its English message where the check is declared, so
+   the same field produces the same wording on every screen that edits it. Components render the message,
+   they do not compose it. Message style follows §8.10.
+
+### 7.2 Sanitization rules
+
+Sanitization normalizes input into the shape the API expects. It never changes meaning, and it never edits
+what the API returned (see §7.5).
+
+| Field class | Rule |
+|---|---|
+| Display labels (endpoint label, gateway key name, combo name, proxy label) | Unicode NFC, trimmed, internal whitespace runs collapsed to one space, control characters removed (`U+0000` to `U+001F`, `U+007F`), max length 120 characters. Angle brackets are rejected with a message that markup is not allowed in labels. |
+| Model refs and aliases | Trimmed, no whitespace inside a segment, must match `provider/model`, a known combo name, or a known alias. The picker is the normal path; typing is validated against the same schema. |
+| Gateway key input | Must start with `sk-` and match the API's documented pattern; spaces and newlines stripped (a pasted key often carries a trailing newline). |
+| Upstream key value | Trimmed of surrounding whitespace only; length bounded; the value is never echoed back into the DOM after submit. |
+| Proxy host | Lowercased, no scheme, no path, no port, valid hostname or IPv4 or IPv6 literal; max 253 characters. |
+| Proxy port | Integer, 1 to 65535, from a string or a number. `0`, negatives, and non-integers fail. |
+| Proxy URL (batch paste) | Parsed by the panel into protocol, host, port, username, password; the preview table shows the parse result before submit, and unparsable lines are listed as rejected with a line number. |
+| `base_url` (self-hosted media provider) | Absolute URL, scheme `http` or `https`, no trailing slash, no whitespace. |
+| `outbound_no_proxy` | Comma-separated host list, trimmed, duplicates removed, empty entries dropped. |
+| Timestamps | RFC3339 only. A value that does not parse renders as "Invalid timestamp" with the raw string in a tooltip, never as "Invalid Date" from a native date call. |
+| Cost amounts | Math string pattern only (digits with an optional decimal part), no sign, no exponent. Displayed verbatim as a string. |
+| Token counts | Non-negative integers. A fractional or negative value fails the response schema, which is a contract bug worth seeing. |
+| ULIDs and prefixed IDs | Validated against the prefix set in SPEC-API §4 (`ep_`, `uky_`, `gky_`, `cmb_`, `prx_`), so a wrong-ID navigation fails fast instead of issuing a doomed request. |
+| Search and filter text | Trimmed, control characters removed, max 200 characters, passed as a query value (never concatenated into a path). |
+| Numeric pagination | `page` at least 1, `per_page` in 1 to 100, clamped with a visible notice when a URL says otherwise. |
+| Password fields | Length bounded only, from 1 to 200 characters. Never trimmed, never normalized, never logged, never stored. |
+
+### 7.3 Module layout and reuse
+
+```
+src/lib/schemas/
+  primitives.ts     # label, key, host, port, absolute URL, RFC3339, cost, token count, prefixed ID
+  sanitize.ts       # named transforms: normalizeLabel, stripControlChars, normalizeHost, normalizeNoProxyList
+  error.ts          # the management error envelope from SPEC-API §8, parsed like any other resource
+  env.ts            # panel environment: API base URL, build mode
+  <resource>.ts     # one file per API resource, exporting the response schema and its inferred type
+  forms/<resource>.ts # form schema for the same resource, sharing primitives and sanitize transforms
+```
+
+Rules:
+
+1. **Sanitization is a Zod transform, not a helper called from a component.** A normalization such as
+   label trimming is written once as a transform in `sanitize.ts` and composed into every schema that has
+   such a field. This is what makes "sanitized everywhere" a property of the schema rather than a habit.
+2. **Shared primitives.** A field class from §7.2 is one exported primitive. Two screens editing the same
+   field class cannot disagree, because there is only one definition to import.
+3. **Response schema and form schema share field names.** They may differ in strictness, since a form is
+   stricter on input than a response is on unknown keys, but a drift test asserts that every form field
+   name exists in the response schema (§7.6.5).
+4. **Environment schema.** `env.ts` parses the public base URL and build mode. A malformed value fails the
+   build with the variable name and the reason, which is the panel-side equivalent of the typed config
+   requirement in SPEC-API §9.3.
+5. **Types are inferred, never duplicated.** `type Endpoint = z.infer<typeof schemaEndpoint>` is the only
+   place the shape is written down. A hand-written interface that mirrors a schema is a defect.
+
+### 7.4 Response parsing and drift
+
+1. `parseResponse(schema, payload)` returns the parsed data or a typed failure carrying the Zod issue path,
+   which the screen shows as "Unexpected response from the gateway at `<path>`" with a refresh action.
+2. Response schemas tolerate **additive** fields: an unknown key in a response is not an error, because
+   `app-serv` must be able to add a field without breaking the panel. Unknown keys are collected and,
+   in development, logged once per schema.
+3. Response schemas are strict about **required** fields, types, and enums. A renamed field, a changed
+   type, or a new enum member the panel does not know is an error, which is exactly the drift the project
+   gates are supposed to catch.
+4. The collected drift notes feed the API drift gate in `scrypts/` (planned, §11.5) so drift is reported
+   as a build artifact rather than discovered by an operator.
+
+### 7.5 Where sanitization must not happen
+
+1. **Captured request and response bodies in `/logs`** render verbatim in an escaped, read-only block
+   (§6.11). Rewriting stored payloads would make the audit view lie about what the gateway recorded.
+   Escaping is a rendering concern (text nodes only, no raw HTML), not a data rewrite.
+2. **Console buffer lines** render verbatim, escaped, in a monospace block.
+3. **Error messages from the API** are displayed for the operator's troubleshooting, with the panel's own
+   copy added around them, never instead of them.
+4. **No `{@html}` with API data or user input.** The panel has no raw HTML sink. If a payload needs
+   highlighting, it is tokenized into text nodes.
+5. **No client-side "fixing" of server data.** If a value fails validation, the panel reports it. It does
+   not coerce a bad value into a plausible one.
+
+### 7.6 Testing (per `docs/RULLES/TDD.md`)
+
+1. Every schema gets a table-driven test with at least five cases: a typical value, a boundary value, an
+   empty value, a negative or invalid value, and an extreme value. A single-case test per schema is a
+   protocol violation under the project TDD rules.
+2. Sanitization tests assert the transformation, not just acceptance: collapsed whitespace, stripped
+   control characters, rejected markup, trimmed pasted keys.
+3. Response-schema tests include an additive-field case (must pass) and a renamed-field case (must fail).
+4. Tests run through Vitest with `bun test` as the documented entry point.
+5. Every schema file listed in §7.7 has a matching test file. A resource with no schema test is a gap the
+   drift gate reports.
+6. The protocol order in §10.2 is mandatory for schema and client work: analysis first, then the failing
+   test, then the implementation, then the compliance self-check, as written in
+   [`docs/RULLES/TDD.md`](../RULLES/TDD.md) §3. A schema written before its test is discarded and
+   restarted from the analysis, the same treatment the protocol gives a hardcoded implementation.
+
+### 7.7 Schema coverage checklist
+
+The drift gate in `scrypts/` (planned, §11.5) uses this table: each row must exist as a schema, and each
+schema must have a table-driven test.
+
+| Schema file | Covers | API reference |
+|---|---|---|
+| `auth.ts` | login request, auth status, change password | SPEC-API §7.2 |
+| `gateway_key.ts` | gateway key list, create response with one-time plaintext, patch | SPEC-API §7.3 |
+| `provider.ts` | registry list and detail, category and auth type enums | SPEC-API §7.4 |
+| `endpoint.ts` | upstream endpoint list, create, patch, delete result | SPEC-API §7.5 |
+| `upstream_key.ts` | key list with health fields, create, patch with write-only value | SPEC-API §7.5 |
+| `model.ts` | catalog entries, custom models, disabled set | SPEC-API §7.6 |
+| `model_alias.ts` | alias to target set | SPEC-API §7.6 |
+| `combo.ts` | combo list and detail, strategy enum, ordered model refs | SPEC-API §7.7 |
+| `vision_adapter.ts` | adapter config and its vision-capable model list | SPEC-API §7.8 |
+| `token_saver.ts` | RTK, headroom, ponytail; `caveman` parsed as DEPRECATED and never rendered | SPEC-API §7.9 |
+| `media_provider.ts` | media provider list and detail, kind enum, base URL | SPEC-API §7.10 |
+| `proxy.ts` | proxy list and detail, protocol enum, write-only password | SPEC-API §7.11 |
+| `usage.ts` | summary, timeseries buckets, records, single record detail | SPEC-API §7.12 |
+| `quota.ts` | quota windows, source enum, budget caps | SPEC-API §7.12 |
+| `request_log.ts` | request log rows, captured bodies, console lines | SPEC-API §7.13 |
+| `settings.ts` | every settings group in SPEC-API §7.14, secrets excluded | SPEC-API §7.14 |
+| `error.ts` | the management error envelope and the code enum | SPEC-API §8 |
+
+## 8. Cross-cutting UI behavior
+
+### 8.1 Session lifecycle
+
+1. `GET /api/v1/auth/status` runs on shell mount. `require_login = false` skips the login screen.
+2. Any management response with `UNAUTHORIZED` clears panel state and routes to `/login` with the current
+   path preserved, then returns to it after login.
+3. Logout calls `POST /api/v1/auth/logout`, clears state, and routes to `/login`. No token is cached
+   anywhere.
+
+### 8.2 Error mapping
+
+The API error envelope and codes come from SPEC-API §8. Each code has one panel treatment, one message
+voice, and a recovery action where one exists.
+
+| Code | Panel treatment |
+|---|---|
+| `VALIDATION_ERROR` | Field-level messages when the server names fields; otherwise a form-level banner. Never a raw JSON dump. |
+| `UNAUTHORIZED` | Session flow in §8.1. For a data-plane path shown in docs, the copy explains the gateway key header instead. |
+| `FORBIDDEN` | Banner with the action that was refused and no retry control. |
+| `NOT_FOUND` | Empty state with a "Back to list" action, plus the resource ID that was requested. |
+| `CONFLICT` | Inline conflict message that names the conflicting object (last active key, alias referencing a combo, duplicate label). |
+| `RATE_LIMITED` | Banner with the retry window and a disabled submit until it elapses. |
+| `NO_PROVIDER_AVAILABLE` | Read-only informational state: no routing candidate is healthy. Shown where routing health is visible. |
+| `UPSTREAM_ERROR`, `UPSTREAM_TIMEOUT` | Test-result and log-detail contexts only; a red banner that states which upstream failed. |
+| `INTERNAL_ERROR` | Banner that shows the `request_id` with a copy control, because that is what an operator hands to a log search. |
+
+Message rules: English, name the field or object, state the fix, no em dash, no buzzwords (R-02, R-16).
+
+### 8.3 UI states
+
+Every data view implements three states, and they are part of the screen definition, not extra work:
+empty (with why it is empty and the action that fills it), loading (skeleton matching the final layout, so
+the page does not jump), and error (with the recovery action from §8.2). A view that only handles success
+does not pass review.
+
+### 8.4 Tables, filters, forms
+
+1. Server-side pagination and filtering on every list. Client-side filtering of a full data set is
+   forbidden, because it either hides rows behind a page boundary or loads everything.
+2. Filters live in the URL as search params, so a filtered view is shareable and back or forward navigation
+   restores it.
+3. Form submit is disabled while in flight. Double submit is not possible.
+4. Dirty state warns before leaving a form with unsaved changes.
+5. Multi-field forms validate on blur and on submit, not on every keystroke, so the operator is not told a
+   half-typed email is invalid.
+
+### 8.5 Destructive actions
+
+| Action | Confirmation |
+|---|---|
+| Revoke gateway key | Modal naming the key and its `key_hint`. States the consequence: clients using it stop working. |
+| Delete upstream endpoint | Modal stating that its keys are deleted with it. Requires the endpoint label to be typed when the endpoint has more than one key. |
+| Delete upstream key | Modal naming the key. Blocked in the UI when it is the last active key (server still enforces). |
+| Delete combo, proxy, custom model, media override | Modal naming the object. |
+| Purge logs | Modal stating the range and row count, with typed `purge` confirmation over 1000 rows. |
+| Disable login requirement | Modal stating that the panel becomes reachable without a password on the network. |
+
+### 8.6 Refresh and polling
+
+1. Polling intervals are visible, pausable, and stop when the tab is hidden. `/logs` console and `/quota`
+   use polling because management API v1 has no stream (SPEC-API §7.13).
+2. Every list view has an explicit refresh control, because operators distrust auto-refresh they cannot
+   trigger.
+3. After a write, the panel re-reads the affected resource instead of patching local state, so the view
+   reflects what the gateway actually stored.
+
+### 8.7 Responsive and input
+
+1. Sidebar collapses to a drawer under 1024px. Tables become stacked key-value rows under 768px, or scroll
+   horizontally inside their own container when a comparison layout is essential; the page body never
+   scrolls horizontally (R-03).
+2. Tap targets are at least 44px on touch layouts.
+3. No hover-only information: every tooltip value is present in the detail view or a table column.
+
+### 8.8 Accessibility
+
+1. Contrast meets WCAG AA: 4.5:1 for body text, 3:1 for large text, measured per theme (§9.4). Contrast is
+   measured on the real rendered pair, not assumed from token names.
+2. Full keyboard operation: logical tab order, Enter or Space activation, Escape closes dialogs, focus
+   returns to the invoking control after a dialog closes, and focus is trapped inside a modal.
+3. No `outline: none` without a replacement focus indicator that is visible in both themes.
+4. Toasts and validation summaries announce through a live region.
+5. Form errors are linked to their inputs, not just colour-coded.
+
+### 8.9 Theme
+
+1. Light and dark are both shipped, with a header toggle. Both are verified before a screen ships (R-34).
+2. Theme choice follows the system on first load and is remembered after an explicit choice.
+3. Dark is a legitimate default for a developer-facing tool (R-21), and it is not delivered by inverting
+   the light theme: each theme's tokens are authored.
+
+### 8.10 Copy contract
+
+1. English only, no i18n framework, one strings module per screen for the panel's own prose.
+2. No em dash in any UI string (R-02). Use a comma, period, colon, or parentheses.
+3. No marketing vocabulary: no "AI Powered", "Seamless", "Powerful", "Effortless", "Next Generation"
+   (R-16). Operator-facing text states what a control does.
+4. No invented numbers, uptime figures, user counts, or compliance claims anywhere in the panel (R-17,
+   R-36).
+5. Button labels name the action and its object: "Create gateway key", "Test this key", "Purge captured
+   logs". "Get Started", "Learn More", and "Try Now" do not appear (R-15).
+6. Empty-state copy explains why the area is empty and what fills it, not "No data".
+
+### 8.11 Icons and no-emoji rule
+
+1. One icon set: `lucide-svelte`, the set the component layer ships with. Mixing sets is forbidden.
+2. Every icon used in navigation and section headers is recorded in one icon map file with a one-line
+   reason for the choice (R-04, R-31). An icon with no writable reason is removed, not decorated. The file
+   is `src/lib/icons.ts`, and it is the only place an icon name appears.
+3. **Sidebar map (owner requirement: fresh shadcn icons).** The sidebar takes its icons from the same set
+   the component layer ships, so the panel has one visual language. Each row states what the icon has to
+   communicate; the exact identifier is taken from the installed package at U0 and verified against its
+   index before it ships, so no guessed name reaches the build.
+
+| Nav item | Icon has to communicate | Candidate identifier | Reason |
+|---|---|---|---|
+| Endpoint & Key | A credential | `key-round` | The screen is about keys, client-facing and upstream. |
+| Providers | An upstream machine | `server` | A provider is a remote host the gateway calls. |
+| Combo & Vision Adapter | Ordered stacking | `layers` | A combo is an ordered list of models tried in sequence. |
+| Usage | Consumption over time | `chart-line` | Usage is a time series, not a single number. |
+| Quota Tracker | A limit with a remaining amount | `gauge` | Quota is headroom against a cap, which a gauge shows at a glance. |
+| Token Saver | Trimming | `scissors` | The savers cut tokens out of a request before it is sent. |
+| Media Providers | A picture frame | `image` | The group covers non-text models, and image is its most used kind. |
+| Media kind: Embedding | Vectors | `binary` | Embeddings are numeric vectors. |
+| Media kind: Image | Image generation | `image` | Direct match to the kind. |
+| Media kind: Video | Moving image | `film` | Direct match to the kind. |
+| Media kind: TTS | Speech output | `volume-2` | The provider produces audio. |
+| Media kind: STT | Speech input | `mic` | The provider consumes audio. |
+| Media kind: Web Search | Retrieval | `search` | The kind is a query against the web. |
+| Proxy Pools | A routing path | `network` | Proxies are intermediate hops in the outbound path. |
+| Skills | Assembled pieces | `blocks` | A skill is a reusable instruction block handed to a client. |
+| Logs | A written record | `scroll-text` | Logs are records read after the fact. |
+| API Docs | A reference to read | `book-open` | The screen is documentation, not an action. |
+| Settings | Configuration | `settings` | Direct match to the screen. |
+
+4. No emoji anywhere in UI strings, buttons, empty states, or headings (owner decision, §13.4). Unicode
+   emoji are also excluded from code comments and commit prose in `app-ui`.
+5. No sparkle, star, lightning, robot, or orb glyphs as feature icons (R-04).
+6. Status is never carried by colour alone: a status chip pairs colour with a text label and, where a
+   glyph helps, an icon whose meaning is written in the icon map.
+7. No custom SVG is drawn for navigation. If the installed set has no icon that fits, the item ships with
+   a text label only, which is better than a glyph that means nothing (R-04).
+8. The icon map holds one entry per icon plus the nav item it serves, so a reviewer can check relevance
+   without opening the sidebar component.
+
+## 9. Design direction and antislop binding
+
+antislop is applied to this project in both modes: **during** work and as an **after** audit. This section
+records what is fixed by the rules versus what needs the owner's direction.
+
+### 9.1 Direction status
+
+| Item | State |
+|---|---|
+| Owner-stated direction | Legacy panel parity in structure and density, with a fresher component layer (shadcn-svelte) and fresh icons, no emoji (owner, 2026-09-16). |
+| `DESIGN.md` | Not in the repository (verified 2026-09-16). Required before U1 screens are styled. |
+| Palette, typography, logo, identity motif | **Not supplied by the owner, and not invented here.** These are placeholders until `DESIGN.md` exists. |
+
+Consequence: any styling detail this spec does not state is a placeholder, not a silent default. A screen
+built from this spec before `DESIGN.md` exists is a **draft without direction**, and it is not a shippable
+deliverable (R-37).
+
+### 9.2 Dials (draft, awaiting `DESIGN.md`)
+
+| Dial | Value | Reason |
+|---|---|---|
+| ENERGY | 1 | Legacy parity: an operator tool that says hello quietly, with dense tables as the main surface. |
+| RHYTHM | 1 | A uniform shell is deliberate for an admin panel: the sidebar, header, and content frame do not change shape between screens, so an operator's muscle memory holds. RHYTHM 1 is a choice here, not an accident. |
+| MOTION | 1 | Motion is limited to hover, focus, and state transitions. No scroll choreography on a screen an operator opens twenty times a day. |
+
+These three values are the honest default that R-37 requires when no `DESIGN.md` exists. They are open to a
+one-line change in `DESIGN.md` once the owner writes it.
+
+### 9.3 Binding to the component layer
+
+shadcn-svelte is a primitive layer, and its untouched defaults are close to the pattern antislop calls a
+sterile default: near-white surfaces, thin grey borders, small radii, and a generic font. Shipping those
+defaults unmodified is a fail. Therefore:
+
+1. Core and accent colours, the typeface, the radius scale, and the density scale are authored in
+   `DESIGN.md` first, then expressed as tokens. Components consume tokens, never raw hex values.
+2. The palette stays at 2 to 3 core colours plus one accent (R-29). Neutral greys do not count toward the
+   cap.
+3. Radius is a hierarchy tool with a consistent scale; not every element becomes a pill (R-11).
+4. Shadows mark elevation only, on surfaces that actually float, such as a modal or a drawer (R-12).
+5. One identity motif is chosen and repeated, for example a specific table row treatment or a specific
+   status chip shape, so the panel belongs to this product and not to its component library (R-20).
+6. Badges exist only where a value is real: endpoint status, key health, quota source, request status.
+   No capsule badge for decoration (R-09).
+7. Charts get one accent series colour and neutral comparison series; no rainbow fills, no glow (R-01,
+   R-13).
+
+### 9.4 Verification duties before a screen ships
+
+1. Contrast measured per theme for every text, chip, and border pair in use, with the measured ratios
+   recorded in the pull request (R-25).
+2. Both themes exercised on every screen (R-34).
+3. Mobile breakpoints exercised, with no horizontal page overflow (R-03).
+4. Keyboard-only pass through every interactive element, including dialog open, Escape close, and focus
+   return (R-32).
+5. A recorded click-through of every interactive element on the screen, with the outcome per element
+   (R-35). A pass claimed without that list is not a pass.
+
+### 9.5 Reason log (R-31)
+
+| Decision | One-line reason |
+|---|---|
+| SvelteKit with CSR on authenticated routes | The session lives in an HttpOnly cookie owned by the API; server-rendering panel state would duplicate that truth. |
+| shadcn-svelte as the primitive layer | The owner asked for a fresher component layer; it provides accessible primitives for dialogs, comboboxes, and tables that are expensive to build correctly from scratch. |
+| Zod as the single boundary validator | One schema per resource gives forms, URL params, and responses the same rules, so validation cannot disagree with itself. |
+| Same-origin serving with a dev proxy | Keeps the session cookie first-party, which removes a whole class of credentialed-CORS failures. |
+| Filters kept in the URL | An operator's filtered view is shareable and survives back navigation. |
+| Cost kept as a string end to end | The API sends a decimal string; converting to a float in the panel would introduce rounding that the operator would read as a real cost. |
+| Polling instead of a live stream | Management API v1 exposes no stream; labelling a poll "Live" would be a false claim. |
+| Deprecated Caveman config not exposed | A deprecated switch teaches an operator to depend on something scheduled for removal. |
+| Media nav item labelled Web Search, not Web Fetch & Search | There is no fetch endpoint in SPEC-API §7.10, and a nav label must match what exists (R-24). |
+| Modal for the one-time gateway key | The API returns the plaintext once; a modal is the only surface that makes the one-time nature explicit. |
+| Bun as the runtime, not only the toolchain | A single runtime for dev, test, build, and serving removes the Node and Bun split that causes adapter drift, and the owner asked for Bun for application speed (§10.1). |
+| The panel server forwards `/api/v1` instead of calling `app-serv` cross-origin | A first-party origin keeps the session cookie on `SameSite=Lax` and removes an entire class of credentialed-CORS failures. |
+| Strict test-first on schema and client code | Zod schemas and the HTTP client are the panel's contract surface; a hardcoded fix there passes today's test and breaks on the next response shape. |
+
+## 10. Code structure and boundaries
+
+Target tree, replacing the current placeholder directory for `app-ui/`:
+
+```
+app-ui/
+├── src/
+│   ├── lib/
+│   │   ├── api/            # one HTTP client, endpoint functions, error mapping
+│   │   ├── schemas/        # Zod schemas per API resource (§7)
+│   │   ├── components/     # panel components built on the primitive layer
+│   │   ├── primitives/     # shadcn-svelte generated components
+│   │   ├── stores/         # session, theme, toasts
+│   │   ├── strings/        # panel prose per screen, English only
+│   │   └── utils/          # formatting: time, tokens, cost, pagination
+│   ├── routes/             # routes from §5.1
+│   └── app.html
+├── static/
+├── tests/                  # schema and component tests
+├── package.json
+└── README.md
+```
+
+Boundaries:
+
+1. `src/lib/api/` is the only place that calls `fetch`, and the only place that knows about HTTP status
+   codes. Components receive typed data or a typed error.
+2. `src/lib/schemas/` is the only place that defines a field list. Forms and response parsing import the
+   same file.
+3. No component imports from another route's directory. Shared UI moves to `src/lib/components/`.
+4. No secrets, tokens, or connection strings in the bundle. A build-time check greps the built output for
+   key-shaped strings and fails on a match.
+5. Server-only concerns stay out: the panel has no database client, no Redis client, and no long-lived
+   process.
+
+File and header rules: source files stay under 250 lines (warning at 200, matching the project gates),
+every file opens with a header comment stating its purpose and the API endpoints it touches, and no file
+carries a `TODO` without an owner and a phase.
+
+### 10.1 Runtime: Bun
+
+1. **Bun everywhere.** `bun install`, `bun run dev`, `bun run build`, `bun test`, and the production start
+   command all run on Bun. The panel process is a Bun process, which is the owner requirement and the
+   reason the panel is fast to start on a small host.
+2. **Production adapter.** SvelteKit produces a server build through an adapter. The panel uses the Bun
+   adapter. If a required capability is blocked by that adapter, the fallback is the Node adapter output
+   executed by the Bun runtime, and the switch is recorded as a one-line note in `app-ui/README.md` with
+   its reason. The runtime stays Bun either way.
+3. **The panel server owns the same origin.** Its server layer serves the built assets and forwards
+   `/api/v1/*` to `app-serv` (§3.1), so the session cookie is first-party and no credentialed CORS setup
+   exists to misconfigure. The forward preserves method, headers, and streaming responses.
+4. **No Node-only dependency.** A dependency that requires Node-specific APIs and cannot run on Bun is
+   rejected at review time, before it reaches the lockfile.
+5. **Startup check.** The start command prints the Bun version, the panel version, and the resolved API
+   target once at boot, so an operator can see what is running without reading a config file.
+
+### 10.2 Strict TDD protocol (mandatory)
+
+Every `app-ui` task follows [`docs/RULLES/TDD.md`](../RULLES/TDD.md) as written. It is not a style
+preference, and this section does not paraphrase it away.
+
+1. **Test first.** A task starts from the tests, not from the implementation. A task with no failing test
+   first is not started.
+2. **Mandatory output order**, per `docs/RULLES/TDD.md` §3: analysis, then implementation, then a
+   compliance self-check. The analysis names three things before any code is written: the core logic the
+   test demands, the identified edge cases, and the dynamic transformation strategy. Writing the analysis
+   after the code is a protocol violation.
+3. **No hardcoding.** No conditional branch whose only purpose is to match a test input, no literal
+   return that happens to satisfy an assertion, no lookup table built from the assertions.
+4. **Table-driven tests.** Every test function uses a table of at least three to five distinct input
+   variations, covering a typical value, a boundary value, a zero or empty value, a negative or invalid
+   value, and an extreme value, per `docs/RULLES/TDD.md` §2.5.
+5. **Fuzz resilience.** The implementation must hold for inputs that never appear in the suite. A pull
+   request states why the logic generalizes, in one line.
+6. **Where it binds hardest in this panel.** Zod schemas (§7), the API client and its error mapping (§10),
+   pagination and filter parsing (§8.4), and formatting utilities such as cost and token display (§4).
+7. **Evidence.** Each pull request carries the analysis, the test file, and the compliance self-check. A
+   missing analysis is the same defect class as a failing test.
+8. **Repository rules.** [`AGENTS.md`](../../AGENTS.md) is present and governs the Go services
+   (`app-*/**`). For the panel, this spec is the rule file: the 250-line limit, the per-file header
+   comment, English copy, and the gate set in `scrypts/` (planned) apply as written in §10 and §11.
+   The shared rules are kept deliberately in step rather than inherited, and §14 Q10 asks whether the
+   panel should also adopt the tagged header format `AGENTS.md` §1.2 uses for Go files.
+
+## 11. Non-functional requirements
+
+1. **Build and run.** `bun install`, then `bun run build`, then the panel starts with the documented Bun
+   start command from `app-ui/`, all without errors and without a runtime network call to a third party.
+   Lockfile committed. The process runs on Bun (§10.1).
+2. **Test.** Table-driven schema tests (§7.6, checklist in §7.7) and component tests for the flows in §12 run through
+   `bun test`. The route table in §5.1 and the nav list in §5.2 have a test that asserts every nav item
+   resolves to a defined route.
+3. **Types.** Type checking passes with no implicit `any`. Types crossing the API boundary are Zod
+   inferences, not hand-written duplicates.
+4. **Lint.** Formatter and linter configured for the Svelte and TypeScript sources, wired to the project
+   hooks. Gitleaks runs over the panel as well, since it is where a key could be accidentally pasted into
+   a fixture.
+5. **Drift.** A gate compares the panel's schema field lists and route constants against SPEC-API §7 and
+   fails on a missing endpoint or a renamed field. This is the same class of gate the project runs on the
+   Go side.
+6. **Size.** The initial panel bundle is tracked per pull request; a rising trend is a review item, not an
+   automatic failure.
+7. **No telemetry.** The panel sends nothing to a third party. No analytics script, no error-reporting
+   service, no font CDN: fonts are self-hosted, which also avoids a third-party request on an internal
+   tool.
+8. **Browser floor.** Current Chrome, Firefox, and Safari, plus the mobile browsers of the same vendors.
+   No polyfill for a browser the owner does not use.
+9. **Behaviour in every state.** Verified per §9.4, including the states in §8.3.
+10. **Test-first protocol.** Every task follows [`docs/RULLES/TDD.md`](../RULLES/TDD.md) as specified in
+   §10.2, with the analysis, the table-driven tests, and the compliance self-check attached to the pull
+   request. This is mandatory, and a pull request missing any of the three is incomplete.
+11. **Mandatory repository rules.** [`AGENTS.md`](../../AGENTS.md) governs the panel together with this
+   spec. A conflict between them is resolved by editing this spec in the same pull request, never by
+   silently following one and ignoring the other.
+
+## 12. Delivery phases
+
+Phases mirror SPEC-API §10, so the panel never ships against an endpoint that does not exist.
+
+| Phase | Panel scope | Exit criteria |
+|---|---|---|
+| **U0** | SvelteKit shell on the Bun runtime (§10.1), token layer, theme toggle, `/login`, session handling, `/endpoint-keys` gateway keys tab, Settings Security tab, Zod foundation (§7.1 to §7.3), strict TDD protocol active (§10.2), `AGENTS.md` in place (§14 Q8) | Login, logout, and gateway key create, rename, disable, revoke each exercised against `app-serv`, with the one-time key modal verified. Schema tests for the U0 resources are table-driven and green, and each U0 pull request carries the analysis plus compliance self-check required by `docs/RULLES/TDD.md` §3. |
+| **U1** | Endpoint & Key upstream tab with multi-key CRUD and test, Providers list and detail, model catalog views, Combos (fallback, round_robin), Vision Adapter, Usage, Quota read views, Logs (requests and console), API Docs, Settings Routing, Network, Logging | An operator connects a provider endpoint with two keys, builds a `fallback` combo, routes one request through `app-serv`, and reads the request in the panel: usage row, quota window, and log detail all match. Click-through recorded per §9.4.5. |
+| **U2** | OAuth start, callback return, and status, fusion combos and combo test, media provider screens, proxy pools including batch add and tests, Token Saver (RTK, Headroom, Ponytail), quota budget caps, custom models, aliases, disabled models | OAuth round trip from the panel; an image generation request routed through a media provider; a proxy tested from the panel; token saver config saved and reflected by the API. |
+| **U3** | Skills tab with `/antislop` AI and SuperPowers, native token saver surface when `002-TOKEN-SAVER` exists | Each Skills entry either resolves to a real source with a working copy control, or shows the unavailable state from §6.10. No entry ships with a broken link. |
+
+## 13. Locked decisions
+
+1. The panel consumes `/api/v1` with a session cookie and never touches PostgreSQL or Redis (SPEC-API §11.5).
+2. Multi-key per upstream endpoint is a first-class panel concept, not a single hidden field (owner
+   requirement; SPEC-API §11.2).
+3. The nav list equals the owner KEEP list plus Skills. No screen beyond §2.1 is built.
+4. Component layer is shadcn-svelte and icons are `lucide-svelte` with no emoji in UI copy (owner,
+   2026-09-16). Legacy panel parity is the structural reference.
+5. **Zod is the single strict validation and sanitization layer in `app-ui`**, taking the latest published
+   version at install time (the v4 line), applied to form input, route and search params, API responses,
+   and panel environment configuration (owner, 2026-09-16; §7). The panel validates for correctness, and
+   `app-serv` remains the security boundary. No second validator and no ad-hoc checks in components.
+6. Token Saver keeps RTK, Headroom, and Ponytail as live sections. **`caveman` is DEPRECATED** (owner,
+   2026-09-16): the API keeps the key frozen for round-trip compatibility, the panel parses it and never
+   renders it, and it is removed with `/api/v2` (SPEC-API §7.9, and §6.7 here). Drop was considered and
+   rejected for one reason: the key still carries migration information for anyone importing a reference
+   configuration, which a silent deletion would lose.
+7. `/antislop` AI and SuperPowers live on their own Skills tab. The Token Saver screen stays limited to the
+   legacy savers (owner, 2026-09-16).
+8. One HTTP module, one schema module, one strings module per screen (§10).
+9. Light and dark are both shipped and both verified (R-34; legacy parity, since the reference panel ships
+   a theme provider and a toggle).
+10. Every control is backed by an endpoint in SPEC-API §7. A control without one is removed (R-26).
+11. Cost values stay decimal strings end to end; token counts stay integers.
+12. No third-party runtime service: no analytics, no error-reporting SaaS, no font CDN, no CAPTCHA.
+13. **Bun is the runtime.** The panel is built, tested, and served with Bun, and the application process
+   is a Bun process, not only a Bun package manager invocation (owner requirement, §10.1).
+14. **Governance is mandatory and explicitly linked.** [`docs/RULLES/TDD.md`](../RULLES/TDD.md) is
+   binding on every panel task through §10.2, and [`AGENTS.md`](../../AGENTS.md) is present for the Go
+   services. The panel keeps this spec as its own rule file, so a Go rule cannot be applied or skipped
+   here without an edit that says so.
+
+## 14. Open questions
+
+1. **`DESIGN.md` is missing.** Who writes it, and when? The palette, typeface, logo treatment, and the
+   identity motif come from it. Until it exists, U1 styling is a draft without direction (§9.1).
+2. **Skills source.** Where do `/antislop` AI and SuperPowers live for `pannelAI`? The reference panel
+   points its skills page at raw URLs in an external repository, and nothing equivalent exists for this
+   repository yet. The Skills tab cannot complete phase U3 without a decided source path and install line.
+3. **Machine-readable contract.** `docs/SPEC-API/002-SPEC-API-openapi.md` is described by SPEC-API as
+   normative for wire shapes and is not in the repository. Until it exists, the panel's response schemas
+   are authored by hand from SPEC-API §7, and `/api-docs` renders from the spec tables rather than a
+   generated bundle. Decide whether the OpenAPI file is produced before U1, which would let response
+   schemas and the drift gate be generated instead of maintained.
+4. **Cost granularity.** Should `/usage` show cost with 4 or 6 decimals, and should the panel display a
+   currency code? The API returns a decimal string with no currency field.
+5. **Provider registry scope.** SPEC-API §12 asks whether all registry providers land in P1 or the API-key
+   category first. The answer changes the Providers screen's default filter and paging behaviour.
+6. **Purge guard threshold.** Is 1000 rows the right typed-confirmation threshold for log purge, or should
+   the confirmation be based on the retention window instead?
+7. **Data-plane playground.** Confirm that the basic chat page stays out permanently. If it is wanted
+   later, it needs its own spec, because it exercises the gateway key path rather than the session path.
+8. **Closed 2026-09-16: the governance file is present.** [`AGENTS.md`](../../AGENTS.md) landed at the
+   repository root and scopes itself to Go services under `app-*/**`, so the earlier blocking note in this
+   section is withdrawn: it does not gate the panel. Two follow-ups come out of it. `SYSTEM_MAP.md` is
+   required in the same pull request by that file and does not exist yet, and the panel must not treat the
+   Go rules as its own by accident. The panel's gate set is still assumed rather than wired, because
+   `scrypts/` does not exist, and that remains the reason U0 cannot be called complete.
+9. **Enumerate gateway key status values.** SPEC-API §7.3 accepts `status` on PATCH but never lists the
+   allowed values, and §6 does not either. The panel therefore writes `active` and `disabled` from two
+   constants in `src/lib/schemas/gateway-key.ts` and renders any other value verbatim, so it cannot
+   reject a value the server accepts. The API spec needs the enum before U1 adds endpoint key health,
+   where the same question returns with circuit-breaker states.
+10. **Panel header format.** `AGENTS.md` §1.2 defines a tagged header for Go files (`@file`, `@for`,
+   `@uses`, `@reason`, `@author`, `@layer`, `@stability`, `@since`), while the panel files carry a
+   free-form rationale comment plus a purpose line. Should the panel adopt the same tags so a reviewer
+   greps one format across both apps, or keep free form because tags such as `@layer` and `@stability`
+   describe Go package concepts that the panel does not have?
+
+## 15. Evidence for numbers and paths used here
+
+Every count in this document is measured, and every referenced path is marked present or planned. This
+table exists so a reader can re-run the measurement instead of trusting the sentence.
+
+| Claim | How it was measured | Result |
+|---|---|---|
+| Reference repository identity | `git log -1` and `node -e` on `package.json` in `/home/rusmanadodi/ai-gateway` | HEAD `9766494`, dated 2026-09-09; package `9router-app` version `0.5.55` |
+| Provider registry size | `ls open-sse/providers/registry/ \| wc -l` in the reference | 121 files |
+| Reference management API breadth | `find src/app/api -name route.js` excluding `api/v1` and `api/v1beta` | 129 route files |
+| Reference data-plane API breadth | `find src/app/api/v1 src/app/api/v1beta -name route.js` | 23 route files |
+| Reference dashboard breadth | `find 'src/app/(dashboard)/dashboard' -maxdepth 1 -type d` | 16 feature directories under the dashboard directory itself |
+| Reference shared component count | `ls src/shared/components/*.js \| wc -l` | 46 files |
+| Reference token saver flag set | `grep -n "DEFAULT_SETTINGS" -A 60 src/lib/db/repos/settingsRepo.js` | Flags include `rtkEnabled`, `headroomEnabled`, `cavemanEnabled`, `ponytailEnabled` |
+| Component layer facts | shadcn-svelte documentation and migration notes | Components are built with Bits UI and Tailwind CSS, with Svelte 5 and Tailwind v4 support; the chart component is built on LayerChart |
+| Validation library line | The `zod` page on npm, and the Zod 4 release notes on zod.dev | Zod 4 is the stable line, with 4.x published at the time of writing. The panel installs the latest at pin time and records the exact version in the lockfile. |
+| `/logs` has no stream endpoint in v1 | SPEC-API §7.13 lists list, detail, purge, and console routes only | No SSE route for management logs, so the panel polls |
+| `DESIGN.md` absent | `find . -maxdepth 2 -iname DESIGN.md` at the `pannelAI` root | No match |
+| `AGENTS.md` absent | `ls AGENTS.md` at the `pannelAI` root | Not present |
+| `pannelAI` root contents | `ls -la` at the project root, plus `grep -c` on `AGENTS.md` | `.gitignore`, `README.md`, `AGENTS.md`, `docs/`, `deployment/`, `anti-slop/`, `app-ui/`. `AGENTS.md` is 266 lines and its scope line names Go services under `app-*/**`. |
+| SvelteKit needs an adapter, and Bun can run it | SvelteKit adapter documentation, the Bun SvelteKit guide, and the Bun adapter template | A production SvelteKit server comes from an adapter; Bun documents building SvelteKit apps and a Bun adapter exists, so serving the panel and proxying `/api/v1` from the panel's own Bun process (§10.1) is a supported setup, not a workaround. |
+
+Path status for every path referenced in this document:
+
+| Path | Status |
+|---|---|
+| `docs/SPEC-API/001-SPEC-API.md` | Present |
+| `docs/RULLES/TDD.md` | Present |
+| `README.md` | Present |
+| `docs/SPEC-API/002-SPEC-API-openapi.md` | Planned, see §14 Q3 |
+| `AGENTS.md` | Present at the repository root, scoped to Go services (`app-*/**`). It does not govern `app-ui`. |
+| `app-ui/`, `app-serv/`, `scrypts/` | Planned, not created |
+| `DESIGN.md` | Planned, see §14 Q1 |
+| `002-TOKEN-SAVER` (native saver spec) | Planned, per SPEC-API §10 P3 |
+
+## 16. antislop gate record for this document
+
+Mode: DURING while writing, AFTER as this record. This is a specification, not a rendered interface, so
+the table separates what a document can be checked for from what can only be checked once a screen exists.
+A deferred item names the check and where the evidence must appear.
+
+**Document-level checks**
+
+| Rule | Result | Evidence |
+|---|---|---|
+| R-02 (no em dash) | PASS | Verified 2026-09-16: zero occurrences of the em dash character (U+2014) in the file, and zero en dashes (U+2013). The title separator is a colon, and negative terms such as "Not ported" use plain wording. |
+| R-17 (numbers need a source) | PASS | Every count appears in §15 with the command that produced it. No figure is carried over from the reference README or the API spec without a citation. |
+| R-24 (no navigation without a destination) | PASS | §5.2.2 makes it a rule, and §5.1 defines a route for every nav item in the list. The U0 scaffold implements it: unbuilt items render with a Planned chip instead of a link. |
+| R-38 (real content or honest placeholder) | PASS | §15 marks every path present or planned. The two ghost references flagged in the earlier panel audit are not repeated: `AGENTS.md` is marked planned, and the missing OpenAPI companion is named as missing in §14 Q3. |
+| R-36 (no fabricated claims) | PASS | The document makes no security, compliance, uptime, or performance claim about the panel. §7.1.3 explicitly denies a security-boundary claim, and the Bun runtime claim in §10.1 exists in §15 with a source rather than as an assertion about speed. |
+| Governance links are real | PASS | Both linked files resolve: [`docs/RULLES/TDD.md`](../RULLES/TDD.md) and [`AGENTS.md`](../../AGENTS.md). Each link states its scope, so a reader cannot mistake the Go rules for the panel's rules. |
+| Mandatory protocol stated, not implied | PASS | §10.2 states the test-first order, the analysis content, the table-driven requirement with case types, and the pull request evidence, all bound to `docs/RULLES/TDD.md` §2.3, §2.5, and §3. |
+| Cross-spec consistency | PASS | The one contradiction between this spec and SPEC-API was the `caveman` key, where the API carried a live config field and the panel refused to render it. Both specs now mark it DEPRECATED with the same removal path (`/api/v2`), so an implementer reading either document reaches the same conclusion (§13.6, SPEC-API §7.9). |
+| R-16 (no marketing vocabulary) | PASS | A case-insensitive scan for the forbidden vocabulary returns exactly one line, which is the rule statement in §8.10.3 that names the words to avoid. That is the carve-out for documenting the rule, not a claim about the product. |
+| Emoji in the document | PASS | A Unicode-range scan for emoji returns 0 matches. This matches the owner requirement that no emoji appear in UI strings, and the document holds itself to the same rule. |
+| Inline bold labels in bullet lists | Disclosed, LOW, deliberate | 90 bullets carry a bold label, for example a screen field name such as the data source or the empty-state text. In a specification this is a definition list: a reviewer scans labels to find a field. The reason is recorded here so the pattern is not mistaken for accidental template text, and it is listed in the follow-up audit for the owner to accept or reject. |
+| R-23 / R-37 (no invented assets, direction required) | PASS for honesty, blocked for styling | No logo, avatar, statistic, or testimonial is invented. §9.1 states that palette and typography are not supplied and are placeholders, and §9.2 sets the required honest draft dials. |
+| R-18 (testimonials), R-28 (FAQ), R-05 pricing block, R-14 feature-card grids | Not applicable | The KEEP list has no marketing surface. These sections are excluded by scope, so they cannot be violated. |
+| C-5 (evidence over claims) | PASS | §15 and the per-screen constraints cite the API spec section for each behaviour instead of asserting panel behaviour the API does not have. |
+
+**Checks deferred to implementation, with the required evidence**
+
+| Rule | Where it is enforced | Required evidence |
+|---|---|---|
+| R-25 (contrast) | §9.4.1, and `app-ui/tests/tokens/contrast.test.ts` | The U0 draft tokens are measured: 16 text pairs across both themes, lowest ratio 4.92:1 against the 4.5:1 floor, asserted by a test that reads the token file itself. Re-measure when `DESIGN.md` replaces these tokens. |
+| R-27 (empty, loading, error states) | §8.3, and each screen section | Screenshot or recording of all three states per screen. |
+| R-32 (keyboard) | §9.4.4 | Keyboard-only pass list per screen, including Escape and focus return. |
+| R-03 (mobile) | §8.7, §9.4.3 | Breakpoint pass per screen, with the horizontal-overflow check. |
+| R-34 (both themes work) | §8.9, §9.4.2 | Both themes exercised per screen before merge. |
+| R-26 (no dead controls) | §13.10, §5.2.2 | The route-to-nav test in §11.2, plus the click-through in R-35. |
+| R-35 (verified before delivery) | §9.4.5 | Recorded click-through list, element by element, with each outcome. |
+| R-04 (icon relevance) | §8.11.2 | The icon map file with a one-line reason per icon. |
+| R-21 (theme choice) | §8.9 | Both authored themes, with the dark default rationale recorded. |
+| R-29, R-11, R-12, R-13, R-01, R-09 (purpose-gate techniques) | §9.3 | Token file showing the palette cap, the radius scale, and the single accent use. |
+| R-31 (reason per decision) | §9.5 | The reason log, extended in the pull request for decisions this spec does not yet cover. |
+
+---
+
+*Changelog: 2026-09-16, initial draft. Mapped from the KEEP list against SPEC-API-001 and the reference
+`~/ai-gateway` at `9766494` (9router-app 0.5.55). Owner decisions recorded the same day: Headroom kept in
+Token Saver, `/antislop` AI and SuperPowers on their own Skills tab, shadcn-svelte as the component layer
+with fresh icons and no emoji, and Zod as the single strict validation and sanitization layer in `app-ui`.
+Zod section strengthened the same day at the owner's request: four validation boundaries, module layout and
+reuse rules, environment parsing, and a per-resource schema coverage checklist. Also added the same day at
+the owner's request: explicit governance links to `AGENTS.md` and `docs/RULLES/TDD.md`, a mandatory strict
+TDD protocol section (§10.2), and a Bun runtime section (§10.1). `AGENTS.md` landed the same day, scoped
+to the Go services, so the earlier blocking note was withdrawn and a question about adopting its header
+format was opened instead. Caveman resolved the same day: marked DEPRECATED in this spec and in SPEC-API, with removal
+scheduled for `/api/v2`, replacing the earlier half-state where one document carried the key and the other
+only mentioned it.*
