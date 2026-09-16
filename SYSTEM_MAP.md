@@ -18,7 +18,7 @@ Dua aplikasi, satu repositori. Keduanya berbagi PostgreSQL dan Redis secara logi
 ```mermaid
 flowchart LR
     CLI["CLI tools: Claude Code, Codex, Cursor"]
-    UI["app-ui: Svelte panel (direncanakan)"]
+    UI["app-ui: Svelte panel U0 (login, gateway keys, settings)"]
 
     subgraph serv["app-serv (Go 1.26)"]
         direction TB
@@ -90,7 +90,32 @@ sequenceDiagram
 
 Plaintext hanya muncul pada respons create. Setiap pembacaan setelahnya hanya membawa `key_hint` (`sk-…abcd`), dan digest SHA-256 adalah satu-satunya bentuk yang tersimpan (SPEC-API-001 §4, §6).
 
-### 3.2 Siklus hidup status
+### 3.2 Permintaan panel (app-ui U0)
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant U as app-ui (SvelteKit on Bun)
+    participant S as app-serv
+
+    B->>U: GET /endpoint-keys
+    U->>U: session gate in the root layout
+    U->>S: GET /api/v1/auth/status (forwarded, PANEL_API_TARGET)
+    S-->>U: 404 NOT_FOUND (auth endpoints not built yet)
+    U-->>B: login screen with the API's message, not a blank panel
+```
+
+The panel forwards `/api/v1` from its own server, so the browser talks to one
+origin and no CORS rule is needed. Two consequences are worth recording:
+
+- **The auth path is not wired end to end.** `app-serv` has no `/api/v1/auth/*`
+  endpoints yet (SPEC-API-001 §7.2), so login cannot complete and the panel
+  reports the API's own error rather than failing silently. That is the U0 exit
+  criterion the panel spec leaves open.
+- The panel never touches PostgreSQL or Redis; the API is its only surface
+  (SPEC-API-001 §11.5, enforced by review because nothing else can see it).
+
+### 3.3 Siklus hidup status
 
 ```mermaid
 stateDiagram-v2
@@ -124,7 +149,7 @@ Route metode-aware (Go 1.22 `ServeMux`), sehingga verbe yang salah dijawab mux d
 
 Route tidak dikenal dijawab `404 NOT_FOUND`, verbe salah dijawab `405 METHOD_NOT_ALLOWED`; keduanya lewat envelope §8 yang sama seperti error lain.
 
-**Belum ada:** middleware sesi. Endpoint manajemen §7.2 belum dibangun, jadi seluruh route gateway keys masih terbuka. Ini batas P0 yang disengaja, bukan celah yang terlupakan; P0 exit criteria menyebut login dan CRUD key diuji bersamaan.
+**Belum ada:** middleware sesi. Endpoint manajemen §7.2 belum dibangun, jadi seluruh route gateway keys masih terbuka, dan panel `app-ui` U0 memanggil `/api/v1/auth/*` yang belum ada sehingga login belum bisa selesai. Ini batas P0 yang disengaja, bukan celah yang terlupakan; P0 exit criteria menyebut login dan CRUD key diuji bersamaan.
 
 ## 4a. Migrasi
 

@@ -1053,7 +1053,9 @@ Path status for every path referenced in this document:
 | `README.md` | Present |
 | `docs/SPEC-API/002-SPEC-API-openapi.md` | Planned, see §14 Q3 |
 | `AGENTS.md` | Present at the repository root, scoped to Go services (`app-*/**`). It does not govern `app-ui`. |
-| `app-ui/`, `app-serv/`, `scrypts/` | Planned, not created |
+| `app-ui/` | Present, phase U0 (login, endpoint-keys, settings). Remaining screens are Planned in the sidebar. |
+| `app-serv/` | Present, phase P0 (config, migrations, health/version, gateway keys). The auth endpoints this panel calls are not built yet, so U0 cannot be exercised end-to-end against it. |
+| `scrypts/` | Present: gates and git hooks, see `scrypts/README.md`. |
 | `DESIGN.md` | Planned, see §14 Q1 |
 | `002-TOKEN-SAVER` (native saver spec) | Planned, per SPEC-API §10 P3 |
 
