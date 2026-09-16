@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Hook: pre-push. The full gate set, because a push is what other people see.
+#
+# Everything here is justified by AGENTS.md's compliance checklist, and the
+# slower checks live here rather than in pre-commit so the commit path stays
+# fast enough that people do not bypass it.
+#
+#   1. Go: build, vet, gofmt, staticcheck (default and integration-tagged),
+#      the race-enabled test suite, and golangci-lint when installed
+#   2. app-ui: format, type check, tests, production build
+#   3. gitleaks across commits and the working tree
+#   4. contract drift between SPEC-API §8 and the panel's error enum
+#
+# A push to a remote also runs the integration suite when
+# PANNELAI_TEST_POSTGRES_DSN is set; otherwise it is reported as skipped.
+#
+# Install: scrypts/hooks/install.sh  (sets core.hooksPath)
+# Bypass:  git push --no-verify
+
+set -euo pipefail
+. "$(dirname "$0")/../lib/common.sh"
+
+root="$(repo_root)"
+failed=0
+
+run_gate() {
+	local label="$1"
+	shift
+	gate_start "$label"
+	if "$@"; then
+		gate_pass "$label"
+	else
+		gate_fail "$label"
+		failed=1
+	fi
+}
+
+run_gate "go lint (vet, gofmt, staticcheck)" bash "$root/scrypts/gates/go-lint.sh"
+run_gate "go test (race)" bash "$root/scrypts/gates/go-test.sh"
+run_gate "panel checks" bash "$root/scrypts/gates/panel-check.sh"
+run_gate "secrets" bash "$root/scrypts/gates/secrets.sh" --all
+run_gate "contract drift" bash "$root/scrypts/gates/contract-drift.sh"
+
+if [ "$failed" -ne 0 ]; then
+	printf '\n%spush blocked%s: fix the failures above, or use --no-verify to bypass (discouraged)\n' \
+		"$(_colour "$C_RED")" "$(_colour "$C_RESET")" >&2
+	exit 1
+fi
+
+gate_pass "all gates"
+exit 0

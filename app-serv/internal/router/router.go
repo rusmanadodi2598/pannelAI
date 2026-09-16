@@ -17,6 +17,7 @@ package router
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/handler"
@@ -86,7 +87,9 @@ func envelope(next http.Handler) http.Handler {
 func writeEnvelope(w http.ResponseWriter, code int, errCode, msg string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	_ = json.NewEncoder(w).Encode(schema.ErrorBody{Error: schema.ErrorDetail{Code: errCode, Message: msg}})
+	if err := json.NewEncoder(w).Encode(schema.ErrorBody{Error: schema.ErrorDetail{Code: errCode, Message: msg}}); err != nil {
+		slog.Error("encoding routing error envelope failed", "status", code, "error", err)
+	}
 }
 
 // statusRecorder intercepts only the mux's built-in 404/405 answers. Those are

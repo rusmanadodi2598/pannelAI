@@ -1,0 +1,127 @@
+# golangci-lint configuration for pannelAI Go services (schema v2).
+#
+# AGENTS.md §1.4 requires "an aggregated linter suite that flags unchecked
+# errors, missing context timeouts on outbound calls, unclosed HTTP response
+# bodies, and unclosed DB rows/statements". Each linter below maps to one of
+# those requirements, and the mapping is written down so a later reader knows
+# why a linter is on rather than deleting it as noise.
+#
+# Run it with scrypts/gates/go-lint.sh, which reports it as skipped when the
+# binary is absent rather than passing silently.
+#
+# Verify any edit with: golangci-lint config verify
+# A config that does not match this schema is rejected, not partially applied,
+# which is why verify belongs in the loop when changing this file.
+
+version: "2"
+
+linters:
+  default: standard
+
+  enable:
+    # ---- unchecked errors (§1.4) ----
+    - errcheck
+
+    # ---- unclosed HTTP bodies, rows, statements (§1.4) ----
+    - bodyclose
+    - rowserrcheck
+    - sqlclosecheck
+
+    # ---- context on outbound calls (§1.6) ----
+    - noctx
+    - contextcheck
+
+    # ---- error hygiene (§1.6) ----
+    - errchkjson
+    - nilerr
+
+    # ---- banned constructs (§1.4) ----
+    - forbidigo
+
+    # ---- everyday correctness ----
+    - copyloopvar
+    - gocritic
+    - misspell
+    - unconvert
+    - unparam
+    - wastedassign
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+      disabled-checks:
+        # hugeParam and rangeValCopy advise passing structs over a size
+        # threshold by pointer. This codebase models its entities and DTOs as
+        # immutable value objects with unexported fields (AGENTS.md §2.2), so
+        # they are passed and copied by value throughout: a pointer would add
+        # aliasing and a mutate-in-place contract that the aggregate exists to
+        # prevent, to save an 80-184 byte copy on paths that are not hot. The
+        # size heuristic does not know that, and per-file exclusions would
+        # scatter the same reasoning across a dozen paths.
+        - hugeParam
+        - rangeValCopy
+
+    forbidigo:
+      # §1.4 forbids `any`/`interface{}` in application code outside a declared
+      # I/O boundary. A blanket ban is impossible: JSON decoding, pgx Scan, and
+      # the response writer genuinely need them. So the rule bans the pattern
+      # where a leak actually hurts, and the boundary files are excluded below.
+      analyze-types: true
+      forbid:
+        - pattern: 'interface\{\}'
+          msg: "AGENTS.md §1.4: use a concrete type; interface{} belongs only at a declared I/O boundary"
+        - pattern: '^any$'
+          msg: "AGENTS.md §1.4: use a concrete type; any belongs only at a declared I/O boundary"
+
+  exclusions:
+    # Generated code is exempt per AGENTS.md §1.1.
+    generated: lax
+
+    rules:
+      # The decode/encode boundaries §1.4 explicitly permits. Each file is named
+      # so the exemption stays visible instead of pattern-matched by accident.
+      - path: internal/schema/(dto|respond)\.go
+        linters: [forbidigo]
+      - path: internal/repository/postgres/.*\.go
+        linters: [forbidigo]
+
+      # noctx targets *outbound* calls that must carry a deadline. A test builds
+      # an inbound request with httptest.NewRequest on purpose: it is the input
+      # the handler receives, not a call the test makes, so there is no caller
+      # context to attach and §1.6's timeout requirement does not apply.
+      - path: _test\.go
+        linters: [noctx, forbidigo, unparam, errcheck]
+
+      # hugeParam and rangeValCopy advise passing large structs by pointer. For
+      # these two types that advice makes the code worse: SystemInfo and
+      # GatewayKey are immutable value objects that are only read, and a pointer
+      # would introduce aliasing (a caller could mutate what another holds) to
+      # save a copy of 80-128 bytes on a path that is not hot. The exclusion is
+      # a judgement about this codebase, not a blanket silencing.
+      - path: internal/schema/respond\.go
+        linters: [gocritic]
+        text: "hugeParam"
+      - path: internal/router/.*_test\.go
+        linters: [gocritic]
+        text: "hugeParam|rangeValCopy"
+      # The repository takes and returns domain aggregates by value, matching
+      # Create, GetByID, and Revoke. Taking a pointer only for Update would make
+      # the interface inconsistent to satisfy a size heuristic, and a mutate-in-
+      # place contract is exactly what the unexported-field aggregate prevents.
+      - path: internal/repository/(gateway_key|postgres/gateway_key)\.go
+        linters: [gocritic]
+        text: "hugeParam"
+
+formatters:
+  enable:
+    - gofmt
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

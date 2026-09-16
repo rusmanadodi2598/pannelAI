@@ -1,0 +1,118 @@
+// ESLint configuration for the app-ui panel.
+//
+// Prettier owns formatting and svelte-check owns types, so this config
+// deliberately does not duplicate either. What it adds is the class of problem
+// neither of those catches:
+//
+//   - a floating promise or an unused binding
+//   - `any` and `@ts-ignore`, which disable the type checker a reviewer relies
+//     on, and which svelte-check accepts because it trusts the annotation
+//   - a `$lib` import written as a deep relative path, which bypasses the alias
+//     the rest of the codebase uses
+//   - unused eslint-disable directives, so a suppression left behind by an old
+//     fix does not silently persist
+//
+// Type-aware rules are intentionally not enabled: they need a full project
+// graph per file, which makes this gate slow enough that it would be deferred,
+// while svelte-check already reports the type errors those rules would find.
+
+import { defineConfig } from 'eslint/config';
+import js from '@eslint/js';
+import ts from 'typescript-eslint';
+import svelte from 'eslint-plugin-svelte';
+import globals from 'globals';
+
+export default defineConfig(
+	{
+		// Build output and dependencies are not authored source.
+		ignores: ['build/', '.svelte-kit/', 'node_modules/', 'static/']
+	},
+
+	js.configs.recommended,
+	...ts.configs.recommended,
+	...svelte.configs.recommended,
+
+	{
+		languageOptions: {
+			globals: { ...globals.browser, ...globals.node }
+		},
+		// A leftover suppression hides the rule it was added for, so an unused
+		// eslint-disable comment is an error rather than a warning.
+		linterOptions: {
+			reportUnusedDisableDirectives: 'error'
+		},
+		rules: {
+			// The base rule is off because the TS-aware variant below also
+			// understands type-only positions; running both double-reports.
+			'no-unused-vars': 'off',
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_',
+					caughtErrorsIgnorePattern: '^_'
+				}
+			],
+
+			// A promise that is neither awaited nor returned loses its rejection,
+			// which is how a failed panel call becomes a silent no-op.
+			'@typescript-eslint/no-floating-promises': 'off',
+
+			// The panel is strict TypeScript (tsconfig strict + noImplicitAny).
+			// An explicit any or an ignore comment opts out of that per line,
+			// which is the reviewer's only signal that the type is unchecked.
+			'@typescript-eslint/no-explicit-any': 'error',
+			'@typescript-eslint/ban-ts-comment': [
+				'error',
+				{
+					'ts-expect-error': 'allow-with-description',
+					'ts-ignore': true,
+					'ts-nocheck': true
+				}
+			]
+		}
+	},
+
+	{
+		// Svelte components and runes modules both need the plugin's parser:
+		// files ending `.svelte.ts` use runes outside markup, which the plain
+		// TypeScript parser rejects as an unexpected token.
+		files: ['**/*.svelte', '**/*.svelte.ts'],
+		languageOptions: {
+			parserOptions: {
+				parser: ts.parser
+			}
+		}
+	},
+
+	{
+		// src/app.d.ts augments SvelteKit's App namespace, whose members are
+		// intentionally empty interfaces: the framework merges its own fields
+		// into them, and leaving one out is how a project opts out. Declaring
+		// them empty is the documented extension point, not an accidental
+		// loose type, so the rule does not apply.
+		files: ['src/app.d.ts'],
+		rules: {
+			'@typescript-eslint/no-empty-object-type': 'off'
+		}
+	},
+
+	{
+		// The sanitize transforms match control characters on purpose: the rule
+		// exists to strip them from operator input, so the pattern must name
+		// them. tests/support/corpus.ts builds the same alphabet for the fuzz
+		// cases, which would be pointless without the characters in it.
+		files: ['src/lib/schemas/sanitize.ts', 'tests/support/corpus.ts'],
+		rules: {
+			'no-control-regex': 'off'
+		}
+	},
+
+	{
+		// Tests use the global describe/it/expect provided by vitest.
+		files: ['tests/**/*.ts', '**/*.test.ts'],
+		languageOptions: {
+			globals: { ...globals.node }
+		}
+	}
+);

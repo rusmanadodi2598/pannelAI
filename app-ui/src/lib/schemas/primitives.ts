@@ -54,7 +54,7 @@ export const proxyHost = z
 	.transform(normalizeHost)
 	.refine((value) => value.length > 0, { message: 'A host is required.' })
 	.refine((value) => value.length <= 253, { message: 'Use 253 characters or fewer.' })
-	.refine((value) => !/[\/\s:]/.test(value), {
+	.refine((value) => !/[/\s:]/.test(value), {
 		message: 'Enter a host only, with no scheme, path, or port.'
 	});
 

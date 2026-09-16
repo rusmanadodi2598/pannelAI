@@ -84,10 +84,13 @@ func logging(next http.Handler) http.Handler {
 // answers with the §8 envelope, logged against the request id.
 func recoverer(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Read the id up front: the deferred closure then needs no context
+		// access, and the value it logs is the one the request started with.
+		requestID := RequestIDFrom(r.Context())
 		defer func() {
 			if rec := recover(); rec != nil {
 				slog.Error("request panic recovered",
-					"request_id", RequestIDFrom(r.Context()),
+					"request_id", requestID,
 					"method", r.Method,
 					"path", r.URL.Path,
 					"panic", rec,

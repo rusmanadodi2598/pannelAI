@@ -28,7 +28,29 @@ bun run check        # svelte-check with the native TypeScript 7 compiler
 bun run test         # unit tests (Vitest, jsdom)
 bun run format       # Prettier write
 bun run lint         # Prettier check
+bun run lint:ts      # ESLint (types, unused bindings, floating promises)
 ```
+
+`bun run lint` and `bun run lint:ts` are separate on purpose: Prettier owns
+formatting, ESLint owns the problems a formatter cannot see (an explicit `any`,
+a binding left unused by a rename, an `eslint-disable` that no longer suppresses
+anything).
+
+### Bun on a CPU without AVX2
+
+Bun ships two x86-64 builds. The default one requires AVX2 and dies with SIGILL
+on older CPUs (Sandy/Ivy Bridge era) even for `bun --version`. Install the
+baseline build, which does not:
+
+```bash
+curl -fsSL -o bun.zip \
+  https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64-baseline.zip
+unzip bun.zip && install -m755 bun-linux-x64-baseline/bun ~/.local/bin/bun
+```
+
+`scrypts/gates/panel-check.sh` probes Bun by running it, so it uses a working
+baseline build when PATH has one and reports the fallback to npm/node when it
+does not.
 
 Set `PANEL_API_TARGET` before starting (see `.env.example`). A missing or malformed value fails the
 first `/api/v1` request with a message naming the variable.

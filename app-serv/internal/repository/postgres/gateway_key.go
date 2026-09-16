@@ -204,11 +204,8 @@ func translatePGError(err error) error {
 	}
 
 	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		switch pgErr.Code {
-		case "23505": // unique_violation
-			return fmt.Errorf("%w: %s", domain.ErrGatewayKeyExists, pgErr.ConstraintName)
-		}
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" { // unique_violation
+		return fmt.Errorf("%w: %s", domain.ErrGatewayKeyExists, pgErr.ConstraintName)
 	}
 	return fmt.Errorf("gateway_keys: %w", err)
 }

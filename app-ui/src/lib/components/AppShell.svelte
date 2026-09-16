@@ -4,26 +4,34 @@
 	// Navigation follows the owner KEEP list in docs/SPEC-UI/001-SPEC-UI.md §5.2. An item whose screen
 	// is not built yet is not a link: it renders with a Planned chip, because a nav item pointing at a
 	// missing route is exactly what R-24 forbids.
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { navIcon } from '$lib/icons';
 	import { session } from '$lib/stores/session.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { Moon, Sun } from 'lucide-svelte';
+	import type { RouteId } from '$app/types';
 	import type { Snippet } from 'svelte';
 
-	type NavItem = { key: string; label: string; href: string; built: boolean };
+	// A built item points at a route that exists, so its href is typed as a
+	// RouteId and resolve() accepts it. A planned item has no route yet, so it
+	// carries no href at all: that is what stops a link to a missing page, which
+	// R-24 forbids, from being written by accident.
+	type NavItem =
+		| { key: string; label: string; built: true; href: RouteId }
+		| { key: string; label: string; built: false; href?: never };
 
 	const NAV: NavItem[] = [
 		{ key: 'endpoint-keys', label: 'Endpoint & Key', href: '/endpoint-keys', built: true },
-		{ key: 'providers', label: 'Providers', href: '/providers', built: false },
-		{ key: 'combos', label: 'Combo & Vision Adapter', href: '/combos', built: false },
-		{ key: 'usage', label: 'Usage', href: '/usage', built: false },
-		{ key: 'quota', label: 'Quota Tracker', href: '/quota', built: false },
-		{ key: 'token-saver', label: 'Token Saver', href: '/token-saver', built: false },
-		{ key: 'proxies', label: 'Proxy Pools', href: '/proxy-pools', built: false },
-		{ key: 'skills', label: 'Skills', href: '/skills', built: false },
-		{ key: 'logs', label: 'Logs', href: '/logs', built: false },
-		{ key: 'api-docs', label: 'API Docs', href: '/api-docs', built: false },
+		{ key: 'providers', label: 'Providers', built: false },
+		{ key: 'combos', label: 'Combo & Vision Adapter', built: false },
+		{ key: 'usage', label: 'Usage', built: false },
+		{ key: 'quota', label: 'Quota Tracker', built: false },
+		{ key: 'token-saver', label: 'Token Saver', built: false },
+		{ key: 'proxies', label: 'Proxy Pools', built: false },
+		{ key: 'skills', label: 'Skills', built: false },
+		{ key: 'logs', label: 'Logs', built: false },
+		{ key: 'api-docs', label: 'API Docs', built: false },
 		{ key: 'settings', label: 'Settings', href: '/settings', built: true }
 	];
 
@@ -58,7 +66,7 @@
 				{@const icon = navIcon(item.key)}
 				{#if item.built}
 					<a
-						href={item.href}
+						href={resolve(item.href)}
 						aria-current={isActive(item.href) ? 'page' : undefined}
 						class="flex min-h-11 items-center gap-2.5 rounded-[var(--radius-sm)] px-2 text-sm transition-colors
 							{isActive(item.href)

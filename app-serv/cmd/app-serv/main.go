@@ -199,8 +199,12 @@ func serve(ctx context.Context, srv *http.Server) error {
 		return err
 	}
 
+	// The parent ctx is already cancelled here (that is why we are shutting
+	// down), so deriving this timeout from it would abort the drain instantly.
+	// context.Background() is the correct root for a bounded shutdown window.
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
+	//nolint:contextcheck // reason: the parent ctx is already cancelled (that is why we are shutting down), so deriving from it would abort the drain immediately; context.Background is the correct root for a bounded shutdown window.
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return err
 	}

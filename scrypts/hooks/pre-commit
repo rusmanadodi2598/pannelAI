@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# Hook: pre-commit. Fast checks only, so a commit stays quick enough to use.
+#
+# A pre-commit hook that takes minutes gets bypassed with --no-verify, and a
+# bypassed hook protects nothing. So this hook runs only the checks that are
+# cheap and that must not be deferred:
+#
+#   1. gofmt on the staged Go files (formatting is the author's job, and a later
+#      commit that reformats unrelated files is noise)
+#   2. AGENTS.md §1.2 header contract on staged Go files
+#   3. gitleaks on the staged patch, because a secret in history cannot be
+#      undone by deleting the file
+#
+# The slower gates (full test suite, staticcheck, panel build) run in pre-push,
+# where a longer wait is expected.
+#
+# Install: scrypts/hooks/install.sh  (sets core.hooksPath)
+# Bypass:  git commit --no-verify  (should be rare and justified)
+
+set -euo pipefail
+. "$(dirname "$0")/../lib/common.sh"
+
+root="$(repo_root)"
+failed=0
+
+# staged_go_files prints staged Go files that still exist on disk. A deleted
+# file cannot be formatted or checked.
+staged_go_files() {
+	git -C "$root" diff --cached --name-only --diff-filter=ACMR -- '*.go' |
+		while IFS= read -r rel; do
+			[ -n "$rel" ] || continue
+			[ -f "$root/$rel" ] && printf '%s\n' "$root/$rel"
+		done
+}
+
+mapfile -t go_files < <(staged_go_files)
+
+# --------------------------------------------------------------- formatting
+
+if [ "${#go_files[@]}" -gt 0 ]; then
+	gate_start "gofmt (staged Go files)"
+	unformatted="$(gofmt -l "${go_files[@]}" || true)"
+	if [ -z "$unformatted" ]; then
+		gate_pass "gofmt"
+	else
+		gate_fail "these staged files are not gofmt-clean:"
+		printf '  %s\n' $unformatted >&2
+		gate_fail "run: gofmt -w <files>"
+		failed=1
+	fi
+fi
+
+# ------------------------------------------------------------------ headers
+
+if [ "${#go_files[@]}" -gt 0 ]; then
+	gate_start "AGENTS.md §1.2 headers (staged Go files)"
+	if bash "$root/scrypts/gates/go-headers.sh"; then
+		gate_pass "headers"
+	else
+		gate_fail "header contract violated"
+		failed=1
+	fi
+fi
+
+# ------------------------------------------------------------------ secrets
+
+gate_start "gitleaks (staged)"
+if bash "$root/scrypts/gates/secrets.sh" --staged; then
+	gate_pass "secrets"
+else
+	gate_fail "secret scanning failed"
+	failed=1
+fi
+
+# ------------------------------------------------------- contract drift
+
+if git -C "$root" diff --cached --name-only | grep -qE 'SPEC-API.*\.md$|app-ui/src/lib/schemas/error\.ts$'; then
+	gate_start "contract drift (spec or error enum changed)"
+	if bash "$root/scrypts/gates/contract-drift.sh"; then
+		gate_pass "contract drift"
+	else
+		gate_fail "contract drift"
+		failed=1
+	fi
+fi
+
+if [ "$failed" -ne 0 ]; then
+	printf '\n%scommit blocked%s: fix the failures above, or use --no-verify to bypass (discouraged)\n' \
+		"$(_colour "$C_RED")" "$(_colour "$C_RESET")" >&2
+	exit 1
+fi
+
+exit 0

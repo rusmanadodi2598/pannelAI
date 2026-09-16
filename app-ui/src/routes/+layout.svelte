@@ -4,6 +4,7 @@
 	// The gate lives here rather than in each screen, so a new screen cannot ship without the session
 	// check. Unauthenticated requests see the login route only.
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
@@ -27,12 +28,12 @@
 		if (session.loading) return;
 
 		if (session.requireLogin && !session.authenticated && !onLoginRoute) {
-			void goto('/login');
+			void goto(resolve('/login'));
 			return;
 		}
 
 		if (session.authenticated && onLoginRoute) {
-			void goto('/endpoint-keys');
+			void goto(resolve('/endpoint-keys'));
 		}
 	});
 </script>

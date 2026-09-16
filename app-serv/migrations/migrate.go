@@ -89,14 +89,22 @@ func Apply(ctx context.Context, dsn string) error {
 }
 
 // appliedVersions reads the ledger into a set.
-func appliedVersions(ctx context.Context, db *sql.DB) (map[string]struct{}, error) {
+func appliedVersions(ctx context.Context, db *sql.DB) (applied map[string]struct{}, err error) {
 	rows, err := db.QueryContext(ctx, `SELECT version FROM schema_migrations`)
 	if err != nil {
 		return nil, fmt.Errorf("migrations: reading ledger: %w", err)
 	}
-	defer rows.Close()
+	// A Close error on this read path would mean the connection is in an
+	// unknown state, so it is reported rather than discarded. The named return
+	// lets the deferred close reach the caller without shadowing a real error.
+	defer func() {
+		if cerr := rows.Close(); cerr != nil && err == nil {
+			applied = nil
+			err = fmt.Errorf("migrations: closing ledger rows: %w", cerr)
+		}
+	}()
 
-	applied := make(map[string]struct{})
+	applied = make(map[string]struct{})
 	for rows.Next() {
 		var version string
 		if err := rows.Scan(&version); err != nil {

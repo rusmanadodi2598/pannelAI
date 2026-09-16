@@ -17,6 +17,7 @@ package schema
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -60,10 +61,17 @@ func Timestamp(t time.Time) string {
 }
 
 // WriteJSON marshals v and writes it with the given status.
+//
+// An encode failure cannot be turned into an error response: the status line is
+// already committed by then, so the client would receive a truncated body
+// either way. It is logged instead of discarded, because a silent truncation is
+// far harder to diagnose than a log line naming the request.
 func WriteJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		slog.Error("encoding response body failed", "status", status, "error", err)
+	}
 }
 
 // WriteError converts any error to the management envelope and writes it.

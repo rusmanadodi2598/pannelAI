@@ -16,7 +16,7 @@ Proyek memisahkan tanggung jawab **Control Plane** (API manajemen) dan **Data Pl
 
 > **Status: dalam pengembangan.** Komponen data plane sudah tersedia di kode, tetapi keberadaan modul belum berarti seluruh alur HTTP, streaming, dan accounting telah terintegrasi atau teruji end-to-end. Dashboard `app-ui` sudah punya scaffold fase U0 (login, gateway keys, settings security) dengan spesifikasi di [`docs/SPEC-UI/001-SPEC-UI.md`](docs/SPEC-UI/001-SPEC-UI.md) dan catatan teknis di [`app-ui/README.md`](app-ui/README.md); layar sisanya masih direncanakan dan ditandai Planned di sidebar.
 
-`app-serv/` sudah ada sebagai skeleton P0 (config, migrasi, health/version, CRUD gateway keys) dengan pengujian di `go test -race`. Panel `app-ui/` pada fase U0 juga sudah ada (login, gateway keys, settings security). Yang belum dibangun: data plane `app-serv` (chat, streaming, accounting), layar sisanya di `app-ui`, dan `scrypts/`. Pohon di bawah adalah **struktur target** yang menjadi acuan pengembangan.
+`app-serv/` sudah ada sebagai skeleton P0 (config, migrasi, health/version, CRUD gateway keys) dengan pengujian di `go test -race`. Panel `app-ui/` pada fase U0 juga sudah ada (login, gateway keys, settings security). Quality gates dan git hooks sudah ada di `scrypts/` (`scrypts/README.md`). Yang belum dibangun: data plane `app-serv` (chat, streaming, accounting) dan layar sisanya di `app-ui`. Pohon di bawah adalah **struktur target** yang menjadi acuan pengembangan.
 
 ## Struktur proyek
 
@@ -47,7 +47,7 @@ pannelAI/
 │   ├── SPEC-API/               # Kontrak API dan OpenAPI
 │   ├── SPEC-UI/                # Spesifikasi dashboard
 │   └── RULLES/                 # Aturan kerja dan protokol pengujian
-├── scrypts/                    # Nama direktori mengikuti repositori
+├── scrypts/                    # Quality gates dan git hooks
 │   ├── gates/                  # Quality gates
 │   ├── hooks/                  # Git hooks
 │   └── lib/                    # Helper skrip
@@ -147,7 +147,7 @@ Alur ini tidak menganggap dashboard analytics, streaming penuh, atau semua strat
 - [Contoh environment](app-serv/.env.example)
 - [Peta sistem](SYSTEM_MAP.md)
 - [Pedoman kontribusi](AGENTS.md)
-- [Quality gates](scrypts/gates/) (direncanakan)
+- [Quality gates dan hooks](scrypts/README.md)
 
 Dokumentasi ini menjelaskan struktur dan rancangan alur; bukan pernyataan bahwa build, lint, atau seluruh pengujian telah lulus.
 
