@@ -4,9 +4,9 @@
 //
 // @file      internal/repository/postgres/integration_harness_test.go
 // @for       Shared harness for the tagged PostgreSQL integration tests.
-// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/repository,
+// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations,
 //
-//	internal/migrations, testing.
+//	context, os, testing, time.
 //
 // @reason    AGENTS.md §1.7 gives repositories the constraint-level guarantees
 //

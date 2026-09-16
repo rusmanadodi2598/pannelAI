@@ -4,10 +4,7 @@
 //
 // @file      internal/repository/postgres/gateway_key_constraint_test.go
 // @for       Integration proof that the schema constraints the contract promises exist.
-// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/repository,
-//
-//	internal/migrations, context, errors, testing.
-//
+// @uses      internal/domain, context, errors, testing, time.
 // @reason    A stub cannot prove a UNIQUE index exists: the earlier P0 schema carried a
 //
 //	plain index on name, so PostgreSQL accepted duplicates while the

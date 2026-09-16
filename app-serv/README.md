@@ -19,6 +19,8 @@ Belum ada dari lingkup P0 itu sendiri: autentikasi sesi (`§7.2`: login, logout,
 
 Belum ada dari fase berikutnya: provider registry, upstream endpoint & multi-key, combos, vision adapter, data plane chat, usage/quota, logs, settings. Lihat SPEC-API-001 §10 untuk P1 sampai P3.
 
+> **Rate limit belum ditegakkan.** `RATE_LIMIT_PER_MIN` divalidasi dan ditampilkan, tetapi belum ada middleware limiter yang memakainya; endpoint publik saat ini tidak terlindungi olehnya.
+>
 > Route manajemen **belum digerbangi sesi**, karena autentikasi dashboard (`§7.2`) belum dibangun. Jangan mengekspos server ini ke jaringan publik sampai itu selesai. P0 exit criteria di SPEC-API-001 §10 menyebut login dan key CRUD diuji bersamaan, jadi P0 belum tuntas.
 
 ## Prasyarat

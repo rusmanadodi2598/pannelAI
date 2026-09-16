@@ -4,10 +4,7 @@
 //
 // @file      internal/repository/postgres/gateway_key_crud_test.go
 // @for       Integration coverage for the gateway key CRUD and pagination round trip.
-// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/repository,
-//
-//	internal/migrations, context, errors, testing.
-//
+// @uses      internal/domain, internal/repository, context, errors, testing, time.
 // @reason    AGENTS.md §2.1 requires repository logic be tested, and the pagination
 //
 //	contract (page and total describing one snapshot) is enforced by
