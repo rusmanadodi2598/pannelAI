@@ -45,3 +45,6 @@ Thumbs.db
 *.log
 tmp/
 .cache/
+
+# Local anti-slop audit artifacts (never published)
+anti-slop/
