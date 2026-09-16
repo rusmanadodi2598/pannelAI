@@ -50,7 +50,7 @@ Every new/modified source file must carry this header (values illustrative):
 // @for       Console workspace settings service backed by database rows.
 // @uses      PostgreSQL connection pool, internal/console/settings/repository
 // @reason    Provides scoped settings data to app-console via app-gateway.
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
 // @since     2026-08-09
@@ -63,7 +63,7 @@ This is a per-file header rather than Go's typical package-level `doc.go` conven
 - [ ] `@for` — one sentence, responsibility only, no implementation detail.
 - [ ] `@uses` — major dependencies (external services, shared internal packages, infra primitives), not every import.
 - [ ] `@reason` — why the file exists, not what it does.
-- [ ] `@author` — stays `Dodi Rusmana <rusmanadodi@kentangtechstore.com>` across all files.
+- [ ] `@author` — stays `Dodi Rusmana <rusmanadodi@kentangtech.com>` across all files.
 - [ ] `@layer` — one of: `schema | domain | repository | service | handler | router | worker | job | util | config`.
 - [ ] `@stability` — `experimental | stable | deprecated`. `deprecated` requires `@deprecated-reason` + `@deprecated-since`.
 - [ ] `@since` — ISO date first introduced; don't touch on later edits, git blame owns that.

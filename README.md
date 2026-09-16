@@ -14,9 +14,9 @@ API Gateway AI berbasis Go untuk mengelola akses klien, provider, upstream endpo
 
 Proyek memisahkan tanggung jawab **Control Plane** (API manajemen) dan **Data Plane** (pemrosesan permintaan AI) secara logis di dalam `app-serv`, bukan sebagai dua server terpisah.
 
-> **Status: dalam pengembangan.** Komponen data plane sudah tersedia di kode, tetapi keberadaan modul belum berarti seluruh alur HTTP, streaming, dan accounting telah terintegrasi atau teruji end-to-end. Dashboard `app-ui` masih direncanakan; spesifikasinya tersedia di `docs/SPEC-UI/`.
+> **Status: dalam pengembangan.** Komponen data plane sudah tersedia di kode, tetapi keberadaan modul belum berarti seluruh alur HTTP, streaming, dan accounting telah terintegrasi atau teruji end-to-end. Dashboard `app-ui` sudah punya scaffold fase U0 (login, gateway keys, settings security) dengan spesifikasi di [`docs/SPEC-UI/001-SPEC-UI.md`](docs/SPEC-UI/001-SPEC-UI.md) dan catatan teknis di [`app-ui/README.md`](app-ui/README.md); layar sisanya masih direncanakan dan ditandai Planned di sidebar.
 
-`app-serv/` sudah ada sebagai skeleton P0 (config, migrasi, health/version, CRUD gateway keys) dengan pengujian di `go test -race`. Data plane (chat, streaming, accounting) dan `app-ui` belum dibangun; `scrypts/` juga belum. Tabel di bawah adalah struktur target yang menjadi acuan pengembangan.
+`app-serv/` sudah ada sebagai skeleton P0 (config, migrasi, health/version, CRUD gateway keys) dengan pengujian di `go test -race`. Panel `app-ui/` pada fase U0 juga sudah ada (login, gateway keys, settings security). Yang belum dibangun: data plane `app-serv` (chat, streaming, accounting), layar sisanya di `app-ui`, dan `scrypts/`. Pohon di bawah adalah **struktur target** yang menjadi acuan pengembangan.
 
 ## Struktur proyek
 
@@ -141,7 +141,8 @@ Alur ini tidak menganggap dashboard analytics, streaming penuh, atau semua strat
 
 - [Kontrak API](docs/SPEC-API/001-SPEC-API.md)
 - [Aturan TDD](docs/RULLES/TDD.md)
-- [Spesifikasi UI](docs/SPEC-UI/) (direncanakan)
+- [Spesifikasi UI](docs/SPEC-UI/001-SPEC-UI.md)
+- [Panel UI dan perintahnya](app-ui/README.md)
 - [Backend dan konfigurasi](app-serv/README.md)
 - [Contoh environment](app-serv/.env.example)
 - [Peta sistem](SYSTEM_MAP.md)

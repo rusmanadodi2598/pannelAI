@@ -11,7 +11,7 @@
 | **Source Rewrite (Reference)** | `/home/rusmanadodi/ai-gateway` (9Router, Next.js monolith) |
 | **Target** | `pannelAI/` → `app-serv/` (Go API) + `app-ui/` (Svelte panel) |
 | **Governance** | `AGENTS.md` (root) — mandatory for all implementation work |
-| **Companion spec** | `docs/SPEC-UI/` (planned, out of scope here) |
+| **Companion spec** | [`docs/SPEC-UI/001-SPEC-UI.md`](../SPEC-UI/001-SPEC-UI.md) (panel contract; wire shapes remain normative here) |
 
 > **SPEC FIRST.** This document is the contract of record for API v1. Implementation starts only against
 > what is written here. Any deviation requires editing this spec in the same PR. The machine-readable
@@ -43,7 +43,7 @@ format translation, multi-provider registry, combos/fallback, quota tracking, to
 | Combo & Vision Adapter | `open-sse/services/combo.js`, `capacityAdapter.js`, `settingsRepo.capacityAdapter.vision` | app-serv |
 | Usage | `src/app/api/usage/*`, `usageRepo.js` | app-serv |
 | Quota Tracker | `quotaAutoPing.js`, provider quota windows | app-serv |
-| Token Saver | RTK / Headroom / Caveman / Ponytail flags (`settingsRepo.js`) | app-serv (config only in v1; native + customizable engine is a later spec) |
+| Token Saver | RTK / Headroom / Caveman / Ponytail flags (`settingsRepo.js`) | app-serv (config only in v1; `caveman` is DEPRECATED per §7.9; native + customizable engine is a later spec) |
 | Media Provider | `src/app/api/media-providers/*`, `sse/handlers/{tts,stt,imageGeneration,videoGeneration,search,embeddings}.js` | app-serv |
 | Proxy Pools | `src/app/api/proxy-pools/*`, `proxyPoolsRepo.js` | app-serv |
 | Logs | `requestDetailsRepo.js`, `consoleLogBuffer.js`, `ENABLE_REQUEST_LOGS` | app-serv |
@@ -257,6 +257,11 @@ capability-generic internally (pdf/audio/video adapters from the reference are *
 - `rtk.enabled` v1 = pass-through flag consumed by the native engine **once built** (later spec:
   native, customizable filter pipeline — explicit user decision, not ported from reference JS).
 - `headroom` calls the external `/v1/compress` endpoint with a 5s timeout; **fails open** on error.
+- `caveman` is **DEPRECATED** (owner decision, 2026-09-16). The key stays accepted so a configuration
+  exported from the reference still round-trips, and it is frozen at the default shown above. No new
+  client code must set it, `app-ui` never renders a control for it (its spec is
+  [`docs/SPEC-UI/001-SPEC-UI.md`](../SPEC-UI/001-SPEC-UI.md) §6.7 and §13.6), and it is removed in the
+  next breaking version (`/api/v2`, §4).
 - `X-Token-Saver: off` per-request bypass (§4).
 
 ### 7.10 Media Providers
@@ -426,4 +431,5 @@ auth → schema validation → bypass detection (naming/warmup) → model resolv
 ---
 
 *Changelog: 2026-09-11 — initial draft (feature mapping from reference `~/ai-gateway` @ 9Router 0.5.55); same day — added 002 OpenAPI companion cross-link + OAuth callback headless mode.*
-*Changelog addition 2026-09-16 — §8 adds `METHOD_NOT_ALLOWED` (405): the router registers routes method-aware, so a wrong verb is rejected before any handler runs and needs a code that maps to 405 rather than borrowing `VALIDATION_ERROR` (which §8 binds to 400). §6 records that `gateway_keys.name` is unique.*
+*Changelog 2026-09-16 — marked the `caveman` token-saver key DEPRECATED with removal scheduled for `/api/v2`, to match the owner decision; linked the panel contract at `docs/SPEC-UI/001-SPEC-UI.md`.*
+*Changelog 2026-09-16 — §8 adds `METHOD_NOT_ALLOWED` (405): the router registers routes method-aware, so a wrong verb is rejected before any handler runs and needs a code that maps to 405 rather than borrowing `VALIDATION_ERROR` (which §8 binds to 400). §6 records that `gateway_keys.name` is unique.*

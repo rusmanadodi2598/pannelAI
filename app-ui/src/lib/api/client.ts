@@ -1,0 +1,114 @@
+// The panel's only HTTP entry point.
+//
+// Components never call fetch (docs/SPEC-UI/001-SPEC-UI.md §10.1), so validation, error mapping, and
+// drift reporting exist once. Session expiry is not handled here: the client reports UNAUTHORIZED and
+// registers a handler, and the session store decides to route to the login screen, which keeps
+// routing out of the transport layer.
+
+import type { z } from 'zod';
+import { ApiError, errorFromResponse } from './errors';
+import { parseResponse, type ParseResult } from './parse';
+
+const API_PREFIX = '/api/v1';
+
+export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiError };
+
+export type RequestOptions<B, T> = {
+	method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+	path: string;
+	schema: z.ZodType<T>;
+	body?: B;
+	bodySchema?: z.ZodType<B>;
+	query?: Record<string, string | number | boolean | undefined>;
+};
+
+let unauthorizedHandler: (() => void) | undefined;
+
+export function onUnauthorized(handler: (() => void) | undefined): void {
+	unauthorizedHandler = handler;
+}
+
+export async function apiRequest<B, T>(options: RequestOptions<B, T>): Promise<ApiResult<T>> {
+	let body: unknown;
+
+	if (options.bodySchema && options.body !== undefined) {
+		const parsed = options.bodySchema.safeParse(options.body);
+		if (!parsed.success) {
+			const issue = parsed.error.issues[0];
+			return {
+				ok: false,
+				error: new ApiError(0, 'VALIDATION_ERROR', `${issue.path.join('.')}: ${issue.message}`)
+			};
+		}
+		body = parsed.data;
+	}
+
+	let response: Response;
+	try {
+		response = await fetch(buildUrl(options.path, options.query), {
+			method: options.method,
+			headers: buildHeaders(body !== undefined),
+			body: body === undefined ? undefined : JSON.stringify(body),
+			credentials: 'same-origin'
+		});
+	} catch (cause) {
+		const detail = cause instanceof Error ? cause.message : 'the request failed';
+		return { ok: false, error: new ApiError(0, 'NETWORK', detail) };
+	}
+
+	if (response.status === 401 || response.status === 403) {
+		if (response.status === 401) unauthorizedHandler?.();
+	}
+
+	if (!response.ok) {
+		return { ok: false, error: await errorFromResponse(response) };
+	}
+
+	if (response.status === 204) {
+		const empty = options.schema.safeParse({});
+		if (empty.success) return { ok: true, data: empty.data };
+		return { ok: false, error: new ApiError(204, 'DRIFT', 'Expected a body that was not sent.') };
+	}
+
+	const payload = await readJson(response);
+	const result: ParseResult<T> = parseResponse(options.schema, payload);
+
+	if (!result.ok) {
+		return {
+			ok: false,
+			error: new ApiError(
+				response.status,
+				'DRIFT',
+				`Unexpected response from the gateway at ${result.path}: ${result.message}`
+			)
+		};
+	}
+
+	if (result.drift.length > 0 && import.meta.env.DEV) {
+		console.warn(`[drift] ${options.path} returned unknown keys: ${result.drift.join(', ')}`);
+	}
+
+	return { ok: true, data: result.data };
+}
+
+async function readJson(response: Response): Promise<unknown> {
+	try {
+		return await response.json();
+	} catch {
+		return null;
+	}
+}
+
+function buildUrl(path: string, query?: RequestOptions<unknown, unknown>['query']): string {
+	const url = new URL(`${API_PREFIX}${path}`, location.origin);
+	for (const [key, value] of Object.entries(query ?? {})) {
+		if (value !== undefined && value !== '') url.searchParams.set(key, String(value));
+	}
+	return url.pathname + url.search;
+}
+
+function buildHeaders(hasBody: boolean): Headers {
+	const headers = new Headers({ accept: 'application/json' });
+	if (hasBody) headers.set('content-type', 'application/json');
+	return headers;
+}
