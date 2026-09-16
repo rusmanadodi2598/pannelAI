@@ -1,11 +1,13 @@
 # pannelAI
 
 <p>
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/go/go-original.svg" alt="Go" width="40" height="40" title="Go" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/svelte/svelte-original.svg" alt="Svelte" width="40" height="40" title="Svelte" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" alt="PostgreSQL" width="40" height="40" title="PostgreSQL" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redis/redis-original.svg" alt="Redis" width="40" height="40" title="Redis" />
-  <img src="https://cdn.simpleicons.org/zod" alt="Zod" width="40" height="40" title="Zod" />
+  <img src="https://img.shields.io/badge/Go-0081A1?style=flat-square&logo=go&logoColor=white" alt="Go" title="Go" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" title="TypeScript" />
+  <img src="https://img.shields.io/badge/Python-397BB2?style=flat-square&logo=python&logoColor=white" alt="Python" title="Python" />
+  <img src="https://img.shields.io/badge/Svelte-DF3600?style=flat-square&logo=svelte&logoColor=white" alt="Svelte" title="Svelte" />
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" title="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Redis-DB3A30?style=flat-square&logo=redis&logoColor=white" alt="Redis" title="Redis" />
+  <img src="https://img.shields.io/badge/Zod-3674D7?style=flat-square&logo=zod&logoColor=white" alt="Zod" title="Zod" />
 </p>
 
 API Gateway AI berbasis Go untuk mengelola akses klien, provider, upstream endpoint, dan pemilihan model melalui satu layanan backend.
@@ -13,6 +15,8 @@ API Gateway AI berbasis Go untuk mengelola akses klien, provider, upstream endpo
 Proyek memisahkan tanggung jawab **Control Plane** (API manajemen) dan **Data Plane** (pemrosesan permintaan AI) secara logis di dalam `app-serv`, bukan sebagai dua server terpisah.
 
 > **Status: dalam pengembangan.** Komponen data plane sudah tersedia di kode, tetapi keberadaan modul belum berarti seluruh alur HTTP, streaming, dan accounting telah terintegrasi atau teruji end-to-end. Dashboard `app-ui` masih direncanakan; spesifikasinya tersedia di `docs/SPEC-UI/`.
+
+Pohon di bawah adalah **struktur target** yang menjadi acuan pengembangan. Saat ini repositori baru memuat dokumen spesifikasi dan aturan, ditambah `deployment/` dan `docs/SPEC-UI/` sebagai direktori penanda; `app-serv/`, `app-ui/`, dan `scrypts/` belum dibuat.
 
 ## Struktur proyek
 
@@ -34,22 +38,32 @@ pannelAI/
 │   ├── .env.example            # Contoh konfigurasi
 │   ├── go.mod                  # Modul dan dependensi Go
 │   └── README.md               # Dokumentasi backend
+├── app-ui/                     # Panel Svelte (Bun toolchain)
+│   ├── src/                    # Komponen dan route panel
+│   ├── static/                 # Aset statis
+│   ├── package.json            # Dependensi dan skrip Bun
+│   └── README.md               # Dokumentasi panel
 ├── docs/
 │   ├── SPEC-API/               # Kontrak API dan OpenAPI
-│   └── SPEC-UI/                # Spesifikasi dashboard
+│   ├── SPEC-UI/                # Spesifikasi dashboard
+│   └── RULLES/                 # Aturan kerja dan protokol pengujian
 ├── scrypts/                    # Nama direktori mengikuti repositori
-│   ├── gates/                 # Quality gates
-│   ├── hooks/                 # Git hooks
-│   └── lib/                   # Helper skrip
+│   ├── gates/                  # Quality gates
+│   ├── hooks/                  # Git hooks
+│   └── lib/                    # Helper skrip
+├── deployment/                 # Berkas dan catatan deployment
 ├── .gitlab-ci.yml              # Konfigurasi CI
 ├── AGENTS.md                   # Pedoman kontribusi dan coding
 ├── SYSTEM_MAP.md               # Peta sistem
+├── .gitignore
 └── README.md
 ```
 
+Panel `app-ui` hanya mengonsumsi API manajemen `app-serv` dan tidak mengakses PostgreSQL atau Redis secara langsung.
+
 ## Stack dan pembagian tanggung jawab
 
-Fondasi backend menggunakan **Go**, HTTP standar **`net/http`**, **PostgreSQL** (`pgx/v5`), dan **Redis** (`go-redis/v9`). Validasi DTO menggunakan `go-playground/validator/v10`.
+Fondasi backend menggunakan **Go**, HTTP standar **`net/http`**, **PostgreSQL** (`pgx/v5`), dan **Redis** (`go-redis/v9`). Validasi DTO backend menggunakan `go-playground/validator/v10`; validasi di sisi panel memakai **Zod**. Panel dibangun dengan **Svelte** dan toolchain **Bun**.
 
 | Bagian | Tanggung jawab |
 | --- | --- |
@@ -57,11 +71,11 @@ Fondasi backend menggunakan **Go**, HTTP standar **`net/http`**, **PostgreSQL** 
 | Data Plane | Komponen normalisasi request, resolusi model/combo, pemilihan endpoint/key, translasi format provider, HTTP upstream dengan retry/timeout |
 | PostgreSQL | Data konfigurasi dan repository untuk usage, latency, serta request logs |
 | Redis | Sesi, penghitung rate limit, dan state sticky round-robin |
-| Dashboard | Rencana antarmuka pengelolaan yang mengonsumsi API Control Plane |
+| Dashboard | Panel Svelte (direncanakan) yang mengonsumsi API Control Plane |
 
 Diagram awal disesuaikan dengan fondasi repo: tidak mengasumsikan Fiber/FastHTTP, Chi/Echo/Gin, SQLite, atau cache respons in-memory. Redis bukan hanya cache, dan kedua plane dapat membutuhkan PostgreSQL maupun Redis.
 
-## Arsitektur API Gateway — Mermaid.js
+## Arsitektur API Gateway (Mermaid.js)
 
 Diagram berikut menggambarkan **alur logis yang dituju** berdasarkan komponen yang tersedia. Garis putus-putus pada akses klien data plane dan dashboard menandai integrasi yang belum diverifikasi end-to-end, bukan jaminan endpoint sudah siap produksi.
 
@@ -125,13 +139,14 @@ Alur ini tidak menganggap dashboard analytics, streaming penuh, atau semua strat
 
 ## Dokumentasi lanjutan
 
-- [Backend dan konfigurasi](app-serv/README.md)
-- [Contoh environment](app-serv/.env.example)
-- [Kontrak API](docs/SPEC-API/)
-- [Spesifikasi UI](docs/SPEC-UI/)
-- [Peta sistem](SYSTEM_MAP.md)
-- [Pedoman kontribusi](AGENTS.md)
-- [Quality gates](scrypts/gates/)
+- [Kontrak API](docs/SPEC-API/001-SPEC-API.md)
+- [Aturan TDD](docs/RULLES/TDD.md)
+- [Spesifikasi UI](docs/SPEC-UI/) (direncanakan)
+- [Backend dan konfigurasi](app-serv/README.md) (direncanakan)
+- [Contoh environment](app-serv/.env.example) (direncanakan)
+- [Peta sistem](SYSTEM_MAP.md) (direncanakan)
+- [Pedoman kontribusi](AGENTS.md) (direncanakan)
+- [Quality gates](scrypts/gates/) (direncanakan)
 
 Dokumentasi ini menjelaskan struktur dan rancangan alur; bukan pernyataan bahwa build, lint, atau seluruh pengujian telah lulus.
 
