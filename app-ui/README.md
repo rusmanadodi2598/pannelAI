@@ -60,6 +60,7 @@ src/lib/components/  panel components (shell, dialogs, table rows, forms, state 
 src/lib/stores/      session and theme state
 src/routes/          one directory per route from the spec
 tests/               table-driven unit tests
+tests/support/       shared test helpers: the seeded corpus generator and the table runner
 ```
 
 ## Verification state
@@ -69,12 +70,14 @@ Measured on 2026-09-16 with Bun 1.3.14 and Go 1.26.5 available on the machine:
 | Check           | Result                                                                                                                                                                                                    |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bun run check` | 0 errors, 0 warnings                                                                                                                                                                                      |
-| `bun run test`  | 99 tests passed across 5 files                                                                                                                                                                            |
+| `bun run test`  | 310 tests passed across 11 files                                                                                                                                                                          |
 | `bun run build` | succeeds, output in `build/`                                                                                                                                                                              |
 | `bun run start` | boots on Bun, prints `pannelAI panel 0.0.1 on Bun 1.3.14` and the resolved API target                                                                                                                     |
 | Panel routes    | `/` returns 200, `/login` returns 200                                                                                                                                                                     |
 | Forwarding      | with `app-serv` down, `/api/v1/auth/status` returns 500 with the panel's error envelope; with a malformed `PANEL_API_TARGET`, it returns 500 naming the variable, while the panel itself still serves 200 |
-| File size       | largest source file is 196 lines, under the 250 limit the project sets                                                                                                                                    |
+| Property tests  | 1600 generated inputs across 4 profiles in `tests/schemas/sanitize-fuzz*.test.ts`; 0 unstable outputs. They found the composition defect fixed in `src/lib/schemas/sanitize.ts`                           |
+| File size       | largest file is 184 lines and the largest under `src/` is 165, both under the 250 limit and below the 200 warn line                                                                                       |
+| Test shape      | 35 test functions: 30 generated from a table, 4 iterating a table inside the body, 1 regression case with two assertions, so 0 assert a single input                                                      |
 | Text hygiene    | 0 em dashes and 0 emoji in `src`, `tests`, and `scripts`                                                                                                                                                  |
 
 Not yet verified: any call that needs a running `app-serv`. Sign-in, key creation, and settings writes

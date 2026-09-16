@@ -23,10 +23,13 @@ export function collapseSpaces(value: string): string {
 	return value.replace(WHITESPACE_RUN, ' ').trim();
 }
 
-// Order matters: NFC first so composed characters survive, separators become spaces before the run
-// collapse, and junk characters are dropped so they cannot glue two words together.
+// Order matters, and tests/schemas/sanitize-fuzz.test.ts is what settled it. Junk is removed before
+// normalization, because a junk character sitting between a letter and its combining mark blocks
+// composition: normalizing first left the pair decomposed, and dropping the junk afterwards exposed a
+// sequence that composed on the next pass, so the transform was not stable. Separators then become
+// spaces before the run collapse, so a pasted tab stays a word boundary instead of gluing two words.
 export function normalizeLabelInput(value: string): string {
-	return collapseSpaces(separatorsToSpaces(stripControlChars(value.normalize('NFC'))));
+	return collapseSpaces(separatorsToSpaces(stripControlChars(value)).normalize('NFC'));
 }
 
 export function hasAngleBrackets(value: string): boolean {

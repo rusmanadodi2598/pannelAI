@@ -26,6 +26,11 @@ function blockTokens(selectorPattern: RegExp): Record<string, string> {
 const light = blockTokens(/@theme\s*\{([\s\S]*?)\n\}/);
 const dark = blockTokens(/\.dark\s*\{([\s\S]*?)\n\}/);
 
+const THEMES = [
+	['light', light],
+	['dark', dark]
+] as const;
+
 // Pairs that the panel actually renders as text, so a regression breaks a real screen.
 const PAIRS: { fg: string; bg: string; label: string }[] = [
 	{ fg: 'text', bg: 'surface', label: 'body text on the page surface' },
@@ -81,10 +86,7 @@ describe('token layer', () => {
 		}
 	});
 
-	for (const [theme, tokens] of [
-		['light', light],
-		['dark', dark]
-	] as const) {
+	for (const [theme, tokens] of THEMES) {
 		describe(`${theme} theme contrast`, () => {
 			for (const pair of PAIRS) {
 				it(`meets AA for ${pair.label}`, () => {
@@ -101,10 +103,16 @@ describe('token layer', () => {
 		});
 	}
 
-	it('keeps the palette within the three-colour plus one-accent cap', () => {
-		// Neutral surfaces do not count toward the cap (R-29); ok, warn, and danger are status colours,
-		// not brand colours, so the brand palette is one accent plus the neutrals.
-		expect(light.accent).toBeDefined();
-		expect(light['accent-text']).toBeDefined();
-	});
+	// Neutral surfaces do not count toward the cap (R-29); ok, warn, and danger are status colours,
+	// not brand colours, so the brand palette is one accent plus the neutrals. Checked per theme so a
+	// second accent added to only one theme cannot slip through.
+	for (const [theme, tokens] of THEMES) {
+		it(`keeps exactly one accent family in the ${theme} theme`, () => {
+			const accentTokens = Object.keys(tokens)
+				.filter((token) => token.startsWith('accent'))
+				.sort();
+
+			expect(accentTokens, `${theme} theme accent tokens`).toEqual(['accent', 'accent-text']);
+		});
+	}
 });
