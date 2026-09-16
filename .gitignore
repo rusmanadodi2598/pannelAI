@@ -1,0 +1,47 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# Go
+/app-serv/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Node / Bun (app-ui)
+node_modules/
+dist/
+build/
+.svelte-kit/
+.output/
+*.tsbuildinfo
+bun.lockb.tmp
+
+# Python (tooling and scripts)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local runtime output
+*.log
+tmp/
+.cache/
