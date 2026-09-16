@@ -16,7 +16,7 @@ Proyek memisahkan tanggung jawab **Control Plane** (API manajemen) dan **Data Pl
 
 > **Status: dalam pengembangan.** Komponen data plane sudah tersedia di kode, tetapi keberadaan modul belum berarti seluruh alur HTTP, streaming, dan accounting telah terintegrasi atau teruji end-to-end. Dashboard `app-ui` masih direncanakan; spesifikasinya tersedia di `docs/SPEC-UI/`.
 
-Pohon di bawah adalah **struktur target** yang menjadi acuan pengembangan. Saat ini repositori baru memuat dokumen spesifikasi dan aturan, ditambah `deployment/` dan `docs/SPEC-UI/` sebagai direktori penanda; `app-serv/`, `app-ui/`, dan `scrypts/` belum dibuat.
+`app-serv/` sudah ada sebagai skeleton P0 (config, migrasi, health/version, CRUD gateway keys) dengan pengujian di `go test -race`. Data plane (chat, streaming, accounting) dan `app-ui` belum dibangun; `scrypts/` juga belum. Tabel di bawah adalah struktur target yang menjadi acuan pengembangan.
 
 ## Struktur proyek
 
@@ -142,10 +142,10 @@ Alur ini tidak menganggap dashboard analytics, streaming penuh, atau semua strat
 - [Kontrak API](docs/SPEC-API/001-SPEC-API.md)
 - [Aturan TDD](docs/RULLES/TDD.md)
 - [Spesifikasi UI](docs/SPEC-UI/) (direncanakan)
-- [Backend dan konfigurasi](app-serv/README.md) (direncanakan)
-- [Contoh environment](app-serv/.env.example) (direncanakan)
-- [Peta sistem](SYSTEM_MAP.md) (direncanakan)
-- [Pedoman kontribusi](AGENTS.md) (direncanakan)
+- [Backend dan konfigurasi](app-serv/README.md)
+- [Contoh environment](app-serv/.env.example)
+- [Peta sistem](SYSTEM_MAP.md)
+- [Pedoman kontribusi](AGENTS.md)
 - [Quality gates](scrypts/gates/) (direncanakan)
 
 Dokumentasi ini menjelaskan struktur dan rancangan alur; bukan pernyataan bahwa build, lint, atau seluruh pengujian telah lulus.

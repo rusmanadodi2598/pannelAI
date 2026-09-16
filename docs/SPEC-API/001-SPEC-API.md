@@ -122,7 +122,7 @@ CLI tools (Claude Code, Codex, Cursor, ...)          Browser (app-ui)
 |---|---|---|
 | `upstream_endpoints` | `id, provider_id, label, auth_type, priority, status, oauth(jsonb, redacted on read), test_status(jsonb), rate_limited_until, created_at, updated_at` | replaces `providerConnections`; unique `(provider_id, label)` |
 | `upstream_keys` | `id, endpoint_id→upstream_endpoints, label, value_encrypted, key_hint, priority, status, last_used_at, last_error, consecutive_errors, rate_limited_until, created_at, updated_at` | **N per endpoint**; value encrypted at rest (AES-GCM, key from env) |
-| `gateway_keys` | `id, name, value_hash, key_hint, status, last_used_at, request_count, created_at, revoked_at` | SHA-256 hash lookup, plaintext shown once |
+| `gateway_keys` | `id, name, value_hash, key_hint, status, last_used_at, request_count, created_at, revoked_at` | SHA-256 hash lookup, plaintext shown once; `name` is **UNIQUE** (duplicate ⇒ `CONFLICT`) |
 | `combos` | `id, name, strategy, sticky_limit, judge_model, models(jsonb), created_at, updated_at` | `models`: `[{ref, priority}]` |
 | `model_aliases` | `alias, target, created_at` | alias → `provider/model` or combo name |
 | `models_custom` | `id, provider_id, model_id, display_name, capabilities(jsonb), created_at` | user-added models |
@@ -379,6 +379,7 @@ auth → schema validation → bypass detection (naming/warmup) → model resolv
 | `UNAUTHORIZED` | 401 | Missing/invalid session or gateway key |
 | `FORBIDDEN` | 403 | Authenticated but not permitted |
 | `NOT_FOUND` | 404 | Unknown resource (incl. unknown `provider_id`) |
+| `METHOD_NOT_ALLOWED` | 405 | Verb is not registered for that path (router-level rejection) |
 | `CONFLICT` | 409 | Uniqueness / referential conflict (e.g. deleting last key) |
 | `RATE_LIMITED` | 429 | Gateway or login rate limit hit |
 | `NO_PROVIDER_AVAILABLE` | 503 | Data plane: all endpoints/keys for the model are unhealthy or quota-exhausted |
@@ -425,3 +426,4 @@ auth → schema validation → bypass detection (naming/warmup) → model resolv
 ---
 
 *Changelog: 2026-09-11 — initial draft (feature mapping from reference `~/ai-gateway` @ 9Router 0.5.55); same day — added 002 OpenAPI companion cross-link + OAuth callback headless mode.*
+*Changelog addition 2026-09-16 — §8 adds `METHOD_NOT_ALLOWED` (405): the router registers routes method-aware, so a wrong verb is rejected before any handler runs and needs a code that maps to 405 rather than borrowing `VALIDATION_ERROR` (which §8 binds to 400). §6 records that `gateway_keys.name` is unique.*

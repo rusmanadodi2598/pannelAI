@@ -48,3 +48,9 @@ tmp/
 
 # Local anti-slop audit artifacts (never published)
 anti-slop/
+
+# Local tooling manifests (root only; sub-apps carry their own go.mod / package.json)
+/go.mod
+/lsp.json
+/package.json
+/pyproject.toml
