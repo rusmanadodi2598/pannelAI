@@ -10,7 +10,7 @@
 //	hashing the presented secret. Masking is a service-layer concern
 //	because the visible prefix is configurable (GATEWAY_KEY_PREFIX).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability experimental
 // @since     2026-09-16

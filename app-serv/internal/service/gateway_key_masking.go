@@ -9,7 +9,7 @@
 //	and belongs with the service that issues the credential. It must
 //	never reveal more than the family plus the trailing characters.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability experimental
 // @since     2026-09-16

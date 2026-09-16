@@ -10,7 +10,7 @@
 //	from inventing codes and keeps driver messages off the wire
 //	(AGENTS.md §1.3).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability experimental
 // @since     2026-09-16

@@ -11,7 +11,7 @@
 //	validation tags written before handlers, and SPEC-API-001 §7.3
 //	fixes the gateway key wire shapes.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability experimental
 // @since     2026-09-16

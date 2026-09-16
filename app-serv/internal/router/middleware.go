@@ -10,7 +10,7 @@
 //	panic recovery at every boundary non-negotiable, so the 500 path
 //	reports the same id an operator can grep for.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability experimental
 // @since     2026-09-16

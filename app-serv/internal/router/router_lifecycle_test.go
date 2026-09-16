@@ -7,7 +7,7 @@
 //	strings, encoding/json, testing.
 //
 // @reason    The individual endpoints can each pass while the lifecycle between them is broken; this walks create, get, and delete as one flow.
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability experimental
 // @since     2026-09-16

@@ -5,7 +5,7 @@
 // @uses      internal/handler, internal/schema, internal/service, internal/domain,
 //            internal/repository, net/http/httptest.
 // @reason    AGENTS.md §2.1 requires a happy path and an auth/error path per route; SPEC-API-001 §4 forbids returning the secret after creation, so the read path must be proven hint-only.
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability experimental
 // @since     2026-09-16

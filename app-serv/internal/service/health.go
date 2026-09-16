@@ -9,7 +9,7 @@
 //	that cannot serve. Dependencies arrive as Pinger interfaces, so
 //	this layer never holds a driver (AGENTS.md §1.5).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability experimental
 // @since     2026-09-16

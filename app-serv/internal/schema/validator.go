@@ -9,7 +9,7 @@
 //	re-compiling the rules on every request (validator is not safe to
 //	share while being mutated, so it is read-only after init).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability experimental
 // @since     2026-09-16

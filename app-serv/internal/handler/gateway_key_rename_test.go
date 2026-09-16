@@ -12,7 +12,7 @@
 //	The stub mirrors the UNIQUE index so this covers the mapping from
 //	domain.ErrGatewayKeyExists to a 409 for the PATCH path.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability experimental
 // @since     2026-09-16

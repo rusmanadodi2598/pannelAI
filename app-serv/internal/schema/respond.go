@@ -9,7 +9,7 @@
 //	through here keeps no handler inventing a shape or leaking a
 //	driver message.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability experimental
 // @since     2026-09-16

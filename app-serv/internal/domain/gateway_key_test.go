@@ -10,7 +10,7 @@
 //	after creation; these are the invariants a caller cannot be
 //	allowed to break (docs/RULLES/TDD.md §2.4).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability experimental
 // @since     2026-09-16

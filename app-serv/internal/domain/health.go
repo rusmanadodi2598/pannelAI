@@ -9,7 +9,7 @@
 //	vocabulary belongs to the domain so the service never depends on
 //	the schema (DTO) layer (AGENTS.md §1.5 layer flow).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability experimental
 // @since     2026-09-16

@@ -12,7 +12,7 @@
 //	live database, and it enforces the documented uniqueness rule
 //	instead of accepting what the real constraint would reject.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability experimental
 // @since     2026-09-16

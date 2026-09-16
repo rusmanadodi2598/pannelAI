@@ -10,7 +10,7 @@
 //	table-driven + randomized test keeps the generator honest beyond
 //	any single fixture (docs/RULLES/TDD.md §2.4, §2.5).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability experimental
 // @since     2026-09-16

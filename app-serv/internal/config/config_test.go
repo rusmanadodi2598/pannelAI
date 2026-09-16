@@ -10,7 +10,7 @@
 //	exactly the boundaries a single smoke run cannot cover
 //	(docs/RULLES/TDD.md §2.5).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability experimental
 // @since     2026-09-16

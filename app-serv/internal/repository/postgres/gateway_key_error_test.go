@@ -10,7 +10,7 @@
 //	duplicate name silently returns 500 instead of CONFLICT, so the
 //	rule is pinned here rather than left to a live smoke run.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability experimental
 // @since     2026-09-16

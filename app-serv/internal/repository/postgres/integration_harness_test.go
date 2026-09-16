@@ -26,7 +26,7 @@
 //	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
 //	    go test -race -tags=integration ./internal/repository/postgres/
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability experimental
 // @since     2026-09-16

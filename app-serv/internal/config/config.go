@@ -8,7 +8,7 @@
 //	typed Config with fail-fast validation, so no raw os.Getenv()
 //	reaches business logic.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability experimental
 // @since     2026-09-16

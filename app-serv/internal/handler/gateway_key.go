@@ -9,7 +9,7 @@
 //	the schema layer and business rules in the service layer, so this
 //	handler only decodes, calls, and encodes.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability experimental
 // @since     2026-09-16

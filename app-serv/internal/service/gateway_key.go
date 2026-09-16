@@ -8,7 +8,7 @@
 //	hints thereafter, terminal revocation) and AGENTS.md §1.5 puts
 //	orchestration in this layer with no net/http import.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability experimental
 // @since     2026-09-16

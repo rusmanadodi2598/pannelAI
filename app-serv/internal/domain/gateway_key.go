@@ -12,7 +12,7 @@
 //	once and whose later reads expose only key_hint; the transitions
 //	are enforced here so no caller can put the entity in a bad state.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability experimental
 // @since     2026-09-16

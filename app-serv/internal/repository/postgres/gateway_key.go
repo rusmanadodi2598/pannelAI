@@ -9,7 +9,7 @@
 //	indexed lookups, and no unbounded queries; this is the only place
 //	SQL appears for this aggregate.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability experimental
 // @since     2026-09-16

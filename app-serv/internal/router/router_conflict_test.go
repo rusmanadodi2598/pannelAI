@@ -14,7 +14,7 @@
 //	PostgreSQL. The stubs here mirror the index's rule so they do not
 //	accept what the database would reject.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability experimental
 // @since     2026-09-16

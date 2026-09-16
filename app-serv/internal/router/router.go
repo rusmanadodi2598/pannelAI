@@ -9,7 +9,7 @@
 //	with its method makes the surface auditable at a glance and makes
 //	a forgotten verb a startup-visible mistake, not a 405 at runtime.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability experimental
 // @since     2026-09-16

@@ -12,7 +12,7 @@
 //	and shuts down gracefully on termination. The pool limits are set
 //	here rather than left at library defaults (AGENTS.md §1.7).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability experimental
 // @since     2026-09-16

@@ -12,7 +12,7 @@
 //	repository does, so the service and handler are exercised through
 //	the contract rather than through mocks of their own output.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability experimental
 // @since     2026-09-16

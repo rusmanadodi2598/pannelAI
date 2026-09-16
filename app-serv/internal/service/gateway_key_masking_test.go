@@ -10,7 +10,7 @@
 //	and short inputs so no single fixture can mask a leak
 //	(docs/RULLES/TDD.md §2.4).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability experimental
 // @since     2026-09-16

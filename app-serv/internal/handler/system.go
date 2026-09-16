@@ -9,7 +9,7 @@
 //	AGENTS.md §1.5 keeps net/http out of the service layer, so the
 //	HTTP mapping (including a 503 when degraded) lives here.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability experimental
 // @since     2026-09-16

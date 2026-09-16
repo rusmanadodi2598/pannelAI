@@ -11,7 +11,7 @@
 //	records what ran, so a migration is applied exactly once and a
 //	non-idempotent statement stays safe on later boots.
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability experimental
 // @since     2026-09-16

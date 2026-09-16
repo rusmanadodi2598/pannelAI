@@ -14,7 +14,7 @@
 //	the SQL, not by Go. Run with -tags=integration plus a DSN; a missing
 //	DSN fails rather than skipping (AGENTS.md §2.1).
 //
-// @author    Dodi Rusmana <rusmanadodi@kentangtechstore.com>
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability experimental
 // @since     2026-09-16
