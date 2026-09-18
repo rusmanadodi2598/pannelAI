@@ -103,6 +103,40 @@ describe('apiRequest', () => {
 		onUnauthorized(undefined);
 	});
 
+	it('sends a body that has no schema, because the schema validates rather than serializes', async () => {
+		// A route without a `bodySchema` still has a body. Reading the body only inside the schema branch
+		// would send an empty request, which the API would report as a decode failure rather than the panel
+		// reporting its own mistake.
+		const fetchMock = vi.fn(async (_input: unknown, _init?: RequestInit) =>
+			jsonResponse(200, { id: 'a', count: 1 })
+		);
+		vi.stubGlobal('fetch', fetchMock);
+
+		await apiRequest<Payload, Payload>({
+			method: 'POST',
+			path: '/things',
+			schema: schemaThing,
+			body: { name: 'sent' }
+		});
+
+		const init = fetchMock.mock.calls[0][1] as RequestInit;
+		expect(init.body).toBe(JSON.stringify({ name: 'sent' }));
+		expect((init.headers as Headers).get('content-type')).toBe('application/json');
+	});
+
+	it('sends no body at all when the caller gave none', async () => {
+		const fetchMock = vi.fn(async (_input: unknown, _init?: RequestInit) =>
+			jsonResponse(200, { id: 'a', count: 1 })
+		);
+		vi.stubGlobal('fetch', fetchMock);
+
+		await apiRequest<void, Payload>({ method: 'GET', path: '/things', schema: schemaThing });
+
+		const init = fetchMock.mock.calls[0][1] as RequestInit;
+		expect(init.body).toBeUndefined();
+		expect((init.headers as Headers).get('content-type')).toBeNull();
+	});
+
 	for (const testCase of cases) {
 		it(testCase.name, async () => {
 			const fetchMock = vi.fn(async () => testCase.answer());

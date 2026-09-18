@@ -29,7 +29,11 @@ export function onUnauthorized(handler: (() => void) | undefined): void {
 }
 
 export async function apiRequest<B, T>(options: RequestOptions<B, T>): Promise<ApiResult<T>> {
-	let body: unknown;
+	// The body starts as whatever the caller passed, because `bodySchema` validates a body rather than
+	// deciding whether one is sent. Assigning it only inside the branch below would drop the body of every
+	// route that has no schema, and the far end would see an empty request rather than the panel reporting a
+	// mistake it could have caught.
+	let body: unknown = options.body;
 
 	if (options.bodySchema && options.body !== undefined) {
 		const parsed = options.bodySchema.safeParse(options.body);

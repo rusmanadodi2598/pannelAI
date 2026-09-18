@@ -308,6 +308,12 @@ absent.
 - **Editor:**
   - Model list is ordered and drag-reorderable, each row a `ref` with a priority. The `ref` field accepts
     `provider/model`, an existing combo name, or an alias, with a picker over the catalog and combos.
+    Reordering ships with two paths to the same operation: a pointer drag, and Up and Down buttons that
+    work from a keyboard or a touch screen. A drag alone would be mouse-only, and this panel is used on a
+    phone. Both call one function, so they cannot disagree about the result, and each move renumbers the
+    priorities rather than swapping two of them, because the numbers are the stored form of the order.
+    The picker's suggestions are the catalog ids and the combo names on the page. Aliases are a third
+    source the API accepts and §7.6 places the alias set in U2, so they are absent rather than guessed at.
   - `strategy` select: `fallback`, `round_robin`, `fusion`. Explaining copy per strategy comes from the
     SPEC-API §7.7 semantics table, so the panel explains the same behavior the router implements:
     - `fallback`: try models in order until one succeeds.
@@ -317,7 +323,10 @@ absent.
     the strategy ignores is hidden, not disabled.
   - Validation blocks saving a `fusion` combo with no `judge_model`, and a combo with zero models.
 - **Delete:** `CONFLICT` when a combo is referenced by an alias (SPEC-API §7.7). The message names the
-  alias and links to the fixed set on the provider detail screen.
+  alias and links to the fixed set on the provider detail screen. The link is **not shipped yet**: §6.3
+  places the alias table on the provider detail screen in U2, so there is nothing to link to and R-24
+  forbids a link to a screen that does not offer the fix. The API's message, which names the alias, stands
+  on its own until that table lands.
 - **Test (U2):** runs the one-token ping and renders a per-model result list in the order the strategy
   would try, including the model that answered.
 - **Empty state:** "No combos yet. A combo is a model string that resolves to several upstream models."
@@ -1301,9 +1310,9 @@ table exists so a reader can re-run the measurement instead of trusting the sent
 | `DESIGN.md` present | `ls DESIGN.md` at the `pannelAI` root | Present, added 2026-09-17. Holds identity, palette, typeface, radius and elevation, identity motif, and the reason log. |
 | `AGENTS.md` present | `ls AGENTS.md` at the `pannelAI` root and `grep -c` on it | Present. Its scope line names Go services under `app-*/**`, so it does not govern the panel. |
 | `pannelAI` root contents | `ls -la` at the project root | `.gitignore`, `README.md`, `AGENTS.md`, `DESIGN.md`, `SYSTEM_MAP.md`, `docs/`, `deployment/`, `scrypts/`, `app-ui/`, `app-serv/`, `backups/` |
-| Panel test count | `bun run test` in `app-ui/` | 634 passing across 24 files after the Providers work (was 499 across 19 after the U0 closure work, and 396 across 13 before it) |
+| Panel test count | `bun run test` in `app-ui/` | 769 passing across 27 files after the Combos work (was 634 across 24 after the Providers work, 499 across 19 after the U0 closure work, and 396 across 13 before it) |
 | Panel type check | `bun run check` in `app-ui/` | 0 errors, 0 warnings |
-| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 20 nodes in 5 groups: 4 with a route, 15 planned leaves (9 items plus 6 media kinds under one container), 1 container |
+| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 20 nodes in 5 groups: 5 with a route, 14 planned leaves (8 items plus 6 media kinds under one container), 1 container |
 | Accent usage in the shell | `grep -rn "color-accent"` across `src/lib/components` | Active row marker, primary action, focus ring, link, and active tab only (DESIGN.md §3.4) |
 | Logo source | `file app-ui/assets/static/logo.png` | JPEG data, 1254x1254, despite the `.png` extension. Cropped to `static/logo-mark.png` (512x512 RGBA, circular alpha mask) |
 | Legacy coral fails AA as a fill | Contrast calculation over the legacy token from `apps/9router/src/app/globals.css` | `#E56A4A` with white text measures 3.23:1, below the 4.5:1 floor, which is why the light theme uses `#B8412A` |
@@ -1366,6 +1375,36 @@ A deferred item names the check and where the evidence must appear.
 | R-21 (theme choice) | §8.9 | Both authored themes, with the dark default rationale recorded. |
 | R-29, R-11, R-12, R-13, R-01, R-09 (purpose-gate techniques) | §9.3 | Token file showing the palette cap, the radius scale, and the single accent use. |
 | R-31 (reason per decision) | §9.5 | The reason log, extended in the pull request for decisions this spec does not yet cover. |
+
+---
+
+*Changelog 2026-09-18: Combos and the Vision Adapter, U1 slice three.*
+
+*`/combos` now exists, so §5.1's Combo & Vision Adapter row carries an `href` instead of a Planned chip.
+Tab one renders the combo table and its editor; tab two renders the vision adapter form and states its own
+scope, because the reference shipped four adapters and this port ships one.*
+
+*The editor mirrors the strategy rules the API enforces in its domain layer, so a save is refused before
+the round trip: `sticky_limit` belongs to `round_robin` and `judge_model` to `fusion`, and §6.4's "hidden,
+not disabled" is what the form does. The body it sends carries only the fields the chosen strategy reads,
+so a combo that changed strategy cannot carry a value the new one refuses.*
+
+*Reordering the model list has two paths to one operation: a pointer drag and Up and Down buttons that
+work from a keyboard or a touch screen. Each move renumbers the priorities rather than swapping two of
+them, because the numbers are the stored form of the order.*
+
+*One bug was found and fixed outside this slice's scope. `apiRequest` assigned the request body only inside
+its `bodySchema` branch, so every route with a body and no schema sent nothing at all. That included
+`POST /endpoints/{id}/test` from slice one. The body is now whatever the caller passed, with `bodySchema`
+narrowing it, and two tests hold the behaviour.*
+
+*Two forms also lost their native `min` and `max` attributes. A native bound blocks the submit before the
+schema sees the value, so the message the operator reads would be the browser's, in the browser's language,
+which is a second validator the panel cannot keep in English. The bounds are stated in the field hints and
+enforced by Zod.*
+
+*Gates pass on 2026-09-18: 769 tests across 27 files, `svelte-check` clean, Prettier and ESLint clean, and a
+production build. §15's counts were re-measured.*
 
 ---
 

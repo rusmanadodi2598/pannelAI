@@ -58,7 +58,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		items: [
 			{ key: 'endpoint-keys', label: 'Endpoint & Key', href: '/endpoint-keys' },
 			{ key: 'providers', label: 'Provider', href: '/providers' },
-			{ key: 'combos', label: 'Combo & Vision Adapter', planned: true },
+			{ key: 'combos', label: 'Combo & Vision Adapter', href: '/combos' },
 			{ key: 'media-providers', label: 'Media Provider', planned: true, children: [] }
 		]
 	},
