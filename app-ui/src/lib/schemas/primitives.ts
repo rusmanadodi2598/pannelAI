@@ -97,6 +97,19 @@ export const rfc3339Timestamp = z
 
 export const nullableTimestamp = rfc3339Timestamp.nullable();
 
+// The endpoint shapes mark their timestamps `omitempty` on the wire (Go omits a nil pointer), so an
+// absent field and an explicit null both mean "never happened". `nullish` accepts both without needing a
+// separate union at every field, and it is the reason this exists next to `nullableTimestamp`.
+export const optionalTimestamp = rfc3339Timestamp.nullish();
+
+// The API bounds a priority at 1 to 10000 (SPEC-API §7.5, `min=1,max=10000`). Kept as a primitive so the
+// panel and the validator cannot disagree about the range.
+export const priority = z.coerce
+	.number()
+	.int({ message: 'Use a whole number for priority.' })
+	.min(1, { message: 'Priority starts at 1.' })
+	.max(10000, { message: 'Priority ends at 10000.' });
+
 export const costString = z
 	.string()
 	.refine((value) => /^\d+(\.\d+)?$/.test(value), { message: 'Invalid cost value.' });
@@ -130,3 +143,8 @@ export function prefixedId(prefix: string) {
 }
 
 export const gatewayKeyId = prefixedId('gky_');
+
+// The upstream identifiers the API mints (SPEC-API §7.5). Listed here beside the gateway key prefix so
+// the panel has one place that knows what an identifier looks like.
+export const endpointId = prefixedId('ep_');
+export const upstreamKeyId = prefixedId('uky_');
