@@ -74,7 +74,11 @@ fi
 
 # ------------------------------------------------------- contract drift
 
-if git -C "$root" diff --cached --name-only | grep -qE 'SPEC-API.*\.md$|app-ui/src/lib/schemas/error\.ts$'; then
+# A here-string rather than `git … | grep -q`: under `set -o pipefail` a producer
+# killed by SIGPIPE when grep exits on its first match would report 141, and the
+# condition would read as "no spec change" — silently skipping the gate below.
+if grep -qE 'SPEC-API.*\.md$|app-ui/src/lib/schemas/error\.ts$' \
+	<<< "$(git -C "$root" diff --cached --name-only)"; then
 	gate_start "contract drift (spec or error enum changed)"
 	if bash "$root/scrypts/gates/contract-drift.sh"; then
 		gate_pass "contract drift"
