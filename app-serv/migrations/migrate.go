@@ -26,6 +26,7 @@ import (
 	"log/slog"
 	"sort"
 	"strings"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver for database/sql
 )
@@ -42,6 +43,19 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     version    text        PRIMARY KEY,
     applied_at timestamptz NOT NULL DEFAULT now()
 )`
+
+// applyLockKey is the advisory-lock key that serialises Apply against one
+// database. Every replica of a rolling deploy boots at once, reads the same
+// empty ledger, and runs the same CREATE TABLE IF NOT EXISTS — a statement that
+// is not atomic against a concurrent creator, so the losers fail with a
+// duplicate key on pg_type_typname_nsp_index. One lock over the whole run makes
+// a simultaneous start safe.
+const applyLockKey int64 = 0x70616e6e656c6169 // "pannelai"
+
+// applyLockWait bounds the wait for that lock, so a replica booting behind a
+// stuck migration fails with a readable error instead of hanging until it is
+// signalled.
+const applyLockWait = 30 * time.Second
 
 // Apply runs every *.up.sql that the ledger has not recorded, in lexical order.
 // A migration is applied at most once per database, in its own transaction, so
@@ -63,11 +77,29 @@ func Apply(ctx context.Context, dsn string) error {
 		return fmt.Errorf("migrations: database is unreachable: %w", err)
 	}
 
-	if _, err := db.ExecContext(ctx, ledgerDDL); err != nil {
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("migrations: reserving a connection: %w", err)
+	}
+	defer func() { _ = conn.Close() }()
+
+	if err := lockApply(ctx, conn); err != nil {
+		return err
+	}
+	// The unlock outlives a cancelled caller context: releasing the lock is the
+	// one statement that must still run while the boot that took it unwinds.
+	defer func() {
+		if _, err := conn.ExecContext(context.WithoutCancel(ctx),
+			`SELECT pg_advisory_unlock($1)`, applyLockKey); err != nil {
+			slog.Error("migrations: releasing the apply lock failed", "error", err)
+		}
+	}()
+
+	if _, err := conn.ExecContext(ctx, ledgerDDL); err != nil {
 		return fmt.Errorf("migrations: creating ledger: %w", err)
 	}
 
-	applied, err := appliedVersions(ctx, db)
+	applied, err := appliedVersions(ctx, conn)
 	if err != nil {
 		return err
 	}
@@ -80,7 +112,7 @@ func Apply(ctx context.Context, dsn string) error {
 		if err != nil {
 			return fmt.Errorf("migrations: reading %s: %w", name, err)
 		}
-		if err := applyOne(ctx, db, name, string(body)); err != nil {
+		if err := applyOne(ctx, conn, name, string(body)); err != nil {
 			return err
 		}
 		slog.Info("migration applied", "file", name)
@@ -88,55 +120,13 @@ func Apply(ctx context.Context, dsn string) error {
 	return nil
 }
 
-// appliedVersions reads the ledger into a set.
-func appliedVersions(ctx context.Context, db *sql.DB) (applied map[string]struct{}, err error) {
-	rows, err := db.QueryContext(ctx, `SELECT version FROM schema_migrations`)
-	if err != nil {
-		return nil, fmt.Errorf("migrations: reading ledger: %w", err)
-	}
-	// A Close error on this read path would mean the connection is in an
-	// unknown state, so it is reported rather than discarded. The named return
-	// lets the deferred close reach the caller without shadowing a real error.
-	defer func() {
-		if cerr := rows.Close(); cerr != nil && err == nil {
-			applied = nil
-			err = fmt.Errorf("migrations: closing ledger rows: %w", cerr)
-		}
-	}()
+// lockApply takes the apply lock, waiting at most applyLockWait.
+func lockApply(ctx context.Context, conn migrationConn) error {
+	lockCtx, cancel := context.WithTimeout(ctx, applyLockWait)
+	defer cancel()
 
-	applied = make(map[string]struct{})
-	for rows.Next() {
-		var version string
-		if err := rows.Scan(&version); err != nil {
-			return nil, fmt.Errorf("migrations: scanning ledger: %w", err)
-		}
-		applied[version] = struct{}{}
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("migrations: iterating ledger: %w", err)
-	}
-	return applied, nil
-}
-
-// applyOne runs a single migration and records it, both inside one transaction:
-// either the schema change and its ledger row commit together, or neither does.
-func applyOne(ctx context.Context, db *sql.DB, name, body string) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("migrations: beginning %s: %w", name, err)
-	}
-	if _, err := tx.ExecContext(ctx, body); err != nil {
-		_ = tx.Rollback()
-		return fmt.Errorf("migrations: applying %s: %w", name, err)
-	}
-	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO schema_migrations (version) VALUES ($1)
-		 ON CONFLICT (version) DO NOTHING`, name); err != nil {
-		_ = tx.Rollback()
-		return fmt.Errorf("migrations: recording %s: %w", name, err)
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("migrations: committing %s: %w", name, err)
+	if _, err := conn.ExecContext(lockCtx, `SELECT pg_advisory_lock($1)`, applyLockKey); err != nil {
+		return fmt.Errorf("migrations: another replica held the apply lock for %s: %w", applyLockWait, err)
 	}
 	return nil
 }

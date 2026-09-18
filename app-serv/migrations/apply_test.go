@@ -29,6 +29,8 @@ import (
 	"context"
 	"database/sql"
 	"os"
+	"strings"
+	"sync"
 	"testing"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver
@@ -150,6 +152,86 @@ func TestApply_SchemaHasRequiredObjects(t *testing.T) {
 		})
 	}
 }
+
+// TestApply_ConcurrentCallsBothSucceed is the regression for a simultaneous
+// start: every replica of a rolling deploy runs Apply while it boots, and two
+// replicas racing on the same unapplied migration used to fail with a duplicate
+// key on PostgreSQL's pg_type_typname_nsp_index. The run happens in its own
+// schema so the migrations really are unapplied and the race is real.
+func TestApply_ConcurrentCallsBothSucceed(t *testing.T) {
+	dsn := scratchSchema(t, testDSN(t))
+	ctx := context.Background()
+
+	names, err := upMigrations()
+	if err != nil {
+		t.Fatalf("upMigrations() error = %v", err)
+	}
+
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			errs <- Apply(ctx, dsn)
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("concurrent Apply() error = %v, want both callers to succeed", err)
+		}
+	}
+	if got := appliedRows(t, dsn); got != len(names) {
+		t.Fatalf("ledger holds %d migrations, want %d: a concurrent run must not record one twice",
+			got, len(names))
+	}
+}
+
+// scratchSchema creates a schema of its own and returns a DSN pointed at it, so
+// a test that must observe an unapplied database leaves the shared public
+// schema — which the repository integration tests run against — untouched.
+func scratchSchema(t *testing.T, baseDSN string) string {
+	t.Helper()
+	ctx := context.Background()
+
+	db, err := sql.Open("pgx", baseDSN)
+	if err != nil {
+		t.Fatalf("opening: %v", err)
+	}
+	// Dropped first so a previous crashed run cannot leave a half-migrated
+	// schema behind for this one to mistake for its own.
+	if _, err := db.ExecContext(ctx, `DROP SCHEMA IF EXISTS `+scratchSchemaName+` CASCADE`); err != nil {
+		t.Fatalf("dropping the scratch schema: %v", err)
+	}
+	if _, err := db.ExecContext(ctx, `CREATE SCHEMA `+scratchSchemaName); err != nil {
+		t.Fatalf("creating the scratch schema: %v", err)
+	}
+	t.Cleanup(func() {
+		if _, err := db.ExecContext(ctx, `DROP SCHEMA IF EXISTS `+scratchSchemaName+` CASCADE`); err != nil {
+			t.Errorf("dropping the scratch schema: %v", err)
+		}
+		_ = db.Close()
+	})
+
+	// search_path is a PostgreSQL runtime parameter, and pgx forwards an
+	// unrecognised DSN parameter to the server in the startup packet, so the
+	// migrations create their objects in the scratch schema rather than public.
+	sep := "?"
+	if strings.Contains(baseDSN, "?") {
+		sep = "&"
+	}
+	return baseDSN + sep + "search_path=" + scratchSchemaName
+}
+
+// scratchSchemaName is fixed rather than generated: only this test uses it, and
+// a name that does not move keeps a failed run's leftovers identifiable.
+const scratchSchemaName = "migrations_apply_concurrent"
 
 // appliedRows reports how many migrations the ledger records.
 func appliedRows(t *testing.T, dsn string) int {
