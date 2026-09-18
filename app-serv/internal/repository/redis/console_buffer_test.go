@@ -1,3 +1,5 @@
+//go:build integration
+
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/console_buffer_test.go
@@ -11,8 +13,15 @@
 //	silent — the buffer simply grows. These tests run against a real
 //	server reached through PANNELAI_TEST_REDIS_ADDR.
 //
-//	The DSN is required rather than skippable: AGENTS.md §2.1 forbids
-//	t.Skip as a way to sidestep a test, so a missing value fails loudly.
+//	The file carries an `integration` build tag, so the default
+//	`go test ./...` stays hermetic on a machine with no Redis (AGENTS.md §2.1
+//	forbids t.Skip as a way to sidestep a test, and a tagged file is not
+//	compiled rather than skipped at runtime). With the tag active the
+//	address is required, not optional: a missing value fails the test
+//	rather than passing silently.
+//
+//	  PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
+//	    go test -race -tags=integration ./internal/repository/redis/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository

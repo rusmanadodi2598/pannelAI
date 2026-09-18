@@ -4,10 +4,12 @@
 # Runs the default suite with the race detector, which AGENTS.md §2.1 makes a
 # required CI gate for any package touching goroutines or shared state.
 #
-# The PostgreSQL integration suite runs only when PANNELAI_TEST_POSTGRES_DSN is
-# set: those tests carry an `integration` build tag precisely so a machine
-# without a database runs the hermetic suite and reports accurately, rather than
-# skipping tests at runtime (§2.1 forbids t.Skip).
+# The integration suite runs only when PANNELAI_TEST_POSTGRES_DSN is set: those
+# tests carry an `integration` build tag precisely so a machine without a
+# database runs the hermetic suite and reports accurately, rather than skipping
+# tests at runtime (§2.1 forbids t.Skip). The tagged pass also compiles the
+# Redis-backed tests, which need PANNELAI_TEST_REDIS_ADDR and fail loudly
+# without it.
 #
 # Exit codes: 0 all suites passed, 1 a suite failed.
 
