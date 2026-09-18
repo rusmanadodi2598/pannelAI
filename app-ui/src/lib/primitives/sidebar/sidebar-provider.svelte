@@ -1,7 +1,12 @@
 <script lang="ts">
 	import * as Tooltip from "$lib/primitives/tooltip/index.js";
 	import { cn, type WithElementRef } from "$lib/utils.js";
-	import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from "./constants.js";
+	import {
+		SIDEBAR_COOKIE_MAX_AGE,
+		SIDEBAR_COOKIE_NAME,
+		SIDEBAR_WIDTH,
+		SIDEBAR_WIDTH_ICON,
+	} from "./constants.js";
 	import { setSidebar } from "./context.svelte.js";
 	import type { HTMLAttributes } from "svelte/elements";
 
@@ -22,10 +27,10 @@
 		open: () => open,
 		setOpen: (value: boolean) => {
 			open = value;
-			// Persistence belongs to the application: `$lib/stores/sidebar` owns the cookie name and its
-			// lifetime, and AppShell writes it through `onOpenChange`. Upstream shadcn also wrote the
-			// cookie here, which left one cookie with two writers that could disagree on its attributes.
 			onOpenChange(value);
+
+			// This sets the cookie to keep the sidebar state.
+			document.cookie = `${SIDEBAR_COOKIE_NAME}=${open}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
 		},
 	});
 </script>

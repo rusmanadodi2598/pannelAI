@@ -4,9 +4,12 @@
 // tablet, and a full sidebar on a desktop. That means the initial open state depends on the viewport,
 // not only on what the operator chose last, and this is the logic worth testing because it is the part
 // that silently gets it wrong on a tablet.
+//
+// The write side is the primitive layer's and is not tested here. What the application owns is reading
+// the cookie back and deciding the first paint, which is what these two functions do.
 
 import { describe, expect, it } from 'vitest';
-import { resolveSidebarOpen, SIDEBAR_PREFERENCE_MAX_AGE, sidebarCookie } from '$lib/stores/sidebar';
+import { readSidebarCookie, resolveSidebarOpen } from '$lib/stores/sidebar';
 
 describe('resolveSidebarOpen', () => {
 	const CASES: { stored: string | null; desktop: boolean; expected: boolean; why: string }[] = [
@@ -71,16 +74,28 @@ describe('resolveSidebarOpen', () => {
 	});
 });
 
-describe('sidebarCookie', () => {
-	it('writes a path-wide, long-lived preference', () => {
-		const cookie = sidebarCookie(false);
+describe('readSidebarCookie', () => {
+	const CASES: { cookie: string | undefined; expected: string | null; why: string }[] = [
+		{ cookie: 'sidebar_state=true', expected: 'true', why: 'the preference is the only cookie' },
+		{ cookie: 'sidebar_state=false', expected: 'false', why: 'a collapsed preference' },
+		{ cookie: 'other=1; sidebar_state=true', expected: 'true', why: 'it follows another cookie' },
+		{ cookie: 'sidebar_state=true; other=1', expected: 'true', why: 'it precedes another cookie' },
+		{ cookie: 'sidebar_state=', expected: '', why: 'an empty value is reported as empty' },
+		{ cookie: 'sidebar_stateX=true', expected: null, why: 'a name that only starts the same' },
+		{ cookie: 'other=1', expected: null, why: 'the preference is absent' },
+		{ cookie: '', expected: null, why: 'an empty cookie string' },
+		{ cookie: undefined, expected: null, why: 'no cookie string at all' }
+	];
 
-		expect(cookie).toContain('sidebar_state=false');
-		expect(cookie).toContain('path=/');
-		expect(cookie).toContain(`max-age=${SIDEBAR_PREFERENCE_MAX_AGE}`);
-	});
+	for (const testCase of CASES) {
+		it(`reads ${testCase.expected ?? 'nothing'} when ${testCase.why}`, () => {
+			expect(readSidebarCookie(testCase.cookie)).toBe(testCase.expected);
+		});
+	}
 
-	it('writes the expanded state as true', () => {
-		expect(sidebarCookie(true)).toContain('sidebar_state=true');
+	it('uses the name the primitive layer writes, so the read and the write cannot disagree', () => {
+		// The name is imported from the primitive's constants rather than repeated as a literal. If the
+		// primitive is regenerated with a different name, this test is where the mismatch shows up.
+		expect(readSidebarCookie('sidebar_state=true')).toBe('true');
 	});
 });

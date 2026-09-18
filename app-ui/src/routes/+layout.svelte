@@ -2,7 +2,8 @@
 	// Root layout: theme and session bootstrap, then the shell.
 	//
 	// The gate lives here rather than in each screen, so a new screen cannot ship without the session
-	// check. Unauthenticated requests see the login route only.
+	// check. Unauthenticated requests see the login route only, and they carry the route they wanted with
+	// them so signing in returns them to it (SPEC-UI §8.1).
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -10,6 +11,7 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { session } from '$lib/stores/session.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
+	import { loginRedirectTarget, loginUrl } from '$lib/utils/redirect';
 	import { onMount, type Snippet } from 'svelte';
 
 	// The token layer. Imported here because this is the one component every route renders through, so
@@ -22,6 +24,10 @@
 	const path = $derived(page.url.pathname);
 	const onLoginRoute = $derived(path === '/login');
 
+	// What to come back to after signing in. The search string is part of it, so a filtered view survives
+	// a session that expired mid-task.
+	const requestedRoute = $derived(page.url.pathname + page.url.search);
+
 	onMount(async () => {
 		theme.init();
 		await session.refresh();
@@ -33,12 +39,20 @@
 		if (session.loading) return;
 
 		if (session.requireLogin && !session.authenticated && !onLoginRoute) {
-			void goto(resolve('/login'));
+			// The destination travels in the query string, so there is no route id for `resolve()` to take.
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- validated query value, not a route id
+			void goto(loginUrl(requestedRoute));
 			return;
 		}
 
 		if (session.authenticated && onLoginRoute) {
-			void goto(resolve('/endpoint-keys'));
+			// The requested route is attacker-influenced, so it is validated rather than followed.
+			const destination = loginRedirectTarget(
+				page.url.searchParams.get('redirectTo'),
+				resolve('/endpoint-keys')
+			);
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- validated query value, not a route id
+			void goto(destination);
 		}
 	});
 </script>

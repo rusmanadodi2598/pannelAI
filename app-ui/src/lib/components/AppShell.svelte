@@ -14,27 +14,22 @@
 	import PanelHeader from '$lib/components/PanelHeader.svelte';
 	import PanelSidebar from '$lib/components/PanelSidebar.svelte';
 	import * as Sidebar from '$lib/primitives/sidebar/index.js';
-	import { readSidebarCookie, resolveSidebarOpen, sidebarCookie } from '$lib/stores/sidebar';
+	import { readSidebarCookie, resolveSidebarOpen } from '$lib/stores/sidebar';
 	import type { Snippet } from 'svelte';
 
 	let { children }: { children: Snippet } = $props();
 
 	// A tablet gets the icon rail and a desktop gets the full sidebar, unless the operator has chosen.
-	// The primitive layer keeps the state in this binding, so `onOpenChange` is where the preference is
-	// persisted.
+	// The primitive layer owns the state and writes the preference cookie itself, so this is the one
+	// thing the application adds: the initial value that matches the viewport on a first visit.
 	let open = $state(
 		typeof document === 'undefined'
 			? true
 			: resolveSidebarOpen(readSidebarCookie(document.cookie), window.innerWidth >= 1024)
 	);
-
-	function persist(value: boolean): void {
-		if (typeof document === 'undefined') return;
-		document.cookie = sidebarCookie(value);
-	}
 </script>
 
-<Sidebar.Provider bind:open onOpenChange={persist}>
+<Sidebar.Provider bind:open>
 	<div class="flex h-dvh w-full overflow-hidden bg-[var(--color-surface)]">
 		<PanelSidebar />
 

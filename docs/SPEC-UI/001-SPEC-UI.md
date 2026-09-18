@@ -1146,6 +1146,16 @@ Phases mirror SPEC-API §10, so the panel never ships against an endpoint that d
 | **U2** | OAuth start, callback return, and status, fusion combos and combo test, media provider screens, proxy pools including batch add and tests, Token Saver (RTK, Headroom, Ponytail), quota budget caps, custom models, aliases, disabled models | OAuth round trip from the panel; an image generation request routed through a media provider; a proxy tested from the panel; token saver config saved and reflected by the API. |
 | **U3** | Skills tab with `/antislop` AI and SuperPowers, native token saver surface when `002-TOKEN-SAVER` exists | Each Skills entry either resolves to a real source with a working copy control, or shows the unavailable state from §6.10. No entry ships with a broken link. |
 
+**U0 status, 2026-09-18: implementation complete, verification run outstanding.** Every U0 obligation
+above exists in `app-ui/`: the SvelteKit shell on the Bun runtime, the token layer, the theme toggle,
+`/login`, session handling, the `/endpoint-keys` gateway keys tab with create, rename, disable, and
+revoke, the Settings Security tab, the Zod foundation, and the not-found view §5.1 assigns to the phase.
+The U0 schema and route tests are table-driven and green, and `bun run test`, `bun run check`,
+`bun run lint`, and `bun run build` all pass. One exit step is a verification run rather than unbuilt
+work: the recorded click-through against a running `app-serv` (§9.4.5), which needs the service,
+PostgreSQL, and Redis up. `app-serv` now exposes the auth and gateway-key endpoints the panel calls, so
+that run is unblocked on the panel side and U0 closes when its result is recorded.
+
 ## 13. Locked decisions
 
 1. The panel consumes `/api/v1` with a session cookie and never touches PostgreSQL or Redis (SPEC-API §11.5).
@@ -1216,12 +1226,13 @@ Phases mirror SPEC-API §10, so the panel never ships against an endpoint that d
      record, so the screen must say so before the operator sends one.
    Until the `app-serv` side lands, the sidebar row carries `Planned`, no route file exists, and no control
    ships. §6.15 records the decided model and the rules the implemented screen must satisfy.
-8. **Closed 2026-09-16: the governance file is present.** [`AGENTS.md`](../../AGENTS.md) landed at the
-   repository root and scopes itself to Go services under `app-*/**`, so the earlier blocking note in this
-   section is withdrawn: it does not gate the panel. Two follow-ups come out of it. `SYSTEM_MAP.md` is
-   required in the same pull request by that file and does not exist yet, and the panel must not treat the
-   Go rules as its own by accident. The panel's gate set is still assumed rather than wired, because
-   `scrypts/` does not exist, and that remains the reason U0 cannot be called complete.
+8. **Closed 2026-09-18: the governance follow-ups are resolved.** [`AGENTS.md`](../../AGENTS.md) landed
+   at the repository root and scopes itself to Go services under `app-*/**`, so the earlier blocking note
+   in this section is withdrawn: it does not gate the panel. Both follow-ups it raised are now closed.
+   `SYSTEM_MAP.md` exists at the repository root, and the panel keeps this spec as its own rule file
+   rather than inheriting the Go rules by accident. `scrypts/` exists and carries the shared gates and git
+   hooks, so the panel's gate set is wired rather than assumed. The earlier sentence that made the
+   absence of `scrypts/` the reason U0 could not be called complete no longer applies.
 9. **Enumerate gateway key status values.** SPEC-API §7.3 accepts `status` on PATCH but never lists the
    allowed values, and §6 does not either. The panel therefore writes `active` and `disabled` from two
    constants in `src/lib/schemas/gateway-key.ts` and renders any other value verbatim, so it cannot
@@ -1270,9 +1281,9 @@ table exists so a reader can re-run the measurement instead of trusting the sent
 | `DESIGN.md` present | `ls DESIGN.md` at the `pannelAI` root | Present, added 2026-09-17. Holds identity, palette, typeface, radius and elevation, identity motif, and the reason log. |
 | `AGENTS.md` present | `ls AGENTS.md` at the `pannelAI` root and `grep -c` on it | Present. Its scope line names Go services under `app-*/**`, so it does not govern the panel. |
 | `pannelAI` root contents | `ls -la` at the project root | `.gitignore`, `README.md`, `AGENTS.md`, `DESIGN.md`, `SYSTEM_MAP.md`, `docs/`, `deployment/`, `scrypts/`, `app-ui/`, `app-serv/`, `backups/` |
-| Panel test count | `bun run test` in `app-ui/` | 396 passing across 13 files after the sidebar work (was 310 across 11 before) |
+| Panel test count | `bun run test` in `app-ui/` | 499 passing across 19 files after the U0 closure work (was 396 across 13 before it) |
 | Panel type check | `bun run check` in `app-ui/` | 0 errors, 0 warnings |
-| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 19 rows in 5 groups: 2 with a route, 11 planned leaves, 5 media kinds under one container, 1 container |
+| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 20 nodes in 5 groups: 3 with a route, 16 planned leaves (10 items plus 6 media kinds under one container), 1 container |
 | Accent usage in the shell | `grep -rn "color-accent"` across `src/lib/components` | Active row marker, primary action, focus ring, link, and active tab only (DESIGN.md §3.4) |
 | Logo source | `file app-ui/assets/static/logo.png` | JPEG data, 1254x1254, despite the `.png` extension. Cropped to `static/logo-mark.png` (512x512 RGBA, circular alpha mask) |
 | Legacy coral fails AA as a fill | Contrast calculation over the legacy token from `apps/9router/src/app/globals.css` | `#E56A4A` with white text measures 3.23:1, below the 4.5:1 floor, which is why the light theme uses `#B8412A` |
@@ -1287,8 +1298,8 @@ Path status for every path referenced in this document:
 | `README.md` | Present |
 | `docs/SPEC-API/002-SPEC-API-openapi.md` | Planned, see §14 Q3 |
 | `AGENTS.md` | Present at the repository root, scoped to Go services (`app-*/**`). It does not govern `app-ui`. |
-| `app-ui/` | Present, phase U0 (login, endpoint-keys, settings). Remaining screens are Planned in the sidebar. |
-| `app-serv/` | Present, phase P0 (config, migrations, health/version, gateway keys). The auth endpoints this panel calls are not built yet, so U0 cannot be exercised end-to-end against it. |
+| `app-ui/` | Present. U0 implementation complete (login, endpoint-keys, settings, changelog, not-found view). Remaining screens are `Planned` in the sidebar. |
+| `app-serv/` | Present, past P0. The auth and gateway-key endpoints the panel calls now exist, so U0 can be exercised against it; the recorded click-through (§9.4.5) is the remaining verification step. |
 | `scrypts/` | Present: gates and git hooks, see `scrypts/README.md`. |
 | `DESIGN.md` | Present at the repository root, added 2026-09-17 |
 | `app-ui/static/logo-mark.png` | Present, cropped from the owner's `assets/static/logo.png` |
@@ -1307,7 +1318,7 @@ A deferred item names the check and where the evidence must appear.
 |---|---|---|
 | R-02 (no em dash) | PASS | Verified 2026-09-16: zero occurrences of the em dash character (U+2014) in the file, and zero en dashes (U+2013). The title separator is a colon, and negative terms such as "Not ported" use plain wording. |
 | R-17 (numbers need a source) | PASS | Every count appears in §15 with the command that produced it. No figure is carried over from the reference README or the API spec without a citation. |
-| R-24 (no navigation without a destination) | PASS | §5.2.2 makes it a rule, and it is now enforced by the data model rather than by review: a navigation row carries an `href` only when a route file exists, so a dead link is not representable. `tests/navigation/navigation.test.ts` cross-checks the tree against the routes discovered on disk. Re-verified 2026-09-17 with all 19 owner rows in the sidebar: 2 rows are real links, 17 are labelled `Planned`. |
+| R-24 (no navigation without a destination) | PASS | §5.2.2 makes it a rule, and it is now enforced by the data model rather than by review: a navigation row carries an `href` only when a route file exists, so a dead link is not representable. `tests/navigation/navigation.test.ts` cross-checks the tree against the routes discovered on disk. Re-verified 2026-09-18 with all 19 owner rows in the sidebar: 3 rows are real links (`/endpoint-keys`, `/changelog`, `/settings`), 16 are labelled `Planned`. |
 | R-38 (real content or honest placeholder) | PASS | §15 marks every path present or planned. `DESIGN.md` and the logo moved from "missing" to present on 2026-09-17, and the entries were updated rather than left stale. The missing OpenAPI companion is still named as missing in §14 Q3, and the two owner additions without an endpoint (Playground Chat, Changelog) are labelled `Planned` rather than shipped as links. |
 | R-36 (no fabricated claims) | PASS | The document makes no security, compliance, uptime, or performance claim about the panel. §7.1.3 explicitly denies a security-boundary claim, and the Bun runtime claim in §10.1 exists in §15 with a source rather than as an assertion about speed. |
 | Governance links are real | PASS | Both linked files resolve: [`docs/RULLES/TDD.md`](../RULLES/TDD.md) and [`AGENTS.md`](../../AGENTS.md). Each link states its scope, so a reader cannot mistake the Go rules for the panel's rules. |
@@ -1324,7 +1335,7 @@ A deferred item names the check and where the evidence must appear.
 
 | Rule | Where it is enforced | Required evidence |
 |---|---|---|
-| R-25 (contrast) | §9.4.1, and `app-ui/tests/tokens/contrast.test.ts` | Satisfied for the shell on 2026-09-17: 48 assertions over both authored themes, 14 text pairs plus 3 graphic pairs, lowest text pair 4.87:1 against the 4.5:1 floor. Measured on the composited colour, so an accent wash is measured against what a reader receives rather than against its raw channel triple. The test reads `src/app.css`, so a palette edit re-measures itself. Each new screen adds its own pairs to that file. |
+| R-25 (contrast) | §9.4.1, and `app-ui/tests/tokens/contrast.test.ts` | Satisfied for the shell on 2026-09-18: 50 assertions over both authored themes, covering the 14 text pairs, the graphic pairs, the per-theme accent-derivation of the active-row wash, typography, and palette hygiene. Lowest text pair 4.87:1 against the 4.5:1 floor. Measured on the composited colour, so an accent wash is measured against what a reader receives rather than against its raw channel triple. The test reads `src/app.css`, so a palette edit re-measures itself. Each new screen adds its own pairs to that file. |
 | R-27 (empty, loading, error states) | §8.3, and each screen section | Screenshot or recording of all three states per screen. `/endpoint-keys` already implements all three and they were observed in the 2026-09-17 pass; the remaining screens owe the same. |
 | R-32 (keyboard) | §9.4.4 | Satisfied for the shell on 2026-09-17: recorded tab order through the sidebar and header, every stop with a 2px accent outline, Enter navigates a row, Enter and Space toggle the media disclosure, Escape closes the mobile drawer, and focus returns to the header control. Each new screen owes the same pass. |
 | R-03 (mobile) | §8.7, §9.4.3 | Satisfied for the shell on 2026-09-17: 390px, 820px, and 1440px exercised, no page overflow at any of the three, dark and light both. Tablet shows the 64px rail, mobile shows the drawer at 293px with an overlay, and the drawer closes on navigation. Each new screen owes the same pass. |
@@ -1335,6 +1346,31 @@ A deferred item names the check and where the evidence must appear.
 | R-21 (theme choice) | §8.9 | Both authored themes, with the dark default rationale recorded. |
 | R-29, R-11, R-12, R-13, R-01, R-09 (purpose-gate techniques) | §9.3 | Token file showing the palette cap, the radius scale, and the single accent use. |
 | R-31 (reason per decision) | §9.5 | The reason log, extended in the pull request for decisions this spec does not yet cover. |
+
+---
+
+*Changelog 2026-09-18: the U0 remainder, closed on the panel side.*
+
+*The not-found view §5.1 assigns to U0 now exists: `src/routes/+error.svelte` names the requested path
+for a 404, gives every other status one panel voice without echoing the server's message, and always
+offers the way back to `/endpoint-keys`. Session handling gained the §8.1.2 behaviour it was missing: an
+unauthenticated visit carries the route it wanted to `/login` and returns there after signing in, with
+the destination validated by `src/lib/utils/redirect.ts` so a crafted `redirectTo` cannot leave the
+origin or bounce back to the login screen.*
+
+*The sidebar was hardened against its own design direction: the dark active-row wash now derives from the
+accent instead of the warn colour, a tablet expands over the content instead of pushing it (§8), the
+navigation is a named `nav` landmark, and one module owns the preference cookie. That last item is also
+where a boundary was corrected: the first attempt removed the write from the primitive's provider, which
+§10.7 does not permit, so the primitive was restored and the duplication removed from the application
+side instead. The one primitive edit that rule does allow, the 264px sidebar width, is recorded in
+`DESIGN.md` §11.*
+
+*§12 gained a U0 status note, §14 Q8 was closed on both governance follow-ups, and §15 was corrected
+where its counts and status rows had gone stale. The panel's gates pass on 2026-09-18: 499 tests across
+19 files, `svelte-check` clean, Prettier and ESLint clean, and a production build. U0's remaining exit
+step is the recorded click-through against a running `app-serv`, which is a verification run rather than
+unbuilt work.*
 
 ---
 

@@ -273,6 +273,7 @@ installed set.
 | Tablet gets an icon rail, not a drawer | A tablet has room for a 64px rail, which keeps navigation reachable while editing. |
 | Two radius values plus a dialog value | Radius is a hierarchy tool; a single value everywhere erases the difference between an input and a panel. |
 | Sidebar groups named by operator intent | A flat list of fifteen items is a list, not a structure. |
+| Expanded sidebar width set to 264px in the primitive layer's constants | §8 fixes 264px and the component layer ships 256px, so this is the one primitive edit SPEC-UI §10.7 permits, it is recorded here as that rule requires, and it is re-applied after a regeneration rather than assumed to survive one. The 64px icon rail already matches and is untouched. |
 
 ---
 
