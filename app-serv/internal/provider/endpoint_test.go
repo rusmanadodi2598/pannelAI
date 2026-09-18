@@ -9,7 +9,9 @@
 //	providers disagree about where the path ends and several add a
 //	suffix. The join rule is therefore "use the entry's URL and append
 //	what it declares", and every shape it has to survive is pinned
-//	here so the core never has to guess a path.
+//	here so the core never has to guess a path. A declared chat_path
+//	is the one entry that says its base_url is a base, so the join
+//	has to tolerate both readings.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
@@ -39,6 +41,39 @@ func TestDefault_EndpointBuildsTheURL(t *testing.T) {
 			name:      "a query suffix is appended",
 			transport: registry.Transport{BaseURL: "https://api.anthropic.com/v1/messages", URLSuffix: "?beta=true"},
 			wantURL:   "https://api.anthropic.com/v1/messages?beta=true",
+		},
+		{
+			name: "a responses url wins for the responses format",
+			transport: registry.Transport{
+				Format: registry.FormatOpenAIResponses, BaseURL: "https://chat.example.test/chat",
+				ResponsesURL: "https://responses.example.test/v1/responses",
+			},
+			wantURL: "https://responses.example.test/v1/responses",
+		},
+		{
+			name:      "a declared chat path completes a base",
+			transport: registry.Transport{BaseURL: "https://api2.cursor.sh", ChatPath: "/aiserver.v1.ChatService/StreamUnifiedChatWithTools"},
+			wantURL:   "https://api2.cursor.sh/aiserver.v1.ChatService/StreamUnifiedChatWithTools",
+		},
+		{
+			name:      "a trailing slash on the base is not doubled",
+			transport: registry.Transport{BaseURL: "https://upstream.test/v1/", ChatPath: "/chat/completions"},
+			wantURL:   "https://upstream.test/v1/chat/completions",
+		},
+		{
+			name:      "a path without a leading slash is joined the same way",
+			transport: registry.Transport{BaseURL: "https://upstream.test/v1", ChatPath: "chat/completions"},
+			wantURL:   "https://upstream.test/v1/chat/completions",
+		},
+		{
+			name:      "a suffix lands after the declared path, not before it",
+			transport: registry.Transport{BaseURL: "https://upstream.test/v1", ChatPath: "/chat/completions", URLSuffix: "?beta=true"},
+			wantURL:   "https://upstream.test/v1/chat/completions?beta=true",
+		},
+		{
+			name:      "an entry with no chat path keeps its full url as written",
+			transport: registry.Transport{BaseURL: "https://api.deepseek.com/v1/chat/completions", ChatPath: ""},
+			wantURL:   "https://api.deepseek.com/v1/chat/completions",
 		},
 		{
 			name:      "the first of several hosts is the primary",

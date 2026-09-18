@@ -62,6 +62,22 @@ func (n CustomNode) format() string {
 	return DefaultFormat
 }
 
+// chatPath is the path that completes the node's base URL. A node stores a
+// base ("https://host/v1"), not a full endpoint URL, so the path has to come
+// from the node's kind. The reference's BaseExecutor.buildUrl appends exactly
+// these three, and the operator's own endpoint row is the only other place the
+// convention appears.
+func (n CustomNode) chatPath() string {
+	switch {
+	case strings.HasPrefix(n.ID, AnthropicCompatiblePrefix):
+		return "/messages"
+	case n.APIType == OpenAITypeResponses:
+		return "/responses"
+	default:
+		return "/chat/completions"
+	}
+}
+
 // Validate checks the node on its own, without reference to the index. It is
 // exported because the management API validates a create request before it
 // looks at collisions, so the caller can report the field that is wrong.
@@ -130,7 +146,7 @@ func (i *Index) Synthesize(node CustomNode) (Provider, error) {
 		AuthType:  AuthAPIKey,
 		Custom:    true,
 		Display:   Display{Name: node.Name},
-		Transport: Transport{Format: node.format(), BaseURL: node.BaseURL},
+		Transport: Transport{Format: node.format(), BaseURL: node.BaseURL, ChatPath: node.chatPath()},
 	}
 	return provider, nil
 }

@@ -67,7 +67,14 @@ func DefaultFactory(entry registry.Provider) Plugin { return NewDefault(entry) }
 // The registry stores a full chat URL rather than a base, because providers
 // disagree about where the path ends ("/v1/chat/completions",
 // "/v1/messages", a suffix with a query). So the join is "use the entry's URL,
-// appending the suffix when one is declared" and there is no path guessing.
+// appending what it declares" and there is no path guessing.
+//
+// One declaration changes that reading: an entry carrying a chat_path is saying
+// its base_url is a BASE, not an endpoint. A custom node stores
+// "https://host/v1" and relies on the path to complete it, and the reference's
+// BaseExecutor.buildUrl joins the two the same way. A Responses-format entry may
+// instead declare a complete responses_url, which takes precedence. A path-less
+// entry keeps the full-URL reading, which is what the embedded registry relies on.
 func (d *Default) Endpoint(req Request, _ Credential) (string, error) {
 	transport := req.Provider.Transport
 
@@ -83,15 +90,32 @@ func (d *Default) Endpoint(req Request, _ Credential) (string, error) {
 	}
 
 	url := base
+	if transport.Format == registry.FormatOpenAIResponses && strings.TrimSpace(transport.ResponsesURL) != "" {
+		// Responses-format entries may keep a chat-shaped base_url for
+		// compatibility while declaring the actual Responses endpoint
+		// separately. The explicit endpoint wins and is already complete.
+		url = strings.TrimSpace(transport.ResponsesURL)
+	} else if path := strings.TrimSpace(transport.ChatPath); path != "" {
+		url = joinPath(base, path)
+	}
 	if transport.URLSuffix != "" {
 		// A suffix may be a query ("?beta=true") or a path fragment. Appending
-		// covers both; the entry is responsible for the leading character.
+		// covers both; the entry is responsible for the leading character, and
+		// it goes last so a query lands after the path it belongs to.
 		url += transport.URLSuffix
 	}
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		return "", fmt.Errorf("provider %s: base_url is not absolute", req.Provider.ID)
 	}
 	return url, nil
+}
+
+// joinPath appends a declared path to a base URL with exactly one separator, so
+// a base written with a trailing slash ("https://host/v1/") and a path written
+// with or without a leading one both produce one correct URL instead of a
+// doubled slash that some upstreams treat as a different path.
+func joinPath(base, path string) string {
+	return strings.TrimSuffix(base, "/") + "/" + strings.TrimPrefix(path, "/")
 }
 
 // ApplyAuth places the credential on the request using the entry's declared

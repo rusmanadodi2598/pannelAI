@@ -79,11 +79,14 @@ func embeddedIndex(t *testing.T) *registry.Index {
 }
 
 // storedNode builds a node the way the management API does, so the test sees the
-// id the domain actually mints rather than one written out by hand.
+// id the domain actually mints rather than one written out by hand. The base URL
+// is a base and not an endpoint, which is the convention SPEC-API-001 §7.4 states
+// (the node's connectivity test reaches `base_url` + "/models") and the one the
+// reference's BaseExecutor builds on.
 func storedNode(t *testing.T, nodeType domain.NodeType, apiType string) domain.ProviderNode {
 	t.Helper()
 	node, err := domain.NewProviderNode("", "My Corp", "mycorp", nodeType, apiType,
-		"https://upstream.test/v1/chat/completions", time.Date(2026, 9, 18, 9, 0, 0, 0, time.UTC))
+		"https://upstream.test/v1", time.Date(2026, 9, 18, 9, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatalf("NewProviderNode() error = %v", err)
 	}

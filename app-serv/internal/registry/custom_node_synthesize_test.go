@@ -38,6 +38,7 @@ providers:
 		wantOK   bool
 		wantID   string
 		wantFmt  string
+		wantPath string
 		wantAuth string
 	}{
 		{
@@ -47,7 +48,7 @@ providers:
 				APIType: "chat", BaseURL: "https://mycorp.test/v1",
 			},
 			wantOK: true, wantID: OpenAICompatiblePrefix + "chat-1",
-			wantFmt: "openai", wantAuth: AuthAPIKey,
+			wantFmt: "openai", wantPath: "/chat/completions", wantAuth: AuthAPIKey,
 		},
 		{
 			name: "an openai responses node speaks its own format",
@@ -56,7 +57,7 @@ providers:
 				APIType: "responses", BaseURL: "https://resp.test/v1",
 			},
 			wantOK: true, wantID: OpenAICompatiblePrefix + "responses-9",
-			wantFmt: FormatOpenAIResponses, wantAuth: AuthAPIKey,
+			wantFmt: FormatOpenAIResponses, wantPath: "/responses", wantAuth: AuthAPIKey,
 		},
 		{
 			name: "anthropic compatible node speaks the claude format",
@@ -65,7 +66,7 @@ providers:
 				BaseURL: "https://proxy.test/v1",
 			},
 			wantOK: true, wantID: AnthropicCompatiblePrefix + "2",
-			wantFmt: "claude", wantAuth: AuthAPIKey,
+			wantFmt: "claude", wantPath: "/messages", wantAuth: AuthAPIKey,
 		},
 		{
 			name: "prefix colliding with a registry id is refused",
@@ -115,6 +116,11 @@ providers:
 			}
 			if got.Transport.Format != tc.wantFmt {
 				t.Fatalf("Format = %q, want %q", got.Transport.Format, tc.wantFmt)
+			}
+			// A node stores a base, so the path that completes it has to come
+			// from the node's kind. A wrong one sends every call to a 404.
+			if got.Transport.ChatPath != tc.wantPath {
+				t.Fatalf("ChatPath = %q, want %q", got.Transport.ChatPath, tc.wantPath)
 			}
 			if got.Transport.BaseURL != tc.node.BaseURL {
 				t.Fatalf("BaseURL = %q, want %q", got.Transport.BaseURL, tc.node.BaseURL)
