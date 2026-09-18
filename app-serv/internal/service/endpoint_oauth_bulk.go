@@ -56,6 +56,11 @@ type OAuthImportResult struct {
 // An account identity already staged is updated in place rather than duplicated,
 // because §8.1 makes a re-import an update: importing the same account twice must
 // not leave two endpoints competing for one token set.
+//
+// Every row is sealed and matched before the store is called, so a batch with one
+// bad row writes nothing at all; the store then applies the whole set in a single
+// transaction. That is the §8.1 rule this route shares with /endpoints/bulk, and
+// it is why the loop below only builds values.
 func (s *EndpointService) BulkImportOAuth(ctx context.Context, providerID string, accounts []OAuthAccountInput) ([]OAuthImportResult, error) {
 	if len(accounts) == 0 {
 		return nil, domain.NewValidationError("accounts is required")
@@ -71,39 +76,76 @@ func (s *EndpointService) BulkImportOAuth(ctx context.Context, providerID string
 		return nil, domain.NewValidationError("unknown provider_id: " + providerID)
 	}
 
-	results := make([]OAuthImportResult, 0, len(accounts))
+	now := s.clock()
+	built := make([]domain.UpstreamEndpoint, 0, len(accounts))
+	existing := make([]bool, 0, len(accounts))
+	hints := make([]string, 0, len(accounts))
 	for i, account := range accounts {
-		result, err := s.importOneOAuth(ctx, providerID, account)
+		endpoint, updated, hint, err := s.buildOAuthImport(ctx, providerID, account, now)
 		if err != nil {
 			return nil, rowError(i, err)
 		}
-		result.Index = i
-		results = append(results, result)
+		built = append(built, endpoint)
+		existing = append(existing, updated)
+		hints = append(hints, hint)
+	}
+
+	// Two rows claiming one label under one provider are refused here rather than
+	// left to the unique index, so the refusal names the second row instead of
+	// reporting a constraint without saying which row caused it.
+	if err := rejectDuplicateLabels(built); err != nil {
+		return nil, err
+	}
+	if err := s.store.ImportOAuthBatch(ctx, built, existing); err != nil {
+		return nil, err
+	}
+
+	results := make([]OAuthImportResult, 0, len(built))
+	for i, endpoint := range built {
+		results = append(results, OAuthImportResult{
+			Index:     i,
+			Endpoint:  endpoint,
+			Updated:   existing[i],
+			TokenHint: hints[i],
+		})
 	}
 	return results, nil
 }
 
-// importOneOAuth seals one credential set and writes it onto the endpoint that
-// already stands for the account, or onto a new one.
-func (s *EndpointService) importOneOAuth(ctx context.Context, providerID string, account OAuthAccountInput) (OAuthImportResult, error) {
+// buildOAuthImport seals one credential set and returns the endpoint that should
+// stand for it: the account's existing endpoint with the new credential applied,
+// or a fresh one. Nothing is written here, so a later row's refusal discards the
+// work rather than leaving it half-applied.
+func (s *EndpointService) buildOAuthImport(ctx context.Context, providerID string, account OAuthAccountInput, now time.Time) (domain.UpstreamEndpoint, bool, string, error) {
 	accessToken := strings.TrimSpace(account.AccessToken)
 	if accessToken == "" {
-		return OAuthImportResult{}, domain.NewValidationError("access_token is required")
+		return domain.UpstreamEndpoint{}, false, "", domain.NewValidationError("access_token is required")
 	}
-	now := s.clock()
 	credential, err := s.sealOAuthCredential(account, now)
 	if err != nil {
-		return OAuthImportResult{}, err
+		return domain.UpstreamEndpoint{}, false, "", err
 	}
+	hint := domain.MaskSecret(accessToken)
 
 	existingID, err := s.store.FindOAuthEndpoint(ctx, providerID, account.Account.Email, account.Account.WorkspaceID)
 	if err != nil && !errors.Is(err, domain.ErrEndpointNotFound) {
-		return OAuthImportResult{}, err
+		return domain.UpstreamEndpoint{}, false, "", err
 	}
 	if existingID != "" {
-		return s.updateOAuthEndpoint(ctx, existingID, credential, account, now)
+		endpoint, err := s.store.GetByID(ctx, existingID)
+		if err != nil {
+			return domain.UpstreamEndpoint{}, false, "", err
+		}
+		endpoint.SetOAuth(credential, now)
+		endpoint.SetAccount(account.Account, now)
+		return endpoint, true, hint, nil
 	}
-	return s.createOAuthEndpoint(ctx, providerID, credential, account, now)
+
+	endpoint, err := buildOAuthEndpoint(providerID, credential, account, now)
+	if err != nil {
+		return domain.UpstreamEndpoint{}, false, "", err
+	}
+	return endpoint, false, hint, nil
 }
 
 // sealOAuthCredential seals both tokens, so the aggregate only ever holds
@@ -133,27 +175,9 @@ func (s *EndpointService) sealOAuthCredential(account OAuthAccountInput, now tim
 	}, nil
 }
 
-// updateOAuthEndpoint writes a re-imported credential set onto the endpoint that
-// already stands for the account.
-func (s *EndpointService) updateOAuthEndpoint(ctx context.Context, id string, credential *domain.OAuthCredential, account OAuthAccountInput, now time.Time) (OAuthImportResult, error) {
-	endpoint, err := s.store.GetByID(ctx, id)
-	if err != nil {
-		return OAuthImportResult{}, err
-	}
-	endpoint.SetOAuth(credential, now)
-	endpoint.SetAccount(account.Account, now)
-	if err := s.store.Update(ctx, endpoint); err != nil {
-		return OAuthImportResult{}, err
-	}
-	return OAuthImportResult{
-		Endpoint:  endpoint,
-		Updated:   true,
-		TokenHint: domain.MaskSecret(strings.TrimSpace(account.AccessToken)),
-	}, nil
-}
-
-// createOAuthEndpoint stages a new oauth endpoint for an account never imported.
-func (s *EndpointService) createOAuthEndpoint(ctx context.Context, providerID string, credential *domain.OAuthCredential, account OAuthAccountInput, now time.Time) (OAuthImportResult, error) {
+// buildOAuthEndpoint stages a new oauth endpoint for an account never imported.
+// It writes nothing: the batch transaction is the only writer on this path.
+func buildOAuthEndpoint(providerID string, credential *domain.OAuthCredential, account OAuthAccountInput, now time.Time) (domain.UpstreamEndpoint, error) {
 	label := strings.TrimSpace(account.Label)
 	if label == "" {
 		label = defaultOAuthLabel(account.Account)
@@ -161,17 +185,11 @@ func (s *EndpointService) createOAuthEndpoint(ctx context.Context, providerID st
 	endpoint, err := domain.NewUpstreamEndpoint(domain.IDPrefixUpstreamEndpoint+domain.NewULID(now),
 		providerID, label, domain.UpstreamAuthOAuth, 1, now)
 	if err != nil {
-		return OAuthImportResult{}, err
+		return domain.UpstreamEndpoint{}, err
 	}
 	endpoint.SetOAuth(credential, now)
 	endpoint.SetAccount(account.Account, now)
-	if err := s.store.Create(ctx, endpoint); err != nil {
-		return OAuthImportResult{}, err
-	}
-	return OAuthImportResult{
-		Endpoint:  endpoint,
-		TokenHint: domain.MaskSecret(strings.TrimSpace(account.AccessToken)),
-	}, nil
+	return endpoint, nil
 }
 
 // defaultOAuthLabel names an unlabelled account after the identity that

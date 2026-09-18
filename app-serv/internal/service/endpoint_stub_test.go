@@ -166,98 +166,42 @@ func (s *memEndpointStore) Delete(_ context.Context, id string) error {
 	return nil
 }
 
-func (s *memEndpointStore) AddKey(_ context.Context, endpointID string, key domain.UpstreamKey) error {
-	if _, ok := s.byID[endpointID]; !ok {
-		return domain.ErrEndpointNotFound
+// ImportOAuthBatch mirrors the real all-or-nothing import: every row is applied
+// only after the whole batch has been checked, and the offending index is
+// attributed. It exists because the OAuth import both creates and updates, which
+// CreateBatch cannot express.
+func (s *memEndpointStore) ImportOAuthBatch(_ context.Context, endpoints []domain.UpstreamEndpoint, existing []bool) error {
+	if len(endpoints) == 0 {
+		return nil
 	}
-	s.keysByEndpoint[endpointID] = append(s.keysByEndpoint[endpointID], key)
-	return nil
-}
-
-func (s *memEndpointStore) UpdateKey(_ context.Context, key domain.UpstreamKey) error {
-	keys, ok := s.keysByEndpoint[key.EndpointID()]
-	if !ok {
-		if _, exists := s.byID[key.EndpointID()]; !exists {
-			return domain.ErrEndpointNotFound
-		}
+	if len(existing) != len(endpoints) {
+		return domain.NewInternalError("oauth import batch: existing flags do not match the endpoint count")
 	}
-	found := false
-	for i, existing := range keys {
-		if existing.ID() == key.ID() {
-			keys[i] = key
-			found = true
-			break
-		}
-	}
-	if !found {
-		return domain.NewNotFoundError("upstream key not found")
-	}
-	s.keysByEndpoint[key.EndpointID()] = keys
-	return nil
-}
-
-func (s *memEndpointStore) DeleteKey(_ context.Context, endpointID, keyID string) error {
-	keys := s.keysByEndpoint[endpointID]
-	for i, key := range keys {
-		if key.ID() == keyID {
-			s.keysByEndpoint[endpointID] = append(keys[:i:i], keys[i+1:]...)
-			return nil
-		}
-	}
-	return domain.NewNotFoundError("upstream key not found")
-}
-
-func (s *memEndpointStore) RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error {
-	return s.UpdateKey(ctx, key)
-}
-
-func (s *memEndpointStore) Reorder(_ context.Context, providerID string, orderedIDs []string) error {
-	for i, id := range orderedIDs {
-		endpoint, ok := s.byID[id]
-		if !ok {
-			return domain.ErrEndpointNotFound
-		}
-		if endpoint.ProviderID() != providerID {
-			return domain.NewConflictError("reorder names an endpoint of another provider")
-		}
-		if err := endpoint.Update(endpoint.Label(), i+1, "", testNow); err != nil {
-			return err
-		}
-		s.store(endpoint)
-	}
-	return nil
-}
-
-func (s *memEndpointStore) IDsByProvider(_ context.Context, providerID string) ([]string, error) {
-	ids := make([]string, 0, len(s.byID))
-	for _, endpoint := range s.byID {
-		if endpoint.ProviderID() == providerID {
-			ids = append(ids, endpoint.ID())
-		}
-	}
-	sortByPriority(ids, s.byID)
-	return ids, nil
-}
-
-// sortByPriority orders ids by the priority the endpoints currently hold, which is
-// what the service reads to renumber siblings.
-func sortByPriority(ids []string, byID map[string]domain.UpstreamEndpoint) {
-	for i := 1; i < len(ids); i++ {
-		for j := i; j > 0 && byID[ids[j]].Priority() < byID[ids[j-1]].Priority(); j-- {
-			ids[j], ids[j-1] = ids[j-1], ids[j]
-		}
-	}
-}
-
-func (s *memEndpointStore) FindOAuthEndpoint(_ context.Context, providerID, email, workspaceID string) (string, error) {
-	for _, endpoint := range s.byID {
-		if endpoint.ProviderID() != providerID || endpoint.AuthType() != domain.UpstreamAuthOAuth {
+	seen := make(map[string]struct{}, len(endpoints))
+	for i, endpoint := range endpoints {
+		if existing[i] {
+			if _, ok := s.byID[endpoint.ID()]; !ok {
+				return rowError(i, domain.ErrEndpointNotFound)
+			}
 			continue
 		}
-		account := endpoint.Account()
-		if (email != "" && account.Email == email) || (workspaceID != "" && account.WorkspaceID == workspaceID) {
-			return endpoint.ID(), nil
+		key := accountKey(endpoint.ProviderID(), endpoint.Label())
+		if _, dup := s.labelKey[key]; dup {
+			return rowError(i, domain.ErrEndpointExists)
 		}
+		if _, dup := seen[key]; dup {
+			return rowError(i, domain.ErrEndpointExists)
+		}
+		seen[key] = struct{}{}
 	}
-	return "", domain.ErrEndpointNotFound
+	for i, endpoint := range endpoints {
+		if existing[i] {
+			s.store(endpoint)
+			continue
+		}
+		s.labelKey[accountKey(endpoint.ProviderID(), endpoint.Label())] = endpoint.ID()
+		s.store(endpoint)
+		s.keysByEndpoint[endpoint.ID()] = endpoint.Keys()
+	}
+	return nil
 }

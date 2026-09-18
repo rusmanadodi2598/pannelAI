@@ -105,6 +105,19 @@ type EndpointStore interface {
 	// same all-or-nothing terms.
 	AddKeys(ctx context.Context, endpointID string, keys []domain.UpstreamKey) error
 
+	// ImportOAuthBatch applies several imported OAuth accounts in ONE
+	// transaction. existing[i] selects the statement for row i: true updates the
+	// endpoint that already stands for the account, false inserts a new one. The
+	// slice must have exactly one entry per endpoint, because a missing entry
+	// would silently turn an update into a duplicate insert.
+	//
+	// It exists beside CreateBatch because the OAuth import is the one batch
+	// route that updates as well as creates (§8.1: a re-import of the same
+	// account is an update), and CreateBatch cannot express that. An
+	// implementation SHOULD return an error satisfying BulkRowIndexer when it
+	// can attribute the refusal to one row.
+	ImportOAuthBatch(ctx context.Context, endpoints []domain.UpstreamEndpoint, existing []bool) error
+
 	// IDsByProvider returns every endpoint id of the provider in the priority
 	// order they currently hold, which is what renumbering siblings needs. The
 	// frozen contract has no such read because it is not aggregate-scoped.

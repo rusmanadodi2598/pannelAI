@@ -144,43 +144,12 @@ func (r *EndpointRepository) GetByID(ctx context.Context, id string) (domain.Ups
 // Update persists the endpoint's own fields, including its OAuth state (stored
 // as ciphertext) and its account identity. Keys are untouched: they have their
 // own methods because a key change is a different concern.
+//
+// The statement itself lives in endpoint_oauth_batch.go, because the OAuth import
+// batch needs the same UPDATE inside its transaction and a second copy is how the
+// two write paths start disagreeing about which columns a write touches.
 func (r *EndpointRepository) Update(ctx context.Context, endpoint domain.UpstreamEndpoint) error {
-	oauthJSON, err := marshalOAuth(endpoint.OAuth())
-	if err != nil {
-		return err
-	}
-	accountJSON, err := marshalAccount(endpoint.Account())
-	if err != nil {
-		return err
-	}
-	testJSON, err := marshalTestStatus(endpoint.TestStatus())
-	if err != nil {
-		return err
-	}
-	const q = `
-UPDATE upstream_endpoints
-   SET label = $1,
-       priority = $2,
-       status = $3,
-       oauth = $4,
-       account = $5,
-       test_status = $6,
-       rate_limited_until = $7,
-       last_used_at = $8,
-       updated_at = $9
- WHERE id = $10`
-
-	tag, err := r.pool.Exec(ctx, q, endpoint.Label(), endpoint.Priority(),
-		string(endpoint.Status()), oauthJSON, accountJSON, testJSON,
-		endpoint.RateLimitedUntil(), endpoint.LastUsedAt(),
-		endpoint.UpdatedAt(), endpoint.ID())
-	if err != nil {
-		return translateEndpointError(err)
-	}
-	if tag.RowsAffected() == 0 {
-		return domain.ErrEndpointNotFound
-	}
-	return nil
+	return updateEndpoint(ctx, r.pool, endpoint)
 }
 
 // Delete removes the endpoint; its keys go with it through the ON DELETE
