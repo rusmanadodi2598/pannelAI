@@ -160,3 +160,37 @@ describe('palette hygiene', () => {
 		);
 	});
 });
+
+// DESIGN.md §6: the active navigation row is marked with the one accent. Its wash is a translucent
+// rgb() mix, so the channel triple has to be the theme's accent rather than merely a tint of some
+// colour. This is what caught the dark wash carrying the warn triple and rendering the active row
+// yellow in dark mode and coral in light.
+describe('sidebar active wash', () => {
+	const HEX = /^#([0-9a-fA-F]{6})$/;
+	const RGB = /^rgb\(\s*(\d+)\s+(\d+)\s+(\d+)\s*\/\s*[\d.]+\s*\)$/;
+
+	// Normalizes a hex or `rgb(r g b / a)` token to a `"r g b"` triple. A value that is neither is
+	// returned unchanged, so an unexpected format fails the comparison instead of passing silently.
+	function triple(value: string | undefined): string {
+		if (value === undefined) return 'missing';
+
+		const hex = value.match(HEX);
+		if (hex) {
+			const channels = Number.parseInt(hex[1], 16);
+			return `${(channels >> 16) & 0xff} ${(channels >> 8) & 0xff} ${channels & 0xff}`;
+		}
+
+		const rgb = value.match(RGB);
+		if (rgb) return `${Number(rgb[1])} ${Number(rgb[2])} ${Number(rgb[3])}`;
+
+		return value;
+	}
+
+	for (const [theme, tokens] of THEMES) {
+		it(`derives the ${theme} active-row wash from the accent`, () => {
+			expect(triple(resolveToken(tokens, 'sidebar-accent'))).toBe(
+				triple(resolveToken(tokens, 'accent'))
+			);
+		});
+	}
+});

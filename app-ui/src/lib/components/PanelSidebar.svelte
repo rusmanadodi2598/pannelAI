@@ -14,13 +14,6 @@
 	import { isActiveRoute, NAV_GROUPS, type NavNode } from '$lib/navigation';
 	import * as Sidebar from '$lib/primitives/sidebar/index.js';
 
-	type Props = {
-		/** Called after a navigation row is followed, so a mobile drawer closes behind it. */
-		onnavigate?: () => void;
-	};
-
-	let { onnavigate }: Props = $props();
-
 	// The primitive layer keeps the mobile drawer's state in its own context, so a row click has to close
 	// it explicitly. Without this the drawer stays open over the page the operator just picked.
 	const sidebar = Sidebar.useSidebar();
@@ -45,7 +38,6 @@
 
 	function handleNavigate(): void {
 		if (sidebar.isMobile) sidebar.setOpenMobile(false);
-		onnavigate?.();
 	}
 </script>
 
@@ -73,29 +65,36 @@
 	</Sidebar.Header>
 
 	<Sidebar.Content class="px-2 py-2">
-		{#each NAV_GROUPS as group (group.key)}
-			<Sidebar.Group class="py-1">
-				<Sidebar.GroupLabel
-					class="h-7 px-2 text-[11px] font-semibold tracking-[0.06em] text-[var(--color-text-muted)] uppercase group-data-[collapsible=icon]:hidden"
-				>
-					{group.label}
-				</Sidebar.GroupLabel>
+		<!-- A `nav` landmark with a name, so a screen-reader user can jump straight to the panel's
+		     navigation instead of walking the header and the logo first. The primitive layer renders a
+		     plain div for the sidebar container, so this is the panel's job rather than shadcn's. Both
+		     render paths (the desktop container and the mobile Sheet) draw the same children, so the
+		     landmark exists at every breakpoint. -->
+		<nav aria-label="Panel navigation" class="flex flex-col gap-2">
+			{#each NAV_GROUPS as group (group.key)}
+				<Sidebar.Group class="py-1">
+					<Sidebar.GroupLabel
+						class="h-7 px-2 text-[11px] font-semibold tracking-[0.06em] text-[var(--color-text-muted)] uppercase group-data-[collapsible=icon]:hidden"
+					>
+						{group.label}
+					</Sidebar.GroupLabel>
 
-				<Sidebar.GroupContent>
-					<Sidebar.Menu>
-						{#each group.items as item (item.key)}
-							<PanelNavRow
-								{item}
-								pathname={current}
-								expanded={isExpanded(item)}
-								ontoggle={() => toggle(item)}
-								onnavigate={handleNavigate}
-							/>
-						{/each}
-					</Sidebar.Menu>
-				</Sidebar.GroupContent>
-			</Sidebar.Group>
-		{/each}
+					<Sidebar.GroupContent>
+						<Sidebar.Menu>
+							{#each group.items as item (item.key)}
+								<PanelNavRow
+									{item}
+									pathname={current}
+									expanded={isExpanded(item)}
+									ontoggle={() => toggle(item)}
+									onnavigate={handleNavigate}
+								/>
+							{/each}
+						</Sidebar.Menu>
+					</Sidebar.GroupContent>
+				</Sidebar.Group>
+			{/each}
+		</nav>
 	</Sidebar.Content>
 
 	<Sidebar.Rail />

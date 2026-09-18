@@ -115,8 +115,24 @@
 	--color-sidebar-ring: var(--color-accent);
 }
 
+/* The dark wash follows the dark accent (#e56a4a), not a status colour. It previously carried the warn
+   triple, which made the active navigation row yellow in dark mode and coral in light. The triple is
+   asserted against --color-accent in tests/tokens/contrast.test.ts, so a re-tune cannot drift again. */
 .dark {
-	--color-sidebar-accent: rgb(232 169 58 / 0.14);
+	--color-sidebar-accent: rgb(229 106 74 / 0.14);
+}
+
+/* DESIGN.md §8: from 768px to 1023px the sidebar rests as a 64px icon rail and expands over the content
+   instead of pushing it, so the content column does not reflow every time the operator opens navigation.
+   Collapsing the gap is enough: the container is already `fixed` and paints above the column. The rule is
+   scoped to the tablet band, so a desktop (>=1024px) still expands by pushing, which is what §8 asks for
+   there. No elevation is added: DESIGN.md §5 allows a shadow on a dialog and the mobile drawer only, and
+   the container's own border is the seam. The desktop branch of the sidebar is what these selectors
+   target; the mobile drawer below 768px is a Sheet and is untouched. */
+@media (min-width: 768px) and (max-width: 1023px) {
+	[data-slot='sidebar'][data-state='expanded'] [data-slot='sidebar-gap'] {
+		width: 0;
+	}
 }
 
 html {
