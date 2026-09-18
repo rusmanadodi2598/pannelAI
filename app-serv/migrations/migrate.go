@@ -121,7 +121,7 @@ func Apply(ctx context.Context, dsn string) error {
 }
 
 // lockApply takes the apply lock, waiting at most applyLockWait.
-func lockApply(ctx context.Context, conn migrationConn) error {
+func lockApply(ctx context.Context, conn *sql.Conn) error {
 	lockCtx, cancel := context.WithTimeout(ctx, applyLockWait)
 	defer cancel()
 

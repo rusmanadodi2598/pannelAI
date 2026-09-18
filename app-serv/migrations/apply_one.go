@@ -22,18 +22,8 @@ import (
 	"fmt"
 )
 
-// migrationConn is the statement surface the runner needs. A *sql.Conn
-// satisfies it, and taking a connection rather than the pool is what keeps the
-// advisory lock and the statements it guards on one session: a session lock
-// released on a different connection than it was taken on would not unlock.
-type migrationConn interface {
-	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
-	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
-	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
-}
-
 // appliedVersions reads the ledger into a set.
-func appliedVersions(ctx context.Context, conn migrationConn) (applied map[string]struct{}, err error) {
+func appliedVersions(ctx context.Context, conn *sql.Conn) (applied map[string]struct{}, err error) {
 	rows, err := conn.QueryContext(ctx, `SELECT version FROM schema_migrations`)
 	if err != nil {
 		return nil, fmt.Errorf("migrations: reading ledger: %w", err)
@@ -64,7 +54,11 @@ func appliedVersions(ctx context.Context, conn migrationConn) (applied map[strin
 
 // applyOne runs a single migration and records it, both inside one transaction:
 // either the schema change and its ledger row commit together, or neither does.
-func applyOne(ctx context.Context, conn migrationConn, name, body string) error {
+//
+// It takes a *sql.Conn rather than the pool so the statement runs on the same
+// session that holds the apply lock: a session lock released on a different
+// pooled connection than it was taken on would not release.
+func applyOne(ctx context.Context, conn *sql.Conn, name, body string) error {
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("migrations: beginning %s: %w", name, err)
