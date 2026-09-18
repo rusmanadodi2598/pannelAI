@@ -20,6 +20,7 @@
 package domain
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -147,17 +148,65 @@ func TestProviderNode_Format(t *testing.T) {
 	}
 }
 
+// TestProviderNode_NewNodeGetsAnID pins the id's shape, which SPEC-API-001 §7.4
+// fixes: the id carries the node's type prefix. The registry reads the wire
+// format out of that prefix when it synthesizes the provider entry, so an id
+// without it yields a node that cannot be routed to.
 func TestProviderNode_NewNodeGetsAnID(t *testing.T) {
-	first := newNode(t, "N", "p", NodeOpenAICompatible, NodeAPIChat, "https://p.test/v1")
-	second := newNode(t, "N", "p", NodeOpenAICompatible, NodeAPIChat, "https://p.test/v1")
-	if first.ID() == "" {
-		t.Fatal("a minted node must carry an id")
+	cases := []struct {
+		name     string
+		nodeType NodeType
+		apiType  string
+		wantPfx  string
+	}{
+		{name: "openai-compatible", nodeType: NodeOpenAICompatible, apiType: NodeAPIChat, wantPfx: NodeIDPrefixOpenAI},
+		{name: "anthropic-compatible", nodeType: NodeAnthropicCompatible, wantPfx: NodeIDPrefixAnthropic},
 	}
-	if len(first.ID()) <= len(IDPrefixNode) || first.ID()[:len(IDPrefixNode)] != IDPrefixNode {
-		t.Fatalf("id %q must carry the %q prefix", first.ID(), IDPrefixNode)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			first := newNode(t, "N", "p", tc.nodeType, tc.apiType, "https://p.test/v1")
+			second := newNode(t, "N", "p", tc.nodeType, tc.apiType, "https://p.test/v1")
+			if first.ID() == "" {
+				t.Fatal("a minted node must carry an id")
+			}
+			if !strings.HasPrefix(first.ID(), tc.wantPfx) {
+				t.Fatalf("id %q must carry the %q prefix", first.ID(), tc.wantPfx)
+			}
+			if first.ID() == second.ID() {
+				t.Fatal("two minted nodes must not share an id")
+			}
+		})
 	}
-	if first.ID() == second.ID() {
-		t.Fatal("two minted nodes must not share an id")
+}
+
+// TestProviderNode_SuppliedIDCarriesTheTypePrefix covers the other arm: a caller
+// that supplies an id gets it normalized, so a bare ULID cannot produce a node
+// the registry cannot synthesize.
+func TestProviderNode_SuppliedIDCarriesTheTypePrefix(t *testing.T) {
+	cases := []struct {
+		name    string
+		given   string
+		nodeTyp NodeType
+		apiType string
+		want    string
+	}{
+		{name: "a bare id gains the openai prefix", given: "node-1",
+			nodeTyp: NodeOpenAICompatible, apiType: NodeAPIChat, want: NodeIDPrefixOpenAI + "node-1"},
+		{name: "an already prefixed id is kept as written", given: NodeIDPrefixOpenAI + "node-1",
+			nodeTyp: NodeOpenAICompatible, apiType: NodeAPIChat, want: NodeIDPrefixOpenAI + "node-1"},
+		{name: "a bare id gains the anthropic prefix", given: "node-2",
+			nodeTyp: NodeAnthropicCompatible, want: NodeIDPrefixAnthropic + "node-2"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			node, err := NewProviderNode(tc.given, "N", "p", tc.nodeTyp, tc.apiType, "https://p.test/v1", nodeNow)
+			if err != nil {
+				t.Fatalf("NewProviderNode() error = %v", err)
+			}
+			if node.ID() != tc.want {
+				t.Fatalf("id = %q, want %q", node.ID(), tc.want)
+			}
+		})
 	}
 }
 

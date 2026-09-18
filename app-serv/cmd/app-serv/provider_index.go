@@ -29,6 +29,7 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
 // nodeLister is the narrow read this adapter needs from storage. It is declared
@@ -73,6 +74,11 @@ func (r *runtimeProviderIndex) Provider(name string) (registry.Provider, bool) {
 	return r.overlay().Provider(name)
 }
 
+// Model resolves a declared model inside an entry, custom nodes included.
+func (r *runtimeProviderIndex) Model(providerName, modelID string) (registry.Model, bool) {
+	return r.overlay().Model(providerName, modelID)
+}
+
 // All returns every entry, embedded and custom.
 func (r *runtimeProviderIndex) All() []registry.Provider { return r.overlay().All() }
 
@@ -107,6 +113,12 @@ func (r *runtimeProviderIndex) overlay() *registry.Index {
 }
 
 // loadNodes reads the stored nodes.
+//
+// The mapping goes through service.NodeCustomNode rather than repeating the
+// field list here: that helper is the one place that knows how a stored node
+// becomes a registry node, and a second copy is how the two shapes drift — the
+// drift that left every custom node unsynthesizable until the id contract was
+// fixed.
 func (r *runtimeProviderIndex) loadNodes(ctx context.Context) ([]registry.CustomNode, error) {
 	rows, err := r.nodes.List(ctx)
 	if err != nil {
@@ -114,13 +126,7 @@ func (r *runtimeProviderIndex) loadNodes(ctx context.Context) ([]registry.Custom
 	}
 	out := make([]registry.CustomNode, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, registry.CustomNode{
-			ID:      row.ID(),
-			Name:    row.Name(),
-			Prefix:  row.Prefix(),
-			APIType: row.APIType(),
-			BaseURL: row.BaseURL(),
-		})
+		out = append(out, service.NodeCustomNode(row))
 	}
 	return out, nil
 }

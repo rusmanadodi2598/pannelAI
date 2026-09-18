@@ -26,8 +26,17 @@ const (
 	IDPrefixUpstreamKey      = "uky_"
 	IDPrefixUpstreamEndpoint = "ep_"
 	IDPrefixCombo            = "cmb_"
-	IDPrefixNode             = "pnd_"
 	IDPrefixProxy            = "prx_"
+)
+
+// Provider node ids carry their type rather than a three-letter mnemonic, which
+// SPEC-API-001 §7.4 fixes: "Its id carries the type prefix
+// (openai-compatible-… / anthropic-compatible-…)". The registry derives a node's
+// wire format from this prefix, so an id without it makes the node
+// unsynthesizable — and a node that cannot be synthesized cannot be routed to.
+const (
+	NodeIDPrefixOpenAI    = "openai-compatible-"
+	NodeIDPrefixAnthropic = "anthropic-compatible-"
 )
 
 // GatewayKey is an aggregate root. Fields are unexported on purpose

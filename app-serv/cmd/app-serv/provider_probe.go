@@ -42,9 +42,17 @@ import (
 // is waiting on a button, and "unreachable" is the answer they need.
 const probeConnectTimeout = 10 * time.Second
 
+// providerLookup is the one registry read the prober needs. It is an interface
+// so the prober can be handed the composition root's runtime overlay: an
+// endpoint belonging to a custom provider node must resolve to that node when
+// the operator probes it, not to an unknown provider.
+type providerLookup interface {
+	Provider(name string) (registry.Provider, bool)
+}
+
 // httpEndpointProber probes an endpoint through the plugin seam.
 type httpEndpointProber struct {
-	index      *registry.Index
+	index      providerLookup
 	connectors *provider.Connectors
 	client     *http.Client
 }
@@ -53,7 +61,7 @@ type httpEndpointProber struct {
 // registry (to resolve a provider) and the connectors (to authenticate), so it
 // holds no repository and no sealer: the service hands over an opened credential
 // for the duration of one call.
-func newHTTPEndpointProber(index *registry.Index, connectors *provider.Connectors) *httpEndpointProber {
+func newHTTPEndpointProber(index providerLookup, connectors *provider.Connectors) *httpEndpointProber {
 	return &httpEndpointProber{
 		index:      index,
 		connectors: connectors,

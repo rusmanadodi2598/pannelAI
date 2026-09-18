@@ -117,8 +117,10 @@ func buildManagement(
 	}
 
 	// The probe adapter reaches the upstream through the plugin seam, so no part
-	// of the graph special-cases a provider id.
-	prober := newHTTPEndpointProber(index, connectors)
+	// of the graph special-cases a provider id. It reads the runtime overlay for
+	// the same reason the data plane does: an endpoint under a custom node must
+	// probe as that node.
+	prober := newHTTPEndpointProber(runtimeIndex, connectors)
 
 	providerSvc, err := service.NewProviderService(service.ProviderServiceDeps{
 		Index: runtimeIndex, Counts: endpointRepo,
@@ -188,8 +190,12 @@ func buildManagement(
 	// The data plane is assembled from the same repositories the management side
 	// writes through, so a value written by one path is readable by the other.
 	// buildDataPlane owns that construction; this function only feeds it.
+	//
+	// The index handed over is the runtime overlay, not the embedded registry:
+	// the catalog route accepts a custom node as a provider_id, so the router
+	// must resolve the same ids the route does.
 	plane, err := buildDataPlane(dataPlaneInputs{
-		Config: cfg, Index: index, Endpoints: endpointRepo, Combos: comboRepo,
+		Config: cfg, Index: runtimeIndex, Endpoints: endpointRepo, Combos: comboRepo,
 		Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
 		Redis: client, Settings: settingsSvc, Usage: usageSvc,
 	})

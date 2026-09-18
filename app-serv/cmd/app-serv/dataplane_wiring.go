@@ -32,7 +32,6 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/config"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 	redisrepo "github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository/redis"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/router"
@@ -50,8 +49,10 @@ type dataPlane struct {
 // passed as one value rather than eight parameters so a caller cannot transpose
 // two of them silently, which is the failure a long positional list invites.
 type dataPlaneInputs struct {
-	Config     config.Config
-	Index      *registry.Index
+	Config config.Config
+	// Index is the runtime overlay, not the boot-frozen registry: a provider
+	// node created after boot has to be routable by the next request.
+	Index      dataplane.ProviderRegistry
 	Endpoints  repository.EndpointRepository
 	Combos     repository.ComboRepository
 	Catalog    repository.ModelCatalogRepository

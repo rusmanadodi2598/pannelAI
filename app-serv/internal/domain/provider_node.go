@@ -61,13 +61,13 @@ type ProviderNode struct {
 //
 // Validation happens here rather than only in the API layer because the prefix
 // is a routing key: a namespace that collides or cannot be parsed makes a model
-// string ambiguous, and that is a domain rule, not a request-shape rule.
+// string ambiguous, and that is a domain rule, not a request-shape rule. The
+// type is validated before the id is minted, because the id's prefix comes from
+// the type: minting first would let an unknown type produce an id no layer can
+// classify.
 func NewProviderNode(id, name, prefix string, nodeType NodeType, apiType, baseURL string, now time.Time) (ProviderNode, error) {
 	name = strings.TrimSpace(name)
 	prefix = strings.TrimSpace(prefix)
-	if id == "" {
-		id = IDPrefixNode + NewULID(now)
-	}
 	if name == "" {
 		return ProviderNode{}, NewValidationError("name is required")
 	}
@@ -83,6 +83,7 @@ func NewProviderNode(id, name, prefix string, nodeType NodeType, apiType, baseUR
 	if err := validateNodeBaseURL(baseURL); err != nil {
 		return ProviderNode{}, err
 	}
+	id = nodeID(id, nodeType, now)
 	return ProviderNode{
 		id:        id,
 		nodeType:  nodeType,
@@ -181,6 +182,28 @@ func validateNodePrefix(prefix string) error {
 		}
 	}
 	return nil
+}
+
+// nodeID returns the node's id: a fresh one when the caller supplied none, and
+// the caller's id normalized to carry its type prefix otherwise.
+//
+// Normalizing rather than refusing follows NewCustomModel's precedent: the
+// prefix is this package's vocabulary, and a caller that passes a bare ULID
+// should not have to know it. The invariant is the id's shape, because the
+// registry reads the wire format out of it (SPEC-API-001 §7.4).
+func nodeID(id string, nodeType NodeType, now time.Time) string {
+	prefix := NodeIDPrefixOpenAI
+	if nodeType == NodeAnthropicCompatible {
+		prefix = NodeIDPrefixAnthropic
+	}
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return prefix + NewULID(now)
+	}
+	if strings.HasPrefix(id, prefix) {
+		return id
+	}
+	return prefix + id
 }
 
 // validateNodeAPIType enforces the per-type rule: an OpenAI-compatible node must

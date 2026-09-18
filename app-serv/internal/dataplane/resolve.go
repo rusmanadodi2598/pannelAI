@@ -85,16 +85,34 @@ type Resolution struct {
 // IsCombo reports whether a combo answered the model string.
 func (r Resolution) IsCombo() bool { return len(r.ComboRefs) > 0 }
 
+// ProviderRegistry is the registry surface the resolver needs: one provider
+// lookup by id, alias, or node prefix, one declared-model lookup inside it, and
+// the full list the models endpoint enumerates.
+//
+// It is an interface rather than *registry.Index because the composition root
+// overlays the stored custom nodes on the embedded registry. A node created
+// through POST /provider-nodes must be routable by the next request, and a
+// boot-frozen index would accept the create and then refuse every request aimed
+// at it — which reads as a routing bug rather than as a stale registry.
+type ProviderRegistry interface {
+	// Provider resolves an id, alias, or node prefix to its entry.
+	Provider(name string) (registry.Provider, bool)
+	// Model resolves a declared model inside a provider.
+	Model(providerName, modelID string) (registry.Model, bool)
+	// All returns every entry, embedded and custom.
+	All() []registry.Provider
+}
+
 // Resolver turns a client model string into a routable provider.
 type Resolver struct {
-	index  *registry.Index
+	index  ProviderRegistry
 	lookup ModelLookup
 }
 
 // NewResolver binds the resolver to the loaded registry and the catalog read
 // path. Both are required: without the registry it cannot tell whether a
 // provider is routable, and without the catalog it cannot see combos or aliases.
-func NewResolver(index *registry.Index, lookup ModelLookup) (*Resolver, error) {
+func NewResolver(index ProviderRegistry, lookup ModelLookup) (*Resolver, error) {
 	if index == nil {
 		return nil, domain.NewValidationError("provider registry is required")
 	}
@@ -226,10 +244,6 @@ func (r *Resolver) Allowed(ctx context.Context, providerID, modelID string) bool
 	}
 	return !disabled
 }
-
-// Index exposes the registry the resolver was built on, so the models list
-// endpoint enumerates the same catalog routing uses.
-func (r *Resolver) Index() *registry.Index { return r.index }
 
 // targetFormat maps a registry wire format onto a translator, or "" when no
 // translator handles it.
