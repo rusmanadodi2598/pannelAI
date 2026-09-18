@@ -121,6 +121,7 @@ CLI tools (Claude Code, Codex, Cursor, ...)          Browser (app-ui)
 | Table | Key columns | Notes |
 |---|---|---|
 | `upstream_endpoints` | `id, provider_id, label, auth_type, priority, status, oauth(jsonb, redacted on read), test_status(jsonb), rate_limited_until, created_at, updated_at` | replaces `providerConnections`; unique `(provider_id, label)` |
+| `provider_nodes` | `id, type, name, prefix, api_type, base_url, created_at, updated_at` | custom OpenAI/Anthropic-compatible providers (§7.4); `prefix` is **UNIQUE** and must not collide with a registry id or alias |
 | `upstream_keys` | `id, endpoint_id→upstream_endpoints, label, value_encrypted, key_hint, priority, status, last_used_at, last_error, consecutive_errors, rate_limited_until, created_at, updated_at` | **N per endpoint**; value encrypted at rest (AES-GCM, key from env) |
 | `gateway_keys` | `id, name, value_hash, key_hint, status, last_used_at, request_count, created_at, revoked_at` | SHA-256 hash lookup, plaintext shown once; `name` is **UNIQUE** (duplicate ⇒ `CONFLICT`) |
 | `combos` | `id, name, strategy, sticky_limit, judge_model, models(jsonb), created_at, updated_at` | `models`: `[{ref, priority}]` |
@@ -131,6 +132,7 @@ CLI tools (Claude Code, Codex, Cursor, ...)          Browser (app-ui)
 | `quota_windows` | `endpoint_id, window, used_units, limit_units, resets_at, source` | window ∈ `5h|daily|weekly|monthly`; counters cached in Redis, flushed to PG |
 | `request_logs` | `request_id, ts, gateway_key_id, endpoint_id, model, status, latency_ms, request_body, response_body, error` | bodies stored only when capture enabled; retention job deletes > `retention_days` |
 | `proxies` | `id, label, protocol, host, port, username, password_encrypted, enabled, status(jsonb), created_at, updated_at` | protocol ∈ `http|https|socks5` |
+| `quota_caps` | `endpoint_id, monthly_cost_usd, monthly_tokens, updated_at` | optional budget caps; a router stops picking an exhausted endpoint (§7.12) |
 | `settings` | `key (pk), value(jsonb), updated_at` | typed accessors, defaults merged at read (mirrors `mergeWithDefaults`) |
 
 Provider **registry is static config embedded in the Go binary** (YAML generated from the reference
@@ -164,6 +166,7 @@ All management endpoints are session-gated; data plane endpoints are gateway-key
 |---|---|---|---|---|
 | GET | `/api/v1/gateway-keys` | S | List (hints only) | P0 |
 | POST | `/api/v1/gateway-keys` | S | `{name}` → returns **full key once** | P0 |
+| GET | `/api/v1/gateway-keys/{id}` | S | Detail (hint only) | P0 |
 | PATCH | `/api/v1/gateway-keys/{id}` | S | `{name?, status?}` | P0 |
 | DELETE | `/api/v1/gateway-keys/{id}` | S | Revoke (soft) | P0 |
 
@@ -171,13 +174,31 @@ All management endpoints are session-gated; data plane endpoints are gateway-key
 
 | Method | Path | Auth | Description | Phase |
 |---|---|---|---|---|
-| GET | `/api/v1/providers` | S | Registry list: `{id, name, category, auth_type, endpoint_count, status_summary}`; filter `?category=apikey|oauth|free|media|local` | P1 |
-| GET | `/api/v1/providers/{provider_id}` | S | Registry detail incl. transport defaults + model catalog summary | P1 |
+| GET | `/api/v1/providers` | S | Registry list: `{id, name, category, auth_type, routability, endpoint_count, status_summary}`; filter `?category=apikey|oauth|free|media|local`, `?routability=native|connector` | P1 |
+| GET | `/api/v1/providers/{provider_id}` | S | Registry detail incl. transport defaults, model catalog summary, `routability` ∈ `native|connector`, and `media` (per-kind base URL and credential placement) | P1 |
 | GET | `/api/v1/providers/{provider_id}/models` | S | Full model list; `?suggested=true` returns suggested set | P1 |
 | POST | `/api/v1/providers/{provider_id}/oauth/start` | S | `{redirect_uri?}` → `{authorize_url, state}` (OAuth providers only) | P2 |
 | GET | `/api/v1/providers/{provider_id}/oauth/callback` | P | Completes flow (validates `state` replay-guard), creates upstream endpoint + tokens; `302` redirect for browsers, `200` JSON body for headless callers (`Accept: application/json`) | P2 |
 | GET | `/api/v1/providers/{provider_id}/oauth/status` | S | Token expiry / refresh state per endpoint | P2 |
 | POST | `/api/v1/providers/{provider_id}/oauth/refresh` | S | Force token refresh (worker also auto-refreshes at `refresh_lead`) | P2 |
+
+**Custom endpoints (owner requirement).** Besides the embedded registry, an operator defines their
+own OpenAI-compatible or Anthropic-compatible base URL. A provider node is that definition: it is
+not an endpoint, because a node has no credential of its own. Its id carries the type prefix
+(`openai-compatible-…` / `anthropic-compatible-…`), and its `prefix` is the model-string namespace
+(`prefix/model`), so a node becomes routable exactly like a registry provider. A node prefix that
+collides with a registry id or alias is refused (`CONFLICT`): two providers answering to one model
+string is unresolvable. Nodes are P1 because the owner list places them beside the registry
+providers; the reference implements the same feature at `POST /api/provider-nodes`.
+
+| Method | Path | Auth | Description | Phase |
+|---|---|---|---|---|
+| GET | `/api/v1/provider-nodes` | S | List custom provider nodes; `?type=openai-compatible\|anthropic-compatible` | P1 |
+| POST | `/api/v1/provider-nodes` | S | `{name, prefix, type, api_type?, base_url}` → node. `type=openai-compatible` requires `api_type` ∈ `chat\|responses`; `type=anthropic-compatible` refuses `api_type`. `base_url` must be an absolute http(s) URL | P1 |
+| GET | `/api/v1/provider-nodes/{id}` | S | Node detail | P1 |
+| PATCH | `/api/v1/provider-nodes/{id}` | S | `{name?, prefix?, base_url?}`; a prefix that would collide is refused | P1 |
+| DELETE | `/api/v1/provider-nodes/{id}` | S | Remove the node; refused (`CONFLICT`) while an endpoint still references it | P1 |
+| POST | `/api/v1/provider-nodes/{id}/test` | S | Validate that `base_url` answers `/models` (or the Anthropic equivalent) with the node's credential | P1 |
 
 ### 7.5 Upstream Endpoints & Multi API Keys (core new capability)
 
@@ -196,6 +217,23 @@ key inside it (priority order, circuit-broken keys skipped). This generalizes th
 | GET | `/api/v1/endpoints/{id}/keys` | S | List keys (hints only) with health fields | P1 |
 | PATCH | `/api/v1/endpoints/{id}/keys/{key_id}` | S | `{label?, value?, priority?, status?}` — value is write-only | P1 |
 | DELETE | `/api/v1/endpoints/{id}/keys/{key_id}` | S | Remove key (endpoint must keep ≥1 active key if `auth_type=api_key`) | P1 |
+
+**Multi-account and bulk onboarding (owner requirement).** Every provider is multi-account: an
+account is one endpoint, so N accounts are N endpoints under one `provider_id`, distinguished by
+label and, for OAuth, by the account identity (`email` / `workspace_id`). Three routes cover the
+onboarding paths the owner listed. They are **all-or-nothing**: a batch is validated in full and
+applied in one transaction, so a rejected row never leaves a half-imported account list. Each row's
+outcome is reported by index, which is why the response carries `results` rather than a bare list.
+
+| Method | Path | Auth | Description | Phase |
+|---|---|---|---|---|
+| POST | `/api/v1/endpoints/bulk` | S | Create several endpoints in one call. Body `{provider_id, auth_type, endpoints: [{label, priority?, keys: [{label?, value}]}]}`. Returns `{created: [...], results: [{index, id?, error?}]}` | P1 |
+| POST | `/api/v1/endpoints/{id}/keys/bulk` | S | Add several API keys to one endpoint. Body `{keys: [{label?, value, priority?}]}`. Duplicate labels within the batch are `VALIDATION_ERROR` | P1 |
+| POST | `/api/v1/providers/{provider_id}/oauth/bulk` | S | Import already-obtained OAuth credentials as endpoints (the path for accounts on a machine with no browser callback). Body `{accounts: [{label?, access_token, refresh_token?, expires_at?, scopes?, account?}]}`. `access_token` is encrypted at rest and never returned; the response carries `key_hint`-style summaries only | P1 |
+
+`POST /api/v1/endpoints` also accepts a `keys` array so a single account with several keys is one
+request; `/endpoints/bulk` is for several accounts at once. Both go through the same validation, so
+the invariant below holds whichever path is used.
 
 Key health model (circuit breaker per key): on repeated upstream auth/429 failures → `consecutive_errors++`;
 ≥3 ⇒ key marked `error` + `rate_limited_until = now + backoff`; successful call resets. Redis-backed.
@@ -392,6 +430,26 @@ auth → schema validation → bypass detection (naming/warmup) → model resolv
 | `UPSTREAM_TIMEOUT` | 504 | Upstream timeout after retries |
 | `INTERNAL_ERROR` | 500 | Unexpected; logged with `request_id` |
 
+`PROVIDER_NOT_ROUTABLE` is a **data-plane** code, so it is returned in the OpenAI error envelope
+(§4), not the management one: the caller is a CLI tool, not the panel. It is returned when a request
+names a provider whose wire format the gateway does not translate and for which no connector is
+registered. It exists so that case is a named, actionable error rather than a 502 that reads like an
+upstream outage. Which providers are in that set is published by `GET /api/v1/providers` as a
+`routability` field (§7.4), computed from the registry entry's format, so the panel can warn before a
+user configures an endpoint that can never answer.
+### 8.1 Wire shapes settled before the endpoint DTOs
+
+These decisions were taken before the schema layer was written, because each one changes the shape a
+client sends and rewriting it later would mean rewriting the DTOs and every caller.
+
+| Question | Decision | Reason |
+|---|---|---|
+| How is a credential's auth type expressed? | The API accepts `api_key`, `oauth`, `no_auth`. The registry's own vocabulary (`apikey`, `none`, `cookie`) is **mapped at the boundary**, not leaked: `apikey`→`api_key`, `none`→`no_auth`, and `cookie` is rejected with `VALIDATION_ERROR` because a browser-session credential is not a supported auth type in v1 (§2.2 leaves its tooling out). | Two vocabularies exist for real reasons, but only one may cross the wire; leaking both would make every client branch. |
+| Does bulk change the single-create shape? | No. `POST /endpoints` takes `{provider_id, label, auth_type, priority?, keys:[…]}`; `POST /endpoints/bulk` takes the same fields per element of an `endpoints` array. The single route is the array-of-one case, so one validator serves both. | Duplicate shapes drift; one shape with two entry points does not. |
+| Bulk OAuth credential import shape | `POST /providers/{provider_id}/oauth/bulk` takes `{accounts:[{access_token, refresh_token?, expires_at?, scopes?, label?, account?}]}`. `access_token` and `refresh_token` are **required to be non-empty** when present, are sealed immediately, and are never returned; the response carries the endpoint id, label, and account identity only. `account` is `{name?, email?, machine_id?, workspace_id?}` and, with the provider's auth modes, decides whether a re-import updates an existing account or adds one. | The tokens are the only fields whose secrecy matters, so the response shape is defined by what it must *not* carry. |
+| Are partial bulk failures allowed? | No: a batch is validated in full and applied in one transaction. The response reports every row by index (`{index, id?, error?}`) so a client can show which row was rejected, but nothing is written unless all rows pass. | A half-imported account list is harder to reason about than a refused batch. |
+| Can a media service use the provider's chat credential placement? | No: each media kind carries its own `auth_type`/`auth_header`, and `auth_header: key` means a **query parameter**, not a header. | Measured in the reference: Gemini's embedding config uses a query-param key while its chat transport uses a header. Reusing the transport's placement authenticates incorrectly rather than failing loudly. |
+
 ## 9. Non-Functional Requirements (from AGENTS.md, binding)
 
 1. Files ≤ 250 lines (generated exempt); headers per §1.2; `gofmt`, `golangci-lint`, `go vet`,
@@ -414,6 +472,8 @@ auth → schema validation → bypass detection (naming/warmup) → model resolv
 | **P2** | OAuth providers + refresh worker, fusion strategy, combo test, media providers + media data plane, proxies, token-saver config, budget caps, custom/alias/disabled models | OAuth provider round-trip; TTS/embeddings passthrough verified |
 | **P3** | Responses API, count_tokens, native token-saver engine (new spec: `002-TOKEN-SAVER`) | parity spot-checks vs reference |
 
+*Changelog 2026-09-17 — §7.4 publishes `routability` (`native` / `connector`) and the per-kind `media` block; §8.1 records the five wire shapes settled before the endpoint DTOs (auth-type mapping, one create shape for single and bulk, the OAuth bulk import shape, all-or-nothing batch semantics, and per-kind credential placement). Rationale: four providers on the owner's list speak protocols P1 does not translate, so "configured but always failing" needed to become a value the panel reads, and the bulk routes needed a shape before their DTOs existed.*
+
 ## 11. Locked Decisions
 
 1. Single version prefix `/api/v1`; data plane lives under it (clients set `base_url = http://host:8080/api/v1`).
@@ -425,11 +485,13 @@ auth → schema validation → bypass detection (naming/warmup) → model resolv
 ## 12. Open Questions (resolve before P1 code)
 
 1. Default listen port for `app-serv` (reference used 20128) — propose **8080**.
-2. Session token format: opaque random + Redis (proposed) vs JWT — opaque preferred for revocation.
+2. Session token format: opaque random nonce + HMAC-SHA256 signature in `pannel_session`; Redis stores the nonce digest with TTL for revocation. JWT is not used because immediate revocation is required.
 3. Registry port scope: all 120+ providers in P1, or apikey-category first (~40) and OAuth set in P2?
 
 ---
 
 *Changelog: 2026-09-11 — initial draft (feature mapping from reference `~/ai-gateway` @ 9Router 0.5.55); same day — added 002 OpenAPI companion cross-link + OAuth callback headless mode.*
+*Changelog 2026-09-17 — P0 auth contract implemented: `/api/v1` session routes, HMAC-signed `pannel_session`, Redis revocation/lockout, and session-gated gateway-key CRUD.*
 *Changelog 2026-09-16 — marked the `caveman` token-saver key DEPRECATED with removal scheduled for `/api/v2`, to match the owner decision; linked the panel contract at `docs/SPEC-UI/001-SPEC-UI.md`.*
 *Changelog 2026-09-16 — §8 adds `METHOD_NOT_ALLOWED` (405): the router registers routes method-aware, so a wrong verb is rejected before any handler runs and needs a code that maps to 405 rather than borrowing `VALIDATION_ERROR` (which §8 binds to 400). §6 records that `gateway_keys.name` is unique.*
+*Changelog 2026-09-17 — §7.4 and §7.5 add the two routes the owner requirements name and the spec lacked: custom provider nodes (OpenAI-compatible / Anthropic-compatible) in §7.4, and multi-account bulk onboarding (endpoint batch, key batch, OAuth credential import) in §7.5. Both are P1, because the reference ships the node feature at the same surface level and every provider is multi-account by requirement.*

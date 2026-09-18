@@ -1,11 +1,16 @@
 <script lang="ts">
 	// Upstream endpoints tab of Endpoint & Key (docs/SPEC-UI/001-SPEC-UI.md §6.2, tab 2).
 	//
-	// The tab owns the query, the filters, and the three data states; the table itself is its own component
-	// because the rows carry eight columns and would otherwise push this file past the project line limit.
+	// The tab owns the query, the filters, the create form's visibility, and the data states; the table and
+	// the create form are their own components.
 	//
 	// The provider filter offers the providers present on the page being shown, because the registry list is
-	// not this screen's data. Widening it to the whole registry is the Providers screen's job.
+	// not this screen's data and §6.3 forbids pulling it in to filter. Choosing a provider is the Providers
+	// screen's job, which is why the empty state links there and why the create form appears only once a
+	// provider has been chosen: §6.3 arrives here with `?provider=` already set.
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
+	import CreateEndpointForm from '$lib/components/CreateEndpointForm.svelte';
 	import EndpointDetailDrawer from '$lib/components/EndpointDetailDrawer.svelte';
 	import EndpointTable from '$lib/components/EndpointTable.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
@@ -17,14 +22,16 @@
 
 	let endpoints = $state<Endpoint[]>([]);
 	let total = $state(0);
-	let page = $state(1);
+	let page_ = $state(1);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
 	let providerFilter = $state('');
 	let statusFilter = $state('');
 	let selected = $state<Endpoint | null>(null);
+	let creating = $state(true);
 
+	const chosenProvider = $derived(page.url.searchParams.get('provider') ?? '');
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 
 	// The API orders by priority already, but the panel does not assume it: a stable order is what makes the
@@ -59,7 +66,7 @@
 
 	async function load(): Promise<void> {
 		loading = true;
-		const result = await listEndpoints({ page, per_page: PAGE_SIZE });
+		const result = await listEndpoints({ page: page_, per_page: PAGE_SIZE });
 		loading = false;
 
 		if (!result.ok) {
@@ -79,6 +86,21 @@
 </script>
 
 <div class="flex flex-col gap-5">
+	{#if chosenProvider && creating}
+		<div class="flex flex-col gap-2">
+			<CreateEndpointForm
+				providerId={chosenProvider}
+				oncreated={() => {
+					creating = false;
+					void load();
+				}}
+			/>
+			<button type="button" class="min-h-11 self-start underline" onclick={() => (creating = false)}
+				>Hide this form</button
+			>
+		</div>
+	{/if}
+
 	<div class="flex flex-wrap items-end gap-3">
 		<label class="flex flex-col gap-1 text-sm">
 			<span class="text-[var(--color-text-muted)]">Provider</span>
@@ -122,8 +144,12 @@
 		<StateMessage
 			kind="empty"
 			title="No upstream endpoints yet"
-			description="Add a provider connection to start routing."
-		/>
+			description="Pick a provider, then add an endpoint for it to start routing."
+		>
+			{#snippet action()}
+				<a href={resolve('/providers')} class="underline">Choose a provider</a>
+			{/snippet}
+		</StateMessage>
 	{:else if shown.length === 0}
 		<StateMessage
 			kind="empty"
@@ -141,19 +167,19 @@
 			<button
 				type="button"
 				class="underline disabled:opacity-50"
-				disabled={page <= 1}
+				disabled={page_ <= 1}
 				onclick={() => {
-					page -= 1;
+					page_ -= 1;
 					void load();
 				}}>Previous</button
 			>
-			<span class="text-[var(--color-text-muted)]">Page {page} of {lastPage}</span>
+			<span class="text-[var(--color-text-muted)]">Page {page_} of {lastPage}</span>
 			<button
 				type="button"
 				class="underline disabled:opacity-50"
-				disabled={page >= lastPage}
+				disabled={page_ >= lastPage}
 				onclick={() => {
-					page += 1;
+					page_ += 1;
 					void load();
 				}}>Next</button
 			>

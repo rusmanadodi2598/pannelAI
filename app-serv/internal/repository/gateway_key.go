@@ -47,6 +47,12 @@ type GatewayKeyRepository interface {
 	// domain.ErrGatewayKeyNotFound so callers map it to 404.
 	GetByID(ctx context.Context, id string) (domain.GatewayKey, error)
 
+	// GetByValueHash loads a key by its SHA-256 digest. The data plane presents
+	// a plaintext bearer token, hashes it, and looks the key up here, so the
+	// stored digest is what authenticates a request (SPEC-API-001 §4). A
+	// missing row must yield domain.ErrGatewayKeyNotFound.
+	GetByValueHash(ctx context.Context, valueHash string) (domain.GatewayKey, error)
+
 	// Update persists mutable field changes (name, status).
 	Update(ctx context.Context, key domain.GatewayKey) error
 

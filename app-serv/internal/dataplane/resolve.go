@@ -1,0 +1,263 @@
+// Package dataplane routes a client request through the gateway: it resolves the
+// model string, picks an upstream endpoint and key, translates the wire format,
+// and performs the outbound call.
+//
+// @file      internal/dataplane/resolve.go
+// @for       Model-string resolution: combo name, then alias, then
+//
+//	provider/model, and the routability gate.
+//
+// @uses      internal/domain, internal/registry.
+// @reason    SPEC-API-001 §7.15 fixes the order and the failure code
+//
+//	(MODEL_NOT_FOUND), and §8 adds PROVIDER_NOT_ROUTABLE for a
+//	provider whose protocol has no translator: both answers decide
+//	whether a request is served at all, so they are computed here
+//	once instead of being re-derived by each caller.
+//
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
+// @layer     service
+// @stability experimental
+// @since     2026-09-17
+package dataplane
+
+import (
+	"context"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
+)
+
+// TargetFormat is the upstream wire format the gateway can translate. Only the
+// formats with a translator are listed: `openai-responses` is admitted by the
+// registry as native but has no translator until P3 (SPEC-API-001 §10), so a
+// request naming it is refused as PROVIDER_NOT_ROUTABLE rather than sent as a
+// 502 that reads like an upstream outage.
+const (
+	TargetOpenAI = "openai"
+	TargetClaude = "claude"
+)
+
+// ModelLookup is the read path resolution and the catalog listing need from the
+// combo and catalog boundaries. It is declared here rather than depending on four
+// repository contracts so the resolver asks narrow questions, and so a question it
+// does not ask cannot leak into this package. Every set it returns is the whole
+// set: the alias, disabled, and combo tables are small and fully rewritten
+// (SPEC-API-001 §7.6 replaces them wholesale), so reading one set per request is
+// the read path rather than an unbounded query.
+type ModelLookup interface {
+	// Combo returns the ordered model references of a combo, and whether the
+	// name addresses one.
+	Combo(ctx context.Context, name string) (refs []string, found bool, err error)
+	// Alias returns an alias's target, and whether the alias exists.
+	Alias(ctx context.Context, name string) (target string, found bool, err error)
+	// Disabled reports whether one model is hidden from routing (§7.6).
+	Disabled(ctx context.Context, providerID, modelID string) (bool, error)
+	// DisabledPairs returns the whole disabled set, which is what the catalog
+	// listing filters with in one read.
+	DisabledPairs(ctx context.Context) ([]domain.ModelRef, error)
+	// ComboNames returns every combo name, because a combo is addressed by name
+	// as a model string.
+	ComboNames(ctx context.Context) ([]string, error)
+}
+
+// Resolution is a model string resolved to everything routing needs.
+type Resolution struct {
+	// Provider is the registry entry that will answer.
+	Provider registry.Provider
+	// Model is the registry model when the provider declares one; a provider
+	// that passes model ids through, or a custom node, yields the client's id.
+	Model registry.Model
+	// ModelID is the model the client named, after alias dereferencing.
+	ModelID string
+	// UpstreamID is the id the upstream expects, with any registry override
+	// applied.
+	UpstreamID string
+	// Target is the wire format to translate into.
+	Target string
+	// Combo is the combo name when the model string addressed one.
+	Combo string
+	// ComboRefs is that combo's ordered model list, which the caller fails over
+	// through.
+	ComboRefs []string
+}
+
+// IsCombo reports whether a combo answered the model string.
+func (r Resolution) IsCombo() bool { return len(r.ComboRefs) > 0 }
+
+// Resolver turns a client model string into a routable provider.
+type Resolver struct {
+	index  *registry.Index
+	lookup ModelLookup
+}
+
+// NewResolver binds the resolver to the loaded registry and the catalog read
+// path. Both are required: without the registry it cannot tell whether a
+// provider is routable, and without the catalog it cannot see combos or aliases.
+func NewResolver(index *registry.Index, lookup ModelLookup) (*Resolver, error) {
+	if index == nil {
+		return nil, domain.NewValidationError("provider registry is required")
+	}
+	if lookup == nil {
+		return nil, domain.NewValidationError("model lookup is required")
+	}
+	return &Resolver{index: index, lookup: lookup}, nil
+}
+
+// Resolve applies the documented order: combo name, then alias, then
+// provider/model, then MODEL_NOT_FOUND (SPEC-API-001 §7.15).
+func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error) {
+	if model == "" {
+		return Resolution{}, dataPlaneError(CodeModelNotFound, "the model field is required")
+	}
+
+	// A combo is addressed by a bare name, so a string carrying "/" cannot be
+	// one; that also stops a provider whose id collides with a combo name from
+	// being shadowed.
+	if indexOf(model, '/') < 0 {
+		refs, found, err := r.lookup.Combo(ctx, model)
+		if err != nil {
+			return Resolution{}, err
+		}
+		if found && len(refs) > 0 {
+			return r.resolveCombo(ctx, model, refs)
+		}
+
+		target, found, err := r.lookup.Alias(ctx, model)
+		if err != nil {
+			return Resolution{}, err
+		}
+		if found {
+			return r.Resolve(ctx, target)
+		}
+		return Resolution{}, dataPlaneError(CodeModelNotFound,
+			"model "+model+" is not a known model, alias, or combo")
+	}
+	return r.resolveReference(ctx, model)
+}
+
+// resolveCombo resolves the combo's first model, which is where the request
+// starts: the caller fails over to the remaining references, so a combo never
+// multiplies this call's work.
+func (r *Resolver) resolveCombo(ctx context.Context, name string, refs []string) (Resolution, error) {
+	// One dereference level only (SPEC-API-001 §7.7): a reference may itself be
+	// a provider/model or an alias, and a nested combo is refused rather than
+	// expanded, because a cycle between two combos would otherwise recurse.
+	resolved, err := r.resolveReference(ctx, refs[0])
+	if err != nil {
+		target, ok, aliasErr := r.lookup.Alias(ctx, refs[0])
+		if aliasErr != nil {
+			return Resolution{}, aliasErr
+		}
+		if !ok {
+			return Resolution{}, err
+		}
+		resolved, err = r.Resolve(ctx, target)
+		if err != nil {
+			return Resolution{}, err
+		}
+	}
+	resolved.Combo = name
+	resolved.ComboRefs = refs
+	return resolved, nil
+}
+
+// resolveReference handles the provider/model form, where the first segment may
+// be a provider id or any of its aliases.
+func (r *Resolver) resolveReference(ctx context.Context, model string) (Resolution, error) {
+	slash := indexOf(model, '/')
+	if slash <= 0 || slash == len(model)-1 {
+		return Resolution{}, dataPlaneError(CodeModelNotFound,
+			"model "+model+" is not a known model, alias, or combo")
+	}
+	return r.ResolveParts(ctx, model[:slash], model[slash+1:])
+}
+
+// ResolveParts resolves an already-split provider identifier and model id, so a
+// combo entry, an alias target, and a client's model string all run through one
+// implementation.
+func (r *Resolver) ResolveParts(_ context.Context, providerName, modelID string) (Resolution, error) {
+	entry, ok := r.index.Provider(providerName)
+	if !ok {
+		return Resolution{}, dataPlaneError(CodeModelNotFound,
+			"provider "+providerName+" is not in the registry")
+	}
+	// A provider the gateway cannot translate is refused by name rather than
+	// attempted and reported as an upstream failure (SPEC-API-001 §8).
+	if !entry.IsChatRoutable() {
+		return Resolution{}, dataPlaneError(CodeProviderNotRoutable,
+			"provider "+entry.ID+" speaks a wire format the gateway does not translate")
+	}
+
+	resolution := Resolution{Provider: entry, ModelID: modelID, Target: targetFormat(entry.Transport.Format)}
+	if resolution.Target == "" {
+		return Resolution{}, dataPlaneError(CodeProviderNotRoutable,
+			"provider "+entry.ID+" speaks "+entry.Transport.Format+", which has no translator yet")
+	}
+
+	// A declared model wins; a provider that passes model ids through, or a
+	// user-defined node with no model list, accepts the client's id as-is.
+	if declared, found := r.index.Model(entry.ID, modelID); found {
+		resolution.Model = declared
+		resolution.UpstreamID = declared.UpstreamID()
+		if declared.TargetFormat != "" {
+			if target := targetFormat(declared.TargetFormat); target != "" {
+				resolution.Target = target
+			}
+		}
+		return resolution, nil
+	}
+	if !entry.PassthroughModels && !entry.Custom {
+		return Resolution{}, dataPlaneError(CodeModelNotFound,
+			"model "+entry.ID+"/"+modelID+" is not available")
+	}
+	resolution.Model = registry.Model{ID: modelID}
+	resolution.UpstreamID = modelID
+	return resolution, nil
+}
+
+// Allowed reports whether a model is routable, applying the disabled set the
+// catalog owns. It is separate from Resolve so the models list endpoint can ask
+// exactly the question the router asks.
+func (r *Resolver) Allowed(ctx context.Context, providerID, modelID string) bool {
+	disabled, err := r.lookup.Disabled(ctx, providerID, modelID)
+	if err != nil {
+		return false
+	}
+	return !disabled
+}
+
+// Index exposes the registry the resolver was built on, so the models list
+// endpoint enumerates the same catalog routing uses.
+func (r *Resolver) Index() *registry.Index { return r.index }
+
+// targetFormat maps a registry wire format onto a translator, or "" when no
+// translator handles it.
+//
+// Gemini is deliberately absent: the registry reports every provider declaring it
+// as `routability: connector` (they wrap the payload in a vendor envelope), so a
+// format with no reachable route must not decode as translatable. The Gemini
+// payload builder exists for the connector that will need it, and is exercised
+// directly by its own tests.
+func targetFormat(format string) string {
+	switch format {
+	case registry.DefaultFormat:
+		return TargetOpenAI
+	case TargetClaude:
+		return TargetClaude
+	default:
+		return ""
+	}
+}
+
+// indexOf reports the position of sep, or -1. It keeps the resolver free of
+// strings.Index arithmetic at the call sites, where an off-by-one would rename a
+// model.
+func indexOf(value string, sep byte) int {
+	for i := 0; i < len(value); i++ {
+		if value[i] == sep {
+			return i
+		}
+	}
+	return -1
+}

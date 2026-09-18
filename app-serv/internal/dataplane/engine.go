@@ -1,0 +1,259 @@
+// Package dataplane routes a client request through the gateway: it resolves the
+// model string, picks an upstream endpoint and key, translates the wire format,
+// and performs the outbound call.
+//
+// @file      internal/dataplane/engine.go
+// @for       One chat request end to end: resolve, select, translate, call, and
+//
+//	hand back either a translated body or a stream of frames.
+//
+// @uses      internal/domain, internal/schema, context, time.
+// @reason    SPEC-API-001 §7.15 fixes the pipeline order (model resolve → format
+//
+//	translation → endpoint and key selection → upstream call → response
+//	translation → usage recording). Keeping it in one place is what makes
+//	the order auditable, and keeping it out of the handler is what keeps
+//	the same path usable from a worker or a combo probe.
+//
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
+// @layer     service
+// @stability experimental
+// @since     2026-09-17
+package dataplane
+
+import (
+	"context"
+	"time"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
+)
+
+// FrameSink receives the frames of a streamed answer. It exists so the data plane
+// never touches an http.ResponseWriter (AGENTS.md §1.5 keeps net/http out of the
+// service layer) while still flushing each frame as it is produced.
+type FrameSink interface {
+	// WriteFrame writes one complete SSE frame. A partial write is an error the
+	// caller stops the stream on.
+	WriteFrame(frame []byte) error
+	// Flush pushes what has been written to the client.
+	Flush()
+}
+
+// Outcome reports what one relayed call produced, in the form accounting and
+// logging need.
+type Outcome struct {
+	// Format is the wire format the caller's answer is written in.
+	Format schema.DataPlaneFormat
+	// ProviderID, EndpointID, and Model are the routing identity of the call.
+	ProviderID string
+	EndpointID string
+	Model      string
+	// Combo names the combo the request addressed, or "".
+	Combo string
+	// Body is the non-streamed answer, already in Format. It is nil for a
+	// streamed answer, which the sink received frame by frame.
+	Body []byte
+	// Usage is the accounting the upstream reported, or nil when it reported
+	// none, so a caller records nothing rather than a fabricated zero.
+	Usage *schema.Usage
+	// Streamed reports whether the answer went to a FrameSink.
+	Streamed bool
+	// LatencyMS is the upstream call's duration, measured with the engine's
+	// clock.
+	LatencyMS int64
+}
+
+// Engine executes the §7.15 pipeline for one chat request.
+type Engine struct {
+	resolver  *Resolver
+	selector  *Selector
+	transport *Transport
+	clock     func() time.Time
+}
+
+// EngineDeps holds the collaborators the engine needs.
+type EngineDeps struct {
+	Resolver  *Resolver
+	Selector  *Selector
+	Transport *Transport
+	// Clock overrides the time source, so a test can measure latency and the
+	// circuit window without sleeping.
+	Clock func() time.Time
+}
+
+// NewEngine validates deps and returns an engine.
+func NewEngine(deps EngineDeps) (*Engine, error) {
+	if deps.Resolver == nil {
+		return nil, internalError("model resolver is required", nil)
+	}
+	if deps.Selector == nil {
+		return nil, internalError("endpoint selector is required", nil)
+	}
+	if deps.Transport == nil {
+		return nil, internalError("upstream transport is required", nil)
+	}
+	clock := deps.Clock
+	if clock == nil {
+		clock = time.Now
+	}
+	return &Engine{resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport, clock: clock}, nil
+}
+
+// Resolver exposes the resolver, so a caller can answer catalog questions with
+// exactly the rule routing uses.
+func (e *Engine) Resolver() *Resolver { return e.resolver }
+
+// Relay runs the pipeline. When the request asks for a stream, every frame is
+// written to sink as it arrives and Outcome.Body stays nil.
+func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome, error) {
+	resolution, err := e.resolver.Resolve(ctx, in.Model)
+	if err != nil {
+		return Outcome{}, err
+	}
+
+	// A combo tries its members in order (SPEC-API-001 §7.7, strategy fallback):
+	// the first member is where the request starts, and a failure that the
+	// endpoint layer reports as retryable-elsewhere moves to the next one.
+	refs := resolution.ComboRefs
+	if len(refs) == 0 {
+		refs = []string{resolution.Provider.ID + "/" + resolution.ModelID}
+	}
+
+	var lastErr error
+	for _, ref := range refs {
+		member, resolveErr := e.resolver.Resolve(ctx, ref)
+		if resolveErr != nil {
+			lastErr = resolveErr
+			continue
+		}
+		member.Combo = resolution.Combo
+		outcome, relayErr := e.relayOnce(ctx, in, member, sink)
+		if relayErr == nil {
+			return outcome, nil
+		}
+		lastErr = relayErr
+		// A client error is not worth failing over from: the same request body
+		// would be rejected identically by every other member, and trying them
+		// spends accounts for nothing.
+		if failure := AsError(relayErr); !failoverWorthy(failure.Code) {
+			return Outcome{}, relayErr
+		}
+	}
+	return Outcome{}, lastErr
+}
+
+// relayOnce handles one resolved provider: select, translate, call, and translate
+// the answer back.
+func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolution, sink FrameSink) (Outcome, error) {
+	selection, err := e.selector.Select(ctx, resolution.Provider.ID)
+	if err != nil {
+		return Outcome{}, err
+	}
+
+	body, err := upstreamBody(in, resolution)
+	if err != nil {
+		return Outcome{}, err
+	}
+
+	started := e.clock()
+	upstream, err := e.transport.Do(ctx, Call{
+		Provider:   resolution.Provider,
+		Model:      resolution.Model,
+		Credential: selection.Credential,
+		Body:       body,
+		Stream:     in.Stream,
+		// A chat completion is never idempotent: the upstream may have begun
+		// generating, so the transport caps its retries.
+		Idempotent: false,
+	})
+	if err != nil {
+		e.recordFailure(ctx, selection, err)
+		return Outcome{}, e.translateCallError(err)
+	}
+	defer func() {
+		// reason: the body is read to completion by the caller of this function,
+		// so a close error here reports nothing a request path can act on.
+		_ = upstream.Close()
+	}()
+
+	outcome := Outcome{
+		Format:     in.ClientFormat,
+		ProviderID: resolution.Provider.ID,
+		EndpointID: selection.Endpoint.ID(),
+		Model:      resolution.ModelID,
+		Combo:      resolution.Combo,
+		Streamed:   in.Stream,
+	}
+	if in.Stream {
+		if err := e.relayStream(ctx, upstream, resolution, in, sink, &outcome); err != nil {
+			e.recordFailure(ctx, selection, err)
+			return Outcome{}, err
+		}
+	} else {
+		body, usage, err := e.translateAnswer(upstream, resolution, in)
+		if err != nil {
+			e.recordFailure(ctx, selection, err)
+			return Outcome{}, err
+		}
+		outcome.Body = body
+		outcome.Usage = usage
+	}
+	outcome.LatencyMS = e.clock().Sub(started).Milliseconds()
+	if outcome.LatencyMS < 0 {
+		outcome.LatencyMS = 0
+	}
+	// A served request clears the key's circuit state, which is what makes a
+	// recovered credential usable again on the next call.
+	if err := e.selector.RecordSuccess(ctx, selection); err != nil {
+		return Outcome{}, err
+	}
+	return outcome, nil
+}
+
+// recordFailure applies an upstream failure to the key's circuit state. A
+// persistence failure is logged by the caller through the returned outcome and
+// never replaces the upstream error the client must see.
+func (e *Engine) recordFailure(ctx context.Context, selection Selection, cause error) {
+	failure, ok := AsUpstreamError(cause)
+	reason := "upstream call failed"
+	if ok {
+		reason = failure.Message
+	}
+	if err := e.selector.RecordFailure(ctx, selection, reason); err != nil {
+		// reason: the client's error is the upstream failure, and reporting a
+		// bookkeeping failure instead would hide the cause it came from.
+		_ = err
+	}
+}
+
+// translateCallError maps a transport failure onto the client-visible code,
+// keeping the upstream's status class: a timeout is UPSTREAM_TIMEOUT and a
+// rejected request is UPSTREAM_ERROR.
+func (e *Engine) translateCallError(err error) error {
+	if failure, ok := AsUpstreamError(err); ok {
+		code := CodeUpstreamError
+		if failure.Status == 429 {
+			code = CodeRateLimited
+		}
+		if failure.Status == 401 || failure.Status == 403 {
+			code = CodeUpstreamError
+		}
+		return wrapDataPlaneError(code, failure.Message, err)
+	}
+	if AsError(err).Code == CodeUpstreamTimeout {
+		return err
+	}
+	return err
+}
+
+// failoverWorthy reports whether another combo member could plausibly succeed.
+// A malformed request or an unroutable provider fails identically everywhere, so
+// only an upstream-side failure is worth another account.
+func failoverWorthy(code string) bool {
+	switch code {
+	case CodeUpstreamError, CodeUpstreamTimeout, CodeRateLimited, CodeNoProvider:
+		return true
+	default:
+		return false
+	}
+}

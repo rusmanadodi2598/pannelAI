@@ -23,9 +23,14 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// probeTimeout bounds each dependency check so a hung dependency degrades the
-// probe instead of stalling it (AGENTS.md §1.6).
-const probeTimeout = 3 * time.Second
+// dependencyProbeTimeout bounds each liveness dependency check so a hung
+// dependency degrades the report instead of stalling it (AGENTS.md §1.6).
+//
+// The name states what it bounds because this package also owns a connectivity
+// test, whose budget is deliberately longer: a liveness probe must answer
+// quickly while an operator waits, whereas a connectivity test is allowed to
+// wait for a real upstream round trip.
+const dependencyProbeTimeout = 3 * time.Second
 
 // Pinger is the probe surface a dependency must offer. pgxpool.Pool satisfies
 // it directly; a Redis client is adapted at the composition root.
@@ -76,7 +81,7 @@ func (s *HealthService) probe(ctx context.Context, name string, p Pinger) domain
 	if p == nil {
 		return domain.ProbeResult{Name: name, State: domain.ProbeSkipped}
 	}
-	ctx, cancel := context.WithTimeout(ctx, probeTimeout)
+	ctx, cancel := context.WithTimeout(ctx, dependencyProbeTimeout)
 	defer cancel()
 
 	if err := p.Ping(ctx); err != nil {

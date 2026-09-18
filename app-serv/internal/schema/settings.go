@@ -1,0 +1,80 @@
+// Package schema holds request/response DTOs and their validation rules.
+//
+// @file      internal/schema/settings.go
+// @for       The settings read/patch contract and its per-key validation.
+// @uses      internal/domain (Settings, SettingsPatch, ParseComboStrategy).
+// @reason    SPEC-API-001 §7.14 fixes the settings surface and §2.4 requires the
+//
+//	contract as typed structs with validation tags before the handler,
+//	so a PATCH is validated per key here rather than by the service
+//	guessing what a client meant.
+//
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
+// @layer     schema
+// @stability experimental
+// @since     2026-09-18
+package schema
+
+// SettingsResponse is the body of GET and PATCH /api/v1/settings. It mirrors
+// domain.Settings so the service and the wire shape stay one document, and it
+// carries no secret: the v1 settings surface has none to return (§7.14).
+type SettingsResponse struct {
+	Security   SecuritySettingsResponse   `json:"security"`
+	Routing    RoutingSettingsResponse    `json:"routing"`
+	Network    NetworkSettingsResponse    `json:"network"`
+	TokenSaver TokenSaverSettingsResponse `json:"token_saver"`
+	Logging    LoggingSettingsResponse    `json:"logging"`
+}
+
+// SecuritySettingsResponse is the §7.14 security group.
+type SecuritySettingsResponse struct {
+	RequireLogin  bool `json:"require_login"`
+	RequireAPIKey bool `json:"require_api_key"`
+}
+
+// RoutingSettingsResponse is the §7.14 routing group.
+type RoutingSettingsResponse struct {
+	ComboStrategy    string `json:"combo_strategy"`
+	ComboStickyLimit int    `json:"combo_sticky_limit"`
+	StickyLimit      int    `json:"sticky_limit"`
+}
+
+// NetworkSettingsResponse is the §7.14 network group.
+type NetworkSettingsResponse struct {
+	OutboundProxyEnabled bool   `json:"outbound_proxy_enabled"`
+	OutboundProxyURL     string `json:"outbound_proxy_url"`
+	OutboundNoProxy      string `json:"outbound_no_proxy"`
+}
+
+// TokenSaverSettingsResponse carries the §7.9 groups.
+//
+// It has no caveman field and never will in v1: the key is DEPRECATED (§7.9) and
+// stays frozen at its default inside the domain object so a configuration
+// exported from the reference still round-trips, but §7.9 forbids rendering a
+// control for it, so no response exposes it either.
+type TokenSaverSettingsResponse struct {
+	RTK      TokenSaverToggleResponse   `json:"rtk"`
+	Headroom TokenSaverHeadroomResponse `json:"headroom"`
+	Ponytail TokenSaverToggleResponse   `json:"ponytail"`
+}
+
+// TokenSaverToggleResponse is one enable/level saver group.
+type TokenSaverToggleResponse struct {
+	Enabled bool   `json:"enabled"`
+	Level   string `json:"level,omitempty"`
+}
+
+// TokenSaverHeadroomResponse is the external compression saver group.
+type TokenSaverHeadroomResponse struct {
+	Enabled              bool   `json:"enabled"`
+	URL                  string `json:"url"`
+	CompressUserMessages bool   `json:"compress_user_messages"`
+}
+
+// LoggingSettingsResponse is the §7.14 logging group.
+type LoggingSettingsResponse struct {
+	RequestCaptureEnabled   bool `json:"request_capture_enabled"`
+	RetentionDays           int  `json:"retention_days"`
+	CaptureBodyMaxBytes     int  `json:"capture_body_max_bytes"`
+	ObservabilityMaxRecords int  `json:"observability_max_records"`
+}

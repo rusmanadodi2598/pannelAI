@@ -25,20 +25,25 @@ import (
 // Config holds every runtime setting for app-serv. It is loaded once, validated,
 // and then immutable for the process lifetime (AGENTS.md §1.4).
 type Config struct {
-	AppEnv           string
-	HTTPAddr         string
-	PostgresDSN      string
-	RedisAddr        string
-	RedisPassword    string
-	DBPoolMax        int
-	LogLevel         string
-	SessionSecret    string
-	SessionTTL       time.Duration
-	EncryptionKey    string
-	LoginMaxFails    int
-	LoginLockout     time.Duration
-	GatewayKeyPrefix string
-	RateLimitPerMin  int
+	AppEnv            string
+	HTTPAddr          string
+	PostgresDSN       string
+	RedisAddr         string
+	RedisPassword     string
+	DBPoolMax         int
+	LogLevel          string
+	SessionSecret     string
+	SessionTTL        time.Duration
+	EncryptionKey     string
+	BootstrapPassword string
+	LoginMaxFails     int
+	LoginLockout      time.Duration
+	GatewayKeyPrefix  string
+	RateLimitPerMin   int
+	// DataPlaneStickyLimit is how many consecutive requests one upstream
+	// endpoint serves before round-robin rotation moves on (SPEC-API-001
+	// §4 settings.routing.sticky_limit, whose default is 3).
+	DataPlaneStickyLimit int
 }
 
 // Load reads the environment and returns a validated Config, or an error naming
@@ -46,15 +51,16 @@ type Config struct {
 // these constraints fails rather than serving degraded.
 func Load() (Config, error) {
 	cfg := Config{
-		AppEnv:           getenv("APP_ENV", "development"),
-		HTTPAddr:         getenv("HTTP_ADDR", ":8080"),
-		PostgresDSN:      getenv("POSTGRES_DSN", ""),
-		RedisAddr:        getenv("REDIS_ADDR", "localhost:6379"),
-		RedisPassword:    getenv("REDIS_PASSWORD", ""),
-		LogLevel:         getenv("LOG_LEVEL", "info"),
-		SessionSecret:    getenv("SESSION_SECRET", ""),
-		EncryptionKey:    getenv("ENCRYPTION_KEY", ""),
-		GatewayKeyPrefix: getenv("GATEWAY_KEY_PREFIX", "sk-"),
+		AppEnv:            getenv("APP_ENV", "development"),
+		HTTPAddr:          getenv("HTTP_ADDR", ":8080"),
+		PostgresDSN:       getenv("POSTGRES_DSN", ""),
+		RedisAddr:         getenv("REDIS_ADDR", "localhost:6379"),
+		RedisPassword:     getenv("REDIS_PASSWORD", ""),
+		LogLevel:          getenv("LOG_LEVEL", "info"),
+		SessionSecret:     getenv("SESSION_SECRET", ""),
+		EncryptionKey:     getenv("ENCRYPTION_KEY", ""),
+		BootstrapPassword: getenv("PANEL_BOOTSTRAP_PASSWORD", ""),
+		GatewayKeyPrefix:  getenv("GATEWAY_KEY_PREFIX", "sk-"),
 	}
 
 	intFields := []struct {
@@ -66,6 +72,7 @@ func Load() (Config, error) {
 		{"DB_POOL_MAX", &cfg.DBPoolMax, 10, 100},
 		{"LOGIN_MAX_FAILS", &cfg.LoginMaxFails, 5, 100},
 		{"RATE_LIMIT_PER_MIN", &cfg.RateLimitPerMin, 120, 10000},
+		{"DATA_PLANE_STICKY_LIMIT", &cfg.DataPlaneStickyLimit, 3, 100},
 	}
 	for _, f := range intFields {
 		v, err := getenvInt(f.name, f.def)
@@ -121,6 +128,9 @@ func (c Config) validate() error {
 	if len(c.EncryptionKey) != 32 {
 		problems = append(problems, "ENCRYPTION_KEY must be exactly 32 bytes (AES-256)")
 	}
+	if len([]byte(c.BootstrapPassword)) > 72 {
+		problems = append(problems, "PANEL_BOOTSTRAP_PASSWORD must be at most 72 bytes")
+	}
 	if c.DBPoolMax < 1 || c.DBPoolMax > 100 {
 		problems = append(problems, "DB_POOL_MAX must be between 1 and 100")
 	}
@@ -135,6 +145,9 @@ func (c Config) validate() error {
 	}
 	if c.RateLimitPerMin < 1 {
 		problems = append(problems, "RATE_LIMIT_PER_MIN must be >= 1")
+	}
+	if c.DataPlaneStickyLimit < 1 {
+		problems = append(problems, "DATA_PLANE_STICKY_LIMIT must be >= 1")
 	}
 	if !isValidLogLevel(c.LogLevel) {
 		problems = append(problems, "LOG_LEVEL must be one of debug, info, warn, error")

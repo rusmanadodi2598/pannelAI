@@ -64,6 +64,12 @@ func run() error {
 		Level: logLevel(cfg.LogLevel),
 	})))
 	slog.Info("configuration loaded", "env", cfg.AppEnv, "addr", cfg.HTTPAddr)
+	// The provider registry and plugin seam are installed before anything can
+	// serve a request, so no caller ever sees an unpopulated lookup.
+	index, connectors, err := buildProviderRuntime()
+	if err != nil {
+		return err
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -87,6 +93,10 @@ func run() error {
 	}
 
 	// Composition: repositories -> services -> handlers -> router.
+	authHandler, rateLimiter, err := buildAuth(ctx, cfg, pool, rdb)
+	if err != nil {
+		return err
+	}
 	keyRepo := postgres.NewGatewayKeyRepository(pool)
 	keySvc, err := service.NewGatewayKeyService(service.GatewayKeyServiceDeps{
 		Repo:   keyRepo,
@@ -100,13 +110,19 @@ func run() error {
 		Redis:    redisPinger{client: rdb},
 	})
 
-	mux := router.New(router.Deps{
-		System: handler.NewSystemHandler(handler.SystemHandlerDeps{
-			Info:   buildInfo(),
-			Health: healthSvc,
-		}),
-		GatewayKey: handler.NewGatewayKeyHandler(keySvc),
-	})
+	// The P1 management graph. It is built in its own file because a dozen
+	// services would blow this file's line budget and mix the boot sequence with
+	// the graph.
+	mgmt, err := buildManagement(cfg, pool, rdb, index, connectors, keyRepo)
+	if err != nil {
+		return err
+	}
+
+	mux := router.New(routerDeps(cfg, authHandler, handler.NewGatewayKeyHandler(keySvc), healthSvc, rateLimiter, mgmt))
+
+	// The flush worker runs alongside the server and stops with the context, so
+	// shutdown leaves nothing running (AGENTS.md §1.6).
+	runQuotaFlusher(ctx, mgmt.QuotaFlusher)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

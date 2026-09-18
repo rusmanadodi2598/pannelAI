@@ -20,12 +20,14 @@ package schema
 import (
 	"errors"
 	"fmt"
+
 	val "github.com/go-playground/validator/v10"
 
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
 // MaxPerPage caps any list request, mirroring SPEC-API-001 §4 ("max 100").

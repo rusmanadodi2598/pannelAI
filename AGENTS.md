@@ -264,4 +264,21 @@ Prefer the Go standard library over third-party frameworks by default (`net/http
 
 ---
 
+## NOTE
+1. Mandatory:
+- Build Source Code: AGENTS.md
+- Strict Validation: go-playground/validator/v10 (Golang) / Zod v4xx latest (Svelte / TypeScrypts)
+- Strict Test: docs/RULLES/TDD.md
+- SSRF: docs/RULLES/SSRF.md
+
+2. Stack:
+- Go v1.26 (Latest)
+- Svelte (Latest)
+- TypeScrypts v7xx (Latest)
+- Bun 1.3 (Latest)
+- Postgres v17 (v18 latest)
+- Redis (Latest)
+
+---
+
 *Governance file for AI coding agents working in this Go codebase. Do not edit ad hoc — changes go through the same review process as other project documentation. || Created for Dodi Rusmana*

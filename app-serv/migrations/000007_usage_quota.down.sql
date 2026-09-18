@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS quota_caps;
+DROP TABLE IF EXISTS quota_windows;
+DROP INDEX IF EXISTS idx_usage_records_request;
+DROP INDEX IF EXISTS idx_usage_records_gateway_key_ts;
+DROP INDEX IF EXISTS idx_usage_records_model_ts;
+DROP INDEX IF EXISTS idx_usage_records_endpoint_ts;
+DROP INDEX IF EXISTS idx_usage_records_provider_ts;
+DROP INDEX IF EXISTS idx_usage_records_ts;
+DROP TABLE IF EXISTS usage_records;

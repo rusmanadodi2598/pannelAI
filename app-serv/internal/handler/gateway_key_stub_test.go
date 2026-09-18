@@ -86,6 +86,19 @@ func (r *stubKeyRepo) GetByID(ctx context.Context, id string) (domain.GatewayKey
 	return k, nil
 }
 
+// GetByValueHash answers a digest lookup the way the real repository does, so a
+// handler test that authenticates a presented token exercises the same path.
+func (r *stubKeyRepo) GetByValueHash(ctx context.Context, valueHash string) (domain.GatewayKey, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, k := range r.db {
+		if k.ValueHash() == valueHash {
+			return k, nil
+		}
+	}
+	return domain.GatewayKey{}, domain.ErrGatewayKeyNotFound
+}
+
 func (r *stubKeyRepo) Update(ctx context.Context, key domain.GatewayKey) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

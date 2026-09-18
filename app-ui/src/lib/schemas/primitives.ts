@@ -95,6 +95,14 @@ export const rfc3339Timestamp = z
 	.string()
 	.refine((value) => !Number.isNaN(Date.parse(value)), { message: 'Invalid timestamp.' });
 
+// A list of strings that the API may send as null. Go marshals a nil slice as `null` rather than `[]`, and
+// several response shapes carry a list without `omitempty`, so an empty collection arrives as null. It is
+// normalized to an empty array here so no caller has to handle both spellings of "none".
+export const stringList = z
+	.array(z.string())
+	.nullish()
+	.transform((value) => value ?? []);
+
 export const nullableTimestamp = rfc3339Timestamp.nullable();
 
 // The endpoint shapes mark their timestamps `omitempty` on the wire (Go omits a nil pointer), so an

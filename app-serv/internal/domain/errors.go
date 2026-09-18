@@ -16,14 +16,18 @@
 // @since     2026-09-16
 package domain
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 // AppError is the management-plane error contract (SPEC-API-001 §8).
 // Code is machine-parseable; Message is always English (AGENTS.md §1.3).
 type AppError struct {
-	Code    string
-	Message string
-	Wrapped error
+	Code       string
+	Message    string
+	Wrapped    error
+	RetryAfter time.Duration
 }
 
 func (e *AppError) Error() string {
@@ -110,6 +114,12 @@ var (
 	ErrGatewayKeyRevoked  = NewConflictError("gateway key is already revoked")
 	ErrUnauthenticated    = NewUnauthorizedError("authentication is required")
 	ErrForbidden          = NewForbiddenError("access is denied")
+
+	ErrEndpointNotFound = NewNotFoundError("upstream endpoint not found")
+	ErrEndpointExists   = NewConflictError("an endpoint with this label already exists for this provider")
+	ErrNodeNotFound     = NewNotFoundError("provider node not found")
+	ErrNodePrefixTaken  = NewConflictError("this prefix is already in use")
+	ErrNodeInUse        = NewConflictError("an endpoint still references this provider")
 )
 
 // AsAppError unwraps any error into an AppError, mapping unknown failures to

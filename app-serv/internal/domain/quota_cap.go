@@ -1,0 +1,99 @@
+// Package domain holds entities, value objects, and the ubiquitous language
+// of the pannelAI gateway (SPEC-API-001 §5).
+//
+// @file      internal/domain/quota_cap.go
+// @for       The QuotaCap value object: an endpoint's optional monthly budget
+//
+//	ceiling and the rule that makes the router skip it.
+//
+// @uses      internal/domain (Decimal, AppError constructors), time.
+// @reason    SPEC-API-001 §7.12 makes the cap the thing a router reads to skip
+//
+//	an exhausted endpoint, so the exhausted rule is a domain decision
+//	rather than a comparison inside a query. Both fields are optional
+//	because "no cap" and "a cap of zero" are different rules.
+//
+// @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
+// @layer     domain
+// @stability experimental
+// @since     2026-09-18
+package domain
+
+import "time"
+
+// QuotaCap is an endpoint's optional budget ceiling. Both fields are pointers:
+// a cap that was never set is not a cap of zero, and the router's rule differs
+// between the two.
+type QuotaCap struct {
+	endpointID     string
+	monthlyCostUSD *Decimal
+	monthlyTokens  *int64
+	updatedAt      time.Time
+}
+
+// NewQuotaCap builds a cap from validated values. A nil field clears that cap,
+// which is how a client removes a budget without a separate delete route.
+func NewQuotaCap(endpointID string, monthlyCostUSD *Decimal, monthlyTokens *int64, now time.Time) (QuotaCap, error) {
+	if endpointID == "" {
+		return QuotaCap{}, NewValidationError("endpoint_id is required")
+	}
+	if monthlyCostUSD != nil && monthlyCostUSD.IsNegative() {
+		return QuotaCap{}, NewValidationError("monthly_cost_usd must not be negative")
+	}
+	if monthlyTokens != nil && *monthlyTokens < 0 {
+		return QuotaCap{}, NewValidationError("monthly_tokens must not be negative")
+	}
+	if monthlyCostUSD != nil && monthlyCostUSD.IsZero() && monthlyTokens == nil {
+		// A zero cost cap would make the router skip an endpoint after the
+		// first fraction of a cent, which is never what a caller meant. It is
+		// rejected rather than silently treated as "no cap".
+		return QuotaCap{}, NewValidationError("monthly_cost_usd must be greater than zero when it is the only cap")
+	}
+	return QuotaCap{
+		endpointID:     endpointID,
+		monthlyCostUSD: monthlyCostUSD,
+		monthlyTokens:  monthlyTokens,
+		updatedAt:      now.UTC(),
+	}, nil
+}
+
+// RehydrateQuotaCap rebuilds a stored row for the repository load path.
+func RehydrateQuotaCap(endpointID string, monthlyCostUSD *Decimal, monthlyTokens *int64, updatedAt time.Time) QuotaCap {
+	return QuotaCap{
+		endpointID:     endpointID,
+		monthlyCostUSD: monthlyCostUSD,
+		monthlyTokens:  monthlyTokens,
+		updatedAt:      updatedAt.UTC(),
+	}
+}
+
+// Accessors expose the cap without allowing mutation.
+func (c QuotaCap) EndpointID() string   { return c.endpointID }
+func (c QuotaCap) UpdatedAt() time.Time { return c.updatedAt }
+func (c QuotaCap) MonthlyCostUSD() (string, bool) {
+	if c.monthlyCostUSD == nil {
+		return "", false
+	}
+	return c.monthlyCostUSD.String(), true
+}
+func (c QuotaCap) MonthlyTokens() (int64, bool) {
+	if c.monthlyTokens == nil {
+		return 0, false
+	}
+	return *c.monthlyTokens, true
+}
+
+// Exhausted reports whether month-to-date usage has reached either cap. This is
+// the rule the router reads to skip an endpoint (SPEC-API-001 §7.12).
+func (c QuotaCap) Exhausted(monthlyCost Decimal, monthlyTokens int64) bool {
+	if c.monthlyCostUSD != nil && monthlyCost.Cmp(*c.monthlyCostUSD) >= 0 {
+		return true
+	}
+	if c.monthlyTokens != nil && monthlyTokens >= *c.monthlyTokens {
+		return true
+	}
+	return false
+}
+
+// ErrQuotaCapNotFound is the sentinel a missing budget cap maps to.
+var ErrQuotaCapNotFound = NewNotFoundError("quota cap not found")

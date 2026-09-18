@@ -20,14 +20,14 @@ package router
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/handler"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
 // memKeyRepo is an in-memory GatewayKeyRepository for route tests. Keying
@@ -76,6 +76,19 @@ func (r *memKeyRepo) GetByID(ctx context.Context, id string) (domain.GatewayKey,
 	return k, nil
 }
 
+// GetByValueHash mirrors the real lookup: the stub stores keys by id but must
+// answer a digest query, so it scans for the digest the same way the index
+// does. Enforcing the contract here keeps the stub from accepting a call the
+// real repository would reject.
+func (r *memKeyRepo) GetByValueHash(ctx context.Context, valueHash string) (domain.GatewayKey, error) {
+	for _, k := range r.db {
+		if k.ValueHash() == valueHash {
+			return k, nil
+		}
+	}
+	return domain.GatewayKey{}, domain.ErrGatewayKeyNotFound
+}
+
 func (r *memKeyRepo) Update(ctx context.Context, key domain.GatewayKey) error {
 	existing, ok := r.db[key.ID()]
 	if !ok {
@@ -103,20 +116,22 @@ func (r *memKeyRepo) Revoke(ctx context.Context, id string, revokedAt time.Time)
 	return nil
 }
 
-// newTestRouter builds the real mux over an in-memory repository.
+// newTestRouter builds the real authenticated mux and injects a valid session
+// cookie into legacy CRUD tests; auth-specific tests exercise the guard without
+// that fixture.
 func newTestRouter(t *testing.T) *Mux {
 	t.Helper()
-	svc, err := service.NewGatewayKeyService(service.GatewayKeyServiceDeps{
-		Repo: newMemKeyRepo(), Prefix: "sk-",
-	})
-	if err != nil {
-		t.Fatalf("service: %v", err)
+	mux, _ := newAuthenticatedRouter(t)
+	login := httptest.NewRecorder()
+	mux.ServeHTTP(login, httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"password":"correct"}`)))
+	if login.Code != http.StatusNoContent {
+		t.Fatalf("test auth login: %d (%s)", login.Code, login.Body.String())
 	}
-	return New(Deps{
-		System: handler.NewSystemHandler(handler.SystemHandlerDeps{
-			Info:   schema.SystemInfo{Version: "test", Commit: "test"},
-			Health: service.NewHealthService(service.HealthServiceDeps{}),
-		}),
-		GatewayKey: handler.NewGatewayKeyHandler(svc),
+	cookie := login.Result().Cookies()[0]
+	original := mux.Handler
+	mux.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.AddCookie(cookie)
+		original.ServeHTTP(w, r)
 	})
+	return mux
 }

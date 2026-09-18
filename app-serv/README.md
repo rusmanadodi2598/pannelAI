@@ -6,22 +6,30 @@ Kontrak perilaku ada di [`docs/SPEC-API/001-SPEC-API.md`](../docs/SPEC-API/001-S
 
 ## Status
 
-**P0 sebagian.** Yang tersedia dan teruji:
+**P0 selesai; P1 sedang berjalan.** Yang tersedia dan teruji:
+
+P0 (selesai):
 
 - konfigurasi environment bertipe dengan validasi fail-fast
 - koneksi PostgreSQL (pgx/v5) dan Redis (go-redis/v9) dengan limit pool eksplisit
-- migrasi `gateway_keys`
+- migrasi `gateway_keys` dan singleton `panel_auth`
 - endpoint sistem: `/api/v1/health`, `/api/v1/version`
-- CRUD gateway keys: list, create, get, patch, revoke
+- auth sesi: login, logout, status, change-password
+- CRUD gateway keys: list, create, get, patch, revoke, seluruhnya session-gated
+- HMAC-signed HttpOnly cookie, Redis session revocation, bcrypt password hash
+- Redis login lockout (5 kegagalan → 15 menit default) dan gateway rate limit
 - middleware: pemulihan panic, envelope error §8, 404/405 dinormalkan
 
-Belum ada dari lingkup P0 itu sendiri: autentikasi sesi (`§7.2`: login, logout, status, change-password) dan quality gates di `scrypts/`. Tanpa `§7.2`, seluruh route gateway keys masih terbuka.
+P1 sejauh ini (kode ada dan teruji; endpoint HTTP-nya belum semua terpasang):
 
-Belum ada dari fase berikutnya: provider registry, upstream endpoint & multi-key, combos, vision adapter, data plane chat, usage/quota, logs, settings. Lihat SPEC-API-001 §10 untuk P1 sampai P3.
+- **Registry provider di-embed**: `internal/registry/registry.yaml` dihasilkan `tools/registry-gen.mjs` dari referensi 9Router, 94 provider, di-decode ketat (`KnownFields`) sehingga field yang tidak dikenal menggagalkan boot, bukan hilang diam-diam
+- **Seam plugin provider** (`internal/provider`): lookup `provider id → Plugin`, connector fallback untuk vendor OpenAI/Claude-compatible, dan `Unsupported()` yang melaporkan provider ber-protokol khusus yang belum punya connector
+- **Agregat endpoint**: `UpstreamEndpoint` menahan 1..N `UpstreamKey`; endpoint `api_key` wajib menyisakan minimal satu key aktif; circuit breaker per key (3 kegagalan → backoff 2 menit, sukses mereset)
+- **Migrasi P1** (000004-000008): provider nodes, upstream endpoints + keys, combos dan katalog model, usage dan quota, request logs dan settings
 
-> **Rate limit belum ditegakkan.** `RATE_LIMIT_PER_MIN` divalidasi dan ditampilkan, tetapi belum ada middleware limiter yang memakainya; endpoint publik saat ini tidak terlindungi olehnya.
->
-> Route manajemen **belum digerbangi sesi**, karena autentikasi dashboard (`§7.2`) belum dibangun. Jangan mengekspos server ini ke jaringan publik sampai itu selesai. P0 exit criteria di SPEC-API-001 §10 menyebut login dan key CRUD diuji bersamaan, jadi P0 belum tuntas.
+Belum terpasang: repository dan service endpoint, handler dan route CRUD-nya, bulk onboarding (endpoint batch, key batch, import kredensial OAuth), combos, vision adapter, data plane chat, usage/quota read, logs, settings. Lihat SPEC-API-001 §7 dan §10 untuk P1 sampai P3.
+
+> `PANEL_BOOTSTRAP_PASSWORD` hanya dipakai saat row `panel_auth` belum memiliki hash. Setelah bootstrap, ubah password melalui endpoint change-password; env tidak menimpa hash yang sudah ada.
 
 ## Prasyarat
 
@@ -56,14 +64,20 @@ Server gagal start bila konfigurasi tidak valid, dan menyebut variabel yang berm
 curl localhost:8080/api/v1/health
 curl localhost:8080/api/v1/version
 
-curl -X POST localhost:8080/api/v1/gateway-keys \
+# Set PANEL_BOOTSTRAP_PASSWORD before the first boot, then use a cookie jar.
+curl -i -c cookies.txt -X POST localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' -d '{"password":"your-panel-password"}'
+
+curl -b cookies.txt localhost:8080/api/v1/auth/status
+curl -b cookies.txt -X POST localhost:8080/api/v1/gateway-keys \
   -H 'Content-Type: application/json' -d '{"name":"cli"}'
 
-curl localhost:8080/api/v1/gateway-keys
-curl -X DELETE localhost:8080/api/v1/gateway-keys/{id}
+curl -b cookies.txt localhost:8080/api/v1/gateway-keys
+curl -b cookies.txt -X DELETE localhost:8080/api/v1/gateway-keys/{id}
+curl -b cookies.txt -X POST localhost:8080/api/v1/auth/logout
 ```
 
-Respons create memuat `plaintext_key` satu kali. Setelah itu hanya `key_hint` (`sk-…abcd`) yang dikembalikan; yang tersimpan hanyalah digest SHA-256.
+Login, logout, dan change-password berhasil dengan `204 No Content`; kredensial sesi berada di cookie `pannel_session` (HttpOnly, SameSite=Lax). Respons create memuat `plaintext_key` satu kali. Setelah itu hanya `key_hint` (`sk-…abcd`) yang dikembalikan; yang tersimpan hanyalah digest SHA-256.
 
 ## Struktur
 
@@ -99,8 +113,8 @@ Cakupan saat ini:
 | `internal/domain` | generator ULID (keunikan, monotonisitas, alfabet), transisi state gateway key, hashing |
 | `internal/config` | parsing env table-driven, tiap aturan penolakan, batas nilai, perbedaan "tidak diset" vs "diset kosong" |
 | `internal/service` | transformasi `key_hint`, termasuk kasus kunci pendek yang tidak menyembunyikan apa pun |
-| `internal/router` | setiap route melalui mux sungguhan: status, verbe salah, duplikat nama, `request_id`, siklus hidup create → get → delete |
-| `internal/handler` | create/list/get/update/revoke termasuk paginasi dan validasi payload |
+| `internal/router` | route `/api/v1` melalui mux sungguhan: auth login/status/logout, session gating, status, verbe salah, duplikat nama, `request_id`, limiter, siklus hidup create → get → delete |
+| `internal/handler` | auth happy/validation/auth cases, cookie lifecycle, create/list/get/update/revoke, paginasi, dan validasi payload |
 | `internal/repository/postgres` | pemetaan error driver → domain (unit); constraint, paginasi, dan round-trip terhadap PostgreSQL nyata (integrasi) |
 
 ### Test integrasi
@@ -123,5 +137,49 @@ Sesuai AGENTS.md "Stack", pustaka standar dipakai lebih dulu. Dua pengecualian y
 | `github.com/go-playground/validator/v10` | validasi struct-tag; pengecualian yang disebut AGENTS.md |
 | `github.com/jackc/pgx/v5` | driver PostgreSQL; pengecualian yang disebut AGENTS.md |
 | `github.com/redis/go-redis/v9` | klien Redis; Redis wajib untuk sesi, limiter, dan circuit state |
+| `gopkg.in/yaml.v3` | membaca registry provider yang di-embed (SPEC-API-001 §6); hanya dipakai `internal/registry` |
 
-ULID dihasilkan sendiri (`internal/domain/ulid.go`) alih-alih menambah dependensi.
+
+## Registry provider dan seam plugin
+
+### Registry di-embed
+
+`internal/registry/registry.yaml` adalah sumber katalog provider (SPEC-API-001 §6). Berkas itu **dihasilkan**, bukan ditulis tangan:
+
+```bash
+node tools/registry-gen.mjs /path/ke/9router internal/registry/registry.yaml
+```
+
+Aturan yang membuatnya aman:
+
+- decode **ketat** (`KnownFields(true)`): key yang tidak punya tag struct menggagalkan boot. Ini bukan kekakuan demi kekakuan; inilah yang menangkap drift saat porting, dan ia benar-benar menangkap 12 kelas field yang hilang pada percobaan pertama.
+- `client_secret` **tidak** disalin dari referensi. Checkout referensi memuat kredensial pihak ketiga yang hidup, dan berkas ini di-commit; alur yang butuh secret membacanya dari config bertipe saat flow-nya diimplementasikan.
+- identifier ganda ditolak saat load, bukan saat request.
+- resolusi nama mengikuti referensi, bukan intuisi: **alias menang atas id milik provider lain**. Referensi membangun satu tabel alias datar (`uiAlias || alias`) dan resolve dengan `ALIAS_TO_ID[t] || t`, sehingga provider yang id-nya dipakai sebagai alias orang lain tidak terjangkau lewat id itu. Kasus itu nyata di data (`mimo-free` ber-`alias: mmf`, sementara entri tersembunyi ber-`id: mmf`), dan keduanya menuju base URL serta model yang sama; alias-vs-alias tetap fatal karena tidak ada dasar untuk memilih salah satu.
+- **routability** dipublikasikan per provider: `native` untuk format yang diterjemahkan gateway sendiri (OpenAI, Claude, OpenAI Responses), `connector` untuk protokol khusus yang butuh connector. Tanpa itu, beberapa provider pada daftar owner (`commandcode`, `gemini-cli`, `kiro`, `gemini`, `cursor`, `antigravity`) bisa dikonfigurasi tapi tidak akan pernah menjawab.
+- **blok media** (`media.embedding`, `media.image`, …) ikut di-port karena sebuah layanan media sering menaruh kredensialnya berbeda dari transport chat provider yang sama: Gemini memakai `auth_header: key` (query parameter) untuk embeddings, sementara chat-nya memakai header. `auth_header: key` berarti **query parameter**, bukan header.
+
+### Seam plugin
+
+Setiap provider berbeda dalam konektivitas (api_key, OAuth, gratis tanpa kredensial, atau keduanya). `internal/provider` memisahkan perbedaan itu dari core:
+
+```go
+type Plugin interface {
+	ProviderID() string
+	AuthType() string
+	Endpoint(req Request, cred Credential) (string, error)
+	ApplyAuth(req *http.Request, cred Credential) error
+	DecodeUsage(status int, header http.Header) Usage
+	ShouldRetry(status int, header http.Header) RetryDecision
+	IsQuotaError(status int, body []byte) bool
+}
+```
+
+Menambah provider:
+
+1. **Format standar** (OpenAI atau Claude): cukup tambahkan entri di `registry.yaml`. `provider.Default` menangani URL dan auth dari entri itu. Tidak ada berkas Go baru.
+2. **Protokol khusus**: buat satu berkas di `internal/provider/`, embed `Base`, daftarkan di `NewConnectors(...)` pada composition root. Tidak ada perubahan di core maupun provider lain.
+
+`Connectors.Unsupported(idx)` melaporkan provider di registry yang formatnya belum didukung fallback dan belum punya connector. Laporan itu adalah daftar kerja yang terlihat, bukan kegagalan diam saat traffic datang.
+
+ULID dihasilkan sendiri (`internal/domain/ulid.go`) alih-alih menambah dependensi. `gopkg.in/yaml.v3` adalah dependensi ketiga di luar daftar AGENTS.md Stack, ditambahkan untuk membaca registry yang di-embed; ia hanya dipakai di `internal/registry`.

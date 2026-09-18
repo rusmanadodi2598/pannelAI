@@ -16,7 +16,7 @@ Proyek memisahkan tanggung jawab **Control Plane** (API manajemen) dan **Data Pl
 
 > **Status: dalam pengembangan.** Komponen data plane sudah tersedia di kode, tetapi keberadaan modul belum berarti seluruh alur HTTP, streaming, dan accounting telah terintegrasi atau teruji end-to-end. Dashboard `app-ui` sudah punya scaffold fase U0 (login, gateway keys, settings security) dengan spesifikasi di [`docs/SPEC-UI/001-SPEC-UI.md`](docs/SPEC-UI/001-SPEC-UI.md) dan catatan teknis di [`app-ui/README.md`](app-ui/README.md); layar sisanya masih direncanakan dan ditandai Planned di sidebar.
 
-`app-serv/` sudah ada sebagai skeleton P0 (config, migrasi, health/version, CRUD gateway keys) dengan pengujian di `go test -race`. Panel `app-ui/` pada fase U0 juga sudah ada (login, gateway keys, settings security). Quality gates dan git hooks sudah ada di `scrypts/` (`scrypts/README.md`). Yang belum dibangun: data plane `app-serv` (chat, streaming, accounting) dan layar sisanya di `app-ui`. Pohon di bawah adalah **struktur target** yang menjadi acuan pengembangan.
+`app-serv/` sekarang mencakup P0 (config, migrasi, health/version, auth sesi, CRUD gateway keys) dan bagian P1: **registry provider yang di-embed** (94 provider, dihasilkan dari referensi 9Router), **seam plugin per provider** (`internal/provider`, sehingga provider bisa di-patch atau ditambah tanpa menyentuh core), **agregat upstream endpoint dan multi-key** dengan circuit breaker per key, serta migrasi P1 untuk provider nodes, endpoints, combos, katalog model, usage, quota, logs, dan settings. Yang belum terpasang: repository/service endpoint dan route HTTP-nya, bulk onboarding (endpoint batch, key batch, import OAuth), combos, vision adapter, data plane chat, usage/quota read, logs, settings. Panel `app-ui` berada pada fase U0 (login, gateway keys, settings security), dengan spesifikasi di [`docs/SPEC-UI/001-SPEC-UI.md`](docs/SPEC-UI/001-SPEC-UI.md).
 
 ## Struktur proyek
 
@@ -30,6 +30,7 @@ pannelAI/
 │   │   ├── domain/             # Entitas, aturan domain, interface storage
 │   │   ├── handler/            # HTTP handlers dan middleware
 │   │   ├── registry/           # Registry provider dan registry.yaml
+│   │   ├── provider/           # Seam plugin konektivitas per provider
 │   │   ├── repository/         # Akses PostgreSQL dan Redis
 │   │   ├── router/             # Pemetaan route HTTP
 │   │   ├── schema/             # DTO, decoding, validasi request

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -78,6 +79,13 @@ func WriteJSON(w http.ResponseWriter, status int, v any) {
 // Unknown errors become INTERNAL_ERROR so driver internals never leak (§8).
 func WriteError(w http.ResponseWriter, err error) {
 	appErr := domain.AsAppError(err)
+	if appErr.RetryAfter > 0 {
+		seconds := int64((appErr.RetryAfter + time.Second - 1) / time.Second)
+		if seconds < 1 {
+			seconds = 1
+		}
+		w.Header().Set("Retry-After", strconv.FormatInt(seconds, 10))
+	}
 	WriteJSON(w, appErr.HTTPStatus(), ErrorBody{Error: ErrorDetail{
 		Code:    appErr.Code,
 		Message: appErr.Message,

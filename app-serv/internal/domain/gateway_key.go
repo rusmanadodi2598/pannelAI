@@ -26,6 +26,7 @@ const (
 	IDPrefixUpstreamKey      = "uky_"
 	IDPrefixUpstreamEndpoint = "ep_"
 	IDPrefixCombo            = "cmb_"
+	IDPrefixNode             = "pnd_"
 	IDPrefixProxy            = "prx_"
 )
 
