@@ -113,6 +113,17 @@ describe('navigation items', () => {
 		});
 	}
 
+	it('points every link at a static screen, because a nav row cannot choose a parameter', () => {
+		// The provider detail route is `/providers/[provider_id]`, and no sidebar row may link to it: the
+		// renderer would have to invent a provider id, and `resolve` cannot build the link without one. The
+		// type excludes it, and this asserts the same rule over the data, so a hand-edited href fails here
+		// rather than at build time only.
+		for (const { node } of ALL) {
+			if (node.href === undefined) continue;
+			expect(node.href, `${node.key} links to a parameterised route`).not.toContain('[');
+		}
+	});
+
 	it('covers every screen the owner listed', () => {
 		for (const required of OWNER_ITEMS) {
 			const node = NODES.find((candidate) => candidate.key === required.key);

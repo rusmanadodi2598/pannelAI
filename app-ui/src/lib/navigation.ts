@@ -14,14 +14,28 @@
 
 import type { RouteId } from '$app/types';
 
+/**
+ * The routes a navigation row may link to.
+ *
+ * Every screen in the sidebar has a static path, and that is a fact about the panel rather than a
+ * coincidence: a parameterised route is not a screen an operator can open without first choosing a record,
+ * so a nav row never targets one, and `resolve` could not build the link without the parameters anyway.
+ *
+ * The exclusion is a subtraction from the generated `RouteId` rather than a hand-written union, so a
+ * renamed or removed route still fails to compile here. If a new parameterised route is added, this type
+ * keeps rejecting it, which is the intended failure: it forces the decision instead of silently widening
+ * what the sidebar may link to.
+ */
+export type NavHref = Exclude<RouteId, '/providers/[provider_id]'>;
+
 export type NavNode = {
 	key: string;
 	label: string;
 	/**
-	 * Present only when the screen exists. Typed as a RouteId so a typo cannot compile, and absent for
+	 * Present only when the screen exists. Typed as a static route so a typo cannot compile, and absent for
 	 * a planned screen so the renderer has nothing to link to.
 	 */
-	href?: RouteId;
+	href?: NavHref;
 	/** True when the screen is not built yet. The sidebar renders a Planned chip for it. */
 	planned?: boolean;
 	/** Sub-items (the Media kinds). A node with children is a container and carries no href. */
@@ -43,7 +57,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		reason: 'Answers what the gateway routes to: keys, providers, combos, and media kinds.',
 		items: [
 			{ key: 'endpoint-keys', label: 'Endpoint & Key', href: '/endpoint-keys' },
-			{ key: 'providers', label: 'Provider', planned: true },
+			{ key: 'providers', label: 'Provider', href: '/providers' },
 			{ key: 'combos', label: 'Combo & Vision Adapter', planned: true },
 			{ key: 'media-providers', label: 'Media Provider', planned: true, children: [] }
 		]

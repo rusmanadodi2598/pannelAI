@@ -75,7 +75,11 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the provider registry" />
 	{:else if error}
-		<StateMessage kind="error" title="The provider registry could not be loaded" description={error}>
+		<StateMessage
+			kind="error"
+			title="The provider registry could not be loaded"
+			description={error}
+		>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={load}>Try again</button>
 			{/snippet}

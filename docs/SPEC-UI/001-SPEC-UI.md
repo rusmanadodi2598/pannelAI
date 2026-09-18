@@ -270,6 +270,10 @@ absent.
 
 - **Table:** provider name, category, auth type, endpoint count, status summary. Filters: category
   (`apikey`, `oauth`, `free`, `media`, `local`), search over name and ID.
+- **Search is not built.** `ProviderListQuery` declares only `category` and `routability` and the handler
+  reads no other filter, so a search box would either send a parameter the server ignores or pull the
+  registry into a client-side filter, which the next bullet forbids. The control is absent rather than
+  fake, and the gap is recorded in §14 Q13.
 - **Pagination discipline:** the registry is a data set the API owns. The screen renders
   `GET /api/v1/providers` with the server's paging and never loads the whole registry into a client filter.
 - **Row action:** open detail. A provider with zero endpoints shows "No endpoint configured" and links to
@@ -280,7 +284,9 @@ absent.
 - **Header:** provider name, category, auth type, transport defaults, model count summary.
 - **Model catalog** (SPEC-API §7.6): searchable list with capability filters (`vision`, `tools`), a
   "suggested" toggle, and per-model enable or disable state. Enable and disable write through
-  `PUT /api/v1/models/disabled` (phase U2).
+  `PUT /api/v1/models/disabled` (phase U2). The search and the two capability filters read
+  `GET /api/v1/models/catalog` with `provider_id`, `capability`, and `q`, because that is the only route
+  that accepts them. **The "suggested" toggle is not built** and the reason is recorded in §14 Q12.
 - **Custom models** (U2): add and remove rows through `POST /api/v1/models/custom` and its delete route.
 - **Aliases** (U2): the alias to target table, edited as a full set per `PUT /api/v1/models/aliases`. The
   target picker draws from the model catalog and from combo names, because a target may be either.
@@ -1260,6 +1266,20 @@ that run is unblocked on the panel side and U0 closes when its result is recorde
    A hand-written page that restates releases is a defect for the same reason a hand-written second copy
    of the API contract is (§6.12): it drifts and then lies. §6.16 records the shape as far as it is
    decided.
+12. **The model catalog has no "suggested" flag to filter on.** §6.3 asks for a "suggested" toggle on the
+   provider detail catalog, and SPEC-API §7.4 offers `?suggested=true` on
+   `GET /providers/{provider_id}/models`. The parameter is a documented no-op: `ProviderModelsFrom` sets
+   `Suggested: true` on every row, because the embedded registry carries no suggestion flag and a
+   hardcoded subset would be a guess the panel then renders as advice. A toggle over a constant would
+   either filter nothing or empty the table, which is a control that lies (R-26), so the panel ships no
+   toggle and the catalog reads `GET /models/catalog` instead, which is the route that carries the search
+   and capability filters §6.3 also asks for. Decide whether the registry gains a real suggestion flag or
+   §6.3 drops the toggle.
+13. **The provider list has no search, and the API is why.** §6.3 asks for a search over name and ID on
+   `/providers`. SPEC-API §7.4 declares `?category` and `?routability` only, and the handler reads nothing
+   else, so the panel cannot send a search term and §6.3's own pagination discipline forbids filtering the
+   registry in the browser. The list therefore ships with the category filter alone. Decide whether
+   SPEC-API adds `?q` (the shape `/models/catalog` already uses) or §6.3 drops the requirement.
 
 ## 15. Evidence for numbers and paths used here
 
@@ -1281,9 +1301,9 @@ table exists so a reader can re-run the measurement instead of trusting the sent
 | `DESIGN.md` present | `ls DESIGN.md` at the `pannelAI` root | Present, added 2026-09-17. Holds identity, palette, typeface, radius and elevation, identity motif, and the reason log. |
 | `AGENTS.md` present | `ls AGENTS.md` at the `pannelAI` root and `grep -c` on it | Present. Its scope line names Go services under `app-*/**`, so it does not govern the panel. |
 | `pannelAI` root contents | `ls -la` at the project root | `.gitignore`, `README.md`, `AGENTS.md`, `DESIGN.md`, `SYSTEM_MAP.md`, `docs/`, `deployment/`, `scrypts/`, `app-ui/`, `app-serv/`, `backups/` |
-| Panel test count | `bun run test` in `app-ui/` | 499 passing across 19 files after the U0 closure work (was 396 across 13 before it) |
+| Panel test count | `bun run test` in `app-ui/` | 634 passing across 24 files after the Providers work (was 499 across 19 after the U0 closure work, and 396 across 13 before it) |
 | Panel type check | `bun run check` in `app-ui/` | 0 errors, 0 warnings |
-| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 20 nodes in 5 groups: 3 with a route, 16 planned leaves (10 items plus 6 media kinds under one container), 1 container |
+| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 20 nodes in 5 groups: 4 with a route, 15 planned leaves (9 items plus 6 media kinds under one container), 1 container |
 | Accent usage in the shell | `grep -rn "color-accent"` across `src/lib/components` | Active row marker, primary action, focus ring, link, and active tab only (DESIGN.md §3.4) |
 | Logo source | `file app-ui/assets/static/logo.png` | JPEG data, 1254x1254, despite the `.png` extension. Cropped to `static/logo-mark.png` (512x512 RGBA, circular alpha mask) |
 | Legacy coral fails AA as a fill | Contrast calculation over the legacy token from `apps/9router/src/app/globals.css` | `#E56A4A` with white text measures 3.23:1, below the 4.5:1 floor, which is why the light theme uses `#B8412A` |
@@ -1346,6 +1366,31 @@ A deferred item names the check and where the evidence must appear.
 | R-21 (theme choice) | §8.9 | Both authored themes, with the dark default rationale recorded. |
 | R-29, R-11, R-12, R-13, R-01, R-09 (purpose-gate techniques) | §9.3 | Token file showing the palette cap, the radius scale, and the single accent use. |
 | R-31 (reason per decision) | §9.5 | The reason log, extended in the pull request for decisions this spec does not yet cover. |
+
+---
+
+*Changelog 2026-09-18: the Providers screens, U1 slice two.*
+
+*`/providers` and `/providers/[provider_id]` now exist, so §5.1's Provider row carries an `href` instead
+of a Planned chip. The list renders the registry with the server's paging and the category filter the API
+accepts; the detail renders the transport defaults beside the facts, the model catalog, and the
+provider-scoped endpoint list that reuses the §6.2 drawer.*
+
+*Two §6.3 requirements are deliberately not built, and both are API limits rather than unfinished panel
+work. The list's search over name and ID cannot be sent: `ProviderListQuery` declares only `category` and
+`routability`. The catalog's "suggested" toggle has nothing to filter: `ProviderModelsFrom` sets
+`Suggested: true` on every row because the registry carries no suggestion flag. Each would be a control
+that cannot do what it says (R-26), so each is absent and recorded in §14 Q12 and Q13.*
+
+*The catalog therefore reads `GET /models/catalog` rather than `GET /providers/{id}/models`, because that
+is the route carrying the `provider_id`, `capability`, and `q` parameters §6.3's search and two capability
+filters need. The provider-scoped model shapes were removed with it rather than left unused, and a new
+`src/lib/schemas/model.ts` holds the §7.6 shapes. `src/lib/navigation.ts` gained `NavHref`, which subtracts
+parameterised routes from the generated `RouteId`, so a sidebar row cannot link to `/providers/[provider_id]`
+without the parameters `resolve` needs.*
+
+*Gates pass on 2026-09-18: 634 tests across 24 files, `svelte-check` clean, Prettier and ESLint clean, and
+a production build. §15's counts were re-measured.*
 
 ---
 

@@ -6,9 +6,8 @@
 // returned; the panel filters by the values it sees and shows the rest verbatim. §14 Q9 records the same
 // decision for a gateway key's status.
 //
-// The provider's models are read from the provider-scoped route, which is the one that carries `suggested`
-// and `capabilities`. The global catalog (`/models/catalog`) reports neither, so it cannot answer the
-// "suggested" toggle §6.3 asks for.
+// A provider's models are not read here. §6.3's model catalog points at §7.6, and that is the route that
+// carries the filters the screen offers, so the catalog shapes live in `model.ts`.
 
 import { z } from 'zod';
 import { label, stringList } from './primitives';
@@ -70,6 +69,10 @@ export type ProviderMedia = z.infer<typeof schemaProviderMedia>;
 
 // The detail body embeds the list shape, so it repeats every list field plus the transport defaults. Those
 // defaults are what decide reachability, which is why the screen shows them rather than the display name.
+//
+// `media` is declared because the API sends it and a shape the panel does not describe is a shape it
+// cannot notice changing. It is not rendered on this screen: §6.3's header names five facts and media is
+// not among them, and §6.8 owns the per-kind view.
 export const schemaProviderDetail = schemaProvider.extend({
 	base_url: z.string(),
 	format: z.string(),
@@ -78,7 +81,10 @@ export const schemaProviderDetail = schemaProvider.extend({
 	timeout_ms: z.number().int(),
 	model_count: z.number().int().min(0),
 	chat_model_count: z.number().int().min(0),
-	media: z.array(schemaProviderMedia).nullish().transform((value) => value ?? []),
+	media: z
+		.array(schemaProviderMedia)
+		.nullish()
+		.transform((value) => value ?? []),
 	deprecated: z.boolean(),
 	deprecation_notice: z.string().optional(),
 	website: z.string().optional()
@@ -86,31 +92,9 @@ export const schemaProviderDetail = schemaProvider.extend({
 
 export type ProviderDetail = z.infer<typeof schemaProviderDetail>;
 
-// One model inside a provider. `kind` is carried because a non-chat model is not routable through the chat
-// data plane, so hiding it would offer a model string that cannot answer.
-export const schemaProviderModel = z.object({
-	id: z.string().min(1),
-	name: z.string(),
-	kind: z.string(),
-	capabilities: stringList,
-	dimensions: z.number().int().optional(),
-	suggested: z.boolean()
-});
-
-export type ProviderModel = z.infer<typeof schemaProviderModel>;
-
-export const schemaProviderModelList = z.object({
-	data: z.array(schemaProviderModel)
-});
-
-export type ProviderModelList = z.infer<typeof schemaProviderModelList>;
-
 // The categories the reference registry measures. Offered as filter suggestions, not as a closed set: the
 // list the API returns is authoritative, and a provider with a category outside this list still renders.
 export const PROVIDER_CATEGORIES = ['apikey', 'oauth', 'free', 'media', 'local'] as const;
-
-// The two capability filters §6.3 asks for, matched case-insensitively against a model's capability list.
-export const MODEL_CAPABILITY_FILTERS = ['vision', 'tools'] as const;
 
 // The list query, matching exactly what the API reads: `category`, `routability`, and paging.
 //
@@ -125,13 +109,6 @@ export const schemaProviderQuery = z.strictObject({
 });
 
 export type ProviderQuery = z.infer<typeof schemaProviderQuery>;
-
-// A model's capabilities as the panel shows them. Empty is legitimate and renders as no chips rather than
-// as a placeholder, because a model with no declared capability is a real state.
-export function hasCapability(model: ProviderModel, capability: string): boolean {
-	const wanted = capability.toLowerCase();
-	return model.capabilities.some((entry) => entry.toLowerCase() === wanted);
-}
 
 // The one-line status a provider row shows. Written as a sentence rather than a set of numbers because the
 // operator's question is whether anything needs attention, not what the exact counts are.

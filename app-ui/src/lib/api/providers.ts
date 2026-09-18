@@ -7,10 +7,8 @@
 import {
 	schemaProviderDetail,
 	schemaProviderList,
-	schemaProviderModelList,
 	type ProviderDetail,
 	type ProviderList,
-	type ProviderModelList,
 	type ProviderQuery
 } from '$lib/schemas/provider';
 import { apiRequest, type ApiResult } from './client';
@@ -36,15 +34,5 @@ export function getProvider(id: string): Promise<ApiResult<ProviderDetail>> {
 		method: 'GET',
 		path: `/providers/${encodeURIComponent(id)}`,
 		schema: schemaProviderDetail
-	});
-}
-
-// The provider-scoped model list, which is the one carrying `suggested` and `capabilities`. It is not
-// paginated: a provider's model set is fixed by the registry entry.
-export function listProviderModels(id: string): Promise<ApiResult<ProviderModelList>> {
-	return apiRequest<void, ProviderModelList>({
-		method: 'GET',
-		path: `/providers/${encodeURIComponent(id)}/models`,
-		schema: schemaProviderModelList
 	});
 }

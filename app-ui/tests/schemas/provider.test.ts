@@ -8,14 +8,11 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-	hasCapability,
 	schemaProvider,
 	schemaProviderDetail,
 	schemaProviderList,
-	schemaProviderModel,
 	schemaProviderQuery,
-	statusSummaryText,
-	type ProviderModel
+	statusSummaryText
 } from '$lib/schemas/provider';
 
 function provider(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -30,17 +27,6 @@ function provider(overrides: Record<string, unknown> = {}): Record<string, unkno
 		routability: 'native',
 		endpoint_count: 2,
 		status_summary: { total: 2, active: 2, disabled: 0, error: 0, rate_limited: 0 },
-		...overrides
-	};
-}
-
-function model(overrides: Partial<ProviderModel> = {}): ProviderModel {
-	return {
-		id: 'openai/gpt-4o',
-		name: 'GPT-4o',
-		kind: 'chat',
-		capabilities: ['vision', 'tools'],
-		suggested: true,
 		...overrides
 	};
 }
@@ -141,51 +127,15 @@ describe('schemaProviderDetail', () => {
 	});
 });
 
-describe('schemaProviderModel', () => {
-	it('accepts a model with capabilities', () => {
-		expect(schemaProviderModel.safeParse(model()).success).toBe(true);
-	});
-
-	it('accepts null capabilities and normalizes them to an empty list', () => {
-		const result = schemaProviderModel.safeParse({ ...model(), capabilities: null });
-
-		expect(result.success).toBe(true);
-		expect(result.success && result.data.capabilities).toEqual([]);
-	});
-
-	it('accepts an embedding model carrying its dimensions', () => {
-		const result = schemaProviderModel.safeParse({
-			...model(),
-			kind: 'embedding',
-			dimensions: 1536
-		});
-
-		expect(result.success).toBe(true);
-	});
-});
-
-describe('hasCapability', () => {
-	const CASES: { capabilities: string[]; wanted: string; expected: boolean; why: string }[] = [
-		{ capabilities: ['vision'], wanted: 'vision', expected: true, why: 'an exact match' },
-		{ capabilities: ['Vision'], wanted: 'vision', expected: true, why: 'the API capitalises it' },
-		{ capabilities: ['tools', 'vision'], wanted: 'tools', expected: true, why: 'a later entry' },
-		{ capabilities: [], wanted: 'vision', expected: false, why: 'no declared capabilities' },
-		{ capabilities: ['tools'], wanted: 'vision', expected: false, why: 'a different capability' },
-		{ capabilities: ['visionary'], wanted: 'vision', expected: false, why: 'a prefix is not a match' }
-	];
-
-	for (const testCase of CASES) {
-		it(`returns ${testCase.expected} when ${testCase.why}`, () => {
-			expect(hasCapability(model({ capabilities: testCase.capabilities }), testCase.wanted)).toBe(
-				testCase.expected
-			);
-		});
-	}
-});
-
 describe('statusSummaryText', () => {
 	const CASES: {
-		summary: { total: number; active: number; disabled: number; error: number; rate_limited: number };
+		summary: {
+			total: number;
+			active: number;
+			disabled: number;
+			error: number;
+			rate_limited: number;
+		};
 		expected: string;
 		why: string;
 	}[] = [

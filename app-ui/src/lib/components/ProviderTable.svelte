@@ -45,7 +45,9 @@
 							>
 							{#if provider.endpoint_count === 0}
 								<a
-									href={`${resolve('/endpoint-keys')}?provider=${encodeURIComponent(provider.id)}`}
+									href={resolve(
+										`/endpoint-keys?provider=${encodeURIComponent(provider.id)}`
+									)}
 									class="min-h-11 content-center underline">Add endpoint</a
 								>
 							{/if}
