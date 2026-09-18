@@ -5,8 +5,8 @@ Diperbarui pada PR yang sama ketika topologi atau alur data berubah (AGENTS.md �
 
 | | |
 |---|---|
-| **Status** | P0 sebagian: config, migrasi (dengan ledger), health/version, gateway keys selesai; auth §7.2 dan `scrypts/` gates belum |
-| **Terakhir diperbarui** | 2026-09-16 |
+| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. P1 berjalan: registry provider di-embed (94 provider, decode ketat), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) yang sudah diverifikasi terhadap PostgreSQL nyata. Repository, service, handler, dan data plane P1 sedang dibangun per vertical. Panel U0 selesai termasuk shell sidebar bertema |
+| **Terakhir diperbarui** | 2026-09-18 |
 | **Kontrak** | `docs/SPEC-API/001-SPEC-API.md` |
 
 ---
@@ -18,12 +18,12 @@ Dua aplikasi, satu repositori. Keduanya berbagi PostgreSQL dan Redis secara logi
 ```mermaid
 flowchart LR
     CLI["CLI tools: Claude Code, Codex, Cursor"]
-    UI["app-ui: Svelte panel U0 (login, gateway keys, settings)"]
+    UI["app-ui: Svelte panel U0 (login, gateway keys, settings, shell sidebar)"]
 
     subgraph serv["app-serv (Go 1.26)"]
         direction TB
-        MW["Middleware: requestID, logging, recoverer, envelope"]
-        RT["router: /api/v1"]
+        MW["Middleware: requestID, logging, recoverer, envelope, rate limit"]
+        RT["router: /api/v1 + session guard"]
         H["handler"]
         S["service"]
         R["repository"]
@@ -41,7 +41,14 @@ flowchart LR
     S -.->|"P1: translasi + upstream"| UP
 ```
 
-**Batas domain saat ini (P0):** `gateway_keys`. Tabel lain di SPEC-API §6 belum dibuat; setiap tabel baru menambah satu domain dan satu repository pada layer yang sama.
+**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008 sudah ada; repository dan service-nya menyusul per fase di todo). Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
+
+**Catatan boot P1 (diukur 2026-09-18):** `app-serv` berhenti saat boot pada migrasi `000007_usage_quota.up.sql`.
+Kolom `window` di `quota_windows` adalah reserved word PostgreSQL, dan runner gagal dengan `SQLSTATE 42601`
+(`syntax error at or near "window"`) setelah migrasi 000005 dan 000006 terterap. Efeknya: endpoint P1 belum bisa
+dilayani, sehingga panel belum bisa diverifikasi end-to-end terhadap API nyata. Verifikasi shell memakai stub
+`/api/v1/auth/status`. Perbaikan (rename kolom, atau kutip `"window"` plus kunci pada `(endpoint_id, window)`)
+milik pekerjaan P1 `app-serv`; tidak diubah dari sini karena di luar cakupan perubahan panel.
 
 ---
 
@@ -61,8 +68,26 @@ schema → domain → repository → service → handler → router
 | service | `internal/service` | Orkestrasi use case, panggilan keluar dengan timeout | mengimpor `net/http` |
 | handler | `internal/handler` | Decode, panggil service, encode | memuat SQL atau Redis langsung |
 | router | `internal/router` | Tabel route dan middleware lintas-potong | memuat logika bisnis |
+| config | `internal/config`, `internal/registry`, `internal/provider` | Konfigurasi env bertipe, registry provider yang di-embed, dan seam plugin konektivitas per provider | memuat logika use case atau SQL |
 
 `cmd/app-serv/main.go` adalah composition root: hanya wiring, tanpa logika.
+
+### 2.1 Seam plugin provider (wajib, permintaan owner)
+
+Setiap provider berbeda dalam konektivitas: ada yang **api_key**, ada yang **OAuth**, ada yang **gratis tanpa kredensial**, dan ada yang menerima **keduanya**. Perbedaan itu tidak boleh masuk ke core, karena satu patch provider lalu menjadi perubahan kode bersama.
+
+`internal/provider` memisahkannya:
+
+| Bagian | Isi |
+|---|---|
+| `Plugin` | Antarmuka satu provider: `Endpoint` (URL), `ApplyAuth` (header dan skema), `DecodeUsage`, `ShouldRetry`, `IsQuotaError` |
+| `Base` | Perilaku bawaan yang di-embed tiap connector, sehingga provider baru cukup mengisi `ProviderID` |
+| `Default` | Connector fallback: URL dari registry, header dan skema dari `transport.auth`, jadi vendor OpenAI/Claude-compatible tidak perlu berkas baru |
+| `Connectors` | Lookup `provider id -> Plugin`, menolak id ganda, dan `Unsupported()` melaporkan provider yang butuh connector tapi belum ada |
+
+**Konsekuensi operasional:** menambah provider = menambah entri di `registry.yaml` (speak format standar) atau satu berkas connector (protokol khusus). Tidak ada `switch` pada provider id di core, sehingga provider A bisa di-patch tanpa menyentuh provider B.
+
+**Batasan yang diketahui:** `Connectors.Unsupported()` sengaja melaporkan provider ber-format khusus (mis. `kiro`, `cursor`, `antigravity`) selama connector-nya belum ditulis; laporan itu adalah daftar kerja, bukan kegagalan diam.
 
 ---
 
@@ -92,30 +117,48 @@ Plaintext hanya muncul pada respons create. Setiap pembacaan setelahnya hanya me
 
 ### 3.2 Permintaan panel (app-ui U0)
 
+Shell panel dirender dari data navigasi di `src/lib/navigation.ts`: lima grup yang masing-masing menjawab satu
+pertanyaan operator (Configure, Observe, Optimize, Developer, System) berisi total 19 baris. Baris yang
+layarnya belum dibangun tidak membawa `href`, sehingga tidak bisa dirender sebagai link; R-24 jadi sifat tipe,
+bukan disiplin review. Tiga bentuk responsif: drawer di bawah 768px, rail ikon 64px pada 768-1023px, dan
+sidebar 264px pada 1024px ke atas, dengan preferensi collapse disimpan di cookie.
+
 ```mermaid
 sequenceDiagram
     participant B as Browser
     participant U as app-ui (SvelteKit on Bun)
     participant S as app-serv
+    participant R as Redis
 
+    B->>U: POST /api/v1/auth/login {password}
+    U->>S: POST /api/v1/auth/login (forwarded, PANEL_API_TARGET)
+    S->>S: bcrypt compare + HMAC nonce
+    S->>R: SET session digest with TTL
+    S-->>U: 204 + HttpOnly pannel_session
+    U-->>B: redirect to endpoint keys
     B->>U: GET /endpoint-keys
-    U->>U: session gate in the root layout
-    U->>S: GET /api/v1/auth/status (forwarded, PANEL_API_TARGET)
-    S-->>U: 404 NOT_FOUND (auth endpoints not built yet)
-    U-->>B: login screen with the API's message, not a blank panel
+    U->>S: GET /api/v1/auth/status + session cookie
+    S->>R: EXISTS session digest
+    S-->>U: authenticated=true
 ```
 
 The panel forwards `/api/v1` from its own server, so the browser talks to one
-origin and no CORS rule is needed. Two consequences are worth recording:
+origin and no CORS rule is needed. The panel never touches PostgreSQL or Redis;
+the API is its only surface (SPEC-API-001 §11.5).
 
-- **The auth path is not wired end to end.** `app-serv` has no `/api/v1/auth/*`
-  endpoints yet (SPEC-API-001 §7.2), so login cannot complete and the panel
-  reports the API's own error rather than failing silently. That is the U0 exit
-  criterion the panel spec leaves open.
-- The panel never touches PostgreSQL or Redis; the API is its only surface
-  (SPEC-API-001 §11.5, enforced by review because nothing else can see it).
+### 3.3 Autentikasi dan revocation
 
-### 3.3 Siklus hidup status
+`POST /api/v1/auth/login` memverifikasi bcrypt hash dari `panel_auth`, membuat
+nonce 32-byte, menandatanganinya dengan HMAC-SHA256 `SESSION_SECRET`, lalu
+menyimpan digest nonce di Redis selama `SESSION_TTL`. Cookie `pannel_session`
+bersifat HttpOnly, SameSite=Lax, Path `/`, dan Secure pada production.
+
+`POST /api/v1/auth/logout` menghapus digest dari Redis. Guard sesi memverifikasi
+signature dan keberadaan digest sebelum logout, change-password, atau route
+`gateway-keys` dipanggil. Login failure counter dan lockout disimpan di Redis;
+lima kegagalan berturut-turut memicu `LOGIN_LOCKOUT` (default 15 menit).
+
+### 3.4 Siklus hidup status
 
 ```mermaid
 stateDiagram-v2
@@ -139,21 +182,33 @@ Setiap respons membawa `X-Request-Id` (dibuat bila tidak dikirim pemanggil) dan 
 |---|---|---|---|
 | GET | `/api/v1/health` | publik | liveness + PostgreSQL + Redis; `503` saat salah satu dependency tidak menjawab |
 | GET | `/api/v1/version` | publik | build version, commit, registry revision |
-| GET | `/api/v1/gateway-keys` | belum digerbangi | daftar (hint saja) + meta paginasi |
-| POST | `/api/v1/gateway-keys` | belum digerbangi | buat; plaintext sekali |
-| GET | `/api/v1/gateway-keys/{id}` | belum digerbangi | detail (hint saja) |
-| PATCH | `/api/v1/gateway-keys/{id}` | belum digerbangi | ubah `name`, `status` |
-| DELETE | `/api/v1/gateway-keys/{id}` | belum digerbangi | revoke (soft) |
+| POST | `/api/v1/auth/login` | publik | bcrypt login; 204 + HttpOnly session cookie |
+| GET | `/api/v1/auth/status` | publik | authenticated, require_login, password_configured |
+| POST | `/api/v1/auth/logout` | S | revoke session; 204 + deletion cookie |
+| POST | `/api/v1/auth/change-password` | S | verify current password; 204 |
+| GET | `/api/v1/gateway-keys` | S | daftar (hint saja) + meta paginasi |
+| POST | `/api/v1/gateway-keys` | S | buat; plaintext sekali |
+| GET | `/api/v1/gateway-keys/{id}` | S | detail (hint saja) |
+| PATCH | `/api/v1/gateway-keys/{id}` | S | ubah `name`, `status` |
+| DELETE | `/api/v1/gateway-keys/{id}` | S | revoke (soft) |
 
 Route metode-aware (Go 1.22 `ServeMux`), sehingga verbe yang salah dijawab mux dan dinormalkan ke envelope §8.
 
 Route tidak dikenal dijawab `404 NOT_FOUND`, verbe salah dijawab `405 METHOD_NOT_ALLOWED`; keduanya lewat envelope §8 yang sama seperti error lain.
 
-**Belum ada:** middleware sesi. Endpoint manajemen §7.2 belum dibangun, jadi seluruh route gateway keys masih terbuka, dan panel `app-ui` U0 memanggil `/api/v1/auth/*` yang belum ada sehingga login belum bisa selesai. Ini batas P0 yang disengaja, bukan celah yang terlupakan; P0 exit criteria menyebut login dan CRUD key diuji bersamaan.
+Semua endpoint manajemen selain health/version digerbangi sesi. `RATE_LIMIT_PER_MIN`
+ditegakkan melalui Redis fixed-window middleware untuk traffic `/api/v1` selain
+health/version (operational probes harus tetap dapat melaporkan Redis failure);
+login memiliki counter dan lockout Redis terpisah.
 
 ## 4a. Migrasi
 
 Berkas `app-serv/migrations/*.up.sql` di-embed ke binary dan diterapkan saat boot, dicatat di `schema_migrations`. Satu migrasi dijalankan paling banyak sekali per database, dalam satu transaksi bersama baris ledger-nya. Ini berlaku untuk P0 single-instance; produksi multi-replika harus memindahkannya ke job rilis terpisah.
+
+Migrasi P1 (`000004`-`000008`) menambah `provider_nodes`, `upstream_endpoints` + `upstream_keys`, `combos` + `model_aliases` + `models_custom` + `models_disabled`, `usage_records` + `quota_windows` + `quota_caps`, `request_logs` + `settings`. Dua catatan yang lahir dari menjalankannya terhadap PostgreSQL nyata, bukan dari membaca kodenya:
+
+- kolom `quota_windows."window"` **wajib dikutip**: `window` adalah reserved word di PostgreSQL, dan tanpa kutip migrasinya gagal parse. Nama kolomnya dipertahankan agar sama dengan field API (SPEC-API §7.12 mengembalikan `window`), bukan diganti demi parser lalu dipetakan balik di setiap query.
+- idempotensi diuji, bukan diasumsikan: `migrations/apply_test.go` (tag `integration`) menjalankan runner sungguhan dua kali dan memastikan ledger tidak bertambah.
 
 ---
 
@@ -161,8 +216,8 @@ Berkas `app-serv/migrations/*.up.sql` di-embed ke binary dan diterapkan saat boo
 
 | Sumber | Isi | Catatan |
 |---|---|---|
-| PostgreSQL | `gateway_keys` (P0), `schema_migrations` (ledger runner), tabel §6 lainnya (P1+) | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE |
-| Redis | sesi, rate limit, sticky round-robin, circuit state | dibutuhkan untuk limiter dan state; bukan sekadar cache |
+| PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1) | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali |
+| Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, sticky round-robin, circuit state, console ring buffer | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut |
 
 ---
 

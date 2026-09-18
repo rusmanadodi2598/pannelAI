@@ -1,51 +1,122 @@
 /* Panel token layer.
  *
- * STATUS: draft without direction. DESIGN.md does not exist yet (docs/SPEC-UI/001-SPEC-UI.md §9.1),
- * so the palette below is the minimum needed to build screens without shipping an untouched
- * component-library default. Typography stays on the system stack for the same reason: choosing a
- * web font without direction would be a guess, and a font CDN is excluded by §11.7.
+ * Direction: DESIGN.md §3 (palette), §4 (typography), §5 (radius and elevation). Before DESIGN.md
+ * existed this file was a "draft without direction"; it is now the implementation of a stated one.
  *
- * Palette size follows R-29: three neutrals plus one accent. Every text pair used here is measured
- * against WCAG AA in tests/tokens/contrast.test.ts, which fails the build when a pair regresses.
+ * Two token families live here on purpose:
+ *
+ *   1. `--color-*` is the panel's own vocabulary (surface, text, border, accent). Screens use it.
+ *   2. `--background`, `--foreground`, `--primary`, `--sidebar` are the primitive layer's vocabulary,
+ *      which shadcn-svelte components read. They are aliases that point back at family 1 rather than
+ *      a second palette, so there is exactly one place a colour is decided.
+ *
+ * Palette size follows R-29: one accent plus warm neutrals, with three status colours that are not
+ * brand colours. Every text pair rendered by the panel is measured in
+ * tests/tokens/contrast.test.ts, which reads this file and fails the build when a pair regresses.
  */
 
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Inter, self-hosted. SPEC-UI §11.7 excludes a font CDN, so the file ships with the panel
+   (static/fonts/InterVariable.woff2, one variable file covering 100 to 900). Rendering moves to the
+   system stack only if that file is unavailable. */
+@font-face {
+	font-family: 'Inter';
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url('/fonts/InterVariable.woff2') format('woff2-variations');
+}
+
 @theme {
-	--color-surface: #ffffff;
-	--color-surface-2: #f4f6f8;
-	--color-surface-3: #e9edf1;
-	--color-border: #d5dae0;
-	--color-text: #14181f;
-	--color-text-muted: #5b6472;
-	--color-accent: #1d4ed8;
+	/* Surfaces, warm neutral. Separated enough to read as hierarchy rather than as one tinted field. */
+	--color-surface: #fcfaf7;
+	--color-surface-2: #f4f1ec;
+	--color-surface-3: #e9e4dc;
+	--color-border: #dfd9d0;
+
+	--color-text: #1a1614;
+	--color-text-muted: #5f574e;
+
+	/* One accent. The legacy coral (#e56a4a) measures 3.23:1 as a fill with white text, below the AA
+	   floor, so the light theme uses the same hue one step darker (5.49:1). See DESIGN.md §3.1. */
+	--color-accent: #b8412a;
 	--color-accent-text: #ffffff;
-	--color-ok: #15803d;
-	--color-warn: #a16207;
-	--color-danger: #b91c1c;
 
-	--radius-sm: 4px;
-	--radius-md: 6px;
-	--radius-lg: 10px;
+	/* Status. These report state, so they are not part of the brand palette cap. */
+	--color-ok: #14743a;
+	--color-warn: #8f5c0a;
+	--color-danger: #b3261e;
 
-	--font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--radius-sm: 6px;
+	--radius-md: 8px;
+	--radius-lg: 12px;
+
+	--font-sans:
+		'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--font-mono: ui-monospace, 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
 }
 
 .dark {
-	--color-surface: #101317;
-	--color-surface-2: #171c22;
-	--color-surface-3: #1f262e;
-	--color-border: #2b333d;
-	--color-text: #eef1f5;
-	--color-text-muted: #aab4c2;
-	--color-accent: #7da2ff;
-	--color-accent-text: #0b0f14;
-	--color-ok: #4ade80;
-	--color-warn: #fbbf24;
-	--color-danger: #f87171;
+	--color-surface: #1a1917;
+	--color-surface-2: #24221f;
+	--color-surface-3: #302d29;
+	--color-border: #3a362f;
+
+	--color-text: #edeae6;
+	--color-text-muted: #a69e93;
+
+	/* The dark theme keeps the exact legacy coral and pairs it with a near-black label (5.85:1).
+	   White on coral would be 3.23:1, and a bright accent with a white label is also the glow
+	   treatment R-13 rejects. */
+	--color-accent: #e56a4a;
+	--color-accent-text: #14100e;
+
+	--color-ok: #5cc97b;
+	--color-warn: #e8a93a;
+	--color-danger: #f08a84;
+}
+
+/* Primitive-layer alias layer.
+ *
+ * `@theme inline` keeps these as references rather than resolved copies, so the dark block above is
+ * still the single source of truth per mode. Every value points at a token declared above; a hex
+ * value written here would be a second palette. */
+@theme inline {
+	--color-background: var(--color-surface);
+	--color-foreground: var(--color-text);
+	--color-card: var(--color-surface);
+	--color-card-foreground: var(--color-text);
+	--color-popover: var(--color-surface);
+	--color-popover-foreground: var(--color-text);
+	--color-primary: var(--color-accent);
+	--color-primary-foreground: var(--color-accent-text);
+	--color-secondary: var(--color-surface-2);
+	--color-secondary-foreground: var(--color-text);
+	--color-muted: var(--color-surface-2);
+	--color-muted-foreground: var(--color-text-muted);
+	--color-input: var(--color-border);
+	--color-ring: var(--color-accent);
+	--color-destructive: var(--color-danger);
+
+	/* The sidebar is the one place where a separate surface token carries navigation. It is still
+	   surface-2 underneath, so there is no second neutral to keep in sync. */
+	--color-sidebar: var(--color-surface-2);
+	--color-sidebar-foreground: var(--color-text);
+	/* The active row is a tinted accent wash, not an accent fill: 4.87:1 for accent-on-wash and
+	   13.85:1 for text-on-wash in light, 4.90:1 and 10.96:1 in dark. Kept as an rgb() mix so the tint
+	   follows the accent if the accent is re-tuned. */
+	--color-sidebar-accent: rgb(184 65 42 / 0.1);
+	--color-sidebar-accent-foreground: var(--color-text);
+	--color-sidebar-border: var(--color-border);
+	--color-sidebar-ring: var(--color-accent);
+}
+
+.dark {
+	--color-sidebar-accent: rgb(232 169 58 / 0.14);
 }
 
 html {
@@ -61,6 +132,18 @@ body {
 	color: var(--color-text);
 	font-family: var(--font-sans);
 	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection picks up the accent as a wash, not as a fill, so selected text stays readable. */
+::selection {
+	background-color: rgb(184 65 42 / 0.22);
+	color: var(--color-text);
+}
+
+.dark ::selection {
+	background-color: rgb(229 106 74 / 0.28);
+	color: var(--color-text);
 }
 
 /* One visible focus treatment for the whole panel. Replacing the outline is only allowed together
@@ -68,4 +151,10 @@ body {
 :focus-visible {
 	outline: 2px solid var(--color-accent);
 	outline-offset: 2px;
+}
+
+/* Scrollbars, kept thin so a dense table is not squeezed by its own scroll gutter. */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--color-border) transparent;
 }

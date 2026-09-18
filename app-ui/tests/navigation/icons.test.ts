@@ -1,62 +1,77 @@
 // Navigation icon map tests.
 //
 // R-04 requires an icon to be relevant and its purpose writable in one line, so the map is checked as
-// data: a key without an entry, an entry without a reason, or an entry for something that is not a
-// screen fails here. The key list is a table, so a screen added to the sidebar is a row rather than
-// another copy of the same test.
+// data rather than as markup. The two sides are cross-checked: a navigation row with no icon and an
+// icon entry with no row both fail, which is what stops the map from quietly drifting away from the
+// sidebar it describes.
+//
+// The key list comes from `src/lib/navigation.ts`, so adding a row re-checks itself with no change here.
 
 import { describe, expect, it } from 'vitest';
-import { NAV_ICONS, navIcon } from '$lib/icons';
+import { NAV_ICONS, navIcon, STATUS_ICONS } from '$lib/icons';
+import { allNodes } from '$lib/navigation';
 
-const SCREEN_KEYS = [
-	'endpoint-keys',
-	'providers',
-	'combos',
-	'usage',
-	'quota',
-	'token-saver',
-	'media-embedding',
-	'media-image',
-	'media-video',
-	'media-tts',
-	'media-stt',
-	'media-search',
-	'proxies',
-	'skills',
-	'logs',
-	'api-docs',
-	'settings'
-];
+const NAV_KEYS = allNodes().map((node) => node.key);
 
-const KEY_CASES = [
-	...SCREEN_KEYS.map((key) => ({ key, defined: true })),
-	{ key: 'not-a-screen', defined: false },
-	{ key: 'ENDPOINT-KEYS', defined: false },
-	{ key: 'media-audio', defined: false },
-	{ key: 'endpoint-keys ', defined: false },
-	{ key: '', defined: false }
+// Keys that must never resolve. A near miss is the interesting case: `media-audio` and `proxy` look
+// plausible and would silently render nothing, so they are asserted as rejections rather than assumed.
+const REJECTED_KEYS = [
+	'not-a-screen',
+	'ENDPOINT-KEYS',
+	'endpoint-keys ',
+	' endpoint-keys',
+	'media-audio',
+	'proxy',
+	'changelogs',
+	''
 ];
 
 describe('navigation icon map', () => {
-	for (const testCase of KEY_CASES) {
-		it(`${testCase.defined ? 'resolves' : 'rejects'} ${JSON.stringify(testCase.key)}`, () => {
-			const entry = navIcon(testCase.key);
+	it('resolves an icon for every navigation row', () => {
+		for (const key of NAV_KEYS) {
+			expect(navIcon(key), `${key} has no icon entry`).toBeDefined();
+		}
+	});
 
-			expect(entry === undefined, `${testCase.key} resolved to ${entry?.reason ?? 'nothing'}`).toBe(
-				!testCase.defined
-			);
+	for (const key of REJECTED_KEYS) {
+		it(`rejects ${JSON.stringify(key)}`, () => {
+			expect(navIcon(key)).toBeUndefined();
 		});
 	}
 
-	it('has no entries beyond the navigation keys', () => {
+	it('has no entries beyond the navigation rows and the extra status icons', () => {
+		const allowed = new Set([...NAV_KEYS, ...Object.keys(STATUS_ICONS)]);
+
 		for (const key of Object.keys(NAV_ICONS)) {
-			expect(SCREEN_KEYS, `${key} is not a navigation key`).toContain(key);
+			expect(allowed.has(key), `${key} is not a navigation row`).toBe(true);
 		}
 	});
 
 	it('gives every icon a reason of at least 20 characters', () => {
-		for (const [key, entry] of Object.entries(NAV_ICONS)) {
+		for (const [key, entry] of [...Object.entries(NAV_ICONS), ...Object.entries(STATUS_ICONS)]) {
 			expect(entry.reason.length, `${key} needs a real reason`).toBeGreaterThanOrEqual(20);
+			expect(entry.reason, `${key} reason must be one sentence`).toMatch(/\.$/);
 		}
+	});
+
+	// R-04: the banned glyphs are the generic "AI product" vocabulary. Asserted by importing the
+	// resolved component names so a rename inside the library cannot slip a sparkle back in.
+	it('uses no sparkle, star, magic, lightning, diamond, robot, or orb glyph', () => {
+		const banned = /sparkle|star|magic|zap|lightning|diamond|bot|robot|orb|cube/i;
+
+		for (const [key, entry] of Object.entries(NAV_ICONS)) {
+			// A Svelte 5 component is callable but not a class, so only `name` is reliable here.
+			const name = entry.icon.name ?? '';
+			expect(banned.test(name), `${key} resolves to ${name}, which R-04 rejects`).toBe(false);
+		}
+	});
+
+	it('gives the media container and its kinds distinct icons for the kinds that differ', () => {
+		// Five of the six kinds must not share a glyph with each other, or the sub-items become
+		// indistinguishable at a glance.
+		const kinds = NAV_KEYS.filter((key) => key.startsWith('media-') && key !== 'media-providers');
+		const icons = kinds.map((key) => navIcon(key)?.icon);
+
+		expect(new Set(icons).size, 'two media kinds share an icon').toBe(kinds.length);
 	});
 });

@@ -3,7 +3,7 @@
 	//
 	// Native modal mode gives Escape-to-close, focus containment, and inert background for free, which
 	// is what R-32 requires. Reimplementing that on a div is how focus handling goes wrong.
-	import { X } from 'lucide-svelte';
+	import { X } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 
 	type Props = {

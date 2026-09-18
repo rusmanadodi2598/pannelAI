@@ -7,8 +7,9 @@ Spec of record: [`docs/SPEC-UI/001-SPEC-UI.md`](../docs/SPEC-UI/001-SPEC-UI.md).
 API contract: [`docs/SPEC-API/001-SPEC-API.md`](../docs/SPEC-API/001-SPEC-API.md).
 
 Status: **U0 scaffold**, verified locally. Screens built: `/login`, `/endpoint-keys` (gateway keys
-tab), `/settings` (security tab). Everything else in the sidebar is marked Planned, because a nav item
-without a route is a defect.
+tab), `/settings` (security tab). The shell is complete: a themed sidebar with five groups and 19 owner
+rows, responsive across phone, tablet, and desktop. Every other screen is marked Planned in the sidebar,
+because a navigation item without a route is a defect.
 
 ## Requirements
 
@@ -64,13 +65,17 @@ single path, which is why there is no dev-only CORS proxy in `vite.config.ts`.
 
 ## Recorded decisions
 
-| Decision                                   | Reason                                                                                                                                                                                                                                                                        |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Official Node adapter, executed by Bun     | The Bun-specific SvelteKit adapter is still on a 1.0.x release; `docs/SPEC-UI/001-SPEC-UI.md` §10.1.2 allows this fallback, and the runtime stays Bun. Verified by the boot banner printing `Bun 1.3.14`.                                                                     |
-| TypeScript 7 with `typescript` 6 alongside | `svelte-check` requires both packages before it will use the TypeScript 7 compiler, and it needs the `--tsgo` flag. `typescript` resolves to 6.0.3 for the tool, and `@typescript/native` is an alias of TypeScript 7.0.2. This is the setup `svelte-check` itself documents. |
-| Zod 4.6.5 as the only validator            | Owner decision, `docs/SPEC-UI/001-SPEC-UI.md` §7. One schema module per resource feeds forms, URL parameters, and response parsing. No ad-hoc checks in components.                                                                                                           |
-| `lucide-svelte` icons, no emoji            | The set the component layer ships with. Every navigation icon has a written reason in `src/lib/icons.ts`, and all 22 identifiers were verified against the installed package rather than guessed.                                                                             |
-| Design tokens marked as a draft            | `DESIGN.md` does not exist yet, so `src/app.css` carries the minimum palette needed to build screens, with the status stated in the file header. §9.1 of the spec forbids inventing the missing direction.                                                                    |
+| Decision                                   | Reason                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Official Node adapter, executed by Bun     | The Bun-specific SvelteKit adapter is still on a 1.0.x release; `docs/SPEC-UI/001-SPEC-UI.md` §10.1.2 allows this fallback, and the runtime stays Bun. Verified by the boot banner printing `Bun 1.3.14`.                                                                                                          |
+| TypeScript 7 with `typescript` 6 alongside | `svelte-check` requires both packages before it will use the TypeScript 7 compiler, and it needs the `--tsgo` flag. `typescript` resolves to 6.0.3 for the tool, and `@typescript/native` is an alias of TypeScript 7.0.2. This is the setup `svelte-check` itself documents.                                      |
+| Zod 4.6.5 as the only validator            | Owner decision, `docs/SPEC-UI/001-SPEC-UI.md` §7. One schema module per resource feeds forms, URL parameters, and response parsing. No ad-hoc checks in components.                                                                                                                                                |
+| `@lucide/svelte` icons, no emoji           | The set the component layer ships with. The older `lucide-svelte` package is deprecated on npm in favour of this one. Every navigation icon has a written reason in `src/lib/icons.ts`, and `tests/navigation/icons.test.ts` fails the build when a row has no icon, an icon has no row, or the reason is missing. |
+| shadcn-svelte as the primitive layer       | Owner decision. `src/lib/primitives/` is generated by the component layer's CLI and is not hand-edited, with one exception: the sidebar rail width was changed from 48px to 64px so a 44px touch row is not cramped, and that change is recorded in `DESIGN.md` §11.                                               |
+| Navigation as data, not markup             | `src/lib/navigation.ts` holds the tree, so a row carries an `href` only when a route exists. R-24 becomes a property of the type rather than a review habit, and `tests/navigation/navigation.test.ts` cross-checks the tree against the routes discovered on disk.                                                |
+| Design direction from `DESIGN.md`          | The palette, typeface, radius and elevation scale, and identity motif come from `DESIGN.md` at the repository root, written 2026-09-17. `src/app.css` implements it and `tests/tokens/contrast.test.ts` measures it. The earlier placeholder state is closed.                                                      |
+| Inter self-hosted                          | `DESIGN.md` §4 chose Inter for legibility at 12px in dense tables and for parity with the legacy panel. It ships as one variable file at `static/fonts/InterVariable.woff2` because a font CDN is excluded by spec §11.7.                                                                                          |
+| Token bridge for the primitive layer       | The panel's own vocabulary is `--color-*`. The primitive layer reads `--background`, `--primary`, `--sidebar`. Those are aliases pointing back at `--color-*` in an `@theme inline` block, so a colour is decided once and there is no second palette to keep in sync.                                             |
 
 ## Layout
 
@@ -78,16 +83,77 @@ single path, which is why there is no dev-only CORS proxy in `vite.config.ts`.
 src/lib/api/         the only place that calls fetch: client, error mapping, one module per resource
 src/lib/schemas/     Zod schemas: field primitives, sanitization transforms, response contracts
 src/lib/server/      server-only code: environment validation and the /api/v1 forwarder
-src/lib/components/  panel components (shell, dialogs, table rows, forms, state messages)
-src/lib/stores/      session and theme state
+src/lib/components/  panel components (shell, sidebar, header, dialogs, table rows, forms)
+src/lib/primitives/  shadcn-svelte components, generated, not hand-edited
+src/lib/stores/      session, theme, and sidebar preference state
+src/lib/navigation.ts  the sidebar tree as data, five groups and 19 rows
+src/lib/icons.ts     the one icon map, one written reason per icon
+src/lib/utils.ts     class-name helper (clsx plus tailwind-merge)
+src/app.css          the token layer: DESIGN.md §3 to §5
+assets/static/       owner-supplied source assets (the logo original)
+static/              served assets: circular logo mark, favicon, self-hosted Inter
 src/routes/          one directory per route from the spec
-tests/               table-driven unit tests
+tests/               table-driven unit tests, plus token and navigation assertions
 tests/support/       shared test helpers: the seeded corpus generator and the table runner
 ```
 
 ## Verification state
 
-Measured on 2026-09-16 with Bun 1.3.14 and Go 1.26.5 available on the machine:
+Two passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the shell
+and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per element.
+
+### Shell and sidebar, 2026-09-18
+
+Run with Bun 1.3.14. `app-serv` could not be started: its P1 tree fails at boot on migration
+`000007_usage_quota.up.sql`, which uses `window` as a column name (a PostgreSQL reserved word). The shell
+needs one public endpoint to decide what to render, so `/api/v1/auth/status` was answered by a throwaway
+stub, and the stub was deleted after the pass. Nothing else was stubbed.
+
+| Check           | Result                                               |
+| --------------- | ---------------------------------------------------- |
+| `bun run check` | 0 errors, 0 warnings                                 |
+| `bun run test`  | 396 tests passed across 13 files (was 310 across 11) |
+| `bun run build` | succeeds, output in `build/`                         |
+
+Click-through, element by element, at 1440x900 unless stated otherwise:
+
+| Element                                    | Action                | Outcome                                                                                                                                                                                                                  |
+| ------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Header, theme toggle                       | Click twice           | `document.documentElement` gains and loses `dark`; body background measured `rgb(252, 250, 247)` light and `rgb(26, 25, 23)` dark, matching `DESIGN.md` §3.2                                                             |
+| Header, API base Copy                      | Click                 | Label switches to "Copied", the value is on the clipboard, a live region announces it, and it reverts after 2s                                                                                                           |
+| Header, Sign out                           | Click                 | Calls the session store; with `require_login = false` the panel stays usable, which is the stub's shape                                                                                                                  |
+| Header, sidebar trigger at 390px           | Click                 | Drawer opens at 293px over a dimmed overlay, focus moves inside it                                                                                                                                                       |
+| Drawer, Escape                             | Press                 | Drawer closes, focus returns to the header control                                                                                                                                                                       |
+| Drawer, a nav link                         | Click                 | Navigates to `/settings` and the drawer closes behind it                                                                                                                                                                 |
+| Sidebar, `Endpoint & Key`                  | Click                 | Navigates to `/endpoint-keys`; row carries `aria-current="page"` and the 3px accent marker                                                                                                                               |
+| Sidebar, `Setting`                         | Click                 | Navigates to `/settings`                                                                                                                                                                                                 |
+| Sidebar, `Media Provider`                  | Click                 | Expands to the six kinds; `aria-expanded` goes `false` then `true`, and back on a second click                                                                                                                           |
+| Sidebar, `Media Provider` from a cold load | Observe               | Starts closed, and starts open only when a media kind is the current route                                                                                                                                               |
+| Sidebar, a planned row                     | Click                 | Inert by design: no `href`, no pointer cursor, a visible `Planned` chip, and the title attribute says why                                                                                                                |
+| Sidebar, rail collapse at 1440px           | Click                 | `data-state` goes `expanded` to `collapsed` and back; the preference is written to the `sidebar_state` cookie                                                                                                            |
+| Sidebar at 820px                           | Load                  | Starts as a 64px icon rail, expands to full width on the trigger, collapses again, cookie reads `false` afterwards                                                                                                       |
+| Keyboard, full pass                        | Tab from the top      | Order is logo, then each navigation row, then the header controls, then the page controls. Every stop shows a 2px accent outline. Enter follows a link. Enter and Space toggle the disclosure. Escape closes the drawer. |
+| Overflow                                   | All three breakpoints | `document.documentElement.scrollWidth` never exceeds `clientWidth`, in both themes                                                                                                                                       |
+| Tap targets                                | 390px and 820px       | Every visible sidebar, drawer, and header control is at least 44px tall. The desktop sidebar rail is a 14px drag handle with `tabindex="-1"`, so it is not a touch target and is not counted.                            |
+| Console                                    | All three breakpoints | No page errors. The only 404 is `/api/v1/gateway-keys`, which the stub deliberately does not implement.                                                                                                                  |
+
+Two defects were found by this pass and fixed, and both are recorded because the pattern matters more
+than the fix:
+
+1. **The token layer was never imported.** `src/app.css` was written and tested in U0 but no file imported
+   it, so the whole panel rendered unstyled while `tests/tokens/contrast.test.ts` passed. The test read the
+   file; the browser never did. Fixed by importing it once from `src/routes/+layout.svelte`, and the rule is
+   now written into spec §10 boundaries 6 and this README.
+2. **Three component headers sat outside the script block.** A leading `//` comment placed above
+   `<script>` in a `.svelte` file is template text, not a comment, so Svelte rendered the whole comment
+   block into the page. Found by reading the rendered body text, not by a type check. Fixed by moving the
+   comments inside `<script>`.
+
+Two smaller defects were also found and fixed in the same pass: the media disclosure opened on first load
+instead of closed, and a planned media kind rendered as an anchor with no destination, which is a dead
+control under R-26.
+
+### U0 scaffold, 2026-09-16
 
 | Check           | Result                                                                                                                                                                                                    |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -98,22 +164,30 @@ Measured on 2026-09-16 with Bun 1.3.14 and Go 1.26.5 available on the machine:
 | Panel routes    | `/` returns 200, `/login` returns 200                                                                                                                                                                     |
 | Forwarding      | with `app-serv` down, `/api/v1/auth/status` returns 500 with the panel's error envelope; with a malformed `PANEL_API_TARGET`, it returns 500 naming the variable, while the panel itself still serves 200 |
 | Property tests  | 1600 generated inputs across 4 profiles in `tests/schemas/sanitize-fuzz*.test.ts`; 0 unstable outputs. They found the composition defect fixed in `src/lib/schemas/sanitize.ts`                           |
-| File size       | largest file is 184 lines and the largest under `src/` is 165, both under the 250 limit and below the 200 warn line                                                                                       |
+| File size       | largest file is 202 lines and the largest under `src/` is 202, both under the 250 limit                                                                                                                   |
 | Test shape      | 35 test functions: 30 generated from a table, 4 iterating a table inside the body, 1 regression case with two assertions, so 0 assert a single input                                                      |
 | Text hygiene    | 0 em dashes and 0 emoji in `src`, `tests`, and `scripts`                                                                                                                                                  |
 
 Not yet verified: any call that needs a running `app-serv`. Sign-in, key creation, and settings writes
-were exercised against the panel's own error paths only, so the screens' happy paths still need a live
+were exercised against the panel's own error paths only, so those screens' happy paths still need a live
 gateway.
 
 ## Open items that block later phases
 
-1. `AGENTS.md` exists and scopes itself to the Go services (`app-*/**`), so it does not govern this
-   panel. The panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5 and are
-   followed by hand here, because `scrypts/` does not exist yet to enforce them.
-2. `DESIGN.md` does not exist, so U1 screens cannot be styled and this phase's visuals stay a draft
-   without direction (§9.1).
-3. `scrypts/` does not exist, so the drift gate that compares these schemas against SPEC-API §7 is not
-   wired yet.
-4. Gateway key `status` values are not enumerated in SPEC-API §7.3. The panel currently writes `active`
+1. **`app-serv` cannot boot on its P1 tree.** Migration `000007_usage_quota.up.sql` uses `window` as a
+   column name, which is a PostgreSQL reserved word, and the runner stops with `SQLSTATE 42601` after
+   migrations 000005 and 000006 apply. Until that is fixed no panel screen can be verified end-to-end.
+   The fix belongs to `app-serv` P1 and is recorded in `SYSTEM_MAP.md`. Commands for a local run are in
+   `app-serv/README.md`.
+2. **Playground Chat cannot be built.** It crosses the session-versus-gateway-key auth boundary, and
+   SPEC-API assigns it no phase. Spec §14 Q7 lists the three decisions it needs; §6.17 records the shape
+   so far. The sidebar row carries `Planned`.
+3. **Changelog has no data source.** SPEC-API §7 defines no changelog endpoint. Spec §14 Q11 lists the
+   three options. The sidebar row carries `Planned`.
+4. `AGENTS.md` scopes itself to the Go services (`app-*/**`), so it does not govern this panel. The
+   panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5, and they are applied by
+   hand here. The panel's gates live in `scrypts/gates/panel-check.sh`.
+5. The drift gate that compares these schemas against SPEC-API §7 is not wired yet, because
+   `docs/SPEC-API/002-SPEC-API-openapi.md` does not exist to compare against (spec §14 Q3).
+6. Gateway key `status` values are not enumerated in SPEC-API §7.3. The panel currently writes `active`
    and `disabled` and renders any other value verbatim; see §14 Q9.

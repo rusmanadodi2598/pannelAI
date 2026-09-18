@@ -3,7 +3,7 @@
 	//
 	// All three live in one component so a screen cannot implement loading and forget the empty case.
 	// Copy is passed in, because the reason a view is empty belongs to the screen that owns the data.
-	import { LoaderCircle, TriangleAlert } from 'lucide-svelte';
+	import { LoaderCircle, TriangleAlert } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
 
 	type Props = {

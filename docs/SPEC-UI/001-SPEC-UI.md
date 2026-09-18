@@ -53,10 +53,25 @@ not code to copy.
 | 8 | Proxy Pools | `/proxy-pools` | SPEC-API §7.11 | U2 |
 | 9 | Skills (`/antislop` AI, SuperPowers) | `/skills` | Content source not yet in a repository. See §14 Q2. | U3 |
 | 10 | API Docs | `/api-docs` | SPEC-API §7 (read-only rendering) | U1 |
-| 11 | Logs | `/logs` (Requests tab, Console tab) | SPEC-API §7.13 | U1 |
+| 11 | Logs | `/logs` (Requests tab) | SPEC-API §7.13 | U1 |
 | 12 | Settings | `/settings` (Security, Routing, Network, Logging tabs) | SPEC-API §7.14 | U1, U2 |
 | 13 | English | Cross-cutting copy contract, no screen | SPEC-API §4 | U0 |
 | 14 | Authentication (session) | `/login` | SPEC-API §7.2 | U0 |
+| 15 | Playground Chat (owner addition, 2026-09-17) | `/playground` | Data plane, SPEC-API §7.15. See §6.14 and §14 Q7. | Unassigned |
+| 16 | Changelog (owner addition, 2026-09-17) | `/changelog` | No API. See §6.15. | Unassigned |
+| 17 | Console Log (split out of Logs, owner 2026-09-17) | `/console-log` | SPEC-API §7.13 | U1 |
+
+Additions 15 to 17 are owner decisions recorded on 2026-09-17. Three consequences follow, and each is
+stated here rather than left implicit:
+
+- **Console Log is now its own route.** §6.11 keeps only the Requests tab, and §6.16 is the console
+  screen. The backing endpoints are unchanged (`GET` and `DELETE /api/v1/logs/console`).
+- **Playground Chat has no phase.** SPEC-API §10 assigns it none, because it exercises the data plane
+  through a gateway key rather than the management API through a session. Until SPEC-API assigns a phase
+  and a key-handling rule, the sidebar row carries the Planned label and no route, and no control is
+  built. §14 Q7 records what the spec still has to decide.
+- **Changelog has no endpoint.** SPEC-API §7 lists none. The row carries the Planned label and no route;
+  §14 Q11 records the decision the API spec has to make first.
 
 Ledger:
 - **Multi Provider.** The Providers screen renders whatever `GET /api/v1/providers` returns and holds
@@ -122,7 +137,7 @@ Rules:
 | Components | shadcn-svelte (built on Bits UI and Tailwind CSS) as the primitive layer, extended in `src/lib/components/`. Baseline primitives are a starting point, never a shipped default (§9). |
 | Validation | **`zod`**, the v4 line, latest at pin time with the exact version recorded in the lockfile, as the only strict validation and sanitization layer at the panel boundary (§7). No second validator, and no hand-rolled regex in a component. |
 | Charts | shadcn-svelte's chart component, which is built on LayerChart. One chart library only. |
-| Icons | `lucide-svelte` (the set shadcn-svelte ships with), one set, no emoji glyphs in UI strings (owner decision, §13.4). |
+| Icons | `@lucide/svelte` (the set shadcn-svelte ships with), one set, no emoji glyphs in UI strings (owner decision, §13.4). |
 | Language | English only. No i18n framework, no switcher. |
 | API base | `/api/v1`, relative path in the browser. A build-time env var may override the origin for split deployments, with the same `SameSite` caveat in §3.1. |
 | Naming | Panel names mirror the API: `endpoint`, `gateway_key`, `combo`, `quota_window`, `proxy`, `token_saver`. No second vocabulary in the UI layer. |
@@ -151,25 +166,48 @@ Rules:
 | `/media-providers/[kind]` | Media providers by kind | Session | U2 |
 | `/proxy-pools` | Proxy rows, tests, and outbound proxy settings | Session | U2 |
 | `/skills` | `/antislop` AI and SuperPowers install entries | Session | U3 |
-| `/logs` | Request logs and the console ring buffer | Session | U1 |
+| `/logs` | Request logs | Session | U1 |
+| `/console-log` | The console ring buffer | Session | U1 |
+| `/playground` | Playground chat over a gateway key | Gateway key | Unassigned, §14 Q7 |
+| `/changelog` | Release notes for the gateway | Session | Unassigned, §14 Q11 |
 | `/api-docs` | API v1 reference rendered from SPEC-API §7 | Session | U1 |
 | `/settings` | Security, Routing, Network, Logging | Session | U1, U2 |
 | Unknown path | Not-found view with a link back to `/endpoint-keys` | Session | U0 |
 
 ### 5.2 Navigation contract
 
-1. The sidebar lists exactly these items, in this order, matching the owner KEEP list: Endpoint & Key,
-   Providers, Combo & Vision Adapter, Usage, Quota Tracker, Token Saver, Media Providers (grouped
-   sub-items for each kind), Proxy Pools, Skills, Logs, API Docs, Settings.
-2. **Every nav item has a route in §5.1 that exists at the time the item ships.** An item whose screen is
-   not built yet is absent, not disabled (R-24).
-3. Nav items whose screen is planned for a later phase appear in the sidebar only when that phase ships,
-   or with a visible "Planned" label in the item when the owner asks for the full structure up front.
+1. The sidebar lists the owner KEEP list plus the three additions recorded in §2.1, in five groups. A
+   flat list of nineteen rows is a list, not a structure, so each group answers one question the operator
+   has, and the grouping is part of the specification rather than a layout choice:
+
+   | Group | Question it answers | Items |
+   |---|---|---|
+   | Configure | What does the gateway route to? | Endpoint & Key, Provider, Combo & Vision Adapter, Media Provider (with its six kinds as sub-items) |
+   | Observe | What already happened? | Usage, Quota Tracker, Console Log |
+   | Optimize | What can be cheaper or reused? | Token Saver, Skill |
+   | Developer | How does a client talk to the gateway? | Playground Chat, API Docs, Changelog |
+   | System | How does the panel itself behave? | Proxy Pools, Setting |
+
+   Group labels are the panel's own prose and appear in English only. Media Provider is a disclosure, not
+   a route: it expands to Embedding, Image, Video, TTS, STT, and Web Search.
+
+2. **Every nav item has a route in §5.1 that exists at the time the item ships.** The panel enforces
+   this in code rather than by review: an item carries an `href` only when a route file exists, and an
+   item without one renders as inert text with a visible `Planned` chip. A dead link is therefore not
+   representable, not merely discouraged (R-24).
+3. Items for later phases are visible with the `Planned` label, because the owner asked for the full
+   structure up front (owner, 2026-09-17). Hiding an unbuilt screen would misrepresent the panel's scope;
+   leaving it clickable would break R-24. The labelled row is the third option and the one used.
 4. The header holds the theme toggle, the session identity (no profile page, so it is a label plus a
    logout action), and a global "API base URL" copy control. No search box in the header: search is
    per-screen and server-side.
-5. Media kinds render as sub-items under one Media Providers group: Embedding, Image, Video, TTS, STT,
-   Web Search. Kinds with no configured provider still open and show the empty state with the reason.
+5. **Three responsive shapes** (owner requirement, 2026-09-17; DESIGN.md §8). Mobile is a drawer over a
+   dimmed overlay, tablet is a 64px icon rail that expands on demand, and desktop is a 264px sidebar that
+   collapses to the same rail. The collapsed state is remembered in a cookie, and the viewport decides
+   the first visit. Every row is at least 44px tall, and the shell uses `100dvh` so mobile browser chrome
+   does not clip the header (R-03).
+6. The active row carries the panel's identity motif: a 3px accent marker on the leading edge, always
+   paired with the label, so position is never signalled by colour alone (DESIGN.md §6).
 
 ## 6. Screen specifications
 
@@ -402,12 +440,61 @@ absent.
 
 **Tab 2: Console**
 
-- **Data:** `GET /api/v1/logs/console`, `DELETE /api/v1/logs/console`.
+Moved to its own screen at `/console-log` (§6.16) on 2026-09-17, at the owner's request, because console
+output is read while a request is being debugged and a tab behind the Requests list made it a
+second-class view. The endpoints are unchanged. This section is kept as a pointer so a reader who
+remembers the tab finds the new home rather than an empty heading.
+
+### 6.16 `/console-log`
+
+- **Data:** `GET /api/v1/logs/console`, `DELETE /api/v1/logs/console` (SPEC-API §7.13).
 - **View:** ring buffer lines in a monospace block, newest last, with a pause and resume control, a
   follow toggle, and a clear action.
 - **Honesty rule:** the buffer is polled, because management API v1 exposes no stream (SPEC-API §7.13). The
   control is labelled "Auto refresh", not "Live", and shows the poll interval.
-- **Empty state:** "Console buffer is empty."
+- **Clear:** `DELETE` removes the buffer server-side, so the confirmation names that consequence rather
+  than presenting it as a local view reset.
+- **Empty state:** "Console buffer is empty." plus the reason it can be empty: the gateway records console
+  output only while it is running, so a restart also empties the buffer.
+- **Phase:** U1, with the Requests screen it was split from.
+
+### 6.17 `/playground`
+
+**Status: shape recorded, not specified. Unassigned phase, §14 Q7.**
+
+This section exists so the sidebar row has a named destination in the document, and so the questions the
+screen has to answer are written down before anyone builds it. It is deliberately not a screen
+specification: SPEC-UI §13.10 forbids a control without an endpoint behind it, and SPEC-API assigns no
+phase to the routes this screen needs.
+
+What is already decided and what still has to be decided:
+
+| Question | State |
+|---|---|
+| Which API does it call? | The data plane, SPEC-API §7.15 (`POST /api/v1/chat/completions`), not the management API. |
+| How does it authenticate? | **Undecided.** Every other screen uses the session cookie. The data plane uses a gateway key (SPEC-API §4), so this screen crosses the auth boundary that §3.3 of this spec relies on. §14 Q7 asks which applies. |
+| Is there a phase? | No. SPEC-API §10 gives the data plane routes a phase, but no panel phase is assigned to this screen. The sidebar row is `Planned` until one is. |
+| Does the request cost money? | Yes, it is a real routed request that consumes provider quota and writes a usage record. The screen has to say so before the operator sends one. |
+
+Until every row above is answered, no control ships, and the sidebar row stays inert. A code block in the
+nav data is not a control, which is what keeps this consistent with R-26 and R-24.
+
+### 6.18 `/changelog`
+
+**Status: shape recorded, not specified. Unassigned phase, §14 Q11.**
+
+- **What the screen is for:** the gateway changes behaviour across releases (provider registry entries,
+  routing defaults, token savers), and an operator who is debugging a changed response needs to know what
+  moved and when.
+- **Blocking dependency:** SPEC-API §7 lists no changelog endpoint, so there is no data source. The page
+  could read a bundled file, but a bundled file drifts from the running gateway and would be the
+  hand-written second copy that §6.12 already calls a defect for the same reason.
+- **Honest alternative while blocked:** the row carries the `Planned` label and no route. A page that
+  renders a stale bundled list is worse than a row that says the screen does not exist yet (R-38).
+- **If SPEC-API adds an endpoint:** the screen lists entries newest first with the release, the date, and
+  the changed behaviour, and it states the running version so the reader can tell whether an entry is
+  behind or ahead of what they are running. No download counts, no star counts, no version badges for
+  anything the API does not return (R-17).
 
 ### 6.12 `/api-docs`
 
@@ -674,11 +761,23 @@ does not pass review.
 
 ### 8.7 Responsive and input
 
-1. Sidebar collapses to a drawer under 1024px. Tables become stacked key-value rows under 768px, or scroll
-   horizontally inside their own container when a comparison layout is essential; the page body never
-   scrolls horizontally (R-03).
-2. Tap targets are at least 44px on touch layouts.
-3. No hover-only information: every tooltip value is present in the detail view or a table column.
+1. **Three shapes, not two** (owner requirement, 2026-09-17; DESIGN.md §8). The breakpoints are mobile
+   under 768px, tablet 768px to 1023px, and desktop 1024px and up:
+
+   | Band | Shell | Notes |
+   |---|---|---|
+   | Mobile | Off-canvas drawer over a dimmed overlay | Opens from the header control, closes on Escape, on the overlay, on navigation, and on the close control. Safe-area insets pad the drawer and the header. |
+   | Tablet | 64px icon rail, expandable to full width | This band previously received a drawer, which wasted the space a tablet actually has. The rail keeps navigation reachable while a form is open. |
+   | Desktop | 264px sidebar, collapsible to the same rail | The collapsed state is remembered in a cookie. |
+
+2. Tables become stacked key-value rows under 768px, or scroll horizontally inside their own container
+   when a comparison layout is essential; the page body never scrolls horizontally (R-03).
+3. Tap targets are at least 44px on touch layouts, including the control that opens the mobile drawer.
+4. The shell height is `100dvh`, not `100vh`: `100vh` is taller than the visible area under mobile browser
+   chrome, which clips a sticky header on a phone. Only the content column scrolls.
+5. No hover-only information: every tooltip value is present in the detail view or a table column. On the
+   tablet rail, a collapsed row's label is available as a tooltip and the row keeps an accessible name,
+   so collapsing the sidebar never removes the label from a screen reader.
 
 ### 8.8 Accessibility
 
@@ -711,35 +810,41 @@ does not pass review.
 
 ### 8.11 Icons and no-emoji rule
 
-1. One icon set: `lucide-svelte`, the set the component layer ships with. Mixing sets is forbidden.
+1. One icon set: `@lucide/svelte`, the set the component layer ships with. Mixing sets is forbidden. The
+   older `lucide-svelte` package is deprecated on npm in favour of `@lucide/svelte` and is no longer a
+   dependency.
 2. Every icon used in navigation and section headers is recorded in one icon map file with a one-line
    reason for the choice (R-04, R-31). An icon with no writable reason is removed, not decorated. The file
    is `src/lib/icons.ts`, and it is the only place an icon name appears.
 3. **Sidebar map (owner requirement: fresh shadcn icons).** The sidebar takes its icons from the same set
-   the component layer ships, so the panel has one visual language. Each row states what the icon has to
-   communicate; the exact identifier is taken from the installed package at U0 and verified against its
-   index before it ships, so no guessed name reaches the build.
+   the component layer ships with, so the panel has one visual language. Each row states what the icon has
+   to communicate. The identifier column names the shape, and the assertion that it resolves lives in
+   `tests/navigation/icons.test.ts`, which fails the build when a name does not exist in the installed
+   package, so no guessed name can reach the build.
 
-| Nav item | Icon has to communicate | Candidate identifier | Reason |
+| Nav item | Icon has to communicate | Identifier | Reason |
 |---|---|---|---|
 | Endpoint & Key | A credential | `key-round` | The screen is about keys, client-facing and upstream. |
-| Providers | An upstream machine | `server` | A provider is a remote host the gateway calls. |
+| Provider | An upstream machine | `server` | A provider is a remote host the gateway calls. |
 | Combo & Vision Adapter | Ordered stacking | `layers` | A combo is an ordered list of models tried in sequence. |
-| Usage | Consumption over time | `chart-line` | Usage is a time series, not a single number. |
-| Quota Tracker | A limit with a remaining amount | `gauge` | Quota is headroom against a cap, which a gauge shows at a glance. |
-| Token Saver | Trimming | `scissors` | The savers cut tokens out of a request before it is sent. |
-| Media Providers | A picture frame | `image` | The group covers non-text models, and image is its most used kind. |
+| Media Provider | A non-text model | `image` | The group covers non-text models, and image is the kind most operators configure first. |
 | Media kind: Embedding | Vectors | `binary` | Embeddings are numeric vectors. |
 | Media kind: Image | Image generation | `image` | Direct match to the kind. |
 | Media kind: Video | Moving image | `film` | Direct match to the kind. |
 | Media kind: TTS | Speech output | `volume-2` | The provider produces audio. |
 | Media kind: STT | Speech input | `mic` | The provider consumes audio. |
 | Media kind: Web Search | Retrieval | `search` | The kind is a query against the web. |
-| Proxy Pools | A routing path | `network` | Proxies are intermediate hops in the outbound path. |
-| Skills | Assembled pieces | `blocks` | A skill is a reusable instruction block handed to a client. |
-| Logs | A written record | `scroll-text` | Logs are records read after the fact. |
+| Usage | Consumption over time | `chart-line` | Usage is a time series, not a single number. |
+| Quota Tracker | A limit with a remaining amount | `gauge` | Quota is headroom against a cap, which a gauge shows at a glance. |
+| Console Log | Captured terminal output | `terminal-square` | The buffer is terminal output, not a written audit trail, so it is a different glyph from Logs. |
+| Token Saver | Trimming | `scissors` | The savers cut tokens out of a request before it is sent. |
+| Skill | Assembled pieces | `blocks` | A skill is a reusable instruction block handed to a client. |
+| Playground Chat | Sending a request by hand | `message-square-code` | The screen sends a chat request by hand to see what the gateway answers. |
 | API Docs | A reference to read | `book-open` | The screen is documentation, not an action. |
-| Settings | Configuration | `settings` | Direct match to the screen. |
+| Changelog | A record ordered by time | `history` | A changelog is a record read backwards through time. |
+| Proxy Pools | A routing path | `network` | Proxies are intermediate hops in the outbound path. |
+| Setting | Configuration | `settings` | Direct match to the screen. |
+| Request logs (section header, not a nav row) | A written record | `scroll-text` | Request logs are records read after the fact. |
 
 4. No emoji anywhere in UI strings, buttons, empty states, or headings (owner decision, §13.4). Unicode
    emoji are also excluded from code comments and commit prose in `app-ui`.
@@ -760,24 +865,30 @@ records what is fixed by the rules versus what needs the owner's direction.
 
 | Item | State |
 |---|---|
-| Owner-stated direction | Legacy panel parity in structure and density, with a fresher component layer (shadcn-svelte) and fresh icons, no emoji (owner, 2026-09-16). |
-| `DESIGN.md` | Not in the repository (verified 2026-09-16). Required before U1 screens are styled. |
-| Palette, typography, logo, identity motif | **Not supplied by the owner, and not invented here.** These are placeholders until `DESIGN.md` exists. |
+| Owner-stated direction | Legacy panel parity in structure and density, delivered fresh: a cleaner component layer (shadcn-svelte), fresh icons, no emoji, and explicit mobile, tablet, and desktop behaviour (owner, 2026-09-16 and 2026-09-17). |
+| `DESIGN.md` | **Present at the repository root** (added 2026-09-17). It holds the identity, the palette, the typeface, the radius and elevation scale, the identity motif, and the reason log. |
+| Palette, typography, logo, identity motif | Supplied through `DESIGN.md`. The logo was supplied by the owner at `app-ui/assets/static/logo.png` on 2026-09-17 and is cropped to a circular mark for the panel. |
 
-Consequence: any styling detail this spec does not state is a placeholder, not a silent default. A screen
-built from this spec before `DESIGN.md` exists is a **draft without direction**, and it is not a shippable
-deliverable (R-37).
+Consequence: the earlier "draft without direction" state is closed. A screen built from this spec and
+`DESIGN.md` is a deliverable, and `DESIGN.md` is where a visual value is decided. Where the two files
+disagree about a visual value, `DESIGN.md` wins; where they disagree about a behaviour, an endpoint, or a
+route, this spec wins.
 
-### 9.2 Dials (draft, awaiting `DESIGN.md`)
+The palette decision worth recording here, because it differs from the legacy panel on purpose: the
+legacy coral `#E56A4A` measures 3.23:1 as a button fill with white text, below the AA floor. The light
+theme therefore uses the same hue one step darker, and the dark theme keeps the exact legacy coral with a
+near-black label. `DESIGN.md` §3.1 and §3.3 carry the measured ratios.
+
+### 9.2 Dials
 
 | Dial | Value | Reason |
 |---|---|---|
-| ENERGY | 1 | Legacy parity: an operator tool that says hello quietly, with dense tables as the main surface. |
-| RHYTHM | 1 | A uniform shell is deliberate for an admin panel: the sidebar, header, and content frame do not change shape between screens, so an operator's muscle memory holds. RHYTHM 1 is a choice here, not an accident. |
-| MOTION | 1 | Motion is limited to hover, focus, and state transitions. No scroll choreography on a screen an operator opens twenty times a day. |
+| ENERGY | 1 | An instrument states its values and stops. Density is the point, not decoration. |
+| RHYTHM | 2 | The shell is deliberately uniform so muscle memory holds across screens, while the sidebar's five task groups and the screen bodies vary in composition. A flat 1 would make every screen one undifferentiated strip; a 3 would cost the operator orientation. |
+| MOTION | 1 | Hover, focus, and state transition only, plus the mobile drawer slide. No scroll choreography on a screen an operator opens twenty times a day. |
 
-These three values are the honest default that R-37 requires when no `DESIGN.md` exists. They are open to a
-one-line change in `DESIGN.md` once the owner writes it.
+`DESIGN.md` §2.1 is the source of these values. A change to a dial is a one-line change there, and this
+table follows it.
 
 ### 9.3 Binding to the component layer
 
@@ -838,17 +949,30 @@ app-ui/
 │   │   ├── api/            # one HTTP client, endpoint functions, error mapping
 │   │   ├── schemas/        # Zod schemas per API resource (§7)
 │   │   ├── components/     # panel components built on the primitive layer
-│   │   ├── primitives/     # shadcn-svelte generated components
-│   │   ├── stores/         # session, theme, toasts
+│   │   ├── primitives/     # shadcn-svelte generated components, unmodified
+│   │   ├── stores/         # session, theme, sidebar preference
 │   │   ├── strings/        # panel prose per screen, English only
-│   │   └── utils/          # formatting: time, tokens, cost, pagination
+│   │   ├── icons.ts        # the one icon map, one written reason per icon (§8.11)
+│   │   ├── navigation.ts   # the sidebar tree as data (§5.2)
+│   │   └── utils.ts        # class-name helper for the primitive layer
 │   ├── routes/             # routes from §5.1
-│   └── app.html
-├── static/
-├── tests/                  # schema and component tests
+│   ├── app.css             # the token layer, DESIGN.md §3 to §5
+│   ├── app.html
+├── assets/static/          # owner-supplied source assets (logo originals)
+├── static/                 # served assets: logo mark, favicon, self-hosted fonts
+├── tests/                  # schema, component, token, and navigation tests
+├── components.json         # the primitive layer's install configuration
 ├── package.json
 └── README.md
 ```
+
+Two files carry structure that a reader would otherwise have to reconstruct from components:
+
+- **`src/lib/navigation.ts`** holds the sidebar tree: the five groups, each with a written reason, and
+  every item with its label, its icon key, and either an `href` or a `Planned` state. A screen is added in
+  one place. The rule from §5.2.2 is enforced by the type rather than by review, because an item without
+  `href` has nothing for the renderer to link to.
+- **`src/lib/icons.ts`** holds one entry per navigation row, each with a one-line reason (R-04, R-31).
 
 Boundaries:
 
@@ -861,6 +985,14 @@ Boundaries:
    key-shaped strings and fails on a match.
 5. Server-only concerns stay out: the panel has no database client, no Redis client, and no long-lived
    process.
+6. `src/app.css` is imported once, from the root layout, because that is the one component every route
+   renders through. A route cannot load without it. This is stated as a rule because the opposite
+   happened: the token layer was written and tested in U0 and never imported anywhere, so the whole panel
+   rendered unstyled while its contrast test passed. The test measured the file, not the page.
+7. `src/lib/primitives/` is generated by the component layer's CLI and is not hand-edited, except for a
+   token value that has to satisfy `DESIGN.md` (the sidebar rail width). A change there is recorded in
+   `DESIGN.md` §11 with its reason, and it is re-applied after a regeneration rather than assumed to
+   survive one.
 
 File and header rules: source files stay under 250 lines (warning at 200, matching the project gates),
 every file opens with a header comment stating its purpose and the API endpoints it touches, and no file
@@ -917,8 +1049,17 @@ preference, and this section does not paraphrase it away.
    start command from `app-ui/`, all without errors and without a runtime network call to a third party.
    Lockfile committed. The process runs on Bun (§10.1).
 2. **Test.** Table-driven schema tests (§7.6, checklist in §7.7) and component tests for the flows in §12 run through
-   `bun test`. The route table in §5.1 and the nav list in §5.2 have a test that asserts every nav item
-   resolves to a defined route.
+   `bun test`. Three specific assertions carry structural rules, and each is a test rather than a review
+   habit:
+   - **Navigation.** The nav tree is checked as data against the route files discovered on disk, so a row
+     with an `href` that no route provides fails the build (R-24). The reverse direction is checked too: a
+     route-shaped item the owner did not list fails, and so does a navigation row with no icon or no
+     written reason (R-04, R-31).
+   - **Tokens.** Every colour pair the panel renders is measured against WCAG AA in both themes, read from
+     `src/app.css` rather than restated, so a palette regression fails the build instead of shipping
+     (R-25). The accent count per theme is asserted, which is how the R-29 cap is held (one accent).
+   - **Sidebar preference.** The initial open state is a function of the stored cookie and the viewport
+     band, tested table-driven, because the tablet band is the one that silently regresses.
 3. **Types.** Type checking passes with no implicit `any`. Types crossing the API boundary are Zod
    inferences, not hand-written duplicates.
 4. **Lint.** Formatter and linter configured for the Svelte and TypeScript sources, wired to the project
@@ -959,7 +1100,7 @@ Phases mirror SPEC-API §10, so the panel never ships against an endpoint that d
 2. Multi-key per upstream endpoint is a first-class panel concept, not a single hidden field (owner
    requirement; SPEC-API §11.2).
 3. The nav list equals the owner KEEP list plus Skills. No screen beyond §2.1 is built.
-4. Component layer is shadcn-svelte and icons are `lucide-svelte` with no emoji in UI copy (owner,
+4. Component layer is shadcn-svelte and icons are `@lucide/svelte` with no emoji in UI copy (owner,
    2026-09-16). Legacy panel parity is the structural reference.
 5. **Zod is the single strict validation and sanitization layer in `app-ui`**, taking the latest published
    version at install time (the v4 line), applied to form input, route and search params, API responses,
@@ -987,8 +1128,13 @@ Phases mirror SPEC-API §10, so the panel never ships against an endpoint that d
 
 ## 14. Open questions
 
-1. **`DESIGN.md` is missing.** Who writes it, and when? The palette, typeface, logo treatment, and the
-   identity motif come from it. Until it exists, U1 styling is a draft without direction (§9.1).
+1. **Closed 2026-09-17: `DESIGN.md` is present.** The owner supplied the direction the same day: legacy
+   structural parity, delivered fresh, with mobile, tablet, and desktop behaviour as an explicit
+   requirement, and the logo at `app-ui/assets/static/logo.png`. `DESIGN.md` at the repository root holds
+   the identity, palette, typeface, radius and elevation scale, identity motif, and reason log, so the
+   "draft without direction" state in §9.1 is closed. One follow-up stays open: the typeface is Inter,
+   chosen for legibility at 12px in dense tables and for parity with the legacy panel, and it is a value a
+   later `DESIGN.md` revision can change in one line.
 2. **Skills source.** Where do `/antislop` AI and SuperPowers live for `pannelAI`? The reference panel
    points its skills page at raw URLs in an external repository, and nothing equivalent exists for this
    repository yet. The Skills tab cannot complete phase U3 without a decided source path and install line.
@@ -1003,8 +1149,18 @@ Phases mirror SPEC-API §10, so the panel never ships against an endpoint that d
    category first. The answer changes the Providers screen's default filter and paging behaviour.
 6. **Purge guard threshold.** Is 1000 rows the right typed-confirmation threshold for log purge, or should
    the confirmation be based on the retention window instead?
-7. **Data-plane playground.** Confirm that the basic chat page stays out permanently. If it is wanted
-   later, it needs its own spec, because it exercises the gateway key path rather than the session path.
+7. **Partially closed 2026-09-17: the data-plane playground is wanted.** The owner added Playground Chat
+   to the sidebar, so the earlier recommendation to leave it out permanently is withdrawn. It cannot be
+   built yet, and the reason is not styling. Three decisions are missing, and all three belong to
+   SPEC-API rather than to this document:
+   - **Auth.** The data plane authenticates with a gateway key (SPEC-API §4), while every panel screen uses
+     the session cookie. If the panel holds a gateway key, where does it live, and how is it protected on
+     a shared browser? If it does not, an operator has to paste one per request.
+   - **Phase.** SPEC-API §10 assigns the data-plane routes a phase but assigns this screen none.
+   - **Cost disclosure.** A sent request routes through a real provider, consumes quota, and writes a usage
+     record. The screen has to state that before the operator sends one.
+   Until those are answered, the sidebar row carries `Planned`, no route file exists, and no control ships.
+   §6.17 records the shape as far as it is decided.
 8. **Closed 2026-09-16: the governance file is present.** [`AGENTS.md`](../../AGENTS.md) landed at the
    repository root and scopes itself to Go services under `app-*/**`, so the earlier blocking note in this
    section is withdrawn: it does not gate the panel. Two follow-ups come out of it. `SYSTEM_MAP.md` is
@@ -1021,6 +1177,18 @@ Phases mirror SPEC-API §10, so the panel never ships against an endpoint that d
    free-form rationale comment plus a purpose line. Should the panel adopt the same tags so a reviewer
    greps one format across both apps, or keep free form because tags such as `@layer` and `@stability`
    describe Go package concepts that the panel does not have?
+11. **Changelog has no data source.** The owner added Changelog to the sidebar on 2026-09-17, and SPEC-API
+   §7 lists no changelog endpoint. Decide one of three paths before the screen is built:
+   - **An endpoint.** SPEC-API adds a route that reports the running version with its release entries,
+     which is the only option where the page cannot drift from the running gateway.
+   - **A generated file at build time.** The panel bundles the release notes it built against. This is
+     honest only if the page also states the version it was built with, so a reader can tell when it is
+     stale.
+   - **No screen.** The sidebar row is removed and Changelog stays a repository file, which is what
+     `CHANGELOG.md` conventions already provide.
+   A hand-written page that restates releases is a defect for the same reason a hand-written second copy
+   of the API contract is (§6.12): it drifts and then lies. §6.18 records the shape as far as it is
+   decided.
 
 ## 15. Evidence for numbers and paths used here
 
@@ -1039,9 +1207,15 @@ table exists so a reader can re-run the measurement instead of trusting the sent
 | Component layer facts | shadcn-svelte documentation and migration notes | Components are built with Bits UI and Tailwind CSS, with Svelte 5 and Tailwind v4 support; the chart component is built on LayerChart |
 | Validation library line | The `zod` page on npm, and the Zod 4 release notes on zod.dev | Zod 4 is the stable line, with 4.x published at the time of writing. The panel installs the latest at pin time and records the exact version in the lockfile. |
 | `/logs` has no stream endpoint in v1 | SPEC-API §7.13 lists list, detail, purge, and console routes only | No SSE route for management logs, so the panel polls |
-| `DESIGN.md` absent | `find . -maxdepth 2 -iname DESIGN.md` at the `pannelAI` root | No match |
-| `AGENTS.md` absent | `ls AGENTS.md` at the `pannelAI` root | Not present |
-| `pannelAI` root contents | `ls -la` at the project root, plus `grep -c` on `AGENTS.md` | `.gitignore`, `README.md`, `AGENTS.md`, `docs/`, `deployment/`, `anti-slop/`, `app-ui/`. `AGENTS.md` is 266 lines and its scope line names Go services under `app-*/**`. |
+| `DESIGN.md` present | `ls DESIGN.md` at the `pannelAI` root | Present, added 2026-09-17. Holds identity, palette, typeface, radius and elevation, identity motif, and the reason log. |
+| `AGENTS.md` present | `ls AGENTS.md` at the `pannelAI` root and `grep -c` on it | Present. Its scope line names Go services under `app-*/**`, so it does not govern the panel. |
+| `pannelAI` root contents | `ls -la` at the project root | `.gitignore`, `README.md`, `AGENTS.md`, `DESIGN.md`, `SYSTEM_MAP.md`, `docs/`, `deployment/`, `scrypts/`, `app-ui/`, `app-serv/`, `backups/` |
+| Panel test count | `bun run test` in `app-ui/` | 396 passing across 13 files after the sidebar work (was 310 across 11 before) |
+| Panel type check | `bun run check` in `app-ui/` | 0 errors, 0 warnings |
+| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 19 rows in 5 groups: 2 with a route, 11 planned leaves, 5 media kinds under one container, 1 container |
+| Accent usage in the shell | `grep -rn "color-accent"` across `src/lib/components` | Active row marker, primary action, focus ring, link, and active tab only (DESIGN.md §3.4) |
+| Logo source | `file app-ui/assets/static/logo.png` | JPEG data, 1254x1254, despite the `.png` extension. Cropped to `static/logo-mark.png` (512x512 RGBA, circular alpha mask) |
+| Legacy coral fails AA as a fill | Contrast calculation over the legacy token from `apps/9router/src/app/globals.css` | `#E56A4A` with white text measures 3.23:1, below the 4.5:1 floor, which is why the light theme uses `#B8412A` |
 | SvelteKit needs an adapter, and Bun can run it | SvelteKit adapter documentation, the Bun SvelteKit guide, and the Bun adapter template | A production SvelteKit server comes from an adapter; Bun documents building SvelteKit apps and a Bun adapter exists, so serving the panel and proxying `/api/v1` from the panel's own Bun process (§10.1) is a supported setup, not a workaround. |
 
 Path status for every path referenced in this document:
@@ -1056,7 +1230,9 @@ Path status for every path referenced in this document:
 | `app-ui/` | Present, phase U0 (login, endpoint-keys, settings). Remaining screens are Planned in the sidebar. |
 | `app-serv/` | Present, phase P0 (config, migrations, health/version, gateway keys). The auth endpoints this panel calls are not built yet, so U0 cannot be exercised end-to-end against it. |
 | `scrypts/` | Present: gates and git hooks, see `scrypts/README.md`. |
-| `DESIGN.md` | Planned, see §14 Q1 |
+| `DESIGN.md` | Present at the repository root, added 2026-09-17 |
+| `app-ui/static/logo-mark.png` | Present, cropped from the owner's `assets/static/logo.png` |
+| `app-ui/static/fonts/InterVariable.woff2` | Present, self-hosted (344 KB), because a font CDN is excluded by §11.7 |
 | `002-TOKEN-SAVER` (native saver spec) | Planned, per SPEC-API §10 P3 |
 
 ## 16. antislop gate record for this document
@@ -1071,8 +1247,8 @@ A deferred item names the check and where the evidence must appear.
 |---|---|---|
 | R-02 (no em dash) | PASS | Verified 2026-09-16: zero occurrences of the em dash character (U+2014) in the file, and zero en dashes (U+2013). The title separator is a colon, and negative terms such as "Not ported" use plain wording. |
 | R-17 (numbers need a source) | PASS | Every count appears in §15 with the command that produced it. No figure is carried over from the reference README or the API spec without a citation. |
-| R-24 (no navigation without a destination) | PASS | §5.2.2 makes it a rule, and §5.1 defines a route for every nav item in the list. The U0 scaffold implements it: unbuilt items render with a Planned chip instead of a link. |
-| R-38 (real content or honest placeholder) | PASS | §15 marks every path present or planned. The two ghost references flagged in the earlier panel audit are not repeated: `AGENTS.md` is marked planned, and the missing OpenAPI companion is named as missing in §14 Q3. |
+| R-24 (no navigation without a destination) | PASS | §5.2.2 makes it a rule, and it is now enforced by the data model rather than by review: a navigation row carries an `href` only when a route file exists, so a dead link is not representable. `tests/navigation/navigation.test.ts` cross-checks the tree against the routes discovered on disk. Re-verified 2026-09-17 with all 19 owner rows in the sidebar: 2 rows are real links, 17 are labelled `Planned`. |
+| R-38 (real content or honest placeholder) | PASS | §15 marks every path present or planned. `DESIGN.md` and the logo moved from "missing" to present on 2026-09-17, and the entries were updated rather than left stale. The missing OpenAPI companion is still named as missing in §14 Q3, and the two owner additions without an endpoint (Playground Chat, Changelog) are labelled `Planned` rather than shipped as links. |
 | R-36 (no fabricated claims) | PASS | The document makes no security, compliance, uptime, or performance claim about the panel. §7.1.3 explicitly denies a security-boundary claim, and the Bun runtime claim in §10.1 exists in §15 with a source rather than as an assertion about speed. |
 | Governance links are real | PASS | Both linked files resolve: [`docs/RULLES/TDD.md`](../RULLES/TDD.md) and [`AGENTS.md`](../../AGENTS.md). Each link states its scope, so a reader cannot mistake the Go rules for the panel's rules. |
 | Mandatory protocol stated, not implied | PASS | §10.2 states the test-first order, the analysis content, the table-driven requirement with case types, and the pull request evidence, all bound to `docs/RULLES/TDD.md` §2.3, §2.5, and §3. |
@@ -1080,7 +1256,7 @@ A deferred item names the check and where the evidence must appear.
 | R-16 (no marketing vocabulary) | PASS | A case-insensitive scan for the forbidden vocabulary returns exactly one line, which is the rule statement in §8.10.3 that names the words to avoid. That is the carve-out for documenting the rule, not a claim about the product. |
 | Emoji in the document | PASS | A Unicode-range scan for emoji returns 0 matches. This matches the owner requirement that no emoji appear in UI strings, and the document holds itself to the same rule. |
 | Inline bold labels in bullet lists | Disclosed, LOW, deliberate | 90 bullets carry a bold label, for example a screen field name such as the data source or the empty-state text. In a specification this is a definition list: a reviewer scans labels to find a field. The reason is recorded here so the pattern is not mistaken for accidental template text, and it is listed in the follow-up audit for the owner to accept or reject. |
-| R-23 / R-37 (no invented assets, direction required) | PASS for honesty, blocked for styling | No logo, avatar, statistic, or testimonial is invented. §9.1 states that palette and typography are not supplied and are placeholders, and §9.2 sets the required honest draft dials. |
+| R-23 / R-37 (no invented assets, direction required) | PASS | No logo, avatar, statistic, or testimonial is invented anywhere. §9.1 records that direction now exists in `DESIGN.md` and states where it wins over this spec. The one asset question R-23 raises is closed by the owner supplying the logo, and it is cropped rather than redrawn. |
 | R-18 (testimonials), R-28 (FAQ), R-05 pricing block, R-14 feature-card grids | Not applicable | The KEEP list has no marketing surface. These sections are excluded by scope, so they cannot be violated. |
 | C-5 (evidence over claims) | PASS | §15 and the per-screen constraints cite the API spec section for each behaviour instead of asserting panel behaviour the API does not have. |
 
@@ -1088,17 +1264,53 @@ A deferred item names the check and where the evidence must appear.
 
 | Rule | Where it is enforced | Required evidence |
 |---|---|---|
-| R-25 (contrast) | §9.4.1, and `app-ui/tests/tokens/contrast.test.ts` | The U0 draft tokens are measured: 16 text pairs across both themes, lowest ratio 4.92:1 against the 4.5:1 floor, asserted by a test that reads the token file itself. Re-measure when `DESIGN.md` replaces these tokens. |
-| R-27 (empty, loading, error states) | §8.3, and each screen section | Screenshot or recording of all three states per screen. |
-| R-32 (keyboard) | §9.4.4 | Keyboard-only pass list per screen, including Escape and focus return. |
-| R-03 (mobile) | §8.7, §9.4.3 | Breakpoint pass per screen, with the horizontal-overflow check. |
-| R-34 (both themes work) | §8.9, §9.4.2 | Both themes exercised per screen before merge. |
-| R-26 (no dead controls) | §13.10, §5.2.2 | The route-to-nav test in §11.2, plus the click-through in R-35. |
-| R-35 (verified before delivery) | §9.4.5 | Recorded click-through list, element by element, with each outcome. |
-| R-04 (icon relevance) | §8.11.2 | The icon map file with a one-line reason per icon. |
+| R-25 (contrast) | §9.4.1, and `app-ui/tests/tokens/contrast.test.ts` | Satisfied for the shell on 2026-09-17: 48 assertions over both authored themes, 14 text pairs plus 3 graphic pairs, lowest text pair 4.87:1 against the 4.5:1 floor. Measured on the composited colour, so an accent wash is measured against what a reader receives rather than against its raw channel triple. The test reads `src/app.css`, so a palette edit re-measures itself. Each new screen adds its own pairs to that file. |
+| R-27 (empty, loading, error states) | §8.3, and each screen section | Screenshot or recording of all three states per screen. `/endpoint-keys` already implements all three and they were observed in the 2026-09-17 pass; the remaining screens owe the same. |
+| R-32 (keyboard) | §9.4.4 | Satisfied for the shell on 2026-09-17: recorded tab order through the sidebar and header, every stop with a 2px accent outline, Enter navigates a row, Enter and Space toggle the media disclosure, Escape closes the mobile drawer, and focus returns to the header control. Each new screen owes the same pass. |
+| R-03 (mobile) | §8.7, §9.4.3 | Satisfied for the shell on 2026-09-17: 390px, 820px, and 1440px exercised, no page overflow at any of the three, dark and light both. Tablet shows the 64px rail, mobile shows the drawer at 293px with an overlay, and the drawer closes on navigation. Each new screen owes the same pass. |
+| R-34 (both themes work) | §8.9, §9.4.2 | Satisfied for the shell on 2026-09-17: both themes at all three breakpoints, body background measured as `rgb(252, 250, 247)` light and `rgb(26, 25, 23)` dark, no overflow in either. Each new screen owes the same pass. |
+| R-26 (no dead controls) | §13.10, §5.2.2 | Satisfied for the shell on 2026-09-17: the navigation test asserts that a row without a route carries no `href`, and the click-through confirmed every rendered control acts. The one control that had none (a planned sub-item rendered as a link without a destination) was found in this pass and rewritten as an inert row. |
+| R-35 (verified before delivery) | §9.4.5 | Satisfied for the shell on 2026-09-17. The recorded click-through is in `app-ui/README.md`, and it includes the two defects it found: the token layer was never imported, so the entire panel rendered unstyled while the contrast test passed, and three component files carried their header comment outside the script block, so Svelte rendered the comment as page text. |
+| R-04 (icon relevance) | §8.11.2 | Satisfied on 2026-09-17: `src/lib/icons.ts` holds one entry per navigation row with a written reason, and `tests/navigation/icons.test.ts` fails the build on an icon with no row, a row with no icon, a reason under 20 characters, or a banned glyph. |
 | R-21 (theme choice) | §8.9 | Both authored themes, with the dark default rationale recorded. |
 | R-29, R-11, R-12, R-13, R-01, R-09 (purpose-gate techniques) | §9.3 | Token file showing the palette cap, the radius scale, and the single accent use. |
 | R-31 (reason per decision) | §9.5 | The reason log, extended in the pull request for decisions this spec does not yet cover. |
+
+---
+
+*Changelog 2026-09-17: sidebar, design direction, and three owner additions.*
+
+*The owner supplied the direction that §9.1 was waiting for: legacy structural parity, delivered fresh,
+with mobile, tablet, and desktop behaviour as an explicit requirement. `DESIGN.md` was written the same day
+and holds the identity, palette, typeface, radius and elevation scale, identity motif, and reason log, so
+the "draft without direction" state is closed and §9.1 and §9.2 were rewritten to point at it. The logo was
+supplied at `app-ui/assets/static/logo.png` and cropped to a circular mark. The light accent was re-tuned
+from the legacy coral because the legacy value measures 3.23:1 with white text and fails R-25; §9.1 records
+the measurement and `DESIGN.md` §3.1 records the decision.*
+
+*The sidebar was rebuilt: 19 owner rows in five task groups, and the table in §5.2 now states the grouping
+rather than listing items flat. §5.2.2 was strengthened from "an unbuilt item is absent" to "an item
+carries an `href` only when a route file exists", which turns R-24 from a review rule into a type-level
+one. §8.7 was rewritten for three responsive shapes, replacing the previous two, because the tablet band
+previously received a drawer and wasted the space it has. §8.11 was rewritten with the shipped identifier
+per icon, the icon set corrected to `@lucide/svelte` (the older `lucide-svelte` package is deprecated on
+npm), and two rows added.*
+
+*Three owner additions. Console Log was split out of `/logs` into its own route, with the original tab left
+as a pointer in §6.11 and the screen specified in §6.16; its endpoints are unchanged, so only the route and
+the spec text moved. Playground Chat and Changelog were added to the sidebar and cannot be built yet, so
+§6.17 and §6.18 record the shape and the blocking questions instead of a specification: the playground
+crosses the session-versus-gateway-key auth boundary (§14 Q7), and Changelog has no endpoint at all
+(§14 Q11). Both rows carry `Planned` and no route, so R-24 and R-26 hold.*
+
+*§11.2 now names three structural assertions as tests rather than habits: the navigation tree against the
+routes on disk, the colour pairs against the AA floor, and the sidebar's initial open state against the
+viewport band. §10 gained two boundaries, both from defects this work found: `src/app.css` is imported once
+from the root layout, because in U0 it was written and tested but never imported, so the panel rendered
+unstyled while its contrast test passed; and `src/lib/primitives/` is generated code, with the one token
+change recorded rather than assumed to survive a regeneration. §15 was updated where a path moved from
+missing to present, and §16 records the evidence for the checks that are now satisfied rather than
+deferred.*
 
 ---
 

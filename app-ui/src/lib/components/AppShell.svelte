@@ -1,149 +1,55 @@
 <script lang="ts">
-	// Panel shell: sidebar, header, and content frame.
+	// Panel shell: sidebar, header, and the content frame.
 	//
-	// Navigation follows the owner KEEP list in docs/SPEC-UI/001-SPEC-UI.md §5.2. An item whose screen
-	// is not built yet is not a link: it renders with a Planned chip, because a nav item pointing at a
-	// missing route is exactly what R-24 forbids.
-	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
-	import { navIcon } from '$lib/icons';
-	import { session } from '$lib/stores/session.svelte';
-	import { theme } from '$lib/stores/theme.svelte';
-	import { Moon, Sun } from 'lucide-svelte';
-	import type { RouteId } from '$app/types';
+	// Navigation follows src/lib/navigation.ts, which is where the owner's screen list lives. An item whose
+	// screen is not built yet renders as inert text with a Planned chip, because a nav item pointing at a
+	// missing route is exactly what R-24 forbids and the data model makes it unrepresentable.
+	//
+	// Breakpoint behaviour comes from DESIGN.md §8. The primitive layer already owns the hard part: it
+	// swaps to a Sheet drawer below 768px and to a collapsible rail above it. What this component adds is
+	// the initial state that matches the viewport, so a tablet starts as a rail instead of a full sidebar.
+	//
+	// The shell is `h-dvh`, not `min-h-screen`: 100vh is taller than the visible area under mobile browser
+	// chrome, which is what clips a sticky header on a phone.
+	import PanelHeader from '$lib/components/PanelHeader.svelte';
+	import PanelSidebar from '$lib/components/PanelSidebar.svelte';
+	import * as Sidebar from '$lib/primitives/sidebar/index.js';
+	import { readSidebarCookie, resolveSidebarOpen, sidebarCookie } from '$lib/stores/sidebar';
 	import type { Snippet } from 'svelte';
-
-	// A built item points at a route that exists, so its href is typed as a
-	// RouteId and resolve() accepts it. A planned item has no route yet, so it
-	// carries no href at all: that is what stops a link to a missing page, which
-	// R-24 forbids, from being written by accident.
-	type NavItem =
-		| { key: string; label: string; built: true; href: RouteId }
-		| { key: string; label: string; built: false; href?: never };
-
-	const NAV: NavItem[] = [
-		{ key: 'endpoint-keys', label: 'Endpoint & Key', href: '/endpoint-keys', built: true },
-		{ key: 'providers', label: 'Providers', built: false },
-		{ key: 'combos', label: 'Combo & Vision Adapter', built: false },
-		{ key: 'usage', label: 'Usage', built: false },
-		{ key: 'quota', label: 'Quota Tracker', built: false },
-		{ key: 'token-saver', label: 'Token Saver', built: false },
-		{ key: 'proxies', label: 'Proxy Pools', built: false },
-		{ key: 'skills', label: 'Skills', built: false },
-		{ key: 'logs', label: 'Logs', built: false },
-		{ key: 'api-docs', label: 'API Docs', built: false },
-		{ key: 'settings', label: 'Settings', href: '/settings', built: true }
-	];
 
 	let { children }: { children: Snippet } = $props();
 
-	let copied = $state(false);
-	const apiBase = $derived(
-		typeof location === 'undefined' ? '/api/v1' : `${location.origin}/api/v1`
+	// A tablet gets the icon rail and a desktop gets the full sidebar, unless the operator has chosen.
+	// The primitive layer keeps the state in this binding, so `onOpenChange` is where the preference is
+	// persisted.
+	let open = $state(
+		typeof document === 'undefined'
+			? true
+			: resolveSidebarOpen(readSidebarCookie(document.cookie), window.innerWidth >= 1024)
 	);
 
-	const current = $derived(page.url.pathname);
-
-	function isActive(href: string): boolean {
-		return current === href || current.startsWith(`${href}/`);
-	}
-
-	async function copyApiBase(): Promise<void> {
-		await navigator.clipboard.writeText(apiBase);
-		copied = true;
-		setTimeout(() => (copied = false), 2000);
+	function persist(value: boolean): void {
+		if (typeof document === 'undefined') return;
+		document.cookie = sidebarCookie(value);
 	}
 </script>
 
-<div class="flex min-h-screen flex-col lg:flex-row">
-	<aside
-		class="flex shrink-0 flex-col gap-1 border-b border-[var(--color-border)] bg-[var(--color-surface-2)] p-3 lg:w-64 lg:border-b-0 lg:border-r"
-	>
-		<p class="px-2 py-3 text-sm font-semibold tracking-tight">KENTANG TECH pannelAI</p>
+<Sidebar.Provider bind:open onOpenChange={persist}>
+	<div class="flex h-dvh w-full overflow-hidden bg-[var(--color-surface)]">
+		<PanelSidebar />
 
-		<nav aria-label="Panel sections" class="flex flex-col gap-0.5">
-			{#each NAV as item (item.key)}
-				{@const icon = navIcon(item.key)}
-				{#if item.built}
-					<a
-						href={resolve(item.href)}
-						aria-current={isActive(item.href) ? 'page' : undefined}
-						class="flex min-h-11 items-center gap-2.5 rounded-[var(--radius-sm)] px-2 text-sm transition-colors
-							{isActive(item.href)
-							? 'bg-[var(--color-surface-3)] font-medium'
-							: 'hover:bg-[var(--color-surface-3)]'}"
-					>
-						{#if icon}
-							<icon.icon
-								class="size-4 shrink-0 text-[var(--color-text-muted)]"
-								aria-hidden="true"
-							/>
-						{/if}
-						<span>{item.label}</span>
-					</a>
-				{:else}
-					<span
-						class="flex min-h-11 items-center gap-2.5 px-2 text-sm text-[var(--color-text-muted)]"
-					>
-						{#if icon}
-							<icon.icon class="size-4 shrink-0" aria-hidden="true" />
-						{/if}
-						<span>{item.label}</span>
-						<span
-							class="ml-auto rounded-[var(--radius-sm)] border border-[var(--color-border)] px-1.5 py-0.5 text-[11px]"
-							>Planned</span
-						>
-					</span>
-				{/if}
-			{/each}
-		</nav>
-	</aside>
-
-	<div class="flex min-w-0 flex-1 flex-col">
-		<header
-			class="flex flex-wrap items-center gap-3 border-b border-[var(--color-border)] px-4 py-3"
-		>
-			<div class="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-				<span class="font-medium text-[var(--color-text)]">API base</span>
-				<code class="rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-1.5 py-1"
-					>{apiBase}</code
-				>
-				<button
-					type="button"
-					class="rounded-[var(--radius-sm)] px-1.5 py-1 underline hover:text-[var(--color-text)]"
-					onclick={copyApiBase}
-				>
-					{copied ? 'Copied' : 'Copy'}
-				</button>
-			</div>
-
-			<div class="ml-auto flex items-center gap-2">
-				<button
-					type="button"
-					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-					onclick={() => theme.toggle()}
-					aria-label={theme.name === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-				>
-					{#if theme.name === 'dark'}
-						<Sun class="size-4" aria-hidden="true" />
-					{:else}
-						<Moon class="size-4" aria-hidden="true" />
-					{/if}
-					<span class="hidden sm:inline">{theme.name === 'dark' ? 'Light' : 'Dark'}</span>
-				</button>
-
-				<button
-					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-					onclick={() => session.signOut()}
-				>
-					Sign out
-				</button>
-			</div>
-		</header>
-
-		<main class="min-w-0 flex-1 p-4 lg:p-6">
-			{@render children()}
-		</main>
+		<div class="flex min-w-0 flex-1 flex-col">
+			<PanelHeader />
+			<!-- Only this column scrolls, so the header stays put and a long table does not drag the
+			     whole shell with it. -->
+			<main
+				class="min-w-0 flex-1 overflow-y-auto p-4 lg:p-6"
+				style="padding-bottom: max(1rem, env(safe-area-inset-bottom));"
+			>
+				<div class="mx-auto w-full max-w-[1600px]">
+					{@render children()}
+				</div>
+			</main>
+		</div>
 	</div>
-</div>
+</Sidebar.Provider>
