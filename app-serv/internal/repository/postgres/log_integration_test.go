@@ -262,14 +262,22 @@ func TestLogRepository_RetentionPurgeBoundary(t *testing.T) {
 			}
 		})
 	}
+}
 
-	t.Run("a purge over an empty table is a no-op", func(t *testing.T) {
-		deleted, err := repo.DeleteOlderThan(ctx, now)
-		if err != nil {
-			t.Fatalf("DeleteOlderThan error = %v", err)
-		}
-		if deleted != 0 {
-			t.Fatalf("deleted = %d, want 0", deleted)
-		}
-	})
+// TestLogRepository_RetentionPurgeOverAnEmptyTable covers the other end of the
+// boundary: a purge with nothing to delete removes nothing and reports nothing.
+// It is its own test rather than a subtest of the boundary table because that
+// table deliberately leaves survivors behind, and a purge over a table that
+// still holds them is a different case — the one the table above already covers.
+func TestLogRepository_RetentionPurgeOverAnEmptyTable(t *testing.T) {
+	repo := newLogRepo(t)
+	now := time.Now().UTC().Truncate(time.Second)
+
+	deleted, err := repo.DeleteOlderThan(context.Background(), now)
+	if err != nil {
+		t.Fatalf("DeleteOlderThan error = %v", err)
+	}
+	if deleted != 0 {
+		t.Fatalf("deleted = %d, want 0", deleted)
+	}
 }
