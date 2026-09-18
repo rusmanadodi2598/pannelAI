@@ -150,12 +150,12 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: combos: %w", err)
 	}
 
-	// The capability predicate is left to the service's safe default: the
-	// registry does not yet carry input modalities, so a predicate written here
-	// would be a guess the API then acts on. This is the wiring point where the
-	// real one belongs once the registry carries the data.
+	// The capability predicate is the registry's ported vision table: §7.8 refuses
+	// a model that cannot read images, and the registry carries no modality data,
+	// so the answer comes from internal/registry/capability.go rather than from a
+	// guess at this call site.
 	visionSvc, err := service.NewVisionAdapterService(service.VisionAdapterServiceDeps{
-		Repo: visionRepo, Catalog: catalogSvc,
+		Repo: visionRepo, Catalog: catalogSvc, Capable: visionCapabilityCheck,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: vision adapter: %w", err)
