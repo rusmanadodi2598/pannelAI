@@ -57,21 +57,24 @@ not code to copy.
 | 12 | Settings | `/settings` (Security, Routing, Network, Logging tabs) | SPEC-API §7.14 | U1, U2 |
 | 13 | English | Cross-cutting copy contract, no screen | SPEC-API §4 | U0 |
 | 14 | Authentication (session) | `/login` | SPEC-API §7.2 | U0 |
-| 15 | Playground Chat (owner addition, 2026-09-17) | `/playground` | Data plane, SPEC-API §7.15. See §6.14 and §14 Q7. | Unassigned |
-| 16 | Changelog (owner addition, 2026-09-17) | `/changelog` | No API. See §6.15. | Unassigned |
+| 15 | Playground Chat (owner addition, 2026-09-17) | `/playground` | Data plane, SPEC-API §7.15. See §6.15 and §14 Q7. | Unassigned |
+| 16 | Changelog (owner addition, 2026-09-17) | `/changelog` | `GET /api/v1/version` (§7.1) for the running build. Release-note source open, §14 Q11. | U0 |
 | 17 | Console Log (split out of Logs, owner 2026-09-17) | `/console-log` | SPEC-API §7.13 | U1 |
 
 Additions 15 to 17 are owner decisions recorded on 2026-09-17. Three consequences follow, and each is
 stated here rather than left implicit:
 
-- **Console Log is now its own route.** §6.11 keeps only the Requests tab, and §6.16 is the console
+- **Console Log is now its own route.** §6.11 keeps only the Requests tab, and §6.14 is the console
   screen. The backing endpoints are unchanged (`GET` and `DELETE /api/v1/logs/console`).
-- **Playground Chat has no phase.** SPEC-API §10 assigns it none, because it exercises the data plane
-  through a gateway key rather than the management API through a session. Until SPEC-API assigns a phase
-  and a key-handling rule, the sidebar row carries the Planned label and no route, and no control is
-  built. §14 Q7 records what the spec still has to decide.
-- **Changelog has no endpoint.** SPEC-API §7 lists none. The row carries the Planned label and no route;
-  §14 Q11 records the decision the API spec has to make first.
+- **Playground Chat has no phase.** SPEC-API §10 assigns it none. Its auth model is now decided: the panel
+  server injects the gateway key and the browser never holds a credential (owner, 2026-09-17). Until the
+  `app-serv` side lands and a phase is assigned, the sidebar row carries the Planned label and no route,
+  and no control is built. §6.15 and §14 Q7 record the model and what remains.
+- **Changelog ships its screen without a release-note source.** SPEC-API §7 lists no changelog endpoint,
+  so the row links to a real screen that reads the running version from `GET /api/v1/version` and renders
+  an honest empty release list until a source exists (§6.16, §14 Q11). The owner asked for the panel side
+  to be ready while the `app-serv` side is built separately, and a screen is worth linking once it has a
+  route, a live header, and three real states.
 
 Ledger:
 - **Multi Provider.** The Providers screen renders whatever `GET /api/v1/providers` returns and holds
@@ -169,7 +172,7 @@ Rules:
 | `/logs` | Request logs | Session | U1 |
 | `/console-log` | The console ring buffer | Session | U1 |
 | `/playground` | Playground chat over a gateway key | Gateway key | Unassigned, §14 Q7 |
-| `/changelog` | Release notes for the gateway | Session | Unassigned, §14 Q11 |
+| `/changelog` | Release notes for the gateway, marked against the running build | Session | U0, §6.16 |
 | `/api-docs` | API v1 reference rendered from SPEC-API §7 | Session | U1 |
 | `/settings` | Security, Routing, Network, Logging | Session | U1, U2 |
 | Unknown path | Not-found view with a link back to `/endpoint-keys` | Session | U0 |
@@ -440,61 +443,10 @@ absent.
 
 **Tab 2: Console**
 
-Moved to its own screen at `/console-log` (§6.16) on 2026-09-17, at the owner's request, because console
+Moved to its own screen at `/console-log` (§6.14) on 2026-09-17, at the owner's request, because console
 output is read while a request is being debugged and a tab behind the Requests list made it a
 second-class view. The endpoints are unchanged. This section is kept as a pointer so a reader who
 remembers the tab finds the new home rather than an empty heading.
-
-### 6.16 `/console-log`
-
-- **Data:** `GET /api/v1/logs/console`, `DELETE /api/v1/logs/console` (SPEC-API §7.13).
-- **View:** ring buffer lines in a monospace block, newest last, with a pause and resume control, a
-  follow toggle, and a clear action.
-- **Honesty rule:** the buffer is polled, because management API v1 exposes no stream (SPEC-API §7.13). The
-  control is labelled "Auto refresh", not "Live", and shows the poll interval.
-- **Clear:** `DELETE` removes the buffer server-side, so the confirmation names that consequence rather
-  than presenting it as a local view reset.
-- **Empty state:** "Console buffer is empty." plus the reason it can be empty: the gateway records console
-  output only while it is running, so a restart also empties the buffer.
-- **Phase:** U1, with the Requests screen it was split from.
-
-### 6.17 `/playground`
-
-**Status: shape recorded, not specified. Unassigned phase, §14 Q7.**
-
-This section exists so the sidebar row has a named destination in the document, and so the questions the
-screen has to answer are written down before anyone builds it. It is deliberately not a screen
-specification: SPEC-UI §13.10 forbids a control without an endpoint behind it, and SPEC-API assigns no
-phase to the routes this screen needs.
-
-What is already decided and what still has to be decided:
-
-| Question | State |
-|---|---|
-| Which API does it call? | The data plane, SPEC-API §7.15 (`POST /api/v1/chat/completions`), not the management API. |
-| How does it authenticate? | **Undecided.** Every other screen uses the session cookie. The data plane uses a gateway key (SPEC-API §4), so this screen crosses the auth boundary that §3.3 of this spec relies on. §14 Q7 asks which applies. |
-| Is there a phase? | No. SPEC-API §10 gives the data plane routes a phase, but no panel phase is assigned to this screen. The sidebar row is `Planned` until one is. |
-| Does the request cost money? | Yes, it is a real routed request that consumes provider quota and writes a usage record. The screen has to say so before the operator sends one. |
-
-Until every row above is answered, no control ships, and the sidebar row stays inert. A code block in the
-nav data is not a control, which is what keeps this consistent with R-26 and R-24.
-
-### 6.18 `/changelog`
-
-**Status: shape recorded, not specified. Unassigned phase, §14 Q11.**
-
-- **What the screen is for:** the gateway changes behaviour across releases (provider registry entries,
-  routing defaults, token savers), and an operator who is debugging a changed response needs to know what
-  moved and when.
-- **Blocking dependency:** SPEC-API §7 lists no changelog endpoint, so there is no data source. The page
-  could read a bundled file, but a bundled file drifts from the running gateway and would be the
-  hand-written second copy that §6.12 already calls a defect for the same reason.
-- **Honest alternative while blocked:** the row carries the `Planned` label and no route. A page that
-  renders a stale bundled list is worse than a row that says the screen does not exist yet (R-38).
-- **If SPEC-API adds an endpoint:** the screen lists entries newest first with the release, the date, and
-  the changed behaviour, and it states the running version so the reader can tell whether an entry is
-  behind or ahead of what they are running. No download counts, no star counts, no version badges for
-  anything the API does not return (R-17).
 
 ### 6.12 `/api-docs`
 
@@ -527,6 +479,106 @@ Tabs, each mapping to one group of keys in SPEC-API §7.14.
   discard action. Secrets are never returned by the API, so no field renders an existing secret value.
 - **Password rules:** current password, new password, confirm. Trimming is not applied to password fields
   (§7.2).
+
+### 6.14 `/console-log`
+
+- **Data:** `GET /api/v1/logs/console`, `DELETE /api/v1/logs/console` (SPEC-API §7.13).
+- **View:** ring buffer lines in a monospace block, newest last, with a pause and resume control, a
+  follow toggle, and a clear action.
+- **Honesty rule:** the buffer is polled, because management API v1 exposes no stream (SPEC-API §7.13). The
+  control is labelled "Auto refresh", not "Live", and shows the poll interval.
+- **Clear:** `DELETE` removes the buffer server-side, so the confirmation names that consequence rather
+  than presenting it as a local view reset.
+- **Empty state:** "Console buffer is empty." plus the reason it can be empty: the gateway records console
+  output only while it is running, so a restart also empties the buffer.
+- **Phase:** U1, with the Requests screen it was split from.
+
+### 6.15 `/playground`
+
+**Status: auth model decided 2026-09-17, still unassigned a phase. §14 Q7.**
+
+The screen sends a chat request by hand and shows what the gateway answered, so an operator can check a
+route without wiring a client first.
+
+**The authentication model is decided, and it is the reason this screen is not a security problem.** The
+browser never holds a gateway key. The panel's own server performs the data-plane call, reading the
+credential from the environment, so the key material never enters the page, the bundle, or browser
+storage (owner decision, 2026-09-17).
+
+| Question | State |
+|---|---|
+| Which API does it call? | The data plane, SPEC-API §7.15 (`POST /api/v1/chat/completions`). |
+| How does it authenticate? | **Decided.** The panel server injects the credential and forwards the call. The browser is never given a key, and no key is stored client-side. |
+| Why not hold a key in the browser? | A key in the page is readable by any script on the origin, visible in devtools, and persists in storage if it is saved. The owner's rule is blunt on this point: a browser-resident credential is not safe, and the exposure is obvious. Server-side injection removes the class of problem rather than mitigating it. |
+| Where does the key come from? | `PANEL_PLAYGROUND_KEY` in the panel's server environment, read through `src/lib/schemas/env.ts` so a missing or malformed value fails fast with the variable name. It is a **gateway key**, not a provider key: the gateway still does its own auth, routing, quota, and usage accounting. |
+| What if it is unset? | The screen renders the unavailable state and says the panel has no gateway key configured. It does not fall back to asking the operator to paste one. |
+| What does the panel server do with it? | Adds it as the `Authorization: Bearer` header on the forwarded request only. It is never logged, never echoed in a response, and never sent to the browser. |
+| Is there a phase? | Still no. SPEC-API §10 gives the data-plane routes a phase, but this screen's server-side injection is `app-serv`-side work that is being built separately. The sidebar row stays `Planned` until it lands, so no control ships against a route that is not there (R-26). |
+| Does the request cost money? | Yes. It routes to a real provider, consumes quota, and writes a usage record. The screen states that next to the send control, before the operator sends one. |
+
+Rules the implemented screen must satisfy:
+
+1. **No credential in the browser, at any point.** Not in the bundle, not in `localStorage`, not in a
+   cookie readable by script, not in a form field, not in a URL.
+2. **The panel server is the only holder.** The key is read once at boot through the typed config and used
+   only on the outbound header. A request that would echo it back returns the gateway's own error instead.
+3. **The injection is not a new auth path for the panel.** Playground calls do not grant management access;
+   they are ordinary data-plane calls, so a compromised playground request is bounded by the gateway key's
+   own scope.
+4. **The screen states the cost before the send**, and shows the resolved model and the upstream status so
+   a failure is diagnosable rather than mysterious.
+
+Until the `app-serv` side lands, no control ships and the sidebar row stays inert. A code block in the nav
+data is not a control, which is what keeps this consistent with R-26 and R-24.
+
+### 6.16 `/changelog`
+
+**Status: screen built 2026-09-17. The release-note source is still open, §14 Q11.**
+
+The screen answers one question: what changed, and is this build behind? The order follows that question
+rather than the usual changelog order, because an operator comes here while diagnosing a change in
+behaviour, not to browse history.
+
+**Header**
+
+- **Running version** is the focal point, read from `GET /api/v1/version` (SPEC-API §7.1), which already
+  reports `version`, `commit`, `build_date`, `go_version`, and `registry_revision`. No new endpoint is
+  needed for this part, and the figure is real rather than a placeholder (R-17).
+- **Status line** states either how many releases are newer than this build, or that this build is the
+  newest listed, or that the running version could not be read.
+
+**Release list**
+
+- Newest first. Two releases on the same day are ordered by version, so the list does not reorder itself
+  between two reads, which would read as a bug.
+- Each release carries its version verbatim as the gateway reports it, its date, its category, and its
+  entries. The version string is never rewritten.
+- **Status marker per release:** `Running` for the build in use, `Newer` for a release ahead of it,
+  `Installed` for one behind it. When the running version is not readable, **no release is marked**: "I
+  could not read your version" is a different statement from "you are behind on all of these", and the
+  second one is confidently wrong in a way that would tell an operator to upgrade something they already
+  run.
+- **Category** is one of `feature`, `fix`, `change`, `security`, `internal`. An unknown category fails the
+  parse rather than collapsing into an "Other" bucket, so contract drift is visible (SPEC-UI §7.4).
+- The item bullets use the identity motif at list scale: a small marker on the leading edge, paired with
+  the text so meaning is never carried by the mark alone.
+
+**States**
+
+- **Empty:** "No release notes yet", with the reason: the gateway reports its version, but no release-note
+  source is configured for the panel. This is the state today and it is deliberate.
+- **Loading:** a skeleton matching the final layout.
+- **Error:** the running version could not be read. The screen still renders the release list, because the
+  list is worth reading without a version, and the status line says the comparison is unavailable.
+
+**Why the screen does not bundle a release file.** A bundled `CHANGELOG.md` would drift from the running
+gateway and would be the hand-written second copy that §6.12 already calls a defect for the API contract:
+it goes stale and then it lies. Until §14 Q11 picks a source, the page shows what it actually knows plus
+an honest empty state, which is what R-38 asks for.
+
+**Copy:** `src/lib/strings/changelog.ts`. English only, no em dash (R-02), no marketing vocabulary (R-16),
+and no figure the source did not provide.
+
 
 ## 7. Validation and sanitization (Zod)
 
@@ -1149,18 +1201,21 @@ Phases mirror SPEC-API §10, so the panel never ships against an endpoint that d
    category first. The answer changes the Providers screen's default filter and paging behaviour.
 6. **Purge guard threshold.** Is 1000 rows the right typed-confirmation threshold for log purge, or should
    the confirmation be based on the retention window instead?
-7. **Partially closed 2026-09-17: the data-plane playground is wanted.** The owner added Playground Chat
-   to the sidebar, so the earlier recommendation to leave it out permanently is withdrawn. It cannot be
-   built yet, and the reason is not styling. Three decisions are missing, and all three belong to
-   SPEC-API rather than to this document:
-   - **Auth.** The data plane authenticates with a gateway key (SPEC-API §4), while every panel screen uses
-     the session cookie. If the panel holds a gateway key, where does it live, and how is it protected on
-     a shared browser? If it does not, an operator has to paste one per request.
-   - **Phase.** SPEC-API §10 assigns the data-plane routes a phase but assigns this screen none.
+7. **Closed on auth, open on phase (owner, 2026-09-17).** The owner added Playground Chat to the sidebar,
+   so the earlier recommendation to leave it out permanently is withdrawn, and settled the auth question in
+   the same decision:
+   - **Auth: decided, server-side injection.** The panel's own server performs the data-plane call and
+     injects a gateway key read from its environment. The browser is never given a credential, and none is
+     stored client-side, because a credential in a page is readable by any script on the origin, visible in
+     devtools, and persistent if saved. That exposure is obvious and the owner rejected it outright.
+   - **Key scope: a gateway key, not a provider key.** The gateway still does its own auth, routing, quota,
+     and usage accounting, so the panel does not become a second path to a provider.
+   - **Still open: the phase.** SPEC-API §10 assigns the data-plane routes a phase but assigns this screen
+     none, and the server-side injection is `app-serv` work being done separately.
    - **Cost disclosure.** A sent request routes through a real provider, consumes quota, and writes a usage
-     record. The screen has to state that before the operator sends one.
-   Until those are answered, the sidebar row carries `Planned`, no route file exists, and no control ships.
-   §6.17 records the shape as far as it is decided.
+     record, so the screen must say so before the operator sends one.
+   Until the `app-serv` side lands, the sidebar row carries `Planned`, no route file exists, and no control
+   ships. §6.15 records the decided model and the rules the implemented screen must satisfy.
 8. **Closed 2026-09-16: the governance file is present.** [`AGENTS.md`](../../AGENTS.md) landed at the
    repository root and scopes itself to Go services under `app-*/**`, so the earlier blocking note in this
    section is withdrawn: it does not gate the panel. Two follow-ups come out of it. `SYSTEM_MAP.md` is
@@ -1177,8 +1232,13 @@ Phases mirror SPEC-API §10, so the panel never ships against an endpoint that d
    free-form rationale comment plus a purpose line. Should the panel adopt the same tags so a reviewer
    greps one format across both apps, or keep free form because tags such as `@layer` and `@stability`
    describe Go package concepts that the panel does not have?
-11. **Changelog has no data source.** The owner added Changelog to the sidebar on 2026-09-17, and SPEC-API
-   §7 lists no changelog endpoint. Decide one of three paths before the screen is built:
+11. **Changelog: the screen is built, the data source is not.** The owner added Changelog to the sidebar on
+   2026-09-17 and asked for the panel side to be prepared while the `app-serv` side is built separately. So
+   the screen exists at `/changelog` (§6.16): the running-version header is live from
+   `GET /api/v1/version`, the list, ordering, per-release status markers, categories, and all three states
+   are implemented, and the release list renders its honest empty state because no source is configured.
+   What is still needed is the source, and SPEC-API §7 lists no changelog endpoint. Decide one of three
+   paths:
    - **An endpoint.** SPEC-API adds a route that reports the running version with its release entries,
      which is the only option where the page cannot drift from the running gateway.
    - **A generated file at build time.** The panel bundles the release notes it built against. This is
@@ -1187,7 +1247,7 @@ Phases mirror SPEC-API §10, so the panel never ships against an endpoint that d
    - **No screen.** The sidebar row is removed and Changelog stays a repository file, which is what
      `CHANGELOG.md` conventions already provide.
    A hand-written page that restates releases is a defect for the same reason a hand-written second copy
-   of the API contract is (§6.12): it drifts and then lies. §6.18 records the shape as far as it is
+   of the API contract is (§6.12): it drifts and then lies. §6.16 records the shape as far as it is
    decided.
 
 ## 15. Evidence for numbers and paths used here
@@ -1297,9 +1357,9 @@ per icon, the icon set corrected to `@lucide/svelte` (the older `lucide-svelte` 
 npm), and two rows added.*
 
 *Three owner additions. Console Log was split out of `/logs` into its own route, with the original tab left
-as a pointer in §6.11 and the screen specified in §6.16; its endpoints are unchanged, so only the route and
+as a pointer in §6.11 and the screen specified in §6.14; its endpoints are unchanged, so only the route and
 the spec text moved. Playground Chat and Changelog were added to the sidebar and cannot be built yet, so
-§6.17 and §6.18 record the shape and the blocking questions instead of a specification: the playground
+§6.15 and §6.16 record the shape and the blocking questions instead of a specification: the playground
 crosses the session-versus-gateway-key auth boundary (§14 Q7), and Changelog has no endpoint at all
 (§14 Q11). Both rows carry `Planned` and no route, so R-24 and R-26 hold.*
 

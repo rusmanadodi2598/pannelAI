@@ -74,7 +74,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		items: [
 			{ key: 'playground', label: 'Playground Chat', planned: true },
 			{ key: 'api-docs', label: 'API Docs', planned: true },
-			{ key: 'changelog', label: 'Changelog', planned: true }
+			{ key: 'changelog', label: 'Changelog', href: '/changelog' }
 		]
 	},
 	{

@@ -179,11 +179,13 @@ gateway.
    migrations 000005 and 000006 apply. Until that is fixed no panel screen can be verified end-to-end.
    The fix belongs to `app-serv` P1 and is recorded in `SYSTEM_MAP.md`. Commands for a local run are in
    `app-serv/README.md`.
-2. **Playground Chat cannot be built.** It crosses the session-versus-gateway-key auth boundary, and
-   SPEC-API assigns it no phase. Spec §14 Q7 lists the three decisions it needs; §6.17 records the shape
-   so far. The sidebar row carries `Planned`.
-3. **Changelog has no data source.** SPEC-API §7 defines no changelog endpoint. Spec §14 Q11 lists the
-   three options. The sidebar row carries `Planned`.
+2. **Playground Chat cannot be built yet, but its auth model is decided.** The panel server injects the
+   gateway key, so the browser never holds a credential (owner, 2026-09-17; spec §6.15). What remains is
+   the `app-serv` side and a phase. The sidebar row carries `Planned`.
+3. **Changelog has no release-note source.** SPEC-API §7 defines no changelog endpoint, so the screen at
+   `/changelog` renders the running version from `GET /api/v1/version` and an honest empty release list.
+   The list, ordering, per-release markers, categories, and all three states are implemented, so a source
+   only has to feed `schemaChangelog`. Spec §14 Q11 lists the three options.
 4. `AGENTS.md` scopes itself to the Go services (`app-*/**`), so it does not govern this panel. The
    panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5, and they are applied by
    hand here. The panel's gates live in `scrypts/gates/panel-check.sh`.
