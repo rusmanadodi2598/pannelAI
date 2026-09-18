@@ -35,10 +35,11 @@ func routerDeps(
 	health *service.HealthService,
 	limiter repository.RateLimiter,
 	mgmt managementDeps,
+	registryRevision string,
 ) router.Deps {
 	return router.Deps{
 		System: handler.NewSystemHandler(handler.SystemHandlerDeps{
-			Info:   buildInfo(),
+			Info:   buildInfo(registryRevision),
 			Health: health,
 		}),
 		Auth:            auth,

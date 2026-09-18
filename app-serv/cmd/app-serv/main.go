@@ -118,7 +118,9 @@ func run() error {
 		return err
 	}
 
-	mux := router.New(routerDeps(cfg, authHandler, handler.NewGatewayKeyHandler(keySvc), healthSvc, rateLimiter, mgmt))
+	// The registry revision travels with the index, so /version reports the
+	// document this process actually loaded.
+	mux := router.New(routerDeps(cfg, authHandler, handler.NewGatewayKeyHandler(keySvc), healthSvc, rateLimiter, mgmt, index.Revision()))
 
 	// The flush worker runs alongside the server and stops with the context, so
 	// shutdown leaves nothing running (AGENTS.md §1.6).
@@ -177,13 +179,17 @@ func buildPool(ctx context.Context, cfg config.Config) (*pgxpool.Pool, error) {
 }
 
 // buildInfo reports the version endpoints payload (SPEC-API-001 §7.1).
-func buildInfo() schema.SystemInfo {
+//
+// The registry revision is the document's own value, not a placeholder: §7.1
+// exposes it so an operator can tell which registry a running gateway loaded,
+// and a constant answers that question wrongly.
+func buildInfo(registryRevision string) schema.SystemInfo {
 	return schema.SystemInfo{
 		Version:          "0.1.0-dev",
 		Commit:           "dev",
 		BuildDate:        "dev",
 		GoVersion:        "1.26",
-		RegistryRevision: "none",
+		RegistryRevision: registryRevision,
 	}
 }
 
