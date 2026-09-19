@@ -111,8 +111,10 @@ func NewSelector(deps SelectorDeps) (*Selector, error) {
 	}, nil
 }
 
-// Select returns the first available endpoint that owns a usable key, in
-// priority order, rotated by the cursor when one is configured.
+// Select returns the first available endpoint that can serve a request, in
+// priority order, rotated by the cursor when one is configured. A keyed
+// endpoint must own a usable key; a no_auth endpoint presents nothing, so it is
+// selected without one (its Availability already answered the key question).
 func (s *Selector) Select(ctx context.Context, providerID string) (Selection, error) {
 	now := s.clock()
 	endpoints, err := s.candidates(ctx, providerID)
@@ -130,9 +132,13 @@ func (s *Selector) Select(ctx context.Context, providerID string) (Selection, er
 		if !endpoint.Available(now) {
 			continue
 		}
-		key, ok := endpoint.NextKey(now)
-		if !ok {
-			continue
+		var key domain.UpstreamKey
+		if endpoint.AuthType() != domain.UpstreamAuthNone {
+			picked, ok := endpoint.NextKey(now)
+			if !ok {
+				continue
+			}
+			key = picked
 		}
 		credential, err := s.credential(endpoint, key)
 		if err != nil {
@@ -177,30 +183,4 @@ func (s *Selector) offset(ctx context.Context, providerID string, size int) int 
 		return 0
 	}
 	return next % size
-}
-
-// RecordSuccess applies a served request to the key and persists its health, so
-// the circuit the domain owns is what changes and nothing else does.
-func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error {
-	updated, err := selection.Endpoint.RecordKeySuccess(selection.Key.ID(), s.clock())
-	if err != nil {
-		return err
-	}
-	return s.endpoints.RecordKeyHealth(ctx, updated)
-}
-
-// RecordFailure applies a failed attempt to the key and persists its health, so
-// the circuit the domain owns is what changes and nothing else does.
-func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reason string) error {
-	updated, err := selection.Endpoint.RecordKeyFailure(selection.Key.ID(), reason, s.clock())
-	if err != nil {
-		return err
-	}
-	return s.endpoints.RecordKeyHealth(ctx, updated)
-}
-
-// PersistKey records a key whose health was already updated in memory, so a
-// failure discovered after the response body was read needs no second mutation.
-func (s *Selector) PersistKey(ctx context.Context, key domain.UpstreamKey) error {
-	return s.endpoints.RecordKeyHealth(ctx, key)
 }
