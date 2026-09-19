@@ -7,7 +7,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 16 gap terdaftar, enam di antaranya temuan click-through, empat sudah CLOSED (G11, G13, G15, G16) |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 16 gap terdaftar, enam di antaranya temuan click-through, lima sudah CLOSED (G11, G13, G14, G15, G16) |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
 | **Bukti terakhir** | commit `1f00860` + `573979b`; click-through G1 2026-09-19 (baris §8); gate hijau |
 
@@ -37,7 +37,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G11 | `POST /models/custom` menolak provider node kustom (katalog memegang index boot-time, bukan overlay). **CLOSED 2026-09-19** | bug wiring §7.6/§7.4 | tidak | 2 |
 | G12 | Budget cap hanya bisa ditulis; `GET /quotas/{endpoint_id}` tidak pernah memuatnya sampai ada window usage | kontrak §7.12 | **ya** | 3 |
 | G13 | Embeddings menolak node openai-compatible (reference punya adapter `openaiCompatNode`). **CLOSED 2026-09-19** | fitur/paritas | tidak | 5 |
-| G14 | State store OAuth tanpa test; `GETDEL` butuh Redis ≥ 6.2 dan gagalnya 500 tanpa log | test + portabilitas | **ya** | 2 |
+| G14 | State store OAuth tanpa test; `GETDEL` butuh Redis ≥ 6.2 dan gagalnya 500 tanpa log. **CLOSED 2026-09-19** | test + portabilitas | **ya** | 2 |
 | G15 | Endpoint `no_auth` tanpa key tidak pernah terpilih (selector menuntut key sebelum cabang auth type). **CLOSED 2026-09-19** | bug routing §7.5 | tidak | 2 |
 | G16 | Jalur media mengirim `Authorization: Bearer` kosong saat materi kredensial kosong; jalur chat mengirim tanpa header. **CLOSED 2026-09-19** | bug kredensial §8.1 | tidak | 2 |
 
@@ -338,7 +338,7 @@ barisnya gagal sebelum perbaikan (`Bearer ` kosong).
 lewat endpoint `no_auth` tanpa key sama-sama 200 dan stub tidak melihat header
 `Authorization` sama sekali; kontrol berkey tetap melihat `Bearer` berisi key.
 
-### G14: State store OAuth tanpa test dan tanpa lantai versi
+### G14: State store OAuth tanpa test dan tanpa lantai versi (CLOSED 2026-09-19)
 
 **Bukti.** `internal/repository/redis/oauth_state.go` memakai `GETDEL` dan tidak
 punya file test sama sekali (tidak ada `oauth_state_test.go`, tidak ada test
@@ -363,6 +363,16 @@ lantai Redis ≥ 6.2 di SPEC-API §6, atau (b) ganti `Take` ke `EVAL` skrip Lua
 Redis nyata; pilihan lantai versi tercatat; kegagalan store menghasilkan satu
 baris log berkode.
 
+**Perbaikan (2026-09-19).** `Take` memakai `redis.NewScript` (EVALSHA dengan
+fallback EVAL) berisi `GET` + `DEL` dalam satu langkah atomik, jadi tidak ada
+lantai versi di atas 6.0. Empat test store baru bertag `integration` mengunci
+stage + TTL, take yang menghapus key, replay sebagai jawaban `ok=false` tanpa
+error, stage ulang yang ditolak `ErrStateAlreadyStaged` tanpa menimpa payload
+pertama, dan kedaluwarsa TTL. Diuji terhadap Redis 6.0.16 host tanpa shim: merah
+`unknown command getdel` sebelum perbaikan, hijau sesudahnya; `GET /oauth/callback`
+dengan state asing menjawab 302 ke panel dengan `oauth_error` (sebelumnya 500).
+Baris log berkode untuk kegagalan store tetap bagian G9 (P2.8).
+
 ## 4. Keputusan yang menunggu owner
 
 | # | Pertanyaan | Pilihan | Jawaban owner | Dampak kalau ditunda |
@@ -380,7 +390,7 @@ baris log berkode.
 3. **P2.3, G6**: keputusan D3 lalu sambungkan `Outcome()` ke recorder.
 4. **P2.4, G4**: keputusan D2 lalu wire atau amend.
 5. **P2.5, G14**: temuan G1 yang tersisa, butuh D4 untuk pilihan lantai versi
-   (testnya bisa ditulis lebih dulu).
+   (testnya bisa ditulis lebih dulu). Selesai 2026-09-19 dengan D4 = (b).
 6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas.
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
@@ -449,3 +459,4 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G13 CLOSED**: `nodeEmbeddingMedia` + format eksplisit di `IsGeminiEmbedding`, dua test baru (tabel lima bentuk node + kontrol benign) | PASS live (PostgreSQL 14 + Redis nyata, stub loopback 8091, tanpa shim): node `openai-compatible-…` (base `http://127.0.0.1:8091/v1`) + endpoint + key, `POST /embeddings` model `g13node/stub-embed` menjawab 200 dalam 58 ms bentuk OpenAI (`data[0].embedding [0.1,0.2,0.3]`, usage 4); log stub membuktikan `POST /v1/embeddings` dengan payload OpenAI dan kredensial endpoint sebagai bearer. Negatif: endpoint `api_key` tanpa key ditolak saat create (VALIDATION_ERROR), endpoint `no_auth` tanpa key ditolak selector 503 tanpa dial (G15), node anthropic-compatible tetap 400 `PROVIDER_NOT_ROUTABLE`. Artefak dibersihkan (tiga node, tiga endpoint, key, gateway key, hash panel) |
 | 2026-09-19 | G13 temuan: `no_auth` tanpa key vs bearer kosong | G15: endpoint `no_auth` tanpa key 201 tetapi 503 `NO_PROVIDER_AVAILABLE`, nol dial. G16: dengan key placeholder, chat sampai ke stub tanpa header `Authorization`, embeddings sampai dengan `Authorization: Bearer` kosong (keduanya dari log stub) |
 | 2026-09-19 | **G15 + G16 CLOSED**: `Select` memilih endpoint `no_auth` tanpa key, health write no-op untuk selection tanpa key, `MediaTarget` tidak menulis header saat secret kosong; tiga test baru | PASS live (PostgreSQL 14 + Redis nyata, stub loopback 8091): node A dengan endpoint `no_auth` **tanpa key** menjawab 200 untuk chat dan embeddings (sebelumnya 503), dan log stub menunjukkan **tidak ada** header `Authorization` di kedua panggilan; kontrol node B berkey tetap 200 dengan `Bearer` berisi key di kedua jalur. Artefak dibersihkan (dua node, dua endpoint, gateway key, usage baris pass, hash panel) |
+| 2026-09-19 | **G14 CLOSED**: `Take` jadi skrip atomik `GET`+`DEL` via `redis.NewScript`, empat test store bertag `integration` | PASS: terhadap Redis 6.0.16 host **tanpa shim**, keempat test merah `unknown command getdel` sebelum perbaikan dan hijau sesudahnya (stage+TTL, take menghapus key, replay `ok=false` tanpa error, stage ulang `ErrStateAlreadyStaged` tanpa menimpa payload, TTL kedaluwarsa); `GET /oauth/callback` state asing menjawab 302 `oauth_error` dalam 4 ms (sebelumnya 500 dalam 1 ms); tanpa key tersisa |
