@@ -55,7 +55,7 @@ func TestVisionAdapterService_Applicable(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			service, repo, _ := newAdapterFixture(t, acceptAll)
+			service, repo, _ := newAdapterFixture(t, ctx, acceptAll)
 			if tc.seed {
 				refs := make([]domain.ModelRef, 0, len(tc.models))
 				for _, model := range tc.models {
@@ -102,7 +102,7 @@ func TestRejectAllVisionCapability(t *testing.T) {
 
 // TestNewVisionAdapterService_RequiresDeps pins the constructor's validation.
 func TestNewVisionAdapterService_RequiresDeps(t *testing.T) {
-	catalog := newCatalogFixture(t)
+	catalog := newCatalogFixture(t, context.Background())
 	repo := newStubAdapterRepo()
 	cases := []struct {
 		name    string

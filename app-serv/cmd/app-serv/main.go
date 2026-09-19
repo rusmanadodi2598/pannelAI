@@ -122,9 +122,9 @@ func run() error {
 	// document this process actually loaded.
 	mux := router.New(routerDeps(cfg, authHandler, handler.NewGatewayKeyHandler(keySvc), healthSvc, rateLimiter, mgmt, index.Revision()))
 
-	// The flush worker runs alongside the server and stops with the context, so
-	// shutdown leaves nothing running (AGENTS.md §1.6).
-	runQuotaFlusher(ctx, mgmt.QuotaFlusher)
+	// The background workers run alongside the server and stop with the context,
+	// so shutdown leaves nothing running (AGENTS.md §1.6).
+	runWorkers(ctx, mgmt)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

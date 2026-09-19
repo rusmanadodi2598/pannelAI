@@ -91,6 +91,28 @@ linters:
       - path: internal/repository/postgres/.*\.go
         linters: [forbidigo]
 
+      # handler/endpoint_body.go holds decodeInto: the request body is read once
+      # into a concrete DTO the caller validates immediately, which is the exact
+      # decode boundary §1.4 names as permitted.
+      - path: internal/handler/endpoint_body\.go
+        linters: [forbidigo]
+
+      # service/settings.go: decodeOr is a generic, and an unconstrained type
+      # parameter has no spelling other than `any`; groupValue returns one of the
+      # typed settings structs for JSON persistence, a union a concrete return
+      # type cannot express without duplicating the switch per caller.
+      - path: internal/service/settings\.go
+        linters: [forbidigo]
+
+      # The dataplane's wire translators (translate_*.go, engine_translate.go)
+      # speak the vendors' own formats: an upstream answer arrives untyped and is
+      # read member by member, and a Claude SSE frame is assembled from members
+      # the upstream models as a free-form object. This is the untyped
+      # third-party-response boundary §1.4 permits; everything on the CLIENT side
+      # of these files stays in schema DTOs.
+      - path: internal/dataplane/(translate_.*|engine_translate)\.go
+        linters: [forbidigo]
+
       # noctx targets *outbound* calls that must carry a deadline. A test builds
       # an inbound request with httptest.NewRequest on purpose: it is the input
       # the handler receives, not a call the test makes, so there is no caller

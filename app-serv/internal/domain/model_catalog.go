@@ -131,7 +131,7 @@ func NewModelCapabilities(names ...string) ModelCapabilities {
 func (c ModelCapabilities) Has(name string) bool {
 	target := strings.ToLower(strings.TrimSpace(name))
 	for _, item := range c {
-		if strings.ToLower(item) == target {
+		if strings.EqualFold(item, target) {
 			return true
 		}
 	}

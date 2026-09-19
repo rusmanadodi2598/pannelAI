@@ -21,8 +21,8 @@ import (
 // TestModelCatalogService_Resolve covers §7.15's resolution order and the rules
 // that a disabled model does not resolve and an unknown string does not either.
 func TestModelCatalogService_Resolve(t *testing.T) {
-	fixture := newCatalogFixture(t)
 	ctx := context.Background()
+	fixture := newCatalogFixture(t, ctx)
 	if err := fixture.combos.Create(ctx, mustCombo(t, "cmb_one", "fallback-combo")); err != nil {
 		t.Fatalf("seeding a combo: %v", err)
 	}
@@ -86,8 +86,8 @@ func TestModelCatalogService_Resolve(t *testing.T) {
 // dereference rule on the read path: an alias whose target is another alias
 // cannot resolve, because such a row is refused at write time.
 func TestModelCatalogService_ResolveRejectsAnAliasChain(t *testing.T) {
-	fixture := newCatalogFixture(t)
 	ctx := context.Background()
+	fixture := newCatalogFixture(t, ctx)
 	// Written straight to the fake, because the service refuses it: this pins
 	// the read path's behaviour for a row that predates the rule.
 	if err := fixture.repo.ReplaceAliases(ctx, []domain.ModelAlias{mustAlias(t, "chain", "fast")}); err != nil {
@@ -101,8 +101,8 @@ func TestModelCatalogService_ResolveRejectsAnAliasChain(t *testing.T) {
 // TestModelCatalogService_ModelExists covers the predicate a combo ref, a judge
 // model, and a vision adapter entry all validate through.
 func TestModelCatalogService_ModelExists(t *testing.T) {
-	fixture := newCatalogFixture(t)
 	ctx := context.Background()
+	fixture := newCatalogFixture(t, ctx)
 	cases := []struct {
 		name string
 		raw  string

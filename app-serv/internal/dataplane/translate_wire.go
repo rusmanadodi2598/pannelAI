@@ -90,15 +90,6 @@ func intField(obj object, key string) int {
 	return value
 }
 
-// boolField reads a boolean member, returning false when absent or mistyped.
-func boolField(obj object, key string) bool {
-	var value bool
-	if raw, ok := obj[key]; ok {
-		_ = json.Unmarshal(raw, &value)
-	}
-	return value
-}
-
 // objectField reads a nested object member.
 func objectField(obj object, key string) (object, bool) {
 	raw, ok := obj[key]

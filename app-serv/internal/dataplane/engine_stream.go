@@ -86,6 +86,7 @@ func (e *Engine) pump(
 		if err := ctx.Err(); err != nil {
 			// A client that disconnected stops the upstream read: continuing would
 			// bill an answer nobody receives.
+			//nolint:nilerr // reason: there is no caller left to report the cancelled context to; a quiet stop is the documented behaviour for a disconnected client.
 			return nil
 		}
 		line, err := reader.ReadBytes('\n')

@@ -356,8 +356,6 @@ type retryPlugin struct {
 	provider.Base
 	// retryable is the status set this plugin considers worth repeating.
 	retryable map[int]bool
-	// after is the wait it asks for.
-	after int
 }
 
 func (p retryPlugin) ShouldRetry(status int, _ http.Header) provider.RetryDecision {

@@ -92,6 +92,7 @@ func (s *ModelCatalogService) Resolve(ctx context.Context, model string) (RefTar
 
 	ref, err := domain.ParseModelRef(trimmed)
 	if err != nil {
+		//nolint:nilerr // reason: a string that is not a provider/model reference is an unresolvable target, not a failure; the caller answers "not found" for it.
 		return RefTarget{}, false, nil
 	}
 	hidden, err := s.isDisabled(ctx, ref)

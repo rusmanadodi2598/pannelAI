@@ -23,8 +23,8 @@ import (
 // validation: a target must exist as a model or a combo, and a bad row refuses
 // the whole write.
 func TestModelCatalogService_ReplaceAliases(t *testing.T) {
-	fixture := newCatalogFixture(t)
 	ctx := context.Background()
+	fixture := newCatalogFixture(t, ctx)
 	if err := fixture.combos.Create(ctx, mustCombo(t, "cmb_one", "fallback-combo")); err != nil {
 		t.Fatalf("seeding a combo: %v", err)
 	}
@@ -110,8 +110,8 @@ func TestModelCatalogService_ReplaceAliases(t *testing.T) {
 // the rule that a pair must name a catalog model — including one that is already
 // disabled, so re-submitting the same set is idempotent.
 func TestModelCatalogService_ReplaceDisabled(t *testing.T) {
-	fixture := newCatalogFixture(t)
 	ctx := context.Background()
+	fixture := newCatalogFixture(t, ctx)
 	openai, err := domain.NewModelRef("openai", "gpt-4o-mini")
 	if err != nil {
 		t.Fatalf("NewModelRef() error = %v", err)

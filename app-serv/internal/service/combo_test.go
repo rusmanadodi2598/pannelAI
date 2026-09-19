@@ -86,8 +86,8 @@ func TestComboService_Create(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			service, _ := newComboFixture(t, nil)
-			seedComboReferences(t, service)
+			service, _ := newComboFixture(t, ctx, nil)
+			seedComboReferences(t, ctx, service)
 			combo, err := service.Create(ctx, tc.draft)
 			if tc.wantErr != "" {
 				if err == nil {
@@ -115,8 +115,8 @@ func TestComboService_Create(t *testing.T) {
 // enforces, through the sentinel the service maps to CONFLICT.
 func TestComboService_CreateRejectsADuplicateName(t *testing.T) {
 	ctx := context.Background()
-	service, _ := newComboFixture(t, nil)
-	seedComboReferences(t, service)
+	service, _ := newComboFixture(t, ctx, nil)
+	seedComboReferences(t, ctx, service)
 	input := comboDraft(t, "daily", domain.ComboFallback, 0, "", comboRef(t, "openai/gpt-4o", 1))
 
 	if _, err := service.Create(ctx, input); err != nil {

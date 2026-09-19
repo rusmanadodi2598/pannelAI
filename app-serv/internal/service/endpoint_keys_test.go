@@ -227,7 +227,8 @@ func TestEndpointService_RemoveKeyKeepsOneActiveCredential(t *testing.T) {
 			endpoint := seedEndpoint(t, svc, "deepseek", "acct", tc.authType, toKeyInputs(tc.labels)...)
 
 			var err error
-			if tc.removeAll {
+			switch {
+			case tc.removeAll:
 				for len(endpoint.Keys()) > 0 {
 					keys := endpoint.Keys()
 					err = svc.RemoveKey(ctx, endpoint.ID(), keys[0].ID())
@@ -240,9 +241,9 @@ func TestEndpointService_RemoveKeyKeepsOneActiveCredential(t *testing.T) {
 					}
 					endpoint = reloaded
 				}
-			} else if len(tc.labels) > 0 {
+			case len(tc.labels) > 0:
 				err = svc.RemoveKey(ctx, endpoint.ID(), endpoint.Keys()[0].ID())
-			} else {
+			default:
 				err = svc.RemoveKey(ctx, endpoint.ID(), "uky_absent")
 				tc.wantCode = "NOT_FOUND"
 			}

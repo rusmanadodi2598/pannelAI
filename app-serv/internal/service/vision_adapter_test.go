@@ -41,9 +41,9 @@ func (r *stubAdapterRepo) Save(_ context.Context, adapter domain.VisionAdapter) 
 }
 
 // newAdapterFixture wires the adapter service over the shared catalog fixture.
-func newAdapterFixture(t *testing.T, capable domain.VisionCapabilityCheck) (*VisionAdapterService, *stubAdapterRepo, catalogFixture) {
+func newAdapterFixture(t *testing.T, ctx context.Context, capable domain.VisionCapabilityCheck) (*VisionAdapterService, *stubAdapterRepo, catalogFixture) {
 	t.Helper()
-	catalog := newCatalogFixture(t)
+	catalog := newCatalogFixture(t, ctx)
 	repo := newStubAdapterRepo()
 	service, err := NewVisionAdapterService(VisionAdapterServiceDeps{
 		Repo: repo, Catalog: catalog.service, Capable: capable,
@@ -71,7 +71,7 @@ func acceptAll(domain.ModelRef) bool { return true }
 // TestVisionAdapterService_GetServesTheDefault documents the fresh-install
 // shape: a usable configuration, never a 404.
 func TestVisionAdapterService_GetServesTheDefault(t *testing.T) {
-	service, _, _ := newAdapterFixture(t, acceptAll)
+	service, _, _ := newAdapterFixture(t, context.Background(), acceptAll)
 	adapter, err := service.Get(context.Background())
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
@@ -130,7 +130,7 @@ func TestVisionAdapterService_Replace(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			service, repo, _ := newAdapterFixture(t, tc.capable)
+			service, repo, _ := newAdapterFixture(t, context.Background(), tc.capable)
 			refs := make([]domain.ModelRef, 0, len(tc.models))
 			for _, model := range tc.models {
 				refs = append(refs, visionRef(t, model))
@@ -180,7 +180,7 @@ func TestVisionAdapterService_Replace(t *testing.T) {
 // parsed references; a zero one cannot be in the catalog and is refused as
 // unknown rather than stored.
 func TestVisionAdapterService_ReplaceRejectsAZeroRef(t *testing.T) {
-	service, repo, _ := newAdapterFixture(t, acceptAll)
+	service, repo, _ := newAdapterFixture(t, context.Background(), acceptAll)
 	_, err := service.Replace(context.Background(), true, false, []domain.ModelRef{{}})
 	if err == nil {
 		t.Fatal("Replace() accepted a zero reference")
@@ -199,8 +199,8 @@ func TestVisionAdapterService_ReplaceRejectsAZeroRef(t *testing.T) {
 // TestVisionAdapterService_ReplaceIsIdempotent proves a PUT of the same
 // configuration is a no-op in effect, which the panel's save button relies on.
 func TestVisionAdapterService_ReplaceIsIdempotent(t *testing.T) {
-	service, repo, _ := newAdapterFixture(t, acceptAll)
 	ctx := context.Background()
+	service, repo, _ := newAdapterFixture(t, ctx, acceptAll)
 	refs := []domain.ModelRef{visionRef(t, "openai/gpt-4o")}
 	first, err := service.Replace(ctx, true, true, refs)
 	if err != nil {
@@ -221,8 +221,8 @@ func TestVisionAdapterService_ReplaceIsIdempotent(t *testing.T) {
 // TestVisionAdapterService_ReplaceRemovesDroppedModels pins the whole-set
 // replacement: a model left out of the PUT is gone, not merged.
 func TestVisionAdapterService_ReplaceRemovesDroppedModels(t *testing.T) {
-	service, _, _ := newAdapterFixture(t, acceptAll)
 	ctx := context.Background()
+	service, _, _ := newAdapterFixture(t, ctx, acceptAll)
 	if _, err := service.Replace(ctx, true, true,
 		[]domain.ModelRef{visionRef(t, "openai/gpt-4o"), visionRef(t, "openai/gpt-4o-mini")}); err != nil {
 		t.Fatalf("Replace() error = %v", err)

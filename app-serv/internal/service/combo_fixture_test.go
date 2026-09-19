@@ -27,9 +27,9 @@ import (
 
 // newComboFixture wires a combo service over in-memory repositories. A nil
 // rotation store exercises the documented no-Redis deployment.
-func newComboFixture(t *testing.T, rotation repository.ComboRotationStore) (*ComboService, catalogFixture) {
+func newComboFixture(t *testing.T, ctx context.Context, rotation repository.ComboRotationStore) (*ComboService, catalogFixture) {
 	t.Helper()
-	catalog := newCatalogFixture(t)
+	catalog := newCatalogFixture(t, ctx)
 	service, err := NewComboService(ComboServiceDeps{Repo: catalog.combos, Catalog: catalog.service, Rotation: rotation})
 	if err != nil {
 		t.Fatalf("NewComboService() error = %v", err)
@@ -38,9 +38,8 @@ func newComboFixture(t *testing.T, rotation repository.ComboRotationStore) (*Com
 }
 
 // seedComboReferences creates the combo and the aliases a combo's refs may name.
-func seedComboReferences(t *testing.T, service *ComboService) {
+func seedComboReferences(t *testing.T, ctx context.Context, service *ComboService) {
 	t.Helper()
-	ctx := context.Background()
 	if _, err := service.Create(ctx, comboDraft(t, "seeded-combo", domain.ComboFallback, 0, "", comboRef(t, "openai/gpt-4o", 1))); err != nil {
 		t.Fatalf("seeding a combo: %v", err)
 	}

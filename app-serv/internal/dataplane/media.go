@@ -24,7 +24,6 @@ package dataplane
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -205,68 +204,4 @@ func canonicalHeader(name string) string {
 		out = append(out, strings.ToUpper(part[:1])+strings.ToLower(part[1:]))
 	}
 	return strings.Join(out, "-")
-}
-
-// GeminiEmbeddingFormat marks the Gemini embedding payload shape, which is
-// `{model, content: {parts}}` for one input and `{requests: [...]}` for several.
-const GeminiEmbeddingFormat = "gemini-embedding"
-
-// IsGeminiEmbedding reports whether a media block declares the Gemini embeddings
-// shape, which is decided by its base URL: the registry declares no per-kind format
-// for embeddings, and the endpoint is what distinguishes the two protocols.
-func IsGeminiEmbedding(media registry.MediaConfig) bool {
-	return strings.Contains(media.BaseURL, "generativelanguage.googleapis.com")
-}
-
-// GeminiEmbeddingsURL builds the :embedContent or :batchEmbedContents URL, which is
-// how Gemini's embeddings API is addressed.
-func GeminiEmbeddingsURL(baseURL, upstreamModel string, batch bool) string {
-	model := upstreamModel
-	if !strings.HasPrefix(model, "models/") {
-		model = "models/" + model
-	}
-	operation := "embedContent"
-	if batch {
-		operation = "batchEmbedContents"
-	}
-	return strings.TrimSuffix(baseURL, "/") + "/" + model + ":" + operation
-}
-
-// GeminiEmbeddingsBody builds the Gemini embeddings payload.
-func GeminiEmbeddingsBody(model string, input GeminiEmbeddingInput) []byte {
-	path := model
-	if !strings.HasPrefix(path, "models/") {
-		path = "models/" + model
-	}
-	payload := map[string]any{"model": path, "content": map[string]any{
-		"parts": []map[string]string{{"text": input.Single}},
-	}}
-	if len(input.Many) > 0 {
-		requests := make([]map[string]any, 0, len(input.Many))
-		for _, text := range input.Many {
-			requests = append(requests, map[string]any{
-				"model": path, "content": map[string]any{"parts": []map[string]string{{"text": text}}},
-			})
-		}
-		payload = map[string]any{"requests": requests}
-	}
-	if input.Dimensions > 0 {
-		payload["outputDimensionality"] = input.Dimensions
-	}
-	encoded, err := json.Marshal(payload)
-	if err != nil {
-		return []byte(`{}`)
-	}
-	return encoded
-}
-
-// GeminiEmbeddingInput is the Gemini payload's input, kept typed so the body
-// builder needs no untyped value.
-type GeminiEmbeddingInput struct {
-	// Single is the text of a one-input request.
-	Single string
-	// Many is the text of a multi-input request, which uses batchEmbedContents.
-	Many []string
-	// Dimensions is the requested output size, or zero for the model's default.
-	Dimensions int
 }

@@ -132,10 +132,10 @@ func (s *ChatService) Authenticate(ctx context.Context, presented string) (domai
 func (s *ChatService) Relay(ctx context.Context, in dataplane.Request, sink dataplane.FrameSink, keyID string) (dataplane.Outcome, error) {
 	outcome, err := s.engine.Relay(ctx, in, sink)
 	if err != nil {
-		s.record(ctx, in, outcome, keyID, dataplane.AsError(err).Code)
+		s.record(ctx, outcome, keyID, dataplane.AsError(err).Code)
 		return dataplane.Outcome{}, err
 	}
-	s.record(ctx, in, outcome, keyID, "")
+	s.record(ctx, outcome, keyID, "")
 	return outcome, nil
 }
 
@@ -149,7 +149,7 @@ func (s *ChatService) Models(ctx context.Context) (schema.ModelList, error) {
 // A recording failure is deliberately not returned: the client already has its
 // answer, and failing the request over an accounting write would turn a served
 // call into an error the client cannot act on.
-func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome dataplane.Outcome, keyID, errorCode string) {
+func (s *ChatService) record(ctx context.Context, outcome dataplane.Outcome, keyID, errorCode string) {
 	if s.usage == nil {
 		return
 	}

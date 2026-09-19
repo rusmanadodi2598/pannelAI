@@ -69,3 +69,16 @@ type VisionAdapterRepository interface {
 	// response reports, so the write and the reported instant agree.
 	Save(ctx context.Context, adapter domain.VisionAdapter) error
 }
+
+// VisionRotationStore persists the round-robin position the vision adapter
+// continues from, so two image-bearing requests do not always start at the
+// same adapter model. The state is advisory: a lost key costs one request of
+// skew, never a wrong answer, so the implementation is not required to be
+// transactional.
+type VisionRotationStore interface {
+	// Get returns the stored state, or the zero state when none is stored.
+	Get(ctx context.Context) (domain.RotationState, error)
+
+	// Save replaces the stored state.
+	Save(ctx context.Context, state domain.RotationState) error
+}

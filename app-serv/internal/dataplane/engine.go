@@ -68,7 +68,10 @@ type Engine struct {
 	resolver  *Resolver
 	selector  *Selector
 	transport *Transport
-	clock     func() time.Time
+	// vision is the optional §7.8 seam. A nil one means no adapter is wired,
+	// which serves every request un-augmented.
+	vision VisionAugmenter
+	clock  func() time.Time
 }
 
 // EngineDeps holds the collaborators the engine needs.
@@ -76,6 +79,9 @@ type EngineDeps struct {
 	Resolver  *Resolver
 	Selector  *Selector
 	Transport *Transport
+	// Vision augments image-bearing requests aimed at a model that cannot read
+	// images. Optional: nil keeps the pipeline free of the adapter entirely.
+	Vision VisionAugmenter
 	// Clock overrides the time source, so a test can measure latency and the
 	// circuit window without sleeping.
 	Clock func() time.Time
@@ -96,7 +102,7 @@ func NewEngine(deps EngineDeps) (*Engine, error) {
 	if clock == nil {
 		clock = time.Now
 	}
-	return &Engine{resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport, clock: clock}, nil
+	return &Engine{resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport, vision: deps.Vision, clock: clock}, nil
 }
 
 // Resolver exposes the resolver, so a caller can answer catalog questions with
@@ -119,8 +125,11 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 		refs = []string{resolution.Provider.ID + "/" + resolution.ModelID}
 	}
 
+	// The §7.8 decision lives beside the seam it consults (vision.go).
+	refs, adapterCount := e.augmentForVision(ctx, in, resolution, refs)
+
 	var lastErr error
-	for _, ref := range refs {
+	for index, ref := range refs {
 		member, resolveErr := e.resolver.Resolve(ctx, ref)
 		if resolveErr != nil {
 			lastErr = resolveErr
@@ -129,6 +138,9 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 		member.Combo = resolution.Combo
 		outcome, relayErr := e.relayOnce(ctx, in, member, sink)
 		if relayErr == nil {
+			if index < adapterCount {
+				outcome.Model = resolution.ModelID
+			}
 			return outcome, nil
 		}
 		lastErr = relayErr

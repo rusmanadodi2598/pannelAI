@@ -56,7 +56,7 @@ func TestComboService_Order(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			rotation := &stubRotation{}
-			service, _ := newComboFixture(t, rotation)
+			service, _ := newComboFixture(t, ctx, rotation)
 			combo, err := domain.NewCombo("cmb_test", "ordered", tc.strategy, tc.sticky, tc.judge, tc.modelList, catalogTestNow())
 			if err != nil {
 				t.Fatalf("NewCombo() error = %v", err)
@@ -81,7 +81,7 @@ func TestComboService_Order(t *testing.T) {
 func TestComboService_OrderRotatesAcrossRequests(t *testing.T) {
 	ctx := context.Background()
 	rotation := &stubRotation{}
-	service, _ := newComboFixture(t, rotation)
+	service, _ := newComboFixture(t, ctx, rotation)
 	combo, err := domain.NewCombo("cmb_test", "rotating", domain.ComboRoundRobin, 1, "", []domain.ComboModel{
 		comboRef(t, "a/one", 1), comboRef(t, "b/two", 2), comboRef(t, "c/three", 3),
 	}, catalogTestNow())
@@ -108,7 +108,7 @@ func TestComboService_OrderRotatesAcrossRequests(t *testing.T) {
 func TestComboService_OrderFallsBackWhenTheStoreFails(t *testing.T) {
 	ctx := context.Background()
 	rotation := &stubRotation{failure: errors.New("redis is down")}
-	service, _ := newComboFixture(t, rotation)
+	service, _ := newComboFixture(t, ctx, rotation)
 	combo, err := domain.NewCombo("cmb_test", "rotating", domain.ComboRoundRobin, 1, "", []domain.ComboModel{
 		comboRef(t, "a/one", 1), comboRef(t, "b/two", 2),
 	}, catalogTestNow())
@@ -128,7 +128,7 @@ func TestComboService_OrderFallsBackWhenTheStoreFails(t *testing.T) {
 // management plane still serves combo CRUD, and Order serves the stored order.
 func TestComboService_OrderWithoutAStore(t *testing.T) {
 	ctx := context.Background()
-	service, _ := newComboFixture(t, nil)
+	service, _ := newComboFixture(t, ctx, nil)
 	combo, err := domain.NewCombo("cmb_test", "rotating", domain.ComboRoundRobin, 1, "", []domain.ComboModel{
 		comboRef(t, "a/one", 1), comboRef(t, "b/two", 2),
 	}, catalogTestNow())
@@ -147,8 +147,8 @@ func TestComboService_OrderWithoutAStore(t *testing.T) {
 // TestComboService_ListAndGet cover the read paths a panel table drives.
 func TestComboService_ListAndGet(t *testing.T) {
 	ctx := context.Background()
-	service, _ := newComboFixture(t, nil)
-	seedComboReferences(t, service)
+	service, _ := newComboFixture(t, ctx, nil)
+	seedComboReferences(t, ctx, service)
 	for _, name := range []string{"alpha", "beta", "gamma"} {
 		if _, err := service.Create(ctx, comboDraft(t, name, domain.ComboFallback, 0, "", comboRef(t, "openai/gpt-4o", 1))); err != nil {
 			t.Fatalf("seeding %q: %v", name, err)
@@ -184,7 +184,7 @@ func TestComboService_ListAndGet(t *testing.T) {
 // TestNewComboService_RequiresDeps pins the constructor's validation and the
 // documented optional rotation store.
 func TestNewComboService_RequiresDeps(t *testing.T) {
-	catalog := newCatalogFixture(t)
+	catalog := newCatalogFixture(t, context.Background())
 	cases := []struct {
 		name    string
 		deps    ComboServiceDeps

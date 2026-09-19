@@ -62,6 +62,8 @@ type dataPlaneInputs struct {
 	Redis      redis.UniversalClient
 	Settings   *service.SettingsService
 	Usage      *service.UsageService
+	// Vision is the §7.8 seam the engine consults for image-bearing requests.
+	Vision dataplane.VisionAugmenter
 }
 
 // buildDataPlane assembles the resolver, selector, transport, and engine, then the
@@ -105,7 +107,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 	}
 
 	engine, err := dataplane.NewEngine(dataplane.EngineDeps{
-		Resolver: resolver, Selector: selector, Transport: transport,
+		Resolver: resolver, Selector: selector, Transport: transport, Vision: in.Vision,
 	})
 	if err != nil {
 		return dataPlane{}, err

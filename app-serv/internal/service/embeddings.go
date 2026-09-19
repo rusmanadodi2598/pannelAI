@@ -105,11 +105,15 @@ func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequ
 		TimeoutMS: media.TimeoutMS,
 	})
 	if err != nil {
-		s.engine.RecordFailure(ctx, selection, "the embeddings upstream could not be reached")
+		// reason: the client's error is the upstream failure, and reporting a
+		// bookkeeping failure instead would hide the cause it came from.
+		_ = s.engine.RecordFailure(ctx, selection, "the embeddings upstream could not be reached")
 		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
 	}
 	if answer.Status < 200 || answer.Status >= 300 {
-		s.engine.RecordFailure(ctx, selection, "the embeddings upstream rejected the request")
+		// reason: the upstream rejection is the client's error; a failed health
+		// write retries on the next call rather than replacing this one.
+		_ = s.engine.RecordFailure(ctx, selection, "the embeddings upstream rejected the request")
 		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
 	}
 	if err := s.engine.RecordSuccess(ctx, selection); err != nil {
@@ -166,12 +170,12 @@ func embeddingsBody(req schema.EmbeddingsRequest, upstreamModel string, media re
 		return dataplane.GeminiEmbeddingsBody(upstreamModel, input)
 	}
 
-	body := map[string]any{"model": upstreamModel, "input": req.Input}
+	body := embeddingsUpstreamBody{Model: upstreamModel, Input: req.Input}
 	if req.EncodingFormat != "" {
-		body["encoding_format"] = req.EncodingFormat
+		body.EncodingFormat = req.EncodingFormat
 	}
 	if req.Dimensions != nil {
-		body["dimensions"] = *req.Dimensions
+		body.Dimensions = req.Dimensions
 	}
 	encoded, err := json.Marshal(body)
 	if err != nil {
@@ -180,108 +184,12 @@ func embeddingsBody(req schema.EmbeddingsRequest, upstreamModel string, media re
 	return encoded
 }
 
-// normalizeEmbeddings puts an upstream answer into the OpenAI embeddings shape.
-//
-// A body already in that shape is passed through field by field, because the
-// response carries vectors whose length the gateway must not reinterpret; a
-// provider-native shape (Gemini's embeddings array) is converted.
-func normalizeEmbeddings(raw []byte, req schema.EmbeddingsRequest, model string, gemini bool) schema.EmbeddingsResponse {
-	if !gemini {
-		var shaped struct {
-			Object string `json:"object"`
-			Data   []struct {
-				Object    string          `json:"object"`
-				Index     int             `json:"index"`
-				Embedding json.RawMessage `json:"embedding"`
-			} `json:"data"`
-			Model string        `json:"model"`
-			Usage *schema.Usage `json:"usage"`
-		}
-		if err := json.Unmarshal(raw, &shaped); err == nil && len(shaped.Data) > 0 {
-			response := schema.EmbeddingsResponse{
-				Object: "list", Data: make([]schema.EmbeddingObject, 0, len(shaped.Data)),
-				Model: shaped.Model, Usage: shaped.Usage,
-			}
-			if response.Model == "" {
-				response.Model = model
-			}
-			for _, item := range shaped.Data {
-				response.Data = append(response.Data, schema.EmbeddingObject{
-					Object: "embedding", Index: item.Index,
-					Embedding: decodeVector(item.Embedding, req.EncodingFormat),
-				})
-			}
-			return response
-		}
-	}
-	return geminiEmbeddingsFromNative(raw, model, req.EncodingFormat)
-}
-
-// decodeVector reads one embedding in whichever encoding the upstream sent it.
-func decodeVector(raw json.RawMessage, encoding string) schema.EmbeddingVector {
-	var floats []float64
-	if err := json.Unmarshal(raw, &floats); err == nil {
-		if encoding == "base64" {
-			return schema.NewEncodedVector(floats)
-		}
-		return schema.NewFloatVector(floats)
-	}
-	var encoded string
-	if err := json.Unmarshal(raw, &encoded); err == nil {
-		return schema.EmbeddingVector{Encoded: encoded}
-	}
-	return schema.NewFloatVector(nil)
-}
-
-// geminiEmbeddingsFromNative converts Gemini's embeddings array into the OpenAI
-// list shape, numbering each entry in arrival order.
-func geminiEmbeddingsFromNative(raw []byte, model, encoding string) schema.EmbeddingsResponse {
-	var native struct {
-		Embeddings []struct {
-			Values []float64 `json:"values"`
-		} `json:"embeddings"`
-		Embedding struct {
-			Values []float64 `json:"values"`
-		} `json:"embedding"`
-	}
-	response := schema.EmbeddingsResponse{Object: "list", Data: make([]schema.EmbeddingObject, 0, 1), Model: model}
-	if err := json.Unmarshal(raw, &native); err != nil {
-		return response
-	}
-	appendVector := func(index int, values []float64) {
-		vector := schema.NewFloatVector(values)
-		if encoding == "base64" {
-			vector = schema.NewEncodedVector(values)
-		}
-		response.Data = append(response.Data, schema.EmbeddingObject{
-			Object: "embedding", Index: index, Embedding: vector,
-		})
-	}
-	for index, item := range native.Embeddings {
-		appendVector(index, item.Values)
-	}
-	if len(response.Data) == 0 && native.Embedding.Values != nil {
-		appendVector(0, native.Embedding.Values)
-	}
-	return response
-}
-
-// upstreamMessageOf extracts a message from an upstream error body, so the client
-// gets something actionable rather than an empty string.
-func upstreamMessageOf(body []byte) string {
-	var shaped struct {
-		Error struct {
-			Message string `json:"message"`
-		} `json:"error"`
-		Message string `json:"message"`
-	}
-	if json.Unmarshal(body, &shaped) == nil {
-		if shaped.Error.Message != "" {
-			return shaped.Error.Message
-		}
-		if shaped.Message != "" {
-			return shaped.Message
-		}
-	}
-	return "the upstream rejected the request"
+// embeddingsUpstreamBody is the OpenAI embeddings payload, typed so the request
+// builder never holds an untyped map (AGENTS.md §1.4). Input marshals itself:
+// a single input is a string, a batch an array (schema.EmbeddingInput).
+type embeddingsUpstreamBody struct {
+	Model          string                `json:"model"`
+	Input          schema.EmbeddingInput `json:"input"`
+	EncodingFormat string                `json:"encoding_format,omitempty"`
+	Dimensions     *int                  `json:"dimensions,omitempty"`
 }

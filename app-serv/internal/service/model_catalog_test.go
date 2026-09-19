@@ -22,7 +22,7 @@ import (
 // TestModelCatalogService_MergesThreeSources proves the merged view: registry
 // models, custom models, and the disabled subtraction.
 func TestModelCatalogService_MergesThreeSources(t *testing.T) {
-	fixture := newCatalogFixture(t)
+	fixture := newCatalogFixture(t, context.Background())
 	models, err := fixture.service.Catalog(context.Background(), CatalogFilter{})
 	if err != nil {
 		t.Fatalf("Catalog() error = %v", err)
@@ -47,7 +47,7 @@ func TestModelCatalogService_MergesThreeSources(t *testing.T) {
 // the operator's row wins for a pair the registry also declares, because a
 // custom row is an explicit statement and a registry row is the port's default.
 func TestModelCatalogService_CustomOverridesARegistryRow(t *testing.T) {
-	fixture := newCatalogFixture(t)
+	fixture := newCatalogFixture(t, context.Background())
 	override := mustCustomModel(t, "openai", "gpt-4o", "Our GPT-4o", "vision")
 	if err := fixture.repo.AddCustom(context.Background(), override); err != nil {
 		t.Fatalf("AddCustom() error = %v", err)
@@ -70,7 +70,7 @@ func TestModelCatalogService_CustomOverridesARegistryRow(t *testing.T) {
 // TestModelCatalogService_CatalogFilters covers the three documented query
 // parameters and their combinations, including a filter that matches nothing.
 func TestModelCatalogService_CatalogFilters(t *testing.T) {
-	fixture := newCatalogFixture(t)
+	fixture := newCatalogFixture(t, context.Background())
 	cases := []struct {
 		name   string
 		filter CatalogFilter
@@ -123,8 +123,8 @@ func TestModelCatalogService_CatalogFilters(t *testing.T) {
 // TestModelCatalogService_AddCustom pins the create path, including the unknown
 // provider rejection §6 requires.
 func TestModelCatalogService_AddCustom(t *testing.T) {
-	fixture := newCatalogFixture(t)
 	ctx := context.Background()
+	fixture := newCatalogFixture(t, ctx)
 	cases := []struct {
 		name        string
 		providerID  string
@@ -164,8 +164,8 @@ func TestModelCatalogService_AddCustom(t *testing.T) {
 
 // TestModelCatalogService_RemoveCustom covers both outcomes.
 func TestModelCatalogService_RemoveCustom(t *testing.T) {
-	fixture := newCatalogFixture(t)
 	ctx := context.Background()
+	fixture := newCatalogFixture(t, ctx)
 	model, err := fixture.service.AddCustom(ctx, "openai", "gone", "Gone", nil)
 	if err != nil {
 		t.Fatalf("AddCustom() error = %v", err)

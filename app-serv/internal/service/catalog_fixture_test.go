@@ -70,8 +70,10 @@ type catalogFixture struct {
 	service *ModelCatalogService
 }
 
-// newCatalogFixture builds the fixture described on catalogFixture.
-func newCatalogFixture(t *testing.T) catalogFixture {
+// newCatalogFixture builds the fixture described on catalogFixture. The seeding
+// calls carry the caller's context, so a test's setup answers to the same
+// cancellation its assertions do.
+func newCatalogFixture(t *testing.T, ctx context.Context) catalogFixture {
 	t.Helper()
 	index := testIndex(t,
 		testProvider("openai", "api",
@@ -81,7 +83,7 @@ func newCatalogFixture(t *testing.T) catalogFixture {
 	)
 	repo := newStubCatalogRepo()
 	combos := newStubComboRepo()
-	if err := repo.AddCustom(context.Background(), mustCustomModel(t, "openai", "local-embed", "Local Embed", "embedding")); err != nil {
+	if err := repo.AddCustom(ctx, mustCustomModel(t, "openai", "local-embed", "Local Embed", "embedding")); err != nil {
 		t.Fatalf("seeding a custom model: %v", err)
 	}
 	disabled, err := domain.NewModelRef("anthropic", "claude-3")

@@ -63,8 +63,8 @@ func TestComboService_Update(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			service, _ := newComboFixture(t, nil)
-			seedComboReferences(t, service)
+			service, _ := newComboFixture(t, ctx, nil)
+			seedComboReferences(t, ctx, service)
 			created, err := service.Create(ctx, comboDraft(t, "daily", domain.ComboFallback, 0, "", comboRef(t, "openai/gpt-4o", 1)))
 			if err != nil {
 				t.Fatalf("seeding a combo: %v", err)
@@ -101,8 +101,8 @@ func TestComboService_Update(t *testing.T) {
 func TestComboService_UpdateResetsRotationWhenTheListChanges(t *testing.T) {
 	ctx := context.Background()
 	rotation := &stubRotation{}
-	service, _ := newComboFixture(t, rotation)
-	seedComboReferences(t, service)
+	service, _ := newComboFixture(t, ctx, rotation)
+	seedComboReferences(t, ctx, service)
 	created, err := service.Create(ctx, comboDraft(t, "rotating", domain.ComboRoundRobin, 1, "",
 		comboRef(t, "openai/gpt-4o", 1), comboRef(t, "openai/gpt-4o-mini", 2)))
 	if err != nil {
@@ -145,8 +145,8 @@ func TestComboService_UpdateResetsRotationWhenTheListChanges(t *testing.T) {
 // rule: the alias set must be cleaned first, and the answer is CONFLICT.
 func TestComboService_DeleteRefusesWhileAnAliasReferencesIt(t *testing.T) {
 	ctx := context.Background()
-	service, catalog := newComboFixture(t, nil)
-	seedComboReferences(t, service)
+	service, catalog := newComboFixture(t, ctx, nil)
+	seedComboReferences(t, ctx, service)
 	created, err := service.Create(ctx, comboDraft(t, "daily", domain.ComboFallback, 0, "", comboRef(t, "openai/gpt-4o", 1)))
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)

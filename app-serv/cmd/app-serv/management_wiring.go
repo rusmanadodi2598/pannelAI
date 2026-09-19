@@ -30,7 +30,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 
@@ -65,9 +64,11 @@ type managementDeps struct {
 	Chat          *handler.ChatHandler
 	Embeddings    *handler.EmbeddingsHandler
 
-	// QuotaFlusher is returned so the caller can run it after the server is
-	// listening, rather than leaving a goroutine nothing supervises.
+	// QuotaFlusher and LogRetention are returned so the caller can run them
+	// after the server is listening, rather than leaving goroutines nothing
+	// supervises.
 	QuotaFlusher *service.QuotaFlusher
+	LogRetention *service.LogRetentionWorker
 }
 
 // buildManagement assembles the P1 graph.
@@ -161,6 +162,17 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: vision adapter: %w", err)
 	}
 
+	// The augmenter is the engine's view of the adapter: the pipeline asks the
+	// seam, and this is what answers it (SPEC-API-001 §7.8).
+	augmenter, err := service.NewVisionAugmenter(service.VisionAugmenterDeps{
+		Adapter:  visionSvc,
+		Capable:  visionCapabilityCheck,
+		Rotation: redisrepo.NewVisionRotationStore(client),
+	})
+	if err != nil {
+		return managementDeps{}, fmt.Errorf("management wiring: vision augmenter: %w", err)
+	}
+
 	usageSvc, err := service.NewUsageService(service.UsageServiceDeps{
 		Usage: usageRepo, Logs: logRepo, Settings: settingsSvc,
 	})
@@ -187,6 +199,14 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: quota flusher: %w", err)
 	}
 
+	// The retention worker shares the log service's purge, so the scheduled
+	// deletion and the panel's purge route apply the same cutoff from the same
+	// settings read.
+	retention, err := service.NewLogRetentionWorker(logSvc, service.DefaultLogRetentionPolicy(), slog.Default())
+	if err != nil {
+		return managementDeps{}, fmt.Errorf("management wiring: log retention: %w", err)
+	}
+
 	// The data plane is assembled from the same repositories the management side
 	// writes through, so a value written by one path is readable by the other.
 	// buildDataPlane owns that construction; this function only feeds it.
@@ -197,7 +217,7 @@ func buildManagement(
 	plane, err := buildDataPlane(dataPlaneInputs{
 		Config: cfg, Index: runtimeIndex, Endpoints: endpointRepo, Combos: comboRepo,
 		Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
-		Redis: client, Settings: settingsSvc, Usage: usageSvc,
+		Redis: client, Settings: settingsSvc, Usage: usageSvc, Vision: augmenter,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: data plane: %w", err)
@@ -219,24 +239,6 @@ func buildManagement(
 		Chat:          handler.NewChatHandler(plane.Chat),
 		Embeddings:    handler.NewEmbeddingsHandler(plane.Embeddings, plane.Chat),
 		QuotaFlusher:  flusher,
+		LogRetention:  retention,
 	}, nil
-}
-
-// runQuotaFlusher runs the flush worker until the context is cancelled.
-//
-// The goroutine recovers from a panic and has an explicit termination condition
-// (AGENTS.md §1.6): it returns when ctx is cancelled, so shutdown leaves nothing
-// running.
-func runQuotaFlusher(ctx context.Context, flusher *service.QuotaFlusher) {
-	if flusher == nil {
-		return
-	}
-	go func() {
-		defer func() {
-			if recovered := recover(); recovered != nil {
-				slog.Error("panic saat menjalankan quota flusher", "panic", recovered)
-			}
-		}()
-		flusher.Run(ctx)
-	}()
 }
