@@ -69,8 +69,8 @@ func TestMediaCallService_Prepare(t *testing.T) {
 			kind: domain.MediaKindImage, wantErrorText: "does not offer image",
 		},
 		{
-			name: "a media format the gateway does not translate", model: "elevenlabs/eleven_multilingual_v2",
-			kind: domain.MediaKindTTS, wantErrorText: "elevenlabs tts format",
+			name: "a media format the gateway does not translate", model: "edge-tts/en-US-AriaNeural",
+			kind: domain.MediaKindTTS, wantErrorText: "edge-tts tts format",
 		},
 		{
 			name: "a provider with no base URL", model: "selfhosted/sd-xl", kind: domain.MediaKindImage,

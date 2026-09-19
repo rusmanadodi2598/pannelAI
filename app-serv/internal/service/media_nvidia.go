@@ -2,13 +2,13 @@
 //
 // @file      internal/service/media_nvidia.go
 // @for       The NVIDIA NIM speech adapter in the §7.10 media plane.
-// @uses      internal/registry, internal/schema, strings.
+// @uses      internal/schema, strings.
 // @reason    NVIDIA's TTS endpoint accepts a small provider-specific JSON shape
 //
 //	and returns WAV bytes, while the surrounding route keeps the OpenAI-ish
-//	speech response. Keeping its voice default, request body, and output
-//	format together prevents the generic OpenAI builder from sending
-//	`input` as a string or labeling WAV bytes as mp3.
+//	speech response. Keeping its voice default and request body together
+//	prevents the generic OpenAI builder from sending `input` as a string;
+//	the output label lives with the other formats in media_speech.go.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -44,19 +44,5 @@ func nvidiaSpeechRequest(req schema.SpeechRequest, model string) nvidiaSpeechBod
 	}
 	return nvidiaSpeechBody{
 		Input: nvidiaSpeechInput{Text: req.Input}, Voice: voice, Model: model,
-	}
-}
-
-// SpeechOutputFormat maps the provider's response bytes to the route's output
-// label. NVIDIA's adapter always returns WAV; the OpenAI-shaped path follows the
-// client's requested format or its mp3 default.
-func (c MediaCall) SpeechOutputFormat(req schema.SpeechRequest) string {
-	switch strings.ToLower(strings.TrimSpace(c.Media.Format)) {
-	case "nvidia-tts":
-		return "wav"
-	case "cartesia":
-		return "mp3"
-	default:
-		return schema.SpeechFormat(req)
 	}
 }

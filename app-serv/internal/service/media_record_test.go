@@ -68,7 +68,7 @@ func TestMediaCallService_RecordsEveryCall(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Prepare() error = %v", err)
 			}
-			if _, err := svc.Perform(context.Background(), call, dataplane.MediaRequest{Body: []byte(`{}`)}, "gky_recorded"); tc.wantStatus.Success() && err != nil {
+			if _, err := svc.Perform(context.Background(), call, dataplane.MediaRequest{Body: []byte(`{}`)}, "gky_recorded", nil); tc.wantStatus.Success() && err != nil {
 				t.Fatalf("Perform() error = %v", err)
 			}
 
@@ -151,7 +151,7 @@ func TestMediaCallService_RecordsAFallbackRequestID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Prepare() error = %v", err)
 	}
-	if _, err := svc.Perform(context.Background(), call, dataplane.MediaRequest{Body: []byte(`{}`)}, ""); err != nil {
+	if _, err := svc.Perform(context.Background(), call, dataplane.MediaRequest{Body: []byte(`{}`)}, "", nil); err != nil {
 		t.Fatalf("Perform() error = %v", err)
 	}
 	if len(usage.rows) != 1 || usage.rows[0].RequestID == "" {
@@ -172,7 +172,7 @@ func TestMediaCallService_ServesWithoutRecorders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Prepare() error = %v", err)
 	}
-	answer, err := svc.Perform(context.Background(), call, dataplane.MediaRequest{Body: []byte(`{}`)}, "")
+	answer, err := svc.Perform(context.Background(), call, dataplane.MediaRequest{Body: []byte(`{}`)}, "", nil)
 	if err != nil {
 		t.Fatalf("Perform() error = %v", err)
 	}
@@ -197,7 +197,7 @@ func TestMediaCallService_RecordsFailuresDoNotFailTheCall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Prepare() error = %v", err)
 	}
-	answer, err := svc.Perform(context.Background(), call, dataplane.MediaRequest{Body: []byte(`{}`)}, "gky_recorded")
+	answer, err := svc.Perform(context.Background(), call, dataplane.MediaRequest{Body: []byte(`{}`)}, "gky_recorded", nil)
 	if err != nil {
 		t.Fatalf("Perform() error = %v, want the answer to survive a failed write", err)
 	}

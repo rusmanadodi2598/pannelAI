@@ -107,34 +107,40 @@ var audioContentTypes = map[string]string{
 	"webm": "audio/webm",
 }
 
-// normalizeTranscription keeps the OpenAI response shape for every client while
-// adapting Deepgram's nested response. A malformed successful response is an
-// internal error rather than a fabricated empty transcript.
-func normalizeTranscription(media registry.MediaConfig, body []byte) ([]byte, error) {
-	if strings.EqualFold(strings.TrimSpace(media.Format), "deepgram") {
-		var answer struct {
-			Results struct {
-				Channels []struct {
-					Alternatives []struct {
-						Transcript string `json:"transcript"`
-					} `json:"alternatives"`
-				} `json:"channels"`
-			} `json:"results"`
-		}
-		if err := json.Unmarshal(body, &answer); err != nil {
-			return nil, dataplane.InternalError("the transcription answer could not be read", err)
-		}
-		text := ""
-		if len(answer.Results.Channels) > 0 && len(answer.Results.Channels[0].Alternatives) > 0 {
-			text = answer.Results.Channels[0].Alternatives[0].Transcript
-		}
-		encoded, err := json.Marshal(struct {
-			Text string `json:"text"`
-		}{Text: text})
-		if err != nil {
-			return nil, dataplane.InternalError("the transcription answer could not be built", err)
-		}
-		return encoded, nil
+// transcriptionReader reports how a provider's transcription answer is read into
+// the OpenAI shape: Deepgram nests its transcript, the rest answer it already.
+func transcriptionReader(media registry.MediaConfig) mediaAnswerReader {
+	if !strings.EqualFold(strings.TrimSpace(media.Format), "deepgram") {
+		return nil
 	}
-	return body, nil
+	return func(_ int, body []byte) ([]byte, error) { return deepgramTranscriptionAnswer(body) }
+}
+
+// deepgramTranscriptionAnswer keeps the OpenAI response shape for every client
+// while adapting Deepgram's nested response. A malformed successful response is
+// an internal error rather than a fabricated empty transcript.
+func deepgramTranscriptionAnswer(body []byte) ([]byte, error) {
+	var answer struct {
+		Results struct {
+			Channels []struct {
+				Alternatives []struct {
+					Transcript string `json:"transcript"`
+				} `json:"alternatives"`
+			} `json:"channels"`
+		} `json:"results"`
+	}
+	if err := json.Unmarshal(body, &answer); err != nil {
+		return nil, dataplane.InternalError("the transcription answer could not be read", err)
+	}
+	text := ""
+	if len(answer.Results.Channels) > 0 && len(answer.Results.Channels[0].Alternatives) > 0 {
+		text = answer.Results.Channels[0].Alternatives[0].Transcript
+	}
+	encoded, err := json.Marshal(struct {
+		Text string `json:"text"`
+	}{Text: text})
+	if err != nil {
+		return nil, dataplane.InternalError("the transcription answer could not be built", err)
+	}
+	return encoded, nil
 }

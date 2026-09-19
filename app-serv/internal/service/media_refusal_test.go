@@ -60,8 +60,8 @@ func TestMediaCallService_RecordsRefusalsBeforeTheCall(t *testing.T) {
 			wantCode: dataplane.CodeModelNotFound, wantProvider: "nope", wantModel: "voice",
 		},
 		{
-			name: "a media format the gateway does not translate", model: "elevenlabs/voice", kind: domain.MediaKindTTS,
-			wantCode: dataplane.CodeProviderNotRoutable, wantProvider: "elevenlabs", wantModel: "voice",
+			name: "a media format the gateway does not translate", model: "edge-tts/voice", kind: domain.MediaKindTTS,
+			wantCode: dataplane.CodeProviderNotRoutable, wantProvider: "edge-tts", wantModel: "voice",
 		},
 		{
 			name: "a provider with no base URL", model: "selfhosted/sd-xl", kind: domain.MediaKindImage,

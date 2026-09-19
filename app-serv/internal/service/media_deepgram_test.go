@@ -131,47 +131,48 @@ func TestTranscriptionContentTypeUsesSafeAudioValues(t *testing.T) {
 	}
 }
 
-// TestNormalizeTranscription covers the nested answer, an empty but valid
-// answer, malformed JSON, and the benign non-Deepgram passthrough control.
-func TestNormalizeTranscription(t *testing.T) {
+// TestTranscriptionReader covers the nested answer, an empty but valid
+// answer, malformed JSON, and the benign non-Deepgram control that reads
+// nothing because the upstream answer already carries the OpenAI shape.
+func TestTranscriptionReader(t *testing.T) {
 	cases := []struct {
 		name    string
-		media   registry.MediaConfig
+		format  string
 		body    []byte
 		want    string
 		wantErr bool
-		wantRaw bool
+		wantNil bool
 	}{
 		{
-			name: "nested transcript", media: registryMedia("deepgram"),
+			name: "nested transcript", format: "deepgram",
 			body: []byte(`{"results":{"channels":[{"alternatives":[{"transcript":"hello"}]}]}}`),
 			want: `{"text":"hello"}`,
 		},
 		{
-			name: "empty channels", media: registryMedia("deepgram"),
+			name: "empty channels", format: "deepgram",
 			body: []byte(`{"results":{"channels":[]}}`), want: `{"text":""}`,
 		},
 		{
-			name: "malformed JSON", media: registryMedia("deepgram"), body: []byte(`not-json`), wantErr: true,
+			name: "malformed JSON", format: "deepgram", body: []byte(`not-json`), wantErr: true,
 		},
 		{
-			name: "other format passthrough", media: registryMedia("openai"),
-			body: []byte(`{"text":"already normalized"}`), wantRaw: true,
+			name: "other format reads nothing", format: "openai", wantNil: true,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := normalizeTranscription(tc.media, tc.body)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("normalizeTranscription() error = %v, want error = %v", err, tc.wantErr)
-			}
-			if err != nil {
+			read := transcriptionReader(registryMedia(tc.format))
+			if tc.wantNil {
+				if read != nil {
+					t.Fatal("transcriptionReader() = a reader, want none for a format that needs no reading")
+				}
 				return
 			}
-			if tc.wantRaw {
-				if !bytes.Equal(got, tc.body) {
-					t.Fatalf("body = %s, want unchanged", got)
-				}
+			got, err := read(200, tc.body)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("reader error = %v, want error = %v", err, tc.wantErr)
+			}
+			if err != nil {
 				return
 			}
 			if string(got) != tc.want {

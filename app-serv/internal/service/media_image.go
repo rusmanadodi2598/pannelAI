@@ -42,7 +42,7 @@ func (s *MediaCallService) GenerateImage(ctx context.Context, req schema.ImageRe
 		return schema.MediaGenerationResponse{}, call.Outcome(),
 			dataplane.InternalError("the image request could not be built", err)
 	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body}, keyID)
+	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body}, keyID, nil)
 	if err != nil {
 		return schema.MediaGenerationResponse{}, call.Outcome(), err
 	}
@@ -64,7 +64,7 @@ func (s *MediaCallService) GenerateVideo(ctx context.Context, req schema.VideoRe
 		return schema.MediaGenerationResponse{}, call.Outcome(),
 			dataplane.InternalError("the video request could not be built", err)
 	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body}, keyID)
+	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body}, keyID, nil)
 	if err != nil {
 		return schema.MediaGenerationResponse{}, call.Outcome(), err
 	}

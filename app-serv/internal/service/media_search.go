@@ -71,7 +71,7 @@ func (s *MediaCallService) Search(ctx context.Context, req schema.SearchRequest,
 		request.Body = body
 	}
 
-	answer, err := s.Perform(ctx, call, request, keyID)
+	answer, err := s.Perform(ctx, call, request, keyID, nil)
 	if err != nil {
 		return schema.SearchResponse{}, call.Outcome(), err
 	}

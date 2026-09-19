@@ -26,7 +26,6 @@ package service
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -155,47 +154,9 @@ func (s *MediaCallService) Prepare(ctx context.Context, model string, kind domai
 	}, nil
 }
 
-// Perform runs one prepared call, records its accounting, and applies its answer
-// to the endpoint's health, so a media route feeds the same circuit state the
-// chat plane reads. The key id is the authenticated caller's, recorded on both
-// rows the call writes (SPEC-API-001 §7.12/§7.13).
-func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request dataplane.MediaRequest, keyID string) (dataplane.MediaResponse, error) {
-	request.URL = call.Target
-	request.Headers = mergeHeaders(call.Headers, request.Headers)
-	if request.TimeoutMS == 0 {
-		request.TimeoutMS = call.Media.TimeoutMS
-	}
-
-	started := time.Now()
-	answer, err := s.caller.Do(ctx, request)
-	latencyMS := time.Since(started).Milliseconds()
-
-	// One exit from the classification, so a call is recorded exactly once
-	// whichever way it ended: unreachable, rejected, or served.
-	failure := err
-	switch {
-	case err != nil:
-		// reason: the client's error is the upstream failure; a failed health
-		// write retries on the next call rather than replacing this one.
-		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream could not be reached")
-	case answer.Status < 200 || answer.Status >= 300:
-		failure = dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
-		// reason: same as above — the upstream rejection is what the client
-		// must see, and the health write is bookkeeping.
-		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream rejected the request")
-	default:
-		failure = s.router.RecordSuccess(ctx, call.Selection)
-	}
-	s.recorder.record(ctx, call.Outcome(), keyID, mediaCost(call.Media.CostPerQuery), latencyMS, failure)
-
-	if failure == nil {
-		return answer, nil
-	}
-	if err != nil {
-		return dataplane.MediaResponse{}, err
-	}
-	return answer, failure
-}
+// Perform runs one prepared call, reads its answer, records its accounting, and
+// applies its answer to the endpoint's health. It lives in media_perform.go,
+// with the answer-reading seam a provider-specific failure needs.
 
 // effectiveBaseURL resolves where the kind is dialed: the operator's stored
 // override wins, the registry's own value is the default, and neither is a

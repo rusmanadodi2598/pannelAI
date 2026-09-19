@@ -23,7 +23,6 @@ package service
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"mime/multipart"
 	"strings"
 
@@ -35,34 +34,17 @@ import (
 
 // Speech performs one text-to-speech call and answers with whatever the
 // upstream returned: the audio bytes, which the handler renders as the caller
-// asked for.
+// asked for. The per-format request shape lives in media_speech.go.
 func (s *MediaCallService) Speech(ctx context.Context, req schema.SpeechRequest, query map[string]string, keyID string) (dataplane.MediaResponse, MediaCall, error) {
 	call, err := s.prepareForCall(ctx, req.Model, domain.MediaKindTTS, query, keyID)
 	if err != nil {
 		return dataplane.MediaResponse{}, MediaCall{}, err
 	}
-	var body []byte
-	headers := map[string]string{}
-	switch strings.ToLower(strings.TrimSpace(call.Media.Format)) {
-	case "nvidia-tts":
-		body, err = json.Marshal(nvidiaSpeechRequest(req, call.UpstreamModel))
-	case "cartesia":
-		var request cartesiaSpeechBody
-		request, headers = cartesiaSpeechRequest(req, call.UpstreamModel)
-		body, err = json.Marshal(request)
-	default:
-		body, err = json.Marshal(schema.SpeechBody{
-			Model:          call.UpstreamModel,
-			Input:          req.Input,
-			Voice:          schema.SpeechVoice(req),
-			ResponseFormat: strings.TrimSpace(req.ResponseFormat),
-			Speed:          req.Speed,
-		})
-	}
+	request, err := speechRequest(call, req)
 	if err != nil {
-		return dataplane.MediaResponse{}, call, dataplane.InternalError("the speech request could not be built", err)
+		return dataplane.MediaResponse{}, call, err
 	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Headers: headers, Body: body}, keyID)
+	answer, err := s.Perform(ctx, call, request, keyID, speechReader(call))
 	return answer, call, err
 }
 
@@ -89,16 +71,8 @@ func (s *MediaCallService) Transcribe(ctx context.Context, form schema.Transcrip
 			Headers: map[string]string{"Content-Type": contentType},
 		}
 	}
-	answer, err := s.Perform(ctx, call, request, keyID)
-	if err != nil {
-		return answer, call, err
-	}
-	if normalized, normalizeErr := normalizeTranscription(call.Media, answer.Body); normalizeErr != nil {
-		return dataplane.MediaResponse{}, call, normalizeErr
-	} else {
-		answer.Body = normalized
-	}
-	return answer, call, nil
+	answer, err := s.Perform(ctx, call, request, keyID, transcriptionReader(call.Media))
+	return answer, call, err
 }
 
 // Voices returns the speech catalog the provider declares. §7.10's route exists

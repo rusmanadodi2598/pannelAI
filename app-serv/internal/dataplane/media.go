@@ -5,15 +5,19 @@
 // @file      internal/dataplane/media.go
 // @for       The media call surface: one outbound request to a non-chat service,
 //
-//	with the credential placement its own kind declares.
+//	with the URL and headers its own kind declares.
 //
-// @uses      internal/registry, context, io, net/http, net/url, strings, time.
+// @uses      internal/provider, internal/registry, bytes, context, io, net/http,
+//
+//	net/url, strings, time.
+//
 // @reason    SPEC-API-001 §8.1 requires a media service's credential placement to
 //
 //	come from its per-kind block, because `auth_header: key` is a QUERY
-//	PARAMETER rather than a header. Keeping the placement and the call in
-//	one file is what stops a caller from reaching for the chat transport
-//	and authenticating incorrectly instead of failing loudly.
+//	PARAMETER rather than a header. Keeping the call and the target
+//	construction in one file is what stops a caller from reaching for
+//	the chat transport and authenticating incorrectly instead of
+//	failing loudly; the placement branches live in media_credential.go.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -125,7 +129,7 @@ func methodOrPost(declared string) string {
 }
 
 // MediaTarget builds the URL and headers for one media call, placing the
-// credential the way the kind's block declares it.
+// credential the way the kind's block declares it (media_credential.go).
 //
 // `auth_header: key` means a QUERY PARAMETER (SPEC-API-001 §8.1): measured in the
 // reference, Gemini's embedding config uses a query-param key while its chat
@@ -144,41 +148,29 @@ func MediaTarget(media registry.MediaConfig, baseURL string, cred provider.Crede
 	for name, value := range query {
 		target = withQuery(target, name, value)
 	}
-
-	secret := credentialValue(cred)
-	declared := strings.ToLower(strings.TrimSpace(media.AuthHeader))
-	switch {
-	case media.AuthType == "" || media.AuthType == registry.AuthNone || declared == "none":
-		return target, headers, nil
-	case declared == "key" || declared == "query":
-		if secret == "" {
-			return "", nil, wrapDataPlaneError(CodeUpstreamError, "the media service has no credential", nil)
-		}
-		return withQuery(target, "key", secret), headers, nil
-	case declared == "bearer" || declared == "token":
-		if secret != "" {
-			scheme := "Bearer"
-			if declared == "token" {
-				scheme = "Token"
-			}
-			headers["Authorization"] = scheme + " " + secret
-		}
-		return target, headers, nil
-	case declared == "":
-		// A kind that declares an auth type but no header keeps the registry's
-		// documented default, which is Authorization + bearer.
-		//
-		// No credential material means the provider needs none, so nothing is
-		// sent: the chat path's ApplyAuth documents the same rule, and an empty
-		// bearer is a malformed credential rather than an anonymous call (G16).
-		if secret != "" {
-			headers[provider.DefaultAuthHeader] = "Bearer " + secret
-		}
-		return target, headers, nil
-	default:
-		headers[canonicalHeader(media.AuthHeader)] = secret
-		return target, headers, nil
+	credentialed, err := applyMediaCredential(target, headers, media, credentialValue(cred))
+	if err != nil {
+		return "", nil, err
 	}
+	return credentialed, headers, nil
+}
+
+// MediaPath appends a path segment to a media target, keeping any query the
+// credential placement already added.
+//
+// A provider whose endpoint names the model or the voice in its path (Gemini,
+// ElevenLabs) shapes its own URL, and a naive concatenation would append after
+// a `?key=` and build an address nothing answers.
+func MediaPath(target, suffix string) (string, error) {
+	parsed, err := url.Parse(strings.TrimSpace(target))
+	if err != nil {
+		return "", wrapDataPlaneError(CodeUpstreamError, "the media target could not be read", err)
+	}
+	parsed.Path = strings.TrimSuffix(parsed.Path, "/") + suffix
+	// String() re-encodes the path, and a stale RawPath would win over the
+	// value just set; clearing it keeps the suffix in the path where it belongs.
+	parsed.RawPath = ""
+	return parsed.String(), nil
 }
 
 // credentialValue prefers the OAuth token when the account holds one, matching the
@@ -201,19 +193,4 @@ func withQuery(raw, name, value string) string {
 	query.Set(name, value)
 	parsed.RawQuery = query.Encode()
 	return parsed.String()
-}
-
-// canonicalHeader renders a declared header name in its canonical spelling, so the
-// outbound request carries `X-Api-Key` rather than a lowercase spelling an upstream
-// may compare exactly.
-func canonicalHeader(name string) string {
-	parts := strings.Split(name, "-")
-	out := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if part == "" {
-			continue
-		}
-		out = append(out, strings.ToUpper(part[:1])+strings.ToLower(part[1:]))
-	}
-	return strings.Join(out, "-")
 }

@@ -64,7 +64,7 @@ func TestMediaCallService_Perform(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Prepare() error = %v", err)
 			}
-			_, err = svc.Perform(context.Background(), call, dataplane.MediaRequest{Body: []byte(`{}`)}, "gky_test")
+			_, err = svc.Perform(context.Background(), call, dataplane.MediaRequest{Body: []byte(`{}`)}, "gky_test", nil)
 			if tc.wantCode == "" {
 				if err != nil {
 					t.Fatalf("Perform() error = %v", err)
@@ -96,7 +96,7 @@ func TestMediaCallService_PerformMergesHeaders(t *testing.T) {
 	}
 	_, err = svc.Perform(context.Background(), call, dataplane.MediaRequest{
 		Headers: map[string]string{"Content-Type": "multipart/form-data; boundary=x"},
-	}, "gky_test")
+	}, "gky_test", nil)
 	if err != nil {
 		t.Fatalf("Perform() error = %v", err)
 	}
