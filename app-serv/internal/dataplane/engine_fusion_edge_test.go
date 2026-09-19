@@ -3,13 +3,15 @@
 // @file      internal/dataplane/engine_fusion_edge_test.go
 // @for       The fusion edges: a client that asked for SSE, a panel thinned to
 //
-//	one answer, and a reference that no longer resolves.
+//	one answer, a reference that no longer resolves, and the identity a
+//	failed panel or judge leaves behind.
 //
 // @uses      testing, context, strings.
 // @reason    Each edge decides the shape of the served answer rather than the
 //
 //	panel's composition, so they are pinned together: a streamed client
-//	must receive a stream, and a stale reference must cost its own slot.
+//	must receive a stream, a stale reference must cost its own slot, and
+//	a failed call must still name the member it failed at (register G17).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -114,5 +116,48 @@ func TestRelay_FusionSkipsAReferenceThatNoLongerResolves(t *testing.T) {
 	}
 	if len(upstream.callsFor("judge")) != 1 {
 		t.Fatal("the judge was not called, want the two resolvable members fused")
+	}
+}
+
+// TestRelay_FusionPanelFailureKeepsTheFirstAttemptedIdentity pins register G17 on
+// the fusion path: when every panel member fails, the reported identity is the
+// first member's — the one whose failure is the client's error — so a recorded
+// row names the attempt its error belongs to.
+func TestRelay_FusionPanelFailureKeepsTheFirstAttemptedIdentity(t *testing.T) {
+	upstream := &fusionUpstream{}
+	combo := fusionRow("doomed", "gamma/judge", "alpha/broken", "beta/broken")
+	engine, _ := fusionEngine(t, upstream, combo)
+
+	outcome, err := engine.Relay(context.Background(), fusionRequest("doomed", false, false), nil)
+	if err == nil {
+		t.Fatal("Relay() = nil error, want the panel's failure")
+	}
+	if outcome.ProviderID != "alpha" || outcome.EndpointID != "ep-alpha" || outcome.Model != "broken" {
+		t.Fatalf("Outcome identity = %s/%s/%s, want alpha/ep-alpha/broken (the member whose failure is reported)",
+			outcome.ProviderID, outcome.EndpointID, outcome.Model)
+	}
+	if outcome.Combo != "doomed" {
+		t.Fatalf("Outcome.Combo = %q, want doomed", outcome.Combo)
+	}
+	if len(upstream.callsFor("judge")) != 0 {
+		t.Fatal("the judge was called with an empty panel, want no judge call")
+	}
+}
+
+// TestRelay_FusionJudgeFailureKeepsTheJudgesIdentity pins the same rule for the
+// synthesis call: a judge that fails leaves its own identity with the error, not
+// a panel member's.
+func TestRelay_FusionJudgeFailureKeepsTheJudgesIdentity(t *testing.T) {
+	upstream := &fusionUpstream{}
+	combo := fusionRow("panel", "gamma/broken", "alpha/one", "beta/two")
+	engine, _ := fusionEngine(t, upstream, combo)
+
+	outcome, err := engine.Relay(context.Background(), fusionRequest("panel", false, false), nil)
+	if err == nil {
+		t.Fatal("Relay() = nil error, want the judge's failure")
+	}
+	if outcome.ProviderID != "gamma" || outcome.EndpointID != "ep-gamma" || outcome.Model != "broken" {
+		t.Fatalf("Outcome identity = %s/%s/%s, want gamma/ep-gamma/broken (the judge that failed)",
+			outcome.ProviderID, outcome.EndpointID, outcome.Model)
 	}
 }

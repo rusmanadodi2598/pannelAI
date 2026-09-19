@@ -153,6 +153,9 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Keys:     in.Keys,
 		Settings: in.Settings,
 		Usage:    in.Usage,
+		// The log service answers the §7.13 seam directly, so one chat call
+		// leaves the same accounting pair a media call does (register G18).
+		Logs: in.Logs,
 		// The key repository answers the use-counter seam too: every call the
 		// §4 rule admits advances that key's request_count (SPEC-API-001 §7.3).
 		KeyUse: in.Keys,

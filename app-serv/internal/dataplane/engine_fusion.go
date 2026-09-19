@@ -47,12 +47,14 @@ func (e *Engine) relayFusion(ctx context.Context, in Request, resolution Resolut
 	if err != nil {
 		return Outcome{}, err
 	}
-	answers, answerErr := e.fanOut(ctx, panel, resolution.Combo, members)
+	answers, failed, answerErr := e.fanOut(ctx, panel, resolution.Combo, members)
 
 	var outcome Outcome
 	switch len(answers) {
 	case 0:
-		return Outcome{}, answerErr
+		// The panel is empty, so the client's error is the first member's
+		// failure; its identity travels with it (register G17).
+		return failed, answerErr
 	case 1:
 		// One model answered, so there is nothing to fuse: answering directly
 		// keeps its own identity and spends no judge call. A client that asked
@@ -65,18 +67,15 @@ func (e *Engine) relayFusion(ctx context.Context, in Request, resolution Resolut
 		}
 		outcome, err = e.relayOnce(ctx, in, answers[0].member, sink)
 		if err != nil {
-			return Outcome{}, err
+			return outcome, err
 		}
 	default:
 		outcome, err = e.judge(ctx, in, resolution, answers, sink)
 		if err != nil {
-			return Outcome{}, err
+			return outcome, err
 		}
 	}
-	outcome.LatencyMS = e.clock().Sub(started).Milliseconds()
-	if outcome.LatencyMS < 0 {
-		outcome.LatencyMS = 0
-	}
+	outcome.LatencyMS = e.elapsedMS(started)
 	return outcome, nil
 }
 
@@ -111,10 +110,14 @@ type fusionAnswer struct {
 // fanOut calls every panel member in parallel and collects the prose answers, in
 // member order so the judge's source labels are stable.
 //
+// It also reports the first failed member's identity, because that member's
+// failure is the error the caller returns, and a recorded call names the attempt
+// its error belongs to (register G17).
+//
 // Each member writes only its own result slot, and each goroutine recovers from
 // a panic: AGENTS.md §1.6 makes the recovery non-negotiable, and a member that
 // panicked must cost its own answer rather than the whole process.
-func (e *Engine) fanOut(ctx context.Context, in Request, combo domain.Combo, members []Resolution) ([]fusionAnswer, error) {
+func (e *Engine) fanOut(ctx context.Context, in Request, combo domain.Combo, members []Resolution) ([]fusionAnswer, Outcome, error) {
 	type result struct {
 		answer fusionAnswer
 		err    error
@@ -133,13 +136,16 @@ func (e *Engine) fanOut(ctx context.Context, in Request, combo domain.Combo, mem
 			member.Combo = combo
 			outcome, err := e.relayOnce(ctx, in, member, nil)
 			if err != nil {
-				results[index] = result{err: err}
+				results[index] = result{answer: fusionAnswer{member: member, outcome: outcome}, err: err}
 				return
 			}
 			text := strings.TrimSpace(answerText(outcome.Body, in.ClientFormat))
 			if text == "" {
-				results[index] = result{err: dataPlaneError(CodeUpstreamError,
-					"the panel member returned no text to fuse")}
+				results[index] = result{
+					answer: fusionAnswer{member: member, outcome: outcome},
+					err: dataPlaneError(CodeUpstreamError,
+						"the panel member returned no text to fuse"),
+				}
 				return
 			}
 			results[index] = result{answer: fusionAnswer{member: member, outcome: outcome, text: text}}
@@ -148,17 +154,18 @@ func (e *Engine) fanOut(ctx context.Context, in Request, combo domain.Combo, mem
 	wg.Wait()
 
 	answers := make([]fusionAnswer, 0, len(results))
+	var failed Outcome
 	var firstErr error
 	for _, result := range results {
 		if result.err != nil {
 			if firstErr == nil {
-				firstErr = result.err
+				firstErr, failed = result.err, result.answer.outcome
 			}
 			continue
 		}
 		answers = append(answers, result.answer)
 	}
-	return answers, firstErr
+	return answers, failed, firstErr
 }
 
 // judge asks the combo's judge model to synthesize one answer from the panel.

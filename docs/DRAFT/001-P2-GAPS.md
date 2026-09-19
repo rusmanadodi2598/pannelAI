@@ -7,9 +7,9 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 19 gap terdaftar, sembilan di antaranya temuan click-through/pass live, sebelas sudah CLOSED (G1, G2, G3, G6, G7, G11, G12, G13, G14, G15, G16) |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 20 gap terdaftar, sepuluh di antaranya temuan click-through/pass live, tigabelas sudah CLOSED (G1, G2, G3, G6, G7, G11, G12, G13, G14, G15, G16, G17, G18) |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
-| **Bukti terakhir** | pass G12 2026-09-19 (§8 baris terakhir); suite `-race` 13 paket, tagged integration, `go-lint.sh`, dan `go-headers.sh` hijau |
+| **Bukti terakhir** | pass G17+G18 2026-09-19 (§8 dua baris terakhir); suite `-race` 13 paket, tagged integration, `go-lint.sh`, dan `go-headers.sh` hijau |
 
 ## 1. Cara pakai
 
@@ -40,9 +40,10 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G14 | State store OAuth tanpa test; `GETDEL` butuh Redis ≥ 6.2 dan gagalnya 500 tanpa log. **CLOSED 2026-09-19** | test + portabilitas | **ya** | 2 |
 | G15 | Endpoint `no_auth` tanpa key tidak pernah terpilih (selector menuntut key sebelum cabang auth type). **CLOSED 2026-09-19** | bug routing §7.5 | tidak | 2 |
 | G16 | Jalur media mengirim `Authorization: Bearer` kosong saat materi kredensial kosong; jalur chat mengirim tanpa header. **CLOSED 2026-09-19** | bug kredensial §8.1 | tidak | 2 |
-| G17 | Kegagalan panggilan chat tidak menulis usage row (outcome kosong di jalur error) | akuntansi §7.12 | tidak | 3 |
-| G18 | Jalur chat tidak menulis `request_logs` sama sekali; hanya media/embeddings yang menulis | akuntansi §7.13 | tidak | 3 |
+| G17 | Kegagalan panggilan chat tidak menulis usage row (outcome kosong di jalur error). **CLOSED 2026-09-19** | akuntansi §7.12 | tidak | 3 |
+| G18 | Jalur chat tidak menulis `request_logs` sama sekali; hanya media/embeddings yang menulis. **CLOSED 2026-09-19** | akuntansi §7.13 | tidak | 3 |
 | G19 | `media_provider_settings` dan `proxies` dimiliki role superuser; role aplikasi `pannelai` tanpa privilege, jadi §7.10/§7.11 gagal di host ini | lingkungan (aksi pemilik) | tidak | 6 |
+| G20 | Penolakan media/embeddings sebelum panggilan (Prepare: provider tak dikenal, `base_url` kosong, format gate, tanpa kredensial, tanpa akun) tidak meninggalkan baris log, sedangkan jalur chat kini mencatat setiap panggilan | akuntansi §7.13 | tidak | 6 |
 
 ## 3. Detail per gap
 
@@ -483,7 +484,7 @@ pertama, dan kedaluwarsa TTL. Diuji terhadap Redis 6.0.16 host tanpa shim: merah
 dengan state asing menjawab 302 ke panel dengan `oauth_error` (sebelumnya 500).
 Baris log berkode untuk kegagalan store tetap bagian G9 (P2.8).
 
-### G17: Kegagalan panggilan chat tidak menulis usage row
+### G17: Kegagalan panggilan chat tidak menulis usage row (CLOSED 2026-09-19)
 
 **Bukti.** Pass G6 (2026-09-19): satu `POST /chat/completions` dengan gateway key
 nyata menjawab 502 `UPSTREAM_ERROR` (upstream asli menolak kredensial endpoint
@@ -504,11 +505,41 @@ detail `status: "error"`.
 (provider/endpoint/model/combo) sebelum dial dan kembalikan bersama error, agar
 `ChatService.record` menerima identitas yang cukup untuk menulis baris error.
 
+**Perbaikan.** `relayOnce` — dipindah ke `internal/dataplane/engine_relay.go`
+karena `engine.go` menembus batas 250 baris (§1.1) — membangun `Outcome` sebelum
+langkah pertama yang bisa gagal dan mengembalikannya di setiap jalan keluar, dengan
+`latency_ms` diisi lewat `elapsedMS` (termasuk jalur gagal). `Engine.Relay`
+menyimpan `lastOutcome` dari anggota terakhir yang benar-benar dicoba, sehingga combo
+yang habis melaporkan identity anggota yang errornya diterima klien. Jalur fusion
+mendapat aturan yang sama: `fanOut` mengembalikan identity anggota pertama yang
+gagal (error yang dilaporkan), `relayFusion` meneruskan outcome `relayOnce`/`judge`
+alih-alih `Outcome{}`. `ChatService.record` menulis baris usage hanya ketika
+identity ada (provider + model): panggilan yang ditolak sebelum ada percobaan
+(provider tak dikenal) tidak menulis baris usage, dan pelewatan itu eksplisit —
+bukan validasi agregat yang gagal lalu ditelan, pola yang menyembunyikan gap ini.
+
+**Bukti live (2026-09-19).** Stub chat loopback (200 + usage 5/2 untuk model apa
+pun kecuali `broken`, yang menjawab 500 dengan pesan `Incorrect API key provided:
+sk-g18-should-not-be-stored`), node `openai-compatible` + endpoint + key, tiga
+gateway key, `EGRESS_ALLOWED_TARGETS=127.0.0.1/32`. Satu `POST /chat/completions`
+model `g18node/broken` menjawab 502 `UPSTREAM_ERROR` dan meninggalkan **satu baris
+`usage_records`** `status:error`, `error_code:UPSTREAM_ERROR`,
+provider/endpoint/model terisi (`openai-compatible-…`, `ep_…`, `broken`), token 0,
+latency 7 ms — request id `0385RT4FG14Y44H76TZW2NB1YJ` yang sama dengan baris
+log-nya. Panggilan sukses menulis baris `success` token 5/2, dan `POST` model
+`nosuchprovider/model` menjawab 400 `MODEL_NOT_FOUND` dengan baris log **tanpa**
+baris usage (batas sebelum percobaan). Baseline dipulihkan (`usage=2 logs=1`).
+
 **Definisi selesai.** Satu panggilan chat yang gagal di upstream menghasilkan satu
 usage row `status: error` dengan `error_code` dan identity terisi; test mengunci
-bentuknya; changelog SPEC-API §7.12.
+bentuknya; changelog SPEC-API §7.12. **Terpenuhi 2026-09-19**: tiga test baru
+(`TestRelay_FailureKeepsTheAttemptedIdentity`,
+`TestRelay_ExhaustedComboReportsTheLastAttemptedMember`,
+`TestRelay_FusionPanelFailureKeepsTheFirstAttemptedIdentity` +
+`TestRelay_FusionJudgeFailureKeepsTheJudgesIdentity`), plus changelog §7.12 di
+`docs/SPEC-API/001-SPEC-API.md`.
 
-### G18: Jalur chat tidak menulis `request_logs`
+### G18: Jalur chat tidak menulis `request_logs` (CLOSED 2026-09-19)
 
 **Bukti.** Pass G6 (2026-09-19): satu-satunya penulis `domain.RequestLogInput` di
 tree non-test adalah `dataPlaneRecorder` (media + embeddings). Panggilan chat —
@@ -526,9 +557,41 @@ body saat capture aktif).
 router yang sama seperti usage row-nya; keputusan body tetap satu tempat di
 `LogService.Record`, jadi capture tetap satu aturan.
 
+**Perbaikan.** `ChatService` menerima seam `Logs RequestLogRecorder`, dipasang di
+`cmd/app-serv/dataplane_wiring.go` dengan `LogService` yang sama seperti jalur
+media/embeddings. `record` — dipindah ke `internal/service/chat_record.go` agar
+`chat.go` tetap di bawah batas baris — menulis satu baris `request_logs` per
+panggilan chat: request id router yang sama dengan baris usage, identity, status,
+latency, `request_body` dari `in.Raw`, `response_body` dari `outcome.Body`, dan
+`error` = **kode saja**. Itu berbeda dari baris media (`CODE: message`) dengan
+alasan keamanan: pesan upstream chat mengutip kembali kredensial yang dikirim
+(terukur: `Incorrect API key provided: sk-…`), sedangkan pesan jalur media adalah
+pesan tetap milik gateway. Body diserahkan apa adanya supaya `LogService.Record`
+yang memutuskan capture/truncation, dan panggilan yang ditolak sebelum pipeline
+berjalan tetap meninggalkan baris log.
+
+**Bukti live (2026-09-19).** Lima panggilan chat dari pass yang sama: 200 sukses,
+502 `UPSTREAM_ERROR`, 200 passthrough, 400 `MODEL_NOT_FOUND`, dan satu panggilan
+dengan capture aktif. Setiap request id di log server punya baris `request_logs`
+sendiri, dan baris sukses/gagal berbagi request id dengan baris usage-nya
+(`0385RT4F97CD2B8S4JMXSKGEWW`, `0385RT4FG14Y44H76TZW2NB1YJ`,
+`0385RT4FKMS66HGQ841KG2A78M`). Baris gagal menyimpan `error` = `UPSTREAM_ERROR`
+saja; pencarian sentinel `sk-g18` di `request_logs` (error + kedua body) dan
+`usage_records` menjawab 0 baris, padahal respons 502 ke klien memuat teks
+upstream itu. Capture default mati: `request_body`/`response_body` kosong; setelah
+`PATCH /settings {"logging":{"request_capture_enabled":true}}`, satu panggilan
+menyimpan body permintaan (`{"model": "g18node/stub-ok", …}`) dan body jawaban
+utuh di bawah request id yang sama. Baris setting capture dihapus saat cleanup
+(baseline `settings` 1 baris), dan `gateway_keys.request_count` naik 1 per
+panggilan terautentikasi (3/1/1 untuk tiga key).
+
 **Definisi selesai.** Satu panggilan chat menghasilkan satu baris `request_logs`
 dengan request id yang sama dengan usage row-nya; body hanya tersimpan saat
-capture aktif; test mengunci bentuknya; changelog SPEC-API §7.13.
+capture aktif; test mengunci bentuknya; changelog SPEC-API §7.13. **Terpenuhi
+2026-09-19**: tiga test baru (`TestChatService_RecordWritesTheAccountingPairOnFailure`,
+`TestChatService_RecordRefusedBeforeAnAttemptLogsWithoutUsage`,
+`TestChatService_RecordWritesTheServedAnswer`), plus changelog §7.13 di
+`docs/SPEC-API/001-SPEC-API.md`.
 
 ### G19: Tabel P2 dimiliki role superuser, role aplikasi tanpa privilege
 
@@ -551,6 +614,31 @@ migration berikutnya membuat tabel dengan owner yang benar.
 
 **Definisi selesai.** `PATCH /media-providers/{provider_id}` dan rute §7.11
 berhasil dengan DSN `.env` tanpa perubahan environment.
+
+### G20: Penolakan media/embeddings sebelum panggilan tidak meninggalkan baris log
+
+**Bukti.** Temuan pass G17/G18 (2026-09-19): jalur chat kini mencatat **setiap**
+panggilan — termasuk `MODEL_NOT_FOUND` yang ditolak sebelum pipeline berjalan
+(terbukti live: baris log tanpa baris usage) — sedangkan `MediaCallService.Prepare`
+dan `EmbeddingsService` menulis baris hanya setelah `Perform` dijalankan. Jadi
+penolakan provider tak dikenal, `base_url` kosong, format gate, kredensial kosong,
+atau `NO_PROVIDER_AVAILABLE` di §7.10/§7.9 tidak pernah muncul di layar Logs,
+padahal klien menerima error dan request id-nya tercatat di log server.
+
+**Kenapa.** Layar Logs (§7.13) adalah tempat operator melihat lalu lintas yang
+ditolak; jalur media/embeddings yang ditolak sebelum dial tidak terlihat di sana,
+dan aturannya berbeda dari jalur chat untuk kelas kegagalan yang sama.
+
+**Pendekatan.** Panggil recorder di pembungkus handler (atau di jalur `Prepare`)
+sehingga satu panggilan yang ditolak pun menulis baris log — dengan identity
+sebisanya (provider/model) dan kode error saja. Baris usage tetap hanya untuk
+panggilan yang mencapai percobaan, sama seperti chat. Bentuk teknisnya belum
+diputuskan: `dataPlaneRecorder.record` menerima `dataplane.Outcome`, jadi jalur
+`Prepare` yang gagal harus menyusun identity parsial atau memakai penulis terpisah.
+
+**Definisi selesai.** Satu `POST /images/generations` (atau rute §7.10 lain) dengan
+provider tak dikenal meninggalkan satu baris `request_logs` dengan kode error dan
+request id yang sama dengan log server; test mengunci bentuknya; changelog §7.13.
 
 ## 4. Keputusan yang menunggu owner
 
@@ -579,11 +667,12 @@ berhasil dengan DSN `.env` tanpa perubahan environment.
 8. **P2.8, G8, G9, G10, G19**: penutup kecil + dokumen + aksi lingkungan
    pemilik. G7 selesai 2026-09-19 (keputusan default tercatat di changelog §7.10).
 9. **P2.9, G17 + G18**: temuan pass G6 di jalur chat (baris usage error dan baris
-   log chat), tanpa keputusan owner.
+   log chat), tanpa keputusan owner. Selesai 2026-09-19.
 
-D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2, P2.3, P2.5, dan
-P2.6 (G12/G13) sudah selesai, sehingga yang tidak lagi menunggu keputusan tinggal
-G5. P2.4 (G4) masih menunggu D2.
+D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2, P2.3, P2.5, P2.6
+(G12/G13), P2.7, dan P2.9 sudah selesai, sehingga yang tidak lagi menunggu
+keputusan tinggal G5. P2.4 (G4) masih menunggu D2. P2.8 menyisakan G8, G9, G10,
+dan G19.
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
 
@@ -651,3 +740,6 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | G19 temuan pass G6: kepemilikan tabel P2 | FAIL dengan DSN aplikasi (role `pannelai`): `PATCH /media-providers/openai` → `permission denied for table media_provider_settings`; `has_table_privilege` media `SELECT=false INSERT=false UPDATE=false`, `proxies SELECT=false INSERT=false`, sementara tabel lain dimiliki `pannelai`. Pass diselesaikan dengan DSN superuser; aksi pemilik dicatat sebagai G19 |
 | 2026-09-19 | **G12 CLOSED**: `cap` di body `GET /quotas/{endpoint_id}` (D5 = b), `QuotaService.GetCap` dipakai handler, `quota_test.go` (PUT→GET, `"cap":null`, rute koleksi tanpa cap, cost negatif 400) | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS, `go-headers.sh` PASS; live (PostgreSQL 14 + Redis nyata, DSN `.env` role aplikasi, tanpa workaround G19): `PUT /quotas/{id}` → 200 `{"monthly_cost_usd":"5.00000000","monthly_tokens":1000}`, `GET /quotas/{id}` → 200 `{"endpoint_id":…,"cap":{…5.00000000, 1000…},"data":[]}` (sebelumnya `{"data":[]}`), `GET /quotas` → 200 `{"data":[]}` tanpa field cap. Artefak dibersihkan (endpoint, baris `quota_caps`, hash panel NULL; baseline `usage=2 logs=1` pulih) |
 | 2026-09-19 | **G7 CLOSED**: keputusan default kind `video` (biarkan terdokumentasi, tanpa provider) | Terpenuhi oleh changelog §7.10 yang sudah ada (commit `1f00860`): rute terdaftar menolak `PROVIDER_NOT_ROUTABLE` dengan alasan paritas reference; tidak ada perubahan kode. Kalau kelak ada provider ber-kind `video`, adapternya masuk G5 |
+| 2026-09-19 | **G17 CLOSED**: identity dibangun sebelum dial di `relayOnce` (dipindah ke `engine_relay.go` karena `engine.go` menembus batas 250 baris), `lastOutcome` di `Relay`, identity fusion dari `fanOut`/`judge`, guard identity eksplisit di `ChatService.record`; empat test baru | PASS live: `POST /chat/completions` model `g18node/broken` menjawab 502 `UPSTREAM_ERROR` dan menulis satu baris `usage_records` `status:error` `error_code:UPSTREAM_ERROR` dengan provider/endpoint/model terisi (`openai-compatible-…`/`ep_…`/`broken`), token 0, latency 7 ms, request id `0385RT4FG14Y44H76TZW2NB1YJ` sama dengan baris log-nya; sukses 200 token 5/2; `nosuchprovider/model` 400 `MODEL_NOT_FOUND` hanya baris log; baseline `usage=2 logs=1 keys=0 endpoints=0 nodes=0` dipulihkan; suite `-race` 13 paket, tagged integration, `go-lint.sh` (0 issues), `go-headers.sh` (464 file) hijau |
+| 2026-09-19 | **G18 CLOSED**: seam `Logs RequestLogRecorder` di `ChatService` + `chat_record.go` (satu baris `request_logs` per panggilan chat, request id sama dengan usage row, `error` = kode saja, body dari `in.Raw`/`outcome.Body` diserahkan ke aturan capture `LogService.Record`); tiga test baru | PASS live: lima panggilan chat masing-masing meninggalkan satu baris `request_logs` dengan request id yang sama seperti log server (`0385RT4F97CD2B8S4JMXSKGEWW` 200, `0385RT4FG14Y44H76TZW2NB1YJ` 502, `0385RT4FKMS66HGQ841KG2A78M` 200, `0385RT5213H7JB69WFC19FJHS4` 400, `0385RT7NDEKVYRZKWR56AC8BM0` 200 capture); baris gagal menyimpan `error` = `UPSTREAM_ERROR` saja sementara respons klien memuat pesan upstream berisi `sk-g18-should-not-be-stored`; pencarian sentinel `sk-g18` di `request_logs` (error + dua body) dan `usage_records` menjawab 0 baris; capture default mati → body kosong, `PATCH /settings {"logging":{"request_capture_enabled":true}}` → body permintaan + jawaban tersimpan utuh; baris setting capture dihapus saat cleanup; `gateway_keys.request_count` 3/1/1 untuk tiga key |
+| 2026-09-19 | G20 temuan pass G17/G18: penolakan media/embeddings sebelum panggilan tidak menulis baris log | FAIL by design saat ini: `MediaCallService.Prepare` dan `EmbeddingsService.Embed` menulis baris hanya setelah `perform`, jadi provider tak dikenal, `base_url` kosong, format gate, kredensial kosong, atau `NO_PROVIDER_AVAILABLE` tidak meninggalkan `request_logs` — sedangkan jalur chat kini mencatat setiap panggilan (terbukti live untuk 400 `MODEL_NOT_FOUND`). Dicatat sebagai G20 |

@@ -149,7 +149,12 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	// The §7.8 decision lives beside the seam it consults (vision.go).
 	refs, adapterCount := e.augmentForVision(ctx, in, resolution, refs)
 
+	// lastOutcome carries the identity of the last member that was actually
+	// attempted, so a failure still tells the caller which provider, endpoint,
+	// and model it failed against (register G17: the chat plane records a
+	// failed call, and a zero outcome carries nothing to record).
 	var lastErr error
+	var lastOutcome Outcome
 	for index, ref := range refs {
 		member, resolveErr := e.resolver.Resolve(ctx, ref)
 		if resolveErr != nil {
@@ -165,80 +170,15 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 			return outcome, nil
 		}
 		lastErr = relayErr
+		if outcome.ProviderID != "" {
+			lastOutcome = outcome
+		}
 		// A client error is not worth failing over from: the same request body
 		// would be rejected identically by every other member, and trying them
 		// spends accounts for nothing.
 		if failure := AsError(relayErr); !failoverWorthy(failure.Code) {
-			return Outcome{}, relayErr
+			return outcome, relayErr
 		}
 	}
-	return Outcome{}, lastErr
-}
-
-// relayOnce handles one resolved provider: select, translate, call, and translate
-// the answer back.
-func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolution, sink FrameSink) (Outcome, error) {
-	selection, err := e.selector.Select(ctx, resolution.Provider.ID)
-	if err != nil {
-		return Outcome{}, err
-	}
-
-	body, err := upstreamBody(in, resolution)
-	if err != nil {
-		return Outcome{}, err
-	}
-
-	started := e.clock()
-	upstream, err := e.transport.Do(ctx, Call{
-		Provider:   resolution.Provider,
-		Model:      resolution.Model,
-		Credential: selection.Credential,
-		Body:       body,
-		Stream:     in.Stream,
-		// A chat completion is never idempotent: the upstream may have begun
-		// generating, so the transport caps its retries.
-		Idempotent: false,
-	})
-	if err != nil {
-		e.recordFailure(ctx, selection, err)
-		return Outcome{}, e.translateCallError(err)
-	}
-	defer func() {
-		// reason: the body is read to completion by the caller of this function,
-		// so a close error here reports nothing a request path can act on.
-		_ = upstream.Close()
-	}()
-
-	outcome := Outcome{
-		Format:     in.ClientFormat,
-		ProviderID: resolution.Provider.ID,
-		EndpointID: selection.Endpoint.ID(),
-		Model:      resolution.ModelID,
-		Combo:      resolution.Combo.Name(),
-		Streamed:   in.Stream,
-	}
-	if in.Stream {
-		if err := e.relayStream(ctx, upstream, resolution, in, sink, &outcome); err != nil {
-			e.recordFailure(ctx, selection, err)
-			return Outcome{}, err
-		}
-	} else {
-		body, usage, err := e.translateAnswer(upstream, resolution, in)
-		if err != nil {
-			e.recordFailure(ctx, selection, err)
-			return Outcome{}, err
-		}
-		outcome.Body = body
-		outcome.Usage = usage
-	}
-	outcome.LatencyMS = e.clock().Sub(started).Milliseconds()
-	if outcome.LatencyMS < 0 {
-		outcome.LatencyMS = 0
-	}
-	// A served request clears the key's circuit state, which is what makes a
-	// recovered credential usable again on the next call.
-	if err := e.selector.RecordSuccess(ctx, selection); err != nil {
-		return Outcome{}, err
-	}
-	return outcome, nil
+	return lastOutcome, lastErr
 }

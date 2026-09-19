@@ -64,6 +64,7 @@ type ChatService struct {
 	keys      GatewayKeyLookup
 	settings  RequireAPIKeyReader
 	usage     UsageRecorder
+	logs      RequestLogRecorder
 	keyUse    KeyUseRecorder
 	requestID RequestIDReader
 	clock     func() time.Time
@@ -75,6 +76,9 @@ type ChatServiceDeps struct {
 	Keys     GatewayKeyLookup
 	Settings RequireAPIKeyReader
 	Usage    UsageRecorder
+	// Logs writes the request-log half of the §7.13 accounting pair. Optional:
+	// without one the data plane serves and records usage only.
+	Logs RequestLogRecorder
 	// KeyUse advances the presenting key's own counters. Optional: without one
 	// the data plane serves every request and records no key usage.
 	KeyUse    KeyUseRecorder
@@ -95,7 +99,8 @@ func NewChatService(deps ChatServiceDeps) (*ChatService, error) {
 	}
 	return &ChatService{
 		engine: deps.Engine, keys: deps.Keys, settings: deps.Settings,
-		usage: deps.Usage, keyUse: deps.KeyUse, requestID: deps.RequestID, clock: time.Now,
+		usage: deps.Usage, logs: deps.Logs, keyUse: deps.KeyUse,
+		requestID: deps.RequestID, clock: time.Now,
 	}, nil
 }
 
@@ -137,61 +142,14 @@ func (s *ChatService) Authenticate(ctx context.Context, presented string) (domai
 func (s *ChatService) Relay(ctx context.Context, in dataplane.Request, sink dataplane.FrameSink, keyID string) (dataplane.Outcome, error) {
 	outcome, err := s.engine.Relay(ctx, in, sink)
 	if err != nil {
-		s.record(ctx, outcome, keyID, dataplane.AsError(err).Code)
+		s.record(ctx, in, outcome, keyID, dataplane.AsError(err).Code)
 		return dataplane.Outcome{}, err
 	}
-	s.record(ctx, outcome, keyID, "")
+	s.record(ctx, in, outcome, keyID, "")
 	return outcome, nil
 }
 
 // Models lists the routable models and combos in the OpenAI list shape (§7.15).
 func (s *ChatService) Models(ctx context.Context) (schema.ModelList, error) {
 	return s.engine.Resolver().ModelList(ctx)
-}
-
-// record writes one usage row.
-//
-// A recording failure is deliberately not returned: the client already has its
-// answer, and failing the request over an accounting write would turn a served
-// call into an error the client cannot act on.
-func (s *ChatService) record(ctx context.Context, outcome dataplane.Outcome, keyID, errorCode string) {
-	if s.usage == nil {
-		return
-	}
-	status := domain.UsageStatusSuccess
-	if errorCode != "" {
-		status = domain.UsageStatusError
-	}
-	input := domain.UsageRecordInput{
-		RequestID:    s.requestIDFrom(ctx),
-		TS:           s.clock().UTC(),
-		EndpointID:   outcome.EndpointID,
-		ProviderID:   outcome.ProviderID,
-		Model:        outcome.Model,
-		Combo:        outcome.Combo,
-		GatewayKeyID: keyID,
-		LatencyMS:    outcome.LatencyMS,
-		Status:       status,
-		ErrorCode:    errorCode,
-	}
-	if outcome.Usage != nil {
-		input.TokensIn = int64(outcome.Usage.PromptTokens)
-		input.TokensOut = int64(outcome.Usage.CompletionTokens)
-		if details := outcome.Usage.PromptTokensDetails; details != nil {
-			input.TokensCacheRead = int64(details.CachedTokens)
-			input.TokensCacheWrite = int64(details.CacheCreationTokens)
-		}
-	}
-	// reason: a failed accounting write must not fail a request the client has
-	// already received an answer to; the row is written by the next request's
-	// flush rather than by re-serving this one.
-	_, _ = s.usage.Record(ctx, input)
-}
-
-// requestIDFrom reads the router's request id, falling back to a fresh ULID so a
-// usage row always carries one (the column is not nullable in practice, and a
-// blank id would make the row unfindable). The rule itself lives in
-// dataplane_record.go, where the media plane reads it the same way.
-func (s *ChatService) requestIDFrom(ctx context.Context) string {
-	return requestIDOrNew(ctx, s.requestID, s.clock)
 }
