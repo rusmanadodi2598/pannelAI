@@ -146,6 +146,10 @@ func mediaCallEntries() []registry.Provider {
 					BaseURL:  "https://generativelanguage.googleapis.com/v1beta/models",
 					AuthType: registry.AuthAPIKey, AuthHeader: "key", Format: "gemini-tts",
 				},
+				registry.MediaSTT: {
+					BaseURL:  "https://generativelanguage.googleapis.com/v1beta/models",
+					AuthType: registry.AuthAPIKey, AuthHeader: "key", Format: "gemini-stt",
+				},
 			},
 		},
 		{

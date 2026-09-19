@@ -56,20 +56,9 @@ func (s *MediaCallService) Transcribe(ctx context.Context, form schema.Transcrip
 	if err != nil {
 		return dataplane.MediaResponse{}, MediaCall{}, err
 	}
-	var request dataplane.MediaRequest
-	if strings.EqualFold(strings.TrimSpace(call.Media.Format), "deepgram") {
-		request = deepgramRequest(form)
-	} else {
-		body, contentType, buildErr := transcriptionBody(form, call.UpstreamModel)
-		if buildErr != nil {
-			return dataplane.MediaResponse{}, call, buildErr
-		}
-		request = dataplane.MediaRequest{
-			Method: "POST", Body: body,
-			// The target carries a JSON content type; a multipart body must
-			// replace it, boundary included.
-			Headers: map[string]string{"Content-Type": contentType},
-		}
+	request, err := transcriptionRequest(form, call)
+	if err != nil {
+		return dataplane.MediaResponse{}, call, err
 	}
 	answer, err := s.Perform(ctx, call, request, keyID, transcriptionReader(call.Media))
 	return answer, call, err

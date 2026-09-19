@@ -107,13 +107,41 @@ var audioContentTypes = map[string]string{
 	"webm": "audio/webm",
 }
 
+// transcriptionRequest builds the request the format's upstream expects. The
+// OpenAI shape is multipart, Deepgram takes the raw uploaded bytes, and Gemini's
+// transcription surface is one generateContent call with the audio inline.
+func transcriptionRequest(form schema.TranscriptionForm, call MediaCall) (dataplane.MediaRequest, error) {
+	switch mediaFormat(call.Media) {
+	case "deepgram":
+		return deepgramRequest(form), nil
+	case "gemini-stt":
+		return geminiTranscriptionRequest(form, call)
+	default:
+		body, contentType, err := transcriptionBody(form, call.UpstreamModel)
+		if err != nil {
+			return dataplane.MediaRequest{}, err
+		}
+		return dataplane.MediaRequest{
+			Method: "POST", Body: body,
+			// The target carries a JSON content type; a multipart body must
+			// replace it, boundary included.
+			Headers: map[string]string{"Content-Type": contentType},
+		}, nil
+	}
+}
+
 // transcriptionReader reports how a provider's transcription answer is read into
-// the OpenAI shape: Deepgram nests its transcript, the rest answer it already.
+// the OpenAI shape: Deepgram nests its transcript, Gemini spreads it over parts,
+// the rest answer it already.
 func transcriptionReader(media registry.MediaConfig) mediaAnswerReader {
-	if !strings.EqualFold(strings.TrimSpace(media.Format), "deepgram") {
+	switch mediaFormat(media) {
+	case "deepgram":
+		return func(_ int, body []byte) ([]byte, error) { return deepgramTranscriptionAnswer(body) }
+	case "gemini-stt":
+		return geminiTranscriptionAnswer
+	default:
 		return nil
 	}
-	return func(_ int, body []byte) ([]byte, error) { return deepgramTranscriptionAnswer(body) }
 }
 
 // deepgramTranscriptionAnswer keeps the OpenAI response shape for every client
@@ -136,6 +164,12 @@ func deepgramTranscriptionAnswer(body []byte) ([]byte, error) {
 	if len(answer.Results.Channels) > 0 && len(answer.Results.Channels[0].Alternatives) > 0 {
 		text = answer.Results.Channels[0].Alternatives[0].Transcript
 	}
+	return transcriptionText(text)
+}
+
+// transcriptionText is the `{text}` answer the transcription route returns
+// whatever the provider's own shape was, so the adapters cannot drift apart.
+func transcriptionText(text string) ([]byte, error) {
 	encoded, err := json.Marshal(struct {
 		Text string `json:"text"`
 	}{Text: text})

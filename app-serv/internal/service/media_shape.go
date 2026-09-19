@@ -79,15 +79,15 @@ func splitMediaModel(model string) (string, string, error) {
 // media format for a kind.
 //
 // An empty declaration and `openai` are the OpenAI shape these routes build.
-// The provider-specific formats are the adapters ported in G5: Deepgram for
-// speech-to-text, and NVIDIA NIM, Cartesia, ElevenLabs, MiniMax, Inworld,
-// PlayHT, Coqui, Tortoise, and Gemini for speech. Other formats are refused by
-// name instead of being sent a payload their API does not accept: the reference
-// has a per-provider adapter for each of those formats, and reporting the gap is
-// honest where a wrong-shaped call would look like an upstream outage (G21 lists
-// the ones that need a multi-step or signed request). The search kind is exempt
-// because its shape is built from the block's own declarations (method,
-// parameter names) rather than from a fixed payload.
+// The provider-specific formats are the adapters ported in G5: Deepgram and
+// Gemini for speech-to-text, and NVIDIA NIM, Cartesia, ElevenLabs, MiniMax,
+// Inworld, PlayHT, Coqui, Tortoise, and Gemini for speech. Other formats are
+// refused by name instead of being sent a payload their API does not accept:
+// the reference has a per-provider adapter for each of those formats, and
+// reporting the gap is honest where a wrong-shaped call would look like an
+// upstream outage (G21 lists the ones that need a multi-step or signed request).
+// The search kind is exempt because its shape is built from the block's own
+// declarations (method, parameter names) rather than from a fixed payload.
 func mediaFormatSupported(kind domain.MediaKind, format string) bool {
 	if kind == domain.MediaKindSearch {
 		return true
@@ -95,7 +95,7 @@ func mediaFormatSupported(kind domain.MediaKind, format string) bool {
 	switch strings.ToLower(strings.TrimSpace(format)) {
 	case "", "openai":
 		return true
-	case "deepgram":
+	case "deepgram", "gemini-stt":
 		return kind == domain.MediaKindSTT
 	case "nvidia-tts", "cartesia", "elevenlabs", "minimax-tts", "inworld", "playht", "coqui", "tortoise", "gemini-tts":
 		return kind == domain.MediaKindTTS
