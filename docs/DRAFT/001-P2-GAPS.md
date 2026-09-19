@@ -7,7 +7,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 16 gap terdaftar, enam di antaranya temuan click-through |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 16 gap terdaftar, enam di antaranya temuan click-through, empat sudah CLOSED (G11, G13, G15, G16) |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
 | **Bukti terakhir** | commit `1f00860` + `573979b`; click-through G1 2026-09-19 (baris §8); gate hijau |
 
@@ -38,8 +38,8 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G12 | Budget cap hanya bisa ditulis; `GET /quotas/{endpoint_id}` tidak pernah memuatnya sampai ada window usage | kontrak §7.12 | **ya** | 3 |
 | G13 | Embeddings menolak node openai-compatible (reference punya adapter `openaiCompatNode`). **CLOSED 2026-09-19** | fitur/paritas | tidak | 5 |
 | G14 | State store OAuth tanpa test; `GETDEL` butuh Redis ≥ 6.2 dan gagalnya 500 tanpa log | test + portabilitas | **ya** | 2 |
-| G15 | Endpoint `no_auth` tanpa key tidak pernah terpilih (selector menuntut key sebelum cabang auth type) | bug routing §7.5 | tidak | 2 |
-| G16 | Jalur media mengirim `Authorization: Bearer` kosong saat materi kredensial kosong; jalur chat mengirim tanpa header | bug kredensial §8.1 | tidak | 2 |
+| G15 | Endpoint `no_auth` tanpa key tidak pernah terpilih (selector menuntut key sebelum cabang auth type). **CLOSED 2026-09-19** | bug routing §7.5 | tidak | 2 |
+| G16 | Jalur media mengirim `Authorization: Bearer` kosong saat materi kredensial kosong; jalur chat mengirim tanpa header. **CLOSED 2026-09-19** | bug kredensial §8.1 | tidak | 2 |
 
 ## 3. Detail per gap
 
@@ -280,7 +280,7 @@ tabel lima bentuk node plus satu kontrol benign.
 diukur live (endpoint `api_key` menolak dibuat tanpa key; endpoint `no_auth`
 tanpa key ditolak selector tanpa dial) dan melahirkan G15/G16.
 
-### G15: Endpoint `no_auth` tanpa key tidak pernah terpilih
+### G15: Endpoint `no_auth` tanpa key tidak pernah terpilih (CLOSED 2026-09-19)
 
 **Bukti.** `POST /api/v1/endpoints` dengan `auth_type: no_auth` dan tanpa key
 menjawab 201 `"key_count":0,"available":true`, tetapi
@@ -300,10 +300,18 @@ kredensial; sekarang endpoint seperti itu mati sampai diisi rahasia palsu.
 menuntut key id. Alternatifnya: `no_auth` tetap butuh key, dan itu dinyatakan di
 SPEC-API.
 
-**Definisi selesai.** Endpoint `no_auth` tanpa key bisa dirutekan; test
-mengunci pemilihan tanpa key dan health write-nya.
+**Perbaikan (2026-09-19).** `Select` hanya menuntut key untuk endpoint ber-auth
+key (nilai `Available` sudah menolak endpoint berkey yang tidak punya key sehat),
+dan `RecordSuccess`/`RecordFailure` menjadi no-op untuk selection tanpa key
+(`selection_health.go`, file baru hasil pemisahan agar `selection.go` tetap di
+bawah ambang baris). Dua test: pemilihan tanpa key + health no-op, dan kontrol
+benign bahwa endpoint `no_auth` yang disabled tetap ditolak.
 
-### G16: Jalur media mengirim bearer kosong
+**Definisi selesai.** Terpenuhi: live pada binary yang sama, endpoint `no_auth`
+tanpa key menjawab 200 untuk chat maupun embeddings; health write tidak menulis
+baris key.
+
+### G16: Jalur media mengirim bearer kosong (CLOSED 2026-09-19)
 
 **Bukti.** Pada endpoint `no_auth` yang diberi key placeholder (satu-satunya cara
 G15 membiarkannya terpilih), `POST /api/v1/chat/completions` sampai ke stub
@@ -321,8 +329,14 @@ justru tidak butuh kredensial.
 berarti tidak ada header yang dikirim (cabang default dan bearer), sementara
 cabang query-param tetap menolak keras. Test tabel di level `MediaTarget`.
 
-**Definisi selesai.** Tidak ada header kredensial terkirim saat materi kosong;
-test mengunci ketiga cabang.
+**Perbaikan (2026-09-19).** Cabang `bearer` dan default di `MediaTarget` hanya
+menulis header saat secret tidak kosong; cabang `key`/`query` tetap menolak.
+Tabel tujuh baris mengunci ketiga cabang dalam dua keadaan kredensial, dan dua
+barisnya gagal sebelum perbaikan (`Bearer ` kosong).
+
+**Definisi selesai.** Terpenuhi: live pada binary yang sama, chat dan embeddings
+lewat endpoint `no_auth` tanpa key sama-sama 200 dan stub tidak melihat header
+`Authorization` sama sekali; kontrol berkey tetap melihat `Bearer` berisi key.
 
 ### G14: State store OAuth tanpa test dan tanpa lantai versi
 
@@ -368,7 +382,7 @@ baris log berkode.
    (testnya bisa ditulis lebih dulu).
 6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas.
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
-   media kosong), tanpa keputusan owner.
+   media kosong), tanpa keputusan owner. Selesai 2026-09-19.
 8. **P2.8, G7, G8, G9, G10**: penutup kecil + dokumen.
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
@@ -430,3 +444,4 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G11 CLOSED**: `CatalogIndex` + `runtimeIndex` di wiring, dua test baru | PASS: suite `-race` 13 paket hijau, `go-lint.sh` dan `go-headers.sh` (442 file) PASS; live pada binary yang sama: `POST /models/custom` node 201, katalog memuat `openai-compatible-…/stub-model`, `POST /combos` ref node 201; artefak dibersihkan (node, model, combo, key, hash panel) |
 | 2026-09-19 | **G13 CLOSED**: `nodeEmbeddingMedia` + format eksplisit di `IsGeminiEmbedding`, dua test baru (tabel lima bentuk node + kontrol benign) | PASS live (PostgreSQL 14 + Redis nyata, stub loopback 8091, tanpa shim): node `openai-compatible-…` (base `http://127.0.0.1:8091/v1`) + endpoint + key, `POST /embeddings` model `g13node/stub-embed` menjawab 200 dalam 58 ms bentuk OpenAI (`data[0].embedding [0.1,0.2,0.3]`, usage 4); log stub membuktikan `POST /v1/embeddings` dengan payload OpenAI dan kredensial endpoint sebagai bearer. Negatif: endpoint `api_key` tanpa key ditolak saat create (VALIDATION_ERROR), endpoint `no_auth` tanpa key ditolak selector 503 tanpa dial (G15), node anthropic-compatible tetap 400 `PROVIDER_NOT_ROUTABLE`. Artefak dibersihkan (tiga node, tiga endpoint, key, gateway key, hash panel) |
 | 2026-09-19 | G13 temuan: `no_auth` tanpa key vs bearer kosong | G15: endpoint `no_auth` tanpa key 201 tetapi 503 `NO_PROVIDER_AVAILABLE`, nol dial. G16: dengan key placeholder, chat sampai ke stub tanpa header `Authorization`, embeddings sampai dengan `Authorization: Bearer` kosong (keduanya dari log stub) |
+| 2026-09-19 | **G15 + G16 CLOSED**: `Select` memilih endpoint `no_auth` tanpa key, health write no-op untuk selection tanpa key, `MediaTarget` tidak menulis header saat secret kosong; tiga test baru | PASS live (PostgreSQL 14 + Redis nyata, stub loopback 8091): node A dengan endpoint `no_auth` **tanpa key** menjawab 200 untuk chat dan embeddings (sebelumnya 503), dan log stub menunjukkan **tidak ada** header `Authorization` di kedua panggilan; kontrol node B berkey tetap 200 dengan `Bearer` berisi key di kedua jalur. Artefak dibersihkan (dua node, dua endpoint, gateway key, usage baris pass, hash panel) |

@@ -156,12 +156,20 @@ func MediaTarget(media registry.MediaConfig, baseURL string, cred provider.Crede
 		}
 		return withQuery(target, "key", secret), headers, nil
 	case declared == "bearer":
-		headers["Authorization"] = "Bearer " + secret
+		if secret != "" {
+			headers["Authorization"] = "Bearer " + secret
+		}
 		return target, headers, nil
 	case declared == "":
 		// A kind that declares an auth type but no header keeps the registry's
 		// documented default, which is Authorization + bearer.
-		headers[provider.DefaultAuthHeader] = "Bearer " + secret
+		//
+		// No credential material means the provider needs none, so nothing is
+		// sent: the chat path's ApplyAuth documents the same rule, and an empty
+		// bearer is a malformed credential rather than an anonymous call (G16).
+		if secret != "" {
+			headers[provider.DefaultAuthHeader] = "Bearer " + secret
+		}
 		return target, headers, nil
 	default:
 		headers[canonicalHeader(media.AuthHeader)] = secret
