@@ -18,8 +18,6 @@
 // @since     2026-09-19
 package router
 
-import "net/http"
-
 // registerDataPlaneRoutes registers §7.15: the OpenAI, Anthropic, and Responses
 // wires, the models list, the token estimate, and embeddings.
 //
@@ -30,7 +28,7 @@ import "net/http"
 //
 // A handler that was not built is simply not registered, so a deployment
 // without one answers 404 there rather than panicking on a nil handler.
-func registerDataPlaneRoutes(mux *http.ServeMux, deps Deps) {
+func registerDataPlaneRoutes(mux *routeRecorder, deps Deps) {
 	if deps.Chat != nil {
 		mux.HandleFunc("POST "+APIVersion+"/chat/completions", deps.Chat.Completions)
 		mux.HandleFunc("POST "+APIVersion+"/messages", deps.Chat.Messages)

@@ -30,6 +30,7 @@ const APIVersion = "/api/v1"
 // Mux is the HTTP serve mux for app-serv.
 type Mux struct {
 	http.Handler
+	routes []string
 }
 
 // Deps holds the handlers the router wires up.
@@ -60,6 +61,9 @@ type Deps struct {
 	Quota           *handler.QuotaHandler
 	Log             *handler.LogHandler
 	Settings        *handler.SettingsHandler
+	Skills          *handler.SkillsHandler
+	OpenAPI         *handler.OpenAPIHandler
+	Changelog       *handler.ChangelogHandler
 	Chat            *handler.ChatHandler
 	Embeddings      *handler.EmbeddingsHandler
 	TokenCount      *handler.TokenCountHandler
@@ -71,7 +75,7 @@ type Deps struct {
 // method (Go 1.22 ServeMux syntax) so the mux rejects a wrong verb before any
 // handler sees it.
 func New(deps Deps) *Mux {
-	mux := http.NewServeMux()
+	mux := &routeRecorder{ServeMux: http.NewServeMux()}
 
 	// §7.1 System (public).
 	mux.HandleFunc("GET "+APIVersion+"/health", deps.System.Health)
@@ -193,6 +197,14 @@ func New(deps Deps) *Mux {
 	mux.Handle("GET "+APIVersion+"/settings", gateway(http.HandlerFunc(deps.Settings.Get)))
 	mux.Handle("PATCH "+APIVersion+"/settings", gateway(http.HandlerFunc(deps.Settings.Patch)))
 
+	// §7.16–§7.18: the skill catalog, the served contract, and the release
+	// notes are management routes over embedded static data, session-gated like
+	// the rest. The contract route answers with the document itself rather than
+	// the §8 envelope, so a reader can diff it against the spec.
+	mux.Handle("GET "+APIVersion+"/skills", gateway(http.HandlerFunc(deps.Skills.List)))
+	mux.Handle("GET "+APIVersion+"/openapi.json", gateway(http.HandlerFunc(deps.OpenAPI.Document)))
+	mux.Handle("GET "+APIVersion+"/changelog", gateway(http.HandlerFunc(deps.Changelog.List)))
+
 	// §7.15 Data plane: registered together in router_dataplane.go, because
 	// these are the routes a CLI tool calls and they are not session-gated.
 	registerDataPlaneRoutes(mux, deps)
@@ -200,5 +212,5 @@ func New(deps Deps) *Mux {
 	// Unknown paths and wrong verbs stay the mux's answer so it can distinguish
 	// 404 from 405 (and send Allow on the latter); envelope() then restates
 	// either in the §8 shape, so routing errors look like every other error.
-	return &Mux{Handler: chain(requestRateLimit(mux, deps.RateLimiter, deps.RateLimitPerMin))}
+	return &Mux{Handler: chain(requestRateLimit(mux, deps.RateLimiter, deps.RateLimitPerMin)), routes: mux.patterns}
 }

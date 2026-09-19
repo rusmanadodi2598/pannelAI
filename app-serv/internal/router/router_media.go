@@ -24,7 +24,7 @@ import "net/http"
 // deliberately NOT session-gated, for the same reason the chat wires are not: a
 // CLI tool presents `Authorization: Bearer <gateway key>`, and a dashboard
 // session cookie is not a credential a CLI tool can hold.
-func registerMediaRoutes(mux *http.ServeMux, deps Deps, gateway func(http.Handler) http.Handler) {
+func registerMediaRoutes(mux *routeRecorder, deps Deps, gateway func(http.Handler) http.Handler) {
 	mux.Handle("GET "+APIVersion+"/media-providers", gateway(http.HandlerFunc(deps.MediaProvider.List)))
 	mux.Handle("GET "+APIVersion+"/media-providers/{provider_id}", gateway(http.HandlerFunc(deps.MediaProvider.Get)))
 	mux.Handle("PATCH "+APIVersion+"/media-providers/{provider_id}", gateway(http.HandlerFunc(deps.MediaProvider.Patch)))

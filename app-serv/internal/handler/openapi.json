@@ -1,0 +1,787 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "pannelAI API",
+    "summary": "The management and data planes of the pannelAI gateway, the machine-readable form of docs/SPEC-API/001-SPEC-API.md.",
+    "version": "v0.4.0",
+    "description": "Session cookie auth guards the management plane; the data plane presents Authorization: Bearer <gateway key> when settings.security.require_api_key is true. Errors follow SPEC-API-001 \u00a78 (management) and the OpenAI error shape (data plane)."
+  },
+  "security": [
+    {
+      "sessionCookie": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "pannel_session"
+      },
+      "gatewayKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A gateway key (sk-...) created through \u00a77.3."
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "summary": "Liveness and DB/Redis reachability",
+        "tags": [
+          "System"
+        ],
+        "security": []
+      }
+    },
+    "/api/v1/version": {
+      "get": {
+        "summary": "Build version, commit, registry revision",
+        "tags": [
+          "System"
+        ],
+        "security": []
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Password login; sets the session cookie",
+        "tags": [
+          "Auth"
+        ],
+        "security": []
+      }
+    },
+    "/api/v1/auth/status": {
+      "get": {
+        "summary": "Session and password state",
+        "tags": [
+          "Auth"
+        ],
+        "security": []
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "summary": "Revoke the session",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/change-password": {
+      "post": {
+        "summary": "Change the dashboard password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/gateway-keys": {
+      "get": {
+        "summary": "List client keys (hints only)",
+        "tags": [
+          "Gateway Keys"
+        ]
+      },
+      "post": {
+        "summary": "Create a key; the full value is returned once",
+        "tags": [
+          "Gateway Keys"
+        ]
+      }
+    },
+    "/api/v1/gateway-keys/{id}": {
+      "get": {
+        "summary": "Key detail (hint only)",
+        "tags": [
+          "Gateway Keys"
+        ]
+      },
+      "patch": {
+        "summary": "Rename or re-enable a key",
+        "tags": [
+          "Gateway Keys"
+        ]
+      },
+      "delete": {
+        "summary": "Revoke a key (soft)",
+        "tags": [
+          "Gateway Keys"
+        ]
+      }
+    },
+    "/api/v1/providers": {
+      "get": {
+        "summary": "Registry list with routability and status",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/providers/{provider_id}": {
+      "get": {
+        "summary": "Registry detail with transport and media blocks",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/providers/{provider_id}/models": {
+      "get": {
+        "summary": "Provider model catalog",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/providers/{provider_id}/oauth/bulk": {
+      "post": {
+        "summary": "Import already-obtained OAuth credentials as endpoints",
+        "tags": [
+          "Providers"
+        ]
+      }
+    },
+    "/api/v1/providers/{provider_id}/oauth/start": {
+      "post": {
+        "summary": "Begin the authorization flow; returns the authorize URL",
+        "tags": [
+          "OAuth"
+        ]
+      }
+    },
+    "/api/v1/providers/{provider_id}/oauth/callback": {
+      "get": {
+        "summary": "Complete the flow; public, guarded by the single-use state",
+        "tags": [
+          "OAuth"
+        ],
+        "security": []
+      }
+    },
+    "/api/v1/providers/{provider_id}/oauth/status": {
+      "get": {
+        "summary": "Token expiry and refresh state per endpoint",
+        "tags": [
+          "OAuth"
+        ]
+      }
+    },
+    "/api/v1/providers/{provider_id}/oauth/refresh": {
+      "post": {
+        "summary": "Force a token refresh",
+        "tags": [
+          "OAuth"
+        ]
+      }
+    },
+    "/api/v1/provider-nodes": {
+      "get": {
+        "summary": "List custom OpenAI/Anthropic-compatible nodes",
+        "tags": [
+          "Provider Nodes"
+        ]
+      },
+      "post": {
+        "summary": "Define a custom node",
+        "tags": [
+          "Provider Nodes"
+        ]
+      }
+    },
+    "/api/v1/provider-nodes/{id}": {
+      "get": {
+        "summary": "Node detail",
+        "tags": [
+          "Provider Nodes"
+        ]
+      },
+      "patch": {
+        "summary": "Update a node",
+        "tags": [
+          "Provider Nodes"
+        ]
+      },
+      "delete": {
+        "summary": "Remove a node",
+        "tags": [
+          "Provider Nodes"
+        ]
+      }
+    },
+    "/api/v1/provider-nodes/{id}/test": {
+      "post": {
+        "summary": "Validate the node's base URL answers",
+        "tags": [
+          "Provider Nodes"
+        ]
+      }
+    },
+    "/api/v1/endpoints": {
+      "get": {
+        "summary": "List upstream endpoints",
+        "tags": [
+          "Endpoints"
+        ]
+      },
+      "post": {
+        "summary": "Create an endpoint with its initial keys",
+        "tags": [
+          "Endpoints"
+        ]
+      }
+    },
+    "/api/v1/endpoints/bulk": {
+      "post": {
+        "summary": "Create several endpoints all-or-nothing",
+        "tags": [
+          "Endpoints"
+        ]
+      }
+    },
+    "/api/v1/endpoints/{id}": {
+      "get": {
+        "summary": "Endpoint detail with key summaries",
+        "tags": [
+          "Endpoints"
+        ]
+      },
+      "patch": {
+        "summary": "Update label, priority, or status",
+        "tags": [
+          "Endpoints"
+        ]
+      },
+      "delete": {
+        "summary": "Delete the endpoint and its keys",
+        "tags": [
+          "Endpoints"
+        ]
+      }
+    },
+    "/api/v1/endpoints/{id}/test": {
+      "post": {
+        "summary": "Connectivity test through a key",
+        "tags": [
+          "Endpoints"
+        ]
+      }
+    },
+    "/api/v1/endpoints/{id}/keys": {
+      "get": {
+        "summary": "List keys (hints only) with health fields",
+        "tags": [
+          "Endpoint Keys"
+        ]
+      },
+      "post": {
+        "summary": "Add a key",
+        "tags": [
+          "Endpoint Keys"
+        ]
+      }
+    },
+    "/api/v1/endpoints/{id}/keys/bulk": {
+      "post": {
+        "summary": "Add several keys all-or-nothing",
+        "tags": [
+          "Endpoint Keys"
+        ]
+      }
+    },
+    "/api/v1/endpoints/{id}/keys/{key_id}": {
+      "patch": {
+        "summary": "Update label, value, priority, or status",
+        "tags": [
+          "Endpoint Keys"
+        ]
+      },
+      "delete": {
+        "summary": "Remove a key",
+        "tags": [
+          "Endpoint Keys"
+        ]
+      }
+    },
+    "/api/v1/models/catalog": {
+      "get": {
+        "summary": "Merged catalog across providers",
+        "tags": [
+          "Models"
+        ]
+      }
+    },
+    "/api/v1/models/custom": {
+      "get": {
+        "summary": "List custom models",
+        "tags": [
+          "Models"
+        ]
+      },
+      "post": {
+        "summary": "Add a custom model",
+        "tags": [
+          "Models"
+        ]
+      }
+    },
+    "/api/v1/models/custom/{id}": {
+      "delete": {
+        "summary": "Remove a custom model",
+        "tags": [
+          "Models"
+        ]
+      }
+    },
+    "/api/v1/models/aliases": {
+      "get": {
+        "summary": "Read the alias set",
+        "tags": [
+          "Models"
+        ]
+      },
+      "put": {
+        "summary": "Replace the alias set",
+        "tags": [
+          "Models"
+        ]
+      }
+    },
+    "/api/v1/models/disabled": {
+      "get": {
+        "summary": "Read the disabled set",
+        "tags": [
+          "Models"
+        ]
+      },
+      "put": {
+        "summary": "Replace the disabled set",
+        "tags": [
+          "Models"
+        ]
+      }
+    },
+    "/api/v1/combos": {
+      "get": {
+        "summary": "List combos",
+        "tags": [
+          "Combos"
+        ]
+      },
+      "post": {
+        "summary": "Create a combo",
+        "tags": [
+          "Combos"
+        ]
+      }
+    },
+    "/api/v1/combos/{id}": {
+      "get": {
+        "summary": "Combo detail",
+        "tags": [
+          "Combos"
+        ]
+      },
+      "patch": {
+        "summary": "Update any combo field",
+        "tags": [
+          "Combos"
+        ]
+      },
+      "delete": {
+        "summary": "Delete a combo",
+        "tags": [
+          "Combos"
+        ]
+      }
+    },
+    "/api/v1/combos/{id}/test": {
+      "post": {
+        "summary": "Probe every member of the combo",
+        "tags": [
+          "Combos"
+        ]
+      }
+    },
+    "/api/v1/vision-adapter": {
+      "get": {
+        "summary": "Read the vision adapter config",
+        "tags": [
+          "Vision Adapter"
+        ]
+      },
+      "put": {
+        "summary": "Replace the vision adapter config",
+        "tags": [
+          "Vision Adapter"
+        ]
+      }
+    },
+    "/api/v1/token-saver": {
+      "get": {
+        "summary": "Read the token-saver document",
+        "tags": [
+          "Token Saver"
+        ]
+      },
+      "put": {
+        "summary": "Replace the token-saver document",
+        "tags": [
+          "Token Saver"
+        ]
+      }
+    },
+    "/api/v1/skills": {
+      "get": {
+        "summary": "The agent skill catalog (\u00a77.16)",
+        "tags": [
+          "Skills"
+        ]
+      }
+    },
+    "/api/v1/openapi.json": {
+      "get": {
+        "summary": "This document (\u00a77.17)",
+        "tags": [
+          "API Docs"
+        ]
+      }
+    },
+    "/api/v1/changelog": {
+      "get": {
+        "summary": "Release notes, newest first (\u00a77.18)",
+        "tags": [
+          "Changelog"
+        ]
+      }
+    },
+    "/api/v1/media-providers": {
+      "get": {
+        "summary": "Media-capable providers by kind",
+        "tags": [
+          "Media Providers"
+        ]
+      }
+    },
+    "/api/v1/media-providers/{provider_id}": {
+      "get": {
+        "summary": "Provider detail with per-kind resolution",
+        "tags": [
+          "Media Providers"
+        ]
+      },
+      "patch": {
+        "summary": "Set default model or base_url override",
+        "tags": [
+          "Media Providers"
+        ]
+      }
+    },
+    "/api/v1/audio/speech": {
+      "post": {
+        "summary": "Text-to-speech; audio bytes or a JSON envelope",
+        "tags": [
+          "Media"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/audio/transcriptions": {
+      "post": {
+        "summary": "Transcribe an upload; upstream answer passed through",
+        "tags": [
+          "Media"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/audio/voices": {
+      "get": {
+        "summary": "The provider's declared voice catalog",
+        "tags": [
+          "Media"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/images/generations": {
+      "post": {
+        "summary": "Text-to-image, normalized OpenAI shape",
+        "tags": [
+          "Media"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/videos/generations": {
+      "post": {
+        "summary": "Registered; refuses PROVIDER_NOT_ROUTABLE in v1",
+        "tags": [
+          "Media"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/search": {
+      "post": {
+        "summary": "Web search built from the provider's declared parameters",
+        "tags": [
+          "Media"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/proxies": {
+      "get": {
+        "summary": "List proxies",
+        "tags": [
+          "Proxy Pools"
+        ]
+      },
+      "post": {
+        "summary": "Add a proxy",
+        "tags": [
+          "Proxy Pools"
+        ]
+      }
+    },
+    "/api/v1/proxies/test": {
+      "post": {
+        "summary": "Test an unsaved candidate",
+        "tags": [
+          "Proxy Pools"
+        ]
+      }
+    },
+    "/api/v1/proxies/{id}": {
+      "patch": {
+        "summary": "Update a proxy (password write-only)",
+        "tags": [
+          "Proxy Pools"
+        ]
+      },
+      "delete": {
+        "summary": "Remove a proxy",
+        "tags": [
+          "Proxy Pools"
+        ]
+      }
+    },
+    "/api/v1/proxies/{id}/test": {
+      "post": {
+        "summary": "Test a stored proxy and store the finding",
+        "tags": [
+          "Proxy Pools"
+        ]
+      }
+    },
+    "/api/v1/usage/summary": {
+      "get": {
+        "summary": "Totals and group-by over a window",
+        "tags": [
+          "Usage"
+        ]
+      }
+    },
+    "/api/v1/usage/timeseries": {
+      "get": {
+        "summary": "Buckets over a window",
+        "tags": [
+          "Usage"
+        ]
+      }
+    },
+    "/api/v1/usage/records": {
+      "get": {
+        "summary": "Paginated raw records",
+        "tags": [
+          "Usage"
+        ]
+      }
+    },
+    "/api/v1/usage/records/{request_id}": {
+      "get": {
+        "summary": "One request's record detail",
+        "tags": [
+          "Usage"
+        ]
+      }
+    },
+    "/api/v1/quotas": {
+      "get": {
+        "summary": "All quota windows",
+        "tags": [
+          "Quota Tracker"
+        ]
+      }
+    },
+    "/api/v1/quotas/{endpoint_id}": {
+      "get": {
+        "summary": "Windows for one endpoint",
+        "tags": [
+          "Quota Tracker"
+        ]
+      },
+      "put": {
+        "summary": "Set the endpoint's budget caps",
+        "tags": [
+          "Quota Tracker"
+        ]
+      }
+    },
+    "/api/v1/logs/requests": {
+      "get": {
+        "summary": "Paginated request logs",
+        "tags": [
+          "Logs"
+        ]
+      },
+      "delete": {
+        "summary": "Purge request logs",
+        "tags": [
+          "Logs"
+        ]
+      }
+    },
+    "/api/v1/logs/requests/{request_id}": {
+      "get": {
+        "summary": "Captured request and response bodies",
+        "tags": [
+          "Logs"
+        ]
+      }
+    },
+    "/api/v1/logs/console": {
+      "get": {
+        "summary": "The in-memory console ring buffer",
+        "tags": [
+          "Logs"
+        ]
+      },
+      "delete": {
+        "summary": "Clear the console buffer",
+        "tags": [
+          "Logs"
+        ]
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "summary": "The typed settings object",
+        "tags": [
+          "Settings"
+        ]
+      },
+      "patch": {
+        "summary": "Partial update, validated per key",
+        "tags": [
+          "Settings"
+        ]
+      }
+    },
+    "/api/v1/chat/completions": {
+      "post": {
+        "summary": "Chat over the OpenAI wire, streamed or not",
+        "tags": [
+          "Data Plane"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/messages": {
+      "post": {
+        "summary": "Chat over the Anthropic wire, streamed or not",
+        "tags": [
+          "Data Plane"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/responses": {
+      "post": {
+        "summary": "Chat over the OpenAI Responses wire",
+        "tags": [
+          "Data Plane"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/models": {
+      "get": {
+        "summary": "Routable models and combos",
+        "tags": [
+          "Data Plane"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/embeddings": {
+      "post": {
+        "summary": "Embeddings over the OpenAI wire",
+        "tags": [
+          "Data Plane"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/messages/count_tokens": {
+      "post": {
+        "summary": "Anthropic-style token estimate",
+        "tags": [
+          "Data Plane"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ]
+      }
+    }
+  }
+}
