@@ -49,6 +49,14 @@ type MediaRouter interface {
 	RecordFailure(ctx context.Context, selection dataplane.Selection, reason string) error
 }
 
+// ModelResolver turns a client model string into a routable provider. It is the
+// one question the embeddings use case asks of the resolver, kept as its own
+// port for the same reason as MediaRouter: the use case must not carry the
+// engine's wire translators to answer it.
+type ModelResolver interface {
+	Resolve(ctx context.Context, model string) (dataplane.Resolution, error)
+}
+
 // GatewayAuthenticator applies the §4 gateway-key rule to one data-plane
 // request. ChatService implements it.
 //

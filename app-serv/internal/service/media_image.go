@@ -30,7 +30,7 @@ import (
 
 // GenerateImage performs one image generation call and normalizes the answer.
 func (s *MediaCallService) GenerateImage(ctx context.Context, req schema.ImageRequest, keyID string) (schema.MediaGenerationResponse, dataplane.Outcome, error) {
-	call, err := s.Prepare(ctx, req.Model, domain.MediaKindImage, nil)
+	call, err := s.prepareForCall(ctx, req.Model, domain.MediaKindImage, nil, keyID)
 	if err != nil {
 		return schema.MediaGenerationResponse{}, dataplane.Outcome{}, err
 	}
@@ -55,7 +55,7 @@ func (s *MediaCallService) GenerateImage(ctx context.Context, req schema.ImageRe
 // reference is in, where `videoConfig` is a recognized key nothing defines — so
 // the route answers PROVIDER_NOT_ROUTABLE until one does.
 func (s *MediaCallService) GenerateVideo(ctx context.Context, req schema.VideoRequest, keyID string) (schema.MediaGenerationResponse, dataplane.Outcome, error) {
-	call, err := s.Prepare(ctx, req.Model, domain.MediaKindVideo, nil)
+	call, err := s.prepareForCall(ctx, req.Model, domain.MediaKindVideo, nil, keyID)
 	if err != nil {
 		return schema.MediaGenerationResponse{}, dataplane.Outcome{}, err
 	}

@@ -40,10 +40,13 @@ import (
 func (s *MediaCallService) Search(ctx context.Context, req schema.SearchRequest, keyID string) (schema.SearchResponse, dataplane.Outcome, error) {
 	providerID, err := searchProvider(req)
 	if err != nil {
+		// The request named no provider, so the row is named by nothing.
+		s.recorder.refuse(ctx, dataplane.Outcome{}, keyID, err)
 		return schema.SearchResponse{}, dataplane.Outcome{}, err
 	}
 	block, err := s.Block(providerID, domain.MediaKindSearch)
 	if err != nil {
+		s.recorder.refuse(ctx, mediaRefusalOutcome(providerID, ""), keyID, err)
 		return schema.SearchResponse{}, dataplane.Outcome{}, err
 	}
 
@@ -52,7 +55,7 @@ func (s *MediaCallService) Search(ctx context.Context, req schema.SearchRequest,
 	maxResults := maxResultsFor(block, req.MaxResults)
 
 	started := time.Now()
-	call, err := s.Prepare(ctx, providerID+"/", domain.MediaKindSearch, searchQuery(block, queryParam, maxParam, req.Query, maxResults))
+	call, err := s.prepareForCall(ctx, providerID+"/", domain.MediaKindSearch, searchQuery(block, queryParam, maxParam, req.Query, maxResults), keyID)
 	if err != nil {
 		return schema.SearchResponse{}, dataplane.Outcome{}, err
 	}

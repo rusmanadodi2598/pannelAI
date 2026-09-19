@@ -7,9 +7,9 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 20 gap terdaftar, sepuluh di antaranya temuan click-through/pass live, empat belas sudah CLOSED (G1, G2, G3, G6, G7, G9, G11, G12, G13, G14, G15, G16, G17, G18) |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 20 gap terdaftar, sepuluh di antaranya temuan click-through/pass live, lima belas sudah CLOSED (G1, G2, G3, G6, G7, G9, G11, G12, G13, G14, G15, G16, G17, G18, G20) |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
-| **Bukti terakhir** | pass G9 2026-09-19 (§8 baris terakhir); suite `-race` 13 paket, tagged integration, `go-lint.sh`, dan `go-headers.sh` hijau |
+| **Bukti terakhir** | pass G20 2026-09-19 (§8 baris terakhir); suite `-race` 13 paket, tagged integration, `go-lint.sh`, dan `go-headers.sh` hijau |
 
 ## 1. Cara pakai
 
@@ -43,7 +43,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G17 | Kegagalan panggilan chat tidak menulis usage row (outcome kosong di jalur error). **CLOSED 2026-09-19** | akuntansi §7.12 | tidak | 3 |
 | G18 | Jalur chat tidak menulis `request_logs` sama sekali; hanya media/embeddings yang menulis. **CLOSED 2026-09-19** | akuntansi §7.13 | tidak | 3 |
 | G19 | `media_provider_settings` dan `proxies` dimiliki role superuser; role aplikasi `pannelai` tanpa privilege, jadi §7.10/§7.11 gagal di host ini | lingkungan (aksi pemilik) | tidak | 6 |
-| G20 | Penolakan media/embeddings sebelum panggilan (Prepare: provider tak dikenal, `base_url` kosong, format gate, tanpa kredensial, tanpa akun) tidak meninggalkan baris log, sedangkan jalur chat kini mencatat setiap panggilan | akuntansi §7.13 | tidak | 6 |
+| G20 | Penolakan media/embeddings sebelum panggilan (Prepare: provider tak dikenal, `base_url` kosong, format gate, tanpa kredensial, tanpa akun) tidak meninggalkan baris log, sedangkan jalur chat kini mencatat setiap panggilan. **CLOSED 2026-09-19** | akuntansi §7.13 | tidak | 6 |
 
 ## 3. Detail per gap
 
@@ -643,7 +643,7 @@ migration berikutnya membuat tabel dengan owner yang benar.
 **Definisi selesai.** `PATCH /media-providers/{provider_id}` dan rute §7.11
 berhasil dengan DSN `.env` tanpa perubahan environment.
 
-### G20: Penolakan media/embeddings sebelum panggilan tidak meninggalkan baris log
+### G20: Penolakan media/embeddings sebelum panggilan tidak meninggalkan baris log (CLOSED 2026-09-19)
 
 **Bukti.** Temuan pass G17/G18 (2026-09-19): jalur chat kini mencatat **setiap**
 panggilan — termasuk `MODEL_NOT_FOUND` yang ditolak sebelum pipeline berjalan
@@ -660,13 +660,51 @@ dan aturannya berbeda dari jalur chat untuk kelas kegagalan yang sama.
 **Pendekatan.** Panggil recorder di pembungkus handler (atau di jalur `Prepare`)
 sehingga satu panggilan yang ditolak pun menulis baris log — dengan identity
 sebisanya (provider/model) dan kode error saja. Baris usage tetap hanya untuk
-panggilan yang mencapai percobaan, sama seperti chat. Bentuk teknisnya belum
-diputuskan: `dataPlaneRecorder.record` menerima `dataplane.Outcome`, jadi jalur
-`Prepare` yang gagal harus menyusun identity parsial atau memakai penulis terpisah.
+panggilan yang mencapai percobaan, sama seperti chat.
+
+**Perbaikan.** Penulis terpisah dipilih: `dataPlaneRecorder.refuse` menulis satu
+baris `request_logs` (tanpa baris usage — aggregate menuntut provider dan model,
+aturan yang sama dengan penolakan pra-pipeline chat) dengan `error` = kode saja,
+latensi 0, dan body kosong. Di jalur media, `MediaCallService.prepareForCall`
+membungkus `Prepare` dan mencatat penolakannya; identity disusun
+`refusalOutcome` dari string `provider/model` yang dikirim klien (string tanpa
+provider tidak diberi nama — sama seperti chat yang tidak mengarang identity),
+dan dua penolakan awal `Search` (`searchProvider`, `Block`) mencatat lewat
+`mediaRefusalOutcome`/outcome kosong. Di jalur embeddings, fase resolusi dipindah
+ke `resolveCall` (`embeddings_resolve.go`) yang **membangun identity sebelum
+langkah pertama yang bisa gagal** — aturan yang sama dengan `relayOnce` G17 —
+sehingga `Embed` punya satu titik penolakan; `EmbeddingsServiceDeps.Engine`
+diganti dua port sempit (`ModelResolver`, `MediaRouter`) agar use case tidak
+membawa engine ke setiap test. Penolakan di handler (body invalid, 401) tidak
+mencatat — batas yang sama dengan jalur chat. `Voices` juga tidak mencatat: rute
+itu membaca katalog registry dan tidak pernah dial (keputusan §7.10 yang sudah
+ada).
+
+**Bukti live (2026-09-19).** Binary dari tree yang sama, `.env` + override run,
+tanpa stub: login + satu gateway key, lalu empat penolakan — `POST
+/images/generations` model `nope/whatever` → 400 `MODEL_NOT_FOUND`, `POST
+/embeddings` model `nope/embed` → 400 `MODEL_NOT_FOUND`, `POST /audio/speech`
+model `elevenlabs/voice` → 400 `PROVIDER_NOT_ROUTABLE` (format gate), `POST
+/search` provider `nope` → 400 `MODEL_NOT_FOUND`. Keempatnya meninggalkan
+**satu** baris `request_logs` dengan request id yang sama dengan baris akses
+server, `status:error`, `error` = kode saja, latensi 0, body kosong; identity
+terisi sejauh resolusi sampai (`nope/whatever`, `elevenlabs/voice`,
+`nope/nope`), dan penolakan embeddings provider tak dikenal tidak beridentity
+karena resolver gagal sebelum provider diketahui. Nol baris usage untuk keempatnya
+(total usage tetap 2). Dua kontrol negatif: panggilan media tanpa key (401) dan
+penolakan validasi body di handler (400) **tidak** meninggalkan baris
+(`control_rows=0`); `gateway_keys.request_count` = 5 untuk empat penolakan +
+satu panggilan yang terautentikasi lalu ditolak handler. Baseline dipulihkan
+(`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1
+auth_null=true`), artefak `/tmp/g20_*` dihapus.
 
 **Definisi selesai.** Satu `POST /images/generations` (atau rute §7.10 lain) dengan
 provider tak dikenal meninggalkan satu baris `request_logs` dengan kode error dan
 request id yang sama dengan log server; test mengunci bentuknya; changelog §7.13.
+**Terpenuhi 2026-09-19**: `media_refusal_test.go` (lima kelas penolakan + kontrol
+benign + dua penolakan `Search`) dan `embeddings_refusal_test.go` (empat kelas +
+kontrol served) mengunci bentuknya, changelog SPEC-API dicatat, dan bukti live di
+atas.
 
 ## 4. Keputusan yang menunggu owner
 
@@ -697,11 +735,13 @@ request id yang sama dengan log server; test mengunci bentuknya; changelog §7.1
    G9 selesai 2026-09-19 (baris akses kegagalan membawa kode).
 9. **P2.9, G17 + G18**: temuan pass G6 di jalur chat (baris usage error dan baris
    log chat), tanpa keputusan owner. Selesai 2026-09-19.
+10. **P2.10, G20**: temuan pass G17/G18 (penolakan media/embeddings pra-panggilan
+    tanpa baris log), tanpa keputusan owner. Selesai 2026-09-19.
 
 D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2, P2.3, P2.5, P2.6
-(G12/G13), P2.7, P2.8 (G7/G9), dan P2.9 sudah selesai, sehingga yang tidak lagi
-menunggu keputusan tinggal G5. P2.4 (G4) masih menunggu D2. P2.8 menyisakan G8,
-G10, dan G19.
+(G12/G13), P2.7, P2.8 (G7/G9), P2.9, dan P2.10 sudah selesai, sehingga yang tidak
+lagi menunggu keputusan tinggal G5. P2.4 (G4) masih menunggu D2. P2.8 menyisakan
+G8, G10, dan G19.
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
 
@@ -773,3 +813,4 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G18 CLOSED**: seam `Logs RequestLogRecorder` di `ChatService` + `chat_record.go` (satu baris `request_logs` per panggilan chat, request id sama dengan usage row, `error` = kode saja, body dari `in.Raw`/`outcome.Body` diserahkan ke aturan capture `LogService.Record`); tiga test baru | PASS live: lima panggilan chat masing-masing meninggalkan satu baris `request_logs` dengan request id yang sama seperti log server (`0385RT4F97CD2B8S4JMXSKGEWW` 200, `0385RT4FG14Y44H76TZW2NB1YJ` 502, `0385RT4FKMS66HGQ841KG2A78M` 200, `0385RT5213H7JB69WFC19FJHS4` 400, `0385RT7NDEKVYRZKWR56AC8BM0` 200 capture); baris gagal menyimpan `error` = `UPSTREAM_ERROR` saja sementara respons klien memuat pesan upstream berisi `sk-g18-should-not-be-stored`; pencarian sentinel `sk-g18` di `request_logs` (error + dua body) dan `usage_records` menjawab 0 baris; capture default mati → body kosong, `PATCH /settings {"logging":{"request_capture_enabled":true}}` → body permintaan + jawaban tersimpan utuh; baris setting capture dihapus saat cleanup; `gateway_keys.request_count` 3/1/1 untuk tiga key |
 | 2026-09-19 | G20 temuan pass G17/G18: penolakan media/embeddings sebelum panggilan tidak menulis baris log | FAIL by design saat ini: `MediaCallService.Prepare` dan `EmbeddingsService.Embed` menulis baris hanya setelah `perform`, jadi provider tak dikenal, `base_url` kosong, format gate, kredensial kosong, atau `NO_PROVIDER_AVAILABLE` tidak meninggalkan `request_logs` — sedangkan jalur chat kini mencatat setiap panggilan (terbukti live untuk 400 `MODEL_NOT_FOUND`). Dicatat sebagai G20 |
 | 2026-09-19 | **G9 CLOSED**: seam `schema.ErrorCodeRecorder` di-set `WriteError`/`writeDataPlaneError`/`writeEnvelope`, diimplementasikan `responseRecorder`, diteruskan eksplisit `statusRecorder` (Go hanya mempromosikan metode interface yang di-embed); `logging` menambah attr `code` hanya saat gagal; `router_errorlog_test.go` (empat jalur + kasus negatif) | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 466 file PASS; live pada binary dari tree yang sama (tanpa stub): `GET /api/v1/nope` → 404 baris `code=NOT_FOUND`, `POST /api/v1/chat/completions` tanpa key → 401 `code=UNAUTHORIZED`, `POST /api/v1/images/generations` tanpa key → 401 `code=UNAUTHORIZED`, `GET /api/v1/health` dan `/version` 200 tanpa field `code`; baseline tidak berubah (`usage=2 logs=1 keys=0 endpoints=0 nodes=0 settings=1 auth_null=true`), `panel_auth.password_hash` di-null kembali; changelog SPEC-API dicatat |
+| 2026-09-19 | **G20 CLOSED**: `dataPlaneRecorder.refuse` (satu baris `request_logs`, kode saja, tanpa usage), `MediaCallService.prepareForCall` + `refusalOutcome`, dua penolakan awal `Search`, `EmbeddingsService` dipecah ke `resolveCall` (identity dibangun sebelum langkah gagal pertama) + port `ModelResolver`/`MediaRouter`; dua test baru | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 470 file PASS; live pada binary dari tree yang sama: empat penolakan (images `nope/whatever` 400 `MODEL_NOT_FOUND`, embeddings `nope/embed` 400 `MODEL_NOT_FOUND`, speech `elevenlabs/voice` 400 `PROVIDER_NOT_ROUTABLE`, search `nope` 400 `MODEL_NOT_FOUND`) masing-masing meninggalkan **satu** baris `request_logs` dengan request id yang sama dengan baris akses server, `status:error`, `error` = kode saja, latensi 0, body kosong, identity sejauh resolusi (`nope/whatever`, `elevenlabs/voice`, `nope/nope`, embeddings tanpa identity); nol baris usage (total tetap 2); kontrol negatif 401 tanpa key dan 400 validasi handler tidak menulis baris (`control_rows=0`); baseline dipulihkan (`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true`), `/tmp/g20_*` dihapus |

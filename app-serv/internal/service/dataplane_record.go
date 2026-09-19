@@ -119,6 +119,32 @@ func requestLogStatus(status domain.UsageStatus) domain.RequestLogStatus {
 	return domain.RequestLogError
 }
 
+// refuse writes the one request log row a call leaves when it was refused
+// before any upstream attempt (register G20), so a media or embeddings refusal
+// appears in the §7.13 Logs screen the way a chat refusal already does.
+//
+// No usage row is written: nothing was spent, and the usage aggregate requires a
+// provider and a model — the same deliberate skip the chat plane makes for a
+// call refused before the pipeline ran. The stored error text is the code
+// alone: the message is ours and the row must not hold text an upstream can
+// influence (the G6/G18 rule).
+func (r dataPlaneRecorder) refuse(ctx context.Context, outcome dataplane.Outcome, keyID string, failure error) {
+	if r.logs == nil || failure == nil {
+		return
+	}
+	// reason: the refusal's log row is bookkeeping, not a condition of the
+	// client's error — a failed write retries on the next call.
+	_, _ = r.logs.Record(ctx, domain.RequestLogInput{
+		RequestID:    requestIDOrNew(ctx, r.requestID, r.clock),
+		GatewayKeyID: keyID,
+		EndpointID:   outcome.EndpointID,
+		ProviderID:   outcome.ProviderID,
+		Model:        outcome.Model,
+		Status:       domain.RequestLogError,
+		Error:        dataplane.AsError(failure).Code,
+	})
+}
+
 // logError renders the code and its message for a stored log row, or an empty
 // string for a call that succeeded.
 func logError(code, message string) string {

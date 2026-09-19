@@ -37,7 +37,7 @@ import (
 // upstream returned: the audio bytes, which the handler renders as the caller
 // asked for.
 func (s *MediaCallService) Speech(ctx context.Context, req schema.SpeechRequest, query map[string]string, keyID string) (dataplane.MediaResponse, MediaCall, error) {
-	call, err := s.Prepare(ctx, req.Model, domain.MediaKindTTS, query)
+	call, err := s.prepareForCall(ctx, req.Model, domain.MediaKindTTS, query, keyID)
 	if err != nil {
 		return dataplane.MediaResponse{}, MediaCall{}, err
 	}
@@ -58,7 +58,7 @@ func (s *MediaCallService) Speech(ctx context.Context, req schema.SpeechRequest,
 // Transcribe performs one speech-to-text call, forwarding the caller's optional
 // fields the way the reference's OpenAI-compatible path does.
 func (s *MediaCallService) Transcribe(ctx context.Context, form schema.TranscriptionForm, query map[string]string, keyID string) (dataplane.MediaResponse, MediaCall, error) {
-	call, err := s.Prepare(ctx, form.Model, domain.MediaKindSTT, query)
+	call, err := s.prepareForCall(ctx, form.Model, domain.MediaKindSTT, query, keyID)
 	if err != nil {
 		return dataplane.MediaResponse{}, MediaCall{}, err
 	}

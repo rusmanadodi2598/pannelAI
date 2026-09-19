@@ -33,7 +33,8 @@ import (
 
 // EmbeddingsService implements the embeddings half of SPEC-API-001 §7.10.
 type EmbeddingsService struct {
-	engine    *dataplane.Engine
+	resolver  ModelResolver
+	router    MediaRouter
 	caller    dataplane.MediaCaller
 	overrides MediaOverrideReader
 	recorder  dataPlaneRecorder
@@ -41,8 +42,12 @@ type EmbeddingsService struct {
 
 // EmbeddingsServiceDeps holds the collaborators the service needs.
 type EmbeddingsServiceDeps struct {
-	Engine *dataplane.Engine
-	Caller dataplane.MediaCaller
+	// Resolver and Router are the two questions the use case asks of the
+	// engine, as narrow ports: the wire translators stay out of every test
+	// that only needs a model resolved or an account picked.
+	Resolver ModelResolver
+	Router   MediaRouter
+	Caller   dataplane.MediaCaller
 	// Overrides reads the stored per-provider base URL §7.10's save writes.
 	// It is optional so a deployment that has not configured one still
 	// resolves the registry's own base URL.
@@ -57,14 +62,17 @@ type EmbeddingsServiceDeps struct {
 
 // NewEmbeddingsService validates deps and returns a ready service.
 func NewEmbeddingsService(deps EmbeddingsServiceDeps) (*EmbeddingsService, error) {
-	if deps.Engine == nil {
-		return nil, domain.NewValidationError("data plane engine is required")
+	if deps.Resolver == nil {
+		return nil, domain.NewValidationError("model resolver is required")
+	}
+	if deps.Router == nil {
+		return nil, domain.NewValidationError("media router is required")
 	}
 	if deps.Caller == nil {
 		return nil, domain.NewValidationError("media caller is required")
 	}
 	return &EmbeddingsService{
-		engine: deps.Engine, caller: deps.Caller, overrides: deps.Overrides,
+		resolver: deps.Resolver, router: deps.Router, caller: deps.Caller, overrides: deps.Overrides,
 		recorder: newDataPlaneRecorder(deps.Usage, deps.Logs, deps.RequestID),
 	}, nil
 }
@@ -76,95 +84,22 @@ func NewEmbeddingsService(deps EmbeddingsServiceDeps) (*EmbeddingsService, error
 // behaves identically on both routes; what differs is only the transport, which is
 // exactly what §8.1's per-kind placement exists for. The key id is the
 // authenticated caller's, recorded on both rows the call writes.
-func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequest, keyID string) (schema.EmbeddingsResponse, dataplane.Outcome, error) {
-	resolution, err := s.engine.Resolver().Resolve(ctx, req.Model)
-	if err != nil {
-		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
-	}
-	if resolution.IsCombo() {
-		// A combo is an ordered list for chat failover. Honouring its first member
-		// would embed with a model the client did not name, so it is refused rather
-		// than silently dereferenced.
-		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, dataplane.ValidationError(
-			"model " + req.Model + " is a combo; embeddings requires a single model")
-	}
-
-	media, baseURL, err := s.mediaConfig(ctx, resolution.Provider)
-	if err != nil {
-		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
-	}
-
-	selection, err := s.engine.Selector().Select(ctx, resolution.Provider.ID)
-	if err != nil {
-		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
-	}
-
-	gemini := dataplane.IsGeminiEmbedding(media)
-	query := make(map[string]string, 1)
-	if !gemini {
-		if name, value := embeddingModelQuery(media, resolution.UpstreamID); name != "" {
-			query[name] = value
-		}
-	}
-	target, headers, err := dataplane.MediaTarget(media, baseURL, selection.Credential, query)
-	if err != nil {
-		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
-	}
-	if gemini {
-		target = dataplane.GeminiEmbeddingsURL(baseURL, resolution.UpstreamID, !req.Input.Single())
-	}
-
-	outcome := dataplane.Outcome{
-		Format:     schema.FormatOpenAI,
-		ProviderID: resolution.Provider.ID,
-		EndpointID: selection.Endpoint.ID(),
-		Model:      resolution.ModelID,
-	}
-	answer, err := s.perform(ctx, dataplane.MediaRequest{
-		Method: "POST", URL: target, Headers: headers, Body: embeddingsBody(req, resolution.UpstreamID, media),
-		TimeoutMS: media.TimeoutMS,
-	}, selection, outcome, keyID)
-	if err != nil {
-		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
-	}
-	return normalizeEmbeddings(answer.Body, req, resolution.ModelID, gemini), outcome, nil
-}
-
-// mediaConfig reads the provider's per-kind block and the effective base URL:
-// the operator's stored override wins over the registry's own value, and a
-// provider with neither is refused because §7.10 forbids a silent cloud
-// fallback. The stored value is read per call rather than cached, so a save in
-// the panel takes effect on the next request.
 //
-// A custom OpenAI-compatible node declares no media block at all, so its
-// embeddings block is synthesized from the node's base URL before the refusal
-// is reached (see nodeEmbeddingMedia).
-func (s *EmbeddingsService) mediaConfig(ctx context.Context, entry registry.Provider) (registry.MediaConfig, string, error) {
-	media, ok := entry.Media.For(registry.MediaEmbedding)
-	if !ok {
-		media, ok = nodeEmbeddingMedia(entry)
+// A refusal before the call — an unresolvable model, a combo, a provider without
+// an embeddings block or base URL, no usable account — leaves one request log row
+// and no usage row (register G20), the same shape the chat plane gives a request
+// refused before the pipeline ran.
+func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequest, keyID string) (schema.EmbeddingsResponse, dataplane.Outcome, error) {
+	call, err := s.resolveCall(ctx, req)
+	if err != nil {
+		s.recorder.refuse(ctx, call.outcome, keyID, err)
+		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
 	}
-	if !ok {
-		return registry.MediaConfig{}, "", dataplane.ProviderNotRoutable(
-			"provider " + entry.ID + " does not offer embeddings")
+	answer, err := s.perform(ctx, call.request, call.selection, call.outcome, keyID)
+	if err != nil {
+		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
 	}
-	baseURL := strings.TrimSpace(media.BaseURL)
-	if s.overrides != nil {
-		stored, err := s.overrides.MediaBaseURL(ctx, entry.ID, domain.MediaKindEmbedding)
-		if err != nil {
-			return registry.MediaConfig{}, "", err
-		}
-		if stored = strings.TrimSpace(stored); stored != "" {
-			baseURL = stored
-		}
-	}
-	if baseURL == "" {
-		// §7.10 forbids a silent cloud fallback: a provider with no base_url is a
-		// configuration mistake, not a default to guess at.
-		return registry.MediaConfig{}, "", dataplane.ValidationError(
-			"provider " + entry.ID + " has no embeddings base_url configured")
-	}
-	return media, baseURL, nil
+	return normalizeEmbeddings(answer.Body, req, call.modelID, call.gemini), call.outcome, nil
 }
 
 // embeddingModelQuery reports the query parameter a media block declares the model

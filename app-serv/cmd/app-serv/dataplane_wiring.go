@@ -175,7 +175,11 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 	caller := dataplane.NewMediaTransport(in.Client)
 
 	embeddings, err := service.NewEmbeddingsService(service.EmbeddingsServiceDeps{
-		Engine:    engine,
+		// The embeddings use case asks the engine only for resolution and
+		// selection, so it takes the same narrow ports the media service does
+		// (register G20: a refusal has to be recordable without the engine).
+		Resolver:  engine.Resolver(),
+		Router:    mediaRouter{engine: engine},
 		Caller:    caller,
 		Overrides: in.MediaOverrides,
 		Usage:     in.Usage,
