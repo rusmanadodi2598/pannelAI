@@ -52,7 +52,7 @@ func testModel(id, name, kind string, capabilities ...string) registry.Model {
 }
 
 // newCatalogService wires a catalog service over in-memory repositories.
-func newCatalogService(t *testing.T, index *registry.Index, repo *stubCatalogRepo, combos *stubComboRepo) *ModelCatalogService {
+func newCatalogService(t *testing.T, index CatalogIndex, repo *stubCatalogRepo, combos *stubComboRepo) *ModelCatalogService {
 	t.Helper()
 	service, err := NewModelCatalogService(ModelCatalogServiceDeps{Index: index, Repo: repo, Combos: combos})
 	if err != nil {

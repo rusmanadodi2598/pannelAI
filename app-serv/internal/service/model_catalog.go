@@ -41,9 +41,22 @@ type CatalogFilter struct {
 	Query      string
 }
 
+// CatalogIndex is the registry view the catalog merges: every provider it can
+// route to, and the provider behind one model string's namespace.
+//
+// It is an interface rather than *registry.Index because the composition root
+// hands over its runtime overlay, which resolves stored custom nodes alongside
+// the embedded document. Taking the concrete type here made a node invisible to
+// the catalog even though the same node was routable everywhere else, so
+// registering a model under it answered "unknown provider_id".
+type CatalogIndex interface {
+	Provider(name string) (registry.Provider, bool)
+	All() []registry.Provider
+}
+
 // ModelCatalogService implements SPEC-API-001 §7.6.
 type ModelCatalogService struct {
-	index  *registry.Index
+	index  CatalogIndex
 	repo   repository.ModelCatalogRepository
 	combos repository.ComboRepository
 	clock  func() time.Time
@@ -51,7 +64,7 @@ type ModelCatalogService struct {
 
 // ModelCatalogServiceDeps holds the collaborators the service needs.
 type ModelCatalogServiceDeps struct {
-	Index  *registry.Index
+	Index  CatalogIndex
 	Repo   repository.ModelCatalogRepository
 	Combos repository.ComboRepository
 }
@@ -125,8 +138,8 @@ func (s *ModelCatalogService) lookups(ctx context.Context) (map[string]domain.Ca
 	return merged, nil
 }
 
-// registryModels projects the embedded index into catalog rows, skipping the
-// disabled set.
+// registryModels projects the index into catalog rows, skipping the disabled
+// set.
 func (s *ModelCatalogService) registryModels(blocked map[string]struct{}) map[string]domain.CatalogModel {
 	providers := s.index.All()
 	merged := make(map[string]domain.CatalogModel, len(providers)*4)

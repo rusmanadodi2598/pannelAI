@@ -85,9 +85,11 @@ func buildManagement(
 	}
 
 	// The catalog must exist before the combo and vision services, which resolve
-	// their refs through it.
+	// their refs through it. It reads the runtime overlay like the rest of the
+	// management graph: a model the operator registers under a custom node has
+	// to reach the catalog, or the node's models are routable but invisible.
 	catalogSvc, err := service.NewModelCatalogService(service.ModelCatalogServiceDeps{
-		Index: index, Repo: catalogRepo, Combos: comboRepo,
+		Index: runtimeIndex, Repo: catalogRepo, Combos: comboRepo,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: model catalog: %w", err)

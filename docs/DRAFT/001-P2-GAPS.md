@@ -34,7 +34,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G8 | `.env` lokal drift dari `.env.example` sehingga boot polos gagal | lingkungan | tidak | 6 |
 | G9 | Kegagalan request hanya tercatat sebagai `status`, tanpa kode/alasan | observability §1.6 | tidak | 6 |
 | G10 | Status row `SYSTEM_MAP.md` masih menarasikan P1 sebagai fase terakhir | dokumen §1.9 | tidak | 6 |
-| G11 | `POST /models/custom` menolak provider node kustom (katalog memegang index boot-time, bukan overlay) | bug wiring §7.6/§7.4 | tidak | 2 |
+| G11 | `POST /models/custom` menolak provider node kustom (katalog memegang index boot-time, bukan overlay). **CLOSED 2026-09-19** | bug wiring §7.6/§7.4 | tidak | 2 |
 | G12 | Budget cap hanya bisa ditulis; `GET /quotas/{endpoint_id}` tidak pernah memuatnya sampai ada window usage | kontrak §7.12 | **ya** | 3 |
 | G13 | Embeddings menolak node openai-compatible (reference punya adapter `openaiCompatNode`) | fitur/paritas | tidak | 5 |
 | G14 | State store OAuth tanpa test; `GETDEL` butuh Redis ≥ 6.2 dan gagalnya 500 tanpa log | test + portabilitas | **ya** | 2 |
@@ -196,7 +196,7 @@ Jangan dipecah per slice agar tidak churn.
 
 **Definisi selesai.** Status row menyebut P2 CLOSED dengan daftar buktinya.
 
-### G11: Model kustom untuk provider node ditolak
+### G11: Model kustom untuk provider node ditolak (CLOSED 2026-09-19)
 
 **Bukti.** `POST /api/v1/models/custom` dengan `provider_id` sebuah node
 (`openai-compatible-0385R7Z3Z8FJM23V16F9EBGFGC`, dibuat lewat §7.4 dan terbukti
@@ -214,12 +214,16 @@ yang terukur: combo dengan ref `stub/stub-model` ditolak
 provider node", dan panel butuh baris katalog untuk menampilkan model sebuah node.
 Tanpa itu, node hanya bisa dipakai kalau klien menebak string `prefix/model`.
 
-**Pendekatan.** Ubah `ModelCatalogServiceDeps.Index` menjadi interface sempit
-(`Provider(name)`, `All()`) seperti seam lain di service layer, lalu serahkan
-`runtimeIndex` di wiring. Tambah test yang membuktikan node ter-sintesis diterima.
+**Perbaikan (2026-09-19).** `ModelCatalogServiceDeps.Index` menjadi interface
+sempit `CatalogIndex` (`Provider`, `All`) dan wiring menyerahkan `runtimeIndex`.
+Dua test baru mengunci keduanya:
+`TestModelCatalogService_RegistersAModelUnderACustomNode` dan
+`TestComboService_AcceptsARefUnderACustomNode`. Diverifikasi live pada binary yang
+sama: `POST /models/custom` untuk node 201, katalog memuat barisnya, dan
+`POST /combos` dengan ref node 201.
 
-**Definisi selesai.** `POST /models/custom` dengan provider node menjawab 201; baris
-katalog dan ref combo untuk model node terlihat; ada test yang mengunci keduanya.
+**Definisi selesai.** Terpenuhi: 201 untuk model di bawah node, baris katalog dan
+ref combo terlihat, dan test mengunci keduanya.
 
 ### G12: Budget cap tidak terbaca kembali
 
@@ -303,8 +307,8 @@ baris log berkode.
 2. **P2.2, G2 + G3**: satu keputusan D1, satu implementasi guard.
 3. **P2.3, G6**: keputusan D3 lalu sambungkan `Outcome()` ke recorder.
 4. **P2.4, G4**: keputusan D2 lalu wire atau amend.
-5. **P2.5, G11 + G14**: dua temuan G1, keduanya bisa dikerjakan tanpa keputusan
-   baru (G14 butuh D4 untuk pilihan lantai, testnya tidak).
+5. **P2.5, G14**: temuan G1 yang tersisa, butuh D4 untuk pilihan lantai versi
+   (testnya bisa ditulis lebih dulu).
 6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas.
 7. **P2.7, G7, G8, G9, G10**: penutup kecil + dokumen.
 
@@ -329,6 +333,11 @@ baris log berkode.
 - `has_oauth` di `GET /providers` berasal dari field YAML registry, bukan turunan
   dari blok `oauth`; `claude` mendeklarasikan blok oauth tetapi `has_oauth: false`,
   persis seperti data reference.
+- `GET /api/v1/models` (data plane) sengaja hanya memuat model yang dideklarasikan
+  registry plus nama combo; baris `models_custom` tidak masuk ke situ, dan itu
+  tertulis di `internal/dataplane/catalog.go`: provider passthrough tidak
+  menyebutkan katalognya, jadi satu id karangan akan menjadi tebakan. G11 soal
+  katalog manajemen dan ref combo, bukan daftar data plane.
 
 ## 7. Definisi selesai & cara verifikasi
 
@@ -359,3 +368,4 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | G1 data plane: chat non-stream, chat stream, messages (wire Anthropic), models | PASS: 200 dengan jawaban stub apa adanya; stream SSE utuh; `/messages` ditranslate ke bentuk Anthropic (usage 11/7); 401 tanpa key dan salah key (envelope OpenAI), provider tak dikenal 400 `MODEL_NOT_FOUND`; key endpoint terpasang ke upstream sebagai header Bearer (dibuktikan dari log stub) |
 | 2026-09-19 | G1 embeddings lewat node kustom | FAIL by design: 400 `PROVIDER_NOT_ROUTABLE` (G13) |
 | 2026-09-19 | G1 OAuth: start, callback (JSON + redirect), status, refresh (per endpoint + due sweep) | PASS lewat shim `GETDEL`: authorize URL berisi client_id, state, PKCE S256, scopes; callback 200 `created:true` label `stub@example.com` (identitas dari userinfo stub), replay dan state asing 400, callback browser 302 ke `/providers/claude?oauth=connected&endpoint_id=…`; status menampilkan `refresh_state:"due"`; refresh per endpoint dan due sweep `refreshed:1`; endpoint asing 404, provider non-oauth 400; stub melihat grant JSON dengan `code_verifier` dan refresh grant dengan `refresh_token`. Tanpa shim (Redis 6.0.16) callback 500 tanpa log: G14 |
+| 2026-09-19 | **G11 CLOSED**: `CatalogIndex` + `runtimeIndex` di wiring, dua test baru | PASS: suite `-race` 13 paket hijau, `go-lint.sh` dan `go-headers.sh` (442 file) PASS; live pada binary yang sama: `POST /models/custom` node 201, katalog memuat `openai-compatible-…/stub-model`, `POST /combos` ref node 201; artefak dibersihkan (node, model, combo, key, hash panel) |

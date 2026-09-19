@@ -32,9 +32,9 @@ func (s *ModelCatalogService) Custom(ctx context.Context) ([]domain.CustomModel,
 }
 
 // AddCustom registers a user-added model (§7.6 POST). The provider must exist in
-// the registry (including a synthesized provider node), because a model under an
-// unknown provider is unroutable and §6 makes an unknown provider id a
-// VALIDATION_ERROR.
+// the index the service was handed (including a synthesized provider node),
+// because a model under an unknown provider is unroutable and §6 makes an
+// unknown provider id a VALIDATION_ERROR.
 //
 // The row is constructed before the registry is consulted so a request that is
 // missing a required field is told which field is missing, rather than being told
