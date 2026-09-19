@@ -72,10 +72,10 @@ type Engine struct {
 	// vision is the optional §7.8 seam. A nil one means no adapter is wired,
 	// which serves every request un-augmented.
 	vision VisionAugmenter
-	// rotation is the optional §7.7 round-robin state. A nil one serves every
-	// combo in stored priority order.
-	rotation RotationStore
-	clock    func() time.Time
+	// orders is the optional §7.7 combo-order seam. A nil one serves every combo
+	// in stored priority order.
+	orders ComboOrderer
+	clock  func() time.Time
 }
 
 // EngineDeps holds the collaborators the engine needs.
@@ -86,10 +86,10 @@ type EngineDeps struct {
 	// Vision augments image-bearing requests aimed at a model that cannot read
 	// images. Optional: nil keeps the pipeline free of the adapter entirely.
 	Vision VisionAugmenter
-	// Rotation advances a round-robin combo's position. Optional: nil serves
+	// ComboOrder advances a round-robin combo's position. Optional: nil serves
 	// every combo in stored priority order, which is what a deployment without
 	// Redis gets instead of a failure.
-	Rotation RotationStore
+	ComboOrder ComboOrderer
 	// Clock overrides the time source, so a test can measure latency and the
 	// circuit window without sleeping.
 	Clock func() time.Time
@@ -112,7 +112,7 @@ func NewEngine(deps EngineDeps) (*Engine, error) {
 	}
 	return &Engine{
 		resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport,
-		vision: deps.Vision, rotation: deps.Rotation, clock: clock,
+		vision: deps.Vision, orders: deps.ComboOrder, clock: clock,
 	}, nil
 }
 
@@ -131,14 +131,14 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	// A fusion combo fans out to every member and has a judge synthesize the
 	// final answer (SPEC-API-001 §7.7, strategy fusion), so it never walks the
 	// member order below.
-	if resolution.ComboStrategy == domain.ComboFusion {
+	if resolution.Combo.Strategy() == domain.ComboFusion {
 		return e.relayFusion(ctx, in, resolution, sink)
 	}
 
 	// A combo tries its members in order (SPEC-API-001 §7.7, strategy fallback):
 	// the first member is where the request starts, and a failure that the
 	// endpoint layer reports as retryable-elsewhere moves to the next one.
-	refs := resolution.ComboRefs
+	refs := resolution.Combo.Refs()
 	if len(refs) == 0 {
 		refs = []string{resolution.Provider.ID + "/" + resolution.ModelID}
 	}
@@ -214,7 +214,7 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		ProviderID: resolution.Provider.ID,
 		EndpointID: selection.Endpoint.ID(),
 		Model:      resolution.ModelID,
-		Combo:      resolution.Combo,
+		Combo:      resolution.Combo.Name(),
 		Streamed:   in.Stream,
 	}
 	if in.Stream {

@@ -162,7 +162,7 @@ func newRelayEngine(t *testing.T, upstreamURL string, repo *memEndpointRepo, com
 // newEngineWith is the same wiring over an explicit provider list and an
 // optional rotation store, so a test that needs a third provider — the fusion
 // judge — or a round-robin combo does not re-implement it.
-func newEngineWith(t *testing.T, providers []registry.Provider, repo *memEndpointRepo, combos map[string]domain.Combo, rotation RotationStore, vision ...VisionAugmenter) *Engine {
+func newEngineWith(t *testing.T, providers []registry.Provider, repo *memEndpointRepo, combos map[string]domain.Combo, orders ComboOrderer, vision ...VisionAugmenter) *Engine {
 	t.Helper()
 	resolver, err := NewResolver(
 		relayRegistry{providers: providers},
@@ -189,7 +189,7 @@ func newEngineWith(t *testing.T, providers []registry.Provider, repo *memEndpoin
 	}
 	engine, err := NewEngine(EngineDeps{
 		Resolver: resolver, Selector: selector, Transport: transport,
-		Vision: augmenter, Rotation: rotation,
+		Vision: augmenter, ComboOrder: orders,
 	})
 	if err != nil {
 		t.Fatalf("NewEngine() error = %v", err)

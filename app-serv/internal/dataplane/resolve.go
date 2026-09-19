@@ -77,24 +77,16 @@ type Resolution struct {
 	UpstreamID string
 	// Target is the wire format to translate into.
 	Target string
-	// Combo is the combo name when the model string addressed one.
-	Combo string
-	// ComboRefs is that combo's ordered model list, which the caller fails over
-	// through.
-	ComboRefs []string
-	// ComboStrategy is the strategy the combo executes. The fallback path does
-	// not read it; the fusion path fans out because of it.
-	ComboStrategy domain.ComboStrategy
-	// ComboJudge is the model a fusion combo synthesizes its final answer with.
-	ComboJudge string
-	// ComboStickyLimit is how many consecutive requests a round_robin combo
-	// keeps on one member, which is the combo's own limit rather than the
-	// data plane's default.
-	ComboStickyLimit int
+	// Combo is the combo a model string addressed, or the zero combo. Its
+	// references, strategy, judge, and sticky limit travel whole because the
+	// strategy rules live in the aggregate, and reading them from four fields
+	// copied out of it is how the two answers could drift.
+	Combo domain.Combo
 }
 
-// IsCombo reports whether a combo answered the model string.
-func (r Resolution) IsCombo() bool { return len(r.ComboRefs) > 0 }
+// IsCombo reports whether a combo answered the model string. A combo always
+// carries a name (the domain refuses one without), so the name is the test.
+func (r Resolution) IsCombo() bool { return r.Combo.Name() != "" }
 
 // ProviderRegistry is the registry surface the resolver needs: one provider
 // lookup by id, alias, or node prefix, one declared-model lookup inside it, and
@@ -149,7 +141,7 @@ func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error
 			return Resolution{}, err
 		}
 		if found && len(combo.Refs()) > 0 {
-			return r.resolveCombo(ctx, model, combo)
+			return r.resolveCombo(ctx, combo)
 		}
 
 		target, found, err := r.lookup.Alias(ctx, model)

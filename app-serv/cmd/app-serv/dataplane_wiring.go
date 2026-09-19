@@ -52,9 +52,13 @@ type dataPlaneInputs struct {
 	Config config.Config
 	// Index is the runtime overlay, not the boot-frozen registry: a provider
 	// node created after boot has to be routable by the next request.
-	Index      dataplane.ProviderRegistry
-	Endpoints  repository.EndpointRepository
-	Combos     repository.ComboRepository
+	Index     dataplane.ProviderRegistry
+	Endpoints repository.EndpointRepository
+	Combos    repository.ComboRepository
+	// ComboOrder is the §7.7 order seam, satisfied by the combo service: the
+	// round-robin rule and its Redis state stay in one place, and the engine
+	// asks for the order rather than reading the state.
+	ComboOrder dataplane.ComboOrderer
 	Catalog    repository.ModelCatalogRepository
 	Keys       repository.GatewayKeyRepository
 	Sealer     service.CredentialSealer
@@ -108,10 +112,10 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 
 	engine, err := dataplane.NewEngine(dataplane.EngineDeps{
 		Resolver: resolver, Selector: selector, Transport: transport, Vision: in.Vision,
-		// The round-robin counter lives in Redis for the same reason the
-		// endpoint cursor does: a per-process counter would make a combo's
-		// distribution depend on which replica answered.
-		Rotation: redisrepo.NewComboRotationStore(in.Redis),
+		// The combo service owns the round-robin rule and the counter it
+		// advances, so the engine asks it for the order instead of reading the
+		// rotation state itself. It satisfies the seam directly.
+		ComboOrder: in.ComboOrder,
 	})
 	if err != nil {
 		return dataPlane{}, err

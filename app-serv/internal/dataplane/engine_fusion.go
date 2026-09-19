@@ -27,6 +27,8 @@ import (
 	"context"
 	"strings"
 	"sync"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
 // relayFusion serves a request addressed to a fusion combo.
@@ -83,9 +85,10 @@ func (e *Engine) relayFusion(ctx context.Context, in Request, resolution Resolut
 // members can still answer, and the panel is where a broken reference is
 // reported by omission.
 func (e *Engine) fusionMembers(ctx context.Context, resolution Resolution) ([]Resolution, error) {
-	members := make([]Resolution, 0, len(resolution.ComboRefs))
+	refs := resolution.Combo.Refs()
+	members := make([]Resolution, 0, len(refs))
 	var lastErr error
-	for _, ref := range resolution.ComboRefs {
+	for _, ref := range refs {
 		member, err := e.resolver.Resolve(ctx, ref)
 		if err != nil {
 			lastErr = err
@@ -111,7 +114,7 @@ type fusionAnswer struct {
 // Each member writes only its own result slot, and each goroutine recovers from
 // a panic: AGENTS.md §1.6 makes the recovery non-negotiable, and a member that
 // panicked must cost its own answer rather than the whole process.
-func (e *Engine) fanOut(ctx context.Context, in Request, combo string, members []Resolution) ([]fusionAnswer, error) {
+func (e *Engine) fanOut(ctx context.Context, in Request, combo domain.Combo, members []Resolution) ([]fusionAnswer, error) {
 	type result struct {
 		answer fusionAnswer
 		err    error
@@ -162,7 +165,7 @@ func (e *Engine) fanOut(ctx context.Context, in Request, combo string, members [
 // The judge receives the client's own request plus one appended user turn, so
 // its stream flag and tool declarations survive to the served call.
 func (e *Engine) judge(ctx context.Context, in Request, resolution Resolution, answers []fusionAnswer, sink FrameSink) (Outcome, error) {
-	judgeResolution, err := e.resolver.Resolve(ctx, resolution.ComboJudge)
+	judgeResolution, err := e.resolver.Resolve(ctx, resolution.Combo.JudgeModel())
 	if err != nil {
 		return Outcome{}, err
 	}

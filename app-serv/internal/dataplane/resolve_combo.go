@@ -36,23 +36,18 @@ import (
 // cannot resolve. A fusion combo ignores the leading choice and fans out to
 // every reference instead, which is why the strategy travels with the
 // resolution rather than being re-read by the caller.
-func (r *Resolver) resolveCombo(ctx context.Context, name string, combo domain.Combo) (Resolution, error) {
-	refs := combo.Refs()
-	if len(refs) == 0 {
-		return Resolution{}, dataPlaneError(CodeModelNotFound, "combo "+name+" has no models")
+func (r *Resolver) resolveCombo(ctx context.Context, combo domain.Combo) (Resolution, error) {
+	if combo.ModelCount() == 0 {
+		return Resolution{}, dataPlaneError(CodeModelNotFound, "combo "+combo.Name()+" has no models")
 	}
 	var lastErr error
-	for _, ref := range refs {
+	for _, ref := range combo.Refs() {
 		resolved, err := r.resolveMember(ctx, ref)
 		if err != nil {
 			lastErr = err
 			continue
 		}
-		resolved.Combo = name
-		resolved.ComboRefs = refs
-		resolved.ComboStrategy = combo.Strategy()
-		resolved.ComboJudge = combo.JudgeModel()
-		resolved.ComboStickyLimit = combo.StickyLimit()
+		resolved.Combo = combo
 		return resolved, nil
 	}
 	return Resolution{}, lastErr

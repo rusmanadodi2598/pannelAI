@@ -3,7 +3,7 @@
 // @file      internal/dataplane/rotation_test.go
 // @for       The round_robin strategy end to end: the rotated leader serves, and
 //
-//	a rotation the store cannot answer falls back to priority order.
+//	an order the seam cannot answer falls back to priority order.
 //
 // @uses      testing, context, errors, sync, internal/domain.
 // @reason    SPEC-API-001 §7.7 makes round_robin a distribution rule and §9.6
@@ -28,25 +28,21 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// fakeRotation is a RotationStore double: one configured order, the last ask
-// recorded, and an optional failure so a test can drive the fall-back.
-type fakeRotation struct {
-	mu     sync.Mutex
-	order  []string
-	err    error
-	calls  int
-	combo  string
-	models []string
-	sticky int
+// fakeOrderer is a ComboOrderer double: one configured order, the last combo it
+// was asked about, and an optional failure so a test can drive the fall-back.
+type fakeOrderer struct {
+	mu    sync.Mutex
+	order []string
+	err   error
+	calls int
+	combo domain.Combo
 }
 
-func (f *fakeRotation) Next(_ context.Context, comboKey string, models []string, stickyLimit int) ([]string, error) {
+func (f *fakeOrderer) Order(_ context.Context, combo domain.Combo) ([]string, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.calls++
-	f.combo = comboKey
-	f.models = append([]string(nil), models...)
-	f.sticky = stickyLimit
+	f.combo = combo
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -54,31 +50,32 @@ func (f *fakeRotation) Next(_ context.Context, comboKey string, models []string,
 }
 
 // rotationEngine wires an engine over the two-provider relay upstream, with the
-// given combo and rotation store. A nil double becomes a nil seam rather than a
+// given combo and order seam. A nil double becomes a nil seam rather than a
 // typed nil, which is what a deployment without Redis wires.
-func rotationEngine(t *testing.T, upstreamURL string, combo domain.Combo, rotation *fakeRotation) (*Engine, *memEndpointRepo) {
+func rotationEngine(t *testing.T, upstreamURL string, combo domain.Combo, orders *fakeOrderer) (*Engine, *memEndpointRepo) {
 	t.Helper()
 	repo := newMemEndpointRepo()
 	repo.byProvider["alpha"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-alpha", "alpha")}
 	repo.byProvider["beta"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-beta", "beta")}
-	var store RotationStore
-	if rotation != nil {
-		store = rotation
+	var seam ComboOrderer
+	if orders != nil {
+		seam = orders
 	}
 	engine := newEngineWith(t, fusionProviders(upstreamURL, "alpha", "beta"), repo,
-		map[string]domain.Combo{combo.Name(): combo}, store)
+		map[string]domain.Combo{combo.Name(): combo}, seam)
 	return engine, repo
 }
 
 // TestRelay_RoundRobinServesTheRotatedLeader pins the distribution: the order
-// the store returns is the order the request walks, and the store is asked with
-// the combo's own name and sticky limit rather than the data plane's default.
+// the seam returns is the order the request walks, and the seam is asked about
+// the combo aggregate itself, so the strategy layer reads the combo's own name
+// and sticky limit rather than a copy that could drift.
 func TestRelay_RoundRobinServesTheRotatedLeader(t *testing.T) {
 	var calls int
 	server := newRelayUpstream(t, &calls)
-	rotation := &fakeRotation{order: []string{"beta/works", "alpha/broken"}}
+	orders := &fakeOrderer{order: []string{"beta/works", "alpha/broken"}}
 	combo := roundRobinRow("daily", 3, "alpha/broken", "beta/works")
-	engine, _ := rotationEngine(t, server.URL, combo, rotation)
+	engine, _ := rotationEngine(t, server.URL, combo, orders)
 
 	outcome, err := engine.Relay(context.Background(), relayRequest("daily"), nil)
 	if err != nil {
@@ -90,17 +87,18 @@ func TestRelay_RoundRobinServesTheRotatedLeader(t *testing.T) {
 	if calls != 1 {
 		t.Fatalf("upstream calls = %d, want 1: the rotated leader served without failover", calls)
 	}
-	if rotation.calls != 1 {
-		t.Fatalf("rotation asks = %d, want 1", rotation.calls)
+	if orders.calls != 1 {
+		t.Fatalf("order asks = %d, want 1", orders.calls)
 	}
-	if rotation.combo != "daily" {
-		t.Fatalf("rotation combo key = %q, want the combo name daily", rotation.combo)
+	if orders.combo.Name() != "daily" {
+		t.Fatalf("order combo = %q, want the combo name daily", orders.combo.Name())
 	}
-	if rotation.sticky != 3 {
-		t.Fatalf("rotation sticky limit = %d, want the combo's own 3", rotation.sticky)
+	if orders.combo.StickyLimit() != 3 {
+		t.Fatalf("order combo sticky limit = %d, want the combo's own 3", orders.combo.StickyLimit())
 	}
-	if len(rotation.models) != 2 || rotation.models[0] != "alpha/broken" {
-		t.Fatalf("rotation models = %v, want the combo's stored priority order", rotation.models)
+	refs := orders.combo.Refs()
+	if len(refs) != 2 || refs[0] != "alpha/broken" {
+		t.Fatalf("order combo refs = %v, want the combo's stored priority order", refs)
 	}
 }
 
@@ -111,42 +109,42 @@ func TestRelay_RotationIsAnOptimisation(t *testing.T) {
 	cases := []struct {
 		name         string
 		combo        domain.Combo
-		rotation     *fakeRotation
+		orders       *fakeOrderer
 		wantRotation int
 		wantCalls    int
 	}{
 		{
 			name:         "a rotation store that fails",
 			combo:        roundRobinRow("daily", 1, "alpha/broken", "beta/works"),
-			rotation:     &fakeRotation{err: errors.New("redis is down")},
+			orders:       &fakeOrderer{err: errors.New("redis is down")},
 			wantRotation: 1,
 			wantCalls:    2,
 		},
 		{
 			name:         "a store answering with an unusable order",
 			combo:        roundRobinRow("daily", 1, "alpha/broken", "beta/works"),
-			rotation:     &fakeRotation{order: []string{"beta/works"}},
+			orders:       &fakeOrderer{order: []string{"beta/works"}},
 			wantRotation: 1,
 			wantCalls:    2,
 		},
 		{
 			name:         "a deployment with no rotation store",
 			combo:        roundRobinRow("daily", 1, "alpha/broken", "beta/works"),
-			rotation:     nil,
+			orders:       nil,
 			wantRotation: 0,
 			wantCalls:    2,
 		},
 		{
 			name:         "a fallback combo, which does not rotate",
 			combo:        comboRow("daily", "alpha/broken", "beta/works"),
-			rotation:     &fakeRotation{order: []string{"beta/works", "alpha/broken"}},
+			orders:       &fakeOrderer{order: []string{"beta/works", "alpha/broken"}},
 			wantRotation: 0,
 			wantCalls:    2,
 		},
 		{
 			name:         "a combo with nothing to rotate",
 			combo:        roundRobinRow("solo", 1, "beta/works"),
-			rotation:     &fakeRotation{order: []string{"beta/works"}},
+			orders:       &fakeOrderer{order: []string{"beta/works"}},
 			wantRotation: 0,
 			wantCalls:    1,
 		},
@@ -156,7 +154,7 @@ func TestRelay_RotationIsAnOptimisation(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			var calls int
 			server := newRelayUpstream(t, &calls)
-			engine, _ := rotationEngine(t, server.URL, testCase.combo, testCase.rotation)
+			engine, _ := rotationEngine(t, server.URL, testCase.combo, testCase.orders)
 
 			outcome, err := engine.Relay(context.Background(), relayRequest(testCase.combo.Name()), nil)
 			if err != nil {
@@ -169,8 +167,8 @@ func TestRelay_RotationIsAnOptimisation(t *testing.T) {
 				t.Fatalf("upstream calls = %d, want %d: the stored order was walked from the top",
 					calls, testCase.wantCalls)
 			}
-			if testCase.rotation != nil && testCase.rotation.calls != testCase.wantRotation {
-				t.Fatalf("rotation asks = %d, want %d", testCase.rotation.calls, testCase.wantRotation)
+			if testCase.orders != nil && testCase.orders.calls != testCase.wantRotation {
+				t.Fatalf("order asks = %d, want %d", testCase.orders.calls, testCase.wantRotation)
 			}
 		})
 	}

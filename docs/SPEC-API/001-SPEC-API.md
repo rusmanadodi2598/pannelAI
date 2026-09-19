@@ -294,10 +294,11 @@ The fusion execution the reference fixes, and the gateway implements:
 - A member's tokens are spent but are **not folded into the served request's usage row**, which records the
   judge's accounting — one row per request stays the accounting unit.
 
-`round_robin` execution: the engine asks the rotation store for the order using the **combo's own
-`sticky_limit`** (not the data plane default), serves the returned leader, and fails over through the rest
-of the rotated order. Rotation is an optimisation — a store that errors or answers with an order of a
-different length serves the stored priority order instead of failing the request.
+`round_robin` execution: the engine asks `ComboService.Order` — through the `dataplane.ComboOrderer` seam —
+for the order, which reaches the rotation store with the **combo's own `sticky_limit`** (not the data plane
+default); it serves the returned leader and fails over through the rest of the rotated order. Rotation is an
+optimisation: an order that cannot be produced, or one of a different length, serves the stored priority
+order instead of failing the request.
 
 ### 7.8 Vision Adapter
 
@@ -532,4 +533,4 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 *Changelog 2026-09-17 — §7.4 and §7.5 add the two routes the owner requirements name and the spec lacked: custom provider nodes (OpenAI-compatible / Anthropic-compatible) in §7.4, and multi-account bulk onboarding (endpoint batch, key batch, OAuth credential import) in §7.5. Both are P1, because the reference ships the node feature at the same surface level and every provider is multi-account by requirement.*
 *Changelog 2026-09-19 — §7.4 records the callback's two answers and the redirect-origin rule, because the panel (SPEC-UI §6.3) has to read the outcome the browser lands with. The callback is public by necessity and its origin never comes from the request: a configured `PUBLIC_BASE_URL` wins, the staged `redirect_uri` origin is only a fallback, and with neither the route answers JSON instead of redirecting.*
 *Changelog 2026-09-19 — §7.7 records the fusion execution the reference fixes, now that the data plane runs it: a non-streamed tool-less panel, the judge receiving the client's request plus the directive, the 1-answer and 0-answer degradations, and that panel spend stays outside the request's usage row. Also: a combo whose leading reference no longer resolves now starts from the first reference that does, instead of failing the whole combo — the engine already skipped such members.*
-*Changelog 2026-09-19 — §7.7 records round_robin execution: the engine consults the rotation store with the combo's own `sticky_limit`, and a store that cannot answer falls back to priority order because rotation is an optimisation, not a correctness input. Before this, `ComboRotationStore` had no consumer on the request path.*
+*Changelog 2026-09-19 — §7.7 records round_robin execution: the engine asks `ComboService.Order` for the order through the `dataplane.ComboOrderer` seam, so the distribution rule stays in one place and the combo's own `sticky_limit` is what reaches the store. An order that cannot be produced falls back to priority order, because rotation is an optimisation, not a correctness input. Before this, `ComboService.Order` had no production caller and the engine walked the stored order for every strategy.*

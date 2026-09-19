@@ -652,8 +652,8 @@ func TestResolver_Order(t *testing.T) {
 			if got.Target != tc.wantTarget {
 				t.Fatalf("target = %q, want %q", got.Target, tc.wantTarget)
 			}
-			if got.Combo != tc.wantCombo {
-				t.Fatalf("combo = %q, want %q", got.Combo, tc.wantCombo)
+			if got.Combo.Name() != tc.wantCombo {
+				t.Fatalf("combo = %q, want %q", got.Combo.Name(), tc.wantCombo)
 			}
 		})
 	}

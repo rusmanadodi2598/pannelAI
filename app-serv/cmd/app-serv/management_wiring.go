@@ -182,7 +182,7 @@ func buildManagement(
 	// must resolve the same ids the route does.
 	plane, err := buildDataPlane(dataPlaneInputs{
 		Config: cfg, Index: runtimeIndex, Endpoints: endpointRepo, Combos: comboRepo,
-		Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
+		ComboOrder: comboSvc, Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
 		Redis: client, Settings: settingsSvc, Usage: usageSvc, Vision: augmenter,
 	})
 	if err != nil {
