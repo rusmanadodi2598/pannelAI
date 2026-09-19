@@ -11,6 +11,7 @@ import {
 	schemaEndpoint,
 	schemaEndpointKey,
 	schemaEndpointKeyList,
+	schemaEndpointLabelList,
 	schemaEndpointList,
 	schemaEndpointTestStatus,
 	schemaUpdateEndpointForm,
@@ -22,6 +23,7 @@ import {
 	type Endpoint,
 	type EndpointKey,
 	type EndpointKeyList,
+	type EndpointLabelList,
 	type EndpointList,
 	type EndpointTestStatus,
 	type UpdateEndpointForm,
@@ -46,6 +48,17 @@ export function listEndpoints(query: EndpointQuery = {}): Promise<ApiResult<Endp
 		method: 'GET',
 		path: '/endpoints',
 		schema: schemaEndpointList,
+		query
+	});
+}
+
+// The label-only read screens that name endpoints beside other data use (§6.6). Same route as the list,
+// one projection fewer fields, so a screen that only names rows cannot fail on a field it never reads.
+export function listEndpointLabels(query: ListQuery = {}): Promise<ApiResult<EndpointLabelList>> {
+	return apiRequest<void, EndpointLabelList>({
+		method: 'GET',
+		path: '/endpoints',
+		schema: schemaEndpointLabelList,
 		query
 	});
 }

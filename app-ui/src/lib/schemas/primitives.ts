@@ -95,13 +95,26 @@ export const rfc3339Timestamp = z
 	.string()
 	.refine((value) => !Number.isNaN(Date.parse(value)), { message: 'Invalid timestamp.' });
 
-// A list of strings that the API may send as null. Go marshals a nil slice as `null` rather than `[]`, and
-// several response shapes carry a list without `omitempty`, so an empty collection arrives as null. It is
-// normalized to an empty array here so no caller has to handle both spellings of "none".
-export const stringList = z
-	.array(z.string())
-	.nullish()
-	.transform((value) => value ?? []);
+// A list the API may send as null. Go marshals a nil slice as `null` rather than `[]`, and several response
+// shapes carry a list without `omitempty`, so an empty collection arrives as null. It is normalized to an
+// empty array here so no caller has to handle both spellings of "none", and it is the one place that rule
+// lives: `stringList` below is the string case of the same transform.
+export function nullableList<T extends z.ZodType>(item: T) {
+	return z
+		.array(item)
+		.nullish()
+		.transform((value) => value ?? []);
+}
+
+export const stringList = nullableList(z.string());
+
+// The pagination block SPEC-API §4 returns beside every list. It lives here rather than in each resource
+// file because a second definition would be a second answer to "what does the panel expect from `meta`".
+export const pageMeta = z.object({
+	page: z.number().int(),
+	per_page: z.number().int(),
+	total: z.number().int()
+});
 
 export const nullableTimestamp = rfc3339Timestamp.nullable();
 
@@ -138,6 +151,20 @@ export const password = z
 	.string()
 	.refine((value) => value.length >= 1, { message: 'A password is required.' })
 	.refine((value) => value.length <= 200, { message: 'Use 200 characters or fewer.' });
+
+// How a recorded request ended. One field class, two resources: a usage record and a request log both
+// carry it, and both come from the same closed set in app-serv (`UsageStatus`, which the log aggregate
+// reuses), so it is declared once here rather than twice with a drift risk between them. SPEC-UI §7.4.3
+// makes an unknown member an error rather than a value rendered verbatim.
+export const REQUEST_STATUSES = ['success', 'error'] as const;
+export type RequestStatus = (typeof REQUEST_STATUSES)[number];
+
+export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
+	success: 'Success',
+	error: 'Error'
+};
+
+export const schemaRequestStatus = z.enum(REQUEST_STATUSES);
 
 // Endpoints that answer 204 carry no body, and the client still parses through a schema. Loose so an
 // API that starts returning a body does not fail the panel.

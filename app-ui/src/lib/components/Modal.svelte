@@ -23,8 +23,17 @@
 		const node = element;
 		if (!node) return;
 
-		if (open && !node.open) node.showModal();
-		if (!open && node.open) node.close();
+		// jsdom, the panel's test environment, predates showModal/close on <dialog>. The open attribute is
+		// the fallback that keeps the dialog readable there; real browsers take the native path, which is
+		// what brings Escape-to-close and focus containment (R-32).
+		if (open && !node.open) {
+			if (typeof node.showModal === 'function') node.showModal();
+			else node.setAttribute('open', '');
+		}
+		if (!open && node.open) {
+			if (typeof node.close === 'function') node.close();
+			else node.removeAttribute('open');
+		}
 	});
 
 	function handleCancel(event: Event): void {

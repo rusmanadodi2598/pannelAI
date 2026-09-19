@@ -15,18 +15,12 @@ import {
 	endpointId,
 	label,
 	optionalTimestamp,
+	pageMeta,
 	priority,
 	rfc3339Timestamp,
 	secretValue,
 	upstreamKeyId
 } from './primitives';
-
-// The pagination block SPEC-API §4 returns beside every list.
-const pageMeta = z.object({
-	page: z.number().int(),
-	per_page: z.number().int(),
-	total: z.number().int()
-});
 
 // The non-secret identity an endpoint presents. Every field is optional on the wire.
 export const schemaEndpointAccount = z.object({
@@ -110,6 +104,23 @@ export const schemaEndpointList = z.object({
 });
 
 export type EndpointList = z.infer<typeof schemaEndpointList>;
+
+// The one projection a label lookup reads (the quota tracker names each window's endpoint, §6.6). Parsed
+// narrowly on purpose: the screen reads id and label and nothing else, so a strict parse of the full row
+// would make every label fail because of fields the screen never shows.
+export const schemaEndpointLabel = z.object({
+	id: endpointId,
+	label: z.string()
+});
+
+export type EndpointLabel = z.infer<typeof schemaEndpointLabel>;
+
+export const schemaEndpointLabelList = z.object({
+	data: z.array(schemaEndpointLabel),
+	meta: pageMeta
+});
+
+export type EndpointLabelList = z.infer<typeof schemaEndpointLabelList>;
 
 export const schemaEndpointKeyList = z.object({
 	data: z.array(schemaEndpointKey),

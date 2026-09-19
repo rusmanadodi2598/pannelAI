@@ -67,8 +67,8 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: 'Observe',
 		reason: 'Answers what already happened: consumption, remaining quota, and runtime output.',
 		items: [
-			{ key: 'usage', label: 'Usage', planned: true },
-			{ key: 'quota', label: 'Quota Tracker', planned: true },
+			{ key: 'usage', label: 'Usage', href: '/usage' },
+			{ key: 'quota', label: 'Quota Tracker', href: '/quota' },
 			{ key: 'console-log', label: 'Console Log', planned: true }
 		]
 	},
