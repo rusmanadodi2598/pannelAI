@@ -742,7 +742,8 @@ atas.
 5. **P2.5, G14**: temuan G1 yang tersisa, butuh D4 untuk pilihan lantai versi
    (testnya bisa ditulis lebih dulu). Selesai 2026-09-19 dengan D4 = (b).
 6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas. G13 selesai
-   2026-09-19; G12 selesai 2026-09-19 dengan D5 = (b); G5 tersisa.
+   2026-09-19; G12 selesai 2026-09-19 dengan D5 = (b); G5 incremental:
+   Deepgram STT slice 1 selesai 2026-09-19, 15 adapter/provider tersisa.
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
 8. **P2.8, G8, G9, G10, G19**: penutup kecil + dokumen + aksi lingkungan
