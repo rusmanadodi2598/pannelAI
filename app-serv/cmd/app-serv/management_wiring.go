@@ -202,6 +202,12 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: token saver: %w", err)
 	}
 
+	// §7.11 proxy pools, with their own egress guard (see proxy_wiring.go).
+	proxyHandler, err := buildProxies(cfg, pool, sealer)
+	if err != nil {
+		return managementDeps{}, err
+	}
+
 	oauthHandler, refreshWorker, err := buildOAuth(cfg, runtimeIndex, endpointRepo, client, sealer)
 	if err != nil {
 		return managementDeps{}, err
@@ -217,6 +223,7 @@ func buildManagement(
 		Model:         handler.NewModelHandler(catalogSvc),
 		Combo:         handler.NewComboHandler(comboSvc),
 		ComboTest:     handler.NewComboTestHandler(comboTestSvc),
+		Proxy:         proxyHandler,
 		VisionAdapter: handler.NewVisionAdapterHandler(visionSvc),
 		TokenSaver:    handler.NewTokenSaverHandler(tokenSaverSvc),
 		Usage:         handler.NewUsageHandler(usageSvc),

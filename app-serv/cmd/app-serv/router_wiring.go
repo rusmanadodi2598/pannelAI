@@ -40,6 +40,7 @@ type managementDeps struct {
 	Model         *handler.ModelHandler
 	Combo         *handler.ComboHandler
 	ComboTest     *handler.ComboTestHandler
+	Proxy         *handler.ProxyHandler
 	VisionAdapter *handler.VisionAdapterHandler
 	TokenSaver    *handler.TokenSaverHandler
 	Usage         *handler.UsageHandler
@@ -84,6 +85,7 @@ func routerDeps(
 		Model:           mgmt.Model,
 		Combo:           mgmt.Combo,
 		ComboTest:       mgmt.ComboTest,
+		Proxy:           mgmt.Proxy,
 		VisionAdapter:   mgmt.VisionAdapter,
 		TokenSaver:      mgmt.TokenSaver,
 		Usage:           mgmt.Usage,

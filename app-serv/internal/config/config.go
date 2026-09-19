@@ -2,7 +2,7 @@
 //
 // @file      internal/config/config.go
 // @for       Typed environment configuration for app-serv, validated once at boot.
-// @uses      net/url, os, strconv, strings, time (standard library only).
+// @uses      fmt, strings, time (the env-reading helpers are in env.go).
 // @reason    SPEC-API-001 §4 and AGENTS.md §1.4 require env vars to become a
 //
 //	typed Config with fail-fast validation, so no raw os.Getenv()
@@ -16,9 +16,6 @@ package config
 
 import (
 	"fmt"
-	"net/url"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -51,6 +48,17 @@ type Config struct {
 	// to send a browser back to the panel after an authorization; leaving it
 	// empty makes the callback refuse to redirect rather than trust a header.
 	PublicBaseURL string
+	// EgressAllowedTargets is the operator's allowlist of outbound
+	// destinations, as CIDR prefixes or single addresses. The egress guard
+	// (internal/netguard) refuses loopback and private ranges unless they
+	// appear here, so a self-hosted proxy on the operator's own network is a
+	// deliberate opt-in rather than a default (OWASP A01).
+	EgressAllowedTargets []string
+	// ProxyTestURL is the URL the proxy connectivity test fetches through the
+	// candidate. It is server configuration rather than a request field on
+	// purpose: a client-supplied test URL would be an SSRF seam, and the value
+	// only has to be something a working proxy can reach.
+	ProxyTestURL string
 }
 
 // Load reads the environment and returns a validated Config, or an error naming
@@ -69,7 +77,9 @@ func Load() (Config, error) {
 		BootstrapPassword: getenv("PANEL_BOOTSTRAP_PASSWORD", ""),
 		GatewayKeyPrefix:  getenv("GATEWAY_KEY_PREFIX", "sk-"),
 		PublicBaseURL:     getenv("PUBLIC_BASE_URL", ""),
+		ProxyTestURL:      getenv("PROXY_TEST_URL", "https://www.google.com/"),
 	}
+	cfg.EgressAllowedTargets = splitList(getenv("EGRESS_ALLOWED_TARGETS", ""))
 
 	intFields := []struct {
 		name string
@@ -160,6 +170,9 @@ func (c Config) validate() error {
 	if c.PublicBaseURL != "" && !isAbsoluteHTTPURL(c.PublicBaseURL) {
 		problems = append(problems, "PUBLIC_BASE_URL must be an absolute http(s) URL, e.g. https://gateway.example.com")
 	}
+	if !isAbsoluteHTTPURL(c.ProxyTestURL) {
+		problems = append(problems, "PROXY_TEST_URL must be an absolute http(s) URL")
+	}
 	if !isValidLogLevel(c.LogLevel) {
 		problems = append(problems, "LOG_LEVEL must be one of debug, info, warn, error")
 	}
@@ -168,70 +181,4 @@ func (c Config) validate() error {
 		return fmt.Errorf("config: invalid: %s", strings.Join(problems, "; "))
 	}
 	return nil
-}
-
-// getenv returns the variable's value when the variable is set, even when that
-// value is empty, and the fallback only when it is unset. Collapsing the two
-// cases would make an explicitly empty HTTP_ADDR silently become ":8080",
-// which is precisely the misconfiguration the boot validation exists to catch.
-func getenv(key, fallback string) string {
-	v, ok := os.LookupEnv(key)
-	if !ok {
-		return fallback
-	}
-	return v
-}
-
-// isAbsoluteHTTPURL reports whether raw is an absolute http(s) URL, the only
-// shape a browser may be redirected to and the only shape an OAuth provider
-// will accept as a callback.
-func isAbsoluteHTTPURL(raw string) bool {
-	parsed, err := url.Parse(raw)
-	if err != nil {
-		return false
-	}
-	if parsed.Host == "" {
-		return false
-	}
-	return parsed.Scheme == "http" || parsed.Scheme == "https"
-}
-
-// isValidLogLevel reports whether the level names one slog supports. Validating
-// here means a misspelled LOG_LEVEL is a boot failure rather than a value the
-// logger silently ignores.
-func isValidLogLevel(level string) bool {
-	switch level {
-	case "debug", "info", "warn", "error":
-		return true
-	default:
-		return false
-	}
-}
-
-// getenvInt reads an integer, using the fallback only when the variable is
-// unset. A variable that is set but empty or malformed is an error: silently
-// substituting a default would hide a broken deployment configuration.
-func getenvInt(key string, fallback int) (int, error) {
-	v, ok := os.LookupEnv(key)
-	if !ok {
-		return fallback, nil
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		return 0, fmt.Errorf("not an integer: %q", v)
-	}
-	return n, nil
-}
-
-// getenvDuration reads a Go duration string with the same unset/empty rule.
-func getenvDuration(key string, fallback time.Duration) (time.Duration, error) {
-	v, ok := os.LookupEnv(key)
-	if !ok {
-		return fallback, nil
-	}
-	d, err := time.ParseDuration(v)
-	if err != nil {
-		return 0, fmt.Errorf("not a duration: %q", v)
-	}
-	return d, nil
 }

@@ -54,6 +54,7 @@ func TestLoad_Defaults(t *testing.T) {
 		{"SessionTTL", cfg.SessionTTL, 24 * time.Hour}, {"LoginMaxFails", cfg.LoginMaxFails, 5},
 		{"LoginLockout", cfg.LoginLockout, 15 * time.Minute}, {"RateLimitPerMin", cfg.RateLimitPerMin, 120},
 		{"BootstrapPassword", cfg.BootstrapPassword, ""},
+		{"ProxyTestURL", cfg.ProxyTestURL, "https://www.google.com/"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -101,6 +102,10 @@ func TestLoad_Validation(t *testing.T) {
 		{"public base URL without a scheme", map[string]string{"PUBLIC_BASE_URL": "gateway.example.com"}, nil, true},
 		{"public base URL with a bad scheme", map[string]string{"PUBLIC_BASE_URL": "ftp://gateway.example.com"}, nil, true},
 		{"public base URL relative", map[string]string{"PUBLIC_BASE_URL": "/api/v1"}, nil, true},
+		{"proxy test URL default", nil, nil, false},
+		{"proxy test URL empty", map[string]string{"PROXY_TEST_URL": ""}, nil, true},
+		{"proxy test URL without a scheme", map[string]string{"PROXY_TEST_URL": "www.google.com"}, nil, true},
+		{"proxy test URL with a bad scheme", map[string]string{"PROXY_TEST_URL": "ftp://www.google.com"}, nil, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -118,6 +123,38 @@ func TestLoad_Validation(t *testing.T) {
 			}
 			if !tc.wantErr && err != nil {
 				t.Fatalf("Load() error = %v, want nil", err)
+			}
+		})
+	}
+}
+
+// TestLoad_EgressAllowedTargets pins the allowlist parsing: entries are split
+// on commas, trimmed, and blanks dropped, so a trailing comma is not an entry
+// of "" — an empty entry would reach the guard as a prefix it cannot parse.
+func TestLoad_EgressAllowedTargets(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+		want []string
+	}{
+		{name: "unset", raw: "", want: []string{}},
+		{name: "one address", raw: "10.0.0.5", want: []string{"10.0.0.5"}},
+		{name: "a prefix and a host", raw: "10.0.0.0/8, proxy.internal", want: []string{"10.0.0.0/8", "proxy.internal"}},
+		{name: "blanks dropped", raw: " 10.0.0.5 , ,", want: []string{"10.0.0.5"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			env := validEnv()
+			if tc.raw != "" {
+				env["EGRESS_ALLOWED_TARGETS"] = tc.raw
+			}
+			setEnv(t, env)
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("Load() error = %v", err)
+			}
+			if strings.Join(cfg.EgressAllowedTargets, "|") != strings.Join(tc.want, "|") {
+				t.Fatalf("EgressAllowedTargets = %v, want %v", cfg.EgressAllowedTargets, tc.want)
 			}
 		})
 	}

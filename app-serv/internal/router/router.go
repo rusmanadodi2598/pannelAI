@@ -51,6 +51,7 @@ type Deps struct {
 	Model           *handler.ModelHandler
 	Combo           *handler.ComboHandler
 	ComboTest       *handler.ComboTestHandler
+	Proxy           *handler.ProxyHandler
 	VisionAdapter   *handler.VisionAdapterHandler
 	TokenSaver      *handler.TokenSaverHandler
 	Usage           *handler.UsageHandler
@@ -157,6 +158,16 @@ func New(deps Deps) *Mux {
 	mux.Handle("PUT "+APIVersion+"/vision-adapter", gateway(http.HandlerFunc(deps.VisionAdapter.Put)))
 	mux.Handle("GET "+APIVersion+"/token-saver", gateway(http.HandlerFunc(deps.TokenSaver.Get)))
 	mux.Handle("PUT "+APIVersion+"/token-saver", gateway(http.HandlerFunc(deps.TokenSaver.Put)))
+
+	// §7.11 Proxy pools, session-gated like the rest of management. The
+	// candidate route addresses no stored resource, which is why it is
+	// /proxies/test rather than /proxies/{id}/test.
+	mux.Handle("GET "+APIVersion+"/proxies", gateway(http.HandlerFunc(deps.Proxy.List)))
+	mux.Handle("POST "+APIVersion+"/proxies", gateway(http.HandlerFunc(deps.Proxy.Create)))
+	mux.Handle("POST "+APIVersion+"/proxies/test", gateway(http.HandlerFunc(deps.Proxy.TestCandidate)))
+	mux.Handle("PATCH "+APIVersion+"/proxies/{id}", gateway(http.HandlerFunc(deps.Proxy.Update)))
+	mux.Handle("DELETE "+APIVersion+"/proxies/{id}", gateway(http.HandlerFunc(deps.Proxy.Delete)))
+	mux.Handle("POST "+APIVersion+"/proxies/{id}/test", gateway(http.HandlerFunc(deps.Proxy.Test)))
 
 	// §7.12–§7.14 Usage, quotas, logs, and settings are management routes, so
 	// they share the same session guard.

@@ -103,6 +103,7 @@ func newManagementRouter(t *testing.T) *Mux {
 		Combo:         management.combo,
 		ComboTest:     management.comboTest,
 		VisionAdapter: management.vision,
+		Proxy:         management.proxy,
 	})
 }
 
@@ -124,6 +125,7 @@ type catalogServices struct {
 	combo     *handler.ComboHandler
 	comboTest *handler.ComboTestHandler
 	vision    *handler.VisionAdapterHandler
+	proxy     *handler.ProxyHandler
 }
 
 // newCatalogFixture wires the catalog, combo, and adapter services over
@@ -176,6 +178,7 @@ func newCatalogFixture(t *testing.T) catalogServices {
 		combo:     handler.NewComboHandler(combos),
 		comboTest: handler.NewComboTestHandler(comboTests),
 		vision:    handler.NewVisionAdapterHandler(adapter),
+		proxy:     newProxyRouteHandler(t),
 	}
 }
 

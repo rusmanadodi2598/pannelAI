@@ -63,9 +63,15 @@ type managementFixture struct {
 	combo     *ComboHandler
 	comboTest *ComboTestHandler
 	vision    *VisionAdapterHandler
+	proxy     *ProxyHandler
 	// prober is the combo test route's seam double, exposed so a case can make
 	// a member fail without rebuilding the fixture.
 	prober *stubProber
+	// proxyProber and proxyRepo are the §7.11 seams, exposed for the same
+	// reason: a case can turn a probe into a failure or inspect what the
+	// routes stored.
+	proxyProber *stubProxyProber
+	proxyRepo   *stubProxyRepo
 }
 
 // newManagementFixture wires the handlers over a small fixed registry with one
@@ -113,13 +119,18 @@ func newManagementFixture(t *testing.T) managementFixture {
 	if err != nil {
 		t.Fatalf("NewComboTestService() error = %v", err)
 	}
+	proxyProber := &stubProxyProber{result: service.ProxyProbeResult{State: domain.EndpointTestOK, LatencyMS: 7}}
+	proxyService, proxyRepo := newStubProxyService(t, proxyProber)
 	seedHandlerFixture(t, catalog, comboRepo)
 	return managementFixture{
-		model:     NewModelHandler(catalog),
-		combo:     NewComboHandler(comboService),
-		comboTest: NewComboTestHandler(comboTestService),
-		vision:    NewVisionAdapterHandler(adapterService),
-		prober:    prober,
+		model:       NewModelHandler(catalog),
+		combo:       NewComboHandler(comboService),
+		comboTest:   NewComboTestHandler(comboTestService),
+		vision:      NewVisionAdapterHandler(adapterService),
+		proxy:       NewProxyHandler(proxyService),
+		prober:      prober,
+		proxyProber: proxyProber,
+		proxyRepo:   proxyRepo,
 	}
 }
 

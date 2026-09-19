@@ -47,9 +47,9 @@ import (
 // testDSNEnv names the variable that enables these tests.
 const testDSNEnv = "PANNELAI_TEST_POSTGRES_DSN"
 
-// newTestRepo connects to the configured database, applies migrations, and
-// returns a repository with a clean table.
-func newTestRepo(t *testing.T) *GatewayKeyRepository {
+// newTestPool connects to the configured database and applies migrations, so
+// every integration test in this package shares one setup path.
+func newTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 
 	dsn := os.Getenv(testDSNEnv)
@@ -67,8 +67,14 @@ func newTestRepo(t *testing.T) *GatewayKeyRepository {
 		t.Fatalf("connecting: %v", err)
 	}
 	t.Cleanup(pool.Close)
+	return pool
+}
 
-	if _, err := pool.Exec(ctx, `TRUNCATE gateway_keys`); err != nil {
+// newTestRepo returns a gateway-key repository over a clean table.
+func newTestRepo(t *testing.T) *GatewayKeyRepository {
+	t.Helper()
+	pool := newTestPool(t)
+	if _, err := pool.Exec(context.Background(), `TRUNCATE gateway_keys`); err != nil {
 		t.Fatalf("truncating: %v", err)
 	}
 	return NewGatewayKeyRepository(pool)

@@ -120,6 +120,8 @@ var (
 	ErrNodeNotFound     = NewNotFoundError("provider node not found")
 	ErrNodePrefixTaken  = NewConflictError("this prefix is already in use")
 	ErrNodeInUse        = NewConflictError("an endpoint still references this provider")
+
+	ErrProxyNotFound = NewNotFoundError("proxy not found")
 )
 
 // AsAppError unwraps any error into an AppError, mapping unknown failures to
