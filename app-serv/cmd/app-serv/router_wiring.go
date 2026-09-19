@@ -51,6 +51,7 @@ type managementDeps struct {
 	Settings      *handler.SettingsHandler
 	Chat          *handler.ChatHandler
 	Embeddings    *handler.EmbeddingsHandler
+	TokenCount    *handler.TokenCountHandler
 
 	// QuotaFlusher, LogRetention, and OAuthRefresh are returned so the caller
 	// can run them after the server is listening, rather than leaving
@@ -98,6 +99,7 @@ func routerDeps(
 		Settings:        mgmt.Settings,
 		Chat:            mgmt.Chat,
 		Embeddings:      mgmt.Embeddings,
+		TokenCount:      mgmt.TokenCount,
 		RateLimiter:     limiter,
 		RateLimitPerMin: cfg.RateLimitPerMin,
 	}

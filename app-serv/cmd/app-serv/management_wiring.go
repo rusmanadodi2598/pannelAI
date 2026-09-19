@@ -37,7 +37,6 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/config"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/handler"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
@@ -56,26 +55,12 @@ func buildManagement(
 	connectors *provider.Connectors,
 	keys repository.GatewayKeyRepository,
 ) (managementDeps, error) {
-	// Settings first: the egress route (§7.11) and the log service both read it.
-	settingsRepo := postgres.NewSettingsRepository(pool)
-	settingsSvc, err := service.NewSettingsService(service.SettingsServiceDeps{Repo: settingsRepo})
+	// Settings, the egress policy, and the sealer are the process-wide
+	// collaborators every builder below reads, so they are built together
+	// (see foundation_wiring.go).
+	settingsSvc, egress, sealer, err := buildFoundation(cfg, pool)
 	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: settings: %w", err)
-	}
-
-	// The process-wide egress policy (OWASP A01): one guard and one guarded HTTP
-	// client, shared by the probe, the data plane, the OAuth client, and the
-	// proxy test. Built once so a second caller cannot grow a second allowlist.
-	egress, err := buildEgress(cfg, settingsSvc)
-	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: %w", err)
-	}
-
-	// The sealer is created once and shared: sealing and opening must agree on
-	// the key, so a second instance would be a second source of truth for it.
-	sealer, err := domain.NewSealer([]byte(cfg.EncryptionKey))
-	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: %w", err)
+		return managementDeps{}, err
 	}
 
 	// Repositories.
@@ -242,8 +227,11 @@ func buildManagement(
 		Settings:      handler.NewSettingsHandler(settingsSvc),
 		Chat:          handler.NewChatHandler(plane.Chat),
 		Embeddings:    handler.NewEmbeddingsHandler(plane.Embeddings, plane.Chat),
-		QuotaFlusher:  flusher,
-		LogRetention:  retention,
-		OAuthRefresh:  refreshWorker,
+		// The estimate route dials no upstream, so it is built over its own
+		// stateless service and borrows the §4 key rule from the chat service.
+		TokenCount:   handler.NewTokenCountHandler(service.NewTokenCountService(), plane.Chat),
+		QuotaFlusher: flusher,
+		LogRetention: retention,
+		OAuthRefresh: refreshWorker,
 	}, nil
 }

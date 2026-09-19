@@ -62,6 +62,7 @@ type Deps struct {
 	Settings        *handler.SettingsHandler
 	Chat            *handler.ChatHandler
 	Embeddings      *handler.EmbeddingsHandler
+	TokenCount      *handler.TokenCountHandler
 	RateLimiter     repository.RateLimiter
 	RateLimitPerMin int
 }
@@ -192,20 +193,9 @@ func New(deps Deps) *Mux {
 	mux.Handle("GET "+APIVersion+"/settings", gateway(http.HandlerFunc(deps.Settings.Get)))
 	mux.Handle("PATCH "+APIVersion+"/settings", gateway(http.HandlerFunc(deps.Settings.Patch)))
 
-	// §7.15 Data plane: the OpenAI and Anthropic wires plus the models list.
-	// These are deliberately NOT session-gated. A CLI tool presents
-	// `Authorization: Bearer <gateway key>` and the handler enforces it when
-	// settings.security.require_api_key is true (§4); the dashboard session cookie
-	// is not a credential a CLI tool can hold, so wrapping these in the session
-	// guard would make every client request a 401.
-	if deps.Chat != nil {
-		mux.HandleFunc("POST "+APIVersion+"/chat/completions", deps.Chat.Completions)
-		mux.HandleFunc("POST "+APIVersion+"/messages", deps.Chat.Messages)
-		mux.HandleFunc("GET "+APIVersion+"/models", deps.Chat.Models)
-	}
-	if deps.Embeddings != nil {
-		mux.HandleFunc("POST "+APIVersion+"/embeddings", deps.Embeddings.Embed)
-	}
+	// §7.15 Data plane: registered together in router_dataplane.go, because
+	// these are the routes a CLI tool calls and they are not session-gated.
+	registerDataPlaneRoutes(mux, deps)
 
 	// Unknown paths and wrong verbs stay the mux's answer so it can distinguish
 	// 404 from 405 (and send Allow on the latter); envelope() then restates
