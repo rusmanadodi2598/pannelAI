@@ -78,13 +78,15 @@ func splitMediaModel(model string) (string, string, error) {
 // mediaFormatSupported reports whether the gateway speaks a provider's declared
 // media format for a kind.
 //
-// An empty declaration and `openai` are the OpenAI shape these routes build. A
-// provider declaring anything else is refused by name instead of being sent a
-// payload its API does not accept: the reference has a per-provider adapter for
-// each of those formats, and reporting the gap is honest where a wrong-shaped
-// call would look like an upstream outage. The search kind is exempt because
-// its shape is built from the block's own declarations (method, parameter
-// names) rather than from a fixed payload.
+// An empty declaration and `openai` are the OpenAI shape these routes build.
+// Deepgram STT is the first provider-specific adapter ported in G5, so its
+// binary request and nested transcript are handled separately. Other formats
+// are refused by name instead of being sent a payload their API does not accept:
+// the reference has a per-provider adapter for each of those formats, and
+// reporting the gap is honest where a wrong-shaped call would look like an
+// upstream outage. The search kind is exempt because its shape is built from
+// the block's own declarations (method, parameter names) rather than from a
+// fixed payload.
 func mediaFormatSupported(kind domain.MediaKind, format string) bool {
 	if kind == domain.MediaKindSearch {
 		return true
@@ -92,6 +94,8 @@ func mediaFormatSupported(kind domain.MediaKind, format string) bool {
 	switch strings.ToLower(strings.TrimSpace(format)) {
 	case "", "openai":
 		return true
+	case "deepgram":
+		return kind == domain.MediaKindSTT
 	default:
 		return false
 	}

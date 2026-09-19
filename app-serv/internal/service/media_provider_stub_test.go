@@ -79,8 +79,13 @@ type mediaIndex struct {
 
 func (i *mediaIndex) Provider(name string) (registry.Provider, bool) {
 	for _, entry := range i.entries {
-		if entry.ID == name {
+		if entry.ID == name || entry.Alias == name {
 			return entry, true
+		}
+		for _, alias := range entry.Aliases {
+			if alias == name {
+				return entry, true
+			}
 		}
 	}
 	return registry.Provider{}, false

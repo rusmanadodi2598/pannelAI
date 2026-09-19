@@ -155,9 +155,13 @@ func MediaTarget(media registry.MediaConfig, baseURL string, cred provider.Crede
 			return "", nil, wrapDataPlaneError(CodeUpstreamError, "the media service has no credential", nil)
 		}
 		return withQuery(target, "key", secret), headers, nil
-	case declared == "bearer":
+	case declared == "bearer" || declared == "token":
 		if secret != "" {
-			headers["Authorization"] = "Bearer " + secret
+			scheme := "Bearer"
+			if declared == "token" {
+				scheme = "Token"
+			}
+			headers["Authorization"] = scheme + " " + secret
 		}
 		return target, headers, nil
 	case declared == "":

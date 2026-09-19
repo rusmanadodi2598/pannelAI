@@ -58,21 +58,36 @@ func (s *MediaCallService) Speech(ctx context.Context, req schema.SpeechRequest,
 // Transcribe performs one speech-to-text call, forwarding the caller's optional
 // fields the way the reference's OpenAI-compatible path does.
 func (s *MediaCallService) Transcribe(ctx context.Context, form schema.TranscriptionForm, query map[string]string, keyID string) (dataplane.MediaResponse, MediaCall, error) {
-	call, err := s.prepareForCall(ctx, form.Model, domain.MediaKindSTT, query, keyID)
+	callQuery := s.transcriptionQuery(form, query)
+	call, err := s.prepareForCall(ctx, form.Model, domain.MediaKindSTT, callQuery, keyID)
 	if err != nil {
 		return dataplane.MediaResponse{}, MediaCall{}, err
 	}
-	body, contentType, err := transcriptionBody(form, call.UpstreamModel)
-	if err != nil {
-		return dataplane.MediaResponse{}, call, err
+	var request dataplane.MediaRequest
+	if strings.EqualFold(strings.TrimSpace(call.Media.Format), "deepgram") {
+		request = deepgramRequest(form)
+	} else {
+		body, contentType, buildErr := transcriptionBody(form, call.UpstreamModel)
+		if buildErr != nil {
+			return dataplane.MediaResponse{}, call, buildErr
+		}
+		request = dataplane.MediaRequest{
+			Method: "POST", Body: body,
+			// The target carries a JSON content type; a multipart body must
+			// replace it, boundary included.
+			Headers: map[string]string{"Content-Type": contentType},
+		}
 	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{
-		Method: "POST", Body: body,
-		// The target carries a JSON content type; a multipart body must
-		// replace it, boundary included.
-		Headers: map[string]string{"Content-Type": contentType},
-	}, keyID)
-	return answer, call, err
+	answer, err := s.Perform(ctx, call, request, keyID)
+	if err != nil {
+		return answer, call, err
+	}
+	if normalized, normalizeErr := normalizeTranscription(call.Media, answer.Body); normalizeErr != nil {
+		return dataplane.MediaResponse{}, call, normalizeErr
+	} else {
+		answer.Body = normalized
+	}
+	return answer, call, nil
 }
 
 // Voices returns the speech catalog the provider declares. §7.10's route exists

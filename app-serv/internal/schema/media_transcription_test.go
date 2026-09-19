@@ -112,9 +112,9 @@ func TestReadBounded(t *testing.T) {
 	})
 }
 
-// TestReadTranscriptionForm_SanitizesTheFilename pins that the reduction is
-// wired into the form, not merely available: the filename a caller crafts is
-// the one that reaches the upstream part.
+// TestReadTranscriptionForm_SanitizesTheFilename pins that the reduction and
+// part MIME capture are wired into the form, not merely available: the filename
+// and content type a caller crafts are the values the adapter receives.
 func TestReadTranscriptionForm_SanitizesTheFilename(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -132,6 +132,9 @@ func TestReadTranscriptionForm_SanitizesTheFilename(t *testing.T) {
 			}
 			if form.Filename != tc.want {
 				t.Fatalf("filename = %q, want %q", form.Filename, tc.want)
+			}
+			if form.ContentType != "application/octet-stream" {
+				t.Fatalf("content type = %q, want multipart's safe default", form.ContentType)
 			}
 		})
 	}

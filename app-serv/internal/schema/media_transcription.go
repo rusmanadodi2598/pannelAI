@@ -43,6 +43,7 @@ type TranscriptionForm struct {
 	ResponseFormat string
 	Temperature    string
 	Filename       string
+	ContentType    string
 	File           []byte
 }
 
@@ -82,6 +83,7 @@ func ReadTranscriptionForm(r *http.Request) (TranscriptionForm, error) {
 	}
 	form.File = content
 	form.Filename = safeUploadName(header)
+	form.ContentType = header.Header.Get("Content-Type")
 	return form, nil
 }
 

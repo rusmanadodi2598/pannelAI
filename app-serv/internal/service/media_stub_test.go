@@ -24,6 +24,7 @@ import (
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
@@ -46,9 +47,10 @@ func (c *stubMediaCaller) Do(_ context.Context, request dataplane.MediaRequest) 
 // stubMediaRouter answers selection with one fixed endpoint and records the
 // health reports a call produces.
 type stubMediaRouter struct {
-	failure   error
-	successes int
-	failures  []string
+	failure    error
+	credential provider.Credential
+	successes  int
+	failures   []string
 }
 
 func (r *stubMediaRouter) Select(_ context.Context, providerID string) (dataplane.Selection, error) {
@@ -60,7 +62,7 @@ func (r *stubMediaRouter) Select(_ context.Context, providerID string) (dataplan
 	if err != nil {
 		return dataplane.Selection{}, err
 	}
-	return dataplane.Selection{Endpoint: endpoint}, nil
+	return dataplane.Selection{Endpoint: endpoint, Credential: r.credential}, nil
 }
 
 func (r *stubMediaRouter) RecordSuccess(context.Context, dataplane.Selection) error {
@@ -112,7 +114,16 @@ func mediaCallEntries() []registry.Provider {
 			},
 		},
 		{
-			ID: "elevenlabs", Display: registry.Display{Name: "ElevenLabs"}, Priority: 2, Category: "media",
+			ID: "deepgram", Alias: "dg", Display: registry.Display{Name: "Deepgram"}, Priority: 2, Category: "apikey",
+			Media: registry.MediaConfigs{
+				registry.MediaSTT: {
+					BaseURL: "https://api.deepgram.com/v1/listen", AuthType: registry.AuthAPIKey,
+					AuthHeader: "token", Format: "deepgram",
+				},
+			},
+		},
+		{
+			ID: "elevenlabs", Display: registry.Display{Name: "ElevenLabs"}, Priority: 3, Category: "media",
 			Media: registry.MediaConfigs{
 				registry.MediaTTS: {
 					BaseURL: "https://api.elevenlabs.io/v1/text-to-speech",

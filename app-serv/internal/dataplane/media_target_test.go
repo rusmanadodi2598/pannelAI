@@ -48,6 +48,16 @@ func TestMediaTarget_CredentialPlacement(t *testing.T) {
 			media: registry.MediaConfig{AuthType: registry.AuthAPIKey, AuthHeader: "bearer"},
 		},
 		{
+			name:       "a token header uses the Token scheme",
+			media:      registry.MediaConfig{AuthType: registry.AuthAPIKey, AuthHeader: "token"},
+			credential: provider.Credential{APIKey: "dg-x"},
+			wantHeader: "Token dg-x", wantHeaderSet: true,
+		},
+		{
+			name:  "an empty token credential sends no Authorization header",
+			media: registry.MediaConfig{AuthType: registry.AuthAPIKey, AuthHeader: "token"},
+		},
+		{
 			name:       "the registry default is a bearer header",
 			media:      registry.MediaConfig{AuthType: registry.AuthAPIKey},
 			credential: provider.Credential{APIKey: "sk-x"},
