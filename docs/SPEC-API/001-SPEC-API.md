@@ -389,13 +389,19 @@ with no credential, returning WAV bytes. Gemini TTS puts the model in the path (
 :generateContent`), the credential in the `key` query parameter, and wraps the base64 PCM answer in a
 RIFF/WAVE container.
 
+`POST /audio/transcriptions` has a second provider-specific adapter, Gemini STT, on the same
+`…/models/{model}:generateContent` surface: the credential rides in the `key` query, the uploaded audio
+travels inline as base64 `inline_data` with its `mime_type`, and the prompt is the caller's own `prompt`
+field or the reference's transcript instruction, with `Language: <lang>.` appended when the caller set a
+language. The answer joins the first candidate's text parts into `{text}`; an answer with no candidate is
+an empty transcript rather than a refusal, because silence transcribes to nothing.
+
 A provider format without an adapter remains an explicit `PROVIDER_NOT_ROUTABLE` refusal naming the
-format; this is the incremental G5 boundary, not a claim that all reference adapters are present. Six
-formats stay on that boundary: Gemini STT (a single `generateContent` with inline audio, which the TTS
-adapter's shape already covers), and the five registered as G21 in the P2 gap register — AssemblyAI STT
-(upload → submit → poll), AWS Polly (SigV4 signing, which the reference does not implement), Edge TTS and
-Google TTS (a token scraped from a vendor HTML page, whose registry `base_url` is a marker rather than a
-URL), and Local Device TTS (spawns host binaries).
+format; this is the incremental G5 boundary, not a claim that all reference adapters are present. Five
+formats stay on that boundary, registered as G21 in the P2 gap register — AssemblyAI STT (upload →
+submit → poll), AWS Polly (SigV4 signing, which the reference does not implement), Edge TTS and Google
+TTS (a token scraped from a vendor HTML page, whose registry `base_url` is a marker rather than a URL),
+and Local Device TTS (spawns host binaries).
 
 ### 7.11 Proxy Pools
 
@@ -603,3 +609,5 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 *Changelog 2026-09-19 — §7.11 records that the proxy settings are now honored on the dial path (register G4, owner decision D2 = a): `settings.network.outbound_proxy_*` is read per request and decides the route for every outbound call the shared client makes, so an operator's proxy takes effect on the next call rather than the next boot, and `outbound_no_proxy` exempts hosts by exact name or domain suffix (`*` for all). The security half is stated in the section because it is the reason the check lives where it does: a proxied request never dials its destination, so the destination is validated against the egress allowlist before the route is returned — otherwise enabling a proxy would switch the A01 policy off for every call — and a settings read or proxy URL that fails refuses the call rather than dialing direct. Per-endpoint binding stays deferred.*
 
 *Changelog 2026-09-19 — §6 records the schema's ownership rule (register G19): every table belongs to the role that owns `gateway_keys`. A migration runs as whichever role boots the process, so a superuser boot created `media_provider_settings` and `proxies` owned by that superuser while the application role could not read them — measured live as `permission denied for table media_provider_settings` on `PATCH /media-providers/{id}` and on every §7.11 route, while all other tables answered. Migration `000011` re-owns the two to the anchor role, and because a role that does not own a table cannot re-own it, a refusal is a boot warning naming the statement to run instead of a boot that never comes up.*
+
+*Changelog 2026-09-19 — §7.10 records G5's last adapter, Gemini STT, which closes the G5 register item: the transcription route now speaks Gemini's `generateContent` surface. The model is a path segment before `:generateContent` and the credential stays in the `key` query parameter, both as in the TTS adapter; the audio travels inline as base64 `inline_data` with the `mime_type` the upload's own resolver produced, so a non-audio content type is never copied through; and the prompt is the caller's `prompt` when it wrote one, the reference's transcript instruction otherwise, with `Language: <lang>.` appended when a language was set. The answer joins the first candidate's text parts into `{text}`, and an answer with no candidate is an empty transcript rather than a refusal — silence transcribes to nothing. The five remaining formats stay `PROVIDER_NOT_ROUTABLE` refusals by name under G21.*

@@ -7,9 +7,9 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 21 gap terdaftar, sebelas di antaranya temuan click-through/pass live, sembilan belas sudah CLOSED (G1, G2, G3, G4, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20); G5 tersisa enam format (lima di antaranya kini G21), G21 terdaftar sebagai seam baru |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 21 gap terdaftar, sebelas di antaranya temuan click-through/pass live, dua puluh sudah CLOSED (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20); G21 terdaftar sebagai seam baru dan menjadi satu-satunya item terbuka |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
-| **Bukti terakhir** | pass G4 2026-09-19 (proxy loopback 8092: direct → lewat proxy → exempt → ditolak allowlist); sebelum itu pass G5 slice 4–10 (tujuh adapter TTS ke stub), G19 (migration `000011` + rute §7.10/§7.11 dengan DSN `.env`), dan G8 (boot polos tanpa override) |
+| **Bukti terakhir** | pass G5 slice 11 2026-09-19 (Gemini STT ke stub loopback 8093: URL `:generateContent` + `key` query, audio inline base64, prompt bawaan/eksplisit, `{text}`; kontrol assemblyai tetap ditolak dengan nama); sebelum itu pass G4 (proxy loopback 8092), G5 slice 4–10 (tujuh adapter TTS ke stub), G19 (migration `000011`), dan G8 (boot polos tanpa override) |
 
 ## 1. Cara pakai
 
@@ -28,7 +28,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G2 | Dial upstream (chat + media + embeddings) tidak melewati `internal/netguard`. **CLOSED 2026-09-19** | keamanan (A01) | **ya** | 2 |
 | G3 | `provider_probe.go` mendial `base_url` dari user tanpa guard. **CLOSED 2026-09-19** | keamanan (A01) | menyatu G2 | 2 |
 | G4 | `settings.network.outbound_proxy_*` tidak dipakai di jalur dial. **CLOSED 2026-09-19** | kontrak §7.11 | **ya** | 4 |
-| G5 | Adapter media per-provider (format gate menolak 16 provider dengan nama); sepuluh format selesai, enam tersisa | fitur | tidak | 5 |
+| G5 | Adapter media per-provider (format gate menolak 16 provider dengan nama); sebelas format selesai, lima sisanya pindah ke G21. **CLOSED 2026-09-19** | fitur | tidak | 5 |
 | G6 | Panggilan media tidak menulis usage/log; `gateway_keys.request_count` tidak pernah naik. **CLOSED 2026-09-19** | akuntansi §7.12/§7.13 | **ya** | 3 |
 | G7 | Kind `video` terdaftar tanpa provider (rute menolak). **CLOSED 2026-09-19** | cakupan | tidak | 6 |
 | G8 | `.env` lokal drift dari `.env.example` sehingga boot polos gagal. **CLOSED 2026-09-19** | lingkungan | tidak | 6 |
@@ -191,15 +191,15 @@ hash panel NULL; baseline `usage=2 logs=1 settings=1` pulih).
 **Definisi selesai.** Terpenuhi 2026-09-19: pilihan (a) tercatat di SPEC-API §7.11,
 dan satu panggilan chat terbukti keluar lewat proxy lewat log stub proxy.
 
-### G5: Adapter media per-provider
+### G5: Adapter media per-provider (CLOSED 2026-09-19)
 
 **Bukti.** 16 provider mendeklarasikan format media non-OpenAI
 (`assemblyai, aws-polly, cartesia, coqui, deepgram, edge-tts, elevenlabs, gemini`
 untuk tts+stt, lalu `google-tts, inworld, local-device, minimax` (+`minimax-cn`),
 `nvidia-tts, playht, tortoise`); sebelum adapter ini semuanya ditolak
 `PROVIDER_NOT_ROUTABLE` dengan nama formatnya (terverifikasi live untuk elevenlabs,
-2026-09-19). Sepuluh format sudah di-port, enam masih berada di gate tersebut
-(lima di antaranya kini terdaftar sebagai G21).
+2026-09-19). Sebelas format sudah di-port, lima masih berada di gate tersebut
+(kini terdaftar sebagai G21).
 
 **Kenapa.** Ini keputusan sadar (menolak dengan nama lebih baik daripada mengirim
 bentuk yang salah), tapi selama belum di-port, provider itu tidak bisa dipakai.
@@ -262,10 +262,20 @@ yang menaruh model/voice di URL), cabang kredensial `basic`/`playht` di
 dipanggil `MediaCallService.Perform`, sehingga satu adapter bisa mengubah bytes
 jawaban sebelum amplop §7.10 dibangun.
 
-**Sisa G5 (enam format).** Lima di antaranya dipindahkan ke G21 karena butuh lebih
-dari satu request; satu, **Gemini STT**, tetap pekerjaan G5 biasa (satu
-`generateContent` dengan inline audio, bentuk yang sudah dipakai adapter TTS
-Gemini).
+**Gemini STT (slice 11, adapter selesai 2026-09-19).** Sisa G5 yang bukan G21: satu
+`generateContent` dengan audio inline, di permukaan yang sama dengan adapter TTS
+Gemini. Model jadi segmen path sebelum `:generateContent`, kredensial tetap di
+query `key` (ditempatkan `MediaTarget`, §8.1), audio dikirim inline sebagai
+`inline_data` base64 dengan `mime_type` hasil resolver yang sama dengan Deepgram
+(sehingga content type non-audio tidak pernah ikut), dan prompt diambil dari field
+`prompt` pemanggil atau instruksi bawaan reference, ditambah ` Language: <lang>.`
+bila bahasa diisi. Jawaban menggabungkan part teks kandidat pertama menjadi
+`{text}`; jawaban tanpa kandidat adalah transkrip kosong, bukan penolakan — diam
+memang bertranskrip kosong — sedangkan jawaban 200 yang tidak terbaca tetap
+`INTERNAL_ERROR`. Field JSON mengikuti ejaan reference untuk permukaan STT
+(`inline_data`/`mime_type`; keduanya diterima pemetaan JSON Gemini, dan port
+mempertahankan yang diukur). Lima format sisa pindah ke G21, sehingga tidak ada
+lagi pekerjaan adapter biasa di G5.
 
 **Definisi selesai (per adapter).** Format ditranslate, tabel test 3 sampai 5 kasus
 termasuk kontrol benign, dan satu panggilan live ke stub yang meniru provider itu.
@@ -283,7 +293,13 @@ and base64 `format:mp3`. Untuk tujuh adapter slice 4–10 terpenuhi 2026-09-19: 
 file test per provider (`media_elevenlabs_test.go`, `media_minimax_test.go`,
 `media_inworld_test.go`, `media_playht_test.go`, `media_local_tts_test.go`,
 `media_gemini_tts_test.go`) plus tabel entri registry di
-`media_call_entries_test.go`, dan bukti live ke stub dicatat pada §8.
+`media_call_entries_test.go`, dan bukti live ke stub dicatat pada §8. Untuk Gemini
+STT terpenuhi 2026-09-19: `media_gemini_stt_test.go` mengunci tiga bentuk prompt/MIME
+(bawaan + MIME dari ekstensi, prompt pemanggil + bahasa + MIME audio ter-parse, MIME
+non-audio + suffix tak dikenal), penggabungan part jawaban, transkrip kosong yang
+tetap served, jawaban rusak yang tetap `INTERNAL_ERROR`, tabel gate per kind, dan
+kontrol benign jalur OpenAI multipart yang tidak berubah; bukti live ke stub dicatat
+pada §8.
 
 ### G6: Akuntansi panggilan media (CLOSED 2026-09-19)
 
@@ -442,10 +458,10 @@ Jangan dipecah per slice agar tidak churn.
 bukti live-nya (OAuth round-trip, combo test, proxy pools + guard egress,
 token-saver, budget caps, katalog model, media §7.10, embeddings lewat node,
 akuntansi usage/log), plus apa yang **tidak** ikut tertutup supaya "CLOSED" tidak
-dibaca sebagai "tidak ada sisa": enam format media sisa (G5, lima di antaranya
-G21) dan baris ini sendiri. Tiga bagian lain ikut diperbarui karena berubah sejak
+dibaca sebagai "tidak ada sisa": lima format media sisa (G21, setelah Gemini STT
+ditutup di slice 11) dan baris ini sendiri. Tiga bagian lain ikut diperbarui karena berubah sejak
 P1: §3.6 menambah paragraf seam adapter (empat seam + `MediaPath` +
-`media_credential.go`, sepuluh format teradaptasi, batas G21), §4a menambah narasi
+`media_credential.go`, sebelas format teradaptasi, batas G21), §4a menambah narasi
 migrasi P2 `000009`-`000011` termasuk aturan kepemilikannya, dan batas domain §1
 menyebut `000011` untuk kedua tabel P2.
 
@@ -876,7 +892,8 @@ atas.
 ### G21: Lima format media butuh lebih dari satu request
 
 **Bukti.** Sisa G5 yang tidak bisa masuk pipeline media sekarang — satu URL, satu
-request, satu jawaban. Kelimanya berasal dari daftar format yang sama
+request, satu jawaban — dan sejak slice 11 (Gemini STT, 2026-09-19) satu-satunya
+format media yang masih ditolak gate. Kelimanya berasal dari daftar format yang sama
 (`registry.yaml`), dan alasan masing-masing terlihat di reference
 (`open-sse/handlers/`):
 
@@ -942,10 +959,10 @@ alasannya.
    (testnya bisa ditulis lebih dulu). Selesai 2026-09-19 dengan D4 = (b).
 6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas. G13 selesai
    2026-09-19; G12 selesai 2026-09-19 dengan D5 = (b); G5 incremental:
-   Deepgram STT slice 1, NVIDIA NIM TTS slice 2, Cartesia TTS slice 3, dan tujuh
+   Deepgram STT slice 1, NVIDIA NIM TTS slice 2, Cartesia TTS slice 3, tujuh
    adapter TTS slice 4–10 (ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT,
-   Coqui, Tortoise, Gemini TTS) selesai 2026-09-19, enam format tersisa — lima
-   di antaranya dipindahkan ke G21.
+   Coqui, Tortoise, Gemini TTS), dan Gemini STT slice 11 selesai 2026-09-19 —
+   G5 CLOSED, lima format multi-request tersisa di G21.
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
 8. **P2.8, G8, G9, G10, G19**: penutup kecil + dokumen + aksi lingkungan
@@ -963,8 +980,8 @@ alasannya.
     keputusan bentuk seam per kelas (polling, SigV4, token scraping, proses host).
 
 D1, D2, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2, P2.3, P2.4,
-P2.5, P2.6 (G12/G13/G5 slice 1–10), P2.7, P2.8 (G7/G8/G9/G10/G19), P2.9, dan P2.10
-sudah selesai. Yang belum menunggu keputusan: sisa G5 (satu format, Gemini STT).
+P2.5, P2.6 (G12/G13/G5 slice 1–11), P2.7, P2.8 (G7/G8/G9/G10/G19), P2.9, dan P2.10
+sudah selesai. Tidak ada lagi item yang menunggu keputusan.
 Yang terdaftar dan belum dikerjakan: G21.
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
@@ -1046,4 +1063,5 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G5 slice 4–10 CLOSED**: tujuh adapter TTS (ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS), seam `MediaPath` + cabang kredensial `basic`/`playht` + `mediaAnswerReader`; satu file test per provider | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS, `go-headers.sh` PASS; live (registry sementara diarahkan ke stub loopback 8091 lalu dipulihkan, `git diff` bersih, DSN `.env` polos): ElevenLabs `xi-api-key` + voice di path + `{text,model_id,voice_settings}` → bytes MP3 + `format:mp3`; MiniMax & MiniMax CN bearer + `output_format:"hex"` + nested `voice_setting`/`audio_setting` → hex di-decode; Inworld `Authorization: Basic` + `{text,voiceId,modelId,audioConfig}` → base64; PlayHT `X-USER-ID` + bearer dari satu materi `userId:apiKey` (dibuktikan setelah key diperbarui) + `Accept: audio/mpeg`; Coqui `{text}` tanpa kredensial → WAV; Tortoise `{text,voice:"random"}` → WAV; Gemini `key` query + model di path sebelum `:generateContent` + prompt "Say: …" → PCM dibungkus RIFF/WAVE 44 byte; kontrol negatif lima provider multi-step tetap 400 `PROVIDER_NOT_ROUTABLE` dengan nama format; 22 panggilan terautentikasi = 22 `request_count`, tiap panggilan satu usage + satu log; artefak dibersihkan (8 endpoint, 6 key, 3 gateway key, 17 usage, 22 log; baseline `usage=2 logs=1 keys=0 endpoints=0 upkeys=0 settings=1 auth_null=true` pulih) |
 | 2026-09-19 | **G21 terdaftar**: lima format yang butuh lebih dari satu request (AssemblyAI upload→submit→poll, AWS Polly SigV4 tanpa implementasi reference, Edge TTS & Google TTS token hasil scraping HTML, Local Device proses host) — keputusan owner memisahkannya dari G5 | Terdaftar di §2/§3 dengan alasan per provider dan bentuk seam yang dibutuhkan; SPEC-API §7.10 menyebut kelimanya sebagai batas yang dipilih, bukan kelalaian; format gate tetap menolak dengan nama (terbukti live di pass G5 slice 4–10) |
 | 2026-09-19 | **G4 CLOSED**: seam `Proxy` di `dataplane.HTTPClientDeps`, `egressProxy`/`proxyRoute`/`exemptFromProxy` di `egress_wiring.go` (settings dibaca per request, tujuan divalidasi sebelum rute dikembalikan, gagal baca/URL ⇒ tolak bukan bypass); `egress_proxy_test.go` (tabel rute + A01) | PASS: dua mutasi diukur merah (hook dilepas ⇒ baris "arrives at it" gagal; cek tujuan dilepas ⇒ baris A01 gagal), tree hijau setelah dipulihkan; live (stub chat 8091, proxy forwarding 8092, `EGRESS_ALLOWED_TARGETS=127.0.0.1/32`, DSN `.env`): proxy mati → log proxy 0 baris; proxy nyala → log proxy 1 baris berisi absolute-form ke 8091 dan stub tetap menerima; `outbound_no_proxy=127.0.0.1` → langsung lagi, log proxy 0; tujuan `127.0.0.2` (di luar allowlist) → 502 `UPSTREAM_ERROR` dengan 0 baris di proxy dan 0 baris baru di stub; artefak dibersihkan (2 node, 2 endpoint, gateway key, 4 usage, 4 log, baris settings `network`; baseline pulih) |
-| 2026-09-19 | **G10 CLOSED**: status row `SYSTEM_MAP.md` menyebut **P2 CLOSED** dengan daftar bukti live-nya dan sisa yang eksplisit tidak ikut tertutup (enam format media G5/G21); §3.6 menambah paragraf seam adapter, §4a menambah narasi migrasi P2 `000009`-`000011` + aturan kepemilikan, batas domain §1 menyebut `000011` | PASS: narasi diverifikasi terhadap kode dan bukti pass yang tercatat di berkas ini (bukan diklaim ulang); tidak ada perubahan kode |
+| 2026-09-19 | **G10 CLOSED**: status row `SYSTEM_MAP.md` menyebut **P2 CLOSED** dengan daftar bukti live-nya dan sisa yang eksplisit tidak ikut tertutup (lima format media G21); §3.6 menambah paragraf seam adapter, §4a menambah narasi migrasi P2 `000009`-`000011` + aturan kepemilikan, batas domain §1 menyebut `000011` | PASS: narasi diverifikasi terhadap kode dan bukti pass yang tercatat di berkas ini (bukan diklaim ulang); tidak ada perubahan kode |
+| 2026-09-19 | **G5 slice 11 CLOSED** (G5 penuh): adapter Gemini STT (`media_gemini_stt.go`), seam `transcriptionRequest` (dispatch request per format di `media_transcription.go`, sehingga `media_audio.go` tinggal memanggil), gate `gemini-stt` untuk `stt`, `transcriptionText` sebagai pembentuk jawaban bersama Deepgram; `media_gemini_stt_test.go` + tabel gate per kind | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 496 file PASS; live (registry sementara diarahkan ke stub loopback 8093 lalu dipulihkan, `git diff` bersih, DSN `.env` polos tanpa grant superuser): `POST /audio/transcriptions` `gemini/gemini-2.5-flash` filename `clip.mp3` dengan `prompt=names` + `language=Indonesian` → 200 `application/json` `{"text":"gemini stt live transcript"}`; stub melihat `POST /gmstt/v1beta/models/gemini-2.5-flash:generateContent?key=gm-secret` dengan body `{"contents":[{"parts":[{"text":"names Language: Indonesian."},{"inline_data":{"mime_type":"audio/mpeg","data":"<base64 audio>"}}]}]}` (prompt, MIME, bytes, dan key-query keempatnya cocok); panggilan kedua `gemini/gemini-2.5-pro` filename `clip.wav` → prompt bawaan + `mime_type":"audio/wav"`; kontrol benign `assemblyai/best` (G21) tetap 400 `PROVIDER_NOT_ROUTABLE` "does not translate yet" tanpa baris stub baru; akuntansi: 2 panggilan → +2 usage (`success`, provider `gemini`, model benar) + 2 log + `request_count=2`, penolakan kontrol menulis satu log `error=PROVIDER_NOT_ROUTABLE` tanpa usage; artefak dibersihkan (2 gateway key, 1 endpoint + 1 upstream key, 2 usage, 3 log, `panel_auth.password_hash` di-null) → baseline `usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true media_settings=0 proxies=0` pulih; `/tmp/g5d-app-serv` dan cookie dihapus |
