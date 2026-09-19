@@ -42,9 +42,15 @@ func (s *MediaCallService) Speech(ctx context.Context, req schema.SpeechRequest,
 		return dataplane.MediaResponse{}, MediaCall{}, err
 	}
 	var body []byte
-	if strings.EqualFold(strings.TrimSpace(call.Media.Format), "nvidia-tts") {
+	headers := map[string]string{}
+	switch strings.ToLower(strings.TrimSpace(call.Media.Format)) {
+	case "nvidia-tts":
 		body, err = json.Marshal(nvidiaSpeechRequest(req, call.UpstreamModel))
-	} else {
+	case "cartesia":
+		var request cartesiaSpeechBody
+		request, headers = cartesiaSpeechRequest(req, call.UpstreamModel)
+		body, err = json.Marshal(request)
+	default:
 		body, err = json.Marshal(schema.SpeechBody{
 			Model:          call.UpstreamModel,
 			Input:          req.Input,
@@ -56,7 +62,7 @@ func (s *MediaCallService) Speech(ctx context.Context, req schema.SpeechRequest,
 	if err != nil {
 		return dataplane.MediaResponse{}, call, dataplane.InternalError("the speech request could not be built", err)
 	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body}, keyID)
+	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Headers: headers, Body: body}, keyID)
 	return answer, call, err
 }
 

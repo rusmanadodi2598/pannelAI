@@ -51,8 +51,12 @@ func nvidiaSpeechRequest(req schema.SpeechRequest, model string) nvidiaSpeechBod
 // label. NVIDIA's adapter always returns WAV; the OpenAI-shaped path follows the
 // client's requested format or its mp3 default.
 func (c MediaCall) SpeechOutputFormat(req schema.SpeechRequest) string {
-	if strings.EqualFold(strings.TrimSpace(c.Media.Format), "nvidia-tts") {
+	switch strings.ToLower(strings.TrimSpace(c.Media.Format)) {
+	case "nvidia-tts":
 		return "wav"
+	case "cartesia":
+		return "mp3"
+	default:
+		return schema.SpeechFormat(req)
 	}
-	return schema.SpeechFormat(req)
 }

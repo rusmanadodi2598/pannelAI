@@ -97,7 +97,7 @@ func mediaFormatSupported(kind domain.MediaKind, format string) bool {
 		return true
 	case "deepgram":
 		return kind == domain.MediaKindSTT
-	case "nvidia-tts":
+	case "nvidia-tts", "cartesia":
 		return kind == domain.MediaKindTTS
 	default:
 		return false

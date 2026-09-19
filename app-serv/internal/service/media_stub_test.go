@@ -132,7 +132,17 @@ func mediaCallEntries() []registry.Provider {
 			},
 		},
 		{
-			ID: "elevenlabs", Display: registry.Display{Name: "ElevenLabs"}, Priority: 4, Category: "media",
+			ID: "cartesia", Alias: "cartesia", Display: registry.Display{Name: "Cartesia"}, Priority: 4, Category: "apikey",
+			Media: registry.MediaConfigs{
+				registry.MediaTTS: {
+					BaseURL: "https://api.cartesia.ai/tts/bytes", AuthType: registry.AuthAPIKey,
+					AuthHeader: "x-api-key", Format: "cartesia",
+					Models: []registry.MediaModel{{ID: "sonic-2", Name: "Sonic 2"}, {ID: "sonic-3", Name: "Sonic 3"}},
+				},
+			},
+		},
+		{
+			ID: "elevenlabs", Display: registry.Display{Name: "ElevenLabs"}, Priority: 5, Category: "media",
 			Media: registry.MediaConfigs{
 				registry.MediaTTS: {
 					BaseURL: "https://api.elevenlabs.io/v1/text-to-speech",
