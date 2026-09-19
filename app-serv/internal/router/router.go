@@ -52,6 +52,7 @@ type Deps struct {
 	Model           *handler.ModelHandler
 	Combo           *handler.ComboHandler
 	VisionAdapter   *handler.VisionAdapterHandler
+	TokenSaver      *handler.TokenSaverHandler
 	Usage           *handler.UsageHandler
 	Quota           *handler.QuotaHandler
 	Log             *handler.LogHandler
@@ -140,6 +141,8 @@ func New(deps Deps) *Mux {
 	mux.Handle("DELETE "+APIVersion+"/combos/{id}", gateway(http.HandlerFunc(deps.Combo.Delete)))
 	mux.Handle("GET "+APIVersion+"/vision-adapter", gateway(http.HandlerFunc(deps.VisionAdapter.Get)))
 	mux.Handle("PUT "+APIVersion+"/vision-adapter", gateway(http.HandlerFunc(deps.VisionAdapter.Put)))
+	mux.Handle("GET "+APIVersion+"/token-saver", gateway(http.HandlerFunc(deps.TokenSaver.Get)))
+	mux.Handle("PUT "+APIVersion+"/token-saver", gateway(http.HandlerFunc(deps.TokenSaver.Put)))
 
 	// §7.12–§7.14 Usage, quotas, logs, and settings are management routes, so
 	// they share the same session guard.

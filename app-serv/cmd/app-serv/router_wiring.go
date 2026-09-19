@@ -52,6 +52,7 @@ func routerDeps(
 		Model:           mgmt.Model,
 		Combo:           mgmt.Combo,
 		VisionAdapter:   mgmt.VisionAdapter,
+		TokenSaver:      mgmt.TokenSaver,
 		Usage:           mgmt.Usage,
 		Quota:           mgmt.Quota,
 		Log:             mgmt.Log,

@@ -57,6 +57,7 @@ type managementDeps struct {
 	Model         *handler.ModelHandler
 	Combo         *handler.ComboHandler
 	VisionAdapter *handler.VisionAdapterHandler
+	TokenSaver    *handler.TokenSaverHandler
 	Usage         *handler.UsageHandler
 	Quota         *handler.QuotaHandler
 	Log           *handler.LogHandler
@@ -223,6 +224,11 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: data plane: %w", err)
 	}
 
+	tokenSaverSvc, err := service.NewTokenSaverService(service.TokenSaverServiceDeps{Settings: settingsSvc})
+	if err != nil {
+		return managementDeps{}, fmt.Errorf("management wiring: token saver: %w", err)
+	}
+
 	return managementDeps{
 		Provider:      handler.NewProviderHandler(providerSvc),
 		Endpoint:      handler.NewEndpointHandler(endpointSvc),
@@ -232,6 +238,7 @@ func buildManagement(
 		Model:         handler.NewModelHandler(catalogSvc),
 		Combo:         handler.NewComboHandler(comboSvc),
 		VisionAdapter: handler.NewVisionAdapterHandler(visionSvc),
+		TokenSaver:    handler.NewTokenSaverHandler(tokenSaverSvc),
 		Usage:         handler.NewUsageHandler(usageSvc),
 		Quota:         handler.NewQuotaHandler(quotaSvc),
 		Log:           handler.NewLogHandler(logSvc),

@@ -164,6 +164,21 @@ func TestSettings_ValidateRejectsCrossKeyCombinations(t *testing.T) {
 		{"capture cap below one", func(s *Settings) { s.Logging.CaptureBodyMaxBytes = 0 }},
 		{"observability below one", func(s *Settings) { s.Logging.ObservabilityMaxRecords = 0 }},
 		{"headroom enabled without a url", func(s *Settings) { s.TokenSaver.Headroom.Enabled = true }},
+		{"headroom url with a non-http scheme", func(s *Settings) {
+			s.TokenSaver.Headroom.Enabled = true
+			s.TokenSaver.Headroom.URL = "ftp://localhost:8787"
+		}},
+		{"headroom url without a host", func(s *Settings) {
+			s.TokenSaver.Headroom.Enabled = true
+			s.TokenSaver.Headroom.URL = "http://"
+		}},
+		{"headroom url that is not a URL", func(s *Settings) {
+			s.TokenSaver.Headroom.Enabled = true
+			s.TokenSaver.Headroom.URL = "not a url at all"
+		}},
+		{"a disabled headroom with a non-http url", func(s *Settings) {
+			s.TokenSaver.Headroom.URL = "file:///etc/passwd"
+		}},
 		{"unknown strategy", func(s *Settings) { s.Routing.ComboStrategy = "fusion_v2" }},
 		{"combo sticky below one", func(s *Settings) { s.Routing.ComboStickyLimit = 0 }},
 	}

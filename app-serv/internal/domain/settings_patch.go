@@ -6,7 +6,10 @@
 //
 //	whole-document validation a patch is checked against.
 //
-// @uses      internal/domain (Settings, ComboStrategy, AppError constructors).
+// @uses      internal/domain (Settings, ComboStrategy, AppError constructors),
+//
+//	(net/url).
+//
 // @reason    SPEC-API-001 §7.14 validates a PATCH per key, and the rules that
 //
 //	matter are the cross-key ones: a per-field tag can reject one value,
@@ -19,6 +22,10 @@
 // @stability experimental
 // @since     2026-09-18
 package domain
+
+import (
+	"net/url"
+)
 
 // SettingsPatch is a partial mutation. A nil section or nil field means "leave
 // unchanged", so a caller can send any subset without having read the rest.
@@ -103,6 +110,38 @@ func (s Settings) Validate() error {
 	}
 	if s.TokenSaver.Headroom.Enabled && s.TokenSaver.Headroom.URL == "" {
 		return NewValidationError("token_saver.headroom.url is required when headroom is enabled")
+	}
+	if err := validateHeadroomURL(s.TokenSaver.Headroom.URL); err != nil {
+		return err
+	}
+	if !validSaverLevel(s.TokenSaver.RTK.Level) || !validSaverLevel(s.TokenSaver.Ponytail.Level) {
+		return NewValidationError("token_saver levels must be one of lite, full, ultra")
+	}
+	return nil
+}
+
+// validSaverLevel reports whether a saver level is one the §7.9 surface
+// accepts. The set matches the §7.14 PATCH tags, so both write paths reject the
+// same words and an empty level cannot slip in through either.
+func validSaverLevel(level string) bool {
+	switch level {
+	case "lite", "full", "ultra":
+		return true
+	}
+	return false
+}
+
+// validateHeadroomURL requires an absolute http(s) URL whenever the compression
+// saver carries one. The saver dials the URL later (§7.9), so a scheme that dial
+// cannot speak is refused at write time, whichever write path stored it: the
+// §7.14 PATCH and the §7.9 PUT both land in Settings.Validate.
+func validateHeadroomURL(raw string) error {
+	if raw == "" {
+		return nil
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		return NewValidationError("token_saver.headroom.url must be an absolute http or https URL")
 	}
 	return nil
 }

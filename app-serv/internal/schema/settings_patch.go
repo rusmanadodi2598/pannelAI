@@ -66,10 +66,12 @@ type TokenSaverTogglePatch struct {
 	Level   *string `json:"level,omitempty" validate:"omitempty,oneof=lite full ultra"`
 }
 
-// TokenSaverHeadroomPatch updates the external compression saver group.
+// TokenSaverHeadroomPatch updates the external compression saver group. The
+// URL tag matches the §7.9 PUT: both write paths reject a scheme the saver
+// cannot dial, and the domain rule is the class-level backstop for both.
 type TokenSaverHeadroomPatch struct {
 	Enabled              *bool   `json:"enabled,omitempty"`
-	URL                  *string `json:"url,omitempty" validate:"omitempty,url,max=2048"`
+	URL                  *string `json:"url,omitempty" validate:"omitempty,http_url,max=2048"`
 	CompressUserMessages *bool   `json:"compress_user_messages,omitempty"`
 }
 
