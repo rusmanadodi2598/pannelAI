@@ -6,7 +6,7 @@ di PR yang sama dengan dokumen ini (lihat §6).
 
 | | |
 |---|---|
-| **Status** | audit selesai; F2 dan F3 diterima owner (2026-09-20) dan diedit ke SPEC-API-001 |
+| **Status** | audit selesai; F2 dan F3 diterima owner (2026-09-20) dan F3 sudah diimplementasikan sebagai P4 pada hari yang sama |
 | **Dibuat** | 2026-09-20, dari `app-serv/internal/router/*.go` (main) dibandingkan dengan SPEC-API-001 §7.1 sampai §7.15 |
 | **Kaitan** | SPEC-API-001 §2.2 (eksklusi), §7.6 (drift), §7.16 sampai §7.18 (section baru), §10 (fase P4) |
 
