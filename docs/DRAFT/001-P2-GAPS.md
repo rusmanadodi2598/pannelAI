@@ -356,7 +356,8 @@ lantainya tidak dinyatakan dan tidak dijaga.
 
 **Keputusan owner (D4).** (a) pertahankan `GETDEL`, tambah test store dan catat
 lantai Redis ≥ 6.2 di SPEC-API §6, atau (b) ganti `Take` ke `EVAL` skrip Lua
-`GET`+`DEL` yang tetap atomik dan jalan di 6.0 ke atas.
+`GET`+`DEL` yang tetap atomik dan jalan di 6.0 ke atas. **Diputuskan (b)
+2026-09-19:** perbaiki agar jalan di 6.0 ke atas, tanpa amend lantai versi.
 
 **Definisi selesai.** Test store (stage, take, replay ditolak, TTL) hijau terhadap
 Redis nyata; pilihan lantai versi tercatat; kegagalan store menghasilkan satu
@@ -364,13 +365,13 @@ baris log berkode.
 
 ## 4. Keputusan yang menunggu owner
 
-| # | Pertanyaan | Pilihan | Dampak kalau ditunda |
-|---|---|---|---|
-| D1 | Guard egress upstream? (G2/G3) | (a) guard + allowlist, (b) trusted + catat | dial internal tetap mungkin dari konfigurasi salah |
-| D2 | Proxy settings dihormati di jalur dial? (G4) | (a) wire, (b) amend spec | §7.11 separuh benar |
-| D3 | Apa yang dicatat panggilan media? (G6) | (a) usage+log, (b) +request_count, (c) combo test tetap tanpa row | layar Usage/Logs panel kosong untuk media |
-| D4 | Lantai Redis untuk state OAuth? (G14) | (a) `GETDEL` + catat Redis ≥ 6.2, (b) `EVAL` Lua agar 6.0 ikut jalan | host Redis < 6.2 kehilangan rute callback |
-| D5 | Bagaimana cap dibaca kembali? (G12) | (a) sintesis window, (b) field cap di rute baca, (c) amend spec | panel tidak bisa menampilkan budget tersimpan |
+| # | Pertanyaan | Pilihan | Jawaban owner | Dampak kalau ditunda |
+|---|---|---|---|---|
+| D1 | Guard egress upstream? (G2/G3) | (a) guard + allowlist, (b) trusted + catat | **(a) guard + allowlist** (2026-09-19) | dial internal tetap mungkin dari konfigurasi salah |
+| D2 | Proxy settings dihormati di jalur dial? (G4) | (a) wire, (b) amend spec | belum dijawab | §7.11 separuh benar |
+| D3 | Apa yang dicatat panggilan media? (G6) | (a) usage+log, (b) +request_count, (c) combo test tetap tanpa row | **(b) usage + log + request_count** (2026-09-19) | layar Usage/Logs panel kosong untuk media |
+| D4 | Lantai Redis untuk state OAuth? (G14) | (a) `GETDEL` + catat Redis ≥ 6.2, (b) `EVAL` Lua agar 6.0 ikut jalan | **(b) perbaiki agar jalan di 6.0 ke atas** (2026-09-19) | host Redis < 6.2 kehilangan rute callback |
+| D5 | Bagaimana cap dibaca kembali? (G12) | (a) sintesis window, (b) field cap di rute baca, (c) amend spec | **(b) field cap terpisah** (2026-09-19) | panel tidak bisa menampilkan budget tersimpan |
 
 ## 5. Urutan kerja usulan
 
@@ -384,6 +385,9 @@ baris log berkode.
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
 8. **P2.8, G7, G8, G9, G10**: penutup kecil + dokumen.
+
+D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4), jadi P2.2, P2.3, P2.5,
+dan P2.6 tidak lagi menunggu keputusan; P2.4 (G4) masih menunggu D2.
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
 
