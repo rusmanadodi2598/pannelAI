@@ -1,9 +1,13 @@
 // Command app-serv adapts the connectivity probe port to HTTP.
 //
 // @file      cmd/app-serv/provider_probe_test.go
-// @for       Tests for the probe adapter's outcome classification.
-// @uses      testing, net/http, net/http/httptest, internal/domain, internal/provider,
+// @for       Tests for the probe adapter's outcome classification and its
 //
+//	egress policy.
+//
+// @uses      testing, context, net/http, net/http/httptest, strings,
+//
+//	sync/atomic, internal/domain, internal/netguard, internal/provider,
 //	internal/registry, internal/service, time.
 //
 // @reason    The classification is the whole value of a connectivity test: an
@@ -11,7 +15,9 @@
 //	operator reads its result to decide whether to replace a credential
 //	or fix a URL. Reporting a 404 as "your key is wrong" sends them to
 //	replace a working credential, so each status class is pinned here
-//	against a real server rather than asserted from reading the code.
+//	against a real server rather than asserted from reading the code. The
+//	egress table pins that a denied destination never reaches the wire,
+//	because a probe is the one request an operator points anywhere.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
@@ -23,10 +29,13 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/netguard"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
@@ -92,7 +101,7 @@ func TestProbeEndpoint_ClassifiesOutcomes(t *testing.T) {
 			defer server.Close()
 
 			index, connectors, _ := probeFixture(t, server.URL+"/models")
-			prober := newHTTPEndpointProber(index, connectors)
+			prober := newHTTPEndpointProber(index, connectors, probeGuard(t, "127.0.0.1/32"))
 
 			endpoint := newEndpoint(t, "probe-target")
 			key := newKey(t, endpoint.ID())
@@ -124,7 +133,7 @@ func TestProbeEndpoint_UnreachableHost(t *testing.T) {
 	server.Close() // now nothing listens on that port
 
 	index, connectors, _ := probeFixture(t, target+"/models")
-	prober := newHTTPEndpointProber(index, connectors)
+	prober := newHTTPEndpointProber(index, connectors, probeGuard(t, "127.0.0.1/32"))
 
 	endpoint := newEndpoint(t, "probe-target")
 	key := newKey(t, endpoint.ID())
@@ -148,7 +157,7 @@ func TestProbeEndpoint_UnreachableHost(t *testing.T) {
 // does not know is a configuration problem, not an upstream answer.
 func TestProbeEndpoint_UnknownProviderIsAnError(t *testing.T) {
 	index, connectors, _ := probeFixture(t, "https://upstream.test/models")
-	prober := newHTTPEndpointProber(index, connectors)
+	prober := newHTTPEndpointProber(index, connectors, probeGuard(t, "127.0.0.1/32"))
 
 	endpoint := newEndpoint(t, "not-in-the-registry")
 	key := newKey(t, endpoint.ID())
@@ -162,7 +171,7 @@ func TestProbeEndpoint_UnknownProviderIsAnError(t *testing.T) {
 // 404 that reads like a credential problem.
 func TestProbeEndpoint_NoValidateURLIsAFailure(t *testing.T) {
 	index, connectors, _ := probeFixture(t, "")
-	prober := newHTTPEndpointProber(index, connectors)
+	prober := newHTTPEndpointProber(index, connectors, probeGuard(t, "127.0.0.1/32"))
 
 	endpoint := newEndpoint(t, "probe-target")
 	key := newKey(t, endpoint.ID())
@@ -191,7 +200,7 @@ func TestProbeEndpoint_RespectsTheContextDeadline(t *testing.T) {
 	defer close(release)
 
 	index, connectors, _ := probeFixture(t, server.URL+"/models")
-	prober := newHTTPEndpointProber(index, connectors)
+	prober := newHTTPEndpointProber(index, connectors, probeGuard(t, "127.0.0.1/32"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
@@ -216,7 +225,7 @@ func TestProbeNode_UsesTheNodeBaseURL(t *testing.T) {
 	defer server.Close()
 
 	index, connectors, _ := probeFixture(t, "https://unused.test/models")
-	prober := newHTTPEndpointProber(index, connectors)
+	prober := newHTTPEndpointProber(index, connectors, probeGuard(t, "127.0.0.1/32"))
 
 	node, err := domain.NewProviderNode(
 		"openai-compatible-chat-1", "My Corp", "mycorp",
@@ -254,7 +263,7 @@ func TestProbeNode_NoCredentialStillProbes(t *testing.T) {
 	defer server.Close()
 
 	index, connectors, _ := probeFixture(t, "https://unused.test/models")
-	prober := newHTTPEndpointProber(index, connectors)
+	prober := newHTTPEndpointProber(index, connectors, probeGuard(t, "127.0.0.1/32"))
 
 	node, err := domain.NewProviderNode(
 		"openai-compatible-chat-1", "Open", "open",
@@ -270,6 +279,85 @@ func TestProbeNode_NoCredentialStillProbes(t *testing.T) {
 	if outcome.State != domain.EndpointTestOK {
 		t.Fatalf("State = %q, want ok", outcome.State)
 	}
+}
+
+// TestProbeNode_RefusesADeniedAddress pins the egress policy on the probe: a
+// node whose base_url is a denied address is refused before anything is sent,
+// and the same address is probed once the operator allowlists it.
+func TestProbeNode_RefusesADeniedAddress(t *testing.T) {
+	var hits atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	nodeAt := func(t *testing.T, baseURL string) domain.ProviderNode {
+		t.Helper()
+		node, err := domain.NewProviderNode(
+			"openai-compatible-chat-1", "My Corp", "mycorp",
+			domain.NodeOpenAICompatible, domain.NodeAPIChat, baseURL, time.Now().UTC(),
+		)
+		if err != nil {
+			t.Fatalf("NewProviderNode(%q) error = %v", baseURL, err)
+		}
+		return node
+	}
+
+	cases := []struct {
+		name      string
+		baseURL   string
+		allowed   []string
+		wantState string
+		wantMsg   string
+		wantHits  int32
+	}{
+		{
+			name: "a loopback node is refused by default", baseURL: server.URL,
+			wantState: domain.EndpointTestFail, wantMsg: "loopback",
+		},
+		{
+			name: "the allowlisted loopback is probed", baseURL: server.URL,
+			allowed: []string{"127.0.0.1/32"}, wantState: domain.EndpointTestOK, wantHits: 1,
+		},
+		{
+			name: "a private node address is refused", baseURL: "http://10.0.0.5/v1",
+			wantState: domain.EndpointTestFail, wantMsg: "private",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			hits.Store(0)
+			index, connectors, _ := probeFixture(t, "https://unused.test/models")
+			prober := newHTTPEndpointProber(index, connectors, probeGuard(t, tc.allowed...))
+
+			outcome, err := prober.ProbeNode(context.Background(), nodeAt(t, tc.baseURL), "sk-node")
+			if err != nil {
+				t.Fatalf("ProbeNode() error = %v, want a probe answer", err)
+			}
+			if outcome.State != tc.wantState {
+				t.Fatalf("State = %q (message %q), want %q", outcome.State, outcome.Message, tc.wantState)
+			}
+			if tc.wantMsg != "" && !strings.Contains(outcome.Message, tc.wantMsg) {
+				t.Fatalf("Message = %q, want it to mention %q", outcome.Message, tc.wantMsg)
+			}
+			if got := hits.Load(); got != tc.wantHits {
+				t.Fatalf("the upstream saw %d requests, want %d", got, tc.wantHits)
+			}
+		})
+	}
+}
+
+// probeGuard builds the guard the probe tests run under. Loopback is refused
+// unless it is named, so a test that wants to reach its httptest server must
+// allowlist it — which is the rule a self-hosted deployment follows.
+func probeGuard(t *testing.T, allowed ...string) *netguard.Guard {
+	t.Helper()
+	guard, err := netguard.NewGuard(allowed)
+	if err != nil {
+		t.Fatalf("netguard.NewGuard(%v) error = %v", allowed, err)
+	}
+	return guard
 }
 
 // newEndpoint builds an endpoint for the probe tests.

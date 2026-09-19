@@ -7,7 +7,7 @@
 //
 // @uses      internal/config, internal/domain, internal/handler,
 //
-//	internal/repository/redis, internal/service, redis.
+//	internal/repository/redis, internal/service, net/http, redis.
 //
 // @reason    AGENTS.md §1.5 makes this file wiring only, and §1.1 caps
 //
@@ -24,6 +24,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/redis/go-redis/v9"
 
@@ -36,18 +37,19 @@ import (
 
 // buildOAuth assembles the §7.4 flow. The state store is Redis-backed because
 // the replay guard must be single-use across processes, and the token client
-// speaks both grant encodings from the one shared HTTP pool.
+// speaks both grant encodings from the process's guarded HTTP pool.
 func buildOAuth(
 	cfg config.Config,
 	index service.ProviderIndex,
 	store service.OAuthAccountStore,
 	client redis.UniversalClient,
 	sealer *domain.Sealer,
+	upstream *http.Client,
 ) (*handler.OAuthHandler, *service.OAuthRefreshWorker, error) {
 	flow, err := service.NewOAuthFlowService(service.OAuthFlowDeps{
 		Index: index, Store: store,
 		States: redisrepo.NewOAuthStateStore(client),
-		Tokens: service.NewOAuthHTTPClient(nil), Sealer: sealer,
+		Tokens: service.NewOAuthHTTPClient(upstream), Sealer: sealer,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("management wiring: oauth flow: %w", err)

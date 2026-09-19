@@ -56,6 +56,14 @@ func buildManagement(
 	connectors *provider.Connectors,
 	keys repository.GatewayKeyRepository,
 ) (managementDeps, error) {
+	// The process-wide egress policy (OWASP A01): one guard and one guarded HTTP
+	// client, shared by the probe, the data plane, the OAuth client, and the
+	// proxy test. Built once so a second caller cannot grow a second allowlist.
+	egress, err := buildEgress(cfg)
+	if err != nil {
+		return managementDeps{}, fmt.Errorf("management wiring: %w", err)
+	}
+
 	// The sealer is created once and shared: sealing and opening must agree on
 	// the key, so a second instance would be a second source of truth for it.
 	sealer, err := domain.NewSealer([]byte(cfg.EncryptionKey))
@@ -99,7 +107,7 @@ func buildManagement(
 	// of the graph special-cases a provider id. It reads the runtime overlay for
 	// the same reason the data plane does: an endpoint under a custom node must
 	// probe as that node.
-	prober := newHTTPEndpointProber(runtimeIndex, connectors)
+	prober := newHTTPEndpointProber(runtimeIndex, connectors, egress.Guard)
 
 	providerSvc, err := service.NewProviderService(service.ProviderServiceDeps{
 		Index: runtimeIndex, Counts: endpointRepo,
@@ -151,23 +159,11 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: vision augmenter: %w", err)
 	}
 
-	usageSvc, err := service.NewUsageService(service.UsageServiceDeps{
-		Usage: usageRepo, Logs: logRepo, Settings: settingsSvc,
-	})
+	// The usage, quota, and log services read the same repositories, so they are
+	// built together (see observability_wiring.go).
+	usageSvc, quotaSvc, logSvc, err := buildObservability(usageRepo, quotaRepo, logRepo, settingsSvc, client)
 	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: usage: %w", err)
-	}
-
-	quotaSvc, err := service.NewQuotaService(service.QuotaServiceDeps{Quotas: quotaRepo, Usage: usageRepo})
-	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: quotas: %w", err)
-	}
-
-	logSvc, err := service.NewLogService(service.LogServiceDeps{
-		Logs: logRepo, Settings: settingsSvc, Console: redisrepo.NewConsoleBuffer(client),
-	})
-	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: logs: %w", err)
+		return managementDeps{}, err
 	}
 
 	flusher, retention, err := buildWorkers(client, quotaRepo, logSvc)
@@ -194,7 +190,7 @@ func buildManagement(
 	plane, err := buildDataPlane(dataPlaneInputs{
 		Config: cfg, Index: runtimeIndex, Endpoints: endpointRepo, Combos: comboRepo,
 		ComboOrder: comboSvc, Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
-		Redis: client, Settings: settingsSvc, Usage: usageSvc, Vision: augmenter,
+		Client: egress.Client, Redis: client, Settings: settingsSvc, Usage: usageSvc, Vision: augmenter,
 		MediaOverrides: mediaSvc, MediaIndex: runtimeIndex,
 	})
 	if err != nil {
@@ -214,13 +210,13 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: token saver: %w", err)
 	}
 
-	// §7.11 proxy pools, with their own egress guard (see proxy_wiring.go).
-	proxyHandler, err := buildProxies(cfg, pool, sealer)
+	// §7.11 proxy pools, over the process's shared egress guard.
+	proxyHandler, err := buildProxies(cfg, pool, sealer, egress.Guard)
 	if err != nil {
 		return managementDeps{}, err
 	}
 
-	oauthHandler, refreshWorker, err := buildOAuth(cfg, runtimeIndex, endpointRepo, client, sealer)
+	oauthHandler, refreshWorker, err := buildOAuth(cfg, runtimeIndex, endpointRepo, client, sealer, egress.Client)
 	if err != nil {
 		return managementDeps{}, err
 	}

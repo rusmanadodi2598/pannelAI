@@ -1,9 +1,9 @@
 // Command app-serv wires the §7.11 proxy pool graph.
 //
 // @file      cmd/app-serv/proxy_wiring.go
-// @for       Builds the egress guard, the proxy prober adapter, and the proxy
+// @for       Builds the proxy prober adapter and the proxy service behind its
 //
-//	service behind its handler.
+//	handler, over the process's egress guard.
 //
 // @uses      internal/config, internal/handler, internal/netguard,
 //
@@ -12,9 +12,9 @@
 // @reason    AGENTS.md §1.5 makes the composition root wiring only, and §1.1
 //
 //	keeps management_wiring.go inside its line budget. The guard is built
-//	here because it is the process-wide egress policy (OWASP A01): the
-//	proxy test is the first caller, and a second caller must share this
-//	instance rather than grow a second allowlist.
+//	once in egress_wiring.go and passed in, because it is the process-wide
+//	egress policy (OWASP A01): the proxy test is one caller among several,
+//	and every one of them must share the same allowlist.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
@@ -35,11 +35,7 @@ import (
 )
 
 // buildProxies assembles the proxy pool handler over the shared egress guard.
-func buildProxies(cfg config.Config, pool *pgxpool.Pool, sealer service.CredentialSealer) (*handler.ProxyHandler, error) {
-	guard, err := netguard.NewGuard(cfg.EgressAllowedTargets)
-	if err != nil {
-		return nil, fmt.Errorf("proxy wiring: egress guard: %w", err)
-	}
+func buildProxies(cfg config.Config, pool *pgxpool.Pool, sealer service.CredentialSealer, guard *netguard.Guard) (*handler.ProxyHandler, error) {
 	svc, err := service.NewProxyService(service.ProxyServiceDeps{
 		Repo:   postgres.NewProxyRepository(pool),
 		Sealer: sealer,

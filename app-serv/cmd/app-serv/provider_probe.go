@@ -5,9 +5,10 @@
 //
 //	service.NodeProber.
 //
-// @uses      internal/domain, internal/provider, internal/registry,
+// @uses      internal/dataplane, internal/domain, internal/netguard,
 //
-//	internal/service, net/http, time.
+//	internal/provider, internal/registry, internal/service, net/http,
+//	time.
 //
 // @reason    SPEC-API-001 §7.5 and §7.4 offer a connectivity test, and the probe
 //
@@ -16,7 +17,10 @@
 //	lives in the composition root, and that split is what keeps the
 //	service testable with a fake and the adapter free of business
 //	rules. It reaches the upstream through the `provider.Plugin` seam,
-//	so no probe special-cases a provider id.
+//	so no probe special-cases a provider id. The destination goes
+//	through the process's egress guard (OWASP A01): a node's base_url is
+//	operator input, and a probe must not be the one dial that skips the
+//	policy the data plane follows.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
@@ -30,7 +34,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/netguard"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
@@ -54,23 +60,25 @@ type providerLookup interface {
 type httpEndpointProber struct {
 	index      providerLookup
 	connectors *provider.Connectors
+	guard      *netguard.Guard
 	client     *http.Client
 }
 
 // newHTTPEndpointProber builds the adapter. Its only dependencies are the
-// registry (to resolve a provider) and the connectors (to authenticate), so it
-// holds no repository and no sealer: the service hands over an opened credential
-// for the duration of one call.
-func newHTTPEndpointProber(index providerLookup, connectors *provider.Connectors) *httpEndpointProber {
-	return &httpEndpointProber{
-		index:      index,
-		connectors: connectors,
-		client: &http.Client{
-			// The per-call context carries the total budget; the client's own
-			// timeout is a backstop so a hung connection cannot outlive it.
-			Timeout: probeConnectTimeout + 5*time.Second,
-		},
-	}
+// registry (to resolve a provider), the connectors (to authenticate), and the
+// process's egress guard (to refuse a destination the operator's allowlist does
+// not name), so it holds no repository and no sealer: the service hands over an
+// opened credential for the duration of one call.
+func newHTTPEndpointProber(index providerLookup, connectors *provider.Connectors, guard *netguard.Guard) *httpEndpointProber {
+	// The probe shares the gateway's pool configuration and the guard's dialer,
+	// so the address actually reached is the address that was validated.
+	client := dataplane.NewHTTPClient(dataplane.HTTPClientDeps{
+		Dialer: guard.NewDialer(probeConnectTimeout, 0),
+	})
+	// The per-call context carries the total budget; the client's own timeout
+	// is a backstop so a hung connection cannot outlive it.
+	client.Timeout = probeConnectTimeout + 5*time.Second
+	return &httpEndpointProber{index: index, connectors: connectors, guard: guard, client: client}
 }
 
 // ProbeEndpoint asks the provider's own validation surface whether the given
@@ -146,58 +154,6 @@ func (p *httpEndpointProber) ProbeNode(ctx context.Context, node domain.Provider
 	return p.probe(ctx, target, entry, connector, cred)
 }
 
-// probe performs one authenticated request and classifies the outcome.
-//
-// Classification is the whole job: an upstream that answers with any 2xx or a
-// 4xx that is not an authentication failure proves the host is reachable and the
-// URL is right, while 401/403 proves the credential was checked and rejected.
-// Only those two are reported as a credential failure, because reporting a 404
-// as "your key is wrong" sends an operator to replace a working credential.
-func (p *httpEndpointProber) probe(ctx context.Context, target string, entry registry.Provider, connector provider.Plugin, cred provider.Credential) (service.ProbeOutcome, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
-	if err != nil {
-		return service.ProbeOutcome{}, fmt.Errorf("probe %s: building the request: %w", entry.ID, err)
-	}
-	for name, value := range entry.Transport.Headers {
-		req.Header.Set(name, value)
-	}
-	if err := connector.ApplyAuth(req, cred); err != nil {
-		// An unusable credential is a probe answer, not an adapter fault: the
-		// operator needs to see "no credential" in the panel.
-		return failure(err.Error()), nil
-	}
-
-	started := time.Now()
-	resp, err := p.client.Do(req)
-	latency := int(time.Since(started).Milliseconds())
-	if err != nil {
-		// The call never completed, so there is no status; the message stays
-		// short because a transport error can carry a long internal chain.
-		return service.ProbeOutcome{
-			State:     domain.EndpointTestFail,
-			LatencyMS: latency,
-			Message:   "the upstream could not be reached",
-		}, nil
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	outcome := service.ProbeOutcome{LatencyMS: latency, Status: resp.StatusCode}
-	switch {
-	case resp.StatusCode >= 200 && resp.StatusCode < 300:
-		outcome.State = domain.EndpointTestOK
-	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:
-		outcome.State = domain.EndpointTestFail
-		outcome.Message = "the upstream rejected this credential"
-	default:
-		// Reachable but unhappy: the host and URL are proven, which is what a
-		// connectivity test asks, so the failure message names the status rather
-		// than blaming the credential.
-		outcome.State = domain.EndpointTestFail
-		outcome.Message = fmt.Sprintf("the upstream answered %d", resp.StatusCode)
-	}
-	return outcome, nil
-}
-
 // resolve finds the registry entry and connector for a provider id.
 //
 // A failure here is a real error, not a probe outcome: an unknown provider means
@@ -209,9 +165,4 @@ func (p *httpEndpointProber) resolve(providerID string) (registry.Provider, prov
 		return registry.Provider{}, nil, fmt.Errorf("probe: provider %q is not in the registry", providerID)
 	}
 	return entry, p.connectors.For(entry), nil
-}
-
-// failure builds a failed outcome with the given English explanation.
-func failure(message string) service.ProbeOutcome {
-	return service.ProbeOutcome{State: domain.EndpointTestFail, Message: message}
 }

@@ -72,7 +72,7 @@ func (p *proxyProber) ProbeProxy(ctx context.Context, target service.ProxyTarget
 	// dialer's own Control hook repeats the check on the address it reaches,
 	// which is what closes the rebinding window.
 	if err := p.guard.CheckHost(ctx, target.Host); err != nil {
-		return service.ProxyProbeResult{State: domain.EndpointTestFail, Message: refusalMessage(err)}, nil
+		return service.ProxyProbeResult{State: domain.EndpointTestFail, Message: refusalMessage("proxy", err)}, nil
 	}
 
 	proxyURL := &url.URL{
@@ -142,7 +142,7 @@ func classifyProxyStatus(status, latency int) service.ProxyProbeResult {
 // reported without the raw chain (AGENTS.md §1.3).
 func transportMessage(err error) string {
 	if errors.Is(err, netguard.ErrDenied) {
-		return refusalMessage(err)
+		return refusalMessage("proxy", err)
 	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return "the proxy did not answer within the time limit"
@@ -151,11 +151,12 @@ func transportMessage(err error) string {
 }
 
 // refusalMessage keeps the guard's reason and drops the wrapper, so the panel
-// shows "a private address" rather than the error chain.
-func refusalMessage(err error) string {
+// shows "a private address" rather than the error chain. The subject names what
+// was refused, because one guard answers both the proxy test and the node probe.
+func refusalMessage(subject string, err error) string {
 	reason := netguard.Reason(err)
 	if reason == "" {
 		reason = "the address is not permitted"
 	}
-	return "the proxy address was refused: " + reason
+	return "the " + subject + " address was refused: " + reason
 }

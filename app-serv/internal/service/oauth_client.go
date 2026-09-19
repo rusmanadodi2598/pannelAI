@@ -54,10 +54,11 @@ type OAuthHTTPClient struct {
 }
 
 // NewOAuthHTTPClient binds the token client to the shared pool, so an OAuth
-// call carries the same §1.7 limits as every other outbound call.
+// call carries the same §1.7 limits as every other outbound call. The caller
+// supplies the process's guarded client; the default is the plain pool.
 func NewOAuthHTTPClient(client *http.Client) *OAuthHTTPClient {
 	if client == nil {
-		client = dataplane.NewHTTPClient()
+		client = dataplane.NewHTTPClient(dataplane.HTTPClientDeps{})
 	}
 	return &OAuthHTTPClient{client: client}
 }

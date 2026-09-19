@@ -179,7 +179,8 @@ func TestHTTPEndpointProber_ResolvesACustomNode(t *testing.T) {
 	}
 
 	prober := newHTTPEndpointProber(
-		newRuntimeProviderIndex(embeddedIndex(t), nodeListerStub{[]domain.ProviderNode{node}}, nil), connectors)
+		newRuntimeProviderIndex(embeddedIndex(t), nodeListerStub{[]domain.ProviderNode{node}}, nil), connectors,
+		probeGuard(t, "127.0.0.1/32"))
 
 	entry, _, err := prober.resolve(node.ID())
 	if err != nil {
@@ -191,7 +192,7 @@ func TestHTTPEndpointProber_ResolvesACustomNode(t *testing.T) {
 
 	// The same id against the frozen registry is the configuration fault the
 	// adapter reports, which is what makes the assertion above meaningful.
-	frozen := newHTTPEndpointProber(embeddedIndex(t), connectors)
+	frozen := newHTTPEndpointProber(embeddedIndex(t), connectors, probeGuard(t, "127.0.0.1/32"))
 	if _, _, err := frozen.resolve(node.ID()); err == nil {
 		t.Fatal("resolve() against the frozen registry = nil error, want the unknown-provider fault")
 	}

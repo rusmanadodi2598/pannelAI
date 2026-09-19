@@ -8,7 +8,7 @@
 // @uses      internal/dataplane, internal/provider, internal/registry,
 //
 //	internal/repository, internal/repository/redis, internal/router,
-//	internal/service, redis.
+//	internal/service, net/http, redis.
 //
 // @reason    The data plane declares narrow ports and must not import a driver or a
 //
@@ -28,6 +28,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/redis/go-redis/v9"
 
@@ -72,9 +73,13 @@ type dataPlaneInputs struct {
 	Keys       repository.GatewayKeyRepository
 	Sealer     service.CredentialSealer
 	Connectors *provider.Connectors
-	Redis      redis.UniversalClient
-	Settings   *service.SettingsService
-	Usage      *service.UsageService
+	// Client is the guarded upstream client from egress_wiring.go. Chat, media,
+	// and embeddings all draw on it, so every upstream dial goes through the one
+	// guard and the one connection pool (OWASP A01, AGENTS.md §1.7).
+	Client   *http.Client
+	Redis    redis.UniversalClient
+	Settings *service.SettingsService
+	Usage    *service.UsageService
 	// Vision is the §7.8 seam the engine consults for image-bearing requests.
 	Vision dataplane.VisionAugmenter
 	// MediaOverrides is the §7.10 seam the media routes read a stored base
@@ -121,7 +126,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		return dataPlane{}, err
 	}
 
-	transport, err := dataplane.NewTransport(dataplane.TransportDeps{Connectors: in.Connectors})
+	transport, err := dataplane.NewTransport(dataplane.TransportDeps{Connectors: in.Connectors, Client: in.Client})
 	if err != nil {
 		return dataPlane{}, err
 	}
@@ -153,10 +158,11 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		return dataPlane{}, err
 	}
 
-	// The package's own HTTP implementation, which already carries the §1.7
-	// pool limits and the §1.6 deadlines. One instance serves every media call,
-	// so the routes share a connection pool rather than opening one each.
-	caller := dataplane.NewMediaTransport(nil)
+	// The package's own HTTP implementation over the guarded client, which
+	// already carries the §1.7 pool limits and the §1.6 deadlines. One instance
+	// serves every media call, so the routes share a connection pool rather than
+	// opening one each.
+	caller := dataplane.NewMediaTransport(in.Client)
 
 	embeddings, err := service.NewEmbeddingsService(service.EmbeddingsServiceDeps{
 		Engine:    engine,

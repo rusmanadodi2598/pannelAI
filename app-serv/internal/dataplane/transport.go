@@ -3,18 +3,18 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/transport.go
-// @for       The outbound HTTP call: URL and authentication through the provider
-//
-//	plugin seam, the §4 deadlines, and the retry loop.
-//
-// @uses      internal/provider, context, bytes, net, net/http, sort, time.
+// @for       The transport's shape and the shared HTTP client it dials with.
+// @uses      internal/provider, net, net/http, sort, time.
 // @reason    SPEC-API-001 §4 fixes the timeouts (connect 10s, total 120s, no
 //
 //	total cap while streaming with a 300s idle read) and AGENTS.md §1.6
-//	requires every outbound call to run under a context deadline.
-//	Nothing here branches on a provider id: the URL and the credential
-//	placement come from provider.Plugin, which is what makes a new
-//	provider a registry entry rather than a change to shared code.
+//	requires every outbound call to run under a context deadline. The
+//	pool limits live here because one client serves every upstream call
+//	(AGENTS.md §1.7), and its dialer is the seam the composition root
+//	injects the egress guard through (OWASP A01). Nothing here branches
+//	on a provider id: the URL and the credential placement come from
+//	provider.Plugin, which is what makes a new provider a registry entry
+//	rather than a change to shared code.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -23,17 +23,12 @@
 package dataplane
 
 import (
-	"bytes"
-	"context"
-	"errors"
-	"io"
 	"net"
 	"net/http"
 	"sort"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
 // Deadlines fixed by SPEC-API-001 §4. A registry entry may override the total
@@ -74,9 +69,10 @@ type Transport struct {
 type TransportDeps struct {
 	// Connectors resolves a provider id to the plugin that handles it.
 	Connectors *provider.Connectors
-	// Client overrides the default HTTP client, so a deployment can install its
-	// own pool limits. The default already carries the §1.6 deadlines and
-	// explicit pool limits.
+	// Client overrides the default HTTP client. The composition root passes the
+	// guarded client from egress_wiring.go, so a chat call reaches no address the
+	// egress guard refused; the default carries the §1.6 deadlines and explicit
+	// pool limits.
 	Client *http.Client
 }
 
@@ -87,9 +83,19 @@ func NewTransport(deps TransportDeps) (*Transport, error) {
 	}
 	client := deps.Client
 	if client == nil {
-		client = NewHTTPClient()
+		client = NewHTTPClient(HTTPClientDeps{})
 	}
 	return &Transport{connectors: deps.Connectors, client: client}, nil
+}
+
+// HTTPClientDeps holds the seams the shared upstream client is built from.
+type HTTPClientDeps struct {
+	// Dialer overrides the TCP dialer. The composition root passes the egress
+	// guard's dialer, so the address actually reached is validated at connect
+	// time (OWASP A01). A zero value keeps the plain dialer, which is what the
+	// hermetic tests use: an httptest server is loopback, and the guard refuses
+	// loopback unless the operator allowlists it.
+	Dialer *net.Dialer
 }
 
 // NewHTTPClient builds the HTTP client the gateway calls upstreams with.
@@ -98,8 +104,11 @@ func NewTransport(deps TransportDeps) (*Transport, error) {
 // (AGENTS.md §1.7): an unbounded pool fans out to a failing upstream as fast as
 // to a healthy one, and the idle cap stops a long tail of providers from holding
 // sockets open.
-func NewHTTPClient() *http.Client {
-	dialer := &net.Dialer{Timeout: ConnectTimeout, KeepAlive: 30 * time.Second}
+func NewHTTPClient(deps HTTPClientDeps) *http.Client {
+	dialer := deps.Dialer
+	if dialer == nil {
+		dialer = &net.Dialer{Timeout: ConnectTimeout, KeepAlive: 30 * time.Second}
+	}
 	return &http.Client{
 		Transport: &http.Transport{
 			DialContext:           dialer.DialContext,
@@ -113,121 +122,6 @@ func NewHTTPClient() *http.Client {
 			ForceAttemptHTTP2:     true,
 		},
 	}
-}
-
-// Do performs one call, retrying the same target per SPEC-API-001 §4. The
-// returned body is the caller's to close.
-//
-// The retry loop owns the decision, not the plugin: the plugin only says whether
-// an outcome is worth repeating and the registry entry only says how many attempts
-// the provider allows, so neither can multiply a request on its own.
-func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
-	plugin := t.connectors.For(call.Provider)
-	url, err := plugin.Endpoint(RequestFor(call), call.Credential)
-	if err != nil {
-		return nil, wrapDataPlaneError(CodeUpstreamError, "upstream endpoint could not be resolved", err)
-	}
-
-	for retries := 0; ; retries++ {
-		upstream, failure, err := t.attempt(ctx, plugin, call, url)
-		switch {
-		case err != nil:
-			decision := DecideRetry(call.Provider, plugin, Attempt{Retries: retries, Idempotent: call.Idempotent})
-			if !decision.Retry {
-				return nil, err
-			}
-			if waitErr := sleep(ctx, decision.After); waitErr != nil {
-				return nil, timeoutError(waitErr)
-			}
-		case failure != nil:
-			// A quota rejection parks the account instead of retrying it:
-			// repeating a request the account cannot pay for only delays the
-			// failover to an account that can serve it.
-			if plugin.IsQuotaError(failure.Status, failure.Body) {
-				return nil, failure
-			}
-			decision := DecideRetry(call.Provider, plugin, Attempt{
-				Retries: retries, Status: failure.Status, Header: failure.Header, Idempotent: call.Idempotent,
-			})
-			if !decision.Retry {
-				return nil, failure
-			}
-			if waitErr := sleep(ctx, decision.After); waitErr != nil {
-				return nil, timeoutError(waitErr)
-			}
-		default:
-			return upstream, nil
-		}
-	}
-}
-
-// attempt performs exactly one outbound call and classifies its outcome, so Do
-// only has to decide.
-func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Call, url string) (*Upstream, *UpstreamError, error) {
-	// A streamed call has no total cap, so only the non-streamed shape gets a
-	// deadline here; the idle guard covers a stalled stream instead.
-	attemptCtx, cancel := context.WithCancel(ctx)
-	if !call.Stream {
-		attemptCtx, cancel = context.WithTimeout(ctx, totalTimeout(call.Provider))
-	}
-
-	request, err := http.NewRequestWithContext(attemptCtx, http.MethodPost, url, bytes.NewReader(call.Body))
-	if err != nil {
-		cancel()
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "upstream request could not be built", err)
-	}
-	applyHeaders(request.Header, call)
-	if err := plugin.ApplyAuth(request, call.Credential); err != nil {
-		cancel()
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "upstream credential could not be applied", err)
-	}
-
-	response, err := t.client.Do(request)
-	if err != nil {
-		cancel()
-		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-			return nil, nil, timeoutError(err)
-		}
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream could not be reached", err)
-	}
-
-	usage := plugin.DecodeUsage(response.StatusCode, response.Header)
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		failure := readUpstreamError(response)
-		cancel()
-		return nil, failure, nil
-	}
-
-	if call.Stream {
-		// The guard owns the cancel: it fires when reads stall, and it releases
-		// the context when the caller closes the body.
-		return &Upstream{
-			Status: response.StatusCode,
-			Header: response.Header,
-			Usage:  usage,
-			Body:   newIdleGuard(response.Body, idleTimeout(call.Provider), cancel),
-		}, nil, nil
-	}
-
-	// A non-streamed body is buffered so the context can be released before the
-	// caller reads it, which lets the total deadline bound the whole exchange.
-	body, readErr := readBounded(response.Body, maxUpstreamBodyBytes)
-	cancel()
-	if readErr != nil {
-		// reason: the body is fully consumed or the limit was hit, so a close
-		// error adds nothing to the read error already reported.
-		_ = response.Body.Close()
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream response could not be read", readErr)
-	}
-	if closeErr := response.Body.Close(); closeErr != nil {
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream response could not be read", closeErr)
-	}
-	return &Upstream{
-		Status: response.StatusCode,
-		Header: response.Header,
-		Usage:  usage,
-		Body:   io.NopCloser(bytes.NewReader(body)),
-	}, nil, nil
 }
 
 // applyHeaders copies the registry entry's declared headers and the shape headers
@@ -250,37 +144,4 @@ func applyHeaders(dst http.Header, call Call) {
 	if call.Stream {
 		dst.Set("Accept", "text/event-stream")
 	}
-}
-
-// sleep waits, or returns early when the caller's context ends.
-func sleep(ctx context.Context, wait time.Duration) error {
-	if wait <= 0 {
-		return nil
-	}
-	timer := time.NewTimer(wait)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-timer.C:
-		return nil
-	}
-}
-
-// totalTimeout reports the total deadline for a non-streamed call, honouring a
-// registry override.
-func totalTimeout(entry registry.Provider) time.Duration {
-	if ms := entry.Transport.TimeoutMS; ms > 0 {
-		return time.Duration(ms) * time.Millisecond
-	}
-	return TotalTimeout
-}
-
-// idleTimeout reports how long a streamed body may stay silent, honouring a
-// registry override.
-func idleTimeout(entry registry.Provider) time.Duration {
-	if ms := entry.Transport.StallTimeoutMS; ms > 0 {
-		return time.Duration(ms) * time.Millisecond
-	}
-	return IdleTimeout
 }

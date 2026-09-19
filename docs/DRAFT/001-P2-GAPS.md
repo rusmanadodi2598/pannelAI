@@ -7,9 +7,9 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 16 gap terdaftar, enam di antaranya temuan click-through, lima sudah CLOSED (G11, G13, G14, G15, G16) |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 16 gap terdaftar, enam di antaranya temuan click-through, delapan sudah CLOSED (G1, G2, G3, G11, G13, G14, G15, G16) |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
-| **Bukti terakhir** | commit `1f00860` + `573979b`; click-through G1 2026-09-19 (baris §8); gate hijau |
+| **Bukti terakhir** | commit `0ee025c` + pass G2/G3 2026-09-19 (baris §8); gate hijau |
 
 ## 1. Cara pakai
 
@@ -25,8 +25,8 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | ID | Gap | Kelas | Keputusan? | Prioritas |
 |---|---|---|---|---|
 | G1 | Verifikasi live sisa permukaan P2 (OAuth, combo test, proxies, token-saver, budget caps, katalog model, chat/embeddings) | verifikasi | tidak | 1 |
-| G2 | Dial upstream (chat + media + embeddings) tidak melewati `internal/netguard` | keamanan (A01) | **ya** | 2 |
-| G3 | `provider_probe.go` mendial `base_url` dari user tanpa guard | keamanan (A01) | menyatu G2 | 2 |
+| G2 | Dial upstream (chat + media + embeddings) tidak melewati `internal/netguard`. **CLOSED 2026-09-19** | keamanan (A01) | **ya** | 2 |
+| G3 | `provider_probe.go` mendial `base_url` dari user tanpa guard. **CLOSED 2026-09-19** | keamanan (A01) | menyatu G2 | 2 |
 | G4 | `settings.network.outbound_proxy_*` tidak dipakai di jalur dial | kontrak §7.11 | **ya** | 4 |
 | G5 | Adapter media per-provider (format gate menolak 16 provider dengan nama) | fitur | tidak | 5 |
 | G6 | Panggilan media tidak menulis usage/log; `gateway_keys.request_count` tidak pernah naik | akuntansi §7.12/§7.13 | **ya** | 3 |
@@ -57,7 +57,7 @@ tercatat (status + bentuk body), plus satu jalur gagal per rute. Gap baru yang
 muncul menjadi ID baru di register ini. **Selesai 2026-09-19** untuk rute yang
 tidak menunggu keputusan owner.
 
-### G2: Egress guard untuk dial upstream
+### G2: Egress guard untuk dial upstream (CLOSED 2026-09-19)
 
 **Bukti.** `dataplane.NewHTTPClient()`, dipakai chat, embeddings, dan media, tidak
 melewati `internal/netguard`; guard itu baru dipakai kandidat proxy (§7.11). Header
@@ -77,10 +77,38 @@ sebagai trusted dan catat itu eksplisit di SPEC-API §6.
 memakai double loopback (`httptest`) yang akan ikut ditolak kalau guard dipasang
 global tanpa seam. Ini alasan guard tidak disapu diam-diam saat §7.10.
 
-**Definisi selesai.** Keputusan tercatat di SPEC-API; implementasi + tabel test
-(host publik lolos, privat/loopback ditolak, loopback yang di-allowlist lolos).
+**Perbaikan (2026-09-19, D1 = a).** Satu guard per proses: `egress_wiring.go`
+membangun `netguard.Guard` dari `EGRESS_ALLOWED_TARGETS` plus satu `*http.Client`
+di atas dialer guard itu, lalu client yang sama di-inject ke transport chat
+(`TransportDeps.Client`), media/embeddings (`NewMediaTransport`), OAuth
+(`NewOAuthHTTPClient`), dan probe; `buildProxies` tidak lagi membangun guard
+sendiri, jadi hanya ada satu allowlist. `dataplane.NewHTTPClient` menerima
+`HTTPClientDeps{Dialer}`: default-nya dialer polos, dan seam itulah yang membuat
+test hermetic (`httptest` loopback) tetap jalan tanpa melemahkan produksi.
+Allowlist yang salah gagal saat boot, bukan memperlebar policy diam-diam.
+Keputusan dan aturannya tercatat di SPEC-API §9 butir 9 + changelog.
 
-### G3: `provider_probe.go` tanpa guard
+**Bukti penutupan (2026-09-19).** `egress_wiring_test.go` (tabel: loopback ditolak
+default, `127.0.0.1/32` dan `127.0.0.0/8` lolos, kontrol benign publik lolos dan
+privat ditolak, allowlist `10.0.0.0/33` menolak boot). Tabel itu merah kalau
+dialer guard dilepas (`Get() reached a loopback address that is not allowlisted`).
+Live (PostgreSQL 14 + Redis nyata, stub `0.0.0.0:8091`): node A
+`http://127.0.0.1:8091/v1` (allowlist) menjawab chat 200 dan embeddings 200
+dengan baris stub bertambah; node B `http://127.0.0.2:8091/denied` (loopback yang
+alamatnya terbukti hidup lewat curl langsung, tapi tidak ada di allowlist)
+menjawab 502 `UPSTREAM_ERROR` tanpa satu pun baris `/denied` di log stub. Rute
+proxy test tetap benar lewat guard yang sama: privat dan loopback non-allowlist
+`state=fail` dengan alasan + petunjuk allowlist, loopback allowlist
+`the proxy could not be reached` (guard meloloskan, tidak ada yang mendengarkan).
+Boot dengan `EGRESS_ALLOWED_TARGETS=10.0.0.0/33` berhenti dengan
+`management wiring: egress wiring: netguard: "10.0.0.0/33" is neither a CIDR prefix
+nor an IP address`.
+
+**Definisi selesai.** Terpenuhi 2026-09-19: keputusan tercatat di SPEC-API §9;
+implementasi + tabel test (host publik lolos, privat/loopback ditolak, loopback
+yang di-allowlist lolos).
+
+### G3: `provider_probe.go` tanpa guard (CLOSED 2026-09-19)
 
 **Bukti.** `cmd/app-serv/provider_probe.go` mendial `base_url` yang di-supply user
 saat probe node kustom (§7.4/§7.5), tanpa guard. Ditemukan saat §7.11, dilaporkan,
@@ -92,8 +120,24 @@ request panel, satu dial ke alamat pilihan penyerang).
 **Pendekatan.** Menyatu dengan G2: keputusan yang sama, guard yang sama, allowlist
 yang sama. Jangan diselesaikan terpisah supaya tidak ada dua semantik egress.
 
-**Definisi selesai.** Probe memakai guard; tabel test mencakup host privat,
-loopback, dan yang di-allowlist.
+**Perbaikan (2026-09-19, menyatu G2).** `newHTTPEndpointProber` menerima guard
+proses dan membangun client-nya dari `dataplane.NewHTTPClient` dengan dialer
+guard; `probe()` memanggil `guard.CheckHost` sebelum mengirim apa pun, sehingga
+alamat yang ditolak dilaporkan sebagai penolakan beralasan alih-alih "host tidak
+terjangkau", dan hook `Control` di dialer mengulang cek pada alamat yang
+benar-benar didial. `provider_probe.go` dipecah: klasifikasi pindah ke
+`provider_probe_call.go` supaya file pertama tetap di bawah ambang §1.1.
+
+**Bukti penutupan (2026-09-19).** Tabel `TestProbeNode_RefusesADeniedAddress`:
+node loopback ditolak default (0 request sampai ke server), loopback yang
+di-allowlist diprobe (1 request), alamat privat ditolak dengan alasan. Live:
+probe node A `state=ok` (baris stub 3→4), node B `the upstream address was refused:
+a loopback address; add it to EGRESS_ALLOWED_TARGETS if it is your own proxy`,
+node C `a private address; ...`, node D `a link-local address` (tanpa petunjuk
+allowlist, benar untuk tier never-a-host), ketiganya 0 baris stub baru.
+
+**Definisi selesai.** Terpenuhi 2026-09-19: probe memakai guard; tabel test
+mencakup host privat, loopback, dan yang di-allowlist.
 
 ### G4: Proxy assignment belum dipakai di jalur dial
 
@@ -386,7 +430,8 @@ Baris log berkode untuk kegagalan store tetap bagian G9 (P2.8).
 ## 5. Urutan kerja usulan
 
 1. **P2.1, G1**: verifikasi live sisa permukaan. Selesai 2026-09-19.
-2. **P2.2, G2 + G3**: satu keputusan D1, satu implementasi guard.
+2. **P2.2, G2 + G3**: satu keputusan D1, satu implementasi guard. Selesai
+   2026-09-19 dengan D1 = (a).
 3. **P2.3, G6**: keputusan D3 lalu sambungkan `Outcome()` ke recorder.
 4. **P2.4, G4**: keputusan D2 lalu wire atau amend.
 5. **P2.5, G14**: temuan G1 yang tersisa, butuh D4 untuk pilihan lantai versi
@@ -396,8 +441,9 @@ Baris log berkode untuk kegagalan store tetap bagian G9 (P2.8).
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
 8. **P2.8, G7, G8, G9, G10**: penutup kecil + dokumen.
 
-D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4), jadi P2.2, P2.3, P2.5,
-dan P2.6 tidak lagi menunggu keputusan; P2.4 (G4) masih menunggu D2.
+D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2 sudah selesai,
+sehingga P2.3, P2.5, dan P2.6 tidak lagi menunggu keputusan. P2.4 (G4) masih
+menunggu D2.
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
 
@@ -460,3 +506,4 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | G13 temuan: `no_auth` tanpa key vs bearer kosong | G15: endpoint `no_auth` tanpa key 201 tetapi 503 `NO_PROVIDER_AVAILABLE`, nol dial. G16: dengan key placeholder, chat sampai ke stub tanpa header `Authorization`, embeddings sampai dengan `Authorization: Bearer` kosong (keduanya dari log stub) |
 | 2026-09-19 | **G15 + G16 CLOSED**: `Select` memilih endpoint `no_auth` tanpa key, health write no-op untuk selection tanpa key, `MediaTarget` tidak menulis header saat secret kosong; tiga test baru | PASS live (PostgreSQL 14 + Redis nyata, stub loopback 8091): node A dengan endpoint `no_auth` **tanpa key** menjawab 200 untuk chat dan embeddings (sebelumnya 503), dan log stub menunjukkan **tidak ada** header `Authorization` di kedua panggilan; kontrol node B berkey tetap 200 dengan `Bearer` berisi key di kedua jalur. Artefak dibersihkan (dua node, dua endpoint, gateway key, usage baris pass, hash panel) |
 | 2026-09-19 | **G14 CLOSED**: `Take` jadi skrip atomik `GET`+`DEL` via `redis.NewScript`, empat test store bertag `integration` | PASS: terhadap Redis 6.0.16 host **tanpa shim**, keempat test merah `unknown command getdel` sebelum perbaikan dan hijau sesudahnya (stage+TTL, take menghapus key, replay `ok=false` tanpa error, stage ulang `ErrStateAlreadyStaged` tanpa menimpa payload, TTL kedaluwarsa); `GET /oauth/callback` state asing menjawab 302 `oauth_error` dalam 4 ms (sebelumnya 500 dalam 1 ms); tanpa key tersisa |
+| 2026-09-19 | **G2 + G3 CLOSED**: `egress_wiring.go` (satu guard + satu client ber-guard), `HTTPClientDeps{Dialer}` di `NewHTTPClient`, guard di probe, empat jalur wiring berbagi guard; `egress_wiring_test.go` + tabel probe | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 452 file PASS; live (PostgreSQL 14 + Redis nyata, stub `0.0.0.0:8091`): chat 200 dan embeddings 200 lewat node allowlist (baris stub bertambah), node `127.0.0.2` (terbukti hidup lewat curl langsung) 502 `UPSTREAM_ERROR` tanpa baris `/denied` di stub, probe empat node (allowlist `ok`; loopback/privat/link-local `fail` beralasan, 0 dial), proxy test lewat guard yang sama tetap benar, boot dengan allowlist salah berhenti dengan pesan netguard. Artefak dibersihkan (4 node, 2 endpoint, 2 gateway key, usage baris pass, hash panel kembali NULL) |

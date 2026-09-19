@@ -71,7 +71,7 @@ type MediaTransport struct {
 // pool configuration so a media call has the same §1.7 limits as a chat call.
 func NewMediaTransport(client *http.Client) *MediaTransport {
 	if client == nil {
-		client = NewHTTPClient()
+		client = NewHTTPClient(HTTPClientDeps{})
 	}
 	return &MediaTransport{client: client}
 }
