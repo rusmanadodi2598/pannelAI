@@ -5,7 +5,7 @@ Diperbarui pada PR yang sama ketika topologi atau alur data berubah (AGENTS.md �
 
 | | |
 |---|---|
-| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (94 provider, decode ketat), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (§7.4-§7.8, §7.12-§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis → PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API |
+| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (94 provider, decode ketat), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (§7.4-§7.8, §7.12-§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis → PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API. **P2 CLOSED**: seluruh permukaan §7.4–§7.15 terpasang dan terverifikasi live terhadap PostgreSQL 14 + Redis nyata dengan stub upstream dan stub proxy loopback — OAuth round-trip (start, callback, status, refresh per endpoint + due sweep), combo test, proxy pools (dua rute test + guard egress), token-saver, budget caps (cap terbaca kembali), katalog model + custom/alias/disabled, media §7.10 (speech, transcriptions, voices, images, search), embeddings lewat node kustom, dan jalur chat + media + embeddings yang menulis usage/log. Media plane memakai satu `MediaTransport` bersama embeddings di atas satu egress guard proses (`EGRESS_ALLOWED_TARGETS`), dan `settings.network.outbound_proxy_*` kini menentukan rute tiap panggilan keluar (§7.11). Sepuluh format media non-OpenAI sudah punya adapter (Deepgram STT; NVIDIA NIM, Cartesia, ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS). Register gap P2 (`docs/DRAFT/001-P2-GAPS.md`) menutup 18 dari 21 item; yang terbuka bukan kriteria keluar fase: enam format media sisa (G5 — lima di antaranya G21: AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device, yang butuh lebih dari satu request per panggilan) dan pemeliharaan dokumen ini (G10, baris ini). `go test -race ./...` bersih (13 paket + `cmd`), tagged integration hijau, `go-lint.sh` dan `go-headers.sh` PASS |
 | **Terakhir diperbarui** | 2026-09-19 |
 | **Kontrak** | `docs/SPEC-API/001-SPEC-API.md` |
 
@@ -41,7 +41,7 @@ flowchart LR
     S -.->|"P1: translasi + upstream"| UP
 ```
 
-**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008; repository, service, handler, dan data plane-nya terpasang); `proxies` (P2, 000009) dan `media_provider_settings` (P2, 000010). Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
+**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008; repository, service, handler, dan data plane-nya terpasang); `proxies` (P2, 000009) dan `media_provider_settings` (P2, 000010) — keduanya dimiliki role aplikasi lewat `000011`, sama seperti seluruh schema. Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
 
 **Catatan migrasi P1:** kolom `quota_windows."window"` adalah reserved word PostgreSQL dan wajib dikutip; nama kolomnya dipertahankan agar sama dengan field API (SPEC-API §7.12 mengembalikan `window`). Idempotensi runner diuji, bukan diasumsikan: `migrations/apply_test.go` (tag `integration`) menjalankan runner sungguhan dua kali dan memastikan ledger tidak bertambah.
 
@@ -208,6 +208,14 @@ Enam rute data plane media (`/audio/speech`, `/audio/transcriptions`, `/audio/vo
 - jawaban dinormalkan per kind: speech bytes (atau base64 dengan `?response_format=json`), transkripsi
   diteruskan apa adanya, gambar ke `{created, data:[...]}`, search dari nama parameter yang dideklarasikan
   registry (`query_param`/`max_results_param`), voices dari `voices:` registry.
+- adapter per format tinggal di `internal/service/media_*.go` dan menyentuh empat seam: gate format
+  (`media_shape.go`), pembangun payload (`media_speech.go` plus satu file per provider), pembaca jawaban
+  (`mediaAnswerReader`, dipanggil `Perform` sebelum amplop dibangun), dan label output
+  (`SpeechOutputFormat`). Provider yang menaruh model atau voice di path memakai `dataplane.MediaPath`;
+  kredensial non-bearer (`basic`, `playht`, header yang dideklarasikan registry) ditangani
+  `media_credential.go`. Sepuluh format sudah punya adapter; lima masih ditolak dengan nama karena satu
+  panggilan butuh lebih dari satu request (G21: AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device),
+  dan satu (Gemini STT) adalah pekerjaan adapter biasa.
 
 ---
 
@@ -246,6 +254,10 @@ Migrasi P1 (`000004`-`000008`) menambah `provider_nodes`, `upstream_endpoints` +
 
 - kolom `quota_windows."window"` **wajib dikutip**: `window` adalah reserved word di PostgreSQL, dan tanpa kutip migrasinya gagal parse. Nama kolomnya dipertahankan agar sama dengan field API (SPEC-API §7.12 mengembalikan `window`), bukan diganti demi parser lalu dipetakan balik di setiap query.
 - idempotensi diuji, bukan diasumsikan: `migrations/apply_test.go` (tag `integration`) menjalankan runner sungguhan dua kali dan memastikan ledger tidak bertambah.
+
+Migrasi P2 (`000009`-`000011`) menambah `proxies`, `media_provider_settings`, dan aturan kepemilikan tabel. Satu catatan yang lahir dari menjalankannya terhadap PostgreSQL nyata:
+
+- migration berjalan sebagai role yang mem-boot gateway, jadi boot ber-DSN superuser membuat tabel milik superuser dan role aplikasi tidak bisa membacanya (terukur: `permission denied for table media_provider_settings` di `PATCH /media-providers/{id}` dan di setiap rute §7.11, sementara tabel lain normal). `000011` memindahkan kedua tabel itu ke role pemilik `gateway_keys` — satu aturan, bukan nama role per deployment — dan karena role yang tidak memiliki tabel tidak bisa memindahkannya, penolakan dilaporkan sebagai warning boot berisi statement yang harus dijalankan, bukan kegagalan boot. Invariannya dikunci `migrations/ownership_test.go` untuk seluruh schema.
 
 ---
 

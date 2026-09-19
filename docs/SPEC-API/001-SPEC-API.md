@@ -135,6 +135,13 @@ CLI tools (Claude Code, Codex, Cursor, ...)          Browser (app-ui)
 | `quota_caps` | `endpoint_id, monthly_cost_usd, monthly_tokens, updated_at` | optional budget caps; a router stops picking an exhausted endpoint (§7.12) |
 | `settings` | `key (pk), value(jsonb), updated_at` | typed accessors, defaults merged at read (mirrors `mergeWithDefaults`) |
 
+Every table in the schema belongs to the role that owns `gateway_keys` — the application role the gateway
+connects as. A migration runs as whichever role boots the process, so a superuser boot would otherwise
+create tables the application role cannot read (measured live: `media_provider_settings` and `proxies`
+answered `permission denied` while every other table worked). Migration `000011` re-owns those two to the
+anchor role, and a refusal it cannot carry out is a warning at boot naming the statement to run rather
+than a boot failure.
+
 Provider **registry is static config embedded in the Go binary** (YAML generated from the reference
 registry port), not a DB table. DB rows reference registry IDs; unknown provider ID ⇒ `VALIDATION_ERROR`.
 
@@ -369,9 +376,26 @@ sanitized audio MIME type, `model`, `smart_format=true`, `punctuate=true`, and e
 `results.channels[0].alternatives[0].transcript` to `{text}`. `POST /audio/speech` also has the first
 provider-specific TTS adapter, NVIDIA NIM: `{input:{text}, voice, model}`, `Authorization: Bearer`, and
 WAV output, with provider voice default `default`. Cartesia TTS is also adapted: `{model_id, transcript,
-voice?, output_format}`, `X-API-Key`, `Cartesia-Version: 2024-06-10`, and fixed MP3 output. A provider format without an adapter remains an explicit
-`PROVIDER_NOT_ROUTABLE` refusal; this is the incremental G5 boundary, not a claim that all reference
-adapters are present.
+voice?, output_format}`, `X-API-Key`, `Cartesia-Version: 2024-06-10`, and fixed MP3 output.
+
+Seven further TTS formats are adapted from the same reference handlers. ElevenLabs sends `{text,
+model_id, voice_settings}` with `xi-api-key` and the voice id as the target's last path segment. MiniMax
+and MiniMax CN send `{model, text, stream:false, language_boost, output_format:"hex", voice_setting,
+audio_setting}` with `Authorization: Bearer` and decode the hex answer. Inworld sends `{text, voiceId,
+modelId, audioConfig}`, authenticates with `Authorization: Basic`, and decodes a base64 answer. PlayHT
+sends `{text, voice, voice_engine, output_format, speed}` and splits one `userId:apiKey` credential into
+`X-USER-ID` and `Authorization: Bearer`. Coqui and Tortoise are self-hosted and send `{text, voice?}`
+with no credential, returning WAV bytes. Gemini TTS puts the model in the path (`…/models/{model}
+:generateContent`), the credential in the `key` query parameter, and wraps the base64 PCM answer in a
+RIFF/WAVE container.
+
+A provider format without an adapter remains an explicit `PROVIDER_NOT_ROUTABLE` refusal naming the
+format; this is the incremental G5 boundary, not a claim that all reference adapters are present. Six
+formats stay on that boundary: Gemini STT (a single `generateContent` with inline audio, which the TTS
+adapter's shape already covers), and the five registered as G21 in the P2 gap register — AssemblyAI STT
+(upload → submit → poll), AWS Polly (SigV4 signing, which the reference does not implement), Edge TTS and
+Google TTS (a token scraped from a vendor HTML page, whose registry `base_url` is a marker rather than a
+URL), and Local Device TTS (spawns host binaries).
 
 ### 7.11 Proxy Pools
 
@@ -387,6 +411,14 @@ adapters are present.
 Proxy assignment to upstream endpoints rides on `settings.network.outbound_proxy_*` (global) in v1;
 per-endpoint proxy binding is deferred (not in the reference either — reference assigns pools globally
 with per-provider strategy overrides in `settings.providerStrategies`).
+
+The settings are read per request, so enabling a proxy takes effect on the next outbound call rather than
+the next boot. `outbound_proxy_url` is the proxy for every outbound call except the hosts named in
+`outbound_no_proxy` — a comma-separated list of hosts or domain suffixes, with `*` exempting everything.
+A proxied call still has its destination validated against the egress allowlist (§9), because the dialer's
+guard sees the proxy's address rather than the destination's; a settings read or a proxy URL that fails
+refuses the call rather than dialing direct, since quietly bypassing a proxy the operator enabled is the
+failure this setting exists to prevent.
 
 ### 7.12 Usage & Quota Tracker
 
@@ -563,3 +595,11 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 *Changelog 2026-09-19 — §7.10 records the first incremental G5 adapter: Deepgram STT now accepts the raw uploaded audio bytes, derives a safe audio MIME type from the multipart part or sanitized filename, sends `model`, `smart_format`, `punctuate`, and `language`/`detect_language` query parameters, uses `Authorization: Token`, and normalizes Deepgram's nested transcript to the OpenAI-compatible `{text}` answer. Provider aliases resolve before the adapter is selected (`dg/nova-2` and `deepgram/nova-2` are equivalent). The remaining non-OpenAI media formats stay explicit `PROVIDER_NOT_ROUTABLE` refusals until their own adapters are ported; AWS Polly is not invented because the reference has no builder for it.*
 *Changelog 2026-09-19 — §7.10 records G5's second incremental adapter: NVIDIA NIM TTS now sends `{input:{text}, voice, model}` with `Authorization: Bearer`, defaults the provider voice to `default`, and labels its raw answer as WAV (including `format: "wav"` in the base64 JSON form). The remaining non-OpenAI media formats stay explicit `PROVIDER_NOT_ROUTABLE` refusals until their own builders are ported.*
 *Changelog 2026-09-19 — §7.10 records G5's third incremental adapter: Cartesia TTS now sends `{model_id, transcript, voice?, output_format}` with `X-API-Key` and `Cartesia-Version: 2024-06-10`; omitted voices stay omitted, the requested output is fixed MP3 (`128000` bit rate, `44100` sample rate), and the route labels both raw and base64 answers `mp3`. The remaining non-OpenAI media formats stay explicit `PROVIDER_NOT_ROUTABLE` refusals until their own builders are ported.*
+
+*Changelog 2026-09-19 — §7.10 records G5's fourth slice, seven TTS adapters in one pass (register G5): ElevenLabs, MiniMax and MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, and Gemini TTS. Each is the reference's own wire shape rather than a generic guess, and the differences are the point — the credential is a declared header for some (`xi-api-key`), a raw-base64 `Basic` value for Inworld, one `userId:apiKey` string split across two headers for PlayHT, and a `key` query parameter for Gemini; the model is a path segment for ElevenLabs (the voice) and Gemini (the model, before `:generateContent`); and the answer arrives as raw bytes, hex, base64, or base64 PCM that needs a RIFF/WAVE header. A provider format without an adapter is still an explicit `PROVIDER_NOT_ROUTABLE` refusal naming the format.*
+
+*Changelog 2026-09-19 — §7.10 and the P2 gap register record G21, the five formats deliberately left unadapted: AssemblyAI STT (upload → submit → poll up to 120s), AWS Polly (SigV4 signing, which the reference does not implement at all), Edge TTS and Google TTS (a token scraped out of a vendor HTML page and cached, with a registry `base_url` that is a marker rather than a URL), and Local Device TTS (spawns host binaries: macOS `say`, Windows SAPI, ffmpeg). They are not one builder away from the current pipeline — each needs a second request, a signing scheme, or a host process — so they stay refused by name until a seam for multi-step adapters is designed. Gemini STT remains ordinary G5 work: it is a single `generateContent` with inline audio.*
+
+*Changelog 2026-09-19 — §7.11 records that the proxy settings are now honored on the dial path (register G4, owner decision D2 = a): `settings.network.outbound_proxy_*` is read per request and decides the route for every outbound call the shared client makes, so an operator's proxy takes effect on the next call rather than the next boot, and `outbound_no_proxy` exempts hosts by exact name or domain suffix (`*` for all). The security half is stated in the section because it is the reason the check lives where it does: a proxied request never dials its destination, so the destination is validated against the egress allowlist before the route is returned — otherwise enabling a proxy would switch the A01 policy off for every call — and a settings read or proxy URL that fails refuses the call rather than dialing direct. Per-endpoint binding stays deferred.*
+
+*Changelog 2026-09-19 — §6 records the schema's ownership rule (register G19): every table belongs to the role that owns `gateway_keys`. A migration runs as whichever role boots the process, so a superuser boot created `media_provider_settings` and `proxies` owned by that superuser while the application role could not read them — measured live as `permission denied for table media_provider_settings` on `PATCH /media-providers/{id}` and on every §7.11 route, while all other tables answered. Migration `000011` re-owns the two to the anchor role, and because a role that does not own a table cannot re-own it, a refusal is a boot warning naming the statement to run instead of a boot that never comes up.*
