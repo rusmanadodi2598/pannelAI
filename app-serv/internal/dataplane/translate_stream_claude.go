@@ -7,13 +7,16 @@
 //
 //	on /api/v1/messages can be served by any provider.
 //
-// @uses      internal/schema, encoding/json.
+// @uses      internal/schema.
 // @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages on the Anthropic wire,
 //
-//	and the resolved provider may speak OpenAI — so the framing has to be
-//	produced, not forwarded. Anthropic's stream is stricter than OpenAI's:
-//	every content block must be opened, fed, and closed in order, so this
-//	is a small state machine whose state the caller owns.
+//	and the resolved provider may speak OpenAI or the Responses API, so the
+//	framing has to be produced, not forwarded. Anthropic's stream is
+//	stricter than OpenAI's: every content block must be opened, fed, and
+//	closed in order, so this is a small state machine whose state the
+//	caller owns. Its delta and block-closing helpers live in
+//	translate_stream_claude_delta.go and translate_stream_claude_blocks.go,
+//	for the AGENTS.md §1.1 budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -44,6 +47,10 @@ type ClaudeStreamState struct {
 	// was opened as, so argument fragments land on the right block.
 	toolIndex map[int]int
 
+	// responses maps Responses API events onto the OpenAI chunks this state
+	// frames, when the upstream speaks that format.
+	responses responsesStreamState
+
 	// usage is the accounting folded into the closing message_delta, which is
 	// where Anthropic carries it.
 	usage *schema.Usage
@@ -61,16 +68,39 @@ func NewClaudeStreamState(id, model string) *ClaudeStreamState {
 
 // Frames converts one upstream payload into Anthropic events.
 func (s *ClaudeStreamState) Frames(upstreamTarget string, payload []byte) [][]byte {
-	chunk, ok := decodeObject(payload)
-	if !ok {
-		return nil
-	}
-	if upstreamTarget == TargetClaude {
+	switch upstreamTarget {
+	case TargetClaude:
+		chunk, ok := decodeObject(payload)
+		if !ok {
+			return nil
+		}
 		// The upstream already speaks Anthropic, so its events are forwarded after
 		// the identity fields the client expects are set.
 		return s.forwardClaude(chunk)
+	case TargetResponses:
+		return s.fromResponses(payload)
+	default:
+		chunk, ok := decodeObject(payload)
+		if !ok {
+			return nil
+		}
+		return s.fromOpenAI(chunk)
 	}
-	return s.fromOpenAI(chunk)
+}
+
+// fromResponses converts one Responses event by mapping it into the OpenAI chunk
+// vocabulary first, then framing that chunk: the same path an OpenAI upstream
+// takes, so the event mapping lives in one place.
+func (s *ClaudeStreamState) fromResponses(payload []byte) [][]byte {
+	chunk := s.responses.chunk(payload)
+	if chunk == nil {
+		return nil
+	}
+	decoded, ok := decodeObject(chunk)
+	if !ok {
+		return nil
+	}
+	return s.fromOpenAI(decoded)
 }
 
 // Finish closes the stream: any open block is stopped, the closing
@@ -157,108 +187,6 @@ func (s *ClaudeStreamState) fromOpenAI(chunk object) [][]byte {
 	return frames
 }
 
-// deltaFrames converts one OpenAI delta, opening and closing Anthropic blocks as
-// the content type changes: Anthropic has no equivalent of a single delta that
-// carries text and a tool call at once.
-func (s *ClaudeStreamState) deltaFrames(delta object) [][]byte {
-	frames := make([][]byte, 0, 2)
-
-	if thinking := stringField(delta, "reasoning_content"); thinking != "" {
-		frames = append(frames, s.closeText()...)
-		if s.thinkingIndex < 0 {
-			s.thinkingIndex = s.nextIndex
-			s.nextIndex++
-			frames = append(frames, eventFrame(schema.EventContentBlockStart, mustFrame(map[string]any{
-				"type":  schema.EventContentBlockStart,
-				"index": s.thinkingIndex,
-				"content_block": map[string]any{
-					"type": schema.BlockThinking, "thinking": "",
-				},
-			})))
-		}
-		frames = append(frames, eventFrame(schema.EventContentBlockDelta, mustFrame(map[string]any{
-			"type":  schema.EventContentBlockDelta,
-			"index": s.thinkingIndex,
-			"delta": map[string]any{"type": schema.DeltaThinking, "thinking": thinking},
-		})))
-	}
-
-	if content := stringField(delta, "content"); content != "" {
-		frames = append(frames, s.closeThinking()...)
-		if s.textIndex < 0 {
-			s.textIndex = s.nextIndex
-			s.nextIndex++
-			frames = append(frames, eventFrame(schema.EventContentBlockStart, mustFrame(map[string]any{
-				"type":  schema.EventContentBlockStart,
-				"index": s.textIndex,
-				"content_block": map[string]any{
-					"type": schema.BlockText, "text": "",
-				},
-			})))
-		}
-		frames = append(frames, eventFrame(schema.EventContentBlockDelta, mustFrame(map[string]any{
-			"type":  schema.EventContentBlockDelta,
-			"index": s.textIndex,
-			"delta": map[string]any{"type": schema.DeltaText, "text": content},
-		})))
-	}
-
-	frames = append(frames, s.toolCallFrames(delta)...)
-	return frames
-}
-
-// toolCallFrames opens a tool_use block for a new tool call and feeds argument
-// fragments into it.
-func (s *ClaudeStreamState) toolCallFrames(delta object) [][]byte {
-	calls, ok := arrayField(delta, "tool_calls")
-	if !ok {
-		return nil
-	}
-	frames := make([][]byte, 0, len(calls)*2)
-	for _, raw := range calls {
-		call, ok := decodeObject(raw)
-		if !ok {
-			continue
-		}
-		openAIIndex := intField(call, "index")
-		function, hasFunction := objectField(call, "function")
-
-		if id := stringField(call, "id"); id != "" {
-			frames = append(frames, s.closeText()...)
-			frames = append(frames, s.closeThinking()...)
-			blockIndex := s.nextIndex
-			s.nextIndex++
-			s.toolIndex[openAIIndex] = blockIndex
-			name := ""
-			if hasFunction {
-				name = stringField(function, "name")
-			}
-			frames = append(frames, eventFrame(schema.EventContentBlockStart, mustFrame(map[string]any{
-				"type":  schema.EventContentBlockStart,
-				"index": blockIndex,
-				"content_block": map[string]any{
-					"type": schema.BlockToolUse, "id": id, "name": name, "input": map[string]any{},
-				},
-			})))
-		}
-
-		if !hasFunction {
-			continue
-		}
-		fragment := stringField(function, "arguments")
-		blockIndex, known := s.toolIndex[openAIIndex]
-		if fragment == "" || !known {
-			continue
-		}
-		frames = append(frames, eventFrame(schema.EventContentBlockDelta, mustFrame(map[string]any{
-			"type":  schema.EventContentBlockDelta,
-			"index": blockIndex,
-			"delta": map[string]any{"type": schema.DeltaInputJSON, "partial_json": fragment},
-		})))
-	}
-	return frames
-}
-
 // startFrame emits message_start exactly once, which Anthropic requires as the
 // first event of a stream.
 func (s *ClaudeStreamState) startFrame() []byte {
@@ -274,61 +202,4 @@ func (s *ClaudeStreamState) startFrame() []byte {
 			"usage": schema.MessagesUsage{},
 		},
 	}))
-}
-
-// closeText stops the open text block, if one is open.
-func (s *ClaudeStreamState) closeText() [][]byte {
-	if s.textIndex < 0 {
-		return nil
-	}
-	index := s.textIndex
-	s.textIndex = -1
-	return [][]byte{blockStopFrame(index)}
-}
-
-// closeThinking stops the open thinking block, if one is open.
-func (s *ClaudeStreamState) closeThinking() [][]byte {
-	if s.thinkingIndex < 0 {
-		return nil
-	}
-	index := s.thinkingIndex
-	s.thinkingIndex = -1
-	return [][]byte{blockStopFrame(index)}
-}
-
-// closeBlocks stops every open block, ordered by index so the client sees them
-// close in the order they opened.
-func (s *ClaudeStreamState) closeBlocks() [][]byte {
-	frames := make([][]byte, 0, 3)
-	frames = append(frames, s.closeThinking()...)
-	frames = append(frames, s.closeText()...)
-	for index := 0; index < s.nextIndex; index++ {
-		if isToolBlock(s.toolIndex, index) {
-			frames = append(frames, blockStopFrame(index))
-		}
-	}
-	s.toolIndex = make(map[int]int, 0)
-	return frames
-}
-
-// isToolBlock reports whether a block index was opened as a tool_use block.
-func isToolBlock(index map[int]int, blockIndex int) bool {
-	for _, value := range index {
-		if value == blockIndex {
-			return true
-		}
-	}
-	return false
-}
-
-// blockStopFrame builds a content_block_stop event.
-func blockStopFrame(index int) []byte {
-	return eventFrame(schema.EventContentBlockStop, mustFrame(map[string]any{
-		"type": schema.EventContentBlockStop, "index": index,
-	}))
-}
-
-// eventFrame renders a JSON payload as a named Anthropic SSE event.
-func eventFrame(event string, payload []byte) []byte {
-	return EventFrame(event, payload)
 }

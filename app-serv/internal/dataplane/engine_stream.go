@@ -197,7 +197,7 @@ func (e *Engine) translateAnswer(upstream *Upstream, resolution Resolution, in R
 		if resolution.Target == TargetClaude {
 			return raw, usage, nil
 		}
-		translated, err := OpenAIToClaudeResponse(raw, resolution.ModelID)
+		translated, err := claudeAnswer(raw, resolution)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -207,7 +207,7 @@ func (e *Engine) translateAnswer(upstream *Upstream, resolution Resolution, in R
 		if resolution.Target == TargetOpenAI {
 			return raw, usage, nil
 		}
-		translated, err := ClaudeToOpenAIResponse(raw, resolution.ModelID, e.clock().Unix())
+		translated, err := openAIAnswer(raw, resolution, e.clock().Unix())
 		if err != nil {
 			return nil, nil, err
 		}

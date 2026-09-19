@@ -7,14 +7,16 @@
 //
 //	usage chunk stream_options.include_usage asks for.
 //
-// @uses      internal/schema, encoding/json, strings.
+// @uses      internal/schema, encoding/json.
 // @reason    SPEC-API-001 §4 fixes SSE as the transport and requires a usage chunk
 //
 //	when the client asked for one. Re-framing needs per-stream state
 //	(which content block is open, the next tool-call index, the last
 //	usage), and the state is passed in rather than held in a package
 //	variable, so a test drives every path directly and no clock decides
-//	what a frame contains.
+//	what a frame contains. The Anthropic-event mapping lives in
+//	translate_stream_openai_claude.go and the usage readers in
+//	translate_usage_read.go, both for the AGENTS.md §1.1 budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -24,7 +26,6 @@ package dataplane
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
@@ -49,6 +50,10 @@ type StreamState struct {
 	// toolCalls counts the tool calls reported so far, which is the next OpenAI
 	// index.
 	toolCalls int
+
+	// responses maps Responses API events onto the OpenAI chunks this state
+	// frames, when the upstream speaks that format.
+	responses responsesStreamState
 
 	// usage is the last accounting block seen, so the finish frame and the usage
 	// chunk can both carry it. It is nil until an upstream reports one, which is
@@ -77,10 +82,25 @@ func NewStreamState(id, model string, created int64, includeUsage bool) *StreamS
 // keep-alive, or an event with no OpenAI equivalent. Emitting an empty frame
 // instead would make a client that counts frames mis-count the answer.
 func (s *StreamState) Frames(upstreamTarget string, payload []byte) [][]byte {
-	if upstreamTarget == TargetClaude {
+	switch upstreamTarget {
+	case TargetClaude:
 		return s.claudeFrames(payload)
+	case TargetResponses:
+		return s.responsesFrames(payload)
+	default:
+		return s.openAIFrames(payload)
 	}
-	return s.openAIFrames(payload)
+}
+
+// responsesFrames converts one Responses event into the OpenAI frames it stands
+// for: the event is mapped into the chunk vocabulary first, and the same
+// re-framing every OpenAI chunk takes does the rest.
+func (s *StreamState) responsesFrames(payload []byte) [][]byte {
+	chunk := s.responses.chunk(payload)
+	if chunk == nil {
+		return nil
+	}
+	return s.openAIFrames(chunk)
 }
 
 // Finish returns the frames that close the stream: the final content frame when
@@ -163,122 +183,6 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 	return frames
 }
 
-// claudeFrames converts one Anthropic stream event into OpenAI frames, keeping the
-// tool-call indices OpenAI clients expect.
-func (s *StreamState) claudeFrames(payload []byte) [][]byte {
-	event, ok := decodeObject(payload)
-	if !ok {
-		return nil
-	}
-	frames := make([][]byte, 0, 2)
-
-	switch stringField(event, "type") {
-	case schema.EventMessageStart:
-		if message, ok := objectField(event, "message"); ok {
-			if id := stringField(message, "id"); id != "" {
-				s.ID = id
-			}
-			if usage, ok := objectField(message, "usage"); ok {
-				// A message_start usage block only carries the prompt side, so the
-				// stream keeps the last one it sees rather than the first.
-				parsed := ClaudeUsageToOpenAI(claudeUsageFromObject(usage))
-				s.usage = &parsed
-			}
-		}
-		frames = append(frames, s.chunk(schema.Delta{Role: RoleAssistant}, nil))
-
-	case schema.EventContentBlockStart:
-		block, ok := objectField(event, "content_block")
-		if !ok {
-			break
-		}
-		if stringField(block, "type") != schema.BlockToolUse {
-			break
-		}
-		index := intField(event, "index")
-		s.toolIndex[index] = s.toolCalls
-		s.toolCalls++
-		frames = append(frames, s.chunk(schema.Delta{ToolCalls: []schema.ToolCallDelta{{
-			Index: s.toolIndex[index],
-			ID:    stringField(block, "id"),
-			Type:  schema.BlockFunction,
-			Function: &schema.FunctionDelta{
-				Name: strings.TrimPrefix(stringField(block, "name"), ClaudeToolPrefix),
-			},
-		}}}, nil))
-
-	case schema.EventContentBlockDelta:
-		delta, ok := objectField(event, "delta")
-		if !ok {
-			break
-		}
-		if frame := s.blockDeltaFrame(intField(event, "index"), delta); frame != nil {
-			frames = append(frames, frame)
-		}
-
-	case schema.EventMessageDelta:
-		if delta, ok := objectField(event, "delta"); ok {
-			if reason := stringField(delta, "stop_reason"); reason != "" {
-				s.finishReason = openAIFinishReason(reason, TargetClaude)
-			}
-		}
-		if usage, ok := objectField(event, "usage"); ok {
-			parsed := ClaudeUsageToOpenAI(claudeUsageFromObject(usage))
-			s.usage = &parsed
-		}
-		if s.finishReason != "" && !s.finishSent {
-			reason := s.finishReason
-			frames = append(frames, s.chunk(schema.Delta{}, &reason))
-			s.finishSent = true
-		}
-
-	case schema.EventMessageStop:
-		if !s.finishSent {
-			reason := s.finishReason
-			if reason == "" {
-				reason = FinishStop
-			}
-			frames = append(frames, s.chunk(schema.Delta{}, &reason))
-			s.finishSent = true
-		}
-
-	default:
-		// A ping, or an event type this translator does not map, carries nothing a
-		// client acts on.
-		return nil
-	}
-	return frames
-}
-
-// blockDeltaFrame builds the frame one Anthropic content delta stands for, or nil
-// when the delta is empty or belongs to an unknown block.
-func (s *StreamState) blockDeltaFrame(index int, delta object) []byte {
-	switch stringField(delta, "type") {
-	case schema.DeltaText:
-		if text := stringField(delta, "text"); text != "" {
-			return s.chunk(schema.Delta{Content: text}, nil)
-		}
-	case schema.DeltaThinking:
-		if thinking := stringField(delta, "thinking"); thinking != "" {
-			return s.chunk(schema.Delta{ReasoningContent: thinking}, nil)
-		}
-	case schema.DeltaInputJSON:
-		fragment := stringField(delta, "partial_json")
-		if fragment == "" {
-			return nil
-		}
-		toolIndex, ok := s.toolIndex[index]
-		if !ok {
-			return nil
-		}
-		return s.chunk(schema.Delta{ToolCalls: []schema.ToolCallDelta{{
-			Index:    toolIndex,
-			Function: &schema.FunctionDelta{Arguments: fragment},
-		}}}, nil)
-	}
-	return nil
-}
-
 // chunk builds one OpenAI frame from the stream's identity.
 func (s *StreamState) chunk(delta schema.Delta, finishReason *string) []byte {
 	return mustFrame(schema.ChatCompletionChunk{
@@ -307,40 +211,4 @@ func mustFrame(value any) []byte {
 		return []byte("null")
 	}
 	return encoded
-}
-
-// claudeUsageFromObject reads an Anthropic usage object from a decoded chunk.
-func claudeUsageFromObject(usage object) schema.MessagesUsage {
-	return schema.MessagesUsage{
-		InputTokens:              intField(usage, "input_tokens"),
-		OutputTokens:             intField(usage, "output_tokens"),
-		CacheReadInputTokens:     intField(usage, "cache_read_input_tokens"),
-		CacheCreationInputTokens: intField(usage, "cache_creation_input_tokens"),
-	}
-}
-
-// openAIUsageFromObject reads an OpenAI usage object from a decoded chunk.
-func openAIUsageFromObject(usage object) *schema.Usage {
-	parsed := schema.Usage{
-		PromptTokens:     intField(usage, "prompt_tokens"),
-		CompletionTokens: intField(usage, "completion_tokens"),
-		TotalTokens:      intField(usage, "total_tokens"),
-	}
-	if details, ok := objectField(usage, "prompt_tokens_details"); ok {
-		cached := intField(details, "cached_tokens")
-		creation := intField(details, "cache_creation_tokens")
-		if cached > 0 || creation > 0 {
-			parsed.PromptTokensDetails = &schema.PromptTokensDetails{
-				CachedTokens:         cached,
-				CacheCreationTokens:  creation,
-				CacheReadInputTokens: cached,
-			}
-		}
-	}
-	if details, ok := objectField(usage, "completion_tokens_details"); ok {
-		if reasoning := intField(details, "reasoning_tokens"); reasoning > 0 {
-			parsed.CompletionTokensDetail = &schema.CompletionDetail{ReasoningTokens: reasoning}
-		}
-	}
-	return &parsed
 }

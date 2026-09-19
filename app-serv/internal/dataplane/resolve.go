@@ -28,16 +28,6 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
-// TargetFormat is the upstream wire format the gateway can translate. Only the
-// formats with a translator are listed: `openai-responses` is admitted by the
-// registry as native but has no translator until P3 (SPEC-API-001 §10), so a
-// request naming it is refused as PROVIDER_NOT_ROUTABLE rather than sent as a
-// 502 that reads like an upstream outage.
-const (
-	TargetOpenAI = "openai"
-	TargetClaude = "claude"
-)
-
 // ModelLookup is the read path resolution and the catalog listing need from the
 // combo and catalog boundaries. It is declared here rather than depending on four
 // repository contracts so the resolver asks narrow questions, and so a question it
@@ -209,23 +199,4 @@ func (r *Resolver) Allowed(ctx context.Context, providerID, modelID string) bool
 		return false
 	}
 	return !disabled
-}
-
-// targetFormat maps a registry wire format onto a translator, or "" when no
-// translator handles it.
-//
-// Gemini is deliberately absent: the registry reports every provider declaring it
-// as `routability: connector` (they wrap the payload in a vendor envelope), so a
-// format with no reachable route must not decode as translatable. The Gemini
-// payload builder exists for the connector that will need it, and is exercised
-// directly by its own tests.
-func targetFormat(format string) string {
-	switch format {
-	case registry.DefaultFormat:
-		return TargetOpenAI
-	case TargetClaude:
-		return TargetClaude
-	default:
-		return ""
-	}
 }

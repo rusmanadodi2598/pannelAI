@@ -710,8 +710,9 @@ func TestResolver_ModelList(t *testing.T) {
 }
 
 // TestTargetFormat pins the translator check: only a format with a translator
-// decodes as routable, so a Gemini or Responses provider is refused by name rather
-// than sent as a 502.
+// decodes as routable, so a Gemini provider is refused by name rather than sent
+// as a 502. The Responses format gained its translator in P3 (SPEC-API-001 §10),
+// so it now maps to its own target.
 func TestTargetFormat(t *testing.T) {
 	cases := []struct {
 		format string
@@ -721,7 +722,7 @@ func TestTargetFormat(t *testing.T) {
 		{format: "claude", want: TargetClaude},
 		{format: "gemini", want: ""},
 		{format: "gemini-cli", want: ""},
-		{format: registry.FormatOpenAIResponses, want: ""},
+		{format: registry.FormatOpenAIResponses, want: TargetResponses},
 		{format: "kiro", want: ""},
 		{format: "", want: ""},
 	}

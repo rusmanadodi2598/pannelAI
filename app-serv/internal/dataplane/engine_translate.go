@@ -65,15 +65,21 @@ func translateUpstreamBody(in Request, resolution Resolution) ([]byte, error) {
 		if in.Messages == nil {
 			return nil, dataPlaneError(CodeValidation, "the request body could not be read")
 		}
-		if resolution.Target == TargetOpenAI {
+		switch resolution.Target {
+		case TargetOpenAI:
 			return encode(ClaudeToOpenAI(*in.Messages, resolution.UpstreamID, in.Stream))
+		case TargetResponses:
+			return encode(ClaudeToResponses(*in.Messages, resolution.UpstreamID, in.Stream))
 		}
 	case schema.FormatOpenAI:
 		if in.Chat == nil {
 			return nil, dataPlaneError(CodeValidation, "the request body could not be read")
 		}
-		if resolution.Target == TargetClaude {
+		switch resolution.Target {
+		case TargetClaude:
 			return encode(OpenAIToClaude(*in.Chat, resolution.UpstreamID, in.Stream))
+		case TargetResponses:
+			return encode(OpenAIToResponses(*in.Chat, resolution.UpstreamID, in.Stream))
 		}
 	}
 	return nil, dataPlaneError(CodeProviderNotRoutable,
@@ -91,11 +97,33 @@ func readUsage(raw []byte, upstreamTarget string) *schema.Usage {
 	if !ok {
 		return nil
 	}
-	if upstreamTarget == TargetClaude {
+	switch upstreamTarget {
+	case TargetClaude:
 		parsed := ClaudeUsageToOpenAI(claudeUsageFromObject(usage))
 		return &parsed
+	case TargetResponses:
+		return responsesUsageFromObject(usage)
+	default:
+		return openAIUsageFromObject(usage)
 	}
-	return openAIUsageFromObject(usage)
+}
+
+// claudeAnswer translates a non-streamed upstream answer into the Anthropic
+// wire, whichever format the upstream wrote it in.
+func claudeAnswer(raw []byte, resolution Resolution) (schema.MessagesResponse, error) {
+	if resolution.Target == TargetResponses {
+		return ResponsesToClaudeResponse(raw, resolution.ModelID)
+	}
+	return OpenAIToClaudeResponse(raw, resolution.ModelID)
+}
+
+// openAIAnswer translates a non-streamed upstream answer into the OpenAI wire,
+// whichever format the upstream wrote it in.
+func openAIAnswer(raw []byte, resolution Resolution, created int64) (schema.ChatCompletionResponse, error) {
+	if resolution.Target == TargetResponses {
+		return ResponsesToOpenAIResponse(raw, resolution.ModelID, created)
+	}
+	return ClaudeToOpenAIResponse(raw, resolution.ModelID, created)
 }
 
 // encode marshals a translated payload, reporting a failure as a client error
