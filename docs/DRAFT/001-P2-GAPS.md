@@ -7,7 +7,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 14 gap terdaftar, empat di antaranya temuan click-through G1 |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 16 gap terdaftar, enam di antaranya temuan click-through |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
 | **Bukti terakhir** | commit `1f00860` + `573979b`; click-through G1 2026-09-19 (baris §8); gate hijau |
 
@@ -36,8 +36,10 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G10 | Status row `SYSTEM_MAP.md` masih menarasikan P1 sebagai fase terakhir | dokumen §1.9 | tidak | 6 |
 | G11 | `POST /models/custom` menolak provider node kustom (katalog memegang index boot-time, bukan overlay). **CLOSED 2026-09-19** | bug wiring §7.6/§7.4 | tidak | 2 |
 | G12 | Budget cap hanya bisa ditulis; `GET /quotas/{endpoint_id}` tidak pernah memuatnya sampai ada window usage | kontrak §7.12 | **ya** | 3 |
-| G13 | Embeddings menolak node openai-compatible (reference punya adapter `openaiCompatNode`) | fitur/paritas | tidak | 5 |
+| G13 | Embeddings menolak node openai-compatible (reference punya adapter `openaiCompatNode`). **CLOSED 2026-09-19** | fitur/paritas | tidak | 5 |
 | G14 | State store OAuth tanpa test; `GETDEL` butuh Redis ≥ 6.2 dan gagalnya 500 tanpa log | test + portabilitas | **ya** | 2 |
+| G15 | Endpoint `no_auth` tanpa key tidak pernah terpilih (selector menuntut key sebelum cabang auth type) | bug routing §7.5 | tidak | 2 |
+| G16 | Jalur media mengirim `Authorization: Bearer` kosong saat materi kredensial kosong; jalur chat mengirim tanpa header | bug kredensial §8.1 | tidak | 2 |
 
 ## 3. Detail per gap
 
@@ -245,7 +247,7 @@ di v1.
 **Definisi selesai.** Pilihan tercatat; kalau (a)/(b), satu PUT lalu GET
 menampilkan cap yang sama; ada test yang mengunci bentuknya.
 
-### G13: Embeddings menolak node openai-compatible
+### G13: Embeddings menolak node openai-compatible (CLOSED 2026-09-19)
 
 **Bukti.** `POST /api/v1/embeddings` dengan model `stub/stub-embed` (node §7.4 yang
 sama, endpoint + key aktif) menjawab
@@ -264,8 +266,63 @@ adalah provider registry yang mendeklarasikan blok media.
 `Transport.BaseURL` + `/embeddings` sebagai target, dengan payload OpenAI yang
 sudah dipakai adapter registry.
 
-**Definisi selesai.** Satu panggilan embeddings lewat node menjawab 200 dengan
-bentuk OpenAI; tabel test 3 sampai 5 kasus termasuk node tanpa kredensial.
+**Perbaikan (2026-09-19).** `mediaConfig` memanggil `nodeEmbeddingMedia` baru:
+node `Custom` berformat OpenAI (chat atau Responses) mendapat blok sintesis
+(`BaseURL` = base node dengan aturan trim reference, `AuthType` api_key,
+`Format` openai), node Anthropic-compatible tetap ditolak. Blok sintesis
+mendeklarasikan formatnya secara eksplisit, dan `IsGeminiEmbedding` kini
+mendahulukan format yang dideklarasikan, supaya node yang menunjuk host
+OpenAI-compatible Gemini tidak dibaca sebagai protokol native. Dua test baru:
+tabel lima bentuk node plus satu kontrol benign.
+
+**Definisi selesai.** Terpenuhi: satu panggilan embeddings lewat node menjawab
+200 dengan bentuk OpenAI; tabel test lima kasus. Kasus node tanpa kredensial
+diukur live (endpoint `api_key` menolak dibuat tanpa key; endpoint `no_auth`
+tanpa key ditolak selector tanpa dial) dan melahirkan G15/G16.
+
+### G15: Endpoint `no_auth` tanpa key tidak pernah terpilih
+
+**Bukti.** `POST /api/v1/endpoints` dengan `auth_type: no_auth` dan tanpa key
+menjawab 201 `"key_count":0,"available":true`, tetapi
+`POST /api/v1/embeddings` lewat provider itu (node openai-compatible) menjawab
+`503 NO_PROVIDER_AVAILABLE "every upstream endpoint for provider … is unavailable
+or has no usable key"`, tanpa satu pun dial ke stub. `Selector.Select` memanggil
+`endpoint.NextKey(now)` dan `continue` bila tidak ada key sehat, sedangkan cabang
+`no_auth` di `credential()` (yang memang mengabaikan key) baru dicapai setelah
+itu. Efeknya endpoint `no_auth` hanya bisa dipakai kalau operator menyimpan key
+placeholder, dan key itu tidak pernah dikirim.
+
+**Kenapa.** Auth type `no_auth` adalah jalur resmi (§7.5) untuk provider tanpa
+kredensial; sekarang endpoint seperti itu mati sampai diisi rahasia palsu.
+
+**Pendekatan.** Di `Select`, cabang `no_auth` dipilih sebelum pengecekan key
+(kredensial kosong, `Selection.Key` zero), dengan jalur health write yang tidak
+menuntut key id. Alternatifnya: `no_auth` tetap butuh key, dan itu dinyatakan di
+SPEC-API.
+
+**Definisi selesai.** Endpoint `no_auth` tanpa key bisa dirutekan; test
+mengunci pemilihan tanpa key dan health write-nya.
+
+### G16: Jalur media mengirim bearer kosong
+
+**Bukti.** Pada endpoint `no_auth` yang diberi key placeholder (satu-satunya cara
+G15 membiarkannya terpilih), `POST /api/v1/chat/completions` sampai ke stub
+**tanpa** header `Authorization` (`ApplyAuth` berhenti saat materi kredensial
+kosong), sedangkan `POST /api/v1/embeddings` dengan endpoint yang sama sampai
+dengan `Authorization: Bearer` kosong. `MediaTarget` menulis header itu di cabang
+default tanpa memeriksa secret; reference pun mengirim
+`Bearer ${creds.apiKey || creds.accessToken}` sehingga paritas bukan pembenaran.
+
+**Kenapa.** Satu akun menyajikan dua aturan kredensial yang berbeda di dua jalur,
+dan header kosong adalah kredensial salah bentuk yang dikirim ke upstream yang
+justru tidak butuh kredensial.
+
+**Pendekatan.** Samakan dengan aturan `ApplyAuth`: materi kredensial kosong
+berarti tidak ada header yang dikirim (cabang default dan bearer), sementara
+cabang query-param tetap menolak keras. Test tabel di level `MediaTarget`.
+
+**Definisi selesai.** Tidak ada header kredensial terkirim saat materi kosong;
+test mengunci ketiga cabang.
 
 ### G14: State store OAuth tanpa test dan tanpa lantai versi
 
@@ -310,7 +367,9 @@ baris log berkode.
 5. **P2.5, G14**: temuan G1 yang tersisa, butuh D4 untuk pilihan lantai versi
    (testnya bisa ditulis lebih dulu).
 6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas.
-7. **P2.7, G7, G8, G9, G10**: penutup kecil + dokumen.
+7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
+   media kosong), tanpa keputusan owner.
+8. **P2.8, G7, G8, G9, G10**: penutup kecil + dokumen.
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
 
@@ -369,3 +428,5 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | G1 embeddings lewat node kustom | FAIL by design: 400 `PROVIDER_NOT_ROUTABLE` (G13) |
 | 2026-09-19 | G1 OAuth: start, callback (JSON + redirect), status, refresh (per endpoint + due sweep) | PASS lewat shim `GETDEL`: authorize URL berisi client_id, state, PKCE S256, scopes; callback 200 `created:true` label `stub@example.com` (identitas dari userinfo stub), replay dan state asing 400, callback browser 302 ke `/providers/claude?oauth=connected&endpoint_id=…`; status menampilkan `refresh_state:"due"`; refresh per endpoint dan due sweep `refreshed:1`; endpoint asing 404, provider non-oauth 400; stub melihat grant JSON dengan `code_verifier` dan refresh grant dengan `refresh_token`. Tanpa shim (Redis 6.0.16) callback 500 tanpa log: G14 |
 | 2026-09-19 | **G11 CLOSED**: `CatalogIndex` + `runtimeIndex` di wiring, dua test baru | PASS: suite `-race` 13 paket hijau, `go-lint.sh` dan `go-headers.sh` (442 file) PASS; live pada binary yang sama: `POST /models/custom` node 201, katalog memuat `openai-compatible-…/stub-model`, `POST /combos` ref node 201; artefak dibersihkan (node, model, combo, key, hash panel) |
+| 2026-09-19 | **G13 CLOSED**: `nodeEmbeddingMedia` + format eksplisit di `IsGeminiEmbedding`, dua test baru (tabel lima bentuk node + kontrol benign) | PASS live (PostgreSQL 14 + Redis nyata, stub loopback 8091, tanpa shim): node `openai-compatible-…` (base `http://127.0.0.1:8091/v1`) + endpoint + key, `POST /embeddings` model `g13node/stub-embed` menjawab 200 dalam 58 ms bentuk OpenAI (`data[0].embedding [0.1,0.2,0.3]`, usage 4); log stub membuktikan `POST /v1/embeddings` dengan payload OpenAI dan kredensial endpoint sebagai bearer. Negatif: endpoint `api_key` tanpa key ditolak saat create (VALIDATION_ERROR), endpoint `no_auth` tanpa key ditolak selector 503 tanpa dial (G15), node anthropic-compatible tetap 400 `PROVIDER_NOT_ROUTABLE`. Artefak dibersihkan (tiga node, tiga endpoint, key, gateway key, hash panel) |
+| 2026-09-19 | G13 temuan: `no_auth` tanpa key vs bearer kosong | G15: endpoint `no_auth` tanpa key 201 tetapi 503 `NO_PROVIDER_AVAILABLE`, nol dial. G16: dengan key placeholder, chat sampai ke stub tanpa header `Authorization`, embeddings sampai dengan `Authorization: Bearer` kosong (keduanya dari log stub) |

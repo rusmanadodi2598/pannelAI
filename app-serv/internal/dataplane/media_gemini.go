@@ -34,9 +34,15 @@ import (
 const GeminiEmbeddingFormat = "gemini-embedding"
 
 // IsGeminiEmbedding reports whether a media block declares the Gemini embeddings
-// shape, which is decided by its base URL: the registry declares no per-kind format
-// for embeddings, and the endpoint is what distinguishes the two protocols.
+// shape. A declared format wins; the base URL is the fallback for the registry
+// blocks, which declare no per-kind format for embeddings and are told apart by
+// their endpoint. A synthesized custom-node block declares `openai` explicitly,
+// so a node pointed at a host that also serves the native protocol (Gemini's
+// OpenAI-compatible path) is not misread as that protocol.
 func IsGeminiEmbedding(media registry.MediaConfig) bool {
+	if declared := strings.TrimSpace(media.Format); declared != "" {
+		return declared == GeminiEmbeddingFormat
+	}
 	return strings.Contains(media.BaseURL, "generativelanguage.googleapis.com")
 }
 

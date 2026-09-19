@@ -136,8 +136,15 @@ func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequ
 // provider with neither is refused because §7.10 forbids a silent cloud
 // fallback. The stored value is read per call rather than cached, so a save in
 // the panel takes effect on the next request.
+//
+// A custom OpenAI-compatible node declares no media block at all, so its
+// embeddings block is synthesized from the node's base URL before the refusal
+// is reached (see nodeEmbeddingMedia).
 func (s *EmbeddingsService) mediaConfig(ctx context.Context, entry registry.Provider) (registry.MediaConfig, string, error) {
 	media, ok := entry.Media.For(registry.MediaEmbedding)
+	if !ok {
+		media, ok = nodeEmbeddingMedia(entry)
+	}
 	if !ok {
 		return registry.MediaConfig{}, "", dataplane.ProviderNotRoutable(
 			"provider " + entry.ID + " does not offer embeddings")
