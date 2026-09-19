@@ -38,7 +38,7 @@ func fusionEngine(t *testing.T, upstream *fusionUpstream, combo domain.Combo) (*
 		}
 	}
 	engine := newEngineWith(t, fusionProviders(server.URL, "alpha", "beta", "gamma"), repo,
-		map[string]domain.Combo{combo.Name(): combo})
+		map[string]domain.Combo{combo.Name(): combo}, nil)
 	return engine, repo
 }
 

@@ -108,6 +108,10 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 
 	engine, err := dataplane.NewEngine(dataplane.EngineDeps{
 		Resolver: resolver, Selector: selector, Transport: transport, Vision: in.Vision,
+		// The round-robin counter lives in Redis for the same reason the
+		// endpoint cursor does: a per-process counter would make a combo's
+		// distribution depend on which replica answered.
+		Rotation: redisrepo.NewComboRotationStore(in.Redis),
 	})
 	if err != nil {
 		return dataPlane{}, err

@@ -87,6 +87,10 @@ type Resolution struct {
 	ComboStrategy domain.ComboStrategy
 	// ComboJudge is the model a fusion combo synthesizes its final answer with.
 	ComboJudge string
+	// ComboStickyLimit is how many consecutive requests a round_robin combo
+	// keeps on one member, which is the combo's own limit rather than the
+	// data plane's default.
+	ComboStickyLimit int
 }
 
 // IsCombo reports whether a combo answered the model string.

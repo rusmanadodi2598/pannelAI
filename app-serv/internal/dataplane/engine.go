@@ -72,7 +72,10 @@ type Engine struct {
 	// vision is the optional §7.8 seam. A nil one means no adapter is wired,
 	// which serves every request un-augmented.
 	vision VisionAugmenter
-	clock  func() time.Time
+	// rotation is the optional §7.7 round-robin state. A nil one serves every
+	// combo in stored priority order.
+	rotation RotationStore
+	clock    func() time.Time
 }
 
 // EngineDeps holds the collaborators the engine needs.
@@ -83,6 +86,10 @@ type EngineDeps struct {
 	// Vision augments image-bearing requests aimed at a model that cannot read
 	// images. Optional: nil keeps the pipeline free of the adapter entirely.
 	Vision VisionAugmenter
+	// Rotation advances a round-robin combo's position. Optional: nil serves
+	// every combo in stored priority order, which is what a deployment without
+	// Redis gets instead of a failure.
+	Rotation RotationStore
 	// Clock overrides the time source, so a test can measure latency and the
 	// circuit window without sleeping.
 	Clock func() time.Time
@@ -103,7 +110,10 @@ func NewEngine(deps EngineDeps) (*Engine, error) {
 	if clock == nil {
 		clock = time.Now
 	}
-	return &Engine{resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport, vision: deps.Vision, clock: clock}, nil
+	return &Engine{
+		resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport,
+		vision: deps.Vision, rotation: deps.Rotation, clock: clock,
+	}, nil
 }
 
 // Resolver exposes the resolver, so a caller can answer catalog questions with
@@ -132,6 +142,9 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	if len(refs) == 0 {
 		refs = []string{resolution.Provider.ID + "/" + resolution.ModelID}
 	}
+	// A round_robin combo rotates its leading member; every other strategy
+	// keeps the stored order.
+	refs = e.rotate(ctx, resolution, refs)
 
 	// The §7.8 decision lives beside the seam it consults (vision.go).
 	refs, adapterCount := e.augmentForVision(ctx, in, resolution, refs)

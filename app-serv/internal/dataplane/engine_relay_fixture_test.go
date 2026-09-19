@@ -63,24 +63,31 @@ func (l relayLookup) Combo(_ context.Context, name string) (domain.Combo, bool, 
 // comboRow builds a stored combo row for the fixtures: fallback, one sticky
 // request per model, no judge — the shape every pre-fusion test used.
 func comboRow(name string, refs ...string) domain.Combo {
-	return comboWithStrategy(name, domain.ComboFallback, "", refs...)
+	return comboWithStrategy(name, domain.ComboFallback, 1, "", refs...)
 }
 
 // fusionRow builds a fusion combo row: the strategy under test, and the judge
-// the panel's answers are synthesized by.
+// the panel's answers are synthesized by. Fusion refuses a sticky limit, so the
+// stored row carries the zero a valid one would.
 func fusionRow(name, judge string, refs ...string) domain.Combo {
-	return comboWithStrategy(name, domain.ComboFusion, judge, refs...)
+	return comboWithStrategy(name, domain.ComboFusion, 0, judge, refs...)
+}
+
+// roundRobinRow builds a round_robin combo row with the given sticky limit, so a
+// test can pin what the strategy layer passes to the rotation store.
+func roundRobinRow(name string, stickyLimit int, refs ...string) domain.Combo {
+	return comboWithStrategy(name, domain.ComboRoundRobin, stickyLimit, "", refs...)
 }
 
 // comboWithStrategy rebuilds a combo the way the repository load path would:
 // through Rehydrate, because the row already exists and the shape rules were
 // enforced when it was written.
-func comboWithStrategy(name string, strategy domain.ComboStrategy, judge string, refs ...string) domain.Combo {
+func comboWithStrategy(name string, strategy domain.ComboStrategy, stickyLimit int, judge string, refs ...string) domain.Combo {
 	models := make([]domain.ComboModel, 0, len(refs))
 	for index, ref := range refs {
 		models = append(models, domain.RehydrateComboModel(ref, index))
 	}
-	return domain.RehydrateCombo("cmb_"+name, name, strategy, 1, judge, models, now, now)
+	return domain.RehydrateCombo("cmb_"+name, name, strategy, stickyLimit, judge, models, now, now)
 }
 
 func (relayLookup) Alias(context.Context, string) (string, bool, error) { return "", false, nil }
@@ -149,12 +156,13 @@ func newRelayEngine(t *testing.T, upstreamURL string, repo *memEndpointRepo, com
 	t.Helper()
 	return newEngineWith(t, []registry.Provider{
 		relayProvider("alpha", upstreamURL), relayProvider("beta", upstreamURL),
-	}, repo, combos, vision...)
+	}, repo, combos, nil, vision...)
 }
 
-// newEngineWith is the same wiring over an explicit provider list, so a test
-// that needs a third provider — the fusion judge — does not re-implement it.
-func newEngineWith(t *testing.T, providers []registry.Provider, repo *memEndpointRepo, combos map[string]domain.Combo, vision ...VisionAugmenter) *Engine {
+// newEngineWith is the same wiring over an explicit provider list and an
+// optional rotation store, so a test that needs a third provider — the fusion
+// judge — or a round-robin combo does not re-implement it.
+func newEngineWith(t *testing.T, providers []registry.Provider, repo *memEndpointRepo, combos map[string]domain.Combo, rotation RotationStore, vision ...VisionAugmenter) *Engine {
 	t.Helper()
 	resolver, err := NewResolver(
 		relayRegistry{providers: providers},
@@ -180,7 +188,8 @@ func newEngineWith(t *testing.T, providers []registry.Provider, repo *memEndpoin
 		augmenter = vision[0]
 	}
 	engine, err := NewEngine(EngineDeps{
-		Resolver: resolver, Selector: selector, Transport: transport, Vision: augmenter,
+		Resolver: resolver, Selector: selector, Transport: transport,
+		Vision: augmenter, Rotation: rotation,
 	})
 	if err != nil {
 		t.Fatalf("NewEngine() error = %v", err)

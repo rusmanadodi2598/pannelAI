@@ -180,8 +180,11 @@ stateDiagram-v2
   tetap berlaku. Satu jawaban panel tidak di-fusion: klien non-streaming dilayani jawaban itu langsung,
   klien streaming di-issue ulang ke member yang hidup supaya menerima stream yang sah. Nol jawaban
   melaporkan kegagalan panel. `Outcome.LatencyMS` melaporkan durasi panel+judge, bukan panggilan judge saja.
-- `round_robin` — urutan diputar dari counter Redis (`repository.ComboRotationStore`); **belum dieksekusi
-  `Engine.Relay`** (gap P2 yang tercatat di §7.7 SPEC-API).
+- `round_robin` — urutan diputar dari counter Redis (`repository.ComboRotationStore`, key
+  `pannelai:combo:rotation:<sha256(nama)>`). Engine hanya meminta urutan lewat seam
+  `dataplane.RotationStore` dan memakai `sticky_limit` milik combo, bukan default data plane. Rotasi adalah
+  optimasi: store yang gagal atau menjawab dengan panjang berbeda jatuh ke urutan prioritas, bukan
+  menggagalkan request. Store di-reset `ComboService` saat daftar model atau strategi berubah.
 
 Referensi member yang tidak lagi resolve dilewati, bukan menggagalkan combo: resolusi combo memulai dari
 referensi pertama yang masih routable, dan panel melaporkan referensi rusak lewat slot yang hilang.

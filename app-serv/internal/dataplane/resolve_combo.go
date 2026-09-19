@@ -52,6 +52,7 @@ func (r *Resolver) resolveCombo(ctx context.Context, name string, combo domain.C
 		resolved.ComboRefs = refs
 		resolved.ComboStrategy = combo.Strategy()
 		resolved.ComboJudge = combo.JudgeModel()
+		resolved.ComboStickyLimit = combo.StickyLimit()
 		return resolved, nil
 	}
 	return Resolution{}, lastErr
