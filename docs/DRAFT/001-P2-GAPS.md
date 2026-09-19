@@ -7,7 +7,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 18 gap terdaftar, delapan di antaranya temuan click-through/pass live, sembilan sudah CLOSED (G1, G2, G3, G6, G11, G13, G14, G15, G16) |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 19 gap terdaftar, sembilan di antaranya temuan click-through/pass live, sembilan sudah CLOSED (G1, G2, G3, G6, G11, G13, G14, G15, G16) |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
 | **Bukti terakhir** | pass G6 2026-09-19 (§8 baris terakhir); suite `-race` 13 paket, tagged integration, `go-lint.sh`, dan `go-headers.sh` (460 file) hijau |
 
@@ -42,6 +42,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G16 | Jalur media mengirim `Authorization: Bearer` kosong saat materi kredensial kosong; jalur chat mengirim tanpa header. **CLOSED 2026-09-19** | bug kredensial §8.1 | tidak | 2 |
 | G17 | Kegagalan panggilan chat tidak menulis usage row (outcome kosong di jalur error) | akuntansi §7.12 | tidak | 3 |
 | G18 | Jalur chat tidak menulis `request_logs` sama sekali; hanya media/embeddings yang menulis | akuntansi §7.13 | tidak | 3 |
+| G19 | `media_provider_settings` dan `proxies` dimiliki role superuser; role aplikasi `pannelai` tanpa privilege, jadi §7.10/§7.11 gagal di host ini | lingkungan (aksi pemilik) | tidak | 6 |
 
 ## 3. Detail per gap
 
@@ -501,6 +502,28 @@ router yang sama seperti usage row-nya; keputusan body tetap satu tempat di
 dengan request id yang sama dengan usage row-nya; body hanya tersimpan saat
 capture aktif; test mengunci bentuknya; changelog SPEC-API §7.13.
 
+### G19: Tabel P2 dimiliki role superuser, role aplikasi tanpa privilege
+
+**Bukti.** Pass G6 (2026-09-19): menjalankan gateway dengan DSN `.env` (role
+`pannelai`) gagal `ERROR: permission denied for table media_provider_settings`
+saat `PATCH /media-providers/{provider_id}`. `has_table_privilege` untuk role itu:
+`media_provider_settings SELECT=false INSERT=false UPDATE=false`, `proxies
+SELECT=false INSERT=false`, sementara tabel lain dimiliki `pannelai`. Kedua tabel
+dibuat migration P2 tetapi dimiliki `rusmanadodi` (superuser), jadi override §7.10
+dan rute §7.11 tidak bisa dipakai dengan kredensial aplikasi. Pass diselesaikan
+dengan DSN superuser — workaround, bukan keadaan yang boleh dibiarkan.
+
+**Kenapa.** Fitur P2 yang sudah lulus gate dan live pass tetap tidak jalan di
+deployment normal; kegagalannya muncul sebagai 500 di dua permukaan panel, bukan
+sebagai kesalahan konfigurasi yang jelas.
+
+**Pendekatan.** Aksi pemilik (seperti G8): re-own kedua tabel ke role aplikasi
+(`ALTER TABLE ... OWNER TO pannelai`) atau berikan grant setara, lalu pastikan
+migration berikutnya membuat tabel dengan owner yang benar.
+
+**Definisi selesai.** `PATCH /media-providers/{provider_id}` dan rute §7.11
+berhasil dengan DSN `.env` tanpa perubahan environment.
+
 ## 4. Keputusan yang menunggu owner
 
 | # | Pertanyaan | Pilihan | Jawaban owner | Dampak kalau ditunda |
@@ -524,7 +547,8 @@ capture aktif; test mengunci bentuknya; changelog SPEC-API §7.13.
 6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas.
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
-8. **P2.8, G7, G8, G9, G10**: penutup kecil + dokumen.
+8. **P2.8, G7, G8, G9, G10, G19**: penutup kecil + dokumen + aksi lingkungan
+   pemilik.
 9. **P2.9, G17 + G18**: temuan pass G6 di jalur chat (baris usage error dan baris
    log chat), tanpa keputusan owner.
 
@@ -595,3 +619,4 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G14 CLOSED**: `Take` jadi skrip atomik `GET`+`DEL` via `redis.NewScript`, empat test store bertag `integration` | PASS: terhadap Redis 6.0.16 host **tanpa shim**, keempat test merah `unknown command getdel` sebelum perbaikan dan hijau sesudahnya (stage+TTL, take menghapus key, replay `ok=false` tanpa error, stage ulang `ErrStateAlreadyStaged` tanpa menimpa payload, TTL kedaluwarsa); `GET /oauth/callback` state asing menjawab 302 `oauth_error` dalam 4 ms (sebelumnya 500 dalam 1 ms); tanpa key tersisa |
 | 2026-09-19 | **G2 + G3 CLOSED**: `egress_wiring.go` (satu guard + satu client ber-guard), `HTTPClientDeps{Dialer}` di `NewHTTPClient`, guard di probe, empat jalur wiring berbagi guard; `egress_wiring_test.go` + tabel probe | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 452 file PASS; live (PostgreSQL 14 + Redis nyata, stub `0.0.0.0:8091`): chat 200 dan embeddings 200 lewat node allowlist (baris stub bertambah), node `127.0.0.2` (terbukti hidup lewat curl langsung) 502 `UPSTREAM_ERROR` tanpa baris `/denied` di stub, probe empat node (allowlist `ok`; loopback/privat/link-local `fail` beralasan, 0 dial), proxy test lewat guard yang sama tetap benar, boot dengan allowlist salah berhenti dengan pesan netguard. Artefak dibersihkan (4 node, 2 endpoint, 2 gateway key, usage baris pass, hash panel kembali NULL) |
 | 2026-09-19 | **G6 CLOSED**: `RecordUse` di kontrak repo gateway key + seam `KeyUseRecorder` di `ChatService.Authenticate`; `dataPlaneRecorder` (pasangan usage+log) di media dan embeddings; klasifikasi satu-exit di `Perform`/`perform`; `accountingModel()` untuk search; `MediaCall.Model` dihapus; test baru `key_use_test.go`, `media_record_test.go` (+stub), `TestIntegration_RecordUse` | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 460 file PASS; live (PostgreSQL 14 + Redis nyata, stub loopback 8091, gateway 127.0.0.1:8099): baseline `usage=2 logs=1 reqcount=0` → speech 200 (+1/+1/+1), speech ke jalur 500 (+1/+1/+1, usage `status:error` `UPSTREAM_ERROR`, log `UPSTREAM_ERROR: stub refused`), embeddings 200 (+1/+1/+1), search 200 (+1/+1/+1, `cost_usd` 0.005 = registry `cost_per_query`, model = provider id `brave-search`); tiap pasangan usage+log satu request id, tokens 0, latency sama, key id terisi; kontrol chat 502 menaikkan reqcount tanpa baris media. Artefak dibersihkan: baseline pulih (`usage=2 logs=1`, keys/endpoints/upkeys/nodes/media rows 0, `panel_auth.password_hash` NULL). Dua temuan baru dicatat: G17 (kegagalan chat tanpa usage row), G18 (chat tanpa `request_logs`) |
+| 2026-09-19 | G19 temuan pass G6: kepemilikan tabel P2 | FAIL dengan DSN aplikasi (role `pannelai`): `PATCH /media-providers/openai` → `permission denied for table media_provider_settings`; `has_table_privilege` media `SELECT=false INSERT=false UPDATE=false`, `proxies SELECT=false INSERT=false`, sementara tabel lain dimiliki `pannelai`. Pass diselesaikan dengan DSN superuser; aksi pemilik dicatat sebagai G19 |
