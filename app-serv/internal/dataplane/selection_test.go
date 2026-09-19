@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -37,7 +38,13 @@ var now = time.Date(2026, 9, 18, 12, 0, 0, 0, time.UTC)
 
 // memEndpointRepo is an in-memory EndpointRepository, keyed by provider so the
 // filter the selector sends is what the double answers.
+//
+// The mutex guards the double against the fan-out's concurrency: a fusion panel
+// records every member's outcome in parallel, so a bare map write here would be
+// a data race the production repository (a database) never has. Tests read
+// health directly once Relay has returned, which the fan-out's join orders.
 type memEndpointRepo struct {
+	mu         sync.Mutex
 	byProvider map[string][]domain.UpstreamEndpoint
 	// health records the last health write per key id, so a test can assert the
 	// circuit the domain owns is what changed.
@@ -53,6 +60,8 @@ func newMemEndpointRepo() *memEndpointRepo {
 }
 
 func (r *memEndpointRepo) List(_ context.Context, filter repository.EndpointFilter, _ repository.PageQuery) ([]domain.UpstreamEndpoint, int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if r.err != nil {
 		return nil, 0, r.err
 	}
@@ -70,6 +79,8 @@ func (r *memEndpointRepo) List(_ context.Context, filter repository.EndpointFilt
 }
 
 func (r *memEndpointRepo) RecordKeyHealth(_ context.Context, key domain.UpstreamKey) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.health[key.ID()] = key
 	return nil
 }
@@ -403,18 +414,18 @@ func TestSelector_UnreadableCredentialIsInternal(t *testing.T) {
 
 // fakeLookup answers the catalog questions from fixed sets.
 type fakeLookup struct {
-	combos   map[string][]string
+	combos   map[string]domain.Combo
 	aliases  map[string]string
 	disabled []domain.ModelRef
 	err      error
 }
 
-func (l fakeLookup) Combo(_ context.Context, name string) ([]string, bool, error) {
+func (l fakeLookup) Combo(_ context.Context, name string) (domain.Combo, bool, error) {
 	if l.err != nil {
-		return nil, false, l.err
+		return domain.Combo{}, false, l.err
 	}
-	refs, ok := l.combos[name]
-	return refs, ok, nil
+	combo, ok := l.combos[name]
+	return combo, ok, nil
 }
 
 func (l fakeLookup) Alias(_ context.Context, name string) (string, bool, error) {
@@ -497,11 +508,11 @@ func testIndex(t *testing.T) *registry.Index {
 // each failure and the provider-not-routable case §8 adds.
 func TestResolver_Order(t *testing.T) {
 	lookup := fakeLookup{
-		combos: map[string][]string{
-			"my-combo":   {"provider-a/fast", "claude-only/slow"},
-			"nested":     {"my-combo"},
-			"empty":      {},
-			"claude-com": {"claude-only/x"},
+		combos: map[string]domain.Combo{
+			"my-combo":   comboRow("my-combo", "provider-a/fast", "claude-only/slow"),
+			"nested":     comboRow("nested", "my-combo"),
+			"empty":      comboRow("empty"),
+			"claude-com": comboRow("claude-com", "claude-only/x"),
 		},
 		aliases: map[string]string{
 			"fast":     "provider-a/gpt-fast",
@@ -652,7 +663,7 @@ func TestResolver_Order(t *testing.T) {
 // pairs hidden, combos owned by "combo", and a stable order.
 func TestResolver_ModelList(t *testing.T) {
 	lookup := fakeLookup{
-		combos:  map[string][]string{"my-combo": {"provider-a/x"}},
+		combos:  map[string]domain.Combo{"my-combo": comboRow("my-combo", "provider-a/x")},
 		aliases: map[string]string{},
 		disabled: func() []domain.ModelRef {
 			ref, err := domain.NewModelRef("declared", "known-model")

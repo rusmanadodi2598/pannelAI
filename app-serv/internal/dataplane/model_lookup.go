@@ -48,20 +48,20 @@ func NewCatalogLookup(combos repository.ComboRepository, catalog repository.Mode
 	return &CatalogLookup{combos: combos, catalog: catalog}, nil
 }
 
-// Combo returns the ordered references of a combo, and whether the name
-// addresses one.
+// Combo returns a combo by name, and whether the name addresses one. The
+// aggregate is returned whole because the fusion strategy is executed from it.
 //
 // A missing combo is "not found", not an error: a model string that is not a
 // combo is the ordinary case, and the resolver moves on to the alias path.
-func (l *CatalogLookup) Combo(ctx context.Context, name string) ([]string, bool, error) {
+func (l *CatalogLookup) Combo(ctx context.Context, name string) (domain.Combo, bool, error) {
 	combo, err := l.combos.GetByName(ctx, name)
 	if err != nil {
 		if domain.AsAppError(err).Code == "NOT_FOUND" {
-			return nil, false, nil
+			return domain.Combo{}, false, nil
 		}
-		return nil, false, err
+		return domain.Combo{}, false, err
 	}
-	return combo.Refs(), true, nil
+	return combo, true, nil
 }
 
 // Alias returns an alias's target, and whether the alias exists.

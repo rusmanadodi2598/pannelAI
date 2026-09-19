@@ -280,6 +280,20 @@ Strategy semantics (ported from `combo.js`):
 - `round_robin` — distribute; `sticky_limit` = consecutive requests kept on one model before rotating.
 - `fusion` — fan out to N models, `judge_model` synthesizes the final answer.
 
+The fusion execution the reference fixes, and the gateway implements:
+- Panel calls are **forced non-streaming and carry no tools** (the judge needs complete prose, and a member
+  that called a tool would return none). The panel answers are read back in the client's own wire format.
+- The judge receives the **client's original request plus one appended user turn** carrying the directive —
+  so the client's stream flag and tool declarations survive to the served call. Sources are anonymized
+  (`[Source N]`) and the judge is told not to mention the panel.
+- Degradation: **0 panel answers** is an upstream error (the panel's own failure is reported, so a
+  validation failure stays a validation failure); **exactly 1 answer** is served directly, with no judge
+  call — and a client that asked for SSE is re-issued the surviving member with its own request, because a
+  streamed client must receive a stream rather than the panel's prose-only answer; a member that no longer
+  resolves costs its own slot, not the request.
+- A member's tokens are spent but are **not folded into the served request's usage row**, which records the
+  judge's accounting — one row per request stays the accounting unit.
+
 ### 7.8 Vision Adapter
 
 | Method | Path | Auth | Description | Phase |
@@ -512,3 +526,4 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 *Changelog 2026-09-16 — §8 adds `METHOD_NOT_ALLOWED` (405): the router registers routes method-aware, so a wrong verb is rejected before any handler runs and needs a code that maps to 405 rather than borrowing `VALIDATION_ERROR` (which §8 binds to 400). §6 records that `gateway_keys.name` is unique.*
 *Changelog 2026-09-17 — §7.4 and §7.5 add the two routes the owner requirements name and the spec lacked: custom provider nodes (OpenAI-compatible / Anthropic-compatible) in §7.4, and multi-account bulk onboarding (endpoint batch, key batch, OAuth credential import) in §7.5. Both are P1, because the reference ships the node feature at the same surface level and every provider is multi-account by requirement.*
 *Changelog 2026-09-19 — §7.4 records the callback's two answers and the redirect-origin rule, because the panel (SPEC-UI §6.3) has to read the outcome the browser lands with. The callback is public by necessity and its origin never comes from the request: a configured `PUBLIC_BASE_URL` wins, the staged `redirect_uri` origin is only a fallback, and with neither the route answers JSON instead of redirecting.*
+*Changelog 2026-09-19 — §7.7 records the fusion execution the reference fixes, now that the data plane runs it: a non-streamed tool-less panel, the judge receiving the client's request plus the directive, the 1-answer and 0-answer degradations, and that panel spend stays outside the request's usage row. Also: a combo whose leading reference no longer resolves now starts from the first reference that does, instead of failing the whole combo — the engine already skipped such members.*

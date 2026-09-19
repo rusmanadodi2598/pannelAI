@@ -167,6 +167,25 @@ stateDiagram-v2
 
 `revoked` bersifat terminal: transisi keluar ditolak dengan `CONFLICT`.
 
+### 3.5 Strategi combo di jalur request
+
+`Engine.Relay` membaca strategi combo dari agregat yang sama dengan resolusi (satu pembacaan per request,
+`dataplane.Resolution.ComboStrategy`), lalu:
+
+- `fallback` — member dicoba berurutan; kegagalan yang `failoverWorthy` pindah ke member berikutnya, dan
+  kegagalan request (validasi, provider tidak routable) berhenti tanpa menghabiskan akun lain.
+- `fusion` — fan-out paralel ke seluruh member lewat goroutine (satu per member, masing-masing pulih dari
+  panic), panggilan panel **non-streaming dan tanpa tools**, lalu `judge_model` menyintesis satu jawaban.
+  Permintaan judge adalah permintaan klien ditambah satu turn direktif, sehingga `stream` dan tools klien
+  tetap berlaku. Satu jawaban panel tidak di-fusion: klien non-streaming dilayani jawaban itu langsung,
+  klien streaming di-issue ulang ke member yang hidup supaya menerima stream yang sah. Nol jawaban
+  melaporkan kegagalan panel. `Outcome.LatencyMS` melaporkan durasi panel+judge, bukan panggilan judge saja.
+- `round_robin` — urutan diputar dari counter Redis (`repository.ComboRotationStore`); **belum dieksekusi
+  `Engine.Relay`** (gap P2 yang tercatat di §7.7 SPEC-API).
+
+Referensi member yang tidak lagi resolve dilewati, bukan menggagalkan combo: resolusi combo memulai dari
+referensi pertama yang masih routable, dan panel melaporkan referensi rusak lewat slot yang hilang.
+
 ---
 
 ## 4. Endpoint Aktif (P0)

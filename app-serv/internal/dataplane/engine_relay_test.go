@@ -41,8 +41,8 @@ func TestRelay_ComboFallsBackFromAFailingMember(t *testing.T) {
 	repo := newMemEndpointRepo()
 	repo.byProvider["alpha"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-alpha", "alpha")}
 	repo.byProvider["beta"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-beta", "beta")}
-	engine := newRelayEngine(t, server.URL, repo, map[string][]string{
-		"daily": {"alpha/broken", "beta/works"},
+	engine := newRelayEngine(t, server.URL, repo, map[string]domain.Combo{
+		"daily": comboRow("daily", "alpha/broken", "beta/works"),
 	})
 
 	outcome, err := engine.Relay(context.Background(), relayRequest("daily"), nil)
@@ -91,8 +91,8 @@ func TestRelay_ComboExhaustionReportsTheLastUpstreamFailure(t *testing.T) {
 	repo := newMemEndpointRepo()
 	repo.byProvider["alpha"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-alpha", "alpha")}
 	repo.byProvider["beta"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-beta", "beta")}
-	engine := newRelayEngine(t, server.URL, repo, map[string][]string{
-		"doomed": {"alpha/broken", "beta/broken"},
+	engine := newRelayEngine(t, server.URL, repo, map[string]domain.Combo{
+		"doomed": comboRow("doomed", "alpha/broken", "beta/broken"),
 	})
 
 	_, err := engine.Relay(context.Background(), relayRequest("doomed"), nil)
@@ -115,8 +115,8 @@ func TestRelay_RequestFailureStopsTheCombo(t *testing.T) {
 	server := newRelayUpstream(t, &calls)
 	repo := newMemEndpointRepo()
 	repo.byProvider["alpha"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-alpha", "alpha")}
-	engine := newRelayEngine(t, server.URL, repo, map[string][]string{
-		"daily": {"alpha/broken", "beta/works"},
+	engine := newRelayEngine(t, server.URL, repo, map[string]domain.Combo{
+		"daily": comboRow("daily", "alpha/broken", "beta/works"),
 	})
 
 	// A messages-shaped request carrying no messages body cannot be translated

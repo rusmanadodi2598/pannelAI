@@ -47,8 +47,10 @@ func (s nodeListerStub) List(context.Context) ([]domain.ProviderNode, error) {
 // a fresh deployment looks like: no combos, no aliases, no disabled models.
 type lookupStub struct{}
 
-func (lookupStub) Combo(context.Context, string) ([]string, bool, error) { return nil, false, nil }
-func (lookupStub) Alias(context.Context, string) (string, bool, error)   { return "", false, nil }
+func (lookupStub) Combo(context.Context, string) (domain.Combo, bool, error) {
+	return domain.Combo{}, false, nil
+}
+func (lookupStub) Alias(context.Context, string) (string, bool, error) { return "", false, nil }
 func (lookupStub) Disabled(context.Context, string, string) (bool, error) {
 	return false, nil
 }

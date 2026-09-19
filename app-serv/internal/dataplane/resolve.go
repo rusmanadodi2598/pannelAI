@@ -46,9 +46,11 @@ const (
 // (SPEC-API-001 §7.6 replaces them wholesale), so reading one set per request is
 // the read path rather than an unbounded query.
 type ModelLookup interface {
-	// Combo returns the ordered model references of a combo, and whether the
-	// name addresses one.
-	Combo(ctx context.Context, name string) (refs []string, found bool, err error)
+	// Combo returns a combo by name, and whether the name addresses one. The
+	// aggregate travels whole rather than as a bare reference list because the
+	// fusion strategy is executed from it, and a second read per request would
+	// let the two answers disagree.
+	Combo(ctx context.Context, name string) (combo domain.Combo, found bool, err error)
 	// Alias returns an alias's target, and whether the alias exists.
 	Alias(ctx context.Context, name string) (target string, found bool, err error)
 	// Disabled reports whether one model is hidden from routing (§7.6).
@@ -80,6 +82,11 @@ type Resolution struct {
 	// ComboRefs is that combo's ordered model list, which the caller fails over
 	// through.
 	ComboRefs []string
+	// ComboStrategy is the strategy the combo executes. The fallback path does
+	// not read it; the fusion path fans out because of it.
+	ComboStrategy domain.ComboStrategy
+	// ComboJudge is the model a fusion combo synthesizes its final answer with.
+	ComboJudge string
 }
 
 // IsCombo reports whether a combo answered the model string.
@@ -133,12 +140,12 @@ func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error
 	// one; that also stops a provider whose id collides with a combo name from
 	// being shadowed.
 	if indexOf(model, '/') < 0 {
-		refs, found, err := r.lookup.Combo(ctx, model)
+		combo, found, err := r.lookup.Combo(ctx, model)
 		if err != nil {
 			return Resolution{}, err
 		}
-		if found && len(refs) > 0 {
-			return r.resolveCombo(ctx, model, refs)
+		if found && len(combo.Refs()) > 0 {
+			return r.resolveCombo(ctx, model, combo)
 		}
 
 		target, found, err := r.lookup.Alias(ctx, model)
@@ -152,43 +159,6 @@ func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error
 			"model "+model+" is not a known model, alias, or combo")
 	}
 	return r.resolveReference(ctx, model)
-}
-
-// resolveCombo resolves the combo's first model, which is where the request
-// starts: the caller fails over to the remaining references, so a combo never
-// multiplies this call's work.
-func (r *Resolver) resolveCombo(ctx context.Context, name string, refs []string) (Resolution, error) {
-	// One dereference level only (SPEC-API-001 §7.7): a reference may itself be
-	// a provider/model or an alias, and a nested combo is refused rather than
-	// expanded, because a cycle between two combos would otherwise recurse.
-	resolved, err := r.resolveReference(ctx, refs[0])
-	if err != nil {
-		target, ok, aliasErr := r.lookup.Alias(ctx, refs[0])
-		if aliasErr != nil {
-			return Resolution{}, aliasErr
-		}
-		if !ok {
-			return Resolution{}, err
-		}
-		resolved, err = r.Resolve(ctx, target)
-		if err != nil {
-			return Resolution{}, err
-		}
-	}
-	resolved.Combo = name
-	resolved.ComboRefs = refs
-	return resolved, nil
-}
-
-// resolveReference handles the provider/model form, where the first segment may
-// be a provider id or any of its aliases.
-func (r *Resolver) resolveReference(ctx context.Context, model string) (Resolution, error) {
-	slash := indexOf(model, '/')
-	if slash <= 0 || slash == len(model)-1 {
-		return Resolution{}, dataPlaneError(CodeModelNotFound,
-			"model "+model+" is not a known model, alias, or combo")
-	}
-	return r.ResolveParts(ctx, model[:slash], model[slash+1:])
 }
 
 // ResolveParts resolves an already-split provider identifier and model id, so a
@@ -262,16 +232,4 @@ func targetFormat(format string) string {
 	default:
 		return ""
 	}
-}
-
-// indexOf reports the position of sep, or -1. It keeps the resolver free of
-// strings.Index arithmetic at the call sites, where an off-by-one would rename a
-// model.
-func indexOf(value string, sep byte) int {
-	for i := 0; i < len(value); i++ {
-		if value[i] == sep {
-			return i
-		}
-	}
-	return -1
 }
