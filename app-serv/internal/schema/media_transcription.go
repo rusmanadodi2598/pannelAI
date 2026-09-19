@@ -103,11 +103,18 @@ func readBounded(reader io.Reader, limit int64) ([]byte, error) {
 
 // safeUploadName keeps the client's filename for the upstream part, reduced to
 // its base name so a crafted path cannot steer where an upstream stores it.
+//
+// Trailing separators are trimmed before the base is taken: without that step
+// a name like `../../` reduces to an empty segment, the replacement is skipped,
+// and the traversal form is forwarded as-is — the one shape the reduction would
+// otherwise miss. After trimming, every accepted name is a single segment with
+// no separator left, and the degenerate `.`/`..`/empty set collapses to the
+// default rather than reaching the upstream.
 func safeUploadName(header *multipart.FileHeader) string {
 	if header == nil {
 		return "audio"
 	}
-	name := strings.TrimSpace(header.Filename)
+	name := strings.TrimRight(strings.TrimSpace(header.Filename), `/\`)
 	if name == "" {
 		return "audio"
 	}
