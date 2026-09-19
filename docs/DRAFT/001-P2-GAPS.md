@@ -166,7 +166,7 @@ keluar lewat proxy (log stub).
 untuk tts+stt, lalu `google-tts, inworld, local-device, minimax` (+`minimax-cn`),
 `nvidia-tts, playht, tortoise`); sebelum adapter ini semuanya ditolak
 `PROVIDER_NOT_ROUTABLE` dengan nama formatnya (terverifikasi live untuk elevenlabs,
-2026-09-19), dan kini 15 format/provider masih berada di gate tersebut.
+2026-09-19), dan kini 14 format/provider masih berada di gate tersebut.
 
 **Kenapa.** Ini keputusan sadar (menolak dengan nama lebih baik daripada mengirim
 bentuk yang salah), tapi selama belum di-port, provider itu tidak bisa dipakai.
@@ -182,15 +182,26 @@ karena reference mendefinisikan satu POST tanpa polling: bytes audio mentah,
 dinormalisasi ke `{text}`. `TranscriptionForm` membawa MIME part; MIME audio yang
 valid dipakai setelah `mime.ParseMediaType`, MIME non-audio/malformed tidak disalin
 ke outbound header dan jatuh ke pemetaan extension atau `application/octet-stream`.
-Alias provider ikut resolve (`dg/nova-2`). Format lain tetap gate `PROVIDER_NOT_ROUTABLE`;
-AWS Polly belum diambil karena reference tidak punya builder SigV4.
+Alias provider ikut resolve (`dg/nova-2`).
+
+**NVIDIA NIM TTS (adapter selesai 2026-09-19).** Reference mendefinisikan satu
+POST JSON tanpa polling: `{input:{text}, voice, model}`, `Authorization: Bearer`,
+dan bytes WAV. Voice default provider adalah `default` (bukan default OpenAI
+`alloy`), dan response route selalu dilabeli `wav` — termasuk bentuk JSON base64 —
+agar bytes WAV tidak salah dilabeli mp3. Model harus dinamai (`nvidia/fastpitch` atau
+`nvidia/tacotron2`); registry sudah mendeklarasikan keduanya. Format lain tetap gate
+`PROVIDER_NOT_ROUTABLE`; AWS Polly belum diambil karena reference tidak punya
+builder SigV4.
 
 **Definisi selesai (per adapter).** Format ditranslate, tabel test 3 sampai 5 kasus
 termasuk kontrol benign, dan satu panggilan live ke stub yang meniru provider itu.
 Untuk Deepgram terpenuhi 2026-09-19: `media_deepgram_test.go` mengunci dua bentuk
 request (language eksplisit dan auto-detection), auth/query/raw bytes/MIME/alias,
 empat variasi MIME, empat bentuk respons (nested, kosong, malformed, passthrough),
-dan bukti live ke stub dicatat pada §8; 15 format/provider tersisa.
+dan bukti live ke stub dicatat pada §8. Untuk NVIDIA terpenuhi 2026-09-19:
+`media_nvidia_test.go` mengunci default/explicit voice, nested body, bearer, WAV
+output, dan kontrol OpenAI; live bytes + `?response_format=json` ke stub membuktikan
+body, auth, `audio/wav`, base64 `format:wav`; 14 format/provider tersisa.
 
 ### G6: Akuntansi panggilan media (CLOSED 2026-09-19)
 
@@ -743,7 +754,8 @@ atas.
    (testnya bisa ditulis lebih dulu). Selesai 2026-09-19 dengan D4 = (b).
 6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas. G13 selesai
    2026-09-19; G12 selesai 2026-09-19 dengan D5 = (b); G5 incremental:
-   Deepgram STT slice 1 selesai 2026-09-19, 15 adapter/provider tersisa.
+   Deepgram STT slice 1 dan NVIDIA NIM TTS slice 2 selesai 2026-09-19,
+   14 adapter/provider tersisa.
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
 8. **P2.8, G8, G9, G10, G19**: penutup kecil + dokumen + aksi lingkungan
@@ -830,4 +842,5 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | G20 temuan pass G17/G18: penolakan media/embeddings sebelum panggilan tidak menulis baris log | FAIL by design saat ini: `MediaCallService.Prepare` dan `EmbeddingsService.Embed` menulis baris hanya setelah `perform`, jadi provider tak dikenal, `base_url` kosong, format gate, kredensial kosong, atau `NO_PROVIDER_AVAILABLE` tidak meninggalkan `request_logs` — sedangkan jalur chat kini mencatat setiap panggilan (terbukti live untuk 400 `MODEL_NOT_FOUND`). Dicatat sebagai G20 |
 | 2026-09-19 | **G9 CLOSED**: seam `schema.ErrorCodeRecorder` di-set `WriteError`/`writeDataPlaneError`/`writeEnvelope`, diimplementasikan `responseRecorder`, diteruskan eksplisit `statusRecorder` (Go hanya mempromosikan metode interface yang di-embed); `logging` menambah attr `code` hanya saat gagal; `router_errorlog_test.go` (empat jalur + kasus negatif) | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 466 file PASS; live pada binary dari tree yang sama (tanpa stub): `GET /api/v1/nope` → 404 baris `code=NOT_FOUND`, `POST /api/v1/chat/completions` tanpa key → 401 `code=UNAUTHORIZED`, `POST /api/v1/images/generations` tanpa key → 401 `code=UNAUTHORIZED`, `GET /api/v1/health` dan `/version` 200 tanpa field `code`; baseline tidak berubah (`usage=2 logs=1 keys=0 endpoints=0 nodes=0 settings=1 auth_null=true`), `panel_auth.password_hash` di-null kembali; changelog SPEC-API dicatat |
 | 2026-09-19 | **G20 CLOSED**: `dataPlaneRecorder.refuse` (satu baris `request_logs`, kode saja, tanpa usage), `MediaCallService.prepareForCall` + `refusalOutcome`, dua penolakan awal `Search`, `EmbeddingsService` dipecah ke `resolveCall` (identity dibangun sebelum langkah gagal pertama) + port `ModelResolver`/`MediaRouter`; dua test baru | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 470 file PASS; live pada binary dari tree yang sama: empat penolakan (images `nope/whatever` 400 `MODEL_NOT_FOUND`, embeddings `nope/embed` 400 `MODEL_NOT_FOUND`, speech `elevenlabs/voice` 400 `PROVIDER_NOT_ROUTABLE`, search `nope` 400 `MODEL_NOT_FOUND`) masing-masing meninggalkan **satu** baris `request_logs` dengan request id yang sama dengan baris akses server, `status:error`, `error` = kode saja, latensi 0, body kosong, identity sejauh resolusi (`nope/whatever`, `elevenlabs/voice`, `nope/nope`, embeddings tanpa identity); nol baris usage (total tetap 2); kontrol negatif 401 tanpa key dan 400 validasi handler tidak menulis baris (`control_rows=0`); baseline dipulihkan (`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true`), `/tmp/g20_*` dihapus |
-| 2026-09-19 | **G5 adapter Deepgram STT (slice 1)**: format gate `deepgram` untuk `stt`; raw audio request + safe MIME, `model`/`smart_format`/`punctuate`/`language|detect_language`, `Authorization: Token`, nested transcript → `{text}`; alias resolution; `media_deepgram_test.go` + MIME/auth tests | PASS: focused + affected package `-race` tests, `go-lint.sh` (golangci-lint 0 issues), `go-headers.sh` (472 files); full hermetic/tagged suite after the code freeze; live stub proof: Deepgram registry base URL overridden to loopback, multipart upload through `/audio/transcriptions` returned normalized `{"text":"deepgram live"}`, stub saw raw bytes, `Content-Type: audio/mpeg`, query model + flags, `Authorization: Token`; 15 format/provider adapters remain open |
+| 2026-09-19 | **G5 adapter Deepgram STT (slice 1)**: format gate `deepgram` untuk `stt`; raw audio request + safe MIME, `model`/`smart_format`/`punctuate`/`language|detect_language`, `Authorization: Token`, nested transcript → `{text}`; alias resolution; `media_deepgram_test.go` + MIME/auth tests | PASS: focused + affected package `-race` tests, `go-lint.sh` (golangci-lint 0 issues), `go-headers.sh` (472 files); full hermetic/tagged suite after the code freeze; live stub proof: Deepgram registry base URL overridden to loopback, multipart upload through `/audio/transcriptions` returned normalized `{"text":"deepgram live"}`, stub saw raw bytes, `Content-Type: audio/mpeg`, query model + flags, `Authorization: Token`; 14 format/provider adapters remain open |
+| 2026-09-19 | **G5 adapter NVIDIA NIM TTS (slice 2)**: format gate `nvidia-tts` untuk `tts`; typed `{input:{text}, voice, model}` body, voice default `default`, `Authorization: Bearer`, output format WAV; `media_nvidia_test.go` + OpenAI control | PASS: focused + affected package `-race` tests, `go-lint.sh` (golangci-lint 0 issues), `go-headers.sh` PASS; full hermetic/tagged suite after code freeze; live stub proof: `nvidia/fastpitch` returned raw bytes with `Content-Type: audio/wav`, `?response_format=json` + explicit voice returned base64 `format:wav`, stub saw nested body and bearer; baseline dipulihkan (`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true`); 14 format/provider adapters remain open |

@@ -123,7 +123,16 @@ func mediaCallEntries() []registry.Provider {
 			},
 		},
 		{
-			ID: "elevenlabs", Display: registry.Display{Name: "ElevenLabs"}, Priority: 3, Category: "media",
+			ID: "nvidia", Display: registry.Display{Name: "NVIDIA"}, Priority: 3, Category: "apikey",
+			Media: registry.MediaConfigs{
+				registry.MediaTTS: {
+					BaseURL:  "https://integrate.api.nvidia.com/v1/audio/speech",
+					AuthType: registry.AuthAPIKey, AuthHeader: "bearer", Format: "nvidia-tts",
+				},
+			},
+		},
+		{
+			ID: "elevenlabs", Display: registry.Display{Name: "ElevenLabs"}, Priority: 4, Category: "media",
 			Media: registry.MediaConfigs{
 				registry.MediaTTS: {
 					BaseURL: "https://api.elevenlabs.io/v1/text-to-speech",

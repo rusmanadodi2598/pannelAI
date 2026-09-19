@@ -49,12 +49,12 @@ func (h *MediaHandler) Speech(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	answer, _, err := h.media.Speech(r.Context(), req, nil, keyID)
+	answer, call, err := h.media.Speech(r.Context(), req, nil, keyID)
 	if err != nil {
 		writeDataPlaneError(w, err)
 		return
 	}
-	format := schema.SpeechFormat(req)
+	format := call.SpeechOutputFormat(req)
 	if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("response_format")), "json") {
 		schema.WriteJSON(w, http.StatusOK, schema.SpeechResponse{
 			Audio: base64.StdEncoding.EncodeToString(answer.Body), Format: format,

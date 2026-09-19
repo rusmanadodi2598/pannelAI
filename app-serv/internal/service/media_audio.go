@@ -41,13 +41,18 @@ func (s *MediaCallService) Speech(ctx context.Context, req schema.SpeechRequest,
 	if err != nil {
 		return dataplane.MediaResponse{}, MediaCall{}, err
 	}
-	body, err := json.Marshal(schema.SpeechBody{
-		Model:          call.UpstreamModel,
-		Input:          req.Input,
-		Voice:          schema.SpeechVoice(req),
-		ResponseFormat: strings.TrimSpace(req.ResponseFormat),
-		Speed:          req.Speed,
-	})
+	var body []byte
+	if strings.EqualFold(strings.TrimSpace(call.Media.Format), "nvidia-tts") {
+		body, err = json.Marshal(nvidiaSpeechRequest(req, call.UpstreamModel))
+	} else {
+		body, err = json.Marshal(schema.SpeechBody{
+			Model:          call.UpstreamModel,
+			Input:          req.Input,
+			Voice:          schema.SpeechVoice(req),
+			ResponseFormat: strings.TrimSpace(req.ResponseFormat),
+			Speed:          req.Speed,
+		})
+	}
 	if err != nil {
 		return dataplane.MediaResponse{}, call, dataplane.InternalError("the speech request could not be built", err)
 	}

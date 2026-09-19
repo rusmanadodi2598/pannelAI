@@ -79,9 +79,10 @@ func splitMediaModel(model string) (string, string, error) {
 // media format for a kind.
 //
 // An empty declaration and `openai` are the OpenAI shape these routes build.
-// Deepgram STT is the first provider-specific adapter ported in G5, so its
-// binary request and nested transcript are handled separately. Other formats
-// are refused by name instead of being sent a payload their API does not accept:
+// Deepgram STT and NVIDIA NIM TTS are the first provider-specific adapters
+// ported in G5, so their binary/JSON requests and provider-specific answers are
+// handled separately. Other formats are refused by name instead of being sent
+// a payload their API does not accept:
 // the reference has a per-provider adapter for each of those formats, and
 // reporting the gap is honest where a wrong-shaped call would look like an
 // upstream outage. The search kind is exempt because its shape is built from
@@ -96,6 +97,8 @@ func mediaFormatSupported(kind domain.MediaKind, format string) bool {
 		return true
 	case "deepgram":
 		return kind == domain.MediaKindSTT
+	case "nvidia-tts":
+		return kind == domain.MediaKindTTS
 	default:
 		return false
 	}
