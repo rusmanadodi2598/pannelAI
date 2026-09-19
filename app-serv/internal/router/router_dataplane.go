@@ -20,8 +20,8 @@ package router
 
 import "net/http"
 
-// registerDataPlaneRoutes registers §7.15: the OpenAI and Anthropic wires, the
-// models list, the token estimate, and embeddings.
+// registerDataPlaneRoutes registers §7.15: the OpenAI, Anthropic, and Responses
+// wires, the models list, the token estimate, and embeddings.
 //
 // A CLI tool presents `Authorization: Bearer <gateway key>` and the handler
 // enforces it when settings.security.require_api_key is true (§4); the
@@ -34,6 +34,7 @@ func registerDataPlaneRoutes(mux *http.ServeMux, deps Deps) {
 	if deps.Chat != nil {
 		mux.HandleFunc("POST "+APIVersion+"/chat/completions", deps.Chat.Completions)
 		mux.HandleFunc("POST "+APIVersion+"/messages", deps.Chat.Messages)
+		mux.HandleFunc("POST "+APIVersion+"/responses", deps.Chat.Responses)
 		mux.HandleFunc("GET "+APIVersion+"/models", deps.Chat.Models)
 	}
 	if deps.Embeddings != nil {

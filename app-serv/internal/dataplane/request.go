@@ -30,6 +30,8 @@ const (
 	RouteChatCompletions Route = "chat_completions"
 	// RouteMessages is POST /api/v1/messages (Anthropic wire).
 	RouteMessages Route = "messages"
+	// RouteResponses is POST /api/v1/responses (Responses API wire).
+	RouteResponses Route = "responses"
 	// RouteEmbeddings is POST /api/v1/embeddings (OpenAI wire).
 	RouteEmbeddings Route = "embeddings"
 )
@@ -50,6 +52,8 @@ type Request struct {
 	Chat *schema.ChatRequest
 	// Messages is the decoded Anthropic body, set for the Anthropic route.
 	Messages *schema.MessagesRequest
+	// Responses is the decoded Responses body, set for the Responses route.
+	Responses *schema.ResponsesRequest
 	// Embeddings is the decoded embeddings body.
 	Embeddings *schema.EmbeddingsRequest
 	// Raw is the body as it arrived, which a same-format target is forwarded

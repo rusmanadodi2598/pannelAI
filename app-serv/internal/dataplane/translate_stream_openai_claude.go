@@ -3,7 +3,7 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_openai_claude.go
-// @for       Converting Anthropic stream events into OpenAI frames, which is the
+// @for       Converting Anthropic stream events into OpenAI chunks, which is the
 //
 //	half of the OpenAI client stream that a Claude provider needs.
 //
@@ -12,7 +12,8 @@
 //
 //	concerns: one keeps the stream's identity and usage, the other maps
 //	event types. Splitting them keeps both files inside the AGENTS.md
-//	§1.1 budget.
+//	§1.1 budget, and keeping the mapping unframed lets a client state on
+//	another wire reuse it.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -29,11 +30,29 @@ import (
 // claudeFrames converts one Anthropic stream event into OpenAI frames, keeping the
 // tool-call indices OpenAI clients expect.
 func (s *StreamState) claudeFrames(payload []byte) [][]byte {
+	chunks := s.claudeChunks(payload)
+	if len(chunks) == 0 {
+		return nil
+	}
+	frames := make([][]byte, 0, len(chunks))
+	for _, chunk := range chunks {
+		frames = append(frames, Frame(chunk))
+	}
+	return frames
+}
+
+// claudeChunks converts one Anthropic stream event into the OpenAI chunks it
+// stands for, unframed.
+//
+// It is separate from the framing because a client state whose own wire is not
+// the OpenAI chunk wire still needs this event mapping: the Responses client
+// state reads the chunks rather than the frames.
+func (s *StreamState) claudeChunks(payload []byte) [][]byte {
 	event, ok := decodeObject(payload)
 	if !ok {
 		return nil
 	}
-	frames := make([][]byte, 0, 2)
+	chunks := make([][]byte, 0, 2)
 
 	switch stringField(event, "type") {
 	case schema.EventMessageStart:
@@ -42,13 +61,10 @@ func (s *StreamState) claudeFrames(payload []byte) [][]byte {
 				s.ID = id
 			}
 			if usage, ok := objectField(message, "usage"); ok {
-				// A message_start usage block only carries the prompt side, so the
-				// stream keeps the last one it sees rather than the first.
-				parsed := ClaudeUsageToOpenAI(claudeUsageFromObject(usage))
-				s.usage = &parsed
+				s.mergeUsage(usage)
 			}
 		}
-		frames = append(frames, s.chunk(schema.Delta{Role: RoleAssistant}, nil))
+		chunks = append(chunks, s.chunk(schema.Delta{Role: RoleAssistant}, nil))
 
 	case schema.EventContentBlockStart:
 		block, ok := objectField(event, "content_block")
@@ -61,7 +77,7 @@ func (s *StreamState) claudeFrames(payload []byte) [][]byte {
 		index := intField(event, "index")
 		s.toolIndex[index] = s.toolCalls
 		s.toolCalls++
-		frames = append(frames, s.chunk(schema.Delta{ToolCalls: []schema.ToolCallDelta{{
+		chunks = append(chunks, s.chunk(schema.Delta{ToolCalls: []schema.ToolCallDelta{{
 			Index: s.toolIndex[index],
 			ID:    stringField(block, "id"),
 			Type:  schema.BlockFunction,
@@ -76,7 +92,7 @@ func (s *StreamState) claudeFrames(payload []byte) [][]byte {
 			break
 		}
 		if frame := s.blockDeltaFrame(intField(event, "index"), delta); frame != nil {
-			frames = append(frames, frame)
+			chunks = append(chunks, frame)
 		}
 
 	case schema.EventMessageDelta:
@@ -86,12 +102,11 @@ func (s *StreamState) claudeFrames(payload []byte) [][]byte {
 			}
 		}
 		if usage, ok := objectField(event, "usage"); ok {
-			parsed := ClaudeUsageToOpenAI(claudeUsageFromObject(usage))
-			s.usage = &parsed
+			s.mergeUsage(usage)
 		}
 		if s.finishReason != "" && !s.finishSent {
 			reason := s.finishReason
-			frames = append(frames, s.chunk(schema.Delta{}, &reason))
+			chunks = append(chunks, s.chunk(schema.Delta{}, &reason))
 			s.finishSent = true
 		}
 
@@ -101,7 +116,7 @@ func (s *StreamState) claudeFrames(payload []byte) [][]byte {
 			if reason == "" {
 				reason = FinishStop
 			}
-			frames = append(frames, s.chunk(schema.Delta{}, &reason))
+			chunks = append(chunks, s.chunk(schema.Delta{}, &reason))
 			s.finishSent = true
 		}
 
@@ -110,7 +125,30 @@ func (s *StreamState) claudeFrames(payload []byte) [][]byte {
 		// client acts on.
 		return nil
 	}
-	return frames
+	return chunks
+}
+
+// mergeUsage folds one Anthropic usage block into the stream's accounting.
+//
+// Anthropic reports the prompt side once, on message_start, and the output side
+// cumulatively, on message_delta, so a later block replaces only the members it
+// actually reports. Replacing the whole block would report a prompt of zero for
+// every Claude upstream, which is what the reference avoids by accumulating
+// (open-sse/translator/response/claude-to-openai.js).
+func (s *StreamState) mergeUsage(usage object) {
+	parsed := ClaudeUsageToOpenAI(claudeUsageFromObject(usage))
+	if s.usage == nil {
+		s.usage = &parsed
+		return
+	}
+	if parsed.PromptTokens > 0 {
+		s.usage.PromptTokens = parsed.PromptTokens
+		s.usage.PromptTokensDetails = parsed.PromptTokensDetails
+	}
+	if parsed.CompletionTokens > 0 {
+		s.usage.CompletionTokens = parsed.CompletionTokens
+	}
+	s.usage.TotalTokens = s.usage.PromptTokens + s.usage.CompletionTokens
 }
 
 // blockDeltaFrame builds the frame one Anthropic content delta stands for, or nil

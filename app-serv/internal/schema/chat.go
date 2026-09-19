@@ -39,6 +39,11 @@ const (
 	FormatOpenAI DataPlaneFormat = "openai"
 	// FormatAnthropic is the Anthropic messages wire format.
 	FormatAnthropic DataPlaneFormat = "anthropic"
+	// FormatOpenAIResponses is the OpenAI Responses wire format, which POST
+	// /api/v1/responses serves. It is a client wire of its own rather than a
+	// variant of FormatOpenAI: its request is an item array, not a message
+	// array, and its answer is a response object, not a choice list.
+	FormatOpenAIResponses DataPlaneFormat = "openai-responses"
 )
 
 // ReadBody reads a bounded request body. The raw bytes are kept because a

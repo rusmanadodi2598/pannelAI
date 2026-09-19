@@ -34,7 +34,8 @@ import (
 // field the gateway does not model, which for a coding agent is most of them.
 func upstreamBody(in Request, resolution Resolution) ([]byte, error) {
 	sameFormat := (in.ClientFormat == schema.FormatOpenAI && resolution.Target == TargetOpenAI) ||
-		(in.ClientFormat == schema.FormatAnthropic && resolution.Target == TargetClaude)
+		(in.ClientFormat == schema.FormatAnthropic && resolution.Target == TargetClaude) ||
+		(in.ClientFormat == schema.FormatOpenAIResponses && resolution.Target == TargetResponses)
 
 	if sameFormat {
 		return replaceModel(in.Raw, resolution.UpstreamID)
@@ -81,6 +82,16 @@ func translateUpstreamBody(in Request, resolution Resolution) ([]byte, error) {
 		case TargetResponses:
 			return encode(OpenAIToResponses(*in.Chat, resolution.UpstreamID, in.Stream))
 		}
+	case schema.FormatOpenAIResponses:
+		if in.Responses == nil {
+			return nil, dataPlaneError(CodeValidation, "the request body could not be read")
+		}
+		switch resolution.Target {
+		case TargetOpenAI:
+			return encode(ResponsesToOpenAI(*in.Responses, resolution.UpstreamID, in.Stream))
+		case TargetClaude:
+			return encode(ResponsesToClaude(*in.Responses, resolution.UpstreamID, in.Stream))
+		}
 	}
 	return nil, dataPlaneError(CodeProviderNotRoutable,
 		"the gateway cannot translate "+string(in.ClientFormat)+" into "+resolution.Target)
@@ -124,6 +135,19 @@ func openAIAnswer(raw []byte, resolution Resolution, created int64) (schema.Chat
 		return ResponsesToOpenAIResponse(raw, resolution.ModelID, created)
 	}
 	return ClaudeToOpenAIResponse(raw, resolution.ModelID, created)
+}
+
+// responsesClientAnswer translates a non-streamed upstream answer into the Responses
+// wire, whichever format the upstream wrote it in.
+func responsesClientAnswer(raw []byte, resolution Resolution, created int64) (schema.ResponsesAnswer, error) {
+	switch resolution.Target {
+	case TargetOpenAI:
+		return OpenAIToResponsesAnswer(raw, resolution.ModelID, created)
+	case TargetClaude:
+		return ClaudeToResponsesAnswer(raw, resolution.ModelID, created)
+	default:
+		return ResponsesToResponsesAnswer(raw, resolution.ModelID)
+	}
 }
 
 // encode marshals a translated payload, reporting a failure as a client error

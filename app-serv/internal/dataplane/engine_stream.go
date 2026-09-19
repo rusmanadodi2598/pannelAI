@@ -57,6 +57,15 @@ func (e *Engine) relayStream(
 			return err
 		}
 		outcome.Usage = state.Usage()
+	case schema.FormatOpenAIResponses:
+		state := NewResponsesStreamState("", resolution.UpstreamID, e.clock().Unix())
+		if err := e.pump(ctx, upstream, sink, resolution.Target, state.Frames); err != nil {
+			return err
+		}
+		if err := writeFrames(sink, state.Finish()); err != nil {
+			return err
+		}
+		outcome.Usage = state.Usage()
 	default:
 		state := NewStreamState("", resolution.UpstreamID, e.clock().Unix(), in.IncludeUsage)
 		if err := e.pump(ctx, upstream, sink, resolution.Target, state.Frames); err != nil {
@@ -181,37 +190,4 @@ func writeFrames(sink FrameSink, frames [][]byte) error {
 	}
 	sink.Flush()
 	return nil
-}
-
-// translateAnswer converts a non-streamed upstream answer into the client's wire
-// format and reads its accounting.
-func (e *Engine) translateAnswer(upstream *Upstream, resolution Resolution, in Request) ([]byte, *schema.Usage, error) {
-	raw, err := io.ReadAll(upstream.Body)
-	if err != nil {
-		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream response could not be read", err)
-	}
-	usage := readUsage(raw, resolution.Target)
-
-	switch in.ClientFormat {
-	case schema.FormatAnthropic:
-		if resolution.Target == TargetClaude {
-			return raw, usage, nil
-		}
-		translated, err := claudeAnswer(raw, resolution)
-		if err != nil {
-			return nil, nil, err
-		}
-		body, encodeErr := encode(translated)
-		return body, usage, encodeErr
-	default:
-		if resolution.Target == TargetOpenAI {
-			return raw, usage, nil
-		}
-		translated, err := openAIAnswer(raw, resolution, e.clock().Unix())
-		if err != nil {
-			return nil, nil, err
-		}
-		body, encodeErr := encode(translated)
-		return body, usage, encodeErr
-	}
 }

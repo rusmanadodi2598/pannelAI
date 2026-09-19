@@ -47,6 +47,11 @@ func (h *ChatHandler) Messages(w http.ResponseWriter, r *http.Request) {
 	h.serve(w, r, dataplane.RouteMessages, schema.FormatAnthropic)
 }
 
+// Responses serves POST /api/v1/responses on the Responses API wire.
+func (h *ChatHandler) Responses(w http.ResponseWriter, r *http.Request) {
+	h.serve(w, r, dataplane.RouteResponses, schema.FormatOpenAIResponses)
+}
+
 // serve runs the shared pipeline for both chat routes: read the body, decode and
 // validate it against the route's contract, authenticate, then relay.
 func (h *ChatHandler) serve(w http.ResponseWriter, r *http.Request, route dataplane.Route, format schema.DataPlaneFormat) {
@@ -69,6 +74,19 @@ func (h *ChatHandler) serve(w http.ResponseWriter, r *http.Request, route datapl
 			return
 		}
 		request.Messages = &decoded
+		request.Model = decoded.Model
+		request.Stream = decoded.Stream
+	case schema.FormatOpenAIResponses:
+		decoded, decodeErr := schema.DecodeResponsesRequest(raw)
+		if decodeErr != nil {
+			writeDataPlaneError(w, decodeErr)
+			return
+		}
+		if validateErr := schema.ValidateStruct(decoded); validateErr != nil {
+			writeDataPlaneError(w, validateErr)
+			return
+		}
+		request.Responses = &decoded
 		request.Model = decoded.Model
 		request.Stream = decoded.Stream
 	default:
