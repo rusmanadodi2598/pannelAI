@@ -7,7 +7,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 21 gap terdaftar, sebelas di antaranya temuan click-through/pass live, dua puluh sudah CLOSED (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20); G21 terdaftar sebagai seam baru dan menjadi satu-satunya item terbuka |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 21 gap terdaftar, sebelas di antaranya temuan click-through/pass live, dua puluh sudah CLOSED (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20); G21 terdaftar sebagai seam baru dan menjadi satu-satunya item terbuka — desain seam-nya sudah ada, keputusannya (D6) menunggu owner |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
 | **Bukti terakhir** | pass G5 slice 11 2026-09-19 (Gemini STT ke stub loopback 8093: URL `:generateContent` + `key` query, audio inline base64, prompt bawaan/eksplisit, `{text}`; kontrol assemblyai tetap ditolak dengan nama); sebelum itu pass G4 (proxy loopback 8092), G5 slice 4–10 (tujuh adapter TTS ke stub), G19 (migration `000011`), dan G8 (boot polos tanpa override) |
 
@@ -930,6 +930,14 @@ AWS Polly, (c) pengambil token pihak ketiga dengan cache TTL untuk Edge/Google T
 untuk Local Device, yang perlu keputusan tersendiri karena menjalankan binary dari
 proses gateway memperbesar permukaan ancaman (OWASP) dan tidak berlaku di container.
 
+**Desain (2026-09-19).** Keempat kelas sudah punya desain seam yang bisa direview:
+`docs/DRAFT/002-G21-SEAM-DESIGN.md` — per kelas berisi bukti reference (file:line),
+bentuk seam, kontrak/registry yang berubah, risiko + temuan keamanan (mis. argument
+injection di Local Device, ToS/kerapuhan scraping di Edge/Google), test yang akan
+mengunci, dan pertanyaan keputusan. Ringkasan keputusannya ada di dokumen itu §5
+(A1–A3, B1–B2, C1–C2, D1) dan tercatat sebagai D6 di §4 berkas ini. Tidak ada kode
+yang ditulis sebelum keputusan itu dijawab.
+
 **Definisi selesai.** Tiap provider punya seam + adapter-nya, tabel test termasuk
 kontrol benign, dan satu bukti live ke stub yang meniru alurnya; atau keputusan
 tertulis bahwa provider itu tidak didukung di v1, dengan SPEC-API §7.10 menyebut
@@ -944,6 +952,7 @@ alasannya.
 | D3 | Apa yang dicatat panggilan media? (G6) | (a) usage+log, (b) +request_count, (c) combo test tetap tanpa row | **(b) usage + log + request_count** (2026-09-19) | layar Usage/Logs panel kosong untuk media |
 | D4 | Lantai Redis untuk state OAuth? (G14) | (a) `GETDEL` + catat Redis ≥ 6.2, (b) `EVAL` Lua agar 6.0 ikut jalan | **(b) perbaiki agar jalan di 6.0 ke atas** (2026-09-19) | host Redis < 6.2 kehilangan rute callback |
 | D5 | Bagaimana cap dibaca kembali? (G12) | (a) sintesis window, (b) field cap di rute baca, (c) amend spec | **(b) field cap terpisah** (2026-09-19) | panel tidak bisa menampilkan budget tersimpan |
+| D6 | Bentuk seam empat kelas G21 | lihat `docs/DRAFT/002-G21-SEAM-DESIGN.md` §5: A1–A3 (AssemblyAI), B1–B2 (Polly), C1–C3 (Edge/Google TTS), D1 (Local Device) | **(belum dijawab)** | tidak ada adapter multi-request yang boleh ditulis; kelimanya tetap ditolak dengan nama |
 
 ## 5. Urutan kerja usulan
 
@@ -976,13 +985,15 @@ alasannya.
 10. **P2.10, G20**: temuan pass G17/G18 (penolakan media/embeddings pra-panggilan
     tanpa baris log), tanpa keputusan owner. Selesai 2026-09-19.
 11. **P2.11, G21**: lima format yang butuh lebih dari satu request, dipisahkan dari
-    G5 oleh keputusan owner 2026-09-19. Terdaftar, belum dikerjakan — butuh
-    keputusan bentuk seam per kelas (polling, SigV4, token scraping, proses host).
+    G5 oleh keputusan owner 2026-09-19. Terdaftar, belum dikerjakan — desain seam
+    keempat kelas tersedia 2026-09-19 di `docs/DRAFT/002-G21-SEAM-DESIGN.md`, dan
+    keputusannya menunggu owner (D6 di §4).
 
 D1, D2, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2, P2.3, P2.4,
 P2.5, P2.6 (G12/G13/G5 slice 1–11), P2.7, P2.8 (G7/G8/G9/G10/G19), P2.9, dan P2.10
-sudah selesai. Tidak ada lagi item yang menunggu keputusan.
-Yang terdaftar dan belum dikerjakan: G21.
+sudah selesai. Yang terdaftar dan belum dikerjakan: G21, dan satu-satunya keputusan
+yang masih menunggu owner adalah bentuk seam-nya (D6, desain di
+`docs/DRAFT/002-G21-SEAM-DESIGN.md`).
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
 
@@ -1065,3 +1076,4 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G4 CLOSED**: seam `Proxy` di `dataplane.HTTPClientDeps`, `egressProxy`/`proxyRoute`/`exemptFromProxy` di `egress_wiring.go` (settings dibaca per request, tujuan divalidasi sebelum rute dikembalikan, gagal baca/URL ⇒ tolak bukan bypass); `egress_proxy_test.go` (tabel rute + A01) | PASS: dua mutasi diukur merah (hook dilepas ⇒ baris "arrives at it" gagal; cek tujuan dilepas ⇒ baris A01 gagal), tree hijau setelah dipulihkan; live (stub chat 8091, proxy forwarding 8092, `EGRESS_ALLOWED_TARGETS=127.0.0.1/32`, DSN `.env`): proxy mati → log proxy 0 baris; proxy nyala → log proxy 1 baris berisi absolute-form ke 8091 dan stub tetap menerima; `outbound_no_proxy=127.0.0.1` → langsung lagi, log proxy 0; tujuan `127.0.0.2` (di luar allowlist) → 502 `UPSTREAM_ERROR` dengan 0 baris di proxy dan 0 baris baru di stub; artefak dibersihkan (2 node, 2 endpoint, gateway key, 4 usage, 4 log, baris settings `network`; baseline pulih) |
 | 2026-09-19 | **G10 CLOSED**: status row `SYSTEM_MAP.md` menyebut **P2 CLOSED** dengan daftar bukti live-nya dan sisa yang eksplisit tidak ikut tertutup (lima format media G21); §3.6 menambah paragraf seam adapter, §4a menambah narasi migrasi P2 `000009`-`000011` + aturan kepemilikan, batas domain §1 menyebut `000011` | PASS: narasi diverifikasi terhadap kode dan bukti pass yang tercatat di berkas ini (bukan diklaim ulang); tidak ada perubahan kode |
 | 2026-09-19 | **G5 slice 11 CLOSED** (G5 penuh): adapter Gemini STT (`media_gemini_stt.go`), seam `transcriptionRequest` (dispatch request per format di `media_transcription.go`, sehingga `media_audio.go` tinggal memanggil), gate `gemini-stt` untuk `stt`, `transcriptionText` sebagai pembentuk jawaban bersama Deepgram; `media_gemini_stt_test.go` + tabel gate per kind | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 496 file PASS; live (registry sementara diarahkan ke stub loopback 8093 lalu dipulihkan, `git diff` bersih, DSN `.env` polos tanpa grant superuser): `POST /audio/transcriptions` `gemini/gemini-2.5-flash` filename `clip.mp3` dengan `prompt=names` + `language=Indonesian` → 200 `application/json` `{"text":"gemini stt live transcript"}`; stub melihat `POST /gmstt/v1beta/models/gemini-2.5-flash:generateContent?key=gm-secret` dengan body `{"contents":[{"parts":[{"text":"names Language: Indonesian."},{"inline_data":{"mime_type":"audio/mpeg","data":"<base64 audio>"}}]}]}` (prompt, MIME, bytes, dan key-query keempatnya cocok); panggilan kedua `gemini/gemini-2.5-pro` filename `clip.wav` → prompt bawaan + `mime_type":"audio/wav"`; kontrol benign `assemblyai/best` (G21) tetap 400 `PROVIDER_NOT_ROUTABLE` "does not translate yet" tanpa baris stub baru; akuntansi: 2 panggilan → +2 usage (`success`, provider `gemini`, model benar) + 2 log + `request_count=2`, penolakan kontrol menulis satu log `error=PROVIDER_NOT_ROUTABLE` tanpa usage; artefak dibersihkan (2 gateway key, 1 endpoint + 1 upstream key, 2 usage, 3 log, `panel_auth.password_hash` di-null) → baseline `usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true media_settings=0 proxies=0` pulih; `/tmp/g5d-app-serv` dan cookie dihapus |
+| 2026-09-19 | **Desain seam G21** (empat kelas multi-request) ditulis di `docs/DRAFT/002-G21-SEAM-DESIGN.md`; §3 G21 menunjuk dokumen itu, §4 menambah D6, §5 P2.11 mencatat desainnya | Belum ada kode — menunggu keputusan owner. Isi per kelas: bukti reference (file:line), bentuk seam, kontrak/registry yang berubah, risiko + temuan keamanan (argument injection `say -v <voiceId>` di Local Device; ToS/kerapuhan scraping Edge/Google; region Polly tidak boleh ditebak), test yang akan mengunci, dan tabel keputusan A1–A3/B1–B2/C1–C2/D1. Format gate tidak berubah: kelimanya tetap ditolak dengan nama sampai keputusan dijawab |
