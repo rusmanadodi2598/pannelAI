@@ -55,7 +55,7 @@ func (s *TokenSaverService) Get(ctx context.Context) (domain.TokenSaverSettings,
 // it GET never leaves a stale field behind.
 func (s *TokenSaverService) Replace(ctx context.Context, next domain.TokenSaverSettings) (domain.TokenSaverSettings, error) {
 	patch := domain.SettingsPatch{TokenSaver: &domain.TokenSaverSettingsPatch{
-		RTK:      replaceToggle(next.RTK),
+		RTK:      replaceRTK(next.RTK),
 		Headroom: replaceHeadroom(next.Headroom),
 		Ponytail: replaceToggle(next.Ponytail),
 	}}
@@ -64,6 +64,13 @@ func (s *TokenSaverService) Replace(ctx context.Context, next domain.TokenSaverS
 		return domain.TokenSaverSettings{}, err
 	}
 	return settings.TokenSaver, nil
+}
+
+// replaceRTK turns the native engine's group into a patch that writes every
+// field, the filter allowlist included.
+func replaceRTK(r domain.TokenSaverRTK) *domain.TokenSaverRTKPatch {
+	filters := append([]string{}, r.Filters...)
+	return &domain.TokenSaverRTKPatch{Enabled: &r.Enabled, Filters: &filters}
 }
 
 // replaceToggle turns one saver group into a patch that writes every field.

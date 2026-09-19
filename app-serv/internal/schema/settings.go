@@ -53,9 +53,17 @@ type NetworkSettingsResponse struct {
 // exported from the reference still round-trips, but §7.9 forbids rendering a
 // control for it, so no response exposes it either.
 type TokenSaverSettingsResponse struct {
-	RTK      TokenSaverToggleResponse   `json:"rtk"`
+	RTK      TokenSaverRTKResponse      `json:"rtk"`
 	Headroom TokenSaverHeadroomResponse `json:"headroom"`
 	Ponytail TokenSaverToggleResponse   `json:"ponytail"`
+}
+
+// TokenSaverRTKResponse is the native engine's group: the enable flag and the
+// filter allowlist. An empty list is rendered as `[]`, never `null`, so a panel
+// round-trip cannot turn "no allowlist" into a missing member (SPEC-API-002 §4).
+type TokenSaverRTKResponse struct {
+	Enabled bool     `json:"enabled"`
+	Filters []string `json:"filters"`
 }
 
 // TokenSaverToggleResponse is one enable/level saver group.

@@ -60,8 +60,9 @@ var SettingsKeys = []SettingsKey{
 // requires it to stay at that value for the life of v1.
 const DefaultCavemanLevel = "full"
 
-// DefaultSaverLevel is the level every saver group starts at and the word the
-// reference registry uses for each saver's default.
+// DefaultSaverLevel is the level the ponytail group starts at and the word the
+// reference registry uses for that saver's default. The RTK group has no level:
+// its strength is the filter allowlist (SPEC-API-002 §4).
 const DefaultSaverLevel = "full"
 
 // CavemanSetting is the deprecated saver's stored shape. It is decoded and
@@ -97,6 +98,62 @@ type NetworkSettings struct {
 	OutboundNoProxy      string `json:"outbound_no_proxy"`
 }
 
+// TokenSaverFilters is the canonical filter vocabulary of the native RTK engine
+// (SPEC-API-002 §4). It is the single source for the twelve names: the schema's
+// oneof tag is pinned against it by a test, and the engine's registry resolves
+// exactly these.
+var TokenSaverFilters = []string{
+	"git-diff",
+	"git-status",
+	"git-log",
+	"grep",
+	"find",
+	"ls",
+	"tree",
+	"dedup-log",
+	"smart-truncate",
+	"read-numbered",
+	"search-list",
+	"build-output",
+}
+
+// ValidTokenSaverFilter reports whether a name is one the engine implements.
+// Aliases the reference accepts on a command line (rg, fd) are not configuration
+// values: the panel picks from the canonical list, so the stored document
+// carries only names the registry resolves by itself.
+func ValidTokenSaverFilter(name string) bool {
+	for _, known := range TokenSaverFilters {
+		if name == known {
+			return true
+		}
+	}
+	return false
+}
+
+// TokenSaverLevels is the strength vocabulary the ponytail saver accepts, in
+// the order the levels escalate. The native engine's prompt table is keyed by
+// exactly these words, and a test in that package fails when the two drift
+// (SPEC-API-002 §7).
+var TokenSaverLevels = []string{"lite", "full", "ultra"}
+
+// ValidTokenSaverLevel reports whether a level is one the engine implements.
+func ValidTokenSaverLevel(level string) bool {
+	for _, known := range TokenSaverLevels {
+		if level == known {
+			return true
+		}
+	}
+	return false
+}
+
+// TokenSaverRTK is the native engine's group (§7.9): an enable flag and the
+// filter allowlist. An empty list means every filter is eligible; the engine
+// still autodetects which one applies to a given tool result (SPEC-API-002 §4).
+type TokenSaverRTK struct {
+	Enabled bool     `json:"enabled"`
+	Filters []string `json:"filters"`
+}
+
 // TokenSaverToggle is one enable/level saver group (§7.9).
 type TokenSaverToggle struct {
 	Enabled bool   `json:"enabled"`
@@ -112,7 +169,7 @@ type TokenSaverHeadroom struct {
 
 // TokenSaverSettings is the §7.9 saver configuration, minus caveman.
 type TokenSaverSettings struct {
-	RTK      TokenSaverToggle   `json:"rtk"`
+	RTK      TokenSaverRTK      `json:"rtk"`
 	Headroom TokenSaverHeadroom `json:"headroom"`
 	Ponytail TokenSaverToggle   `json:"ponytail"`
 }
@@ -148,7 +205,9 @@ func DefaultSettings() Settings {
 		},
 		Network: NetworkSettings{OutboundProxyEnabled: false},
 		TokenSaver: TokenSaverSettings{
-			RTK:      TokenSaverToggle{Enabled: true, Level: DefaultSaverLevel},
+			// Every saver ships off (owner decision, 2026-09-19): the pipeline
+			// must not rewrite a request until an operator turns a group on.
+			RTK:      TokenSaverRTK{Enabled: false, Filters: []string{}},
 			Headroom: TokenSaverHeadroom{Enabled: false},
 			Ponytail: TokenSaverToggle{Enabled: false, Level: DefaultSaverLevel},
 		},

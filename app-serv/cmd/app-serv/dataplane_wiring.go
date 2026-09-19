@@ -8,7 +8,7 @@
 // @uses      internal/dataplane, internal/provider, internal/registry,
 //
 //	internal/repository, internal/repository/redis, internal/router,
-//	internal/service, net/http, redis.
+//	internal/service, internal/tokensaver, net/http, redis.
 //
 // @reason    The data plane declares narrow ports and must not import a driver or a
 //
@@ -27,7 +27,6 @@
 package main
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/redis/go-redis/v9"
@@ -39,6 +38,7 @@ import (
 	redisrepo "github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository/redis"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/router"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/tokensaver"
 )
 
 // dataPlane is the assembled data plane: the chat, embeddings, and media
@@ -135,8 +135,14 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		return dataPlane{}, err
 	}
 
+	saver, err := tokensaver.NewApplierWithClient(in.Settings, in.Client, dataplane.TokenSaverTranslator{})
+	if err != nil {
+		return dataPlane{}, err
+	}
+
 	engine, err := dataplane.NewEngine(dataplane.EngineDeps{
 		Resolver: resolver, Selector: selector, Transport: transport, Vision: in.Vision,
+		TokenSaver: saver,
 		// The combo service owns the round-robin rule and the counter it
 		// advances, so the engine asks it for the order instead of reading the
 		// rotation state itself. It satisfies the seam directly.
@@ -203,22 +209,4 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		return dataPlane{}, err
 	}
 	return dataPlane{Chat: chat, Embeddings: embeddings, Media: media, Engine: engine, Caller: caller}, nil
-}
-
-// mediaRouter adapts the engine to the three questions a media call asks. The
-// adapter exists because the engine's selector is reached through a method:
-// taking the engine itself would put the resolver and the wire translators in
-// the way of every media call.
-type mediaRouter struct{ engine *dataplane.Engine }
-
-func (r mediaRouter) Select(ctx context.Context, providerID string) (dataplane.Selection, error) {
-	return r.engine.Selector().Select(ctx, providerID)
-}
-
-func (r mediaRouter) RecordSuccess(ctx context.Context, selection dataplane.Selection) error {
-	return r.engine.RecordSuccess(ctx, selection)
-}
-
-func (r mediaRouter) RecordFailure(ctx context.Context, selection dataplane.Selection, reason string) error {
-	return r.engine.RecordFailure(ctx, selection, reason)
 }

@@ -67,12 +67,12 @@ func TestTokenSaverRoutes_ThroughMux(t *testing.T) {
 	if getRecorder.Code != http.StatusOK {
 		t.Fatalf("get = %d (body: %s)", getRecorder.Code, getRecorder.Body.String())
 	}
-	if !strings.Contains(getRecorder.Body.String(), `"rtk":{"enabled":true,"level":"full"}`) {
+	if !strings.Contains(getRecorder.Body.String(), `"rtk":{"enabled":false,"filters":[]}`) {
 		t.Fatalf("get body = %s, want the §7.9 defaults", getRecorder.Body.String())
 	}
 
 	put := httptest.NewRequest(http.MethodPut, "/api/v1/token-saver",
-		strings.NewReader(`{"rtk":{"enabled":false,"level":"lite"},"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`))
+		strings.NewReader(`{"rtk":{"enabled":true,"filters":["git-log","tree"]},"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`))
 	put.AddCookie(cookie)
 	putRecorder := httptest.NewRecorder()
 	mux.ServeHTTP(putRecorder, put)
@@ -84,7 +84,7 @@ func TestTokenSaverRoutes_ThroughMux(t *testing.T) {
 	afterRequest := httptest.NewRequest(http.MethodGet, "/api/v1/token-saver", nil)
 	afterRequest.AddCookie(cookie)
 	mux.ServeHTTP(after, afterRequest)
-	if !strings.Contains(after.Body.String(), `"rtk":{"enabled":false,"level":"lite"}`) {
+	if !strings.Contains(after.Body.String(), `"rtk":{"enabled":true,"filters":["git-log","tree"]}`) {
 		t.Fatalf("body after put = %s, want the replaced document", after.Body.String())
 	}
 

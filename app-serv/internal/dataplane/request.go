@@ -59,6 +59,9 @@ type Request struct {
 	// Raw is the body as it arrived, which a same-format target is forwarded
 	// with so no unmodelled field is lost.
 	Raw []byte
+	// TokenSaverBypass is set by X-Token-Saver: off. It affects only this
+	// request and never changes the stored saver configuration.
+	TokenSaverBypass bool
 }
 
 // ProviderID reports the provider the request resolved to, or "" before

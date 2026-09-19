@@ -25,6 +25,7 @@ package domain
 
 import (
 	"net/url"
+	"strings"
 )
 
 // SettingsPatch is a partial mutation. A nil section or nil field means "leave
@@ -61,9 +62,17 @@ type NetworkSettingsPatch struct {
 // only way to reach that key is through SettingsKeyCaveman, which no route
 // writes.
 type TokenSaverSettingsPatch struct {
-	RTK      *TokenSaverTogglePatch
+	RTK      *TokenSaverRTKPatch
 	Headroom *TokenSaverHeadroomPatch
 	Ponytail *TokenSaverTogglePatch
+}
+
+// TokenSaverRTKPatch updates the native engine's group. Filters is a whole
+// replacement, so a patch carrying an empty list clears the allowlist back to
+// "every filter is eligible".
+type TokenSaverRTKPatch struct {
+	Enabled *bool
+	Filters *[]string
 }
 
 // TokenSaverTogglePatch updates one saver group.
@@ -114,21 +123,15 @@ func (s Settings) Validate() error {
 	if err := validateHeadroomURL(s.TokenSaver.Headroom.URL); err != nil {
 		return err
 	}
-	if !validSaverLevel(s.TokenSaver.RTK.Level) || !validSaverLevel(s.TokenSaver.Ponytail.Level) {
-		return NewValidationError("token_saver levels must be one of lite, full, ultra")
+	for _, name := range s.TokenSaver.RTK.Filters {
+		if !ValidTokenSaverFilter(name) {
+			return NewValidationError("token_saver.rtk.filters entries must be one of the twelve engine filters")
+		}
+	}
+	if !ValidTokenSaverLevel(s.TokenSaver.Ponytail.Level) {
+		return NewValidationError("token_saver levels must be one of " + strings.Join(TokenSaverLevels, ", "))
 	}
 	return nil
-}
-
-// validSaverLevel reports whether a saver level is one the §7.9 surface
-// accepts. The set matches the §7.14 PATCH tags, so both write paths reject the
-// same words and an empty level cannot slip in through either.
-func validSaverLevel(level string) bool {
-	switch level {
-	case "lite", "full", "ultra":
-		return true
-	}
-	return false
 }
 
 // validateHeadroomURL requires an absolute http(s) URL whenever the compression
@@ -167,7 +170,7 @@ func (s *Settings) Update(patch SettingsPatch) error {
 		applyString(&s.Network.OutboundNoProxy, p.OutboundNoProxy)
 	}
 	if p := patch.TokenSaver; p != nil {
-		applyToggle(&s.TokenSaver.RTK, p.RTK)
+		applyRTK(&s.TokenSaver.RTK, p.RTK)
 		applyToggle(&s.TokenSaver.Ponytail, p.Ponytail)
 		if h := p.Headroom; h != nil {
 			applyBool(&s.TokenSaver.Headroom.Enabled, h.Enabled)
@@ -212,4 +215,19 @@ func applyToggle(dst *TokenSaverToggle, src *TokenSaverTogglePatch) {
 	}
 	applyBool(&dst.Enabled, src.Enabled)
 	applyString(&dst.Level, src.Level)
+}
+
+// applyRTK writes the native engine's group. The filter list is replaced
+// wholesale, so an empty list in the patch is a real value (clear the allowlist)
+// rather than "leave unchanged", which the nil pointer already means.
+func applyRTK(dst *TokenSaverRTK, src *TokenSaverRTKPatch) {
+	if src == nil {
+		return
+	}
+	applyBool(&dst.Enabled, src.Enabled)
+	if src.Filters != nil {
+		replaced := make([]string, len(*src.Filters))
+		copy(replaced, *src.Filters)
+		dst.Filters = replaced
+	}
 }

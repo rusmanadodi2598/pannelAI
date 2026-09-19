@@ -67,7 +67,8 @@ func newTokenSaverFixture(t *testing.T) *TokenSaverHandler {
 }
 
 // TestTokenSaverHandler_GetServesTheDefaults documents the fresh-install
-// payload: the §7.9 defaults with every level rendered, never a 404.
+// payload: the §7.9 defaults with every level rendered and every saver off, never
+// a 404.
 func TestTokenSaverHandler_GetServesTheDefaults(t *testing.T) {
 	h := newTokenSaverFixture(t)
 	rr := do(t, http.MethodGet, "/api/v1/token-saver", "", h.Get)
@@ -75,7 +76,7 @@ func TestTokenSaverHandler_GetServesTheDefaults(t *testing.T) {
 		t.Fatalf("status = %d, want 200 (body: %s)", rr.Code, rr.Body.String())
 	}
 	body := rr.Body.String()
-	for _, want := range []string{`"rtk":{"enabled":true,"level":"full"}`, `"headroom"`, `"ponytail":{"enabled":false,"level":"full"}`} {
+	for _, want := range []string{`"rtk":{"enabled":false,"filters":[]}`, `"headroom"`, `"ponytail":{"enabled":false,"level":"full"}`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("body %s must contain %s", body, want)
 		}
@@ -90,20 +91,22 @@ func TestTokenSaverHandler_Put(t *testing.T) {
 		status int
 	}{
 		{
-			name:   "every saver on at the ultra level",
-			body:   `{"rtk":{"enabled":true,"level":"ultra"},"headroom":{"enabled":true,"url":"http://localhost:8787","compress_user_messages":true},"ponytail":{"enabled":true,"level":"lite"}}`,
+			name:   "every saver on",
+			body:   `{"rtk":{"enabled":true,"filters":["git-diff","grep"]},"headroom":{"enabled":true,"url":"http://localhost:8787","compress_user_messages":true},"ponytail":{"enabled":true,"level":"lite"}}`,
 			status: http.StatusOK,
 		},
 		{
 			name:   "the documented defaults",
-			body:   `{"rtk":{"enabled":true,"level":"full"},"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`,
+			body:   `{"rtk":{"enabled":false,"filters":[]},"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`,
 			status: http.StatusOK,
 		},
 		{name: "a missing rtk group", body: `{"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`, status: http.StatusBadRequest},
-		{name: "an unknown level word", body: `{"rtk":{"enabled":true,"level":"maximum"},"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`, status: http.StatusBadRequest},
-		{name: "a headroom url with a non-http scheme", body: `{"rtk":{"enabled":false,"level":"full"},"headroom":{"enabled":true,"url":"gopher://localhost:8787","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`, status: http.StatusBadRequest},
-		{name: "headroom enabled without a url", body: `{"rtk":{"enabled":false,"level":"full"},"headroom":{"enabled":true,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`, status: http.StatusBadRequest},
-		{name: "an unknown field", body: `{"rtk":{"enabled":true,"level":"full"},"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"},"caveman":{"enabled":true}}`, status: http.StatusBadRequest},
+		{name: "a filter the engine does not implement", body: `{"rtk":{"enabled":true,"filters":["summarize"]},"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`, status: http.StatusBadRequest},
+		{name: "the rtk level the contract removed", body: `{"rtk":{"enabled":true,"level":"full","filters":[]},"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`, status: http.StatusBadRequest},
+		{name: "an unknown ponytail level", body: `{"rtk":{"enabled":true,"filters":[]},"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"maximum"}}`, status: http.StatusBadRequest},
+		{name: "a headroom url with a non-http scheme", body: `{"rtk":{"enabled":false,"filters":[]},"headroom":{"enabled":true,"url":"gopher://localhost:8787","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`, status: http.StatusBadRequest},
+		{name: "headroom enabled without a url", body: `{"rtk":{"enabled":false,"filters":[]},"headroom":{"enabled":true,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"}}`, status: http.StatusBadRequest},
+		{name: "an unknown field", body: `{"rtk":{"enabled":true,"filters":[]},"headroom":{"enabled":false,"url":"","compress_user_messages":false},"ponytail":{"enabled":false,"level":"full"},"caveman":{"enabled":true}}`, status: http.StatusBadRequest},
 		{name: "a malformed body", body: `{"rtk":`, status: http.StatusBadRequest},
 		{name: "an empty body", body: ``, status: http.StatusBadRequest},
 	}
@@ -136,7 +139,7 @@ func TestTokenSaverHandler_Put(t *testing.T) {
 // comes back out of GET field for field, which the panel's save relies on.
 func TestTokenSaverHandler_PutThenGetRoundTrip(t *testing.T) {
 	h := newTokenSaverFixture(t)
-	put := `{"rtk":{"enabled":true,"level":"ultra"},"headroom":{"enabled":true,"url":"https://compress.internal:8787","compress_user_messages":true},"ponytail":{"enabled":true,"level":"lite"}}`
+	put := `{"rtk":{"enabled":true,"filters":["git-diff","build-output"]},"headroom":{"enabled":true,"url":"https://compress.internal:8787","compress_user_messages":true},"ponytail":{"enabled":true,"level":"lite"}}`
 	rr := do(t, http.MethodPut, "/api/v1/token-saver", put, h.Put)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("put = %d (body: %s)", rr.Code, rr.Body.String())
@@ -148,7 +151,7 @@ func TestTokenSaverHandler_PutThenGetRoundTrip(t *testing.T) {
 	if after.Body.String() != rr.Body.String() {
 		t.Fatalf("GET after PUT = %s, want the PUT response %s", after.Body.String(), rr.Body.String())
 	}
-	for _, want := range []string{`"level":"ultra"`, `"compress_user_messages":true`, `"level":"lite"`} {
+	for _, want := range []string{`"filters":["git-diff","build-output"]`, `"compress_user_messages":true`, `"level":"lite"`} {
 		if !strings.Contains(after.Body.String(), want) {
 			t.Fatalf("body %s must contain %s", after.Body.String(), want)
 		}

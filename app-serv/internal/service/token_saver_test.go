@@ -17,6 +17,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -69,7 +70,8 @@ func newTokenSaverFixture(t *testing.T) (*TokenSaverService, *stubSettingsStore)
 }
 
 // TestTokenSaverService_GetServesTheDefaults documents the fresh-install shape:
-// the §7.9 defaults, never a 404, with rtk enabled at the full level.
+// the §7.9 defaults, never a 404, with every saver off and the filter allowlist
+// empty.
 func TestTokenSaverService_GetServesTheDefaults(t *testing.T) {
 	saver, _ := newTokenSaverFixture(t)
 	got, err := saver.Get(context.Background())
@@ -77,7 +79,7 @@ func TestTokenSaverService_GetServesTheDefaults(t *testing.T) {
 		t.Fatalf("Get() error = %v", err)
 	}
 	want := domain.DefaultSettings().TokenSaver
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Get() = %+v, want the §7.9 defaults %+v", got, want)
 	}
 }
@@ -94,20 +96,20 @@ func TestTokenSaverService_Replace(t *testing.T) {
 		wantStored func(t *testing.T, got domain.TokenSaverSettings)
 	}{
 		{
-			name: "every saver on at the ultra level",
+			name: "every saver on",
 			next: domain.TokenSaverSettings{
-				RTK:      domain.TokenSaverToggle{Enabled: true, Level: "ultra"},
+				RTK:      domain.TokenSaverRTK{Enabled: true, Filters: []string{"git-diff", "grep"}},
 				Headroom: domain.TokenSaverHeadroom{Enabled: true, URL: "http://localhost:8787", CompressUserMessages: true},
 				Ponytail: domain.TokenSaverToggle{Enabled: true, Level: "ultra"},
 			},
 			wantSaves: 1,
 			wantStored: func(t *testing.T, got domain.TokenSaverSettings) {
 				want := domain.TokenSaverSettings{
-					RTK:      domain.TokenSaverToggle{Enabled: true, Level: "ultra"},
+					RTK:      domain.TokenSaverRTK{Enabled: true, Filters: []string{"git-diff", "grep"}},
 					Headroom: domain.TokenSaverHeadroom{Enabled: true, URL: "http://localhost:8787", CompressUserMessages: true},
 					Ponytail: domain.TokenSaverToggle{Enabled: true, Level: "ultra"},
 				}
-				if got != want {
+				if !reflect.DeepEqual(got, want) {
 					t.Fatalf("stored = %+v, want the replaced document %+v", got, want)
 				}
 			},
@@ -115,7 +117,7 @@ func TestTokenSaverService_Replace(t *testing.T) {
 		{
 			name: "headroom enabled without a url",
 			next: domain.TokenSaverSettings{
-				RTK:      domain.TokenSaverToggle{Enabled: false, Level: "full"},
+				RTK:      domain.TokenSaverRTK{Enabled: false, Filters: []string{}},
 				Headroom: domain.TokenSaverHeadroom{Enabled: true},
 				Ponytail: domain.TokenSaverToggle{Enabled: false, Level: "full"},
 			},
@@ -125,7 +127,7 @@ func TestTokenSaverService_Replace(t *testing.T) {
 		{
 			name: "headroom url with a non-http scheme",
 			next: domain.TokenSaverSettings{
-				RTK:      domain.TokenSaverToggle{Enabled: false, Level: "full"},
+				RTK:      domain.TokenSaverRTK{Enabled: false, Filters: []string{}},
 				Headroom: domain.TokenSaverHeadroom{Enabled: true, URL: "gopher://localhost:8787"},
 				Ponytail: domain.TokenSaverToggle{Enabled: false, Level: "full"},
 			},
@@ -133,11 +135,21 @@ func TestTokenSaverService_Replace(t *testing.T) {
 			wantSaves: 0,
 		},
 		{
-			name: "an empty level",
+			name: "an unknown filter",
 			next: domain.TokenSaverSettings{
-				RTK:      domain.TokenSaverToggle{Enabled: true, Level: ""},
+				RTK:      domain.TokenSaverRTK{Enabled: true, Filters: []string{"summarize"}},
 				Headroom: domain.TokenSaverHeadroom{},
 				Ponytail: domain.TokenSaverToggle{Enabled: false, Level: "full"},
+			},
+			wantErr:   "token_saver.rtk.filters",
+			wantSaves: 0,
+		},
+		{
+			name: "an empty ponytail level",
+			next: domain.TokenSaverSettings{
+				RTK:      domain.TokenSaverRTK{Enabled: false, Filters: []string{}},
+				Headroom: domain.TokenSaverHeadroom{},
+				Ponytail: domain.TokenSaverToggle{Enabled: false, Level: ""},
 			},
 			wantErr:   "token_saver",
 			wantSaves: 0,
@@ -165,7 +177,7 @@ func TestTokenSaverService_Replace(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Get() after Replace() error = %v", err)
 			}
-			if reread != got {
+			if !reflect.DeepEqual(reread, got) {
 				t.Fatalf("Get() after Replace() = %+v, want %+v", reread, got)
 			}
 		})
@@ -179,7 +191,7 @@ func TestTokenSaverService_ReplaceLeavesOtherRowsAlone(t *testing.T) {
 	ctx := context.Background()
 	saver, repo := newTokenSaverFixture(t)
 	next := domain.TokenSaverSettings{
-		RTK:      domain.TokenSaverToggle{Enabled: true, Level: "lite"},
+		RTK:      domain.TokenSaverRTK{Enabled: true, Filters: []string{"git-diff"}},
 		Headroom: domain.TokenSaverHeadroom{Enabled: false, URL: "https://compress.internal:8787"},
 		Ponytail: domain.TokenSaverToggle{Enabled: false, Level: "full"},
 	}
@@ -216,7 +228,7 @@ func TestTokenSaverService_ReplaceRoundTripsThroughStorage(t *testing.T) {
 	ctx := context.Background()
 	saver, repo := newTokenSaverFixture(t)
 	next := domain.TokenSaverSettings{
-		RTK:      domain.TokenSaverToggle{Enabled: true, Level: "lite"},
+		RTK:      domain.TokenSaverRTK{Enabled: true, Filters: []string{"ls", "tree"}},
 		Headroom: domain.TokenSaverHeadroom{URL: "http://localhost:8787"},
 		Ponytail: domain.TokenSaverToggle{Enabled: true, Level: "ultra"},
 	}
@@ -231,7 +243,7 @@ func TestTokenSaverService_ReplaceRoundTripsThroughStorage(t *testing.T) {
 	if err := json.Unmarshal([]byte(raw), &stored); err != nil {
 		t.Fatalf("stored row does not decode: %v", err)
 	}
-	if stored != next {
+	if !reflect.DeepEqual(stored, next) {
 		t.Fatalf("stored row = %+v, want %+v", stored, next)
 	}
 }

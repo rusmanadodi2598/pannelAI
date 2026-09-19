@@ -40,6 +40,13 @@ type FrameSink interface {
 	Flush()
 }
 
+// TokenSaver is the request-path seam for optional body transforms. The engine
+// hands it the already translated upstream wire, so a saver cannot be undone by
+// a later format conversion.
+type TokenSaver interface {
+	Apply(ctx context.Context, body []byte, wire, model string, bypass bool) []byte
+}
+
 // Outcome reports what one relayed call produced, in the form accounting and
 // logging need.
 type Outcome struct {
@@ -75,7 +82,10 @@ type Engine struct {
 	// orders is the optional §7.7 combo-order seam. A nil one serves every combo
 	// in stored priority order.
 	orders ComboOrderer
-	clock  func() time.Time
+	// saver rewrites the translated upstream body when an operator enabled a
+	// token-saver group. A nil one keeps the pipeline pass-through.
+	saver TokenSaver
+	clock func() time.Time
 }
 
 // EngineDeps holds the collaborators the engine needs.
@@ -90,6 +100,9 @@ type EngineDeps struct {
 	// every combo in stored priority order, which is what a deployment without
 	// Redis gets instead of a failure.
 	ComboOrder ComboOrderer
+	// TokenSaver rewrites the translated upstream body when enabled. Optional:
+	// nil leaves the data plane pass-through, which is the safe default.
+	TokenSaver TokenSaver
 	// Clock overrides the time source, so a test can measure latency and the
 	// circuit window without sleeping.
 	Clock func() time.Time
@@ -112,7 +125,7 @@ func NewEngine(deps EngineDeps) (*Engine, error) {
 	}
 	return &Engine{
 		resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport,
-		vision: deps.Vision, orders: deps.ComboOrder, clock: clock,
+		vision: deps.Vision, orders: deps.ComboOrder, saver: deps.TokenSaver, clock: clock,
 	}, nil
 }
 

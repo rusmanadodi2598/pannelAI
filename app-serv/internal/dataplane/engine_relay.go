@@ -53,6 +53,9 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 	if err != nil {
 		return outcome, err
 	}
+	if e.saver != nil {
+		body = e.saver.Apply(ctx, body, resolution.Target, resolution.UpstreamID, in.TokenSaverBypass)
+	}
 
 	started := e.clock()
 	upstream, err := e.transport.Do(ctx, Call{

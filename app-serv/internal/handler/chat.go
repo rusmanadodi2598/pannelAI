@@ -27,6 +27,8 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
+const tokenSaverBypassHeader = "X-Token-Saver"
+
 // ChatHandler serves the chat side of the data plane (§7.15).
 type ChatHandler struct {
 	chat *service.ChatService
@@ -61,7 +63,10 @@ func (h *ChatHandler) serve(w http.ResponseWriter, r *http.Request, route datapl
 		return
 	}
 
-	request := dataplane.Request{Route: route, ClientFormat: format, Raw: raw}
+	request := dataplane.Request{
+		Route: route, ClientFormat: format, Raw: raw,
+		TokenSaverBypass: tokenSaverBypass(r),
+	}
 	switch format {
 	case schema.FormatAnthropic:
 		decoded, decodeErr := schema.DecodeMessagesRequest(raw)
@@ -155,6 +160,13 @@ func (h *ChatHandler) Models(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	schema.WriteJSON(w, http.StatusOK, list)
+}
+
+// tokenSaverBypass reports whether this request opted out of all token savers.
+// Only the exact case-insensitive value "off" is a bypass; every other value
+// keeps the stored configuration active.
+func tokenSaverBypass(r *http.Request) bool {
+	return strings.EqualFold(strings.TrimSpace(r.Header.Get(tokenSaverBypassHeader)), "off")
 }
 
 // bearerToken reads the §4 data plane credential. A bare token is accepted too,

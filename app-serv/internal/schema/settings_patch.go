@@ -55,12 +55,22 @@ type NetworkSettingsPatch struct {
 // design: §7.9 marks it deprecated, never rendered, and frozen at its default,
 // so accepting a value for it here would create the control the spec removes.
 type TokenSaverSettingsPatch struct {
-	RTK      *TokenSaverTogglePatch   `json:"rtk,omitempty"`
+	RTK      *TokenSaverRTKPatch      `json:"rtk,omitempty"`
 	Headroom *TokenSaverHeadroomPatch `json:"headroom,omitempty"`
 	Ponytail *TokenSaverTogglePatch   `json:"ponytail,omitempty"`
 }
 
-// TokenSaverTogglePatch updates one saver group.
+// TokenSaverRTKPatch updates the native engine's group. The filter list is a
+// whole replacement and its entries are the twelve engine filters; an empty list
+// is accepted and means "every filter is eligible" (SPEC-API-002 §4). The
+// oneof values are pinned against domain.TokenSaverFilters by a test, so the tag
+// and the engine's registry cannot drift apart.
+type TokenSaverRTKPatch struct {
+	Enabled *bool     `json:"enabled,omitempty"`
+	Filters *[]string `json:"filters,omitempty" validate:"omitempty,dive,oneof=git-diff git-status git-log grep find ls tree dedup-log smart-truncate read-numbered search-list build-output"`
+}
+
+// TokenSaverTogglePatch updates one enable/level saver group.
 type TokenSaverTogglePatch struct {
 	Enabled *bool   `json:"enabled,omitempty"`
 	Level   *string `json:"level,omitempty" validate:"omitempty,oneof=lite full ultra"`
@@ -146,7 +156,7 @@ func ToSettingsPatch(req PatchSettingsRequest) domain.SettingsPatch {
 	}
 	if req.TokenSaver != nil {
 		patch.TokenSaver = &domain.TokenSaverSettingsPatch{
-			RTK:      togglePtr(req.TokenSaver.RTK),
+			RTK:      rtkPtr(req.TokenSaver.RTK),
 			Headroom: headroomPtr(req.TokenSaver.Headroom),
 			Ponytail: togglePtr(req.TokenSaver.Ponytail),
 		}
@@ -180,7 +190,7 @@ func SettingsResponseFrom(s domain.Settings) SettingsResponse {
 			OutboundNoProxy:      s.Network.OutboundNoProxy,
 		},
 		TokenSaver: TokenSaverSettingsResponse{
-			RTK:      TokenSaverToggleResponse{Enabled: s.TokenSaver.RTK.Enabled, Level: s.TokenSaver.RTK.Level},
+			RTK:      TokenSaverRTKResponse{Enabled: s.TokenSaver.RTK.Enabled, Filters: filtersOrEmpty(s.TokenSaver.RTK.Filters)},
 			Headroom: TokenSaverHeadroomResponse{Enabled: s.TokenSaver.Headroom.Enabled, URL: s.TokenSaver.Headroom.URL, CompressUserMessages: s.TokenSaver.Headroom.CompressUserMessages},
 			Ponytail: TokenSaverToggleResponse{Enabled: s.TokenSaver.Ponytail.Enabled, Level: s.TokenSaver.Ponytail.Level},
 		},
@@ -211,6 +221,14 @@ func togglePtr(in *TokenSaverTogglePatch) *domain.TokenSaverTogglePatch {
 		return nil
 	}
 	return &domain.TokenSaverTogglePatch{Enabled: in.Enabled, Level: in.Level}
+}
+
+// rtkPtr lowers the native engine's group.
+func rtkPtr(in *TokenSaverRTKPatch) *domain.TokenSaverRTKPatch {
+	if in == nil {
+		return nil
+	}
+	return &domain.TokenSaverRTKPatch{Enabled: in.Enabled, Filters: in.Filters}
 }
 
 // headroomPtr lowers the headroom saver group.
