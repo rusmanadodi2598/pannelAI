@@ -26,6 +26,7 @@ import (
 	"strconv"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
 // openAIErrorBody is the §4 data plane error envelope.
@@ -46,10 +47,17 @@ type openAIErrorDetail struct {
 // The wrapped cause is never written: only the data plane's own message reaches a
 // client, so an upstream's raw body or a driver message cannot leak through this
 // path (AGENTS.md §1.3).
+//
+// The access log records the machine code and never the message (register G9): a
+// data-plane failure's message can quote an upstream's text back, and that text
+// can carry the credential the gateway sent, so only the code is safe to log.
 func writeDataPlaneError(w http.ResponseWriter, err error) {
 	failure := dataplane.AsError(err)
 	if failure == nil {
 		failure = dataplane.AsError(dataplane.InternalError("an unexpected error occurred", nil))
+	}
+	if recorder, ok := w.(schema.ErrorCodeRecorder); ok {
+		recorder.SetErrorCode(failure.Code)
 	}
 	if failure.RetryAfter > 0 {
 		w.Header().Set("Retry-After", strconv.Itoa(failure.RetryAfter))

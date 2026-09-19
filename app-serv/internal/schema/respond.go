@@ -75,10 +75,26 @@ func WriteJSON(w http.ResponseWriter, status int, v any) {
 	}
 }
 
+// ErrorCodeRecorder receives the machine code of an error response, so the
+// access log line can name why a request failed instead of only its status
+// (register G9). The router's access-log recorder implements it and the
+// envelope middleware forwards it through the writer chain; a writer that does
+// not implement it is simply not asked, which is what keeps the seam optional
+// for a test driving a handler with a plain httptest.ResponseRecorder.
+type ErrorCodeRecorder interface {
+	SetErrorCode(code string)
+}
+
 // WriteError converts any error to the management envelope and writes it.
 // Unknown errors become INTERNAL_ERROR so driver internals never leak (§8).
+//
+// The code is recorded before the body is written, so the access log names it
+// even though the log line is produced after the handler returns.
 func WriteError(w http.ResponseWriter, err error) {
 	appErr := domain.AsAppError(err)
+	if recorder, ok := w.(ErrorCodeRecorder); ok {
+		recorder.SetErrorCode(appErr.Code)
+	}
 	if appErr.RetryAfter > 0 {
 		seconds := int64((appErr.RetryAfter + time.Second - 1) / time.Second)
 		if seconds < 1 {

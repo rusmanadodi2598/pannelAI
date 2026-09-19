@@ -7,9 +7,9 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 20 gap terdaftar, sepuluh di antaranya temuan click-through/pass live, tigabelas sudah CLOSED (G1, G2, G3, G6, G7, G11, G12, G13, G14, G15, G16, G17, G18) |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 20 gap terdaftar, sepuluh di antaranya temuan click-through/pass live, empat belas sudah CLOSED (G1, G2, G3, G6, G7, G9, G11, G12, G13, G14, G15, G16, G17, G18) |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
-| **Bukti terakhir** | pass G17+G18 2026-09-19 (§8 dua baris terakhir); suite `-race` 13 paket, tagged integration, `go-lint.sh`, dan `go-headers.sh` hijau |
+| **Bukti terakhir** | pass G9 2026-09-19 (§8 baris terakhir); suite `-race` 13 paket, tagged integration, `go-lint.sh`, dan `go-headers.sh` hijau |
 
 ## 1. Cara pakai
 
@@ -32,7 +32,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G6 | Panggilan media tidak menulis usage/log; `gateway_keys.request_count` tidak pernah naik. **CLOSED 2026-09-19** | akuntansi §7.12/§7.13 | **ya** | 3 |
 | G7 | Kind `video` terdaftar tanpa provider (rute menolak). **CLOSED 2026-09-19** | cakupan | tidak | 6 |
 | G8 | `.env` lokal drift dari `.env.example` sehingga boot polos gagal | lingkungan | tidak | 6 |
-| G9 | Kegagalan request hanya tercatat sebagai `status`, tanpa kode/alasan | observability §1.6 | tidak | 6 |
+| G9 | Kegagalan request hanya tercatat sebagai `status`, tanpa kode/alasan. **CLOSED 2026-09-19** | observability §1.6 | tidak | 6 |
 | G10 | Status row `SYSTEM_MAP.md` masih menarasikan P1 sebagai fase terakhir | dokumen §1.9 | tidak | 6 |
 | G11 | `POST /models/custom` menolak provider node kustom (katalog memegang index boot-time, bukan overlay). **CLOSED 2026-09-19** | bug wiring §7.6/§7.4 | tidak | 2 |
 | G12 | Budget cap hanya bisa ditulis; `GET /quotas/{endpoint_id}` tidak pernah memuatnya sampai ada window usage. **CLOSED 2026-09-19** | kontrak §7.12 | **ya** | 3 |
@@ -262,7 +262,7 @@ Resep override sementara ada di `reference_appserv_local_env.md`.
 
 **Definisi selesai.** `./app-serv` boot bersih tanpa override environment.
 
-### G9: Logging kegagalan request
+### G9: Logging kegagalan request (CLOSED 2026-09-19)
 
 **Bukti.** Kegagalan media tampil di log sebagai `request handled … "status":502`
 plus request id, tanpa kode error atau alasan. Klien menerima envelope yang benar;
@@ -274,8 +274,36 @@ menyebut Redis (lihat G14).
 **Pendekatan.** Log satu baris dengan `code` (dan `error`) di jalur
 `writeDataPlaneError`/handler, memakai request id yang sudah ada.
 
+**Perbaikan.** Baris akses yang sudah ada (`request handled`, dengan request id
+dan status) yang diperkaya — bukan baris kedua, supaya satu baris menjawab "apa"
+dan "kenapa". Seam-nya `schema.ErrorCodeRecorder` (satu metode), di-set oleh
+`schema.WriteError` (envelope manajemen) dan `handler.writeDataPlaneError`
+(envelope data plane), diimplementasikan `router.responseRecorder`, dan
+diteruskan `router.statusRecorder`. Penerusan itu eksplisit karena Go hanya
+mempromosikan metode milik interface yang di-embed (`http.ResponseWriter`), bukan
+metode tambahan milik nilai konkretnya — tanpa itu assertion handler gagal
+diam-diam dan kode berhenti tercatat. `writeEnvelope` (404/405 milik mux) ikut
+mencatat kodenya. Field `code` hanya muncul saat request gagal, jadi
+kehadirannya berarti "request ini gagal". **Pesan tidak pernah dicatat** — hanya
+kode — karena pesan kegagalan data plane bisa mengutip teks upstream yang membawa
+kredensial (aturan yang sama dengan G18); jalur panic tetap mencatat id + nilai
+panic lewat `recoverer`.
+
+**Bukti live (2026-09-19).** Binary dari tree yang sama, `.env` + override run
+(tanpa stub, tanpa artefak DB): `GET /api/v1/nope` → 404 baris
+`code=NOT_FOUND` (envelope mux), `POST /api/v1/chat/completions` tanpa key → 401
+`code=UNAUTHORIZED`, `POST /api/v1/images/generations` tanpa key → 401
+`code=UNAUTHORIZED` (keduanya lewat `writeDataPlaneError`), dan dua permintaan
+sukses (`GET /api/v1/health`, `GET /api/v1/version`) tidak membawa field `code`.
+Baseline tidak berubah (`usage=2 logs=1 keys=0 endpoints=0 nodes=0 settings=1
+auth_null=true`); `panel_auth.password_hash` di-null kembali setelah server
+berhenti.
+
 **Definisi selesai.** Tiap kegagalan request menghasilkan satu baris log berisi
-kode + request id; ada test yang mengunci bentuknya.
+kode + request id; ada test yang mengunci bentuknya. **Terpenuhi 2026-09-19**:
+`router_errorlog_test.go` mengunci empat jalur (error handler, rute tak dikenal,
+verb salah, penolakan data plane) plus kasus negatif (request sukses tanpa field
+`code`), changelog SPEC-API dicatat, dan bukti live di atas.
 
 ### G10: Narasi P2 di `SYSTEM_MAP.md`
 
@@ -665,14 +693,15 @@ request id yang sama dengan log server; test mengunci bentuknya; changelog §7.1
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
 8. **P2.8, G8, G9, G10, G19**: penutup kecil + dokumen + aksi lingkungan
-   pemilik. G7 selesai 2026-09-19 (keputusan default tercatat di changelog §7.10).
+   pemilik. G7 selesai 2026-09-19 (keputusan default tercatat di changelog §7.10);
+   G9 selesai 2026-09-19 (baris akses kegagalan membawa kode).
 9. **P2.9, G17 + G18**: temuan pass G6 di jalur chat (baris usage error dan baris
    log chat), tanpa keputusan owner. Selesai 2026-09-19.
 
 D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2, P2.3, P2.5, P2.6
-(G12/G13), P2.7, dan P2.9 sudah selesai, sehingga yang tidak lagi menunggu
-keputusan tinggal G5. P2.4 (G4) masih menunggu D2. P2.8 menyisakan G8, G9, G10,
-dan G19.
+(G12/G13), P2.7, P2.8 (G7/G9), dan P2.9 sudah selesai, sehingga yang tidak lagi
+menunggu keputusan tinggal G5. P2.4 (G4) masih menunggu D2. P2.8 menyisakan G8,
+G10, dan G19.
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
 
@@ -743,3 +772,4 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G17 CLOSED**: identity dibangun sebelum dial di `relayOnce` (dipindah ke `engine_relay.go` karena `engine.go` menembus batas 250 baris), `lastOutcome` di `Relay`, identity fusion dari `fanOut`/`judge`, guard identity eksplisit di `ChatService.record`; empat test baru | PASS live: `POST /chat/completions` model `g18node/broken` menjawab 502 `UPSTREAM_ERROR` dan menulis satu baris `usage_records` `status:error` `error_code:UPSTREAM_ERROR` dengan provider/endpoint/model terisi (`openai-compatible-…`/`ep_…`/`broken`), token 0, latency 7 ms, request id `0385RT4FG14Y44H76TZW2NB1YJ` sama dengan baris log-nya; sukses 200 token 5/2; `nosuchprovider/model` 400 `MODEL_NOT_FOUND` hanya baris log; baseline `usage=2 logs=1 keys=0 endpoints=0 nodes=0` dipulihkan; suite `-race` 13 paket, tagged integration, `go-lint.sh` (0 issues), `go-headers.sh` (464 file) hijau |
 | 2026-09-19 | **G18 CLOSED**: seam `Logs RequestLogRecorder` di `ChatService` + `chat_record.go` (satu baris `request_logs` per panggilan chat, request id sama dengan usage row, `error` = kode saja, body dari `in.Raw`/`outcome.Body` diserahkan ke aturan capture `LogService.Record`); tiga test baru | PASS live: lima panggilan chat masing-masing meninggalkan satu baris `request_logs` dengan request id yang sama seperti log server (`0385RT4F97CD2B8S4JMXSKGEWW` 200, `0385RT4FG14Y44H76TZW2NB1YJ` 502, `0385RT4FKMS66HGQ841KG2A78M` 200, `0385RT5213H7JB69WFC19FJHS4` 400, `0385RT7NDEKVYRZKWR56AC8BM0` 200 capture); baris gagal menyimpan `error` = `UPSTREAM_ERROR` saja sementara respons klien memuat pesan upstream berisi `sk-g18-should-not-be-stored`; pencarian sentinel `sk-g18` di `request_logs` (error + dua body) dan `usage_records` menjawab 0 baris; capture default mati → body kosong, `PATCH /settings {"logging":{"request_capture_enabled":true}}` → body permintaan + jawaban tersimpan utuh; baris setting capture dihapus saat cleanup; `gateway_keys.request_count` 3/1/1 untuk tiga key |
 | 2026-09-19 | G20 temuan pass G17/G18: penolakan media/embeddings sebelum panggilan tidak menulis baris log | FAIL by design saat ini: `MediaCallService.Prepare` dan `EmbeddingsService.Embed` menulis baris hanya setelah `perform`, jadi provider tak dikenal, `base_url` kosong, format gate, kredensial kosong, atau `NO_PROVIDER_AVAILABLE` tidak meninggalkan `request_logs` — sedangkan jalur chat kini mencatat setiap panggilan (terbukti live untuk 400 `MODEL_NOT_FOUND`). Dicatat sebagai G20 |
+| 2026-09-19 | **G9 CLOSED**: seam `schema.ErrorCodeRecorder` di-set `WriteError`/`writeDataPlaneError`/`writeEnvelope`, diimplementasikan `responseRecorder`, diteruskan eksplisit `statusRecorder` (Go hanya mempromosikan metode interface yang di-embed); `logging` menambah attr `code` hanya saat gagal; `router_errorlog_test.go` (empat jalur + kasus negatif) | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 466 file PASS; live pada binary dari tree yang sama (tanpa stub): `GET /api/v1/nope` → 404 baris `code=NOT_FOUND`, `POST /api/v1/chat/completions` tanpa key → 401 `code=UNAUTHORIZED`, `POST /api/v1/images/generations` tanpa key → 401 `code=UNAUTHORIZED`, `GET /api/v1/health` dan `/version` 200 tanpa field `code`; baseline tidak berubah (`usage=2 logs=1 keys=0 endpoints=0 nodes=0 settings=1 auth_null=true`), `panel_auth.password_hash` di-null kembali; changelog SPEC-API dicatat |

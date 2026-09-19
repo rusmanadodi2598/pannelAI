@@ -49,6 +49,9 @@ func envelope(next http.Handler) http.Handler {
 // writeEnvelope emits the §8 error shape for a response the mux produced and
 // this middleware suppressed, so no other body exists for that request.
 func writeEnvelope(w http.ResponseWriter, code int, errCode, msg string) {
+	if recorder, ok := w.(schema.ErrorCodeRecorder); ok {
+		recorder.SetErrorCode(errCode)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	if err := json.NewEncoder(w).Encode(schema.ErrorBody{Error: schema.ErrorDetail{Code: errCode, Message: msg}}); err != nil {
@@ -84,4 +87,16 @@ func (rec *statusRecorder) Write(b []byte) (int, error) {
 		return len(b), nil
 	}
 	return rec.ResponseWriter.Write(b)
+}
+
+// SetErrorCode forwards an error code to the recorder inside, so the access log
+// can name why the request failed (register G9). The forwarding is explicit
+// because Go promotes only the methods of the embedded interface
+// (http.ResponseWriter) and not the extra ones the concrete value behind it
+// carries — without this method a handler's SetErrorCode assertion would fail on
+// the writer it actually receives, and the code would silently stop being logged.
+func (rec *statusRecorder) SetErrorCode(code string) {
+	if recorder, ok := rec.ResponseWriter.(schema.ErrorCodeRecorder); ok {
+		recorder.SetErrorCode(code)
+	}
 }

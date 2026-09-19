@@ -61,7 +61,9 @@ func requestID(next http.Handler) http.Handler {
 	})
 }
 
-// logging records one structured line per request with the status and duration.
+// logging records one structured line per request with the status and duration,
+// plus the error code when the request failed (register G9), so one line answers
+// "what happened" and "why" together.
 func logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
@@ -69,13 +71,21 @@ func logging(next http.Handler) http.Handler {
 
 		next.ServeHTTP(rec, r)
 
-		slog.Info("request handled",
-			"request_id", RequestIDFrom(r.Context()),
-			"method", r.Method,
-			"path", r.URL.Path,
-			"status", rec.status,
-			"duration_ms", time.Since(started).Milliseconds(),
-		)
+		attrs := []slog.Attr{
+			slog.String("request_id", RequestIDFrom(r.Context())),
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.Int("status", rec.status),
+			slog.Int64("duration_ms", time.Since(started).Milliseconds()),
+		}
+		// A failed request names its code; a served one carries no code field at
+		// all, so the field's presence means exactly "this request failed".
+		// The message is never logged: it can quote an upstream's text back,
+		// and that text can carry a credential (register G18).
+		if rec.errorCode != "" {
+			attrs = append(attrs, slog.String("code", rec.errorCode))
+		}
+		slog.LogAttrs(r.Context(), slog.LevelInfo, "request handled", attrs...)
 	})
 }
 
@@ -108,7 +118,16 @@ type responseRecorder struct {
 	http.ResponseWriter
 	status      int
 	wroteHeader bool
+	// errorCode is the machine code of the error envelope the handler wrote, or
+	// "" for a request that produced no error envelope. The error writers set it
+	// through SetErrorCode and the access log reads it (register G9).
+	errorCode string
 }
+
+// SetErrorCode records the code of an error response, so the access log line can
+// name it. The error writers reach this method through the envelope middleware's
+// recorder, which forwards it (see statusRecorder.SetErrorCode).
+func (rec *responseRecorder) SetErrorCode(code string) { rec.errorCode = code }
 
 func (rec *responseRecorder) WriteHeader(code int) {
 	if !rec.wroteHeader {
