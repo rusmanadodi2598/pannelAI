@@ -50,13 +50,18 @@ format translation, multi-provider registry, combos/fallback, quota tracking, to
 | English | all client-facing strings/errors in English | both |
 | Settings | `settingsRepo.js` (subset, see §7.14) | app-serv |
 
-### 2.2 NOT PORTED (left out on purpose — do not spec, do not build)
+### 2.2 NOT PORTED (left out on purpose: do not spec, do not build)
 
 Cloud sync, tunnels (Cloudflare/Tailscale), MITM router, pxpipe, CLI-tools config writers
-(`src/app/api/cli-tools/*`), translator playground page, skills, basic-chat page, headroom process
-manager (start/stop/restart — v1 only calls an external Headroom URL), proxy-pool cloud deployers
+(`src/app/api/cli-tools/*`), the translator playground page, headroom process manager
+(start/stop/restart; v1 only calls an external Headroom URL), proxy-pool cloud deployers
 (Cloudflare/Deno/Vercel), SAML/OIDC/SSO, MCP, shutdown/update endpoints, i18n framework.
 Anything not listed in §2.1 is assumed **not wanted**; it may be added later via a new spec only.
+
+The 2026-09-20 endpoint audit ([`../DRAFT/003-ENDPOINT-READINESS.md`](../DRAFT/003-ENDPOINT-READINESS.md))
+pulled four items back into scope by owner decision: **skills**, the **chat playground**, **API
+docs**, and a **changelog surface**. They are not reference ports; §7.16 to §7.18 specify them from
+the reference's surface behavior, and phase P4 builds them. The translator playground stays excluded.
 
 ## 3. Architecture & Data Flow
 
@@ -266,6 +271,7 @@ Key health model (circuit breaker per key): on repeated upstream auth/429 failur
 | Method | Path | Auth | Description | Phase |
 |---|---|---|---|---|
 | GET | `/api/v1/models/catalog` | S | Merged catalog across providers; `?provider_id=&capability=vision|tools&q=`; excludes disabled | P1 |
+| GET | `/api/v1/models/custom` | S | List custom models; `?provider_id=` | P2 |
 | POST | `/api/v1/models/custom` | S | `{provider_id, model_id, display_name, capabilities?}` | P2 |
 | DELETE | `/api/v1/models/custom/{id}` | S | Remove custom model | P2 |
 | GET / PUT | `/api/v1/models/aliases` | S | `[{alias, target}]`; PUT replaces full set (validated: target exists) | P2 |
@@ -506,6 +512,58 @@ auth → schema validation → bypass detection (naming/warmup) → model resolv
   → SSE passthrough / JSON response
 ```
 
+**The panel playground is a §7.15 client, not a route group.** The reference serves its basic-chat
+page from the same origin; pannelAI's panel is a separate app, so its playground calls the routes
+above with `Authorization: Bearer <gateway key>` it creates through §7.3, exactly like a CLI tool.
+No playground-specific endpoint exists, and the page's contract lives in SPEC-UI.
+
+### 7.16 Skills (agent skill catalog)
+
+The reference's `/dashboard/skills` page is a static catalog of **agent skill documents**: one
+`SKILL.md` per gateway capability, hosted in the product's own repository, whose raw URL the user
+copies into any AI agent so the agent learns the capability without the operator explaining it.
+pannelAI ports the same shape: the gateway serves the catalog, the documents live in the owner's
+skills repository, and the panel renders what the route returns. The catalog is embedded static
+data (Locked Decision 3's registry rule), carries no database table, and lists one entry per
+capability endpoint this gateway actually serves, the entry skill first.
+
+| Method | Path | Auth | Description | Phase |
+|---|---|---|---|---|
+| GET | `/api/v1/skills` | S | `{data: [{id, name, description, endpoint, entry, raw_url, blob_url}]}`; `entry` marks the index skill | P4 |
+
+`endpoint` is the §7.15 path the skill teaches (`/chat/completions`, `/images/generations`,
+`/audio/speech`, and the rest); `raw_url` and `blob_url` derive from the repository constants
+beside the catalog, the same derivation `src/shared/constants/skills.js` performs. The documents
+themselves are owner-authored content in that repository: the route serves metadata and links,
+never a `SKILL.md` body, so no capability doc can drift from what the gateway serves.
+
+### 7.17 API Docs (machine-readable contract)
+
+The reference keeps its docs in an external gitbook; pannelAI serves the contract itself, because
+a self-hosted gateway's panel cannot assume internet access, and the egress guard (§9) exists to
+notice when it tries.
+
+| Method | Path | Auth | Description | Phase |
+|---|---|---|---|---|
+| GET | `/api/v1/openapi.json` | S | The OpenAPI document of both planes; `application/json`, no error envelope | P4 |
+
+The document is embedded at build from the same source of truth as this spec and names every
+registered route of §7; a route missing from it is a build failure, not a doc lag. The response is
+the document itself, so a reader can diff the served contract against the spec that produced it.
+
+### 7.18 Changelog (served release notes)
+
+The reference's `ChangelogModal` fetches a GitHub changelog URL from the browser. pannelAI serves
+its own history instead: the binary carries the release notes it was built from, the panel reads
+them over the management API it already has, and nothing external is fetched.
+
+| Method | Path | Auth | Description | Phase |
+|---|---|---|---|---|
+| GET | `/api/v1/changelog` | S | `{data: [{version, date, title, notes}]}`, newest first | P4 |
+
+Entries are embedded at build from the repository's changelog file. The route is read-only and has
+no database table, because the changelog describes the binary and the binary carries it.
+
 ## 8. Error Codes (management envelope)
 
 | Code | HTTP | Meaning |
@@ -568,6 +626,7 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 | **P1** | Provider registry port (YAML), upstream endpoints + multi-key, models catalog, combos (fallback/round_robin), vision adapter, chat data plane (OpenAI + Anthropic), embeddings, usage + quotas, logs, settings | CLI tool completes a request through combo fallback; `-race` clean |
 | **P2** | OAuth providers + refresh worker, fusion strategy, combo test, media providers + media data plane, proxies, token-saver config, budget caps, custom/alias/disabled models | OAuth provider round-trip; TTS/embeddings passthrough verified |
 | **P3** | Responses API, count_tokens, native token-saver engine (new spec: `002-TOKEN-SAVER`) | parity spot-checks vs reference (002 §9 records their status) |
+| **P4** | Skills catalog, openapi.json, changelog routes (§7.16 to §7.18); panel playground (SPEC-UI page over §7.15, no new route) | the three routes tested (happy/validation/auth per route); the served openapi.json names every registered route |
 
 *Changelog 2026-09-17 — §7.4 publishes `routability` (`native` / `connector`) and the per-kind `media` block; §8.1 records the five wire shapes settled before the endpoint DTOs (auth-type mapping, one create shape for single and bulk, the OAuth bulk import shape, all-or-nothing batch semantics, and per-kind credential placement). Rationale: four providers on the owner's list speak protocols P1 does not translate, so "configured but always failing" needed to become a value the panel reads, and the bulk routes needed a shape before their DTOs existed.*
 
@@ -629,3 +688,5 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 *Changelog 2026-09-19: §7.15's `POST /api/v1/responses` route is served, the third P3 slice, so a coding agent on the Responses wire reaches every provider the registry offers. The request direction pivots through the OpenAI chat request: `instructions` becomes the leading system turn; the `input` union (a bare string or an item array) becomes the message list; an item's `type` decides its role with the `role` fallback the CLI tools rely on; a `function_call` item becomes an assistant turn's tool call and a `function_call_output` item becomes a tool result whose JSON string is unwrapped, so the model reads the payload rather than a quoted copy of it; `image_url` is read as the bare string this wire carries; `max_output_tokens` becomes `max_tokens` and is omitted when the client set none, because a zero ceiling reads as "produce nothing"; a tool declaration still carrying OpenAI's `function` wrapper is flattened, a nameless one is skipped, and an object schema without `properties` gains one; and the fields only the Responses API knows are dropped rather than leaked into a chat body. A streamed answer always asks the upstream for usage (`stream_options.include_usage`), because this wire reports accounting in its closing event rather than behind a client flag, and the reference omits the request and so reports none. The stream is the API's named-event lifecycle: `response.created` and `response.in_progress` open it once; an item opens before its content and closes after it, through `response.output_item.added`, the part-added event, the deltas, and the part-done and item-done closers; `response.completed` closes it and `data: [DONE]` ends it; and `sequence_number` increases by one across the whole stream. Reasoning, message, and function-call items open lazily on the first delta that needs them, each at its own output index, so a reasoning item and the message that follows it do not share one as they do in the reference, which keys items by the OpenAI choice index. Inline `<think>` markup is routed to the reasoning item and stripped from the answer either way, and text that follows a tool call opens a fresh message item rather than feeding deltas to one the client already saw close. Item ids are `rs_<response>_<index>`, `msg_<response>_<index>`, and `fc_<call_id>`, with a deterministic `call_pannelai_<index>` call id when the provider omits one and `{}` for a call that never reported arguments. The closing event reports the assembled items and the accounting, which the official API does and the reference omits, so the streamed and non-streamed answers describe the same object. Accounting for an Anthropic upstream now merges rather than replaces, because that provider reports the prompt side once and the output side cumulatively, and replacing the block reported a prompt of zero for every Claude call, which the reference avoids by accumulating.*
 
 *Changelog 2026-09-19: §7.9's native token-saver engine is built and wired, the fourth P3 slice, governed by the new [`002-TOKEN-SAVER.md`](./002-TOKEN-SAVER.md) it cites. Three savers run in the reference's order (RTK, then Headroom, then Ponytail) inside the relay, on the already translated upstream body before the transport call, so a rewrite cannot be undone by a later format conversion and only the provider ever sees one; the pipeline covers streamed and non-streamed calls alike. `rtk` on the wire trades its `level` for `filters`, the allowlist of the twelve canonical filter names (an empty list means every filter is eligible), because the allowlist is the compressor's strength; `ponytail.level` stays. Every saver ships off by default (owner decision, 2026-09-19), so the request path is byte-neutral until an operator enables a group, and Locked Decision 4 is amended accordingly. The document is read per request, so a settings change takes effect on the next call rather than the next boot. `X-Token-Saver: off` (§4) now reaches the pipeline as a per-request bypass: only the exact case-insensitive value `off` opts out, and every other value keeps the stored configuration active. The failure direction is fail-open everywhere: a settings read error, a proxy failure, a malformed transform, or a filter panic returns the latest body and the call proceeds, because a saver is an optimization and no request may fail or grow because of one. Headroom's external call shares the process's guarded HTTP client (§9), so a self-hosted compression proxy needs its address in `EGRESS_ALLOWED_TARGETS` exactly like a self-hosted provider, and its endpoint is redacted in errors. The savers write no accounting of their own: the relayed call keeps the one usage row and one log row §7.12/§7.13 already give it.*
+
+*Changelog 2026-09-20: the endpoint audit ([`../DRAFT/003-ENDPOINT-READINESS.md`](../DRAFT/003-ENDPOINT-READINESS.md)) lands. §7.6 adds the `GET /api/v1/models/custom` list route the router already served and tested but the table lacked, closing the one drift the audit found between the registered routes (90) and the contract (89). §2.2 records the owner decision pulling four items back into scope: skills, the chat playground, API docs, and a changelog surface. §7.16 to §7.18 specify them from the reference's surface behavior rather than invention: the reference's skills page is a static catalog of agent skill documents (`src/shared/constants/skills.js`), so §7.16 is one read-only catalog route over embedded data; the reference serves docs from an external gitbook and fetches its changelog from a GitHub URL in the browser (`ChangelogModal.js`), so §7.17 and §7.18 serve both from the binary itself, because a self-hosted panel cannot assume internet access and §9 exists to notice when it tries; and the playground needs no endpoint at all, so §7.15 records it as a data plane client carrying a gateway key. §10 adds P4 to carry the build. The translator playground stays excluded.*
