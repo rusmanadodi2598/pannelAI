@@ -39,6 +39,7 @@ type managementDeps struct {
 	Node          *handler.ProviderNodeHandler
 	Model         *handler.ModelHandler
 	Combo         *handler.ComboHandler
+	ComboTest     *handler.ComboTestHandler
 	VisionAdapter *handler.VisionAdapterHandler
 	TokenSaver    *handler.TokenSaverHandler
 	Usage         *handler.UsageHandler
@@ -82,6 +83,7 @@ func routerDeps(
 		OAuth:           mgmt.OAuth,
 		Model:           mgmt.Model,
 		Combo:           mgmt.Combo,
+		ComboTest:       mgmt.ComboTest,
 		VisionAdapter:   mgmt.VisionAdapter,
 		TokenSaver:      mgmt.TokenSaver,
 		Usage:           mgmt.Usage,

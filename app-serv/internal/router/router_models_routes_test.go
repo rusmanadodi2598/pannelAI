@@ -19,12 +19,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/handler"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
+
+// routeProber answers the §7.7 combo test route healthily, so the route table
+// can drive the route end to end without an engine.
+type routeProber struct{}
+
+func (routeProber) Ping(context.Context, string) (dataplane.Outcome, error) {
+	return dataplane.Outcome{ProviderID: "openai", EndpointID: "ep-1", Model: "gpt-4o", LatencyMS: 12}, nil
+}
 
 // TestManagementRoutes_DuplicateComboNameIsConflict pins the uniqueness mapping
 // on the combo route, so the panel gets the same code the gateway keys return.
@@ -92,6 +101,7 @@ func newManagementRouter(t *testing.T) *Mux {
 		GatewayKey:    handler.NewGatewayKeyHandler(keyService),
 		Model:         management.model,
 		Combo:         management.combo,
+		ComboTest:     management.comboTest,
 		VisionAdapter: management.vision,
 	})
 }
@@ -110,9 +120,10 @@ func loginCookie(t *testing.T, mux *Mux) *http.Cookie {
 
 // catalogServices is the wired management handler set a route test drives.
 type catalogServices struct {
-	model  *handler.ModelHandler
-	combo  *handler.ComboHandler
-	vision *handler.VisionAdapterHandler
+	model     *handler.ModelHandler
+	combo     *handler.ComboHandler
+	comboTest *handler.ComboTestHandler
+	vision    *handler.VisionAdapterHandler
 }
 
 // newCatalogFixture wires the catalog, combo, and adapter services over
@@ -155,11 +166,16 @@ func newCatalogFixture(t *testing.T) catalogServices {
 	if err != nil {
 		t.Fatalf("NewVisionAdapterService() error = %v", err)
 	}
+	comboTests, err := service.NewComboTestService(combos, routeProber{})
+	if err != nil {
+		t.Fatalf("NewComboTestService() error = %v", err)
+	}
 	seedRouteFixture(t, comboRepo)
 	return catalogServices{
-		model:  handler.NewModelHandler(catalog),
-		combo:  handler.NewComboHandler(combos),
-		vision: handler.NewVisionAdapterHandler(adapter),
+		model:     handler.NewModelHandler(catalog),
+		combo:     handler.NewComboHandler(combos),
+		comboTest: handler.NewComboTestHandler(comboTests),
+		vision:    handler.NewVisionAdapterHandler(adapter),
 	}
 }
 

@@ -59,6 +59,37 @@ type ComboList struct {
 	Meta Page            `json:"meta"`
 }
 
+// Combo test roles: which part of a combo a probed reference plays.
+const (
+	ComboTestRoleModel = "model"
+	ComboTestRoleJudge = "judge"
+)
+
+// ComboTestResult is one reference's probe outcome (§7.7). A failure is a result
+// rather than an error, because the route's purpose is to say which references
+// fail while still reporting the ones that answered.
+type ComboTestResult struct {
+	Ref        string `json:"ref"`
+	Role       string `json:"role"`
+	OK         bool   `json:"ok"`
+	ProviderID string `json:"provider_id,omitempty"`
+	ModelID    string `json:"model_id,omitempty"`
+	EndpointID string `json:"endpoint_id,omitempty"`
+	LatencyMS  int64  `json:"latency_ms"`
+	ErrorCode  string `json:"error_code,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
+// ComboTestResponse is the combo test route's answer: the combo's identity and
+// one result per reference, in the order the combo stores them, with a fusion
+// combo's judge last.
+type ComboTestResponse struct {
+	ComboID  string            `json:"combo_id"`
+	Combo    string            `json:"combo"`
+	Strategy string            `json:"strategy"`
+	Results  []ComboTestResult `json:"results"`
+}
+
 // ToComboModels converts the wire entries into the ordered domain list,
 // validating each reference's shape. Whether a reference resolves to a model, a
 // combo, or an alias is the service's check, because it spans three sources.

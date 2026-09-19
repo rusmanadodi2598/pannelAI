@@ -40,6 +40,7 @@ var managementRoutes = []struct {
 	{"combo detail", http.MethodGet, "/api/v1/combos/cmb_x", ""},
 	{"combo update", http.MethodPatch, "/api/v1/combos/cmb_x", `{"name":"daily","strategy":"fallback","models":[{"ref":"openai/gpt-4o","priority":1}]}`},
 	{"combo delete", http.MethodDelete, "/api/v1/combos/cmb_x", ""},
+	{"combo test", http.MethodPost, "/api/v1/combos/cmb_x/test", ""},
 	{"vision get", http.MethodGet, "/api/v1/vision-adapter", ""},
 	{"vision put", http.MethodPut, "/api/v1/vision-adapter", `{"enabled":false,"round_robin":false,"models":[]}`},
 }
@@ -115,6 +116,10 @@ func TestManagementRoutes_HappyPath(t *testing.T) {
 			name: "combo update", method: http.MethodPatch, path: "/api/v1/combos/cmb_seeded",
 			body:   `{"name":"seeded-combo","strategy":"round_robin","sticky_limit":2,"models":[{"ref":"openai/gpt-4o","priority":1}]}`,
 			status: http.StatusOK, want: `"round_robin"`,
+		},
+		{
+			name: "combo test", method: http.MethodPost, path: "/api/v1/combos/cmb_seeded/test",
+			status: http.StatusOK, want: `"results"`,
 		},
 		{name: "vision get", method: http.MethodGet, path: "/api/v1/vision-adapter", status: http.StatusOK, want: `"enabled"`},
 		{

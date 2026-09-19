@@ -50,6 +50,7 @@ type Deps struct {
 	ProviderNode    *handler.ProviderNodeHandler
 	Model           *handler.ModelHandler
 	Combo           *handler.ComboHandler
+	ComboTest       *handler.ComboTestHandler
 	VisionAdapter   *handler.VisionAdapterHandler
 	TokenSaver      *handler.TokenSaverHandler
 	Usage           *handler.UsageHandler
@@ -151,6 +152,7 @@ func New(deps Deps) *Mux {
 	mux.Handle("GET "+APIVersion+"/combos/{id}", gateway(http.HandlerFunc(deps.Combo.Get)))
 	mux.Handle("PATCH "+APIVersion+"/combos/{id}", gateway(http.HandlerFunc(deps.Combo.Update)))
 	mux.Handle("DELETE "+APIVersion+"/combos/{id}", gateway(http.HandlerFunc(deps.Combo.Delete)))
+	mux.Handle("POST "+APIVersion+"/combos/{id}/test", gateway(http.HandlerFunc(deps.ComboTest.Test)))
 	mux.Handle("GET "+APIVersion+"/vision-adapter", gateway(http.HandlerFunc(deps.VisionAdapter.Get)))
 	mux.Handle("PUT "+APIVersion+"/vision-adapter", gateway(http.HandlerFunc(deps.VisionAdapter.Put)))
 	mux.Handle("GET "+APIVersion+"/token-saver", gateway(http.HandlerFunc(deps.TokenSaver.Get)))

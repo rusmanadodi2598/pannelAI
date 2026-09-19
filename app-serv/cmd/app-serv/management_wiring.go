@@ -189,6 +189,14 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: data plane: %w", err)
 	}
 
+	// The §7.7 combo test probes through the engine, and the engine asks the
+	// combo service for the round-robin order, so the probe is its own service
+	// rather than a method on that one — the cycle would otherwise be real.
+	comboTestSvc, err := service.NewComboTestService(comboSvc, plane.Engine)
+	if err != nil {
+		return managementDeps{}, fmt.Errorf("management wiring: combo test: %w", err)
+	}
+
 	tokenSaverSvc, err := service.NewTokenSaverService(service.TokenSaverServiceDeps{Settings: settingsSvc})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: token saver: %w", err)
@@ -208,6 +216,7 @@ func buildManagement(
 		Node:          handler.NewProviderNodeHandler(nodeSvc),
 		Model:         handler.NewModelHandler(catalogSvc),
 		Combo:         handler.NewComboHandler(comboSvc),
+		ComboTest:     handler.NewComboTestHandler(comboTestSvc),
 		VisionAdapter: handler.NewVisionAdapterHandler(visionSvc),
 		TokenSaver:    handler.NewTokenSaverHandler(tokenSaverSvc),
 		Usage:         handler.NewUsageHandler(usageSvc),

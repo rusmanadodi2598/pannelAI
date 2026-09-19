@@ -39,10 +39,13 @@ import (
 )
 
 // dataPlane is the assembled data plane: the chat and embeddings services that
-// share one engine.
+// share one engine, plus the engine itself — the §7.7 combo test probes through
+// it, and rebuilding a second pipeline for that route would be a second
+// pipeline to keep in step.
 type dataPlane struct {
 	Chat       *service.ChatService
 	Embeddings *service.EmbeddingsService
+	Engine     *dataplane.Engine
 }
 
 // dataPlaneInputs are the collaborators the data plane is built from. They are
@@ -146,5 +149,5 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 	if err != nil {
 		return dataPlane{}, err
 	}
-	return dataPlane{Chat: chat, Embeddings: embeddings}, nil
+	return dataPlane{Chat: chat, Embeddings: embeddings, Engine: engine}, nil
 }

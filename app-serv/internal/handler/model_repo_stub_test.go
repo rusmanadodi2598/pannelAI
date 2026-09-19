@@ -59,9 +59,13 @@ func (stubRotation) Next(_ context.Context, _ string, models []string, _ int) ([
 
 // managementFixture is the wired handler set the §7.6–§7.8 tests drive.
 type managementFixture struct {
-	model  *ModelHandler
-	combo  *ComboHandler
-	vision *VisionAdapterHandler
+	model     *ModelHandler
+	combo     *ComboHandler
+	comboTest *ComboTestHandler
+	vision    *VisionAdapterHandler
+	// prober is the combo test route's seam double, exposed so a case can make
+	// a member fail without rebuilding the fixture.
+	prober *stubProber
 }
 
 // newManagementFixture wires the handlers over a small fixed registry with one
@@ -104,11 +108,18 @@ func newManagementFixture(t *testing.T) managementFixture {
 	if err != nil {
 		t.Fatalf("NewVisionAdapterService() error = %v", err)
 	}
+	prober := newStubProber()
+	comboTestService, err := service.NewComboTestService(comboService, prober)
+	if err != nil {
+		t.Fatalf("NewComboTestService() error = %v", err)
+	}
 	seedHandlerFixture(t, catalog, comboRepo)
 	return managementFixture{
-		model:  NewModelHandler(catalog),
-		combo:  NewComboHandler(comboService),
-		vision: NewVisionAdapterHandler(adapterService),
+		model:     NewModelHandler(catalog),
+		combo:     NewComboHandler(comboService),
+		comboTest: NewComboTestHandler(comboTestService),
+		vision:    NewVisionAdapterHandler(adapterService),
+		prober:    prober,
 	}
 }
 
