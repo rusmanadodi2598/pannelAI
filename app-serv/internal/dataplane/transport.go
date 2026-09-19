@@ -25,6 +25,7 @@ package dataplane
 import (
 	"net"
 	"net/http"
+	"net/url"
 	"sort"
 	"time"
 
@@ -96,6 +97,15 @@ type HTTPClientDeps struct {
 	// hermetic tests use: an httptest server is loopback, and the guard refuses
 	// loopback unless the operator allowlists it.
 	Dialer *net.Dialer
+	// Proxy decides how one request reaches its destination: nil to dial it
+	// directly, or the proxy to dial instead (SPEC-API-001 §7.11). The
+	// composition root builds it from settings.network, so the routing decision
+	// stays out of this package; a zero value dials direct.
+	//
+	// A proxied request never dials the destination, so a caller that routes
+	// through a proxy owns validating the destination itself — the dialer's
+	// guard only sees the proxy's address.
+	Proxy func(*http.Request) (*url.URL, error)
 }
 
 // NewHTTPClient builds the HTTP client the gateway calls upstreams with.
@@ -112,6 +122,7 @@ func NewHTTPClient(deps HTTPClientDeps) *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
 			DialContext:           dialer.DialContext,
+			Proxy:                 deps.Proxy,
 			MaxIdleConns:          100,
 			MaxIdleConnsPerHost:   16,
 			MaxConnsPerHost:       64,

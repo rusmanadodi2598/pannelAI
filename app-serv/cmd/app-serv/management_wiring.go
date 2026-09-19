@@ -56,10 +56,17 @@ func buildManagement(
 	connectors *provider.Connectors,
 	keys repository.GatewayKeyRepository,
 ) (managementDeps, error) {
+	// Settings first: the egress route (§7.11) and the log service both read it.
+	settingsRepo := postgres.NewSettingsRepository(pool)
+	settingsSvc, err := service.NewSettingsService(service.SettingsServiceDeps{Repo: settingsRepo})
+	if err != nil {
+		return managementDeps{}, fmt.Errorf("management wiring: settings: %w", err)
+	}
+
 	// The process-wide egress policy (OWASP A01): one guard and one guarded HTTP
 	// client, shared by the probe, the data plane, the OAuth client, and the
 	// proxy test. Built once so a second caller cannot grow a second allowlist.
-	egress, err := buildEgress(cfg)
+	egress, err := buildEgress(cfg, settingsSvc)
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: %w", err)
 	}
@@ -80,17 +87,10 @@ func buildManagement(
 	usageRepo := postgres.NewUsageRepository(pool)
 	quotaRepo := postgres.NewQuotaRepository(pool)
 	logRepo := postgres.NewLogRepository(pool)
-	settingsRepo := postgres.NewSettingsRepository(pool)
 
 	// The runtime index overlays stored custom nodes on the embedded registry,
 	// so a node created at runtime is resolvable as a provider id.
 	runtimeIndex := newRuntimeProviderIndex(index, nodeRepo, slog.Default())
-
-	// Settings first: the log service reads the capture policy from it.
-	settingsSvc, err := service.NewSettingsService(service.SettingsServiceDeps{Repo: settingsRepo})
-	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: settings: %w", err)
-	}
 
 	// The catalog must exist before the combo and vision services, which resolve
 	// their refs through it. It reads the runtime overlay like the rest of the

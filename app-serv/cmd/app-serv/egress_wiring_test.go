@@ -54,7 +54,7 @@ func TestBuildEgress_GuardsUpstreamDials(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			egress, err := buildEgress(config.Config{EgressAllowedTargets: tc.allowed})
+			egress, err := buildEgress(config.Config{EgressAllowedTargets: tc.allowed}, settingsStub{})
 			if err != nil {
 				t.Fatalf("buildEgress() error = %v", err)
 			}
@@ -75,7 +75,7 @@ func TestBuildEgress_GuardsUpstreamDials(t *testing.T) {
 
 	// The benign control: a public address passes, and a private one is refused
 	// with its reason rather than accepted.
-	egress, err := buildEgress(config.Config{})
+	egress, err := buildEgress(config.Config{}, settingsStub{})
 	if err != nil {
 		t.Fatalf("buildEgress() error = %v", err)
 	}
@@ -90,7 +90,7 @@ func TestBuildEgress_GuardsUpstreamDials(t *testing.T) {
 // TestBuildEgress_RefusesAMalformedAllowlist pins that a typo fails the boot
 // rather than silently widening what the gateway may reach.
 func TestBuildEgress_RefusesAMalformedAllowlist(t *testing.T) {
-	if _, err := buildEgress(config.Config{EgressAllowedTargets: []string{"10.0.0.0/33"}}); err == nil {
+	if _, err := buildEgress(config.Config{EgressAllowedTargets: []string{"10.0.0.0/33"}}, settingsStub{}); err == nil {
 		t.Fatal("buildEgress() = nil error, want a malformed allowlist to be refused")
 	}
 }
