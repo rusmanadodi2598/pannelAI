@@ -5,8 +5,8 @@ Diperbarui pada PR yang sama ketika topologi atau alur data berubah (AGENTS.md �
 
 | | |
 |---|---|
-| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. P1 berjalan: registry provider di-embed (94 provider, decode ketat), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) yang sudah diverifikasi terhadap PostgreSQL nyata. Repository, service, handler, dan data plane P1 sedang dibangun per vertical. Panel U0 selesai termasuk shell sidebar bertema |
-| **Terakhir diperbarui** | 2026-09-18 |
+| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (94 provider, decode ketat), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (§7.4-§7.8, §7.12-§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis → PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API |
+| **Terakhir diperbarui** | 2026-09-19 |
 | **Kontrak** | `docs/SPEC-API/001-SPEC-API.md` |
 
 ---
@@ -41,14 +41,9 @@ flowchart LR
     S -.->|"P1: translasi + upstream"| UP
 ```
 
-**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008 sudah ada; repository dan service-nya menyusul per fase di todo). Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
+**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008; repository, service, handler, dan data plane-nya terpasang). Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
 
-**Catatan boot P1 (diukur 2026-09-18):** `app-serv` berhenti saat boot pada migrasi `000007_usage_quota.up.sql`.
-Kolom `window` di `quota_windows` adalah reserved word PostgreSQL, dan runner gagal dengan `SQLSTATE 42601`
-(`syntax error at or near "window"`) setelah migrasi 000005 dan 000006 terterap. Efeknya: endpoint P1 belum bisa
-dilayani, sehingga panel belum bisa diverifikasi end-to-end terhadap API nyata. Verifikasi shell memakai stub
-`/api/v1/auth/status`. Perbaikan (rename kolom, atau kutip `"window"` plus kunci pada `(endpoint_id, window)`)
-milik pekerjaan P1 `app-serv`; tidak diubah dari sini karena di luar cakupan perubahan panel.
+**Catatan migrasi P1:** kolom `quota_windows."window"` adalah reserved word PostgreSQL dan wajib dikutip; nama kolomnya dipertahankan agar sama dengan field API (SPEC-API §7.12 mengembalikan `window`). Idempotensi runner diuji, bukan diasumsikan: `migrations/apply_test.go` (tag `integration`) menjalankan runner sungguhan dua kali dan memastikan ledger tidak bertambah.
 
 ---
 
@@ -223,13 +218,14 @@ Migrasi P1 (`000004`-`000008`) menambah `provider_nodes`, `upstream_endpoints` +
 
 ## 6. Asinkron
 
-Belum ada worker pada P0. Antrean berikut masuk pada P1/P2 sesuai SPEC-API §3 dan §10:
+Dua worker P1 berjalan bersama server, keduanya dipulai lewat `cmd/app-serv/worker_wiring.go` dengan batas panic dan terminasi lewat context (AGENTS.md §1.6). Antrean berikut masuk pada P2 sesuai SPEC-API §3 dan §10:
 
 | Worker | Pemicu | Kebijakan retry | Dead-letter |
 |---|---|---|---|
+| Quota flush (`internal/service/quota_flush.go`) | tick 30 detik, batch terbatas | fixed tick, `MaxAttempts: 5` | baris Redis tersisa dicoba lagi pada tick berikutnya |
+| Log retention (`internal/service/log_retention.go`) | tick 1 jam, cutoff dari `settings.logging.retention_days` | fixed tick, `MaxAttempts: 3` | DELETE bersifat set-based dan atomik; baris tetap untuk percobaan berikutnya |
 | OAuth token refresh | `refresh_lead` tercapai | eksponensial + jitter (P2) | tandai endpoint `error` |
-| Quota re-check | kadens per provider (5h/daily/weekly/monthly) | eksponensial (P1) | catat `resets_at` terakhir |
-| Log flush / retensi | jadwal periodik | tetap (P1) | hapus melewati `retention_days` |
+| Quota re-check | kadens per provider (5h/daily/weekly/monthly) | eksponensial (P2) | catat `resets_at` terakhir |
 
 Setiap goroutine baru wajib memulihkan panic dan punya kondisi terminasi eksplisit (AGENTS.md §1.6).
 
