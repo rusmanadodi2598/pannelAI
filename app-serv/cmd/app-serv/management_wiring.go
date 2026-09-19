@@ -173,6 +173,15 @@ func buildManagement(
 		return managementDeps{}, err
 	}
 
+	// §7.10 media providers: the registry's media blocks resolved against the
+	// stored per-provider+kind overrides, counted from the same endpoint rows
+	// §7.4 reads. Built before the data plane because the media routes and the
+	// embeddings route read the same stored overrides through this service.
+	mediaSvc, mediaHandler, err := buildMediaProviders(pool, runtimeIndex, endpointRepo)
+	if err != nil {
+		return managementDeps{}, err
+	}
+
 	// The data plane is assembled from the same repositories the management side
 	// writes through, so a value written by one path is readable by the other.
 	// buildDataPlane owns that construction; this function only feeds it.
@@ -184,6 +193,7 @@ func buildManagement(
 		Config: cfg, Index: runtimeIndex, Endpoints: endpointRepo, Combos: comboRepo,
 		ComboOrder: comboSvc, Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
 		Redis: client, Settings: settingsSvc, Usage: usageSvc, Vision: augmenter,
+		MediaOverrides: mediaSvc,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: data plane: %w", err)
@@ -224,6 +234,7 @@ func buildManagement(
 		Combo:         handler.NewComboHandler(comboSvc),
 		ComboTest:     handler.NewComboTestHandler(comboTestSvc),
 		Proxy:         proxyHandler,
+		MediaProvider: mediaHandler,
 		VisionAdapter: handler.NewVisionAdapterHandler(visionSvc),
 		TokenSaver:    handler.NewTokenSaverHandler(tokenSaverSvc),
 		Usage:         handler.NewUsageHandler(usageSvc),

@@ -35,14 +35,17 @@ import (
 type EmbeddingsService struct {
 	engine    *dataplane.Engine
 	caller    dataplane.MediaCaller
-	overrides map[string]string
+	overrides MediaOverrideReader
 }
 
 // EmbeddingsServiceDeps holds the collaborators the service needs.
 type EmbeddingsServiceDeps struct {
-	Engine  *dataplane.Engine
-	Caller  dataplane.MediaCaller
-	BaseURL map[string]string
+	Engine *dataplane.Engine
+	Caller dataplane.MediaCaller
+	// Overrides reads the stored per-provider base URL §7.10's save writes.
+	// It is optional so a deployment that has not configured one still
+	// resolves the registry's own base URL.
+	Overrides MediaOverrideReader
 }
 
 // NewEmbeddingsService validates deps and returns a ready service.
@@ -53,7 +56,7 @@ func NewEmbeddingsService(deps EmbeddingsServiceDeps) (*EmbeddingsService, error
 	if deps.Caller == nil {
 		return nil, domain.NewValidationError("media caller is required")
 	}
-	return &EmbeddingsService{engine: deps.Engine, caller: deps.Caller, overrides: deps.BaseURL}, nil
+	return &EmbeddingsService{engine: deps.Engine, caller: deps.Caller, overrides: deps.Overrides}, nil
 }
 
 // Embed resolves the model, selects the account, performs the call, and returns the
@@ -75,7 +78,7 @@ func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequ
 			"model " + req.Model + " is a combo; embeddings requires a single model")
 	}
 
-	media, baseURL, err := s.mediaConfig(resolution.Provider)
+	media, baseURL, err := s.mediaConfig(ctx, resolution.Provider)
 	if err != nil {
 		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
 	}
@@ -128,17 +131,26 @@ func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequ
 	}, nil
 }
 
-// mediaConfig reads the provider's per-kind block, or refuses a provider that
-// offers no embeddings service.
-func (s *EmbeddingsService) mediaConfig(entry registry.Provider) (registry.MediaConfig, string, error) {
+// mediaConfig reads the provider's per-kind block and the effective base URL:
+// the operator's stored override wins over the registry's own value, and a
+// provider with neither is refused because §7.10 forbids a silent cloud
+// fallback. The stored value is read per call rather than cached, so a save in
+// the panel takes effect on the next request.
+func (s *EmbeddingsService) mediaConfig(ctx context.Context, entry registry.Provider) (registry.MediaConfig, string, error) {
 	media, ok := entry.Media.For(registry.MediaEmbedding)
 	if !ok {
 		return registry.MediaConfig{}, "", dataplane.ProviderNotRoutable(
 			"provider " + entry.ID + " does not offer embeddings")
 	}
 	baseURL := strings.TrimSpace(media.BaseURL)
-	if override := strings.TrimSpace(s.overrides[entry.ID]); override != "" {
-		baseURL = override
+	if s.overrides != nil {
+		stored, err := s.overrides.MediaBaseURL(ctx, entry.ID, domain.MediaKindEmbedding)
+		if err != nil {
+			return registry.MediaConfig{}, "", err
+		}
+		if stored = strings.TrimSpace(stored); stored != "" {
+			baseURL = stored
+		}
 	}
 	if baseURL == "" {
 		// §7.10 forbids a silent cloud fallback: a provider with no base_url is a

@@ -71,6 +71,10 @@ type dataPlaneInputs struct {
 	Usage      *service.UsageService
 	// Vision is the §7.8 seam the engine consults for image-bearing requests.
 	Vision dataplane.VisionAugmenter
+	// MediaOverrides is the §7.10 seam the media routes read a stored base
+	// URL through. It is passed in rather than built here because the same
+	// service answers the management routes.
+	MediaOverrides service.MediaOverrideReader
 }
 
 // buildDataPlane assembles the resolver, selector, transport, and engine, then the
@@ -144,7 +148,8 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Engine: engine,
 		// The package's own HTTP implementation, which already carries the §1.7
 		// pool limits and the §1.6 deadlines.
-		Caller: dataplane.NewMediaTransport(nil),
+		Caller:    dataplane.NewMediaTransport(nil),
+		Overrides: in.MediaOverrides,
 	})
 	if err != nil {
 		return dataPlane{}, err

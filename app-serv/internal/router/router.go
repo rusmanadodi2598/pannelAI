@@ -52,6 +52,7 @@ type Deps struct {
 	Combo           *handler.ComboHandler
 	ComboTest       *handler.ComboTestHandler
 	Proxy           *handler.ProxyHandler
+	MediaProvider   *handler.MediaProviderHandler
 	VisionAdapter   *handler.VisionAdapterHandler
 	TokenSaver      *handler.TokenSaverHandler
 	Usage           *handler.UsageHandler
@@ -168,6 +169,10 @@ func New(deps Deps) *Mux {
 	mux.Handle("PATCH "+APIVersion+"/proxies/{id}", gateway(http.HandlerFunc(deps.Proxy.Update)))
 	mux.Handle("DELETE "+APIVersion+"/proxies/{id}", gateway(http.HandlerFunc(deps.Proxy.Delete)))
 	mux.Handle("POST "+APIVersion+"/proxies/{id}/test", gateway(http.HandlerFunc(deps.Proxy.Test)))
+
+	// §7.10 Media providers: three management routes and the six data-plane
+	// media routes, registered together in router_media.go.
+	registerMediaRoutes(mux, deps, gateway)
 
 	// §7.12–§7.14 Usage, quotas, logs, and settings are management routes, so
 	// they share the same session guard.

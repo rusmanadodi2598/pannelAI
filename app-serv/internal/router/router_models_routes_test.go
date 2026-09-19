@@ -17,12 +17,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/handler"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
@@ -104,6 +102,7 @@ func newManagementRouter(t *testing.T) *Mux {
 		ComboTest:     management.comboTest,
 		VisionAdapter: management.vision,
 		Proxy:         management.proxy,
+		MediaProvider: management.media,
 	})
 }
 
@@ -117,86 +116,6 @@ func loginCookie(t *testing.T, mux *Mux) *http.Cookie {
 		t.Fatalf("test auth login: %d (%s)", recorder.Code, recorder.Body.String())
 	}
 	return recorder.Result().Cookies()[0]
-}
-
-// catalogServices is the wired management handler set a route test drives.
-type catalogServices struct {
-	model     *handler.ModelHandler
-	combo     *handler.ComboHandler
-	comboTest *handler.ComboTestHandler
-	vision    *handler.VisionAdapterHandler
-	proxy     *handler.ProxyHandler
-}
-
-// newCatalogFixture wires the catalog, combo, and adapter services over
-// in-memory repositories.
-func newCatalogFixture(t *testing.T) catalogServices {
-	t.Helper()
-	index, err := registry.NewIndex(registry.Document{Revision: "test", Providers: []registry.Provider{
-		{
-			ID: "openai", Priority: 1, Category: "api",
-			Models: []registry.Model{
-				{ID: "gpt-4o", Name: "GPT-4o", Kind: "llm", Capabilities: []string{"vision", "tools"}},
-				{ID: "gpt-4o-mini", Name: "GPT-4o mini", Kind: "llm", Capabilities: []string{"tools"}},
-			},
-		},
-		{
-			ID: "anthropic", Priority: 2, Category: "api",
-			Models: []registry.Model{{ID: "claude-3", Name: "Claude 3", Kind: "llm", Capabilities: []string{"vision"}}},
-		},
-	}})
-	if err != nil {
-		t.Fatalf("registry.NewIndex() error = %v", err)
-	}
-	catalogRepo := newMemCatalogRepo()
-	comboRepo := newMemComboRepo()
-	catalog, err := service.NewModelCatalogService(service.ModelCatalogServiceDeps{
-		Index: index, Repo: catalogRepo, Combos: comboRepo,
-	})
-	if err != nil {
-		t.Fatalf("NewModelCatalogService() error = %v", err)
-	}
-	combos, err := service.NewComboService(service.ComboServiceDeps{
-		Repo: comboRepo, Catalog: catalog, Rotation: nil,
-	})
-	if err != nil {
-		t.Fatalf("NewComboService() error = %v", err)
-	}
-	adapter, err := service.NewVisionAdapterService(service.VisionAdapterServiceDeps{
-		Repo: newMemAdapterRepo(), Catalog: catalog,
-	})
-	if err != nil {
-		t.Fatalf("NewVisionAdapterService() error = %v", err)
-	}
-	comboTests, err := service.NewComboTestService(combos, routeProber{})
-	if err != nil {
-		t.Fatalf("NewComboTestService() error = %v", err)
-	}
-	seedRouteFixture(t, comboRepo)
-	return catalogServices{
-		model:     handler.NewModelHandler(catalog),
-		combo:     handler.NewComboHandler(combos),
-		comboTest: handler.NewComboTestHandler(comboTests),
-		vision:    handler.NewVisionAdapterHandler(adapter),
-		proxy:     newProxyRouteHandler(t),
-	}
-}
-
-// seedRouteFixture stores the combo the route tests address by id.
-func seedRouteFixture(t *testing.T, combos *memComboRepo) {
-	t.Helper()
-	model, err := domain.NewComboModel("openai/gpt-4o", 1)
-	if err != nil {
-		t.Fatalf("NewComboModel() error = %v", err)
-	}
-	combo, err := domain.NewCombo("cmb_seeded", "seeded-combo", domain.ComboFallback, 0, "",
-		[]domain.ComboModel{model}, time.Now().UTC())
-	if err != nil {
-		t.Fatalf("NewCombo() error = %v", err)
-	}
-	if err := combos.Create(context.Background(), combo); err != nil {
-		t.Fatalf("seeding a combo: %v", err)
-	}
 }
 
 // The remaining stubs implement the repository contracts in memory, mirroring
