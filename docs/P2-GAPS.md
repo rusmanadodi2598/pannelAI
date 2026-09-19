@@ -9,7 +9,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 |---|---|
 | **Status** | P2: seluruh permukaan rute terpasang; §7.10 terverifikasi live, sisanya "implementasi selesai, verifikasi live outstanding" |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
-| **Bukti terakhir** | commit `1f00860` + `573979b`; gate hijau; log click-through `/tmp/pannelai-serv.log` |
+| **Bukti terakhir** | commit `1f00860` + `573979b`; gate hijau; baris §8 (log mentah `/tmp/pannelai-serv.log` transient — rujukan jangka panjangnya adalah §8, bukan file itu) |
 
 ## 1. Cara pakai
 
