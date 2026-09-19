@@ -2,7 +2,11 @@
 //
 // @file      migrations/migrate.go
 // @for       Embedded, ordered, once-only application of the sibling *.up.sql files.
-// @uses      embed, io/fs, sort, strings, database/sql, github.com/jackc/pgx/v5/stdlib.
+// @uses      embed, io/fs, sort, strings, database/sql, log/slog, time,
+//
+//	github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn,
+//	github.com/jackc/pgx/v5/stdlib.
+//
 // @reason    SPEC-API-001 §10 puts migrations in P0 and §6 puts them in
 //
 //	app-serv/migrations. Booting against a database without the schema
@@ -28,7 +32,9 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" driver for database/sql
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/stdlib"
 )
 
 // files holds the migration bundle so the binary carries its own schema.
@@ -67,9 +73,9 @@ func Apply(ctx context.Context, dsn string) error {
 		return err
 	}
 
-	db, err := sql.Open("pgx", dsn)
+	db, err := openDB(dsn)
 	if err != nil {
-		return fmt.Errorf("migrations: opening database: %w", err)
+		return err
 	}
 	defer func() { _ = db.Close() }()
 
@@ -118,6 +124,30 @@ func Apply(ctx context.Context, dsn string) error {
 		slog.Info("migration applied", "file", name)
 	}
 	return nil
+}
+
+// openDB opens the migration connection with notices routed to the log. A
+// migration that cannot do its job reports it with RAISE WARNING, and pgx
+// drops notices when OnNotice is nil — a warning nobody reads is the same as
+// no warning, so the handler is what makes the refusal visible at boot.
+func openDB(dsn string) (*sql.DB, error) {
+	cfg, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("migrations: reading the DSN: %w", err)
+	}
+	cfg.OnNotice = func(_ *pgconn.PgConn, notice *pgconn.Notice) {
+		// CREATE TABLE IF NOT EXISTS reports "already exists, skipping" as a
+		// NOTICE on every boot after the first, so the quiet severities are
+		// kept out of the default log and only a real refusal is a warning.
+		level := slog.LevelWarn
+		switch notice.Severity {
+		case "DEBUG", "INFO", "NOTICE", "LOG":
+			level = slog.LevelDebug
+		}
+		slog.Log(context.Background(), level, "migration notice",
+			"severity", notice.Severity, "message", notice.Message)
+	}
+	return stdlib.OpenDB(*cfg), nil
 }
 
 // lockApply takes the apply lock, waiting at most applyLockWait.
