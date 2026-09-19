@@ -41,14 +41,34 @@ func (h *QuotaHandler) List(w http.ResponseWriter, r *http.Request) {
 	h.writeWindows(w, r, "")
 }
 
-// Get serves GET /api/v1/quotas/{endpoint_id}: one endpoint's windows.
+// Get serves GET /api/v1/quotas/{endpoint_id}: one endpoint's windows plus the
+// stored budget cap, so a cap that was written can be read back even when no
+// usage window exists yet (SPEC-API-001 §7.12, owner decision D5 = b).
 func (h *QuotaHandler) Get(w http.ResponseWriter, r *http.Request) {
 	endpointID := r.PathValue("endpoint_id")
 	if endpointID == "" {
 		schema.WriteError(w, domain.NewValidationError("endpoint_id is required"))
 		return
 	}
-	h.writeWindows(w, r, endpointID)
+	windows, err := h.quotas.ListWindows(r.Context(), endpointID)
+	if err != nil {
+		schema.WriteError(w, err)
+		return
+	}
+	cap, stored, err := h.quotas.GetCap(r.Context(), endpointID)
+	if err != nil {
+		schema.WriteError(w, err)
+		return
+	}
+	resp := schema.QuotaEndpointDetail{
+		EndpointID: endpointID,
+		Data:       windowResponses(windows),
+	}
+	if stored {
+		mapped := schema.QuotaCapResponseFrom(cap)
+		resp.Cap = &mapped
+	}
+	schema.WriteJSON(w, http.StatusOK, resp)
 }
 
 // PutCap serves PUT /api/v1/quotas/{endpoint_id}: it replaces the cap set for
@@ -86,19 +106,26 @@ func (h *QuotaHandler) PutCap(w http.ResponseWriter, r *http.Request) {
 	schema.WriteJSON(w, http.StatusOK, schema.QuotaCapResponseFrom(cap))
 }
 
-// writeWindows reads and renders the windows for one endpoint, or for all of
-// them when endpointID is empty.
+// writeWindows reads and renders every endpoint's windows for the collection
+// route.
 func (h *QuotaHandler) writeWindows(w http.ResponseWriter, r *http.Request, endpointID string) {
 	windows, err := h.quotas.ListWindows(r.Context(), endpointID)
 	if err != nil {
 		schema.WriteError(w, err)
 		return
 	}
-	resp := schema.QuotaWindowList{Data: make([]schema.QuotaWindowResponse, 0, len(windows))}
+	schema.WriteJSON(w, http.StatusOK, schema.QuotaWindowList{Data: windowResponses(windows)})
+}
+
+// windowResponses maps stored windows onto their wire shape, always as a
+// non-nil slice so an endpoint with no windows answers an empty array rather
+// than a null.
+func windowResponses(windows []domain.QuotaWindow) []schema.QuotaWindowResponse {
+	resp := make([]schema.QuotaWindowResponse, 0, len(windows))
 	for _, window := range windows {
-		resp.Data = append(resp.Data, schema.QuotaWindowResponseFrom(window))
+		resp = append(resp, schema.QuotaWindowResponseFrom(window))
 	}
-	schema.WriteJSON(w, http.StatusOK, resp)
+	return resp
 }
 
 // parseOptionalCost lowers an optional decimal string to the value object,

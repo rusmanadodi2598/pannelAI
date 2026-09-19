@@ -67,9 +67,22 @@ type QuotaWindowResponse struct {
 	Source     string  `json:"source"`
 }
 
-// QuotaWindowList is the body of both quota read routes.
+// QuotaWindowList is the body of GET /api/v1/quotas, which reads every
+// endpoint's windows. The collection route carries no cap: a cap belongs to one
+// endpoint, and the per-endpoint route is where a client reads it back.
 type QuotaWindowList struct {
 	Data []QuotaWindowResponse `json:"data"`
+}
+
+// QuotaEndpointDetail is the body of GET /api/v1/quotas/{endpoint_id}: that
+// endpoint's windows plus its stored budget cap, so a client that just wrote a
+// cap reads the same values back (SPEC-API-001 §7.12, owner decision D5 = b).
+// Cap is null when no cap is stored — a state the panel renders as an empty
+// form, which a missing field could not be told apart from.
+type QuotaEndpointDetail struct {
+	EndpointID string                `json:"endpoint_id"`
+	Cap        *QuotaCapResponse     `json:"cap"`
+	Data       []QuotaWindowResponse `json:"data"`
 }
 
 // QuotaCapResponse is the body of PUT /api/v1/quotas/{endpoint_id}. An omitted

@@ -7,9 +7,9 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 19 gap terdaftar, sembilan di antaranya temuan click-through/pass live, sembilan sudah CLOSED (G1, G2, G3, G6, G11, G13, G14, G15, G16) |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 19 gap terdaftar, sembilan di antaranya temuan click-through/pass live, sebelas sudah CLOSED (G1, G2, G3, G6, G7, G11, G12, G13, G14, G15, G16) |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
-| **Bukti terakhir** | pass G6 2026-09-19 (§8 baris terakhir); suite `-race` 13 paket, tagged integration, `go-lint.sh`, dan `go-headers.sh` (460 file) hijau |
+| **Bukti terakhir** | pass G12 2026-09-19 (§8 baris terakhir); suite `-race` 13 paket, tagged integration, `go-lint.sh`, dan `go-headers.sh` hijau |
 
 ## 1. Cara pakai
 
@@ -30,12 +30,12 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G4 | `settings.network.outbound_proxy_*` tidak dipakai di jalur dial | kontrak §7.11 | **ya** | 4 |
 | G5 | Adapter media per-provider (format gate menolak 16 provider dengan nama) | fitur | tidak | 5 |
 | G6 | Panggilan media tidak menulis usage/log; `gateway_keys.request_count` tidak pernah naik. **CLOSED 2026-09-19** | akuntansi §7.12/§7.13 | **ya** | 3 |
-| G7 | Kind `video` terdaftar tanpa provider (rute menolak) | cakupan | tidak | 6 |
+| G7 | Kind `video` terdaftar tanpa provider (rute menolak). **CLOSED 2026-09-19** | cakupan | tidak | 6 |
 | G8 | `.env` lokal drift dari `.env.example` sehingga boot polos gagal | lingkungan | tidak | 6 |
 | G9 | Kegagalan request hanya tercatat sebagai `status`, tanpa kode/alasan | observability §1.6 | tidak | 6 |
 | G10 | Status row `SYSTEM_MAP.md` masih menarasikan P1 sebagai fase terakhir | dokumen §1.9 | tidak | 6 |
 | G11 | `POST /models/custom` menolak provider node kustom (katalog memegang index boot-time, bukan overlay). **CLOSED 2026-09-19** | bug wiring §7.6/§7.4 | tidak | 2 |
-| G12 | Budget cap hanya bisa ditulis; `GET /quotas/{endpoint_id}` tidak pernah memuatnya sampai ada window usage | kontrak §7.12 | **ya** | 3 |
+| G12 | Budget cap hanya bisa ditulis; `GET /quotas/{endpoint_id}` tidak pernah memuatnya sampai ada window usage. **CLOSED 2026-09-19** | kontrak §7.12 | **ya** | 3 |
 | G13 | Embeddings menolak node openai-compatible (reference punya adapter `openaiCompatNode`). **CLOSED 2026-09-19** | fitur/paritas | tidak | 5 |
 | G14 | State store OAuth tanpa test; `GETDEL` butuh Redis ≥ 6.2 dan gagalnya 500 tanpa log. **CLOSED 2026-09-19** | test + portabilitas | **ya** | 2 |
 | G15 | Endpoint `no_auth` tanpa key tidak pernah terpilih (selector menuntut key sebelum cabang auth type). **CLOSED 2026-09-19** | bug routing §7.5 | tidak | 2 |
@@ -233,7 +233,7 @@ usage row + satu request log dengan request id yang sama, dan `request_count` ke
 naik 1 per panggilan terautentikasi (terbukti live untuk tts, embeddings, dan
 search, termasuk jalur gagal).
 
-### G7: Kind `video` tanpa provider
+### G7: Kind `video` tanpa provider (CLOSED 2026-09-19)
 
 **Bukti.** Rute terdaftar dan menolak dengan nama; tidak ada provider di registry
 yang mendeklarasikan `video` (reference juga tidak mendefinisikannya, paritas).
@@ -242,6 +242,12 @@ yang mendeklarasikan `video` (reference juga tidak mendefinisikannya, paritas).
 mendeklarasikan kind + tulis adapter (masuk G5).
 
 **Definisi selesai.** Keputusan tercatat di changelog SPEC-API §7.10.
+**Terpenuhi 2026-09-19:** changelog §7.10 (commit `1f00860`) sudah mencatat
+`POST /videos/generations` terdaftar tetapi menolak `PROVIDER_NOT_ROUTABLE` karena
+tidak ada provider yang mendeklarasikan `video`, dengan alasan paritas reference
+(`videoConfig` dikenali, tidak ada yang mendefinisikannya). Default "biarkan
+terdokumentasi" yang dipilih; kalau kelak ada provider ber-kind `video`, adapter
+masuk G5 dan bukan gap ini.
 
 ### G8: `.env` lokal drift dari `.env.example`
 
@@ -309,7 +315,7 @@ sama: `POST /models/custom` untuk node 201, katalog memuat barisnya, dan
 **Definisi selesai.** Terpenuhi: 201 untuk model di bawah node, baris katalog dan
 ref combo terlihat, dan test mengunci keduanya.
 
-### G12: Budget cap tidak terbaca kembali
+### G12: Budget cap tidak terbaca kembali (CLOSED 2026-09-19)
 
 **Bukti.** `PUT /api/v1/quotas/{endpoint_id}` menjawab 200
 `{"monthly_cost_usd":"5.00000000","monthly_tokens":1000}` dan baris `quota_caps`
@@ -321,13 +327,35 @@ yang terisi oleh flush counter usage. Tidak ada rute mana pun yang membaca
 **Kenapa.** Panel tidak bisa menampilkan budget yang sudah disetel (form selalu
 kosong sampai ada traffic), padahal §7.12 menjadikan cap sebagai kontrol P2.
 
-**Keputusan owner.** (a) rute baca menggabungkan cap ke window (sintesis window
-`limit` walaupun `used` 0), (b) tambah pembacaan cap di `GET /quotas/{endpoint_id}`
-lewat field terpisah, atau (c) amend SPEC-API §7.12 agar cap dinyatakan tulis-saja
-di v1.
+**Keputusan owner (D5).** (a) rute baca menggabungkan cap ke window (sintesis
+window `limit` walaupun `used` 0), (b) tambah pembacaan cap di
+`GET /quotas/{endpoint_id}` lewat field terpisah, atau (c) amend SPEC-API §7.12
+agar cap dinyatakan tulis-saja di v1. **Diputuskan (b) 2026-09-19:** field cap
+terpisah.
 
-**Definisi selesai.** Pilihan tercatat; kalau (a)/(b), satu PUT lalu GET
-menampilkan cap yang sama; ada test yang mengunci bentuknya.
+**Perbaikan (2026-09-19).** `GET /api/v1/quotas/{endpoint_id}` sekarang menjawab
+`{endpoint_id, cap, data}`: `cap` berisi cap tersimpan (`QuotaCapResponse` yang
+sama dengan jawaban PUT) atau `null` eksplisit saat belum ada cap — `null` dipilih
+daripada field hilang supaya "belum ada cap" bisa dibedakan dari jawaban yang
+lupa memuatnya. `QuotaService.GetCap` yang tadinya tanpa pemanggil produksi kini
+dipakai handler; rute koleksi `GET /api/v1/quotas` tetap windows-only (cap milik
+satu endpoint) dan bentuknya tidak berubah. Test `quota_test.go` mengunci PUT→GET
+(cap yang sama terbaca walau `data` kosong), kasus `"cap":null` dengan window
+tetap tampil, rute koleksi tanpa field cap, dan jalur validasi (cost negatif 400
+tanpa menulis apa pun).
+
+**Bukti penutupan (2026-09-19, live).** Boot dengan DSN `.env` (role aplikasi,
+tanpa workaround G19 — tabel quota milik `pannelai`), login, satu endpoint
+`openai`: `PUT /quotas/{id}` `{"monthly_cost_usd":"5","monthly_tokens":1000}` → 200
+`{"monthly_cost_usd":"5.00000000","monthly_tokens":1000,…}`;
+`GET /quotas/{id}` → 200 `{"endpoint_id":…,"cap":{"monthly_cost_usd":"5.00000000",
+"monthly_tokens":1000,…},"data":[]}` — gejala G12 (`{"data":[]}` tanpa cap)
+hilang; `GET /quotas` → 200 `{"data":[]}` tetap tanpa field cap. Artefak
+dibersihkan (endpoint, baris `quota_caps`, hash panel NULL; baseline `usage=2
+logs=1` pulih).
+
+**Definisi selesai.** Terpenuhi 2026-09-19: satu PUT lalu GET menampilkan cap yang
+sama, dengan test yang mengunci bentuknya.
 
 ### G13: Embeddings menolak node openai-compatible (CLOSED 2026-09-19)
 
@@ -544,17 +572,18 @@ berhasil dengan DSN `.env` tanpa perubahan environment.
 4. **P2.4, G4**: keputusan D2 lalu wire atau amend.
 5. **P2.5, G14**: temuan G1 yang tersisa, butuh D4 untuk pilihan lantai versi
    (testnya bisa ditulis lebih dulu). Selesai 2026-09-19 dengan D4 = (b).
-6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas.
+6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas. G13 selesai
+   2026-09-19; G12 selesai 2026-09-19 dengan D5 = (b); G5 tersisa.
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
-8. **P2.8, G7, G8, G9, G10, G19**: penutup kecil + dokumen + aksi lingkungan
-   pemilik.
+8. **P2.8, G8, G9, G10, G19**: penutup kecil + dokumen + aksi lingkungan
+   pemilik. G7 selesai 2026-09-19 (keputusan default tercatat di changelog §7.10).
 9. **P2.9, G17 + G18**: temuan pass G6 di jalur chat (baris usage error dan baris
    log chat), tanpa keputusan owner.
 
-D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2 dan P2.3 sudah
-selesai, sehingga P2.5 dan P2.6 tidak lagi menunggu keputusan. P2.4 (G4) masih
-menunggu D2.
+D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2, P2.3, P2.5, dan
+P2.6 (G12/G13) sudah selesai, sehingga yang tidak lagi menunggu keputusan tinggal
+G5. P2.4 (G4) masih menunggu D2.
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
 
@@ -620,3 +649,5 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G2 + G3 CLOSED**: `egress_wiring.go` (satu guard + satu client ber-guard), `HTTPClientDeps{Dialer}` di `NewHTTPClient`, guard di probe, empat jalur wiring berbagi guard; `egress_wiring_test.go` + tabel probe | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 452 file PASS; live (PostgreSQL 14 + Redis nyata, stub `0.0.0.0:8091`): chat 200 dan embeddings 200 lewat node allowlist (baris stub bertambah), node `127.0.0.2` (terbukti hidup lewat curl langsung) 502 `UPSTREAM_ERROR` tanpa baris `/denied` di stub, probe empat node (allowlist `ok`; loopback/privat/link-local `fail` beralasan, 0 dial), proxy test lewat guard yang sama tetap benar, boot dengan allowlist salah berhenti dengan pesan netguard. Artefak dibersihkan (4 node, 2 endpoint, 2 gateway key, usage baris pass, hash panel kembali NULL) |
 | 2026-09-19 | **G6 CLOSED**: `RecordUse` di kontrak repo gateway key + seam `KeyUseRecorder` di `ChatService.Authenticate`; `dataPlaneRecorder` (pasangan usage+log) di media dan embeddings; klasifikasi satu-exit di `Perform`/`perform`; `accountingModel()` untuk search; `MediaCall.Model` dihapus; test baru `key_use_test.go`, `media_record_test.go` (+stub), `TestIntegration_RecordUse` | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 460 file PASS; live (PostgreSQL 14 + Redis nyata, stub loopback 8091, gateway 127.0.0.1:8099): baseline `usage=2 logs=1 reqcount=0` → speech 200 (+1/+1/+1), speech ke jalur 500 (+1/+1/+1, usage `status:error` `UPSTREAM_ERROR`, log `UPSTREAM_ERROR: stub refused`), embeddings 200 (+1/+1/+1), search 200 (+1/+1/+1, `cost_usd` 0.005 = registry `cost_per_query`, model = provider id `brave-search`); tiap pasangan usage+log satu request id, tokens 0, latency sama, key id terisi; kontrol chat 502 menaikkan reqcount tanpa baris media. Artefak dibersihkan: baseline pulih (`usage=2 logs=1`, keys/endpoints/upkeys/nodes/media rows 0, `panel_auth.password_hash` NULL). Dua temuan baru dicatat: G17 (kegagalan chat tanpa usage row), G18 (chat tanpa `request_logs`) |
 | 2026-09-19 | G19 temuan pass G6: kepemilikan tabel P2 | FAIL dengan DSN aplikasi (role `pannelai`): `PATCH /media-providers/openai` → `permission denied for table media_provider_settings`; `has_table_privilege` media `SELECT=false INSERT=false UPDATE=false`, `proxies SELECT=false INSERT=false`, sementara tabel lain dimiliki `pannelai`. Pass diselesaikan dengan DSN superuser; aksi pemilik dicatat sebagai G19 |
+| 2026-09-19 | **G12 CLOSED**: `cap` di body `GET /quotas/{endpoint_id}` (D5 = b), `QuotaService.GetCap` dipakai handler, `quota_test.go` (PUT→GET, `"cap":null`, rute koleksi tanpa cap, cost negatif 400) | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS, `go-headers.sh` PASS; live (PostgreSQL 14 + Redis nyata, DSN `.env` role aplikasi, tanpa workaround G19): `PUT /quotas/{id}` → 200 `{"monthly_cost_usd":"5.00000000","monthly_tokens":1000}`, `GET /quotas/{id}` → 200 `{"endpoint_id":…,"cap":{…5.00000000, 1000…},"data":[]}` (sebelumnya `{"data":[]}`), `GET /quotas` → 200 `{"data":[]}` tanpa field cap. Artefak dibersihkan (endpoint, baris `quota_caps`, hash panel NULL; baseline `usage=2 logs=1` pulih) |
+| 2026-09-19 | **G7 CLOSED**: keputusan default kind `video` (biarkan terdokumentasi, tanpa provider) | Terpenuhi oleh changelog §7.10 yang sudah ada (commit `1f00860`): rute terdaftar menolak `PROVIDER_NOT_ROUTABLE` dengan alasan paritas reference; tidak ada perubahan kode. Kalau kelak ada provider ber-kind `video`, adapternya masuk G5 |
