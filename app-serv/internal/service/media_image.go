@@ -29,7 +29,7 @@ import (
 )
 
 // GenerateImage performs one image generation call and normalizes the answer.
-func (s *MediaCallService) GenerateImage(ctx context.Context, req schema.ImageRequest) (schema.MediaGenerationResponse, dataplane.Outcome, error) {
+func (s *MediaCallService) GenerateImage(ctx context.Context, req schema.ImageRequest, keyID string) (schema.MediaGenerationResponse, dataplane.Outcome, error) {
 	call, err := s.Prepare(ctx, req.Model, domain.MediaKindImage, nil)
 	if err != nil {
 		return schema.MediaGenerationResponse{}, dataplane.Outcome{}, err
@@ -42,7 +42,7 @@ func (s *MediaCallService) GenerateImage(ctx context.Context, req schema.ImageRe
 		return schema.MediaGenerationResponse{}, call.Outcome(),
 			dataplane.InternalError("the image request could not be built", err)
 	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body})
+	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body}, keyID)
 	if err != nil {
 		return schema.MediaGenerationResponse{}, call.Outcome(), err
 	}
@@ -54,7 +54,7 @@ func (s *MediaCallService) GenerateImage(ctx context.Context, req schema.ImageRe
 // and no registry provider declares a video block yet — the same state the
 // reference is in, where `videoConfig` is a recognized key nothing defines — so
 // the route answers PROVIDER_NOT_ROUTABLE until one does.
-func (s *MediaCallService) GenerateVideo(ctx context.Context, req schema.VideoRequest) (schema.MediaGenerationResponse, dataplane.Outcome, error) {
+func (s *MediaCallService) GenerateVideo(ctx context.Context, req schema.VideoRequest, keyID string) (schema.MediaGenerationResponse, dataplane.Outcome, error) {
 	call, err := s.Prepare(ctx, req.Model, domain.MediaKindVideo, nil)
 	if err != nil {
 		return schema.MediaGenerationResponse{}, dataplane.Outcome{}, err
@@ -64,7 +64,7 @@ func (s *MediaCallService) GenerateVideo(ctx context.Context, req schema.VideoRe
 		return schema.MediaGenerationResponse{}, call.Outcome(),
 			dataplane.InternalError("the video request could not be built", err)
 	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body})
+	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body}, keyID)
 	if err != nil {
 		return schema.MediaGenerationResponse{}, call.Outcome(), err
 	}

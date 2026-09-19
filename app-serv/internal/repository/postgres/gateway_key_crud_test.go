@@ -3,7 +3,10 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/gateway_key_crud_test.go
-// @for       Integration coverage for the gateway key CRUD and pagination round trip.
+// @for       Integration coverage for the gateway key CRUD, pagination round
+//
+//	trip, and use counter.
+//
 // @uses      internal/domain, internal/repository, context, errors, testing, time.
 // @reason    AGENTS.md §2.1 requires repository logic be tested, and the pagination
 //
@@ -155,5 +158,41 @@ func TestIntegration_List_PaginationAndTotal(t *testing.T) {
 		if _, visited := seen[id]; !visited {
 			t.Fatalf("pagination never returned seeded key %s", id)
 		}
+	}
+}
+
+// TestIntegration_RecordUse pins the two columns one authenticated call
+// advances: the counter climbs by one per call and last_used_at is stamped. The
+// arithmetic is the database's own, which is what keeps two concurrent calls on
+// one key from losing a count.
+func TestIntegration_RecordUse(t *testing.T) {
+	repo := newTestRepo(t)
+	ctx := context.Background()
+	created := seed(t, repo, "record-use")
+
+	if created.RequestCount() != 0 || created.LastUsedAt() != nil {
+		t.Fatalf("fresh key = %d/%v, want 0/nil", created.RequestCount(), created.LastUsedAt())
+	}
+
+	usedAt := time.Now().UTC().Truncate(time.Millisecond)
+	const calls = 3
+	for i := 0; i < calls; i++ {
+		if err := repo.RecordUse(ctx, created.ID(), usedAt); err != nil {
+			t.Fatalf("RecordUse(%d): %v", i, err)
+		}
+	}
+	got, err := repo.GetByID(ctx, created.ID())
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if got.RequestCount() != calls {
+		t.Fatalf("request_count = %d, want %d", got.RequestCount(), calls)
+	}
+	if got.LastUsedAt() == nil {
+		t.Fatal("last_used_at must be stamped")
+	}
+
+	if err := repo.RecordUse(ctx, "gky_does_not_exist", usedAt); !errors.Is(err, domain.ErrGatewayKeyNotFound) {
+		t.Fatalf("RecordUse(missing) = %v, want %v", err, domain.ErrGatewayKeyNotFound)
 	}
 }

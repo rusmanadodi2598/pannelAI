@@ -37,7 +37,7 @@ import (
 // The provider may be named directly, or through a model string whose first
 // segment is one: the reference accepts either, and refusing the direct form
 // would make a caller name a model the search route never uses.
-func (s *MediaCallService) Search(ctx context.Context, req schema.SearchRequest) (schema.SearchResponse, dataplane.Outcome, error) {
+func (s *MediaCallService) Search(ctx context.Context, req schema.SearchRequest, keyID string) (schema.SearchResponse, dataplane.Outcome, error) {
 	providerID, err := searchProvider(req)
 	if err != nil {
 		return schema.SearchResponse{}, dataplane.Outcome{}, err
@@ -68,7 +68,7 @@ func (s *MediaCallService) Search(ctx context.Context, req schema.SearchRequest)
 		request.Body = body
 	}
 
-	answer, err := s.Perform(ctx, call, request)
+	answer, err := s.Perform(ctx, call, request, keyID)
 	if err != nil {
 		return schema.SearchResponse{}, call.Outcome(), err
 	}

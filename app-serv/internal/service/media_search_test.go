@@ -71,7 +71,7 @@ func TestMediaCallService_SearchRequest(t *testing.T) {
 			caller.answer = dataplane.MediaResponse{Status: 200, Body: []byte(
 				`{"web":{"results":[{"title":"Go","url":"https://go.dev","description":"the language"}]}}`)}
 
-			response, _, err := svc.Search(context.Background(), tc.req)
+			response, _, err := svc.Search(context.Background(), tc.req, "")
 			if tc.wantErrorText != "" {
 				if err == nil || !strings.Contains(err.Error(), tc.wantErrorText) {
 					t.Fatalf("error = %v, want it to mention %q", err, tc.wantErrorText)
@@ -133,7 +133,7 @@ func TestMediaCallService_SearchNormalizesResults(t *testing.T) {
 
 			response, _, err := svc.Search(context.Background(), schema.SearchRequest{
 				Provider: "brave-search", Query: "golang generics",
-			})
+			}, "")
 			if err != nil {
 				t.Fatalf("Search() error = %v", err)
 			}
@@ -158,7 +158,7 @@ func TestMediaCallService_SearchRefusesANonJSONAnswer(t *testing.T) {
 	svc, caller, _ := mediaCallFixture(t)
 	caller.answer = dataplane.MediaResponse{Status: 200, Body: []byte("upstream says no")}
 
-	_, _, err := svc.Search(context.Background(), schema.SearchRequest{Provider: "brave-search", Query: "golang"})
+	_, _, err := svc.Search(context.Background(), schema.SearchRequest{Provider: "brave-search", Query: "golang"}, "")
 	if err == nil || !strings.Contains(err.Error(), "could not be read") {
 		t.Fatalf("error = %v, want the unreadable-answer refusal", err)
 	}

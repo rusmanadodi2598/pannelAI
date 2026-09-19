@@ -7,9 +7,9 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 16 gap terdaftar, enam di antaranya temuan click-through, delapan sudah CLOSED (G1, G2, G3, G11, G13, G14, G15, G16) |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 18 gap terdaftar, delapan di antaranya temuan click-through/pass live, sembilan sudah CLOSED (G1, G2, G3, G6, G11, G13, G14, G15, G16) |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
-| **Bukti terakhir** | commit `0ee025c` + pass G2/G3 2026-09-19 (baris §8); gate hijau |
+| **Bukti terakhir** | pass G6 2026-09-19 (§8 baris terakhir); suite `-race` 13 paket, tagged integration, `go-lint.sh`, dan `go-headers.sh` (460 file) hijau |
 
 ## 1. Cara pakai
 
@@ -29,7 +29,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G3 | `provider_probe.go` mendial `base_url` dari user tanpa guard. **CLOSED 2026-09-19** | keamanan (A01) | menyatu G2 | 2 |
 | G4 | `settings.network.outbound_proxy_*` tidak dipakai di jalur dial | kontrak §7.11 | **ya** | 4 |
 | G5 | Adapter media per-provider (format gate menolak 16 provider dengan nama) | fitur | tidak | 5 |
-| G6 | Panggilan media tidak menulis usage/log; `gateway_keys.request_count` tidak pernah naik | akuntansi §7.12/§7.13 | **ya** | 3 |
+| G6 | Panggilan media tidak menulis usage/log; `gateway_keys.request_count` tidak pernah naik. **CLOSED 2026-09-19** | akuntansi §7.12/§7.13 | **ya** | 3 |
 | G7 | Kind `video` terdaftar tanpa provider (rute menolak) | cakupan | tidak | 6 |
 | G8 | `.env` lokal drift dari `.env.example` sehingga boot polos gagal | lingkungan | tidak | 6 |
 | G9 | Kegagalan request hanya tercatat sebagai `status`, tanpa kode/alasan | observability §1.6 | tidak | 6 |
@@ -40,6 +40,8 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G14 | State store OAuth tanpa test; `GETDEL` butuh Redis ≥ 6.2 dan gagalnya 500 tanpa log. **CLOSED 2026-09-19** | test + portabilitas | **ya** | 2 |
 | G15 | Endpoint `no_auth` tanpa key tidak pernah terpilih (selector menuntut key sebelum cabang auth type). **CLOSED 2026-09-19** | bug routing §7.5 | tidak | 2 |
 | G16 | Jalur media mengirim `Authorization: Bearer` kosong saat materi kredensial kosong; jalur chat mengirim tanpa header. **CLOSED 2026-09-19** | bug kredensial §8.1 | tidak | 2 |
+| G17 | Kegagalan panggilan chat tidak menulis usage row (outcome kosong di jalur error) | akuntansi §7.12 | tidak | 3 |
+| G18 | Jalur chat tidak menulis `request_logs` sama sekali; hanya media/embeddings yang menulis | akuntansi §7.13 | tidak | 3 |
 
 ## 3. Detail per gap
 
@@ -173,7 +175,7 @@ konversi jawaban ke envelope §7.10.
 **Definisi selesai (per adapter).** Format ditranslate, tabel test 3 sampai 5 kasus
 termasuk kontrol benign, dan satu panggilan live ke stub yang meniru provider itu.
 
-### G6: Akuntansi panggilan media
+### G6: Akuntansi panggilan media (CLOSED 2026-09-19)
 
 **Bukti.** Setelah 9 panggilan media pada 2026-09-19: `usage_records` tidak
 bertambah (2 baris lama), `request_logs` tidak bertambah (1 baris lama), dan
@@ -184,16 +186,51 @@ sudah ada tetapi tidak dikonsumsi pemanggil mana pun.
 **Kenapa.** Layar Usage (§7.12) dan Logs (§7.13) panel kosong untuk media; kolom
 request_count di daftar gateway key selalu 0.
 
-**Keputusan owner.** (a) media menulis usage row (tokens 0; untuk search ada
+**Keputusan owner (D3).** (a) media menulis usage row (tokens 0; untuk search ada
 `cost_per_query` di registry) dan request log; (b) `request_count` di-increment
 middleware untuk setiap panggilan data plane terautentikasi; (c) combo test §7.7
 tetap tanpa usage row, keputusan itu sudah final dan tidak dibuka lagi di sini.
+**Diputuskan (b) 2026-09-19:** usage + log + request_count.
 
-**Pendekatan.** `Outcome()` sudah membawa provider/endpoint/model; yang kurang
-hanya pemanggil di handler/service dan (untuk cost) sumber harga per kind.
+**Perbaikan (2026-09-19).** Counter: `RecordUse` ditambahkan ke kontrak
+`repository.GatewayKeyRepository` (satu UPDATE `request_count = request_count + 1,
+last_used_at = $1`, baris hilang → `ErrGatewayKeyNotFound`), dan seam
+`KeyUseRecorder` dipanggil dari **satu** titik — `ChatService.Authenticate`, choke
+point yang sama untuk chat, models, media, dan embeddings — jadi satu panggilan
+terautentikasi menambah tepat satu, aritmetikanya di database (bukan
+read-modify-write), dan kegagalan tulis tidak menolak request yang sudah lolos
+autentikasi. Akuntansi media: `dataPlaneRecorder` menulis satu usage row + satu
+log row di bawah request id router (`requestIDOrNew` memakai ULID baru bila
+context tidak membawa id), dipakai `MediaCallService.Perform` dan
+`EmbeddingsService.perform`; klasifikasi satu-exit (transport error, upstream
+non-2xx via `UpstreamRejected`, atau sukses) membangun outcome **sebelum**
+panggilan, sehingga baris error tetap membawa provider/endpoint/model. Search
+mencatat `cost_per_query` registry dan model = provider id lewat
+`accountingModel()` (rute search tidak menyebut model, kolomnya wajib). Teks error
+log `CODE: message` tanpa cause terbungkus — URL media bisa membawa kredensial
+sebagai query param (§8.1) — dan body log media sengaja kosong (reference mencatat
+detail hanya untuk chat). `MediaCall.Model` (string klien, hanya di-echo) dihapus.
+Test: `key_use_test.go`, `media_record_test.go` + stub-nya, dan
+`TestIntegration_RecordUse`.
 
-**Definisi selesai.** Keputusan tercatat; kalau (a)+(b): satu panggilan media
-menghasilkan satu usage row + satu request log, dan request_count key naik 1.
+**Bukti penutupan (2026-09-19, live).** PostgreSQL 14 + Redis 6.0.16 host, stub
+upstream loopback 8091, gateway 127.0.0.1:8099 (`EGRESS_ALLOWED_TARGETS=127.0.0.1/32`).
+Baseline `usage=2 logs=1 reqcount=0`; satu endpoint `openai` (override §7.10 ke
+stub) dan satu endpoint `brave-search`, satu gateway key. Empat panggilan media:
+speech 200 (usage+1, log+1, reqcount+1), speech ke jalur 500 (usage+1 `status:error`
+`UPSTREAM_ERROR`, log+1 `UPSTREAM_ERROR: stub refused`, reqcount+1), embeddings 200
+(+1/+1/+1), search 200 (+1/+1/+1, `cost_usd` 0.005 = registry `cost_per_query`,
+model `brave-search` = provider id). Setiap pasangan usage+log memakai request id
+yang sama, tokens 0, latency sama, key id terisi; kontrol chat 502 menaikkan
+reqcount (+1) tanpa baris media. Artefak dibersihkan: baseline pulih (`usage=2
+logs=1`, `gateway_keys=0`, `upstream_endpoints=0`, `upstream_keys=0`,
+`provider_nodes=0`, `media_provider_settings=0`, `panel_auth.password_hash` NULL).
+Pass ini melahirkan G17 dan G18 (jalur chat).
+
+**Definisi selesai.** Terpenuhi 2026-09-19: satu panggilan media menghasilkan satu
+usage row + satu request log dengan request id yang sama, dan `request_count` key
+naik 1 per panggilan terautentikasi (terbukti live untuk tts, embeddings, dan
+search, termasuk jalur gagal).
 
 ### G7: Kind `video` tanpa provider
 
@@ -417,6 +454,53 @@ pertama, dan kedaluwarsa TTL. Diuji terhadap Redis 6.0.16 host tanpa shim: merah
 dengan state asing menjawab 302 ke panel dengan `oauth_error` (sebelumnya 500).
 Baris log berkode untuk kegagalan store tetap bagian G9 (P2.8).
 
+### G17: Kegagalan panggilan chat tidak menulis usage row
+
+**Bukti.** Pass G6 (2026-09-19): satu `POST /chat/completions` dengan gateway key
+nyata menjawab 502 `UPSTREAM_ERROR` (upstream asli menolak kredensial endpoint
+stub), `gateway_keys.request_count` naik 1, tetapi `usage_records` tidak
+bertambah satu baris pun. Penyebabnya di kode: `Engine.Relay` mengembalikan
+`Outcome{}` di setiap jalur error (identity yang sudah dibangun `relayOnce`
+dibuang), sedangkan `domain.NewUsageRecord` menolak input tanpa
+`provider_id`/`model` — jadi `ChatService.record` gagal validasi dan errornya
+diabaikan (`_, _ =`). Panggilan yang dilayani menulis baris normal.
+
+**Kenapa.** Kegagalan chat tidak terlihat di layar Usage (§7.12) padahal kolom
+`status`/`error_code` ada untuk itu, dan jalur media sudah mencatat kegagalan
+(baris `tts-1` `status:error` `UPSTREAM_ERROR` di pass yang sama) — dua jalur data
+plane dengan aturan berbeda. Reference mencatat kegagalan chat sebagai request
+detail `status: "error"`.
+
+**Pendekatan.** Pakai pola satu-exit yang sama dengan media: bangun outcome
+(provider/endpoint/model/combo) sebelum dial dan kembalikan bersama error, agar
+`ChatService.record` menerima identitas yang cukup untuk menulis baris error.
+
+**Definisi selesai.** Satu panggilan chat yang gagal di upstream menghasilkan satu
+usage row `status: error` dengan `error_code` dan identity terisi; test mengunci
+bentuknya; changelog SPEC-API §7.12.
+
+### G18: Jalur chat tidak menulis `request_logs`
+
+**Bukti.** Pass G6 (2026-09-19): satu-satunya penulis `domain.RequestLogInput` di
+tree non-test adalah `dataPlaneRecorder` (media + embeddings). Panggilan chat —
+sukses maupun gagal — tidak pernah menghasilkan baris `request_logs`;
+`LogService.Record` sudah lengkap (selalu menulis baris, hanya body yang
+dipotong/dibuang sesuai `settings.logging.request_capture_enabled`), tetapi tidak
+ada pemanggil dari jalur chat.
+
+**Kenapa.** Layar Logs (§7.13) tidak pernah menampilkan lalu lintas chat — justru
+lalu lintas utama gateway — dan `GET /usage/records/{request_id}` tidak bisa
+menjoin log untuk request chat. Reference mencatat request detail chat (dengan
+body saat capture aktif).
+
+**Pendekatan.** Panggil `LogService.Record` dari jalur chat dengan request id
+router yang sama seperti usage row-nya; keputusan body tetap satu tempat di
+`LogService.Record`, jadi capture tetap satu aturan.
+
+**Definisi selesai.** Satu panggilan chat menghasilkan satu baris `request_logs`
+dengan request id yang sama dengan usage row-nya; body hanya tersimpan saat
+capture aktif; test mengunci bentuknya; changelog SPEC-API §7.13.
+
 ## 4. Keputusan yang menunggu owner
 
 | # | Pertanyaan | Pilihan | Jawaban owner | Dampak kalau ditunda |
@@ -432,7 +516,8 @@ Baris log berkode untuk kegagalan store tetap bagian G9 (P2.8).
 1. **P2.1, G1**: verifikasi live sisa permukaan. Selesai 2026-09-19.
 2. **P2.2, G2 + G3**: satu keputusan D1, satu implementasi guard. Selesai
    2026-09-19 dengan D1 = (a).
-3. **P2.3, G6**: keputusan D3 lalu sambungkan `Outcome()` ke recorder.
+3. **P2.3, G6**: keputusan D3 lalu sambungkan `Outcome()` ke recorder. Selesai
+   2026-09-19 dengan D3 = (b).
 4. **P2.4, G4**: keputusan D2 lalu wire atau amend.
 5. **P2.5, G14**: temuan G1 yang tersisa, butuh D4 untuk pilihan lantai versi
    (testnya bisa ditulis lebih dulu). Selesai 2026-09-19 dengan D4 = (b).
@@ -440,9 +525,11 @@ Baris log berkode untuk kegagalan store tetap bagian G9 (P2.8).
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
 8. **P2.8, G7, G8, G9, G10**: penutup kecil + dokumen.
+9. **P2.9, G17 + G18**: temuan pass G6 di jalur chat (baris usage error dan baris
+   log chat), tanpa keputusan owner.
 
-D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2 sudah selesai,
-sehingga P2.3, P2.5, dan P2.6 tidak lagi menunggu keputusan. P2.4 (G4) masih
+D1, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2 dan P2.3 sudah
+selesai, sehingga P2.5 dan P2.6 tidak lagi menunggu keputusan. P2.4 (G4) masih
 menunggu D2.
 
 ## 6. Bukan gap (keputusan final, jangan dibuka lagi)
@@ -507,3 +594,4 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G15 + G16 CLOSED**: `Select` memilih endpoint `no_auth` tanpa key, health write no-op untuk selection tanpa key, `MediaTarget` tidak menulis header saat secret kosong; tiga test baru | PASS live (PostgreSQL 14 + Redis nyata, stub loopback 8091): node A dengan endpoint `no_auth` **tanpa key** menjawab 200 untuk chat dan embeddings (sebelumnya 503), dan log stub menunjukkan **tidak ada** header `Authorization` di kedua panggilan; kontrol node B berkey tetap 200 dengan `Bearer` berisi key di kedua jalur. Artefak dibersihkan (dua node, dua endpoint, gateway key, usage baris pass, hash panel) |
 | 2026-09-19 | **G14 CLOSED**: `Take` jadi skrip atomik `GET`+`DEL` via `redis.NewScript`, empat test store bertag `integration` | PASS: terhadap Redis 6.0.16 host **tanpa shim**, keempat test merah `unknown command getdel` sebelum perbaikan dan hijau sesudahnya (stage+TTL, take menghapus key, replay `ok=false` tanpa error, stage ulang `ErrStateAlreadyStaged` tanpa menimpa payload, TTL kedaluwarsa); `GET /oauth/callback` state asing menjawab 302 `oauth_error` dalam 4 ms (sebelumnya 500 dalam 1 ms); tanpa key tersisa |
 | 2026-09-19 | **G2 + G3 CLOSED**: `egress_wiring.go` (satu guard + satu client ber-guard), `HTTPClientDeps{Dialer}` di `NewHTTPClient`, guard di probe, empat jalur wiring berbagi guard; `egress_wiring_test.go` + tabel probe | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 452 file PASS; live (PostgreSQL 14 + Redis nyata, stub `0.0.0.0:8091`): chat 200 dan embeddings 200 lewat node allowlist (baris stub bertambah), node `127.0.0.2` (terbukti hidup lewat curl langsung) 502 `UPSTREAM_ERROR` tanpa baris `/denied` di stub, probe empat node (allowlist `ok`; loopback/privat/link-local `fail` beralasan, 0 dial), proxy test lewat guard yang sama tetap benar, boot dengan allowlist salah berhenti dengan pesan netguard. Artefak dibersihkan (4 node, 2 endpoint, 2 gateway key, usage baris pass, hash panel kembali NULL) |
+| 2026-09-19 | **G6 CLOSED**: `RecordUse` di kontrak repo gateway key + seam `KeyUseRecorder` di `ChatService.Authenticate`; `dataPlaneRecorder` (pasangan usage+log) di media dan embeddings; klasifikasi satu-exit di `Perform`/`perform`; `accountingModel()` untuk search; `MediaCall.Model` dihapus; test baru `key_use_test.go`, `media_record_test.go` (+stub), `TestIntegration_RecordUse` | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 460 file PASS; live (PostgreSQL 14 + Redis nyata, stub loopback 8091, gateway 127.0.0.1:8099): baseline `usage=2 logs=1 reqcount=0` → speech 200 (+1/+1/+1), speech ke jalur 500 (+1/+1/+1, usage `status:error` `UPSTREAM_ERROR`, log `UPSTREAM_ERROR: stub refused`), embeddings 200 (+1/+1/+1), search 200 (+1/+1/+1, `cost_usd` 0.005 = registry `cost_per_query`, model = provider id `brave-search`); tiap pasangan usage+log satu request id, tokens 0, latency sama, key id terisi; kontrol chat 502 menaikkan reqcount tanpa baris media. Artefak dibersihkan: baseline pulih (`usage=2 logs=1`, keys/endpoints/upkeys/nodes/media rows 0, `panel_auth.password_hash` NULL). Dua temuan baru dicatat: G17 (kegagalan chat tanpa usage row), G18 (chat tanpa `request_logs`) |

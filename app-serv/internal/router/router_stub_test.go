@@ -116,6 +116,19 @@ func (r *memKeyRepo) Revoke(ctx context.Context, id string, revokedAt time.Time)
 	return nil
 }
 
+// RecordUse mirrors the real counter update, so a router test can assert what
+// an admitted data-plane call does to the key that presented the credential.
+func (r *memKeyRepo) RecordUse(ctx context.Context, id string, usedAt time.Time) error {
+	k, ok := r.db[id]
+	if !ok {
+		return domain.ErrGatewayKeyNotFound
+	}
+	stamp := usedAt
+	r.db[id] = domain.RehydrateGatewayKey(k.ID(), k.Name(), k.ValueHash(), k.KeyHint(),
+		k.Status(), &stamp, k.RequestCount()+1, k.CreatedAt(), k.RevokedAt())
+	return nil
+}
+
 // newTestRouter builds the real authenticated mux and injects a valid session
 // cookie into legacy CRUD tests; auth-specific tests exercise the guard without
 // that fixture.

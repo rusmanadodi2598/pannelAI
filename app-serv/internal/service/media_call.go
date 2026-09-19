@@ -26,6 +26,7 @@ package service
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -39,6 +40,14 @@ type MediaCallServiceDeps struct {
 	Router    MediaRouter
 	Caller    dataplane.MediaCaller
 	Overrides MediaOverrideReader
+	// Usage and Logs write the §7.12/§7.13 accounting pair for every call that
+	// reaches an upstream. Both are optional so a deployment that wires none
+	// still serves.
+	Usage UsageRecorder
+	Logs  RequestLogRecorder
+	// RequestID reads the router's request id, so a media call's usage row and
+	// its log row share one identifier (SPEC-API-001 §4).
+	RequestID RequestIDReader
 }
 
 // MediaCallService performs one §7.10 data-plane media call for any kind.
@@ -47,6 +56,7 @@ type MediaCallService struct {
 	router    MediaRouter
 	caller    dataplane.MediaCaller
 	overrides MediaOverrideReader
+	recorder  dataPlaneRecorder
 }
 
 // NewMediaCallService validates deps and returns a ready service. The override
@@ -63,20 +73,20 @@ func NewMediaCallService(deps MediaCallServiceDeps) (*MediaCallService, error) {
 	}
 	return &MediaCallService{
 		index: deps.Index, router: deps.Router, caller: deps.Caller, overrides: deps.Overrides,
+		recorder: newDataPlaneRecorder(deps.Usage, deps.Logs, deps.RequestID),
 	}, nil
 }
 
 // MediaCall is one resolved media call: who answers, where, with which
 // credential, and under which upstream model.
 type MediaCall struct {
-	// Model is the model string the client named, echoed in the outcome.
-	Model string
 	// ProviderID is the registry entry that answers.
 	ProviderID string
 	// UpstreamModel is the model id the upstream expects, with the registry's
 	// default applied when the client named none.
 	UpstreamModel string
-	// Media is the kind's block, which fixes the credential placement.
+	// Media is the kind's block, which fixes the credential placement and
+	// carries the per-query price a search call records.
 	Media registry.MediaConfig
 	// BaseURL is the effective base URL: the stored override when one exists,
 	// the registry's own value otherwise.
@@ -92,8 +102,18 @@ func (c MediaCall) Outcome() dataplane.Outcome {
 		Format:     schema.FormatOpenAI,
 		ProviderID: c.ProviderID,
 		EndpointID: c.Selection.Endpoint.ID(),
-		Model:      c.Model,
+		Model:      c.accountingModel(),
 	}
+}
+
+// accountingModel is the model id a recorded row carries: the upstream model
+// when the kind resolved one, and the provider's own id when it did not — a
+// search call names no model, and the usage row's model column is required.
+func (c MediaCall) accountingModel() string {
+	if model := strings.TrimSpace(c.UpstreamModel); model != "" {
+		return model
+	}
+	return c.ProviderID
 }
 
 // Prepare resolves a media model string into a call target.
@@ -130,37 +150,51 @@ func (s *MediaCallService) Prepare(ctx context.Context, model string, kind domai
 		return MediaCall{}, err
 	}
 	return MediaCall{
-		Model: model, ProviderID: entry.ID, UpstreamModel: upstreamModel, Media: media,
+		ProviderID: entry.ID, UpstreamModel: upstreamModel, Media: media,
 		BaseURL: baseURL, Target: target, Headers: headers, Selection: selection,
 	}, nil
 }
 
-// Perform runs one prepared call and applies its answer to the endpoint's
-// health, so a media route feeds the same circuit state the chat plane reads.
-func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request dataplane.MediaRequest) (dataplane.MediaResponse, error) {
+// Perform runs one prepared call, records its accounting, and applies its answer
+// to the endpoint's health, so a media route feeds the same circuit state the
+// chat plane reads. The key id is the authenticated caller's, recorded on both
+// rows the call writes (SPEC-API-001 §7.12/§7.13).
+func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request dataplane.MediaRequest, keyID string) (dataplane.MediaResponse, error) {
 	request.URL = call.Target
 	request.Headers = mergeHeaders(call.Headers, request.Headers)
 	if request.TimeoutMS == 0 {
 		request.TimeoutMS = call.Media.TimeoutMS
 	}
 
+	started := time.Now()
 	answer, err := s.caller.Do(ctx, request)
-	if err != nil {
+	latencyMS := time.Since(started).Milliseconds()
+
+	// One exit from the classification, so a call is recorded exactly once
+	// whichever way it ended: unreachable, rejected, or served.
+	failure := err
+	switch {
+	case err != nil:
 		// reason: the client's error is the upstream failure; a failed health
 		// write retries on the next call rather than replacing this one.
 		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream could not be reached")
-		return dataplane.MediaResponse{}, err
-	}
-	if answer.Status < 200 || answer.Status >= 300 {
+	case answer.Status < 200 || answer.Status >= 300:
+		failure = dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
 		// reason: same as above — the upstream rejection is what the client
 		// must see, and the health write is bookkeeping.
 		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream rejected the request")
-		return answer, dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
+	default:
+		failure = s.router.RecordSuccess(ctx, call.Selection)
 	}
-	if err := s.router.RecordSuccess(ctx, call.Selection); err != nil {
-		return answer, err
+	s.recorder.record(ctx, call.Outcome(), keyID, mediaCost(call.Media.CostPerQuery), latencyMS, failure)
+
+	if failure == nil {
+		return answer, nil
 	}
-	return answer, nil
+	if err != nil {
+		return dataplane.MediaResponse{}, err
+	}
+	return answer, failure
 }
 
 // effectiveBaseURL resolves where the kind is dialed: the operator's stored

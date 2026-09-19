@@ -191,7 +191,7 @@ func buildManagement(
 		Config: cfg, Index: runtimeIndex, Endpoints: endpointRepo, Combos: comboRepo,
 		ComboOrder: comboSvc, Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
 		Client: egress.Client, Redis: client, Settings: settingsSvc, Usage: usageSvc, Vision: augmenter,
-		MediaOverrides: mediaSvc, MediaIndex: runtimeIndex,
+		Logs: logSvc, MediaOverrides: mediaSvc, MediaIndex: runtimeIndex,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: data plane: %w", err)

@@ -61,12 +61,15 @@ func (h *EmbeddingsHandler) Embed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := h.auth.Authenticate(r.Context(), bearerToken(r)); err != nil {
+	key, err := h.auth.Authenticate(r.Context(), bearerToken(r))
+	if err != nil {
 		writeDataPlaneError(w, err)
 		return
 	}
 
-	response, _, err := h.embeddings.Embed(r.Context(), req)
+	// The key's id travels with the call so the usage and log rows it writes
+	// name the key that was admitted (SPEC-API-001 §7.12/§7.13).
+	response, _, err := h.embeddings.Embed(r.Context(), req, key.ID())
 	if err != nil {
 		writeDataPlaneError(w, err)
 		return

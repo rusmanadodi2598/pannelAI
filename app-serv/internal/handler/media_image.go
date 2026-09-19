@@ -22,7 +22,8 @@ import (
 
 // Images serves POST /api/v1/images/generations.
 func (h *MediaHandler) Images(w http.ResponseWriter, r *http.Request) {
-	if !h.authorize(w, r) {
+	keyID, ok := h.authorize(w, r)
+	if !ok {
 		return
 	}
 	raw, err := schema.ReadBody(r)
@@ -39,7 +40,7 @@ func (h *MediaHandler) Images(w http.ResponseWriter, r *http.Request) {
 		writeDataPlaneError(w, err)
 		return
 	}
-	response, _, err := h.media.GenerateImage(r.Context(), req)
+	response, _, err := h.media.GenerateImage(r.Context(), req, keyID)
 	if err != nil {
 		writeDataPlaneError(w, err)
 		return
@@ -49,7 +50,8 @@ func (h *MediaHandler) Images(w http.ResponseWriter, r *http.Request) {
 
 // Videos serves POST /api/v1/videos/generations.
 func (h *MediaHandler) Videos(w http.ResponseWriter, r *http.Request) {
-	if !h.authorize(w, r) {
+	keyID, ok := h.authorize(w, r)
+	if !ok {
 		return
 	}
 	raw, err := schema.ReadBody(r)
@@ -66,7 +68,7 @@ func (h *MediaHandler) Videos(w http.ResponseWriter, r *http.Request) {
 		writeDataPlaneError(w, err)
 		return
 	}
-	response, _, err := h.media.GenerateVideo(r.Context(), req)
+	response, _, err := h.media.GenerateVideo(r.Context(), req, keyID)
 	if err != nil {
 		writeDataPlaneError(w, err)
 		return

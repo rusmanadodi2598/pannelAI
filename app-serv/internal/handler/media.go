@@ -35,11 +35,17 @@ func NewMediaHandler(media *service.MediaCallService, auth service.GatewayAuthen
 }
 
 // authorize applies the §4 gateway-key rule, writing the OpenAI envelope and
-// reporting false when the request may not proceed.
-func (h *MediaHandler) authorize(w http.ResponseWriter, r *http.Request) bool {
-	if _, err := h.auth.Authenticate(r.Context(), bearerToken(r)); err != nil {
+// returning false when the request may not proceed.
+//
+// The authenticated key's id comes back with the verdict rather than being
+// dropped: every call it admits is recorded against that key (SPEC-API-001
+// §7.12/§7.13), and the service layer must not have to authenticate a second
+// time to learn who is calling.
+func (h *MediaHandler) authorize(w http.ResponseWriter, r *http.Request) (string, bool) {
+	key, err := h.auth.Authenticate(r.Context(), bearerToken(r))
+	if err != nil {
 		writeDataPlaneError(w, err)
-		return false
+		return "", false
 	}
-	return true
+	return key.ID(), true
 }

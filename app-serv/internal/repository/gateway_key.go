@@ -56,6 +56,11 @@ type GatewayKeyRepository interface {
 	// Update persists mutable field changes (name, status).
 	Update(ctx context.Context, key domain.GatewayKey) error
 
+	// RecordUse applies one authenticated data-plane call to the key: the
+	// request counter advances by one and last_used_at is stamped (SPEC-API-001
+	// §7.3). A missing row must yield domain.ErrGatewayKeyNotFound.
+	RecordUse(ctx context.Context, id string, usedAt time.Time) error
+
 	// Revoke applies a terminal revocation: it sets status=revoked and the
 	// revoked_at instant, and must no-op cleanly when the key is already
 	// revoked (the domain layer rejects a double-revoke first).

@@ -36,6 +36,7 @@ type EmbeddingsService struct {
 	engine    *dataplane.Engine
 	caller    dataplane.MediaCaller
 	overrides MediaOverrideReader
+	recorder  dataPlaneRecorder
 }
 
 // EmbeddingsServiceDeps holds the collaborators the service needs.
@@ -46,6 +47,12 @@ type EmbeddingsServiceDeps struct {
 	// It is optional so a deployment that has not configured one still
 	// resolves the registry's own base URL.
 	Overrides MediaOverrideReader
+	// Usage and Logs write the §7.12/§7.13 accounting pair for every call that
+	// reaches an upstream; RequestID gives both rows one identifier. All three
+	// are optional so a deployment that wires none still serves.
+	Usage     UsageRecorder
+	Logs      RequestLogRecorder
+	RequestID RequestIDReader
 }
 
 // NewEmbeddingsService validates deps and returns a ready service.
@@ -56,7 +63,10 @@ func NewEmbeddingsService(deps EmbeddingsServiceDeps) (*EmbeddingsService, error
 	if deps.Caller == nil {
 		return nil, domain.NewValidationError("media caller is required")
 	}
-	return &EmbeddingsService{engine: deps.Engine, caller: deps.Caller, overrides: deps.Overrides}, nil
+	return &EmbeddingsService{
+		engine: deps.Engine, caller: deps.Caller, overrides: deps.Overrides,
+		recorder: newDataPlaneRecorder(deps.Usage, deps.Logs, deps.RequestID),
+	}, nil
 }
 
 // Embed resolves the model, selects the account, performs the call, and returns the
@@ -64,8 +74,9 @@ func NewEmbeddingsService(deps EmbeddingsServiceDeps) (*EmbeddingsService, error
 //
 // Resolution runs through the same resolver the chat plane uses, so a model string
 // behaves identically on both routes; what differs is only the transport, which is
-// exactly what §8.1's per-kind placement exists for.
-func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequest) (schema.EmbeddingsResponse, dataplane.Outcome, error) {
+// exactly what §8.1's per-kind placement exists for. The key id is the
+// authenticated caller's, recorded on both rows the call writes.
+func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequest, keyID string) (schema.EmbeddingsResponse, dataplane.Outcome, error) {
 	resolution, err := s.engine.Resolver().Resolve(ctx, req.Model)
 	if err != nil {
 		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
@@ -103,32 +114,20 @@ func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequ
 		target = dataplane.GeminiEmbeddingsURL(baseURL, resolution.UpstreamID, !req.Input.Single())
 	}
 
-	answer, err := s.caller.Do(ctx, dataplane.MediaRequest{
-		Method: "POST", URL: target, Headers: headers, Body: embeddingsBody(req, resolution.UpstreamID, media),
-		TimeoutMS: media.TimeoutMS,
-	})
-	if err != nil {
-		// reason: the client's error is the upstream failure, and reporting a
-		// bookkeeping failure instead would hide the cause it came from.
-		_ = s.engine.RecordFailure(ctx, selection, "the embeddings upstream could not be reached")
-		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
-	}
-	if answer.Status < 200 || answer.Status >= 300 {
-		// reason: the upstream rejection is the client's error; a failed health
-		// write retries on the next call rather than replacing this one.
-		_ = s.engine.RecordFailure(ctx, selection, "the embeddings upstream rejected the request")
-		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
-	}
-	if err := s.engine.RecordSuccess(ctx, selection); err != nil {
-		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
-	}
-
-	return normalizeEmbeddings(answer.Body, req, resolution.ModelID, gemini), dataplane.Outcome{
+	outcome := dataplane.Outcome{
 		Format:     schema.FormatOpenAI,
 		ProviderID: resolution.Provider.ID,
 		EndpointID: selection.Endpoint.ID(),
 		Model:      resolution.ModelID,
-	}, nil
+	}
+	answer, err := s.perform(ctx, dataplane.MediaRequest{
+		Method: "POST", URL: target, Headers: headers, Body: embeddingsBody(req, resolution.UpstreamID, media),
+		TimeoutMS: media.TimeoutMS,
+	}, selection, outcome, keyID)
+	if err != nil {
+		return schema.EmbeddingsResponse{}, dataplane.Outcome{}, err
+	}
+	return normalizeEmbeddings(answer.Body, req, resolution.ModelID, gemini), outcome, nil
 }
 
 // mediaConfig reads the provider's per-kind block and the effective base URL:

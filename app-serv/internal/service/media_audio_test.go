@@ -62,7 +62,7 @@ func TestMediaCallService_Speech(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, caller, _ := mediaCallFixture(t)
-			_, _, err := svc.Speech(context.Background(), tc.req, nil)
+			_, _, err := svc.Speech(context.Background(), tc.req, nil, "")
 			if err != nil {
 				t.Fatalf("Speech() error = %v", err)
 			}
@@ -83,7 +83,7 @@ func TestMediaCallService_SpeechForwardsTheFormat(t *testing.T) {
 	svc, caller, _ := mediaCallFixture(t)
 	if _, _, err := svc.Speech(context.Background(), schema.SpeechRequest{
 		Model: "openai/gpt-4o-mini-tts", Input: "hello", ResponseFormat: "opus",
-	}, nil); err != nil {
+	}, nil, ""); err != nil {
 		t.Fatalf("Speech() error = %v", err)
 	}
 	var body schema.SpeechBody
@@ -102,7 +102,7 @@ func TestMediaCallService_Transcribe(t *testing.T) {
 	_, _, err := svc.Transcribe(context.Background(), schema.TranscriptionForm{
 		Model: "openai/whisper-1", Language: "id", Prompt: "names", ResponseFormat: "json",
 		Temperature: "0.2", Filename: "clip.mp3", File: []byte("audio-bytes"),
-	}, nil)
+	}, nil, "")
 	if err != nil {
 		t.Fatalf("Transcribe() error = %v", err)
 	}
@@ -156,7 +156,7 @@ func TestMediaCallService_TranscribeOmitsEmptyFields(t *testing.T) {
 	svc, caller, _ := mediaCallFixture(t)
 	if _, _, err := svc.Transcribe(context.Background(), schema.TranscriptionForm{
 		Model: "openai/whisper-1", Filename: "clip.mp3", File: []byte("audio-bytes"),
-	}, nil); err != nil {
+	}, nil, ""); err != nil {
 		t.Fatalf("Transcribe() error = %v", err)
 	}
 	if strings.Contains(string(caller.requests[0].Body), "language") {
@@ -172,7 +172,7 @@ func TestMediaCallService_TranscribeUpstreamRejection(t *testing.T) {
 
 	_, _, err := svc.Transcribe(context.Background(), schema.TranscriptionForm{
 		Model: "openai/whisper-1", Filename: "clip.mp3", File: []byte("audio-bytes"),
-	}, nil)
+	}, nil, "")
 	if err == nil {
 		t.Fatal("Transcribe() accepted a rejected upstream")
 	}

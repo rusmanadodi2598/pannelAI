@@ -14,11 +14,11 @@
 //
 //	service (AGENTS.md §1.5), so the composition root is where those ports
 //	meet their implementations. No adapter type is declared here, because
-//	none is needed: the gateway key repository already answers the
-//	authentication seam, the settings service already answers the
-//	require-key seam, and the usage service already answers the recorder
-//	seam — each by a method written for its own use, which is what makes
-//	the seams narrow enough to satisfy without translation.
+//	none is needed: the gateway key repository answers the authentication
+//	and key-use seams, the settings service answers the require-key seam,
+//	and the usage and log services answer the accounting seams — each by a
+//	method written for its own use, which is what makes the seams narrow
+//	enough to satisfy without translation.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
@@ -80,6 +80,10 @@ type dataPlaneInputs struct {
 	Redis    redis.UniversalClient
 	Settings *service.SettingsService
 	Usage    *service.UsageService
+	// Logs writes the request-log half of the data plane's accounting pair. It
+	// is passed in rather than built here because the management side reads the
+	// same rows through the same service.
+	Logs service.RequestLogRecorder
 	// Vision is the §7.8 seam the engine consults for image-bearing requests.
 	Vision dataplane.VisionAugmenter
 	// MediaOverrides is the §7.10 seam the media routes read a stored base
@@ -149,6 +153,9 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Keys:     in.Keys,
 		Settings: in.Settings,
 		Usage:    in.Usage,
+		// The key repository answers the use-counter seam too: every call the
+		// §4 rule admits advances that key's request_count (SPEC-API-001 §7.3).
+		KeyUse: in.Keys,
 		// The request id comes from the router's context, so a usage row and the
 		// log line for one request share an identifier (SPEC-API-001 §4). It is a
 		// function value so the service layer never imports the HTTP layer.
@@ -168,6 +175,9 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Engine:    engine,
 		Caller:    caller,
 		Overrides: in.MediaOverrides,
+		Usage:     in.Usage,
+		Logs:      in.Logs,
+		RequestID: router.RequestIDFrom,
 	})
 	if err != nil {
 		return dataPlane{}, err
@@ -178,6 +188,9 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Router:    mediaRouter{engine: engine},
 		Caller:    caller,
 		Overrides: in.MediaOverrides,
+		Usage:     in.Usage,
+		Logs:      in.Logs,
+		RequestID: router.RequestIDFrom,
 	})
 	if err != nil {
 		return dataPlane{}, err

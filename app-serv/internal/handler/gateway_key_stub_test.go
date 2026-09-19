@@ -105,6 +105,7 @@ func (r *stubKeyRepo) Update(ctx context.Context, key domain.GatewayKey) error {
 	if _, ok := r.db[key.ID()]; !ok {
 		return domain.ErrGatewayKeyNotFound
 	}
+
 	// A rename onto another key's name collides with the UNIQUE index in the
 	// real schema; enforcing it here keeps the stub from accepting what
 	// PostgreSQL would reject.
@@ -126,6 +127,22 @@ func (r *stubKeyRepo) Revoke(ctx context.Context, id string, revokedAt time.Time
 	}
 	k = rehydrateRevoked(k, revokedAt)
 	r.db[id] = k
+	return nil
+}
+
+// RecordUse mirrors the real counter update, so a handler test can assert what
+// an admitted data-plane call does to the key that presented the credential.
+func (r *stubKeyRepo) RecordUse(ctx context.Context, id string, usedAt time.Time) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	k, ok := r.db[id]
+	if !ok {
+		return domain.ErrGatewayKeyNotFound
+	}
+	stamp := usedAt
+	r.db[id] = domain.RehydrateGatewayKey(
+		k.ID(), k.Name(), k.ValueHash(), k.KeyHint(),
+		k.Status(), &stamp, k.RequestCount()+1, k.CreatedAt(), k.RevokedAt())
 	return nil
 }
 

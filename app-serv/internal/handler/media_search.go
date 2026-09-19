@@ -22,7 +22,8 @@ import (
 
 // Search serves POST /api/v1/search.
 func (h *MediaHandler) Search(w http.ResponseWriter, r *http.Request) {
-	if !h.authorize(w, r) {
+	keyID, ok := h.authorize(w, r)
+	if !ok {
 		return
 	}
 	raw, err := schema.ReadBody(r)
@@ -39,7 +40,7 @@ func (h *MediaHandler) Search(w http.ResponseWriter, r *http.Request) {
 		writeDataPlaneError(w, err)
 		return
 	}
-	response, _, err := h.media.Search(r.Context(), req)
+	response, _, err := h.media.Search(r.Context(), req, keyID)
 	if err != nil {
 		writeDataPlaneError(w, err)
 		return

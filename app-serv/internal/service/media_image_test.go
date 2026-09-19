@@ -38,7 +38,7 @@ func TestMediaCallService_GenerateImage(t *testing.T) {
 	n, size := 2, "1024x1024"
 	response, outcome, err := svc.GenerateImage(context.Background(), schema.ImageRequest{
 		Model: "openai/gpt-image-1", Prompt: "a cat", N: &n, Size: size, Quality: "hd",
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("GenerateImage() error = %v", err)
 	}
@@ -46,8 +46,10 @@ func TestMediaCallService_GenerateImage(t *testing.T) {
 		response.Data[0].URL != "https://img.example.com/a.png" {
 		t.Fatalf("response = %+v, want the normalized envelope", response)
 	}
-	if outcome.ProviderID != "openai" || outcome.Model != "openai/gpt-image-1" {
-		t.Fatalf("outcome = %+v, want the provider and the client's model", outcome)
+	// The outcome is the accounting identity: the upstream model, not the
+	// client's `provider/model` string.
+	if outcome.ProviderID != "openai" || outcome.Model != "gpt-image-1" {
+		t.Fatalf("outcome = %+v, want the provider and the upstream model", outcome)
 	}
 
 	var body schema.ImageBody
@@ -68,7 +70,7 @@ func TestMediaCallService_GenerateImageRefusesANonJSONAnswer(t *testing.T) {
 
 	_, _, err := svc.GenerateImage(context.Background(), schema.ImageRequest{
 		Model: "openai/gpt-image-1", Prompt: "a cat",
-	})
+	}, "")
 	if err == nil || !strings.Contains(err.Error(), "could not be read") {
 		t.Fatalf("error = %v, want the unreadable-answer refusal", err)
 	}
@@ -83,7 +85,7 @@ func TestMediaCallService_GenerateImageEmptyData(t *testing.T) {
 
 	response, _, err := svc.GenerateImage(context.Background(), schema.ImageRequest{
 		Model: "openai/gpt-image-1", Prompt: "a cat",
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("GenerateImage() error = %v", err)
 	}
@@ -102,7 +104,7 @@ func TestMediaCallService_GenerateVideoRefusesWithoutADeclaration(t *testing.T) 
 	svc, _, _ := mediaCallFixture(t)
 	_, _, err := svc.GenerateVideo(context.Background(), schema.VideoRequest{
 		Model: "openai/sora", Prompt: "a cat",
-	})
+	}, "")
 	if err == nil || !strings.Contains(err.Error(), "does not offer video") {
 		t.Fatalf("error = %v, want the not-routable refusal", err)
 	}

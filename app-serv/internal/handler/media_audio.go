@@ -30,7 +30,8 @@ import (
 func (h *MediaHandler) Speech(w http.ResponseWriter, r *http.Request) {
 	// The key is checked before the body is read: a request that may not
 	// proceed must not cost the gateway a parse.
-	if !h.authorize(w, r) {
+	keyID, ok := h.authorize(w, r)
+	if !ok {
 		return
 	}
 	raw, err := schema.ReadBody(r)
@@ -48,7 +49,7 @@ func (h *MediaHandler) Speech(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	answer, _, err := h.media.Speech(r.Context(), req, nil)
+	answer, _, err := h.media.Speech(r.Context(), req, nil, keyID)
 	if err != nil {
 		writeDataPlaneError(w, err)
 		return
@@ -70,7 +71,8 @@ func (h *MediaHandler) Speech(w http.ResponseWriter, r *http.Request) {
 func (h *MediaHandler) Transcribe(w http.ResponseWriter, r *http.Request) {
 	// Authentication comes before the upload is parsed: a 25 MB multipart body
 	// must not be read, or spilled to disk, for a caller without a key.
-	if !h.authorize(w, r) {
+	keyID, ok := h.authorize(w, r)
+	if !ok {
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, schema.MaxTranscriptionBytes)
@@ -80,7 +82,7 @@ func (h *MediaHandler) Transcribe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	answer, _, err := h.media.Transcribe(r.Context(), form, nil)
+	answer, _, err := h.media.Transcribe(r.Context(), form, nil, keyID)
 	if err != nil {
 		writeDataPlaneError(w, err)
 		return
@@ -96,7 +98,9 @@ func (h *MediaHandler) Transcribe(w http.ResponseWriter, r *http.Request) {
 // is per provider, and listing every provider's would answer a question the
 // client did not ask.
 func (h *MediaHandler) Voices(w http.ResponseWriter, r *http.Request) {
-	if !h.authorize(w, r) {
+	// The catalog comes from the registry, so no upstream call is made and
+	// nothing is recorded beyond the key's own use counter.
+	if _, ok := h.authorize(w, r); !ok {
 		return
 	}
 	providerID := strings.TrimSpace(r.URL.Query().Get("provider"))

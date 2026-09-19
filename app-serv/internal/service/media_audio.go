@@ -36,7 +36,7 @@ import (
 // Speech performs one text-to-speech call and answers with whatever the
 // upstream returned: the audio bytes, which the handler renders as the caller
 // asked for.
-func (s *MediaCallService) Speech(ctx context.Context, req schema.SpeechRequest, query map[string]string) (dataplane.MediaResponse, MediaCall, error) {
+func (s *MediaCallService) Speech(ctx context.Context, req schema.SpeechRequest, query map[string]string, keyID string) (dataplane.MediaResponse, MediaCall, error) {
 	call, err := s.Prepare(ctx, req.Model, domain.MediaKindTTS, query)
 	if err != nil {
 		return dataplane.MediaResponse{}, MediaCall{}, err
@@ -51,13 +51,13 @@ func (s *MediaCallService) Speech(ctx context.Context, req schema.SpeechRequest,
 	if err != nil {
 		return dataplane.MediaResponse{}, call, dataplane.InternalError("the speech request could not be built", err)
 	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body})
+	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body}, keyID)
 	return answer, call, err
 }
 
 // Transcribe performs one speech-to-text call, forwarding the caller's optional
 // fields the way the reference's OpenAI-compatible path does.
-func (s *MediaCallService) Transcribe(ctx context.Context, form schema.TranscriptionForm, query map[string]string) (dataplane.MediaResponse, MediaCall, error) {
+func (s *MediaCallService) Transcribe(ctx context.Context, form schema.TranscriptionForm, query map[string]string, keyID string) (dataplane.MediaResponse, MediaCall, error) {
 	call, err := s.Prepare(ctx, form.Model, domain.MediaKindSTT, query)
 	if err != nil {
 		return dataplane.MediaResponse{}, MediaCall{}, err
@@ -71,7 +71,7 @@ func (s *MediaCallService) Transcribe(ctx context.Context, form schema.Transcrip
 		// The target carries a JSON content type; a multipart body must
 		// replace it, boundary included.
 		Headers: map[string]string{"Content-Type": contentType},
-	})
+	}, keyID)
 	return answer, call, err
 }
 

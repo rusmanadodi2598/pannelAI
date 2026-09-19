@@ -64,16 +64,20 @@ type ChatService struct {
 	keys      GatewayKeyLookup
 	settings  RequireAPIKeyReader
 	usage     UsageRecorder
+	keyUse    KeyUseRecorder
 	requestID RequestIDReader
 	clock     func() time.Time
 }
 
 // ChatServiceDeps holds the collaborators the service needs.
 type ChatServiceDeps struct {
-	Engine    *dataplane.Engine
-	Keys      GatewayKeyLookup
-	Settings  RequireAPIKeyReader
-	Usage     UsageRecorder
+	Engine   *dataplane.Engine
+	Keys     GatewayKeyLookup
+	Settings RequireAPIKeyReader
+	Usage    UsageRecorder
+	// KeyUse advances the presenting key's own counters. Optional: without one
+	// the data plane serves every request and records no key usage.
+	KeyUse    KeyUseRecorder
 	RequestID RequestIDReader
 }
 
@@ -91,7 +95,7 @@ func NewChatService(deps ChatServiceDeps) (*ChatService, error) {
 	}
 	return &ChatService{
 		engine: deps.Engine, keys: deps.Keys, settings: deps.Settings,
-		usage: deps.Usage, requestID: deps.RequestID, clock: time.Now,
+		usage: deps.Usage, keyUse: deps.KeyUse, requestID: deps.RequestID, clock: time.Now,
 	}, nil
 }
 
@@ -125,6 +129,7 @@ func (s *ChatService) Authenticate(ctx context.Context, presented string) (domai
 		// revoked is not something an unauthenticated caller should learn.
 		return domain.GatewayKey{}, domain.NewUnauthorizedError("the gateway key is not valid")
 	}
+	s.recordKeyUse(ctx, key)
 	return key, nil
 }
 
@@ -185,12 +190,8 @@ func (s *ChatService) record(ctx context.Context, outcome dataplane.Outcome, key
 
 // requestIDFrom reads the router's request id, falling back to a fresh ULID so a
 // usage row always carries one (the column is not nullable in practice, and a
-// blank id would make the row unfindable).
+// blank id would make the row unfindable). The rule itself lives in
+// dataplane_record.go, where the media plane reads it the same way.
 func (s *ChatService) requestIDFrom(ctx context.Context) string {
-	if s.requestID != nil {
-		if id := s.requestID(ctx); id != "" {
-			return id
-		}
-	}
-	return domain.NewULID(s.clock())
+	return requestIDOrNew(ctx, s.requestID, s.clock)
 }
