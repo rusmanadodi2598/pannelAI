@@ -16,8 +16,6 @@
 package router
 
 import (
-	"encoding/json"
-	"log/slog"
 	"net/http"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -48,6 +46,7 @@ type Deps struct {
 	Endpoint        *handler.EndpointHandler
 	EndpointKey     *handler.EndpointKeyHandler
 	EndpointBulk    *handler.EndpointBulkHandler
+	OAuth           *handler.OAuthHandler
 	ProviderNode    *handler.ProviderNodeHandler
 	Model           *handler.ModelHandler
 	Combo           *handler.ComboHandler
@@ -101,6 +100,19 @@ func New(deps Deps) *Mux {
 	mux.Handle("GET "+APIVersion+"/providers/{provider_id}", gateway(http.HandlerFunc(deps.Provider.Get)))
 	mux.Handle("GET "+APIVersion+"/providers/{provider_id}/models", gateway(http.HandlerFunc(deps.Provider.Models)))
 	mux.Handle("POST "+APIVersion+"/providers/{provider_id}/oauth/bulk", gateway(http.HandlerFunc(deps.Endpoint.ImportOAuth)))
+
+	// §7.4 OAuth. Three of the four routes are management routes the panel
+	// calls, so they share the session guard. The callback is deliberately
+	// public: the provider redirects a browser to it, and a browser cannot
+	// present the dashboard session cookie for that redirect, so gating it
+	// would make every authorization fail at the last step. Its replay guard
+	// is the single-use state (§4), not a session.
+	if deps.OAuth != nil {
+		mux.Handle("POST "+APIVersion+"/providers/{provider_id}/oauth/start", gateway(http.HandlerFunc(deps.OAuth.Start)))
+		mux.HandleFunc("GET "+APIVersion+"/providers/{provider_id}/oauth/callback", deps.OAuth.Callback)
+		mux.Handle("GET "+APIVersion+"/providers/{provider_id}/oauth/status", gateway(http.HandlerFunc(deps.OAuth.Status)))
+		mux.Handle("POST "+APIVersion+"/providers/{provider_id}/oauth/refresh", gateway(http.HandlerFunc(deps.OAuth.Refresh)))
+	}
 	mux.Handle("GET "+APIVersion+"/provider-nodes", gateway(http.HandlerFunc(deps.ProviderNode.List)))
 	mux.Handle("POST "+APIVersion+"/provider-nodes", gateway(http.HandlerFunc(deps.ProviderNode.Create)))
 	mux.Handle("GET "+APIVersion+"/provider-nodes/{id}", gateway(http.HandlerFunc(deps.ProviderNode.Get)))
@@ -180,65 +192,4 @@ func New(deps Deps) *Mux {
 	// 404 from 405 (and send Allow on the latter); envelope() then restates
 	// either in the §8 shape, so routing errors look like every other error.
 	return &Mux{Handler: chain(requestRateLimit(mux, deps.RateLimiter, deps.RateLimitPerMin))}
-}
-
-// envelope restates the mux's own plain-text 404/405 answers in the management
-// error envelope (SPEC-API-001 §8). It intercepts only responses no handler
-// produced: a handler always sets a JSON content type before writing, so
-// anything already JSON passes through untouched and is never double-bodied.
-func envelope(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
-		next.ServeHTTP(rec, r)
-
-		if !rec.suppressed {
-			return
-		}
-		switch rec.status {
-		case http.StatusNotFound:
-			writeEnvelope(w, http.StatusNotFound, "NOT_FOUND", "route not found")
-		case http.StatusMethodNotAllowed:
-			writeEnvelope(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method is not allowed for this route")
-		}
-	})
-}
-
-// writeEnvelope emits the §8 error shape for a response the mux produced and
-// this middleware suppressed, so no other body exists for that request.
-func writeEnvelope(w http.ResponseWriter, code int, errCode, msg string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	if err := json.NewEncoder(w).Encode(schema.ErrorBody{Error: schema.ErrorDetail{Code: errCode, Message: msg}}); err != nil {
-		slog.Error("encoding routing error envelope failed", "status", code, "error", err)
-	}
-}
-
-// statusRecorder intercepts only the mux's built-in 404/405 answers. Those are
-// the responses that carry a text/plain content type; a handler response always
-// sets application/json first, so it is forwarded verbatim.
-type statusRecorder struct {
-	http.ResponseWriter
-	status     int
-	suppressed bool
-}
-
-func (rec *statusRecorder) WriteHeader(code int) {
-	if rec.suppressed {
-		return
-	}
-	builtin := code == http.StatusNotFound || code == http.StatusMethodNotAllowed
-	if builtin && rec.Header().Get("Content-Type") != "application/json" {
-		// Withhold the mux's plain-text body so envelope() can replace it.
-		rec.suppressed = true
-		rec.status = code
-		return
-	}
-	rec.ResponseWriter.WriteHeader(code)
-}
-
-func (rec *statusRecorder) Write(b []byte) (int, error) {
-	if rec.suppressed {
-		return len(b), nil
-	}
-	return rec.ResponseWriter.Write(b)
 }

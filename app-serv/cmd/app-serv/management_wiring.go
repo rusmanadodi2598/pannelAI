@@ -47,31 +47,6 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
-// managementDeps is the graph the router consumes.
-type managementDeps struct {
-	Provider      *handler.ProviderHandler
-	Endpoint      *handler.EndpointHandler
-	EndpointKey   *handler.EndpointKeyHandler
-	EndpointBulk  *handler.EndpointBulkHandler
-	Node          *handler.ProviderNodeHandler
-	Model         *handler.ModelHandler
-	Combo         *handler.ComboHandler
-	VisionAdapter *handler.VisionAdapterHandler
-	TokenSaver    *handler.TokenSaverHandler
-	Usage         *handler.UsageHandler
-	Quota         *handler.QuotaHandler
-	Log           *handler.LogHandler
-	Settings      *handler.SettingsHandler
-	Chat          *handler.ChatHandler
-	Embeddings    *handler.EmbeddingsHandler
-
-	// QuotaFlusher and LogRetention are returned so the caller can run them
-	// after the server is listening, rather than leaving goroutines nothing
-	// supervises.
-	QuotaFlusher *service.QuotaFlusher
-	LogRetention *service.LogRetentionWorker
-}
-
 // buildManagement assembles the P1 graph.
 func buildManagement(
 	cfg config.Config,
@@ -193,19 +168,9 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: logs: %w", err)
 	}
 
-	flusher, err := service.NewQuotaFlusher(
-		redisrepo.NewQuotaCounterStore(client), quotaRepo, service.DefaultQuotaFlushPolicy(), slog.Default(),
-	)
+	flusher, retention, err := buildWorkers(client, quotaRepo, logSvc)
 	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: quota flusher: %w", err)
-	}
-
-	// The retention worker shares the log service's purge, so the scheduled
-	// deletion and the panel's purge route apply the same cutoff from the same
-	// settings read.
-	retention, err := service.NewLogRetentionWorker(logSvc, service.DefaultLogRetentionPolicy(), slog.Default())
-	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: log retention: %w", err)
+		return managementDeps{}, err
 	}
 
 	// The data plane is assembled from the same repositories the management side
@@ -229,11 +194,17 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: token saver: %w", err)
 	}
 
+	oauthHandler, refreshWorker, err := buildOAuth(cfg, runtimeIndex, endpointRepo, client, sealer)
+	if err != nil {
+		return managementDeps{}, err
+	}
+
 	return managementDeps{
 		Provider:      handler.NewProviderHandler(providerSvc),
 		Endpoint:      handler.NewEndpointHandler(endpointSvc),
 		EndpointKey:   handler.NewEndpointKeyHandler(endpointSvc),
 		EndpointBulk:  handler.NewEndpointBulkHandler(endpointSvc),
+		OAuth:         oauthHandler,
 		Node:          handler.NewProviderNodeHandler(nodeSvc),
 		Model:         handler.NewModelHandler(catalogSvc),
 		Combo:         handler.NewComboHandler(comboSvc),
@@ -247,5 +218,6 @@ func buildManagement(
 		Embeddings:    handler.NewEmbeddingsHandler(plane.Embeddings, plane.Chat),
 		QuotaFlusher:  flusher,
 		LogRetention:  retention,
+		OAuthRefresh:  refreshWorker,
 	}, nil
 }

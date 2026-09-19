@@ -182,6 +182,22 @@ All management endpoints are session-gated; data plane endpoints are gateway-key
 | GET | `/api/v1/providers/{provider_id}/oauth/status` | S | Token expiry / refresh state per endpoint | P2 |
 | POST | `/api/v1/providers/{provider_id}/oauth/refresh` | S | Force token refresh (worker also auto-refreshes at `refresh_lead`) | P2 |
 
+**The callback's two answers.** `GET .../oauth/callback` is the one route in §7.4 that is **public**: the
+provider redirects a browser to it, and a browser cannot present the dashboard session cookie for that
+redirect. Its replay guard is the single-use `state` (§4), not a session. It answers by audience:
+
+- `Accept: application/json` → `200` with `{endpoint_id, provider_id, label, account_email?, token_hint,
+  created}`; a failure is the §8 envelope at its own status.
+- anything else (a browser) → `302` to `{origin}/providers/{provider_id}` carrying the outcome as query
+  parameters: `?oauth=connected&endpoint_id=ep_…` on success, and
+  `?oauth=error&oauth_error=<english reason>` on failure. The reason is the `apperror` message, never a
+  wrapped chain.
+
+`origin` is the configured `PUBLIC_BASE_URL` when one is set; otherwise the origin the flow staged from
+its `redirect_uri`, and only when that is an absolute http(s) URL. With neither, the callback answers the
+JSON shape rather than redirecting to a host it cannot vouch for, which is what keeps this route from
+being an open redirect.
+
 **Custom endpoints (owner requirement).** Besides the embedded registry, an operator defines their
 own OpenAI-compatible or Anthropic-compatible base URL. A provider node is that definition: it is
 not an endpoint, because a node has no credential of its own. Its id carries the type prefix
@@ -495,3 +511,4 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 *Changelog 2026-09-16 — marked the `caveman` token-saver key DEPRECATED with removal scheduled for `/api/v2`, to match the owner decision; linked the panel contract at `docs/SPEC-UI/001-SPEC-UI.md`.*
 *Changelog 2026-09-16 — §8 adds `METHOD_NOT_ALLOWED` (405): the router registers routes method-aware, so a wrong verb is rejected before any handler runs and needs a code that maps to 405 rather than borrowing `VALIDATION_ERROR` (which §8 binds to 400). §6 records that `gateway_keys.name` is unique.*
 *Changelog 2026-09-17 — §7.4 and §7.5 add the two routes the owner requirements name and the spec lacked: custom provider nodes (OpenAI-compatible / Anthropic-compatible) in §7.4, and multi-account bulk onboarding (endpoint batch, key batch, OAuth credential import) in §7.5. Both are P1, because the reference ships the node feature at the same surface level and every provider is multi-account by requirement.*
+*Changelog 2026-09-19 — §7.4 records the callback's two answers and the redirect-origin rule, because the panel (SPEC-UI §6.3) has to read the outcome the browser lands with. The callback is public by necessity and its origin never comes from the request: a configured `PUBLIC_BASE_URL` wins, the staged `redirect_uri` origin is only a fallback, and with neither the route answers JSON instead of redirecting.*

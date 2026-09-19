@@ -2,7 +2,7 @@
 //
 // @file      internal/config/config.go
 // @for       Typed environment configuration for app-serv, validated once at boot.
-// @uses      os, strconv, time (standard library only).
+// @uses      net/url, os, strconv, strings, time (standard library only).
 // @reason    SPEC-API-001 §4 and AGENTS.md §1.4 require env vars to become a
 //
 //	typed Config with fail-fast validation, so no raw os.Getenv()
@@ -16,6 +16,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -44,6 +45,12 @@ type Config struct {
 	// endpoint serves before round-robin rotation moves on (SPEC-API-001
 	// §4 settings.routing.sticky_limit, whose default is 3).
 	DataPlaneStickyLimit int
+	// PublicBaseURL is the absolute URL this gateway answers on, when it is
+	// deployed behind a proxy or on a hostname the request's Host header does
+	// not name. SPEC-API-001 §7.4 needs it to build the OAuth callback URL and
+	// to send a browser back to the panel after an authorization; leaving it
+	// empty makes the callback refuse to redirect rather than trust a header.
+	PublicBaseURL string
 }
 
 // Load reads the environment and returns a validated Config, or an error naming
@@ -61,6 +68,7 @@ func Load() (Config, error) {
 		EncryptionKey:     getenv("ENCRYPTION_KEY", ""),
 		BootstrapPassword: getenv("PANEL_BOOTSTRAP_PASSWORD", ""),
 		GatewayKeyPrefix:  getenv("GATEWAY_KEY_PREFIX", "sk-"),
+		PublicBaseURL:     getenv("PUBLIC_BASE_URL", ""),
 	}
 
 	intFields := []struct {
@@ -149,6 +157,9 @@ func (c Config) validate() error {
 	if c.DataPlaneStickyLimit < 1 {
 		problems = append(problems, "DATA_PLANE_STICKY_LIMIT must be >= 1")
 	}
+	if c.PublicBaseURL != "" && !isAbsoluteHTTPURL(c.PublicBaseURL) {
+		problems = append(problems, "PUBLIC_BASE_URL must be an absolute http(s) URL, e.g. https://gateway.example.com")
+	}
 	if !isValidLogLevel(c.LogLevel) {
 		problems = append(problems, "LOG_LEVEL must be one of debug, info, warn, error")
 	}
@@ -163,6 +174,28 @@ func (c Config) validate() error {
 // value is empty, and the fallback only when it is unset. Collapsing the two
 // cases would make an explicitly empty HTTP_ADDR silently become ":8080",
 // which is precisely the misconfiguration the boot validation exists to catch.
+func getenv(key, fallback string) string {
+	v, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback
+	}
+	return v
+}
+
+// isAbsoluteHTTPURL reports whether raw is an absolute http(s) URL, the only
+// shape a browser may be redirected to and the only shape an OAuth provider
+// will accept as a callback.
+func isAbsoluteHTTPURL(raw string) bool {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	if parsed.Host == "" {
+		return false
+	}
+	return parsed.Scheme == "http" || parsed.Scheme == "https"
+}
+
 // isValidLogLevel reports whether the level names one slog supports. Validating
 // here means a misspelled LOG_LEVEL is a boot failure rather than a value the
 // logger silently ignores.
@@ -173,14 +206,6 @@ func isValidLogLevel(level string) bool {
 	default:
 		return false
 	}
-}
-
-func getenv(key, fallback string) string {
-	v, ok := os.LookupEnv(key)
-	if !ok {
-		return fallback
-	}
-	return v
 }
 
 // getenvInt reads an integer, using the fallback only when the variable is

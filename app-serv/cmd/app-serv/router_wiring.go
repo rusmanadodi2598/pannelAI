@@ -26,6 +26,36 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
+// managementDeps is the graph the router consumes, plus the workers the caller
+// runs after the server is listening. It is declared here rather than beside
+// buildManagement because this file is where every field is spent, so a handler
+// the graph builds but the table forgets is visible in one screen.
+type managementDeps struct {
+	Provider      *handler.ProviderHandler
+	Endpoint      *handler.EndpointHandler
+	EndpointKey   *handler.EndpointKeyHandler
+	EndpointBulk  *handler.EndpointBulkHandler
+	OAuth         *handler.OAuthHandler
+	Node          *handler.ProviderNodeHandler
+	Model         *handler.ModelHandler
+	Combo         *handler.ComboHandler
+	VisionAdapter *handler.VisionAdapterHandler
+	TokenSaver    *handler.TokenSaverHandler
+	Usage         *handler.UsageHandler
+	Quota         *handler.QuotaHandler
+	Log           *handler.LogHandler
+	Settings      *handler.SettingsHandler
+	Chat          *handler.ChatHandler
+	Embeddings    *handler.EmbeddingsHandler
+
+	// QuotaFlusher, LogRetention, and OAuthRefresh are returned so the caller
+	// can run them after the server is listening, rather than leaving
+	// goroutines nothing supervises.
+	QuotaFlusher *service.QuotaFlusher
+	LogRetention *service.LogRetentionWorker
+	OAuthRefresh *service.OAuthRefreshWorker
+}
+
 // routerDeps assembles the router's dependency set from the graph the boot
 // sequence already built.
 func routerDeps(
@@ -49,6 +79,7 @@ func routerDeps(
 		Endpoint:        mgmt.Endpoint,
 		EndpointKey:     mgmt.EndpointKey,
 		EndpointBulk:    mgmt.EndpointBulk,
+		OAuth:           mgmt.OAuth,
 		Model:           mgmt.Model,
 		Combo:           mgmt.Combo,
 		VisionAdapter:   mgmt.VisionAdapter,

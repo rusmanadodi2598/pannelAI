@@ -94,6 +94,13 @@ func TestLoad_Validation(t *testing.T) {
 		{"log misspelled", map[string]string{"LOG_LEVEL": "verbose"}, nil, true}, {"log uppercase", map[string]string{"LOG_LEVEL": "INFO"}, nil, true},
 		{"bootstrap maximum", map[string]string{"PANEL_BOOTSTRAP_PASSWORD": strings.Repeat("p", 72)}, nil, false},
 		{"bootstrap too long", map[string]string{"PANEL_BOOTSTRAP_PASSWORD": strings.Repeat("p", 73)}, nil, true},
+		{"public base URL absent", nil, []string{"PUBLIC_BASE_URL"}, false},
+		{"public base URL empty", map[string]string{"PUBLIC_BASE_URL": ""}, nil, false},
+		{"public base URL https", map[string]string{"PUBLIC_BASE_URL": "https://gateway.example.com"}, nil, false},
+		{"public base URL http on a port", map[string]string{"PUBLIC_BASE_URL": "http://localhost:8080"}, nil, false},
+		{"public base URL without a scheme", map[string]string{"PUBLIC_BASE_URL": "gateway.example.com"}, nil, true},
+		{"public base URL with a bad scheme", map[string]string{"PUBLIC_BASE_URL": "ftp://gateway.example.com"}, nil, true},
+		{"public base URL relative", map[string]string{"PUBLIC_BASE_URL": "/api/v1"}, nil, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
