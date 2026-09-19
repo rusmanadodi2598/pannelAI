@@ -26,14 +26,14 @@ import (
 // EmbeddingsHandler serves POST /api/v1/embeddings (§7.10).
 type EmbeddingsHandler struct {
 	embeddings *service.EmbeddingsService
-	auth       *service.ChatService
+	auth       service.GatewayAuthenticator
 }
 
 // NewEmbeddingsHandler validates deps and returns the handler. The chat service is
 // reused for authentication, because the §4 rule is one rule: a second
 // implementation of it is how the two routes start disagreeing about which key is
 // valid.
-func NewEmbeddingsHandler(embeddings *service.EmbeddingsService, auth *service.ChatService) *EmbeddingsHandler {
+func NewEmbeddingsHandler(embeddings *service.EmbeddingsService, auth service.GatewayAuthenticator) *EmbeddingsHandler {
 	return &EmbeddingsHandler{embeddings: embeddings, auth: auth}
 }
 

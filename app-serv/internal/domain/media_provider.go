@@ -11,11 +11,12 @@
 //
 //	one request shape, and the base URL is validated here because it
 //	becomes an outbound destination: a shape check at the boundary is
-//	the first of the two SSRF layers (OWASP A01), the second being
-//	internal/netguard at dial time. The registry's own kind names
-//	(`webSearch`) stay out of this package — the mapping is the
-//	service's job, so the wire vocabulary and the registry vocabulary
-//	cannot be confused for one another.
+//	what this layer can prove (OWASP A01). The dial-time guard
+//	(`internal/netguard`) is wired for proxy candidates; upstream dials
+//	— this one and the chat plane's alike — do not pass through it yet.
+//	The registry's own kind names (`webSearch`) stay out of this package
+//	— the mapping is the service's job, so the wire vocabulary and the
+//	registry vocabulary cannot be confused for one another.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain

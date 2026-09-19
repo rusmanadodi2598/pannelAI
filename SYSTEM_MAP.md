@@ -41,7 +41,7 @@ flowchart LR
     S -.->|"P1: translasi + upstream"| UP
 ```
 
-**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008; repository, service, handler, dan data plane-nya terpasang). Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
+**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008; repository, service, handler, dan data plane-nya terpasang); `proxies` (P2, 000009) dan `media_provider_settings` (P2, 000010). Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
 
 **Catatan migrasi P1:** kolom `quota_windows."window"` adalah reserved word PostgreSQL dan wajib dikutip; nama kolomnya dipertahankan agar sama dengan field API (SPEC-API §7.12 mengembalikan `window`). Idempotensi runner diuji, bukan diasumsikan: `migrations/apply_test.go` (tag `integration`) menjalankan runner sungguhan dua kali dan memastikan ledger tidak bertambah.
 
@@ -190,6 +190,25 @@ stateDiagram-v2
 Referensi member yang tidak lagi resolve dilewati, bukan menggagalkan combo: resolusi combo memulai dari
 referensi pertama yang masih routable, dan panel melaporkan referensi rusak lewat slot yang hilang.
 
+### 3.6 Jalur media (§7.10)
+
+Enam rute data plane media (`/audio/speech`, `/audio/transcriptions`, `/audio/voices`, `/images/generations`,
+`/videos/generations`, `/search`) memakai pipeline yang sama dengan chat, tetapi bukan `Engine.Relay`:
+
+- model string berbentuk `provider/model` (split pada slash pertama, sehingga id ber-slash seperti
+  `openai/gpt-4o-mini-tts` milik openrouter tetap utuh); provider yang tidak mendeklarasikan kind-nya,
+  atau mendeklarasikan format yang belum punya adapter, ditolak dengan `PROVIDER_NOT_ROUTABLE` — bukan
+  didial dengan payload yang salah bentuk.
+- base URL efektif = override tersimpan (`media_provider_settings`, dibaca **per panggilan** lewat
+  `service.MediaOverrideReader` supaya penyimpanan berlaku pada panggilan berikutnya, bukan boot berikutnya)
+  dan jatuh ke registry bila tidak ada; tidak ada fallback cloud diam-diam.
+- endpoint dipilih `MediaRouter` (selector engine yang sama, jadi circuit state bersama chat), lalu
+  `service.MediaCallService.Prepare`/`Perform` memakai satu `dataplane.MediaTransport` bersama embeddings —
+  satu pool koneksi, bukan satu per rute.
+- jawaban dinormalkan per kind: speech bytes (atau base64 dengan `?response_format=json`), transkripsi
+  diteruskan apa adanya, gambar ke `{created, data:[...]}`, search dari nama parameter yang dideklarasikan
+  registry (`query_param`/`max_results_param`), voices dari `voices:` registry.
+
 ---
 
 ## 4. Endpoint Aktif (P0)
@@ -234,7 +253,7 @@ Migrasi P1 (`000004`-`000008`) menambah `provider_nodes`, `upstream_endpoints` +
 
 | Sumber | Isi | Catatan |
 |---|---|---|
-| PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1) | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali |
+| PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1), `proxies` (P2, 000009), `media_provider_settings` (P2, 000010; PK `(provider_id, kind)`) | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali; `proxies.password_encrypted` disegel sama dan `has_password` satu-satunya bentuk yang dibaca kembali |
 | Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, sticky round-robin, circuit state, console ring buffer | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut |
 
 ---

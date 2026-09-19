@@ -37,6 +37,7 @@ type catalogServices struct {
 	vision    *handler.VisionAdapterHandler
 	proxy     *handler.ProxyHandler
 	media     *handler.MediaProviderHandler
+	mediaCall *handler.MediaHandler
 }
 
 // newCatalogFixture wires the catalog, combo, adapter, proxy, and media
@@ -91,6 +92,7 @@ func newCatalogFixture(t *testing.T) catalogServices {
 		vision:    handler.NewVisionAdapterHandler(adapter),
 		proxy:     newProxyRouteHandler(t),
 		media:     newMediaRouteHandler(t),
+		mediaCall: newMediaDataPlaneHandler(t),
 	}
 }
 

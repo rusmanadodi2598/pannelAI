@@ -23,6 +23,7 @@ package service
 import (
 	"context"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
@@ -33,4 +34,28 @@ type MediaOverrideReader interface {
 	// an empty string when no override is stored. An empty answer is not an
 	// error: the registry's own base URL applies then.
 	MediaBaseURL(ctx context.Context, providerID string, kind domain.MediaKind) (string, error)
+}
+
+// MediaRouter picks the endpoint a media call uses and applies the call's
+// outcome to that endpoint's health, so a media route feeds the same circuit
+// state the chat plane reads.
+//
+// The methods are the engine's, gathered into one port because a media call
+// asks all three of the same collaborator: taking the engine itself would drag
+// the resolver and the wire translators into every media test.
+type MediaRouter interface {
+	Select(ctx context.Context, providerID string) (dataplane.Selection, error)
+	RecordSuccess(ctx context.Context, selection dataplane.Selection) error
+	RecordFailure(ctx context.Context, selection dataplane.Selection, reason string) error
+}
+
+// GatewayAuthenticator applies the §4 gateway-key rule to one data-plane
+// request. ChatService implements it.
+//
+// The media and embeddings handlers take this rather than the chat service
+// itself for the same reason the router seam exists: a handler test should not
+// have to build the engine the chat service needs in order to prove that a
+// route refuses a bad key.
+type GatewayAuthenticator interface {
+	Authenticate(ctx context.Context, presented string) (domain.GatewayKey, error)
 }

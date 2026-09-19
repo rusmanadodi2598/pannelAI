@@ -193,7 +193,7 @@ func buildManagement(
 		Config: cfg, Index: runtimeIndex, Endpoints: endpointRepo, Combos: comboRepo,
 		ComboOrder: comboSvc, Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
 		Redis: client, Settings: settingsSvc, Usage: usageSvc, Vision: augmenter,
-		MediaOverrides: mediaSvc,
+		MediaOverrides: mediaSvc, MediaIndex: runtimeIndex,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: data plane: %w", err)
@@ -235,6 +235,7 @@ func buildManagement(
 		ComboTest:     handler.NewComboTestHandler(comboTestSvc),
 		Proxy:         proxyHandler,
 		MediaProvider: mediaHandler,
+		Media:         handler.NewMediaHandler(plane.Media, plane.Chat),
 		VisionAdapter: handler.NewVisionAdapterHandler(visionSvc),
 		TokenSaver:    handler.NewTokenSaverHandler(tokenSaverSvc),
 		Usage:         handler.NewUsageHandler(usageSvc),

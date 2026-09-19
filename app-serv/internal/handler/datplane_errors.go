@@ -76,6 +76,18 @@ func writeDataPlaneBody(w http.ResponseWriter, status int, body []byte) {
 	}
 }
 
+// writeDataPlaneRaw writes a body that is not JSON — the audio bytes a speech
+// call answers with, or a transcription upstream's plain-text form. The content
+// type is the caller's because only the route knows what it produced.
+func writeDataPlaneRaw(w http.ResponseWriter, status int, contentType string, body []byte) {
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+	w.WriteHeader(status)
+	if _, err := w.Write(body); err != nil {
+		slog.Error("writing data plane response failed", "status", status, "error", err)
+	}
+}
+
 // sseSink writes SSE frames to a response writer, flushing each one.
 type sseSink struct {
 	writer  http.ResponseWriter

@@ -63,6 +63,27 @@ type MediaConfig struct {
 	SearchTypes       []string          `yaml:"search_types"`
 	Headers           map[string]string `yaml:"headers"`
 	Models            []MediaModel      `yaml:"models"`
+	// QueryParam and MaxResultsParam name the fields a search provider reads
+	// its query and its result count from. Search APIs disagree on the
+	// spelling (`q` and `num` at Serper, `query` and `max_results` at Tavily),
+	// and the reference carries the same distinction in its per-provider
+	// builders, so it is declared here rather than guessed per request. An
+	// empty value means the default spelling (`query`, `max_results`).
+	QueryParam      string `yaml:"query_param"`
+	MaxResultsParam string `yaml:"max_results_param"`
+	// Voices is the speech catalog the provider documents, used by
+	// GET /api/v1/audio/voices. A provider that fetches its catalog live in
+	// the reference declares none here, and the route names that gap rather
+	// than answering with a model list the client would misread as voices.
+	Voices []MediaVoice `yaml:"voices"`
+}
+
+// MediaVoice is one speech voice a provider documents.
+type MediaVoice struct {
+	ID     string `yaml:"id"`
+	Name   string `yaml:"name"`
+	Lang   string `yaml:"lang"`
+	Gender string `yaml:"gender"`
 }
 
 // MediaModel is one model a media service offers. Dimensions applies to an

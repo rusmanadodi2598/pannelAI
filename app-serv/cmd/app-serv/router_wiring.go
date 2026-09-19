@@ -42,6 +42,7 @@ type managementDeps struct {
 	ComboTest     *handler.ComboTestHandler
 	Proxy         *handler.ProxyHandler
 	MediaProvider *handler.MediaProviderHandler
+	Media         *handler.MediaHandler
 	VisionAdapter *handler.VisionAdapterHandler
 	TokenSaver    *handler.TokenSaverHandler
 	Usage         *handler.UsageHandler
@@ -88,6 +89,7 @@ func routerDeps(
 		ComboTest:       mgmt.ComboTest,
 		Proxy:           mgmt.Proxy,
 		MediaProvider:   mgmt.MediaProvider,
+		Media:           mgmt.Media,
 		VisionAdapter:   mgmt.VisionAdapter,
 		TokenSaver:      mgmt.TokenSaver,
 		Usage:           mgmt.Usage,

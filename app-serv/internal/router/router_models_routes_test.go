@@ -103,6 +103,7 @@ func newManagementRouter(t *testing.T) *Mux {
 		VisionAdapter: management.vision,
 		Proxy:         management.proxy,
 		MediaProvider: management.media,
+		Media:         management.mediaCall,
 	})
 }
 

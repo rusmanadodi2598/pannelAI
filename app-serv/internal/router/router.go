@@ -53,6 +53,7 @@ type Deps struct {
 	ComboTest       *handler.ComboTestHandler
 	Proxy           *handler.ProxyHandler
 	MediaProvider   *handler.MediaProviderHandler
+	Media           *handler.MediaHandler
 	VisionAdapter   *handler.VisionAdapterHandler
 	TokenSaver      *handler.TokenSaverHandler
 	Usage           *handler.UsageHandler

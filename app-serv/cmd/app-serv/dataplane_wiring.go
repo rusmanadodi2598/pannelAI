@@ -27,6 +27,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/redis/go-redis/v9"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/config"
@@ -38,14 +40,18 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
-// dataPlane is the assembled data plane: the chat and embeddings services that
-// share one engine, plus the engine itself — the §7.7 combo test probes through
-// it, and rebuilding a second pipeline for that route would be a second
-// pipeline to keep in step.
+// dataPlane is the assembled data plane: the chat, embeddings, and media
+// services that share one engine, plus the engine itself — the §7.7 combo test
+// probes through it, and rebuilding a second pipeline for that route would be a
+// second pipeline to keep in step.
 type dataPlane struct {
 	Chat       *service.ChatService
 	Embeddings *service.EmbeddingsService
+	Media      *service.MediaCallService
 	Engine     *dataplane.Engine
+	// Caller is the one media HTTP transport, shared so the embeddings and
+	// media routes draw on the same connection pool (§1.7).
+	Caller dataplane.MediaCaller
 }
 
 // dataPlaneInputs are the collaborators the data plane is built from. They are
@@ -75,6 +81,9 @@ type dataPlaneInputs struct {
 	// URL through. It is passed in rather than built here because the same
 	// service answers the management routes.
 	MediaOverrides service.MediaOverrideReader
+	// MediaIndex is the same runtime overlay, typed for the media service's
+	// own index port.
+	MediaIndex service.ProviderIndex
 }
 
 // buildDataPlane assembles the resolver, selector, transport, and engine, then the
@@ -144,15 +153,46 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		return dataPlane{}, err
 	}
 
+	// The package's own HTTP implementation, which already carries the §1.7
+	// pool limits and the §1.6 deadlines. One instance serves every media call,
+	// so the routes share a connection pool rather than opening one each.
+	caller := dataplane.NewMediaTransport(nil)
+
 	embeddings, err := service.NewEmbeddingsService(service.EmbeddingsServiceDeps{
-		Engine: engine,
-		// The package's own HTTP implementation, which already carries the §1.7
-		// pool limits and the §1.6 deadlines.
-		Caller:    dataplane.NewMediaTransport(nil),
+		Engine:    engine,
+		Caller:    caller,
 		Overrides: in.MediaOverrides,
 	})
 	if err != nil {
 		return dataPlane{}, err
 	}
-	return dataPlane{Chat: chat, Embeddings: embeddings, Engine: engine}, nil
+
+	media, err := service.NewMediaCallService(service.MediaCallServiceDeps{
+		Index:     in.MediaIndex,
+		Router:    mediaRouter{engine: engine},
+		Caller:    caller,
+		Overrides: in.MediaOverrides,
+	})
+	if err != nil {
+		return dataPlane{}, err
+	}
+	return dataPlane{Chat: chat, Embeddings: embeddings, Media: media, Engine: engine, Caller: caller}, nil
+}
+
+// mediaRouter adapts the engine to the three questions a media call asks. The
+// adapter exists because the engine's selector is reached through a method:
+// taking the engine itself would put the resolver and the wire translators in
+// the way of every media call.
+type mediaRouter struct{ engine *dataplane.Engine }
+
+func (r mediaRouter) Select(ctx context.Context, providerID string) (dataplane.Selection, error) {
+	return r.engine.Selector().Select(ctx, providerID)
+}
+
+func (r mediaRouter) RecordSuccess(ctx context.Context, selection dataplane.Selection) error {
+	return r.engine.RecordSuccess(ctx, selection)
+}
+
+func (r mediaRouter) RecordFailure(ctx context.Context, selection dataplane.Selection, reason string) error {
+	return r.engine.RecordFailure(ctx, selection, reason)
 }

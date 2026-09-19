@@ -20,11 +20,22 @@ import "net/http"
 
 // registerMediaRoutes wires the media provider routes. The three
 // /media-providers routes are management routes and share the session guard the
-// other management routes use; the media calls themselves are registered
-// separately once their handlers exist, because they authenticate with a
-// gateway key rather than a dashboard session.
+// other management routes use; the media calls themselves are data plane and
+// deliberately NOT session-gated, for the same reason the chat wires are not: a
+// CLI tool presents `Authorization: Bearer <gateway key>`, and a dashboard
+// session cookie is not a credential a CLI tool can hold.
 func registerMediaRoutes(mux *http.ServeMux, deps Deps, gateway func(http.Handler) http.Handler) {
 	mux.Handle("GET "+APIVersion+"/media-providers", gateway(http.HandlerFunc(deps.MediaProvider.List)))
 	mux.Handle("GET "+APIVersion+"/media-providers/{provider_id}", gateway(http.HandlerFunc(deps.MediaProvider.Get)))
 	mux.Handle("PATCH "+APIVersion+"/media-providers/{provider_id}", gateway(http.HandlerFunc(deps.MediaProvider.Patch)))
+
+	if deps.Media == nil {
+		return
+	}
+	mux.HandleFunc("POST "+APIVersion+"/audio/speech", deps.Media.Speech)
+	mux.HandleFunc("POST "+APIVersion+"/audio/transcriptions", deps.Media.Transcribe)
+	mux.HandleFunc("GET "+APIVersion+"/audio/voices", deps.Media.Voices)
+	mux.HandleFunc("POST "+APIVersion+"/images/generations", deps.Media.Images)
+	mux.HandleFunc("POST "+APIVersion+"/videos/generations", deps.Media.Videos)
+	mux.HandleFunc("POST "+APIVersion+"/search", deps.Media.Search)
 }

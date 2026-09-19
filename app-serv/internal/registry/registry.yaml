@@ -959,6 +959,25 @@ providers:
         auth_header: bearer
         format: openai
         default_model: gpt-4o-mini-tts
+        voices:
+          - id: alloy
+            name: Alloy
+          - id: ash
+            name: Ash
+          - id: coral
+            name: Coral
+          - id: echo
+            name: Echo
+          - id: fable
+            name: Fable
+          - id: nova
+            name: Nova
+          - id: onyx
+            name: Onyx
+          - id: sage
+            name: Sage
+          - id: shimmer
+            name: Shimmer
       stt:
         base_url: https://api.openai.com/v1/audio/transcriptions
         auth_type: apikey
@@ -3457,6 +3476,8 @@ providers:
       webSearch:
         base_url: https://api.search.brave.com/res/v1
         method: GET
+        query_param: q
+        max_results_param: count
         auth_type: apikey
         auth_header: x-subscription-token
         cost_per_query: 0.005
@@ -3580,6 +3601,7 @@ providers:
       webSearch:
         base_url: https://api.exa.ai/search
         method: POST
+        max_results_param: numResults
         auth_type: apikey
         auth_header: x-api-key
         cost_per_query: 0.007
@@ -3650,6 +3672,8 @@ providers:
       webSearch:
         base_url: https://www.googleapis.com/customsearch/v1
         method: GET
+        query_param: q
+        max_results_param: num
         auth_type: apikey
         auth_header: key
         cost_per_query: 0.005
@@ -3783,6 +3807,8 @@ providers:
       webSearch:
         base_url: https://api.linkup.so/v1/search
         method: POST
+        query_param: q
+        max_results_param: maxResults
         auth_type: apikey
         auth_header: bearer
         cost_per_query: 0.005
@@ -3857,6 +3883,7 @@ providers:
       webSearch:
         base_url: https://www.searchapi.io/api/v1/search
         method: GET
+        query_param: q
         auth_type: apikey
         auth_header: api_key
         cost_per_query: 0.004
@@ -3885,6 +3912,7 @@ providers:
       webSearch:
         base_url: http://localhost:8888/search
         method: GET
+        query_param: q
         auth_type: none
         auth_header: none
         cost_per_query: 0
@@ -3914,6 +3942,8 @@ providers:
       webSearch:
         base_url: https://google.serper.dev
         method: POST
+        query_param: q
+        max_results_param: num
         auth_type: apikey
         auth_header: x-api-key
         cost_per_query: 0.001
@@ -4022,6 +4052,7 @@ providers:
       webSearch:
         base_url: https://ydc-index.io/v1/search
         method: GET
+        max_results_param: count
         auth_type: apikey
         auth_header: x-api-key
         cost_per_query: 0.005
