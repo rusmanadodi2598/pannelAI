@@ -1,18 +1,20 @@
 <script lang="ts">
 	// Provider detail (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 	//
-	// The screen answers four questions in the order an operator asks them: what this provider is (facts),
-	// which models it can answer with (catalog), which of its models are turned off (disabled), and which
-	// accounts the gateway routes through (endpoints). Each is its own component, so the page's own job is
-	// the loads, the heading, the section titles, and the one piece of state two sections share.
+	// The screen answers five questions about this provider in the order an operator asks them: what it is
+	// (facts), which models it can answer with (catalog), which of its models are turned off (disabled),
+	// which models it declares itself (custom), and what the gateway routes through it (endpoints). Each is
+	// its own component, so the page's own job is the loads, the heading, the section titles, and the one
+	// piece of state two sections share.
 	//
 	// That shared state is the disabled set. Disabling a model removes its catalog row and enabling one
 	// brings it back, so the catalog reloads after a write in either section: `catalogToken` is what tells
-	// it to. §6.3 also places the OAuth section, the custom-model editor, and the alias table here; the
-	// custom-model editor is the third section below, and OAuth and the alias table are still U2.
+	// it to. §6.3 also places the OAuth section and the alias table here. OAuth is still U2. The alias table
+	// is the sixth section and takes no provider, because the alias set is global.
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import ModelCatalogList from '$lib/components/ModelCatalogList.svelte';
+	import ProviderAliases from '$lib/components/ProviderAliases.svelte';
 	import ProviderCustomModels from '$lib/components/ProviderCustomModels.svelte';
 	import ProviderDisabledModels from '$lib/components/ProviderDisabledModels.svelte';
 	import ProviderEndpoints from '$lib/components/ProviderEndpoints.svelte';
@@ -103,6 +105,11 @@
 		<div class="flex flex-col gap-3">
 			<h2 class="text-base font-medium">Custom models</h2>
 			<ProviderCustomModels {providerId} onchanged={bumpCatalog} />
+		</div>
+
+		<div class="flex flex-col gap-3">
+			<h2 class="text-base font-medium">Aliases</h2>
+			<ProviderAliases />
 		</div>
 
 		<div class="flex flex-col gap-3">

@@ -105,11 +105,16 @@ export default defineConfig(
 	},
 
 	{
-		// The sanitize transforms match control characters on purpose: the rule
-		// exists to strip them from operator input, so the pattern must name
-		// them. tests/support/corpus.ts builds the same alphabet for the fuzz
-		// cases, which would be pointless without the characters in it.
-		files: ['src/lib/schemas/sanitize.ts', 'tests/support/corpus.ts'],
+		// These files match control characters on purpose: the sanitize transforms
+		// exist to strip them from operator input, `model-alias.ts` mirrors the
+		// gateway's own refusal (`hasControlChars` in app-serv's domain), and
+		// tests/support/corpus.ts builds the same alphabet for the fuzz cases,
+		// which would be pointless without the characters in it.
+		files: [
+			'src/lib/schemas/sanitize.ts',
+			'src/lib/schemas/model-alias.ts',
+			'tests/support/corpus.ts'
+		],
 		rules: {
 			'no-control-regex': 'off'
 		}

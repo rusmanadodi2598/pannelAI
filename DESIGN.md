@@ -296,6 +296,13 @@ installed set.
 | A disabled row shows its model id rather than a display name | The catalog cannot name a row it hides, and the id is what the API stores and keys on, so the panel shows what it can prove instead of fetching a second list to decorate the row. |
 | The custom model capabilities field is free text | The API accepts any value and publishes no vocabulary, so a picker would have to invent one and a value outside it would be unreachable; the hint names the two filters the panel itself offers. |
 | The custom model removal dialog says a shadowed registry row reappears | A custom row overrides a registry row with the same pair, so removing it puts the registry's version back in the catalog, and an operator who believed the model itself was deleted would not press the button. |
+| The alias set renders whole on every provider's detail screen, and says so | Neither alias route takes a provider, so the set is not this provider's; a table narrowed to one provider would imply an ownership the API does not have, and one sentence is what keeps the section from reading as scoped. |
+| The alias form is both the add path and the edit path | `alias` is the table's primary key, so a second row with the same name is a database error whose answer names the constraint rather than the alias; changing what an existing name targets is the only shape that can succeed, and it saves a second control. |
+| An alias write carries every alias the panel last read | `PUT /models/aliases` replaces the whole set, so a write built from one screen's slice would delete the rest; the body is sorted the way the read route sorts, which keeps the table from reshuffling after a reload. |
+| An alias write before the set has loaded is refused with a sentence, not a disabled button | The merge runs over the set the panel holds, so writing first would send an empty set and clear every alias; the refusal names that cause and a test proves no request was sent. |
+| The alias target field suggests the catalog ids and the combo names | Those are the two things the API resolves a target from, so a third suggestion would offer a value the write refuses; the field stays typable because a stored target can have left both lists since it was written. |
+| The combo delete dialog's lead sentence follows the error code | Only a `CONFLICT` means an alias still references the combo, so a server failure that read "still referenced" would be a claim the panel cannot support. |
+| The combo editor offers the alias names as references | §7.7 lets a ref be a catalog id, a combo name, or an alias, so a picker offering two of the three would hide a value the API accepts. |
 
 ---
 

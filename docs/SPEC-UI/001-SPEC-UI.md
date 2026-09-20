@@ -288,8 +288,12 @@ absent.
   `GET /api/v1/models/catalog` with `provider_id`, `capability`, and `q`, because that is the only route
   that accepts them. **The "suggested" toggle is not built** and the reason is recorded in §14 Q12.
 - **Custom models** (U2): add and remove rows through `POST /api/v1/models/custom` and its delete route.
-- **Aliases** (U2): the alias to target table, edited as a full set per `PUT /api/v1/models/aliases`. The
-  target picker draws from the model catalog and from combo names, because a target may be either.
+- **Aliases** (U2, landed): the alias to target table, edited as a full set per `PUT /api/v1/models/aliases`.
+  The target picker draws from the model catalog and from combo names, because a target may be either. The
+  set is global: neither route takes a provider, and `alias` is the table's primary key, so the table is the
+  same on every provider's detail screen and the section says so. A stored alias whose target has since been
+  disabled or deleted is rendered as it is, and because a write carries the whole set it refuses every alias
+  write until that row is removed (Q21).
 - **Provider-scoped endpoints:** the endpoint list filtered by `provider_id`, with the same drawer as §6.2.
 - **OAuth section (U2, OAuth providers only):** `POST /providers/{id}/oauth/start` opens the authorize URL
   in the same tab; the callback lands on the API and redirects back to the provider detail page. The panel
@@ -312,8 +316,8 @@ absent.
     work from a keyboard or a touch screen. A drag alone would be mouse-only, and this panel is used on a
     phone. Both call one function, so they cannot disagree about the result, and each move renumbers the
     priorities rather than swapping two of them, because the numbers are the stored form of the order.
-    The picker's suggestions are the catalog ids and the combo names on the page. Aliases are a third
-    source the API accepts and §7.6 places the alias set in U2, so they are absent rather than guessed at.
+    The picker's suggestions are the catalog ids, the combo names on the page, and the alias names: all
+    three are sources the API resolves a ref from, and all three are reads the panel already has.
   - `strategy` select: `fallback`, `round_robin`, `fusion`. Explaining copy per strategy comes from the
     SPEC-API §7.7 semantics table, so the panel explains the same behavior the router implements:
     - `fallback`: try models in order until one succeeds.
@@ -323,10 +327,11 @@ absent.
     the strategy ignores is hidden, not disabled.
   - Validation blocks saving a `fusion` combo with no `judge_model`, and a combo with zero models.
 - **Delete:** `CONFLICT` when a combo is referenced by an alias (SPEC-API §7.7). The message names the
-  alias and links to the fixed set on the provider detail screen. The link is **not shipped yet**: §6.3
-  places the alias table on the provider detail screen in U2, so there is nothing to link to and R-24
-  forbids a link to a screen that does not offer the fix. The API's message, which names the alias, stands
-  on its own until that table lands.
+  alias, and the dialog adds where the fix lives: "The alias set is on any provider's detail screen, under
+  Aliases." There is still **no link**, because that route takes a provider id and the refusal names none,
+  so the sentence names the place rather than linking to an arbitrary provider (Q20). The dialog's lead
+  sentence depends on the error code, not the message: only `CONFLICT` means the combo is still referenced,
+  so another failure does not read as though it did.
 - **Test (U2):** runs the one-token ping and renders a per-model result list in the order the strategy
   would try, including the model that answered.
 - **Empty state:** "No combos yet. A combo is a model string that resolves to several upstream models."
@@ -1171,7 +1176,7 @@ work: the recorded click-through against a running `app-serv` (§9.4.5), which n
 PostgreSQL, and Redis up. `app-serv` now exposes the auth and gateway-key endpoints the panel calls, so
 that run is unblocked on the panel side and U0 closes when its result is recorded.
 
-**U2 status, 2026-09-20: five of the nine capabilities the U2 row lists are landed.** Token Saver (§6.7)
+**U2 status, 2026-09-20: six of the nine capabilities the U2 row lists are landed.** Token Saver (§6.7)
 shipped first: RTK with its twelve-filter allowlist, Headroom with the external URL and the fails-open
 copy, and Ponytail with its level, each saved as a whole-document `PUT` because that is the only write
 route the API has, with the draft helpers merging the edited group over the last document read so a save
@@ -1184,7 +1189,9 @@ screen at six addresses, a card per registry provider with its configured-endpoi
 override, and a default model selector over the declared set. The disabled and custom model writes (§6.3)
 shipped fourth, both on the provider detail screen: a Disable action per catalog row, a list of the models
 this provider cannot route with an Enable action per row, and a custom-model table with an add form and a
-removal dialog.
+removal dialog. The alias set (§6.3) shipped fifth, as the last model write on that screen: the alias to
+target table with a form that adds a row or changes what an existing one targets, each change a whole-set
+`PUT`, with the target field suggesting the catalog ids and the combo names.
 
 That fourth area is where the spec and the implementation disagree, and the disagreement is recorded
 rather than papered over. §6.3 asks for "per-model enable or disable state" on the catalog, but the merged
@@ -1192,6 +1199,15 @@ catalog *excludes* disabled models (`internal/service/model_catalog.go`), so a d
 there and a state control on that list could only ever read "enabled". The panel renders the two lists the
 API can serve: the catalog, where a row can be disabled, and a disabled list, which is the only place a
 disabled model is visible and the only place it can be turned back on (Q19).
+
+The alias set is the one resource on that screen that is not the provider's. Neither its read nor its write
+route takes a provider, and `alias` is the table's primary key, so the section renders the whole set on
+every provider's detail screen and says so in as many words. Two consequences are recorded rather than
+hidden. §6.4 asks the combo delete refusal to link to the fixed set, and no link can be built, because the
+only screen that offers the fix takes a provider id and the refusal names none, so the dialog names the
+place instead (Q20). And an alias whose target has since been disabled or whose target combo has since been
+deleted cannot be written back, while every write replaces the whole set, so one such row refuses every
+alias edit until it is removed (Q21).
 
 Five facts were settled by reading the implementation rather than the spec, and all five are recorded in
 §14 instead of worked around. The pool routes nothing: the egress path reads
@@ -1209,10 +1225,9 @@ than something an operator picks after opening the screen. `navigation.ts` gaine
 `/providers/[provider_id]` stays excluded for the opposite reason, and a test asserts that every
 placeholder a row's route declares is filled and no parameter is passed that the route does not declare.
 
-Still open in U2: the OAuth section on provider detail (§6.3), the combo test action (§6.4), quota budget
-caps (§6.6), and the alias table (§6.3). The alias set is the one part of §6.3's model writes that is not
-landed, and §6.4's combo delete message still cannot link to it, because the table it would link to does
-not exist yet.
+Still open in U2: the OAuth section on provider detail (§6.3), the combo test action (§6.4), and quota
+budget caps (§6.6). §6.4's combo delete refusal names where the fix lives instead of linking to it, because
+the alias set is global and the only screen it has takes a provider id (Q20).
 
 **U2 exit criteria, 2026-09-20: two of the four are met against a running `app-serv`, and the other two
 are not.** A live pass booted the service and the built panel and drove the panel's own `/api/v1` routes,
@@ -1410,6 +1425,26 @@ its baseline, counted before and after.
    provider at once. Decide whether §6.3's catalog bullet is amended to describe the two lists the API
    can serve, or whether the catalog gains the state some other way, which would need a route the API
    does not have.
+20. **§6.4 asks for a link to the alias set, and the only screen that holds it is provider-scoped.** The
+   set is global: `GET /models/aliases` and `PUT /models/aliases` take no provider
+   (`app-serv/internal/router/router.go`), and `model_aliases.alias` is the primary key
+   (`app-serv/migrations/000006_model_catalog.up.sql`), so an alias belongs to no provider and to all of
+   them at once. §6.3 places the table on the provider detail screen, and §6.4 asks the combo delete
+   refusal to link to it. The refusal names an alias and no provider, so there is no provider id to build
+   the route from and no honest link to render: R-24 forbids a link that does not offer the fix. The panel
+   renders the table on every provider's detail screen with a sentence saying the set is global, and the
+   dialog says where the fix lives in words instead of linking. Decide whether §6.4's sentence is amended
+   to match, or whether the alias set gets a provider-independent home, which would mean a screen or a
+   route the nav list does not currently carry (§2.1).
+21. **One alias whose target stopped resolving refuses every alias write, because the write replaces the
+   whole set.** `ReplaceAliases` validates each entry against the merged catalog and the combo names before
+   it writes anything (`app-serv/internal/service/model_catalog_writes.go`), and the merged catalog skips
+   the disabled set, so an alias written before its target was disabled no longer passes validation. The
+   read path does not re-check, so the row still renders (`RehydrateModelAlias`), but every write is
+   refused until that row is removed, and the refusal names the alias and its target, which is what tells
+   the operator which row to remove. Removing it is a write that succeeds, because the rest of the set
+   validates. Decide whether §7.6 documents that a stored alias can become unwritable, or whether the
+   validation should pass an entry whose target is unchanged from what is already stored.
 
 ## 15. Evidence for numbers and paths used here
 

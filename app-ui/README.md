@@ -99,11 +99,42 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Five passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Six passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
-day.
+day. The sixth is the alias set, measured the same day.
+
+### Alias set, 2026-09-20
+
+Run with Bun 1.3.14. This pass covers the alias table of `/providers/[provider_id]` (SPEC-UI §6.3): the
+alias to target table, the form that adds a row or changes what an existing one targets, and the target
+field's suggestions. It also carries the §6.4 combo delete refusal, which now says where the fix lives.
+
+| Check             | Result                                                                    |
+| ----------------- | ------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                      |
+| `bun run test`    | 1626 tests passed across 66 files, 75 of them new in this pass            |
+| `bun run lint`    | Prettier reports every file conforms                                      |
+| `bun run lint:ts` | ESLint exits 0                                                            |
+| `bun run build`   | succeeds, output in `build/`                                              |
+| File size         | largest source file this pass is 218 lines, under the 220 warning line    |
+| Text hygiene      | 0 em dashes and 0 emoji across `src` and `tests`                          |
+
+What the section does, and where it states a limit rather than hiding one:
+
+| Area              | Behaviour                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The set is global | Neither the read nor the write route takes a provider, and `alias` is the table's primary key, so the table is the same on every provider's detail screen and the section says so instead of implying it belongs to this provider. §6.4's delete refusal cannot link to it for the same reason: the route needs a provider id and the refusal names none (Q20). |
+| Whole-set writes  | `PUT /models/aliases` replaces the set, so every change merges over the whole last read, and the body is sorted the way the read route sorts, which keeps the table from reshuffling after a reload. A write before the first successful read is refused with a sentence, because the merge would send an empty set and clear every alias.                      |
+| One form, two jobs | A name already in the table changes that alias's target instead of adding a second row: a duplicate is a primary-key violation whose answer names the constraint rather than the alias. The outcome line says which of the two happened, so a write that changed a target is not reported as an add.                                                        |
+| The suggestions   | The target field suggests the catalog ids and the combo names, the two things a target may be. They are suggestions, not a constraint: a failed read leaves the field usable and says so, and a combo list longer than the API's 100-row page says it is truncated rather than looking whole.                                                                   |
+| Stale targets     | A stored alias whose target has since been disabled or deleted still renders, and a write that carries it is refused by the API with a sentence naming the alias. Q21 records that one such row refuses every alias edit until it is removed.                                                                                                                |
+| The combo delete  | The dialog's lead sentence follows the error code, so only a `CONFLICT` reads as "still referenced" and a server failure no longer does. The editor's reference suggestions gained the alias names, the third source §7.7 resolves a ref from.                                                                                                                |
+
+Not yet verified: the rendered half in a browser, and every write against a running `app-serv`. The
+screen is client-rendered (`ssr = false`), so the tests exercise it against a stub that applies writes and
+answers with the server's own refusals.
 
 ### Provider detail model writes, 2026-09-20
 

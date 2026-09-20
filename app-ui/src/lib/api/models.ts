@@ -16,6 +16,13 @@ import {
 	type CustomModelList
 } from '$lib/schemas/custom-model';
 import {
+	aliasSetBody,
+	schemaAliasSet,
+	schemaReplaceAliasesBody,
+	type AliasSet,
+	type ModelAliasEntry
+} from '$lib/schemas/model-alias';
+import {
 	schemaDisabledSet,
 	schemaReplaceDisabledBody,
 	type DisabledRef,
@@ -86,5 +93,27 @@ export function deleteCustomModel(id: string): Promise<ApiResult<EmptyResponse>>
 		method: 'DELETE',
 		path: `/models/custom/${encodeURIComponent(id)}`,
 		schema: emptyResponse
+	});
+}
+
+// The whole alias set. Global rather than per provider: the route reads no filter, which is why the screen
+// that renders it says so and why the merge below is over every alias rather than over a slice.
+export function listModelAliases(): Promise<ApiResult<AliasSet>> {
+	return apiRequest<void, AliasSet>({
+		method: 'GET',
+		path: '/models/aliases',
+		schema: schemaAliasSet
+	});
+}
+
+// Replaces the whole alias set. The body is built from every entry the caller last read, sorted the way the
+// read route sorts, so the answer is the set the panel already shows in the order it shows it.
+export function replaceModelAliases(entries: ModelAliasEntry[]): Promise<ApiResult<AliasSet>> {
+	return apiRequest<{ aliases: ModelAliasEntry[] }, AliasSet>({
+		method: 'PUT',
+		path: '/models/aliases',
+		schema: schemaAliasSet,
+		body: aliasSetBody(entries),
+		bodySchema: schemaReplaceAliasesBody
 	});
 }
