@@ -55,8 +55,7 @@ func TestChangelogList_Shape(t *testing.T) {
 		t.Fatalf("served %d entries, table carries %d", len(body.Data), len(changelogEntries))
 	}
 	for _, entry := range body.Data {
-		switch {
-		case entry.Version == "" || entry.Date == "" || entry.Title == "" || entry.Notes == "":
+		if entry.Version == "" || entry.Date == "" || entry.Title == "" || entry.Notes == "" {
 			t.Fatalf("entry %s has an empty field: %+v", entry.Version, entry)
 		}
 	}
