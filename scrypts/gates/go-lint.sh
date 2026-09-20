@@ -33,6 +33,37 @@ run_in() {
 	(cd "$dir" && "$@")
 }
 
+# check_changed_line_limits enforces AGENTS.md §1.1 on touched hand-written
+# service sources. Tests and generated files are excluded deliberately: the
+# policy limits application source, while generated output and test fixtures
+# have separate maintenance rhythms. A warning at 220 gives a change owner a
+# split point before CI rejects a file at 251.
+check_changed_line_limits() {
+	local rel file lines failed_limit=0 warned=0
+	while IFS= read -r rel; do
+		[ -n "$rel" ] || continue
+		case "$rel" in
+			app-*/internal/*.go|app-*/internal/*/*.go|app-*/cmd/*.go|app-*/cmd/*/*.go) ;;
+			*) continue ;;
+		esac
+		case "$rel" in
+			*_gen.go|*.pb.go|*/vendor/*) continue ;;
+		esac
+		file="$root/$rel"
+		[ -f "$file" ] || continue
+		lines="$(wc -l < "$file")"
+		if [ "$lines" -gt 250 ]; then
+			gate_fail "$rel has $lines lines (AGENTS.md §1.1 max 250)"
+			failed_limit=1
+		elif [ "$lines" -gt 220 ]; then
+			gate_start "$rel has $lines lines (warning at 220; split before 250)"
+			warned=1
+		fi
+	done < <(changed_files)
+	[ "$warned" = "1" ] && gate_skip "line-limit warnings require review"
+	return "$failed_limit"
+}
+
 while IFS= read -r dir; do
 	[ -n "$dir" ] || continue
 	rel="${dir#"$root"/}"
@@ -63,6 +94,10 @@ while IFS= read -r dir; do
 	else
 		gate_fail "gofmt $rel: these files need formatting"
 		printf '%s\n' "$unformatted" >&2
+		failed=1
+	fi
+
+	if ! check_changed_line_limits; then
 		failed=1
 	fi
 
