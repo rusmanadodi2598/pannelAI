@@ -111,6 +111,9 @@
 
 <div class="flex flex-col gap-3">
 	{#if options.length === 0}
+		<!-- No link to Endpoint & Key here: this state means the window table is empty too (its endpoint
+		     ids feed the options), so the screen's own empty state is on screen right above and carries
+		     that link already. -->
 		<StateMessage
 			kind="empty"
 			title="No endpoints to cap"
@@ -144,11 +147,14 @@
 					<label class="flex flex-col gap-1 text-sm">
 						<span class="text-[var(--color-text-muted)]">Monthly cost (USD)</span>
 						<!-- Read-only until the stored cap has been read: a field the operator could type into
-						     before the answer landed would be overwritten by it. -->
+						     before the answer landed would be overwritten by it. An edit also drops the save
+						     confirmation, because the sentence below then describes a value the form no
+						     longer holds. -->
 						<input
 							bind:value={draft.cost}
 							inputmode="decimal"
 							disabled={read === undefined}
+							oninput={() => (saved = false)}
 							class="min-h-11 w-40 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50"
 							placeholder="25"
 						/>
@@ -159,6 +165,7 @@
 							bind:value={draft.tokens}
 							inputmode="numeric"
 							disabled={read === undefined}
+							oninput={() => (saved = false)}
 							class="min-h-11 w-40 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50"
 							placeholder="1000000"
 						/>

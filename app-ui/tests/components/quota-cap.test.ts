@@ -120,6 +120,23 @@ describe('Quota caps', () => {
 		).toBeTruthy();
 	});
 
+	it('drops the save confirmation once the form is edited again', async () => {
+		stub = stubQuota({ windows: [] });
+		render(QuotaPage);
+
+		await choose('ep_1');
+		await fireEvent.input(input('Monthly cost (USD)'), { target: { value: '40' } });
+		await fireEvent.click(screen.getByRole('button', { name: 'Save the cap' }));
+		await screen.findByText(/^Saved\. This endpoint is capped at 40 USD a month\./);
+
+		// The sentence would otherwise keep claiming a save while the field holds a value that was never
+		// sent, so an edit takes the confirmation away and leaves the stored state stated.
+		await fireEvent.input(input('Monthly cost (USD)'), { target: { value: '50' } });
+
+		expect(screen.queryByText(/^Saved\./)).toBeNull();
+		expect(screen.getByText(/This endpoint is capped at 40 USD a month\./)).toBeTruthy();
+	});
+
 	it('clears the cap whose field was blanked, and reports the cap that remains', async () => {
 		stub = stubQuota({
 			windows: [quotaWindowRow()],

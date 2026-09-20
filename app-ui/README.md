@@ -119,12 +119,12 @@ picker, the read of the stored cap, the whole-set write, and the read-back that 
 | Check             | Result                                                                                                                                                                                                |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                                  |
-| `bun run test`    | 1775 tests passed across 72 files, including 61 new quota-cap tests across 2 files                                                                                                                    |
+| `bun run test`    | 1776 tests passed across 72 files, including 62 new quota-cap tests across 2 files                                                                                                                    |
 | `bun run lint`    | Prettier reports every file conforms                                                                                                                                                                  |
 | `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                        |
 | `bun run build`   | succeeds, output in `build/`                                                                                                                                                                          |
 | Live wire pass    | 23 checks, 0 failures, against a booted `app-serv`; every response parsed through the panel's own schemas                                                                                             |
-| File size         | largest changed source is 203 lines (`QuotaCaps.svelte`); `quota.ts` crossed the 220 warning line while the cap half lived in it, so the half was split into `quota-cap.ts` and both are now under it |
+| File size         | largest changed source is 210 lines (`QuotaCaps.svelte`); `quota.ts` crossed the 220 warning line while the cap half lived in it, so the half was split into `quota-cap.ts` and both are now under it |
 | Text hygiene      | 0 em dashes; the only emoji in `src` and `tests` is one test vector proving the sanitizer refuses one                                                                                                 |
 
 What the section does, and where it states a limit rather than hiding one:
@@ -138,6 +138,7 @@ What the section does, and where it states a limit rather than hiding one:
 | Bounds             | Non-negative, at most 1,000,000,000 USD and 1,000,000,000,000 tokens, with the messages computed from the bounds themselves so the copy cannot drift from the rule.                                                                                                                                             |
 | A refused endpoint | An endpoint the gateway does not carry is refused with the gateway's own sentence (`upstream endpoint not found`), and the panel shows it rather than inventing one.                                                                                                                                            |
 | Read before write  | Both fields stay read-only until the stored cap has been read. The tests found the two defects that come from skipping this: a field the operator could type into was overwritten by the answer when it landed, and the summary claimed "no cap is stored" before any answer had arrived.                       |
+| Save confirmation  | The sentence says "Saved." only until the form is edited again, because a confirmation left on screen while the field holds a value that was never sent would describe a save that did not happen.                                                                                                              |
 
 Two shapes are recorded rather than smoothed over. The API's cost parser accepts more spellings than the
 form does (`1e9` and `1/2` both parse there), so the panel is deliberately the stricter of the two; §14 Q24
