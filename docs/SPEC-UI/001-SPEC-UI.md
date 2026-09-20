@@ -1171,26 +1171,36 @@ work: the recorded click-through against a running `app-serv` (§9.4.5), which n
 PostgreSQL, and Redis up. `app-serv` now exposes the auth and gateway-key endpoints the panel calls, so
 that run is unblocked on the panel side and U0 closes when its result is recorded.
 
-**U2 status, 2026-09-20: two of the seven U2 items are landed, and neither carries its exit run yet.**
-Token Saver (§6.7) shipped first: RTK with its twelve-filter allowlist, Headroom with the external URL
-and the fails-open copy, and Ponytail with its level, each saved as a whole-document `PUT` because that
-is the only write route the API has, with the draft helpers merging the edited group over the last
-document read so a save of one group cannot rewrite another. The deprecated `caveman` key is parsed and
-never rendered, per §13 item 6. Proxy Pools (§6.9) shipped second: the pool table, the add and edit
-dialog with a candidate test, the batch paste add, the per-row test, the delete dialog, and the outbound
-settings card. The Settings Network tab folded into that screen, so `SettingsNetworkTab.svelte` is
-deleted and `/settings` links to `/proxy-pools` and `/token-saver` rather than embedding either.
+**U2 status, 2026-09-20: three of the seven U2 items are landed.** Token Saver (§6.7) shipped first: RTK
+with its twelve-filter allowlist, Headroom with the external URL and the fails-open copy, and Ponytail
+with its level, each saved as a whole-document `PUT` because that is the only write route the API has,
+with the draft helpers merging the edited group over the last document read so a save of one group cannot
+rewrite another. The deprecated `caveman` key is parsed and never rendered, per §13 item 6. Proxy Pools
+(§6.9) shipped second: the pool table, the add and edit dialog with a candidate test, the batch paste add,
+the per-row test, the delete dialog, and the outbound settings card. The Settings Network tab folded into
+that screen, so `SettingsNetworkTab.svelte` is deleted and `/settings` links to `/proxy-pools` and
+`/token-saver` rather than embedding either. Media Provider (§6.8) shipped third: one screen at six
+addresses, a card per registry provider with its configured-endpoint count, a `base_url` override, and a
+default model selector over the declared set.
 
-Two facts were settled by reading the implementation rather than the spec, and both are recorded in §14
-instead of worked around. The pool routes nothing: the egress path reads
+Four facts were settled by reading the implementation rather than the spec, and all four are recorded in
+§14 instead of worked around. The pool routes nothing: the egress path reads
 `settings.network.outbound_proxy_url` and nothing else, so §6.9's empty-state sentence promised
 behaviour the API does not have, and the screen states the truth (Q15). An enabled proxy with an empty
 URL dials direct, which is the bypass §7.11 says the setting exists to prevent, so the panel refuses to
-write that combination and names it when a stored document already holds it (Q16).
+write that combination and names it when a stored document already holds it (Q16). A kind that declares
+no models cannot have a default model set from the panel, because a selector over an empty set is a dead
+control and §6.8 asks for no other shape (Q17). Clearing a `base_url` override is a save the panel cannot
+check, because the registry's own value is not on the wire while an override exists (Q18).
 
-Still open in U2: the OAuth section on provider detail (§6.3), the combo test action (§6.4), the media
-provider screens (§6.8), quota budget caps (§6.6), and the custom model, alias, and disabled model
-writes (§6.3).
+The media kinds are the first sidebar rows to link to a parameterised route. A row may do that when the
+row itself fixes the parameter, which is the case here: the kind is part of the row's identity rather
+than something an operator picks after opening the screen. `navigation.ts` gained a `link` shape for it,
+`/providers/[provider_id]` stays excluded for the opposite reason, and a test asserts that every
+placeholder a row's route declares is filled and no parameter is passed that the route does not declare.
+
+Still open in U2: the OAuth section on provider detail (§6.3), the combo test action (§6.4), quota budget
+caps (§6.6), and the custom model, alias, and disabled model writes (§6.3).
 
 **U2 exit criteria, 2026-09-20: two of the four are met against a running `app-serv`, and the other two
 are not.** A live pass booted the service and the built panel and drove the panel's own `/api/v1` routes,
@@ -1357,6 +1367,26 @@ its baseline, counted before and after.
    already holds it, because the panel cannot prevent a state it did not write. Decide whether
    `proxyRoute` refuses an empty URL when proxying is enabled, or §7.11 records the empty value as
    "off" and the panel's rule is dropped.
+17. **A kind that declares no models cannot have its default model set from the panel.** §6.8 asks for a
+   default model selector. `validateMediaModel` returns early when the kind declares no models
+   (`app-serv/internal/service/media_provider_resolve.go`), so the API accepts any string for such a
+   kind, but a selector over an empty set has no options and is therefore a dead control (R-26). The
+   panel renders the fact instead: "This service declares no models, so there is nothing to choose."
+   The result is a capability the API has and the panel does not expose, and the alternative the panel
+   rejected was a free-text field §6.8 does not ask for, which would invite a model name nothing in the
+   registry can route. Decide whether §6.8 gains a second control shape for that case, or whether the
+   API refuses a `default_model` for a kind that declares none, which would make the panel's silence
+   the correct behaviour rather than a gap.
+18. **Clearing an override is a save the panel cannot check.** The server refuses a save that would
+   leave a provider with no base URL from either source, and the panel blocks the one case it can prove:
+   `base_url_source` is `registry` and the value is empty, so the registry declares none and an empty
+   field means no base URL at all. When the source is `override` the registry's own value is not on the
+   wire, because `viewFor` reads it only after the override resolves empty
+   (`app-serv/internal/service/media_provider_resolve.go`), so the panel cannot tell whether clearing
+   the field is safe. It sends the clear and shows the server's answer, which is honest but means an
+   operator can be refused for a state the panel could have predicted. Decide whether §7.10 adds the
+   registry's own value beside the resolved one, which would make every case provable, or whether the
+   current split is accepted as the cost of a two-field block.
 
 ## 15. Evidence for numbers and paths used here
 

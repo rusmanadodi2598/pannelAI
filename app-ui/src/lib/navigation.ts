@@ -13,29 +13,48 @@
 // Screen scope and phases come from SPEC-UI §2.1 and §5.1; the group names are this panel's own.
 
 import type { RouteId } from '$app/types';
+import { MEDIA_KIND_LABELS, MEDIA_KINDS, type MediaKind } from '$lib/schemas/media-provider';
 
 /**
- * The routes a navigation row may link to.
+ * The routes a navigation row may link to with a static path.
  *
- * Every screen in the sidebar has a static path, and that is a fact about the panel rather than a
- * coincidence: a parameterised route is not a screen an operator can open without first choosing a record,
- * so a nav row never targets one, and `resolve` could not build the link without the parameters anyway.
+ * A parameterised route is not one of them, and the reason is the parameter: a row can only link where
+ * it knows the address, and a parameter that names a record (a provider id) is something the sidebar has
+ * no way to know. `resolve` could not build the link either.
  *
  * The exclusion is a subtraction from the generated `RouteId` rather than a hand-written union, so a
  * renamed or removed route still fails to compile here. If a new parameterised route is added, this type
  * keeps rejecting it, which is the intended failure: it forces the decision instead of silently widening
  * what the sidebar may link to.
  */
-export type NavHref = Exclude<RouteId, '/providers/[provider_id]'>;
+export type NavHref = Exclude<RouteId, '/providers/[provider_id]' | '/media-providers/[kind]'>;
+
+/**
+ * A link to a parameterised route, with the parameter the row itself fixes.
+ *
+ * The media kinds are why this exists. `Embedding` and `TTS` are one screen at six addresses, and the row
+ * *is* the choice: the kind is part of the row's identity rather than something an operator picks after
+ * opening the screen, so the row knows the parameter and can build the link. `/providers/[provider_id]`
+ * stays out for the opposite reason, which is why `NavHref` keeps excluding it.
+ *
+ * The route is a one-member union rather than any `RouteId`, so a second parameterised nav target is a
+ * deliberate edit to this type rather than something that compiles by accident.
+ */
+export type NavLink = {
+	route: '/media-providers/[kind]';
+	params: { kind: MediaKind };
+};
 
 export type NavNode = {
 	key: string;
 	label: string;
 	/**
-	 * Present only when the screen exists. Typed as a static route so a typo cannot compile, and absent for
-	 * a planned screen so the renderer has nothing to link to.
+	 * Present only when the screen exists at a static path. Typed as a static route so a typo cannot
+	 * compile, and absent for a planned screen so the renderer has nothing to link to.
 	 */
 	href?: NavHref;
+	/** Present only when the screen exists at a parameterised path and the row fixes the parameter. */
+	link?: NavLink;
 	/** True when the screen is not built yet. The sidebar renders a Planned chip for it. */
 	planned?: boolean;
 	/** Sub-items (the Media kinds). A node with children is a container and carries no href. */
@@ -105,22 +124,31 @@ export const NAV_GROUPS: NavGroup[] = [
 // The Media kinds live under one container so the sidebar does not carry six extra top-level rows.
 // The container itself is not a screen, so it carries no href; `planned` is set on it only to keep the
 // shape uniform, and the renderer treats a node with children as a disclosure instead.
-// `web` maps to the API kind `search` (SPEC-UI §6.8), and the label is "Web Search" because no fetch
-// endpoint exists, which is the one place a label had to match the API rather than the legacy panel.
-const MEDIA_KINDS: NavNode[] = [
-	{ key: 'media-embedding', label: 'Embedding', planned: true },
-	{ key: 'media-image', label: 'Image', planned: true },
-	{ key: 'media-video', label: 'Video', planned: true },
-	{ key: 'media-tts', label: 'TTS', planned: true },
-	{ key: 'media-stt', label: 'STT', planned: true },
-	{ key: 'media-search', label: 'Web Search', planned: true }
-];
+//
+// The keys, labels, and links are derived from the schema module's kind vocabulary rather than restated
+// here, so a sidebar row and the heading of the page it opens cannot disagree. The label for `web` is
+// "Web Search", which is the one place a label matches the API's meaning rather than the legacy panel's
+// wording, because the panel has no fetch endpoint and "Web" alone would read as a browsing surface.
+const MEDIA_KIND_NODE_KEYS: Record<MediaKind, string> = {
+	embedding: 'media-embedding',
+	image: 'media-image',
+	video: 'media-video',
+	tts: 'media-tts',
+	stt: 'media-stt',
+	web: 'media-search'
+};
+
+const MEDIA_KIND_NODES: NavNode[] = MEDIA_KINDS.map((kind) => ({
+	key: MEDIA_KIND_NODE_KEYS[kind],
+	label: MEDIA_KIND_LABELS[kind],
+	link: { route: '/media-providers/[kind]', params: { kind } }
+}));
 
 // Filled here rather than inline so the container above stays readable and the kinds have one home.
 const mediaGroup = NAV_GROUPS.find((group) => group.key === 'configure')?.items.find(
 	(item) => item.key === 'media-providers'
 );
-if (mediaGroup) mediaGroup.children = MEDIA_KINDS;
+if (mediaGroup) mediaGroup.children = MEDIA_KIND_NODES;
 
 /**
  * True when `pathname` is the node's route or a child of it. Kept here rather than in the component so

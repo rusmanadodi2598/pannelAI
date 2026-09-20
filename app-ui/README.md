@@ -99,9 +99,54 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Three passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Four passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
-element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20.
+element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
+Provider screen, measured the same day.
+
+### Media Provider, 2026-09-20
+
+Run with Bun 1.3.14. This pass covers `/media-providers/[kind]` (SPEC-UI §6.8), one screen at six
+addresses, and the navigation change that lets a sidebar row link to a parameterised route.
+
+| Check             | Result                                                                    |
+| ----------------- | ------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                      |
+| `bun run test`    | 1437 tests passed across 57 files, 228 of them this slice plus navigation |
+| `bun run lint`    | Prettier reports every file conforms                                      |
+| `bun run lint:ts` | ESLint exits 0                                                            |
+| `bun run build`   | succeeds, output in `build/`                                              |
+| File size         | largest source file this slice is 195 lines, under the 220 warning line   |
+| Text hygiene      | 0 em dashes and 0 emoji across `src` and `tests`                          |
+
+What the screen does, and the three places it states a limit rather than hiding one:
+
+| Area               | Behaviour                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The kind           | The panel's six kinds are `embedding`, `image`, `video`, `tts`, `stt`, `web`, and the API's sixth is `search`. The mapping is total in both directions, so `/media-providers/web` asks for `?kind=search` and a row answering `kind: "search"` renders under the `web` heading. An address naming no kind is refused before any request, with the six real addresses offered as the way out. |
+| The base URL       | The field is the override, not the resolved value, because an empty override is how one is undone. It is empty unless the stored source is `override`, and the registry's value is named beside it. The panel blocks the one save it can prove the server would refuse, quoting the server's sentence, and lets the server answer the cases it cannot prove.                                 |
+| The default model  | A selector over the models the service declares, plus the registry default, so an invalid model is structurally impossible. A kind that declares none gets a stated fact instead, because a select with no options is a dead control. A stored override the service no longer declares is named rather than dropped, so the operator can see why the selector reset.                         |
+| The endpoint count | Scoped to this provider and this kind, and stated rather than linked: the endpoint screen filters by provider alone, so a link there would promise a narrower list than it shows. The provider name links to its registry entry, which is where its endpoints are listed.                                                                                                                    |
+
+Two defects were found and fixed by this pass, and both are recorded because the pattern matters more
+than the fix:
+
+1. **The sidebar's disclosure check read `child.href`.** With the media kinds linking through a
+   parameterised route, that check would have stopped matching and a reload on a Media kind page would
+   have shown the container closed with the operator's own row hidden inside it. Nothing else failed,
+   because no test covered the auto-open rule. Fixed by resolving every row through one shared
+   `navPath`, and `tests/navigation/sidebar-disclosure.test.ts` now pins the rule for a static child, a
+   parameterised one, and a route that matches no child at all.
+2. **A child link never carried `aria-current`.** The top-level branch set it and the child branch did
+   not, which never mattered before because no child was routable. With the media kinds routable, the
+   current page was marked for sighted users and not for a screen reader. Found by the new test
+   asserting the marker as well as the attribute, since DESIGN.md §6 requires position never to be
+   carried by colour alone.
+
+Not yet verified: the rendered half in a browser, and every write against a running `app-serv`. The
+screen is client-rendered (`ssr = false`), so the tests exercise it against a stub that applies writes
+and answers with the server's own refusals; the wire half for the two earlier U2 screens is verified
+live below.
 
 ### Token Saver and Proxy Pools, 2026-09-20
 

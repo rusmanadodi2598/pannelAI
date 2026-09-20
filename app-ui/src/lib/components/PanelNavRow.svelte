@@ -6,14 +6,15 @@
 	//
 	//   A node with children is a disclosure: a button with `aria-expanded`, because a container is not a
 	//   route and must not look like one.
-	//   A node with an `href` is a link.
+	//   A node that links is a link, whether its route is static or parameterised. A parameterised row
+	//   fixes its own parameter (a Media kind), so the sidebar can build the address.
 	//   A node with neither is inert text plus a Planned chip, which is what makes R-24 structural: there
 	//   is nothing to click.
 	//
 	// DESIGN.md §6: the active row carries the identity motif, a 3px accent marker on the leading edge,
 	// always paired with the label so position is never carried by colour alone.
-	import { resolve } from '$app/paths';
 	import { navIcon } from '$lib/icons';
+	import { navPath } from '$lib/nav-path';
 	import { isActiveRoute, type NavNode } from '$lib/navigation';
 	import * as Collapsible from '$lib/primitives/collapsible/index.js';
 	import * as Sidebar from '$lib/primitives/sidebar/index.js';
@@ -31,11 +32,11 @@
 
 	const icon = $derived(navIcon(item.key));
 
-	// `resolve()` only accepts a real RouteId, so the value is narrowed to a local before the call. Both
-	// call sites below sit inside an `{#if}` that proves the type, which is why the helper shape is not
-	// needed here.
-	const href = $derived(item.href);
-	const active = $derived(href ? isActiveRoute(pathname, href) : false);
+	// `resolve()` only accepts a real RouteId, so the narrowing lives in `navPath`, which the sidebar
+	// shares. It returns the resolved path rather than the route pattern, so the `href` attribute and the
+	// active check read the same value.
+	const path = $derived(navPath(item));
+	const active = $derived(path !== undefined && isActiveRoute(pathname, path));
 </script>
 
 <Sidebar.MenuItem>
@@ -61,12 +62,16 @@
 				<Sidebar.MenuSub class="ml-3 border-s border-[var(--color-sidebar-border)]">
 					{#each item.children as child (child.key)}
 						{@const childIcon = navIcon(child.key)}
+						{@const childPath = navPath(child)}
+						{@const childActive = childPath !== undefined && isActiveRoute(pathname, childPath)}
 						<Sidebar.MenuSubItem>
-							{#if child.href}
-								{@const childHref = child.href}
+							{#if childPath}
+								<!-- `aria-current` rides through the primitive's rest props onto the anchor, which is
+								     what pairs the active background with a signal a screen reader reads. -->
 								<Sidebar.MenuSubButton
-									href={resolve(childHref)}
-									isActive={isActiveRoute(pathname, childHref)}
+									href={childPath}
+									isActive={childActive}
+									aria-current={childActive ? 'page' : undefined}
 									onclick={onnavigate}
 									class="min-h-11"
 								>
@@ -95,19 +100,15 @@
 				</Sidebar.MenuSub>
 			</Collapsible.Content>
 		</Collapsible.Root>
-	{:else if href}
+	{:else if path}
 		<Sidebar.MenuButton
 			isActive={active}
 			tooltipContent={item.label}
 			class="min-h-11 data-[active=true]:font-medium"
 		>
 			{#snippet child({ props })}
-				<a
-					{...props}
-					href={resolve(href)}
-					aria-current={active ? 'page' : undefined}
-					onclick={onnavigate}
-				>
+				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- navPath() resolves it, and the rule cannot see through the call -->
+				<a {...props} href={path} aria-current={active ? 'page' : undefined} onclick={onnavigate}>
 					{#if active}
 						<span
 							aria-hidden="true"

@@ -283,6 +283,12 @@ installed set.
 | Network settings live on the Proxy Pools screen, and `/settings` links there | They are proxy settings, and a second copy under Settings is the duplication the owner's KEEP list removes. |
 | The outbound card states that its scope is global | A control sitting beside a pool table reads as per-row routing, which the egress path does not implement. |
 | The delete dialog names the object and says it does not reroute traffic | The dangerous assumption is that removing a row changes routing; naming both the object and the non-effect is what makes the confirm safe to press. |
+| The media base URL field shows the registry's value beside it rather than pre-filling it | A field pre-filled with a value the panel did not write would save that value back as an override, changing where the address comes from without changing the address. |
+| The media default model is a selector, not a text field | The service declares the models it can route, so the set is a choice; free text invites a value nothing downstream can serve. |
+| A media kind that declares no models gets a stated fact instead of an empty selector | A select with no options is a dead control under R-26, and the fact is the honest shape of "there is nothing to choose". |
+| The media endpoint count is stated, not linked | The count is scoped to one provider and one kind, and the endpoint screen filters by provider alone, so a link would promise a narrower list than it shows. |
+| The media provider name links to its registry entry | The card names a provider, and the registry entry is where its facts and its endpoint list live. |
+| A sidebar row may link to a parameterised route when the row fixes the parameter | A Media kind is part of the row's identity rather than something an operator picks after opening the screen, so the row can build the address; a provider id is the opposite case and stays unlinkable. |
 
 ---
 

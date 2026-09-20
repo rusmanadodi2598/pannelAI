@@ -11,6 +11,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import PanelNavRow from '$lib/components/PanelNavRow.svelte';
+	import { navPath } from '$lib/nav-path';
 	import { isActiveRoute, NAV_GROUPS, type NavNode } from '$lib/navigation';
 	import * as Sidebar from '$lib/primitives/sidebar/index.js';
 
@@ -26,9 +27,13 @@
 		const chosen = expanded[node.key];
 		if (chosen !== undefined) return chosen;
 
-		// Default is closed. It opens only when a child is the current route.
+		// Default is closed. It opens only when a child is the current route, and the check goes through
+		// `navPath` so a parameterised child (a Media kind) counts the same as a static one.
 		return (
-			node.children?.some((child) => child.href && isActiveRoute(current, child.href)) ?? false
+			node.children?.some((child) => {
+				const path = navPath(child);
+				return path !== undefined && isActiveRoute(current, path);
+			}) ?? false
 		);
 	}
 

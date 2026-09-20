@@ -102,26 +102,79 @@ describe('navigation items', () => {
 		});
 
 		it(`points ${node.key} at a route that exists, or at nothing at all`, () => {
-			// A node without an href is the only correct state for a screen that is not built: the renderer
-			// cannot produce a link for it, so R-24 cannot be violated by accident.
-			if (node.href === undefined) return;
+			// A node that links nowhere is the only correct state for a screen that is not built: the
+			// renderer cannot produce a link for it, so R-24 cannot be violated by accident.
+			if (node.href !== undefined) {
+				expect(
+					ROUTES.has(node.href),
+					`${node.key} links to ${node.href}, which no route file provides`
+				).toBe(true);
+			}
 
-			expect(
-				ROUTES.has(node.href),
-				`${node.key} links to ${node.href}, which no route file provides`
-			).toBe(true);
+			if (node.link !== undefined) {
+				expect(
+					ROUTES.has(node.link.route),
+					`${node.key} links to ${node.link.route}, which no route file provides`
+				).toBe(true);
+			}
 		});
 	}
 
-	it('points every link at a static screen, because a nav row cannot choose a parameter', () => {
-		// The provider detail route is `/providers/[provider_id]`, and no sidebar row may link to it: the
-		// renderer would have to invent a provider id, and `resolve` cannot build the link without one. The
-		// type excludes it, and this asserts the same rule over the data, so a hand-edited href fails here
-		// rather than at build time only.
+	it('keeps a record parameter out of the sidebar, and fills the parameters a row does own', () => {
+		// Two halves of one rule. A static link may not name a parameterised route, because the sidebar has
+		// no way to know a record's id and `resolve` could not build the address. A row that does link to a
+		// parameterised route must supply every placeholder it declares, or `resolve` would build an address
+		// with a literal `[kind]` in it, and must supply no parameter the route does not declare.
 		for (const { node } of ALL) {
-			if (node.href === undefined) continue;
-			expect(node.href, `${node.key} links to a parameterised route`).not.toContain('[');
+			if (node.href !== undefined) {
+				expect(node.href, `${node.key} links to a parameterised route`).not.toContain('[');
+			}
+
+			if (node.link === undefined) continue;
+
+			expect(
+				node.link.route,
+				`${node.key} links through the parameterised shape to a static route`
+			).toContain('[');
+
+			const placeholders = [...node.link.route.matchAll(/\[(\w+)\]/g)].map((match) => match[1]);
+			expect(
+				placeholders.length,
+				`${node.key} links to a parameterised route with no placeholder`
+			).toBeGreaterThan(0);
+
+			for (const placeholder of placeholders) {
+				expect(
+					node.link.params[placeholder as keyof typeof node.link.params],
+					`${node.key} does not fill ${placeholder}`
+				).toBeTruthy();
+			}
+
+			expect(
+				Object.keys(node.link.params).sort(),
+				`${node.key} passes a parameter the route does not declare`
+			).toEqual([...placeholders].sort());
 		}
+	});
+
+	it('sends each media kind to its own address', () => {
+		const container = NODES.find((node) => node.key === 'media-providers');
+		const kinds = container?.children ?? [];
+		expect(kinds.length).toBe(6);
+
+		for (const child of kinds) {
+			expect(child.link?.route, `${child.key} does not link to the media screen`).toBe(
+				'/media-providers/[kind]'
+			);
+		}
+
+		// The six slugs are distinct, which is the point of the parameter: a copy-paste that left two rows on
+		// one kind would render one screen twice and hide another.
+		const slugs = kinds.map((child) => child.link?.params.kind);
+		expect(new Set(slugs).size, `two media kinds share a slug in ${slugs.join(', ')}`).toBe(
+			slugs.length
+		);
+		expect(slugs.sort()).toEqual(['embedding', 'image', 'stt', 'tts', 'video', 'web']);
 	});
 
 	it('covers every screen the owner listed', () => {
@@ -166,17 +219,28 @@ describe('navigation items', () => {
 		// A hidden item would misrepresent the panel's scope. A container is not a screen: it carries
 		// children and its own label, so it is exempt.
 		for (const { node } of ALL) {
-			if (node.href !== undefined || node.children !== undefined) continue;
+			if (node.href !== undefined || node.link !== undefined || node.children !== undefined)
+				continue;
 			expect(node.planned, `${node.key} has no route and is not marked planned`).toBe(true);
 		}
 	});
 
-	it('gives every child of a container a planned state of its own', () => {
-		// A container is exempt from the chip, so its children have to carry the information instead.
+	it('gives every child of a container a link of its own', () => {
+		// A container is exempt from the Planned chip, so its children carry the state instead. Every media
+		// kind is built and links; the assertion is written as "links or is planned" so a kind added before
+		// its screen fails the pair rather than passing silently, and a row that both links and claims to be
+		// planned is caught because the chip would be a lie.
 		const container = NODES.find((node) => node.children !== undefined);
+
 		for (const child of container?.children ?? []) {
-			expect(child.href, `${child.key} is a leaf and must not carry an href yet`).toBeUndefined();
-			expect(child.planned, `${child.key} needs its own planned state`).toBe(true);
+			expect(
+				child.link !== undefined || child.planned === true,
+				`${child.key} neither links nor is marked planned`
+			).toBe(true);
+
+			if (child.link !== undefined) {
+				expect(child.planned, `${child.key} links and is also marked planned`).toBeUndefined();
+			}
 		}
 	});
 });
