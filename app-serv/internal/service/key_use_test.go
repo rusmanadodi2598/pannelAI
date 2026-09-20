@@ -42,10 +42,15 @@ func (l *stubKeyLookup) GetByValueHash(_ context.Context, _ string) (domain.Gate
 	return l.key, nil
 }
 
-// stubRequireKey answers the settings seam.
-type stubRequireKey struct{ required bool }
+// stubRequireKey answers the settings seam. err != nil models the settings
+// store failing, which authentication must treat as "required" rather than
+// skipping the check (deny by default).
+type stubRequireKey struct {
+	required bool
+	err      error
+}
 
-func (s stubRequireKey) RequireAPIKey(context.Context) (bool, error) { return s.required, nil }
+func (s stubRequireKey) RequireAPIKey(context.Context) (bool, error) { return s.required, s.err }
 
 // stubKeyUse collects the counter updates the data plane applies.
 type stubKeyUse struct {
@@ -65,6 +70,7 @@ func TestChatService_AuthenticateRecordsKeyUse(t *testing.T) {
 	cases := []struct {
 		name        string
 		required    bool
+		settingsErr error
 		presented   string
 		lookupFail  error
 		wantRefused bool
@@ -77,13 +83,23 @@ func TestChatService_AuthenticateRecordsKeyUse(t *testing.T) {
 		},
 		{name: "no key presented", required: true, wantRefused: true},
 		{name: "authentication disabled", required: false, wantUses: 0},
+		{
+			name:        "a settings read failure refuses even a valid key",
+			settingsErr: errors.New("the settings store is down"), presented: "sk-live",
+			wantRefused: true,
+		},
+		{
+			name:        "a settings read failure refuses an absent key too",
+			settingsErr: errors.New("the settings store is down"),
+			wantRefused: true,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			use := &stubKeyUse{}
 			svc := &ChatService{
 				keys:     &stubKeyLookup{key: key, fail: tc.lookupFail},
-				settings: stubRequireKey{required: tc.required},
+				settings: stubRequireKey{required: tc.required, err: tc.settingsErr},
 				keyUse:   use,
 				clock:    time.Now,
 			}

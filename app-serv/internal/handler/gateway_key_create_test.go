@@ -93,4 +93,37 @@ func TestGatewayKey_Create_Validation(t *testing.T) {
 	}
 }
 
-// TestGatewayKey_Get_AfterCreate shows only the hint, never the plaintext.
+// TestGatewayKey_Create_DuplicateNameConflict pins the §6 uniqueness rule's
+// journey: the first create succeeds, a second create with the same name is a
+// 409 CONFLICT rather than a 500 or a validation error, and a create with a
+// different name still succeeds afterward, so the refusal tracks the name and
+// not the fact that a key exists.
+func TestGatewayKey_Create_DuplicateNameConflict(t *testing.T) {
+	h, _ := newTestHandler(t)
+
+	create := func(name string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/gateway-keys", strings.NewReader(`{"name":"`+name+`"}`))
+		rr := httptest.NewRecorder()
+		h.Create(rr, req)
+		return rr
+	}
+
+	if first := create("ci"); first.Code != http.StatusCreated {
+		t.Fatalf("first create = %d, want 201 (body: %s)", first.Code, first.Body.String())
+	}
+	duplicate := create("ci")
+	if duplicate.Code != http.StatusConflict {
+		t.Fatalf("duplicate create = %d, want 409 (body: %s)", duplicate.Code, duplicate.Body.String())
+	}
+	body := decodeBody(t, duplicate)
+	errObj, ok := body["error"].(map[string]any)
+	if !ok {
+		t.Fatalf("response must carry the error envelope: %v", body)
+	}
+	if code, _ := errObj["code"].(string); code != "CONFLICT" {
+		t.Fatalf("code = %q, want CONFLICT", code)
+	}
+	if again := create("cd"); again.Code != http.StatusCreated {
+		t.Fatalf("create after the conflict = %d, want 201 (body: %s)", again.Code, again.Body.String())
+	}
+}

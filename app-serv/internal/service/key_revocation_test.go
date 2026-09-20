@@ -118,16 +118,22 @@ func TestRevokedKeyStopsServingTheDataPlane(t *testing.T) {
 	if err := keys.Revoke(ctx, key.ID()); err != nil {
 		t.Fatalf("revoke: %v", err)
 	}
-	_, err = chat.Authenticate(ctx, plaintext)
-	if err == nil {
+	_, revokedErr := chat.Authenticate(ctx, plaintext)
+	if revokedErr == nil {
 		t.Fatal("Authenticate() admitted a revoked key")
 	}
-	appErr, ok := err.(*domain.AppError)
+	appErr, ok := revokedErr.(*domain.AppError)
 	if !ok || appErr.Code != "UNAUTHORIZED" {
-		t.Fatalf("Authenticate() error = %v, want the UNAUTHORIZED code", err)
+		t.Fatalf("Authenticate() error = %v, want the UNAUTHORIZED code", revokedErr)
 	}
 
-	if _, err := chat.Authenticate(ctx, "sk-never-issued"); err == nil {
+	_, unknownErr := chat.Authenticate(ctx, "sk-never-issued")
+	if unknownErr == nil {
 		t.Fatal("Authenticate() admitted a key that never existed")
+	}
+	// The two refusals must be indistinguishable: a caller who learns that a
+	// revoked key differs from an unknown one gains an oracle for key state.
+	if revokedErr.Error() != unknownErr.Error() {
+		t.Fatalf("refusals differ: revoked = %q, unknown = %q", revokedErr, unknownErr)
 	}
 }
