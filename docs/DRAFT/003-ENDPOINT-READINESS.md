@@ -37,7 +37,7 @@ breaking change baru memunculkannya.
 
 | Area owner | Section spec | Route di router | Status |
 |---|---|---|---|
-| Endpoint & Key | §7.3 + §7.5 | gateway-keys (5), endpoints CRUD + test (7), keys CRUD + bulk (5), endpoints/bulk, oauth/bulk | lengkap |
+| Endpoint & Key | §7.3 + §7.5 | gateway-keys (5), endpoints CRUD + test (7), keys CRUD + bulk (5), endpoints/bulk, oauth/bulk | CLOSED (perjalanan dipin test, lihat §8) |
 | Provider | §7.4 | providers (3), provider-nodes CRUD + test (6), OAuth start/callback/status/refresh (4) | lengkap |
 | Combo & Vision Adapter | §7.7 + §7.8 | combos CRUD + test (6), vision-adapter GET/PUT | lengkap |
 | Usage | §7.12 | summary, timeseries, records, records/{request_id} | lengkap |
@@ -97,3 +97,28 @@ playground di §7.15, dan fase P4 di §10. Translator playground tetap dieksklus
 
 Spec §7.1 sampai §7.15 mendefinisikan 89 route; router mendaftarkan 90. Satu-satunya
 selisih adalah F2. Setelah edit spec ini, kedua sisi 90.
+
+## 8. Penutupan area Endpoint & Key (2026-09-20)
+
+Status **CLOSED**. Bukti perjalanan yang dipin test (commit `2b75d85` dan `45131c9`),
+semuanya table-driven sesuai TDD.md §2.5 dan dipetakan ke OWASP:
+
+| Perjalanan | Test | Bukti |
+|---|---|---|
+| Create mengembalikan plaintext tepat sekali, setelah itu hanya `key_hint` | `TestGatewayKey_Create_HappyPath`, `TestGatewayKey_Get_AfterCreate` | handler |
+| Kredensial diterima dari salah satu header (Bearer / X-Api-Key, OWASP: klien OpenAI dan Anthropic) | `TestBearerTokenExtraction` (9 kasus, termasuk dua header sekaligus dan scheme asing) | handler |
+| Settings gagal dibaca, auth tetap menolak (OWASP A01: deny by default) | `TestChatService_AuthenticateRecordsKeyUse`, 2 kasus baru | service |
+| Kunci revoked berhenti melayani data plane, tanpa oracle: jawaban identik dengan kunci yang tak pernah ada | `TestRevokedKeyStopsServingTheDataPlane` | service |
+| Revoke terminal, tidak bisa dihidupkan lewat PATCH maupun revoke ulang | `TestGatewayKey_StatusTransitions`, `TestGatewayKey_Revoke_IsTerminal` | domain, handler |
+| Nama duplikat: create kedua = 409 CONFLICT, nama lain tetap berhasil | `TestGatewayKey_Create_DuplicateNameConflict`, `TestGatewayKey_Update_RenameCollision` | handler |
+| Counter `request_count`/`last_used_at` maju per panggilan sah, gagal tulis tidak menggagalkan request | `TestChatService_AuthenticateRecordsKeyUse`, `TestChatService_AuthenticateSurvivesAFailedKeyUseWrite` | service |
+| Route tanpa session = 401, verb salah = 405 (OWASP A01: enforcement per method) | `TestVersionedRoutesRequireSession`, `router_verb_test.go` | router |
+| Rule keep-last-key §7.5 (endpoint `api_key` wajib menyisakan ≥1 kunci aktif) | aggregate `Endpoint.RemoveKey` → CONFLICT | domain, service |
+
+Kontrak mesin-baca: dokumen `openapi.json` yang dilayani (§7.17) mengunci kelima verb
+gateway-keys dan endpoint keys lewat coverage test dua arah di
+`TestOpenAPICoversEveryRegisteredRoute`, jadi method DELETE tidak bisa hilang dari
+kontrak tanpa gagal build.
+
+Sisa gap pada audit ini: tidak ada. Area berikutnya yang bisa ditutup dengan pola yang
+sama: Provider, Combo & Vision Adapter.
