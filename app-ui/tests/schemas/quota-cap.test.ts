@@ -1,26 +1,22 @@
-// Budget-cap schema tests (docs/SPEC-UI/001-SPEC-UI.md §6.6, U2).
+// Budget-cap read-shape and form-rule tests (docs/SPEC-UI/001-SPEC-UI.md §6.6, U2).
 //
 // The rule this file exists for is the one the wire turns on: `PUT /quotas/{endpoint_id}` replaces the
 // whole cap set, so an amount the body omits CLEARS that cap. A form that sent a zero instead, or that
 // dropped a field it meant to keep, would change a budget in production. The bounds and the degenerate
-// zero-cost rule are the API's own (`domain.ValidateQuotaCapValues`), so they are checked here against the
-// same values the API refuses, and the round trip from a stored cap back to a body is checked so the
-// display trimming cannot lose a digit.
+// zero-cost rule are the API's own (`domain.ValidateQuotaCapValues`), so the form's rules are checked here
+// against the same values the API refuses.
+//
+// The four pure mappings (request body, field values, sentence, picker options) are in
+// `quota-cap-form.test.ts`.
 
 import { describe, expect, it } from 'vitest';
 import { forEachCase } from '../support/tables';
 import {
 	MAX_QUOTA_MONTHLY_COST_USD,
 	MAX_QUOTA_MONTHLY_TOKENS,
-	buildQuotaCapBody,
-	quotaCapForm,
-	quotaCapOptions,
-	quotaCapSummary,
 	schemaQuotaCap,
 	schemaQuotaCapForm,
-	schemaQuotaEndpointDetail,
-	type QuotaCap,
-	type QuotaCapForm
+	schemaQuotaEndpointDetail
 } from '$lib/schemas/quota-cap';
 
 // A wire row, loose on purpose: the schema tests feed it values the API would refuse, which a typed
@@ -33,14 +29,6 @@ function cap_(overrides: Record<string, unknown> = {}): Record<string, unknown> 
 		updated_at: '2026-09-20T12:00:00Z',
 		...overrides
 	};
-}
-
-// The same fixture read through the panel's own schema, for the tests that call the pure functions. It
-// keeps one definition of "a stored cap" in the file rather than two.
-function storedCap(overrides: Record<string, unknown> = {}): QuotaCap {
-	const parsed = schemaQuotaCap.safeParse(cap_(overrides));
-	if (!parsed.success) throw new Error('The fixture is not a cap the panel can read.');
-	return parsed.data;
 }
 
 describe('schemaQuotaCap', () => {
@@ -105,7 +93,7 @@ describe('schemaQuotaEndpointDetail', () => {
 		expect(parsed.success).toBe(true);
 		expect(parsed.data?.cap).not.toBeNull();
 		expect(parsed.data?.cap?.monthly_cost_usd).toBeUndefined();
-		expect(quotaCapForm(parsed.data?.cap ?? null)).toEqual({ cost: '', tokens: '' });
+		expect(parsed.data?.cap?.monthly_tokens).toBeUndefined();
 	});
 
 	it('reads a null window list as no windows', () => {
@@ -197,159 +185,5 @@ describe('schemaQuotaCapForm', () => {
 		expect(parsed.error?.issues[0]?.message).toBe(
 			'A monthly cost cannot exceed 1,000,000,000 USD.'
 		);
-	});
-});
-
-describe('buildQuotaCapBody', () => {
-	forEachCase(
-		[
-			{
-				name: 'omits a blank cost, which clears it',
-				form: { cost: '', tokens: '1000' },
-				body: { monthly_tokens: 1000 }
-			},
-			{
-				name: 'omits blank tokens, which clears them',
-				form: { cost: '25', tokens: '' },
-				body: { monthly_cost_usd: '25' }
-			},
-			{ name: 'sends an empty body when both are blank', form: { cost: '', tokens: '' }, body: {} },
-			{
-				name: 'sends both amounts when both are set',
-				form: { cost: '25.50', tokens: '1000' },
-				body: { monthly_cost_usd: '25.50', monthly_tokens: 1000 }
-			}
-		],
-		(testCase) => {
-			expect(buildQuotaCapBody(testCase.form)).toEqual(testCase.body);
-		}
-	);
-
-	it('does not send a blank field as an empty string', () => {
-		expect(Object.keys(buildQuotaCapBody({ cost: '', tokens: '' }))).toEqual([]);
-	});
-});
-
-describe('quotaCapForm', () => {
-	type Case = { name: string; cap: QuotaCap | null; expected: QuotaCapForm };
-
-	forEachCase<Case>(
-		[
-			{
-				name: 'reads no stored cap as two empty fields',
-				cap: null,
-				expected: { cost: '', tokens: '' }
-			},
-			{
-				name: 'prints a stored cost without its trailing zeros',
-				cap: storedCap(),
-				expected: { cost: '25', tokens: '1000000' }
-			},
-			{
-				name: 'keeps the digits of a cost that has real precision',
-				cap: storedCap({ monthly_cost_usd: '0.33333333' }),
-				expected: { cost: '0.33333333', tokens: '1000000' }
-			},
-			{
-				name: 'prints a cost under a dollar as a plain amount',
-				cap: storedCap({ monthly_cost_usd: '0.50000000' }),
-				expected: { cost: '0.5', tokens: '1000000' }
-			},
-			{
-				name: 'reads a cleared cap as two empty fields',
-				cap: storedCap({ monthly_cost_usd: undefined, monthly_tokens: undefined }),
-				expected: { cost: '', tokens: '' }
-			}
-		],
-		(testCase) => {
-			expect(quotaCapForm(testCase.cap)).toEqual(testCase.expected);
-		}
-	);
-
-	it('round-trips a stored cap back to the same amount', () => {
-		for (const amount of ['25.00000000', '0.50000000', '0.33333333', '1000000000.00000000']) {
-			const parsed = schemaQuotaCapForm.safeParse(
-				quotaCapForm(storedCap({ monthly_cost_usd: amount }))
-			);
-
-			expect(parsed.success).toBe(true);
-			if (!parsed.success) continue;
-			expect(Number(buildQuotaCapBody(parsed.data).monthly_cost_usd)).toBe(Number(amount));
-		}
-	});
-});
-
-describe('quotaCapSummary', () => {
-	type Case = { name: string; cap: QuotaCap | null; expected: string };
-
-	forEachCase<Case>(
-		[
-			{
-				name: 'says no cap is stored rather than printing a ceiling of zero',
-				cap: null,
-				expected:
-					'No cap is stored for this endpoint, so the router picks it whenever it is healthy.'
-			},
-			{
-				name: 'names a cost cap alone',
-				cap: storedCap({ monthly_tokens: undefined }),
-				expected: 'This endpoint is capped at 25 USD a month.'
-			},
-			{
-				name: 'names a token cap alone',
-				cap: storedCap({ monthly_cost_usd: undefined }),
-				expected: 'This endpoint is capped at 1,000,000 tokens a month.'
-			},
-			{
-				name: 'names both caps',
-				cap: storedCap(),
-				expected: 'This endpoint is capped at 25 USD and 1,000,000 tokens a month.'
-			},
-			{
-				name: 'reads a cleared cap as no cap at all',
-				cap: storedCap({ monthly_cost_usd: undefined, monthly_tokens: undefined }),
-				expected:
-					'No cap is stored for this endpoint, so the router picks it whenever it is healthy.'
-			}
-		],
-		(testCase) => {
-			expect(quotaCapSummary(testCase.cap)).toBe(testCase.expected);
-		}
-	);
-});
-
-describe('quotaCapOptions', () => {
-	it('offers the endpoints the label read returned', () => {
-		const options = quotaCapOptions(new Map([['ep_1', 'Anthropic primary']]), []);
-
-		expect(options).toEqual([{ id: 'ep_1', label: 'Anthropic primary' }]);
-	});
-
-	it('offers an endpoint the window table names past the label list', () => {
-		const options = quotaCapOptions(new Map([['ep_1', 'Anthropic primary']]), [
-			'ep_1',
-			'ep_beyond'
-		]);
-
-		expect(options).toEqual([
-			{ id: 'ep_1', label: 'Anthropic primary' },
-			{ id: 'ep_beyond', label: 'ep_beyond' }
-		]);
-	});
-
-	it('sorts by the label the operator reads', () => {
-		const options = quotaCapOptions(
-			new Map([
-				['ep_2', 'Zebra'],
-				['ep_1', 'Alpha']
-			]),
-			[]
-		);
-
-		expect(options.map((option) => option.id)).toEqual(['ep_1', 'ep_2']);
-	});
-
-	it('offers nothing when neither read named an endpoint', () => {
-		expect(quotaCapOptions(new Map(), [])).toEqual([]);
 	});
 });

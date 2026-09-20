@@ -795,7 +795,8 @@ schema must have a table-driven test.
 | `media_provider.ts` | media provider list and detail, kind enum, base URL | SPEC-API §7.10 |
 | `proxy.ts` | proxy list and detail, protocol enum, write-only password | SPEC-API §7.11 |
 | `usage.ts` | summary, timeseries buckets, records, single record detail | SPEC-API §7.12 |
-| `quota.ts` | quota windows, source enum, budget caps | SPEC-API §7.12 |
+| `quota.ts` | quota windows, source enum | SPEC-API §7.12 |
+| `quota-cap.ts` | budget cap read shape, whole-set write body, form rules | SPEC-API §7.12 |
 | `request_log.ts` | request log rows, captured bodies, console lines | SPEC-API §7.13 |
 | `settings.ts` | every settings group in SPEC-API §7.14, secrets excluded | SPEC-API §7.14 |
 | `error.ts` | the management error envelope and the code enum | SPEC-API §8 |
