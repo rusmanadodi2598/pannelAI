@@ -99,10 +99,53 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Four passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Five passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
-Provider screen, measured the same day.
+Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
+day.
+
+### Provider detail model writes, 2026-09-20
+
+Run with Bun 1.3.14. This pass covers the disabled and custom model writes of `/providers/[provider_id]`
+(SPEC-UI §6.3): the Disable action on every catalog row, the list of models this provider cannot route,
+and the custom-model table with its add form and removal dialog.
+
+| Check             | Result                                                                 |
+| ----------------- | ---------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                   |
+| `bun run test`    | 1551 tests passed across 62 files, 114 of them new in this pass        |
+| `bun run lint`    | Prettier reports every file conforms                                   |
+| `bun run lint:ts` | ESLint exits 0                                                         |
+| `bun run build`   | succeeds, output in `build/`                                           |
+| File size         | largest source file this pass is 179 lines, under the 220 warning line |
+| Text hygiene      | 0 em dashes and 0 emoji across `src` and `tests`                       |
+
+What the screen does, and the four places it states a limit rather than hiding one:
+
+| Area             | Behaviour                                                                                                                                                                                                                                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The write rule   | `PUT /models/disabled` replaces the whole set for every provider, so a write built from this provider's slice would erase another provider's rows. The panel merges over the whole last-read set and renders the server's answer, and the two set operations are tested as set algebra rather than as fixtures.                                        |
+| The two lists    | The merged catalog excludes a disabled model, so a disabled row has no place in it: the catalog offers Disable and a second list, "Models this provider cannot route", offers Enable. That list is the only place a disabled model is visible, which is why it exists at all. SPEC-UI §14 Q19 records the spec sentence this does not match.           |
+| The refusal      | A Disable press before the disabled set has loaded is refused with a sentence, not with a disabled button. The merge runs over the set the panel holds, so writing first would send an empty set and clear every provider's rows; the refusal names that cause, and a test asserts no request was sent.                                                |
+| The outcome line | The last write's result renders in whichever list holds the affected model: a model that could not be disabled is still in the catalog, and one that was disabled is in the disabled list. One rule, so the message appears beside the action that produced it, exactly once.                                                                          |
+| Custom models    | Rows are read whole and narrowed to this provider, each write is one row, and the removal dialog states what a custom row shadows: a custom row overrides a registry row with the same pair, so removing it puts the registry's version back in the catalog. Capabilities are free text because the API accepts any value and publishes no vocabulary. |
+| The catalog      | The table moved into its own component, because the row's action and its outcome message both name a model. The list keeps the filters, the request, and the states, and the page bumps a token after any write that changes the catalog, since all four writes do.                                                                                    |
+
+One defect was found and fixed by this pass, and it is recorded because the pattern matters more than the
+fix:
+
+1. **`ModelCatalogTable.svelte` used `catalogSourceLabel` without importing it.** `svelte-check` was clean
+   on the file list it was given and the component compiled, so the failure only appeared when a test
+   rendered the table: the render threw, the component stayed on its loading state, and every catalog
+   assertion failed with "Unable to find role=table". The page-level tests caught it because they render
+   the whole screen rather than the component that changed, which is the reason those tests exist in that
+   shape.
+
+Not yet verified: the rendered half in a browser, and every write against a running `app-serv`. The
+screen is client-rendered (`ssr = false`), so the tests exercise it against a stub that applies writes and
+answers with the server's own refusals; the wire half for the two earlier U2 screens is verified live
+below.
 
 ### Media Provider, 2026-09-20
 

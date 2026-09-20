@@ -1,23 +1,37 @@
 <script lang="ts">
 	// The provider detail model catalog (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 	//
-	// The component owns its query, so the provider is the only thing passed in. Three parameters reach the
-	// API: the provider scope, a capability filter, and free text. §6.3 also asks for a "suggested" toggle
-	// and for per-model enable or disable state; the first is absent because the registry reports every
-	// model as suggested, so the control would filter nothing (R-26), and the second writes through
-	// `PUT /models/disabled`, which §6.3 itself places in U2.
+	// The component owns its query, so the provider is the only thing it must be told. Three parameters
+	// reach the API: the provider scope, a capability filter, and free text. §6.3 also asks for a
+	// "suggested" toggle, which is absent because the registry reports every model as suggested, so the
+	// control would filter nothing (R-26).
+	//
+	// The rows and their Disable action are the table's business (ModelCatalogTable). This component
+	// fetches, filters, and reports the states a fetch can be in.
 	import { untrack } from 'svelte';
+	import ModelCatalogTable from '$lib/components/ModelCatalogTable.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listModelCatalog } from '$lib/api/models';
 	import {
 		CATALOG_CAPABILITY_FILTERS,
-		catalogModelLabel,
 		catalogQueryParams,
-		catalogSourceLabel,
 		type CatalogModel
 	} from '$lib/schemas/model';
+	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 
-	let { providerId }: { providerId: string } = $props();
+	let {
+		providerId,
+		disabled,
+		onchanged,
+		token = 0
+	}: {
+		providerId: string;
+		disabled: ModelDisabledStore;
+		onchanged: () => void;
+		// Bumped by the page when a write elsewhere changes this list: disabling a model removes its row,
+		// enabling one brings it back, and a custom model joins it.
+		token?: number;
+	} = $props();
 
 	let models = $state<CatalogModel[]>([]);
 	let loading = $state(true);
@@ -31,19 +45,26 @@
 
 	const filtered = $derived(applied !== '' || capability !== '');
 
-	// Reloads when the route's provider changes. The filter state is read untracked because the handlers
-	// below already reload on a filter change, and the reads inside `load` happen synchronously before its
-	// first await: tracking them here would fire a second, identical request on every filter click.
+	// Reloads when the route's provider changes and when the token moves. The filter state is read
+	// untracked because the handlers below already reload on a filter change, and the reads inside `load`
+	// happen synchronously before its first await: tracking them here would fire a second, identical
+	// request on every filter click.
 	$effect(() => {
 		const provider = providerId;
-		untrack(() => void load(provider));
+		const revision = token;
+		untrack(() => void load(provider, revision));
 	});
 
-	async function load(provider: string): Promise<void> {
+	async function load(provider: string, revision: number): Promise<void> {
 		loading = true;
 		const result = await listModelCatalog(
 			catalogQueryParams({ providerId: provider, capability, query: applied })
 		);
+
+		// A newer load owns this state now, so an older answer that lands late is dropped rather than
+		// rendering a list the operator has already moved past.
+		if (revision !== token) return;
+
 		loading = false;
 
 		if (!result.ok) {
@@ -57,19 +78,19 @@
 
 	function applySearch(): void {
 		applied = draft;
-		void load(providerId);
+		void load(providerId, token);
 	}
 
 	function toggleCapability(value: string): void {
 		capability = capability === value ? '' : value;
-		void load(providerId);
+		void load(providerId, token);
 	}
 
 	function clearFilters(): void {
 		draft = '';
 		applied = '';
 		capability = '';
-		void load(providerId);
+		void load(providerId, token);
 	}
 </script>
 
@@ -117,7 +138,9 @@
 	{:else if error}
 		<StateMessage kind="error" title="The model catalog could not be loaded" description={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => load(providerId)}>Try again</button>
+				<button type="button" class="underline" onclick={() => load(providerId, token)}
+					>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if models.length === 0 && filtered}
@@ -137,46 +160,7 @@
 			description="The catalog reports nothing for this provider. A model the gateway has disabled is left out of the catalog, so check the disabled set before treating this as an empty registry entry."
 		/>
 	{:else}
-		<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-			<table class="w-full min-w-[44rem] border-collapse text-sm">
-				<caption class="sr-only">Model catalog for this provider</caption>
-				<thead class="bg-[var(--color-surface-2)] text-left">
-					<tr>
-						<th scope="col" class="px-3 py-2 font-medium">Model</th>
-						<th scope="col" class="px-3 py-2 font-medium">Kind</th>
-						<th scope="col" class="px-3 py-2 font-medium">Capabilities</th>
-						<th scope="col" class="px-3 py-2 font-medium">Source</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each models as model (model.id)}
-						<tr class="border-t border-[var(--color-border)]">
-							<td class="px-3 py-2">
-								<span class="font-medium">{catalogModelLabel(model)}</span>
-								<br />
-								<span class="text-[var(--color-text-muted)]">{model.model_id}</span>
-							</td>
-							<td class="px-3 py-2">{model.kind ?? 'Not declared'}</td>
-							<td class="px-3 py-2">
-								{#if model.capabilities.length === 0}
-									<span class="text-[var(--color-text-muted)]">None declared</span>
-								{:else}
-									<span class="flex flex-wrap gap-1">
-										{#each model.capabilities as entry (entry)}
-											<span
-												class="rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-2 py-0.5"
-												>{entry}</span
-											>
-										{/each}
-									</span>
-								{/if}
-							</td>
-							<td class="px-3 py-2">{catalogSourceLabel(model.source)}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
+		<ModelCatalogTable {models} {disabled} {onchanged} />
 
 		<p class="text-sm text-[var(--color-text-muted)]">
 			{models.length}

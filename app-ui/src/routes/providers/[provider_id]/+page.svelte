@@ -1,19 +1,25 @@
 <script lang="ts">
 	// Provider detail (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 	//
-	// The screen answers three questions in the order an operator asks them: what this provider is (facts),
-	// which models it can answer with (catalog), and which accounts the gateway routes through (endpoints).
-	// Each is its own component, so the page's own job is the load, the heading, and the section titles.
+	// The screen answers four questions in the order an operator asks them: what this provider is (facts),
+	// which models it can answer with (catalog), which of its models are turned off (disabled), and which
+	// accounts the gateway routes through (endpoints). Each is its own component, so the page's own job is
+	// the loads, the heading, the section titles, and the one piece of state two sections share.
 	//
-	// §6.3 also places the OAuth section, the custom-model editor, and the alias table on this screen. All
-	// three are U2, which is why nothing here writes.
+	// That shared state is the disabled set. Disabling a model removes its catalog row and enabling one
+	// brings it back, so the catalog reloads after a write in either section: `catalogToken` is what tells
+	// it to. §6.3 also places the OAuth section, the custom-model editor, and the alias table here; the
+	// custom-model editor is the third section below, and OAuth and the alias table are still U2.
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import ModelCatalogList from '$lib/components/ModelCatalogList.svelte';
+	import ProviderCustomModels from '$lib/components/ProviderCustomModels.svelte';
+	import ProviderDisabledModels from '$lib/components/ProviderDisabledModels.svelte';
 	import ProviderEndpoints from '$lib/components/ProviderEndpoints.svelte';
 	import ProviderFacts from '$lib/components/ProviderFacts.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { getProvider } from '$lib/api/providers';
+	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import type { ProviderDetail } from '$lib/schemas/provider';
 	import type { PageProps } from './$types';
 
@@ -25,12 +31,24 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
+	// The disabled set is global, so it is read once rather than per provider.
+	const disabled = createModelDisabledStore();
+	let catalogToken = $state(0);
+
 	// Reloads when the route's provider changes, so a hand-edited URL never leaves one provider's facts
 	// above another provider's catalog.
 	$effect(() => {
 		const id = providerId;
 		untrack(() => void load(id));
 	});
+
+	$effect(() => {
+		untrack(() => void disabled.load());
+	});
+
+	function bumpCatalog(): void {
+		catalogToken += 1;
+	}
 
 	async function load(id: string): Promise<void> {
 		loading = true;
@@ -74,7 +92,17 @@
 
 		<div class="flex flex-col gap-3">
 			<h2 class="text-base font-medium">Model catalog</h2>
-			<ModelCatalogList {providerId} />
+			<ModelCatalogList {providerId} {disabled} onchanged={bumpCatalog} token={catalogToken} />
+		</div>
+
+		<div class="flex flex-col gap-3">
+			<h2 class="text-base font-medium">Models this provider cannot route</h2>
+			<ProviderDisabledModels {providerId} {disabled} onchanged={bumpCatalog} />
+		</div>
+
+		<div class="flex flex-col gap-3">
+			<h2 class="text-base font-medium">Custom models</h2>
+			<ProviderCustomModels {providerId} onchanged={bumpCatalog} />
 		</div>
 
 		<div class="flex flex-col gap-3">

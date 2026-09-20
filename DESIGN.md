@@ -289,6 +289,13 @@ installed set.
 | The media endpoint count is stated, not linked | The count is scoped to one provider and one kind, and the endpoint screen filters by provider alone, so a link would promise a narrower list than it shows. |
 | The media provider name links to its registry entry | The card names a provider, and the registry entry is where its facts and its endpoint list live. |
 | A sidebar row may link to a parameterised route when the row fixes the parameter | A Media kind is part of the row's identity rather than something an operator picks after opening the screen, so the row can build the address; a provider id is the opposite case and stays unlinkable. |
+| Disabling lives on the catalog row and enabling lives in a second list | The merged catalog hides a disabled model, so one list cannot carry both states: a state control on the catalog could only ever read "enabled", and the disabled list is the only place a disabled model can be seen or turned back on. |
+| A write to the disabled set carries every provider's rows | `PUT /models/disabled` replaces the whole set, so a write built from this provider's slice would erase another provider's rows; the panel merges over the whole last-read set and renders the server's answer. |
+| A Disable press before the set has loaded is refused with a sentence, not a disabled button | The merge runs over the set the panel holds, so writing before the first read would send an empty set; a disabled button hides why, while the refusal names the cause and a test proves it. |
+| The last write's outcome renders in whichever list holds the affected model | The row that could not be disabled is still in the catalog and the row that was disabled is in the disabled list, so one rule puts the message beside the action that produced it, exactly once. |
+| A disabled row shows its model id rather than a display name | The catalog cannot name a row it hides, and the id is what the API stores and keys on, so the panel shows what it can prove instead of fetching a second list to decorate the row. |
+| The custom model capabilities field is free text | The API accepts any value and publishes no vocabulary, so a picker would have to invent one and a value outside it would be unreachable; the hint names the two filters the panel itself offers. |
+| The custom model removal dialog says a shadowed registry row reappears | A custom row overrides a registry row with the same pair, so removing it puts the registry's version back in the catalog, and an operator who believed the model itself was deleted would not press the button. |
 
 ---
 

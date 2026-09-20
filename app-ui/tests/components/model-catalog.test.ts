@@ -9,6 +9,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ModelCatalogList from '../../src/lib/components/ModelCatalogList.svelte';
+import { createModelDisabledStore } from '../../src/lib/stores/model-disabled.svelte';
 
 function catalogRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
 	return {
@@ -47,7 +48,15 @@ async function renderCatalog(
 	status = 200
 ): Promise<{ requested: string[]; container: HTMLElement }> {
 	const requested = stubCatalog(data, status);
-	const { container } = render(ModelCatalogList, { props: { providerId: 'openai' } });
+	// The disabled set is the page's to load, so a store that was never loaded is what this component
+	// sees here: it renders the Disable action and refuses the write, which the page-level tests cover.
+	const { container } = render(ModelCatalogList, {
+		props: {
+			providerId: 'openai',
+			disabled: createModelDisabledStore(),
+			onchanged: () => {}
+		}
+	});
 
 	await waitFor(() => {
 		if (requested.length === 0) throw new Error('the catalog was never requested');
@@ -167,7 +176,13 @@ describe('ModelCatalogList', () => {
 
 	it('reports a failure and offers a retry rather than an empty catalog', async () => {
 		const requested = stubCatalog([], 500);
-		render(ModelCatalogList, { props: { providerId: 'openai' } });
+		render(ModelCatalogList, {
+			props: {
+				providerId: 'openai',
+				disabled: createModelDisabledStore(),
+				onchanged: () => {}
+			}
+		});
 
 		expect(await screen.findByText('The model catalog could not be loaded')).toBeTruthy();
 		expect(screen.queryByText('This provider offers no models')).toBeNull();

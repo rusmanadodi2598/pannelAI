@@ -1171,19 +1171,29 @@ work: the recorded click-through against a running `app-serv` (§9.4.5), which n
 PostgreSQL, and Redis up. `app-serv` now exposes the auth and gateway-key endpoints the panel calls, so
 that run is unblocked on the panel side and U0 closes when its result is recorded.
 
-**U2 status, 2026-09-20: three of the seven U2 items are landed.** Token Saver (§6.7) shipped first: RTK
-with its twelve-filter allowlist, Headroom with the external URL and the fails-open copy, and Ponytail
-with its level, each saved as a whole-document `PUT` because that is the only write route the API has,
-with the draft helpers merging the edited group over the last document read so a save of one group cannot
-rewrite another. The deprecated `caveman` key is parsed and never rendered, per §13 item 6. Proxy Pools
-(§6.9) shipped second: the pool table, the add and edit dialog with a candidate test, the batch paste add,
-the per-row test, the delete dialog, and the outbound settings card. The Settings Network tab folded into
-that screen, so `SettingsNetworkTab.svelte` is deleted and `/settings` links to `/proxy-pools` and
-`/token-saver` rather than embedding either. Media Provider (§6.8) shipped third: one screen at six
-addresses, a card per registry provider with its configured-endpoint count, a `base_url` override, and a
-default model selector over the declared set.
+**U2 status, 2026-09-20: five of the nine capabilities the U2 row lists are landed.** Token Saver (§6.7)
+shipped first: RTK with its twelve-filter allowlist, Headroom with the external URL and the fails-open
+copy, and Ponytail with its level, each saved as a whole-document `PUT` because that is the only write
+route the API has, with the draft helpers merging the edited group over the last document read so a save
+of one group cannot rewrite another. The deprecated `caveman` key is parsed and never rendered, per §13
+item 6. Proxy Pools (§6.9) shipped second: the pool table, the add and edit dialog with a candidate test,
+the batch paste add, the per-row test, the delete dialog, and the outbound settings card. The Settings
+Network tab folded into that screen, so `SettingsNetworkTab.svelte` is deleted and `/settings` links to
+`/proxy-pools` and `/token-saver` rather than embedding either. Media Provider (§6.8) shipped third: one
+screen at six addresses, a card per registry provider with its configured-endpoint count, a `base_url`
+override, and a default model selector over the declared set. The disabled and custom model writes (§6.3)
+shipped fourth, both on the provider detail screen: a Disable action per catalog row, a list of the models
+this provider cannot route with an Enable action per row, and a custom-model table with an add form and a
+removal dialog.
 
-Four facts were settled by reading the implementation rather than the spec, and all four are recorded in
+That fourth area is where the spec and the implementation disagree, and the disagreement is recorded
+rather than papered over. §6.3 asks for "per-model enable or disable state" on the catalog, but the merged
+catalog *excludes* disabled models (`internal/service/model_catalog.go`), so a disabled model has no row
+there and a state control on that list could only ever read "enabled". The panel renders the two lists the
+API can serve: the catalog, where a row can be disabled, and a disabled list, which is the only place a
+disabled model is visible and the only place it can be turned back on (Q19).
+
+Five facts were settled by reading the implementation rather than the spec, and all five are recorded in
 §14 instead of worked around. The pool routes nothing: the egress path reads
 `settings.network.outbound_proxy_url` and nothing else, so §6.9's empty-state sentence promised
 behaviour the API does not have, and the screen states the truth (Q15). An enabled proxy with an empty
@@ -1200,7 +1210,9 @@ than something an operator picks after opening the screen. `navigation.ts` gaine
 placeholder a row's route declares is filled and no parameter is passed that the route does not declare.
 
 Still open in U2: the OAuth section on provider detail (§6.3), the combo test action (§6.4), quota budget
-caps (§6.6), and the custom model, alias, and disabled model writes (§6.3).
+caps (§6.6), and the alias table (§6.3). The alias set is the one part of §6.3's model writes that is not
+landed, and §6.4's combo delete message still cannot link to it, because the table it would link to does
+not exist yet.
 
 **U2 exit criteria, 2026-09-20: two of the four are met against a running `app-serv`, and the other two
 are not.** A live pass booted the service and the built panel and drove the panel's own `/api/v1` routes,
@@ -1387,6 +1399,17 @@ its baseline, counted before and after.
    operator can be refused for a state the panel could have predicted. Decide whether §7.10 adds the
    registry's own value beside the resolved one, which would make every case provable, or whether the
    current split is accepted as the cost of a two-field block.
+19. **§6.3's per-model enable or disable state cannot live on the catalog, because the catalog hides a
+   disabled model.** `ModelCatalogService.lookups` skips every pair in the disabled set
+   (`app-serv/internal/service/model_catalog.go`), so `GET /models/catalog` never returns a disabled row
+   and a state control on that list could only ever read "enabled". The panel renders two lists instead:
+   the catalog, where each row offers Disable, and "Models this provider cannot route", which is the only
+   place a disabled model is visible and the only place it can be turned back on. `GET /models/disabled`
+   reads every provider's pairs, so the disabled list is narrowed to the screen's provider for display
+   while the whole set is what a write carries, because `PUT /models/disabled` replaces the set for every
+   provider at once. Decide whether §6.3's catalog bullet is amended to describe the two lists the API
+   can serve, or whether the catalog gains the state some other way, which would need a route the API
+   does not have.
 
 ## 15. Evidence for numbers and paths used here
 
