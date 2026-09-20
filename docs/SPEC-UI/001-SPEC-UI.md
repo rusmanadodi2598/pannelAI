@@ -404,8 +404,17 @@ absent.
   used, resets at with a countdown, source badge.
 - **Source badge:** `computed` or `reported` (SPEC-API §7.12). The badge is functional, not decorative: it
   tells the operator whether the number came from local accounting or from the provider.
-- **Budget caps (U2):** monthly cost in USD and monthly tokens per endpoint. Saving a cap warns that the
-  router stops picking an exhausted endpoint.
+- **Budget caps (U2, landed):** a picker plus one form, keyed by endpoint rather than by window, because
+  the collection route carries no cap and reading one per endpoint to fill a column would be an N+1
+  (SPEC-API §7.12). The picker offers the endpoints the label read returned plus any endpoint the window
+  table names past that list's first page. Choosing one reads its cap, so the form is seeded with the
+  stored amounts and the fields stay read-only until that answer lands. Saving replaces both caps at once
+  and re-reads them, and the sentence under the form is that read: "no cap is stored" is stated as a rule
+  rather than as a ceiling of zero. The warning §6.6 asks for is stated where the cap is saved: an empty
+  field clears that cap, and once the month-to-date spend reaches a cap the router stops picking the
+  endpoint. The bounds and the degenerate zero-cost rule are the API's own, refused by the form before the
+  round trip. The section renders whether or not any window exists, because a cap is legal before the
+  first routed request, and an endpoint the gateway does not carry is refused with the gateway's sentence.
 - **Empty state:** "No quota windows yet. Quota tracking starts after the first routed request."
 - **Refresh:** the countdown ticks locally; the data refetches on an interval (§8.6).
 
@@ -1203,7 +1212,7 @@ work: the recorded click-through against a running `app-serv` (§9.4.5), which n
 PostgreSQL, and Redis up. `app-serv` now exposes the auth and gateway-key endpoints the panel calls, so
 that run is unblocked on the panel side and U0 closes when its result is recorded.
 
-**U2 status, 2026-09-20: seven of the nine capabilities the U2 row lists are landed.** Token Saver (§6.7)
+**U2 status, 2026-09-20: all nine capabilities the U2 row lists are landed.** Token Saver (§6.7)
 shipped first: RTK with its twelve-filter allowlist, Headroom with the external URL and the fails-open
 copy, and Ponytail with its level, each saved as a whole-document `PUT` because that is the only write
 route the API has, with the draft helpers merging the edited group over the last document read so a save
@@ -1225,7 +1234,10 @@ button and the other three flows get their reason instead. The authorize URL is 
 follow, the callback's outcome is read from this page's query and its three keys are dropped from the address
 after they are read, and a manual refresh is per account and re-reads the state it moved. The combo test
 (§6.4) shipped seventh: a confirmed one-token probe per stored reference, sequentially, with a modal result
-row for every model and fusion judge, including failed members and the gateway's own reason.
+row for every model and fusion judge, including failed members and the gateway's own reason. The quota
+budget caps (§6.6) shipped eighth and last: a per-endpoint picker, a form whose two fields are seeded from
+the stored cap, a whole-set write followed by the read that proves it, and the routing warning §6.6 asks
+for stated where the cap is saved.
 
 That fourth area is where the spec and the implementation disagree, and the disagreement is recorded
 rather than papered over. §6.3 asks for "per-model enable or disable state" on the catalog, but the merged
@@ -1259,7 +1271,7 @@ than something an operator picks after opening the screen. `navigation.ts` gaine
 `/providers/[provider_id]` stays excluded for the opposite reason, and a test asserts that every
 placeholder a row's route declares is filled and no parameter is passed that the route does not declare.
 
-Still open in U2: quota budget caps (§6.6). §6.4's combo delete refusal names where the fix lives instead
+Nothing in U2 is still open on the panel side. §6.4's combo delete refusal names where the fix lives instead
 of linking to it, because the alias set is global and the only screen it has takes a provider id (Q20).
 
 **U2 exit criteria, 2026-09-20: two of the four are met against a running `app-serv`, and the other two
@@ -1273,10 +1285,15 @@ re-read. "OAuth round trip from the panel" and "an image generation request rout
 provider" stay open, and now for a different reason than when the pass ran: both screens exist, so what is
 missing is the evidence rather than the surface. The OAuth round trip additionally needs a provider account
 the pass does not have, since the registry marks one provider (`xai`) as `has_oauth`, and that provider
-reports the `device` flow, so no provider currently offers the start path at all (Q23). One limit is recorded
-rather than glossed: the panel is client-rendered (`ssr = false`), so the pass proves the wire contract and
-not the rendered output, and a browser click-through of both screens is still outstanding. The database was
-returned to its baseline, counted before and after.
+reports the `device` flow, so no provider currently offers the start path at all (Q23). The quota budget
+caps landed after that pass, so they were checked in a separate one: a driver logged in, created an
+endpoint, and drove the cap routes while parsing every response through the panel's own schemas, 23 checks
+with 0 failures, covering the null cap, both amounts written and read back, the form's round trip, an
+omitted field clearing one cap while the other survived, an empty body answering a cap object with no
+amounts, and four refusals including `404 upstream endpoint not found`. The database was returned to its
+baseline, counted before and after. One limit is recorded rather than glossed: the panel is client-rendered
+(`ssr = false`), so the pass proves the wire contract and not the rendered output, and a browser
+click-through of both screens is still outstanding.
 
 ## 13. Locked decisions
 
@@ -1504,6 +1521,16 @@ returned to its baseline, counted before and after.
    points at something the registry does not carry. Decide whether the registry gains an `authorize_url` for
    xai (or another provider gains `has_oauth`), whether `flowKind` distinguishes a refresh-only block from a
    device flow, or whether the start path stays dormant by design and §6.3 records it as such.
+24. **The cap form accepts a narrower spelling than the API's parser does, and the two are not the same
+   rule.** `PUT /quotas/{endpoint_id}` takes the cost as a string and parses it with
+   `big.Rat.SetString` (`app-serv/internal/domain/decimal.go`), which accepts forms a budget field should
+   not: `1e9` parses as a billion, and `1/2` as half a dollar. The panel's form accepts a plain decimal
+   only (`/^\d+(\.\d+)?$/`), so a value the API would take is refused in the panel, and the two disagree
+   about what a legal amount looks like. The read is unaffected in practice: the API prints a stored amount
+   through `Decimal.String()` with eight places, so whatever spelling was written comes back as a plain
+   decimal the panel parses. Decide whether SPEC-API narrows the wire to a decimal grammar (which would
+   make the panel's rule a copy rather than a stricter one), or whether the panel should accept the
+   parser's full grammar and display whatever it is given.
 
 ## 15. Evidence for numbers and paths used here
 

@@ -317,6 +317,15 @@ installed set.
 | A fusion judge is labeled separately and appears last | The judge is part of the probe chain but is not one of the combo's model references, so the role and stored order must remain visible. |
 | The test dialog can close while probes run, but cannot cancel them | The API runs the sequential loop without a cancellation contract, so a disabled close would trap the operator while a fake cancel would claim work stopped. |
 | Each modal gets its own title id | The combo screen can render a test dialog beside a delete dialog, and one fixed id would give a screen reader the first dialog's heading for both. |
+| The budget cap is a picker plus one form, not a column on the window table | The collection route carries no cap, so a cap column would be one read per endpoint, and a cap belongs to an endpoint rather than to a window row. |
+| The cap section renders whether or not any window exists | A cap is legal before the first routed request, which is exactly when an operator sets a first budget; gating it on traffic would hide it then. |
+| Both cap fields stay read-only until the stored cap has been read | A field typed into before the answer lands is overwritten by it, and a save would then replace a cap the operator could not see. |
+| The read-back says no cap is stored rather than a ceiling of zero | No cap and a cap of zero are opposite routing rules, so printing zero would state the one that stops the router picking the endpoint. |
+| The form states that a blank field clears that cap | The route replaces the whole cap set, so a blank field is not "leave it alone"; an operator who read it that way would clear a budget without being told. |
+| The routing warning sits where the cap is saved | A cap changes routing rather than reporting it, and the commit happens in this form, so the consequence belongs beside the button that causes it. |
+| The zero-cost-alone rule and the bounds are mirrored from the API, with the messages computed from the bounds | The form refuses what the API refuses, one step earlier, and computing the message from the bound keeps the copy from drifting from the rule. |
+| The sentence under the form reports the read that follows a save, not the draft | The write replaces the set, so only a read shows what is stored; a sentence built from the draft would report what was sent instead. |
+| The cost field accepts a narrower spelling than the API's parser | The parser takes `1e9` and `1/2`, which a budget field should not accept, so the panel is deliberately the stricter of the two and §14 Q24 records the divergence. |
 
 ---
 

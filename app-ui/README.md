@@ -6,11 +6,14 @@ API in `app-serv` and never touches PostgreSQL or Redis.
 Spec of record: [`docs/SPEC-UI/001-SPEC-UI.md`](../docs/SPEC-UI/001-SPEC-UI.md).
 API contract: [`docs/SPEC-API/001-SPEC-API.md`](../docs/SPEC-API/001-SPEC-API.md).
 
-Status: **U2 in progress**, verified locally. Screens built: `/login`, `/endpoint-keys`, `/settings`,
-`/providers` and `/providers/[provider_id]`, `/combos`, `/usage`, `/quota`, `/logs`, `/console-log`,
-`/changelog`, `/media-providers/[kind]`, `/proxy-pools`, and `/token-saver`. The shell is complete: a
-themed sidebar with five groups and 19 owner rows, responsive across phone, tablet, and desktop. Every
-other screen is marked Planned in the sidebar, because a navigation item without a route is a defect.
+Status: **U2 capabilities complete**, verified locally. Screens built: `/login`, `/endpoint-keys`,
+`/settings`, `/providers` and `/providers/[provider_id]`, `/combos`, `/usage`, `/quota`, `/logs`,
+`/console-log`, `/changelog`, `/media-providers/[kind]`, `/proxy-pools`, and `/token-saver`. The shell is
+complete: a themed sidebar with five groups and 19 owner rows, responsive across phone, tablet, and
+desktop. Every other screen is marked Planned in the sidebar, because a navigation item without a route is
+a defect. All nine capabilities the U2 row of SPEC-UI §12 lists are landed; two of that row's four exit
+criteria are verified against a running `app-serv`, and the remaining two need a provider account and a
+browser click-through rather than unbuilt work (§12 records both).
 
 ## Requirements
 
@@ -100,12 +103,57 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Eight passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Nine passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
 day. The sixth is the alias set, measured the same day. The seventh is the OAuth section, measured the
-same day. The eighth is the combo test action, measured the same day.
+same day. The eighth is the combo test action, measured the same day. The ninth is the quota budget caps,
+measured the same day, and it closes U2 on the panel side.
+
+### Quota budget caps, 2026-09-20
+
+Run with Bun 1.3.14. This pass covers the budget-cap section of `/quota` (SPEC-UI §6.6): the per-endpoint
+picker, the read of the stored cap, the whole-set write, and the read-back that follows it.
+
+| Check             | Result                                                                                                                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                                  |
+| `bun run test`    | 1775 tests passed across 72 files, including 61 new quota-cap tests across 2 files                                                                                                                    |
+| `bun run lint`    | Prettier reports every file conforms                                                                                                                                                                  |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                        |
+| `bun run build`   | succeeds, output in `build/`                                                                                                                                                                          |
+| Live wire pass    | 23 checks, 0 failures, against a booted `app-serv`; every response parsed through the panel's own schemas                                                                                             |
+| File size         | largest changed source is 203 lines (`QuotaCaps.svelte`); `quota.ts` crossed the 220 warning line while the cap half lived in it, so the half was split into `quota-cap.ts` and both are now under it |
+| Text hygiene      | 0 em dashes; the only emoji in `src` and `tests` is one test vector proving the sanitizer refuses one                                                                                                 |
+
+What the section does, and where it states a limit rather than hiding one:
+
+| Area               | Behaviour                                                                                                                                                                                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Who can be capped  | The picker offers every endpoint the label read returned, plus any endpoint the window table names past that read's first page. A cap is legal before the first routed request, so the section renders whether or not a window exists, and it is the one part of the screen that is useful on an empty gateway. |
+| What a save means  | The write replaces the whole cap set, so an empty field clears that cap and the form says so. The routing warning §6.6 asks for is stated where the cap is saved: once the month-to-date spend reaches a cap, the router stops picking the endpoint.                                                            |
+| What is on screen  | Choosing an endpoint reads its cap and seeds both fields from the answer, so a save replaces what the gateway holds rather than a value the operator could not see. After a save the panel reads the cap again, and the sentence under the form is that read.                                                   |
+| No cap versus zero | "No cap is stored for this endpoint" is a rule, not a ceiling of zero, and the sentence says which. A cost cap of zero with no token cap beside it is refused by the form before any request, because the API refuses it too.                                                                                   |
+| Bounds             | Non-negative, at most 1,000,000,000 USD and 1,000,000,000,000 tokens, with the messages computed from the bounds themselves so the copy cannot drift from the rule.                                                                                                                                             |
+| A refused endpoint | An endpoint the gateway does not carry is refused with the gateway's own sentence (`upstream endpoint not found`), and the panel shows it rather than inventing one.                                                                                                                                            |
+| Read before write  | Both fields stay read-only until the stored cap has been read. The tests found the two defects that come from skipping this: a field the operator could type into was overwritten by the answer when it landed, and the summary claimed "no cap is stored" before any answer had arrived.                       |
+
+Two shapes are recorded rather than smoothed over. The API's cost parser accepts more spellings than the
+form does (`1e9` and `1/2` both parse there), so the panel is deliberately the stricter of the two; §14 Q24
+records it. And the collection route carries no cap, so a cap column on the window table would be an N+1
+read; the caps live in their own section instead.
+
+Not yet verified: the rendered half in a browser. The wire half was verified against a running `app-serv`:
+a throwaway driver logged in, created an endpoint, and drove the cap routes while parsing every response
+through the panel's own schema modules. 23 checks, 0 failures. It proved the read of an endpoint with
+nothing stored (`cap: null`), both caps written and read back with the amount printed as an 8-place
+decimal, the form's own round trip, an omitted field clearing that cap while the other survived, an empty
+body answering a cap object with no amounts rather than a null, the panel's sentence reading that as "no
+cap is stored", and four refusals (a zero cost alone, a cost and a token cap past their ceilings, and an
+endpoint the gateway does not carry, which answers `404 upstream endpoint not found`). The database was
+returned to its baseline, counted before and after; the endpoint's `quota_caps` row needed an explicit
+delete, because removing an endpoint does not cascade it.
 
 ### Combo test action, 2026-09-20
 

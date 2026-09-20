@@ -12,6 +12,9 @@
 // The window's counter has no unit on the wire. app-serv's aggregate is `Add(units int64)` and the DTO
 // says `used`, so the panel renders the number without naming a unit it would be inventing; §14 Q15
 // records the gap.
+//
+// The budget cap that shares this section is in `quota-cap.ts`: it belongs to an endpoint rather than to a
+// window, and its form carries rules this read shape has no opinion about.
 
 import { z } from 'zod';
 import { nullableList, optionalTimestamp } from './primitives';

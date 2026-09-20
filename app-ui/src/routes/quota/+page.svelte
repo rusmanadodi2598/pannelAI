@@ -11,6 +11,7 @@
 	// and says why.
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
+	import QuotaCaps from '$lib/components/QuotaCaps.svelte';
 	import QuotaTable from '$lib/components/QuotaTable.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listEndpointLabels } from '$lib/api/endpoints';
@@ -36,6 +37,11 @@
 	let now = $state(Date.now());
 	let lastLoadedAt = $state(0);
 	let readAt = $state('');
+
+	// Every endpoint the window table names, so the cap picker can offer one the label list's first page
+	// does not cover. A cap belongs to an endpoint, and the window table is the other place the screen
+	// learns one exists.
+	const windowEndpointIds = $derived(windows.map((window) => window.endpoint_id));
 
 	onMount(() => {
 		const timer = setInterval(tick, TICK_MS);
@@ -171,4 +177,15 @@
 
 		<QuotaTable {windows} {labels} {now} />
 	{/if}
+
+	<!-- Outside the branch above: a cap is legal before the first routed request, so this section is the
+	     one part of the screen that is useful on a gateway whose windows are all still empty. -->
+	<div class="flex flex-col gap-3">
+		<h2 class="text-base font-medium">Budget caps</h2>
+		<p class="text-sm text-[var(--color-text-muted)]">
+			A monthly ceiling per endpoint, in USD or in tokens. The gateway checks it before every routed
+			request.
+		</p>
+		<QuotaCaps {labels} {windowEndpointIds} labelsUnread={labelNotice !== null} />
+	</div>
 </section>
