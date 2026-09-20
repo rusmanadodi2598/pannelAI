@@ -11,23 +11,9 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SettingsPage from '../../src/routes/settings/+page.svelte';
+import { settingsDocument } from '../support/settings-document';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
-
-function settingsDocument(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-	return {
-		security: { require_login: true, require_api_key: true },
-		routing: { combo_strategy: 'fallback', combo_sticky_limit: 1, sticky_limit: 3 },
-		network: { outbound_proxy_enabled: false, outbound_proxy_url: '', outbound_no_proxy: '' },
-		logging: {
-			request_capture_enabled: false,
-			retention_days: 7,
-			capture_body_max_bytes: 65536,
-			observability_max_records: 1000
-		},
-		...overrides
-	};
-}
 
 type Stub = {
 	patches: Record<string, unknown>[];
@@ -187,26 +173,31 @@ describe('SettingsPage', () => {
 		expect(screen.getByText(/can include sensitive content/i)).toBeTruthy();
 	});
 
-	it('sends only the network group when the Network tab saves', async () => {
+	it('links the Network tab to Proxy Pools instead of repeating the outbound form', async () => {
+		// §6.13 gives this tab a link, not a second editor: one configuration with two editors is how
+		// the two drift. The link is real because the route exists, which R-24 requires.
 		const stub = stubSettings();
 		render(SettingsPage);
 		await openTab('Network');
 
-		await fireEvent.input(screen.getByLabelText('Outbound proxy URL'), {
-			target: { value: 'http://proxy.internal:8080' }
-		});
-		await fireEvent.click(screen.getByRole('button', { name: 'Save network settings' }));
+		const link = screen.getByRole('link', { name: 'Open Proxy Pools' });
+		expect(link.getAttribute('href')).toBe('/proxy-pools');
+		expect(screen.queryByLabelText('Outbound proxy URL')).toBeNull();
 
-		await waitFor(() => {
-			expect(stub.patches.length).toBe(1);
-		});
+		// Nothing is written from this tab any more, so a click here must not produce a PATCH.
+		await fireEvent.click(link);
+		expect(stub.patches).toEqual([]);
+	});
 
-		expect(Object.keys(stub.patches[0])).toEqual(['network']);
-		expect(stub.patches[0].network).toEqual({
-			outbound_proxy_enabled: false,
-			outbound_proxy_url: 'http://proxy.internal:8080',
-			outbound_no_proxy: ''
-		});
+	it('links the Token Saver tab to its own screen instead of repeating the form', async () => {
+		stubSettings();
+		render(SettingsPage);
+		await openTab('Token Saver');
+
+		expect(screen.getByRole('link', { name: 'Open Token Saver' }).getAttribute('href')).toBe(
+			'/token-saver'
+		);
+		expect(screen.queryByRole('button', { name: 'Save RTK' })).toBeNull();
 	});
 
 	it('shows the server message when a save is refused, and keeps the draft', async () => {

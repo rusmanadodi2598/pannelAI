@@ -96,7 +96,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		label: 'System',
 		reason: 'Answers how the panel itself behaves: outbound routing and panel configuration.',
 		items: [
-			{ key: 'proxies', label: 'Proxy Pools', planned: true },
+			{ key: 'proxies', label: 'Proxy Pools', href: '/proxy-pools' },
 			{ key: 'settings', label: 'Setting', href: '/settings' }
 		]
 	}

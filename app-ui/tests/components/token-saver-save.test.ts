@@ -8,7 +8,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import TokenSaverPage from '../../src/routes/token-saver/+page.svelte';
-import { checked, stubTokenSaver, text, tokenSaverDocument } from '../support/token-saver-stub';
+import { checked, text } from '../support/dom';
+import { stubTokenSaver, tokenSaverDocument } from '../support/token-saver-stub';
 
 async function loaded(): Promise<void> {
 	await screen.findByRole('heading', { name: 'RTK' });

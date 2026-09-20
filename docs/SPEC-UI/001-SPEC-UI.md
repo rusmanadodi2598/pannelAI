@@ -1171,6 +1171,30 @@ work: the recorded click-through against a running `app-serv` (§9.4.5), which n
 PostgreSQL, and Redis up. `app-serv` now exposes the auth and gateway-key endpoints the panel calls, so
 that run is unblocked on the panel side and U0 closes when its result is recorded.
 
+**U2 status, 2026-09-20: two of the seven U2 items are landed, and neither carries its exit run yet.**
+Token Saver (§6.7) shipped first: RTK with its twelve-filter allowlist, Headroom with the external URL
+and the fails-open copy, and Ponytail with its level, each saved as a whole-document `PUT` because that
+is the only write route the API has, with the draft helpers merging the edited group over the last
+document read so a save of one group cannot rewrite another. The deprecated `caveman` key is parsed and
+never rendered, per §13 item 6. Proxy Pools (§6.9) shipped second: the pool table, the add and edit
+dialog with a candidate test, the batch paste add, the per-row test, the delete dialog, and the outbound
+settings card. The Settings Network tab folded into that screen, so `SettingsNetworkTab.svelte` is
+deleted and `/settings` links to `/proxy-pools` and `/token-saver` rather than embedding either.
+
+Two facts were settled by reading the implementation rather than the spec, and both are recorded in §14
+instead of worked around. The pool routes nothing: the egress path reads
+`settings.network.outbound_proxy_url` and nothing else, so §6.9's empty-state sentence promised
+behaviour the API does not have, and the screen states the truth (Q15). An enabled proxy with an empty
+URL dials direct, which is the bypass §7.11 says the setting exists to prevent, so the panel refuses to
+write that combination and names it when a stored document already holds it (Q16).
+
+Still open in U2: the OAuth section on provider detail (§6.3), the combo test action (§6.4), the media
+provider screens (§6.8), quota budget caps (§6.6), and the custom model, alias, and disabled model
+writes (§6.3). All four U2 exit criteria are verification runs against a live `app-serv` rather than
+unbuilt work, the same position the U0 click-through is in: the panel side of the token saver save and
+of the proxy test both exist and are covered against a stateful stub, and neither has been exercised
+against the service.
+
 ## 13. Locked decisions
 
 1. The panel consumes `/api/v1` with a session cookie and never touches PostgreSQL or Redis (SPEC-API §11.5).
@@ -1289,6 +1313,40 @@ that run is unblocked on the panel side and U0 closes when its result is recorde
    else, so the panel cannot send a search term and §6.3's own pagination discipline forbids filtering the
    registry in the browser. The list therefore ships with the category filter alone. Decide whether
    SPEC-API adds `?q` (the shape `/models/catalog` already uses) or §6.3 drops the requirement.
+14. **The RFC3339 check is looser than §7.2 says, and it is one primitive away from every screen.** §7.2
+   lists timestamps as "RFC3339 only", and `src/lib/schemas/primitives.ts` implements `rfc3339Timestamp`
+   as `!Number.isNaN(Date.parse(value))`. `Date.parse` accepts strings RFC3339 does not allow, for
+   instance `19 September 2026`, so a timestamp the API should never send still parses. The consequence is
+   bounded: the panel renders a correct time or fails on a value no parser can read, and the drift is
+   caught later than §7.4.3 intends rather than shown wrongly. Found while writing the proxy pool
+   contract, and deliberately not fixed there: `rfc3339Timestamp` is composed into every response schema
+   in the panel, so tightening it is a change across unrelated screens rather than a fix in one. Decide
+   whether the primitive gains a real RFC3339 pattern, with every schema re-checked in one pass, or §7.2
+   accepts `Date.parse` as the panel's reading of "RFC3339 only".
+15. **The pool's empty state promises routing the API does not do.** §6.9 gives the empty state as "No
+   proxies yet. Add one to route upstream calls through it.", while the same section's outbound bullet
+   says the global `network.outbound_proxy_*` settings are what this screen edits. SPEC-API §7.11
+   settles which of the two carries traffic: the outbound URL does, per-endpoint binding is deferred, and
+   a pool row is a stored candidate. Checked against the implementation rather than inferred: the egress
+   path reads `settings.network.outbound_proxy_url` and nothing else
+   (`app-serv/cmd/app-serv/egress_wiring.go`), and the pool repository is read by the proxy CRUD service
+   alone. The screen therefore ships "No proxies yet" with "Add one to keep and test an address before
+   you point the outbound setting at it.", states the same fact on the outbound card, and says in the
+   page header that the pool routes nothing. Decide whether §6.9's sentence is corrected, or whether a
+   later phase makes a pool row routable and the original sentence becomes true.
+16. **An enabled proxy with no URL dials direct, which is the bypass §7.11 says the setting exists to
+   prevent.** SPEC-API §7.11 states the intent plainly: "a settings read or a proxy URL that fails
+   refuses the call rather than dialing direct, since quietly bypassing a proxy the operator enabled is
+   the failure this setting exists to prevent." The implementation covers the failing read and the
+   unparseable URL, and not the empty one: `proxyRoute` returns `nil, nil` when
+   `outbound_proxy_enabled` is true and `outbound_proxy_url` is empty
+   (`app-serv/cmd/app-serv/egress_wiring.go`), so the call goes direct while the setting reads as
+   proxied. Nothing in `domain.Settings.Validate()` or `NetworkSettingsPatch` rejects the combination
+   either, so the API stores it. The panel refuses to write it (a cross-field rule in
+   `src/lib/schemas/settings.ts`, with a message naming both ways out) and states it when a document
+   already holds it, because the panel cannot prevent a state it did not write. Decide whether
+   `proxyRoute` refuses an empty URL when proxying is enabled, or §7.11 records the empty value as
+   "off" and the panel's rule is dropped.
 
 ## 15. Evidence for numbers and paths used here
 

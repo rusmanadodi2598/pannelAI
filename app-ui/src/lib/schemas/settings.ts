@@ -85,11 +85,23 @@ export const schemaRoutingSettingsForm = z.strictObject({
 
 export type RoutingSettingsForm = z.infer<typeof schemaRoutingSettingsForm>;
 
-export const schemaNetworkSettingsForm = z.strictObject({
-	outbound_proxy_enabled: z.boolean(),
-	outbound_proxy_url: optionalAbsoluteUrl,
-	outbound_no_proxy: noProxyList
-});
+// The one cross-field rule in the settings surface: proxying on with no URL. The API accepts that
+// state, and the egress path then dials direct, which is the quiet bypass SPEC-API §7.11 says the
+// setting exists to prevent. The panel refuses to save it rather than mirroring the API into a trap,
+// and the message names both ways out.
+//
+// The *response* schema above deliberately carries no such rule, because a document stored that way
+// still has to parse: the screen states it rather than rejecting the read.
+export const schemaNetworkSettingsForm = z
+	.strictObject({
+		outbound_proxy_enabled: z.boolean(),
+		outbound_proxy_url: optionalAbsoluteUrl,
+		outbound_no_proxy: noProxyList
+	})
+	.refine((form) => !form.outbound_proxy_enabled || form.outbound_proxy_url !== '', {
+		message: 'A URL is required when proxying is on. Set one, or turn the switch off to go direct.',
+		path: ['outbound_proxy_url']
+	});
 
 export type NetworkSettingsForm = z.infer<typeof schemaNetworkSettingsForm>;
 

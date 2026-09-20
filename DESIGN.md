@@ -274,6 +274,15 @@ installed set.
 | Two radius values plus a dialog value | Radius is a hierarchy tool; a single value everywhere erases the difference between an input and a panel. |
 | Sidebar groups named by operator intent | A flat list of fifteen items is a list, not a structure. |
 | Expanded sidebar width set to 264px in the primitive layer's constants | §8 fixes 264px and the component layer ships 256px, so this is the one primitive edit SPEC-UI §10.7 permits, it is recorded here as that rule requires, and it is re-applied after a regeneration rather than assumed to survive one. The 64px icon rail already matches and is untouched. |
+| Three savers share one section shell | Three groups of equal weight should read as siblings, not as three unrelated forms that happen to sit on one page. |
+| The per-request bypass is copyable text, not a disabled control | A control that cannot act is a dead control under R-26; text the operator can copy into a client is a real function. |
+| The native token saver engine is a Planned note, not a greyed toggle | A disabled toggle promises a capability the repository does not have yet, which is the claim R-36 rules out. |
+| Pool test result sits in the row, with "Not tested" kept distinct from a failure | The operator's question is which row is broken, and a row nobody has tested is not a broken row. |
+| The password cell reads "Set" or "Not set" | The API returns `has_password` and never the secret, so presence is the only thing the cell can honestly report; a blank cell would read as no password. |
+| Batch add shows the parse before any write | A pasted list is where the input goes wrong, so the operator sees what the panel understood before a single request is sent. |
+| Network settings live on the Proxy Pools screen, and `/settings` links there | They are proxy settings, and a second copy under Settings is the duplication the owner's KEEP list removes. |
+| The outbound card states that its scope is global | A control sitting beside a pool table reads as per-row routing, which the egress path does not implement. |
+| The delete dialog names the object and says it does not reroute traffic | The dangerous assumption is that removing a row changes routing; naming both the object and the non-effect is what makes the confirm safe to press. |
 
 ---
 

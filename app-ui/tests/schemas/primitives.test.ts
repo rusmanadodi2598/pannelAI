@@ -111,13 +111,35 @@ describe('proxyHost', () => {
 				ok: true
 			},
 			{ name: 'a host at the 253 character limit', input: `${'h'.repeat(249)}.com`, ok: true },
+			{ name: 'an IPv4 literal', input: '10.0.0.7', ok: true },
+			// The bracketed form is what the API can use, because it builds `host:port` itself.
+			{ name: 'a bracketed IPv6 literal', input: '[2001:db8::1]', ok: true },
+			{ name: 'the bracketed loopback', input: '[::1]', ok: true },
 			{ name: 'a host with a scheme', input: 'http://proxy.example.com', ok: false },
 			{ name: 'a host with a port', input: 'proxy.example.com:8080', ok: false },
 			{ name: 'an empty value', input: '', ok: false },
-			{ name: 'a host past the limit', input: `${'h'.repeat(250)}.com`, ok: false }
+			{ name: 'a host past the limit', input: `${'h'.repeat(250)}.com`, ok: false },
+			{ name: 'a bare IPv6 literal, which needs brackets', input: '2001:db8::1', ok: false },
+			{ name: 'a bare loopback', input: '::1', ok: false },
+			{ name: 'a bracketed literal with a port', input: '[::1]:8080', ok: false }
 		],
 		proxyHost
 	);
+
+	it('names the brackets in the message for a bare IPv6 literal', () => {
+		// The two colon cases read differently to an operator, so they say different things: a
+		// `host:port` is a host field carrying a port, and a bare literal is a spelling the API
+		// cannot use. A single message for both would leave one of them unexplained.
+		const bare = proxyHost.safeParse('::1');
+		const withPort = proxyHost.safeParse('proxy.example.com:8080');
+
+		expect(bare.success ? '' : bare.error.issues[0]?.message).toBe(
+			'Write an IPv6 address in square brackets, for example [::1].'
+		);
+		expect(withPort.success ? '' : withPort.error.issues[0]?.message).toBe(
+			'Enter a host only, with no scheme, path, or port.'
+		);
+	});
 });
 
 describe('proxyPort', () => {

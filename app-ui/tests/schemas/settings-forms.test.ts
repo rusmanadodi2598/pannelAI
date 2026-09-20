@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { forEachCase } from '../support/tables';
 import {
 	schemaLoggingSettingsForm,
+	schemaNetworkSettings,
 	schemaNetworkSettingsForm,
 	schemaRoutingSettingsForm,
 	settingsGroupDirty
@@ -80,6 +81,22 @@ describe('schemaNetworkSettingsForm', () => {
 			input: { ...valid, outbound_proxy_url: 'socks5://proxy.internal:1080' },
 			ok: false
 		},
+		{
+			name: 'accepts an enabled proxy that has a URL',
+			input: {
+				...valid,
+				outbound_proxy_enabled: true,
+				outbound_proxy_url: 'http://p.internal:8080'
+			},
+			ok: true
+		},
+		{
+			// The API stores this combination happily, and the egress path then dials direct, which is
+			// the quiet bypass SPEC-API §7.11 says the setting exists to prevent.
+			name: 'rejects an enabled proxy with no URL',
+			input: { ...valid, outbound_proxy_enabled: true, outbound_proxy_url: '' },
+			ok: false
+		},
 		{ name: 'rejects an unknown key', input: { ...valid, extra: true }, ok: false }
 	];
 
@@ -87,6 +104,30 @@ describe('schemaNetworkSettingsForm', () => {
 		expect(schemaNetworkSettingsForm.safeParse(testCase.input).success, testCase.name).toBe(
 			testCase.ok
 		);
+	});
+
+	it('names both ways out of an enabled proxy with no URL', () => {
+		const parsed = schemaNetworkSettingsForm.safeParse({
+			...valid,
+			outbound_proxy_enabled: true,
+			outbound_proxy_url: ''
+		});
+
+		expect(parsed.success ? '' : parsed.error.issues[0]?.message).toBe(
+			'A URL is required when proxying is on. Set one, or turn the switch off to go direct.'
+		);
+	});
+
+	it('still parses that combination on the response side, because a stored document must read', () => {
+		// The form rule is a refusal to write, not a refusal to read. A document the API accepted has to
+		// render, and the screen states the problem rather than failing the load.
+		expect(
+			schemaNetworkSettings.safeParse({
+				outbound_proxy_enabled: true,
+				outbound_proxy_url: '',
+				outbound_no_proxy: ''
+			}).success
+		).toBe(true);
 	});
 });
 

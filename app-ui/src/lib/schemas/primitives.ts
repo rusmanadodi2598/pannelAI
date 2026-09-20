@@ -49,12 +49,30 @@ export const secretValue = z
 	.refine((value) => value.length >= 8, { message: 'That value looks too short.' })
 	.refine((value) => value.length <= 4096, { message: 'Use 4096 characters or fewer.' });
 
+// A bracketed IPv6 literal, and the reason the brackets are required: app-serv builds the proxy URL
+// as `host + ":" + strconv.Itoa(port)`, so a bare `::1` would produce an address it cannot parse.
+// `new URL` hands the batch parser the bracketed form already, so this is the spelling both paths
+// produce. SPEC-UI §7.2 asks for "valid hostname or IPv4 or IPv6 literal".
+const BRACKETED_IPV6 = /^\[[0-9a-f:.]+\]$/;
+
+function colonCount(value: string): number {
+	return value.split(':').length - 1;
+}
+
 export const proxyHost = z
 	.string()
 	.transform(normalizeHost)
 	.refine((value) => value.length > 0, { message: 'A host is required.' })
 	.refine((value) => value.length <= 253, { message: 'Use 253 characters or fewer.' })
-	.refine((value) => !/[/\s:]/.test(value), {
+	.refine((value) => !/[/\s]/.test(value), {
+		message: 'Enter a host only, with no scheme, path, or port.'
+	})
+	// More than one colon is an IPv6 literal written without brackets, which gets its own message so
+	// the fix is stated. A single colon is the host:port case below.
+	.refine((value) => BRACKETED_IPV6.test(value) || colonCount(value) <= 1, {
+		message: 'Write an IPv6 address in square brackets, for example [::1].'
+	})
+	.refine((value) => colonCount(value) !== 1, {
 		message: 'Enter a host only, with no scheme, path, or port.'
 	});
 

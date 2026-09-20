@@ -99,8 +99,41 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Two passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the shell
-and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per element.
+Three passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
+element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20.
+
+### Token Saver and Proxy Pools, 2026-09-20
+
+Run with Bun 1.3.14. This pass covers the two U2 screens that are landed, `/token-saver` (SPEC-UI §6.7)
+and `/proxy-pools` (§6.9), and the fold of the Settings Network tab into the proxy screen.
+
+| Check             | Result                                                                                                                            |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                              |
+| `bun run test`    | 1307 tests passed across 52 files (was 396 across 13)                                                                             |
+| `bun run lint`    | Prettier reports every file conforms                                                                                              |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                    |
+| `bun run build`   | succeeds, output in `build/`                                                                                                      |
+| File size         | largest source file is 218 lines, under the 220 warning line; test files run to 582 in this repository, so the source limit binds |
+| Text hygiene      | 0 em dashes and 0 emoji across `src` and `tests`                                                                                  |
+
+What each screen does, and the two places it states a limit rather than hiding one:
+
+| Screen         | Behaviour                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/token-saver` | RTK with its twelve-filter allowlist, Headroom with the external URL and the fails-open copy, Ponytail with its level. Each group saves as a whole-document `PUT`, because that is the only write route the API has, and the draft helpers merge the edited group over the last document read, so saving RTK cannot rewrite Headroom and an invalid value in one group does not block another. A filter name the panel has no checkbox for is kept and named rather than dropped on save. The deprecated `caveman` key is parsed and never rendered. |
+| `/proxy-pools` | The pool table with its nine columns, the add and edit dialog with a candidate test before saving, the batch paste add with a per-row outcome, the per-row test, the delete dialog, and the outbound settings card. The page re-reads the pool after every write, so a row's state is the server's answer rather than the panel's assumption.                                                                                                                                                                                                        |
+
+Two facts about the proxy path were settled by reading `app-serv`, and the screen states both instead of
+implying otherwise. The pool routes nothing: the egress path reads `settings.network.outbound_proxy_url`
+and nothing else, so a stored pool row is a candidate rather than a live route, and the page header says
+so. An enabled proxy with an empty URL dials direct, so the panel refuses to write that combination and
+names it when a stored document already holds it. Both are recorded as SPEC-UI §14 Q15 and Q16.
+
+Not yet verified: every write on both screens against a running `app-serv`. The tests exercise the panel
+against a stateful stub that applies writes and returns the API's error shapes, which covers the panel's
+half of the contract and not the service's.
 
 ### Shell and sidebar, 2026-09-18
 

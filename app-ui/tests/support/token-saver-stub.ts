@@ -4,8 +4,7 @@
 // load broke" from "the save broke". The stub records every PUT body, because the rules worth checking
 // here are about what the panel sent, not only about what it rendered.
 //
-// The panel's tests run on plain Vitest assertions, without a jest-dom matcher layer, so a control's
-// state is read through the element rather than through a custom matcher.
+// Reading a control's state is `tests/support/dom.ts`, which the component tests share.
 
 import { vi } from 'vitest';
 
@@ -72,16 +71,4 @@ export function stubTokenSaver(overrides: Partial<TokenSaverStub> = {}): TokenSa
 	});
 
 	return stub;
-}
-
-export function checked(element: HTMLElement): boolean {
-	return (element as HTMLInputElement).checked;
-}
-
-export function value(element: HTMLElement): string {
-	return (element as HTMLInputElement | HTMLSelectElement).value;
-}
-
-export function text(element: HTMLElement): string {
-	return element.textContent ?? '';
 }
