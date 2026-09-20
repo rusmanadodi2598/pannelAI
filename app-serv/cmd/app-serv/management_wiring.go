@@ -145,8 +145,10 @@ func buildManagement(
 	}
 
 	// The usage, quota, and log services read the same repositories, so they are
-	// built together (see observability_wiring.go).
-	usageSvc, quotaSvc, logSvc, err := buildObservability(usageRepo, quotaRepo, logRepo, settingsSvc, client)
+	// built together (see observability_wiring.go). The endpoint repository
+	// rides along because the quota service refuses a cap for an endpoint that
+	// is not configured (draft 005 F2).
+	usageSvc, quotaSvc, logSvc, err := buildObservability(usageRepo, quotaRepo, endpointRepo, logRepo, settingsSvc, client)
 	if err != nil {
 		return managementDeps{}, err
 	}
@@ -176,7 +178,7 @@ func buildManagement(
 		Config: cfg, Index: runtimeIndex, Endpoints: endpointRepo, Combos: comboRepo,
 		ComboOrder: comboSvc, Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
 		Client: egress.Client, Redis: client, Settings: settingsSvc, Usage: usageSvc, Vision: augmenter,
-		Logs: logSvc, MediaOverrides: mediaSvc, MediaIndex: runtimeIndex,
+		Logs: logSvc, MediaOverrides: mediaSvc, MediaIndex: runtimeIndex, Quotas: quotaSvc,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: data plane: %w", err)

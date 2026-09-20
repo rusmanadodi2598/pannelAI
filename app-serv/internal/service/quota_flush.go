@@ -1,34 +1,21 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush.go
-// @for       The bounded worker that drains Redis quota counters into
+// @for       The quota flush worker's lifecycle: one bounded goroutine, a
 //
-//	PostgreSQL, with its stated retry and dead-letter policy.
+//	single-flight guard, and the composition-root entry point.
 //
-// @uses      internal/domain, internal/repository, log/slog, runtime/debug, sync, time.
-// @reason    AGENTS.md §1.6 requires every worker to recover from panic, to have
+// @uses      internal/domain, internal/repository, log/slog, runtime/debug,
 //
-//	an explicit termination condition, and to state its retry and
-//	dead-letter behaviour. This is the only long-lived goroutine in the
-//	usage vertical, so both properties and both policies are documented
-//	here rather than implied by the loop.
+//	sync, sync/atomic, time.
 //
-// RETRY POLICY
+// @reason    AGENTS.md §1.6 requires every worker to recover from panic and to
 //
-//	A failed flush is retried on the worker's next tick with the same batch.
-//	There is no in-worker retry loop: the tick is the backoff, so a database
-//	outage costs one failed tick rather than a hot retry storm against a
-//	database already struggling. MaxAttempts bounds how many consecutive ticks
-//	one batch is retried for.
-//
-// DEAD-LETTER POLICY
-//
-//	After MaxAttempts consecutive failures on the same batch, the batch is
-//	dead-lettered: it is logged at error level with the endpoint ids and the
-//	last error, and the counters are LEFT IN REDIS, so a restart or a later
-//	successful tick still flushes them. Nothing is discarded, and no separate
-//	dead-letter store is invented: the counters are already the durable copy
-//	until they are cleared, and Clear runs only after a successful write.
+//	have an explicit termination condition, which is lifecycle, not
+//	batch mechanics: this file states who runs, when, and how it stops,
+//	while the batch itself lives in quota_flush_drain.go and the stated
+//	retry and dead-letter behaviour in quota_flush_policy.go
+//	(draft 005 F3).
 //
 // TERMINATION
 //
@@ -43,7 +30,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"runtime/debug"
 	"sync"
@@ -53,38 +39,6 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
-
-// QuotaFlushPolicy states the flush worker's retry and dead-letter behaviour,
-// which AGENTS.md §1.6 requires every worker to declare explicitly.
-//
-// Retry: a flush that fails is retried on the worker's next tick with the SAME
-// batch, because the counters are only cleared after a successful durable write.
-// There is no in-worker retry loop and no exponential backoff: the tick itself
-// is the backoff, so a transient database outage costs one failed tick rather
-// than a hot retry storm against a database that is already struggling.
-//
-// Attempts are bounded per batch. After MaxAttempts consecutive failures on the
-// same batch, the batch is dead-lettered: it is logged at error level with the
-// endpoint ids and the last error, and Redis RetainAfterFailure keeps the
-// counters so the next start can still flush them. Nothing is silently dropped
-// — a counter lost is a quota an operator would under-read.
-type QuotaFlushPolicy struct {
-	// Interval is the tick between flushes.
-	Interval time.Duration
-	// BatchSize bounds one flush, so a backlog is drained over several ticks
-	// instead of one unbounded statement (AGENTS.md §1.7).
-	BatchSize int
-	// MaxAttempts is how many consecutive failures one batch is retried for
-	// before it is dead-lettered and left in Redis.
-	MaxAttempts int
-	// Timeout bounds one flush, so a hung database cannot stall the worker loop.
-	Timeout time.Duration
-}
-
-// DefaultQuotaFlushPolicy is the policy used when a caller does not supply one.
-func DefaultQuotaFlushPolicy() QuotaFlushPolicy {
-	return QuotaFlushPolicy{Interval: 30 * time.Second, BatchSize: 500, MaxAttempts: 5, Timeout: 10 * time.Second}
-}
 
 // QuotaFlusher drains Redis counters into PostgreSQL on a bounded tick.
 type QuotaFlusher struct {
@@ -179,62 +133,6 @@ func (f *QuotaFlusher) flushOnce(ctx context.Context) bool {
 	}()
 	<-done
 	return true
-}
-
-// drain reads one batch, writes it, and clears only what was written.
-func (f *QuotaFlusher) drain(ctx context.Context) {
-	callCtx, cancel := context.WithTimeout(ctx, f.policy.Timeout)
-	defer cancel()
-
-	pending, err := f.counters.Pending(callCtx, f.policy.BatchSize)
-	if err != nil {
-		f.logger.Error("membaca counter kuota gagal", "error", err)
-		return
-	}
-	if len(pending) == 0 {
-		f.attempts, f.lastKey = 0, ""
-		return
-	}
-
-	batchKey := batchIdentity(pending)
-	if batchKey != f.lastKey {
-		f.attempts, f.lastKey = 0, batchKey
-	}
-
-	if err := f.quotas.UpsertWindows(callCtx, pending); err != nil {
-		f.attempts++
-		if f.attempts >= f.policy.MaxAttempts {
-			// Dead-letter: the counters stay in Redis, so they are retried after
-			// a restart rather than lost. The batch identity names the endpoints
-			// an operator has to look at.
-			f.logger.Error("batch flush kuota masuk dead-letter",
-				"batch", batchKey, "windows", len(pending), "attempts", f.attempts, "error", err)
-			f.attempts, f.lastKey = 0, ""
-			return
-		}
-		f.logger.Warn("flush kuota gagal, akan dicoba lagi",
-			"batch", batchKey, "attempts", f.attempts, "error", err)
-		return
-	}
-
-	if err := f.counters.Clear(callCtx, pending); err != nil {
-		// The rows are durable; only the drain failed. Leaving them means the
-		// next flush writes the same values again, which is idempotent because
-		// UpsertWindows replaces rather than adds.
-		f.logger.Error("membersihkan counter kuota gagal", "batch", batchKey, "error", err)
-		return
-	}
-	f.attempts, f.lastKey = 0, ""
-}
-
-// batchIdentity names a batch by its endpoint ids so a retry of the same batch
-// is recognised and a different batch is not charged with its failures.
-func batchIdentity(windows []domain.QuotaWindow) string {
-	seen := make([]string, 0, len(windows))
-	for _, window := range windows {
-		seen = append(seen, string(window.Window()))
-	}
-	return fmt.Sprintf("%d:%v", len(windows), seen)
 }
 
 // StartQuotaFlush runs the flusher until ctx is cancelled and blocks until it

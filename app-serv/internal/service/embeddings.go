@@ -53,10 +53,12 @@ type EmbeddingsServiceDeps struct {
 	// resolves the registry's own base URL.
 	Overrides MediaOverrideReader
 	// Usage and Logs write the §7.12/§7.13 accounting pair for every call that
-	// reaches an upstream; RequestID gives both rows one identifier. All three
-	// are optional so a deployment that wires none still serves.
+	// reaches an upstream; Quotas advances the §7.12 window counters; RequestID
+	// gives both rows one identifier. All four are optional so a deployment that
+	// wires none still serves.
 	Usage     UsageRecorder
 	Logs      RequestLogRecorder
+	Quotas    *QuotaCounter
 	RequestID RequestIDReader
 }
 
@@ -73,7 +75,7 @@ func NewEmbeddingsService(deps EmbeddingsServiceDeps) (*EmbeddingsService, error
 	}
 	return &EmbeddingsService{
 		resolver: deps.Resolver, router: deps.Router, caller: deps.Caller, overrides: deps.Overrides,
-		recorder: newDataPlaneRecorder(deps.Usage, deps.Logs, deps.RequestID),
+		recorder: newDataPlaneRecorder(deps.Usage, deps.Logs, deps.Quotas, deps.RequestID),
 	}, nil
 }
 

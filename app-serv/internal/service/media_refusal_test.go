@@ -37,7 +37,7 @@ func recordingRefusalFixture(t *testing.T) (*MediaCallService, *stubMediaRouter,
 	t.Helper()
 	svc, _, router := mediaCallFixture(t)
 	usage, logs := &stubUsageRecorder{}, &stubLogRecorder{}
-	svc.recorder = newDataPlaneRecorder(usage, logs, func(context.Context) string { return "req_refused" })
+	svc.recorder = newDataPlaneRecorder(usage, logs, nil, func(context.Context) string { return "req_refused" })
 	return svc, router, usage, logs
 }
 

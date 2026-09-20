@@ -58,7 +58,7 @@ func embeddingsRefusalFixture(resolver ModelResolver, router MediaRouter) (*Embe
 		resolver: resolver,
 		router:   router,
 		caller:   &stubMediaCaller{answer: dataplane.MediaResponse{Status: 200, Body: []byte(`{"data":[{"embedding":[0.1],"index":0}]}`)}},
-		recorder: newDataPlaneRecorder(usage, logs, func(context.Context) string { return "req_embed_refused" }),
+		recorder: newDataPlaneRecorder(usage, logs, nil, func(context.Context) string { return "req_embed_refused" }),
 	}
 	return svc, usage, logs
 }

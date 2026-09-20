@@ -65,6 +65,7 @@ type ChatService struct {
 	settings  RequireAPIKeyReader
 	usage     UsageRecorder
 	logs      RequestLogRecorder
+	quotas    *QuotaCounter
 	keyUse    KeyUseRecorder
 	requestID RequestIDReader
 	clock     func() time.Time
@@ -79,6 +80,10 @@ type ChatServiceDeps struct {
 	// Logs writes the request-log half of the §7.13 accounting pair. Optional:
 	// without one the data plane serves and records usage only.
 	Logs RequestLogRecorder
+	// Quotas advances the §7.12 window counters by the tokens the call reported.
+	// Optional: without one the data plane serves and the quota screen stays
+	// empty rather than the process refusing to boot.
+	Quotas *QuotaCounter
 	// KeyUse advances the presenting key's own counters. Optional: without one
 	// the data plane serves every request and records no key usage.
 	KeyUse    KeyUseRecorder
@@ -99,7 +104,7 @@ func NewChatService(deps ChatServiceDeps) (*ChatService, error) {
 	}
 	return &ChatService{
 		engine: deps.Engine, keys: deps.Keys, settings: deps.Settings,
-		usage: deps.Usage, logs: deps.Logs, keyUse: deps.KeyUse,
+		usage: deps.Usage, logs: deps.Logs, quotas: deps.Quotas, keyUse: deps.KeyUse,
 		requestID: deps.RequestID, clock: time.Now,
 	}, nil
 }

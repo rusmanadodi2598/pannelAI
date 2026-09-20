@@ -77,7 +77,7 @@ type QuotaWindowList struct {
 // QuotaEndpointDetail is the body of GET /api/v1/quotas/{endpoint_id}: that
 // endpoint's windows plus its stored budget cap, so a client that just wrote a
 // cap reads the same values back (SPEC-API-001 §7.12, owner decision D5 = b).
-// Cap is null when no cap is stored — a state the panel renders as an empty
+// Cap is null when no cap is stored, a state the panel renders as an empty
 // form, which a missing field could not be told apart from.
 type QuotaEndpointDetail struct {
 	EndpointID string                `json:"endpoint_id"`
@@ -98,29 +98,29 @@ type QuotaCapResponse struct {
 // decimal string so the wire never carries a float (SPEC-API-001 §4). An
 // omitted field clears that cap: the route replaces the cap set, matching the
 // reference's whole-object write, so a client removing a budget sends the body
-// without that field rather than leaving a value it cannot see.
+// without that field rather than leaving a value it cannot see. The value rules
+// (sign, ceiling, degenerate zero cost) live in ValidateQuotaCap and the domain
+// rule set it shares, not in struct tags, so they are stated exactly once.
 type QuotaCapRequest struct {
 	MonthlyCostUSD *string `json:"monthly_cost_usd,omitempty"`
-	MonthlyTokens  *int64  `json:"monthly_tokens,omitempty" validate:"omitempty,min=0"`
+	MonthlyTokens  *int64  `json:"monthly_tokens,omitempty"`
 }
 
-// ValidateQuotaCap enforces the bounds the struct tags cannot: the cost must be
-// a parseable, non-negative decimal string, and a negative token cap is
-// meaningless.
+// ValidateQuotaCap enforces what the wire must check before the service sees
+// the body: the cost has to be a parseable decimal string, and both amounts
+// have to satisfy the one cap rule set the domain constructor also applies
+// (domain.ValidateQuotaCapValues), so this boundary and the domain cannot
+// disagree about what a legal cap is.
 func ValidateQuotaCap(req QuotaCapRequest) error {
+	var cost *domain.Decimal
 	if req.MonthlyCostUSD != nil {
 		amount, err := domain.ParseDecimal(*req.MonthlyCostUSD)
 		if err != nil {
 			return err
 		}
-		if amount.IsNegative() {
-			return domain.NewValidationError("monthly_cost_usd must not be negative")
-		}
+		cost = &amount
 	}
-	if req.MonthlyTokens != nil && *req.MonthlyTokens < 0 {
-		return domain.NewValidationError("monthly_tokens must not be negative")
-	}
-	return nil
+	return domain.ValidateQuotaCapValues(cost, req.MonthlyTokens)
 }
 
 // UsageRecordResponseFrom maps one stored record onto the wire shape.

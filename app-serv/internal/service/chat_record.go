@@ -24,6 +24,7 @@ import (
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
 // record writes one usage row and one request log for a chat call, under the
@@ -42,7 +43,7 @@ import (
 // answer, and failing the request over an accounting write would turn a served
 // call into an error the client cannot act on.
 func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome dataplane.Outcome, keyID, errorCode string) {
-	if s.usage == nil && s.logs == nil {
+	if s.usage == nil && s.logs == nil && s.quotas == nil {
 		return
 	}
 	requestID := s.requestIDFrom(ctx)
@@ -82,6 +83,14 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 		// panel's totals, which is where an operator can act on it.
 		_, _ = s.usage.Record(ctx, input)
 	}
+	// The quota counters advance by the tokens the upstream billed, in every
+	// window this call falls inside (§7.12). A call that reported no usage
+	// advanced nothing, which is the same deliberate skip the usage row makes:
+	// counting a request the upstream never measured would put a fabricated
+	// number in a window an operator reads as spend.
+	if s.quotas != nil && outcome.Usage != nil {
+		s.quotas.Record(ctx, outcome.EndpointID, chatQuotaUnits(outcome.Usage))
+	}
 	if s.logs != nil {
 		// reason: same as above — the log is the second half of the accounting
 		// pair, not a condition of the answer.
@@ -98,6 +107,23 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 			Error:        errorCode,
 		})
 	}
+}
+
+// chatQuotaUnits is what one chat call spends against a quota window: every
+// token the upstream billed, prompt and completion alike, because a window is a
+// budget of work rather than of one direction. Cached reads count too, since the
+// provider counts them against its own rate limit; the cached-write side does
+// not, because it is not a second billed unit. A report whose total is zero or
+// negative is treated as nothing to count rather than a negative spend.
+func chatQuotaUnits(usage *schema.Usage) int64 {
+	if usage == nil {
+		return 0
+	}
+	units := int64(usage.PromptTokens) + int64(usage.CompletionTokens)
+	if units < 0 {
+		return 0
+	}
+	return units
 }
 
 // requestIDFrom reads the router's request id, falling back to a fresh ULID so

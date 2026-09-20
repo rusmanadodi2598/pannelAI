@@ -27,6 +27,7 @@
 package main
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/redis/go-redis/v9"
@@ -93,6 +94,10 @@ type dataPlaneInputs struct {
 	// MediaIndex is the same runtime overlay, typed for the media service's
 	// own index port.
 	MediaIndex service.ProviderIndex
+	// Quotas is the §7.12 budget gate the selector consults before picking an
+	// endpoint, and the counter the accounting sites advance. It is passed in
+	// because the management side reads the same rows through the same service.
+	Quotas *service.QuotaService
 }
 
 // buildDataPlane assembles the resolver, selector, transport, and engine, then the
@@ -125,6 +130,10 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		// The global default. A combo with its own limit overrides it in the
 		// strategy layer, not here.
 		StickyLimit: in.Config.DataPlaneStickyLimit,
+		// §7.12: an endpoint whose stored budget cap is spent is skipped, which
+		// is the enforcement half of the quota surface. The quota service
+		// satisfies the seam directly, so no adapter is written for it.
+		Gate: in.Quotas,
 	})
 	if err != nil {
 		return dataPlane{}, err
@@ -152,6 +161,13 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		return dataPlane{}, err
 	}
 
+	// One counter instance for every accounting site, so the chat, media, and
+	// embeddings planes advance the same Redis keys and cannot disagree about
+	// which windows a call bills against (§7.12, register G22). It is built here
+	// because this is the only function that owns both the Redis client and the
+	// data plane's services.
+	quotas := service.NewQuotaCounter(redisrepo.NewQuotaCounterStore(in.Redis), slog.Default())
+
 	// The settings and usage services satisfy their seams directly, so no
 	// adapter is written for either.
 	chat, err := service.NewChatService(service.ChatServiceDeps{
@@ -162,6 +178,9 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		// The log service answers the §7.13 seam directly, so one chat call
 		// leaves the same accounting pair a media call does (register G18).
 		Logs: in.Logs,
+		// The quota counters advance by the tokens the upstream billed, so the
+		// window the panel reads is what this gateway actually served (§7.12).
+		Quotas: quotas,
 		// The key repository answers the use-counter seam too: every call the
 		// §4 rule admits advances that key's request_count (SPEC-API-001 §7.3).
 		KeyUse: in.Keys,
@@ -190,6 +209,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Overrides: in.MediaOverrides,
 		Usage:     in.Usage,
 		Logs:      in.Logs,
+		Quotas:    quotas,
 		RequestID: router.RequestIDFrom,
 	})
 	if err != nil {
@@ -203,6 +223,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Overrides: in.MediaOverrides,
 		Usage:     in.Usage,
 		Logs:      in.Logs,
+		Quotas:    quotas,
 		RequestID: router.RequestIDFrom,
 	})
 	if err != nil {

@@ -44,6 +44,10 @@ type MediaCallServiceDeps struct {
 	// still serves.
 	Usage UsageRecorder
 	Logs  RequestLogRecorder
+	// Quotas advances the §7.12 window counters for every served call. Optional
+	// for the same reason as the other two: a deployment without Redis serves
+	// and leaves the quota screen empty rather than failing to boot.
+	Quotas *QuotaCounter
 	// RequestID reads the router's request id, so a media call's usage row and
 	// its log row share one identifier (SPEC-API-001 §4).
 	RequestID RequestIDReader
@@ -72,7 +76,7 @@ func NewMediaCallService(deps MediaCallServiceDeps) (*MediaCallService, error) {
 	}
 	return &MediaCallService{
 		index: deps.Index, router: deps.Router, caller: deps.Caller, overrides: deps.Overrides,
-		recorder: newDataPlaneRecorder(deps.Usage, deps.Logs, deps.RequestID),
+		recorder: newDataPlaneRecorder(deps.Usage, deps.Logs, deps.Quotas, deps.RequestID),
 	}, nil
 }
 

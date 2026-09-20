@@ -29,17 +29,27 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
 
+// EndpointFinder answers whether an endpoint id is configured. It is the one
+// read the quota service needs from endpoint storage, declared narrowly so the
+// service asks a question rather than depending on the whole store
+// (AGENTS.md §1.5); repository.EndpointRepository satisfies it as is.
+type EndpointFinder interface {
+	GetByID(ctx context.Context, id string) (domain.UpstreamEndpoint, error)
+}
+
 // QuotaService implements SPEC-API-001 §7.12.
 type QuotaService struct {
-	quotas repository.QuotaRepository
-	usage  repository.UsageRecordRepository
-	clock  func() time.Time
+	quotas    repository.QuotaRepository
+	usage     repository.UsageRecordRepository
+	endpoints EndpointFinder
+	clock     func() time.Time
 }
 
 // QuotaServiceDeps holds the collaborators the service needs.
 type QuotaServiceDeps struct {
-	Quotas repository.QuotaRepository
-	Usage  repository.UsageRecordRepository
+	Quotas    repository.QuotaRepository
+	Usage     repository.UsageRecordRepository
+	Endpoints EndpointFinder
 }
 
 // NewQuotaService validates deps and returns a ready service.
@@ -47,7 +57,10 @@ func NewQuotaService(deps QuotaServiceDeps) (*QuotaService, error) {
 	if deps.Quotas == nil {
 		return nil, domain.NewValidationError("quota repository is required")
 	}
-	return &QuotaService{quotas: deps.Quotas, usage: deps.Usage, clock: time.Now}, nil
+	if deps.Endpoints == nil {
+		return nil, domain.NewValidationError("endpoint finder is required")
+	}
+	return &QuotaService{quotas: deps.Quotas, usage: deps.Usage, endpoints: deps.Endpoints, clock: time.Now}, nil
 }
 
 // ListWindows returns the quota windows for one endpoint, or for every endpoint
@@ -58,12 +71,20 @@ func (s *QuotaService) ListWindows(ctx context.Context, endpointID string) ([]do
 
 // SetCap replaces one endpoint's budget cap and returns the stored value.
 //
-// The cap is validated by the domain constructor, and the endpoint is required
-// to exist first: a cap on an endpoint that is not configured is a typo the
-// caller should see rather than a row nothing reads.
+// The endpoint must exist first: a cap on an endpoint that is not configured is
+// a typo the caller should see (NOT_FOUND) rather than a row no selector will
+// ever read. Existence is judged before the cap itself, because the endpoint is
+// the resource the request names; a lookup that fails for any other reason is
+// wrapped and stays an internal error instead of masquerading as not-found.
 func (s *QuotaService) SetCap(ctx context.Context, endpointID string, monthlyCostUSD *domain.Decimal, monthlyTokens *int64) (domain.QuotaCap, error) {
 	if endpointID == "" {
 		return domain.QuotaCap{}, domain.NewValidationError("endpoint_id is required")
+	}
+	if _, err := s.endpoints.GetByID(ctx, endpointID); err != nil {
+		if errors.Is(err, domain.ErrEndpointNotFound) {
+			return domain.QuotaCap{}, domain.ErrEndpointNotFound
+		}
+		return domain.QuotaCap{}, fmt.Errorf("checking endpoint %s: %w", endpointID, err)
 	}
 	cap, err := domain.NewQuotaCap(endpointID, monthlyCostUSD, monthlyTokens, s.clock())
 	if err != nil {
@@ -87,4 +108,43 @@ func (s *QuotaService) GetCap(ctx context.Context, endpointID string) (domain.Qu
 		return domain.QuotaCap{}, false, err
 	}
 	return cap, true, nil
+}
+
+// Exhausted reports whether one endpoint has spent its budget cap, which is the
+// question the router asks before picking an endpoint (SPEC-API-001 §7.12).
+//
+// An endpoint with no stored cap is never exhausted: "uncapped" and "used up" are
+// different states, and treating a missing row as a zero cap would skip every
+// endpoint an operator never capped.
+//
+// The usage read is the month-to-date aggregate, which is what a cap is defined
+// against. It is read only when a cap exists, so an uncapped gateway does not pay
+// an aggregate query per selection.
+func (s *QuotaService) Exhausted(ctx context.Context, endpointID string) (bool, error) {
+	if endpointID == "" {
+		return false, nil
+	}
+	if s.usage == nil {
+		return false, nil
+	}
+	cap, stored, err := s.GetCap(ctx, endpointID)
+	if err != nil {
+		return false, err
+	}
+	if !stored {
+		return false, nil
+	}
+	totals, err := s.usage.MonthlyUsage(ctx, endpointID, s.clock())
+	if err != nil {
+		return false, fmt.Errorf("reading month-to-date usage: %w", err)
+	}
+	// The aggregate carries the cost as the decimal string the wire uses (§4),
+	// so it is parsed back into the value object the cap compares with. An
+	// unparseable total cannot come from this gateway's own writer; refusing to
+	// read it as zero keeps a corrupt row from silently un-capping an endpoint.
+	spent, err := domain.ParseDecimal(totals.CostUSD)
+	if err != nil {
+		return false, fmt.Errorf("parsing month-to-date cost: %w", err)
+	}
+	return cap.Exhausted(spent, totals.TokensIn+totals.TokensOut), nil
 }

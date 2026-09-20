@@ -81,6 +81,10 @@ func TestNewQuotaCap(t *testing.T) {
 		{"zero cost cap alone is rejected", "ep_1", &zero, nil, true},
 		{"missing endpoint", "", nil, &tenTokens, true},
 		{"negative tokens", "ep_1", nil, ptrInt64(-1), true},
+		{"tokens at the ceiling are allowed", "ep_1", nil, ptrInt64(MaxQuotaMonthlyTokens), false},
+		{"tokens past the ceiling are rejected", "ep_1", nil, ptrInt64(MaxQuotaMonthlyTokens + 1), true},
+		{"cost at the ceiling is allowed", "ep_1", decimalPtr(t, "1000000000"), nil, false},
+		{"cost past the ceiling is rejected", "ep_1", decimalPtr(t, "1000000000.00000001"), nil, true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

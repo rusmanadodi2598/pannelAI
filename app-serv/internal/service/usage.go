@@ -27,6 +27,8 @@ import (
 )
 
 // UsageService implements SPEC-API-001 §7.12.
+const maxUsagePageSize = 100
+
 type UsageService struct {
 	usage    repository.UsageRecordRepository
 	logs     repository.RequestLogRepository
@@ -79,6 +81,9 @@ func (s *UsageService) Summary(ctx context.Context, filter domain.UsageFilter, g
 	if err := filter.Validate(); err != nil {
 		return domain.UsageTotals{}, nil, err
 	}
+	if groupBy != "" && !groupBy.IsValid() {
+		return domain.UsageTotals{}, nil, domain.NewValidationError("invalid group_by: " + string(groupBy))
+	}
 	return s.usage.Summary(ctx, filter, groupBy)
 }
 
@@ -87,6 +92,9 @@ func (s *UsageService) Timeseries(ctx context.Context, filter domain.UsageFilter
 	if err := filter.Validate(); err != nil {
 		return nil, err
 	}
+	if !granularity.IsValid() {
+		return nil, domain.NewValidationError("invalid granularity: " + string(granularity))
+	}
 	return s.usage.Timeseries(ctx, filter, granularity)
 }
 
@@ -94,6 +102,9 @@ func (s *UsageService) Timeseries(ctx context.Context, filter domain.UsageFilter
 func (s *UsageService) Records(ctx context.Context, filter domain.UsageFilter, page, perPage int) ([]domain.UsageRecord, int64, error) {
 	if err := filter.Validate(); err != nil {
 		return nil, 0, err
+	}
+	if page < 1 || perPage < 1 || perPage > maxUsagePageSize {
+		return nil, 0, domain.NewValidationError("page must be at least 1 and per_page must be between 1 and 100")
 	}
 	return s.usage.List(ctx, filter, repository.PageQuery{Page: page, PerPage: perPage})
 }

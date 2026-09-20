@@ -43,13 +43,12 @@ func (h *QuotaHandler) List(w http.ResponseWriter, r *http.Request) {
 
 // Get serves GET /api/v1/quotas/{endpoint_id}: one endpoint's windows plus the
 // stored budget cap, so a cap that was written can be read back even when no
-// usage window exists yet (SPEC-API-001 §7.12, owner decision D5 = b).
+// usage window exists yet (SPEC-API-001 §7.12, owner decision D5 = b). The
+// path value cannot be empty through the route (a Go 1.22 wildcard matches a
+// full segment), so there is no empty-id guard here: the service owns that
+// check for the paths that can reach it.
 func (h *QuotaHandler) Get(w http.ResponseWriter, r *http.Request) {
 	endpointID := r.PathValue("endpoint_id")
-	if endpointID == "" {
-		schema.WriteError(w, domain.NewValidationError("endpoint_id is required"))
-		return
-	}
 	windows, err := h.quotas.ListWindows(r.Context(), endpointID)
 	if err != nil {
 		schema.WriteError(w, err)
@@ -72,13 +71,10 @@ func (h *QuotaHandler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 // PutCap serves PUT /api/v1/quotas/{endpoint_id}: it replaces the cap set for
-// one endpoint and returns the stored value.
+// one endpoint and returns the stored value. An endpoint the gateway does not
+// know is refused by the service with NOT_FOUND (draft 005 F2).
 func (h *QuotaHandler) PutCap(w http.ResponseWriter, r *http.Request) {
 	endpointID := r.PathValue("endpoint_id")
-	if endpointID == "" {
-		schema.WriteError(w, domain.NewValidationError("endpoint_id is required"))
-		return
-	}
 	var req schema.QuotaCapRequest
 	if err := schema.DecodeJSON(r, &req); err != nil {
 		schema.WriteError(w, err)

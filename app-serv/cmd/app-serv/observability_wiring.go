@@ -36,6 +36,7 @@ import (
 func buildObservability(
 	usageRepo repository.UsageRecordRepository,
 	quotaRepo repository.QuotaRepository,
+	endpointRepo repository.EndpointRepository,
 	logRepo repository.RequestLogRepository,
 	settings *service.SettingsService,
 	client redis.UniversalClient,
@@ -47,7 +48,12 @@ func buildObservability(
 		return nil, nil, nil, fmt.Errorf("management wiring: usage: %w", err)
 	}
 
-	quotaSvc, err := service.NewQuotaService(service.QuotaServiceDeps{Quotas: quotaRepo, Usage: usageRepo})
+	// The endpoint repository is the quota service's existence seam: a cap is
+	// only accepted for an endpoint the router could actually pick (draft 005
+	// F2), and this is the same store every endpoint route reads.
+	quotaSvc, err := service.NewQuotaService(service.QuotaServiceDeps{
+		Quotas: quotaRepo, Usage: usageRepo, Endpoints: endpointRepo,
+	})
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("management wiring: quotas: %w", err)
 	}

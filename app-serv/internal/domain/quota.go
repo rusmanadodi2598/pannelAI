@@ -74,6 +74,32 @@ func (k QuotaWindowKind) Duration() time.Duration {
 	}
 }
 
+// NextReset is the instant this window rolls over at, given the moment it was
+// opened. Every window the gateway accounts for is rolling: the provider counts
+// a five-hour window from its start, and the calendar windows are measured as
+// fixed lengths from the instant the first call opened them. Computing it from
+// the caller's clock keeps the rule in one place instead of at each Add site.
+func (k QuotaWindowKind) NextReset(now time.Time) time.Time {
+	length := k.Duration()
+	if length <= 0 {
+		return now.UTC()
+	}
+	return now.UTC().Add(length)
+}
+
+// AccountingKinds are the windows one served request bills against, in the
+// order they are written. A request advances every window it falls inside, so
+// the five-hour, daily, weekly, and monthly counters stay comparable: reporting
+// only the narrowest would make the panel's monthly total disagree with the
+// month-to-date figure the budget cap is compared against (§7.12).
+//
+// The set is fixed rather than configurable per provider because the spec fixes
+// the four kinds (SPEC-API-001 §6 CHECK constraint); a provider that reports its
+// own cadence does so through Report, which replaces a counter instead of adding.
+func AccountingKinds() []QuotaWindowKind {
+	return []QuotaWindowKind{QuotaWindowFiveHour, QuotaWindowDaily, QuotaWindowWeekly, QuotaWindowMonthly}
+}
+
 // QuotaSource distinguishes a number this gateway counted from one the provider
 // reported. The distinction is functional, not decorative: a computed counter
 // can be reconciled from usage_records while a reported one cannot.

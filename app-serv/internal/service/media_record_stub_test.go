@@ -51,6 +51,6 @@ func recordingMediaFixture(t *testing.T) (*MediaCallService, *stubMediaCaller, *
 	t.Helper()
 	svc, caller, _ := mediaCallFixture(t)
 	usage, logs := &stubUsageRecorder{}, &stubLogRecorder{}
-	svc.recorder = newDataPlaneRecorder(usage, logs, func(context.Context) string { return "req_recorded" })
+	svc.recorder = newDataPlaneRecorder(usage, logs, nil, func(context.Context) string { return "req_recorded" })
 	return svc, caller, usage, logs
 }

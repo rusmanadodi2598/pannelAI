@@ -144,7 +144,7 @@ func TestMediaCallService_RecordsTheSearchPrice(t *testing.T) {
 // a blank id would make the row unfindable.
 func TestMediaCallService_RecordsAFallbackRequestID(t *testing.T) {
 	svc, caller, usage, logs := recordingMediaFixture(t)
-	svc.recorder = newDataPlaneRecorder(usage, logs, nil)
+	svc.recorder = newDataPlaneRecorder(usage, logs, nil, nil)
 	caller.answer = dataplane.MediaResponse{Status: 200, Body: []byte(`{"ok":true}`)}
 
 	call, err := svc.Prepare(context.Background(), "openai/gpt-4o-mini-tts", domain.MediaKindTTS, nil)

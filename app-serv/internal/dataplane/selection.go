@@ -75,11 +75,24 @@ type Selection struct {
 	Credential provider.Credential
 }
 
+// BudgetGate reports whether an endpoint has already spent its budget. It is a
+// one-method seam because selection asks exactly one question, and it keeps the
+// router from importing the quota repository (AGENTS.md §1.5).
+//
+// The second return being false means "allowed", which is also what an endpoint
+// with no cap answers: an uncapped endpoint is not an exhausted one.
+type BudgetGate interface {
+	// Exhausted reports whether the endpoint's month-to-date spend has reached
+	// its stored budget cap (SPEC-API-001 §7.12).
+	Exhausted(ctx context.Context, endpointID string) (bool, error)
+}
+
 // Selector picks the endpoint and key for a provider (SPEC-API-001 §7.5).
 type Selector struct {
 	endpoints repository.EndpointRepository
 	opener    SecretOpener
 	cursor    CursorStore
+	gates     BudgetGate
 	clock     func() time.Time
 	// stickyLimit is how many consecutive requests one endpoint serves before
 	// rotation moves on.
@@ -92,6 +105,10 @@ type SelectorDeps struct {
 	Opener      SecretOpener
 	Cursor      CursorStore
 	StickyLimit int
+	// Gate is the optional §7.12 budget check. A nil one selects every
+	// configured endpoint, which is the behaviour a deployment without quota
+	// caps had before the check existed.
+	Gate BudgetGate
 }
 
 // NewSelector validates deps and returns a selector. The opener is optional so a
@@ -106,7 +123,7 @@ func NewSelector(deps SelectorDeps) (*Selector, error) {
 		limit = 1
 	}
 	return &Selector{
-		endpoints: deps.Endpoints, opener: deps.Opener, cursor: deps.Cursor,
+		endpoints: deps.Endpoints, opener: deps.Opener, cursor: deps.Cursor, gates: deps.Gate,
 		clock: time.Now, stickyLimit: limit,
 	}, nil
 }
@@ -132,6 +149,9 @@ func (s *Selector) Select(ctx context.Context, providerID string) (Selection, er
 		if !endpoint.Available(now) {
 			continue
 		}
+		if s.overBudget(ctx, endpoint.ID()) {
+			continue
+		}
 		var key domain.UpstreamKey
 		if endpoint.AuthType() != domain.UpstreamAuthNone {
 			picked, ok := endpoint.NextKey(now)
@@ -147,8 +167,33 @@ func (s *Selector) Select(ctx context.Context, providerID string) (Selection, er
 		return Selection{Endpoint: endpoint, Key: key, Credential: credential}, nil
 	}
 	return Selection{}, domain.NewNoProviderAvailableError("every upstream endpoint for provider " +
-		providerID + " is unavailable or has no usable key")
+		providerID + " is unavailable, has no usable key, or has spent its budget")
 }
+
+// overBudget reports whether an endpoint must be skipped for budget. A gate read
+// that fails is treated as "not over budget", because a quota lookup is a
+// bookkeeping question and a control-plane outage must not take the data plane
+// down: the alternative would let a quota table lock every provider out.
+//
+// The direction is deliberate and stated rather than implied: failing closed here
+// would turn a transient read error into a gateway-wide outage, while failing
+// open costs at most one request beyond a cap the operator set.
+func (s *Selector) overBudget(ctx context.Context, endpointID string) bool {
+	if s.gates == nil || endpointID == "" {
+		return false
+	}
+	exhausted, err := s.gates.Exhausted(ctx, endpointID)
+	if err != nil {
+		return false
+	}
+	return exhausted
+}
+
+// HasBudgetGate reports whether a gate is wired. It exists so the composition
+// root and a test can state the wiring without reaching into the selector's
+// fields, and so a typed-nil gate — an interface holding a nil pointer, which
+// is not itself nil — is caught by the caller rather than at the first request.
+func (s *Selector) HasBudgetGate() bool { return s.gates != nil }
 
 // candidates loads the provider's active endpoints in priority order. A tie on
 // priority is broken by id, so the order is stable across calls.

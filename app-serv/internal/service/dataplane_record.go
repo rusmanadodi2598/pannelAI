@@ -43,14 +43,15 @@ type RequestLogRecorder interface {
 type dataPlaneRecorder struct {
 	usage     UsageRecorder
 	logs      RequestLogRecorder
+	quotas    *QuotaCounter
 	requestID RequestIDReader
 	clock     func() time.Time
 }
 
 // newDataPlaneRecorder binds the recorder to its collaborators, defaulting the
 // clock so a recorder built with none is still usable.
-func newDataPlaneRecorder(usage UsageRecorder, logs RequestLogRecorder, requestID RequestIDReader) dataPlaneRecorder {
-	return dataPlaneRecorder{usage: usage, logs: logs, requestID: requestID, clock: time.Now}
+func newDataPlaneRecorder(usage UsageRecorder, logs RequestLogRecorder, quotas *QuotaCounter, requestID RequestIDReader) dataPlaneRecorder {
+	return dataPlaneRecorder{usage: usage, logs: logs, quotas: quotas, requestID: requestID, clock: time.Now}
 }
 
 // record writes one usage row and one request log for a call that reached an
@@ -67,7 +68,7 @@ func newDataPlaneRecorder(usage UsageRecorder, logs RequestLogRecorder, requestI
 // failing a served call over bookkeeping would turn it into an error the client
 // cannot act on.
 func (r dataPlaneRecorder) record(ctx context.Context, outcome dataplane.Outcome, keyID, costUSD string, latencyMS int64, failure error) {
-	if r.usage == nil && r.logs == nil {
+	if r.usage == nil && r.logs == nil && r.quotas == nil {
 		return
 	}
 	requestID := requestIDOrNew(ctx, r.requestID, r.clock)
@@ -93,6 +94,12 @@ func (r dataPlaneRecorder) record(ctx context.Context, outcome dataplane.Outcome
 			Status:       status,
 			ErrorCode:    code,
 		})
+	}
+	// The quota counters advance with the same accounting pair, so a window the
+	// panel reads is what this gateway actually served (§7.12). A call refused
+	// before an attempt has no endpoint and advances nothing.
+	if r.quotas != nil {
+		r.quotas.Record(ctx, outcome.EndpointID, 1)
 	}
 	if r.logs != nil {
 		// reason: same as above — the log is the second half of the accounting
