@@ -9,8 +9,9 @@
 	//
 	// That shared state is the disabled set. Disabling a model removes its catalog row and enabling one
 	// brings it back, so the catalog reloads after a write in either section: `catalogToken` is what tells
-	// it to. §6.3 also places the OAuth section and the alias table here. OAuth is still U2. The alias table
-	// is the sixth section and takes no provider, because the alias set is global.
+	// it to. §6.3 also places the alias table and the OAuth section here. The alias table is the sixth
+	// section and takes no provider, because the alias set is global. OAuth is the last one and appears only
+	// for a provider the registry says has OAuth, which is the one section whose presence is a provider fact.
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import ModelCatalogList from '$lib/components/ModelCatalogList.svelte';
@@ -19,6 +20,7 @@
 	import ProviderDisabledModels from '$lib/components/ProviderDisabledModels.svelte';
 	import ProviderEndpoints from '$lib/components/ProviderEndpoints.svelte';
 	import ProviderFacts from '$lib/components/ProviderFacts.svelte';
+	import ProviderOAuth from '$lib/components/ProviderOAuth.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { getProvider } from '$lib/api/providers';
 	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
@@ -122,5 +124,12 @@
 			</div>
 			<ProviderEndpoints providerId={provider.id} />
 		</div>
+
+		{#if provider.has_oauth}
+			<div class="flex flex-col gap-3">
+				<h2 class="text-base font-medium">OAuth</h2>
+				<ProviderOAuth providerId={provider.id} />
+			</div>
+		{/if}
 	{/if}
 </section>

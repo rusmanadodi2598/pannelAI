@@ -26,6 +26,26 @@ export type ModelStub = {
 	aliases: StubModel[];
 	/** The combos, whose names are a legal alias target. */
 	combos: StubModel[];
+	/** Whether the provider detail says this provider has OAuth, which is what renders the section. */
+	hasOAuth: boolean;
+	/**
+	 * The flow `GET /oauth/status` reports, which is what decides what the section offers. The default is
+	 * `code`, the one flow that offers the start action, because no live provider reports it today
+	 * (SPEC-UI §14 Q23); a test that needs the dormant case sets `device` or `connector`.
+	 */
+	oauthFlow: string;
+	/** The connected accounts the status route answers. */
+	oauthEndpoints: StubModel[];
+	/** The status route's own status, for a test that needs one read to fail. */
+	oauthReadStatus: number;
+	/** When set, the start route answers this refusal instead of an authorize URL. */
+	oauthStartRefusal: { status: number; code: string; message: string } | null;
+	/** When set, the refresh route answers this refusal instead of moving a token. */
+	oauthRefreshRefusal: { status: number; code: string; message: string } | null;
+	/** The provider ids the start route was called with. */
+	oauthStarts: string[];
+	/** The endpoint ids the refresh route was called with, `null` for "every due account". */
+	oauthRefreshes: (string | null)[];
 	providers: string[];
 	disabledWrites: StubModel[][];
 	customCreates: StubModel[];
@@ -73,6 +93,20 @@ export function aliasRow(overrides: StubModel = {}): StubModel {
 	return { alias: 'fast', target: 'openai/gpt-4o', ...overrides };
 }
 
+export function oauthEndpointRow(overrides: StubModel = {}): StubModel {
+	return {
+		endpoint_id: 'ep_oauth_1',
+		label: 'xAI account',
+		status: 'active',
+		// Relative to the run, because the panel compares an expiry against its own clock: a fixed date would
+		// read as fresh today and as expired in a year.
+		expires_at: new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString(),
+		last_refresh_at: null,
+		refresh_state: 'fresh',
+		...overrides
+	};
+}
+
 export function customRow(overrides: StubModel = {}): StubModel {
 	return {
 		id: 'mdl_01',
@@ -118,6 +152,14 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		custom: [],
 		aliases: [],
 		combos: [],
+		hasOAuth: false,
+		oauthFlow: 'code',
+		oauthEndpoints: [],
+		oauthReadStatus: 200,
+		oauthStartRefusal: null,
+		oauthRefreshRefusal: null,
+		oauthStarts: [],
+		oauthRefreshes: [],
 		providers: ['openai', 'anthropic'],
 		disabledWrites: [],
 		customCreates: [],
@@ -163,10 +205,69 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		// panel's schemas expect, so a test can render the whole screen and assert on one section.
 		const providerMatch = /\/providers\/([^/?]+)$/.exec(parsed.pathname);
 		if (method === 'GET' && providerMatch) {
-			return json(providerDetailRow({ id: decodeURIComponent(providerMatch[1]) }));
+			return json(
+				providerDetailRow({
+					id: decodeURIComponent(providerMatch[1]),
+					has_oauth: stub.hasOAuth
+				})
+			);
 		}
 		if (method === 'GET' && parsed.pathname.endsWith('/endpoints')) {
 			return json({ data: [], meta: { page: 1, per_page: 25, total: 0 } });
+		}
+
+		const oauthMatch = /\/providers\/([^/]+)\/oauth\/(status|start|refresh)$/.exec(parsed.pathname);
+
+		if (method === 'GET' && oauthMatch?.[2] === 'status') {
+			stub.reads.push('oauth:status');
+			if (stub.oauthReadStatus !== 200) {
+				return refusal(
+					'INTERNAL_ERROR',
+					'The oauth state could not be read.',
+					stub.oauthReadStatus
+				);
+			}
+			return json({
+				// The provider the route names, so a test cannot pass against an answer about another one.
+				provider_id: decodeURIComponent(oauthMatch[1]),
+				flow: stub.oauthFlow,
+				endpoints: stub.oauthEndpoints
+			});
+		}
+
+		if (method === 'POST' && oauthMatch?.[2] === 'start') {
+			stub.oauthStarts.push(decodeURIComponent(oauthMatch[1]));
+			if (stub.oauthStartRefusal) {
+				const { status, code, message } = stub.oauthStartRefusal;
+				return refusal(code, message, status);
+			}
+			return json({ authorize_url: 'https://provider.test/authorize?state=st_1', state: 'st_1' });
+		}
+
+		if (method === 'POST' && oauthMatch?.[2] === 'refresh') {
+			const endpointId = (body.endpoint_id as string | undefined) ?? null;
+			stub.oauthRefreshes.push(endpointId);
+			if (stub.oauthRefreshRefusal) {
+				const { status, code, message } = stub.oauthRefreshRefusal;
+				return refusal(code, message, status);
+			}
+
+			// A real refresh moves the token: the named account, or every due one, becomes fresh. The panel
+			// re-reads the status afterwards, so a stub that answered without moving anything would let a
+			// panel that never re-reads pass.
+			const moved: string[] = [];
+			stub.oauthEndpoints = stub.oauthEndpoints.map((endpoint) => {
+				const due = endpoint.refresh_state === 'due';
+				if (endpointId !== null ? endpoint.endpoint_id !== endpointId : !due) return endpoint;
+				moved.push(String(endpoint.endpoint_id));
+				return {
+					...endpoint,
+					refresh_state: 'fresh',
+					last_refresh_at: '2026-09-20T12:00:00Z'
+				};
+			});
+
+			return json({ refreshed: moved.length, endpoint_ids: moved });
 		}
 
 		if (parsed.pathname.endsWith('/models/disabled')) {

@@ -295,12 +295,31 @@ absent.
   disabled or deleted is rendered as it is, and because a write carries the whole set it refuses every alias
   write until that row is removed (Q21).
 - **Provider-scoped endpoints:** the endpoint list filtered by `provider_id`, with the same drawer as §6.2.
-- **OAuth section (U2, OAuth providers only):** `POST /providers/{id}/oauth/start` opens the authorize URL
-  in the same tab; the callback lands on the API and redirects back to the provider detail page. The panel
-  then polls `GET /providers/{id}/oauth/status` once to show token state and offers a manual refresh
-  through `POST /providers/{id}/oauth/refresh`.
-- **OAuth failure states:** expired token, refresh failed, and state mismatch each have distinct copy. A
-  state mismatch message names the cause (the authorization attempt expired) instead of saying "error".
+- **OAuth section (U2, landed, OAuth providers only):** the section renders for a provider whose registry
+  entry says `has_oauth`, and the flow `GET /api/v1/providers/{id}/oauth/status` reports decides what it
+  offers: the panel starts `code` and, for `device`, `connector`, and `none`, states that flow's reason
+  instead of drawing a control that cannot act. `POST /api/v1/providers/{id}/oauth/start` is called with no
+  body, because the gateway derives its own callback from its base URL, and the returned authorize URL is
+  rendered as a link rather than followed by the panel: a scripted navigation to a third party is a redirect
+  the operator did not ask for, and a link shows the host before it is followed. The registry's one
+  `has_oauth` provider declares no `authorize_url`, so the flow it reports is `device` and the start path is
+  dormant until a provider declares one (Q23).
+- **The callback return (U2, landed):** the gateway returns the browser to the provider detail page with
+  `oauth`, `oauth_error`, and `endpoint_id` in its query. The section reads the outcome once, renders it as
+  the gateway's report, and drops those three keys from the address with `replaceState`, so a reload does not
+  announce a past result and a key belonging to something else is left alone. The status is read once per
+  visit and re-read after a refresh or a callback return, not on a timer (Q22).
+- **Connected accounts (U2, landed):** one row per OAuth endpoint with its label and id, its status, its
+  expiry, its last refresh, and the token state the gateway derives from `refresh_state` (`missing`, `fresh`,
+  `due`). The panel does not re-derive that classification; the row adds only what the expiry tells apart, so
+  a `due` token whose expiry has passed reads as expired and one still inside its window reads as inside it.
+  The manual refresh is per row, because the answer names the accounts it moved, and it re-reads the status
+  without blanking the table it just moved.
+- **OAuth failure states:** expired token, refresh failed, and state mismatch each have distinct copy. The
+  expired token is the panel's own sentence, derived from `refresh_state: due` plus an expiry that has
+  passed. A failed refresh and a failed authorization are the gateway's own sentences, attributed to it
+  rather than classified by the panel, which would mean pattern-matching the gateway's English. The failed
+  authorization leads with what happened and then the reason; none of the three says "error" alone.
 - **Empty state (catalog):** "No models found for this filter." with a control that clears filters.
 
 ### 6.4 `/combos`
@@ -1176,7 +1195,7 @@ work: the recorded click-through against a running `app-serv` (§9.4.5), which n
 PostgreSQL, and Redis up. `app-serv` now exposes the auth and gateway-key endpoints the panel calls, so
 that run is unblocked on the panel side and U0 closes when its result is recorded.
 
-**U2 status, 2026-09-20: six of the nine capabilities the U2 row lists are landed.** Token Saver (§6.7)
+**U2 status, 2026-09-20: seven of the nine capabilities the U2 row lists are landed.** Token Saver (§6.7)
 shipped first: RTK with its twelve-filter allowlist, Headroom with the external URL and the fails-open
 copy, and Ponytail with its level, each saved as a whole-document `PUT` because that is the only write
 route the API has, with the draft helpers merging the edited group over the last document read so a save
@@ -1191,7 +1210,14 @@ shipped fourth, both on the provider detail screen: a Disable action per catalog
 this provider cannot route with an Enable action per row, and a custom-model table with an add form and a
 removal dialog. The alias set (§6.3) shipped fifth, as the last model write on that screen: the alias to
 target table with a form that adds a row or changes what an existing one targets, each change a whole-set
-`PUT`, with the target field suggesting the catalog ids and the combo names.
+`PUT`, with the target field suggesting the catalog ids and the combo names. The OAuth section (§6.3) shipped
+sixth, as the last section on that screen: it renders only for a provider the registry marks `has_oauth`,
+reads the status once per visit, and lets the reported flow decide what it offers, so only `code` gets a start
+button and the other three flows get their reason instead. The authorize URL is a link the panel does not
+follow, the callback's outcome is read from this page's query and its three keys are dropped from the address
+after they are read, and a manual refresh is per account and re-reads the state it moved. The start path is
+dormant in this registry rather than wrong: the one `has_oauth` provider declares no `authorize_url`, so the
+flow it reports is `device` and the panel offers its reason instead of a control (Q23).
 
 That fourth area is where the spec and the implementation disagree, and the disagreement is recorded
 rather than papered over. §6.3 asks for "per-model enable or disable state" on the catalog, but the merged
@@ -1225,9 +1251,9 @@ than something an operator picks after opening the screen. `navigation.ts` gaine
 `/providers/[provider_id]` stays excluded for the opposite reason, and a test asserts that every
 placeholder a row's route declares is filled and no parameter is passed that the route does not declare.
 
-Still open in U2: the OAuth section on provider detail (§6.3), the combo test action (§6.4), and quota
-budget caps (§6.6). §6.4's combo delete refusal names where the fix lives instead of linking to it, because
-the alias set is global and the only screen it has takes a provider id (Q20).
+Still open in U2: the combo test action (§6.4) and quota budget caps (§6.6). §6.4's combo delete refusal
+names where the fix lives instead of linking to it, because the alias set is global and the only screen it
+has takes a provider id (Q20).
 
 **U2 exit criteria, 2026-09-20: two of the four are met against a running `app-serv`, and the other two
 are not.** A live pass booted the service and the built panel and drove the panel's own `/api/v1` routes,
@@ -1237,10 +1263,13 @@ answer, and so is "token saver config saved and reflected by the API", with the 
 verbatim and agreed by a fresh read. The pass also covered the pool read, create, patch, and delete, the
 candidate test's live, refused, and protocol-mismatch answers, and the outbound settings write and
 re-read. "OAuth round trip from the panel" and "an image generation request routed through a media
-provider" stay open, because neither screen exists yet. One limit is recorded rather than glossed: the
-panel is client-rendered (`ssr = false`), so the pass proves the wire contract and not the rendered
-output, and a browser click-through of both screens is still outstanding. The database was returned to
-its baseline, counted before and after.
+provider" stay open, and now for a different reason than when the pass ran: both screens exist, so what is
+missing is the evidence rather than the surface. The OAuth round trip additionally needs a provider account
+the pass does not have, since the registry marks one provider (`xai`) as `has_oauth`, and that provider
+reports the `device` flow, so no provider currently offers the start path at all (Q23). One limit is recorded
+rather than glossed: the panel is client-rendered (`ssr = false`), so the pass proves the wire contract and
+not the rendered output, and a browser click-through of both screens is still outstanding. The database was
+returned to its baseline, counted before and after.
 
 ## 13. Locked decisions
 
@@ -1445,6 +1474,29 @@ its baseline, counted before and after.
    the operator which row to remove. Removing it is a write that succeeds, because the rest of the set
    validates. Decide whether §7.6 documents that a stored alias can become unwritable, or whether the
    validation should pass an entry whose target is unchanged from what is already stored.
+22. **§6.3 says the panel "polls" the OAuth status, and the panel deliberately runs no timer.** The section
+   reads `GET /providers/{id}/oauth/status` once per visit and re-reads it after a refresh or a callback
+   return, which are the two events that move what it renders. A timer would be a request the operator did
+   not ask for, repeating on its own, and the panel's rule for a screen is that a read follows a visit or an
+   action. The consequence is narrow but real: `refresh_state` is derived from the clock
+   (`app-serv/internal/domain/oauth_refresh.go`), so a token can cross into its refresh window while the
+   section sits open and its row keeps reading "outside its refresh window" until something re-reads. The
+   only control that re-reads is a row's Refresh, which also refreshes the token, plus a page reload. Decide
+   whether §6.3's "polls" means a timer the panel should run, or whether the read-on-visit and
+   re-read-on-action is the intent and the sentence is amended to say so.
+23. **The one provider with `has_oauth` reports the `device` flow, so the panel's start action has no provider
+   to act on.** `xai` is the only registry entry with `has_oauth: true`, and its `oauth` block declares
+   `client_id`, `token_url`, and `refresh_url` and no `authorize_url`
+   (`app-serv/internal/registry/registry.yaml`). `flowKind` classifies a provider by its exchange, its
+   authorize URL, and nothing else: `RequiresCustomExchange` is false for xai (no `state_url`,
+   `initiate_url`, or `poll_url_base`), so the empty authorize URL falls through to `device`
+   (`app-serv/internal/service/oauth_flow_refresh.go`). The panel follows the API's classification, which
+   means the section renders for xai, states the device reason, and offers no start button, and the start
+   path is dormant until a provider declares an authorize URL. The same classification is imprecise for this
+   entry: xai declares no device endpoint either, so the copy's "connect it through its device endpoint"
+   points at something the registry does not carry. Decide whether the registry gains an `authorize_url` for
+   xai (or another provider gains `has_oauth`), whether `flowKind` distinguishes a refresh-only block from a
+   device flow, or whether the start path stays dormant by design and §6.3 records it as such.
 
 ## 15. Evidence for numbers and paths used here
 

@@ -6,10 +6,11 @@ API in `app-serv` and never touches PostgreSQL or Redis.
 Spec of record: [`docs/SPEC-UI/001-SPEC-UI.md`](../docs/SPEC-UI/001-SPEC-UI.md).
 API contract: [`docs/SPEC-API/001-SPEC-API.md`](../docs/SPEC-API/001-SPEC-API.md).
 
-Status: **U0 scaffold**, verified locally. Screens built: `/login`, `/endpoint-keys` (gateway keys
-tab), `/settings` (security tab). The shell is complete: a themed sidebar with five groups and 19 owner
-rows, responsive across phone, tablet, and desktop. Every other screen is marked Planned in the sidebar,
-because a navigation item without a route is a defect.
+Status: **U2 in progress**, verified locally. Screens built: `/login`, `/endpoint-keys`, `/settings`,
+`/providers` and `/providers/[provider_id]`, `/combos`, `/usage`, `/quota`, `/logs`, `/console-log`,
+`/changelog`, `/media-providers/[kind]`, `/proxy-pools`, and `/token-saver`. The shell is complete: a
+themed sidebar with five groups and 19 owner rows, responsive across phone, tablet, and desktop. Every
+other screen is marked Planned in the sidebar, because a navigation item without a route is a defect.
 
 ## Requirements
 
@@ -99,11 +100,52 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Six passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Seven passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
-day. The sixth is the alias set, measured the same day.
+day. The sixth is the alias set, measured the same day. The seventh is the OAuth section, measured the
+same day.
+
+### OAuth section, 2026-09-20
+
+Run with Bun 1.3.14. This pass covers the OAuth section of `/providers/[provider_id]` (SPEC-UI §6.3): the
+start action, the callback's return to the page, the connected-account table, and the manual refresh.
+
+| Check             | Result                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                      |
+| `bun run test`    | 1681 tests passed across 68 files, 55 of them new in this pass                                                            |
+| `bun run lint`    | Prettier reports every file conforms                                                                                      |
+| `bun run lint:ts` | ESLint exits 0                                                                                                            |
+| `bun run build`   | succeeds, output in `build/`                                                                                              |
+| File size         | the largest file this pass touches is 187 lines, and the repository's largest source file stays at 218, under the warning |
+| Text hygiene      | 0 em dashes; the only emoji in `src` and `tests` is one test vector proving the sanitizer refuses one                     |
+
+What the section does, and where it states a limit rather than hiding one:
+
+| Area                | Behaviour                                                                                                                                                                                                                                                                                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| When it renders     | Only for a provider the registry marks `has_oauth`, which is the API's own answer to whether the provider has a flow. The panel does not infer it from the provider's category.                                                                                                                                                                          |
+| What the flow means | The panel starts `code` and nothing else: `device`, `connector`, and `none` get their reason in words instead of a disabled button, because a control that cannot act is a dead control (R-26). The stub's default flow is `code` so the start path is exercised; no live provider reports it today (Q23).                                               |
+| The start           | `POST .../oauth/start` is called with no body, because the gateway derives its own callback from its base URL, and the authorize URL it answers is rendered as a link rather than a navigation the panel performs. A scripted redirect to a third party is one the operator did not ask for, and a link shows the host before it is followed.            |
+| The callback return | The gateway sends the browser back with `oauth`, `oauth_error`, and `endpoint_id`. The section reads the outcome once, attributes it to the gateway, and drops the three keys with `replaceState`, so a reload does not announce a past result. A key belonging to something else is left alone, and an outcome the panel does not know renders nothing. |
+| The accounts table  | One row per endpoint: label and id, status, expiry, last refresh, and the token state the gateway derives from `refresh_state`. The panel does not re-derive that classification; the row adds only what the expiry tells apart, so a `due` token whose expiry has passed reads as expired and one inside its window reads as inside it.                 |
+| The refresh         | Per row, because the answer names the accounts it moved, and it re-reads the status without blanking the table. The first version did blank it, which destroyed the sentence reporting what the gateway had just done; a test caught that, and `load` now keeps the section mounted when it already has state.                                           |
+| The read cadence    | Once per visit, plus a re-read after a refresh or a callback return. No timer: a self-firing request is not the operator's action, and the consequence (a token that crosses into its refresh window while the section sits open) is recorded as Q22 rather than hidden.                                                                                 |
+
+One defect was found and fixed by this pass, and it is recorded because the pattern matters more than the
+fix:
+
+1. **The refresh blanked the section that reported it.** `onrefreshed` re-read the status with the same
+   loading state the first read uses, so the `{#if loading}` branch unmounted the accounts table and, with
+   it, the outcome sentence the operator had just earned. The test asserted both the sentence and the moved
+   token state, which is what caught it; `load` now takes a `keep` flag for the re-read.
+
+Not yet verified: the rendered half in a browser, and the wire half against a running `app-serv`. The
+section is client-rendered (`ssr = false`), so the tests exercise it against a stub that applies writes and
+answers with the server's own refusals. The start path cannot be driven live in this registry at all, since
+the one `has_oauth` provider reports the `device` flow (Q23).
 
 ### Alias set, 2026-09-20
 
@@ -111,26 +153,26 @@ Run with Bun 1.3.14. This pass covers the alias table of `/providers/[provider_i
 alias to target table, the form that adds a row or changes what an existing one targets, and the target
 field's suggestions. It also carries the §6.4 combo delete refusal, which now says where the fix lives.
 
-| Check             | Result                                                                    |
-| ----------------- | ------------------------------------------------------------------------- |
-| `bun run check`   | 0 errors, 0 warnings                                                      |
-| `bun run test`    | 1626 tests passed across 66 files, 75 of them new in this pass            |
-| `bun run lint`    | Prettier reports every file conforms                                      |
-| `bun run lint:ts` | ESLint exits 0                                                            |
-| `bun run build`   | succeeds, output in `build/`                                              |
-| File size         | largest source file this pass is 218 lines, under the 220 warning line    |
-| Text hygiene      | 0 em dashes and 0 emoji across `src` and `tests`                          |
+| Check             | Result                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                  |
+| `bun run test`    | 1626 tests passed across 66 files, 75 of them new in this pass                                        |
+| `bun run lint`    | Prettier reports every file conforms                                                                  |
+| `bun run lint:ts` | ESLint exits 0                                                                                        |
+| `bun run build`   | succeeds, output in `build/`                                                                          |
+| File size         | largest source file this pass is 218 lines, under the 220 warning line                                |
+| Text hygiene      | 0 em dashes; the only emoji in `src` and `tests` is one test vector proving the sanitizer refuses one |
 
 What the section does, and where it states a limit rather than hiding one:
 
-| Area              | Behaviour                                                                                                                                                                                                                                                                                                                                                    |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| The set is global | Neither the read nor the write route takes a provider, and `alias` is the table's primary key, so the table is the same on every provider's detail screen and the section says so instead of implying it belongs to this provider. §6.4's delete refusal cannot link to it for the same reason: the route needs a provider id and the refusal names none (Q20). |
-| Whole-set writes  | `PUT /models/aliases` replaces the set, so every change merges over the whole last read, and the body is sorted the way the read route sorts, which keeps the table from reshuffling after a reload. A write before the first successful read is refused with a sentence, because the merge would send an empty set and clear every alias.                      |
-| One form, two jobs | A name already in the table changes that alias's target instead of adding a second row: a duplicate is a primary-key violation whose answer names the constraint rather than the alias. The outcome line says which of the two happened, so a write that changed a target is not reported as an add.                                                        |
-| The suggestions   | The target field suggests the catalog ids and the combo names, the two things a target may be. They are suggestions, not a constraint: a failed read leaves the field usable and says so, and a combo list longer than the API's 100-row page says it is truncated rather than looking whole.                                                                   |
-| Stale targets     | A stored alias whose target has since been disabled or deleted still renders, and a write that carries it is refused by the API with a sentence naming the alias. Q21 records that one such row refuses every alias edit until it is removed.                                                                                                                |
-| The combo delete  | The dialog's lead sentence follows the error code, so only a `CONFLICT` reads as "still referenced" and a server failure no longer does. The editor's reference suggestions gained the alias names, the third source §7.7 resolves a ref from.                                                                                                                |
+| Area               | Behaviour                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The set is global  | Neither the read nor the write route takes a provider, and `alias` is the table's primary key, so the table is the same on every provider's detail screen and the section says so instead of implying it belongs to this provider. §6.4's delete refusal cannot link to it for the same reason: the route needs a provider id and the refusal names none (Q20). |
+| Whole-set writes   | `PUT /models/aliases` replaces the set, so every change merges over the whole last read, and the body is sorted the way the read route sorts, which keeps the table from reshuffling after a reload. A write before the first successful read is refused with a sentence, because the merge would send an empty set and clear every alias.                      |
+| One form, two jobs | A name already in the table changes that alias's target instead of adding a second row: a duplicate is a primary-key violation whose answer names the constraint rather than the alias. The outcome line says which of the two happened, so a write that changed a target is not reported as an add.                                                            |
+| The suggestions    | The target field suggests the catalog ids and the combo names, the two things a target may be. They are suggestions, not a constraint: a failed read leaves the field usable and says so, and a combo list longer than the API's 100-row page says it is truncated rather than looking whole.                                                                   |
+| Stale targets      | A stored alias whose target has since been disabled or deleted still renders, and a write that carries it is refused by the API with a sentence naming the alias. Q21 records that one such row refuses every alias edit until it is removed.                                                                                                                   |
+| The combo delete   | The dialog's lead sentence follows the error code, so only a `CONFLICT` reads as "still referenced" and a server failure no longer does. The editor's reference suggestions gained the alias names, the third source §7.7 resolves a ref from.                                                                                                                  |
 
 Not yet verified: the rendered half in a browser, and every write against a running `app-serv`. The
 screen is client-rendered (`ssr = false`), so the tests exercise it against a stub that applies writes and
@@ -142,15 +184,15 @@ Run with Bun 1.3.14. This pass covers the disabled and custom model writes of `/
 (SPEC-UI §6.3): the Disable action on every catalog row, the list of models this provider cannot route,
 and the custom-model table with its add form and removal dialog.
 
-| Check             | Result                                                                 |
-| ----------------- | ---------------------------------------------------------------------- |
-| `bun run check`   | 0 errors, 0 warnings                                                   |
-| `bun run test`    | 1551 tests passed across 62 files, 114 of them new in this pass        |
-| `bun run lint`    | Prettier reports every file conforms                                   |
-| `bun run lint:ts` | ESLint exits 0                                                         |
-| `bun run build`   | succeeds, output in `build/`                                           |
-| File size         | largest source file this pass is 179 lines, under the 220 warning line |
-| Text hygiene      | 0 em dashes and 0 emoji across `src` and `tests`                       |
+| Check             | Result                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                  |
+| `bun run test`    | 1551 tests passed across 62 files, 114 of them new in this pass                                       |
+| `bun run lint`    | Prettier reports every file conforms                                                                  |
+| `bun run lint:ts` | ESLint exits 0                                                                                        |
+| `bun run build`   | succeeds, output in `build/`                                                                          |
+| File size         | largest source file this pass is 179 lines, under the 220 warning line                                |
+| Text hygiene      | 0 em dashes; the only emoji in `src` and `tests` is one test vector proving the sanitizer refuses one |
 
 What the screen does, and the four places it states a limit rather than hiding one:
 
@@ -183,15 +225,15 @@ below.
 Run with Bun 1.3.14. This pass covers `/media-providers/[kind]` (SPEC-UI §6.8), one screen at six
 addresses, and the navigation change that lets a sidebar row link to a parameterised route.
 
-| Check             | Result                                                                    |
-| ----------------- | ------------------------------------------------------------------------- |
-| `bun run check`   | 0 errors, 0 warnings                                                      |
-| `bun run test`    | 1437 tests passed across 57 files, 228 of them this slice plus navigation |
-| `bun run lint`    | Prettier reports every file conforms                                      |
-| `bun run lint:ts` | ESLint exits 0                                                            |
-| `bun run build`   | succeeds, output in `build/`                                              |
-| File size         | largest source file this slice is 195 lines, under the 220 warning line   |
-| Text hygiene      | 0 em dashes and 0 emoji across `src` and `tests`                          |
+| Check             | Result                                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                  |
+| `bun run test`    | 1437 tests passed across 57 files, 228 of them this slice plus navigation                             |
+| `bun run lint`    | Prettier reports every file conforms                                                                  |
+| `bun run lint:ts` | ESLint exits 0                                                                                        |
+| `bun run build`   | succeeds, output in `build/`                                                                          |
+| File size         | largest source file this slice is 195 lines, under the 220 warning line                               |
+| Text hygiene      | 0 em dashes; the only emoji in `src` and `tests` is one test vector proving the sanitizer refuses one |
 
 What the screen does, and the three places it states a limit rather than hiding one:
 
@@ -235,7 +277,7 @@ and `/proxy-pools` (§6.9), and the fold of the Settings Network tab into the pr
 | `bun run lint:ts` | ESLint exits 0                                                                                                                    |
 | `bun run build`   | succeeds, output in `build/`                                                                                                      |
 | File size         | largest source file is 218 lines, under the 220 warning line; test files run to 582 in this repository, so the source limit binds |
-| Text hygiene      | 0 em dashes and 0 emoji across `src` and `tests`                                                                                  |
+| Text hygiene      | 0 em dashes; the only emoji in `src` and `tests` is one test vector proving the sanitizer refuses one                             |
 
 What each screen does, and the two places it states a limit rather than hiding one:
 

@@ -303,6 +303,14 @@ installed set.
 | The alias target field suggests the catalog ids and the combo names | Those are the two things the API resolves a target from, so a third suggestion would offer a value the write refuses; the field stays typable because a stored target can have left both lists since it was written. |
 | The combo delete dialog's lead sentence follows the error code | Only a `CONFLICT` means an alias still references the combo, so a server failure that read "still referenced" would be a claim the panel cannot support. |
 | The combo editor offers the alias names as references | §7.7 lets a ref be a catalog id, a combo name, or an alias, so a picker offering two of the three would hide a value the API accepts. |
+| The OAuth section renders only for a provider the registry marks `has_oauth` | That flag is the API's own answer to whether the provider has a flow, and a section rendered for every provider would show an empty one on most of them. |
+| The authorize URL is a link the panel does not follow | A scripted navigation to a third party is a redirect the operator did not ask for, and a link shows the host before it is followed. |
+| A flow the panel cannot start gets its reason instead of a disabled button | A control that cannot act is a dead control under R-26, and the reason says where the connection is actually made instead of leaving the operator to guess. |
+| The callback's outcome is read once and its keys are dropped from the address | An address can be edited by anyone and a reload would otherwise announce a past result as if it had just happened; the sentence is held in memory so dropping the keys does not drop the report. |
+| The failed authorization shows the gateway's sentence rather than a classified cause | Classifying it would mean pattern-matching the gateway's English, and the panel can attribute what the gateway said without claiming to know which class it is. |
+| The token state is the gateway's `refresh_state`, with only the expiry told apart | Re-deriving the classification would be a second opinion about the gateway's own clock; the expiry is the one fact that separates "inside the window" from "already expired". |
+| The manual refresh is per account rather than one button for the provider | The answer names the accounts it moved, and an id is what the API reads as "this one", so the operator acts on the row they can see. |
+| The refresh re-reads the status without blanking the table | The re-read would otherwise unmount the table and the sentence reporting what the gateway just did, which is the outcome the operator asked for. |
 
 ---
 
