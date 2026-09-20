@@ -7,7 +7,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); 21 gap terdaftar, sebelas di antaranya temuan click-through/pass live, dua puluh sudah CLOSED (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20); G21 terdaftar sebagai seam baru dan menjadi satu-satunya item terbuka — desain seam-nya sudah ada, keputusannya (D6) menunggu owner |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); dua puluh satu gap terdaftar, sebelas di antaranya temuan click-through/pass live, dua puluh sudah CLOSED (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20), G21 terdaftar sebagai seam baru, dan G22 ditutup 2026-09-20 — vertical kuota kini ada ingest dan penegakannya; worker re-check tetap deferred ke P2. G21 adalah satu-satunya item terbuka — desain seam-nya sudah ada, keputusannya (D6) menunggu owner |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
 | **Bukti terakhir** | pass G5 slice 11 2026-09-19 (Gemini STT ke stub loopback 8093: URL `:generateContent` + `key` query, audio inline base64, prompt bawaan/eksplisit, `{text}`; kontrol assemblyai tetap ditolak dengan nama); sebelum itu pass G4 (proxy loopback 8092), G5 slice 4–10 (tujuh adapter TTS ke stub), G19 (migration `000011`), dan G8 (boot polos tanpa override) |
 
@@ -45,6 +45,7 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 | G19 | `media_provider_settings` dan `proxies` dimiliki role superuser; role aplikasi `pannelai` tanpa privilege, jadi §7.10/§7.11 gagal di host ini. **CLOSED 2026-09-19** | lingkungan (aksi pemilik) | tidak | 6 |
 | G20 | Penolakan media/embeddings sebelum panggilan (Prepare: provider tak dikenal, `base_url` kosong, format gate, tanpa kredensial, tanpa akun) tidak meninggalkan baris log, sedangkan jalur chat kini mencatat setiap panggilan. **CLOSED 2026-09-19** | akuntansi §7.13 | tidak | 6 |
 | G21 | Lima format media butuh lebih dari satu request (AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device) sehingga tidak bisa masuk pipeline satu-URL | fitur/seam baru | tidak | 7 |
+| G22 | Quota vertical hanya punya sisi baca: `QuotaCounterStore.Add`, `QuotaCap.Exhausted`, dan `MonthlyUsage` nol pemanggil produksi, sehingga `quota_windows` tidak pernah terisi dan router tidak pernah melewati endpoint ber-cap habis. **CLOSED 2026-09-20**: ingest di seam `QuotaRecorder` (chat + media/embeddings), penegakan di `SelectorDeps.Gate`, worker re-check tetap deferred ke P2 | fungsional §7.12 | tidak | 8 |
 
 ## 3. Detail per gap
 
