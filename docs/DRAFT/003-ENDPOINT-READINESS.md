@@ -39,7 +39,7 @@ breaking change baru memunculkannya.
 |---|---|---|---|
 | Endpoint & Key | §7.3 + §7.5 | gateway-keys (5), endpoints CRUD + test (7), keys CRUD + bulk (5), endpoints/bulk, oauth/bulk | CLOSED (perjalanan dipin test, lihat §8) |
 | Provider | §7.4 | providers (3), provider-nodes CRUD + test (6), OAuth start/callback/status/refresh (4) | lengkap |
-| Combo & Vision Adapter | §7.7 + §7.8 | combos CRUD + test (6), vision-adapter GET/PUT | lengkap |
+| Combo & Vision Adapter | §7.7 + §7.8 | combos CRUD + test (6), vision-adapter GET/PUT | CLOSED (perjalanan dipin test, lihat §9) |
 | Usage | §7.12 | summary, timeseries, records, records/{request_id} | lengkap |
 | Quota Tracker | §7.12 | quotas, quotas/{endpoint_id} GET/PUT | lengkap |
 | Token Saver | §7.9 | token-saver GET/PUT; engine native sudah Closed lewat 002 | lengkap |
@@ -122,3 +122,27 @@ kontrak tanpa gagal build.
 
 Sisa gap pada audit ini: tidak ada. Area berikutnya yang bisa ditutup dengan pola yang
 sama: Provider, Combo & Vision Adapter.
+
+## 9. Penutupan area Combo & Vision Adapter (2026-09-20)
+
+Status **CLOSED**. Audit menemukan cakupan perjalanan area ini sudah menyeluruh dari
+domain sampai handler; satu-satunya gap adalah pengujian gerbang akses dan tabel verb di
+level mux, ditutup pada commit `4833d30`. Bukti per perjalanan, dipetakan ke TDD.md
+(table-driven) dan OWASP:
+
+| Perjalanan | Test | Bukti |
+|---|---|---|
+| Create combo: ref wajib deref satu tingkat (model, combo, atau alias); judge fusion wajib ada dan ikut tervalidasi; nama duplikat = CONFLICT | `TestComboService_Create` (tabel termasuk ref alias, combo, campuran, ref/judge tak terresolve, fusion tanpa judge) | service |
+| Update combo: rename dicek terhadap nama tersimpan; daftar model atau strategi berubah mereset rotasi sticky | `TestComboService_Update`, `TestComboService_UpdateResetsRotationWhenTheListChanges` | service |
+| DELETE combo ditolak CONFLICT selama alias masih menunjuknya, teruji sampai kabel (mux nyata, seeding alias lewat PUT /models/aliases) | `TestComboService_DeleteRefusesWhileAnAliasReferencesIt`, `TestComboDeleteThroughMux_ConflictWhileReferenced`, `TestManagementRoutes_DuplicateComboNameIsConflict` | service, router |
+| Prioritas terurut, prioritas sama stabil (urutan input dipertahankan) | `TestNewCombo_OrdersModelsByPriority`, `TestNewCombo_KeepsEqualPrioritiesStable` | domain |
+| Strategi: fallback, round_robin, fusion beserta rotasi dan batas sticky | `TestComboStrategy_NextOrder`, `TestRotationRequestIndex_Boundaries`, `TestRotateRefs`, `TestComboService_OrderRotatesAcrossRequests` | domain, service |
+| Rotasi gagal/store absen: fallback ke urutan prioritas tersimpan, bukan gagal request | `TestComboService_OrderFallsBackWhenTheStoreFails`, `TestComboService_OrderWithoutAStore` | service |
+| Probe combo: satu hasil per ref sesuai urutan tersimpan, anggota mati = hasil bukan error, judge fusion diprobe terakhir dengan role tersendiri | `TestComboTestService_Test` (tabel 4 kasus), `TestComboTestHandler_ReportsEveryReference`, `TestComboTestHandler_ADeadMemberIsAResult`, `TestComboTestHandler_UnknownCombo` | service, handler |
+| Vision adapter: PUT = replace penuh, model wajib vision-capable (ditolak VALIDATION_ERROR per nama), round-trip GET=PUT, idempoten, model yang dilepas hilang | `TestVisionAdapterService_Replace` (tabel termasuk model non-vision), `TestVisionAdapterHandler_PutRoundTrip`, `TestVisionAdapterService_ReplaceIsIdempotent`, `TestVisionAdapterService_ReplaceRemovesDroppedModels` | service, handler |
+| Augmenter: model yang sudah vision-capable atau adapter mati tidak diaugmentasi; rotasi advisory tidak menggagalkan serving | `TestVisionAugmenter_DeclinesForACapableModel`, `TestVisionAugmenter_DeclinesWhenTheAdapterIsDisabled`, `TestVisionAugmenter_AdvisoryRotationFailureDoesNotBlockServing` | service |
+| Session gate dan verb table §7.7/§7.8: 401 tanpa session untuk kedelapan route, 200 dengan session (benign control), verb tak terdaftar = 405 METHOD_NOT_ALLOWED meski session valid (OWASP A01: function-level + per-method) | `TestComboAndVisionRoutes_SessionGated`, `TestComboAndVisionRoutes_VerbEnforcement` (commit `4833d30`) | router |
+
+Kontrak mesin-baca: kelima verb `/combos` dan keduanya `/vision-adapter` terkunci di
+`openapi.json` yang dilayani lewat coverage test dua arah, sama seperti area Endpoint &
+Key. Sisa gap: tidak ada. Area berikutnya dengan pola yang sama: Provider.
