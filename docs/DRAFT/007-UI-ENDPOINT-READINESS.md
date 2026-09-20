@@ -1,0 +1,424 @@
+# 007-UI-ENDPOINT-READINESS.md: Audit Kesiapan Route Endpoint Panel (app-ui)
+
+Dokumen kerja hasil pemeriksaan kesiapan route dan endpoint pada panel `app-ui` tanggal
+2026-09-20. Bukan kontrak; kontrak tetap `docs/SPEC-UI/001-SPEC-UI.md` (perilaku, route,
+scope) dan `docs/SPEC-API/001-SPEC-API.md` (wire). Dokumen ini melanjutkan pola
+`003-ENDPOINT-READINESS.md` sampai `006-TOKEN-SAVER-READINESS.md`: temuan bernomor F,
+owner memilih nomor yang dikerjakan.
+
+| | |
+|---|---|
+| **Status** | draft siap dikerjakan; belum ada nomor yang disetujui owner |
+| **Dibuat** | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv` |
+| **Kaitan** | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md` |
+| **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan |
+
+## 1. Metode
+
+Empat langkah, semuanya bisa diulang:
+
+1. Route table SPEC-UI §5.1 (19 baris) dibandingkan dengan `find app-ui/src/routes -type f`:
+   setiap route yang ada dipetakan, setiap route yang tidak ada dicatat.
+2. Kesiapan per layar diperiksa terhadap bullet §6.x-nya sendiri, bukan terhadap ringkasan
+   README: tiap kontrol yang diminta spec dicari di komponen, dan tiap endpoint yang
+   dipanggil dicocokkan dengan tabel §7 SPEC-API.
+3. Sisi `app-serv` diperiksa hanya untuk menjawab "apakah endpoint-nya sudah ada": route P4
+   (`/skills`, `/openapi.json`, `/changelog`) dibaca dari router, handler, dan dokumen yang
+   dilayani.
+4. Bukti mekanis dijalankan langsung: `wc -l` atas seluruh `src/` dan `tests/`, inventaris
+   test per layar (`grep -rlF` atas import `+page.svelte`), dan pemetaan filter URL
+   (`page.url.searchParams`).
+
+## 2. Ringkasan kesiapan 14 item
+
+| # | Item (KEEP) | Route | Layar | Endpoint SPEC-API | Status |
+|---|---|---|---|---|---|
+| 1 | Endpoint & Key | `/endpoint-keys` | ada | §7.3, §7.5 live | F5, F6, F7, F9 |
+| 2 | Provider | `/providers`, `/providers/[provider_id]` | ada | §7.4, §7.6 live | F5 (list), F7 (list), Q12/Q13/Q19-Q23 tercatat |
+| 3 | Combo & Vision Adapter | `/combos` | ada | §7.7, §7.8 live | F12 (bukti); test tingkat tab ada |
+| 4 | Usage | `/usage` | ada | §7.12 live | F8, F12; tautan API Docs menunggu F1 |
+| 5 | Quota Tracker | `/quota` | ada | §7.12 live | bersih; live pass tercatat |
+| 6 | Token Saver | `/token-saver` | ada | §7.9 live | bersih; live pass tercatat |
+| 7 | Skill | `/skills` | **tidak ada** | §7.16 live sejak P4 | F2 |
+| 8 | Media Provider | `/media-providers/[kind]` | ada | §7.10 live | Q17/Q18 tercatat |
+| 9 | Playground Chat | `/playground` | **tidak ada** | §7.15 live; §10 P4 menugaskan halamannya | F3 |
+| 10 | Proxy Pools | `/proxy-pools` | ada | §7.11 live | bersih; live pass tercatat |
+| 11 | API Docs | `/api-docs` | **tidak ada** | §7.17 live sejak P4 | F1 |
+| 12 | Changelog | `/changelog` | ada, sumber belum dibaca | §7.18 live sejak P4 | F4 |
+| 13 | Console Log | `/console-log` | ada | §7.13 live | F8 |
+| 14 | Setting | `/settings` | ada | §7.14 live | F10 |
+
+Tiga route yang tidak ada adalah tiga baris terakhir yang masih `planned: true` di
+`src/lib/navigation.ts` (`skills` baris 100, `playground` baris 108, `api-docs` baris 109).
+Ketiganya kini punya endpoint atau penugasan fase, jadi `Planned` pada ketiganya adalah
+status yang bisa ditutup, bukan penantian.
+
+## 3. Bukti kesiapan yang sudah lolos
+
+- 11 dari 14 layar terbangun dan routable; 16 baris sidebar routable (10 route statis plus 6
+  kind media), 3 planned, 1 container, 20 node dalam 5 grup.
+- Sembilan capability U2 (SPEC-UI §12) landed; dua dari empat exit criteria-nya sudah
+  diverifikasi live (proxy tested from the panel; token saver config saved and reflected).
+- Line limit terukur: **tidak ada satu pun file di `app-ui/src/` yang melewati 220 baris**
+  (`find src -name '*.svelte' -o -name '*.ts' | xargs wc -l`). Yang di atas 250 hanya file
+  test pra-eksisting (terbesar `tests/schemas/combo.test.ts` 582), konsisten dengan aturan
+  "file test pra-eksisting dibiarkan".
+- §8.4.2 (filter di URL) sudah dipatuhi Usage (dua tab) dan Logs: `parseXSearch` +
+  `nextXSearch` + `goto(resolve(...))` di `UsageRecordsTab`, `UsageOverviewTab`,
+  `LogsRequestsTab`.
+- §6.6 (badge sumber, countdown, polling dengan pause) dan §6.7/§6.9/§6.8/§6.4 sudah sesuai
+  bullet spec-nya, termasuk pengecualian yang dinyatakan (Q15 sampai Q18).
+- Tiga endpoint P4 sudah live dan session-gated di `app-serv`: `GET /api/v1/skills` (katalog
+  embedded, 7 baris), `GET /api/v1/openapi.json` (67 path, 23 tag, 2 security scheme),
+  `GET /api/v1/changelog` (5 rilis, terbaru dulu).
+
+## 4. F1 (HIGH): `/api-docs` belum dibangun padahal artefak mesin-bacanya sudah live
+
+**Fakta.** SPEC-UI §5.1 menempatkan `/api-docs` di fase U1, dan §12 U1 menyebutnya di scope.
+Tidak ada file route, dan `src/lib/navigation.ts:109` masih `planned: true`. Sejak P4,
+`GET /api/v1/openapi.json` hidup (`app-serv/internal/router/router.go:205`, dokumen
+`app-serv/internal/handler/openapi.json`): 67 path dengan `summary`, `tags`, dan `security`
+per operasi, plus `components.securitySchemes` (`sessionCookie`, `gatewayKey`). Yang **tidak**
+ada di dokumen: `components.schemas` (nol schema request/response), tabel error §8, dan
+penanda fase per grup. §14 Q3 ("Machine-readable contract") karena itu sudah terjawab:
+artefaknya ada, tinggal dikonsumsi.
+
+**Risiko.** Satu-satunya item KEEP fase U1 yang belum punya layar, padahal endpoint-nya sudah
+siap; §6.12 melarang salinan kontrak kedua yang ditulis tangan, jadi menunda berarti menunda
+sampai ada yang menyalin tabel spec ke komponen. Empty state §6.5 ("plus a link to API Docs")
+juga tidak bisa ditepati selama route-nya tidak ada.
+
+**Kerja yang diusulkan.** Bangun `/api-docs` dari dokumen yang dilayani: satu modul
+`src/lib/api/docs.ts` plus schema Zod untuk dokumennya, lalu render base URL, dua scheme
+autentikasi dan operasi mana yang memakai yang mana, katalog path dikelompokkan per tag, satu
+contoh curl per grup yang **disusun dari** `method` + `path` (bukan salinan), dan keadaan
+kosong/loading/error. Dua celah isi diputuskan owner: (a) tabel error §8, dan (b) fase per
+grup. Pilihan yang diusulkan: render hanya yang dokumen bawa, dan ganti tabel error dengan
+satu kalimat yang menunjuk `docs/SPEC-API/001-SPEC-API.md` §8 (bukan salinan yang bisa
+melenceng). Bila owner ingin tabel error dan fase tampil di layar, itu permintaan `app-serv`
+(`x-error-codes`, `x-phase`), dicatat di sini dan tidak dikerjakan dari draft ini.
+
+**Kriteria selesai.** Route file ada, baris nav routable (R-24), tiga state ada, tidak ada
+salinan kontrak kedua, test schema + render hijau, click-through tercatat. §14 Q3 ditutup
+dengan jawabannya di spec.
+
+## 5. F2 (HIGH): `/skills` belum dibangun, dan dokumen skill-nya belum ada di repo
+
+**Fakta.** `GET /api/v1/skills` hidup sejak P4
+(`app-serv/internal/handler/skills.go`), mengembalikan `{data: [...]}` dengan 7 baris: satu
+entry skill (`pannelai`) plus satu per endpoint data plane (`chat`, `image`, `tts`, `stt`,
+`embeddings`, `web-search`). Tiap baris membawa `raw_url` dan `blob_url` yang dirakit dari
+konstanta `rusmanadodi2598/pannelAI`, ref `main`, path `skills/<id>/SKILL.md`
+(`skills.go:31-35`, `skills.go:118-119`). Dua kenyataan yang belum dijawab:
+
+- **Direktori `skills/` tidak ada di repo ini.** `ls skills` gagal; jadi setiap `raw_url` yang
+  dilayani hari ini menunjuk berkas 404, dan cabang yang ditunjuk (`origin/main`) juga
+  tertinggal 104 commit dari HEAD lokal. §6.10 melarang mengirim kontrol copy yang menyalin
+  tautan rusak, jadi layarnya tidak bisa dibangun tanpa ini.
+- **§6.10 dan §7.16 menggambarkan katalog yang berbeda.** §6.10 meminta dua entri
+  (`/antislop` AI, SuperPowers) dan menegaskan "no directory of extras", sedangkan §7.16
+  melayani katalog per capability. §14 Q2 ("Skills source") sekarang terjawab sebagian:
+  sumbernya sudah ditetapkan di kode, yang belum ada isinya.
+
+**Risiko.** Layar yang dibangun dari §6.10 apa adanya akan menampilkan dua entri yang tidak
+pernah dikirim API, dan layar yang dibangun dari API akan menampilkan tujuh entri yang tidak
+diminta spec. Keduanya adalah pelanggaran R-38 (konten yang tidak nyata) atau R-26 (kontrol
+mati).
+
+**Kerja yang diusulkan.** (1) Owner memutuskan katalog mana yang benar, dan menulis berkas
+`skills/<id>/SKILL.md` untuk tiap baris yang dilayani (7 berkas) atau mengubah katalog di
+handler. (2) Amandemen §6.10 supaya cocok dengan katalog yang dilayani, termasuk aturan "entry
+skill first" dan perbedaan `raw_url` (untuk agen) versus `blob_url` (untuk manusia). (3)
+Bangun `/skills`: satu modul `src/lib/api/skills.ts` + schema, satu kartu per baris dengan
+nama, deskripsi, endpoint, dua tautan, dan satu kontrol copy berisi baris instalasi. (4) Bila
+sebuah `raw_url` tidak resolve, baris itu merender unavailable state yang menamai penyebabnya,
+bukan kontrol copy.
+
+**Kriteria selesai.** Tiap entri yang tampil memiliki `SKILL.md` yang benar-benar bisa dibaca
+(dibuktikan dengan permintaan nyata ke `raw_url`, bukan diasumsikan), atau merender unavailable
+state; tidak ada entri dengan tautan rusak; §6.10 dan §7.16 sepakat; §14 Q2 ditutup.
+
+## 6. F3 (HIGH): `/playground` belum dibangun, dan jalur injeksi kredensialnya belum ada
+
+**Fakta.** SPEC-API §10 baris P4 menugaskan "panel playground (SPEC-UI page over §7.15, no new
+route)", jadi fase yang ditunggu §14 Q7 sudah diberikan. Model auth-nya sudah diputuskan owner
+(2026-09-17, §6.15): server panel yang melakukan panggilan data plane dan menyuntikkan gateway
+key, browser tidak pernah memegang kredensial. Yang belum ada di panel:
+
+- `src/lib/schemas/env.ts:9` hanya mendeklarasikan `PANEL_API_TARGET`; tidak ada
+  `PANEL_PLAYGROUND_KEY`.
+- `src/hooks.server.ts:11-15` meneruskan **semua** `/api/v1/*` apa adanya ke `app-serv` tanpa
+  menyuntikkan header. Jadi panggilan browser ke `/api/v1/chat/completions` sampai ke gateway
+  tanpa kredensial (401), dan sekaligus: membuat hook ini menyuntikkan key untuk semua path
+  akan menyerahkan kredensial ke setiap permintaan yang bisa dibuat browser.
+- Tidak ada file route dan baris nav masih `planned: true` (`navigation.ts:108`).
+
+**Risiko.** Layar tidak bisa dibangun hanya dengan menambah halaman: jalur injeksinya adalah
+pekerjaan panel, dan bentuk yang salah (injeksi di forwarder umum) justru memperluas
+permukaan kredensial. Tanpa itu, satu-satunya cara memeriksa rute adalah CLI, dan halaman
+yang §10 P4 tugaskan tetap kosong.
+
+**Kerja yang diusulkan.** (1) Tambah `PANEL_PLAYGROUND_KEY` ke `envSchema` dengan aturan gagal
+cepat yang sudah jadi kebiasaan panel (nama variabel disebut saat hilang atau salah bentuk).
+(2) Tambah endpoint server khusus di luar prefix `/api/v1` (route `+server.ts`) yang melakukan
+panggilan data plane dari server, hanya menambahkan `Authorization: Bearer` di sana, tidak
+pernah mencatat, tidak pernah menggema, dan tidak pernah mengirim key ke browser. (3) Bangun
+`/playground`: pilihan model, kotak pesan, tombol kirim yang menyatakan biayanya sebelum
+kirim, lalu model yang ter-resolve dan status upstream pada hasilnya. (4) Bila key tidak
+diset, layar merender unavailable state yang menyebut variabelnya, bukan meminta operator
+menempel key.
+
+**Kriteria selesai.** Tidak ada kredensial di bundle, storage, URL, atau field form (diuji);
+key tidak muncul di respons mana pun (diuji); unavailable state saat key kosong; click-through
+tercatat. Owner menyediakan satu gateway key untuk pass live.
+
+## 7. F4 (HIGH): Changelog belum membaca sumber rilis yang sekarang sudah dilayani
+
+**Fakta.** `GET /api/v1/changelog` hidup sejak P4
+(`app-serv/internal/handler/changelog.go`), menjawab `{data: [{version, date, title, notes}]}`
+terbaru dulu, 5 rilis (`v0.4.0` sampai `v0.0.1`). Layar `/changelog` masih membaca hanya
+`GET /api/v1/version` dan menyimpan `entries` kosong
+(`src/routes/changelog/+page.svelte:27,38`), dengan komentar yang menyatakan "SPEC-API §7
+defines no changelog endpoint". Bentuk wire-nya juga belum cocok: `schemaChangelog` menuntut
+`{entries: [{version, released_at, category, items[]}]}` (`src/lib/schemas/changelog.ts:22-47`)
+sementara route mengirim `date`, `title`, `notes` datar, tanpa `category` dan tanpa `items`.
+Dua cacat kecil ikut tercatat: komentar route menyebut §6.18 (section yang benar §6.16), dan
+`app-ui/README.md` item 3 masih menyatakan tidak ada sumber rilis.
+
+**Risiko.** Layar menyatakan "no release notes are available" sementara gateway menyajikannya;
+itu klaim yang salah (R-38). Memetakan paksa `notes` menjadi `items[]` atau mengarang
+`category` akan mengubah teks rilis menjadi sesuatu yang tidak ditulis siapa pun.
+
+**Kerja yang diusulkan.** Owner memilih satu: (a) panel merender bentuk yang dilayani (version,
+date, title, notes sebagai satu blok) dan §6.16 diamandemen dari `category` + `items[]` ke
+bentuk itu, atau (b) `app-serv` memperluas entri dengan `category` dan `items[]`, yang dicatat
+sebagai permintaan dan tidak dikerjakan dari draft ini. Setelah itu: `src/lib/api/changelog.ts`
++ schema untuk bentuk yang dipilih, loader membaca dua route (changelog + version), marker
+`Running`/`Newer`/`Installed` tetap dihitung terhadap versi yang berjalan, empty state hanya
+muncul saat route menjawab nol baris, komentar §6.18 diperbaiki, dan Q11 ditutup.
+
+**Kriteria selesai.** Layar merender rilis yang dilayani; perbandingan versi tetap benar; empty
+state tidak lagi berbohong; test schema + render hijau; §14 Q11, §12, dan README diperbarui.
+
+## 8. F5 (MEDIUM): Filter tab Upstream endpoints tidak memfilter dan tidak ada di URL
+
+**Fakta.** `UpstreamEndpointsTab.svelte` menyimpan `providerFilter` dan `statusFilter` di state
+komponen (baris 29-30), menghitung `shown` dari keduanya (baris 45-51), tetapi merender tabel
+dengan `{endpoints}` (baris 164), yaitu seluruh halaman yang dibaca. Akibatnya: memilih
+provider atau status tidak pernah mempersempit tabel; yang berubah hanya apakah empty state
+"No endpoint matches these filters" muncul. `load()` juga memanggil `listEndpoints({ page,
+per_page })` (baris 69) tanpa mengirim filter, padahal `GET /api/v1/endpoints` menerima
+`?provider_id=&status=` (SPEC-API §7.5) dan `src/lib/api/endpoints.ts:41-44` sudah menyediakan
+tipe query-nya. Filter juga tidak ada di URL, yang melanggar §8.4.2; pola yang benar sudah ada
+di `UsageRecordsTab`/`LogsRequestsTab` (parse/next + `goto(resolve(...))`).
+
+**Risiko.** Operator yang memilih satu provider melihat daftar yang tidak cocok dengan
+filternya, atau empty state "tidak ada yang cocok" sementara barisnya ada di layar; tampilan
+tidak bisa dibagikan dan navigasi maju/mundur tidak mengembalikannya. `upstream_endpoints`
+adalah layar U0/U1, jadi cacatnya ada di jalur yang paling awal dipakai.
+
+**Kerja yang diusulkan.** Pindahkan kedua filter ke search params dengan pola
+`parseEndpointSearch`/`nextEndpointSearch` seperti `log-search.ts`/`usage-search.ts`, kirim
+sebagai `provider_id` dan `status` ke API (server-side, sesuai §8.4.1), dan render hasil
+server. Halaman (`page_`) ikut ke URL agar tampilan yang dibagikan konsisten.
+
+**Kriteria selesai.** Test menegaskan filter mempersempit baris yang dirender **dan** menulis
+URL; tidak ada penyaringan client-side atas satu halaman; §8.4.2 terpenuhi di layar ini.
+
+## 9. F6 (MEDIUM): Mode baris berulang untuk menambah banyak key sudah ditulis di klien, belum ada UI-nya
+
+**Fakta.** §6.2 meminta "one form, plus a repeatable row mode for adding several keys in one
+submit loop". Klien dan schema-nya sudah ada: `addEndpointKeys` memanggil
+`POST /endpoints/{id}/keys/bulk` (`src/lib/api/endpoints.ts:133-144`) dengan
+`schemaBulkAddKeysForm` (maksimum 100 baris, `src/lib/schemas/endpoint.ts:213-217`). Tidak ada
+satu pun komponen yang memanggilnya: `AddEndpointKeyForm.svelte:30` memakai jalur satu-key.
+Fungsi itu karena itu kode tanpa pemanggil, dan aturan §6.2-nya belum terpenuhi.
+
+**Risiko.** Multi-key per endpoint adalah inti layar ini (Locked Decision 2), dan onboarding
+akun dengan beberapa key tetap berarti satu submit per key. Kode klien yang tidak dipakai juga
+tidak teruji, jadi bentuk respons `{created, results[]}` yang all-or-nothing tidak pernah
+dibuktikan di panel.
+
+**Kerja yang diusulkan.** Tambah mode baris berulang di drawer: daftar baris label+nilai yang
+bisa ditambah dan dihapus, satu tombol submit yang mengirim satu batch, dan hasil per indeks
+yang ditampilkan per baris (sukses atau pesan penolakan), dengan aturan all-or-nothing
+dinyatakan di UI. Perbarui tabel key setelah sukses.
+
+**Kriteria selesai.** Test render: batch dua baris sukses, batch dengan satu baris duplikat
+ditolak seluruhnya dan pesannya menempel pada barisnya; tidak ada request terkirim saat
+form kosong.
+
+## 10. F7 (MEDIUM): Empat layar tidak punya test render sama sekali
+
+**Fakta.** Diukur dengan mencari import `src/routes/<route>/+page.svelte` di `tests/`: yang
+punya test render adalah `providers/[provider_id]` (4 file), `quota` (2), `token-saver` (2),
+`media-providers/[kind]` (2), `proxy-pools` (3), `settings` (1), plus test tingkat tab untuk
+combos (`CombosTab`), logs (`LogsRequestsTab`), console-log (`ConsoleLog`), usage
+(`UsageOverviewTab`, `UsageRecordsTab`). Yang **tidak** punya test render di tingkat mana pun:
+`/login`, `/endpoint-keys` (kedua tab), `/providers` (list; halaman detailnya punya), dan
+`/changelog`. Seluruh permukaan tab 2 §6.2 (EndpointTable, EndpointDetailDrawer,
+EndpointFieldsForm, EndpointKeysTable, AddEndpointKeyForm, CreateEndpointForm) tidak dirender
+test mana pun; `tests/schemas/endpoint.test.ts` hanya menguji schema, termasuk
+`schemaAddEndpointKeyForm`, bukan komponennya.
+
+**Risiko.** Ini layar U0/U1, dan `docs/RULLES/TDD.md` §2.1 mensyaratkan satu test happy path
+plus satu test validasi per route. Cacat seperti F5 tepatnya ada di area tanpa test; gerbang
+`bun run test` hijau tidak mengatakan apa pun tentang layar-layar ini.
+
+**Kerja yang diusulkan.** Test render table-driven per layar dengan fetch stub: gateway keys
+(create lalu modal satu kali, rename, disable, revoke, empty state), tab endpoints (filter,
+paginasi, drawer, blokir last active key, test), providers list (filter kategori, dua empty
+state), login (password salah, rate limited, redirect), changelog (tiga state plus marker).
+Tambahkan juga test untuk mode F6 begitu UI-nya ada.
+
+**Kriteria selesai.** Tiap layar di atas punya test render yang mengasertif state-nya terhadap
+stub; tidak ada penambahan test yang menembus 250 baris tanpa pemisahan per concern.
+
+## 11. F8 (MEDIUM): Tidak ada kontrol refresh eksplisit di layar daftar mana pun kecuali `/quota`
+
+**Fakta.** §8.6.2: "Every list view has an explicit refresh control, because operators distrust
+auto-refresh they cannot trigger". Yang ada di panel: `Refresh now` hanya di
+`src/routes/quota/+page.svelte:127`, dan `Auto refresh` di console log. Layar daftar lain
+(endpoint-keys dua tab, providers, combos, usage dua tab, logs, proxy-pools,
+media-providers, changelog) hanya menyediakan `Try again` di dalam state error, bukan kontrol
+yang bisa ditekan kapan saja. Header panel juga tidak punya kontrol global (hanya Copy, tema,
+sign out).
+
+**Risiko.** Operator yang mencurigai data basi harus memuat ulang halaman; aturan §8.6.2
+tertulis dan tidak dipenuhi di 9 layar, dan tidak ada test yang menutupnya.
+
+**Kerja yang diusulkan.** Satu komponen refresh kecil yang menerima fungsi `load` dan
+menyatakan hasilnya, dipasang di tiap layar daftar. Bila owner membaca §8.6.2 sebagai aturan
+untuk layar yang polling saja (quota dan console log), alternatifnya adalah amandemen satu
+kalimat di §8.6.2 dengan alasannya, dan tidak ada kode yang ditulis.
+
+**Kriteria selesai.** Setiap layar daftar punya kontrol refresh yang teruji, atau §8.6.2
+diamandemen dengan keputusan owner.
+
+## 12. F9 (LOW): `rate_limited_until` tampil mentah, bukan countdown
+
+**Fakta.** §6.2 meminta kolom "`rate_limited_until` countdown", dan §4 menetapkan waktu
+ditampilkan dalam zona waktu browser dengan label zona. `EndpointKeysTable.svelte:52-57`
+mencetak nilai RFC3339 apa adanya ("rate limited until 2026-09-20T10:00:00Z"). Helper
+`countdownText` dan `formatTimestamp` sudah ada di `src/lib/utils/time.ts` dan dipakai
+`QuotaTable.svelte`.
+
+**Risiko.** Kecil tetapi nyata: satu kolom di layar U0 membaca seperti dump, dan sisa waktu
+tidak bisa dibaca sekilas padahal itu satu-satunya gunanya.
+
+**Kerja yang diusulkan.** Ganti menjadi `formatTimestamp` plus `countdownText`, dengan `now`
+yang di-tick bila countdown ingin hidup; atau tampilkan waktu absolut dengan zona plus sisa
+waktu statis bila ticking dianggap berlebihan.
+
+**Kriteria selesai.** Test menegaskan kolom memuat waktu terformat, bukan string RFC3339 mentah.
+
+## 13. F10 (LOW): §8.4.4 (dirty guard) dan §8.4.5 (validasi saat blur) belum diterapkan
+
+**Fakta.** Tidak ada `beforeunload` maupun `onNavigate` di seluruh `app-ui/src/`; form
+memvalidasi saat submit saja (`safeParse` di handler submit). §8.4.4 meminta peringatan sebelum
+meninggalkan form dengan perubahan belum tersimpan, dan §8.4.5 meminta validasi saat blur dan
+submit, bukan tiap ketikan. Beberapa tab settings sudah punya indikator "Unsaved changes" plus
+Discard, yang memenuhi semangat §8.4.4 di dalam halaman tetapi tidak saat meninggalkannya.
+
+**Risiko.** Operator bisa kehilangan draft konfigurasi (settings, token saver, proxy) tanpa
+peringatan; pesan validasi baru muncul setelah submit, bukan setelah field ditinggalkan.
+
+**Kerja yang diusulkan.** Owner memutuskan: (a) implementasi satu guard bersama untuk form yang
+punya draft (settings tiga tab, token saver, proxy, combo editor) plus validasi blur pada form
+multi-field, atau (b) amandemen §8.4.4 dan §8.4.5 dengan alasan yang ditulis, karena panel
+memvalidasi di submit dan menampilkan indikator dirty.
+
+**Kriteria selesai.** Salah satu jalur dipilih; bila (a), ada test untuk keduanya.
+
+## 14. F11 (LOW): Angka dan klaim dokumen yang basi
+
+**Fakta.** Beberapa klaim terukur tidak lagi cocok, dan dua di antaranya sudah selesai:
+
+- `app-ui/README.md` "Open items that block later phases" butir 1 (app-serv tidak bisa boot),
+  butir 2 (playground belum punya fase), dan butir 3 (tidak ada sumber changelog) semuanya
+  sudah terjawab oleh P1/P4. Butir 5 (drift gate menunggu berkas
+  `docs/SPEC-API/002-SPEC-API-openapi.md`) menyebut berkas yang memang masih belum ada,
+  tetapi premisnya berubah: sejak P4 kontraknya dilayani sebagai `GET /api/v1/openapi.json`,
+  jadi gate itu punya bentuk baru yang bisa dipakai.
+- README baris status menyebut "19 owner rows"; hasil ukur hari ini: 20 node, 14 baris
+  top-level, 16 routable (10 route statis + 6 kind media), 3 planned.
+- SPEC-UI §15 baris "Sidebar row count" masih "8 with a route, 11 planned leaves"; hasil ukur
+  hari ini 16 routable, 3 planned, 1 container (total 20 tetap).
+- SPEC-UI §12 tidak punya paragraf status untuk **U1**, padahal U0 dan U2 punya.
+- Komentar `src/routes/changelog/+page.svelte:2` menyebut §6.18; section changelog adalah
+  §6.16.
+
+**Risiko.** README dan §15 dibaca sebagai bukti (R-36); klaim "blocked" yang sudah selesai
+mengarahkan pekerjaan berikutnya ke tempat yang salah, dan angka yang tidak diukur ulang
+adalah klaim yang tidak berdasar.
+
+**Kerja yang diusulkan.** Ukur ulang tiap angka dengan perintahnya dan tulis hasilnya; ganti
+daftar "open items" README dengan yang benar-benar terbuka (F1 sampai F3, F12, dan permintaan
+`app-serv`); tambahkan paragraf status U1 di §12; perbaiki rujukan §6.18.
+
+**Kriteria selesai.** Tidak ada angka di README/§15 tanpa perintah ukur yang bisa diulang;
+tidak ada item README yang menyatakan blocker yang sudah tertutup.
+
+## 15. F12 (MEDIUM): Bukti click-through U0, U1, dan dua kriteria U2 belum tercatat
+
+**Fakta.** §9.4.5 dan R-35 mensyaratkan click-through terekam per elemen. SPEC-UI §12 U0
+menyatakan "verification run outstanding"; §12 tidak punya status U1 sama sekali, dan exit
+criterion U1 ("operator connects a provider endpoint with two keys, builds a `fallback` combo,
+routes one request, reads usage row, quota window, and log detail that all match") belum
+tercatat di mana pun. U2: dua dari empat criteria terpenuhi; OAuth round trip dan image
+generation melalui media provider belum, dan keduanya butuh akun provider. Tujuh dari sembilan
+pass di `app-ui/README.md` menutup dengan "browser click-through outstanding".
+
+**Risiko.** Panel bisa tampak selesai padahal setengah exit criteria-nya belum pernah
+dijalankan orang. Ini persis bentuk klaim yang R-35/R-36 larang.
+
+**Kerja yang diusulkan.** Satu pass live di atas stack berjalan yang menelusuri alur U0
+(login, key create, modal satu kali, rename, disable, revoke) dan alur U1 (endpoint dua key,
+combo fallback, satu request, lalu usage/quota/log yang saling cocok), plus dua kriteria U2
+bila akun provider tersedia. Setiap elemen dicatat hasilnya di README dengan tanggal. Yang
+tidak bisa dijalankan (OAuth start path dorman, media butuh akun) dicatat sebagai terblokir
+dengan penyebabnya, bukan diklaim lulus.
+
+**Kriteria selesai.** Click-through terekam per §9.4.5 dengan hasil per elemen; paragraf status
+U0 dan U1 di §12 diperbarui; dua kriteria U2 dinyatakan terpenuhi atau terblokir dengan
+penyebab yang disebut.
+
+## 16. Keputusan yang diminta owner
+
+| # | Pertanyaan | Pilihan yang diusulkan | Dipakai oleh |
+|---|---|---|---|
+| D1 | Katalog Skills: §6.10 (dua entri: `/antislop` AI, SuperPowers) atau §7.16 (satu entri per capability, 7 baris)? Dan siapa menulis `skills/<id>/SKILL.md`? | Ikuti katalog yang dilayani, amandemen §6.10, dan tulis 7 dokumen | F2 |
+| D2 | Bentuk rilis changelog: render yang dilayani (`version, date, title, notes`) dengan amandemen §6.16, atau `app-serv` menambah `category` + `items[]`? | Render yang dilayani, amandemen §6.16 | F4 |
+| D3 | API Docs: cukup yang ada di dokumen (path, tag, summary, auth) dengan tabel error ditunjuk lewat kalimat, atau minta `x-error-codes`/`x-phase` ke `app-serv`? | Cukup yang ada, tanpa salinan kedua | F1 |
+| D4 | Refresh control: pasang di semua layar daftar, atau amandemen §8.6.2 menjadi khusus layar yang polling? | Pasang satu komponen bersama | F8 |
+| D5 | §8.4.4 dirty guard dan §8.4.5 validasi blur: implementasi atau amandemen? | Implementasi untuk form berdraft, amandemen untuk blur | F10 |
+| D6 | Playground: sediakan `PANEL_PLAYGROUND_KEY` (gateway key) untuk pass live? | Ya, satu key khusus playground | F3, F12 |
+
+## 17. Urutan pengerjaan yang disarankan
+
+1. F11 (dokumen, paling murah, dan membuat sisa daftar ini jujur).
+2. F5 lalu F9 (dua cacat kecil di satu layar U0/U1 yang sama, sekaligus menutup §8.4.2).
+3. F6 (mode baris berulang; kliennya sudah ada).
+4. F7 (test render empat layar; menutup area yang F5/F6 sentuh).
+5. F8 dan F10 setelah D4 dan D5 dijawab (keduanya bisa jadi satu perubahan lintas layar).
+6. F4, lalu F1, lalu F2, lalu F3 (empat layar; F4 paling kecil karena layarnya sudah ada,
+   F3 terakhir karena butuh D6 dan menyentuh jalur kredensial).
+7. F12 sebagai penutup: satu pass live yang mencatat U0, U1, dan dua kriteria U2.
+
+Setiap nomor dikerjakan sebagai satu commit sendiri, dengan analysis plus compliance
+self-check di badan commit (TDD §3), gate panel lengkap (`bun run test`, `bun run check`,
+`bun run lint`, `bun run lint:ts`, `bun run build`), dan `wc -l` dijalankan atas setiap file
+yang disentuh sebelum staging. Bila sebuah nomor ternyata membutuhkan perubahan `app-serv`,
+pekerjaan itu berhenti dan dicatat sebagai permintaan, bukan dikerjakan dari draft ini.
+
+## 18. Catatan lingkup
+
+- Dua layar SPEC-UI §2.1 berada di luar daftar 14 item ini dan tidak diperiksa mendalam:
+  `/login` (item 14 KEEP, fase U0) dan `/logs` (item 11 KEEP, Requests tab). Keduanya
+  terbangun; `/login` ikut masuk F7 karena tidak punya test render, dan `/logs` tidak punya
+  gap yang ditemukan. Bila owner ingin keduanya diaudit penuh, itu nomor terpisah.
+- Seluruh temuan di atas diperiksa dengan membaca sumber, bukan dengan menjalankan panel di
+  browser. Panel client-rendered (`ssr = false`), jadi bukti render hanya bisa datang dari
+  test jsdom atau browser; F12 adalah nomor yang menutup celah itu.
+- `app-serv/` tidak disentuh. Tiga route P4 dibaca sebagai fakta yang sudah ada, dan setiap
+  kebutuhan yang jatuh di sana (D1, D2, D3) dicatat sebagai permintaan.
