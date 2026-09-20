@@ -1310,9 +1310,9 @@ table exists so a reader can re-run the measurement instead of trusting the sent
 | `DESIGN.md` present | `ls DESIGN.md` at the `pannelAI` root | Present, added 2026-09-17. Holds identity, palette, typeface, radius and elevation, identity motif, and the reason log. |
 | `AGENTS.md` present | `ls AGENTS.md` at the `pannelAI` root and `grep -c` on it | Present. Its scope line names Go services under `app-*/**`, so it does not govern the panel. |
 | `pannelAI` root contents | `ls -la` at the project root | `.gitignore`, `README.md`, `AGENTS.md`, `DESIGN.md`, `SYSTEM_MAP.md`, `docs/`, `deployment/`, `scrypts/`, `app-ui/`, `app-serv/`, `backups/` |
-| Panel test count | `bun run test` in `app-ui/` | 769 passing across 27 files after the Combos work (was 634 across 24 after the Providers work, 499 across 19 after the U0 closure work, and 396 across 13 before it) |
+| Panel test count | `bun run test` in `app-ui/` | 1053 passing across 39 files after the Logs work (was 769 across 27 after the Combos work, 634 across 24 after the Providers work, 499 across 19 after the U0 closure work, and 396 across 13 before it) |
 | Panel type check | `bun run check` in `app-ui/` | 0 errors, 0 warnings |
-| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 20 nodes in 5 groups: 5 with a route, 14 planned leaves (8 items plus 6 media kinds under one container), 1 container |
+| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 20 nodes in 5 groups: 8 with a route, 11 planned leaves (5 items plus 6 media kinds under one container), 1 container |
 | Accent usage in the shell | `grep -rn "color-accent"` across `src/lib/components` | Active row marker, primary action, focus ring, link, and active tab only (DESIGN.md §3.4) |
 | Logo source | `file app-ui/assets/static/logo.png` | JPEG data, 1254x1254, despite the `.png` extension. Cropped to `static/logo-mark.png` (512x512 RGBA, circular alpha mask) |
 | Legacy coral fails AA as a fill | Contrast calculation over the legacy token from `apps/9router/src/app/globals.css` | `#E56A4A` with white text measures 3.23:1, below the 4.5:1 floor, which is why the light theme uses `#B8412A` |
@@ -1323,7 +1323,7 @@ Path status for every path referenced in this document:
 | Path | Status |
 |---|---|
 | `docs/SPEC-API/001-SPEC-API.md` | Present |
-| `docs/RULLES/TDD.md` | Present |
+| `docs/RULLES/TDD.md, & OWASP.md` | Present |
 | `README.md` | Present |
 | `docs/SPEC-API/002-SPEC-API-openapi.md` | Planned, see §14 Q3 |
 | `AGENTS.md` | Present at the repository root, scoped to Go services (`app-*/**`). It does not govern `app-ui`. |

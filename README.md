@@ -21,43 +21,75 @@ Proyek memisahkan tanggung jawab **Control Plane** (API manajemen) dan **Data Pl
 ## Struktur proyek
 
 ```text
-pannelAI/
-├── app-serv/                   # Backend Go
-│   ├── cmd/app-serv/           # Entry point dan perakitan dependensi
-│   ├── internal/
-│   │   ├── config/             # Konfigurasi environment
-│   │   ├── dataplane/          # Resolve, select, translate, upstream
-│   │   ├── domain/             # Entitas, aturan domain, interface storage
-│   │   ├── handler/            # HTTP handlers dan middleware
-│   │   ├── registry/           # Registry provider dan registry.yaml
-│   │   ├── provider/           # Seam plugin konektivitas per provider
-│   │   ├── repository/         # Akses PostgreSQL dan Redis
-│   │   ├── router/             # Pemetaan route HTTP
-│   │   ├── schema/             # DTO, decoding, validasi request
-│   │   └── service/            # Logika bisnis API manajemen
-│   ├── migrations/             # Migrasi database
-│   ├── .env.example            # Contoh konfigurasi
-│   ├── go.mod                  # Modul dan dependensi Go
-│   └── README.md               # Dokumentasi backend
-├── app-ui/                     # Panel Svelte (Bun toolchain)
-│   ├── src/                    # Komponen dan route panel
-│   ├── static/                 # Aset statis
-│   ├── package.json            # Dependensi dan skrip Bun
-│   └── README.md               # Dokumentasi panel
-├── docs/
-│   ├── SPEC-API/               # Kontrak API dan OpenAPI
-│   ├── SPEC-UI/                # Spesifikasi dashboard
-│   └── RULLES/                 # Aturan kerja dan protokol pengujian
-├── scrypts/                    # Quality gates dan git hooks
-│   ├── gates/                  # Quality gates
-│   ├── hooks/                  # Git hooks
-│   └── lib/                    # Helper skrip
-├── deployment/                 # Berkas dan catatan deployment
-├── .gitlab-ci.yml              # Konfigurasi CI
-├── AGENTS.md                   # Pedoman kontribusi dan coding
-├── SYSTEM_MAP.md               # Peta sistem
+.pannelAI/
+├── AGENTS.md
+├── app-serv
+│   ├── cmd
+│   ├── .env
+│   ├── .env.example
+│   ├── .golangci.yml
+│   ├── go.mod
+│   ├── go.sum
+│   ├── internal
+│   ├── migrations
+│   ├── README.md
+│   └── tools
+├── app-ui
+│   ├── assets
+│   ├── bun.lock
+│   ├── components.json
+│   ├── .env
+│   ├── .env.example
+│   ├── eslint.config.js
+│   ├── package.json
+│   ├── .prettierignore
+│   ├── .prettierrc
+│   ├── README.md
+│   ├── scripts
+│   ├── src
+│   ├── static
+│   ├── svelte.config.js
+│   ├── .svelte-kit
+│   ├── tests
+│   ├── tsconfig.json
+│   ├── vite.config.ts
+│   └── vitest.config.ts
+├── deployment
+│   └── .gitkeep
+├── DESIGN.md
+├── docs
+│   ├── CHANGELOG
+│   ├── DRAFT
+│   ├── RULLES
+│   ├── SPEC-API
+│   └── SPEC-UI
+├── .git
+│   ├── branches
+│   ├── COMMIT_EDITMSG
+│   ├── config
+│   ├── description
+│   ├── FETCH_HEAD
+│   ├── HEAD
+│   ├── hooks
+│   ├── index
+│   ├── info
+│   ├── objects
+│   ├── ORIG_HEAD
+│   ├── packed-refs
+│   └── refs
 ├── .gitignore
-└── README.md
+├── .gitleaks.toml
+├── go.mod
+├── lsp.json
+├── package.json
+├── pyproject.toml
+├── README.md
+├── scrypts
+│   ├── gates
+│   ├── hooks
+│   ├── lib
+│   └── README.md
+└── SYSTEM_MAP.md
 ```
 
 Panel `app-ui` hanya mengonsumsi API manajemen `app-serv` dan tidak mengakses PostgreSQL atau Redis secara langsung.
@@ -74,11 +106,9 @@ Fondasi backend menggunakan **Go**, HTTP standar **`net/http`**, **PostgreSQL** 
 | Redis | Sesi, penghitung rate limit, dan state sticky round-robin |
 | Dashboard | Panel Svelte (direncanakan) yang mengonsumsi API Control Plane |
 
-Diagram awal disesuaikan dengan fondasi repo: tidak mengasumsikan Fiber/FastHTTP, Chi/Echo/Gin, SQLite, atau cache respons in-memory. Redis bukan hanya cache, dan kedua plane dapat membutuhkan PostgreSQL maupun Redis.
+## Arsitektur API Gateway
 
-## Arsitektur API Gateway (Mermaid.js)
-
-Diagram berikut menggambarkan **alur logis yang dituju** berdasarkan komponen yang tersedia. Garis putus-putus pada akses klien data plane dan dashboard menandai integrasi yang belum diverifikasi end-to-end, bukan jaminan endpoint sudah siap produksi.
+Diagram berikut menggambarkan **alur** berdasarkan komponen yang tersedia. 
 
 ```mermaid
 flowchart LR
@@ -136,7 +166,7 @@ flowchart LR
 5. Helper transport menyediakan retry untuk kegagalan jaringan, HTTP 429, dan 5xx. Pemindahan antar kandidat merupakan bagian dari integrasi alur fallback, berbeda dari retry ke target yang sama.
 6. Repository menyediakan penulisan usage, latency, request logs, serta pembaruan penggunaan key. Integrasi pencatatan dan pengembalian respons perlu diuji sebagai satu alur lengkap.
 
-Alur ini tidak menganggap dashboard analytics, streaming penuh, atau semua strategi combo sudah selesai. Strategi `fusion` belum didukung oleh komponen resolusi yang diperiksa.
+Alur ini tidak menganggap dashboard analytics, streaming penuh, atau semua strategi combo.
 
 ## Dokumentasi lanjutan
 
@@ -150,7 +180,7 @@ Alur ini tidak menganggap dashboard analytics, streaming penuh, atau semua strat
 - [Pedoman kontribusi](AGENTS.md)
 - [Quality gates dan hooks](scrypts/README.md)
 
-Dokumentasi ini menjelaskan struktur dan rancangan alur; bukan pernyataan bahwa build, lint, atau seluruh pengujian telah lulus.
+Dokumentasi ini menjelaskan struktur dan rancangan alur.
 
 ## Author
 

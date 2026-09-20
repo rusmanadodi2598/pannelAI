@@ -279,6 +279,10 @@ Prefer the Go standard library over third-party frameworks by default (`net/http
 - Postgres v17 (v18 latest)
 - Redis (Latest)
 
+3. Penerapan:
+- Terapkan ke seluruh source aplikasi: `app-*`
+- Pengecualian lint-limit kepada source: `docs/*`
+
 ---
 
 *Governance file for AI coding agents working in this Go codebase. Do not edit ad hoc — changes go through the same review process as other project documentation. || Created for Dodi Rusmana*
