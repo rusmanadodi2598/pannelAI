@@ -17,6 +17,11 @@
 
 	let { title, open, onclose, dismissible = true, children, footer }: Props = $props();
 
+	// One id per instance. The panel renders more than one dialog at a time (a combo's test result sits
+	// beside the tab's delete confirmation), and a fixed id would name every dialog with the first one's
+	// title, so a screen reader would read the wrong heading.
+	const titleId = $props.id();
+
 	let element = $state<HTMLDialogElement | null>(null);
 
 	$effect(() => {
@@ -49,11 +54,11 @@
 	bind:this={element}
 	oncancel={handleCancel}
 	onclose={handleClose}
-	aria-labelledby="modal-title"
+	aria-labelledby={titleId}
 	class="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 text-[var(--color-text)] backdrop:bg-black/50"
 >
 	<div class="flex items-center gap-3 border-b border-[var(--color-border)] px-4 py-3">
-		<h2 id="modal-title" class="text-sm font-semibold">{title}</h2>
+		<h2 id={titleId} class="text-sm font-semibold">{title}</h2>
 		{#if dismissible}
 			<button
 				type="button"

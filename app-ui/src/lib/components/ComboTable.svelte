@@ -5,8 +5,10 @@
 	// types, the strategy decides how the list is used, and the two strategy fields are shown as "Not used"
 	// rather than blank, because a blank cell reads as a value the panel failed to fetch.
 	//
-	// Test is absent because §7.7 places `POST /combos/{id}/test` in P2, and §6.4 marks it U2. A button that
-	// cannot run is worse than no button.
+	// Test is the row's own action and the table holds its readout, so the tab above keeps owning the list
+	// and the delete confirmation and nothing else. The readout is a modal because it answers with a row per
+	// reference, which a table cell cannot hold.
+	import ComboTestDialog from '$lib/components/ComboTestDialog.svelte';
 	import {
 		comboModelSummary,
 		comboStrategyLabel,
@@ -26,6 +28,8 @@
 		ondelete: (combo: Combo) => void;
 		deleting: string | null;
 	} = $props();
+
+	let testing = $state<Combo | null>(null);
 </script>
 
 <div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
@@ -62,6 +66,9 @@
 							<button type="button" class="min-h-11 underline" onclick={() => onedit(combo)}
 								>Edit</button
 							>
+							<button type="button" class="min-h-11 underline" onclick={() => (testing = combo)}
+								>Test</button
+							>
 							<button
 								type="button"
 								class="min-h-11 text-[var(--color-danger)] underline disabled:opacity-50"
@@ -77,3 +84,5 @@
 		</tbody>
 	</table>
 </div>
+
+<ComboTestDialog combo={testing} onclose={() => (testing = null)} />

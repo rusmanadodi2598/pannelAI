@@ -100,12 +100,45 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Seven passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Eight passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
 day. The sixth is the alias set, measured the same day. The seventh is the OAuth section, measured the
-same day.
+same day. The eighth is the combo test action, measured the same day.
+
+### Combo test action, 2026-09-20
+
+Run with Bun 1.3.14. This pass covers the `Test` action on every row of `/combos` (SPEC-UI §6.4): its
+confirmation, one-token sequential probe, and complete per-reference readout.
+
+| Check             | Result                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                              |
+| `bun run test`    | 1714 tests passed across 70 files, including 33 new combo-test tests across 2 files                               |
+| `bun run lint`    | Prettier reports every file conforms                                                                              |
+| `bun run lint:ts` | ESLint exits 0                                                                                                    |
+| `bun run build`   | succeeds, output in `build/`                                                                                      |
+| File size         | largest changed source is 217 lines (`CombosTab.svelte`); combo-test source files stay below the 220 warning line |
+| Text hygiene      | 0 em dashes; the only emoji in `src` and `tests` is one test vector proving the sanitizer refuses one             |
+
+The first full-suite run under concurrent host load had seven 5-second jsdom timeouts, not assertion
+failures. Rerunning those seven files passed all 69 tests; the count above is the complete 1714-test corpus,
+not a claim that the timed-out run itself was green.
+
+What the action does, and where it states a limit rather than hiding one:
+
+| Area                | Behaviour                                                                                                                                                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Before the request  | The Test button opens a confirmation that names the combo and strategy, says each reference gets a one-token probe in turn, and says the diagnostic spend is not written to usage. No request is sent until the operator confirms.                                                  |
+| The result          | One row per stored reference, in the answer's order, with the stored ref, role, resolved provider/model and endpoint when present, latency, and either `Answered` or the gateway's own error code and message. A failed member remains a result, so healthy members are not hidden. |
+| Fusion              | The judge is probed after the stored model references and is labeled `Judge`, so its role is not confused with a chain member.                                                                                                                                                      |
+| While it runs       | The dialog says it is probing sequentially, keeps Close available, and disables Test again. Close does not pretend to cancel the server-side loop; a completed request from a closed dialog is ignored rather than writing stale results into a reopened one.                       |
+| Two modal instances | The shared Modal primitive now gives each instance its own title id, so the test readout and delete confirmation cannot name each other for assistive technology.                                                                                                                   |
+
+Not yet verified: the rendered half in a browser, and the wire half against a running `app-serv`. The
+section is client-rendered (`ssr = false`), so tests exercise the route against a stateful stub that applies
+the server's result shape, including failed members and a missing combo.
 
 ### OAuth section, 2026-09-20
 

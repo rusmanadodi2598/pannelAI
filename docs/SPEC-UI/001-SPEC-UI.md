@@ -326,8 +326,8 @@ absent.
 
 **Tab 1: Combos** (SPEC-API §7.7)
 
-- **Table:** name, strategy, model count, sticky limit, judge model, updated. Actions: edit, test (U2),
-  delete.
+- **Table:** name, strategy, model count, sticky limit, judge model, updated. Actions: edit, test (U2,
+  landed), delete.
 - **Editor:**
   - Model list is ordered and drag-reorderable, each row a `ref` with a priority. The `ref` field accepts
     `provider/model`, an existing combo name, or an alias, with a picker over the catalog and combos.
@@ -351,8 +351,16 @@ absent.
   so the sentence names the place rather than linking to an arbitrary provider (Q20). The dialog's lead
   sentence depends on the error code, not the message: only `CONFLICT` means the combo is still referenced,
   so another failure does not read as though it did.
-- **Test (U2):** runs the one-token ping and renders a per-model result list in the order the strategy
-  would try, including the model that answered.
+- **Test (U2, landed):** each row has a Test action that opens a confirmation before sending anything. The
+  panel states that the route sends one-token, non-streaming probes sequentially and that probe spend is
+  not written to `usage_records`, because one click spends one upstream account at a time as an operator
+  diagnostic. After confirmation, the readout has one row per stored reference, with its role (`model` or
+  `judge`), the stored ref, the resolved provider/model and endpoint when the probe reached them, latency,
+  and either `Answered` or the gateway's own error code and message. A failed member is a result rather than
+  a route error, so one dead model does not hide the members that answered. A fusion combo's judge is last,
+  and the panel labels it as a judge instead of a chain member. The readout is modal so it can hold the
+  complete result beside the row that asked for it; Close stays available while the sequential request runs,
+  but it does not pretend to cancel work the API cannot cancel.
 - **Empty state:** "No combos yet. A combo is a model string that resolves to several upstream models."
 
 **Tab 2: Vision Adapter** (SPEC-API §7.8)
@@ -1215,9 +1223,9 @@ sixth, as the last section on that screen: it renders only for a provider the re
 reads the status once per visit, and lets the reported flow decide what it offers, so only `code` gets a start
 button and the other three flows get their reason instead. The authorize URL is a link the panel does not
 follow, the callback's outcome is read from this page's query and its three keys are dropped from the address
-after they are read, and a manual refresh is per account and re-reads the state it moved. The start path is
-dormant in this registry rather than wrong: the one `has_oauth` provider declares no `authorize_url`, so the
-flow it reports is `device` and the panel offers its reason instead of a control (Q23).
+after they are read, and a manual refresh is per account and re-reads the state it moved. The combo test
+(§6.4) shipped seventh: a confirmed one-token probe per stored reference, sequentially, with a modal result
+row for every model and fusion judge, including failed members and the gateway's own reason.
 
 That fourth area is where the spec and the implementation disagree, and the disagreement is recorded
 rather than papered over. §6.3 asks for "per-model enable or disable state" on the catalog, but the merged
@@ -1251,9 +1259,8 @@ than something an operator picks after opening the screen. `navigation.ts` gaine
 `/providers/[provider_id]` stays excluded for the opposite reason, and a test asserts that every
 placeholder a row's route declares is filled and no parameter is passed that the route does not declare.
 
-Still open in U2: the combo test action (§6.4) and quota budget caps (§6.6). §6.4's combo delete refusal
-names where the fix lives instead of linking to it, because the alias set is global and the only screen it
-has takes a provider id (Q20).
+Still open in U2: quota budget caps (§6.6). §6.4's combo delete refusal names where the fix lives instead
+of linking to it, because the alias set is global and the only screen it has takes a provider id (Q20).
 
 **U2 exit criteria, 2026-09-20: two of the four are met against a running `app-serv`, and the other two
 are not.** A live pass booted the service and the built panel and drove the panel's own `/api/v1` routes,

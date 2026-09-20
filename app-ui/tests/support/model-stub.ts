@@ -26,6 +26,12 @@ export type ModelStub = {
 	aliases: StubModel[];
 	/** The combos, whose names are a legal alias target. */
 	combos: StubModel[];
+	/** The probe results `POST /combos/{id}/test` answers, one entry per stored reference. */
+	comboTestResults: StubModel[];
+	/** The test route's own status, for a test that needs the combo to look deleted. */
+	comboTestStatus: number;
+	/** The combo ids the test route was called with. */
+	comboTests: string[];
 	/** Whether the provider detail says this provider has OAuth, which is what renders the section. */
 	hasOAuth: boolean;
 	/**
@@ -93,6 +99,20 @@ export function aliasRow(overrides: StubModel = {}): StubModel {
 	return { alias: 'fast', target: 'openai/gpt-4o', ...overrides };
 }
 
+/** One entry of a combo test answer: a reference, what it resolved to, and how the probe went. */
+export function comboProbeRow(overrides: StubModel = {}): StubModel {
+	return {
+		ref: 'openai/gpt-4o',
+		role: 'model',
+		ok: true,
+		provider_id: 'openai',
+		model_id: 'gpt-4o',
+		endpoint_id: 'ep_01',
+		latency_ms: 120,
+		...overrides
+	};
+}
+
 export function oauthEndpointRow(overrides: StubModel = {}): StubModel {
 	return {
 		endpoint_id: 'ep_oauth_1',
@@ -152,6 +172,9 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		custom: [],
 		aliases: [],
 		combos: [],
+		comboTestResults: [],
+		comboTestStatus: 200,
+		comboTests: [],
 		hasOAuth: false,
 		oauthFlow: 'code',
 		oauthEndpoints: [],
@@ -398,6 +421,29 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 					per_page: perPage,
 					total: stub.combosTotal ?? stub.combos.length
 				}
+			});
+		}
+
+		// The probe route answers from the stored combo, not from the request: the id it was asked for is
+		// the combo whose name and strategy come back, so a panel that rendered its own row's values would
+		// pass against a stub that echoed the body back.
+		const comboTestMatch = /\/combos\/([^/?]+)\/test$/.exec(parsed.pathname);
+		if (method === 'POST' && comboTestMatch) {
+			const id = decodeURIComponent(comboTestMatch[1]);
+			stub.comboTests.push(id);
+
+			if (stub.comboTestStatus !== 200) {
+				return refusal('NOT_FOUND', 'combo not found', stub.comboTestStatus);
+			}
+
+			const combo = stub.combos.find((entry) => entry.id === id);
+			if (!combo) return refusal('NOT_FOUND', 'combo not found', 404);
+
+			return json({
+				combo_id: combo.id,
+				combo: combo.name,
+				strategy: combo.strategy,
+				results: stub.comboTestResults
 			});
 		}
 

@@ -1,10 +1,10 @@
 // Combo calls, mirroring docs/SPEC-API/001-SPEC-API.md §7.7.
 //
 // Create and patch carry the same body, so they share one schema and one type: §7.7 makes a patch a full
-// replace, and a panel that sent a delta would silently clear the fields it left out. The test route is
-// absent because §7.7 places it in P2.
+// replace, and a panel that sent a delta would silently clear the fields it left out.
 
 import { schemaCombo, schemaComboList, type Combo, type ComboList } from '$lib/schemas/combo';
+import { schemaComboTest, type ComboTest } from '$lib/schemas/combo-test';
 import type { ComboBody } from '$lib/schemas/combo-form';
 import { emptyResponse, type EmptyResponse } from '$lib/schemas/primitives';
 import { apiRequest, type ApiResult } from './client';
@@ -57,5 +57,16 @@ export function deleteCombo(id: string): Promise<ApiResult<EmptyResponse>> {
 		method: 'DELETE',
 		path: `/combos/${encodeURIComponent(id)}`,
 		schema: emptyResponse
+	});
+}
+
+// The probe takes no body: §7.7 gives the route nothing to configure, because the combo's own stored
+// references are what it walks. A reference that failed is part of the answer, so only an unreadable combo
+// is an error here.
+export function testCombo(id: string): Promise<ApiResult<ComboTest>> {
+	return apiRequest<void, ComboTest>({
+		method: 'POST',
+		path: `/combos/${encodeURIComponent(id)}/test`,
+		schema: schemaComboTest
 	});
 }

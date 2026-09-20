@@ -311,6 +311,12 @@ installed set.
 | The token state is the gateway's `refresh_state`, with only the expiry told apart | Re-deriving the classification would be a second opinion about the gateway's own clock; the expiry is the one fact that separates "inside the window" from "already expired". |
 | The manual refresh is per account rather than one button for the provider | The answer names the accounts it moved, and an id is what the API reads as "this one", so the operator acts on the row they can see. |
 | The refresh re-reads the status without blanking the table | The re-read would otherwise unmount the table and the sentence reporting what the gateway just did, which is the outcome the operator asked for. |
+| The combo test asks for confirmation before probing | One click sends a one-token request per stored reference and spends upstream accounts, so the operator needs the cost and sequential behavior in view before starting it. |
+| A failed combo member stays a result beside the healthy members | The diagnostic question is which member is down, so turning one failure into a route error would hide the members that answered. |
+| The combo test result is a modal with one row per reference | A table cell cannot hold identity, latency, role, and a gateway error for every member; the modal keeps the complete answer beside the row that asked for it. |
+| A fusion judge is labeled separately and appears last | The judge is part of the probe chain but is not one of the combo's model references, so the role and stored order must remain visible. |
+| The test dialog can close while probes run, but cannot cancel them | The API runs the sequential loop without a cancellation contract, so a disabled close would trap the operator while a fake cancel would claim work stopped. |
+| Each modal gets its own title id | The combo screen can render a test dialog beside a delete dialog, and one fixed id would give a screen reader the first dialog's heading for both. |
 
 ---
 
