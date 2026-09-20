@@ -84,10 +84,14 @@ export const absoluteUrl = z
 // Optional URL: the settings surface allows an empty string to mean "not set".
 export const optionalAbsoluteUrl = z.union([z.literal(''), absoluteUrl]);
 
+// `outbound_no_proxy` is a comma-separated string on the wire (SPEC-API §7.14, Go
+// `domain.NetworkSettings.OutboundNoProxy string`), so the panel keeps it a string end to end. The
+// sanitizer normalizes the list (trim, lowercase, dedupe, drop empty) and this schema rejoins it, so a
+// typed value and a stored value both round-trip without changing shape.
 export const noProxyList = z
 	.string()
-	.transform(normalizeNoProxyList)
-	.refine((hosts) => hosts.every((host) => host.length <= 253), {
+	.transform((value) => normalizeNoProxyList(value).join(','))
+	.refine((hosts) => hosts.split(',').every((host) => host.length <= 253), {
 		message: 'Each host must be 253 characters or fewer.'
 	});
 

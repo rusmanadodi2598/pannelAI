@@ -10,6 +10,15 @@
 /** How often the quota screen re-reads its windows. */
 export const QUOTA_POLL_MS = 30_000;
 
+/**
+ * How often the console screen re-reads its buffer.
+ *
+ * Faster than the quota interval on purpose: console output is read while a request is being debugged, so
+ * a stale buffer is the one thing the screen cannot be. Five seconds is short enough to watch a request
+ * land and long enough that a panel left open does not become a load generator.
+ */
+export const CONSOLE_POLL_MS = 5_000;
+
 /** The interval in words, for the control that shows the operator what the screen is doing. */
 export function pollIntervalLabel(ms: number): string {
 	const seconds = Math.round(ms / 1000);

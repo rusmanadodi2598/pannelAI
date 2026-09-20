@@ -1,12 +1,25 @@
 // Settings schemas for the v1 surface in docs/SPEC-API/001-SPEC-API.md §7.14.
 //
-// Only the groups the panel edits are modelled. Secrets never appear here because the API never
-// returns them (§7.14), and the token saver lives on its own screen with its own schema.
+// Three shapes per group, and each has one job. The *response* schema parses what the API returns.
+// The *form* schema validates what an operator typed, and is strict, so a field the panel does not
+// know is a failure rather than a silent drop. The *patch* schema wraps one group for the wire, and
+// is the reason a tab cannot overwrite a key another tab owns.
+//
+// The bounds are the API's, not the panel's: app-serv floors every count at 1 in
+// `domain.Settings.Validate()`. A form that accepted 0 would turn a correctable typo into a failed
+// round trip, and a form that invented a ceiling the API does not have would hide a real setting.
+// Secrets never appear here because the API never returns them (§7.14).
 
 import { z } from 'zod';
 import { noProxyList, optionalAbsoluteUrl } from './primitives';
 
 export const COMBO_STRATEGIES = ['fallback', 'round_robin', 'fusion'] as const;
+
+export const COMBO_STRATEGY_LABELS: Record<(typeof COMBO_STRATEGIES)[number], string> = {
+	fallback: 'Fallback',
+	round_robin: 'Round robin',
+	fusion: 'Fusion'
+};
 
 export const schemaSecuritySettings = z.object({
 	require_login: z.boolean(),
@@ -53,3 +66,84 @@ export const schemaSecuritySettingsForm = z.strictObject({
 });
 
 export type SecuritySettingsForm = z.infer<typeof schemaSecuritySettingsForm>;
+
+// The three U1 tabs. Each form schema mirrors its response group field for field, so a field cannot be
+// writable on the wire and invisible in the form, or the reverse. A count is coerced because a number
+// input hands back a string, and the coercion is what turns an empty box into a validation message
+// rather than a NaN that reaches the API.
+export const schemaRoutingSettingsForm = z.strictObject({
+	combo_strategy: z.enum(COMBO_STRATEGIES, { message: 'Pick one of the three strategies.' }),
+	combo_sticky_limit: z.coerce
+		.number()
+		.int({ message: 'Use a whole number of requests.' })
+		.min(1, { message: 'The combo sticky limit must be at least 1.' }),
+	sticky_limit: z.coerce
+		.number()
+		.int({ message: 'Use a whole number of requests.' })
+		.min(1, { message: 'The routing sticky limit must be at least 1.' })
+});
+
+export type RoutingSettingsForm = z.infer<typeof schemaRoutingSettingsForm>;
+
+export const schemaNetworkSettingsForm = z.strictObject({
+	outbound_proxy_enabled: z.boolean(),
+	outbound_proxy_url: optionalAbsoluteUrl,
+	outbound_no_proxy: noProxyList
+});
+
+export type NetworkSettingsForm = z.infer<typeof schemaNetworkSettingsForm>;
+
+export const schemaLoggingSettingsForm = z.strictObject({
+	request_capture_enabled: z.boolean(),
+	retention_days: z.coerce
+		.number()
+		.int({ message: 'Use a whole number of days.' })
+		.min(1, { message: 'Retention must be at least 1 day.' }),
+	capture_body_max_bytes: z.coerce
+		.number()
+		.int({ message: 'Use a whole number of bytes.' })
+		.min(1, { message: 'The capture limit must be at least 1 byte.' }),
+	observability_max_records: z.coerce
+		.number()
+		.int({ message: 'Use a whole number of records.' })
+		.min(1, { message: 'The console buffer must hold at least 1 line.' })
+});
+
+export type LoggingSettingsForm = z.infer<typeof schemaLoggingSettingsForm>;
+
+export const schemaRoutingSettingsPatch = z.strictObject({
+	routing: schemaRoutingSettingsForm
+});
+
+export const schemaNetworkSettingsPatch = z.strictObject({
+	network: schemaNetworkSettingsForm
+});
+
+export const schemaLoggingSettingsPatch = z.strictObject({
+	logging: schemaLoggingSettingsForm
+});
+
+export type RoutingSettingsPatch = z.infer<typeof schemaRoutingSettingsPatch>;
+export type NetworkSettingsPatch = z.infer<typeof schemaNetworkSettingsPatch>;
+export type LoggingSettingsPatch = z.infer<typeof schemaLoggingSettingsPatch>;
+
+/**
+ * Whether a draft group differs from the group that was loaded.
+ *
+ * §6.13 asks for a dirty indicator and a discard action, and both need one answer to "has this
+ * changed". It compares by key rather than by position, so a reordered object is not dirty, and it
+ * treats a missing loaded group as dirty because there is nothing to compare a draft against.
+ */
+export function settingsGroupDirty(
+	loaded: Record<string, unknown> | null,
+	draft: Record<string, unknown>
+): boolean {
+	if (loaded === null) return true;
+
+	const keys = new Set([...Object.keys(loaded), ...Object.keys(draft)]);
+	for (const key of keys) {
+		if (loaded[key] !== draft[key]) return true;
+	}
+
+	return false;
+}

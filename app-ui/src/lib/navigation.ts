@@ -69,7 +69,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		items: [
 			{ key: 'usage', label: 'Usage', href: '/usage' },
 			{ key: 'quota', label: 'Quota Tracker', href: '/quota' },
-			{ key: 'console-log', label: 'Console Log', planned: true }
+			{ key: 'console-log', label: 'Console Log', href: '/console-log' }
 		]
 	},
 	{
