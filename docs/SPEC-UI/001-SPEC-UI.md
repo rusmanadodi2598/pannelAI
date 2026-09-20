@@ -1190,10 +1190,20 @@ write that combination and names it when a stored document already holds it (Q16
 
 Still open in U2: the OAuth section on provider detail (§6.3), the combo test action (§6.4), the media
 provider screens (§6.8), quota budget caps (§6.6), and the custom model, alias, and disabled model
-writes (§6.3). All four U2 exit criteria are verification runs against a live `app-serv` rather than
-unbuilt work, the same position the U0 click-through is in: the panel side of the token saver save and
-of the proxy test both exist and are covered against a stateful stub, and neither has been exercised
-against the service.
+writes (§6.3).
+
+**U2 exit criteria, 2026-09-20: two of the four are met against a running `app-serv`, and the other two
+are not.** A live pass booted the service and the built panel and drove the panel's own `/api/v1` routes,
+parsing every response through the schema the screen uses: 25 checks, 0 failures. "A proxy tested from
+the panel" is met, with the probe confirmed in a loopback proxy's own log rather than inferred from the
+answer, and so is "token saver config saved and reflected by the API", with the saved document returned
+verbatim and agreed by a fresh read. The pass also covered the pool read, create, patch, and delete, the
+candidate test's live, refused, and protocol-mismatch answers, and the outbound settings write and
+re-read. "OAuth round trip from the panel" and "an image generation request routed through a media
+provider" stay open, because neither screen exists yet. One limit is recorded rather than glossed: the
+panel is client-rendered (`ssr = false`), so the pass proves the wire contract and not the rendered
+output, and a browser click-through of both screens is still outstanding. The database was returned to
+its baseline, counted before and after.
 
 ## 13. Locked decisions
 

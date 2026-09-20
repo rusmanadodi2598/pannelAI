@@ -131,9 +131,52 @@ and nothing else, so a stored pool row is a candidate rather than a live route, 
 so. An enabled proxy with an empty URL dials direct, so the panel refuses to write that combination and
 names it when a stored document already holds it. Both are recorded as SPEC-UI §14 Q15 and Q16.
 
-Not yet verified: every write on both screens against a running `app-serv`. The tests exercise the panel
-against a stateful stub that applies writes and returns the API's error shapes, which covers the panel's
-half of the contract and not the service's.
+Not yet verified: the rendered half of either screen in a browser. The panel sets `ssr = false` in
+`src/routes/+layout.ts`, so it is client-rendered and there is no server HTML to read; the tests exercise
+the panel against a stateful stub that applies writes and returns the API's error shapes. The wire half
+is now verified live, below.
+
+#### Live pass against `app-serv`, 2026-09-20
+
+`app-serv` booted from its own `.env` with a run env that added only `HTTP_ADDR=127.0.0.1:9090`,
+`PUBLIC_BASE_URL`, `EGRESS_ALLOWED_TARGETS=127.0.0.1/32`, `PROXY_TEST_URL` at a loopback origin, and a
+run-local `PANEL_BOOTSTRAP_PASSWORD`. Two loopback helpers in `/tmp` answered the pass: an origin serving
+`/proxy-check`, and a forwarding HTTP proxy on `127.0.0.1:8096` that the panel registered as a candidate,
+so a proxy could be tested without touching the internet. The built panel ran with `PANEL_API_TARGET` at
+that address, and the pass logged in through it (204 plus a session cookie).
+
+Because the panel is client-rendered, the pass verified the half a browser cannot: it called the panel's
+own `/api/v1` routes and parsed every response through the exact Zod schema the screen uses. 25 checks, 0
+failures.
+
+| What the pass did             | Result                                                                                                                                                                |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /proxies`                | parses as `schemaProxyList`; the pool started empty                                                                                                                   |
+| `POST /proxies`               | parses as `schemaProxy`; `has_password` false and no secret echoed                                                                                                    |
+| `PATCH /proxies/{id}`         | parses as `schemaProxy`; the rename and the disable both took                                                                                                         |
+| `POST /proxies/{id}/test`     | `{"state":"ok","latency_ms":6}`, and the helper log shows `PROXY GET http://127.0.0.1:8095/proxy-check`, so the probe really went through the candidate               |
+| `POST /proxies/test` (live)   | `{"state":"ok","latency_ms":2}`, no `message`                                                                                                                         |
+| `POST /proxies/test` (dead)   | `{"state":"fail","latency_ms":0,"message":"the proxy could not be reached"}`                                                                                          |
+| `POST /proxies/test` (socks5) | `{"state":"fail","latency_ms":10007,"message":"the proxy did not answer within the time limit"}`, which is the protocol mismatch timing out rather than erroring fast |
+| `GET /proxies` after a test   | the row carries the `status` the test wrote, and `updated_at` moved to the test time                                                                                  |
+| `GET` and `PATCH /settings`   | parses as `schemaSettings`; the three network keys are present, the write reflects on a fresh read                                                                    |
+| `GET` and `PUT /token-saver`  | parses as `schemaTokenSaver`; the saved document came back exactly as sent, and a fresh read agreed                                                                   |
+| `DELETE /proxies/{id}`        | 204, and the pool returned to its starting size                                                                                                                       |
+
+One finding came out of the pass, and it was the pass's own error rather than the panel's: the first
+`PUT /token-saver` used filter names (`strip_ansi`, `collapse_blank_lines`) that the API refuses, and the
+gateway answered `VALIDATION_ERROR`. That confirms the panel's twelve names are the API's twelve, since
+the panel's own list is what the corrected body used.
+
+The database was returned to the baseline it started from, counted before and after:
+`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true media_settings=0
+proxies=0`. The token saver document was put back to its pre-pass value, the `network` settings row the
+pass wrote was deleted, the proxy rows were deleted, the panel hash was nulled after the server stopped,
+and the run env, session jar, and built binary were removed.
+
+Still outstanding: a browser click-through of both screens. Every interactive element is covered by a
+jsdom test that asserts the DOM it produces, and the wire contract is now verified against the service,
+but no one has yet pressed the controls in a browser and watched the screens answer.
 
 ### Shell and sidebar, 2026-09-18
 
