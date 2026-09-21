@@ -11,6 +11,7 @@
 	// schema's. The floors live in the schema and the hint text.
 	import { untrack } from 'svelte';
 	import { patchLoggingSettings } from '$lib/api/settings';
+	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
 		schemaLoggingSettingsForm,
 		settingsGroupDirty,
@@ -33,6 +34,9 @@
 	let saving = $state(false);
 
 	const dirty = $derived(settingsGroupDirty(server, draft));
+
+	// §8.4.4: the shared guard asks before a navigation takes this draft away.
+	$effect(() => registerDirtyForm(() => dirty));
 
 	async function save(): Promise<void> {
 		message = null;

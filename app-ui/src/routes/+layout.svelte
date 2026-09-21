@@ -4,11 +4,12 @@
 	// The gate lives here rather than in each screen, so a new screen cannot ship without the session
 	// check. Unauthenticated requests see the login route only, and they carry the route they wanted with
 	// them so signing in returns them to it (SPEC-UI §8.1).
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import AppShell from '$lib/components/AppShell.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { shouldCancelNavigation } from '$lib/dirty-guard';
 	import { session } from '$lib/stores/session.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { loginRedirectTarget, loginUrl } from '$lib/utils/redirect';
@@ -27,6 +28,16 @@
 	// What to come back to after signing in. The search string is part of it, so a filtered view survives
 	// a session that expired mid-task.
 	const requestedRoute = $derived(page.url.pathname + page.url.search);
+
+	// §8.4.4 lives here for the same reason the session gate does: it is one rule over every screen, and
+	// a screen that had to remember it could forget it. The forms register themselves with the guard, so
+	// this is the only place that asks, and the asking happens whether the navigation came from a link,
+	// `goto`, or the browser's own reload.
+	beforeNavigate((navigation) => {
+		if (shouldCancelNavigation(navigation, (message) => window.confirm(message))) {
+			navigation.cancel();
+		}
+	});
 
 	onMount(async () => {
 		theme.init();

@@ -21,6 +21,7 @@
 	import { onMount } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { fetchSettings, patchNetworkSettings } from '$lib/api/settings';
+	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
 		schemaNetworkSettingsForm,
 		settingsGroupDirty,
@@ -41,6 +42,10 @@
 	let saved = $state(false);
 
 	const dirty = $derived(settingsGroupDirty(server, draft));
+
+	// §8.4.4: the shared guard asks before a navigation takes this draft away. Until the stored document
+	// has been read there is nothing to be dirty against, so the loading window is not a draft.
+	$effect(() => registerDirtyForm(() => server !== null && dirty));
 
 	// A stored document with proxying on and no URL. The API accepts it and the egress path then dials
 	// direct, so the panel cannot prevent a state it did not write; it states the state instead, with

@@ -10,6 +10,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import PasswordChangeForm from '$lib/components/PasswordChangeForm.svelte';
 	import { patchSecuritySettings } from '$lib/api/settings';
+	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
 		schemaSecuritySettingsForm,
 		settingsGroupDirty,
@@ -33,6 +34,9 @@
 	let confirmingOpenPanel = $state(false);
 
 	const dirty = $derived(settingsGroupDirty(server, draft));
+
+	// §8.4.4: the shared guard asks before a navigation takes this draft away.
+	$effect(() => registerDirtyForm(() => dirty));
 
 	async function save(): Promise<void> {
 		message = null;

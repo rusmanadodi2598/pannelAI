@@ -15,6 +15,7 @@
 	import TokenSaverRtkFilters from '$lib/components/TokenSaverRtkFilters.svelte';
 	import TokenSaverSectionShell from '$lib/components/TokenSaverSectionShell.svelte';
 	import { replaceTokenSaver } from '$lib/api/token-saver';
+	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
 		buildTokenSaverBody,
 		TOKEN_SAVER_SECTION_SCHEMAS,
@@ -55,6 +56,9 @@
 		headroom: tokenSaverSectionDirty('headroom', server, draft),
 		ponytail: tokenSaverSectionDirty('ponytail', server, draft)
 	});
+
+	// §8.4.4: the guard takes any unsaved group, because leaving the screen loses all three at once.
+	$effect(() => registerDirtyForm(() => Object.values(dirty).some(Boolean)));
 
 	async function saveSection(section: TokenSaverSection): Promise<void> {
 		error = null;

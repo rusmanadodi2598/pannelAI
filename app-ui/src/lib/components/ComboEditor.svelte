@@ -7,20 +7,22 @@
 	// Two fields appear and disappear with the strategy. `sticky_limit` belongs to `round_robin` and
 	// `judge_model` to `fusion`, and §6.4 requires the field a strategy ignores to be hidden rather than
 	// disabled, so a control that cannot affect the save is not on screen at all. The value is still held in
-	// the form while hidden, so switching away and back does not discard what the operator typed.
+	// the form while hidden, so switching away and back does not discard what the operator typed. Those two
+	// fields live in `ComboStrategyFields`; the rest of the form is here.
 	import { createCombo, updateCombo } from '$lib/api/combos';
 	import ComboModelRows from '$lib/components/ComboModelRows.svelte';
+	import ComboStrategyFields from '$lib/components/ComboStrategyFields.svelte';
 	import FormIssues from '$lib/components/FormIssues.svelte';
+	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
 		COMBO_STRATEGIES,
 		COMBO_STRATEGY_EXPLANATIONS,
 		comboStrategyLabel,
-		usesJudgeModel,
-		usesStickyLimit,
 		type Combo
 	} from '$lib/schemas/combo';
 	import {
 		buildComboBody,
+		comboFormDirty,
 		comboToForm,
 		schemaComboForm,
 		type ComboForm
@@ -51,19 +53,31 @@
 	});
 
 	let form = $state<ComboForm>(empty());
+	// The form as it was seeded. It is a snapshot rather than the live object, because the draft is
+	// mutated in place, and it is what the §8.4.4 guard compares against: a save or a re-seed clears it.
+	let baseline = $state<ComboForm>(empty());
 	let saving = $state(false);
 	let error = $state<string | null>(null);
 	let issues = $state<string[]>([]);
 
 	// Refills the form when the editor is handed a different combo, or when it is switched to create mode.
 	// A tracked read of `combo` inside the effect would refire on every keystroke that touched it, so the
-	// copy is made from the value the effect read.
+	// copy is made from the value the effect read. The baseline is a snapshot of that same copy, because a
+	// state proxy writes through to the object it wraps: sharing one object would let a keystroke move the
+	// baseline with it and the draft would never read as changed.
 	$effect(() => {
 		const source = combo;
-		form = source === null ? empty() : comboToForm(source);
+		const next = source === null ? empty() : comboToForm(source);
+		form = next;
+		baseline = $state.snapshot(next);
 		error = null;
 		issues = [];
 	});
+
+	const dirty = $derived(comboFormDirty(baseline, form));
+
+	// §8.4.4: the shared guard asks before a navigation takes this draft away.
+	$effect(() => registerDirtyForm(() => dirty));
 
 	async function save(): Promise<void> {
 		const parsed = schemaComboForm.safeParse(form);
@@ -137,43 +151,12 @@
 		</div>
 	</div>
 
-	{#if usesStickyLimit(form.strategy)}
-		<div class="flex w-fit flex-col gap-1 text-sm">
-			<label for="combo-sticky" class="text-[var(--color-text-muted)]">Sticky limit</label>
-			<!-- No `min` or `max` attribute on purpose. A native bound would block the submit before Zod saw
-			     the value, and the message the operator then reads would be the browser's, in the browser's
-			     language, which is a second validator the panel cannot keep in English. The bound is stated in
-			     the hint instead and enforced by the schema. -->
-			<input
-				id="combo-sticky"
-				type="number"
-				bind:value={form.stickyLimit}
-				aria-describedby="combo-sticky-hint"
-				class="min-h-11 w-32 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm tabular-nums"
-			/>
-			<span id="combo-sticky-hint" class="text-xs text-[var(--color-text-muted)]">
-				At least 1. Requests kept on one model before rotating to the next.
-			</span>
-		</div>
-	{/if}
-
-	{#if usesJudgeModel(form.strategy)}
-		<div class="flex flex-col gap-1 text-sm">
-			<label for="combo-judge" class="text-[var(--color-text-muted)]">Judge model</label>
-			<input
-				id="combo-judge"
-				type="text"
-				list={REF_LIST_ID}
-				bind:value={form.judgeModel}
-				aria-describedby="combo-judge-hint"
-				placeholder="provider/model"
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
-			/>
-			<span id="combo-judge-hint" class="text-xs text-[var(--color-text-muted)]">
-				Writes the final answer from the models' replies.
-			</span>
-		</div>
-	{/if}
+	<ComboStrategyFields
+		strategy={form.strategy}
+		bind:stickyLimit={form.stickyLimit}
+		bind:judgeModel={form.judgeModel}
+		listId={REF_LIST_ID}
+	/>
 
 	<div class="flex flex-col gap-1">
 		<span class="text-sm text-[var(--color-text-muted)]">

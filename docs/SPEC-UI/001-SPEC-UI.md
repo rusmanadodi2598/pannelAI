@@ -915,9 +915,19 @@ does not pass review.
 2. Filters live in the URL as search params, so a filtered view is shareable and back or forward navigation
    restores it.
 3. Form submit is disabled while in flight. Double submit is not possible.
-4. Dirty state warns before leaving a form with unsaved changes.
-5. Multi-field forms validate on blur and on submit, not on every keystroke, so the operator is not told a
-   half-typed email is invalid.
+4. Dirty state warns before leaving a form with unsaved changes. The guard lives once, in the root
+   layout, and each form that holds a server-confirmed draft registers its own dirty state with it
+   (draft 007, F10). A navigation inside the panel is confirmed by the panel; a navigation that
+   unloads the document is confirmed by the browser.
+5. Multi-field forms validate on submit, and the operator reads the schema's own message for the field
+   the schema names. **Amended 2026-09-21** (owner decision D5 of draft 007): the panel does not
+   validate on blur. Every form parses its whole draft against its Zod schema in the submit handler,
+   so a half-typed value is never reported, which is the purpose this rule states; blur validation
+   would add a touched-field state and a field-to-issue map to every form to say what the submit
+   already says. Three live messages stay live, and none of them is schema validation: the Headroom
+   warning states a combination the API accepts, the purge confirmation follows the typing because
+   the phrase is what enables the control, and the batch add shows the lines it parsed before any
+   write.
 
 ### 8.5 Destructive actions
 

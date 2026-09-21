@@ -118,3 +118,25 @@ export function comboToForm(combo: Combo): ComboForm {
 		judgeModel: combo.judge_model
 	};
 }
+
+// Whether the editor holds an unsaved change. `baseline` is the form as it was seeded, so a save or a
+// re-seed clears this and one keystroke sets it. The models are compared field by field rather than by
+// reference, because the rows are replaced rather than mutated by the child that edits them.
+export function comboFormDirty(baseline: ComboForm, form: ComboForm): boolean {
+	if (
+		baseline.name !== form.name ||
+		baseline.strategy !== form.strategy ||
+		baseline.stickyLimit !== form.stickyLimit ||
+		baseline.judgeModel !== form.judgeModel ||
+		baseline.models.length !== form.models.length
+	) {
+		return true;
+	}
+
+	return baseline.models.some((entry, index) => {
+		const current = form.models[index];
+		return (
+			current === undefined || entry.ref !== current.ref || entry.priority !== current.priority
+		);
+	});
+}

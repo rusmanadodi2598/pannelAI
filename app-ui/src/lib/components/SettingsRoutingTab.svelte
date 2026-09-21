@@ -11,6 +11,7 @@
 	// validator the panel cannot keep in English.
 	import { untrack } from 'svelte';
 	import { patchRoutingSettings } from '$lib/api/settings';
+	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
 		COMBO_STRATEGIES,
 		COMBO_STRATEGY_LABELS,
@@ -41,6 +42,9 @@
 	let saving = $state(false);
 
 	const dirty = $derived(settingsGroupDirty(server, draft));
+
+	// §8.4.4: the shared guard asks before a navigation takes this draft away.
+	$effect(() => registerDirtyForm(() => dirty));
 
 	async function save(): Promise<void> {
 		message = null;
