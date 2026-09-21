@@ -152,17 +152,28 @@ describe('gateway key schema', () => {
 });
 
 describe('created gateway key schema', () => {
+	// The field name is the served one. `POST /api/v1/gateway-keys` answers with `plaintext_key` (and
+	// only on that route); this fixture used to say `key`, which is the name the panel had guessed.
 	const validCreate = {
 		id: validKey.id,
 		name: 'Laptop',
-		key: 'sk-live-abc',
+		plaintext_key: 'sk-live-abc',
 		key_hint: 'sk-...abc',
 		created_at: validKey.created_at
 	};
 
 	const cases = [
 		{ name: 'a create response', input: validCreate, ok: true },
-		{ name: 'a response without the plaintext key', input: { ...validCreate, key: '' }, ok: false },
+		{
+			name: 'a response without the plaintext key',
+			input: { ...validCreate, plaintext_key: '' },
+			ok: false
+		},
+		{
+			name: 'a response that names the plaintext field `key`',
+			input: { ...validCreate, key: 'sk-live-abc', plaintext_key: undefined },
+			ok: false
+		},
 		{
 			name: 'a response with a wrong id prefix',
 			input: { ...validCreate, id: 'ep_01HZY' },
