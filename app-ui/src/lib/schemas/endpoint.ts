@@ -129,25 +129,6 @@ export const schemaEndpointKeyList = z.object({
 
 export type EndpointKeyList = z.infer<typeof schemaEndpointKeyList>;
 
-// One batch row's verdict. §8.1 reports every row by index, so a refused batch still names the row.
-export const schemaBulkResultRow = z.object({
-	index: z.number().int(),
-	id: z.string().optional(),
-	error: z.string().optional()
-});
-
-export type BulkResultRow = z.infer<typeof schemaBulkResultRow>;
-
-// The answer to POST /endpoints/{id}/keys/bulk, which is how the repeatable row mode submits several
-// keys in one request (§6.2).
-export const schemaBulkKeyResult = z.object({
-	error: z.object({ code: z.string(), message: z.string() }).optional(),
-	created: z.array(schemaEndpointKey),
-	results: z.array(schemaBulkResultRow)
-});
-
-export type BulkKeyResult = z.infer<typeof schemaBulkKeyResult>;
-
 // The auth vocabulary the API publishes plus the two registry spellings it also accepts (§7.5). One list
 // so the form, the label map, and the tests cannot drift apart.
 export const AUTH_TYPES = ['api_key', 'oauth', 'no_auth', 'apikey', 'none'] as const;

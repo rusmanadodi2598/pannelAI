@@ -6,7 +6,6 @@
 import {
 	schemaAddEndpointKeyForm,
 	schemaBulkAddKeysForm,
-	schemaBulkKeyResult,
 	schemaCreateEndpointForm,
 	schemaEndpoint,
 	schemaEndpointKey,
@@ -18,7 +17,6 @@ import {
 	schemaUpdateEndpointKeyForm,
 	type AddEndpointKeyForm,
 	type BulkAddKeysForm,
-	type BulkKeyResult,
 	type CreateEndpointForm,
 	type Endpoint,
 	type EndpointKey,
@@ -29,6 +27,12 @@ import {
 	type UpdateEndpointForm,
 	type UpdateEndpointKeyForm
 } from '$lib/schemas/endpoint';
+import {
+	schemaBulkKeyRefusal,
+	schemaBulkKeyResult,
+	type BulkKeyRefusal,
+	type BulkKeyResult
+} from '$lib/schemas/endpoint-bulk';
 import { emptyResponse, type EmptyResponse } from '$lib/schemas/primitives';
 import { apiRequest, type ApiResult } from './client';
 
@@ -129,15 +133,17 @@ export function addEndpointKey(
 }
 
 // The repeatable row mode's single request (§6.2). The batch is all-or-nothing, so the result reports
-// every row by index and `created` is empty on a refusal (§8.1).
+// every row by index and `created` is empty on a refusal (§8.1). The refusal is parsed too: it is what
+// lets a refused row keep the server's own message instead of the screen guessing which row to fix.
 export function addEndpointKeys(
 	id: string,
 	form: BulkAddKeysForm
-): Promise<ApiResult<BulkKeyResult>> {
-	return apiRequest<BulkAddKeysForm, BulkKeyResult>({
+): Promise<ApiResult<BulkKeyResult, BulkKeyRefusal>> {
+	return apiRequest<BulkAddKeysForm, BulkKeyResult, BulkKeyRefusal>({
 		method: 'POST',
 		path: `/endpoints/${encodeURIComponent(id)}/keys/bulk`,
 		schema: schemaBulkKeyResult,
+		refusalSchema: schemaBulkKeyRefusal,
 		body: form,
 		bodySchema: schemaBulkAddKeysForm
 	});

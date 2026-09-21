@@ -24,12 +24,19 @@ export function isRetryable(error: ApiError): boolean {
 	return error.code === 'NETWORK' || error.code === 'INTERNAL_ERROR';
 }
 
-export async function errorFromResponse(response: Response): Promise<ApiError> {
+/**
+ * Maps a failed response to the panel's error type.
+ *
+ * The body is passed in rather than read here, because one family of routes carries more than the §8
+ * envelope on a refusal: the batch routes report every row by index (SPEC-API §8.1), and a `Response` body
+ * can only be read once. The client reads it, maps the envelope with this function, and parses the rows
+ * beside it.
+ */
+export function errorFromPayload(response: Response, payload: unknown): ApiError {
 	const requestId = response.headers.get('x-request-id') ?? undefined;
-	const raw = await readJson(response);
 
-	if (raw !== undefined) {
-		const envelope = schemaApiErrorEnvelope.safeParse(raw);
+	if (payload !== undefined) {
+		const envelope = schemaApiErrorEnvelope.safeParse(payload);
 		if (envelope.success) {
 			const { code, message } = envelope.data.error;
 			return new ApiError(
@@ -47,12 +54,4 @@ export async function errorFromResponse(response: Response): Promise<ApiError> {
 		`The gateway returned ${response.status} without a readable error body.`,
 		requestId
 	);
-}
-
-async function readJson(response: Response): Promise<unknown> {
-	try {
-		return await response.json();
-	} catch {
-		return undefined;
-	}
 }

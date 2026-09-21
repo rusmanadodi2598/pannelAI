@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 |             |                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown). Sisa nomor masih menunggu pilihan owner |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer). Sisa nomor masih menunggu pilihan owner |
 | **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
 | **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
@@ -33,7 +33,7 @@ Empat langkah, semuanya bisa diulang:
 
 | #   | Item (KEEP)            | Route                                    | Layar              | Endpoint SPEC-API                        | Status                                         |
 | --- | ---------------------- | ---------------------------------------- | ------------------ | ---------------------------------------- | ---------------------------------------------- |
-| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F9 **CLOSED**, F6, F7           |
+| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F9 **CLOSED**, F6 **CLOSED**, F7 |
 | 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list) **CLOSED**, F7 (list), Q12/Q13/Q19-Q23 tercatat |
 | 3   | Combo & Vision Adapter | `/combos`                                | ada                | §7.7, §7.8 live                          | F12 (bukti); test tingkat tab ada              |
 | 4   | Usage                  | `/usage`                                 | ada                | §7.12 live                               | F8, F12; tautan API Docs menunggu F1           |
@@ -503,6 +503,42 @@ dinyatakan di UI. Perbarui tabel key setelah sukses.
 **Kriteria selesai.** Test render: batch dua baris sukses, batch dengan satu baris duplikat
 ditolak seluruhnya dan pesannya menempel pada barisnya; tidak ada request terkirim saat
 form kosong.
+
+**Status: CLOSED 2026-09-21.** Mode baris berulang terpasang di drawer, tanpa perubahan `app-serv`:
+
+- `src/lib/components/AddEndpointKeysPanel.svelte` (28 baris) menaruh dua mode §6.2 bersebelahan di
+  drawer: `One key` (form lama, satu jalur `POST /endpoints/{id}/keys`) dan `Several keys` (mode baris
+  berulang). Panel-nya memakai `PanelTabs` yang sudah ada, jadi tidak ada kontrol tab kedua.
+- `src/lib/components/BulkAddKeysForm.svelte` (198 baris) mengirim satu batch: baris label+nilai yang
+  bisa ditambah dan dihapus, satu tombol submit, dan hasil per baris. Aturan all-or-nothing dinyatakan
+  di UI sebelum submit, dan batas 100 baris §7.5 ditegakkan di panel dengan pesan, bukan dengan
+  membiarkan server yang menolak setelah satu round trip.
+- Penolakan seluruh batch dibaca, bukan dibuang: `schemaBulkKeyRefusal` (kini di
+  `src/lib/schemas/endpoint-bulk.ts`) mem-parse `{error, results[]}`, dan pesan tiap baris dipetakan ke
+  indeks yang dilaporkan server sehingga pesannya milik server, bukan rekonstruksi panel. Semua baris
+  tetap di layar saat batch ditolak, karena operator harus memperbaiki salah satunya; baris dibersihkan
+  hanya setelah sukses. Outcome dibersihkan pada setiap edit, karena pesan dari batch sebelumnya akan
+  menunjuk baris yang sudah berubah.
+- Jalur transportnya diperluas tanpa merusak pemanggil lama: `apiRequest` menerima `refusalSchema`
+  opsional dan mengembalikan `ApiResult<T, R>` dengan `refusal?: R`, sehingga body penolakan dibaca
+  sekali di klien dan diteruskan ke pemanggil sebagai tipe, bukan sebagai `any`. `errorFromPayload`
+  menggantikan pembacaan body kedua di `errors.ts`.
+- Split karena batas baris: tiga bentuk wire batch pindah ke `src/lib/schemas/endpoint-bulk.ts`
+  (39 baris) sehingga `src/lib/schemas/endpoint.ts` kembali ke 198 baris, di bawah ambang 220 yang
+  diklaim §3 dokumen ini.
+- Test: `tests/components/bulk-add-keys.test.ts` (9 test) — batch dua baris terkirim dalam satu request
+  dan dilaporkan, batch yang ditolak seluruhnya menyimpan semua barisnya dan menyatakan tidak ada yang
+  disimpan, pesan baris yang ditolak menempel pada input baris itu lewat `aria-describedby` (§8.8.5),
+  tidak ada request terkirim saat satu baris kosong atau terlalu pendek, tombol baris menghormati batas
+  baris terakhir, dan outcome hilang saat batch diedit. Dua test terakhir di berkas itu mengunci
+  kontrak `schemaBulkKeyRefusal` (dibaca bila ada `results`, ditolak bila tidak ada).
+- Dua cacat yang ikut tertutup di jalur ini, keduanya ditemukan saat menulis test: form itu memakai
+  pola label-membungkus-input sehingga nama aksesibel field menyerap hint "(optional)"
+  (`getByLabelText('Label for row 1')` gagal); sekarang `for`/`id` eksplisit dengan `aria-describedby`
+  untuk hint-nya. Dan test tabelnya sempat memanggil `it()` di dalam `it()`; helper `forEachCase`
+  memang menjadikan callback-nya badan test, jadi baris tabelnya sekarang bernama test penuh.
+- Batas yang dicatat: drawer belum punya test render sendiri, jadi mode ini diuji sebagai komponen
+  dengan stub route bulk; click-through browser tetap outstanding bersama U0/U1 lain (F12).
 
 ## 10. F7 (MEDIUM): Empat layar tidak punya test render sama sekali
 

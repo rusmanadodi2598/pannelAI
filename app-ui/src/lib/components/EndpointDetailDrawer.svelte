@@ -9,7 +9,7 @@
 	// The editable fields, the keys table, and the add-key form are each their own component. Together they
 	// carry more state and markup than one file is allowed, so this keeps the drawer's own job: load the
 	// detail, answer the routing question, and coordinate the parts.
-	import AddEndpointKeyForm from '$lib/components/AddEndpointKeyForm.svelte';
+	import AddEndpointKeysPanel from '$lib/components/AddEndpointKeysPanel.svelte';
 	import EndpointFieldsForm from '$lib/components/EndpointFieldsForm.svelte';
 	import EndpointKeysTable from '$lib/components/EndpointKeysTable.svelte';
 	import Modal from '$lib/components/Modal.svelte';
@@ -195,7 +195,7 @@
 				/>
 			{/if}
 
-			<AddEndpointKeyForm endpointId={detail.id} onadded={refresh} />
+			<AddEndpointKeysPanel endpointId={detail.id} onadded={refresh} />
 		</div>
 	{/if}
 

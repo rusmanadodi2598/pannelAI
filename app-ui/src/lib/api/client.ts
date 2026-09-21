@@ -6,20 +6,31 @@
 // routing out of the transport layer.
 
 import type { z } from 'zod';
-import { ApiError, errorFromResponse } from './errors';
+import { ApiError, errorFromPayload } from './errors';
 import { parseResponse, type ParseResult } from './parse';
 
 const API_PREFIX = '/api/v1';
 
-export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiError };
+/**
+ * A call's outcome.
+ *
+ * `refusal` carries a failed route's own extra body, for the one family of routes that has one: a refused
+ * batch reports every row by index (SPEC-API §8.1), which is what lets a message land on the row it names.
+ * It is `never` unless the caller declared a `refusalSchema`, so a screen cannot read a field its route does
+ * not send.
+ */
+export type ApiResult<T, R = never> =
+	{ ok: true; data: T } | { ok: false; error: ApiError; refusal?: R };
 
-export type RequestOptions<B, T> = {
+export type RequestOptions<B, T, R = never> = {
 	method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 	path: string;
 	schema: z.ZodType<T>;
 	body?: B;
 	bodySchema?: z.ZodType<B>;
 	query?: Record<string, string | number | boolean | undefined>;
+	/** A refusal body this route carries beyond the §8 envelope, parsed only when the answer is not ok. */
+	refusalSchema?: z.ZodType<R>;
 };
 
 let unauthorizedHandler: (() => void) | undefined;
@@ -39,7 +50,9 @@ export function reportUnauthorized(status: number): void {
 	if (status === 401) unauthorizedHandler?.();
 }
 
-export async function apiRequest<B, T>(options: RequestOptions<B, T>): Promise<ApiResult<T>> {
+export async function apiRequest<B, T, R = never>(
+	options: RequestOptions<B, T, R>
+): Promise<ApiResult<T, R>> {
 	// The body starts as whatever the caller passed, because `bodySchema` validates a body rather than
 	// deciding whether one is sent. Assigning it only inside the branch below would drop the body of every
 	// route that has no schema, and the far end would see an empty request rather than the panel reporting a
@@ -76,7 +89,17 @@ export async function apiRequest<B, T>(options: RequestOptions<B, T>): Promise<A
 	}
 
 	if (!response.ok) {
-		return { ok: false, error: await errorFromResponse(response) };
+		// The body is read once and used twice: the envelope names the failure, and a batch route's refusal
+		// carries each row's own verdict beside it (§8.1). A refusal that does not parse is dropped rather
+		// than reported, because the envelope already states the failure the operator has to act on.
+		const payload = await readJson(response);
+		const refusal = options.refusalSchema?.safeParse(payload);
+
+		return {
+			ok: false,
+			error: errorFromPayload(response, payload),
+			refusal: refusal?.success ? refusal.data : undefined
+		};
 	}
 
 	if (response.status === 204) {
