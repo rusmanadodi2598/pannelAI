@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 |             |                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup). Sisa nomor masih menunggu pilihan owner |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server). Sisa nomor masih menunggu pilihan owner |
 | **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
 | **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
@@ -33,8 +33,8 @@ Empat langkah, semuanya bisa diulang:
 
 | #   | Item (KEEP)            | Route                                    | Layar              | Endpoint SPEC-API                        | Status                                         |
 | --- | ---------------------- | ---------------------------------------- | ------------------ | ---------------------------------------- | ---------------------------------------------- |
-| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5, F6, F7, F9                                 |
-| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list), F7 (list), Q12/Q13/Q19-Q23 tercatat |
+| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F6, F7, F9                      |
+| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list) **CLOSED**, F7 (list), Q12/Q13/Q19-Q23 tercatat |
 | 3   | Combo & Vision Adapter | `/combos`                                | ada                | §7.7, §7.8 live                          | F12 (bukti); test tingkat tab ada              |
 | 4   | Usage                  | `/usage`                                 | ada                | §7.12 live                               | F8, F12; tautan API Docs menunggu F1           |
 | 5   | Quota Tracker          | `/quota`                                 | ada                | §7.12 live                               | bersih; live pass tercatat                     |
@@ -65,9 +65,9 @@ sekarang membawa `href: '/skills'`.
   (`find src -name '*.svelte' -o -name '*.ts' | xargs wc -l`). Yang di atas 250 hanya file
   test pra-eksisting (terbesar `tests/schemas/combo.test.ts` 582), konsisten dengan aturan
   "file test pra-eksisting dibiarkan".
-- §8.4.2 (filter di URL) sudah dipatuhi Usage (dua tab) dan Logs: `parseXSearch` +
-  `nextXSearch` + `goto(resolve(...))` di `UsageRecordsTab`, `UsageOverviewTab`,
-  `LogsRequestsTab`.
+- §8.4.2 (filter di URL) sudah dipatuhi Usage (dua tab), Logs, dan tab Upstream endpoints
+  (`parseXSearch` + `nextXSearch` + `goto(resolve(...))` di `UsageRecordsTab`, `UsageOverviewTab`,
+  `LogsRequestsTab`, `UpstreamEndpointsTab`).
 - §6.6 (badge sumber, countdown, polling dengan pause) dan §6.7/§6.9/§6.8/§6.4 sudah sesuai
   bullet spec-nya, termasuk pengecualian yang dinyatakan (Q15 sampai Q18).
 - Tiga endpoint P4 sudah live dan session-gated di `app-serv`: `GET /api/v1/skills` (katalog
@@ -445,6 +445,41 @@ server. Halaman (`page_`) ikut ke URL agar tampilan yang dibagikan konsisten.
 
 **Kriteria selesai.** Test menegaskan filter mempersempit baris yang dirender **dan** menulis
 URL; tidak ada penyaringan client-side atas satu halaman; §8.4.2 terpenuhi di layar ini.
+
+**Status: CLOSED 2026-09-21.** Filter tab ini sekarang URL-backed dan server-side, tanpa
+perubahan `app-serv` (route §7.5 sudah membaca `provider_id`, `status`, dan `page`):
+
+- `src/lib/schemas/endpoint-search.ts` (131 baris) mem-parse `provider_id`, `status`, dan `page`
+  dari URL dengan pola yang sama seperti `log-search.ts`/`usage-search.ts`. Nilai yang tidak bisa
+  dipakai dikoreksi dan koreksinya muncul sebagai notice, bukan hilang: `status` yang tidak ada di
+  select, `page` yang bukan angka atau di bawah 1, dan nilai yang melewati batas panjang field.
+  `nextEndpointSearch` menulis satu perubahan ke URL dan membuang `page` saat filter berubah,
+  sehingga nomor halaman hasil lama tidak terbawa ke hasil baru.
+- `src/lib/components/UpstreamEndpointsTab.svelte` (211 baris) membangun request dari URL dan
+  merender hasil server, bukan `shown` yang dulu dihitung lalu tidak dipakai. Tidak ada
+  penyaringan client-side atas satu halaman (§8.4.1): `listEndpoints` menerima `provider_id`,
+  `status`, dan `page` yang sama dengan yang ada di URL.
+- Daftar opsi provider dibaca terpisah dan **tanpa filter** (`per_page=100`, batas §4), karena opsi
+  yang diturunkan dari hasil terfilter akan membuat provider lain hilang dari select begitu satu
+  filter dipasang. Bila bacaan itu gagal, filter tetap menawarkan provider yang ada di hasil
+  halaman dan sebuah notice menyebut alasannya; provider yang dinamai URL selalu ikut ditawarkan,
+  supaya select tidak pernah tampil kosong untuk filter yang sedang aktif.
+- Tiga keadaan kosong dibedakan karena aksinya berbeda: filter tidak cocok (Clear filters), halaman
+  melewati ujung daftar (Go to the first page), dan registry kosong (Choose a provider).
+- `src/lib/components/EndpointFilters.svelte` (85 baris) memisahkan bar filter dan notice-notice-nya
+  dari tab, yang tanpa pemisahan itu menembus batas baris; `src/lib/schemas/endpoint-options.ts`
+  (39 baris) memisahkan derivasi opsi dari komponennya.
+- Test: 4 berkas baru, 43 test — `tests/schemas/endpoint-search.test.ts` (18),
+  `tests/schemas/endpoint-options.test.ts` (8), `tests/components/upstream-endpoints.test.ts` (9),
+  `tests/components/upstream-endpoints-states.test.ts` (8) — plus `tests/support/endpoint-stub.ts`,
+  stub fetch bersama yang menjawab route list dengan filter dan paginasi server-side serta mencatat
+  setiap request (stub yang sama juga melayani route bulk, yang dipakai F6). Bukti yang diminta
+  kriteria selesai: pemilihan provider/status mengubah query yang dikirim dan baris yang dirender
+  adalah baris yang dikembalikan server, URL ikut berubah, dan tidak ada penyaringan di browser.
+- Batas yang dicatat: click-through browser tidak dijalankan pada pass ini (panel client-rendered,
+  jadi separuh render hanya dari test jsdom); bukti live-nya adalah test yang mengunci nama parameter
+  ke `src/lib/api/endpoints.ts` plus route `app-serv` yang membaca parameter itu, dan click-through
+  tetap outstanding bersama layar U0/U1 lain di F12.
 
 ## 9. F6 (MEDIUM): Mode baris berulang untuk menambah banyak key sudah ditulis di klien, belum ada UI-nya
 
