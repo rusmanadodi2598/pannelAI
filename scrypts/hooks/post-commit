@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Hook: post-commit. Refreshes the graphify graph in the background.
+#
+# The commit has already succeeded by the time this runs, so nothing here can
+# block it, and the changed set is exactly what landed. The rebuild itself is
+# detached (see graphify-rebuild) because it takes tens of seconds, and this hook
+# returns as soon as the handoff is written.
+#
+# Only commits that touch a file the graph indexes start a rebuild; the worker
+# checks that against manifest.json. Push does the same handoff from pre-push,
+# because git has no post-push hook.
+#
+# Install: scrypts/hooks/install.sh  (sets core.hooksPath)
+# Bypass:  git commit --no-verify
+
+set -euo pipefail
+. "$(dirname "$0")/../lib/common.sh"
+
+root="$(repo_root)"
+mkdir -p "$root/graphify-out"
+list="$root/graphify-out/.rebuild.changed"
+
+# HEAD~1 does not exist on the root commit, so fall back to listing HEAD itself
+# rather than reporting "nothing changed" on the first commit of a repository.
+if git -C "$root" rev-parse --verify --quiet HEAD~1 >/dev/null; then
+	git -C "$root" diff --name-only HEAD~1 HEAD >"$list" 2>/dev/null || : >"$list"
+else
+	git -C "$root" show --name-only --format= HEAD >"$list" 2>/dev/null || : >"$list"
+fi
+
+# Never let a graph refresh turn into a failed commit.
+bash "$root/scrypts/hooks/graphify-rebuild" detach "$list" >/dev/null 2>&1 || true
+exit 0

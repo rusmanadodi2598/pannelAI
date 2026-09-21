@@ -47,5 +47,19 @@ if [ "$failed" -ne 0 ]; then
 	exit 1
 fi
 
+# Hand off the graph refresh before reporting success. git has no post-push hook,
+# so this is the closest point that still means "the push is going ahead" - and it
+# sits after the gates, so a push that fails here does not trigger one. A push the
+# remote later rejects has already triggered a rebuild, which is harmless: the
+# graph reflects local HEAD either way.
+mkdir -p "$root/graphify-out"
+list="$root/graphify-out/.rebuild.changed"
+if git -C "$root" rev-parse --verify --quiet '@{upstream}' >/dev/null; then
+	git -C "$root" diff --name-only '@{upstream}..HEAD' >"$list" 2>/dev/null || : >"$list"
+else
+	git -C "$root" show --name-only --format= HEAD >"$list" 2>/dev/null || : >"$list"
+fi
+bash "$root/scrypts/hooks/graphify-rebuild" detach "$list" >/dev/null 2>&1 || true
+
 gate_pass "all gates"
 exit 0

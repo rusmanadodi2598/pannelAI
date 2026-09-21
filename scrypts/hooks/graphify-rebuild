@@ -1,0 +1,318 @@
+#!/usr/bin/env bash
+# Hook helper: refresh the graphify graph in the background after a commit or push.
+#
+# Why this is a separate script instead of inline hook code: the trigger has to
+# return at once, while the work takes tens of seconds. A commit that waits for a
+# graph rebuild is a commit people learn to bypass with --no-verify, and a
+# bypassed hook protects nothing. So the hooks only record what changed and hand
+# off; this script detaches, takes a lock, and does the rebuild.
+#
+# Two modes, one script:
+#   detach  - called by the hooks. Records the changed paths, starts `run` fully
+#             detached, and returns immediately.
+#   run     - the actual rebuild. Always exits 0: a background graph refresh must
+#             never become a failed commit or a blocked push.
+#
+# Why incremental: `graphify update` re-extracts only the changed code files and
+# merges them into the existing graph, leaving the semantic (doc/paper/image)
+# layer untouched. `graphify extract` is the incremental AST + LLM variant and is
+# opt-in here, because its headless semantic pass is much thinner than the
+# assistant-driven one - see the note at the call site.
+#
+# Why the throttle: a rebuild costs ~45s of CPU even when nothing in the corpus
+# changed, because a few hundred files fail to parse and so never enter the cache.
+# Without a floor, a run of small commits would keep two workers busy without
+# pause. A trigger inside the window marks the work pending instead, and a single
+# follow-up run picks it up when the current one finishes, so the last commit in a
+# burst still ends up in the graph.
+#
+# Usage: graphify-rebuild detach <changed-file-list>
+#        graphify-rebuild run
+#
+# Tuning: GRAPHIFY_REBUILD_THROTTLE (seconds, default 900)
+#         GRAPHIFY_REBUILD_DOCS=1      also re-extract changed docs via the LLM
+#         GRAPHIFY_REBUILD_TIMEOUT (s, default 1800) kill a wedged rebuild
+
+set -euo pipefail
+. "$(dirname "$0")/../lib/common.sh"
+
+root="$(repo_root)"
+out="$root/graphify-out"
+log="$out/rebuild.log"
+# Deliberately NOT graphify-out/.rebuild.lock: that is graphify's own lock
+# (graphify/watch.py), and graphify takes it in BLOCKING mode. Holding the same
+# path from here deadlocks the rebuild against itself, which is exactly what an
+# earlier version of this script did. Different concern, different file: this one
+# keeps two hook rebuilds from overlapping, graphify's keeps graph.json writers
+# from colliding.
+lock="$out/.hook-rebuild.lock"
+stamp="$out/.rebuild.last"
+pending="$out/.rebuild.pending"
+doc_pending="$out/.rebuild.doc-pending"
+deferred="$out/.rebuild.deferred"
+changed="$out/.rebuild.changed"
+throttle="${GRAPHIFY_REBUILD_THROTTLE:-900}"
+timeout_s="${GRAPHIFY_REBUILD_TIMEOUT:-1800}"
+
+log_line() {
+	printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$log"
+}
+
+# corpus_changed reports whether any changed path is a file the graph indexes.
+# manifest.json is the authority for "is this file part of the corpus", so the
+# check does not need its own copy of the extension lists and cannot drift from
+# what graphify actually scanned. An absent manifest returns "changed" so the
+# rebuild itself decides, rather than this gate silently disabling the hook.
+corpus_changed() {
+	[ -s "$changed" ] || return 1
+	local py="python3"
+	if [ -x "$out/.graphify_python" ]; then
+		py="$(cat "$out/.graphify_python")"
+	fi
+	"$py" - "$root" "$changed" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+manifest = root / "graphify-out" / "manifest.json"
+if not manifest.exists():
+    sys.exit(0)
+try:
+    keys = set(json.loads(manifest.read_text(encoding="utf-8")).keys())
+except (OSError, ValueError):
+    sys.exit(0)
+
+prefix = str(root) + "/"
+for raw in Path(sys.argv[2]).read_text(encoding="utf-8").splitlines():
+    rel = raw.strip()
+    if not rel:
+        continue
+    if rel.startswith(prefix):
+        rel = rel[len(prefix):]
+    if rel in keys:
+        sys.exit(0)
+sys.exit(1)
+PY
+}
+
+# docs_changed reports whether the changed set contains a non-code corpus file,
+# which is what tells a degraded (code-only) run apart from a complete one.
+docs_changed() {
+	[ -s "$changed" ] || return 1
+	local py="python3"
+	if [ -x "$out/.graphify_python" ]; then
+		py="$(cat "$out/.graphify_python")"
+	fi
+	"$py" - "$root" "$changed" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, "")
+try:
+    from graphify.detect import CODE_EXTENSIONS
+except Exception:
+    CODE_EXTENSIONS = []
+
+code = {e.lower() for e in CODE_EXTENSIONS}
+if not code:
+    sys.exit(1)
+
+root = Path(sys.argv[1])
+manifest = root / "graphify-out" / "manifest.json"
+try:
+    keys = set(json.loads(manifest.read_text(encoding="utf-8")).keys())
+except (OSError, ValueError):
+    keys = set()
+
+prefix = str(root) + "/"
+for raw in Path(sys.argv[2]).read_text(encoding="utf-8").splitlines():
+    rel = raw.strip()
+    if not rel:
+        continue
+    if rel.startswith(prefix):
+        rel = rel[len(prefix):]
+    if keys and rel not in keys:
+        continue
+    if Path(rel).suffix.lower() not in code:
+        sys.exit(0)
+sys.exit(1)
+PY
+}
+
+# ---------------------------------------------------------------- run mode
+
+run_rebuild() {
+	local iteration=0
+	while [ "$iteration" -lt 2 ]; do
+		iteration=$((iteration + 1))
+
+		if [ ! -f "$out/graph.json" ]; then
+			log_line "no graph.json in $out; nothing to update"
+			return 0
+		fi
+		if ! have graphify; then
+			log_line "graphify CLI not on PATH; skipping rebuild"
+			return 0
+		fi
+
+		# Throttle. The follow-up iteration deliberately skips it: its whole
+		# purpose is to land the commits that arrived during the first run.
+		if [ "$iteration" -eq 1 ] && [ -f "$stamp" ]; then
+			local now last age
+			now="$(date +%s)"
+			last="$(stat -c %Y "$stamp" 2>/dev/null || printf '0')"
+			age=$((now - last))
+			if [ "$age" -lt "$throttle" ]; then
+				# Marking pending alone would leave this change unrebuilt until some
+				# later trigger happened to arrive, so a burst whose last commit
+				# falls inside the window would leave the graph stale indefinitely.
+				# Schedule exactly one deferred run for when the window expires;
+				# the marker stops a burst from spawning a sleeper per commit.
+				if [ ! -f "$deferred" ]; then
+					: >"$deferred"
+					local wait_s=$((throttle - age + 2))
+					local self
+					self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+					# 9>&- matters: the sleeper must not inherit this script's lock fd,
+					# or it holds the lock for the whole sleep and every trigger in the
+					# meantime takes the wrong branch ("lock held") instead of the
+					# throttle branch.
+					if have setsid; then
+						setsid nohup bash -c "sleep $wait_s; rm -f '$deferred'; exec '$self' run" \
+							</dev/null >>"$log" 2>&1 9>&- &
+					else
+						nohup bash -c "sleep $wait_s; rm -f '$deferred'; exec '$self' run" \
+							</dev/null >>"$log" 2>&1 9>&- &
+					fi
+					log_line "last rebuild was ${age}s ago (< ${throttle}s); deferred rebuild scheduled in ${wait_s}s"
+				else
+					log_line "last rebuild was ${age}s ago (< ${throttle}s); a deferred rebuild is already scheduled"
+				fi
+				return 0
+			fi
+		fi
+
+		if ! corpus_changed; then
+			log_line "no corpus file changed; skipping rebuild"
+			return 0
+		fi
+
+		# Code-only by default. Measured 2026-09-22: the headless semantic pass
+		# re-extracted five changed docs and produced a third of the nodes the
+		# assistant-driven pass had (SYSTEM_MAP.md 65 -> 25, SPEC-UI 76 -> 15,
+		# app-ui/README.md 66 -> 8). The shrink guard refused the write, which is
+		# the right call but leaves the hook failing on every doc-touching commit
+		# and therefore never stamping the throttle. `graphify update` preserves
+		# the existing semantic layer and says so itself: "For doc/paper/image
+		# changes run /graphify --update in your AI assistant". So the doc refresh
+		# stays an explicit act; set GRAPHIFY_REBUILD_DOCS=1 to opt back in.
+		local use_docs=0
+		if [ "${GRAPHIFY_REBUILD_DOCS:-0}" = "1" ] || [ "${GRAPHIFY_REBUILD_DOCS:-}" = "true" ]; then
+			if [ -n "${GEMINI_API_KEY:-}${GOOGLE_API_KEY:-}" ]; then
+				use_docs=1
+			else
+				log_line "GRAPHIFY_REBUILD_DOCS is set but no GEMINI_API_KEY/GOOGLE_API_KEY is in this environment; falling back to code-only"
+			fi
+		fi
+
+		local args
+		if [ "$use_docs" -eq 1 ]; then
+			args=(extract "$root" --backend gemini --max-concurrency 2)
+			log_line "rebuild start (iteration ${iteration}, full AST + semantic, $(grep -c . "$changed" 2>/dev/null || printf '0') changed file(s))"
+		else
+			args=(update "$root")
+			log_line "rebuild start (iteration ${iteration}, code-only, $(grep -c . "$changed" 2>/dev/null || printf '0') changed file(s))"
+		fi
+
+		local status=0
+		# A wedged rebuild must not hold this lock forever: graphify's own lock is
+		# blocking, so a concurrent `graphify watch` daemon (or any future blocking
+		# wait) would otherwise park this process indefinitely, and every later
+		# trigger would only ever mark pending. Exit 124 is the timeout.
+		if have timeout; then
+			timeout --kill-after=30 "$timeout_s" graphify "${args[@]}" >>"$log" 2>&1 || status=$?
+		else
+			graphify "${args[@]}" >>"$log" 2>&1 || status=$?
+		fi
+		if [ "$status" -eq 0 ]; then
+			touch "$stamp"
+			log_line "rebuild finished"
+		elif [ "$status" -eq 124 ]; then
+			log_line "rebuild killed after ${timeout_s}s (GRAPHIFY_REBUILD_TIMEOUT); the graph was not rewritten"
+		else
+			log_line "rebuild failed with exit ${status}; see the output above"
+		fi
+
+		# Doc changes are not refreshed by a code-only run, so say so instead of
+		# letting the rebuild look complete. This marker is advisory only: the
+		# graph is consistent either way.
+		if [ "$use_docs" -eq 0 ] && docs_changed; then
+			: >"$doc_pending"
+			log_line "doc/paper/image changes were not re-extracted; run /graphify --update in an assistant, or set GRAPHIFY_REBUILD_DOCS=1"
+		else
+			rm -f "$doc_pending"
+		fi
+
+		if [ -f "$pending" ]; then
+			rm -f "$pending"
+			log_line "a trigger arrived during the rebuild; running once more"
+			continue
+		fi
+		return 0
+	done
+	log_line "iteration cap reached; the next trigger will pick up any remaining change"
+}
+
+# -------------------------------------------------------------- detach mode
+
+detach() {
+	mkdir -p "$out"
+	if [ -n "${1:-}" ] && [ -f "$1" ]; then
+		cp "$1" "$changed"
+	else
+		changed_files >"$changed" 2>/dev/null || : >"$changed"
+	fi
+
+	# Resolve this script's own path first: a detached process may start in a
+	# different working directory, and $0 as invoked can be relative.
+	local self
+	self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+
+	# setsid detaches from the session so the rebuild survives the terminal that
+	# ran the commit; nohup covers hosts without setsid, and the redirects keep
+	# git from holding the pipe open waiting on this child. 9>&- closes the lock fd
+	# in case this script ever calls detach while holding it.
+	if have setsid; then
+		setsid nohup "$self" run </dev/null >>"$log" 2>&1 9>&- &
+	else
+		nohup "$self" run </dev/null >>"$log" 2>&1 9>&- &
+	fi
+	return 0
+}
+
+# --------------------------------------------------------------- entrypoint
+
+case "${1:-detach}" in
+run)
+	mkdir -p "$out"
+	exec 9>>"$lock"
+	if ! flock -n 9; then
+		: >"$pending"
+		log_line "another rebuild holds the lock; marked pending"
+		exit 0
+	fi
+	run_rebuild || log_line "rebuild aborted on an unexpected error"
+	;;
+detach)
+	detach "${2:-}" || true
+	;;
+*)
+	printf 'usage: %s [detach <changed-file-list> | run]\n' "$(basename "$0")" >&2
+	exit 2
+	;;
+esac
+
+# A background refresh never gets to fail the commit or push that triggered it.
+exit 0

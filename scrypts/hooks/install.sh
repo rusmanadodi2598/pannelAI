@@ -19,7 +19,7 @@ gate_start "installing git hooks"
 
 # Verify every hook is present and executable before pointing git at the
 # directory: a missing hook would leave that stage silently unprotected.
-for hook in pre-commit pre-push; do
+for hook in pre-commit pre-push post-commit; do
 	if [ ! -f "$root/$hooks_rel/$hook" ]; then
 		gate_fail "missing $hooks_rel/$hook"
 		exit 1
@@ -39,7 +39,7 @@ fi
 
 gate_pass "core.hooksPath = $hooks_rel"
 printf '\nactive hooks:\n'
-for hook in pre-commit pre-push; do
+for hook in pre-commit pre-push post-commit; do
 	printf '  %-11s %s\n' "$hook" "$(head -n2 "$root/$hooks_rel/$hook" | tail -n1 | sed 's/^# //')"
 done
 printf '\nbypass a hook with: git commit --no-verify / git push --no-verify\n'
