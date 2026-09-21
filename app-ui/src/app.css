@@ -1,0 +1,71 @@
+/* Panel token layer.
+ *
+ * STATUS: draft without direction. DESIGN.md does not exist yet (docs/SPEC-UI/001-SPEC-UI.md §9.1),
+ * so the palette below is the minimum needed to build screens without shipping an untouched
+ * component-library default. Typography stays on the system stack for the same reason: choosing a
+ * web font without direction would be a guess, and a font CDN is excluded by §11.7.
+ *
+ * Palette size follows R-29: three neutrals plus one accent. Every text pair used here is measured
+ * against WCAG AA in tests/tokens/contrast.test.ts, which fails the build when a pair regresses.
+ */
+
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+	--color-surface: #ffffff;
+	--color-surface-2: #f4f6f8;
+	--color-surface-3: #e9edf1;
+	--color-border: #d5dae0;
+	--color-text: #14181f;
+	--color-text-muted: #5b6472;
+	--color-accent: #1d4ed8;
+	--color-accent-text: #ffffff;
+	--color-ok: #15803d;
+	--color-warn: #a16207;
+	--color-danger: #b91c1c;
+
+	--radius-sm: 4px;
+	--radius-md: 6px;
+	--radius-lg: 10px;
+
+	--font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--font-mono: ui-monospace, 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+}
+
+.dark {
+	--color-surface: #101317;
+	--color-surface-2: #171c22;
+	--color-surface-3: #1f262e;
+	--color-border: #2b333d;
+	--color-text: #eef1f5;
+	--color-text-muted: #aab4c2;
+	--color-accent: #7da2ff;
+	--color-accent-text: #0b0f14;
+	--color-ok: #4ade80;
+	--color-warn: #fbbf24;
+	--color-danger: #f87171;
+}
+
+html {
+	color-scheme: light;
+}
+
+html.dark {
+	color-scheme: dark;
+}
+
+body {
+	background-color: var(--color-surface);
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+}
+
+/* One visible focus treatment for the whole panel. Replacing the outline is only allowed together
+   with a replacement indicator (R-32), which is what this rule provides. */
+:focus-visible {
+	outline: 2px solid var(--color-accent);
+	outline-offset: 2px;
+}
