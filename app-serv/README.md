@@ -6,7 +6,7 @@ Kontrak perilaku ada di [`docs/SPEC-API/001-SPEC-API.md`](../docs/SPEC-API/001-S
 
 ## Status
 
-**P0 selesai; P1 sedang berjalan.** Yang tersedia dan teruji:
+**P0, P1, P2, P3, dan P4 selesai.** Yang tersedia dan teruji:
 
 P0 (selesai):
 
@@ -20,14 +20,19 @@ P0 (selesai):
 - Redis login lockout (5 kegagalan → 15 menit default) dan gateway rate limit
 - middleware: pemulihan panic, envelope error §8, 404/405 dinormalkan
 
-P1 sejauh ini (kode ada dan teruji; endpoint HTTP-nya belum semua terpasang):
+P1 sampai P4 (selesai; seluruh permukaan §7 terpasang dan teruji):
 
 - **Registry provider di-embed**: `internal/registry/registry.yaml` dihasilkan `tools/registry-gen.mjs` dari referensi 9Router, 94 provider, di-decode ketat (`KnownFields`) sehingga field yang tidak dikenal menggagalkan boot, bukan hilang diam-diam
 - **Seam plugin provider** (`internal/provider`): lookup `provider id → Plugin`, connector fallback untuk vendor OpenAI/Claude-compatible, dan `Unsupported()` yang melaporkan provider ber-protokol khusus yang belum punya connector
 - **Agregat endpoint**: `UpstreamEndpoint` menahan 1..N `UpstreamKey`; endpoint `api_key` wajib menyisakan minimal satu key aktif; circuit breaker per key (3 kegagalan → backoff 2 menit, sukses mereset)
-- **Migrasi P1** (000004-000008): provider nodes, upstream endpoints + keys, combos dan katalog model, usage dan quota, request logs dan settings
+- **Migrasi** (000001-000011): gateway keys, auth, provider nodes, upstream endpoints + keys, combos dan katalog model, usage dan quota, request logs dan settings, proxies, media provider settings, dan ownership P2
+- **Data plane chat** (§7.15): `POST /chat/completions`, `POST /messages`, `POST /responses`, dan `GET /models`, dengan auth gateway key sebelum decode body, validasi semantik typed, dan SSE yang meng-commit status pada frame pertama
+- **Data plane media dan embeddings** (§7.10): speech, transcriptions, voices, images, videos, search, dan embeddings di atas satu egress guard proses
+- **Permukaan manajemen** (§7.4-§7.14): providers + OAuth, endpoints + keys termasuk bulk, models (catalog, custom, alias, disabled), combos + test, vision adapter, token saver, media providers, proxy pools, usage/quota, logs, dan settings
+- **Rute statis P4** (§7.16-§7.18): `GET /skills`, `GET /openapi.json`, dan `GET /changelog`, seluruhnya session-gated
+- **Kontrak mesin**: `docs/CONTRACT/001-CONTRACT-API-V1.yaml` adalah sumber wire contract, dan `internal/handler/openapi.json` dihasilkan `tools/openapi-gen` serta di-embed ke binary; gate `scrypts/gates/contract-openapi.sh` menolak artifact yang stale
 
-Belum terpasang: repository dan service endpoint, handler dan route CRUD-nya, bulk onboarding (endpoint batch, key batch, import kredensial OAuth), combos, vision adapter, data plane chat, usage/quota read, logs, settings. Lihat SPEC-API-001 §7 dan §10 untuk P1 sampai P3.
+Lihat SPEC-API-001 §7 untuk permukaan lengkap dan §10 untuk fase pengirimannya.
 
 > `PANEL_BOOTSTRAP_PASSWORD` hanya dipakai saat row `panel_auth` belum memiliki hash. Setelah bootstrap, ubah password melalui endpoint change-password; env tidak menimpa hash yang sudah ada.
 
@@ -58,7 +63,9 @@ Server gagal start bila konfigurasi tidak valid, dan menyebut variabel yang berm
 
 `SESSION_SECRET` minimal 32 byte dan `ENCRYPTION_KEY` tepat 32 byte (AES-256). Keduanya wajib.
 
-## Endpoint P0
+## Endpoint
+
+Permukaan lengkap ada di SPEC-API-001 §7; daftar mesin ada di `internal/handler/openapi.json`. Contoh permukaan yang paling sering dipakai:
 
 ```bash
 curl localhost:8080/api/v1/health
@@ -75,6 +82,14 @@ curl -b cookies.txt -X POST localhost:8080/api/v1/gateway-keys \
 curl -b cookies.txt localhost:8080/api/v1/gateway-keys
 curl -b cookies.txt -X DELETE localhost:8080/api/v1/gateway-keys/{id}
 curl -b cookies.txt -X POST localhost:8080/api/v1/auth/logout
+
+# Data plane: gateway key, bukan session cookie (§7.15).
+curl -X POST localhost:8080/api/v1/chat/completions \
+  -H 'Authorization: Bearer sk-...' -H 'Content-Type: application/json' \
+  -d '{"model":"provider/model","messages":[{"role":"user","content":"hi"}]}'
+
+# Kontrak mesin yang disajikan binary (§7.17).
+curl -b cookies.txt localhost:8080/api/v1/openapi.json
 ```
 
 Login, logout, dan change-password berhasil dengan `204 No Content`; kredensial sesi berada di cookie `pannel_session` (HttpOnly, SameSite=Lax). Respons create memuat `plaintext_key` satu kali. Setelah itu hanya `key_hint` (`sk-…abcd`) yang dikembalikan; yang tersimpan hanyalah digest SHA-256.
@@ -110,12 +125,22 @@ Cakupan saat ini:
 
 | Paket | Yang diuji |
 |---|---|
-| `internal/domain` | generator ULID (keunikan, monotonisitas, alfabet), transisi state gateway key, hashing |
+| `internal/domain` | generator ULID (keunikan, monotonisitas, alfabet), transisi state gateway key, hashing, aturan cap kuota |
 | `internal/config` | parsing env table-driven, tiap aturan penolakan, batas nilai, perbedaan "tidak diset" vs "diset kosong" |
-| `internal/service` | transformasi `key_hint`, termasuk kasus kunci pendek yang tidak menyembunyikan apa pun |
-| `internal/router` | route `/api/v1` melalui mux sungguhan: auth login/status/logout, session gating, status, verbe salah, duplikat nama, `request_id`, limiter, siklus hidup create → get → delete |
-| `internal/handler` | auth happy/validation/auth cases, cookie lifecycle, create/list/get/update/revoke, paginasi, dan validasi payload |
+| `internal/registry` | decode ketat, resolusi alias, dan invariants katalog provider |
+| `internal/provider` | seam plugin per provider dan connector fallback |
+| `internal/netguard` | egress guard: penolakan loopback/private, allowlist, dan validasi ulang saat connect |
+| `internal/schema` | validasi typed table-driven, termasuk union content dan aturan semantik chat |
+| `internal/dataplane` | resolusi model dan combo, seleksi endpoint + budget gate, relay dan failover, translator per wire, stream lifecycle, dan token saver |
+| `internal/tokensaver` | urutan RTK → Headroom → Ponytail, bypass per request, dan fail-open tiap kegagalan |
+| `internal/service` | transformasi `key_hint`, accounting usage/log/quota, dan worker flush serta retention |
+| `internal/router` | route `/api/v1` melalui mux sungguhan: auth login/status/logout, session gating, data plane, batas rate limit, `request_id`, verbe salah, dan siklus hidup CRUD |
+| `internal/handler` | happy/validation/auth per route, termasuk chat HTTP end to end di atas `ChatService` nyata, kontrak OpenAPI, dan cookie lifecycle |
 | `internal/repository/postgres` | pemetaan error driver → domain (unit); constraint, paginasi, dan round-trip terhadap PostgreSQL nyata (integrasi) |
+| `internal/repository/redis` | rotasi combo dan vision, buffer console, dan state OAuth sekali pakai |
+| `tools/openapi-gen` | generator artifact OpenAPI dari YAML, termasuk mode `-check` |
+
+Laporan terakhir: `go test -race -count=1 ./...` hijau pada 15 paket ber-test dan 2 paket tanpa test file, 0 gagal.
 
 ### Test integrasi
 

@@ -6,12 +6,14 @@ Diperbarui pada PR yang sama ketika topologi atau alur data berubah (AGENTS.md �
 | | |
 |---|---|
 | **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (94 provider, decode ketat), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (§7.4-§7.8, §7.12-§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis → PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API. **P2 CLOSED**: seluruh permukaan §7.4–§7.15 terpasang dan terverifikasi live terhadap PostgreSQL 14 + Redis nyata dengan stub upstream dan stub proxy loopback — OAuth round-trip (start, callback, status, refresh per endpoint + due sweep), combo test, proxy pools (dua rute test + guard egress), token-saver, budget caps (cap terbaca kembali), katalog model + custom/alias/disabled, media §7.10 (speech, transcriptions, voices, images, search), embeddings lewat node kustom, dan jalur chat + media + embeddings yang menulis usage/log. Media plane memakai satu `MediaTransport` bersama embeddings di atas satu egress guard proses (`EGRESS_ALLOWED_TARGETS`), dan `settings.network.outbound_proxy_*` kini menentukan rute tiap panggilan keluar (§7.11). Sebelas format media non-OpenAI sudah punya adapter (Deepgram STT; NVIDIA NIM, Cartesia, ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS, Gemini STT). Register gap P2 (`docs/DRAFT/001-P2-GAPS.md`) menutup 20 dari 21 item; yang terbuka bukan kriteria keluar fase: lima format media sisa (G21 — AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device, yang butuh lebih dari satu request per panggilan) dan pemeliharaan dokumen ini (G10, baris ini). `go test -race ./...` bersih (13 paket + `cmd`), tagged integration hijau, `go-lint.sh` dan `go-headers.sh` PASS |
-| **Terakhir diperbarui** | 2026-09-19 |
-| **Kontrak** | `docs/SPEC-API/001-SPEC-API.md` |
+| **Terakhir diperbarui** | 2026-09-21 |
+| **Kontrak** | `docs/SPEC-API/001-SPEC-API.md` (semantik), `docs/CONTRACT/001-CONTRACT-API-V1.yaml` (wire contract), `app-serv/internal/handler/openapi.json` (generated served artifact) |
 
 ---
 
-## 1. Topologi
+P2 readiness audit covered all §7.15 chat surfaces; the Playground Chat client path is now documented here as app-ui server-side forwarding over the gateway-key data plane. `POST /api/v1/chat/completions` authenticates before schema decode, typed semantic validation rejects malformed unions, and SSE status commits on the first frame. OpenAPI request schema parity is tested and generated from the YAML source. The F9 live evidence is closed: one non-streamed and one streamed call through the real router, gateway-key auth, Redis rate limit and quota counter, PostgreSQL usage/log rows, and a guarded loopback upstream, with the refusal paths (`401 UNAUTHORIZED`, `400 VALIDATION_ERROR`, `400 MODEL_NOT_FOUND`) recorded in `docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md` §10.9.
+
+
 
 Dua aplikasi, satu repositori. Keduanya berbagi PostgreSQL dan Redis secara logis; `app-ui` tidak pernah mengakses keduanya langsung.
 
@@ -141,6 +143,45 @@ The panel forwards `/api/v1` from its own server, so the browser talks to one
 origin and no CORS rule is needed. The panel never touches PostgreSQL or Redis;
 the API is its only surface (SPEC-API-001 §11.5).
 
+
+### 3.2a Playground Chat (app-ui client over app-serv data plane)
+
+Playground Chat is rendered and session-forwarded by `app-ui`; `app-serv` does not add a
+`/playground` route. The app-ui server obtains or receives a gateway key through its server-side
+boundary and calls the data plane with `Authorization: Bearer <gateway key>`:
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant U as app-ui server
+    participant S as app-serv
+    participant R as Redis
+    participant P as PostgreSQL
+    participant X as upstream
+
+    B->>U: Playground chat request
+    U->>S: GET /api/v1/models (gateway key)
+    S->>R: rate limit + key use
+    S->>P: model catalog read
+    S-->>U: OpenAI model list
+    U-->>B: model choices without exposing the key
+    U->>S: POST /api/v1/chat/completions (gateway key)
+    S->>R: rate limit, quota, key auth
+    S->>X: guarded upstream relay
+    S->>P: usage + request log
+    S-->>U: JSON or SSE data-plane response
+    U-->>B: chat answer or structured error
+```
+
+The data-plane route is deliberately not session-gated: CLI callers and the app-ui server-side
+forwarder use the gateway key. Authentication happens before body decoding, semantic validation
+uses the typed `schema.ChatRequest` plus `go-playground/validator/v10`, and a stream commits its
+200/SSE response only when its first frame is written; a pre-frame failure remains a normal
+structured HTTP error. `/api/v1/models` lists the same routable model identifiers the relay
+resolver accepts. PostgreSQL, Redis, upstream credentials, and provider response bodies never
+cross into the browser boundary.
+
+
 ### 3.3 Autentikasi dan revocation
 
 `POST /api/v1/auth/login` memverifikasi bcrypt hash dari `panel_auth`, membuat
@@ -244,6 +285,8 @@ Semua endpoint manajemen selain health/version digerbangi sesi. `RATE_LIMIT_PER_
 ditegakkan melalui Redis fixed-window middleware untuk traffic `/api/v1` selain
 health/version (operational probes harus tetap dapat melaporkan Redis failure);
 login memiliki counter dan lockout Redis terpisah.
+
+Setiap perubahan endpoint, batas auth, schema request/response, status, atau error mapping wajib mengubah `docs/CONTRACT/001-CONTRACT-API-V1.yaml`, menjalankan `go run ./tools/openapi-gen` dari `app-serv`, dan memperbarui dokumentasi manual `docs/CONTRACT/001-CONTRACT-API-V1.md` pada PR yang sama. Gate `contract-openapi.sh` menolak artifact JSON yang stale.
 
 ## 4a. Migrasi
 
