@@ -105,7 +105,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Eleven passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Twelve passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -113,7 +113,86 @@ day. The sixth is the alias set, measured the same day. The seventh is the OAuth
 same day. The eighth is the combo test action, measured the same day. The ninth is the quota budget caps,
 measured the same day, and it closes U2 on the panel side. The tenth is the API Docs screen, measured
 2026-09-21. The eleventh is the Skills screen, measured the same day, and it closes F2 of
-`docs/DRAFT/007-UI-ENDPOINT-READINESS.md`.
+`docs/DRAFT/007-UI-ENDPOINT-READINESS.md`. The twelfth is the Playground Chat screen, measured the same
+day, and it closes F3 of that draft.
+
+### Playground Chat, 2026-09-21
+
+Run with Bun 1.3.14. This pass covers `/playground` (SPEC-UI §6.15): the screen that sends one chat request
+through the data plane by hand, and the credential path that makes it possible without the browser ever
+holding a key.
+
+| Check             | Result                                                                                                                                                                                            |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                              |
+| `bun run test`    | 2032 tests passed across 94 files, 133 of them new in this pass across 12 files                                                                                                                   |
+| `bun run lint`    | Prettier reports every file conforms                                                                                                                                                              |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                    |
+| `bun run build`   | succeeds, output in `build/`                                                                                                                                                                      |
+| The bundle        | `grep -rl PANEL_PLAYGROUND_KEY build/client/` finds nothing; the name appears only under `build/server/`                                                                                          |
+| Live wire pass    | 37 checks, 0 failures, in four phases against a booted `app-serv`, plus a fifth isolated phase (5 checks) that pointed a second panel at a frame-by-frame stub                                    |
+| File size         | largest new source is 170 lines (`src/routes/playground/+page.svelte`); largest new test is 174 lines (`tests/api/playground.test.ts`), both under the 250 ceiling and under the 200 warning line |
+| Text hygiene      | 0 em dashes in the new files                                                                                                                                                                      |
+
+What the screen does, and where it states a limit rather than hiding one:
+
+| Area                   | Behaviour                                                                                                                                                                                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The injection path     | `PANEL_PLAYGROUND_KEY` is read from the panel's server environment, and the credential is written in exactly one function (`playgroundHeaders`). The browser is never given a key, so there is no store, form field, or URL that could hold one.                |
+| The two panel routes   | `GET /playground/models` and `POST /playground/chat` sit outside `/api/v1`, so the general forwarder keeps passing `/api/v1/*` through untouched. Teaching that forwarder to inject would attach the credential to every management request a browser can make. |
+| A session is required  | Every playground route first asks `GET /api/v1/auth/status` with the caller's cookie, so the session's truth stays in the gateway's store. The key check comes first, which is why an unconfigured panel dials nothing at all.                                  |
+| The failure vocabulary | The routes answer in the panel's own envelope and keep the gateway's error object inside it. Both planes use the code name `UNAUTHORIZED`, so a forwarded 401 would read as an expired panel session and sign the operator out for a gateway key problem.       |
+| The answer             | The text grows frame by frame while it arrives, with a Stop control that aborts the read. The facts beside it are the resolved model, the finish reason, the token counts, and the HTTP status the panel's route answered with.                                 |
+| A fact the wire omits  | Reads `not stated` rather than a zero or a blank. A stream can end without a usage frame, and printing zero would be a token count the gateway never reported.                                                                                                  |
+| Three endings          | Ending on the documented `[DONE]` sentinel, being stopped by the operator, and closing without the sentinel get three sentences, because only the third means the answer may be cut off.                                                                        |
+| The raw disclosure     | A collapsed block holds the frames exactly as they arrived, which is what makes a contract divergence diagnosable instead of mysterious.                                                                                                                        |
+| The unavailable state  | When the key is unset the screen renders the sentence the panel's own route wrote, which is the only place allowed to name the variable, and renders no send control. It does not ask the operator to paste a key.                                              |
+| States                 | Loading, failure with Try again, an empty model list, and the unavailable state above.                                                                                                                                                                          |
+
+#### Live pass against `app-serv`, 2026-09-21
+
+`app-serv` was built from **committed HEAD** rather than the working tree, because another actor was
+mid-pass in `internal/handler/` at the time: `git archive HEAD app-serv` into `/tmp`, then `go build`
+there. That is read-only for the repository and it builds exactly the committed contract, which is the
+thing the panel talks to. The binary booted from its own `.env` with a run env that added only
+`HTTP_ADDR=127.0.0.1:9090`, `PUBLIC_BASE_URL` at the panel's origin,
+`EGRESS_ALLOWED_TARGETS=127.0.0.1/32`, and a run-local `PANEL_BOOTSTRAP_PASSWORD`. A loopback stub on a
+fresh port answered SSE with a 0.6 s pause after its first frame, so a buffering hop and a streaming one
+would look different.
+
+The driver imported the panel's own client modules by absolute path and shimmed `fetch` to resolve the
+relative paths against the panel's origin and attach the session cookie, because bun has no cookie jar and
+that is what `credentials: 'same-origin'` means in a browser. So the pass drove the code the screen calls,
+not a curl that happens to return bytes.
+
+| Phase     | Checks | What it proved                                                                                                                                                                                                                                 |
+| --------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fixture   | 5      | A provider node, an endpoint with its key, a gateway key whose plaintext is only in the create response, and the panel session through the panel's own origin                                                                                  |
+| No key    | 5      | 503 `PLAYGROUND_KEY_MISSING` naming the variable, and neither the gateway nor the stub dialed at all, which is what "the key check comes first" means in practice                                                                              |
+| With key  | 23     | The session gate, the models read through the panel's client, the streamed answer with its facts, the empty-body refusal, no response carrying either credential, and the stub log proving the endpoint key and `stream_options.include_usage` |
+| Wrong key | 4      | `GATEWAY_KEY_REFUSED` with the gateway's own `UNAUTHORIZED` inside the panel envelope, and the panel session untouched, so a key problem cannot sign the operator out                                                                          |
+| Isolated  | 5      | A second panel pointed at a frame-by-frame stub: the answer arrived over five reads 600 ms apart and the reader ended `done`, which proves the relay streams independently of the gateway's own buffering                                      |
+
+Three defects in `app-serv` came out of this pass. They are recorded here and in
+`docs/DRAFT/007-UI-ENDPOINT-READINESS.md` as requests to that actor, not absorbed by the panel:
+
+| Defect                                            | Where                                                       | What the panel sees                                                                                                                           |
+| ------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| A chunk is marshalled without being framed        | `internal/dataplane/translate_stream_openai.go` `mustFrame` | The stream carries a bare JSON object and `data: [DONE]` is glued to it with no blank line, so the reader ends `truncated` rather than `done` |
+| The status is committed before the model resolves | `internal/handler/chat.go`                                  | A streamed request for an unknown model answers 200 with an error body under an SSE content type, where the non-streamed path answers 400     |
+| The whole answer is written at once               | the gateway's stream handler                                | `sseSink.Flush()` never reaches the client, so nothing streams; the stub's own frame-by-frame writes arrive as one 1074-byte read             |
+
+The panel is deliberately not taught to tolerate the malformed tail: `truncated` is the honest reading of
+the bytes it received, and a reader that accepted the glued sentinel would hide a wire defect behind a
+screen that looked satisfied.
+
+The live database was restored to its exact baseline: `usage=2 logs=1 keys=0 endpoints=0 upkeys=0
+nodes=0 caps=0 settings=1 auth_null=true media_settings=0 proxies=0`. The pass's `usage_records` and
+`request_logs` rows were deleted, the gateway key was hard-deleted (revoking leaves the row), the
+`panel_auth` hash was nulled after the server stopped, and the run's temp files were removed.
+
+The honest limit is the same one U0, U1, and the Skills half carry: the panel is client-rendered, so the
+browser click-through is still outstanding and the render half is covered by jsdom tests only.
 
 ### Skills, 2026-09-21
 

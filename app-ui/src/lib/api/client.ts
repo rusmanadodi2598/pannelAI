@@ -28,6 +28,17 @@ export function onUnauthorized(handler: (() => void) | undefined): void {
 	unauthorizedHandler = handler;
 }
 
+/**
+ * Reports a session expiry the way this client does, for a caller that does its own fetch.
+ *
+ * One module does: the playground calls the panel's own routes and reads a failure envelope of its own,
+ * so it cannot go through `apiRequest`, but an expired session must still sign the operator out once,
+ * in one place (SPEC-UI §8.1).
+ */
+export function reportUnauthorized(status: number): void {
+	if (status === 401) unauthorizedHandler?.();
+}
+
 export async function apiRequest<B, T>(options: RequestOptions<B, T>): Promise<ApiResult<T>> {
 	// The body starts as whatever the caller passed, because `bodySchema` validates a body rather than
 	// deciding whether one is sent. Assigning it only inside the branch below would drop the body of every
@@ -61,7 +72,7 @@ export async function apiRequest<B, T>(options: RequestOptions<B, T>): Promise<A
 	}
 
 	if (response.status === 401 || response.status === 403) {
-		if (response.status === 401) unauthorizedHandler?.();
+		reportUnauthorized(response.status);
 	}
 
 	if (!response.ok) {

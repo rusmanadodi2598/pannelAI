@@ -6,12 +6,12 @@ scope) dan `docs/SPEC-API/001-SPEC-API.md` (wire). Dokumen ini melanjutkan pola
 `003-ENDPOINT-READINESS.md` sampai `006-TOKEN-SAVER-READINESS.md`: temuan bernomor F,
 owner memilih nomor yang dikerjakan.
 
-| | |
-|---|---|
-| **Status** | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup). Sisa nomor masih menunggu pilihan owner |
-| **Dibuat** | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv` |
-| **Kaitan** | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md` |
-| **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan |
+|             |                                                                                                                                                                                                                                                                                                 |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya). Sisa nomor masih menunggu pilihan owner |
+| **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                               |
+| **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                |
+| **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                |
 
 ## 1. Metode
 
@@ -31,22 +31,22 @@ Empat langkah, semuanya bisa diulang:
 
 ## 2. Ringkasan kesiapan 14 item
 
-| # | Item (KEEP) | Route | Layar | Endpoint SPEC-API | Status |
-|---|---|---|---|---|---|
-| 1 | Endpoint & Key | `/endpoint-keys` | ada | §7.3, §7.5 live | F5, F6, F7, F9 |
-| 2 | Provider | `/providers`, `/providers/[provider_id]` | ada | §7.4, §7.6 live | F5 (list), F7 (list), Q12/Q13/Q19-Q23 tercatat |
-| 3 | Combo & Vision Adapter | `/combos` | ada | §7.7, §7.8 live | F12 (bukti); test tingkat tab ada |
-| 4 | Usage | `/usage` | ada | §7.12 live | F8, F12; tautan API Docs menunggu F1 |
-| 5 | Quota Tracker | `/quota` | ada | §7.12 live | bersih; live pass tercatat |
-| 6 | Token Saver | `/token-saver` | ada | §7.9 live | bersih; live pass tercatat |
-| 7 | Skill | `/skills` | ada | §7.16 live sejak P4 | F2 **CLOSED 2026-09-21** |
-| 8 | Media Provider | `/media-providers/[kind]` | ada | §7.10 live | Q17/Q18 tercatat |
-| 9 | Playground Chat | `/playground` | **tidak ada** | §7.15 live; §10 P4 menugaskan halamannya | F3 |
-| 10 | Proxy Pools | `/proxy-pools` | ada | §7.11 live | bersih; live pass tercatat |
-| 11 | API Docs | `/api-docs` | ada | §7.17 live sejak P4 | F1 **CLOSED 2026-09-21** |
-| 12 | Changelog | `/changelog` | ada, sumber belum dibaca | §7.18 live sejak P4 | F4 |
-| 13 | Console Log | `/console-log` | ada | §7.13 live | F8 |
-| 14 | Setting | `/settings` | ada | §7.14 live | F10 |
+| #   | Item (KEEP)            | Route                                    | Layar                    | Endpoint SPEC-API                        | Status                                         |
+| --- | ---------------------- | ---------------------------------------- | ------------------------ | ---------------------------------------- | ---------------------------------------------- |
+| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                      | §7.3, §7.5 live                          | F5, F6, F7, F9                                 |
+| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                      | §7.4, §7.6 live                          | F5 (list), F7 (list), Q12/Q13/Q19-Q23 tercatat |
+| 3   | Combo & Vision Adapter | `/combos`                                | ada                      | §7.7, §7.8 live                          | F12 (bukti); test tingkat tab ada              |
+| 4   | Usage                  | `/usage`                                 | ada                      | §7.12 live                               | F8, F12; tautan API Docs menunggu F1           |
+| 5   | Quota Tracker          | `/quota`                                 | ada                      | §7.12 live                               | bersih; live pass tercatat                     |
+| 6   | Token Saver            | `/token-saver`                           | ada                      | §7.9 live                                | bersih; live pass tercatat                     |
+| 7   | Skill                  | `/skills`                                | ada                      | §7.16 live sejak P4                      | F2 **CLOSED 2026-09-21**                       |
+| 8   | Media Provider         | `/media-providers/[kind]`                | ada                      | §7.10 live                               | Q17/Q18 tercatat                               |
+| 9   | Playground Chat        | `/playground`                            | ada                      | §7.15 live; §10 P4 menugaskan halamannya | F3 **CLOSED 2026-09-21**                       |
+| 10  | Proxy Pools            | `/proxy-pools`                           | ada                      | §7.11 live                               | bersih; live pass tercatat                     |
+| 11  | API Docs               | `/api-docs`                              | ada                      | §7.17 live sejak P4                      | F1 **CLOSED 2026-09-21**                       |
+| 12  | Changelog              | `/changelog`                             | ada, sumber belum dibaca | §7.18 live sejak P4                      | F4                                             |
+| 13  | Console Log            | `/console-log`                           | ada                      | §7.13 live                               | F8                                             |
+| 14  | Setting                | `/settings`                              | ada                      | §7.14 live                               | F10                                            |
 
 Satu route yang tidak ada adalah baris yang masih `planned: true` di
 `src/lib/navigation.ts` (`playground` baris 108). Endpoint dan penugasan fasenya sudah ada
@@ -269,6 +269,69 @@ menempel key.
 key tidak muncul di respons mana pun (diuji); unavailable state saat key kosong; click-through
 tercatat. Owner menyediakan satu gateway key untuk pass live.
 
+**Status: CLOSED 2026-09-21.** Owner menjawab scope layarnya pada 2026-09-21 (streaming ikut, dan hasilnya
+teks + fakta + JSON mentah), lalu dikerjakan:
+
+- Jalur injeksinya ada, dan bentuknya bukan forwarder umum: `src/lib/schemas/env.ts` mendeklarasikan
+  `PANEL_PLAYGROUND_KEY` (kosong atau tidak diset adalah keadaan yang didukung, bukan gagal boot), dan dua
+  route panel di luar prefix `/api/v1` (`GET /playground/models`, `POST /playground/chat`) melakukan
+  panggilan data plane sendiri. `src/lib/server/playground.ts:61` (`playgroundHeaders`) adalah satu-satunya
+  tempat kredensial ditulis, jadi call site kedua tidak bisa menemukan penempatan kedua.
+  `src/hooks.server.ts` tidak disentuh: `/api/v1/*` tetap diteruskan apa adanya, sehingga tidak ada
+  permintaan browser mana pun yang ikut membawa kredensial.
+- Layar `src/routes/playground/+page.svelte` ada dan `src/lib/navigation.ts` sekarang
+  `href: '/playground'` (R-24). Sidebar terukur 2026-09-21: 19 leaf routable, 0 baris `Planned`.
+- Modul panel: `src/lib/schemas/playground.ts` (kontrak panel, ketat) dan `playground-stream.ts` (frame
+  reader), `src/lib/api/playground.ts` plus `playground-reader.ts` (klien; dipisah karena berkas pertama
+  menembus ambang 200 baris), `src/lib/strings/playground.ts`, `PlaygroundComposer.svelte`, dan
+  `PlaygroundAnswer.svelte`. Tiga state ada (loading, gagal dengan `Try again`, dan daftar model kosong),
+  plus unavailable state yang memakai kalimat route panel sendiri dan tidak merender kontrol kirim.
+- Empat aturan §6.15 dipegang test, bukan review: nama variabel hanya boleh muncul di schema yang
+  mendeklarasikannya dan di `src/lib/server/`; kredensial ditulis tepat di satu fungsi; berkas browser
+  dilarang menyebut store atau header kredensial; dan kalimat gateway yang dikutip ulang di-redact.
+  Bundle produksi di-grep: `PANEL_PLAYGROUND_KEY` tidak ada di `build/client/`, hanya di `build/server/`.
+- Envelope kegagalan milik panel sendiri (`PLAYGROUND_KEY_MISSING`, `UNAUTHORIZED`, `VALIDATION_ERROR`,
+  `GATEWAY_UNREACHABLE`, `GATEWAY_KEY_REFUSED`, `GATEWAY_ERROR`, `INTERNAL_ERROR`), karena kedua plane
+  memakai nama kode `UNAUTHORIZED` dan 401 yang diteruskan akan mengeluarkan operator dari sesi panel.
+  Kode gateway tetap ikut di dalam envelope panel.
+- Test: 133 test baru di 12 berkas (semuanya hijau), plus satu test tambahan di `tests/api/client.test.ts`
+  untuk jalur envelope yang dipakai klien playground. Suite penuh di tree beku: 2032 test / 94 berkas,
+  naik dari 1898 / 82 yang dicatat pass F2.
+- Live pass 2026-09-21, empat fase, 37 check, 0 gagal, di atas `app-serv` yang dibangun dari **HEAD
+  ter-commit** (working tree-nya sedang dipegang aktor lain, jadi `git archive HEAD` dipakai dan tidak ada
+  berkas `app-serv` yang disentuh): fixture (5 check), tanpa key (5 check: 503 yang menyebut variabelnya,
+  dan gateway maupun stub tidak didial sama sekali), dengan key (23 check: gerbang sesi, baca model,
+  jawaban stream beserta faktanya, penolakan body kosong, tidak ada respons yang membawa salah satu
+  kredensial, dan log stub yang membuktikan endpoint key plus `stream_options.include_usage`), dan key
+  salah (4 check: `GATEWAY_KEY_REFUSED` dengan `UNAUTHORIZED` milik gateway di dalamnya, sesi panel tidak
+  tersentuh).
+- Fase kelima mengisolasi relay panel: panel kedua diarahkan ke stub yang menulis frame demi frame, karena
+  buffering gateway akan menyembunyikan perilaku relay. Jawabannya datang dalam lima read terpisah 600 ms
+  dan reader berakhir `done`, jadi klaim "panel men-streaming" punya bukti live yang tidak bergantung pada
+  app-serv.
+- Tiga cacat `app-serv` ditemukan pass ini dan **dicatat sebagai permintaan ke aktor itu, bukan dikerjakan
+  dari sini**, semuanya diverifikasi terhadap `app-serv` di `7b9ac1d` (HEAD saat pass, dibangun lewat
+  `git archive`): (1) `mustFrame` di `internal/dataplane/translate_stream_openai.go` mem-marshal payload
+  tanpa membingkainya, sehingga stream membawa objek JSON telanjang dan `data: [DONE]` menempel padanya
+  tanpa baris kosong; (2) `internal/handler/chat.go` menulis status 200 dan content type SSE sebelum model
+  di-resolve, sehingga permintaan stream dengan model tak dikenal menjawab 200 berisi body error di bawah
+  tipe SSE, sementara jalur non-stream menjawab 400 dengan benar (kontrol langsung ke gateway membuktikan
+  itu); (3) gateway menulis seluruh jawaban sekaligus, jadi `sseSink.Flush()` tidak pernah sampai ke klien
+  dan tidak ada yang benar-benar streaming. Panel sengaja tidak diajari mentoleransi tail yang rusak: ia
+  melaporkan `truncated`, yang memang bacaan jujur atas byte yang diterimanya. Catatan status per
+  2026-09-21: working tree `app-serv` sudah mengubah `internal/handler/datplane_errors.go` dan
+  `internal/handler/chat.go`, dan diff-nya memindahkan commit status ke frame pertama, yaitu persis cacat
+  (2); temuan (1) dan (3) belum terlihat tersentuh.
+- Database live dikembalikan ke baseline persis (`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0
+caps=0 settings=1 auth_null=true media_settings=0 proxies=0`); baris `usage_records`/`request_logs` pass
+  dihapus, gateway key di-hard-delete (revoke saja menyisakan baris), hash `panel_auth` di-null setelah
+  server berhenti, dan berkas temp pass dihapus.
+- Batas yang dicatat, bukan disembunyikan: click-through browser masih outstanding karena panel
+  client-rendered (separuh render hanya dari test jsdom), dan D6 tidak terpakai sebagai permintaan key ke
+  owner: pass ini mencetak gateway key-nya sendiri lewat `POST /api/v1/gateway-keys` (plaintext hanya di
+  respons create), jadi owner tidak perlu menyerahkan key. README `app-ui` mencatat pass ini dan DESIGN.md
+  §11 mencatat dua belas keputusan layar ini.
+
 ## 7. F4 (HIGH): Changelog belum membaca sumber rilis yang sekarang sudah dilayani
 
 **Fakta.** `GET /api/v1/changelog` hidup sejak P4
@@ -290,9 +353,10 @@ itu klaim yang salah (R-38). Memetakan paksa `notes` menjadi `items[]` atau meng
 date, title, notes sebagai satu blok) dan §6.16 diamandemen dari `category` + `items[]` ke
 bentuk itu, atau (b) `app-serv` memperluas entri dengan `category` dan `items[]`, yang dicatat
 sebagai permintaan dan tidak dikerjakan dari draft ini. Setelah itu: `src/lib/api/changelog.ts`
-+ schema untuk bentuk yang dipilih, loader membaca dua route (changelog + version), marker
-`Running`/`Newer`/`Installed` tetap dihitung terhadap versi yang berjalan, empty state hanya
-muncul saat route menjawab nol baris, komentar §6.18 diperbaiki, dan Q11 ditutup.
+
+- schema untuk bentuk yang dipilih, loader membaca dua route (changelog + version), marker
+  `Running`/`Newer`/`Installed` tetap dihitung terhadap versi yang berjalan, empty state hanya
+  muncul saat route menjawab nol baris, komentar §6.18 diperbaiki, dan Q11 ditutup.
 
 **Kriteria selesai.** Layar merender rilis yang dilayani; perbandingan versi tetap benar; empty
 state tidak lagi berbohong; test schema + render hijau; §14 Q11, §12, dan README diperbarui.
@@ -482,14 +546,14 @@ penyebab yang disebut.
 
 ## 16. Keputusan yang diminta owner
 
-| # | Pertanyaan | Pilihan yang diusulkan | Dipakai oleh |
-|---|---|---|---|
-| D1 | Katalog Skills: §6.10 (dua entri: `/antislop` AI, SuperPowers) atau §7.16 (satu entri per capability, 7 baris)? Dan siapa menulis `skills/<id>/SKILL.md`? | Ikuti katalog yang dilayani, amandemen §6.10, dan tulis 7 dokumen | F2, dijawab owner 2026-09-21: ikuti katalog yang dilayani, agen menulis 7 dokumen, probe saat load plus `Check again`, commit lokal saja |
-| D2 | Bentuk rilis changelog: render yang dilayani (`version, date, title, notes`) dengan amandemen §6.16, atau `app-serv` menambah `category` + `items[]`? | Render yang dilayani, amandemen §6.16 | F4 |
-| D3 | API Docs: cukup yang ada di dokumen (path, tag, summary, auth) dengan tabel error ditunjuk lewat kalimat, atau minta `x-error-codes`/`x-phase` ke `app-serv`? | Cukup yang ada, tanpa salinan kedua | F1 |
-| D4 | Refresh control: pasang di semua layar daftar, atau amandemen §8.6.2 menjadi khusus layar yang polling? | Pasang satu komponen bersama | F8 |
-| D5 | §8.4.4 dirty guard dan §8.4.5 validasi blur: implementasi atau amandemen? | Implementasi untuk form berdraft, amandemen untuk blur | F10 |
-| D6 | Playground: sediakan `PANEL_PLAYGROUND_KEY` (gateway key) untuk pass live? | Ya, satu key khusus playground | F3, F12 |
+| #   | Pertanyaan                                                                                                                                                    | Pilihan yang diusulkan                                            | Dipakai oleh                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Katalog Skills: §6.10 (dua entri: `/antislop` AI, SuperPowers) atau §7.16 (satu entri per capability, 7 baris)? Dan siapa menulis `skills/<id>/SKILL.md`?     | Ikuti katalog yang dilayani, amandemen §6.10, dan tulis 7 dokumen | F2, dijawab owner 2026-09-21: ikuti katalog yang dilayani, agen menulis 7 dokumen, probe saat load plus `Check again`, commit lokal saja       |
+| D2  | Bentuk rilis changelog: render yang dilayani (`version, date, title, notes`) dengan amandemen §6.16, atau `app-serv` menambah `category` + `items[]`?         | Render yang dilayani, amandemen §6.16                             | F4                                                                                                                                             |
+| D3  | API Docs: cukup yang ada di dokumen (path, tag, summary, auth) dengan tabel error ditunjuk lewat kalimat, atau minta `x-error-codes`/`x-phase` ke `app-serv`? | Cukup yang ada, tanpa salinan kedua                               | F1                                                                                                                                             |
+| D4  | Refresh control: pasang di semua layar daftar, atau amandemen §8.6.2 menjadi khusus layar yang polling?                                                       | Pasang satu komponen bersama                                      | F8                                                                                                                                             |
+| D5  | §8.4.4 dirty guard dan §8.4.5 validasi blur: implementasi atau amandemen?                                                                                     | Implementasi untuk form berdraft, amandemen untuk blur            | F10                                                                                                                                            |
+| D6  | Playground: sediakan `PANEL_PLAYGROUND_KEY` (gateway key) untuk pass live?                                                                                    | Ya, satu key khusus playground                                    | F3, F12; F3 tidak memakainya: pass live mencetak key sendiri lewat `POST /api/v1/gateway-keys`, jadi tidak ada key owner yang perlu diserahkan |
 
 ## 17. Urutan pengerjaan yang disarankan
 
@@ -500,7 +564,7 @@ penyebab yang disebut.
 5. F8 dan F10 setelah D4 dan D5 dijawab (keduanya bisa jadi satu perubahan lintas layar).
 6. F4, lalu F1, lalu F2, lalu F3 (empat layar; F4 paling kecil karena layarnya sudah ada,
    F3 terakhir karena butuh D6 dan menyentuh jalur kredensial). F1 **CLOSED 2026-09-21**, F2
-   **CLOSED 2026-09-21**; F4 dan F3 belum dikerjakan.
+   **CLOSED 2026-09-21**, F3 **CLOSED 2026-09-21**; F4 belum dikerjakan.
 7. F12 sebagai penutup: satu pass live yang mencatat U0, U1, dan dua kriteria U2.
 
 Setiap nomor dikerjakan sebagai satu commit sendiri, dengan analysis plus compliance

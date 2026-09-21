@@ -7,7 +7,12 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { apiRequest, onUnauthorized, type RequestOptions } from '$lib/api/client';
+import {
+	apiRequest,
+	onUnauthorized,
+	reportUnauthorized,
+	type RequestOptions
+} from '$lib/api/client';
 import { ApiError } from '$lib/api/errors';
 import { emptyResponse } from '$lib/schemas/primitives';
 
@@ -135,6 +140,19 @@ describe('apiRequest', () => {
 		const init = fetchMock.mock.calls[0][1] as RequestInit;
 		expect(init.body).toBeUndefined();
 		expect((init.headers as Headers).get('content-type')).toBeNull();
+	});
+
+	it('reports a session expiry for a caller that does its own fetch', () => {
+		// The playground reads its own failure envelope, so it cannot go through apiRequest, but an
+		// expired session must still sign the operator out once, in one place (SPEC-UI §8.1).
+		const handler = vi.fn();
+		onUnauthorized(handler);
+
+		reportUnauthorized(500);
+		reportUnauthorized(401);
+		reportUnauthorized(403);
+
+		expect(handler).toHaveBeenCalledTimes(1);
 	});
 
 	for (const testCase of cases) {
