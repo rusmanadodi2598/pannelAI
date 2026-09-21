@@ -37,6 +37,7 @@ run_gate "go test (race)" bash "$root/scrypts/gates/go-test.sh"
 run_gate "panel checks (app-ui)" bash "$root/scrypts/gates/panel-check.sh"
 run_gate "secrets (gitleaks)" bash "$root/scrypts/gates/secrets.sh" --all
 run_gate "contract drift (SPEC-API <-> panel)" bash "$root/scrypts/gates/contract-drift.sh"
+run_gate "contract artifact (OpenAPI YAML -> JSON)" bash "$root/scrypts/gates/contract-openapi.sh"
 
 printf '\n%s==>%s summary\n' "$(_colour "$C_BOLD")" "$(_colour "$C_RESET")"
 printf '%s\n' "${summary[@]}"

@@ -97,6 +97,11 @@ func writeDataPlaneRaw(w http.ResponseWriter, status int, contentType string, bo
 }
 
 // sseSink writes SSE frames to a response writer, flushing each one.
+//
+// The status line and the SSE headers are committed on the first frame, not
+// before the relay runs: a failure with no frame yet is still an ordinary HTTP
+// error a client can act on, and committing 200 early would force every such
+// failure into a success status carrying an error body.
 type sseSink struct {
 	writer  http.ResponseWriter
 	flusher http.Flusher
@@ -110,12 +115,17 @@ func newSSESink(w http.ResponseWriter) *sseSink {
 	return &sseSink{writer: w, flusher: flusher}
 }
 
-// WriteFrame writes one complete frame.
+// WriteFrame writes one complete frame, committing the SSE response the first
+// time it is called.
 func (s *sseSink) WriteFrame(frame []byte) error {
+	if !s.wroteH {
+		dataplane.DataPlaneHeaders(s.writer.Header())
+		s.writer.WriteHeader(http.StatusOK)
+		s.wroteH = true
+	}
 	if _, err := s.writer.Write(frame); err != nil {
 		return err
 	}
-	s.wroteH = true
 	return nil
 }
 

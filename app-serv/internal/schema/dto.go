@@ -156,6 +156,14 @@ func ValidateStruct(v any) error {
 	if err := engine().Struct(v); err != nil {
 		return domain.NewValidationError(firstFieldError(err))
 	}
+	switch request := v.(type) {
+	case ChatRequest:
+		return ValidateChatRequest(request)
+	case *ChatRequest:
+		if request != nil {
+			return ValidateChatRequest(*request)
+		}
+	}
 	return nil
 }
 
