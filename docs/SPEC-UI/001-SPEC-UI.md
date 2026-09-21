@@ -614,12 +614,12 @@ sentinel are not the same fact: the third means the answer may be cut off.
 
 **The relay streams, and what the gateway does with that is the gateway's.** The panel hands the upstream
 body through rather than reading it to the end, which the live pass proved against a gateway that writes
-frame by frame: the answer grew over five reads 600 ms apart and the stream ended on `done`. The gateway
-this panel talks to today buffers its upstream answer before writing anything and glues the `[DONE]`
-sentinel to the last chunk, so in practice the whole answer arrives at once and the screen reports the
-stream as truncated. That sentence is the honest reading of the bytes the panel received, and the defect
-is recorded as a request to `app-serv` in §16 rather than absorbed by teaching the reader to tolerate a
-malformed tail.
+frame by frame: the answer grew over five reads spread across 700 ms and the stream ended on `done`. The
+gateway this panel talks to today buffers its upstream answer before writing anything and glues the
+`[DONE]` sentinel to the last chunk, so in practice the whole answer arrives at once and the screen
+reports the stream as truncated. That sentence is the honest reading of the bytes the panel received, and
+the defect is recorded as a request to `app-serv` in §16 rather than absorbed by teaching the reader to
+tolerate a malformed tail.
 
 **Failure vocabulary.** The panel's routes answer in the panel's own envelope
 (`PLAYGROUND_KEY_MISSING`, `UNAUTHORIZED`, `VALIDATION_ERROR`, `GATEWAY_UNREACHABLE`,

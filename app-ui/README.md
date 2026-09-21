@@ -171,7 +171,7 @@ not a curl that happens to return bytes.
 | No key    | 5      | 503 `PLAYGROUND_KEY_MISSING` naming the variable, and neither the gateway nor the stub dialed at all, which is what "the key check comes first" means in practice                                                                              |
 | With key  | 23     | The session gate, the models read through the panel's client, the streamed answer with its facts, the empty-body refusal, no response carrying either credential, and the stub log proving the endpoint key and `stream_options.include_usage` |
 | Wrong key | 4      | `GATEWAY_KEY_REFUSED` with the gateway's own `UNAUTHORIZED` inside the panel envelope, and the panel session untouched, so a key problem cannot sign the operator out                                                                          |
-| Isolated  | 5      | A second panel pointed at a frame-by-frame stub: the answer arrived over five reads 600 ms apart and the reader ended `done`, which proves the relay streams independently of the gateway's own buffering                                      |
+| Isolated  | 5      | A second panel pointed at a frame-by-frame stub: the answer arrived over five reads spread across 700 ms and the reader ended `done`, which proves the relay streams independently of the gateway's own buffering                              |
 
 Three defects in `app-serv` came out of this pass. They are recorded here and in
 `docs/DRAFT/007-UI-ENDPOINT-READINESS.md` as requests to that actor, not absorbed by the panel:
