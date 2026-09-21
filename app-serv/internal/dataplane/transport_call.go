@@ -39,10 +39,32 @@ import (
 // returned body is the caller's to close.
 func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	plugin := t.connectors.For(call.Provider)
-	url, err := plugin.Endpoint(RequestFor(call), call.Credential)
+	request := RequestFor(call)
+	if err := applyShape(plugin, &request); err != nil {
+		return nil, err
+	}
+	// A connector that declares it refuses a non-streaming request is obeyed
+	// here rather than trusted to have rewritten its own body: the declaration
+	// would be meaningless if the core still sent the request the provider
+	// rejects. The rewrite is mechanical and wire-agnostic because every wire
+	// the gateway translates names this member `stream`.
+	if forcesStream(plugin) && !request.Stream {
+		streamed, err := forceStreamMember(request.Body)
+		if err != nil {
+			return nil, err
+		}
+		request.Body = streamed
+		request.Stream = true
+	}
+	url, err := plugin.Endpoint(request, call.Credential)
 	if err != nil {
 		return nil, wrapDataPlaneError(CodeUpstreamError, "upstream endpoint could not be resolved", err)
 	}
+	// The shaped request replaces the call's body and stream flag, so the
+	// attempt below sends what the connector asked for rather than what the
+	// caller asked for.
+	call.Body = request.Body
+	call.Stream = request.Stream
 
 	for retries := 0; ; retries++ {
 		upstream, failure, err := t.attempt(ctx, plugin, call, url)

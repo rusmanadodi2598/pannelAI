@@ -46,10 +46,17 @@ func buildProviderRuntime() (*registry.Index, *provider.Connectors, error) {
 		return nil, nil, fmt.Errorf("provider registry: %w", err)
 	}
 
-	// No specialized connector is registered yet. Providers on natively
-	// translated formats are served by provider.Default, which is why the
-	// registry is fully usable before any connector exists.
-	connectors, err := provider.NewConnectors(provider.DefaultFactory)
+	// Specialized connectors are registered here. A provider that needs its
+	// outbound request rewritten, or that only answers a stream, cannot be served
+	// by provider.Default, so it needs an entry in this list. Each is independent,
+	// which is what makes a provider patchable in isolation.
+	opencode, ok := idx.Provider("opencode")
+	if !ok {
+		return nil, nil, fmt.Errorf("provider connectors: the opencode entry is missing from the registry")
+	}
+	connectors, err := provider.NewConnectors(provider.DefaultFactory,
+		provider.NewOpenCode(opencode),
+	)
 	if err != nil {
 		return nil, nil, fmt.Errorf("provider connectors: %w", err)
 	}

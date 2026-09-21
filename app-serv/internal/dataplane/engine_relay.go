@@ -24,6 +24,8 @@ package dataplane
 import (
 	"context"
 	"time"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
 // relayOnce handles one resolved provider: select, translate, call, and translate
@@ -79,21 +81,8 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		_ = upstream.Close()
 	}()
 
-	if in.Stream {
-		if err := e.relayStream(ctx, upstream, resolution, in, sink, &outcome); err != nil {
-			e.recordFailure(ctx, selection, err)
-			outcome.LatencyMS = e.elapsedMS(started)
-			return outcome, err
-		}
-	} else {
-		body, usage, err := e.translateAnswer(upstream, resolution, in)
-		if err != nil {
-			e.recordFailure(ctx, selection, err)
-			outcome.LatencyMS = e.elapsedMS(started)
-			return outcome, err
-		}
-		outcome.Body = body
-		outcome.Usage = usage
+	if err := e.answer(ctx, upstream, resolution, in, sink, selection, started, &outcome); err != nil {
+		return outcome, err
 	}
 	outcome.LatencyMS = e.elapsedMS(started)
 	// A served request clears the key's circuit state, which is what makes a
@@ -113,4 +102,53 @@ func (e *Engine) elapsedMS(started time.Time) int64 {
 		return 0
 	}
 	return ms
+}
+
+// answer reads one upstream answer into the outcome, in whichever of the three
+// shapes the call produced: a stream the client asked for, a stream folded back
+// for a client that asked for one body, or a plain non-streamed body.
+//
+// The dispatch lives here rather than inline so the relay leg reads as the
+// pipeline it is, and so the failure bookkeeping for every shape happens once.
+func (e *Engine) answer(
+	ctx context.Context,
+	upstream *Upstream,
+	resolution Resolution,
+	in Request,
+	sink FrameSink,
+	selection Selection,
+	started time.Time,
+	outcome *Outcome,
+) error {
+	body, usage, err := e.readAnswer(ctx, upstream, resolution, in, sink, outcome)
+	if err != nil {
+		e.recordFailure(ctx, selection, err)
+		outcome.LatencyMS = e.elapsedMS(started)
+		return err
+	}
+	outcome.Body = body
+	outcome.Usage = usage
+	return nil
+}
+
+// readAnswer performs the translation the call's shape calls for.
+func (e *Engine) readAnswer(
+	ctx context.Context,
+	upstream *Upstream,
+	resolution Resolution,
+	in Request,
+	sink FrameSink,
+	outcome *Outcome,
+) ([]byte, *schema.Usage, error) {
+	switch {
+	case in.Stream:
+		return nil, nil, e.relayStream(ctx, upstream, resolution, in, sink, outcome)
+	case e.transport.ForcesStream(resolution.Provider):
+		// The provider only answers a stream, so the single body the client
+		// asked for is folded back out of it. The fold returns the upstream's
+		// own non-streamed wire, so the same answer translator serves it.
+		return e.translateFolded(upstream, resolution, in)
+	default:
+		return e.translateAnswer(upstream, resolution, in)
+	}
 }
