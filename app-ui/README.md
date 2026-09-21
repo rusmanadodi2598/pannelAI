@@ -105,7 +105,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Thirteen passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Fourteen passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -115,7 +115,49 @@ measured the same day, and it closes U2 on the panel side. The tenth is the API 
 2026-09-21. The eleventh is the Skills screen, measured the same day, and it closes F2 of
 `docs/DRAFT/007-UI-ENDPOINT-READINESS.md`. The twelfth is the Playground Chat screen, measured the same
 day, and it closes F3 of that draft. The thirteenth is the Changelog screen, measured the same day, and it
-closes F4 of that draft.
+closes F4 of that draft. The fourteenth is the readiness batch F5 to F9 of the same draft, measured the
+same day: the five MEDIUM findings, each as its own commit, with the gates below measured on the tree that
+carries all five.
+
+### Readiness findings F5 to F9, 2026-09-21
+
+Run with Bun 1.3.14. This pass covers the five MEDIUM findings that were still open in
+`docs/DRAFT/007-UI-ENDPOINT-READINESS.md`: F5 (the upstream tab's filters), F6 (the repeatable key
+rows), F7 (the four screens that had no render test), F8 (the refresh control), and F9 (the rate
+limit column). Each landed as its own commit; the gates below were measured on the tree that
+carries all five, and the register records each finding as CLOSED with its own evidence.
+
+| Check             | Result                                                                                                                                                                                                                                                                                                               |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                 |
+| `bun run test`    | 2168 tests passed across 108 files (the previous pass was 2065 across 96); the five findings added the four missing screen suites, the bulk row mode, the countdown column, and the shared refresh control with a case in each of the eleven screens that carry it, one of which the full suite then caught as flaky |
+| `bun run lint`    | Prettier reports every file conforms                                                                                                                                                                                                                                                                                 |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                                                                                                                                       |
+| `bun run build`   | succeeds, exit 0, output in `build/`                                                                                                                                                                                                                                                                                 |
+| Live wire pass    | not run in this pass. None of the five needed an `app-serv` change, and the browser click-through stays outstanding for the U0/U1 screens, which is F12 of the register                                                                                                                                              |
+| File size         | largest source in `src/` is 220 lines (`src/lib/components/CombosTab.svelte`, exactly at the warning line, up from 217 because the mount is three lines); largest touched test is 319 (`tests/components/media-providers.test.ts`), under the 250 cap                                                                |
+| Text hygiene      | 0 em dashes in the new files; the new copy carries no marketing vocabulary (R-16)                                                                                                                                                                                                                                    |
+
+What each finding changed, and where it states a limit rather than hiding one:
+
+| Finding | Behaviour                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F5      | The upstream tab's filters live in the URL and are applied by the server (`parseEndpointSearch` / `nextEndpointSearch`), so the table renders the rows the gateway returned for the filter instead of computing a narrower list in the browser and rendering the whole page. The provider options come from a second, unfiltered read, because options derived from a filtered result would drop every other provider from the select.                                                                                                                                                                                  |
+| F6      | The drawer carries §6.2's repeatable row mode as a second tab: `One key` posts one key, `Several keys` posts the batch and shows the per-row verdict by index when the gateway refuses the set all-or-nothing.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| F7      | Four screens gained render suites (`/login`, both tabs of `/endpoint-keys`, `/providers` list, `/changelog`), and writing them against the served shapes exposed three wire defects the panel had been hiding: the create response names the plaintext key `plaintext_key` (not `key`), an update answers the key row with no plaintext at all, and a key that was never used omits `last_used_at` rather than sending null. The same pass made a refused rename or revoke visible instead of silently discarded, and gave the login screen the §6.1 copy plus the lockout countdown from the response's `Retry-After`. |
+| F8      | One shared `RefreshControl` (42 lines) on eleven list screens; `/quota` keeps the control it already had. The button stays enabled during a read and swaps its label to "Refreshing" rather than disabling, which is the rule `/quota` records: a disabled gate swallows the click and reads as broken. The control repeats the read on screen, filters and all, and it is deliberately absent at a `/media-providers` address that names no kind, where there is nothing to read.                                                                                                                                      |
+| F9      | The endpoint-keys table prints `rate limited until <zoned time> (<time left>)` through the helpers the quota table already used, with the drawer ticking `now` once a second while it is open, so the countdown is live rather than frozen.                                                                                                                                                                                                                                                                                                                                                                             |
+
+#### What the render tests caught in the wire
+
+The three defects above were not in the panel's logic but in its reading of the gateway, and each
+one broke a screen in a way no unit test of the panel alone could see:
+
+| Defect                      | What it broke                                                                                                          |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `plaintext_key`             | Every gateway-key create failed its parse, so the one-time key never reached the modal.                                |
+| Update answers no plaintext | Every rename and every disable failed its parse, and the failure was discarded, so the row silently kept its old name. |
+| `omitempty` timestamps      | A key that had never been used failed the parse of a `nullable` field, which took the whole list read down.            |
 
 ### Changelog, 2026-09-21
 

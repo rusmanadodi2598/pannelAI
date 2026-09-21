@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 |             |                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sepuluh layar daftar, D4 dijawab owner, §8.6.2 tetap). Sisa nomor masih menunggu pilihan owner |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sebelas layar daftar, D4 dijawab owner, §8.6.2 tetap). Sisa nomor masih menunggu pilihan owner |
 | **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
 | **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
@@ -473,9 +473,9 @@ perubahan `app-serv` (route §7.5 sudah membaca `provider_id`, `status`, dan `pa
 - `src/lib/components/EndpointFilters.svelte` (85 baris) memisahkan bar filter dan notice-notice-nya
   dari tab, yang tanpa pemisahan itu menembus batas baris; `src/lib/schemas/endpoint-options.ts`
   (39 baris) memisahkan derivasi opsi dari komponennya.
-- Test: 4 berkas baru, 43 test — `tests/schemas/endpoint-search.test.ts` (18),
+- Test: 4 berkas baru, 43 test: `tests/schemas/endpoint-search.test.ts` (18),
   `tests/schemas/endpoint-options.test.ts` (8), `tests/components/upstream-endpoints.test.ts` (9),
-  `tests/components/upstream-endpoints-states.test.ts` (8) — plus `tests/support/endpoint-stub.ts`,
+  `tests/components/upstream-endpoints-states.test.ts` (8), plus `tests/support/endpoint-stub.ts`,
   stub fetch bersama yang menjawab route list dengan filter dan paginasi server-side serta mencatat
   setiap request (stub yang sama juga melayani route bulk, yang dipakai F6). Bukti yang diminta
   kriteria selesai: pemilihan provider/status mengubah query yang dikirim dan baris yang dirender
@@ -530,7 +530,7 @@ form kosong.
 - Split karena batas baris: tiga bentuk wire batch pindah ke `src/lib/schemas/endpoint-bulk.ts`
   (39 baris) sehingga `src/lib/schemas/endpoint.ts` kembali ke 198 baris, di bawah ambang 220 yang
   diklaim §3 dokumen ini.
-- Test: `tests/components/bulk-add-keys.test.ts` (9 test) — batch dua baris terkirim dalam satu request
+- Test: `tests/components/bulk-add-keys.test.ts` (9 test): batch dua baris terkirim dalam satu request
   dan dilaporkan, batch yang ditolak seluruhnya menyimpan semua barisnya dan menyatakan tidak ada yang
   disimpan, pesan baris yang ditolak menempel pada input baris itu lewat `aria-describedby` (§8.8.5),
   tidak ada request terkirim saat satu baris kosong atau terlalu pendek, tombol baris menghormati batas
@@ -543,6 +543,8 @@ form kosong.
   memang menjadikan callback-nya badan test, jadi baris tabelnya sekarang bernama test penuh.
 - Batas yang dicatat: drawer belum punya test render sendiri, jadi mode ini diuji sebagai komponen
   dengan stub route bulk; click-through browser tetap outstanding bersama U0/U1 lain (F12).
+  Ditutup F7 2026-09-21: `tests/components/endpoint-detail-drawer.test.ts` merender drawer dan
+  menekan kedua mode tambah key, jadi batas itu tidak lagi berlaku.
 
 ## 10. F7 (MEDIUM): Empat layar tidak punya test render sama sekali
 
@@ -574,10 +576,10 @@ stub; tidak ada penambahan test yang menembus 250 baris tanpa pemisahan per conc
 test itu terhadap bentuk yang benar-benar dilayani `app-serv` membuka tiga cacat wire yang ikut
 ditutup di commit yang sama (changelog sudah ditutup F4):
 
-- Test baru: 29 test di 5 berkas — `tests/routes/login.test.ts` (7),
+- Test baru: 29 test di 5 berkas: `tests/routes/login.test.ts` (7),
   `tests/routes/providers-list.test.ts` (5), `tests/components/gateway-keys-tab.test.ts` (5, list dan
   alur create), `tests/components/gateway-key-actions.test.ts` (5, rename/disable/revoke),
-  `tests/components/endpoint-detail-drawer.test.ts` (7, tab 2 detail) — plus
+  `tests/components/endpoint-detail-drawer.test.ts` (7, tab 2 detail), plus
   `tests/support/gateway-key-stub.ts` (87 baris) sebagai stub bersama kedua berkas gateway keys.
   `tests/components/gateway-keys-tab.test.ts` dipecah dua ketika mencapai 270 baris, sesuai kriteria
   selesai di atas; keduanya 109 dan 112 baris.
@@ -708,7 +710,9 @@ waktu statis bila ticking dianggap berlebihan.
   mesin uji.
 - Batas yang dicatat: yang diuji adalah tabel pada dua `now` berbeda, bukan `setInterval`-nya; yang
   ingin dibuktikan "kolom menghitung terhadap jam yang diberikan", dan itu terbukti tanpa fake timer.
-  Drawer yang memegang tick belum punya test render sendiri (itu F7).
+  Drawer yang memegang tick belum punya test render sendiri (itu F7). Ditutup F7 2026-09-21:
+  drawer-nya sekarang punya test render, tetapi tick satu detiknya sendiri tetap tidak diuji, dan
+  itu tetap disengaja: yang dibuktikan adalah countdown dihitung terhadap jam yang diberikan.
 
 ## 13. F10 (LOW): §8.4.4 (dirty guard) dan §8.4.5 (validasi saat blur) belum diterapkan
 
@@ -790,7 +794,7 @@ penyebab yang disebut.
 | D1  | Katalog Skills: §6.10 (dua entri: `/antislop` AI, SuperPowers) atau §7.16 (satu entri per capability, 7 baris)? Dan siapa menulis `skills/<id>/SKILL.md`?     | Ikuti katalog yang dilayani, amandemen §6.10, dan tulis 7 dokumen | F2, dijawab owner 2026-09-21: ikuti katalog yang dilayani, agen menulis 7 dokumen, probe saat load plus `Check again`, commit lokal saja       |
 | D2  | Bentuk rilis changelog: render yang dilayani (`version, date, title, notes`) dengan amandemen §6.16, atau `app-serv` menambah `category` + `items[]`?         | Render yang dilayani, amandemen §6.16                             | F4 **CLOSED 2026-09-21** (dipakai; `app-serv` tidak disentuh)                                                                                  |
 | D3  | API Docs: cukup yang ada di dokumen (path, tag, summary, auth) dengan tabel error ditunjuk lewat kalimat, atau minta `x-error-codes`/`x-phase` ke `app-serv`? | Cukup yang ada, tanpa salinan kedua                               | F1                                                                                                                                             |
-| D4  | Refresh control: pasang di semua layar daftar, atau amandemen §8.6.2 menjadi khusus layar yang polling?                                                       | Pasang satu komponen bersama                                      | F8                                                                                                                                             |
+| D4  | Refresh control: pasang di semua layar daftar, atau amandemen §8.6.2 menjadi khusus layar yang polling?                                                       | Pasang satu komponen bersama                                      | F8 **CLOSED 2026-09-21** (dipakai owner: satu komponen bersama di sebelas layar daftar, §8.6.2 tetap seperti tertulis)                         |
 | D5  | §8.4.4 dirty guard dan §8.4.5 validasi blur: implementasi atau amandemen?                                                                                     | Implementasi untuk form berdraft, amandemen untuk blur            | F10                                                                                                                                            |
 | D6  | Playground: sediakan `PANEL_PLAYGROUND_KEY` (gateway key) untuk pass live?                                                                                    | Ya, satu key khusus playground                                    | F3, F12; F3 tidak memakainya: pass live mencetak key sendiri lewat `POST /api/v1/gateway-keys`, jadi tidak ada key owner yang perlu diserahkan |
 
@@ -801,6 +805,7 @@ penyebab yang disebut.
 3. F6 (mode baris berulang; kliennya sudah ada).
 4. F7 (test render empat layar; menutup area yang F5/F6 sentuh).
 5. F8 dan F10 setelah D4 dan D5 dijawab (keduanya bisa jadi satu perubahan lintas layar).
+   F8 **CLOSED 2026-09-21**; F10 masih menunggu jawaban D5.
 6. F4, lalu F1, lalu F2, lalu F3 (empat layar; F4 paling kecil karena layarnya sudah ada,
    F3 terakhir karena butuh D6 dan menyentuh jalur kredensial). F1 **CLOSED 2026-09-21**, F2
    **CLOSED 2026-09-21**, F3 **CLOSED 2026-09-21**, F4 **CLOSED 2026-09-21**.
