@@ -196,8 +196,9 @@ dokumen, probe saat load plus `Check again`, commit lokal saja tanpa push), lalu
   plus catatan amandemen bahwa dua entri lama tidak pernah dilayani route mana pun. §5.1 baris `/skills`
   ikut diperbaiki supaya tidak bertentangan dengan §6.10, dan §14 Q2 ditutup.
 - `src/routes/skills/+page.svelte` ada, dan `src/lib/navigation.ts:100` sekarang `href: '/skills'`
-  (R-24). Sidebar terukur 2026-09-21: 20 node dalam 5 grup, 18 leaf routable (12 route statis plus 6
-  kind media), 1 container, 1 baris `Planned` (`Playground Chat`).
+  (R-24). Sidebar terukur 2026-09-21, sebelum F3: 20 node dalam 5 grup, 18 leaf routable (12 route statis
+  plus 6 kind media), 1 container, 1 baris `Planned` (`Playground Chat`); F3 memindahkan baris itu menjadi
+  leaf, jadi angka setelahnya 19 leaf dan 0 `Planned`.
 - Modul panel: `src/lib/schemas/skill.ts` (katalog; field yang dibaca ketat, tambahan ditoleransi §7.4),
   `src/lib/schemas/skill-source.ts` (empat sebab, `installLine`, `orderSkills`, dua classifier),
   `src/lib/api/skills.ts` (satu GET lewat `apiRequest`, satu HEAD publik tanpa kredensial dan tanpa
