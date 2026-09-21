@@ -39,12 +39,14 @@ func DecodeLogFilter(r *http.Request) (LogFilterQuery, error) {
 }
 
 // Filter lowers the validated query into the domain filter with the same
-// bounded default window the usage reads use.
+// bounded default window the usage reads use. The status closed set is shared
+// with the usage route because both decode through DecodeUsageFilter, so the
+// two surfaces cannot drift (draft 010 F2/F9).
 func (q LogFilterQuery) Filter(now time.Time) domain.LogFilter {
 	return domain.NewLogFilter(domain.LogFilterInput{
 		From:       q.From,
 		To:         q.To,
-		Status:     q.Status,
+		Status:     domain.RequestLogStatus(q.Status),
 		EndpointID: q.EndpointID,
 		Model:      q.Model,
 		Query:      q.Q,

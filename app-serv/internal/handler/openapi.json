@@ -10040,7 +10040,11 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "success",
+                "error"
+              ]
             }
           },
           {
@@ -10181,7 +10185,11 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "success",
+                "error"
+              ]
             }
           },
           {
@@ -10306,7 +10314,11 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "success",
+                "error"
+              ]
             }
           },
           {
@@ -10722,7 +10734,11 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "success",
+                "error"
+              ]
             }
           },
           {

@@ -5,8 +5,8 @@ Dokumen ini adalah **DRAFT PLAN**, bukan kontrak. Kontrak tetap `docs/SPEC-API/0
 pola `003` sampai `009`: temuan bernomor F, owner memilih nomor, mode AFTER untuk memeriksa yang
 sudah ada tanpa mengubah source produksi, mode DURING untuk setiap perbaikan yang dipilih.
 
-Status pengerjaan DURING: **F5 CLOSED 2026-09-22** (bukti lengkap di §5 temuan F5). Nomor lain
-menunggu pemilihan owner.
+Status pengerjaan DURING: **F5 CLOSED 2026-09-22**, lalu **F2 + F9 CLOSED 2026-09-22** (bukti
+lengkap di §5 masing-masing temuan). Nomor lain menunggu pemilihan owner.
 
 Lingkup berbeda dari draft sebelumnya: audit ini **menjangkau dua aplikasi sekaligus** atas permintaan
 owner. Bagian pertama (`§3` sampai `§9`) mengaudit readiness empat endpoint Usage di `app-serv/.`.
@@ -219,7 +219,7 @@ quota punya `quota_test.go` + `quota_read_test.go`.
 
 ### F2 HIGH: Filter `status` menerima nilai di luar closed set, dan query diam-diam mencocokkan nol baris
 
-**Status: OPEN.**
+**Status: CLOSED 2026-09-22 (dikerjakan bersama F9; bukti di bawah).**
 
 **Fakta.** Probe mekanis: `?status=banana` dan `?status=SUCCESS` **diterima** `DecodeUsageFilter`
 dan diteruskan ke `UsageFilter.Status`. Karena `status` adalah kolom closed set (`success`|`error`),
@@ -250,6 +250,52 @@ tidak memakainya, tidak seperti `group_by`/`granularity` yang sudah divalidasi k
 
 **Kriteria selesai.** Nilai di luar set ditolak `400 VALIDATION_ERROR` dengan pesan English; nilai
 valid tetap memfilter; test table 5+ variasi termasuk benign control.
+
+#### Bukti penutupan F2 (2026-09-22)
+
+**Implementasi** (bersama F9, satu perubahan tipe + satu boundary check).
+
+- `internal/schema/usage.go`: `DecodeUsageFilter` memanggil `domain.ParseUsageStatus` pada nilai
+  `status` yang sudah di-trim, hanya bila non-empty (guard yang sama dengan `group_by`/
+  `granularity`); `UsageFilterQuery.Status` menjadi `domain.UsageStatus`. `DecodeLogFilter`
+  mewarisinya lewat decoder bersama, jadi route logs memegang set yang sama tanpa mendeklarasi
+  ulang.
+- `internal/domain/usage_types.go`: `ParseUsageStatus` baru (mirip `ParseUsageGroupBy`), dan
+  `UsageFilter.Validate` menolak status di luar set.
+- `internal/domain/log.go`: `LogFilter.Validate` baru dengan aturan yang sama.
+- `internal/service/log.go`: `Requests` memanggil `filter.Validate()` (defense in depth; usage
+  service sudah melakukannya).
+- Kontrak: `status` jadi `enum: [success, error]` pada `summary`/`timeseries`/`records`/
+  `logs/requests` di `docs/CONTRACT/001-CONTRACT-API-V1.yaml`; `openapi.json` di-regenerasi lewat
+  `tools/openapi-gen` (tidak diedit tangan); `contract-openapi.sh` PASS.
+
+**Test** (semuanya table-driven, benign control termasuk, TDD §2.5):
+
+| File | Test | Kasus |
+|---|---|---|
+| `internal/schema/usage_filter_status_test.go` | `TestDecodeUsageFilter_StatusClosedSet` | 12 (3 benign: empty/success/error; 9 ditolak: `banana`, `SUCCESS`, `Success`, trimmed uppercase, `success,error`, SQL fragment, `null`, `,`; trailing-space di-trim lalu diterima sebagai `success`) |
+| sama | `TestDecodeUsageFilter_StatusFlowsToDomainFilter` | 3 benign (nilai lolos sampai domain filter) |
+| sama | `TestDecodeLogFilter_InheritsStatusClosedSet` | logs route mewarisi set (tolak `banana`, terima `error`) |
+| `internal/domain/usage_types_status_test.go` | `TestNewUsageFilter_StatusClosedSet` + `TestNewLogFilter_StatusClosedSet` | 9 kasus dibagikan dua filter (closed set by construction + `Validate`) |
+| sama | `TestUsageFilter_ValidateStillRejectsInvertedRange` | regresi: aturan range lama tetap |
+| `internal/repository/postgres/usage_status_filter_integration_test.go` (tag `integration`) | `TestUsageRepository_StatusFilterMatchesRows` | 5 baris seed (2 sukses, 3 gagal): unfiltered=5, `success`=2, `error`=3, `error_count` summary cocok |
+
+**RED → GREEN.** Test schema + domain ditulis dulu dan **gagal** terhadap kode pra-perbaikan
+(`banana`/`SUCCESS`/`Success`/`success,error`/`null`/SQL fragment diterima; domain tidak compile
+karena field masih `string`), lalu hijau setelah implementasi. Panel sudah memvalidasi field ini
+sebagai Zod enum `['success','error']` (`primitives.ts` `REQUEST_STATUSES`), jadi tidak ada
+perubahan FE yang dibutuhkan.
+
+**Bukti SQL.** Test integrasi dijalankan terhadap PostgreSQL nyata pada database throwaway
+`pannelai_f2f9_evidence` (dibuat untuk ini, dihapus setelahnya; database dev tidak disentuh),
+termasuk seluruh suite integrasi `internal/repository/postgres` (semua PASS, `-race`) untuk
+membuktikan perubahan tipe `string` → `UsageStatus` tidak merusak encode pgx.
+
+**Gate.** `go build ./...`, `go vet ./...`, `go test -count=1 ./...` (lalu `-race` penuh di bawah)
+pASS; `gofmt -l .` bersih; `staticcheck` 0 issue; `golangci-lint` 0 issue; `go-headers.sh` PASS;
+`contract-openapi.sh` PASS.
+
+**Dokumen.** SPEC-API changelog 2026-09-22 (§7.12/§7.13) mencatat enum + value object ini.
 
 ### F3 MEDIUM: `latency_ms` wire adalah sum, bukan mean, dan domain tidak pernah menjelaskannya
 
@@ -431,7 +477,9 @@ sepakat; test table untuk 0, 1, 100, 101, `abc`, kosong.
 
 ### F7 LOW: OpenAPI `from`/`to` tanpa `format: date-time`, `status`/`group_by`/`granularity` tanpa enum
 
-**Status: OPEN.**
+**Status: OPEN, sebagian tertutup 2026-09-22.** `status` sudah menjadi `enum: [success, error]` pada
+keempat path (dikerjakan bersama F2/F9, lihat bukti §5 F2); sisa temuan ini adalah `format: date-time`
+pada `from`/`to` dan enum pada `group_by`/`granularity`.
 
 **Fakta.** YAML path Usage mendeklarasikan `from`/`to` sebagai `type: string` polos (kontrak ini
 memuat 38 deklarasi `format: date-time` di tempat lain, jadi pola itu sudah ada), dan
@@ -478,7 +526,7 @@ panel sepakat; test table `q=usg_` (id), `q=MODEL_NOT_FOUND` (error code), `q=gp
 
 ### F9 LOW: `UsageStatus` tidak dipakai sebagai tipe pada `UsageFilter.Status` (string mentah lolos domain)
 
-**Status: OPEN.**
+**Status: CLOSED 2026-09-22 (dikerjakan bersama F2).**
 
 **Fakta.** `UsageFilter.Status` bertipe `string`, bukan `UsageStatus`, dan `UsageFilterInput`
 sama. Domain punya `UsageStatus` + `IsValid()` tapi field filter memakai `string`, sehingga F2
@@ -491,6 +539,18 @@ bisa terjadi: tidak ada tipe yang menolak nilai liar pada jalur non-HTTP sekalip
 nilai. Sinkron dengan F2.
 
 **Kriteria selesai.** Compiler menolak nilai liar masuk domain; test table idem F2.
+
+#### Bukti penutupan F9 (2026-09-22)
+
+`UsageFilter.Status`, `UsageFilterInput.Status`, dan `UsageFilterQuery.Status` (schema) kini
+bertipe `domain.UsageStatus`; `LogFilter.Status` dan `LogFilterInput.Status` kini bertipe
+`domain.RequestLogStatus`. Compiler kini menolak `filter.Status = "banana"` pada jalur non-HTTP
+(nilai mentah harus melalui `UsageStatus("banana")` eksplisit, yang `Validate` tolak, atau
+`ParseUsageStatus`, yang juga menolak). `repository/postgres` `filterArgs`/`logFilterArgs`
+menjalankan nilai typed itu sebagai argumen query yang sama (`$n = '' OR status = $n` tetap
+parameterized; encode pgx tidak berubah, dibuktikan suite integrasi penuh). Test table idem F2
+(`internal/domain/usage_types_status_test.go`, dua filter membagikan satu tabel kasus) plus
+regresi rentang terbalik tetap hijau.
 
 ## 6. Non-findings dan batasan yang dipertahankan (app-serv)
 
@@ -566,7 +626,9 @@ request id, status, dan hitungan baris saja (tanpa DSN/credential/body).
 | F8 | Scope `q` (model-only) vs janji placeholder panel | MEDIUM | BE+FE |
 | F9 | `UsageFilter.Status` string, bukan `UsageStatus` | LOW | BE |
 
-F5 **CLOSED 2026-09-22** (bukti di §5); nomor lain tetap OPEN.
+F5 **CLOSED 2026-09-22** (bukti di §5 F5). F2 + F9 **CLOSED 2026-09-22** (bukti di §5 F2 dan §5
+F9: satu perubahan tipe + satu boundary check, test table sama, kontrak jadi enum). Nomor lain
+tetap OPEN.
 
 ### 9.2 Cross audit Usage vs Node Animation SSE
 

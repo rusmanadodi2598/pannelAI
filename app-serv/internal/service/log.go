@@ -94,7 +94,13 @@ func (s *LogService) Record(ctx context.Context, in domain.RequestLogInput) (dom
 }
 
 // Requests returns one page of log rows with the total the meta block needs.
+// The filter is validated here as well as at the wire boundary, so a non-HTTP
+// caller cannot hand the repository a status outside the closed set and get a
+// silently empty page (draft 010 F2/F9).
 func (s *LogService) Requests(ctx context.Context, filter domain.LogFilter, page, perPage int) ([]domain.RequestLog, int64, error) {
+	if err := filter.Validate(); err != nil {
+		return nil, 0, err
+	}
 	return s.logs.List(ctx, filter, repository.PageQuery{Page: page, PerPage: perPage})
 }
 

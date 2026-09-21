@@ -115,9 +115,23 @@ func (g UsageGranularity) Interval() string {
 	return "1 hour"
 }
 
+// ParseUsageStatus validates a wire value against the closed set before it
+// reaches a query (draft 010 F2/F9). An unknown status is rejected rather than
+// passed through, because the read predicate treats an empty value as
+// "unfiltered" and every other value as an equality, so a value outside the
+// set would silently match zero rows and answer 200.
+func ParseUsageStatus(value string) (UsageStatus, error) {
+	status := UsageStatus(value)
+	if !status.IsValid() {
+		return "", NewValidationError("status must be one of success, error")
+	}
+	return status, nil
+}
+
 // UsageFilter narrows a usage read. Every text field is empty when unfiltered,
 // and From/To are always populated, because an unbounded range is not
-// requestable (AGENTS.md §1.7).
+// requestable (AGENTS.md §1.7). Status is the domain value object, so a value
+// outside the closed set cannot be constructed into a filter (draft 010 F9).
 type UsageFilter struct {
 	From       time.Time
 	To         time.Time
@@ -125,7 +139,7 @@ type UsageFilter struct {
 	EndpointID string
 	Model      string
 	GatewayKey string
-	Status     string
+	Status     UsageStatus
 	Query      string
 }
 
@@ -138,7 +152,7 @@ type UsageFilterInput struct {
 	EndpointID   string
 	Model        string
 	GatewayKeyID string
-	Status       string
+	Status       UsageStatus
 	Query        string
 }
 
@@ -166,11 +180,16 @@ func NewUsageFilter(in UsageFilterInput, now time.Time) UsageFilter {
 	}
 }
 
-// Validate rejects a filter whose range is inverted, so the repository is never
-// handed a window that cannot match anything.
+// Validate rejects a filter the repository must not run: an inverted range, or
+// a status outside the closed set. The status rule lives here as well as at
+// the wire boundary so a non-HTTP caller cannot construct a filter whose
+// predicate silently matches nothing (draft 010 F9).
 func (f UsageFilter) Validate() error {
 	if f.To.Before(f.From) {
 		return NewValidationError("to must not be earlier than from")
+	}
+	if f.Status != "" && !f.Status.IsValid() {
+		return NewValidationError("status must be one of success, error")
 	}
 	return nil
 }

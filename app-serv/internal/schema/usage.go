@@ -33,13 +33,14 @@ var usageFilterFields = []string{"status", "endpoint_id", "provider_id", "model"
 
 // UsageFilterQuery is the decoded filter set shared by summary, timeseries, and
 // records (SPEC-API-001 §7.12). GroupBy and Granularity are empty when the
-// caller did not ask for them.
+// caller did not ask for them. Status is the domain value object, so the closed
+// set is held by the type from the boundary inward (draft 010 F2/F9).
 type UsageFilterQuery struct {
 	From        *time.Time
 	To          *time.Time
 	GroupBy     string
 	Granularity string
-	Status      string
+	Status      domain.UsageStatus
 	EndpointID  string
 	ProviderID  string
 	Model       string
@@ -74,9 +75,24 @@ func DecodeUsageFilter(r *http.Request) (UsageFilterQuery, error) {
 		return UsageFilterQuery{}, domain.NewValidationError("granularity must be one of hour, day")
 	}
 
+	// The status closed set is checked here, at the boundary, rather than left
+	// to the repository: the read predicate treats an empty value as
+	// "unfiltered" and every other value as an equality, so an unknown value
+	// must be a 400, not a silently empty 200 (draft 010 F2). An omitted or
+	// empty parameter stays "unfiltered", which is why the parse runs only
+	// when a value was sent (the same guard group_by and granularity use).
+	var status domain.UsageStatus
+	if raw := strings.TrimSpace(query.Get("status")); raw != "" {
+		parsed, err := domain.ParseUsageStatus(raw)
+		if err != nil {
+			return UsageFilterQuery{}, err
+		}
+		status = parsed
+	}
+
 	texts := UsageFilterQuery{
 		From: from, To: to, GroupBy: groupBy, Granularity: granularity,
-		Status:     strings.TrimSpace(query.Get("status")),
+		Status:     status,
 		EndpointID: strings.TrimSpace(query.Get("endpoint_id")),
 		ProviderID: strings.TrimSpace(query.Get("provider_id")),
 		Model:      strings.TrimSpace(query.Get("model")),
@@ -95,7 +111,7 @@ func DecodeUsageFilter(r *http.Request) (UsageFilterQuery, error) {
 func (q UsageFilterQuery) value(field string) string {
 	switch field {
 	case "status":
-		return q.Status
+		return string(q.Status)
 	case "endpoint_id":
 		return q.EndpointID
 	case "provider_id":

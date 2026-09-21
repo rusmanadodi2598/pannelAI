@@ -50,6 +50,18 @@ func (s RequestLogStatus) IsValid() bool {
 	return s == RequestLogSuccess || s == RequestLogError
 }
 
+// Validate rejects a status outside the closed set, so a non-HTTP caller
+// cannot hand the repository a predicate that silently matches nothing (draft
+// 010 F2/F9). The range is not checked here: NewLogFilter already collapses an
+// inverted range to the end instant, which the constructor's test pins as the
+// intended behavior for logs.
+func (f LogFilter) Validate() error {
+	if f.Status != "" && !f.Status.IsValid() {
+		return NewValidationError("status must be one of success, error")
+	}
+	return nil
+}
+
 // RequestLog is one request's durable log row. It carries the bodies only when
 // capture was on, so an empty body here means "not captured", which is why the
 // read side reports the capture setting alongside it.
@@ -152,11 +164,14 @@ func (l RequestLog) HasBodies() bool {
 }
 
 // LogFilter narrows a request-log read. From and To are always populated, so a
-// log query can never be an unbounded scan (AGENTS.md §1.7).
+// log query can never be an unbounded scan (AGENTS.md §1.7). Status is the
+// domain value object, so a value outside the closed set cannot be constructed
+// into a filter (draft 010 F2/F9: the logs route shares the usage decoder, so
+// it holds the same rule).
 type LogFilter struct {
 	From       time.Time
 	To         time.Time
-	Status     string
+	Status     RequestLogStatus
 	EndpointID string
 	Model      string
 	GatewayKey string
@@ -168,7 +183,7 @@ type LogFilter struct {
 type LogFilterInput struct {
 	From       *time.Time
 	To         *time.Time
-	Status     string
+	Status     RequestLogStatus
 	EndpointID string
 	Model      string
 	GatewayKey string

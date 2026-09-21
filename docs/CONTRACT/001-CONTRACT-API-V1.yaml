@@ -6661,6 +6661,9 @@ paths:
         required: false
         schema:
           type: string
+          enum:
+          - success
+          - error
       - name: provider_id
         in: query
         required: false
@@ -6749,6 +6752,9 @@ paths:
         required: false
         schema:
           type: string
+          enum:
+          - success
+          - error
       - name: provider_id
         in: query
         required: false
@@ -6827,6 +6833,9 @@ paths:
         required: false
         schema:
           type: string
+          enum:
+          - success
+          - error
       - name: provider_id
         in: query
         required: false
@@ -7087,6 +7096,9 @@ paths:
         required: false
         schema:
           type: string
+          enum:
+          - success
+          - error
       - name: provider_id
         in: query
         required: false
