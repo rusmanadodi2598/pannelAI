@@ -100,3 +100,23 @@ func (rec *statusRecorder) SetErrorCode(code string) {
 		recorder.SetErrorCode(code)
 	}
 }
+
+// Flush forwards the flush to the writer inside, because Go promotes only the
+// methods of the embedded interface and not http.Flusher: without this method a
+// stream's `sseSink.Flush()` is a no-op under the chain, and the whole answer
+// arrives as one blob when the handler returns (draft 010 F5). A suppressed
+// response is never flushed: the flush would commit a status line of its own
+// before envelope() could write the §8 body it is withholding.
+func (rec *statusRecorder) Flush() {
+	if rec.suppressed {
+		return
+	}
+	if flusher, ok := rec.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
+// Unwrap exposes the writer inside, so http.ResponseController (Go 1.20+)
+// reaches the optional capabilities a plain assertion cannot see through a
+// wrapper, and a future wrapper cannot re-introduce this class of bug silently.
+func (rec *statusRecorder) Unwrap() http.ResponseWriter { return rec.ResponseWriter }

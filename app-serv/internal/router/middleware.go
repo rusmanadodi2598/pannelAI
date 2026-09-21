@@ -129,6 +129,22 @@ type responseRecorder struct {
 // recorder, which forwards it (see statusRecorder.SetErrorCode).
 func (rec *responseRecorder) SetErrorCode(code string) { rec.errorCode = code }
 
+// Flush forwards the flush to the writer inside. Go promotes only the methods of
+// the embedded interface and not http.Flusher, so without this method the writer
+// a handler receives stops implementing http.Flusher under the chain, `newSSESink`
+// stores a nil flusher, and every streamed answer is written at once (draft 010
+// F5). It is the same forwarding rule as SetErrorCode for the same reason.
+func (rec *responseRecorder) Flush() {
+	if flusher, ok := rec.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
+// Unwrap exposes the writer inside, so http.ResponseController (Go 1.20+) can
+// reach every optional capability through the wrapper, not just the two this
+// file forwards by name.
+func (rec *responseRecorder) Unwrap() http.ResponseWriter { return rec.ResponseWriter }
+
 func (rec *responseRecorder) WriteHeader(code int) {
 	if !rec.wroteHeader {
 		rec.status = code

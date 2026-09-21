@@ -103,16 +103,18 @@ func writeDataPlaneRaw(w http.ResponseWriter, status int, contentType string, bo
 // error a client can act on, and committing 200 early would force every such
 // failure into a success status carrying an error body.
 type sseSink struct {
-	writer  http.ResponseWriter
-	flusher http.Flusher
-	wroteH  bool
+	writer     http.ResponseWriter
+	controller *http.ResponseController
+	wroteH     bool
 }
 
-// newSSESink builds the sink, resolving the flusher once so a stream does not
-// re-test for it per frame.
+// newSSESink builds the sink. The flush goes through http.ResponseController
+// rather than a direct http.Flusher assertion, because the controller follows
+// Unwrap() through a middleware chain: a wrapper that exposes only Unwrap()
+// would otherwise hide the capability, which is how the production chain
+// silently stopped streaming before draft 010 F5.
 func newSSESink(w http.ResponseWriter) *sseSink {
-	flusher, _ := w.(http.Flusher)
-	return &sseSink{writer: w, flusher: flusher}
+	return &sseSink{writer: w, controller: http.NewResponseController(w)}
 }
 
 // WriteFrame writes one complete frame, committing the SSE response the first
@@ -130,11 +132,11 @@ func (s *sseSink) WriteFrame(frame []byte) error {
 }
 
 // Flush pushes what has been written, so a client sees each frame as it arrives
-// rather than at the end of the answer.
+// rather than at the end of the answer. A writer that cannot flush is not a
+// stream failure: the unsupported error is dropped exactly as the absent flusher
+// was before, and the answer is still delivered in one piece.
 func (s *sseSink) Flush() {
-	if s.flusher != nil {
-		s.flusher.Flush()
-	}
+	_ = s.controller.Flush()
 }
 
 // wrote reports whether any frame has been written, which is what decides whether

@@ -1862,6 +1862,15 @@ never reaches the client and nothing streams. The live database was restored to 
 (`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true media_settings=0
 proxies=0`) and the pass's temp files were removed._
 
+_Resolved 2026-09-22: the third defect above is closed by `app-serv` draft 010 F5. Every middleware
+wrapper now forwards `Flush()` and `Unwrap()`, and the SSE sink flushes through
+`http.ResponseController`, so a frame reaches the client while its handler is still open. The evidence
+is permanent (`internal/router/router_stream_flush_test.go`, first frame before the handler releases) and
+live (`cmd/app-serv/playground_live_flush_test.go` against a throwaway PostgreSQL + Redis and a spaced
+upstream: first frame 16.7 ms with the fix, 770.7 ms without it, measured on the same stack). The first
+two defects remain open with `app-serv`, and this paragraph keeps recording them as requests rather than
+absorbing them into the panel._
+
 _The browser click-through is still outstanding, as it is for U0, U1, and U3's Skills half._
 
 ---

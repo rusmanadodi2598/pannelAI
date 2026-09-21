@@ -177,9 +177,13 @@ The data-plane route is deliberately not session-gated: CLI callers and the app-
 forwarder use the gateway key. Authentication happens before body decoding, semantic validation
 uses the typed `schema.ChatRequest` plus `go-playground/validator/v10`, and a stream commits its
 200/SSE response only when its first frame is written; a pre-frame failure remains a normal
-structured HTTP error. `/api/v1/models` lists the same routable model identifiers the relay
-resolver accepts. PostgreSQL, Redis, upstream credentials, and provider response bodies never
-cross into the browser boundary.
+structured HTTP error. Every middleware wrapper forwards `Flush()` and `Unwrap()`
+(`internal/router/middleware.go`, `internal/router/envelope.go`), and `newSSESink` flushes through
+`http.ResponseController`, so a frame reaches the client while its handler is still open
+(`internal/router/router_stream_flush_test.go`); before draft 010 F5 the chain hid
+`http.Flusher` and the whole answer arrived as one blob. `/api/v1/models` lists the same routable
+model identifiers the relay resolver accepts. PostgreSQL, Redis, upstream credentials, and
+provider response bodies never cross into the browser boundary.
 
 
 ### 3.3 Autentikasi dan revocation
