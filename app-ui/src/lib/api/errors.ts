@@ -13,11 +13,25 @@ export class ApiError extends Error {
 		readonly status: number,
 		readonly code: PanelErrorCode,
 		message: string,
-		readonly requestId?: string
+		readonly requestId?: string,
+		/** The wait the gateway stated, in seconds, when it sent one (`Retry-After`, SPEC-API §7.2). */
+		readonly retryAfterSeconds?: number
 	) {
 		super(message);
 		this.name = 'ApiError';
 	}
+}
+
+/**
+ * Reads `Retry-After` as a whole number of seconds.
+ *
+ * The API sets the header as an integer (app-serv rounds the lockout up to the next second), so the
+ * HTTP-date form is not parsed here: a date would fail the integer check and be reported as absent, which
+ * is the honest answer for a header this panel cannot read.
+ */
+function retryAfterSeconds(response: Response): number | undefined {
+	const value = Number.parseInt(response.headers.get('retry-after') ?? '', 10);
+	return Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
 export function isRetryable(error: ApiError): boolean {
@@ -34,6 +48,7 @@ export function isRetryable(error: ApiError): boolean {
  */
 export function errorFromPayload(response: Response, payload: unknown): ApiError {
 	const requestId = response.headers.get('x-request-id') ?? undefined;
+	const wait = retryAfterSeconds(response);
 
 	if (payload !== undefined) {
 		const envelope = schemaApiErrorEnvelope.safeParse(payload);
@@ -43,7 +58,8 @@ export function errorFromPayload(response: Response, payload: unknown): ApiError
 				response.status,
 				code,
 				message.trim() || fallbackMessage(code),
-				requestId
+				requestId,
+				wait
 			);
 		}
 	}
@@ -52,6 +68,7 @@ export function errorFromPayload(response: Response, payload: unknown): ApiError
 		response.status,
 		'UNPARSABLE',
 		`The gateway returned ${response.status} without a readable error body.`,
-		requestId
+		requestId,
+		wait
 	);
 }

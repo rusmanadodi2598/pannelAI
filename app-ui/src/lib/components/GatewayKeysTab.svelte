@@ -24,6 +24,9 @@
 	let created = $state<CreatedGatewayKey | null>(null);
 	let pendingRevoke = $state<GatewayKey | null>(null);
 	let revoking = $state(false);
+	// A failed revoke is not a failed list read, so it gets its own line rather than replacing the table
+	// with an error state.
+	let notice = $state<string | null>(null);
 
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 
@@ -49,8 +52,15 @@
 		const target = pendingRevoke;
 		pendingRevoke = null;
 		revoking = true;
-		await revokeGatewayKey(target.id);
+		const result = await revokeGatewayKey(target.id);
 		revoking = false;
+
+		if (!result.ok) {
+			notice = result.error.message;
+			return;
+		}
+
+		notice = null;
 		await load();
 	}
 </script>
@@ -62,6 +72,10 @@
 			void load();
 		}}
 	/>
+
+	{#if notice}
+		<p role="alert" class="text-sm text-[var(--color-danger)]">{notice}</p>
+	{/if}
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading gateway keys" />

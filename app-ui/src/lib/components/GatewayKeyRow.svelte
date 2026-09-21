@@ -22,10 +22,12 @@
 	let renaming = $state(false);
 	let draft = $state('');
 	let localBusy = $state(false);
+	let failure = $state<string | null>(null);
 
 	const active = $derived(entry.status === KEY_STATUS_ACTIVE);
 
 	function startRename(): void {
+		failure = null;
 		renaming = true;
 		draft = entry.name;
 	}
@@ -37,18 +39,34 @@
 		}
 
 		localBusy = true;
-		await updateGatewayKey(entry.id, { name: draft });
+		const result = await updateGatewayKey(entry.id, { name: draft });
 		localBusy = false;
+
+		if (!result.ok) {
+			// The field stays open with the operator's draft in it: a rename the gateway refused must not
+			// look like one that happened, and closing the field would throw the draft away.
+			failure = result.error.message;
+			return;
+		}
+
+		failure = null;
 		renaming = false;
 		onchanged();
 	}
 
 	async function toggle(): Promise<void> {
 		localBusy = true;
-		await updateGatewayKey(entry.id, {
+		const result = await updateGatewayKey(entry.id, {
 			status: active ? KEY_STATUS_DISABLED : KEY_STATUS_ACTIVE
 		});
 		localBusy = false;
+
+		if (!result.ok) {
+			failure = result.error.message;
+			return;
+		}
+
+		failure = null;
 		onchanged();
 	}
 
@@ -87,6 +105,10 @@
 				class="underline text-[var(--color-danger)]"
 				onclick={() => onrevoke(entry)}>Revoke</button
 			>
+		{/if}
+
+		{#if failure}
+			<p role="alert" class="basis-full text-sm text-[var(--color-danger)]">{failure}</p>
 		{/if}
 	</td>
 </tr>

@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 |             |                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer). Sisa nomor masih menunggu pilihan owner |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup). Sisa nomor masih menunggu pilihan owner |
 | **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
 | **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
@@ -33,8 +33,8 @@ Empat langkah, semuanya bisa diulang:
 
 | #   | Item (KEEP)            | Route                                    | Layar              | Endpoint SPEC-API                        | Status                                         |
 | --- | ---------------------- | ---------------------------------------- | ------------------ | ---------------------------------------- | ---------------------------------------------- |
-| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F9 **CLOSED**, F6 **CLOSED**, F7 |
-| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list) **CLOSED**, F7 (list), Q12/Q13/Q19-Q23 tercatat |
+| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F6 **CLOSED**, F7 **CLOSED**, F9 **CLOSED** |
+| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list) **CLOSED**, F7 (list) **CLOSED**, Q12/Q13/Q19-Q23 tercatat |
 | 3   | Combo & Vision Adapter | `/combos`                                | ada                | §7.7, §7.8 live                          | F12 (bukti); test tingkat tab ada              |
 | 4   | Usage                  | `/usage`                                 | ada                | §7.12 live                               | F8, F12; tautan API Docs menunggu F1           |
 | 5   | Quota Tracker          | `/quota`                                 | ada                | §7.12 live                               | bersih; live pass tercatat                     |
@@ -565,6 +565,43 @@ Tambahkan juga test untuk mode F6 begitu UI-nya ada.
 
 **Kriteria selesai.** Tiap layar di atas punya test render yang mengasertif state-nya terhadap
 stub; tidak ada penambahan test yang menembus 250 baris tanpa pemisahan per concern.
+
+**Status: CLOSED 2026-09-21.** Empat layar yang tidak punya test render sekarang punya, dan menulis
+test itu terhadap bentuk yang benar-benar dilayani `app-serv` membuka tiga cacat wire yang ikut
+ditutup di commit yang sama (changelog sudah ditutup F4):
+
+- Test baru: 29 test di 5 berkas — `tests/routes/login.test.ts` (7),
+  `tests/routes/providers-list.test.ts` (5), `tests/components/gateway-keys-tab.test.ts` (5, list dan
+  alur create), `tests/components/gateway-key-actions.test.ts` (5, rename/disable/revoke),
+  `tests/components/endpoint-detail-drawer.test.ts` (7, tab 2 detail) — plus
+  `tests/support/gateway-key-stub.ts` (87 baris) sebagai stub bersama kedua berkas gateway keys.
+  `tests/components/gateway-keys-tab.test.ts` dipecah dua ketika mencapai 270 baris, sesuai kriteria
+  selesai di atas; keduanya 109 dan 112 baris.
+- Cacat 1, §6.1 tidak diterapkan: layar login merender kalimat gateway apa adanya ("invalid
+  password", "too many attempts; try again later") dan tidak pernah menyatakan aturannya maupun
+  lama tunggunya, padahal §6.1 menetapkan dua kalimatnya dan meminta jendela retry dari respons.
+  Sekarang `src/lib/strings/login.ts` (33 baris) memegang dua kalimat §6.1, `ApiError` membawa
+  `retryAfterSeconds` dari header `Retry-After` (dibaca di `errors.ts`), dan layar memakai jendela
+  dari respons dengan aturan 15 menit sebagai fallback. Menit dibulatkan ke atas supaya kalimatnya
+  tidak pernah berbunyi "in 0 minutes".
+- Cacat 2, gateway keys tidak cocok dengan wire yang dilayani: create menjawab `plaintext_key`
+  (panel menuntut `key`), update menjawab baris key tanpa plaintext sama sekali (panel mem-parse
+  bentuk create yang menuntutnya), dan `last_used_at`/`revoked_at` adalah `omitempty` sehingga key
+  yang belum pernah dipakai tidak mengirim field itu (panel menuntut `nullable`). Akibatnya setiap
+  create gagal parse sehingga kunci sekali-tampil tidak pernah sampai ke modal, dan setiap rename
+  serta toggle gagal parse yang lalu dibuang barisnya. Ketiganya diperbaiki di skema dan
+  `updateGatewayKey` sekarang mem-parse `schemaGatewayKey`.
+- Cacat 3, aksi yang gagal tidak bersuara: `GatewayKeyRow` membuang hasil update dan
+  `GatewayKeysTab` membuang hasil revoke, jadi rename yang ditolak gateway tampak seperti berhasil.
+  Sekarang barisnya menyimpan draft dan pesan gateway (`role="alert"`), dan tab menampilkan
+  penolakan revoke pada barisnya sendiri alih-alih mengganti tabel dengan state error.
+- Dokumen: SPEC-API §7.3 barisnya sekarang menamai fieldnya (`plaintext_key`, absent di respons
+  lain), karena tabel itu sebelumnya hanya berbunyi "returns full key once" dan nama field yang
+  tidak disebut adalah nama yang ditebak salah.
+- Batas yang dicatat: cacat wire di atas ditemukan dengan membaca DTO dan handler yang dilayani,
+  bukan dari panggilan live; pass ini tidak menyalakan `app-serv`. Click-through browser tetap
+  outstanding bersama U0/U1 lain (F12), dan layar gateway keys belum pernah diuji terhadap gateway
+  yang hidup.
 
 ## 11. F8 (MEDIUM): Tidak ada kontrol refresh eksplisit di layar daftar mana pun kecuali `/quota`
 

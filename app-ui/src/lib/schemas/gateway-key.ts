@@ -5,17 +5,20 @@
 // accepts. The panel renders unknown values verbatim. See SPEC-UI §14 Q9.
 
 import { z } from 'zod';
-import { gatewayKeyId, label, nullableTimestamp, rfc3339Timestamp, tokenCount } from './primitives';
+import { gatewayKeyId, label, optionalTimestamp, rfc3339Timestamp, tokenCount } from './primitives';
 
+// `last_used_at` and `revoked_at` are `omitempty` on the wire (Go omits a nil pointer), so a key that was
+// never used and never revoked omits both. `optionalTimestamp` accepts an absent field and an explicit
+// null; `nullableTimestamp` would demand the field be there and fail the parse for the common case.
 export const schemaGatewayKey = z.object({
 	id: gatewayKeyId,
 	name: label,
 	key_hint: z.string(),
 	status: z.string().min(1),
-	last_used_at: nullableTimestamp,
+	last_used_at: optionalTimestamp,
 	request_count: tokenCount,
 	created_at: rfc3339Timestamp,
-	revoked_at: nullableTimestamp
+	revoked_at: optionalTimestamp
 });
 
 export type GatewayKey = z.infer<typeof schemaGatewayKey>;
@@ -44,12 +47,14 @@ export const schemaUpdateGatewayKeyForm = z.strictObject({
 
 export type UpdateGatewayKeyForm = z.infer<typeof schemaUpdateGatewayKeyForm>;
 
-// The plaintext key is returned exactly once, on create. The panel shows it in a modal and never
-// stores it (SPEC-UI §4, §8.5).
+// The plaintext key is returned exactly once, on create, and the wire names it `plaintext_key`
+// (`app-serv/internal/schema/dto.go`, `omitempty` so it is absent on every other response). SPEC-API §7.3
+// says "returns full key once" without naming the field, so the served name is the one to parse: reading
+// `key` instead made every create fail the parse and no one-time key ever reached the modal.
 export const schemaCreatedGatewayKey = z.object({
 	id: gatewayKeyId,
 	name: label,
-	key: z.string().min(1),
+	plaintext_key: z.string().min(1),
 	key_hint: z.string(),
 	created_at: rfc3339Timestamp
 });

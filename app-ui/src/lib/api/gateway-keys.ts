@@ -3,10 +3,12 @@
 import {
 	schemaCreateGatewayKeyForm,
 	schemaCreatedGatewayKey,
+	schemaGatewayKey,
 	schemaGatewayKeyList,
 	schemaUpdateGatewayKeyForm,
 	type CreateGatewayKeyForm,
 	type CreatedGatewayKey,
+	type GatewayKey,
 	type GatewayKeyList,
 	type UpdateGatewayKeyForm
 } from '$lib/schemas/gateway-key';
@@ -39,15 +41,17 @@ export function createGatewayKey(
 	});
 }
 
-// Rename, disable, and enable all answer with the updated key, so one schema covers them.
+// Rename, disable, and enable all answer with the updated key row and never with a plaintext key, so the
+// update parses through the list row's schema rather than the create response's. Parsing the create shape
+// here made every rename and toggle fail with a drift error that the row then discarded.
 export function updateGatewayKey(
 	id: string,
 	form: UpdateGatewayKeyForm
-): Promise<ApiResult<CreatedGatewayKey>> {
-	return apiRequest<UpdateGatewayKeyForm, CreatedGatewayKey>({
+): Promise<ApiResult<GatewayKey>> {
+	return apiRequest<UpdateGatewayKeyForm, GatewayKey>({
 		method: 'PATCH',
 		path: `/gateway-keys/${encodeURIComponent(id)}`,
-		schema: schemaCreatedGatewayKey,
+		schema: schemaGatewayKey,
 		body: form,
 		bodySchema: schemaUpdateGatewayKeyForm
 	});

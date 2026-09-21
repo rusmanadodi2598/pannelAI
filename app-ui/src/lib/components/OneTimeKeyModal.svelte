@@ -27,7 +27,7 @@
 
 	async function copy(): Promise<void> {
 		if (!created) return;
-		await navigator.clipboard.writeText(created.key);
+		await navigator.clipboard.writeText(created.plaintext_key);
 		copied = true;
 	}
 </script>
@@ -41,7 +41,7 @@
 		<div class="mt-3 flex items-center gap-2">
 			<code
 				class="min-w-0 flex-1 truncate rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-2 py-2 font-mono text-xs"
-				>{created.key}</code
+				>{created.plaintext_key}</code
 			>
 			<button
 				type="button"

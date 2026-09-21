@@ -6,6 +6,7 @@
 
 import { fetchAuthStatus, login as loginRequest, logout as logoutRequest } from '$lib/api/auth';
 import { onUnauthorized } from '$lib/api/client';
+import type { ApiError } from '$lib/api/errors';
 import type { AuthStatus } from '$lib/schemas/auth';
 
 const SIGNED_OUT: AuthStatus = {
@@ -38,9 +39,9 @@ function createSessionStore() {
 		error = result.error.message;
 	}
 
-	async function signIn(password: string): Promise<string | null> {
+	async function signIn(password: string): Promise<ApiError | null> {
 		const result = await loginRequest({ password });
-		if (!result.ok) return result.error.message;
+		if (!result.ok) return result.error;
 		await refresh();
 		return null;
 	}
