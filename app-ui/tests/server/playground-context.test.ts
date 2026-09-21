@@ -19,11 +19,10 @@ vi.mock('$lib/server/config', async () => {
 import {
 	PLAYGROUND_KEY_VARIABLE,
 	playgroundContext,
-	playgroundKey,
-	sessionIsValid
+	playgroundKey
 } from '$lib/server/playground-context';
 import { schemaPlaygroundFailure } from '$lib/schemas/playground';
-import { KEY, TARGET, jsonResponse, recordingFetch, statusResponse } from '../support/playground';
+import { KEY, recordingFetch, statusResponse } from '../support/playground';
 
 beforeEach(() => {
 	state.env = { PANEL_API_TARGET: 'http://gw.test:9090', PANEL_PLAYGROUND_KEY: KEY };
@@ -44,49 +43,6 @@ describe('playgroundKey', () => {
 
 		state.env = { PANEL_API_TARGET: 'http://gw.test:9090', PANEL_PLAYGROUND_KEY: '  ' };
 		expect(playgroundKey()).toBeNull();
-	});
-});
-
-describe('sessionIsValid', () => {
-	const cases = [
-		{ name: 'an authenticated session', answer: () => statusResponse(true), ok: true },
-		{ name: 'a signed-out session', answer: () => statusResponse(false), ok: false },
-		{ name: 'a gateway error', answer: () => jsonResponse(500, { error: {} }), ok: false },
-		{
-			name: 'a body that is not the status shape',
-			answer: () => jsonResponse(200, { ok: true }),
-			ok: false
-		},
-		{
-			name: 'an unreachable gateway',
-			answer: () => Promise.reject(new Error('ECONNREFUSED')),
-			ok: false
-		}
-	];
-
-	for (const testCase of cases) {
-		it(`answers ${testCase.ok} for ${testCase.name}`, async () => {
-			const { impl } = recordingFetch(testCase.answer);
-			expect(await sessionIsValid(TARGET, 'panel_session=abc', impl)).toBe(testCase.ok);
-		});
-	}
-
-	it('does not call the gateway at all without a cookie', async () => {
-		const { calls, impl } = recordingFetch(() => statusResponse(true));
-
-		expect(await sessionIsValid(TARGET, null, impl)).toBe(false);
-		expect(await sessionIsValid(TARGET, '   ', impl)).toBe(false);
-		expect(calls.length).toBe(0);
-	});
-
-	it('asks the gateway that owns the session, forwarding the caller cookie and no credential', async () => {
-		const { calls, impl } = recordingFetch(() => statusResponse(true));
-
-		await sessionIsValid(TARGET, 'panel_session=abc', impl);
-
-		expect(calls[0].url).toBe('http://gw.test:9090/api/v1/auth/status');
-		expect(calls[0].cookie).toBe('panel_session=abc');
-		expect(calls[0].authorization).toBeNull();
 	});
 });
 

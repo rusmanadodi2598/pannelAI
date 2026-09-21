@@ -860,6 +860,10 @@ bagian). Pengukuran yang sama setelah pass "API base dialog dan copy key sekali-
 (2026-09-21) menemukan delapan dari enam belas bagian: pass itu menambah bagian ke-16, dan bagian
 itu menyebut click-through dialog barunya sendiri masih outstanding, jadi angka di kalimat
 sebelumnya adalah keadaan sebelum commit pass tersebut, bukan angka yang salah saat ditulis.
+Pengukuran yang sama setelah pass "The click-through's two findings" (2026-09-21) menemukan
+sembilan dari tujuh belas bagian: bagian ke-17 mencatat click-through owner yang menemukan dua
+cacat pada permukaan bagian ke-16 dan menyatakan perbaikannya belum diverifikasi ulang di browser,
+jadi bagian itu terhitung juga, dan F12 tetap terbuka.
 
 **Risiko.** Panel bisa tampak selesai padahal setengah exit criteria-nya belum pernah
 dijalankan orang. Ini persis bentuk klaim yang R-35/R-36 larang.

@@ -205,11 +205,17 @@ Rules:
 4. The header holds the theme toggle, the session identity (no profile page, so it is a label plus a
    logout action), and one global API base control that opens a dialog. The dialog states the address in
    the three forms a client is configured with (the base URL itself, a cURL line, and the two names an
-   OpenAI-compatible client reads), each with its own copy control. The copy control sits beside the value
-   it copies rather than in the header strip, because a refused clipboard write has to be answered where
-   the value is: the panel is commonly opened on an origin that is not a secure context, where the
-   clipboard API is absent and a copy that reports nothing reads as a dead control (R-26). No search box
-   in the header: search is per-screen and server-side.
+   OpenAI-compatible client reads), each with its own copy control. The address is the gateway's own,
+   read from the panel server (the origin of `PANEL_API_TARGET` plus `/api/v1`) rather than derived from
+   the browser: `location.origin` is the panel, and it is a bind-all address like `http://0.0.0.0:3000`
+   whenever the panel is opened that way, which is not an address any client can call. The read is
+   session-gated, a read that fails is stated with the gateway's sentence and a way to ask again, and the
+   dialog never falls back to the browser's origin, because an address that looks right and is not is
+   worse than no address (R-27). The copy control sits beside the value it copies rather than in the
+   header strip, because a refused clipboard write has to be answered where the value is: the panel is
+   commonly opened on an origin that is not a secure context, where the clipboard API is absent, so the
+   control writes through a selection-based path there and reports a failure only when both paths fail
+   (R-26). No search box in the header: search is per-screen and server-side.
 5. **Three responsive shapes** (owner requirement, 2026-09-17; DESIGN.md §8). Mobile is a drawer over a
    dimmed overlay, tablet is a 64px icon rail that expands on demand, and desktop is a 264px sidebar that
    collapses to the same rail. The collapsed state is remembered in a cookie, and the viewport decides

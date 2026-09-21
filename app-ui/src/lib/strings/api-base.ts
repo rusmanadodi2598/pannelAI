@@ -4,10 +4,10 @@
 // inside a component. English only, no em dash (R-02), no marketing vocabulary (R-16), and no figure the
 // panel did not measure (R-17).
 //
-// Both snippets are composed from the address the panel is served on rather than written out, so a
-// deployment that moves gets them right without an edit here. The key in them is a placeholder, not a
-// credential: the panel holds no gateway key, and the sentence under each snippet says where the real one
-// comes from.
+// The address is the one the panel server answers with, so both snippets are composed from it rather than
+// written out, and a panel restarted against a different gateway gets both lines right without an edit
+// here. The key in them is a placeholder, not a credential: the panel holds no gateway key, and the
+// sentence under each snippet says where the real one comes from.
 
 export const API_BASE_COPY = {
 	title: 'API base',
@@ -20,8 +20,11 @@ export const API_BASE_COPY = {
 		openai: 'OpenAI client'
 	},
 
+	loading: 'Reading the gateway address from the panel server.',
+	retry: 'Try again',
+
 	baseUrl: {
-		note: 'The panel serves this origin and forwards /api/v1 to the gateway, so a client that can reach the panel needs no second address.'
+		note: 'The gateway address this panel server forwards /api/v1 to, read from the panel configuration rather than from the browser. A client on another machine substitutes the host name this gateway answers on for a loopback address here.'
 	},
 
 	curl: {

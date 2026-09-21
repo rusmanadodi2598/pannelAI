@@ -6,12 +6,21 @@
 	// on screen and selectable. Each tab states one form, and the tabs are the panel's own PanelTabs, so
 	// the panel has one tab language rather than two.
 	//
-	// The address is the browser's own origin. The panel server forwards /api/v1 to the gateway (§3.1),
-	// so a client that can reach the panel needs no second address; outside a browser there is no origin
-	// to read and the path alone is what the panel itself would use.
+	// The address is read from the panel server rather than derived from the browser. `location.origin` is
+	// the panel, and it is a bind-all address like `http://0.0.0.0:3000` whenever the operator opens the
+	// panel that way, which no client can call; the panel server is the component that holds the gateway's
+	// address. A read that fails is stated with the gateway's own sentence and a way to ask again, and the
+	// dialog never falls back to the browser's origin, because an address that looks right and is not is
+	// worse than no address.
+	//
+	// The three states are `reading`, `failure`, and the answer, in that order of precedence. The address
+	// itself is a plain string rather than a nullable one, so the tab snippet takes a `string` and the
+	// loaded branch cannot be reached with nothing to show: `reading` and `failure` are what say whether an
+	// answer is in hand.
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import PanelTabs from '$lib/components/PanelTabs.svelte';
+	import { fetchApiBase } from '$lib/api/api-base';
 	import { API_BASE_COPY as copy } from '$lib/strings/api-base';
 
 	type Props = {
@@ -21,7 +30,31 @@
 
 	let { open, onclose }: Props = $props();
 
-	const base = $derived(typeof location === 'undefined' ? '/api/v1' : `${location.origin}/api/v1`);
+	let reading = $state(true);
+	let failure = $state<string | null>(null);
+	let base = $state('');
+
+	async function load(): Promise<void> {
+		reading = true;
+		failure = null;
+
+		const result = await fetchApiBase();
+		reading = false;
+
+		if (!result.ok) {
+			failure = result.error.message;
+			base = '';
+			return;
+		}
+
+		base = result.data.base_url;
+	}
+
+	// Read on every open: the address comes from the panel's environment, so a panel restarted with a
+	// different target must not be described by the previous answer.
+	$effect(() => {
+		if (open) void load();
+	});
 
 	const TABS = [
 		{ id: 'base-url', label: copy.tabs.baseUrl },
@@ -45,16 +78,25 @@
 	{#if open}
 		<p class="text-sm text-[var(--color-text-muted)]">{copy.intro}</p>
 
-		<PanelTabs tabs={TABS} label={copy.tabsLabel}>
-			{#snippet panel(active)}
-				{#if active === 'curl'}
-					{@render block(copy.curl.command(base), copy.curl.note)}
-				{:else if active === 'openai'}
-					{@render block(copy.openai.env(base), copy.openai.note)}
-				{:else}
-					{@render block(base, copy.baseUrl.note)}
-				{/if}
-			{/snippet}
-		</PanelTabs>
+		{#if reading}
+			<p class="mt-4 text-sm text-[var(--color-text-muted)]">{copy.loading}</p>
+		{:else if failure}
+			<div class="mt-4 flex flex-col items-start gap-2">
+				<p class="text-sm text-[var(--color-danger)]" role="alert">{failure}</p>
+				<button type="button" class="underline" onclick={load}>{copy.retry}</button>
+			</div>
+		{:else}
+			<PanelTabs tabs={TABS} label={copy.tabsLabel}>
+				{#snippet panel(active)}
+					{#if active === 'curl'}
+						{@render block(copy.curl.command(base), copy.curl.note)}
+					{:else if active === 'openai'}
+						{@render block(copy.openai.env(base), copy.openai.note)}
+					{:else}
+						{@render block(base, copy.baseUrl.note)}
+					{/if}
+				{/snippet}
+			</PanelTabs>
+		{/if}
 	{/if}
 </Modal>
