@@ -8,6 +8,9 @@
 //
 // The row actions are their own file: rename, disable, and revoke are a different concern from the list and
 // the one-time key, and together they took the file past the panel's line limit.
+//
+// The copy cases belong to the one-time key: the modal is the only place the plaintext exists, so a copy
+// control that reports nothing on a refused write loses the one value the gateway will never show again.
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -21,10 +24,15 @@ async function createKey(name: string): Promise<void> {
 	);
 }
 
+function stubClipboard(writeText: (value: string) => Promise<void>): void {
+	Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+}
+
 describe('gateway keys tab', () => {
 	afterEach(() => {
 		cleanup();
 		vi.unstubAllGlobals();
+		delete (navigator as { clipboard?: unknown }).clipboard;
 	});
 
 	it('renders a row per key, with "Never" for a key that has not been used', async () => {
@@ -118,5 +126,46 @@ describe('gateway keys tab', () => {
 
 		expect(await screen.findByRole('alert')).toBeTruthy();
 		expect(stub.writes).toHaveLength(0);
+	});
+
+	it('copies the new key, and unlocks dismissal once it reached the clipboard', async () => {
+		const copied: string[] = [];
+		stubClipboard(async (value) => {
+			copied.push(value);
+		});
+		stubGatewayKeys();
+		render(GatewayKeysTab);
+		await screen.findByRole('table');
+
+		await createKey('CI runner');
+		const dialog = await screen.findByRole('dialog');
+
+		await fireEvent.click(within(dialog).getByRole('button', { name: 'Copy' }));
+
+		expect(copied).toEqual(['sk-live-once-9999']);
+		expect(within(dialog).getByText('Copied.')).toBeTruthy();
+		// §6.2: the modal closes with an explicit control or Escape after the copy control reports success.
+		expect(within(dialog).getByRole('button', { name: 'Close dialog' })).toBeTruthy();
+	});
+
+	it('says a refused copy failed, and stays gated on the acknowledgement', async () => {
+		// The clipboard is absent outside a secure context, which is where the panel is often opened. The
+		// copy then threw with nothing on screen, so the button read as dead and the key looked lost.
+		stubGatewayKeys();
+		render(GatewayKeysTab);
+		await screen.findByRole('table');
+
+		await createKey('CI runner');
+		const dialog = await screen.findByRole('dialog');
+
+		await fireEvent.click(within(dialog).getByRole('button', { name: 'Copy' }));
+
+		expect(within(dialog).getByText('Copy failed. Select the text and copy it.')).toBeTruthy();
+		// A refused copy is not a reason to let the one value the gateway will never show again be closed
+		// away, so the gate stays where it was.
+		expect(within(dialog).queryByRole('button', { name: 'Close dialog' })).toBeNull();
+		expect(
+			(within(dialog).getByRole('button', { name: 'Done' }) as HTMLButtonElement).disabled
+		).toBe(true);
 	});
 });

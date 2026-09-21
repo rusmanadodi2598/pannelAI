@@ -856,7 +856,10 @@ generation melalui media provider belum, dan keduanya butuh akun provider. Tujuh
 bagian pass di `app-ui/README.md` menyebut click-through browser sebagai masih outstanding (diukur
 ulang 2026-09-21 dengan `awk` per bagian atas README; angka draft "tujuh dari sembilan" tidak bisa
 direproduksi, karena pengukuran yang sama pada commit draft `13ea269` menemukan satu dari sembilan
-bagian).
+bagian). Pengukuran yang sama setelah pass "API base dialog dan copy key sekali-tampil"
+(2026-09-21) menemukan delapan dari enam belas bagian: pass itu menambah bagian ke-16, dan bagian
+itu menyebut click-through dialog barunya sendiri masih outstanding, jadi angka di kalimat
+sebelumnya adalah keadaan sebelum commit pass tersebut, bukan angka yang salah saat ditulis.
 
 **Risiko.** Panel bisa tampak selesai padahal setengah exit criteria-nya belum pernah
 dijalankan orang. Ini persis bentuk klaim yang R-35/R-36 larang.

@@ -6,33 +6,16 @@
 	//   The only control that opens the sidebar on a small screen is the trigger, and it is present at
 	//   every breakpoint (the primitive layer already hides the rail on mobile).
 	//
-	//   The API base control copies a value an operator pastes into a client. It is a button with a live
-	//   region announcing the copy, not a link, so there is nothing to navigate to and nothing to break.
+	//   The API base is one button that opens ApiBaseDialog, rather than an address and a copy control
+	//   squeezed into the strip. The three forms a client is configured with are in the dialog, each with
+	//   the copy control beside the value it copies (SPEC-UI §5.2).
+	import ApiBaseDialog from '$lib/components/ApiBaseDialog.svelte';
 	import { session } from '$lib/stores/session.svelte';
 	import { theme } from '$lib/stores/theme.svelte';
 	import { Moon, Sun } from '@lucide/svelte';
 	import * as Sidebar from '$lib/primitives/sidebar/index.js';
 
-	let copied = $state(false);
-	let copyFailed = $state(false);
-
-	const apiBase = $derived(
-		typeof location === 'undefined' ? '/api/v1' : `${location.origin}/api/v1`
-	);
-
-	async function copyApiBase(): Promise<void> {
-		copyFailed = false;
-		try {
-			await navigator.clipboard.writeText(apiBase);
-			copied = true;
-			setTimeout(() => (copied = false), 2000);
-		} catch {
-			// Clipboard access can be denied (an insecure origin, or a browser policy). Saying so is
-			// better than a control that appears to work.
-			copyFailed = true;
-			setTimeout(() => (copyFailed = false), 4000);
-		}
-	}
+	let baseOpen = $state(false);
 </script>
 
 <header
@@ -46,26 +29,14 @@
 	     touch target, and this control is the only way to open navigation on a phone. -->
 	<Sidebar.Trigger class="size-11 shrink-0 lg:hidden" />
 
-	<div class="flex min-w-0 items-center gap-2 text-xs">
-		<span class="hidden font-medium text-[var(--color-text)] sm:inline">API base</span>
-		<code
-			class="min-w-0 truncate rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-2 py-1 text-[var(--color-text-muted)]"
-			>{apiBase}</code
-		>
-		<button
-			type="button"
-			class="min-h-11 shrink-0 rounded-[var(--radius-sm)] px-2 text-[var(--color-accent)] underline underline-offset-2 hover:bg-[var(--color-surface-2)]"
-			onclick={copyApiBase}
-		>
-			{copied ? 'Copied' : 'Copy'}
-		</button>
-		<span class="sr-only" role="status" aria-live="polite">
-			{copied ? 'API base URL copied to the clipboard.' : ''}
-			{copyFailed
-				? 'The browser refused clipboard access. Select the URL and copy it manually.'
-				: ''}
-		</span>
-	</div>
+	<button
+		type="button"
+		class="min-h-11 shrink-0 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
+		onclick={() => (baseOpen = true)}
+		aria-haspopup="dialog"
+	>
+		API base
+	</button>
 
 	<div class="ms-auto flex items-center gap-1.5">
 		<button
@@ -91,3 +62,7 @@
 		</button>
 	</div>
 </header>
+
+<!-- A sibling of the header rather than a child of it, so the strip's own layout is the same whether the
+     dialog is open, closed, or rendered without a native modal implementation. -->
+<ApiBaseDialog open={baseOpen} onclose={() => (baseOpen = false)} />

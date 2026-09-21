@@ -12,11 +12,19 @@
 	// A clipboard write can fail: the API is absent outside a secure context, and a browser can refuse
 	// one. The control reports the outcome rather than assuming success, and every caller keeps its text
 	// on screen, so a failed copy is still a value the operator can select.
+	//
+	// A caller that has to act on the outcome can pass `oncopied`, which fires only after the write
+	// resolved. The one-time key modal uses it to unlock dismissal, so the modal opens up when the key
+	// actually reached the clipboard rather than when the button was pressed.
 	const DEFAULT_LABEL = 'Copy';
 	const COPIED = 'Copied.';
 	const FAILED = 'Copy failed. Select the text and copy it.';
 
-	let { value, label = DEFAULT_LABEL }: { value: string; label?: string } = $props();
+	let {
+		value,
+		label = DEFAULT_LABEL,
+		oncopied
+	}: { value: string; label?: string; oncopied?: () => void } = $props();
 
 	let state = $state<'idle' | 'copied' | 'failed'>('idle');
 
@@ -24,6 +32,7 @@
 		try {
 			await navigator.clipboard.writeText(value);
 			state = 'copied';
+			oncopied?.();
 		} catch {
 			state = 'failed';
 		}

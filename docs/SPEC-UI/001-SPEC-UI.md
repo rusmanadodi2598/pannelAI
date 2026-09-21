@@ -203,8 +203,13 @@ Rules:
    structure up front (owner, 2026-09-17). Hiding an unbuilt screen would misrepresent the panel's scope;
    leaving it clickable would break R-24. The labelled row is the third option and the one used.
 4. The header holds the theme toggle, the session identity (no profile page, so it is a label plus a
-   logout action), and a global "API base URL" copy control. No search box in the header: search is
-   per-screen and server-side.
+   logout action), and one global API base control that opens a dialog. The dialog states the address in
+   the three forms a client is configured with (the base URL itself, a cURL line, and the two names an
+   OpenAI-compatible client reads), each with its own copy control. The copy control sits beside the value
+   it copies rather than in the header strip, because a refused clipboard write has to be answered where
+   the value is: the panel is commonly opened on an origin that is not a secure context, where the
+   clipboard API is absent and a copy that reports nothing reads as a dead control (R-26). No search box
+   in the header: search is per-screen and server-side.
 5. **Three responsive shapes** (owner requirement, 2026-09-17; DESIGN.md §8). Mobile is a drawer over a
    dimmed overlay, tablet is a 64px icon rail that expands on demand, and desktop is a 264px sidebar that
    collapses to the same rail. The collapsed state is remembered in a cookie, and the viewport decides
@@ -238,8 +243,9 @@ absent.
   disable, revoke.
 - **Create:** a name field, then a response modal that shows the full key once with a copy control and
   the sentence: "This key is shown once. Store it now." The modal cannot be dismissed by
-  clicking the backdrop; it closes with an explicit control or Escape after the copy control is used or
-  the acknowledgement checkbox is ticked.
+  clicking the backdrop; it closes with an explicit control or Escape after the copy control reports
+  success or the acknowledgement checkbox is ticked. A refused copy does not open the modal up: the
+  plaintext exists nowhere else, and a dismissal on a copy that did not land would lose it.
 - **Constraint surfaced in the UI:** revoking is a soft delete and the row leaves the active list.
 - **Empty state:** "No gateway keys yet. Create one to let a CLI tool reach the gateway."
 
