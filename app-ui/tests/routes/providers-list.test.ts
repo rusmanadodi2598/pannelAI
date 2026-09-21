@@ -135,6 +135,25 @@ describe('provider registry list', () => {
 		expect(await screen.findByText('OpenAI')).toBeTruthy();
 	});
 
+	it('re-reads the registry with the filter still applied when the operator asks for it', async () => {
+		const stub = stubProviders({
+			rows: [provider(), provider({ id: 'anthropic', name: 'Anthropic', category: 'media' })]
+		});
+		render(ProvidersPage);
+		await screen.findByRole('table');
+
+		await fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'media' } });
+		await waitFor(() => expect(registryQuery(stub.queries).get('category')).toBe('media'));
+
+		const before = stub.queries.length;
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		await waitFor(() => expect(stub.queries.length).toBeGreaterThan(before));
+		// §8.6.2: the control repeats the read the screen is showing, rather than resetting it to the whole
+		// registry, which would silently undo the filter the operator set.
+		expect(registryQuery(stub.queries).get('category')).toBe('media');
+	});
+
 	it('reports a failed read and retries it on request', async () => {
 		stubProviders({ status: 500, message: 'the registry is unavailable' });
 

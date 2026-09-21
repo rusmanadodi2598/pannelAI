@@ -6,7 +6,7 @@
 // different sentences because they are different facts: a request that did not answer, and a value that is
 // not a release number.
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ChangelogPage from '../../src/routes/changelog/+page.svelte';
 
@@ -91,6 +91,21 @@ describe('ChangelogPage states', () => {
 		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
 		expect(reads.filter((url) => url.startsWith('/api/v1/changelog')).length).toBe(2);
+	});
+
+	it('reads both routes again when the operator asks for a refresh', async () => {
+		stubFetch();
+		render(ChangelogPage);
+		await screen.findByText('Skills catalog');
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		// §8.6.2: the control repeats both reads, so a release published since the page was opened appears
+		// without a reload, and the comparison is redone against the same build.
+		await waitFor(() =>
+			expect(reads.filter((url) => url.startsWith('/api/v1/changelog')).length).toBe(2)
+		);
+		expect(reads.filter((url) => url.startsWith('/api/v1/version')).length).toBe(2);
 	});
 
 	it('states an empty release list rather than a missing source', async () => {

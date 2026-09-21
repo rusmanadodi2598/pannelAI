@@ -13,6 +13,7 @@
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
 	import MediaProviderCard from '$lib/components/MediaProviderCard.svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listMediaProviders } from '$lib/api/media-providers';
 	import {
@@ -81,6 +82,12 @@
 			here changes what the gateway uses for this kind on the next request.
 		</p>
 	</div>
+
+	<!-- The control is absent at an address that names no media kind: there is nothing to read there, and
+	     a button that silently did nothing would read as broken. -->
+	{#if kind !== null}
+		<RefreshControl onrefresh={() => load(kind)} />
+	{/if}
 
 	{#if kind === null}
 		<StateMessage

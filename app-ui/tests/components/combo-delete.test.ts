@@ -7,7 +7,7 @@
 // The other half of the test is the one that keeps the copy honest: only a CONFLICT means the combo is still
 // referenced, so a server failure must not read as though it did.
 
-import { cleanup, render, screen, waitFor, within } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import CombosTab from '../../src/lib/components/CombosTab.svelte';
 import { squashed } from '../support/dom';
@@ -24,9 +24,12 @@ const combo = {
 };
 
 /** Serves the tab's three reads and answers the delete with whatever a test asks for. */
-function stubFetch(deleteStatus: number, deleteCode: string, deleteMessage: string): void {
+function stubFetch(deleteStatus: number, deleteCode: string, deleteMessage: string): string[] {
+	const requested: string[] = [];
+
 	vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
 		const url = String(input);
+		requested.push(url);
 		const json = (payload: unknown, status = 200): Response =>
 			new Response(JSON.stringify(payload), {
 				status,
@@ -45,6 +48,8 @@ function stubFetch(deleteStatus: number, deleteCode: string, deleteMessage: stri
 		}
 		return json({ error: { code: 'NOT_FOUND', message: 'No route matches that request.' } }, 404);
 	});
+
+	return requested;
 }
 
 afterEach(() => {
@@ -99,6 +104,22 @@ describe('deleting a combo', () => {
 
 		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 		expect(screen.getByText('daily')).toBeTruthy();
+	});
+
+	it('re-reads the combo list when the operator asks for it', async () => {
+		const requested = stubFetch(409, 'CONFLICT', 'alias fast still references combo daily');
+		render(CombosTab);
+		await waitFor(() => expect(screen.getByText('daily')).toBeTruthy());
+
+		const combosReads = (): number =>
+			requested.filter((url) => url.split('?')[0].endsWith('/combos')).length;
+		const before = combosReads();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		// §8.6.2: the tab repeats the read rather than leaving a page reload as the only way to see a combo
+		// another operator just added.
+		await waitFor(() => expect(combosReads()).toBeGreaterThan(before));
 	});
 });
 

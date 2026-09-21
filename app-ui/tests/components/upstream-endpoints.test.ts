@@ -224,4 +224,19 @@ describe('UpstreamEndpointsTab filters', () => {
 		expect(within(table()).queryByText('Endpoint 1')).toBeNull();
 		expect(pageQuery(stub).get('page')).toBe('2');
 	});
+
+	it('re-reads the page on screen when the operator asks for it, filters and all', async () => {
+		visit('/endpoint-keys', 'provider_id=anthropic&status=disabled');
+		const stub = stubEndpoints({ rows: threeRows() });
+		await renderLoaded(stub);
+
+		const before = stub.requested.length;
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		await waitFor(() => expect(stub.requested.length).toBeGreaterThan(before));
+		// §8.6.2: the control repeats the read the screen is showing. A read without the filters would swap
+		// the narrowed page for the whole registry while the URL still said otherwise.
+		expect(pageQuery(stub).get('provider_id')).toBe('anthropic');
+		expect(pageQuery(stub).get('status')).toBe('disabled');
+	});
 });

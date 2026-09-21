@@ -33,6 +33,8 @@ export function proxyRow(overrides: Record<string, unknown> = {}): Record<string
 export type ProxyStub = {
 	pool: Record<string, unknown>[];
 	settings: Record<string, unknown>;
+	/** Every read the screen made, in order, so a refresh control can be told from a re-render. */
+	reads: string[];
 	creates: Record<string, unknown>[];
 	patches: { id: string; body: Record<string, unknown> }[];
 	deletes: string[];
@@ -52,6 +54,7 @@ export function stubProxies(overrides: Partial<ProxyStub> = {}): ProxyStub {
 	const stub: ProxyStub = {
 		pool: [],
 		settings: settingsDocument(),
+		reads: [],
 		creates: [],
 		patches: [],
 		deletes: [],
@@ -94,6 +97,8 @@ export function stubProxies(overrides: Partial<ProxyStub> = {}): ProxyStub {
 		const url = String(input);
 		const body: Record<string, unknown> =
 			init?.body === undefined ? {} : JSON.parse(String(init.body));
+
+		if (method === 'GET') stub.reads.push(url);
 
 		if (url.includes('/settings')) {
 			if (method === 'PATCH') {

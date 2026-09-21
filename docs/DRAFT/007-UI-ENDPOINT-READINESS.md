@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 |             |                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup). Sisa nomor masih menunggu pilihan owner |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sepuluh layar daftar, D4 dijawab owner, §8.6.2 tetap). Sisa nomor masih menunggu pilihan owner |
 | **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
 | **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
@@ -33,19 +33,19 @@ Empat langkah, semuanya bisa diulang:
 
 | #   | Item (KEEP)            | Route                                    | Layar              | Endpoint SPEC-API                        | Status                                         |
 | --- | ---------------------- | ---------------------------------------- | ------------------ | ---------------------------------------- | ---------------------------------------------- |
-| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F6 **CLOSED**, F7 **CLOSED**, F9 **CLOSED** |
-| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list) **CLOSED**, F7 (list) **CLOSED**, Q12/Q13/Q19-Q23 tercatat |
-| 3   | Combo & Vision Adapter | `/combos`                                | ada                | §7.7, §7.8 live                          | F12 (bukti); test tingkat tab ada              |
-| 4   | Usage                  | `/usage`                                 | ada                | §7.12 live                               | F8, F12; tautan API Docs menunggu F1           |
+| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F6 **CLOSED**, F7 **CLOSED**, F8 **CLOSED**, F9 **CLOSED** |
+| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list) **CLOSED**, F7 (list) **CLOSED**, F8 (list) **CLOSED**, Q12/Q13/Q19-Q23 tercatat |
+| 3   | Combo & Vision Adapter | `/combos`                                | ada                | §7.7, §7.8 live                          | F8 **CLOSED**; F12 (bukti); test tingkat tab ada |
+| 4   | Usage                  | `/usage`                                 | ada                | §7.12 live                               | F8 **CLOSED**; F12; tautan API Docs menunggu F1 |
 | 5   | Quota Tracker          | `/quota`                                 | ada                | §7.12 live                               | bersih; live pass tercatat                     |
 | 6   | Token Saver            | `/token-saver`                           | ada                | §7.9 live                                | bersih; live pass tercatat                     |
 | 7   | Skill                  | `/skills`                                | ada                | §7.16 live sejak P4                      | F2 **CLOSED 2026-09-21**                       |
-| 8   | Media Provider         | `/media-providers/[kind]`                | ada                | §7.10 live                               | Q17/Q18 tercatat                               |
+| 8   | Media Provider         | `/media-providers/[kind]`                | ada                | §7.10 live                               | F8 **CLOSED**; Q17/Q18 tercatat                |
 | 9   | Playground Chat        | `/playground`                            | ada                | §7.15 live; §10 P4 menugaskan halamannya | F3 **CLOSED 2026-09-21**                       |
-| 10  | Proxy Pools            | `/proxy-pools`                           | ada                | §7.11 live                               | bersih; live pass tercatat                     |
+| 10  | Proxy Pools            | `/proxy-pools`                           | ada                | §7.11 live                               | F8 **CLOSED**; bersih; live pass tercatat      |
 | 11  | API Docs               | `/api-docs`                              | ada                | §7.17 live sejak P4                      | F1 **CLOSED 2026-09-21**                       |
-| 12  | Changelog              | `/changelog`                             | ada, membaca §7.18 | §7.18 live sejak P4                      | F4 **CLOSED 2026-09-21**                       |
-| 13  | Console Log            | `/console-log`                           | ada                | §7.13 live                               | F8                                             |
+| 12  | Changelog              | `/changelog`                             | ada, membaca §7.18 | §7.18 live sejak P4                      | F4 **CLOSED 2026-09-21**, F8 **CLOSED**       |
+| 13  | Console Log            | `/console-log`                           | ada                | §7.13 live                               | F8 **CLOSED 2026-09-21**                       |
 | 14  | Setting                | `/settings`                              | ada                | §7.14 live                               | F10                                            |
 
 Satu route yang tidak ada adalah baris yang masih `planned: true` di
@@ -68,6 +68,10 @@ sekarang membawa `href: '/skills'`.
 - §8.4.2 (filter di URL) sudah dipatuhi Usage (dua tab), Logs, dan tab Upstream endpoints
   (`parseXSearch` + `nextXSearch` + `goto(resolve(...))` di `UsageRecordsTab`, `UsageOverviewTab`,
   `LogsRequestsTab`, `UpstreamEndpointsTab`).
+- §8.6.2 (kontrol refresh eksplisit di setiap layar daftar) dipenuhi sejak F8: satu komponen
+  bersama `RefreshControl` dipasang di sebelas layar daftar, `/quota` tetap memakai kontrolnya
+  sendiri yang sudah teruji, dan test per layar membuktikan kontrolnya mengulang bacaan yang
+  sedang tampil, bukan bacaan default.
 - §6.6 (badge sumber, countdown, polling dengan pause) dan §6.7/§6.9/§6.8/§6.4 sudah sesuai
   bullet spec-nya, termasuk pengecualian yang dinyatakan (Q15 sampai Q18).
 - Tiga endpoint P4 sudah live dan session-gated di `app-serv`: `GET /api/v1/skills` (katalog
@@ -623,6 +627,51 @@ kalimat di §8.6.2 dengan alasannya, dan tidak ada kode yang ditulis.
 
 **Kriteria selesai.** Setiap layar daftar punya kontrol refresh yang teruji, atau §8.6.2
 diamandemen dengan keputusan owner.
+
+**Status: CLOSED 2026-09-21.** Owner memilih opsi (a) pada 2026-09-21 lewat D4: satu komponen
+bersama dipasang di setiap layar daftar, dan §8.6.2 tetap seperti tertulis. Tidak ada perubahan
+`app-serv`:
+
+- `src/lib/components/RefreshControl.svelte` (42 baris) adalah satu-satunya tempat aturannya
+  hidup: nama aksesibelnya "Refresh now", labelnya berubah menjadi "Refreshing" selama bacaan
+  berjalan, dan klik kedua selama bacaan pertama masih jalan dibuang oleh guard, bukan oleh
+  `disabled`. Itu keputusan yang sudah dicatat `/quota` untuk kontrolnya sendiri, dan alasannya
+  sama: gerbang yang mati menelan klik dan terbaca sebagai tombol rusak, sedangkan label yang
+  berubah mengakui kliknya dan state loading layar yang menunjukkan bacaannya. Baris pembungkus
+  (`flex flex-wrap items-center gap-3`) ikut di dalam komponen, karena tombol telanjang di dalam
+  kolom akan melebar selebar layar dan setiap pemanggil harus mengulang pembungkus yang sama.
+- Sebelas layar memakainya, satu baris per layar: `GatewayKeysTab` (kedua tab lewat satu tab),
+  `UpstreamEndpointsTab`, `/providers`, `CombosTab`, `UsageOverviewTab`, `UsageRecordsTab`,
+  `LogsRequestsTab`, `/proxy-pools`, `/media-providers/[kind]`, `/changelog`, dan `/console-log`.
+  Baris 13 tabel di §2 menandai layar console log untuk F8, dan layar itu memang kasus terkuat
+  dari kalimat §8.6.2: satu-satunya kontrolnya adalah poll yang bisa di-*pause*, jadi poll yang
+  dijeda meninggalkan muat ulang halaman sebagai satu-satunya cara membaca buffer lagi. `/quota`
+  tetap memakai kontrolnya sendiri yang sudah ada dan sudah teruji, jadi tidak ada dua kontrol di
+  satu layar.
+- Kontrolnya mengulang bacaan yang sedang tampil, bukan bacaan default: layar berfilter memanggil
+  `load(search)` dengan `search` yang sama dengan URL, dan `/providers` mengulang `load` yang
+  membaca `category`/`page` dari state. Di `/media-providers/[kind]` kontrolnya **absen** saat
+  alamat tidak menamai kind yang panel punya, karena di sana tidak ada bacaan untuk diulang dan
+  tombol yang diam-diam tidak melakukan apa pun akan terbaca rusak; ketiadaan itu diuji, bukan
+  dibiarkan.
+- Test: satu test per layar, sebelas seluruhnya, yang menekan kontrolnya lalu membuktikan
+  bacaan berikutnya terjadi. Yang lebih dari sekadar "ada tombol": layar berfilter membuktikan
+  query yang diulang identik dengan yang sedang tampil (`/providers` tetap membawa `category`,
+  usage dan logs tetap membawa filternya, upstream endpoints tetap membawa
+  `provider_id`/`status`), `/changelog` membuktikan **kedua** route dibaca ulang, bukan hanya
+  daftar rilisnya, dan test console log menjeda pollnya lebih dulu supaya bacaan baru hanya bisa
+  datang dari kontrolnya.
+  `tests/components/refresh-control.test.ts` (3 test) menutup perilaku komponennya sendiri: klik
+  memanggil callback, label bertukar sambil tetap bisa ditekan, dan klik kedua dibuang lalu
+  diizinkan lagi setelah bacaan mendarat.
+- Dua stub bersama diperluas untuk bisa membuktikan itu: `tests/support/gateway-key-stub.ts` dan
+  `tests/support/proxy-stub.ts` sekarang mencatat bacaan (`reads`), bukan hanya tulisan. Sebelum
+  itu stub keduanya hanya mencatat tulis, jadi layar yang tidak pernah membaca ulang akan lulus.
+- Batas yang dicatat: `CombosTab.svelte` duduk tepat di 220 baris, garis peringatan, naik dari 217
+  karena pemasangan tiga baris (import, baris kosong, satu baris kontrol); memecah tab itu bukan
+  bagian dari F8 dan tidak dilakukan di sini. Click-through browser tetap outstanding bersama
+  layar U0/U1 lain (F12), dan pass ini tidak menyalakan `app-serv`: yang dibuktikan adalah bacaan
+  yang diulang, bukan tampilan di browser.
 
 ## 12. F9 (LOW): `rate_limited_until` tampil mentah, bukan countdown
 

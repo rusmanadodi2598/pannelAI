@@ -5,7 +5,7 @@
 // whether the page passed the right kind to the API. What the page renders and what it requests are
 // asserted together, because a request for the wrong kind would look identical on screen.
 
-import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import MediaProvidersPage from '../../src/routes/media-providers/[kind]/+page.svelte';
 import { mediaRow, stubMediaProviders } from '../support/media-stub';
@@ -85,6 +85,22 @@ describe('the page reads one kind', () => {
 
 		await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
 		expect(stub.reads).toEqual([]);
+		// §8.6.2's control is absent here for the same reason: there is no read to repeat, and a button that
+		// silently did nothing would read as broken.
+		expect(screen.queryByRole('button', { name: 'Refresh now' })).toBeNull();
+	});
+
+	it('re-reads the kind on screen when the operator asks for it', async () => {
+		const stub = stubMediaProviders({ rows: [mediaRow()] });
+		renderKind('tts');
+		await waitFor(() => expect(stub.reads.length).toBe(1));
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		// §8.6.2: the same kind is asked for again, so an override saved elsewhere shows up without
+		// re-entering the address.
+		await waitFor(() => expect(stub.reads.length).toBe(2));
+		expect(stub.reads[1]).toBe('tts');
 	});
 });
 

@@ -16,6 +16,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import UsageRecordDrawer from '$lib/components/UsageRecordDrawer.svelte';
 	import UsageRecordTable from '$lib/components/UsageRecordTable.svelte';
@@ -105,6 +106,8 @@
 
 <div class="flex flex-col gap-5">
 	<UsageRecordsFilters {search} onchange={change} onapply={applyFilters} onclear={clearFilters} />
+
+	<RefreshControl onrefresh={() => load(search)} />
 
 	{#if search.notices.length > 0}
 		<div

@@ -19,6 +19,7 @@
 	import ProxyFormModal from '$lib/components/ProxyFormModal.svelte';
 	import ProxyOutboundSettings from '$lib/components/ProxyOutboundSettings.svelte';
 	import ProxyTable from '$lib/components/ProxyTable.svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { deleteProxy, listProxies, testProxy } from '$lib/api/proxies';
 	import { proxyTestStateLabel, type Proxy } from '$lib/schemas/proxy';
@@ -98,6 +99,8 @@
 			itself routes nothing.
 		</p>
 	</div>
+
+	<RefreshControl onrefresh={load} />
 
 	{#if loading && proxies === null}
 		<StateMessage kind="loading" title="Loading the proxy pool" />

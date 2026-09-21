@@ -14,6 +14,7 @@
 	// destination, so it carries a visible label and an icon whose meaning is written in the icon map.
 	import { ScrollText } from '@lucide/svelte';
 	import { resolve } from '$app/paths';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { clearConsoleLog, fetchConsoleLog } from '$lib/api/log';
 	import { CONSOLE_POLL_MS, pollDue, pollIntervalLabel, type PollState } from '$lib/polling';
@@ -107,6 +108,9 @@
 			{#if lastRead && !error}
 				<span class="text-[var(--color-text-muted)]">Last read {lastRead}</span>
 			{/if}
+			<!-- §8.6.2's explicit control sits beside the poll it distrusts: a paused poll must not be the
+			     only way to get a current buffer, and the "Last read" stamp above it is the acknowledgement. -->
+			<RefreshControl onrefresh={load} />
 			<button
 				type="button"
 				disabled={busy}

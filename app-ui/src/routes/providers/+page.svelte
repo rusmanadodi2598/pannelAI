@@ -6,6 +6,7 @@
 	// the API accepts; §6.3 also asks for a search over name and id, which the API does not take a parameter
 	// for yet, so the control is absent rather than fake.
 	import ProviderTable from '$lib/components/ProviderTable.svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listProviders } from '$lib/api/providers';
 	import { PROVIDER_CATEGORIES, type Provider } from '$lib/schemas/provider';
@@ -71,6 +72,8 @@
 			{/each}
 		</select>
 	</label>
+
+	<RefreshControl onrefresh={load} />
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the provider registry" />

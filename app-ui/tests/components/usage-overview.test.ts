@@ -278,4 +278,19 @@ describe('UsageOverviewTab', () => {
 			expect(stub.requested.length).toBeGreaterThan(before);
 		});
 	});
+
+	it('re-reads the window on screen when the operator asks for it', async () => {
+		visit('/usage', 'period=7d');
+		const stub = stubUsage();
+		await renderOverview();
+		const shown = lastQuery(stub, '/usage/summary').toString();
+
+		const before = stub.requested.length;
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		// §8.6.2: the control repeats the read the URL describes, so the refreshed screen is the same window
+		// rather than the defaults.
+		await waitFor(() => expect(stub.requested.length).toBeGreaterThan(before));
+		expect(lastQuery(stub, '/usage/summary').toString()).toBe(shown);
+	});
 });

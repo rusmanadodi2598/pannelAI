@@ -15,6 +15,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import UsageChart from '$lib/components/UsageChart.svelte';
 	import UsageGroupTable from '$lib/components/UsageGroupTable.svelte';
@@ -128,6 +129,8 @@
 			</select>
 		</label>
 	</div>
+
+	<RefreshControl onrefresh={() => load(search)} />
 
 	{#if search.notices.length > 0}
 		<div

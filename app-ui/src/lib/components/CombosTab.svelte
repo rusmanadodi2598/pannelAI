@@ -10,6 +10,7 @@
 	import ComboDeleteDialog from '$lib/components/ComboDeleteDialog.svelte';
 	import ComboEditor from '$lib/components/ComboEditor.svelte';
 	import ComboTable from '$lib/components/ComboTable.svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { deleteCombo, listCombos } from '$lib/api/combos';
 	import { listModelAliases, listModelCatalog } from '$lib/api/models';
@@ -126,6 +127,8 @@
 			>
 		{/if}
 	</div>
+
+	<RefreshControl onrefresh={load} />
 
 	{#if showEditor}
 		<ComboEditor

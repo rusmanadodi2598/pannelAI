@@ -276,4 +276,19 @@ describe('UsageRecordsTab', () => {
 			expect(stub.requested.length).toBeGreaterThan(before);
 		});
 	});
+
+	it('re-reads the filtered page when the operator asks for it', async () => {
+		visit('/usage', 'model=gpt-4o');
+		const stub = stubRecords();
+		await renderRecords();
+		const shown = listQuery(stub).toString();
+
+		const before = stub.requested.length;
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		// §8.6.2: the control repeats the read the filters describe, so a refresh cannot silently widen the
+		// list back to every model.
+		await waitFor(() => expect(stub.requested.length).toBeGreaterThan(before));
+		expect(listQuery(stub).toString()).toBe(shown);
+	});
 });

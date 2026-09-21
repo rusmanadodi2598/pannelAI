@@ -60,6 +60,19 @@ describe('gateway keys tab', () => {
 		expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
 	});
 
+	it('re-reads the list when the operator asks for it', async () => {
+		const stub = stubGatewayKeys();
+		render(GatewayKeysTab);
+		await screen.findByRole('table');
+		const before = stub.reads.length;
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		// §8.6.2: the control re-reads the list in place, because reloading the page is the only other way
+		// to find out whether a key that just failed is working again.
+		await waitFor(() => expect(stub.reads.length).toBeGreaterThan(before));
+	});
+
 	it('shows a new key once, and will not let it be dismissed before it is acknowledged', async () => {
 		const stub = stubGatewayKeys();
 		render(GatewayKeysTab);

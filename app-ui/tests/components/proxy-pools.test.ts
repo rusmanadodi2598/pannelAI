@@ -4,7 +4,7 @@
 // harder half: a password value must not reach the page, a never-tested row must not read as a
 // failure, and a prober state the panel does not know must not be swallowed.
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProxyPoolsPage from '../../src/routes/proxy-pools/+page.svelte';
 import { formatTimestamp } from '$lib/utils/time';
@@ -149,6 +149,22 @@ describe('ProxyPoolsPage', () => {
 			screen.getByText('Line 2: Start the line with http://, https://, or socks5://.')
 		).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Add 2 proxies' })).toBeTruthy();
+	});
+
+	it('re-reads the pool when the operator asks for it', async () => {
+		const stub = stubProxies({ pool: [proxyRow()] });
+		render(ProxyPoolsPage);
+		await screen.findByRole('table');
+
+		const poolReads = (): number =>
+			stub.reads.filter((url) => url.split('?')[0].endsWith('/proxies')).length;
+		const before = poolReads();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		// §8.6.2: the control repeats the pool read, so a row another operator just added shows up without a
+		// page reload.
+		await waitFor(() => expect(poolReads()).toBeGreaterThan(before));
 	});
 
 	it('shows whether a pasted line carried a password, not the password', async () => {

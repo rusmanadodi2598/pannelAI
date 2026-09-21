@@ -264,4 +264,20 @@ describe('LogsRequestsTab', () => {
 		expect(pageState.url.searchParams.get('model')).toBe('gpt-4o');
 		expect(pageState.url.searchParams.get('page')).toBeNull();
 	});
+
+	it('re-reads the filtered page when the operator asks for it', async () => {
+		visit('/logs', 'model=gpt-4o&page=2');
+		const stub = stubLogs();
+		render(LogsRequestsTab);
+		await screen.findByRole('table');
+		const shown = listQuery(stub).toString();
+
+		const before = stub.requested.length;
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		// §8.6.2: the control repeats the read the filters describe, so a refresh cannot silently drop the
+		// model filter or send the operator back to page 1.
+		await waitFor(() => expect(stub.requested.length).toBeGreaterThan(before));
+		expect(listQuery(stub).toString()).toBe(shown);
+	});
 });

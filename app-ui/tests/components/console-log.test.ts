@@ -100,6 +100,25 @@ describe('ConsoleLog', () => {
 		});
 	});
 
+	it('re-reads the buffer on request, even while the poll is paused', async () => {
+		const requested = stubConsole();
+		render(ConsoleLog);
+		await waitFor(() => expect(screen.getByText(/gateway booted/)).toBeTruthy());
+
+		// The poll is paused first, so a new read can only come from the control under test.
+		await fireEvent.click(screen.getByRole('button', { name: 'Pause auto refresh' }));
+		const before = requested.filter((call) => call.startsWith('GET')).length;
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+
+		// §8.6.2: "operators distrust auto-refresh they cannot trigger" is the sentence this screen is the
+		// strongest case for, because a paused poll otherwise leaves a page reload as the only way to read
+		// the buffer again.
+		await waitFor(() =>
+			expect(requested.filter((call) => call.startsWith('GET')).length).toBeGreaterThan(before)
+		);
+	});
+
 	it('explains why an empty buffer can be empty, rather than only saying it is', async () => {
 		vi.stubGlobal(
 			'fetch',

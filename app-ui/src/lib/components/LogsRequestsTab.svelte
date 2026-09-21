@@ -14,6 +14,7 @@
 	import PurgeLogsDialog from '$lib/components/PurgeLogsDialog.svelte';
 	import RequestLogDrawer from '$lib/components/RequestLogDrawer.svelte';
 	import RequestLogTable from '$lib/components/RequestLogTable.svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listRequestLogs, purgeRequestLogs } from '$lib/api/log';
 	import type { LogRecord } from '$lib/schemas/log';
@@ -121,6 +122,8 @@
 			purgeOpen = true;
 		}}
 	/>
+
+	<RefreshControl onrefresh={() => load(search)} />
 
 	{#if purgeResult}
 		<p class="text-sm text-[var(--color-text-muted)]" role="status">{purgeResult}</p>

@@ -22,6 +22,7 @@
 	import EndpointDetailDrawer from '$lib/components/EndpointDetailDrawer.svelte';
 	import EndpointFilters from '$lib/components/EndpointFilters.svelte';
 	import EndpointTable from '$lib/components/EndpointTable.svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listEndpoints } from '$lib/api/endpoints';
 	import type { Endpoint } from '$lib/schemas/endpoint';
@@ -142,6 +143,8 @@
 	{/if}
 
 	<EndpointFilters {search} {options} {optionsNotice} onchange={change} onclear={clearFilters} />
+
+	<RefreshControl onrefresh={() => load(search)} />
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading upstream endpoints" />

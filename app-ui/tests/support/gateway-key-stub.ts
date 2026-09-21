@@ -29,12 +29,15 @@ export type GatewayKeyStubOptions = {
 };
 
 export type GatewayKeyStub = {
+	/** Every read the screen made, in order, so a refresh control can be told from a re-render. */
+	reads: string[];
 	/** Every write the screen made, in order, with the body it sent. */
 	writes: { method: string; url: string; body: unknown }[];
 };
 
-/** Answers the four routes the tab uses and records the writes it saw. */
+/** Answers the four routes the tab uses and records the reads and the writes it saw. */
 export function stubGatewayKeys(options: GatewayKeyStubOptions = {}): GatewayKeyStub {
+	const reads: GatewayKeyStub['reads'] = [];
 	const writes: GatewayKeyStub['writes'] = [];
 	const rows = options.rows ?? [keyRow()];
 
@@ -47,7 +50,9 @@ export function stubGatewayKeys(options: GatewayKeyStubOptions = {}): GatewayKey
 				headers: { 'content-type': 'application/json' }
 			});
 
-		if (method !== 'GET') {
+		if (method === 'GET') {
+			reads.push(url);
+		} else {
 			writes.push({ method, url, body: init?.body ? JSON.parse(String(init.body)) : undefined });
 		}
 
@@ -83,5 +88,5 @@ export function stubGatewayKeys(options: GatewayKeyStubOptions = {}): GatewayKey
 		return json({ data: rows, meta: { page: 1, per_page: 25, total: rows.length } });
 	});
 
-	return { writes };
+	return { reads, writes };
 }

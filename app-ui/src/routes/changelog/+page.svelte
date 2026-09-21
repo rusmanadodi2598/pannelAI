@@ -10,6 +10,7 @@
 	// could not be read does not hide the list: the releases are worth reading without it, and the status
 	// line says the comparison is unavailable rather than marking every release as newer.
 	import { onMount } from 'svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { CHANGELOG_PATH, fetchChangelog } from '$lib/api/changelog';
 	import { fetchSystemInfo } from '$lib/api/system';
@@ -95,6 +96,8 @@
 			</span>
 		</div>
 	</div>
+
+	<RefreshControl onrefresh={load} />
 
 	{#if loading}
 		<StateMessage kind="loading" title={copy.loading} />

@@ -8,6 +8,7 @@
 	import GatewayKeyRow from '$lib/components/GatewayKeyRow.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import OneTimeKeyModal from '$lib/components/OneTimeKeyModal.svelte';
+	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listGatewayKeys, revokeGatewayKey } from '$lib/api/gateway-keys';
 	import type { CreatedGatewayKey, GatewayKey } from '$lib/schemas/gateway-key';
@@ -72,6 +73,8 @@
 			void load();
 		}}
 	/>
+
+	<RefreshControl onrefresh={load} />
 
 	{#if notice}
 		<p role="alert" class="text-sm text-[var(--color-danger)]">{notice}</p>
