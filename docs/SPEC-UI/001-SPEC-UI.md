@@ -13,7 +13,7 @@
 | **Runtime** | Bun for dev, build, test, and the production server process (owner requirement, §10.1) |
 | **Contract of record** | [`docs/SPEC-API/001-SPEC-API.md`](../SPEC-API/001-SPEC-API.md) |
 | **Governance (mandatory)** | [`docs/RULLES/TDD.md`](../RULLES/TDD.md) for the strict test-first protocol (§10.2). [`AGENTS.md`](../../AGENTS.md) is present at the repository root and scopes itself to Go services under `app-*/**`, so it does not govern this panel. Its language and typing rules are mirrored here in §7.1.5 and §8.10 so the two apps cannot quietly diverge. |
-| **Companion spec** | `docs/SPEC-API/002-SPEC-API-openapi.md` is referenced by the API spec but is **not** in the repository. See §14 Q3. |
+| **Companion spec** | The machine-readable contract is served rather than filed: `GET /api/v1/openapi.json`, generated from `docs/CONTRACT/001-CONTRACT-API-V1.yaml`. See §14 Q3, closed 2026-09-21. |
 | **Design direction** | `DESIGN.md` is **not** in the repository. Owner-stated direction: legacy panel parity with a fresher component layer. See §9 and §14 Q1. |
 
 > **SPEC FIRST.** This document is the contract of record for the panel. A screen, control, or field
@@ -509,15 +509,30 @@ remembers the tab finds the new home rather than an empty heading.
 - **Purpose:** one in-panel reference for the v1 contract, so an operator can wire a client without leaving
   the panel.
 - **Content:** base URL, the session versus gateway key distinction (SPEC-API §4), the endpoint catalog
-  grouped exactly as SPEC-API §7 groups it (System, Auth, Gateway Keys, Providers, Endpoints, Models,
-  Combos, Vision Adapter, Token Saver, Media Providers, Proxy Pools, Usage and Quota, Logs, Settings, Data
-  Plane), the error code table from SPEC-API §8, and one curl example per endpoint group.
-- **Source of truth:** the content is generated from `docs/SPEC-API/001-SPEC-API.md`. A hand-written second
-  copy of the contract is a defect (it drifts), so the page either consumes a machine-readable artifact or
-  a build step that extracts the tables. §14 Q3 covers the missing OpenAPI artifact.
-- **Copy controls:** copy base URL, copy a curl example with a `sk-...` placeholder, never a real key.
-- **No claims:** the page states the phase of each endpoint group, using SPEC-API §10, so nobody tests a P2
-  route that is not built.
+  grouped by the served document's own tags, the error code table the document carries, and one curl
+  example per endpoint group.
+- **Source of truth:** the screen renders `GET /api/v1/openapi.json`, the artifact SPEC-API §7.17 serves
+  from the binary. A hand-written second copy of the contract is a defect (it drifts), so nothing on the
+  screen restates SPEC-API: the grouping, the credential per operation, the example call, and the error
+  codes are all derived from the document, and a block the document omits is stated as omitted rather than
+  filled in from this spec. The document is generated from `docs/CONTRACT/001-CONTRACT-API-V1.yaml` by
+  `app-serv/tools/openapi-gen`, and `TestOpenAPICoversEveryRegisteredRoute` pins it to the router in both
+  directions: every pattern the mux registers is named in the document, and every route the document
+  advertises is registered.
+- **Copy controls:** copy base URL, copy a curl example with a `sk-...` placeholder, never a real key. The
+  example is composed from the operation's own method, path, and declared credential; a path parameter is
+  printed as `<id>`, so no example is a URL with literal braces in it.
+- **Phases:** the screen states the document's version and the address it was read from instead of a phase
+  per group. The pin above is why: a group on the screen is a route the router registers, so there is no
+  built-versus-planned distinction left for a phase marker to carry. Should `app-serv` ever publish a phase
+  per group, the screen renders it as one more derived field.
+- **Amended 2026-09-21 (F1 of `docs/DRAFT/007-UI-ENDPOINT-READINESS.md`).** Three details changed when the
+  artifact landed. The catalog is grouped by the document's tags rather than by the hand-list this section
+  carried: that list named 15 groups, and the document declares 23, adding OAuth, Provider Nodes, Endpoint
+  Keys, Media, Skills, API Docs, and Changelog, and splitting Usage from Quota Tracker. The error table is
+  the document's `x-contract.planes` block, with each meaning taken from the response that carries that
+  plane's error envelope, rather than a transcription of SPEC-API §8. And the phase bullet above replaced
+  the earlier "states the phase of each endpoint group, using SPEC-API §10".
 
 ### 6.13 `/settings`
 
@@ -1340,11 +1355,17 @@ click-through of both screens is still outstanding.
 2. **Skills source.** Where do `/antislop` AI and SuperPowers live for `pannelAI`? The reference panel
    points its skills page at raw URLs in an external repository, and nothing equivalent exists for this
    repository yet. The Skills tab cannot complete phase U3 without a decided source path and install line.
-3. **Machine-readable contract.** `docs/SPEC-API/002-SPEC-API-openapi.md` is described by SPEC-API as
-   normative for wire shapes and is not in the repository. Until it exists, the panel's response schemas
-   are authored by hand from SPEC-API §7, and `/api-docs` renders from the spec tables rather than a
-   generated bundle. Decide whether the OpenAPI file is produced before U1, which would let response
-   schemas and the drift gate be generated instead of maintained.
+3. **Closed 2026-09-21: the machine-readable contract exists, and it is served rather than filed.** The
+   artifact SPEC-API described as `docs/SPEC-API/002-SPEC-API-openapi.md` never landed under that name.
+   What landed is an OpenAPI 3.1 document at `GET /api/v1/openapi.json` (SPEC-API §7.17), generated from
+   `docs/CONTRACT/001-CONTRACT-API-V1.yaml` by `app-serv/tools/openapi-gen` and embedded in the binary. It
+   carries 67 paths, 23 tags, 161 schemas, the two security schemes, the per-plane error code map, and an
+   `x-contract` block that names its own source and generator. The panel consumes it: `/api-docs` renders
+   it (§6.12). The panel's own response schemas stay hand-written from SPEC-API §7, because the document
+   describes the gateway's shapes rather than the subset the panel parses. Drift is gated on the generator
+   side (`scrypts/gates/contract-openapi.sh` compares the artifact against its YAML), and
+   `TestOpenAPICoversEveryRegisteredRoute` compares it against the router, so a route added without a
+   document entry fails a build instead of shipping a lagging page.
 4. **Cost granularity.** Should `/usage` show cost with 4 or 6 decimals, and should the panel display a
    currency code? The API returns a decimal string with no currency field.
 5. **Provider registry scope.** SPEC-API §12 asks whether all registry providers land in P1 or the API-key
@@ -1568,7 +1589,8 @@ Path status for every path referenced in this document:
 | `docs/SPEC-API/001-SPEC-API.md` | Present |
 | `docs/RULLES/TDD.md, & OWASP.md` | Present |
 | `README.md` | Present |
-| `docs/SPEC-API/002-SPEC-API-openapi.md` | Planned, see §14 Q3 |
+| `docs/SPEC-API/002-SPEC-API-openapi.md` | Superseded 2026-09-21: the machine-readable contract is served as `GET /api/v1/openapi.json`, generated from `docs/CONTRACT/001-CONTRACT-API-V1.yaml`. See §14 Q3. |
+| `docs/CONTRACT/001-CONTRACT-API-V1.yaml` | Present. The contract of record the served document is generated from; `scrypts/gates/contract-openapi.sh` fails when the two drift. |
 | `AGENTS.md` | Present at the repository root, scoped to Go services (`app-*/**`). It does not govern `app-ui`. |
 | `app-ui/` | Present. U0 implementation complete (login, endpoint-keys, settings, changelog, not-found view). Remaining screens are `Planned` in the sidebar. |
 | `app-serv/` | Present, past P0. The auth and gateway-key endpoints the panel calls now exist, so U0 can be exercised against it; the recorded click-through (§9.4.5) is the remaining verification step. |
@@ -1590,8 +1612,8 @@ A deferred item names the check and where the evidence must appear.
 |---|---|---|
 | R-02 (no em dash) | PASS | Verified 2026-09-16: zero occurrences of the em dash character (U+2014) in the file, and zero en dashes (U+2013). The title separator is a colon, and negative terms such as "Not ported" use plain wording. |
 | R-17 (numbers need a source) | PASS | Every count appears in §15 with the command that produced it. No figure is carried over from the reference README or the API spec without a citation. |
-| R-24 (no navigation without a destination) | PASS | §5.2.2 makes it a rule, and it is now enforced by the data model rather than by review: a navigation row carries an `href` only when a route file exists, so a dead link is not representable. `tests/navigation/navigation.test.ts` cross-checks the tree against the routes discovered on disk. Re-verified 2026-09-18 with all 19 owner rows in the sidebar: 3 rows are real links (`/endpoint-keys`, `/changelog`, `/settings`), 16 are labelled `Planned`. |
-| R-38 (real content or honest placeholder) | PASS | §15 marks every path present or planned. `DESIGN.md` and the logo moved from "missing" to present on 2026-09-17, and the entries were updated rather than left stale. The missing OpenAPI companion is still named as missing in §14 Q3, and the two owner additions without an endpoint (Playground Chat, Changelog) are labelled `Planned` rather than shipped as links. |
+| R-24 (no navigation without a destination) | PASS | §5.2.2 makes it a rule, and it is now enforced by the data model rather than by review: a navigation row carries an `href` only when a route file exists, so a dead link is not representable. `tests/navigation/navigation.test.ts` cross-checks the tree against the routes discovered on disk. Re-verified 2026-09-18 with all 19 owner rows in the sidebar: 3 rows are real links (`/endpoint-keys`, `/changelog`, `/settings`), 16 are labelled `Planned`. Measured again 2026-09-21, after `/api-docs`: 20 nodes, 17 routable leaves (11 static routes plus the 6 media kinds), 2 rows labelled `Planned` (`Skill`, `Playground Chat`), and 1 container. |
+| R-38 (real content or honest placeholder) | PASS | §15 marks every path present or planned, and the entries are updated rather than left stale. The OpenAPI companion is no longer missing: §14 Q3 closed 2026-09-21 with the contract served at `GET /api/v1/openapi.json`, and `/api-docs` renders that document rather than a copy of the spec tables (§6.12). Playground Chat and Skill remain the two sidebar rows labelled `Planned`; Changelog and API Docs ship as links. |
 | R-36 (no fabricated claims) | PASS | The document makes no security, compliance, uptime, or performance claim about the panel. §7.1.3 explicitly denies a security-boundary claim, and the Bun runtime claim in §10.1 exists in §15 with a source rather than as an assertion about speed. |
 | Governance links are real | PASS | Both linked files resolve: [`docs/RULLES/TDD.md`](../RULLES/TDD.md) and [`AGENTS.md`](../../AGENTS.md). Each link states its scope, so a reader cannot mistake the Go rules for the panel's rules. |
 | Mandatory protocol stated, not implied | PASS | §10.2 states the test-first order, the analysis content, the table-driven requirement with case types, and the pull request evidence, all bound to `docs/RULLES/TDD.md` §2.3, §2.5, and §3. |
@@ -1618,6 +1640,40 @@ A deferred item names the check and where the evidence must appear.
 | R-21 (theme choice) | §8.9 | Both authored themes, with the dark default rationale recorded. |
 | R-29, R-11, R-12, R-13, R-01, R-09 (purpose-gate techniques) | §9.3 | Token file showing the palette cap, the radius scale, and the single accent use. |
 | R-31 (reason per decision) | §9.5 | The reason log, extended in the pull request for decisions this spec does not yet cover. |
+
+---
+
+*Changelog 2026-09-21: the API Docs screen renders the served contract, closing §14 Q3.*
+
+*`/api-docs` now exists, so §5.1's API Docs row carries an `href` instead of a Planned chip. The
+screen renders `GET /api/v1/openapi.json` rather than a written-out copy of it: the base URL from the
+document's own `servers` block, one section per tag the document declares, a row per operation with
+its method, path, summary, and credential, one composed `curl` example per section, and one
+error-code table per plane in `x-contract.planes`. A block the document does not carry is stated as
+absent, because an empty space reads as a rendering fault rather than as a fact about the contract.*
+
+*Nothing on the screen is a second copy. The catalog order is the document's path and tag order, the
+credential wording is derived from each scheme's own declaration, the example is composed from the
+operation's method and path, and an error meaning is the description of the response whose body is
+that plane's envelope. A document that grows a tag, a path, or a code renders with no edit to the
+panel.*
+
+*The document grew between the draft that planned this screen and the tree it reads. §6.12's
+amendment of 2026-09-21 records the change: 67 paths, 93 operations, 23 tags, 161 schemas, 18
+responses, and an `x-contract` block naming each plane's codes and its envelope, where the draft
+recorded a document with no schemas, no error table, and no phase markers. The phase markers are
+still absent and are no longer needed: the document is generated from
+`docs/CONTRACT/001-CONTRACT-API-V1.yaml` and pinned to the registered routes by
+`TestOpenAPICoversEveryRegisteredRoute`, so a group on screen is a route that answers.*
+
+*Q3 asked whether the machine-readable contract existed. It does, and it is served rather than filed.
+§15's path rows now name the contract of record instead of the superseded OpenAPI spec file.*
+
+*Gates pass on 2026-09-21: 1868 tests across 79 files, `svelte-check` clean, Prettier and ESLint clean,
+and a production build. The wire half was verified against a booted `app-serv`: the live document parsed
+through the panel's own schema and every derivation was driven over it, 31 checks, 0 failures. The browser
+click-through of the new screen is still outstanding, and `app-ui/README.md` records it as such: the
+render half is covered by the jsdom test and the wire half by the pass above.*
 
 ---
 

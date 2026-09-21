@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 | | |
 |---|---|
-| **Status** | draft siap dikerjakan; belum ada nomor yang disetujui owner |
+| **Status** | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup). Sisa nomor masih menunggu pilihan owner |
 | **Dibuat** | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv` |
 | **Kaitan** | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md` |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan |
@@ -43,20 +43,21 @@ Empat langkah, semuanya bisa diulang:
 | 8 | Media Provider | `/media-providers/[kind]` | ada | §7.10 live | Q17/Q18 tercatat |
 | 9 | Playground Chat | `/playground` | **tidak ada** | §7.15 live; §10 P4 menugaskan halamannya | F3 |
 | 10 | Proxy Pools | `/proxy-pools` | ada | §7.11 live | bersih; live pass tercatat |
-| 11 | API Docs | `/api-docs` | **tidak ada** | §7.17 live sejak P4 | F1 |
+| 11 | API Docs | `/api-docs` | ada | §7.17 live sejak P4 | F1 **CLOSED 2026-09-21** |
 | 12 | Changelog | `/changelog` | ada, sumber belum dibaca | §7.18 live sejak P4 | F4 |
 | 13 | Console Log | `/console-log` | ada | §7.13 live | F8 |
 | 14 | Setting | `/settings` | ada | §7.14 live | F10 |
 
-Tiga route yang tidak ada adalah tiga baris terakhir yang masih `planned: true` di
-`src/lib/navigation.ts` (`skills` baris 100, `playground` baris 108, `api-docs` baris 109).
-Ketiganya kini punya endpoint atau penugasan fase, jadi `Planned` pada ketiganya adalah
-status yang bisa ditutup, bukan penantian.
+Dua route yang tidak ada adalah dua baris yang masih `planned: true` di
+`src/lib/navigation.ts` (`skills` baris 100, `playground` baris 108). Keduanya kini punya
+endpoint atau penugasan fase, jadi `Planned` pada keduanya adalah status yang bisa ditutup,
+bukan penantian.
 
 ## 3. Bukti kesiapan yang sudah lolos
 
-- 11 dari 14 layar terbangun dan routable; 16 baris sidebar routable (10 route statis plus 6
-  kind media), 3 planned, 1 container, 20 node dalam 5 grup.
+- 12 dari 14 layar terbangun dan routable; 17 baris sidebar routable (11 route statis plus 6
+  kind media), 2 planned, 1 container, 20 node dalam 5 grup (diukur ulang 2026-09-21 setelah
+  F1; angka draft 2026-09-20 adalah 11 dari 14, 16 routable, 3 planned).
 - Sembilan capability U2 (SPEC-UI §12) landed; dua dari empat exit criteria-nya sudah
   diverifikasi live (proxy tested from the panel; token saver config saved and reflected).
 - Line limit terukur: **tidak ada satu pun file di `app-ui/src/` yang melewati 220 baris**
@@ -101,6 +102,45 @@ melenceng). Bila owner ingin tabel error dan fase tampil di layar, itu permintaa
 **Kriteria selesai.** Route file ada, baris nav routable (R-24), tiga state ada, tidak ada
 salinan kontrak kedua, test schema + render hijau, click-through tercatat. §14 Q3 ditutup
 dengan jawabannya di spec.
+
+**Status: CLOSED 2026-09-21.** Layar dibangun dari dokumen yang dilayani, tanpa perubahan
+`app-serv`:
+
+- `src/routes/api-docs/+page.svelte` ada, dan `src/lib/navigation.ts:109` sekarang
+  `href: '/api-docs'` (R-24). Sidebar terukur: 17 routable, 2 planned (`skills`, `playground`),
+  1 container, 20 node.
+- `src/lib/schemas/openapi.ts` mem-parse dokumen yang dilayani: field yang dibaca ketat, tambahan
+  ditoleransi (§7.4.2). Empat modul murni menurunkan yang dirender: `openapi-catalog.ts` (urutan
+  operasi dan grup per tag), `openapi-credentials.ts` (label scheme, penempatan, header, contoh
+  curl yang disusun, hitungan pemakaian), dan `openapi-errors.ts` (satu tabel per plane, makna
+  dari respons yang membawa envelope plane itu).
+- Tidak ada salinan kontrak kedua (§6.12): layar tidak memuat satu pun path endpoint, kode error,
+  atau nama scheme yang tidak datang dari dokumen. Blok yang tidak ada dinyatakan tidak ada.
+- Tiga state ada (loading, error dengan Try again, empty untuk dokumen tanpa path), diuji di
+  `tests/components/api-docs.test.ts`.
+- Test: 6 file, 92 test, hijau di suite penuh (1868 test / 79 file). Rincian: `openapi.test.ts`
+  15, `openapi-catalog.test.ts` 16, `openapi-credentials.test.ts` 23, `openapi-example.test.ts`
+  16, `openapi-errors.test.ts` 8, `api-docs.test.ts` 14.
+- Live pass 2026-09-21: 31 check, 0 gagal, di atas `app-serv` yang boot dari `.env`; dokumen live
+  (67 path, 93 operasi, 23 tag, 161 schema, 18 respons) diparse lewat schema panel sendiri dan
+  setiap derivasi dijalankan di atasnya. Dua bukti negatif ikut: schema menolak dokumen tanpa
+  `paths` dan dokumen dengan `openapi` berupa angka. Baseline DB tidak berubah.
+- §14 Q3 ditutup di SPEC-UI dengan jawabannya; §6.12 diamandemen (23 tag, bukan 15 grup; tabel
+  error dari `x-contract.planes`; penanda fase digantikan pin router), §15 dan §16 R-24/R-38
+  diperbarui, dan changelog serta README mencatat pass ini.
+- Premis draft yang berubah: dokumen di working tree sudah membawa `components.schemas` (161),
+  `components.responses` (18), `x-error-codes`, dan `x-contract.planes`, jadi usulan D3 "cukup
+  yang ada di dokumen" terpenuhi tanpa permintaan `app-serv`. Penanda fase tetap tidak ada dan
+  tidak diperlukan, karena `TestOpenAPICoversEveryRegisteredRoute` mem-pin dokumen ke router dua
+  arah: grup di layar adalah route yang menjawab.
+- Click-through: separuh wire tercatat di README (31 check). Click-through browser belum
+  dilakukan dan README menyatakannya masih outstanding; panel client-rendered (`ssr = false`),
+  jadi separuh render ditutup test jsdom per elemen (R-35).
+- Permintaan `app-serv` (dicatat, tidak dikerjakan): blok `servers` dokumen dipatok generator ke
+  `http://localhost:8080` dengan deskripsi "Local app-serv", jadi instance di alamat lain
+  melayani base URL yang bukan alamatnya. Panel merender nilai dokumen apa adanya beserta
+  deskripsinya; membuat blok itu mengikuti instance berjalan (atau menyatakan alamat default)
+  adalah perubahan sisi layanan.
 
 ## 5. F2 (HIGH): `/skills` belum dibangun, dan dokumen skill-nya belum ada di repo
 

@@ -106,7 +106,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		reason: 'Answers how a client talks to the gateway: try it, read the contract, track changes.',
 		items: [
 			{ key: 'playground', label: 'Playground Chat', planned: true },
-			{ key: 'api-docs', label: 'API Docs', planned: true },
+			{ key: 'api-docs', label: 'API Docs', href: '/api-docs' },
 			{ key: 'changelog', label: 'Changelog', href: '/changelog' }
 		]
 	},

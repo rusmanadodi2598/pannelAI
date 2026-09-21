@@ -103,13 +103,82 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Nine passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Ten passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
 day. The sixth is the alias set, measured the same day. The seventh is the OAuth section, measured the
 same day. The eighth is the combo test action, measured the same day. The ninth is the quota budget caps,
-measured the same day, and it closes U2 on the panel side.
+measured the same day, and it closes U2 on the panel side. The tenth is the API Docs screen, measured
+2026-09-21.
+
+### API Docs, 2026-09-21
+
+Run with Bun 1.3.14. This pass covers `/api-docs` (SPEC-UI §6.12): the screen that renders the contract
+the gateway serves rather than a written-out copy of it. It closes F1 of
+`docs/DRAFT/007-UI-ENDPOINT-READINESS.md`.
+
+| Check             | Result                                                                                                                                                           |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                             |
+| `bun run test`    | 1868 tests passed across 79 files, including 92 new API Docs tests across 6 files                                                                                |
+| `bun run lint`    | Prettier reports every file conforms                                                                                                                             |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                   |
+| `bun run build`   | succeeds, output in `build/`                                                                                                                                     |
+| Live wire pass    | 31 checks, 0 failures, against a booted `app-serv`; the live document parsed through the panel's own schema and every derivation driven over the result          |
+| File size         | largest new file is 210 lines (`tests/components/api-docs.test.ts`); largest new source is 116 lines (`openapi-credentials.ts`); `navigation.ts` is line-neutral |
+| Text hygiene      | 0 em dashes in the new files; the new copy carries no marketing vocabulary (R-16)                                                                                |
+
+What the screen does, and where it states a limit rather than hiding one:
+
+| Area        | Behaviour                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source      | One read: `GET /api/v1/openapi.json` through the panel's forwarder, so the session cookie is the only credential involved. Nothing on the screen is typed by hand: the grouping is the document's own tag order, the credential column is derived from each scheme's declaration, the example call is composed from the operation's method and path, and an error meaning is the description of the response whose body is that plane's error envelope. |
+| Groups      | One section per tag the document declares, each with a count, an anchor, and a place in the jump list. A tag declared but unused renders no empty section; an operation with no tag lands in an Untagged tail; an operation with several tags is listed under each.                                                                                                                                                                                     |
+| Credentials | The document's own scheme names with the panel's label beside them (`sessionCookie`, `gatewayKey`), each with the count of operations that declare it, plus the sentence counting the operations that declare none. A scheme an operation names but the document does not define is rendered verbatim and the row says it is undefined.                                                                                                                 |
+| Examples    | One per section, composed from the section's first GET when it has one. A path parameter prints as `<id>`, so no example is a URL with braces in it, and the credential is a placeholder (`Authorization: Bearer sk-...`, `Cookie: pannel_session=<session cookie>`), never a key: a test asserts no example matches a real-key shape.                                                                                                                  |
+| Error codes | One table per plane in the document's `x-contract.planes`, ordered by status then code, with the plane's error envelope named. All 20 codes the live document declares carry a meaning.                                                                                                                                                                                                                                                                 |
+| Absences    | A document with no servers, no schemes, no `x-contract`, or no paths renders a sentence that names the missing block, rather than an empty space or a value the panel invented.                                                                                                                                                                                                                                                                         |
+| States      | Loading, error with Try again, and an empty state for a document that declares no paths.                                                                                                                                                                                                                                                                                                                                                                |
+
+#### Live pass against `app-serv`, 2026-09-21
+
+`app-serv` was built from the working tree and booted from its own `.env` with a run env that added only
+`HTTP_ADDR=127.0.0.1:9090`, `PUBLIC_BASE_URL` at the panel's origin,
+`EGRESS_ALLOWED_TARGETS=127.0.0.1/32`, and a run-local `PANEL_BOOTSTRAP_PASSWORD`. The built panel ran
+with `PANEL_API_TARGET` at that address and answered `/login` with 200.
+
+Because the panel is client-rendered, the pass verified the half a browser cannot: it logged in through
+the panel's own forwarder (204 plus the session cookie), read the document through it, parsed the answer
+with the panel's own `schemaOpenAPIDocument`, and drove every derivation the screen uses over the result.
+31 checks, 0 failures.
+
+| What the pass proved        | Result                                                                                                                                                                                                                                          |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The live document parses    | 200 through the forwarder, and `safeParse` succeeds                                                                                                                                                                                             |
+| The parse is not vacuous    | The same schema refuses a document with no `paths` and one whose `openapi` field is a number                                                                                                                                                    |
+| The catalog is the document | 93 rows for 93 operations measured independently; 23 groups for the 23 declared tags; no empty group; unique anchors; an example for every group                                                                                                |
+| Credentials resolve         | Every scheme an operation names is defined in the document; `sessionCookie` covers 76 operations and `gatewayKey` 12, with 5 declaring none                                                                                                     |
+| Examples are composed       | No example leaves a `{param}` brace, every one starts on the document's own base URL, a data-plane example carries the bearer placeholder, a management example carries `Cookie: pannel_session=<session cookie>`, and none prints key material |
+| Error tables                | One per plane (11 management, 9 data plane), each naming its envelope and ordered by status then code; 20 of 20 codes carry a meaning                                                                                                           |
+| The route answers           | `GET /api-docs` on the built panel returns 200                                                                                                                                                                                                  |
+
+One finding came out of the pass, and it is about the document rather than the panel: the served
+document's `servers` block says `http://localhost:8080` with the description "Local app-serv", because
+the block is fixed by the generator rather than taken from the running instance. The screen renders the
+document's value with the document's own description beside it, which is what §6.12 asks for, so a reader
+on another address sees the document's claim rather than a claim the panel made. It is recorded as a
+request in `docs/DRAFT/007-UI-ENDPOINT-READINESS.md` F1.
+
+The database was counted before and after and is unchanged:
+`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true media_settings=0
+proxies=0`. The pass wrote no business rows; the run env, the built binary, and the session jar were
+removed, and `panel_auth.password_hash` was nulled after the server stopped.
+
+Still outstanding: a browser click-through of the screen. Every element is covered by the jsdom render
+test (the three states, the group headings, the catalog rows, both copy outcomes, the no-server
+statement, and the per-plane tables) and the wire contract is now verified against the service, but no one
+has pressed the controls in a browser and watched the screen answer.
 
 ### Quota budget caps, 2026-09-20
 
