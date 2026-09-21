@@ -283,14 +283,14 @@ describe('UsageOverviewTab', () => {
 		visit('/usage', 'period=7d');
 		const stub = stubUsage();
 		await renderOverview();
-		const shown = lastQuery(stub, '/usage/summary').toString();
 
 		const before = stub.requested.length;
 		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
 
-		// §8.6.2: the control repeats the read the URL describes, so the refreshed screen is the same window
-		// rather than the defaults.
+		// §8.6.2: the control repeats the read the URL describes. The window itself is derived from the clock
+		// at read time, so the assertion is on what the URL chose: a 7d window is read at day granularity,
+		// while a read that fell back to the default 24 hours would ask for hours.
 		await waitFor(() => expect(stub.requested.length).toBeGreaterThan(before));
-		expect(lastQuery(stub, '/usage/summary').toString()).toBe(shown);
+		expect(lastQuery(stub, '/usage/timeseries').get('granularity')).toBe('day');
 	});
 });

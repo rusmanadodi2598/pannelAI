@@ -281,14 +281,15 @@ describe('UsageRecordsTab', () => {
 		visit('/usage', 'model=gpt-4o');
 		const stub = stubRecords();
 		await renderRecords();
-		const shown = listQuery(stub).toString();
 
 		const before = stub.requested.length;
 		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
 
 		// §8.6.2: the control repeats the read the filters describe, so a refresh cannot silently widen the
-		// list back to every model.
+		// list back to every model. The window is derived from the clock at read time, so the assertion is on
+		// the filter and the page rather than on the whole query: comparing two windows compares two instants.
 		await waitFor(() => expect(stub.requested.length).toBeGreaterThan(before));
-		expect(listQuery(stub).toString()).toBe(shown);
+		expect(listQuery(stub).get('model')).toBe('gpt-4o');
+		expect(listQuery(stub).get('page')).toBe('1');
 	});
 });

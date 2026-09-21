@@ -270,14 +270,15 @@ describe('LogsRequestsTab', () => {
 		const stub = stubLogs();
 		render(LogsRequestsTab);
 		await screen.findByRole('table');
-		const shown = listQuery(stub).toString();
 
 		const before = stub.requested.length;
 		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
 
 		// §8.6.2: the control repeats the read the filters describe, so a refresh cannot silently drop the
-		// model filter or send the operator back to page 1.
+		// model filter or send the operator back to page 1. The window is derived from the clock at read
+		// time, so the assertion is on the filters and the page rather than on the whole query.
 		await waitFor(() => expect(stub.requested.length).toBeGreaterThan(before));
-		expect(listQuery(stub).toString()).toBe(shown);
+		expect(listQuery(stub).get('model')).toBe('gpt-4o');
+		expect(listQuery(stub).get('page')).toBe('2');
 	});
 });
