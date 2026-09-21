@@ -726,7 +726,7 @@ berada di luar scope batch ini.
   batch ini dan tetap pre-existing.
 - **UI click-through `/playground`** tetap milik `app-ui` dan di luar scope dokumen ini.
 - **`skills/pannelai*/SKILL.md`** sudah ada di tree dan di-commit, tetapi belum ada di
-  `origin/main` (branch lokal berada 112 commit di depan), sehingga `raw_url` masih menjawab 404
+  `origin/main` (branch lokal berada di depan remote), sehingga `raw_url` masih menjawab 404
   sampai branch di-push. Ini milik draft `008-SKILL-ENDPOINT-READINESS.md` F1, bukan F1-F9 di sini.
 
 Nomor yang tidak dipilih tidak ada; seluruh F1 sampai F9 dipilih owner dan ditutup.
