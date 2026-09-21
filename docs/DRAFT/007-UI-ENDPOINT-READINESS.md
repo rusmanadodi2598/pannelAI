@@ -852,8 +852,11 @@ menyatakan "verification run outstanding"; §12 tidak punya status U1 sama sekal
 criterion U1 ("operator connects a provider endpoint with two keys, builds a `fallback` combo,
 routes one request, reads usage row, quota window, and log detail that all match") belum
 tercatat di mana pun. U2: dua dari empat criteria terpenuhi; OAuth round trip dan image
-generation melalui media provider belum, dan keduanya butuh akun provider. Tujuh dari sembilan
-pass di `app-ui/README.md` menutup dengan "browser click-through outstanding".
+generation melalui media provider belum, dan keduanya butuh akun provider. Tujuh dari lima belas
+bagian pass di `app-ui/README.md` menyebut click-through browser sebagai masih outstanding (diukur
+ulang 2026-09-21 dengan `awk` per bagian atas README; angka draft "tujuh dari sembilan" tidak bisa
+direproduksi, karena pengukuran yang sama pada commit draft `13ea269` menemukan satu dari sembilan
+bagian).
 
 **Risiko.** Panel bisa tampak selesai padahal setengah exit criteria-nya belum pernah
 dijalankan orang. Ini persis bentuk klaim yang R-35/R-36 larang.
