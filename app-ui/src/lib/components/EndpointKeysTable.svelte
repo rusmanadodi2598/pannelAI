@@ -5,13 +5,19 @@
 	// its own to push one file past the project line limit. The delete control is disabled when the API
 	// would refuse the call, and the note beside it says why, so the operator is not left guessing at a
 	// greyed-out button (R-26).
+	//
+	// `rate_limited_until` is the one field here whose value is a duration rather than a fact: §6.2 asks for
+	// a countdown, and a countdown needs a clock. The drawer owns `now` and passes it in, so the table stays
+	// a renderer and the ticking lives with the thing that is open.
 	import { ENDPOINT_STATUS_ACTIVE, type EndpointKey } from '$lib/schemas/endpoint';
 	import { isLastActiveApiKey } from '$lib/utils/routing';
+	import { countdownText, formatTimestamp } from '$lib/utils/time';
 
 	let {
 		keys,
 		authType,
 		testing,
+		now,
 		ontest,
 		onsettled,
 		onremove
@@ -19,6 +25,8 @@
 		keys: EndpointKey[];
 		authType: string;
 		testing: string | null;
+		/** The instant the countdown is measured against, moved by the drawer's tick. */
+		now: number;
 		ontest: (key: EndpointKey) => void;
 		onsettled: (key: EndpointKey, status: 'active' | 'disabled') => void;
 		onremove: (key: EndpointKey) => void;
@@ -51,9 +59,10 @@
 						{key.status}{key.available ? '' : ', unavailable'}
 						{#if key.rate_limited_until}
 							<br />
-							<span class="text-[var(--color-text-muted)]"
-								>rate limited until {key.rate_limited_until}</span
-							>
+							<span class="text-[var(--color-text-muted)]">
+								rate limited until {formatTimestamp(key.rate_limited_until)}
+								({countdownText(key.rate_limited_until, now)})
+							</span>
 						{/if}
 					</td>
 					<td class="px-3 py-2">{key.last_used_at ?? 'Never'}</td>

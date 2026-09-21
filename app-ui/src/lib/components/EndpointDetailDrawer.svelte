@@ -37,8 +37,22 @@
 	let lastTest = $state<EndpointTestStatus | null>(null);
 	let testing = $state<string | null>(null);
 
+	// The countdown's clock (§6.2 asks for a countdown on `rate_limited_until`). A second is the smallest
+	// unit it prints, so a faster tick would redraw without changing what anyone reads. It runs only while
+	// the drawer is open: a closed drawer has nothing to count down, and a timer left behind for a table
+	// that is not on screen is a leak.
+	const TICK_MS = 1000;
+	let now = $state(Date.now());
+
 	const keys = $derived(detail?.keys ?? []);
 	const chosen = $derived(routingKey(keys));
+
+	$effect(() => {
+		if (!entry) return;
+
+		const timer = setInterval(() => (now = Date.now()), TICK_MS);
+		return () => clearInterval(timer);
+	});
 
 	// Reload whenever the drawer is handed a different endpoint, so the keys and the routing answer always
 	// belong to the row that was clicked.
@@ -174,6 +188,7 @@
 					{keys}
 					authType={detail.auth_type}
 					{testing}
+					{now}
 					ontest={(key) => runTest(key.id)}
 					onsettled={setKeyStatus}
 					onremove={removeKey}

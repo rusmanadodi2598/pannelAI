@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 |             |                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server). Sisa nomor masih menunggu pilihan owner |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown). Sisa nomor masih menunggu pilihan owner |
 | **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
 | **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
@@ -33,7 +33,7 @@ Empat langkah, semuanya bisa diulang:
 
 | #   | Item (KEEP)            | Route                                    | Layar              | Endpoint SPEC-API                        | Status                                         |
 | --- | ---------------------- | ---------------------------------------- | ------------------ | ---------------------------------------- | ---------------------------------------------- |
-| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F6, F7, F9                      |
+| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F9 **CLOSED**, F6, F7           |
 | 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list) **CLOSED**, F7 (list), Q12/Q13/Q19-Q23 tercatat |
 | 3   | Combo & Vision Adapter | `/combos`                                | ada                | §7.7, §7.8 live                          | F12 (bukti); test tingkat tab ada              |
 | 4   | Usage                  | `/usage`                                 | ada                | §7.12 live                               | F8, F12; tautan API Docs menunggu F1           |
@@ -567,6 +567,26 @@ yang di-tick bila countdown ingin hidup; atau tampilkan waktu absolut dengan zon
 waktu statis bila ticking dianggap berlebihan.
 
 **Kriteria selesai.** Test menegaskan kolom memuat waktu terformat, bukan string RFC3339 mentah.
+
+**Status: CLOSED 2026-09-21.** Kolomnya sekarang countdown, tanpa perubahan `app-serv`:
+
+- `EndpointKeysTable.svelte` mencetak `rate limited until <waktu terformat> (<sisa waktu>)`.
+  `formatTimestamp` memberi waktu absolut dengan label zona (§4) dan `countdownText` memberi sisanya;
+  keduanya helper yang sudah dipakai `QuotaTable`, jadi tidak ada formatter kedua yang bisa melenceng.
+- Countdown-nya hidup, bukan beku: drawer men-tick `now` satu detik sekali (`TICK_MS = 1000`, satuan
+  terkecil yang dicetak, jadi tick yang lebih cepat hanya menggambar ulang tanpa mengubah bacaan) dan
+  hanya selama drawer terbuka, karena tabel yang tidak di layar tidak punya apa pun untuk dihitung dan
+  timer yang tertinggal adalah kebocoran. Tabelnya tetap murni renderer: ia menerima `now`, tidak
+  memiliki jamnya sendiri, jadi test bisa memindahkan jamnya alih-alih menunggu.
+- Test: `tests/components/endpoint-keys-table.test.ts` (7 test) menegaskan sel memuat waktu terformat
+  dan bukan string RFC3339 mentah, empat offset (jam, menit, di bawah satu menit, dan yang sudah
+  lewat), baris tanpa rate limit tidak menyebut apa pun, dan satu kasus memindahkan `now` setengah jam
+  ke belakang untuk membuktikan countdown dihitung terhadap jam yang diberikan. Harapannya dibangun
+  dengan helper panel sendiri (`formatTimestamp`/`countdownText`) supaya pass ini tidak mengunci locale
+  mesin uji.
+- Batas yang dicatat: yang diuji adalah tabel pada dua `now` berbeda, bukan `setInterval`-nya; yang
+  ingin dibuktikan "kolom menghitung terhadap jam yang diberikan", dan itu terbukti tanpa fake timer.
+  Drawer yang memegang tick belum punya test render sendiri (itu F7).
 
 ## 13. F10 (LOW): §8.4.4 (dirty guard) dan §8.4.5 (validasi saat blur) belum diterapkan
 
