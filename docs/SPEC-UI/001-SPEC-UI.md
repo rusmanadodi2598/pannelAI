@@ -51,7 +51,7 @@ not code to copy.
 | 6 | Token Saver | `/token-saver` | SPEC-API §7.9 | U2 |
 | 7 | Media Provider | `/media-providers/[kind]` | SPEC-API §7.10 | U2 |
 | 8 | Proxy Pools | `/proxy-pools` | SPEC-API §7.11 | U2 |
-| 9 | Skills (`/antislop` AI, SuperPowers) | `/skills` | Content source not yet in a repository. See §14 Q2. | U3 |
+| 9 | Skills (agent skill catalog) | `/skills` | SPEC-API §7.16 | U3 |
 | 10 | API Docs | `/api-docs` | SPEC-API §7 (read-only rendering) | U1 |
 | 11 | Logs | `/logs` (Requests tab) | SPEC-API §7.13 | U1 |
 | 12 | Settings | `/settings` (Security, Routing, Network, Logging tabs) | SPEC-API §7.14 | U1, U2 |
@@ -168,7 +168,7 @@ Rules:
 | `/token-saver` | RTK, Headroom, Ponytail configuration | Session | U2 |
 | `/media-providers/[kind]` | Media providers by kind | Session | U2 |
 | `/proxy-pools` | Proxy rows, tests, and outbound proxy settings | Session | U2 |
-| `/skills` | `/antislop` AI and SuperPowers install entries | Session | U3 |
+| `/skills` | Agent skill catalog served by SPEC-API §7.16, one card per row | Session | U3 |
 | `/logs` | Request logs | Session | U1 |
 | `/console-log` | The console ring buffer | Session | U1 |
 | `/playground` | Playground chat over a gateway key | Gateway key | Unassigned, §14 Q7 |
@@ -470,14 +470,24 @@ absent.
 
 ### 6.10 `/skills`
 
-- **Purpose:** give an operator the install line for the two owner-selected skills so they can paste it
-  into an AI client. This mirrors the reference skills surface, which hands out copyable skill URLs.
-- **Entries:** `/antislop` AI and SuperPowers. Two entries, no directory of extras.
-- **Per entry:** name, one-line description, source link, and a copy control with the install instruction
-  line.
-- **Blocking dependency:** the source location of both skills in the new repository is not decided (§14 Q2).
-  Until a source exists, each entry renders an explicit unavailable state naming the missing source. A copy
-  control that copies a broken link is not shipped.
+- **Purpose:** give an operator the install line for each capability skill so they can paste it into an AI
+  client. The gateway serves the catalog (`GET /api/v1/skills`, SPEC-API §7.16) and never a document body,
+  so every line on this screen is composed from the row's own `raw_url` rather than stored beside it.
+- **Entries:** one row per capability endpoint the gateway serves, the entry skill first. The entry skill
+  indexes the others; each remaining row teaches one route. There is no directory of extras, and the
+  catalog is the whole list. (Amended 2026-09-21: the earlier text named two entries, `/antislop` AI and
+  SuperPowers, which no route ever served. §7.16 is the catalog of record, and §14 Q2 is closed with it.)
+- **Per entry:** name, one-line description, the endpoint it teaches (or the fact that it teaches none),
+  the two addresses the row carries, and a copy control with the install instruction line.
+- **The two addresses differ by reader.** `raw_url` is what an agent fetches and what the copy control
+  hands out; `blob_url` is what a person reads, because it renders the file instead of downloading it. The
+  panel renders each as what it is: the raw address as copyable text, the blob address as a link.
+- **Availability is asked, not assumed.** The catalog carries a path, not a file, so the panel requests
+  each `raw_url` and reports the answer. A row that answered gets its copy control and its link; a row that
+  did not states the cause and keeps the address on screen, because that address names the path that has to
+  be published. A copy control that copies a broken link is not shipped, which is the rule this replaces:
+  the earlier text asked for an unavailable state while a source was undecided, and the source is now
+  decided and checkable.
 - **No invented metadata:** no download counts, no version numbers, no user ratings. There is no such data
   (R-17).
 
@@ -1216,7 +1226,7 @@ Phases mirror SPEC-API §10, so the panel never ships against an endpoint that d
 | **U0** | SvelteKit shell on the Bun runtime (§10.1), token layer, theme toggle, `/login`, session handling, `/endpoint-keys` gateway keys tab, Settings Security tab, Zod foundation (§7.1 to §7.3), strict TDD protocol active (§10.2), `AGENTS.md` in place (§14 Q8) | Login, logout, and gateway key create, rename, disable, revoke each exercised against `app-serv`, with the one-time key modal verified. Schema tests for the U0 resources are table-driven and green, and each U0 pull request carries the analysis plus compliance self-check required by `docs/RULLES/TDD.md` §3. |
 | **U1** | Endpoint & Key upstream tab with multi-key CRUD and test, Providers list and detail, model catalog views, Combos (fallback, round_robin), Vision Adapter, Usage, Quota read views, Logs (requests and console), API Docs, Settings Routing, Network, Logging | An operator connects a provider endpoint with two keys, builds a `fallback` combo, routes one request through `app-serv`, and reads the request in the panel: usage row, quota window, and log detail all match. Click-through recorded per §9.4.5. |
 | **U2** | OAuth start, callback return, and status, fusion combos and combo test, media provider screens, proxy pools including batch add and tests, Token Saver (RTK, Headroom, Ponytail), quota budget caps, custom models, aliases, disabled models | OAuth round trip from the panel; an image generation request routed through a media provider; a proxy tested from the panel; token saver config saved and reflected by the API. |
-| **U3** | Skills tab with `/antislop` AI and SuperPowers, native token saver surface when `002-TOKEN-SAVER` exists | Each Skills entry either resolves to a real source with a working copy control, or shows the unavailable state from §6.10. No entry ships with a broken link. |
+| **U3** | Skills tab over the served catalog (SPEC-API §7.16), native token saver surface when `002-TOKEN-SAVER` exists | Each catalog row either resolves to a real source with a working copy control, or states the cause from §6.10. No row ships with a broken link. |
 
 **U0 status, 2026-09-18: implementation complete, verification run outstanding.** Every U0 obligation
 above exists in `app-ui/`: the SvelteKit shell on the Bun runtime, the token layer, the theme toggle,
@@ -1311,6 +1321,33 @@ baseline, counted before and after. One limit is recorded rather than glossed: t
 (`ssr = false`), so the pass proves the wire contract and not the rendered output, and a browser
 click-through of both screens is still outstanding.
 
+**U3 status, 2026-09-21: the Skills half is built, and its exit criteria is met on the panel side; the
+native token saver half still waits on `002-TOKEN-SAVER`.** The catalog of record is the route, so the
+screen renders the seven rows `GET /api/v1/skills` serves and nothing else: an entry skill that indexes the
+rest, and one row per capability endpoint (§7.15). The two addresses a row carries are rendered as what
+they are, `raw_url` as the address an agent fetches and `blob_url` as the link a person reads. The seven
+documents live at `skills/<id>/SKILL.md` in this repository, which is where the catalog's own constants
+point; the route serves metadata and never a body, so no document can drift from what the gateway serves.
+
+The exit criterion is "resolves, or states the cause", and the panel can only answer it by asking: the
+catalog carries a path rather than a file, so each row's address is requested and the answer decides what
+renders. A row that answered gets its copy control and its link; a row that did not states the cause (a 404
+as "not published at the ref the catalog names", any other status by number, a timeout, a network failure)
+and keeps the address on screen, because that address names what has to be published. The check runs on
+load and again on request, and the count it reports is measured rather than asserted. The source request is
+a `HEAD`, so the panel asks whether the file is there without downloading it. The live pass on 2026-09-21
+ran that whole path against a booted `app-serv`: the catalog read through the panel's own schema, every
+derivation driven over the result, and all seven addresses asked with real requests. 26 checks, 0 failures,
+including two controls that keep the answer from being vacuous, a file that is on the ref reading available
+and a path that is not reading missing.
+
+Two limits are recorded rather than glossed. The panel is client-rendered, so the render evidence is the
+jsdom tests and the wire evidence is the live pass; a browser click-through is outstanding, as it is for
+U0 and U1. And the seven documents are in the working tree but not yet on `refs/heads/main` on the origin,
+which is the ref the catalog names, so every row reports the not-published cause until the owner pushes
+that commit. That is the honest state of the criterion rather than a pass claimed early: the panel's half
+is done, and the source half is one push away.
+
 ## 13. Locked decisions
 
 1. The panel consumes `/api/v1` with a session cookie and never touches PostgreSQL or Redis (SPEC-API §11.5).
@@ -1328,8 +1365,11 @@ click-through of both screens is still outstanding.
    renders it, and it is removed with `/api/v2` (SPEC-API §7.9, and §6.7 here). Drop was considered and
    rejected for one reason: the key still carries migration information for anyone importing a reference
    configuration, which a silent deletion would lose.
-7. `/antislop` AI and SuperPowers live on their own Skills tab. The Token Saver screen stays limited to the
-   legacy savers (owner, 2026-09-16).
+7. The Skills tab carries the served catalog and nothing else, and the Token Saver screen stays limited to
+   the legacy savers (owner, 2026-09-16; amended 2026-09-21). The two skill names this item originally
+   listed, `/antislop` AI and SuperPowers, were never served by any route; SPEC-API §7.16 defines the
+   catalog of record, and the owner chose it over inventing a second list (§6.10, §14 Q2). The half that
+   did not change is the split: skills are not mixed into the Token Saver screen.
 8. One HTTP module, one schema module, one strings module per screen (§10).
 9. Light and dark are both shipped and both verified (R-34; legacy parity, since the reference panel ships
    a theme provider and a toggle).
@@ -1352,9 +1392,18 @@ click-through of both screens is still outstanding.
    "draft without direction" state in §9.1 is closed. One follow-up stays open: the typeface is Inter,
    chosen for legibility at 12px in dense tables and for parity with the legacy panel, and it is a value a
    later `DESIGN.md` revision can change in one line.
-2. **Skills source.** Where do `/antislop` AI and SuperPowers live for `pannelAI`? The reference panel
-   points its skills page at raw URLs in an external repository, and nothing equivalent exists for this
-   repository yet. The Skills tab cannot complete phase U3 without a decided source path and install line.
+2. **Closed 2026-09-21: the source is the served catalog, and the documents are in this repository.** The
+   question was where `/antislop` AI and SuperPowers live for `pannelAI`. Neither name survives: no route
+   ever served them, and SPEC-API §7.16 defines the catalog of record instead, one entry per capability
+   endpoint the gateway serves, the entry skill first. The gateway derives both addresses from constants
+   beside that catalog (`skillsRepo`, `skillsRef = main`, path `skills/<id>/SKILL.md`), so the source is
+   decided in code rather than left open, and the seven documents now exist at that path: `pannelAI` as the
+   index plus `pannelai-chat`, `-image`, `-tts`, `-stt`, `-embeddings`, and `-web-search`. Each is written
+   from the contract the gateway serves (SPEC-API §7.3, §7.10, §7.15), so none advertises a capability §7
+   does not define. §6.10 is amended to that catalog, and the panel renders it: `/skills` shows one row per
+   capability, hands out the install line, and asks each address before it offers a copy control, so no row
+   ships a broken link. The earlier text's "two owner-selected skills" is superseded; the panel's own rule
+   for what it may show is unchanged, which is that a control copies only what it has confirmed.
 3. **Closed 2026-09-21: the machine-readable contract exists, and it is served rather than filed.** The
    artifact SPEC-API described as `docs/SPEC-API/002-SPEC-API-openapi.md` never landed under that name.
    What landed is an OpenAPI 3.1 document at `GET /api/v1/openapi.json` (SPEC-API §7.17), generated from
@@ -1576,7 +1625,7 @@ table exists so a reader can re-run the measurement instead of trusting the sent
 | `pannelAI` root contents | `ls -la` at the project root | `.gitignore`, `README.md`, `AGENTS.md`, `DESIGN.md`, `SYSTEM_MAP.md`, `docs/`, `deployment/`, `scrypts/`, `app-ui/`, `app-serv/`, `backups/` |
 | Panel test count | `bun run test` in `app-ui/` | 1053 passing across 39 files after the Logs work (was 769 across 27 after the Combos work, 634 across 24 after the Providers work, 499 across 19 after the U0 closure work, and 396 across 13 before it) |
 | Panel type check | `bun run check` in `app-ui/` | 0 errors, 0 warnings |
-| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 20 nodes in 5 groups: 8 with a route, 11 planned leaves (5 items plus 6 media kinds under one container), 1 container |
+| Sidebar row count | `grep -c` on `src/lib/navigation.ts`, cross-checked by `bun run test` | 20 nodes in 5 groups: 18 routable leaves (12 static routes plus the 6 media kinds), 1 row labelled `Planned` (`Playground Chat`), 1 container. Measured 2026-09-21 after `/skills` (was 17 routable and 2 planned after `/api-docs`, and 16 routable and 3 planned before it) |
 | Accent usage in the shell | `grep -rn "color-accent"` across `src/lib/components` | Active row marker, primary action, focus ring, link, and active tab only (DESIGN.md §3.4) |
 | Logo source | `file app-ui/assets/static/logo.png` | JPEG data, 1254x1254, despite the `.png` extension. Cropped to `static/logo-mark.png` (512x512 RGBA, circular alpha mask) |
 | Legacy coral fails AA as a fill | Contrast calculation over the legacy token from `apps/9router/src/app/globals.css` | `#E56A4A` with white text measures 3.23:1, below the 4.5:1 floor, which is why the light theme uses `#B8412A` |
@@ -1593,6 +1642,7 @@ Path status for every path referenced in this document:
 | `docs/CONTRACT/001-CONTRACT-API-V1.yaml` | Present. The contract of record the served document is generated from; `scrypts/gates/contract-openapi.sh` fails when the two drift. |
 | `AGENTS.md` | Present at the repository root, scoped to Go services (`app-*/**`). It does not govern `app-ui`. |
 | `app-ui/` | Present. U0 implementation complete (login, endpoint-keys, settings, changelog, not-found view). Remaining screens are `Planned` in the sidebar. |
+| `skills/` | Present 2026-09-21: seven documents, `skills/<id>/SKILL.md` for `pannelAI` and the six capability skills. This is the path `GET /api/v1/skills` derives both of its addresses from (§6.10, §14 Q2). |
 | `app-serv/` | Present, past P0. The auth and gateway-key endpoints the panel calls now exist, so U0 can be exercised against it; the recorded click-through (§9.4.5) is the remaining verification step. |
 | `scrypts/` | Present: gates and git hooks, see `scrypts/README.md`. |
 | `DESIGN.md` | Present at the repository root, added 2026-09-17 |
@@ -1612,8 +1662,8 @@ A deferred item names the check and where the evidence must appear.
 |---|---|---|
 | R-02 (no em dash) | PASS | Verified 2026-09-16: zero occurrences of the em dash character (U+2014) in the file, and zero en dashes (U+2013). The title separator is a colon, and negative terms such as "Not ported" use plain wording. |
 | R-17 (numbers need a source) | PASS | Every count appears in §15 with the command that produced it. No figure is carried over from the reference README or the API spec without a citation. |
-| R-24 (no navigation without a destination) | PASS | §5.2.2 makes it a rule, and it is now enforced by the data model rather than by review: a navigation row carries an `href` only when a route file exists, so a dead link is not representable. `tests/navigation/navigation.test.ts` cross-checks the tree against the routes discovered on disk. Re-verified 2026-09-18 with all 19 owner rows in the sidebar: 3 rows are real links (`/endpoint-keys`, `/changelog`, `/settings`), 16 are labelled `Planned`. Measured again 2026-09-21, after `/api-docs`: 20 nodes, 17 routable leaves (11 static routes plus the 6 media kinds), 2 rows labelled `Planned` (`Skill`, `Playground Chat`), and 1 container. |
-| R-38 (real content or honest placeholder) | PASS | §15 marks every path present or planned, and the entries are updated rather than left stale. The OpenAPI companion is no longer missing: §14 Q3 closed 2026-09-21 with the contract served at `GET /api/v1/openapi.json`, and `/api-docs` renders that document rather than a copy of the spec tables (§6.12). Playground Chat and Skill remain the two sidebar rows labelled `Planned`; Changelog and API Docs ship as links. |
+| R-24 (no navigation without a destination) | PASS | §5.2.2 makes it a rule, and it is now enforced by the data model rather than by review: a navigation row carries an `href` only when a route file exists, so a dead link is not representable. `tests/navigation/navigation.test.ts` cross-checks the tree against the routes discovered on disk. Re-verified 2026-09-18 with all 19 owner rows in the sidebar: 3 rows are real links (`/endpoint-keys`, `/changelog`, `/settings`), 16 are labelled `Planned`. Measured again 2026-09-21, after `/skills`: 20 nodes, 18 routable leaves (12 static routes plus the 6 media kinds), 1 row labelled `Planned` (`Playground Chat`), and 1 container. |
+| R-38 (real content or honest placeholder) | PASS | §15 marks every path present or planned, and the entries are updated rather than left stale. The OpenAPI companion is no longer missing: §14 Q3 closed 2026-09-21 with the contract served at `GET /api/v1/openapi.json`, and `/api-docs` renders that document rather than a copy of the spec tables (§6.12). Playground Chat is the one sidebar row left labelled `Planned`; Skill, Changelog, and API Docs ship as links, and the `/skills` screen asks each source address before it offers a copy control rather than printing a link it has not confirmed (§6.10). |
 | R-36 (no fabricated claims) | PASS | The document makes no security, compliance, uptime, or performance claim about the panel. §7.1.3 explicitly denies a security-boundary claim, and the Bun runtime claim in §10.1 exists in §15 with a source rather than as an assertion about speed. |
 | Governance links are real | PASS | Both linked files resolve: [`docs/RULLES/TDD.md`](../RULLES/TDD.md) and [`AGENTS.md`](../../AGENTS.md). Each link states its scope, so a reader cannot mistake the Go rules for the panel's rules. |
 | Mandatory protocol stated, not implied | PASS | §10.2 states the test-first order, the analysis content, the table-driven requirement with case types, and the pull request evidence, all bound to `docs/RULLES/TDD.md` §2.3, §2.5, and §3. |

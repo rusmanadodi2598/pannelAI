@@ -333,6 +333,11 @@ installed set.
 | The zero-cost-alone rule and the bounds are mirrored from the API, with the messages computed from the bounds | The form refuses what the API refuses, one step earlier, and computing the message from the bound keeps the copy from drifting from the rule. |
 | The sentence under the form reports the read that follows a save, not the draft | The write replaces the set, so only a read shows what is stored; a sentence built from the draft would report what was sent instead. |
 | The cost field accepts a narrower spelling than the API's parser | The parser takes `1e9` and `1/2`, which a budget field should not accept, so the panel is deliberately the stricter of the two and §14 Q24 records the divergence. |
+| The Skills screen renders the served catalog rather than §6.10's two named extras | The seven rows are what `GET /api/v1/skills` actually returns, so a screen built from the other list would render entries no request produces, which is the claim R-38 rules out; §6.10 was amended to the served catalog. |
+| Each source address is asked before a copy control is offered | §6.10 forbids shipping a control that copies a broken link, and the answer is knowable from the browser because the raw host allows a cross-origin read, so the panel asks instead of assuming the file is there. |
+| An unresolved source renders its cause and the address, never a copy control | A copy control on a 404 is a dead control under R-26, and naming the cause tells the operator whether to retry (a timeout, a dropped connection) or to fix the path (a 404), which a bare "unavailable" would not. |
+| The install line names the raw address and the human link is the blob address | The raw form is the file an agent reads directly and the blob form is the page a person reads, so two readers get two addresses and the row says which is which rather than printing one for both. |
+| The source summary counts published rows, not answered ones | Every probe answers, so an answered count would read "7 of 7" while seven rows report a 404 and the number would never move; the count that means something is the one the reader can check by counting the rows marked available. |
 
 ---
 

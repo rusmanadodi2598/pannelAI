@@ -1,16 +1,22 @@
 <script lang="ts">
-	// Copy control (docs/SPEC-UI/001-SPEC-UI.md §6.12).
+	// Copy control (docs/SPEC-UI/001-SPEC-UI.md §6.12, §6.10).
 	//
-	// §6.12 requires a copy control for the base URL and for a curl example. The value is the caller's,
-	// so the placeholder rule lives with the text that carries it and this control never composes a
-	// credential.
+	// The value is the caller's, so the placeholder rule lives with the text that carries it and this
+	// control never composes a credential. The label is a prop because what is copied differs by screen:
+	// a URL on the API Docs screen, an install line on the Skills screen.
+	//
+	// The three sentences below belong to the control rather than to a screen, which is why they live
+	// here: they describe a clipboard write failing or succeeding, and every caller reads the same either
+	// way. They moved out of `strings/api-docs.ts` when Skills became the second caller.
 	//
 	// A clipboard write can fail: the API is absent outside a secure context, and a browser can refuse
 	// one. The control reports the outcome rather than assuming success, and every caller keeps its text
 	// on screen, so a failed copy is still a value the operator can select.
-	import { API_DOCS_COPY as copy } from '$lib/strings/api-docs';
+	const DEFAULT_LABEL = 'Copy';
+	const COPIED = 'Copied.';
+	const FAILED = 'Copy failed. Select the text and copy it.';
 
-	let { value, label = copy.clipboard.label }: { value: string; label?: string } = $props();
+	let { value, label = DEFAULT_LABEL }: { value: string; label?: string } = $props();
 
 	let state = $state<'idle' | 'copied' | 'failed'>('idle');
 
@@ -33,9 +39,9 @@
 
 	<span class="text-xs text-[var(--color-text-muted)]" role="status" aria-live="polite">
 		{#if state === 'copied'}
-			{copy.clipboard.copied}
+			{COPIED}
 		{:else if state === 'failed'}
-			{copy.clipboard.failed}
+			{FAILED}
 		{/if}
 	</span>
 </span>

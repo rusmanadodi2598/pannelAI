@@ -8,12 +8,14 @@ API contract: [`docs/SPEC-API/001-SPEC-API.md`](../docs/SPEC-API/001-SPEC-API.md
 
 Status: **U2 capabilities complete**, verified locally. Screens built: `/login`, `/endpoint-keys`,
 `/settings`, `/providers` and `/providers/[provider_id]`, `/combos`, `/usage`, `/quota`, `/logs`,
-`/console-log`, `/changelog`, `/media-providers/[kind]`, `/proxy-pools`, and `/token-saver`. The shell is
-complete: a themed sidebar with five groups and 19 owner rows, responsive across phone, tablet, and
-desktop. Every other screen is marked Planned in the sidebar, because a navigation item without a route is
-a defect. All nine capabilities the U2 row of SPEC-UI §12 lists are landed; two of that row's four exit
-criteria are verified against a running `app-serv`, and the remaining two need a provider account and a
-browser click-through rather than unbuilt work (§12 records both).
+`/console-log`, `/changelog`, `/media-providers/[kind]`, `/proxy-pools`, `/token-saver`, `/api-docs`, and
+`/skills`. The shell is complete: a themed sidebar with five groups and 20 nodes, responsive across phone,
+tablet, and desktop. Measured 2026-09-21 after `/skills`, the tree holds 18 routable leaves (12 static
+routes plus the 6 media kinds), 1 container, and 1 row marked `Planned` (`Playground Chat`); a navigation
+item without a route is a defect, so the row that has no route is labelled rather than linked. All nine
+capabilities the U2 row of SPEC-UI §12 lists are landed; two of that row's four exit criteria are verified
+against a running `app-serv`, and the remaining two need a provider account and a browser click-through
+rather than unbuilt work (§12 records both).
 
 ## Requirements
 
@@ -90,7 +92,7 @@ src/lib/server/      server-only code: environment validation and the /api/v1 fo
 src/lib/components/  panel components (shell, sidebar, header, dialogs, table rows, forms)
 src/lib/primitives/  shadcn-svelte components, generated, not hand-edited
 src/lib/stores/      session, theme, and sidebar preference state
-src/lib/navigation.ts  the sidebar tree as data, five groups and 19 rows
+src/lib/navigation.ts  the sidebar tree as data, five groups and 20 nodes
 src/lib/icons.ts     the one icon map, one written reason per icon
 src/lib/utils.ts     class-name helper (clsx plus tailwind-merge)
 src/app.css          the token layer: DESIGN.md §3 to §5
@@ -103,14 +105,89 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Ten passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Eleven passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
 day. The sixth is the alias set, measured the same day. The seventh is the OAuth section, measured the
 same day. The eighth is the combo test action, measured the same day. The ninth is the quota budget caps,
 measured the same day, and it closes U2 on the panel side. The tenth is the API Docs screen, measured
-2026-09-21.
+2026-09-21. The eleventh is the Skills screen, measured the same day, and it closes F2 of
+`docs/DRAFT/007-UI-ENDPOINT-READINESS.md`.
+
+### Skills, 2026-09-21
+
+Run with Bun 1.3.14. This pass covers `/skills` (SPEC-UI §6.10): the screen that hands out one install
+line per capability skill, and the reachability check that decides whether a row may offer one.
+
+| Check             | Result                                                                                                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                           |
+| `bun run test`    | 1898 tests passed across 82 files, 30 of them new in this pass across 3 files                                                                                                                  |
+| `bun run lint`    | Prettier reports every file conforms                                                                                                                                                           |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                 |
+| `bun run build`   | succeeds, output in `build/`                                                                                                                                                                   |
+| Live wire pass    | 26 checks, 0 failures, against a booted `app-serv`; the live catalog parsed through the panel's own schema, every derivation driven over it, and each source address asked with a real request |
+| File size         | largest new source is 140 lines (`src/routes/skills/+page.svelte`); largest new test is 243 lines (`tests/components/skills.test.ts`), under the 250 ceiling; `navigation.ts` is line-neutral  |
+| Text hygiene      | 0 em dashes in the new files; the new copy carries no marketing vocabulary (R-16)                                                                                                              |
+
+What the screen does, and where it states a limit rather than hiding one:
+
+| Area            | Behaviour                                                                                                                                                                                                                                                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source          | One read: `GET /api/v1/skills` through the panel's forwarder, so the session cookie is the only credential involved. Nothing on the screen is typed by hand: the order is the catalog's own, the entry row is the row the catalog marks `entry`, and every install line is composed from that row's own `raw_url`.              |
+| The catalog     | Seven rows: the entry skill first, then one per data-plane route. Each row carries the name, the one-line description the gateway wrote, the route it teaches (or `No endpoint` for the entry row, which indexes the others), and the two addresses it was served with.                                                         |
+| Two addresses   | `raw_url` is what an agent fetches and what the copy control hands out, rendered as copyable text. `blob_url` is what a person reads, rendered as a link, because that address renders the file instead of downloading it.                                                                                                      |
+| Availability    | Each `raw_url` is asked with a HEAD before its row offers a copy control. A row that answered gets the control and the link; a row that did not states the cause and keeps the address on screen, because that address names the path that has to be published. `Check again` re-asks every row.                                |
+| The four causes | A 404 or 410 is `missing`; any other non-2xx is reported with its status; a request that did not finish is the timeout; anything else is the network. They are separate sentences because the operator's next move differs: a file that is not published is a push, and a request that never completed is worth pressing again. |
+| Today's answer  | All seven answer 404, because the documents are in this working tree and the ref the catalog names (`main`) does not carry them yet. So the screen renders seven unavailable states, no copy control, and the summary reads "0 of 7 sources are published at the ref the catalog names."                                        |
+| States          | Loading, error with Try again, and an empty state for a catalog that answers no rows.                                                                                                                                                                                                                                           |
+
+#### Live pass against `app-serv`, 2026-09-21
+
+`app-serv` was built from the working tree and booted from its own `.env` with a run env that added only
+`HTTP_ADDR=127.0.0.1:9090`, `PUBLIC_BASE_URL` at the panel's origin,
+`EGRESS_ALLOWED_TARGETS=127.0.0.1/32`, and a run-local `PANEL_BOOTSTRAP_PASSWORD`. The built panel ran
+with `PANEL_API_TARGET` at that address and answered `/skills` with 200. The pass needed no stub and no
+provider fixture: the screen reads a session-gated management route and then asks a public file host.
+
+Because the panel is client-rendered, the pass verified the half a browser cannot: it logged in through
+the panel's own forwarder (204 plus the session cookie), read the catalog with the panel's own
+`fetchSkillCatalog`, and drove every derivation the screen uses (`orderSkills`, `installLine`,
+`probeSkillSources`, `causeSentence`, and `SKILLS_COPY.sources.summary`) over the live rows. 26 checks,
+0 failures.
+
+| What the pass proved            | Result                                                                                                                                                                                                                  |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The live catalog parses         | 200 through the forwarder, and `fetchSkillCatalog` returns ok                                                                                                                                                           |
+| The parse is not vacuous        | The same schema refuses a row whose `raw_url` is relative and a payload with no `data` array                                                                                                                            |
+| The catalog is the spec's       | 7 rows with the 7 ids SPEC-API §7.16 names, exactly one `entry`, and the entry row teaches no route                                                                                                                     |
+| The addresses are the handler's | Every `raw_url` and `blob_url` equals the address derived from the repository constant, the ref `main`, and `skills/<id>/SKILL.md`                                                                                      |
+| The documents exist             | Every served id has `skills/<id>/SKILL.md` in this tree, with frontmatter naming that row, a description, and a heading                                                                                                 |
+| The order rule holds            | `orderSkills` keeps the entry first on the wire order and moves it first from a shuffled order, leaving the rest in the order the gateway sent                                                                          |
+| The install line                | Every row's line starts `Read this skill and use it: ` and names that row's own address                                                                                                                                 |
+| The probes are real             | Seven HEAD requests, all seven answering 404, and every row classified `missing`, so the screen offers no copy control                                                                                                  |
+| The probe discriminates         | A file that is on the same ref reads `available` and a path that is not reads `missing`, so the answer is about the address rather than about the check                                                                 |
+| The classifier splits           | `classifySourceStatus` reads 200 as available, 404 as missing, and 500 as neither                                                                                                                                       |
+| The sentence matches the rows   | Composed from these probes the way the page composes it, the summary reads "0 of 7 sources are published at the ref the catalog names", which is the count of rows marked available and can be checked by counting them |
+
+The honest limit is the state itself. `origin/main` is 106 commits behind this working tree and 0 ahead,
+and `git ls-tree origin/main skills` finds nothing, so the seven documents cannot resolve at the ref the
+catalog names until the owner pushes. The screen is built for both answers and is rendering the true one:
+seven rows, seven `missing` causes, no copy control. The copy control appears the moment the push makes
+those paths readable, with no panel change. This is recorded in SPEC-UI §6.10, and the two facts the pass
+could not settle are recorded there too: the panel is client-rendered, so the render half comes from jsdom
+tests, and the documents do not exist on the named ref yet.
+
+Still outstanding: a browser click-through of the screen. Every element is covered by the jsdom render
+test (the three states, the entry block, the capability rows, both availability shapes, the cause
+sentences, and `Check again`), and the wire contract is now verified against the service, but no one has
+pressed the controls in a browser and watched the screen answer.
+
+The database was counted before and after and is unchanged:
+`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true media_settings=0
+proxies=0`. The pass wrote no business rows; the run env, the built binary, and the session cookie were
+removed, and `panel_auth.password_hash` was nulled after the server stopped.
 
 ### API Docs, 2026-09-21
 

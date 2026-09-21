@@ -97,7 +97,7 @@ export const NAV_GROUPS: NavGroup[] = [
 		reason: 'Answers what can be cheaper or reused: token reduction and client-side skills.',
 		items: [
 			{ key: 'token-saver', label: 'Token Saver', href: '/token-saver' },
-			{ key: 'skills', label: 'Skill', planned: true }
+			{ key: 'skills', label: 'Skill', href: '/skills' }
 		]
 	},
 	{

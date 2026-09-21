@@ -61,11 +61,5 @@ export const API_DOCS_COPY = {
 		absent:
 			'This document carries no error code table, so the codes are not listed here. The contract publishes them in its x-contract block.',
 		envelope: (name: string) => `Failures arrive as ${name}.`
-	},
-
-	clipboard: {
-		label: 'Copy',
-		copied: 'Copied.',
-		failed: 'Copy failed. Select the text and copy it.'
 	}
 } as const;

@@ -39,7 +39,7 @@ Empat langkah, semuanya bisa diulang:
 | 4 | Usage | `/usage` | ada | §7.12 live | F8, F12; tautan API Docs menunggu F1 |
 | 5 | Quota Tracker | `/quota` | ada | §7.12 live | bersih; live pass tercatat |
 | 6 | Token Saver | `/token-saver` | ada | §7.9 live | bersih; live pass tercatat |
-| 7 | Skill | `/skills` | **tidak ada** | §7.16 live sejak P4 | F2 |
+| 7 | Skill | `/skills` | ada | §7.16 live sejak P4 | F2 **CLOSED 2026-09-21** |
 | 8 | Media Provider | `/media-providers/[kind]` | ada | §7.10 live | Q17/Q18 tercatat |
 | 9 | Playground Chat | `/playground` | **tidak ada** | §7.15 live; §10 P4 menugaskan halamannya | F3 |
 | 10 | Proxy Pools | `/proxy-pools` | ada | §7.11 live | bersih; live pass tercatat |
@@ -48,10 +48,11 @@ Empat langkah, semuanya bisa diulang:
 | 13 | Console Log | `/console-log` | ada | §7.13 live | F8 |
 | 14 | Setting | `/settings` | ada | §7.14 live | F10 |
 
-Dua route yang tidak ada adalah dua baris yang masih `planned: true` di
-`src/lib/navigation.ts` (`skills` baris 100, `playground` baris 108). Keduanya kini punya
-endpoint atau penugasan fase, jadi `Planned` pada keduanya adalah status yang bisa ditutup,
-bukan penantian.
+Satu route yang tidak ada adalah baris yang masih `planned: true` di
+`src/lib/navigation.ts` (`playground` baris 108). Endpoint dan penugasan fasenya sudah ada
+(§7.15 live, §10 P4 menugaskan halamannya), jadi `Planned` di baris itu adalah status yang
+bisa ditutup, bukan penantian. Baris `skills` (baris 100) ditutup F2 pada 2026-09-21 dan
+sekarang membawa `href: '/skills'`.
 
 ## 3. Bukti kesiapan yang sudah lolos
 
@@ -177,6 +178,62 @@ bukan kontrol copy.
 **Kriteria selesai.** Tiap entri yang tampil memiliki `SKILL.md` yang benar-benar bisa dibaca
 (dibuktikan dengan permintaan nyata ke `raw_url`, bukan diasumsikan), atau merender unavailable
 state; tidak ada entri dengan tautan rusak; §6.10 dan §7.16 sepakat; §14 Q2 ditutup.
+
+**Status: CLOSED 2026-09-21.** D1 dijawab owner 2026-09-21 (ikuti katalog yang dilayani, tulis tujuh
+dokumen, probe saat load plus `Check again`, commit lokal saja tanpa push), lalu dikerjakan:
+
+- Tujuh dokumen `skills/<id>/SKILL.md` ada, satu per baris yang dilayani: `pannelai` (entry) plus enam
+  capability. Tiap berkas membawa frontmatter (`name`, `description`) dan heading; isinya di-groundkan
+  pada §7.15 dengan membaca sumber Go-nya (`skills.go`, `media_call.go`, `media_shape.go`,
+  `media_audio.go`, `media_search.go`, `embeddings_resolve.go`, `engine.go`, `engine_failure.go`,
+  `catalog.go`, `chat_response.go`), bukan dari ingatan. Empat klaim draf pertama salah dan diperbaiki
+  sebelum berkas ditulis: health menjawab `{"status":"ok",…}` bukan `{"ok":true}`; envelope error data
+  plane membawa `message`/`type`/`code` tanpa `request_id`; combo yang gagal seluruhnya mengembalikan
+  error anggota terakhir, bukan `NO_PROVIDER_AVAILABLE`; model media tanpa prefix provider menjawab
+  `MODEL_NOT_FOUND`, dan provider media tanpa kind itu menjawab `PROVIDER_NOT_ROUTABLE`.
+- Katalog yang dipakai adalah yang dilayani (§7.16). §6.10 diamandemen: satu baris per capability, entry
+  skill first, `raw_url` untuk agen dan `blob_url` untuk manusia, availability ditanya bukan diasumsikan,
+  plus catatan amandemen bahwa dua entri lama tidak pernah dilayani route mana pun. §5.1 baris `/skills`
+  ikut diperbaiki supaya tidak bertentangan dengan §6.10, dan §14 Q2 ditutup.
+- `src/routes/skills/+page.svelte` ada, dan `src/lib/navigation.ts:100` sekarang `href: '/skills'`
+  (R-24). Sidebar terukur 2026-09-21: 20 node dalam 5 grup, 18 leaf routable (12 route statis plus 6
+  kind media), 1 container, 1 baris `Planned` (`Playground Chat`).
+- Modul panel: `src/lib/schemas/skill.ts` (katalog; field yang dibaca ketat, tambahan ditoleransi §7.4),
+  `src/lib/schemas/skill-source.ts` (empat sebab, `installLine`, `orderSkills`, dua classifier),
+  `src/lib/api/skills.ts` (satu GET lewat `apiRequest`, satu HEAD publik tanpa kredensial dan tanpa
+  prefix panel), `src/lib/strings/skills.ts`, `SkillCard.svelte`, `SkillEntryBlock.svelte`. Tiga state
+  ada (loading, error dengan `Try again`, empty untuk katalog tanpa baris).
+- Kontrol copy hanya muncul untuk baris yang benar-benar resolve, yang persis aturan §6.10.
+  `CopyButton.svelte` sekarang menerima label sebagai prop, jadi kontrol yang sama dipakai header, API
+  Docs, dan Skills tanpa modul copy kedua.
+- Test: 3 file, 30 test, hijau di suite penuh (1898 test / 82 file, sebelumnya 1868 / 79). Rincian:
+  `skill.test.ts` 6, `skill-source.test.ts` 11, `skills.test.ts` 13.
+- Live pass 2026-09-21: 26 check, 0 gagal, di atas `app-serv` yang boot dari `.env` dengan run env yang
+  hanya menambah `HTTP_ADDR`, `PUBLIC_BASE_URL`, `EGRESS_ALLOWED_TARGETS`, dan
+  `PANEL_BOOTSTRAP_PASSWORD`. Katalog live (7 baris) dibaca lewat `fetchSkillCatalog` panel sendiri dan
+  diparse lewat `schemaSkillCatalog`; `orderSkills`, `installLine`, `probeSkillSources`, `causeSentence`,
+  dan `SKILLS_COPY.sources.summary` dijalankan di atas hasilnya; tujuh `raw_url` ditanya dengan permintaan
+  HEAD nyata. Tiap baris yang dilayani juga dicocokkan ke berkas `skills/<id>/SKILL.md` di tree ini.
+- Dua kontrol negatif membuat pass tidak hampa: berkas yang ada di ref yang sama (`README.md`) membaca
+  `available` dan path yang tidak ada membaca `missing`, jadi jawabannya tentang alamat itu, bukan tentang
+  pemeriksanya; dan `schemaSkillCatalog` menolak baris dengan `raw_url` relatif serta payload tanpa `data`.
+- Kejujuran hasil live: ketujuh sumber menjawab 404 hari ini, karena `origin/main` tertinggal 106 commit
+  dari HEAD lokal dan 0 di depan, dan `git ls-tree origin/main skills` kosong. Jadi layar merender tujuh
+  unavailable state, nol kontrol copy, dan kalimat "0 of 7 sources are published at the ref the catalog
+  names." Itu jawaban yang benar untuk keadaan sekarang, bukan cacat layar: begitu owner push, kontrol copy
+  muncul tanpa perubahan panel. Dua batas dicatat di SPEC-UI: panel client-rendered (separuh render hanya
+  dari test jsdom) dan dokumen belum ada di ref yang dinamai katalog.
+- Satu cacat copy ditemukan oleh pass ini dan diperbaiki sebelum commit, dan polanya dicatat: kalimat
+  ringkasannya dulu berbunyi "N of M sources answered" dengan N = jumlah baris `available`, sehingga keadaan
+  hari ini terbaca "0 of 7 sources answered" sementara tujuh baris di bawahnya berkata host menjawab 404.
+  Kalimat itu menyatakan pemeriksanya gagal padahal pemeriksanya berhasil, jadi bunyinya diubah menjadi
+  "N of M sources are published at the ref the catalog names" dan variabelnya dinamai `published`. Angkanya
+  sekarang sama dengan jumlah baris yang merender "Source available", yang bisa dihitung pembaca.
+- README `app-ui` mencatat pass ini (26 check, 0 gagal) dan menyatakan click-through browser masih
+  outstanding; DESIGN.md §11 mencatat empat keputusan layar ini (katalog yang dilayani, probe sebelum
+  menawarkan copy, sebab bukan "unavailable" kosong, dua alamat untuk dua pembaca).
+- Temuan di luar lingkup F2, dicatat bukan dikerjakan: §5.1 baris `/api-docs` masih menyebut "rendered
+  from SPEC-API §7" padahal layarnya merender dokumen yang dilayani; itu sisa F1 dan masuk daftar F11.
 
 ## 6. F3 (HIGH): `/playground` belum dibangun, dan jalur injeksi kredensialnya belum ada
 
@@ -427,7 +484,7 @@ penyebab yang disebut.
 
 | # | Pertanyaan | Pilihan yang diusulkan | Dipakai oleh |
 |---|---|---|---|
-| D1 | Katalog Skills: §6.10 (dua entri: `/antislop` AI, SuperPowers) atau §7.16 (satu entri per capability, 7 baris)? Dan siapa menulis `skills/<id>/SKILL.md`? | Ikuti katalog yang dilayani, amandemen §6.10, dan tulis 7 dokumen | F2 |
+| D1 | Katalog Skills: §6.10 (dua entri: `/antislop` AI, SuperPowers) atau §7.16 (satu entri per capability, 7 baris)? Dan siapa menulis `skills/<id>/SKILL.md`? | Ikuti katalog yang dilayani, amandemen §6.10, dan tulis 7 dokumen | F2, dijawab owner 2026-09-21: ikuti katalog yang dilayani, agen menulis 7 dokumen, probe saat load plus `Check again`, commit lokal saja |
 | D2 | Bentuk rilis changelog: render yang dilayani (`version, date, title, notes`) dengan amandemen §6.16, atau `app-serv` menambah `category` + `items[]`? | Render yang dilayani, amandemen §6.16 | F4 |
 | D3 | API Docs: cukup yang ada di dokumen (path, tag, summary, auth) dengan tabel error ditunjuk lewat kalimat, atau minta `x-error-codes`/`x-phase` ke `app-serv`? | Cukup yang ada, tanpa salinan kedua | F1 |
 | D4 | Refresh control: pasang di semua layar daftar, atau amandemen §8.6.2 menjadi khusus layar yang polling? | Pasang satu komponen bersama | F8 |
@@ -442,7 +499,8 @@ penyebab yang disebut.
 4. F7 (test render empat layar; menutup area yang F5/F6 sentuh).
 5. F8 dan F10 setelah D4 dan D5 dijawab (keduanya bisa jadi satu perubahan lintas layar).
 6. F4, lalu F1, lalu F2, lalu F3 (empat layar; F4 paling kecil karena layarnya sudah ada,
-   F3 terakhir karena butuh D6 dan menyentuh jalur kredensial).
+   F3 terakhir karena butuh D6 dan menyentuh jalur kredensial). F1 **CLOSED 2026-09-21**, F2
+   **CLOSED 2026-09-21**; F4 dan F3 belum dikerjakan.
 7. F12 sebagai penutup: satu pass live yang mencatat U0, U1, dan dua kriteria U2.
 
 Setiap nomor dikerjakan sebagai satu commit sendiri, dengan analysis plus compliance
