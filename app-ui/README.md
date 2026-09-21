@@ -8,14 +8,15 @@ API contract: [`docs/SPEC-API/001-SPEC-API.md`](../docs/SPEC-API/001-SPEC-API.md
 
 Status: **U2 capabilities complete**, verified locally. Screens built: `/login`, `/endpoint-keys`,
 `/settings`, `/providers` and `/providers/[provider_id]`, `/combos`, `/usage`, `/quota`, `/logs`,
-`/console-log`, `/changelog`, `/media-providers/[kind]`, `/proxy-pools`, `/token-saver`, `/api-docs`, and
-`/skills`. The shell is complete: a themed sidebar with five groups and 20 nodes, responsive across phone,
-tablet, and desktop. Measured 2026-09-21 after `/skills`, the tree holds 18 routable leaves (12 static
-routes plus the 6 media kinds), 1 container, and 1 row marked `Planned` (`Playground Chat`); a navigation
-item without a route is a defect, so the row that has no route is labelled rather than linked. All nine
-capabilities the U2 row of SPEC-UI §12 lists are landed; two of that row's four exit criteria are verified
-against a running `app-serv`, and the remaining two need a provider account and a browser click-through
-rather than unbuilt work (§12 records both).
+`/console-log`, `/changelog`, `/media-providers/[kind]`, `/proxy-pools`, `/token-saver`, `/api-docs`,
+`/skills`, and `/playground`. The shell is complete: a themed sidebar with five groups and 20 nodes,
+responsive across phone, tablet, and desktop. Measured 2026-09-21, the tree holds 19 routable leaves
+(13 static routes plus the 6 media kinds), 1 container, and no row marked `Planned`; the one `planned`
+flag left in `src/lib/navigation.ts` sits on the Media Provider container, which renders as a disclosure.
+A navigation item without a route is a defect, so a row carries an `href` only when its route file
+exists. All nine capabilities the U2 row of SPEC-UI §12 lists are landed; two of that row's four exit
+criteria are verified against a running `app-serv`, and the remaining two need a provider account and a
+browser click-through rather than unbuilt work (§12 records both).
 
 ## Requirements
 
@@ -105,7 +106,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Fourteen passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Fifteen passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -117,7 +118,49 @@ measured the same day, and it closes U2 on the panel side. The tenth is the API 
 day, and it closes F3 of that draft. The thirteenth is the Changelog screen, measured the same day, and it
 closes F4 of that draft. The fourteenth is the readiness batch F5 to F9 of the same draft, measured the
 same day: the five MEDIUM findings, each as its own commit, with the gates below measured on the tree that
-carries all five.
+carries all five. The fifteenth is the readiness pair F10 and F11 of the same draft, measured the same day:
+the §8.4.4 dirty guard with its §8.4.5 amendment, and the document numbers re-measured with the commands
+that produce them.
+
+### Readiness findings F10 and F11, 2026-09-21
+
+Run with Bun 1.3.14. This pass closes the last two LOW findings of
+`docs/DRAFT/007-UI-ENDPOINT-READINESS.md`. The owner answered D5 on 2026-09-21: implement the guard for
+the forms that hold a draft, and amend §8.4.5 with a written reason instead of adding blur validation.
+
+| Check             | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `bun run test`    | 2185 tests passed across 111 files (the previous pass was 2168 across 108), 17 of them new in this pass across 3 files                                                                                                                                                                                                                                                                                                                                         |
+| `bun run lint`    | Prettier reports every file conforms                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `bun run build`   | succeeds, exit 0, output in `build/`                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Live wire pass    | not run in this pass. The guard is a client-side rule and neither finding needed an `app-serv` change                                                                                                                                                                                                                                                                                                                                                          |
+| File size         | largest source in `src/` is 220 lines (`src/lib/components/CombosTab.svelte`, untouched, exactly at the warning line); the largest new test file is 178 lines (`tests/components/dirty-forms.test.ts`), and every file this pass touched is under the warning; `ComboEditor.svelte` came back from 218 to 201 by moving its strategy fields to `ComboStrategyFields.svelte` (60 lines), because the guard wiring would have pushed the editor past the warning |
+| Text hygiene      | 0 em dashes in the new and edited files                                                                                                                                                                                                                                                                                                                                                                                                                        |
+
+What F10 changed, and where it states a limit rather than hiding one:
+
+| Behaviour          | Detail                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| One guard          | `src/lib/dirty-guard.ts` holds the registry and the cancel decision, and `src/routes/+layout.svelte` is the one place that asks, for the same reason the session gate lives there: a screen that had to remember the rule could forget it. The registry reads each form's dirty state when a navigation happens, so a saved or discarded draft stops warning with no bookkeeping in the form.                                                                      |
+| Two questions      | A navigation that unloads the document is cancelled and the browser asks its own question; a navigation inside the panel has no browser dialog, so the guard asks with `window.confirm`, which is synchronous and therefore what `beforeNavigate` can use. A custom modal would have to defer the navigation and would be a second dialog language for one rule.                                                                                                   |
+| Six forms register | The three Settings tabs, the Token Saver form (any of its three sections), the outbound proxy card, and the combo editor. Only a form with a server-confirmed baseline can say what "unsaved" means, so a dialog that discards on Cancel is not registered. The outbound card is not a draft until its document has been read, which is why it registers `server !== null && dirty`.                                                                               |
+| Combo baseline     | `comboFormDirty` in `combo-form.ts` compares the draft against a snapshot of the seeded form, field by field. A snapshot rather than the live object, because a `$state` proxy writes through to the object it wraps and one shared object would move the baseline with every keystroke.                                                                                                                                                                           |
+| Test split         | The eight wiring cases were one file until Prettier reflowed it to 225 lines, past the 220-line warning. They are two files now, on the form-family seam: the five settings-style forms in `tests/components/dirty-forms.test.ts` (178 lines) and the combo editor's two cases in `tests/components/dirty-combo-form.test.ts` (95), because the combo editor is the one form whose dirty state is compared field by field rather than against a settings document. |
+| Limit              | What is tested is the decision function and each form's registration, not `beforeNavigate` itself, because the test harness renders components without a router. Pressing a nav link with a dirty form is a browser click-through, and it stays outstanding with F12. Cancel and Discard stay silent on purpose: an explicit discard is not leaving a form.                                                                                                        |
+
+F11 re-measured every number it names, with the command beside it:
+
+| Claim              | Measurement and result                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sidebar tree       | `bun -e` over `NAV_GROUPS` and `allNodes` in `src/lib/navigation.ts`: 5 groups, 20 nodes, 19 routable leaves (13 static routes plus the 6 media kinds), 1 container, 0 rows labelled `Planned`. `grep -c 'planned: true'` finds 1, on the Media Provider container, which renders as a disclosure                                                                           |
+| Panel test count   | `bun run test`: 2185 passing across 111 files                                                                                                                                                                                                                                                                                                                               |
+| README status line | It read 18 routable and 1 `Planned` from before `/playground`; it now carries the measurement above, and `/playground` is in the built-screens list                                                                                                                                                                                                                         |
+| README open items  | The drift-gate item claimed no gate was wired. `scrypts/gates/contract-drift.sh` compares SPEC-API §8 with the panel's enum and runs in `all.sh`, and `scrypts/gates/contract-openapi.sh` pins the served document to the contract YAML, so the item now states the half that is still open: the panel's response schemas are not compared to the served contract by a gate |
+| SPEC-UI §15        | The panel test count was 1053 across 39 files; it is the measurement above. The `app-ui/` path row said the remaining screens were `Planned`; every sidebar leaf is routable now                                                                                                                                                                                            |
+| SPEC-UI §12        | U1 had no status paragraph while U0, U2, and U3 had one; it now records what is built and that the recorded click-through is the outstanding exit step                                                                                                                                                                                                                      |
+| SPEC-UI §5.1       | The `/api-docs` row said the screen renders SPEC-API §7; it renders the served OpenAPI document                                                                                                                                                                                                                                                                             |
 
 ### Readiness findings F5 to F9, 2026-09-21
 
@@ -824,16 +867,22 @@ gateway.
 
 ## Open items that block later phases
 
-1. **The drift gate that compares these schemas against SPEC-API §7 is not wired yet.** The premise changed
-   on 2026-09-21: the contract is served as `GET /api/v1/openapi.json` and generated from
-   `docs/CONTRACT/001-CONTRACT-API-V1.yaml`, so the gate has a shape it can use now, and the file it
-   originally waited for (`docs/SPEC-API/002-SPEC-API-openapi.md`) is superseded. See spec §14 Q3.
+1. **The panel's response schemas are not compared against the served contract by a gate.** The
+   error-code half is wired: `scrypts/gates/contract-drift.sh` compares SPEC-API §8 with the panel's own
+   enum in `src/lib/schemas/error.ts`, and it runs in `scrypts/gates/all.sh`. The document half is pinned
+   twice: `scrypts/gates/contract-openapi.sh` compares the served `GET /api/v1/openapi.json` with
+   `docs/CONTRACT/001-CONTRACT-API-V1.yaml`, and `TestOpenAPICoversEveryRegisteredRoute` (in
+   `app-serv/internal/router`) pins the document to the router. What is left is the panel side of a field
+   rename: a field the panel reads strictly is caught by that resource's tests only where a fixture covers
+   it. The file this item originally waited for (`docs/SPEC-API/002-SPEC-API-openapi.md`) is superseded;
+   see spec §14 Q3.
 2. `AGENTS.md` scopes itself to the Go services (`app-*/**`), so it does not govern this panel. The
    panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5, and they are applied by
    hand here. The panel's gates live in `scrypts/gates/panel-check.sh`.
 3. Gateway key `status` values are not enumerated in SPEC-API §7.3. The panel currently writes `active`
    and `disabled` and renders any other value verbatim; see §14 Q9.
 
-Two items left this list on 2026-09-21 because the work they blocked on landed: `app-serv` boots (P1 fixed
-the reserved-word migration), and Playground Chat is built (§6.15), so neither is open. The list is
-measured rather than assumed: each item names the check that would close it.
+Three items left this list on 2026-09-21 because the work they blocked on landed: `app-serv` boots (P1
+fixed the reserved-word migration), Playground Chat is built (§6.15), and the changelog has a served source
+(§7.18), so none of them is open. The list is measured rather than assumed: each item names the check that
+would close it.
