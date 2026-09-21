@@ -1,20 +1,16 @@
-// Changelog schema and comparison tests.
+// Changelog derivations: how a release is compared, ordered, and marked against the running build.
 //
-// Table-driven per docs/RULLES/TDD.md §2.5. Two things are worth testing rather than reviewing:
-//
-//   Version comparison, because it decides what the screen tells an operator about their own build, and a
-//   wrong answer there is confidently wrong.
-//
-//   Ordering, because the tie-break is what stops a same-day release pair from swapping places between two
-//   reads.
+// Table-driven per docs/RULLES/TDD.md §2.5. Version comparison is worth testing rather than reviewing,
+// because it decides what the screen tells an operator about their own build and a wrong answer there is
+// confidently wrong; and so is ordering, because the tie-break is what stops a same-day release pair from
+// swapping places between two reads. The wire contract itself lives in `changelog-contract.test.ts`.
 
 import { describe, expect, it } from 'vitest';
 import {
+	canCompare,
 	compareVersions,
 	countNewer,
 	releaseMarker,
-	schemaChangelog,
-	schemaChangelogEntry,
 	sortChangelog,
 	type ChangelogEntry
 } from '$lib/schemas/changelog';
@@ -22,9 +18,9 @@ import {
 function entry(overrides: Partial<ChangelogEntry> = {}): ChangelogEntry {
 	return {
 		version: 'v1.0.0',
-		released_at: '2026-01-01T00:00:00Z',
-		category: 'feature',
-		items: ['Something changed.'],
+		date: '2026-01-01',
+		title: 'A release',
+		notes: 'Something changed.',
 		...overrides
 	};
 }
@@ -77,6 +73,24 @@ describe('compareVersions', () => {
 	}
 });
 
+describe('canCompare', () => {
+	const cases: { name: string; running: string; expected: boolean }[] = [
+		{ name: 'a release number', running: '1.2.3', expected: true },
+		{ name: 'a v-prefixed release number', running: 'v1.2.3', expected: true },
+		{ name: 'a build number with a prerelease suffix', running: '0.1.0-dev', expected: true },
+		{ name: 'an empty string', running: '', expected: false },
+		{ name: 'whitespace only', running: '   ', expected: false },
+		{ name: 'a word', running: 'nightly', expected: false },
+		{ name: 'a word with a date in it', running: 'nightly-2026-09-20', expected: false }
+	];
+
+	for (const testCase of cases) {
+		it(`${testCase.expected ? 'compares' : 'refuses'} ${testCase.name}`, () => {
+			expect(canCompare(testCase.running)).toBe(testCase.expected);
+		});
+	}
+});
+
 describe('releaseMarker', () => {
 	const cases: { name: string; entry: string; running: string; expected: string }[] = [
 		{
@@ -110,6 +124,12 @@ describe('releaseMarker', () => {
 			entry: '1.2.0-rc.1',
 			running: '1.2.0',
 			expected: 'older'
+		},
+		{
+			name: 'the running build is a prerelease of the entry',
+			entry: '1.2.0',
+			running: '1.2.0-rc.1',
+			expected: 'newer'
 		}
 	];
 
@@ -119,12 +139,14 @@ describe('releaseMarker', () => {
 		});
 	}
 
-	it('never marks an entry as newer when the running version is unknown', () => {
-		// The failure this guards: an unreadable version making every entry look uninstalled, which would
-		// tell an operator to upgrade to something they already run.
+	it('never marks an entry as newer when the running version cannot be compared', () => {
+		// The failure this guards: an unreadable or unparsable version making every entry look uninstalled,
+		// which would tell an operator to upgrade to something they already run.
 		const entries = [entry({ version: '9.9.9' }), entry({ version: '0.0.1' })];
-		for (const item of entries) {
-			expect(releaseMarker(item.version, '')).not.toBe('newer');
+		for (const running of ['', '   ', 'dev-build']) {
+			for (const item of entries) {
+				expect(releaseMarker(item.version, running)).not.toBe('newer');
+			}
 		}
 	});
 });
@@ -132,25 +154,25 @@ describe('releaseMarker', () => {
 describe('sortChangelog', () => {
 	it('orders newest first', () => {
 		const sorted = sortChangelog([
-			entry({ version: '1.0.0', released_at: '2026-01-01T00:00:00Z' }),
-			entry({ version: '1.2.0', released_at: '2026-03-01T00:00:00Z' }),
-			entry({ version: '1.1.0', released_at: '2026-02-01T00:00:00Z' })
+			entry({ version: '1.0.0', date: '2026-01-01' }),
+			entry({ version: '1.2.0', date: '2026-03-01' }),
+			entry({ version: '1.1.0', date: '2026-02-01' })
 		]);
 
 		expect(sorted.map((item) => item.version)).toEqual(['1.2.0', '1.1.0', '1.0.0']);
 	});
 
 	it('breaks a same-day tie by version, whatever order the input arrives in', () => {
-		const sameDay = '2026-01-01T00:00:00Z';
+		const sameDay = '2026-01-01';
 		const forward = sortChangelog([
-			entry({ version: '1.0.0', released_at: sameDay }),
-			entry({ version: '1.1.0', released_at: sameDay }),
-			entry({ version: '1.2.0', released_at: sameDay })
+			entry({ version: '1.0.0', date: sameDay }),
+			entry({ version: '1.1.0', date: sameDay }),
+			entry({ version: '1.2.0', date: sameDay })
 		]);
 		const reversed = sortChangelog([
-			entry({ version: '1.2.0', released_at: sameDay }),
-			entry({ version: '1.1.0', released_at: sameDay }),
-			entry({ version: '1.0.0', released_at: sameDay })
+			entry({ version: '1.2.0', date: sameDay }),
+			entry({ version: '1.1.0', date: sameDay }),
+			entry({ version: '1.0.0', date: sameDay })
 		]);
 
 		expect(forward.map((item) => item.version)).toEqual(['1.2.0', '1.1.0', '1.0.0']);
@@ -189,132 +211,4 @@ describe('countNewer', () => {
 			expect(countNewer(entries, testCase.running)).toBe(testCase.expected);
 		});
 	}
-});
-
-describe('schemaChangelogEntry', () => {
-	const cases: { name: string; input: unknown; ok: boolean }[] = [
-		{
-			name: 'a complete entry',
-			input: {
-				version: 'v1.0.0',
-				released_at: '2026-01-01T00:00:00Z',
-				category: 'feature',
-				items: ['Added a thing.']
-			},
-			ok: true
-		},
-		{
-			name: 'every known category',
-			input: {
-				version: '1.0.0',
-				released_at: '2026-01-01T00:00:00Z',
-				category: 'security',
-				items: ['Hardened this.']
-			},
-			ok: true
-		},
-		{
-			name: 'a version with surrounding whitespace',
-			input: {
-				version: '  v1.0.0  ',
-				released_at: '2026-01-01T00:00:00Z',
-				category: 'fix',
-				items: ['Fixed a thing.']
-			},
-			ok: true
-		},
-		{
-			name: 'an unknown category',
-			input: {
-				version: '1.0.0',
-				released_at: '2026-01-01T00:00:00Z',
-				category: 'chore',
-				items: ['Did a thing.']
-			},
-			ok: false
-		},
-		{
-			name: 'an empty version',
-			input: { version: '', released_at: '2026-01-01T00:00:00Z', category: 'fix', items: ['x'] },
-			ok: false
-		},
-		{
-			name: 'a whitespace-only version',
-			input: { version: '   ', released_at: '2026-01-01T00:00:00Z', category: 'fix', items: ['x'] },
-			ok: false
-		},
-		{
-			name: 'a version past the length bound',
-			input: {
-				version: 'v'.repeat(65),
-				released_at: '2026-01-01T00:00:00Z',
-				category: 'fix',
-				items: ['x']
-			},
-			ok: false
-		},
-		{
-			name: 'an unparsable date',
-			input: { version: '1.0.0', released_at: 'last tuesday', category: 'fix', items: ['x'] },
-			ok: false
-		},
-		{
-			name: 'no release items',
-			input: { version: '1.0.0', released_at: '2026-01-01T00:00:00Z', category: 'fix', items: [] },
-			ok: false
-		},
-		{
-			name: 'one empty release item',
-			input: {
-				version: '1.0.0',
-				released_at: '2026-01-01T00:00:00Z',
-				category: 'fix',
-				items: ['  ']
-			},
-			ok: false
-		},
-		{
-			name: 'a missing category',
-			input: { version: '1.0.0', released_at: '2026-01-01T00:00:00Z', items: ['x'] },
-			ok: false
-		},
-		{
-			name: 'a number where a version belongs',
-			input: {
-				version: 1,
-				released_at: '2026-01-01T00:00:00Z',
-				category: 'fix',
-				items: ['x']
-			},
-			ok: false
-		}
-	];
-
-	for (const testCase of cases) {
-		it(`${testCase.ok ? 'accepts' : 'rejects'} ${testCase.name}`, () => {
-			const result = schemaChangelogEntry.safeParse(testCase.input);
-			expect(result.success, JSON.stringify(result.error?.issues ?? [])).toBe(testCase.ok);
-		});
-	}
-});
-
-describe('schemaChangelog', () => {
-	it('accepts an empty release list, which is a real state and not an error', () => {
-		expect(schemaChangelog.safeParse({ entries: [] }).success).toBe(true);
-	});
-
-	it('rejects a payload with no entries field', () => {
-		expect(schemaChangelog.safeParse({}).success).toBe(false);
-	});
-
-	it('rejects one bad entry in an otherwise good list', () => {
-		const payload = {
-			entries: [
-				{ version: '1.0.0', released_at: '2026-01-01T00:00:00Z', category: 'fix', items: ['ok'] },
-				{ version: '', released_at: '2026-01-01T00:00:00Z', category: 'fix', items: ['bad'] }
-			]
-		};
-
-		expect(schemaChangelog.safeParse(payload).success).toBe(false);
-	});
 });

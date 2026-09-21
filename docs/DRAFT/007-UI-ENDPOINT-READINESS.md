@@ -6,12 +6,12 @@ scope) dan `docs/SPEC-API/001-SPEC-API.md` (wire). Dokumen ini melanjutkan pola
 `003-ENDPOINT-READINESS.md` sampai `006-TOKEN-SAVER-READINESS.md`: temuan bernomor F,
 owner memilih nomor yang dikerjakan.
 
-|             |                                                                                                                                                                                                                                                                                                 |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya). Sisa nomor masih menunggu pilihan owner |
-| **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                               |
-| **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                |
-| **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                |
+|             |                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup). Sisa nomor masih menunggu pilihan owner |
+| **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
+| **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
+| **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
 
 ## 1. Metode
 
@@ -31,22 +31,22 @@ Empat langkah, semuanya bisa diulang:
 
 ## 2. Ringkasan kesiapan 14 item
 
-| #   | Item (KEEP)            | Route                                    | Layar                    | Endpoint SPEC-API                        | Status                                         |
-| --- | ---------------------- | ---------------------------------------- | ------------------------ | ---------------------------------------- | ---------------------------------------------- |
-| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                      | §7.3, §7.5 live                          | F5, F6, F7, F9                                 |
-| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                      | §7.4, §7.6 live                          | F5 (list), F7 (list), Q12/Q13/Q19-Q23 tercatat |
-| 3   | Combo & Vision Adapter | `/combos`                                | ada                      | §7.7, §7.8 live                          | F12 (bukti); test tingkat tab ada              |
-| 4   | Usage                  | `/usage`                                 | ada                      | §7.12 live                               | F8, F12; tautan API Docs menunggu F1           |
-| 5   | Quota Tracker          | `/quota`                                 | ada                      | §7.12 live                               | bersih; live pass tercatat                     |
-| 6   | Token Saver            | `/token-saver`                           | ada                      | §7.9 live                                | bersih; live pass tercatat                     |
-| 7   | Skill                  | `/skills`                                | ada                      | §7.16 live sejak P4                      | F2 **CLOSED 2026-09-21**                       |
-| 8   | Media Provider         | `/media-providers/[kind]`                | ada                      | §7.10 live                               | Q17/Q18 tercatat                               |
-| 9   | Playground Chat        | `/playground`                            | ada                      | §7.15 live; §10 P4 menugaskan halamannya | F3 **CLOSED 2026-09-21**                       |
-| 10  | Proxy Pools            | `/proxy-pools`                           | ada                      | §7.11 live                               | bersih; live pass tercatat                     |
-| 11  | API Docs               | `/api-docs`                              | ada                      | §7.17 live sejak P4                      | F1 **CLOSED 2026-09-21**                       |
-| 12  | Changelog              | `/changelog`                             | ada, sumber belum dibaca | §7.18 live sejak P4                      | F4                                             |
-| 13  | Console Log            | `/console-log`                           | ada                      | §7.13 live                               | F8                                             |
-| 14  | Setting                | `/settings`                              | ada                      | §7.14 live                               | F10                                            |
+| #   | Item (KEEP)            | Route                                    | Layar              | Endpoint SPEC-API                        | Status                                         |
+| --- | ---------------------- | ---------------------------------------- | ------------------ | ---------------------------------------- | ---------------------------------------------- |
+| 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5, F6, F7, F9                                 |
+| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list), F7 (list), Q12/Q13/Q19-Q23 tercatat |
+| 3   | Combo & Vision Adapter | `/combos`                                | ada                | §7.7, §7.8 live                          | F12 (bukti); test tingkat tab ada              |
+| 4   | Usage                  | `/usage`                                 | ada                | §7.12 live                               | F8, F12; tautan API Docs menunggu F1           |
+| 5   | Quota Tracker          | `/quota`                                 | ada                | §7.12 live                               | bersih; live pass tercatat                     |
+| 6   | Token Saver            | `/token-saver`                           | ada                | §7.9 live                                | bersih; live pass tercatat                     |
+| 7   | Skill                  | `/skills`                                | ada                | §7.16 live sejak P4                      | F2 **CLOSED 2026-09-21**                       |
+| 8   | Media Provider         | `/media-providers/[kind]`                | ada                | §7.10 live                               | Q17/Q18 tercatat                               |
+| 9   | Playground Chat        | `/playground`                            | ada                | §7.15 live; §10 P4 menugaskan halamannya | F3 **CLOSED 2026-09-21**                       |
+| 10  | Proxy Pools            | `/proxy-pools`                           | ada                | §7.11 live                               | bersih; live pass tercatat                     |
+| 11  | API Docs               | `/api-docs`                              | ada                | §7.17 live sejak P4                      | F1 **CLOSED 2026-09-21**                       |
+| 12  | Changelog              | `/changelog`                             | ada, membaca §7.18 | §7.18 live sejak P4                      | F4 **CLOSED 2026-09-21**                       |
+| 13  | Console Log            | `/console-log`                           | ada                | §7.13 live                               | F8                                             |
+| 14  | Setting                | `/settings`                              | ada                | §7.14 live                               | F10                                            |
 
 Satu route yang tidak ada adalah baris yang masih `planned: true` di
 `src/lib/navigation.ts` (`playground` baris 108). Endpoint dan penugasan fasenya sudah ada
@@ -362,6 +362,65 @@ sebagai permintaan dan tidak dikerjakan dari draft ini. Setelah itu: `src/lib/ap
 **Kriteria selesai.** Layar merender rilis yang dilayani; perbandingan versi tetap benar; empty
 state tidak lagi berbohong; test schema + render hijau; §14 Q11, §12, dan README diperbarui.
 
+**Status: CLOSED 2026-09-21.** Owner memilih opsi (a) pada 2026-09-21 (render yang dilayani, §6.16
+diamandemen), lalu seluruhnya dikerjakan di `app-ui` tanpa satu pun perubahan `app-serv`:
+
+- Sumbernya dibaca: `src/lib/api/changelog.ts` (`CHANGELOG_PATH = '/changelog'`, `fetchChangelog` lewat
+  `apiRequest`), dan `schemaChangelog` ditulis ulang ke bentuk yang dilayani,
+  `{data: [{version, date, title, notes}]}`, ketat pada field wajib dan toleran pada tambahan (§7.4).
+  Bentuk lama (`{entries: [{version, released_at, category, items[]}]}`) dihapus, bukan dipetakan:
+  memetakan `notes` menjadi `items[]` dan mengarang `category` berarti menuliskan teks yang tidak ditulis
+  siapa pun.
+- `date` adalah tanggal kalender, bukan timestamp: kontraknya `format: date`, dan `Date.parse` saja bukan
+  pemeriksaan itu (ia menerima `2026-9-2` dan menggulung `2026-02-30` ke Maret). Schema melakukan round trip
+  UTC, dan kedua kasus itu punya test. Tanggal dirender apa adanya seperti gateway mengirimnya; formatter
+  timestamp berzona akan mencetak hari yang tidak pernah dilaporkan gateway untuk pembaca di barat UTC.
+- Layar `src/routes/changelog/+page.svelte` membaca dua route sekaligus (`/api/v1/changelog` dan
+  `/api/v1/version`), merender tiap rilis sebagai version + date + title + notes dengan marker
+  `Running`/`Newer`/`Installed` dihitung terhadap versi yang berjalan, plus baris fakta "Read from GET
+  /changelog." dan jumlah rilis. Komentar route diperbaiki dari §6.18 ke §6.16.
+- Dua kebohongan ikut ditutup, keduanya di luar daftar fakta awal. Versi yang tidak bisa dibandingkan
+  (`0.1.0-dev`, nilai yang benar-benar dilaporkan `app-serv` hari ini) dulu membuat status line berbunyi
+  "This build is the newest release listed."; sekarang `canCompare` memisahkan dua sebab (baca gagal vs
+  nilainya bukan nomor rilis) dan tidak ada rilis yang ditandai. Dan empty state tidak lagi menyebut sumber
+  yang tidak ada: ia menyebut route yang menjawab dengan daftar kosong, karena catatannya ikut di dalam
+  biner.
+- Test: `tests/schemas/changelog.test.ts` ditulis ulang untuk derivasi (compareVersions, canCompare,
+  releaseMarker, sortChangelog, countNewer), `tests/schemas/changelog-contract.test.ts` baru untuk kontrak
+  wire, dan `tests/components/changelog.test.ts` baru untuk render (tiga state, urutan, marker, dua
+  kegagalan versi, dan drift). 78 test di 3 berkas, table-driven per TDD §2.5. Satu pasangan grafis baru
+  (marker `warn` di atas baris rilis) ditambahkan ke `tests/tokens/contrast.test.ts`, yang sekarang
+  menjalankan 52 assertion di kedua tema (sebelumnya 50), dan angka itu ikut diperbarui di baris R-25
+  SPEC-UI. Suite penuh di tree beku: 2065 test / 96 berkas, naik dari 2032 / 94 yang dicatat pass F3.
+- Live pass 2026-09-21, 18 check, 0 gagal, di atas `app-serv` yang dibangun dari **HEAD ter-commit**
+  (`git archive`, working tree sedang dipegang aktor lain): login lewat origin panel, lalu route dibaca tiga
+  cara (byte mentah lewat forwarder panel: 200, `application/json`, 1821 byte, 5 rilis; lewat
+  `fetchChangelog` panel sendiri sehingga payload live di-parse `schemaChangelog`; dan lewat
+  `fetchSystemInfo`). Setiap marker dan hitungan newer dihitung ulang dengan aritmetika sendiri di driver,
+  jadi pass ini tidak menguji modul terhadap dirinya sendiri. Empat kontrol: envelope lama ditolak, baris
+  live tanpa `date` ditolak, `{data: []}` lolos (jalur data empty state), dan route menjawab 401 tanpa sesi
+  baik langsung maupun lewat origin panel.
+- Satu fakta tentang data yang dilayani, dan itu milik `app-serv`: biner melaporkan `0.1.0-dev` sementara
+  changelog-nya sendiri sampai `v0.4.0`, jadi layar dengan jujur menulis "4 releases newer than this build"
+  untuk biner yang justru menyajikan catatan itu. Panel tidak bisa memperbaikinya dengan menebak; ia
+  mencetak versi yang dilaporkan gateway. Dicatat sebagai permintaan: konstanta versi `app-serv` tidak ikut
+  naik mengikuti fase.
+- Database live dikembalikan ke baseline persis; pass ini tidak menulis satu baris pun, jadi satu-satunya
+  perubahan adalah hash bootstrap yang di-seed saat boot, di-null setelah server berhenti, dan berkas temp
+  dihapus.
+- Dokumen: §6.16 diamandemen ke bentuk yang dilayani (status, header, daftar rilis, states, alasan tidak
+  membundel berkas rilis), §14 Q11 ditutup dengan keputusan dan buktinya, ledger §2 baris 16 plus butir
+  owner di atasnya diperbarui, §12 mendapat catatan U0, §16 mencatat changelog-nya, baris R-38 mencatat
+  buktinya, DESIGN.md §11 mendapat empat baris alasan, dan README `app-ui` mencatat pass ini.
+- README `app-ui` sekaligus diukur ulang karena daftarnya sedang disentuh: tiga butir "open items" yang
+  sudah tertutup (app-serv tidak bisa boot, playground belum punya fase, tidak ada sumber changelog) keluar
+  dari daftar dan sisanya dinomori ulang, sehingga tidak ada lagi item yang menyatakan blocker yang sudah
+  selesai. Itu menutup separuh kriteria F11 (klaim blocker); angka-angka README/§15 yang tersisa masih
+  milik F11.
+- Batas yang dicatat, bukan disembunyikan: click-through browser masih outstanding karena panel
+  client-rendered, jadi separuh render hanya dari test jsdom; dan empty state tidak bisa dibuktikan live
+  karena route selalu menjawab lima baris, jadi buktinya test render plus kontrol schema.
+
 ## 8. F5 (MEDIUM): Filter tab Upstream endpoints tidak memfilter dan tidak ada di URL
 
 **Fakta.** `UpstreamEndpointsTab.svelte` menyimpan `providerFilter` dan `statusFilter` di state
@@ -498,17 +557,19 @@ memvalidasi di submit dan menampilkan indikator dirty.
 
 - `app-ui/README.md` "Open items that block later phases" butir 1 (app-serv tidak bisa boot),
   butir 2 (playground belum punya fase), dan butir 3 (tidak ada sumber changelog) semuanya
-  sudah terjawab oleh P1/P4. Butir 5 (drift gate menunggu berkas
-  `docs/SPEC-API/002-SPEC-API-openapi.md`) menyebut berkas yang memang masih belum ada,
-  tetapi premisnya berubah: sejak P4 kontraknya dilayani sebagai `GET /api/v1/openapi.json`,
-  jadi gate itu punya bentuk baru yang bisa dipakai.
+  sudah terjawab oleh P1/P4. **Ketiganya sudah keluar dari daftar pada 2026-09-21 lewat pass
+  F4**, dan daftarnya dinomori ulang; yang tersisa adalah drift gate (kini butir 1), lingkup
+  `AGENTS.md` (butir 2), dan enum status gateway key (butir 3). Butir drift gate menyebut
+  berkas `docs/SPEC-API/002-SPEC-API-openapi.md` yang memang masih belum ada, tetapi premisnya
+  berubah dan sudah ditulis ulang di README: sejak P4 kontraknya dilayani sebagai
+  `GET /api/v1/openapi.json`, jadi gate itu punya bentuk baru yang bisa dipakai.
 - README baris status menyebut "19 owner rows"; hasil ukur hari ini: 20 node, 14 baris
   top-level, 16 routable (10 route statis + 6 kind media), 3 planned.
 - SPEC-UI §15 baris "Sidebar row count" masih "8 with a route, 11 planned leaves"; hasil ukur
   hari ini 16 routable, 3 planned, 1 container (total 20 tetap).
 - SPEC-UI §12 tidak punya paragraf status untuk **U1**, padahal U0 dan U2 punya.
 - Komentar `src/routes/changelog/+page.svelte:2` menyebut §6.18; section changelog adalah
-  §6.16.
+  §6.16. **Diperbaiki pada 2026-09-21 lewat pass F4.**
 
 **Risiko.** README dan §15 dibaca sebagai bukti (R-36); klaim "blocked" yang sudah selesai
 mengarahkan pekerjaan berikutnya ke tempat yang salah, dan angka yang tidak diukur ulang
@@ -550,7 +611,7 @@ penyebab yang disebut.
 | #   | Pertanyaan                                                                                                                                                    | Pilihan yang diusulkan                                            | Dipakai oleh                                                                                                                                   |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | D1  | Katalog Skills: §6.10 (dua entri: `/antislop` AI, SuperPowers) atau §7.16 (satu entri per capability, 7 baris)? Dan siapa menulis `skills/<id>/SKILL.md`?     | Ikuti katalog yang dilayani, amandemen §6.10, dan tulis 7 dokumen | F2, dijawab owner 2026-09-21: ikuti katalog yang dilayani, agen menulis 7 dokumen, probe saat load plus `Check again`, commit lokal saja       |
-| D2  | Bentuk rilis changelog: render yang dilayani (`version, date, title, notes`) dengan amandemen §6.16, atau `app-serv` menambah `category` + `items[]`?         | Render yang dilayani, amandemen §6.16                             | F4                                                                                                                                             |
+| D2  | Bentuk rilis changelog: render yang dilayani (`version, date, title, notes`) dengan amandemen §6.16, atau `app-serv` menambah `category` + `items[]`?         | Render yang dilayani, amandemen §6.16                             | F4 **CLOSED 2026-09-21** (dipakai; `app-serv` tidak disentuh)                                                                                  |
 | D3  | API Docs: cukup yang ada di dokumen (path, tag, summary, auth) dengan tabel error ditunjuk lewat kalimat, atau minta `x-error-codes`/`x-phase` ke `app-serv`? | Cukup yang ada, tanpa salinan kedua                               | F1                                                                                                                                             |
 | D4  | Refresh control: pasang di semua layar daftar, atau amandemen §8.6.2 menjadi khusus layar yang polling?                                                       | Pasang satu komponen bersama                                      | F8                                                                                                                                             |
 | D5  | §8.4.4 dirty guard dan §8.4.5 validasi blur: implementasi atau amandemen?                                                                                     | Implementasi untuk form berdraft, amandemen untuk blur            | F10                                                                                                                                            |
@@ -565,7 +626,7 @@ penyebab yang disebut.
 5. F8 dan F10 setelah D4 dan D5 dijawab (keduanya bisa jadi satu perubahan lintas layar).
 6. F4, lalu F1, lalu F2, lalu F3 (empat layar; F4 paling kecil karena layarnya sudah ada,
    F3 terakhir karena butuh D6 dan menyentuh jalur kredensial). F1 **CLOSED 2026-09-21**, F2
-   **CLOSED 2026-09-21**, F3 **CLOSED 2026-09-21**; F4 belum dikerjakan.
+   **CLOSED 2026-09-21**, F3 **CLOSED 2026-09-21**, F4 **CLOSED 2026-09-21**.
 7. F12 sebagai penutup: satu pass live yang mencatat U0, U1, dan dua kriteria U2.
 
 Setiap nomor dikerjakan sebagai satu commit sendiri, dengan analysis plus compliance

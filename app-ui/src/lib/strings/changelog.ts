@@ -10,13 +10,18 @@ export const CHANGELOG_COPY = {
 	subtitle: 'What changed in the gateway, and whether this build is behind.',
 	running: {
 		label: 'Running version',
-		unknown: 'Could not read the running version from the gateway.'
+		// The value slot before the gateway has answered. "unknown" is a claim about a read that finished,
+		// so it may not stand in for one that has not.
+		reading: 'Reading',
+		// Two different facts get two sentences: a read that failed names a request, and a value that is not
+		// a release number names the value itself.
+		unreadable: 'Could not read the running version from the gateway.',
+		notComparable: (value: string) =>
+			`The gateway reports its version as ${value}, which is not a release number, so no release is marked.`
 	},
 	status: {
 		upToDate: 'This build is the newest release listed.',
-		behind: (count: number) => `${count} release${count === 1 ? '' : 's'} newer than this build.`,
-		unknown:
-			'The running version could not be read, so no release is marked as newer or older than this build.'
+		behind: (count: number) => `${count} release${count === 1 ? '' : 's'} newer than this build.`
 	},
 	marker: {
 		running: 'Running',
@@ -24,23 +29,18 @@ export const CHANGELOG_COPY = {
 		older: 'Installed',
 		unknown: ''
 	},
-	category: {
-		feature: 'Feature',
-		fix: 'Fix',
-		change: 'Change',
-		security: 'Security',
-		internal: 'Internal'
+	source: {
+		readFrom: (path: string) => `Read from GET ${path}.`,
+		releases: (count: number) => `${count} release${count === 1 ? '' : 's'}`
 	},
 	empty: {
-		title: 'No release notes yet',
-		description:
-			'The gateway reports its version, but no release notes are available to the panel. Notes appear here once a source is configured.'
+		title: 'The gateway serves no release notes',
+		description: (path: string) =>
+			`GET ${path} answered with an empty list. The notes travel inside the binary, so this is the gateway reporting its own history as empty rather than a source the panel is missing.`
 	},
 	error: {
-		title: 'Release notes could not be loaded',
+		title: 'Release notes could not be read',
 		retry: 'Try again'
 	},
-	loading: 'Loading release notes',
-	dateUnknown: 'Release date not available',
-	entriesCounted: (count: number) => `${count} entry${count === 1 ? '' : 's'}`
+	loading: 'Loading release notes'
 } as const;

@@ -105,7 +105,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Twelve passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Thirteen passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -114,7 +114,71 @@ same day. The eighth is the combo test action, measured the same day. The ninth 
 measured the same day, and it closes U2 on the panel side. The tenth is the API Docs screen, measured
 2026-09-21. The eleventh is the Skills screen, measured the same day, and it closes F2 of
 `docs/DRAFT/007-UI-ENDPOINT-READINESS.md`. The twelfth is the Playground Chat screen, measured the same
-day, and it closes F3 of that draft.
+day, and it closes F3 of that draft. The thirteenth is the Changelog screen, measured the same day, and it
+closes F4 of that draft.
+
+### Changelog, 2026-09-21
+
+Run with Bun 1.3.14. This pass covers `/changelog` (SPEC-UI §6.16): the screen that reads the release notes
+the gateway serves and marks each release against the running build.
+
+| Check             | Result                                                                                                                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                                              |
+| `bun run test`    | 2065 tests passed across 96 files, 33 more than the previous pass; the changelog suite is 78 tests across 3 files, one of them rewritten from the shape this screen used to demand                                |
+| `bun run lint`    | Prettier reports every file conforms                                                                                                                                                                              |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                                    |
+| `bun run build`   | succeeds, output in `build/`                                                                                                                                                                                      |
+| Live wire pass    | 18 checks, 0 failures, against a booted `app-serv`: the served notes read through the panel's own client and schema, every marker and the newer count recomputed independently, and four controls                 |
+| Contrast          | the screen's one new graphic pair (the warn marker on a release row) was added to `tests/tokens/contrast.test.ts`, which now runs 52 assertions over both themes                                                  |
+| File size         | largest new source is 182 lines (`src/routes/changelog/+page.svelte`); largest new test is 211 lines (`tests/components/changelog.test.ts`), and the rewritten schema test is 214, all under the 220 warning line |
+| Text hygiene      | 0 em dashes in the new files; the new copy carries no marketing vocabulary (R-16)                                                                                                                                 |
+
+What the screen does, and where it states a limit rather than hiding one:
+
+| Area                      | Behaviour                                                                                                                                                                                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The source                | One read: `GET /api/v1/changelog` (SPEC-API §7.18), the release notes the binary carries. The panel bundles no release text of its own, which is what §14 Q11 settled: a bundled file would drift from the running gateway and then lie.           |
+| The comparison            | `GET /api/v1/version` decides what each release is marked: `Running`, `Newer`, or `Installed`. Both reads run at once, and the fact row names the route the list came from.                                                                        |
+| The date                  | Rendered as the gateway sent it (`2026-09-20`), not through the zoned timestamp formatter: a calendar date has no zone, and formatting it in the browser's zone prints the previous day for a reader behind UTC.                                   |
+| The note                  | The gateway's own paragraph, rendered as one block. The served entry has no category and no bullet list, so the panel invents neither.                                                                                                             |
+| A version it cannot place | Two sentences, one per cause: the read failed, or the gateway reports a value that is not a release number. Neither says "up to date", and no release is marked, because "I could not place your version" is not "you are behind on all of these". |
+| The empty state           | Names the route that answered with an empty list, because the notes travel inside the binary: an empty answer is the gateway's own history being empty, not a source the panel is missing.                                                         |
+| States                    | Loading, failure with Try again, the empty state above, and a version failure that leaves the release list on screen.                                                                                                                              |
+
+#### Live pass against `app-serv`, 2026-09-21
+
+`app-serv` was built from **committed HEAD** with `git archive HEAD app-serv` and `go build`, the way the
+playground pass built it, because another actor was mid-pass in that tree. It booted from its own `.env`
+with a run env that added only `HTTP_ADDR=127.0.0.1:9090`, `PUBLIC_BASE_URL` at the panel's origin,
+`EGRESS_ALLOWED_TARGETS=127.0.0.1/32`, and a run-local `PANEL_BOOTSTRAP_PASSWORD`. The built panel ran with
+`PANEL_API_TARGET` at that address and answered `/login` with 200.
+
+The driver logged in through the panel's own origin, then read the route three ways: as raw bytes through
+the panel's forwarder (200, `application/json`, 1821 bytes, five releases), through the panel's own
+`fetchChangelog` so the live payload parsed by `schemaChangelog`, and through `fetchSystemInfo`. Every
+marker and the newer count were recomputed in the driver with its own arithmetic and compared to the
+module's, so the pass does not check the module against itself. 18 checks, 0 failures.
+
+| What the pass proved | Result                                                                                                                                                                                                                                                         |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The served contract  | Five releases, `v0.4.0` (2026-09-20) down to `v0.0.1` (2026-09-16), newest first by date, each with a version, a calendar date, a title, and a note                                                                                                            |
+| The panel's schema   | The live payload parses through `schemaChangelog`, and the page's sort keeps the served order                                                                                                                                                                  |
+| The comparison       | The running build reports `0.1.0-dev`; the driver's own arithmetic marks `v0.4.0` through `v0.1.0` newer (a prerelease is older than its release) and `v0.0.1` installed, which is what the screen says                                                        |
+| Controls             | The envelope this panel used to demand (`{entries: [...]}`) is refused, a live row with its date removed is refused, an empty list parses (the empty state's data path), and the route answers 401 with no session, both directly and through the panel origin |
+
+One fact about the served data came out of the pass and belongs to `app-serv` rather than the panel: the
+running build reports `0.1.0-dev` while its own changelog goes to `v0.4.0`, so the screen honestly reads
+"4 releases newer than this build" for the binary that is serving those notes. The panel cannot fix that by
+guessing; it prints the version the gateway reports.
+
+The live database was restored to its exact baseline: `usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0
+caps=0 settings=1 auth_null=true media_settings=0 proxies=0`. This pass writes no rows at all, so the only
+change was the bootstrap password hash the boot seeded, nulled after the server stopped, and the run's temp
+files were removed.
+
+The honest limit is the same one the other passes carry: the panel is client-rendered, so the render half is
+covered by jsdom tests and the browser click-through is outstanding.
 
 ### Playground Chat, 2026-09-21
 
@@ -718,22 +782,16 @@ gateway.
 
 ## Open items that block later phases
 
-1. **`app-serv` cannot boot on its P1 tree.** Migration `000007_usage_quota.up.sql` uses `window` as a
-   column name, which is a PostgreSQL reserved word, and the runner stops with `SQLSTATE 42601` after
-   migrations 000005 and 000006 apply. Until that is fixed no panel screen can be verified end-to-end.
-   The fix belongs to `app-serv` P1 and is recorded in `SYSTEM_MAP.md`. Commands for a local run are in
-   `app-serv/README.md`.
-2. **Playground Chat cannot be built yet, but its auth model is decided.** The panel server injects the
-   gateway key, so the browser never holds a credential (owner, 2026-09-17; spec §6.15). What remains is
-   the `app-serv` side and a phase. The sidebar row carries `Planned`.
-3. **Changelog has no release-note source.** SPEC-API §7 defines no changelog endpoint, so the screen at
-   `/changelog` renders the running version from `GET /api/v1/version` and an honest empty release list.
-   The list, ordering, per-release markers, categories, and all three states are implemented, so a source
-   only has to feed `schemaChangelog`. Spec §14 Q11 lists the three options.
-4. `AGENTS.md` scopes itself to the Go services (`app-*/**`), so it does not govern this panel. The
+1. **The drift gate that compares these schemas against SPEC-API §7 is not wired yet.** The premise changed
+   on 2026-09-21: the contract is served as `GET /api/v1/openapi.json` and generated from
+   `docs/CONTRACT/001-CONTRACT-API-V1.yaml`, so the gate has a shape it can use now, and the file it
+   originally waited for (`docs/SPEC-API/002-SPEC-API-openapi.md`) is superseded. See spec §14 Q3.
+2. `AGENTS.md` scopes itself to the Go services (`app-*/**`), so it does not govern this panel. The
    panel's own rules come from `docs/SPEC-UI/001-SPEC-UI.md` §10, §11, and §7.1.5, and they are applied by
    hand here. The panel's gates live in `scrypts/gates/panel-check.sh`.
-5. The drift gate that compares these schemas against SPEC-API §7 is not wired yet, because
-   `docs/SPEC-API/002-SPEC-API-openapi.md` does not exist to compare against (spec §14 Q3).
-6. Gateway key `status` values are not enumerated in SPEC-API §7.3. The panel currently writes `active`
+3. Gateway key `status` values are not enumerated in SPEC-API §7.3. The panel currently writes `active`
    and `disabled` and renders any other value verbatim; see §14 Q9.
+
+Two items left this list on 2026-09-21 because the work they blocked on landed: `app-serv` boots (P1 fixed
+the reserved-word migration), and Playground Chat is built (§6.15), so neither is open. The list is
+measured rather than assumed: each item names the check that would close it.

@@ -38,6 +38,9 @@ const GRAPHIC_PAIRS: { fg: string; bg: string; floor: number; label: string }[] 
 	{ fg: 'accent', bg: 'surface-3', floor: 3, label: 'accent marker on a selected row' },
 	{ fg: 'accent', bg: 'sidebar-accent', floor: 3, label: 'accent marker on the active row' },
 	{ fg: 'accent', bg: 'sidebar', floor: 3, label: 'accent marker against the sidebar' },
+	// The changelog marks each release with a 3px bar on the row's own surface, and the bar is the only
+	// place `warn` is a graphic rather than text.
+	{ fg: 'warn', bg: 'surface', floor: 3, label: 'warning marker on a release row' },
 	{ fg: 'border', bg: 'surface', floor: 1.2, label: 'surface seam' },
 	{ fg: 'border', bg: 'surface-2', floor: 1.2, label: 'raised panel seam' }
 ];

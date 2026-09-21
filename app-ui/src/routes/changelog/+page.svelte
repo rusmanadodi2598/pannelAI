@@ -1,31 +1,31 @@
 <script lang="ts">
-	// Changelog (docs/SPEC-UI/001-SPEC-UI.md §6.18).
+	// Changelog (docs/SPEC-UI/001-SPEC-UI.md §6.16).
 	//
 	// The screen answers one question: what changed, and is this build behind? So the hierarchy is the
 	// running version first, then the releases, newest first, each marked against that version.
 	//
-	// The data source is not decided (SPEC-UI §14 Q11): SPEC-API §7 defines no changelog endpoint. Rather
-	// than render a bundled list that would drift from the running gateway, the screen shows what it
-	// actually knows plus an honest empty state naming the missing source. When a source lands, it feeds
-	// `schemaChangelog` and only the loader below changes.
-	//
-	// The version header is real: GET /api/v1/version (SPEC-API §7.1) already reports it.
+	// Two reads, and the screen says which one failed. The releases come from `GET /api/v1/changelog`
+	// (SPEC-API §7.18), which the binary serves from the history it was built with; the running version
+	// comes from `GET /api/v1/version` (§7.1), and it is what turns a list into an answer. A version that
+	// could not be read does not hide the list: the releases are worth reading without it, and the status
+	// line says the comparison is unavailable rather than marking every release as newer.
+	import { onMount } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { CHANGELOG_PATH, fetchChangelog } from '$lib/api/changelog';
 	import { fetchSystemInfo } from '$lib/api/system';
 	import {
+		canCompare,
 		countNewer,
 		releaseMarker,
 		sortChangelog,
-		type ChangelogEntry
+		type Changelog,
+		type ReleaseMarker
 	} from '$lib/schemas/changelog';
 	import { CHANGELOG_COPY as copy } from '$lib/strings/changelog';
-	import { formatTimestamp } from '$lib/utils/time';
-	import { onMount } from 'svelte';
 
-	// Entries come from the panel's release-note source. Empty until one exists, and the empty state says
-	// so instead of pretending the gateway has no history.
-	let entries = $state<ChangelogEntry[]>([]);
+	let changelog = $state<Changelog | null>(null);
 	let runningVersion = $state('');
+	let versionError = $state<string | null>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
@@ -34,23 +34,43 @@
 	async function load(): Promise<void> {
 		loading = true;
 		error = null;
+		versionError = null;
 
-		const result = await fetchSystemInfo();
+		// Both reads at once: neither answer depends on the other, and asking for the second only after the
+		// first landed would spend two round trips on two facts the screen can have in one.
+		const [list, version] = await Promise.all([fetchChangelog(), fetchSystemInfo()]);
 		loading = false;
 
-		if (!result.ok) {
-			// A missing version is not a screen failure: the release list is still worth reading. The
-			// status line says the version is unknown rather than marking every release as newer.
-			runningVersion = '';
-			error = result.error.message;
+		if (!list.ok) {
+			changelog = null;
+			error = list.error.message;
 			return;
 		}
 
-		runningVersion = result.data.version;
+		changelog = list.data;
+
+		if (!version.ok) {
+			runningVersion = '';
+			versionError = version.error.message;
+			return;
+		}
+
+		runningVersion = version.data.version;
 	}
 
-	const releases = $derived(sortChangelog(entries));
+	const releases = $derived(changelog ? sortChangelog(changelog.data) : []);
 	const newerCount = $derived(countNewer(releases, runningVersion));
+	const comparable = $derived(canCompare(runningVersion));
+
+	// The identity motif carries the marker and the chip beside it says the same thing in words, so the
+	// state is never carried by the colour alone. `unknown` gets neither, because a mark with no sentence
+	// next to it would be the one thing the motif may not do.
+	const MARKER_TONES: Record<ReleaseMarker, string> = {
+		running: 'bg-[var(--color-accent)]',
+		newer: 'bg-[var(--color-warn)]',
+		older: 'bg-[var(--color-border)]',
+		unknown: ''
+	};
 </script>
 
 <section class="flex max-w-3xl flex-col gap-6">
@@ -61,7 +81,8 @@
 		</div>
 
 		<!-- The running version is the reason the screen exists, so it is the focal point rather than a
-		     line of chrome. -->
+		     line of chrome. While the read is in flight it says so, rather than claiming the version is
+		     unknown before the gateway has answered. -->
 		<div
 			class="ms-auto flex flex-col items-end gap-0.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2"
 		>
@@ -70,78 +91,90 @@
 				>{copy.running.label}</span
 			>
 			<span class="font-mono text-sm text-[var(--color-text)]">
-				{runningVersion || 'unknown'}
+				{loading ? copy.running.reading : runningVersion || 'unknown'}
 			</span>
 		</div>
 	</div>
 
-	{#if error}
-		<p class="text-sm text-[var(--color-text-muted)]" role="status">
-			{copy.running.unknown}
-			<span class="block">{error}</span>
-		</p>
-	{/if}
-
 	{#if loading}
 		<StateMessage kind="loading" title={copy.loading} />
-	{:else if releases.length === 0}
-		<StateMessage kind="empty" title={copy.empty.title} description={copy.empty.description} />
-	{:else}
-		<p class="text-sm text-[var(--color-text-muted)]" role="status">
-			{#if runningVersion}
+	{:else if error}
+		<StateMessage kind="error" title={copy.error.title} description={error}>
+			{#snippet action()}
+				<button type="button" class="underline" onclick={() => void load()}
+					>{copy.error.retry}</button
+				>
+			{/snippet}
+		</StateMessage>
+	{:else if changelog && releases.length === 0}
+		<StateMessage
+			kind="empty"
+			title={copy.empty.title}
+			description={copy.empty.description(CHANGELOG_PATH)}
+		/>
+	{:else if changelog}
+		<!-- What was read, stated as facts about the route rather than as a claim about the gateway. -->
+		<div
+			class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-muted)]"
+		>
+			<span>{copy.source.readFrom(CHANGELOG_PATH)}</span>
+			<span>{copy.source.releases(releases.length)}</span>
+		</div>
+
+		{#if versionError}
+			<p class="text-sm text-[var(--color-text-muted)]" role="status">
+				{copy.running.unreadable}
+				<span class="block">{versionError}</span>
+			</p>
+		{:else if !comparable}
+			<p class="text-sm text-[var(--color-text-muted)]" role="status">
+				{copy.running.notComparable(runningVersion)}
+			</p>
+		{:else}
+			<p class="text-sm text-[var(--color-text-muted)]" role="status">
 				{newerCount > 0 ? copy.status.behind(newerCount) : copy.status.upToDate}
-			{:else}
-				{copy.status.unknown}
-			{/if}
-		</p>
+			</p>
+		{/if}
 
 		<ol class="flex flex-col gap-3">
 			{#each releases as release (release.version)}
 				{@const marker = releaseMarker(release.version, runningVersion)}
+				{@const label = copy.marker[marker]}
 				<li
-					class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+					class="relative flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 ps-5"
 				>
+					{#if label}
+						<span
+							aria-hidden="true"
+							class="absolute inset-y-4 start-0 w-[3px] rounded-[var(--radius-full)] {MARKER_TONES[
+								marker
+							]}"
+						></span>
+					{/if}
+
 					<div class="flex flex-wrap items-center gap-3">
 						<span class="font-mono text-sm font-medium">{release.version}</span>
-						<span class="text-xs text-[var(--color-text-muted)]">
-							{formatTimestamp(release.released_at)}
-						</span>
-						<!-- A real status, not decoration: it says whether this build already has the release. -->
-						{#if copy.marker[marker]}
+						<!-- The date is the gateway's own calendar date, rendered as it was sent. A date has no
+						     zone, and a zoned formatter would print a day the gateway never reported. -->
+						<time class="text-xs text-[var(--color-text-muted)]" datetime={release.date}
+							>{release.date}</time
+						>
+						{#if label}
 							<span
 								class="ms-auto rounded-[var(--radius-sm)] border px-1.5 py-0.5 text-[11px] {marker ===
 								'running'
 									? 'border-[var(--color-accent)] text-[var(--color-accent)]'
 									: 'border-[var(--color-border)] text-[var(--color-text-muted)]'}"
 							>
-								{copy.marker[marker]}
+								{label}
 							</span>
 						{/if}
 					</div>
 
-					<div class="flex flex-col gap-1.5">
-						<span
-							class="text-[11px] font-semibold tracking-[0.06em] uppercase text-[var(--color-text-muted)]"
-							>{copy.category[release.category]}</span
-						>
-						<ul class="flex flex-col gap-1">
-							{#each release.items as item (item)}
-								<li class="flex gap-2 text-sm">
-									<!-- The identity motif at list scale: a marker on the leading edge, paired with
-									     the text so meaning is never carried by the mark alone. -->
-									<span
-										aria-hidden="true"
-										class="mt-1.5 size-1.5 shrink-0 rounded-[var(--radius-full)] bg-[var(--color-border)]"
-									></span>
-									<span class="min-w-0">{item}</span>
-								</li>
-							{/each}
-						</ul>
+					<div class="flex flex-col gap-1">
+						<h2 class="text-sm font-medium">{release.title}</h2>
+						<p class="text-sm text-[var(--color-text-muted)]">{release.notes}</p>
 					</div>
-
-					<p class="text-xs text-[var(--color-text-muted)]">
-						{copy.entriesCounted(release.items.length)}
-					</p>
 				</li>
 			{/each}
 		</ol>

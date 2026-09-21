@@ -1,23 +1,38 @@
-// Changelog schemas.
+// Changelog schemas, for the shape the gateway serves (docs/SPEC-UI/001-SPEC-UI.md §6.16).
 //
-// The screen reads release notes for the running gateway. The data source is not decided yet
-// (SPEC-UI §14 Q11): SPEC-API §7 defines no changelog endpoint, so the panel does not fetch. What is
-// decided is the shape, and this file is that shape, so whichever source lands feeds the same contract
-// and the rendering layer does not change.
+// One call: `GET /api/v1/changelog` (SPEC-API §7.18). The binary carries the release notes it was built
+// from, so the panel reads the history the running gateway reports and cannot drift from it. The route
+// promises newest first and this module still sorts, because the order the screen depends on is the
+// deterministic one: a same-day pair must not swap places between two reads.
 //
-// Two rules shape it:
+// Two rules shape the fields:
 //
-//   `category` is an enum rather than a free string. A category the panel does not know is drift, which
-//   R-38 and SPEC-UI §7.4 say to report rather than render.
+//   `date` is a calendar date, not a timestamp. The contract declares `format: date` (`YYYY-MM-DD`), and
+//   `Date.parse` alone is not that check: it accepts a non-ISO spelling such as `2026-9-2`, and it rolls a
+//   day the month does not have (`2026-02-30`) into the next month. Both are refused here, so a value the
+//   contract does not describe reads as drift rather than as a date the screen prints.
 //
 //   An entry's version is the string the gateway reports, kept verbatim. The panel compares versions to
 //   mark what is newer than the running build, and it never rewrites the value it was given.
 
 import { z } from 'zod';
 
-// The kinds of change a release carries. These are the category names this panel renders, and an unknown
-// one fails the parse so the drift is visible instead of silently collapsing into "Other".
-export const CHANGELOG_CATEGORIES = ['feature', 'fix', 'change', 'security', 'internal'] as const;
+const CALENDAR_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Whether a value is a real calendar date in the contract's `format: date`.
+ *
+ * The round trip is the second half of the check: a day the month does not have moves into the next
+ * month, so the formatted result no longer equals what came in.
+ */
+function isCalendarDate(value: string): boolean {
+	const match = CALENDAR_DATE.exec(value);
+	if (match === null) return false;
+
+	const [, year, month, day] = match;
+	const parsed = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+	return parsed.toISOString().slice(0, 10) === value;
+}
 
 export const schemaChangelogEntry = z.object({
 	version: z
@@ -25,25 +40,23 @@ export const schemaChangelogEntry = z.object({
 		.trim()
 		.refine((value) => value.length > 0, { message: 'A release needs a version.' })
 		.refine((value) => value.length <= 64, { message: 'Use 64 characters or fewer.' }),
-	released_at: z
+	date: z.string().refine(isCalendarDate, { message: 'Invalid release date.' }),
+	title: z
 		.string()
-		.refine((value) => !Number.isNaN(Date.parse(value)), { message: 'Invalid release date.' }),
-	category: z.enum(CHANGELOG_CATEGORIES),
-	// One line per entry. A release note is what changed, not a paragraph about it.
-	items: z
-		.array(
-			z
-				.string()
-				.trim()
-				.refine((value) => value.length > 0, { message: 'An entry cannot be empty.' })
-		)
-		.min(1, { message: 'A release needs at least one entry.' })
+		.trim()
+		.refine((value) => value.length > 0, { message: 'A release needs a title.' }),
+	// The note is the paragraph the gateway wrote, rendered as it stands. Required and not blank: an empty
+	// note would render as a release that changed nothing, which is a claim the source did not make.
+	notes: z
+		.string()
+		.trim()
+		.refine((value) => value.length > 0, { message: 'A release needs a note.' })
 });
 
 export type ChangelogEntry = z.infer<typeof schemaChangelogEntry>;
 
 export const schemaChangelog = z.object({
-	entries: z.array(schemaChangelogEntry)
+	data: z.array(schemaChangelogEntry)
 });
 
 export type Changelog = z.infer<typeof schemaChangelog>;
@@ -58,6 +71,17 @@ function parseVersion(version: string): { segments: number[]; prerelease: boolea
 		segments: match[1].split('.').map((part) => Number(part)),
 		prerelease: match[2] !== undefined
 	};
+}
+
+/**
+ * Whether a running version can be compared to a release at all.
+ *
+ * This is what the screen's status line asks before it says anything about being behind: a gateway that
+ * reports `dev-build` was read successfully, so "I could not read it" would be the wrong sentence, and a
+ * count of zero newer releases is not "you are up to date" when nothing could be compared.
+ */
+export function canCompare(runningVersion: string): boolean {
+	return runningVersion.trim().length > 0 && parseVersion(runningVersion) !== null;
 }
 
 /**
@@ -94,13 +118,13 @@ export type ReleaseMarker = 'running' | 'newer' | 'older' | 'unknown';
  * Says how one release relates to the running build, which is the whole reason the screen exists: an
  * operator reading a changelog wants to know what changed since their version.
  *
- * `runningVersion` empty means the version endpoint did not answer. That returns `unknown` for every
- * entry rather than marking everything as newer, because "I could not read the running version" is a
- * different statement from "you are behind on all of these".
+ * A running version that cannot be compared returns `unknown` for every entry rather than marking
+ * everything as newer, because "I could not place your version" is a different statement from "you are
+ * behind on all of these", and the second one is confidently wrong in a way that would tell an operator to
+ * upgrade something they already run.
  */
 export function releaseMarker(entryVersion: string, runningVersion: string): ReleaseMarker {
-	if (runningVersion.trim().length === 0) return 'unknown';
-	if (parseVersion(runningVersion) === null) return 'unknown';
+	if (!canCompare(runningVersion)) return 'unknown';
 
 	const order = compareVersions(entryVersion, runningVersion);
 	if (order === 0) return 'running';
@@ -115,7 +139,7 @@ export function releaseMarker(entryVersion: string, runningVersion: string): Rel
  */
 export function sortChangelog(entries: readonly ChangelogEntry[]): ChangelogEntry[] {
 	return [...entries].sort((left, right) => {
-		const byDate = Date.parse(right.released_at) - Date.parse(left.released_at);
+		const byDate = Date.parse(right.date) - Date.parse(left.date);
 		if (byDate !== 0) return byDate;
 		return compareVersions(right.version, left.version);
 	});
@@ -123,6 +147,6 @@ export function sortChangelog(entries: readonly ChangelogEntry[]): ChangelogEntr
 
 /** How many releases are newer than the running build, phrased for the screen's summary line. */
 export function countNewer(entries: readonly ChangelogEntry[], runningVersion: string): number {
-	if (runningVersion.trim().length === 0) return 0;
+	if (!canCompare(runningVersion)) return 0;
 	return entries.filter((entry) => releaseMarker(entry.version, runningVersion) === 'newer').length;
 }
