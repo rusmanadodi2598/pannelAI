@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 |             |                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sebelas layar daftar, D4 dijawab owner, §8.6.2 tetap). Sisa nomor masih menunggu pilihan owner |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sebelas layar daftar, D4 dijawab owner, §8.6.2 tetap), F10 **CLOSED 2026-09-21** (guard §8.4.4 di enam form berdraft, §8.4.5 diamandemen dengan alasan tertulis), F11 **CLOSED 2026-09-21** (angka dan klaim dokumen diukur ulang dengan perintahnya). Sisa nomor tinggal F12 |
 | **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
 | **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
@@ -46,19 +46,19 @@ Empat langkah, semuanya bisa diulang:
 | 11  | API Docs               | `/api-docs`                              | ada                | §7.17 live sejak P4                      | F1 **CLOSED 2026-09-21**                       |
 | 12  | Changelog              | `/changelog`                             | ada, membaca §7.18 | §7.18 live sejak P4                      | F4 **CLOSED 2026-09-21**, F8 **CLOSED**       |
 | 13  | Console Log            | `/console-log`                           | ada                | §7.13 live                               | F8 **CLOSED 2026-09-21**                       |
-| 14  | Setting                | `/settings`                              | ada                | §7.14 live                               | F10                                            |
+| 14  | Setting                | `/settings`                              | ada                | §7.14 live                               | F10 **CLOSED 2026-09-21**                      |
 
-Satu route yang tidak ada adalah baris yang masih `planned: true` di
-`src/lib/navigation.ts` (`playground` baris 108). Endpoint dan penugasan fasenya sudah ada
-(§7.15 live, §10 P4 menugaskan halamannya), jadi `Planned` di baris itu adalah status yang
-bisa ditutup, bukan penantian. Baris `skills` (baris 100) ditutup F2 pada 2026-09-21 dan
-sekarang membawa `href: '/skills'`.
+Tidak ada lagi route yang tidak ada. Baris `playground` (`src/lib/navigation.ts:108`) ditutup F3 pada
+2026-09-21 dan sekarang membawa `href: '/playground'`, dan baris `skills` (baris 100) ditutup F2 pada
+tanggal yang sama. Satu-satunya flag `planned: true` yang tersisa ada di container Media Provider, dan
+renderer memperlakukannya sebagai disclosure, bukan chip: jumlah baris yang dirender `Planned` adalah nol.
 
 ## 3. Bukti kesiapan yang sudah lolos
 
-- 12 dari 14 layar terbangun dan routable; 17 baris sidebar routable (11 route statis plus 6
-  kind media), 2 planned, 1 container, 20 node dalam 5 grup (diukur ulang 2026-09-21 setelah
-  F1; angka draft 2026-09-20 adalah 11 dari 14, 16 routable, 3 planned).
+- 14 dari 14 layar terbangun dan routable; 19 baris sidebar routable (13 route statis plus 6
+  kind media), 0 `Planned`, 1 container, 20 node dalam 5 grup (diukur ulang 2026-09-21 lewat
+  `bun -e` atas `NAV_GROUPS` dan `allNodes`; angka draft 2026-09-20 adalah 11 dari 14, 16 routable,
+  3 planned).
 - Sembilan capability U2 (SPEC-UI §12) landed; dua dari empat exit criteria-nya sudah
   diverifikasi live (proxy tested from the panel; token saver config saved and reflected).
 - Line limit terukur: **tidak ada satu pun file di `app-ui/src/` yang melewati 220 baris**
@@ -732,6 +732,53 @@ memvalidasi di submit dan menampilkan indikator dirty.
 
 **Kriteria selesai.** Salah satu jalur dipilih; bila (a), ada test untuk keduanya.
 
+**Status: CLOSED 2026-09-21.** Owner menjawab D5 pada 2026-09-21 dengan jalur tengah: guard bersama
+diimplementasikan untuk form yang punya draft, dan §8.4.5 diamandemen dengan alasan tertulis. Tidak ada
+perubahan `app-serv`:
+
+- `src/lib/dirty-guard.ts` (49 baris) adalah satu-satunya tempat aturannya hidup. Tiga fungsi:
+  `registerDirtyForm(isDirty)` menyimpan getter dan mengembalikan pelepasnya, `hasDirtyForm()` membaca
+  getter itu **saat navigasi terjadi** (bukan saat form mendaftar, jadi draft yang sudah disimpan atau
+  dibuang berhenti memperingatkan tanpa pembukuan di form), dan `shouldCancelNavigation(navigation,
+  confirmLeave)` memisahkan dua jalur pertanyaan.
+- Dua jalur itu dipisah karena dialognya berbeda: navigasi yang melepas dokumen (`willUnload`) cukup
+  dibatalkan, dan browser sendiri yang menanyakan; navigasi di dalam panel tidak punya dialog browser,
+  jadi guard bertanya lewat `window.confirm`, yang sinkron dan karena itu bisa dipakai `beforeNavigate`.
+  `confirm()` tidak bisa ditata seperti modal panel, dan itu keputusan yang dicatat: alternatifnya satu
+  modal kustom yang harus menunda navigasi, yaitu bahasa dialog kedua untuk aturan yang browsernya sudah
+  menjawab sendiri di jalur unload.
+- Pemasangannya satu tempat: `src/routes/+layout.svelte:36-40` memanggil `beforeNavigate` dan
+  membatalkan lewat `shouldCancelNavigation`, dengan alasan yang sama seperti gerbang sesi di berkas itu,
+  yaitu satu aturan untuk semua layar yang tidak bisa dilupakan satu layar.
+- Enam form berdraft mendaftar, satu efek per form: tiga tab Settings (`SettingsSecurityTab`,
+  `SettingsRoutingTab`, `SettingsLoggingTab`), `TokenSaverForm` (dirty bila salah satu dari tiga section
+  berubah, karena meninggalkan layar kehilangan ketiganya), `ProxyOutboundSettings`, dan `ComboEditor`.
+  Form yang lain tidak mendaftar dan itu disengaja: hanya form yang punya baseline hasil baca server yang
+  bisa mengatakan apa arti "belum tersimpan"; dialog yang membuang draftnya saat Cancel tidak punya draft
+  untuk hilang.
+- `ComboEditor` mendapat baseline baru: `comboFormDirty(baseline, form)` di `combo-form.ts` (142 baris)
+  membandingkan field demi field, dan baseline-nya `$state.snapshot` dari salinan yang di-seed, karena
+  proxy `$state` menulis menembus objek yang dibungkusnya sehingga satu objek bersama akan ikut bergerak
+  dengan tiap ketikan. Pemasangan guard mendorong berkas itu dari 218 baris ke atas ambang 220, jadi dua
+  field yang visibilitasnya mengikuti strategi dipindah ke `ComboStrategyFields.svelte` (60 baris),
+  persis seam yang header editor itu sudah sebut; `ComboEditor` sekarang 201 baris.
+- Test: 17 baru di 3 berkas, semuanya hijau. `tests/dirty-guard.test.ts` (9) menutup registry dan
+  keputusan navigasi (tabel empat baris: bersih, unload, tolak, izinkan; plus kalimat yang ditanyakan dan
+  pembacaan getter saat navigasi); `tests/components/dirty-forms.test.ts` (6, 178 baris) merender lima form
+  asli bergaya settings dengan fixture test layarnya masing-masing dan membuktikan tiga hal per form: form
+  yang baru dimuat belum kotor, satu suntingan membuatnya kotor, dan mengembalikan nilainya membuatnya
+  bersih lagi, plus satu test yang membuktikan form yang di-unmount melepas pendaftarannya; dan
+  `tests/components/dirty-combo-form.test.ts` (2, 95 baris) memegang dua kasus combo editor, combo
+  tersimpan dan mode create. Form yang mendaftar sekali saat mount lalu tidak pernah membaca ulang akan
+  gagal di asersi kedua. Berkas kedua dipisah dari yang pertama setelah Prettier mengalirkannya ke 225
+  baris, di atas ambang 220, pada seam yang sudah ada: combo editor satu-satunya form yang dirty-nya
+  perbandingan field demi field, bukan perbandingan dokumen settings.
+- Batas yang dicatat, bukan disembunyikan: yang diuji adalah keputusan guard dan pendaftaran tiap form,
+  bukan `beforeNavigate`-nya sendiri, karena harness test panel merender komponen tanpa router; menekan
+  tautan navigasi dengan draft kotor adalah click-through browser yang tetap outstanding bersama F12.
+  Tombol Cancel/Discard yang eksplisit tetap tidak bertanya, karena itu pembuangan yang disengaja, bukan
+  meninggalkan form.
+
 ## 14. F11 (LOW): Angka dan klaim dokumen yang basi
 
 **Fakta.** Beberapa klaim terukur tidak lagi cocok, dan dua di antaranya sudah selesai:
@@ -762,6 +809,41 @@ daftar "open items" README dengan yang benar-benar terbuka (F1 sampai F3, F12, d
 
 **Kriteria selesai.** Tidak ada angka di README/§15 tanpa perintah ukur yang bisa diulang;
 tidak ada item README yang menyatakan blocker yang sudah tertutup.
+
+**Status: CLOSED 2026-09-21.** Setiap angka diukur ulang dengan perintahnya, dan setiap klaim yang basi
+diperbaiki di dokumen pemiliknya. Tidak ada perubahan kode:
+
+- Sidebar diukur ulang lewat `bun -e` atas `NAV_GROUPS` dan `allNodes` (`src/lib/navigation.ts`): 5 grup,
+  20 node, 19 leaf routable (13 route statis plus 6 kind media), 1 container, 0 baris `Planned`. Sebuah leaf
+  dihitung routable bila ia membawa `href` atau `link`, karena enam baris kind media membawa `link` ke route
+  berparameter `/media-providers/[kind]`, bukan `href`; menghitung `href` saja akan melaporkan 13.
+  `grep -c 'planned: true'` menemukan 1, yaitu container Media Provider yang dirender sebagai disclosure;
+  baris "Sidebar row count" §15 karena itu sekarang menyebut perintah `bun -e` sebagai cara ukurnya,
+  bukan `grep -c` saja.
+- README: baris statusnya menyebut 18 routable dan 1 `Planned` dari keadaan sebelum `/playground`;
+  sekarang 19 routable, 0 `Planned`, dan `/playground` masuk daftar "Screens built", tempat layar itu
+  sebelumnya tidak pernah dicatat. Butir "Open items" nomor 1 menyatakan gate drift "belum wired",
+  padahal `scrypts/gates/contract-drift.sh` sudah membandingkan SPEC-API §8 dengan enum panel dan
+  berjalan di `scrypts/gates/all.sh`, dan `scrypts/gates/contract-openapi.sh` memaku dokumen yang
+  dilayani ke kontrak YAML; butir itu sekarang menyatakan separuh yang benar-benar terbuka, yaitu schema
+  respons panel tidak dibandingkan ke kontrak yang dilayani oleh gate mana pun. Kalimat penutup daftar
+  itu menyebut "dua item keluar" padahal F4 mencatat tiga (boot `app-serv`, fase playground, sumber
+  changelog); angkanya diperbaiki.
+- SPEC-UI §15: baris "Panel test count" masih 1053 dari pass Logs; sekarang 2185 di 111 berkas (diukur pass
+  ini) dan
+  rantai riwayatnya diperpanjang, bukan diganti. Baris path `app-ui/` masih menyatakan sisa layar
+  `Planned`; sekarang menyatakan 19 leaf routable dan 0 `Planned`, dengan click-through terekam sebagai
+  satu-satunya langkah yang tersisa. Baris "Sidebar row count" sudah benar, hanya cara ukurnya diperjelas.
+- SPEC-UI §12: paragraf status U1 ditambahkan; U0, U2, dan U3 sudah punya, U1 tidak. Isinya menyebut tiap
+  layar di baris U1 sudah dibangun, tab Network adalah pointer ke Proxy Pools sesuai §6.9, dan exit
+  criterion-nya adalah click-through terekam yang jadi milik F12.
+- SPEC-UI §5.1: baris `/api-docs` masih menyebut "rendered from SPEC-API §7", padahal layarnya merender
+  dokumen yang dilayani (`GET /api/v1/openapi.json`); barisnya sekarang menyebut itu. Itu sisa yang F2
+  catat sebagai di luar lingkupnya.
+- Dua butir F11 yang sudah selesai lebih dulu dicatat apa adanya: rujukan §6.18 di komentar route
+  changelog (F4) dan tiga butir "open items" README yang blocker-nya sudah tertutup (F4).
+- Batas yang dicatat: angka test count di §15 dan README diukur pada tree beku pass ini, jadi pass
+  berikutnya menggesernya lagi; itu sebabnya tiap baris menyebut perintah pengukurnya.
 
 ## 15. F12 (MEDIUM): Bukti click-through U0, U1, dan dua kriteria U2 belum tercatat
 
@@ -795,7 +877,7 @@ penyebab yang disebut.
 | D2  | Bentuk rilis changelog: render yang dilayani (`version, date, title, notes`) dengan amandemen §6.16, atau `app-serv` menambah `category` + `items[]`?         | Render yang dilayani, amandemen §6.16                             | F4 **CLOSED 2026-09-21** (dipakai; `app-serv` tidak disentuh)                                                                                  |
 | D3  | API Docs: cukup yang ada di dokumen (path, tag, summary, auth) dengan tabel error ditunjuk lewat kalimat, atau minta `x-error-codes`/`x-phase` ke `app-serv`? | Cukup yang ada, tanpa salinan kedua                               | F1                                                                                                                                             |
 | D4  | Refresh control: pasang di semua layar daftar, atau amandemen §8.6.2 menjadi khusus layar yang polling?                                                       | Pasang satu komponen bersama                                      | F8 **CLOSED 2026-09-21** (dipakai owner: satu komponen bersama di sebelas layar daftar, §8.6.2 tetap seperti tertulis)                         |
-| D5  | §8.4.4 dirty guard dan §8.4.5 validasi blur: implementasi atau amandemen?                                                                                     | Implementasi untuk form berdraft, amandemen untuk blur            | F10                                                                                                                                            |
+| D5  | §8.4.4 dirty guard dan §8.4.5 validasi blur: implementasi atau amandemen?                                                                                     | Implementasi untuk form berdraft, amandemen untuk blur            | F10 **CLOSED 2026-09-21** (dipakai owner: guard bersama di enam form berdraft, §8.4.5 diamandemen dengan alasan tertulis)                      |
 | D6  | Playground: sediakan `PANEL_PLAYGROUND_KEY` (gateway key) untuk pass live?                                                                                    | Ya, satu key khusus playground                                    | F3, F12; F3 tidak memakainya: pass live mencetak key sendiri lewat `POST /api/v1/gateway-keys`, jadi tidak ada key owner yang perlu diserahkan |
 
 ## 17. Urutan pengerjaan yang disarankan
@@ -805,7 +887,8 @@ penyebab yang disebut.
 3. F6 (mode baris berulang; kliennya sudah ada).
 4. F7 (test render empat layar; menutup area yang F5/F6 sentuh).
 5. F8 dan F10 setelah D4 dan D5 dijawab (keduanya bisa jadi satu perubahan lintas layar).
-   F8 **CLOSED 2026-09-21**; F10 masih menunggu jawaban D5.
+   F8 **CLOSED 2026-09-21**; F10 **CLOSED 2026-09-21** (D5 dijawab owner: guard bersama plus
+   amandemen §8.4.5).
 6. F4, lalu F1, lalu F2, lalu F3 (empat layar; F4 paling kecil karena layarnya sudah ada,
    F3 terakhir karena butuh D6 dan menyentuh jalur kredensial). F1 **CLOSED 2026-09-21**, F2
    **CLOSED 2026-09-21**, F3 **CLOSED 2026-09-21**, F4 **CLOSED 2026-09-21**.
