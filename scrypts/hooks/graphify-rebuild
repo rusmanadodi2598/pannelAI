@@ -48,7 +48,6 @@ log="$out/rebuild.log"
 lock="$out/.hook-rebuild.lock"
 stamp="$out/.rebuild.last"
 pending="$out/.rebuild.pending"
-doc_pending="$out/.rebuild.doc-pending"
 deferred="$out/.rebuild.deferred"
 changed="$out/.rebuild.changed"
 throttle="${GRAPHIFY_REBUILD_THROTTLE:-900}"
@@ -58,74 +57,48 @@ log_line() {
 	printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$log"
 }
 
-# corpus_changed reports whether any changed path is a file the graph indexes.
-# manifest.json is the authority for "is this file part of the corpus", so the
-# check does not need its own copy of the extension lists and cannot drift from
-# what graphify actually scanned. An absent manifest returns "changed" so the
-# rebuild itself decides, rather than this gate silently disabling the hook.
-corpus_changed() {
+# classify_changed <code|llm> reports whether any changed path is a file
+# graphify routes to that half of the pipeline: "code" for the AST pass that
+# `graphify update` re-runs, "llm" for the doc/paper/image pass it does not
+# touch. It asks graphify itself - detect.classify_file - instead of keeping a
+# copy of the extension lists, so an extensionless hook script is classified by
+# its shebang, a package manifest by name, and the answer cannot drift from the
+# way the graph was actually built. An earlier version asked "not in
+# CODE_EXTENSIONS", which called every extensionless hook file a document and
+# printed a doc advisory for a commit that touched only shell scripts.
+#
+# A deleted path cannot be classified from disk, so it falls back to
+# manifest.json: a file the graph still holds counts as code, which is what
+# makes a deletion trigger the rebuild that drops its nodes.
+#
+# If graphify cannot be imported the answer degrades in the safe direction:
+# "code" rebuilds (wasted work at worst), "llm" stays quiet (this answer only
+# drives an advisory log line, and a false alarm is worse than silence).
+classify_changed() {
 	[ -s "$changed" ] || return 1
 	local py="python3"
 	if [ -x "$out/.graphify_python" ]; then
 		py="$(cat "$out/.graphify_python")"
 	fi
-	"$py" - "$root" "$changed" <<'PY'
+	"$py" - "$root" "$changed" "$1" <<'PY'
 import json
 import sys
 from pathlib import Path
 
+kind = sys.argv[3]
 root = Path(sys.argv[1])
 manifest = root / "graphify-out" / "manifest.json"
-if not manifest.exists():
-    sys.exit(0)
 try:
-    keys = set(json.loads(manifest.read_text(encoding="utf-8")).keys())
+    indexed = set(json.loads(manifest.read_text(encoding="utf-8")).keys())
 except (OSError, ValueError):
-    sys.exit(0)
+    indexed = set()
 
-prefix = str(root) + "/"
-for raw in Path(sys.argv[2]).read_text(encoding="utf-8").splitlines():
-    rel = raw.strip()
-    if not rel:
-        continue
-    if rel.startswith(prefix):
-        rel = rel[len(prefix):]
-    if rel in keys:
-        sys.exit(0)
-sys.exit(1)
-PY
-}
-
-# docs_changed reports whether the changed set contains a non-code corpus file,
-# which is what tells a degraded (code-only) run apart from a complete one.
-docs_changed() {
-	[ -s "$changed" ] || return 1
-	local py="python3"
-	if [ -x "$out/.graphify_python" ]; then
-		py="$(cat "$out/.graphify_python")"
-	fi
-	"$py" - "$root" "$changed" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-sys.path.insert(0, "")
 try:
-    from graphify.detect import CODE_EXTENSIONS
+    from graphify.detect import FileType, classify_file
 except Exception:
-    CODE_EXTENSIONS = []
+    sys.exit(0 if kind == "code" else 1)
 
-code = {e.lower() for e in CODE_EXTENSIONS}
-if not code:
-    sys.exit(1)
-
-root = Path(sys.argv[1])
-manifest = root / "graphify-out" / "manifest.json"
-try:
-    keys = set(json.loads(manifest.read_text(encoding="utf-8")).keys())
-except (OSError, ValueError):
-    keys = set()
-
+llm_types = (FileType.DOCUMENT, FileType.PAPER, FileType.IMAGE, FileType.VIDEO)
 prefix = str(root) + "/"
 for raw in Path(sys.argv[2]).read_text(encoding="utf-8").splitlines():
     rel = raw.strip()
@@ -133,9 +106,16 @@ for raw in Path(sys.argv[2]).read_text(encoding="utf-8").splitlines():
         continue
     if rel.startswith(prefix):
         rel = rel[len(prefix):]
-    if keys and rel not in keys:
-        continue
-    if Path(rel).suffix.lower() not in code:
+    path = root / rel
+    if path.exists():
+        found = classify_file(path)
+    elif rel in indexed:
+        found = FileType.CODE  # deleted, but the graph still holds its nodes
+    else:
+        found = None
+    if kind == "code" and found is FileType.CODE:
+        sys.exit(0)
+    if kind == "llm" and found in llm_types:
         sys.exit(0)
 sys.exit(1)
 PY
@@ -154,6 +134,49 @@ run_rebuild() {
 		fi
 		if ! have graphify; then
 			log_line "graphify CLI not on PATH; skipping rebuild"
+			return 0
+		fi
+
+		# What kind of change arrived? Asked before the throttle so a commit with
+		# nothing for a code-only run to do answers at once, instead of parking a
+		# deferred rebuild that would find nothing to rebuild.
+		local has_code=0 has_llm=0
+		classify_changed code && has_code=1
+		classify_changed llm && has_llm=1
+
+		# Code-only by default. Measured 2026-09-22: the headless semantic pass
+		# re-extracted five changed docs and produced a third of the nodes the
+		# assistant-driven pass had (SYSTEM_MAP.md 65 -> 25, SPEC-UI 76 -> 15,
+		# app-ui/README.md 66 -> 8). The shrink guard refused the write, which is
+		# the right call but leaves the hook failing on every doc-touching commit
+		# and therefore never stamping the throttle. `graphify update` preserves
+		# the existing semantic layer and says so itself: "For doc/paper/image
+		# changes run /graphify --update in your AI assistant". So the doc refresh
+		# stays an explicit act; set GRAPHIFY_REBUILD_DOCS=1 to opt back in.
+		local use_docs=0
+		if [ "${GRAPHIFY_REBUILD_DOCS:-0}" = "1" ] || [ "${GRAPHIFY_REBUILD_DOCS:-}" = "true" ]; then
+			if [ -n "${GEMINI_API_KEY:-}${GOOGLE_API_KEY:-}" ]; then
+				use_docs=1
+			else
+				log_line "GRAPHIFY_REBUILD_DOCS is set but no GEMINI_API_KEY/GOOGLE_API_KEY is in this environment; falling back to code-only"
+			fi
+		fi
+
+		# A doc-only commit is not a reason to spend 45s re-extracting code that
+		# did not change: it gets the advisory below. With the doc pass enabled,
+		# a doc change is part of the run and so is a reason to run.
+		local want=0
+		if [ "$has_code" -eq 1 ]; then
+			want=1
+		elif [ "$use_docs" -eq 1 ] && [ "$has_llm" -eq 1 ]; then
+			want=1
+		fi
+		if [ "$want" -eq 0 ]; then
+			if [ "$has_llm" -eq 1 ]; then
+				log_line "no code file changed; doc/paper/image change(s) need an assistant - run /graphify --update, or set GRAPHIFY_REBUILD_DOCS=1"
+			else
+				log_line "no corpus file changed; skipping rebuild"
+			fi
 			return 0
 		fi
 
@@ -194,29 +217,6 @@ run_rebuild() {
 			fi
 		fi
 
-		if ! corpus_changed; then
-			log_line "no corpus file changed; skipping rebuild"
-			return 0
-		fi
-
-		# Code-only by default. Measured 2026-09-22: the headless semantic pass
-		# re-extracted five changed docs and produced a third of the nodes the
-		# assistant-driven pass had (SYSTEM_MAP.md 65 -> 25, SPEC-UI 76 -> 15,
-		# app-ui/README.md 66 -> 8). The shrink guard refused the write, which is
-		# the right call but leaves the hook failing on every doc-touching commit
-		# and therefore never stamping the throttle. `graphify update` preserves
-		# the existing semantic layer and says so itself: "For doc/paper/image
-		# changes run /graphify --update in your AI assistant". So the doc refresh
-		# stays an explicit act; set GRAPHIFY_REBUILD_DOCS=1 to opt back in.
-		local use_docs=0
-		if [ "${GRAPHIFY_REBUILD_DOCS:-0}" = "1" ] || [ "${GRAPHIFY_REBUILD_DOCS:-}" = "true" ]; then
-			if [ -n "${GEMINI_API_KEY:-}${GOOGLE_API_KEY:-}" ]; then
-				use_docs=1
-			else
-				log_line "GRAPHIFY_REBUILD_DOCS is set but no GEMINI_API_KEY/GOOGLE_API_KEY is in this environment; falling back to code-only"
-			fi
-		fi
-
 		local args
 		if [ "$use_docs" -eq 1 ]; then
 			args=(extract "$root" --backend gemini --max-concurrency 2)
@@ -246,13 +246,11 @@ run_rebuild() {
 		fi
 
 		# Doc changes are not refreshed by a code-only run, so say so instead of
-		# letting the rebuild look complete. This marker is advisory only: the
-		# graph is consistent either way.
-		if [ "$use_docs" -eq 0 ] && docs_changed; then
-			: >"$doc_pending"
+		# letting the rebuild look complete. A log line rather than a marker
+		# file: an assistant-driven refresh cannot clear a marker, so it would
+		# age into a standing false alarm.
+		if [ "$use_docs" -eq 0 ] && [ "$has_llm" -eq 1 ]; then
 			log_line "doc/paper/image changes were not re-extracted; run /graphify --update in an assistant, or set GRAPHIFY_REBUILD_DOCS=1"
-		else
-			rm -f "$doc_pending"
 		fi
 
 		if [ -f "$pending" ]; then
