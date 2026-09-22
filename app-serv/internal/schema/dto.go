@@ -47,8 +47,10 @@ type Page struct {
 	Total   int64 `json:"total"`
 }
 
-// DecodePage reads page/per_page query params and clamps them to the documented
-// ranges: page >= 1, 1 <= per_page <= MaxPerPage.
+// DecodePage reads page/per_page query params and enforces the documented
+// ranges: page >= 1, 1 <= per_page <= MaxPerPage. An out-of-range value is a
+// VALIDATION_ERROR rather than a silent clamp, so a caller can tell the page it
+// asked for from the page it received (draft 010 F6, owner decision D3).
 func DecodePage(r *http.Request) (page, perPage int, err error) {
 	page = 1
 	if v := r.URL.Query().Get("page"); v != "" {
@@ -71,7 +73,7 @@ func DecodePage(r *http.Request) (page, perPage int, err error) {
 			return 0, 0, domain.NewValidationError("per_page must be at least 1")
 		}
 		if perPage > MaxPerPage {
-			perPage = MaxPerPage
+			return 0, 0, domain.NewValidationError("per_page must be at most 100")
 		}
 	}
 

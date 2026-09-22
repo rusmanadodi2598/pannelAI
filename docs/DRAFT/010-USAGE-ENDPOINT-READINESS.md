@@ -5,8 +5,9 @@ Dokumen ini adalah **DRAFT PLAN**, bukan kontrak. Kontrak tetap `docs/SPEC-API/0
 pola `003` sampai `009`: temuan bernomor F, owner memilih nomor, mode AFTER untuk memeriksa yang
 sudah ada tanpa mengubah source produksi, mode DURING untuk setiap perbaikan yang dipilih.
 
-Status pengerjaan DURING: **F5 CLOSED 2026-09-22**, lalu **F2 + F9 CLOSED 2026-09-22** (bukti
-lengkap di §5 masing-masing temuan). Nomor lain menunggu pemilihan owner.
+Status pengerjaan DURING: **F5 CLOSED 2026-09-22**, lalu **F2 + F9 CLOSED 2026-09-22**, lalu
+**F1 + F6 + F7 CLOSED 2026-09-22** (bukti lengkap di §5 masing-masing temuan). Nomor lain
+menunggu pemilihan owner.
 
 Lingkup berbeda dari draft sebelumnya: audit ini **menjangkau dua aplikasi sekaligus** atas permintaan
 owner. Bagian pertama (`§3` sampai `§9`) mengaudit readiness empat endpoint Usage di `app-serv/.`.
@@ -186,7 +187,7 @@ dijalankan lalu **dihapus**; `git status` pada akhir audit bersih dari jejak pro
 
 ### F1 HIGH: Keempat route Usage tidak punya HTTP handler test sama sekali
 
-**Status: OPEN.**
+**Status: CLOSED 2026-09-22 (dikerjakan setelah F2/F9 supaya ekspektasi test menulis aturan yang benar; bukti di bawah).**
 
 **Fakta.** `grep -rln "UsageHandler" --include="*_test.go"` mengembalikan nol file. Coverage yang
 ada: service doubles (`usage_readiness_test.go`, 135 baris), schema quota-cap
@@ -216,6 +217,47 @@ quota punya `quota_test.go` + `quota_read_test.go`.
 
 **Kriteria selesai.** Setiap route punya happy + validation + auth test hijau di
 `go test -race ./internal/handler/ ./internal/router/`; tabel minimal 5 variasi; tanpa `t.Skip`.
+
+#### Bukti penutupan F1 (2026-09-22)
+
+**Implementasi.** Tidak ada satu baris pun handler produksi yang berubah; yang hilang adalah
+coverage-nya, jadi yang ditambah adalah test (plus satu perubahan perilaku F6 di decoder bersama,
+lihat F6). Test memakai seam yang sudah ada (`UsageService` dibangun dari repo in-memory), bukan
+zero-value service.
+
+| File | Test | Isi |
+|---|---|---|
+| `internal/handler/usage_test.go` | `TestUsageHandler_Summary` | 8 variasi: happy dengan group breakdown (`error_rate:"1.0000"` dipaksa oleh seed row gagal, jadi mapper benar-benar diuji), happy tanpa group_by, `from` malformed, rentang terbalik, `group_by` invalid, `status` invalid (regresi F2), `q` 201 char, repo error -> `INTERNAL_ERROR` |
+| sama | `TestUsageHandler_SummaryForwardsFilters` | filter valid penuh diteruskan ke repo (window, provider, endpoint, model, gateway_key, q, status, group_by) |
+| sama | `TestUsageHandler_Timeseries` | 5 variasi: default hour, day, `granularity=week` ditolak, `to` malformed, repo error |
+| `internal/handler/usage_records_test.go` | `TestUsageHandler_Records` | 7 variasi: default (meta `per_page:25 total:1`), `page=3&per_page=100` di-echo, `status=banana` 400, `page=0` 400, `per_page=101` 400 (F6), `per_page=abc` 400, repo error 500 |
+| sama | `TestUsageHandler_RecordsForwardsPage` | `page=2&per_page=50` sampai ke `PageQuery` repo, bukan hanya di-echo |
+| sama | `TestUsageHandler_Detail` | 5 variasi: capture off (tanpa blok log), capture on + log tersimpan (bodies ada), capture on + log hilang (`capture_enabled:true`, tanpa log; "ter-log" vs "tak pernah di-log" terlihat beda), request id tak dikenal -> 404, request id kosong -> 400 |
+| sama | `TestUsageHandler_DetailStorageFailure` | repo error pada detail -> `INTERNAL_ERROR` |
+| `internal/handler/usage_stub_test.go` | doubles | `stubUsageRepo` (dengan seam error per read + pencatatan filter/page yang diteruskan), `stubUsageLogs`, `missingUsageLogs`, fixture capture on/off |
+| `internal/handler/usage_route_helpers_test.go` | runner | `usageCase` + `runUsageCases` + `assertUsageResponse` (satu jalur assertion untuk semua tabel; file di-split demi §1.1) |
+| `internal/router/router_usage_routes_test.go` | `TestUsageRoutes_RequireSession` | 401 `UNAUTHORIZED` untuk keempat route tanpa session (per-route, bukan hanya sweep) |
+| sama | `TestUsageRoutes_ThroughMux` | happy keempat route lewat mux nyata + session, lalu POST tiap route -> 405 `METHOD_NOT_ALLOWED` envelope |
+| sama | `TestUsageRoutes_EchoRequestID` | `X-Request-Id` caller ter-echo pada respons 200 |
+
+**Bukti test menangkap regresi (mutation check, dijalankan lalu dipulihkan).**
+
+- `schema.UsageTotalsResponseFrom` dimutasi `ErrorRate: t.ErrorRate()` -> konstanta `"0.0000"`:
+  `TestUsageHandler_Summary` **FAIL** (`error_rate":"0.0000"` pada seed 1/1). Dipulihkan, hijau.
+  (Mutasi pertama dengan seed row sukses lolos karena 0/1 memang "0.0000"; seed lalu diganti ke
+  row gagal supaya nilai turunan mapper benar-benar diuji, itulah sebabnya tabel memuat
+  `error_rate":"1.0000"`.)
+- `schema.UsageRecordDetailFrom` dimutasi `captureEnabled && log != nil` -> `log != nil`:
+  `TestUsageHandler_Detail` **FAIL** (`log block present = true, want false` pada kasus capture off).
+  Dipulihkan, hijau.
+- `router.go` dimutasi: satu route kehilangan `gateway()` (`HandleFunc` langsung):
+  `TestUsageRoutes_RequireSession` **FAIL** (`GET /usage/summary without a session = 200, want 401`).
+  Dipulihkan, hijau. (Sweep seluruh tabel menangkap ini juga, tapi test per-route kini
+  menyebutkan route yang mana.)
+
+**Gate.** `go build ./...`, `go vet ./...`, `gofmt -l .` bersih; `go test -race -count=1 ./...`
+PASS penuh (handler 78 dtk, router 283 dtk); `staticcheck` 0 issue; `golangci-lint` 0 issue;
+`go-headers.sh` PASS (688 file); semua file baru <220 baris (terbesar 218 `usage_records_test.go`).
 
 ### F2 HIGH: Filter `status` menerima nilai di luar closed set, dan query diam-diam mencocokkan nol baris
 
@@ -454,7 +496,7 @@ yang sama tetap terbuka dan tetap menjadi permintaan ke `app-serv`.
 
 ### F6 MEDIUM: `per_page` diklaim 1..100 oleh UI, diklem oleh handler, tapi kontrak tidak menyatakan batas
 
-**Status: OPEN.**
+**Status: CLOSED 2026-09-22 (keputusan owner D3 = Tolak; bukti di bawah).**
 
 **Fakta.** `DecodePage` menolak `per_page < 1` dan **men-klem** `per_page > 100` ke 100 secara
 diam-diam (`if perPage > MaxPerPage { perPage = MaxPerPage }`). Panel (`primitives.ts` `perPage`)
@@ -475,11 +517,38 @@ refuse-lebih-jelas daripada-meng-klem sudah menjadi pola handler ini untuk nilai
 **Kriteria selesai.** Kontrak menyatakan `minimum/maximum/default`; implementasi dan kontrak
 sepakat; test table untuk 0, 1, 100, 101, `abc`, kosong.
 
+#### Bukti penutupan F6 (2026-09-22)
+
+**Implementasi.** `internal/schema/dto.go` `DecodePage`: cabang klem `perPage > MaxPerPage ->
+perPage = MaxPerPage` diganti `VALIDATION_ERROR "per_page must be at most 100"`, konsisten dengan
+penolakan `page < 1`/`per_page < 1` yang sudah ada. Karena decoder ini dibagi seluruh list
+management (gateway-keys, providers, endpoints, combos, logs, usage), satu titik menutup semua
+route. Panel tidak terdampak: setiap pemanggil panel memakai 25 (atau `per_page: 100` pada quota,
+yang tetap legal).
+
+**Kontrak.** Keempat deklarasi `page`/`per_page` di YAML (`providers`, `endpoints`,
+`usage/records`, `logs/records`) kini `type: integer, minimum: 1, default: 1` (page) dan
+`minimum: 1, maximum: 100, default: 25` (per_page); dua deklarasi yang sebelumnya `type: string`
+juga dikoreksi ke `integer`, karena decoder memang mem-parse integer. `openapi.json`
+di-regenerasi lewat `tools/openapi-gen` (tidak diedit tangan); `contract-openapi.sh` PASS.
+
+**Test (RED -> GREEN).** `internal/schema/dto_page_test.go`
+`TestDecodePage_BoundsIsRefusalNotClamp`: 12 kasus table-driven (4 benign control: kosong
+default 25, `page=1&per_page=1`, `per_page=100`, mid-range; 8 penolakan: `page=0`, `page=-2`,
+`page=abc`, `per_page=0`, `per_page=101`, `per_page=99999`, `per_page=-5`, `per_page=x`).
+Terhadap kode pra-perbaikan, tepat dua kasus over-cap **FAIL** (`(1, 100, nil), want a validation
+error`) dan sisanya pass, yang membuktikan test menargetkan klem diam itu sendiri.
+`TestGatewayKey_List_Pagination` lama yang memaku klem (`?per_page=99999` -> 200/100) dipindah
+kasusnya ke tabel `TestGatewayKey_List_InvalidPage` sebagai dua penolakan baru, karena perilaku
+lamanya kini ilegal. `TestUsageHandler_Records` (F1) memaku `per_page=101 -> 400` di route.
+Kontrak dipaku `TestOpenAPIContract_PaginationParamsAreBounded` (lihat F7).
+
+**Gate.** `go test -race -count=1 ./...` PASS penuh; `staticcheck`/`golangci-lint` 0 issue;
+`contract-openapi.sh` + `contract-drift.sh` PASS.
+
 ### F7 LOW: OpenAPI `from`/`to` tanpa `format: date-time`, `status`/`group_by`/`granularity` tanpa enum
 
-**Status: OPEN, sebagian tertutup 2026-09-22.** `status` sudah menjadi `enum: [success, error]` pada
-keempat path (dikerjakan bersama F2/F9, lihat bukti §5 F2); sisa temuan ini adalah `format: date-time`
-pada `from`/`to` dan enum pada `group_by`/`granularity`.
+**Status: CLOSED 2026-09-22 (sisa poin `from`/`to` + `group_by`/`granularity` dikerjakan bersama F6; bukti di bawah; `status` sudah tertutup bersama F2/F9).**
 
 **Fakta.** YAML path Usage mendeklarasikan `from`/`to` sebagai `type: string` polos (kontrak ini
 memuat 38 deklarasi `format: date-time` di tempat lain, jadi pola itu sudah ada), dan
@@ -497,6 +566,27 @@ mem-verifikasi.
 
 **Kriteria selesai.** `openapi.json` generated membawa format/enum; `contract-openapi.sh` PASS;
 tidak ada edit tangan pada JSON.
+
+#### Bukti penutupan F7 (2026-09-22)
+
+**Kontrak.** Satu pass edit YAML pada path Usage: `from`/`to` di `summary`, `timeseries`,
+`records`, dan `logs/requests` kini `type: string, format: date-time` (8 deklarasi); `group_by`
+kini `enum: [provider, model, endpoint, gateway_key]` dan `granularity` `enum: [hour, day]`
+pada `summary` dan `timeseries` (4 deklarasi). `openapi.json` di-regenerasi lewat
+`tools/openapi-gen` (tidak diedit tangan); `contract-openapi.sh` PASS.
+
+**Test (RED -> GREEN).** `internal/handler/openapi_usage_params_test.go`, tiga test
+table-driven yang membaca dokumen tersaji (bukan YAML, jadi yang diperiksa adalah apa yang
+konsumen terima):
+
+| Test | Kasus | Pra-perbaikan |
+|---|---|---|
+| `TestOpenAPIContract_UsageWindowParamsAreDateTimes` | 4 path x 2 param (`from`/`to`) + aturan `required: false` | 8 FAIL (`format = ""`) |
+| `TestOpenAPIContract_UsageEnumParams` | 8 kombinasi path/param (`group_by`, `granularity`, `status`) | 4 FAIL (`group_by`/`granularity` enum kosong; `status` sudah enum dari F2) |
+| `TestOpenAPIContract_PaginationParamsAreBounded` | seluruh deklarasi `page`/`per_page` di dokumen (4 path) | 14+ FAIL (minimum/default kosong, `page type: "string"` pada 2 path) |
+
+Total 20 kegagalan pra-edit YAML, hijau setelah regenerasi. `TestOpenAPICoversEveryRegisteredRoute`
+(parity dua arah route) tetap PASS, membuktikan perubahan schema tidak mengubah kumpulan path.
 
 ### F8 MEDIUM: Kontrak vs implementasi pada `q` scope: filter bebas yang hanya menyentuh `model`
 
@@ -579,13 +669,13 @@ Hal berikut sudah sesuai atau sengaja bukan gap:
 
 Jika owner memilih semua:
 
-1. **F5** (Flusher) lebih dulu: satu-satunya HIGH yang berlaku lintas seluruh SSE, dan prasyarat
-   bila F10 (SSE Usage) diinginkan.
-2. **F2 + F9** (status closed set): satu perubahan tipe + satu boundary check, test table sama.
-3. **F1** (handler test): setelah F2/F9 supaya test menulis ekspektasi yang benar.
-4. **F7 + F6** (kontrak): YAML edit sekali, regenerasi, gate.
-5. **F3, F8** (semantik `latency_ms`, scope `q`): keputusan owner per poin, lalu implementasi.
-6. **F4** (domain event): keputusan publish-vs-hapus, jangan setengah.
+1. **F5** (Flusher) lebih dulu: CLOSED 2026-09-22.
+2. **F2 + F9** (status closed set): CLOSED 2026-09-22.
+3. **F1** (handler test): CLOSED 2026-09-22 (dikerjakan setelah F2/F9, sesuai urutan ini).
+4. **F7 + F6** (kontrak): CLOSED 2026-09-22 (YAML di-edit satu pass, regenerasi, gate).
+5. **F3, F8** (semantik `latency_ms`, scope `q`): keputusan owner per poin, lalu implementasi
+   (jawaban D1/D4 sudah tercatat di §11, menunggu pengerjaan).
+6. **F4** (domain event): keputusan publish-vs-hapus (D2 = publish tercatat), jangan setengah.
 
 Setiap task: analysis dulu (TDD §2.3 / OWASP §2.3 bila menyentuh security behavior), failing test
 table-driven, header AGENTS.md, cek line count, compliance self-check.
@@ -627,8 +717,11 @@ request id, status, dan hitungan baris saja (tanpa DSN/credential/body).
 | F9 | `UsageFilter.Status` string, bukan `UsageStatus` | LOW | BE |
 
 F5 **CLOSED 2026-09-22** (bukti di §5 F5). F2 + F9 **CLOSED 2026-09-22** (bukti di §5 F2 dan §5
-F9: satu perubahan tipe + satu boundary check, test table sama, kontrak jadi enum). Nomor lain
-tetap OPEN.
+F9: satu perubahan tipe + satu boundary check, test table sama, kontrak jadi enum). F1
+**CLOSED 2026-09-22** (handler + route test untuk keempat route, tiga mutation check membuktikan
+test menangkap regresi). F6 **CLOSED 2026-09-22** (D3 = tolak; decoder, kontrak, dan panel kini
+sepakat 1..100 dengan default 25). F7 **CLOSED 2026-09-22** (sisa `from`/`to` date-time dan enum
+`group_by`/`granularity`; `status` tertutup bersama F2). Nomor lain tetap OPEN.
 
 ### 9.2 Cross audit Usage vs Node Animation SSE
 

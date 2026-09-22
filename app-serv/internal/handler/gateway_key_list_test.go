@@ -23,8 +23,10 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// TestGatewayKey_List_Pagination verifies the meta block, the clamped
-// per_page, and that slicing follows the requested page.
+// TestGatewayKey_List_Pagination verifies the meta block and that slicing
+// follows the requested page. per_page above the cap is a refusal rather than
+// a clamp (draft 010 F6, owner decision D3), and that refusal is pinned in
+// TestGatewayKey_List_InvalidPage beside the other out-of-range values.
 func TestGatewayKey_List_Pagination(t *testing.T) {
 	h, repo := newTestHandler(t)
 	for i := 0; i < 3; i++ {
@@ -44,7 +46,6 @@ func TestGatewayKey_List_Pagination(t *testing.T) {
 		{"limited page", "?per_page=2", 2, 2},
 		{"second page", "?per_page=2&page=2", 1, 2},
 		{"page past the end", "?per_page=2&page=9", 0, 2},
-		{"per_page clamped to the maximum", "?per_page=99999", 3, 100},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -96,6 +97,8 @@ func TestGatewayKey_List_InvalidPage(t *testing.T) {
 		{"non-numeric page", "?page=abc"},
 		{"zero per_page", "?per_page=0"},
 		{"non-numeric per_page", "?per_page=x"},
+		{"per_page one over the maximum", "?per_page=101"},
+		{"per_page far over the maximum", "?per_page=99999"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

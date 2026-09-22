@@ -5749,7 +5749,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
             }
           },
           {
@@ -5758,7 +5760,9 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 100
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
             }
           }
         ],
@@ -6813,7 +6817,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
             }
           },
           {
@@ -6822,7 +6828,9 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "maximum": 100
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
             }
           }
         ],
@@ -10008,7 +10016,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date-time"
             }
           },
           {
@@ -10016,7 +10025,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date-time"
             }
           },
           {
@@ -10024,7 +10034,13 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "provider",
+                "model",
+                "endpoint",
+                "gateway_key"
+              ]
             }
           },
           {
@@ -10032,7 +10048,11 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "hour",
+                "day"
+              ]
             }
           },
           {
@@ -10153,7 +10173,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date-time"
             }
           },
           {
@@ -10161,7 +10182,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date-time"
             }
           },
           {
@@ -10169,7 +10191,13 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "provider",
+                "model",
+                "endpoint",
+                "gateway_key"
+              ]
             }
           },
           {
@@ -10177,7 +10205,11 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "hour",
+                "day"
+              ]
             }
           },
           {
@@ -10298,7 +10330,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date-time"
             }
           },
           {
@@ -10306,7 +10339,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date-time"
             }
           },
           {
@@ -10366,7 +10400,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
             }
           },
           {
@@ -10374,8 +10410,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "maximum": 100
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
             }
           }
         ],
@@ -10718,7 +10756,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date-time"
             }
           },
           {
@@ -10726,7 +10765,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "date-time"
             }
           },
           {
@@ -10786,7 +10826,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
             }
           },
           {
@@ -10794,8 +10836,10 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string",
-              "maximum": 100
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
             }
           }
         ],
