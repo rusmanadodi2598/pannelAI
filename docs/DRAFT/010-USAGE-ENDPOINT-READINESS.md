@@ -585,7 +585,9 @@ konsumen terima):
 | `TestOpenAPIContract_UsageEnumParams` | 8 kombinasi path/param (`group_by`, `granularity`, `status`) | 4 FAIL (`group_by`/`granularity` enum kosong; `status` sudah enum dari F2) |
 | `TestOpenAPIContract_PaginationParamsAreBounded` | seluruh deklarasi `page`/`per_page` di dokumen (4 path) | 14+ FAIL (minimum/default kosong, `page type: "string"` pada 2 path) |
 
-Total 20 kegagalan pra-edit YAML, hijau setelah regenerasi. `TestOpenAPICoversEveryRegisteredRoute`
+Total **26 assertion failure dalam 12 subtest** pra-edit YAML (diukur ulang terhadap
+`openapi.json` pra-perbaikan dari `HEAD~1`, bukan dikutip dari output pertama yang ter-truncate),
+hijau setelah regenerasi. `TestOpenAPICoversEveryRegisteredRoute`
 (parity dua arah route) tetap PASS, membuktikan perubahan schema tidak mengubah kumpulan path.
 
 ### F8 MEDIUM: Kontrak vs implementasi pada `q` scope: filter bebas yang hanya menyentuh `model`
