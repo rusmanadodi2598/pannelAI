@@ -1,15 +1,22 @@
 <script lang="ts">
 	// Provider registry list (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 	//
-	// Read-only: the registry is embedded and the API owns it, so this screen answers what the gateway can
-	// route to and whether it has a working account, and nothing here writes. The category filter is the one
-	// the API accepts; §6.3 also asks for a search over name and id, which the API does not take a parameter
-	// for yet, so the control is absent rather than fake.
+	// Read-only over the registry: the registry is embedded and the API owns it, so this screen answers
+	// what the gateway can route to and whether it has a working account, and the registry half writes
+	// nothing. The category filter is the one the API accepts; §6.3 also asks for a search over name and
+	// id, which the API does not take a parameter for yet, so the control is absent rather than fake.
+	//
+	// The custom provider section is the exception, and it is why this page owns a second read: a node is
+	// operator-created, so the section writes. Its set is not paginated and not narrowed by the category
+	// filter, which is why it is read on its own rather than derived from the registry page.
+	import CustomProviderSection from '$lib/components/CustomProviderSection.svelte';
 	import ProviderTable from '$lib/components/ProviderTable.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listProviders } from '$lib/api/providers';
+	import { listProviderNodes } from '$lib/api/provider-nodes';
 	import { PROVIDER_CATEGORIES, type Provider } from '$lib/schemas/provider';
+	import type { ProviderNode } from '$lib/schemas/provider-node';
 	import { onMount } from 'svelte';
 
 	const PAGE_SIZE = 25;
@@ -21,11 +28,21 @@
 	let error = $state<string | null>(null);
 	let category = $state('');
 
+	let nodes = $state<ProviderNode[]>([]);
+	let nodesLoading = $state(true);
+	let nodesError = $state<string | null>(null);
+
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 
-	onMount(load);
+	onMount(() => void load());
 
+	// One entry point for both reads, so the screen's single refresh control re-reads everything on it
+	// (§8.6.2) rather than the registry alone.
 	async function load(): Promise<void> {
+		await Promise.all([loadProviders(), loadNodes()]);
+	}
+
+	async function loadProviders(): Promise<void> {
 		loading = true;
 		const result = await listProviders({
 			page,
@@ -44,10 +61,24 @@
 		total = result.data.meta.total;
 	}
 
+	async function loadNodes(): Promise<void> {
+		nodesLoading = true;
+		const result = await listProviderNodes();
+		nodesLoading = false;
+
+		if (!result.ok) {
+			nodesError = result.error.message;
+			return;
+		}
+
+		nodesError = null;
+		nodes = result.data.data;
+	}
+
 	function applyCategory(value: string): void {
 		category = value;
 		page = 1;
-		void load();
+		void loadProviders();
 	}
 </script>
 
@@ -74,6 +105,8 @@
 	</label>
 
 	<RefreshControl onrefresh={load} />
+
+	<CustomProviderSection {nodes} loading={nodesLoading} error={nodesError} onreload={loadNodes} />
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the provider registry" />
@@ -113,7 +146,7 @@
 				disabled={page <= 1}
 				onclick={() => {
 					page -= 1;
-					void load();
+					void loadProviders();
 				}}>Previous</button
 			>
 			<span class="text-[var(--color-text-muted)]">Page {page} of {lastPage}</span>
@@ -123,7 +156,7 @@
 				disabled={page >= lastPage}
 				onclick={() => {
 					page += 1;
-					void load();
+					void loadProviders();
 				}}>Next</button
 			>
 		</div>

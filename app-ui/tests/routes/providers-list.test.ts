@@ -5,73 +5,17 @@
 // §6.3 offers and the API accepts (a search over name and id has no parameter yet, so the control is
 // absent rather than fake), the two empty states are different sentences because they mean different
 // things, and a failure offers the retry rather than a blank table.
+//
+// The screen also reads the custom provider node set, which is a second read with its own state; those
+// cases are in `providers-custom-section.test.ts`.
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProvidersPage from '../../src/routes/providers/+page.svelte';
 import { squashed } from '../support/dom';
+import { provider, registryQuery, stubProviders } from '../support/providers-route-stub';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
-
-function provider(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-	return {
-		id: 'openai',
-		name: 'OpenAI',
-		category: 'chat',
-		auth_type: 'api_key',
-		auth_modes: ['api_key'],
-		has_oauth: false,
-		no_auth: false,
-		routability: 'routable',
-		endpoint_count: 2,
-		status_summary: { total: 2, active: 2, disabled: 0, error: 0, rate_limited: 0 },
-		...overrides
-	};
-}
-
-type StubOptions = {
-	rows?: Record<string, unknown>[];
-	total?: number;
-	status?: number;
-	message?: string;
-};
-
-/** Answers the registry read, filters by category the way the API does, and records every query it saw. */
-function stubProviders(options: StubOptions = {}): { queries: string[] } {
-	const queries: string[] = [];
-	const rows = options.rows ?? [provider()];
-
-	vi.stubGlobal('fetch', async (input: unknown) => {
-		const url = String(input);
-		queries.push(url);
-
-		if (options.status && options.status !== 200) {
-			return new Response(
-				JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: options.message ?? 'boom' } }),
-				{ status: options.status, headers: { 'content-type': 'application/json' } }
-			);
-		}
-
-		const category = new URL(url, 'http://panel.test').searchParams.get('category');
-		const matching = category ? rows.filter((row) => row.category === category) : rows;
-
-		return new Response(
-			JSON.stringify({
-				data: matching,
-				meta: { page: 1, per_page: 25, total: options.total ?? matching.length }
-			}),
-			{ status: 200, headers: { 'content-type': 'application/json' } }
-		);
-	});
-
-	return { queries };
-}
-
-/** The registry read, told apart from the paging control's own request by its path alone. */
-function registryQuery(queries: string[]): URLSearchParams {
-	const last = queries.at(-1) ?? '';
-	return new URL(last, 'http://panel.test').searchParams;
-}
 
 describe('provider registry list', () => {
 	afterEach(() => {

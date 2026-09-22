@@ -289,12 +289,34 @@ absent.
   fake, and the gap is recorded in §14 Q13.
 - **Pagination discipline:** the registry is a data set the API owns. The screen renders
   `GET /api/v1/providers` with the server's paging and never loads the whole registry into a client filter.
+- **Custom providers (landed):** a section above the table for the two provider types the embedded registry
+  cannot carry, read from `GET /api/v1/provider-nodes` and written through the same route family (§7.4). The
+  set is read whole, because §7.4 returns every node and a node set is hand-configured, and it is not
+  narrowed by the category filter, which filters the registry and not this set. Two controls add a node, one
+  per compatible type. A row states what the registry table cannot: the prefix its models are addressed by,
+  the wire shape, and the endpoint URL the gateway will call. Write actions are not repeated here; edit,
+  test, and delete live on the node's own detail screen. The screen's one refresh control re-reads both this
+  set and the registry (§8.6.2), and each read owns its own failure state, so a node outage does not blank
+  the table. **CodeBuddy CN and CodeBuddy Int are not built here**, and cannot be: both are registry entries
+  rather than nodes, and the registry's own CodeBuddy entry is hidden. The gap is recorded in
+  `docs/DRAFT/011-CODEBUDDY-PROVIDER-READINESS.md`.
 - **Row action:** open detail. A provider with zero endpoints shows "No endpoint configured" and links to
   the create form pre-filled with that provider.
 
 **Detail**
 
 - **Header:** provider name, category, auth type, transport defaults, model count summary.
+- **Custom provider node (landed):** a provider whose id carries a node prefix (`openai-compatible-` or
+  `anthropic-compatible-`, §7.4) is a node rather than a registry entry, and the panel tells them apart from
+  the id prefix alone because the provider response carries no flag for it. The screen then states what only
+  the node route holds: the model prefix, the base URL, the endpoint the gateway appends to that base URL,
+  the wire format, and when the node was created and last changed. Edit, test, and delete live here. Edit
+  patches name, prefix, and base URL, and states that type and api type are identity rather than offering
+  them as controls that cannot act. Test probes the base URL with a credential the operator may leave empty,
+  where empty means "test without a credential" rather than "send an empty one", and the probe's answer is a
+  state and a latency rather than an HTTP failure. Delete asks first, and a `CONFLICT` answer (an endpoint
+  still references the node) is rendered as the gateway's own sentence with the dialog still open; a
+  deleted node returns to the registry list.
 - **Model catalog** (SPEC-API §7.6): searchable list with capability filters (`vision`, `tools`), a
   "suggested" toggle, and per-model enable or disable state. Enable and disable write through
   `PUT /api/v1/models/disabled` (phase U2). The search and the two capability filters read

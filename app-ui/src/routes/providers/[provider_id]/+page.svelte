@@ -12,8 +12,13 @@
 	// it to. §6.3 also places the alias table and the OAuth section here. The alias table is the sixth
 	// section and takes no provider, because the alias set is global. OAuth is the last one and appears only
 	// for a provider the registry says has OAuth, which is the one section whose presence is a provider fact.
+	//
+	// A custom provider node gets one section the registry providers do not: the card that owns its edit,
+	// test, and delete. Its presence is decided by the id's prefix, which is the public contract for a node
+	// (§7.4) and the only signal the panel has, because the provider response carries no `custom` flag.
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
+	import CustomProviderCard from '$lib/components/CustomProviderCard.svelte';
 	import ModelCatalogList from '$lib/components/ModelCatalogList.svelte';
 	import ProviderAliases from '$lib/components/ProviderAliases.svelte';
 	import ProviderCustomModels from '$lib/components/ProviderCustomModels.svelte';
@@ -24,12 +29,17 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { getProvider } from '$lib/api/providers';
 	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
+	import { isNodeId } from '$lib/schemas/provider-node';
 	import type { ProviderDetail } from '$lib/schemas/provider';
 	import type { PageProps } from './$types';
 
 	let { params }: PageProps = $props();
 
 	const providerId = $derived(params.provider_id);
+
+	// Read once per id, and the node card's own read is separate: a node's prefix and api type are not in
+	// the provider response, so the card reads §7.4's route for them.
+	const custom = $derived(isNodeId(providerId));
 
 	let provider = $state<ProviderDetail | null>(null);
 	let loading = $state(true);
@@ -93,6 +103,10 @@
 		</StateMessage>
 	{:else if provider}
 		<ProviderFacts {provider} />
+
+		{#if custom}
+			<CustomProviderCard {providerId} onchanged={() => load(providerId)} />
+		{/if}
 
 		<div class="flex flex-col gap-3">
 			<h2 class="text-base font-medium">Model catalog</h2>

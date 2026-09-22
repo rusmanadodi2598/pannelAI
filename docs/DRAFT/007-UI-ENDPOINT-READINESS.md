@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 |             |                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sebelas layar daftar, D4 dijawab owner, §8.6.2 tetap), F10 **CLOSED 2026-09-21** (guard §8.4.4 di enam form berdraft, §8.4.5 diamandemen dengan alasan tertulis), F11 **CLOSED 2026-09-21** (angka dan klaim dokumen diukur ulang dengan perintahnya). Sisa nomor tinggal F12 |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sebelas layar daftar, D4 dijawab owner, §8.6.2 tetap), F10 **CLOSED 2026-09-21** (guard §8.4.4 di enam form berdraft, §8.4.5 diamandemen dengan alasan tertulis), F11 **CLOSED 2026-09-21** (angka dan klaim dokumen diukur ulang dengan perintahnya), F13 **OPEN 2026-09-22** (klaim versi Bun di delapan belas baris README tidak dapat direproduksi di mesin ini; baris pass terbaru sudah memakai versi terukur). Sisa nomor tinggal F12 dan F13 |
 | **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
 | **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
@@ -865,6 +865,29 @@ sembilan dari tujuh belas bagian: bagian ke-17 mencatat click-through owner yang
 cacat pada permukaan bagian ke-16 dan menyatakan perbaikannya belum diverifikasi ulang di browser,
 jadi bagian itu terhitung juga, dan F12 tetap terbuka.
 
+Pengukuran yang sama setelah pass "Custom provider surface" (2026-09-22) menemukan **sepuluh dari
+delapan belas bagian**: bagian ke-18 menyebut permukaan barunya belum pernah dijalankan di browser
+dan tidak dijalankan terhadap gateway yang hidup, jadi bagian itu terhitung juga. Perintah yang
+dipakai pengukuran ini dicatat di sini, karena angka-angka sebelumnya tidak dapat direproduksi
+(sebagaimana dicatat di paragraf di atas). Dijalankan dari root repo:
+
+```bash
+python3 - <<'PY'
+import re
+text = open('app-ui/README.md').read()
+body = text[text.index('## Verification state'):]
+body = body[: re.search(r'\n## ', body[5:]).start() + 5]
+sections = [s for s in re.split(r'\n(?=### )', body) if s.startswith('### ')]
+hits = [s for s in sections if re.search(r'(?s)click-through.*outstanding|outstanding.*click-through', s)]
+print(len(hits), 'of', len(sections))
+PY
+```
+
+Perintah itu membaca setiap bagian `###` di bawah `## Verification state` dan menghitung bagian yang
+memuat "click-through" dan "outstanding" dalam urutan mana pun. Dijalankan pada commit ini ia
+mencetak `10 of 18`; dijalankan pada tree sebelum pass ke-18 ia mencetak `9 of 17`, yang sama
+dengan angka yang tercatat di paragraf sebelumnya.
+
 **Risiko.** Panel bisa tampak selesai padahal setengah exit criteria-nya belum pernah
 dijalankan orang. Ini persis bentuk klaim yang R-35/R-36 larang.
 
@@ -903,6 +926,8 @@ penyebab yang disebut.
    F3 terakhir karena butuh D6 dan menyentuh jalur kredensial). F1 **CLOSED 2026-09-21**, F2
    **CLOSED 2026-09-21**, F3 **CLOSED 2026-09-21**, F4 **CLOSED 2026-09-21**.
 7. F12 sebagai penutup: satu pass live yang mencatat U0, U1, dan dua kriteria U2.
+8. F13 (dokumen, paling murah): samakan klaim versi runtime di `app-ui/README.md` dengan versi
+   yang terukur, atau buang nomornya dan sebut syarat `engines`.
 
 Setiap nomor dikerjakan sebagai satu commit sendiri, dengan analysis plus compliance
 self-check di badan commit (TDD §3), gate panel lengkap (`bun run test`, `bun run check`,
@@ -921,3 +946,47 @@ pekerjaan itu berhenti dan dicatat sebagai permintaan, bukan dikerjakan dari dra
   test jsdom atau browser; F12 adalah nomor yang menutup celah itu.
 - `app-serv/` tidak disentuh. Tiga route P4 dibaca sebagai fakta yang sudah ada, dan setiap
   kebutuhan yang jatuh di sana (D1, D2, D3) dicatat sebagai permintaan.
+
+## 19. F13 (LOW): Klaim versi Bun di delapan belas baris README tidak dapat direproduksi
+
+**Fakta.** Delapan belas baris di `app-ui/README.md` menyebut `Bun 1.3.14`: enam belas baris
+pembuka pass, satu baris tabel di bagian Node adapter yang menyatakan boot banner mencetak versi
+itu, dan satu baris tabel di bagian verifikasi `bun run start`. Klaim itu sudah ada sejak commit
+U0 `abf9de5` (`git log -S '1.3.14' -- app-ui/README.md`), jadi ia diwariskan dari pass ke pass,
+bukan diukur ulang.
+
+Diukur 2026-09-22 di mesin yang sama, apa adanya:
+
+```bash
+$ command -v bun
+/home/rusmanadodi/.local/bin/bun        # mtime 2026-09-16 21:15
+$ bun --version
+1.3.0
+$ ~/.bun/bin/bun --version
+1.3.11
+$ /usr/local/bin/bun --version
+exit 132 (binary tidak dapat dijalankan)
+```
+
+Tidak ada binary 1.3.14 di mesin ini, dan banner itu sendiri membaca runtime alih-alih angka
+tetap (`app-ui/scripts/boot-log.ts:15` mencetak `${Bun.version}`), jadi banner tidak mungkin
+mencetak 1.3.14 di sini. Yang tetap benar: `app-ui/package.json` mensyaratkan `bun >= 1.3.0`,
+dan binary yang dipakai memenuhinya, jadi syarat panelnya tidak salah; yang cacat adalah angka
+yang tercatat, bukan jalannya panel.
+
+Baris ke-18 (pass "Custom provider surface", 2026-09-22) sudah memakai versi terukur, `1.3.0`,
+dan menunjuk temuan ini. Enam belas baris pass sebelumnya dibiarkan apa adanya: versi yang
+benar-benar dipakai saat itu tidak dapat dibuktikan dari sini, jadi menggantinya dengan angka
+hari ini akan menulis klaim baru yang sama tidak terbuktinya.
+
+**Risiko.** Pembaca yang mengukur ulang di mesin ini tidak menemukan 1.3.14, lalu punya alasan
+untuk tidak mempercayai seluruh catatan pass. Baris Node adapter lebih tajam lagi: ia klaim
+verifikasi ("Verified by the boot banner printing ...") yang tidak bisa terjadi di mesin ini,
+bentuk klaim yang R-38 larang.
+
+**Kerja yang diusulkan.** Satu pass dokumen: ganti angka di delapan belas baris itu dengan versi
+terukur beserta perintahnya, atau buang nomor versinya dan sebut syarat `engines` yang memang
+mengikat. Tidak ada perubahan kode.
+
+**Kriteria selesai.** Tidak ada lagi baris `app-ui/README.md` yang menyebut versi runtime yang
+tidak dapat direproduksi di mesin ini; tiap baris menyebut perintah pengukurnya.
