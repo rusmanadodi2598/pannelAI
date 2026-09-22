@@ -31,13 +31,19 @@ browser click-through rather than unbuilt work (§12 records both).
 bun install          # install dependencies
 bun run dev          # dev server on http://127.0.0.1:5173
 bun run build        # production build into build/
-bun run start        # run the built server on Bun (prints a boot banner)
+bun run start        # run the built server on Bun, on APP_PORT, and print the boot banner
 bun run check        # svelte-check with the native TypeScript 7 compiler
 bun run test         # unit tests (Vitest, jsdom)
 bun run format       # Prettier write
 bun run lint         # Prettier check
 bun run lint:ts      # ESLint (types, unused bindings, floating promises)
 ```
+
+`bun run start` reads `APP_ENV` and `APP_PORT` from `.env` (defaults `development` and `3000`), prints both
+in its banner, and binds `APP_PORT`; `PORT` wins when both are set, so an adapter-level override is not
+silently replaced. A value the schema refuses stops the process before the server module loads. `bun run
+dev` keeps its own port (5173): the dev server and the built server are different processes with different
+jobs, and a shared port would make them fight over one socket.
 
 `bun run lint` and `bun run lint:ts` are separate on purpose: Prettier owns
 formatting, ESLint owns the problems a formatter cannot see (an explicit `any`,
@@ -106,7 +112,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Eighteen passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Nineteen passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -127,7 +133,38 @@ surface found, measured the same day: the address is read from the panel server 
 browser, and the copy control writes on an origin without the async clipboard API. The eighteenth is the
 custom provider surface, measured 2026-09-22: the two compatible provider types the embedded registry cannot
 carry, built as operator-created nodes through §7.4, with the CodeBuddy pair the owner asked for filed as an
-app-serv register rather than drawn in the panel.
+app-serv register rather than drawn in the panel. The nineteenth is the panel runtime config, measured the
+same day: `APP_ENV` and `APP_PORT` are parsed and validated at boot, and the port the built server binds
+comes from `APP_PORT`.
+
+### Panel runtime config, 2026-09-22
+
+Run with Bun 1.3.0 (`bun --version`; the earlier pass rows state 1.3.14, which no binary on this machine
+reports, filed as F13 of `docs/DRAFT/007-UI-ENDPOINT-READINESS.md`). The owner's `.env` template declares
+`APP_ENV` and `APP_PORT` under `[P0][TAG:RUNTIME]`, and neither was read by anything: the built server bound
+adapter-node's own default whatever the file said, so `APP_PORT=3001` would have served 3000 with nothing on
+screen pointing at the file.
+
+| Check             | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `bun run test`    | 2303 tests passed across 125 files (the last recorded pass was 2288 across 124, so this pass adds 15 tests in one new file, `tests/schemas/env-runtime.test.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `bun run lint`    | Prettier reports every file conforms                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `bun run build`   | succeeds, exit 0, output in `build/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Live boot pass    | five cases against the built server, each started with `bun run start` and stopped by PID: `APP_PORT=eighty` exits 1 with `APP_PORT: must be a port number, digits only`; `APP_ENV=staging` exits 1 with `APP_ENV: must be development, production, or test`; `APP_PORT=3131` prints `Listening on port 3131`, binds 3131 (HTTP 200) and leaves 3000 unanswered; `PORT=4141 APP_PORT=3131` binds 4141; with no override the `.env` value 3000 answers. No browser click-through applies here: this pass adds no screen and no control, and the surface it changes is the boot path, which those five cases drive directly |
+| File size         | largest file this pass touched is 195 lines (`tests/schemas/env-and-contracts.test.ts`); `src/lib/schemas/env.ts` is 157, `scripts/boot-log.ts` is 38, and the new table lives in `tests/schemas/env-runtime.test.ts` at 77 because the first draft pushed the existing test file to 263, over the 250 ceiling                                                                                                                                                                                                                                                                                                            |
+| Text hygiene      | 0 em dashes in the new and edited files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+
+What changed, and what is deliberately not claimed:
+
+| Behaviour                                                | Detail                                                                                                                                                                                                                                                                                                      |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The runtime variables are parsed where they are consumed | `APP_ENV` and `APP_PORT` live in `src/lib/schemas/env.ts` beside the gateway target, and `scripts/boot-log.ts` validates them before the server module loads. The runtime fields are declared once, so the preload's subset and the server's `envSchema` cannot drift into two definitions of a valid port. |
+| A value the schema refuses stops the boot                | A port that cannot be parsed is not bootable, so the preload exits 1 with the variable name and the reason rather than leaving a panel on a port nobody asked for. A missing gateway target is deliberately not pulled forward: that stays a per-request state the panel reports (§6.15).                   |
+| The port comes from `APP_PORT`, and `PORT` wins          | adapter-node reads `PORT` and the env template calls it `APP_PORT`, so the preload maps one to the other only when `PORT` is unset. An explicit adapter override stays authoritative instead of being silently replaced.                                                                                    |
+| Dev keeps its own port                                   | `bun run dev` binds 5173 from `vite.config.ts`. The dev server and the built server are different processes with different jobs, and one shared port would make them fight over one socket.                                                                                                                 |
+| The banner states what is running                        | The first line now carries the runtime environment and a second line carries the port (SPEC-UI §10.1 item 5), so the operator reads the resolved configuration instead of the file.                                                                                                                         |
 
 ### Custom provider surface, 2026-09-22
 

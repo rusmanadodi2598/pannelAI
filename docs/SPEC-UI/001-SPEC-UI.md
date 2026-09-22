@@ -1236,8 +1236,10 @@ carries a `TODO` without an owner and a phase.
    exists to misconfigure. The forward preserves method, headers, and streaming responses.
 4. **No Node-only dependency.** A dependency that requires Node-specific APIs and cannot run on Bun is
    rejected at review time, before it reaches the lockfile.
-5. **Startup check.** The start command prints the Bun version, the panel version, and the resolved API
-   target once at boot, so an operator can see what is running without reading a config file.
+5. **Startup check.** The start command prints the Bun version, the panel version, the runtime
+   environment, the port it binds, and the resolved API target once at boot, so an operator can see
+   what is running without reading a config file. The port line resolves from `APP_PORT`, and `PORT`
+   wins when both are set, so an adapter-level override is not silently ignored.
 
 ### 10.2 Strict TDD protocol (mandatory)
 

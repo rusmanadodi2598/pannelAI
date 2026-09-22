@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 |             |                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sebelas layar daftar, D4 dijawab owner, §8.6.2 tetap), F10 **CLOSED 2026-09-21** (guard §8.4.4 di enam form berdraft, §8.4.5 diamandemen dengan alasan tertulis), F11 **CLOSED 2026-09-21** (angka dan klaim dokumen diukur ulang dengan perintahnya), F13 **OPEN 2026-09-22** (klaim versi Bun di delapan belas baris README tidak dapat direproduksi di mesin ini; baris pass terbaru sudah memakai versi terukur). Sisa nomor tinggal F12 dan F13 |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sebelas layar daftar, D4 dijawab owner, §8.6.2 tetap), F10 **CLOSED 2026-09-21** (guard §8.4.4 di enam form berdraft, §8.4.5 diamandemen dengan alasan tertulis), F11 **CLOSED 2026-09-21** (angka dan klaim dokumen diukur ulang dengan perintahnya), F13 **OPEN 2026-09-22** (klaim versi Bun di sembilan belas baris README tidak dapat direproduksi di mesin ini; dua baris pass terbaru sudah memakai versi terukur). Sisa nomor tinggal F12 dan F13 |
 | **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
 | **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
@@ -888,6 +888,12 @@ memuat "click-through" dan "outstanding" dalam urutan mana pun. Dijalankan pada 
 mencetak `10 of 18`; dijalankan pada tree sebelum pass ke-18 ia mencetak `9 of 17`, yang sama
 dengan angka yang tercatat di paragraf sebelumnya.
 
+Pengukuran yang sama setelah pass "Panel runtime config" (2026-09-22) menemukan **sepuluh dari
+sembilan belas bagian**, dan perintah yang sama mencetak `10 of 19` pada commit pass itu. Penyebutnya
+naik satu sementara pembilangnya tetap: pass ke-19 mengubah jalur boot (variabel runtime dan port
+yang di-bind), tidak menambah layar maupun kontrol, dan bagiannya mencatat lima kasus boot yang
+dijalankan langsung sebagai gantinya, jadi tidak ada click-through yang outstanding di bagian itu.
+
 **Risiko.** Panel bisa tampak selesai padahal setengah exit criteria-nya belum pernah
 dijalankan orang. Ini persis bentuk klaim yang R-35/R-36 larang.
 
@@ -947,13 +953,15 @@ pekerjaan itu berhenti dan dicatat sebagai permintaan, bukan dikerjakan dari dra
 - `app-serv/` tidak disentuh. Tiga route P4 dibaca sebagai fakta yang sudah ada, dan setiap
   kebutuhan yang jatuh di sana (D1, D2, D3) dicatat sebagai permintaan.
 
-## 19. F13 (LOW): Klaim versi Bun di delapan belas baris README tidak dapat direproduksi
+## 19. F13 (LOW): Klaim versi Bun di sembilan belas baris README tidak dapat direproduksi
 
-**Fakta.** Delapan belas baris di `app-ui/README.md` menyebut `Bun 1.3.14`: enam belas baris
-pembuka pass, satu baris tabel di bagian Node adapter yang menyatakan boot banner mencetak versi
-itu, dan satu baris tabel di bagian verifikasi `bun run start`. Klaim itu sudah ada sejak commit
-U0 `abf9de5` (`git log -S '1.3.14' -- app-ui/README.md`), jadi ia diwariskan dari pass ke pass,
-bukan diukur ulang.
+**Fakta.** Sembilan belas baris di `app-ui/README.md` menyatakan `1.3.14` sebagai versi yang
+dipakai: enam belas baris pembuka pass, satu baris tabel Requirements ("Bun | 1.3.14"), satu baris
+tabel di bagian Node adapter yang menyatakan boot banner mencetak versi itu, dan satu baris tabel di
+bagian verifikasi `bun run start`. Dua baris lain menyebut angka itu justru untuk menunjuk temuan ini
+(baris pembuka pass ke-18 dan ke-19). Klaim itu sudah ada sejak commit U0 `abf9de5`
+(`git log -S '1.3.14' -- app-ui/README.md`), jadi ia diwariskan dari pass ke pass, bukan diukur
+ulang.
 
 Diukur 2026-09-22 di mesin yang sama, apa adanya:
 
@@ -965,7 +973,8 @@ $ bun --version
 $ ~/.bun/bin/bun --version
 1.3.11
 $ /usr/local/bin/bun --version
-exit 132 (binary tidak dapat dijalankan)
+exit 132 (SIGILL; build AVX2 di CPU tanpa AVX2, persis kasus yang README ini catat di
+bagian "Bun on a CPU without AVX2", jadi bukan binary rusak melainkan build yang salah)
 ```
 
 Tidak ada binary 1.3.14 di mesin ini, dan banner itu sendiri membaca runtime alih-alih angka
@@ -974,8 +983,9 @@ mencetak 1.3.14 di sini. Yang tetap benar: `app-ui/package.json` mensyaratkan `b
 dan binary yang dipakai memenuhinya, jadi syarat panelnya tidak salah; yang cacat adalah angka
 yang tercatat, bukan jalannya panel.
 
-Baris ke-18 (pass "Custom provider surface", 2026-09-22) sudah memakai versi terukur, `1.3.0`,
-dan menunjuk temuan ini. Enam belas baris pass sebelumnya dibiarkan apa adanya: versi yang
+Baris pass ke-18 ("Custom provider surface") dan ke-19 ("Panel runtime config"), keduanya
+2026-09-22, sudah memakai versi terukur, `1.3.0`, dan menunjuk temuan ini. Enam belas baris pass
+sebelumnya beserta baris Requirements dan Node adapter dibiarkan apa adanya: versi yang
 benar-benar dipakai saat itu tidak dapat dibuktikan dari sini, jadi menggantinya dengan angka
 hari ini akan menulis klaim baru yang sama tidak terbuktinya.
 
@@ -984,7 +994,7 @@ untuk tidak mempercayai seluruh catatan pass. Baris Node adapter lebih tajam lag
 verifikasi ("Verified by the boot banner printing ...") yang tidak bisa terjadi di mesin ini,
 bentuk klaim yang R-38 larang.
 
-**Kerja yang diusulkan.** Satu pass dokumen: ganti angka di delapan belas baris itu dengan versi
+**Kerja yang diusulkan.** Satu pass dokumen: ganti angka di sembilan belas baris itu dengan versi
 terukur beserta perintahnya, atau buang nomor versinya dan sebut syarat `engines` yang memang
 mengikat. Tidak ada perubahan kode.
 
