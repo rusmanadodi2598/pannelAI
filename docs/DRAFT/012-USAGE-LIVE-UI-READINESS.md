@@ -154,6 +154,15 @@ kontrol yang tidak punya lawan bicara); R-36 (tidak ada klaim live tanpa stream)
 **Kriteria selesai.** Route nyata menjawab dengan session, dan live pass merekam frame pertama sampai
 layar. Sampai itu terjadi, panel merender keadaan `unavailable` dengan sebabnya.
 
+**Catatan 2026-09-22, setelah pass di §9.** Langkah 1 baru sebagian, dan sebagiannya sudah mendarat:
+commit `62d21e1` (sisi `app-serv` draft 010 F4) memberi `usage.recorded` sebuah publisher bounded dan
+subscriber nyata lewat Redis Pub/Sub di channel `pannelai:events:usage.recorded`. Bus itu membawa
+request yang **sudah selesai**, jadi ia mengisi separuh `recent` pada frame yang direncanakan;
+himpunan in-flight yang mengisi `active` masih butuh sumbernya sendiri (TTL Redis atau hitungan di
+choke point relay). Route-nya sendiri belum ada: `grep -rn "usage/live" app-serv/` mengembalikan nol
+baris pada tree ini, sehingga keadaan yang panel render hari ini tetap `unavailable` dengan sebab 404,
+dan F4 tetap OPEN. Langkah 2 dan 3 belum tersentuh.
+
 ## 7. F5 INFO: catatan kontrak dan dokumen
 
 - Panel tidak menambah route sendiri: `EventSource` menembak `/api/v1/usage/live` melalui origin panel,
