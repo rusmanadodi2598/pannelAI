@@ -80,6 +80,16 @@ func runWorkers(ctx context.Context, deps managementDeps) {
 	if deps.OAuthRefresh != nil {
 		go runSupervised("oauth refresh", func() { deps.OAuthRefresh.Run(ctx, oauthRefreshInterval) })
 	}
+	// The usage event publisher drains the recorder's queue and the consumer
+	// mirrors each event into the console ring. Both are supervised like every
+	// other worker: the consumer owns a subscription that has to be closed on
+	// shutdown, and the publisher owns the only goroutine that can publish.
+	if deps.UsageEvents != nil {
+		go runSupervised("usage event publisher", func() { deps.UsageEvents.Run(ctx) })
+	}
+	if deps.UsageEventConsumer != nil {
+		go runSupervised("usage event consumer", func() { deps.UsageEventConsumer.Run(ctx) })
+	}
 }
 
 // runSupervised runs one worker body with the §1.6 panic boundary. The worker's

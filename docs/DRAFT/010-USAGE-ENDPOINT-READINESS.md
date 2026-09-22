@@ -79,8 +79,10 @@ melenceng".
 
 **Status per 2026-09-22:** butir 1, 2, 3, dan 4 di atas sudah ditutup dengan bukti (F1, F2+F9, F5,
 F3 berturut-turut), dan F8 (scope `q`, butir 4b) menyusul di batch yang sama; F6 dan F7 juga sudah
-tertutup. Butir 5 (node live / SSE) tetap keputusan owner (D5), dan F4 (domain event) tetap
-menunggu keputusan D2. Lihat §5 untuk bukti tiap penutupan dan §11 untuk sisa keputusan.
+tertutup. **F4 (domain event) CLOSED 2026-09-22** dengan keputusan D2 = publish lewat Redis Pub/Sub,
+publisher di choke point `UsageService.Record` dan consumer nyata yang mencerminkan tiap event ke
+console ring. Butir 5 (node live / SSE) tetap keputusan owner (D5). Lihat §5 untuk bukti tiap
+penutupan dan §11 untuk sisa keputusan.
 
 ## 3. Jalur endpoint yang diperiksa
 
@@ -413,7 +415,7 @@ hijau setelah `tools/openapi-gen` dijalankan ulang.
 
 ### F4 MEDIUM: `UsageEvent` / `usage.recorded` domain event tidak punya publisher maupun subscriber
 
-**Status: OPEN.**
+**Status: CLOSED 2026-09-22 (keputusan owner D2 = publish; transport Redis Pub/Sub; bukti di bawah).**
 
 **Fakta.** `internal/domain/usage_event.go` mendefinisikan `UsageEventName = "usage.recorded"`,
 `UsageEvent`, dan `UsageRecord.NewUsageEvent()`. `grep` seluruh non-test Go: **nol caller**. Comment
@@ -436,6 +438,128 @@ diterapkan per-domain pada saat ada konsumen nyata. Jangan biarkan keduanya sete
 
 **Kriteria selesai.** Event punya minimal satu publisher dan satu subscriber nyata di produksi,
 atau file dihapus dengan alasan tertulis. `-race` clean.
+
+#### Bukti penutupan F4 (2026-09-22, keputusan owner D2 = publish, transport Redis Pub/Sub)
+
+**Keputusan.** D2 = publish, dan transportnya Pub/Sub sesuai keputusan owner. Tidak ada kode yang
+dihapus: `internal/domain/usage_event.go` tetap, dan yang ditambahkan adalah kedua ujung yang
+selama ini hanya komentar.
+
+**Implementasi.** Empat file baru di jalur produksi, masing-masing satu tanggung jawab:
+
+| File | Peran |
+|---|---|
+| `internal/domain/usage_event_codec.go` | Wire form event (`EncodeUsageEvent`/`DecodeUsageEvent`) plus `Validate` dan `SummaryLine` |
+| `internal/repository/usage_event.go` | Port `UsageEventBus` + `UsageEventSubscription` (publish, subscribe, receive berbatas, close) |
+| `internal/repository/redis/usage_event_bus.go` | Transport Redis Pub/Sub pada channel `pannelai:events:usage.recorded` |
+| `internal/service/usage_event_publish.go` | Antrean bounded 256 + satu goroutine drain, drop-and-count, panic boundary, drain berbatas saat shutdown |
+| `internal/service/usage_event_consume.go` | Consumer nyata: subscribe, decode, cerminkan satu event jadi satu baris console ring lewat `LogService.AppendConsole` |
+
+**Choke point.** `UsageService.Record` sekarang memancarkan event lewat `s.events.PublishEvent(record.NewUsageEvent())`
+**setelah** baris tersimpan dan **hanya bila** tulisan berhasil, jadi event berarti "request ini
+tercatat", bukan "request ini dicoba". Pemancaran tidak bisa menggagalkan pemanggil: antrean yang
+penuh men-drop dan menghitung, kegagalan broker dicatat dan dihitung, dan keduanya tidak kembali
+ke caller. Publisher optional: deployment tanpa broker tetap merekam baris dan tidak memancarkan
+event (bukan gagal boot).
+
+**Consumer sebagai bukti hidup.** Subscriber memakai seam yang sudah ada dan sudah teruji
+(`LogService.AppendConsole`, `redisrepo.ConsoleBuffer`), jadi event terlihat di layar `/console-log`
+yang panel sudah polling. Itu membuat seam ini observabel, bukan dekoratif: kalau publisher berhenti,
+console berhenti bertambah. Consumer sengaja tidak menulis apa pun yang durable, karena baris usage
+sudah menjadi rekamannya.
+
+**Kebijakan yang dinyatakan (AGENTS.md §1.6).**
+
+- **Publish:** antrean bounded 256; penuh = event terbaru di-drop dan dihitung (`Dropped()`);
+kegagalan publish dihitung (`Failed()`) dan dicatat, tanpa retry terjadwal (Pub/Sub tidak punya
+tujuan durable); panic di transport dipulihkan di dalam goroutine publish; drain shutdown berbatas
+5 dtk lewat `context.WithoutCancel` supaya ctx yang sudah cancelled tidak membatalkan drain itu
+sendiri.
+- **Consume:** receive timeout = idle (`repository.ErrUsageEventTimeout`), bukan kegagalan; kegagalan
+transport backoff eksponensial 250ms ke 30s, counter reset oleh receive sukses pertama; payload yang
+gagal decode di-drop dan dicatat, tidak mematikan consumer; `Run` menutup subscription saat ctx
+cancelled; tidak ada dead-letter karena subscription dibangun ulang tiap percobaan.
+
+**Wiring.** `buildObservability` membangun satu `bus` yang dipakai bersama publisher dan consumer,
+`buildManagement` mengembalikannya di `managementDeps`, dan `runWorkers` menjalankan keduanya lewat
+`runSupervised` (batas panic + terminasi context) seperti worker lain. Satu bus dipakai bersama
+supaya publisher dan subscriber tidak bisa berakhir di channel berbeda.
+
+**OWASP A08 (channel = untrusted input).** Decoder menolak payload yang bukan satu objek JSON event:
+nama event yang salah, `request_id`/`provider_id`/`model` kosong, `total_tokens` negatif, `cost_usd`
+yang tidak parseable (termasuk `NaN`) atau negatif, `status` di luar closed set, `occurred_at` yang
+bukan RFC3339, field tak dikenal (`DisallowUnknownFields`), trailing content setelah event, dan
+payload terpotong. Semua kegagalan mengembalikan **zero event** bersama error, jadi tidak ada
+consumer yang bisa memakai nilai setengah jadi. Validator yang terlalu ketat juga ketahuan: setiap
+tabel refusal memuat benign control.
+
+**Test (RED → GREEN, table-driven, TDD §2.5).**
+
+| File | Test | Isi |
+|---|---|---|
+| `internal/domain/usage_event_validate_test.go` | `TestUsageEvent_Validate` | 12 kasus: 3 benign (event lengkap, error tanpa endpoint, token besar) + 9 penolakan |
+| `internal/domain/usage_event_codec_test.go` | `TestUsageEvent_CodecRoundTrip` | 4 kasus round-trip (termasuk model unicode dan token besar) |
+| sama | `TestEncodeUsageEvent_RefusesAnInvalidEvent` | 4 kasus (1 benign, 3 penolakan) |
+| sama | `TestDecodeUsageEvent_RefusesAMalformedPayload` | 14 payload: 1 control valid + 13 penolakan (array, scalar, null, nama event salah, field tak dikenal, cost `NaN`, timestamp bukan RFC3339, payload terpotong) |
+| `internal/service/usage_event_publish_test.go` | `TestUsageEventPublisher_PublishesEveryQueuedEvent` | 3 kasus; jumlah yang terbit di-assert terhadap jumlah yang di-enqueue |
+| sama | `TestUsageEventPublisher_FullQueueDropsAndCounts` | antrean penuh: caller tidak boleh block, drop terhitung |
+| sama | `TestUsageEventPublisher_PublishFailureIsCountedNotReturned` | 3 kasus termasuk panic di broker |
+| sama | `TestUsageEventPublisher_RefusesAnInvalidEvent`, `_NilBusIsInert`, `_EnqueuesWithoutARunningDrain` | 3 test perilaku |
+| `internal/service/usage_event_record_test.go` | `TestUsageService_RecordEmitsOneEventPerStoredRow` | 4 kasus lewat choke point produksi, bukan lewat publisher langsung |
+| sama | `TestUsageService_RecordEmitsNothingForARowItRefused` | 7 input yang ditolak agregat: nol baris, nol event |
+| sama | `TestUsageService_RecordEmitsNothingWhenTheStoreFailed` | tulisan gagal = nol event |
+| `internal/service/usage_event_optional_test.go` | `TestUsageService_RecordWorksWithoutABroker` | tanpa broker tetap merekam |
+| `internal/service/usage_event_consume_test.go` | `TestUsageEventConsumer_MirrorsEachEventIntoTheConsole` | 3 kasus; baris console di-assert memuat field event itu sendiri |
+| sama | `TestUsageEventConsumer_SurvivesAMalformedPayload` | 5 payload rusak, lalu event valid berikutnya tetap sampai |
+| `internal/service/usage_event_reconnect_test.go` | `TestUsageEventConsumer_ReconnectsAfterASubscriptionFailure` | 1 dan 3 kegagalan subscribe, lalu pulih |
+| `internal/service/usage_event_degenerate_test.go` | `_NilBusIsInert`, `_NilWriterStillConsumes` | 2 wiring degenerate |
+| `internal/service/usage_event_sink_test.go` | `TestUsageEventConsumer_ConsoleFailureDoesNotStopConsumption` | sink gagal = consumer tetap jalan |
+| `internal/service/usage_event_policy_test.go` | `TestUsageEventConsumer_BackoffIsBoundedAndMonotonic` | kebijakan retry dipaku, bukan hanya dikomentari |
+| `internal/repository/redis/usage_event_bus_test.go` (tag `integration`) | `TestUsageEventBus_PublishReachesASubscriber` | 3 kasus terhadap Redis nyata |
+| sama | `TestUsageEventBus_IdleChannelReportsIdlenessNotAFault` | 3 idle wait berturut-turut, lalu satu delivery pada subscription yang sama |
+| `internal/repository/redis/usage_event_policy_test.go` (tag `integration`) | `TestUsageEventBus_PublishWithNoSubscriberIsNotAnError`, `_RefusesAnEmptyPayload`, `_CloseIsIdempotent` | 3 kebijakan terhadap Redis nyata |
+| `cmd/app-serv/usage_event_wiring_test.go` | `TestUsageEventWiring_RecordedRequestReachesTheConsole` | satu request tercatat sampai satu baris console, lewat publisher dan consumer |
+| `internal/service/usage_event_consume_test.go` | `TestUsageEventConsumer_StopsOnCancellation` | terminasi eksplisit + subscription ditutup |
+
+**RED → GREEN.** Test codec + publisher/consumer ditulis lebih dulu dan **gagal** terhadap kode
+pra-perbaikan (`undefined: EncodeUsageEvent`, `undefined: DecodeUsageEvent`, `event.Validate
+undefined`). Setelah implementasi semuanya hijau.
+
+**Mutation check (dijalankan lalu dipulihkan).**
+
+| Mutasi | Hasil |
+|---|---|
+| `Record` tidak lagi memancarkan event | `TestUsageService_RecordEmitsOneEventPerStoredRow` **FAIL** (`published events = 0, want 1`) |
+| `Record` memancarkan event **sebelum** tulisan | `TestUsageService_RecordEmitsNothingWhenTheStoreFailed` **FAIL** (`published events = 1, want 0`) |
+
+Mutasi kedua itu awalnya **lolos**: test menulis assertion pada broker tanpa pernah menjalankan
+drain publisher, sehingga urutan tidak terlihat. Test diperbaiki lebih dulu (semua assertion broker
+kini lewat helper `drainEvents`) dan mutasi yang sama baru kemudian tertangkap. Ini dicatat karena
+kalau tidak, klaim "urutan dipaku test" tidak punya bukti.
+
+**Bukti live** (`cmd/app-serv/usage_event_live_test.go`, tag `integration`, terhadap PostgreSQL dan
+Redis nyata):
+
+| Skenario | Hasil |
+|---|---|
+| Satu request direkam dengan publisher + consumer nyata, console ring dibaca lewat `LogService.Console` | `console_lines=1 max_records=1000`, baris memuat request id, `status=success`, `tokens=7`, `cost=0.01000000` |
+| Broker mati (client ke port tertutup): request tetap dilayani | `usage_rows=1 publish_failures=1`, `Record()` mengembalikan nil |
+
+**Gate.** `go build ./...`; `go vet ./...` (default dan `-tags=integration`) bersih; `gofmt -l .`
+bersih; `go test -race -count=1 ./...` PASS penuh; suite `-tags=integration -race` PASS penuh
+terhadap database throwaway `pannelai_f4_evidence` (dibuat untuk bukti ini, dihapus setelahnya;
+database dev tidak disentuh) dan Redis nyata; `staticcheck` 0 issue (default dan tagged);
+`golangci-lint` 0 issue (satu temuan `contextcheck` diperbaiki dengan `context.WithoutCancel`,
+bukan suppression); `go-headers.sh` PASS (717 file); semua file baru <220 baris.
+
+**Dokumen.** `SYSTEM_MAP.md` §5 (channel Pub/Sub di tabel Redis) dan §6 (dua worker baru plus
+paragraf domain event) diperbarui di batch yang sama, sesuai AGENTS.md §1.9.
+
+**Catatan yang tersisa (bukan defect, dicatat jujur).** `cmd/app-serv/management_wiring.go` ada di
+241 baris, yaitu band warning §1.1 (220), bukan pelanggaran hard cap (250). Angka itu sudah 239
+sebelum batch ini dan naik 2 baris karena dua field baru di `managementDeps`; gate melaporkannya
+sebagai warning dan tetap exit 0. Memecah file itu berarti menyentuh file yang tidak dimiliki
+perbaikan ini, jadi dicatat sebagai utang, bukan dikerjakan diam-diam.
 
 ### F5 HIGH: `sseSink.Flush()` tidak pernah mencapai klien; middleware chain menyembunyikan `http.Flusher`
 
@@ -775,7 +899,8 @@ Jika owner memilih semua:
 4. **F7 + F6** (kontrak): CLOSED 2026-09-22 (YAML di-edit satu pass, regenerasi, gate).
 5. **F3, F8** (semantik `latency_ms`, scope `q`): CLOSED 2026-09-22 (D1 = c dan D4 = perluas;
    sum dikunci test dan ditulis di kontrak, `q` diperluas di usage dan logs).
-6. **F4** (domain event): keputusan publish-vs-hapus (D2 = publish tercatat), jangan setengah.
+6. **F4** (domain event): CLOSED 2026-09-22 (D2 = publish; Redis Pub/Sub, publisher di choke point
+   `UsageService.Record`, consumer nyata mencerminkan tiap event ke console ring; bukti di §5 F4).
 
 Setiap task: analysis dulu (TDD §2.3 / OWASP §2.3 bila menyentuh security behavior), failing test
 table-driven, header AGENTS.md, cek line count, compliance self-check.
@@ -824,7 +949,10 @@ sepakat 1..100 dengan default 25). F7 **CLOSED 2026-09-22** (sisa `from`/`to` da
 semantik sum ditulis di YAML + SPEC-API §7.12, plus test yang membedakan sum dari mean). F8
 **CLOSED 2026-09-22** (D4 = perluas: `q` mencakup id/request_id/error_code/model pada usage dan
 request_id/error/model pada logs, kontrak menyatakan scope-nya, F11 tertutup sebagai konsekuensi).
-F4 dan temuan cross audit (F10 sampai F14) tetap OPEN.
+**F4 CLOSED 2026-09-22** (D2 = publish: Redis Pub/Sub channel `pannelai:events:usage.recorded`,
+publisher di choke point `UsageService.Record`, consumer nyata menulis ke console ring, codec
+memvalidasi ulang payload terhadap invariant agregat). Temuan cross audit (F10 sampai F14) tetap
+OPEN.
 
 ### 9.2 Cross audit Usage vs Node Animation SSE
 
@@ -1047,7 +1175,8 @@ catat error 401/400 juga. Format bukti mengikuti draft 009 §10.9.
 **BE (app-serv) harus mengerjakan (bila owner memilih parity atau menutup temuan audit):**
 
 - F1 handler test, F2+F9 status closed set, F5 Flusher forwarding, F7+F6+F3+F8 kontrak dan semantik
-  (semuanya **CLOSED 2026-09-22**), F4 keputusan event, F14 live evidence.
+  (semuanya **CLOSED 2026-09-22**), F4 **CLOSED 2026-09-22** (Redis Pub/Sub publisher + consumer),
+  F14 live evidence.
 - Bila parity live: state in-flight dengan Redis TTL atau Pub/Sub, route `GET /api/v1/usage/live`
   SSE, wiring, OpenAPI, amandemen SPEC-API §7.12, SYSTEM_MAP.
 
@@ -1076,7 +1205,8 @@ ada; itu dead control R-26).
 | D5 | Node live / SSE Usage: status quo dengan amandemen spec, polling (FE only), atau SSE penuh (BE+FE, F10)? | Menunggu jawaban | F10, F13 |
 | D6 | Bila SSE dipilih dan topologi node dibuat: indikator aktif sebagai transisi state (sesuai MOTION 1) atau denyut `animate-ping` (amandemen DESIGN.md)? | Transisi state | F10 FE |
 
-D1 dan D4 sudah dipakai (F3 dan F8 **CLOSED 2026-09-22**); D2, D5, dan D6 masih menunggu jawaban.
+D1, D2, dan D4 sudah dipakai (F3, F4, dan F8 **CLOSED 2026-09-22**); D5 dan D6 masih menunggu
+jawaban.
 Nomor F yang bukan keputusan (F1, F2, F5, F7, F9, F12, F14) dapat dipilih langsung tanpa D.
 
 ## 12. Catatan penutup

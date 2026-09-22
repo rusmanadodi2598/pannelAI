@@ -133,11 +133,11 @@ Cakupan saat ini:
 | `internal/schema` | validasi typed table-driven, termasuk union content dan aturan semantik chat |
 | `internal/dataplane` | resolusi model dan combo, seleksi endpoint + budget gate, relay dan failover, translator per wire, stream lifecycle, dan token saver |
 | `internal/tokensaver` | urutan RTK → Headroom → Ponytail, bypass per request, dan fail-open tiap kegagalan |
-| `internal/service` | transformasi `key_hint`, accounting usage/log/quota, dan worker flush serta retention |
+| `internal/service` | transformasi `key_hint`, accounting usage/log/quota, worker flush serta retention, dan domain event `usage.recorded` (publisher + consumer) |
 | `internal/router` | route `/api/v1` melalui mux sungguhan: auth login/status/logout, session gating, data plane, batas rate limit, `request_id`, verbe salah, dan siklus hidup CRUD |
 | `internal/handler` | happy/validation/auth per route, termasuk chat HTTP end to end di atas `ChatService` nyata, kontrak OpenAPI, dan cookie lifecycle |
 | `internal/repository/postgres` | pemetaan error driver → domain (unit); constraint, paginasi, dan round-trip terhadap PostgreSQL nyata (integrasi) |
-| `internal/repository/redis` | rotasi combo dan vision, buffer console, dan state OAuth sekali pakai |
+| `internal/repository/redis` | rotasi combo dan vision, buffer console, state OAuth sekali pakai, dan transport Pub/Sub domain event usage |
 | `tools/openapi-gen` | generator artifact OpenAPI dari YAML, termasuk mode `-check` |
 
 Laporan terakhir: `go test -race -count=1 ./...` hijau pada 15 paket ber-test dan 2 paket tanpa test file, 0 gagal.

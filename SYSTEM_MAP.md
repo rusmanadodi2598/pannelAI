@@ -312,7 +312,7 @@ Migrasi P2 (`000009`-`000011`) menambah `proxies`, `media_provider_settings`, da
 | Sumber | Isi | Catatan |
 |---|---|---|
 | PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1), `proxies` (P2, 000009), `media_provider_settings` (P2, 000010; PK `(provider_id, kind)`) | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali; `proxies.password_encrypted` disegel sama dan `has_password` satu-satunya bentuk yang dibaca kembali |
-| Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, sticky round-robin, circuit state, console ring buffer | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut |
+| Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, sticky round-robin, circuit state, console ring buffer, channel Pub/Sub `pannelai:events:usage.recorded` | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut |
 
 ---
 
@@ -325,7 +325,17 @@ Tiga worker berjalan bersama server, semuanya dipulai lewat `cmd/app-serv/worker
 | Quota flush (`internal/service/quota_flush.go`) | tick 30 detik, batch terbatas; counter ditulis oleh tiap request yang dilayani (`internal/service/quota_counter.go`) | fixed tick, `MaxAttempts: 5` | baris Redis tersisa dicoba lagi pada tick berikutnya |
 | Log retention (`internal/service/log_retention.go`) | tick 1 jam, cutoff dari `settings.logging.retention_days` | fixed tick, `MaxAttempts: 3` | DELETE bersifat set-based dan atomik; baris tetap untuk percobaan berikutnya |
 | OAuth token refresh (`internal/service/oauth_refresh_worker.go`) | tick 5 menit, hanya endpoint `oauth` yang `refresh_state=due` | eksponensial dari 30 detik, jitter maksimum seperempat delay, plafon 30 menit, 5 percobaan | percobaan kelima menandai endpoint `error` lewat `MarkRefreshDeadLetter` dan berhenti di-retry |
+| Usage event publisher (`internal/service/usage_event_publish.go`) | antrean bounded 256 yang diisi `UsageService.Record` (choke point akuntansi, dipakai chat dan media/embeddings) | tanpa retry terjadwal: kegagalan publish dihitung lalu dicatat, karena Pub/Sub tidak punya tujuan durable untuk di-retry | antrean penuh = event terbaru di-drop dan dihitung (`Dropped()`); baris usage adalah rekaman durabelnya |
+| Usage event consumer (`internal/service/usage_event_consume.go`) | subscribe channel `pannelai:events:usage.recorded`; tiap event dicerminkan jadi satu baris console ring | receive timeout = idle (bukan kegagalan); kegagalan transport backoff eksponensial 250ms sampai 30s, counter reset oleh receive sukses pertama | tidak ada: subscription dibangun ulang tiap percobaan, jadi tidak ada state yang perlu di-dead-letter |
 | Quota re-check | **deferred ke P2** (§7.12, register G22): belum ada worker. Penegakan cap terjadi saat seleksi endpoint, dibaca dari `quota_caps` dan `MonthlyUsage`, jadi sebuah cap berlaku pada request berikutnya tanpa re-check terpisah | — | — |
+
+Domain event `usage.recorded` (AGENTS.md §2.3, draft 010 F4) menyeberang lewat Redis Pub/Sub pada channel
+`pannelai:events:usage.recorded`: `UsageService.Record` memancarkannya setelah baris usage tersimpan, publisher
+menaruhnya di broker dari goroutine sendiri, dan consumer mencerminkannya ke console ring lewat
+`LogService.AppendConsole`. Kontrak wire-nya ada di `internal/domain/usage_event_codec.go`, dan decoder-nya
+memvalidasi ulang payload dengan invariant agregat sebelum consumer boleh memakainya (channel = input tak
+terpercaya, OWASP A08). Event hanya dipancarkan setelah tulisan berhasil, jadi artinya "request ini tercatat",
+bukan "request ini dicoba".
 
 Penegakan kuota ada di jalur seleksi, bukan di worker: `dataplane.Selector` menerima
 `SelectorDeps.Gate` (§7.12, register G22) dan melewati endpoint yang spend bulan berjalannya

@@ -34,6 +34,7 @@ type UsageService struct {
 	logs     repository.RequestLogRepository
 	settings *SettingsService
 	clock    func() time.Time
+	events   *UsageEventPublisher
 }
 
 // UsageServiceDeps holds the collaborators the service needs.
@@ -42,10 +43,15 @@ type UsageService struct {
 // the viewer can tell "capture is off" from "this request was never logged".
 // Reading it here rather than taking it as a call argument keeps that policy a
 // single source of truth, the one the log service already writes by.
+//
+// Events is optional: without one the recorder still writes every row and
+// simply emits no domain event, which is the documented behaviour for a
+// deployment that wired no broker.
 type UsageServiceDeps struct {
 	Usage    repository.UsageRecordRepository
 	Logs     repository.RequestLogRepository
 	Settings *SettingsService
+	Events   *UsageEventPublisher
 }
 
 // NewUsageService validates deps and returns a ready service.
@@ -56,15 +62,24 @@ func NewUsageService(deps UsageServiceDeps) (*UsageService, error) {
 	if deps.Settings == nil {
 		return nil, domain.NewValidationError("settings service is required")
 	}
-	return &UsageService{usage: deps.Usage, logs: deps.Logs, settings: deps.Settings, clock: time.Now}, nil
+	return &UsageService{
+		usage: deps.Usage, logs: deps.Logs, settings: deps.Settings,
+		clock: time.Now, events: deps.Events,
+	}, nil
 }
 
-// Record validates and stores one request's accounting row, returning the
-// stored record so a caller can publish its event.
+// Record validates and stores one request's accounting row, then emits the
+// domain event for it (AGENTS.md §2.3).
 //
 // The record is validated by the domain constructor, so a reporter that passes
 // a negative token count or an unparseable cost is rejected here rather than
 // writing a row that would skew every aggregate built on it.
+//
+// The event is emitted only after the row is stored, and emitting it cannot
+// fail the call: the caller already has its answer, and the usage row is the
+// durable record a lost event cannot replace. That ordering is what makes the
+// event mean "this request is recorded" rather than "this request was
+// attempted".
 func (s *UsageService) Record(ctx context.Context, in domain.UsageRecordInput) (domain.UsageRecord, error) {
 	record, err := domain.NewUsageRecord(in, "", s.clock())
 	if err != nil {
@@ -73,6 +88,7 @@ func (s *UsageService) Record(ctx context.Context, in domain.UsageRecordInput) (
 	if err := s.usage.Record(ctx, record); err != nil {
 		return domain.UsageRecord{}, fmt.Errorf("recording usage: %w", err)
 	}
+	s.events.PublishEvent(record.NewUsageEvent())
 	return record, nil
 }
 

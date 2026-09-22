@@ -59,6 +59,14 @@ type managementDeps struct {
 	QuotaFlusher *service.QuotaFlusher
 	LogRetention *service.LogRetentionWorker
 	OAuthRefresh *service.OAuthRefreshWorker
+
+	// UsageEvents is the publisher half of the §2.3 usage domain event and
+	// UsageEventConsumer is its subscriber. Both are returned for the same
+	// reason as the workers above: the publisher's drain goroutine and the
+	// consumer's read loop are started by runWorkers, so neither runs
+	// before the server is listening nor outlives shutdown.
+	UsageEvents        *service.UsageEventPublisher
+	UsageEventConsumer *service.UsageEventConsumer
 }
 
 // routerDeps assembles the router's dependency set from the graph the boot

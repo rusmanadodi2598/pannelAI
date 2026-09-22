@@ -148,7 +148,7 @@ func buildManagement(
 	// built together (see observability_wiring.go). The endpoint repository
 	// rides along because the quota service refuses a cap for an endpoint that
 	// is not configured (draft 005 F2).
-	usageSvc, quotaSvc, logSvc, err := buildObservability(usageRepo, quotaRepo, endpointRepo, logRepo, settingsSvc, client)
+	usageSvc, quotaSvc, logSvc, eventPublisher, eventConsumer, err := buildObservability(usageRepo, quotaRepo, endpointRepo, logRepo, settingsSvc, client)
 	if err != nil {
 		return managementDeps{}, err
 	}
@@ -231,9 +231,11 @@ func buildManagement(
 		Embeddings:    handler.NewEmbeddingsHandler(plane.Embeddings, plane.Chat),
 		// The estimate route dials no upstream, so it is built over its own
 		// stateless service and borrows the §4 key rule from the chat service.
-		TokenCount:   handler.NewTokenCountHandler(service.NewTokenCountService(), plane.Chat),
-		QuotaFlusher: flusher,
-		LogRetention: retention,
-		OAuthRefresh: refreshWorker,
+		TokenCount:         handler.NewTokenCountHandler(service.NewTokenCountService(), plane.Chat),
+		QuotaFlusher:       flusher,
+		LogRetention:       retention,
+		OAuthRefresh:       refreshWorker,
+		UsageEvents:        eventPublisher,
+		UsageEventConsumer: eventConsumer,
 	}, nil
 }
