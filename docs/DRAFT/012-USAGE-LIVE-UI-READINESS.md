@@ -7,7 +7,7 @@ yang bisa diulang, rencana DURING, keputusan owner di depan implementasi.
 
 | | |
 |---|---|
-| **Status** | DURING selesai 2026-09-22. F1 CLOSED; F2 dan F3 diimplementasikan penuh dengan test dan live pass, tetapi CLOSED ditahan oleh F4 |
+| **Status** | DURING selesai 2026-09-22. F1 CLOSED; F2 dan F3 diimplementasikan penuh dengan test dan live pass, tetapi CLOSED ditahan oleh F4; F6 dicatat sebagai follow-up LOW |
 | **Mechanism** | DURING & AFTER (antislop) |
 | **Tanggal** | 2026-09-22 |
 | **Scope** | `app-ui/.` saja. `app-serv/.` tidak disentuh oleh dokumen ini |
@@ -154,7 +154,7 @@ kontrol yang tidak punya lawan bicara); R-36 (tidak ada klaim live tanpa stream)
 **Kriteria selesai.** Route nyata menjawab dengan session, dan live pass merekam frame pertama sampai
 layar. Sampai itu terjadi, panel merender keadaan `unavailable` dengan sebabnya.
 
-**Catatan 2026-09-22, setelah pass di §9.** Langkah 1 baru sebagian, dan sebagiannya sudah mendarat:
+**Catatan 2026-09-22, setelah pass di §10.** Langkah 1 baru sebagian, dan sebagiannya sudah mendarat:
 commit `62d21e1` (sisi `app-serv` draft 010 F4) memberi `usage.recorded` sebuah publisher bounded dan
 subscriber nyata lewat Redis Pub/Sub di channel `pannelai:events:usage.recorded`. Bus itu membawa
 request yang **sudah selesai**, jadi ia mengisi separuh `recent` pada frame yang direncanakan;
@@ -172,7 +172,29 @@ dan F4 tetap OPEN. Langkah 2 dan 3 belum tersentuh.
   (satu baris pengecualian MOTION untuk indikator aktivitas).
 - `app-ui/README.md` mencatat slice ini pada tabel keputusan dan tabel gate.
 
-## 8. Non-findings
+## 8. F6 LOW (FE): pola notice-only `per_page` yang sama masih ada di dua layar lain
+
+**Status: OPEN, dicatat 2026-09-22 sebagai follow-up F1.**
+
+**Fakta.** F1 mengoreksi `per_page` di layar Usage: nilainya dibaca, dikoreksi ke ukuran yang layar
+pakai, notice menyebut angkanya, dan parameternya dibuang dari URL. Dua layar lain masih memakai pola
+lama yang hanya melaporkan: `log-search.ts:67-69` menulis "This screen reads N requests per page, so
+per_page was ignored." dan `endpoint-search.ts:78-81` menulis kalimat yang sama untuk endpoints, tanpa
+mengoreksi URL maupun membaca ulang. Jadi satu URL yang dibagikan tetap berarti tiga hal berbeda:
+nilai di URL, notice di layar, dan jumlah baris yang benar-benar dibaca.
+
+**Risiko dan aturan.** SPEC-UI §7.1.1 dan §8.10 (koreksi harus terlihat, dan URL adalah sumber
+kebenaran); R-26 (kontrol yang tidak melakukan apa labelnya); AGENTS.md §2.4.
+
+**Kerja yang diusulkan.** Angkat pola F1 ke satu tempat (satu jalur koreksi `per_page` yang dipakai
+tiga layar), lalu pakai di `log-search.ts` dan `endpoint-search.ts` dengan test tabel per layar dan
+bukti satu pembacaan di test komponennya. Tidak dikerjakan di pass ini karena scope-nya tiga layar di
+luar Usage.
+
+**Kriteria selesai.** Ketiga layar memakai satu jalur koreksi yang sama, dan URL hasil koreksi tidak
+membawa `per_page` di layar mana pun.
+
+## 9. Non-findings
 
 - **010 F11 tetap CLOSED.** Placeholder "Request id, error code" sudah benar sejak F8 `app-serv`
   memperluas scope `q`; tidak ada pekerjaan FE yang menyertainya.
@@ -183,7 +205,7 @@ dan F4 tetap OPEN. Langkah 2 dan 3 belum tersentuh.
 - **Tidak ada dependensi graph baru.** Layout elips digambar sendiri; menambah pustaka graf untuk
   belasan node akan menjadi bobot yang tidak sebanding dengan gunanya.
 
-## 9. Bukti gate
+## 10. Bukti gate
 
 Dijalankan dari `app-ui/` pada tree beku. File `app-serv` yang belum di-commit di tree adalah pekerjaan
 tim lain; tidak ada satu pun yang disentuh oleh pass ini.
@@ -236,7 +258,7 @@ Click-through browser tetap **blocked**, dan itu dicatat sebagai blocked: panel 
 sehingga R-35 tidak bisa dipenuhi dengan `curl`, dan satu-satunya keadaan yang belum bisa direkam
 adalah frame yang benar-benar tiba, karena route F4 belum ada di gateway.
 
-## 10. Status per 2026-09-22
+## 11. Status per 2026-09-22
 
 - F1 CLOSED dengan bukti test dan live pass: gateway menghormati `per_page=100` sementara panel
   membacanya sebagai 25, dan koreksi URL itu sekarang terlihat serta hanya satu pembacaan yang terjadi.
@@ -247,3 +269,5 @@ adalah frame yang benar-benar tiba, karena route F4 belum ada di gateway.
   beserta sebabnya (panel client-rendered, route lawan bicara belum ada), bukan diklaim lulus.
 - F4 OPEN, milik scope `app-serv`. Ini satu-satunya nomor yang menahan CLOSED F2 dan F3.
 - F5 tercatat; amandemen dokumen (SPEC-UI §6.5, §8.6.1, §9.5 dan DESIGN.md §2.1) ikut di perubahan ini.
+- F6 OPEN dan LOW: pola notice-only `per_page` yang sama masih ada di `log-search.ts` dan
+  `endpoint-search.ts`, dicatat sebagai follow-up F1 untuk pass berikutnya, bukan dikerjakan di sini.
