@@ -5,37 +5,32 @@
 	// keeps the window honest: the URL carries the period *name* rather than the instants it resolves to, so
 	// a shared link keeps meaning "the last 7 days" instead of freezing whichever hour it was read in. Each
 	// read resolves the range from one captured now, which is what makes two reads of the same period
-	// comparable.
+	// comparable. The breakdown's sort is URL state for the same reason, and it is applied to the whole
+	// response rather than to a page of it.
 	//
 	// The screen computes no figure of its own. Every number here comes from the summary or the timeseries,
 	// with one stated exception: the token series adds tokens in to tokens out, and its caption says so.
 	// `latency_ms` is returned by the API and deliberately not shown, because it is a sum of per-request
 	// latencies rather than a mean, and §6.5 asks for p50 and p95 rather than a total.
+	//
+	// The breakdown table is on screen from the first read (draft 014 F1): the API's group block arrives
+	// with the same response, and "which models consumed this window" is the first question it answers.
+	// Turning it off is an explicit choice the URL names.
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
-	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
-	import UsageChart from '$lib/components/UsageChart.svelte';
-	import UsageGroupTable from '$lib/components/UsageGroupTable.svelte';
 	import UsageLivePanel from '$lib/components/UsageLivePanel.svelte';
+	import UsageOverviewBreakdown from '$lib/components/UsageOverviewBreakdown.svelte';
+	import UsageOverviewCharts from '$lib/components/UsageOverviewCharts.svelte';
+	import UsageOverviewControls from '$lib/components/UsageOverviewControls.svelte';
 	import UsageTotalsTiles from '$lib/components/UsageTotalsTiles.svelte';
+	import { listProviders } from '$lib/api/providers';
 	import { getUsageSummary, getUsageTimeseries } from '$lib/api/usage';
-	import {
-		USAGE_GROUP_BYS,
-		USAGE_GROUP_BY_LABELS,
-		USAGE_PERIODS,
-		USAGE_PERIOD_LABELS,
-		type UsageSummary,
-		type UsageTimeseries
-	} from '$lib/schemas/usage';
-	import {
-		granularityFor,
-		periodRange,
-		usageQuery,
-		type SeriesPoint
-	} from '$lib/schemas/usage-view';
+	import { type UsageSort, type UsageSummary, type UsageTimeseries } from '$lib/schemas/usage';
+	import { granularityFor, periodRange, sortGroups, usageQuery } from '$lib/schemas/usage-view';
+	import { providerNameMap } from '$lib/schemas/usage-topology-view';
 	import { nextUsageSearch, parseUsageSearch, type UsageSearch } from '$lib/schemas/usage-search';
 	import { formatTimestamp } from '$lib/utils/time';
 
@@ -43,6 +38,11 @@
 	let timeseries = $state<UsageTimeseries | null>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	// The breakdown table resolves a provider key to its name, which is a second read and not a dependency:
+	// a registry that cannot be read leaves the table rendering the ids, with one line saying so. It runs
+	// only while the provider dimension is the one on screen, so a model breakdown reads nothing extra.
+	let providerNames = $state<Map<string, string> | null>(null);
+	let namesNotice = $state<string | null>(null);
 
 	const search = $derived(parseUsageSearch(page.url.searchParams));
 
@@ -84,66 +84,71 @@
 
 	const buckets = $derived(timeseries?.buckets ?? []);
 	const totals = $derived(summary?.totals ?? null);
+	// The sort is the panel's own: §7.12 has no sort parameter, and the API sends the whole breakdown for
+	// the window, so the order is applied to every group rather than to a page of them.
+	const groups = $derived(sortGroups(summary?.groups ?? [], search.sort, search.order));
 
-	const requests = $derived<SeriesPoint[]>(
-		buckets.map((bucket) => ({ bucket: bucket.bucket, value: bucket.totals.requests }))
-	);
-	const tokens = $derived<SeriesPoint[]>(
-		buckets.map((bucket) => ({
-			bucket: bucket.bucket,
-			value: bucket.totals.tokens_in + bucket.totals.tokens_out
-		}))
-	);
-
-	function change(key: string, value: string): void {
-		const next = nextUsageSearch(page.url.searchParams, key, value).toString();
+	function navigate(params: URLSearchParams): void {
+		const next = params.toString();
 		void goto(resolve(next === '' ? '/usage' : `/usage?${next}`), { keepFocus: true });
 	}
+
+	function change(key: string, value: string): void {
+		navigate(nextUsageSearch(page.url.searchParams, key, value));
+	}
+
+	/**
+	 * A header click: the same column flips the direction, a new column starts ascending, and clearing the
+	 * sort drops both parameters.
+	 */
+	function sortBy(field: UsageSort | ''): void {
+		if (field === '') {
+			const cleared = nextUsageSearch(
+				nextUsageSearch(page.url.searchParams, 'sort', ''),
+				'order',
+				''
+			);
+			navigate(cleared);
+			return;
+		}
+
+		const order = search.sort === field && search.order === 'asc' ? 'desc' : 'asc';
+		const next = nextUsageSearch(
+			nextUsageSearch(page.url.searchParams, 'sort', field),
+			'order',
+			order
+		);
+		navigate(next);
+	}
+
+	async function loadProviderNames(): Promise<void> {
+		const result = await listProviders({ per_page: 100 });
+
+		if (!result.ok) {
+			providerNames = null;
+			namesNotice = `Provider names could not be read (${result.error.message}), so provider ids are shown.`;
+			return;
+		}
+
+		namesNotice = null;
+		providerNames = providerNameMap(result.data.data);
+	}
+
+	function refresh(): void {
+		void load(search);
+		if (search.groupBy === 'provider') void loadProviderNames();
+	}
+
+	// Names are read when, and only when, the provider dimension is the one on screen. The effect also
+	// covers the operator switching to it, which is the moment the ids stop being readable enough.
+	$effect(() => {
+		if (search.groupBy !== 'provider') return;
+		untrack(() => void loadProviderNames());
+	});
 </script>
 
 <div class="flex flex-col gap-5">
-	<div class="flex flex-wrap items-end gap-3">
-		<label class="flex flex-col gap-1 text-sm">
-			<span class="text-[var(--color-text-muted)]">Period</span>
-			<select
-				value={search.period}
-				onchange={(event) => change('period', event.currentTarget.value)}
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
-			>
-				{#each USAGE_PERIODS as period (period)}
-					<option value={period}>{USAGE_PERIOD_LABELS[period]}</option>
-				{/each}
-			</select>
-		</label>
-
-		<label class="flex flex-col gap-1 text-sm">
-			<span class="text-[var(--color-text-muted)]">Group by</span>
-			<select
-				value={search.groupBy}
-				onchange={(event) => change('group_by', event.currentTarget.value)}
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
-			>
-				<option value="">No breakdown</option>
-				{#each USAGE_GROUP_BYS as option (option)}
-					<option value={option}>{USAGE_GROUP_BY_LABELS[option]}</option>
-				{/each}
-			</select>
-		</label>
-	</div>
-
-	<RefreshControl onrefresh={() => load(search)} />
-
-	{#if search.notices.length > 0}
-		<div
-			role="status"
-			aria-live="polite"
-			class="flex flex-col gap-1 rounded-[var(--radius-md)] bg-[var(--color-surface-2)] px-3 py-2 text-sm"
-		>
-			{#each search.notices as notice (notice)}
-				<p>{notice}</p>
-			{/each}
-		</div>
-	{/if}
+	<UsageOverviewControls {search} onchange={change} onrefresh={refresh} />
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading usage" />
@@ -179,34 +184,17 @@
 
 			<UsageTotalsTiles {totals} />
 
-			<div class="grid gap-4 lg:grid-cols-2">
-				<UsageChart
-					title="Requests"
-					unit="requests"
-					caption="Requests recorded in each bucket."
-					points={requests}
-				/>
-				<UsageChart
-					title="Tokens"
-					unit="tokens"
-					caption="Tokens in plus tokens out in each bucket. Cache tokens are counted in the tiles above and not here."
-					points={tokens}
-				/>
-			</div>
+			<UsageOverviewCharts {buckets} />
 
-			{#if search.groupBy !== ''}
-				{#if summary.groups.length === 0}
-					<StateMessage
-						kind="empty"
-						title="No group has any usage in this window"
-						description="The totals above are real, so the breakdown is empty because nothing was recorded against a {USAGE_GROUP_BY_LABELS[
-							search.groupBy
-						].toLowerCase()}. Check that the requests carried one."
-					/>
-				{:else}
-					<UsageGroupTable groups={summary.groups} groupBy={search.groupBy} />
-				{/if}
-			{/if}
+			<UsageOverviewBreakdown
+				breakdown={search.groupBy}
+				sort={search.sort}
+				order={search.order}
+				{groups}
+				{providerNames}
+				{namesNotice}
+				onsort={sortBy}
+			/>
 		{/if}
 	{/if}
 

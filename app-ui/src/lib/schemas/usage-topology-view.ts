@@ -126,3 +126,14 @@ export function configuredProviders(providers: Provider[]): { id: string; name: 
 		.map((provider) => ({ id: provider.id, name: provider.name }))
 		.sort(byId);
 }
+
+/**
+ * The registry's ids mapped to their display names, lowercased on the id.
+ *
+ * The breakdown table resolves a provider group key through this (draft 014 F1): the key is the id the API
+ * grouped by, and `openai` is a name the operator has to translate. The full read is used rather than
+ * `configuredProviders`, because a provider that has usage and no endpoint still has a name.
+ */
+export function providerNameMap(providers: { id: string; name: string }[]): Map<string, string> {
+	return new Map(providers.map((provider) => [provider.id.toLowerCase(), provider.name]));
+}

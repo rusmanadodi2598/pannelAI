@@ -22,20 +22,32 @@ import {
 	type RequestStatus
 } from './primitives';
 import {
+	DEFAULT_USAGE_BREAKDOWN,
+	DEFAULT_USAGE_ORDER,
 	DEFAULT_USAGE_PERIOD,
-	schemaUsageGroupBy,
+	schemaUsageBreakdown,
+	schemaUsageOrder,
 	schemaUsagePeriod,
-	type UsageGroupBy,
-	type UsagePeriod
+	schemaUsageSort,
+	type UsageBreakdown,
+	type UsageOrder,
+	type UsagePeriod,
+	type UsageSort
 } from './usage';
 import { USAGE_RECORDS_PAGE_SIZE } from './usage-view';
 
 /** The filter state the Usage tabs read out of the URL. */
 export type UsageSearch = {
 	period: UsagePeriod;
-	groupBy: UsageGroupBy | '';
+	/** The breakdown the table shows, or `none` when the operator turned it off (draft 014 F1). */
+	groupBy: UsageBreakdown;
+	/** The column the breakdown table is ordered by, or empty for the API's own order. */
+	sort: UsageSort | '';
+	order: UsageOrder;
 	status: RequestStatus | '';
 	endpointId: string;
+	providerId: string;
+	gatewayKeyId: string;
 	model: string;
 	query: string;
 	page: number;
@@ -126,14 +138,32 @@ export function parseUsageSearch(params: URLSearchParams): UsageSearch {
 		),
 		groupBy: pick(
 			params.get('group_by'),
-			schemaUsageGroupBy,
-			'',
+			schemaUsageBreakdown,
+			DEFAULT_USAGE_BREAKDOWN,
 			'group_by value',
-			'no breakdown',
+			'the breakdown by model',
+			notices
+		),
+		sort: pick(
+			params.get('sort'),
+			schemaUsageSort,
+			'',
+			'sort value',
+			"the API's own order",
+			notices
+		),
+		order: pick(
+			params.get('order'),
+			schemaUsageOrder,
+			DEFAULT_USAGE_ORDER,
+			'sort order',
+			'ascending order',
 			notices
 		),
 		status: pick(params.get('status'), schemaRequestStatus, '', 'status', 'any status', notices),
 		endpointId: pickText(params.get('endpoint_id'), notices),
+		providerId: pickText(params.get('provider_id'), notices),
+		gatewayKeyId: pickText(params.get('gateway_key_id'), notices),
 		model: pickText(params.get('model'), notices),
 		query: pickText(params.get('q'), notices),
 		page: pick(params.get('page'), pageNumber, 1, 'page', 'page 1', notices),
@@ -167,7 +197,12 @@ export function cleanedUsageSearch(current: URLSearchParams): URLSearchParams | 
  */
 export function usageFiltersApplied(search: UsageSearch): boolean {
 	return (
-		search.status !== '' || search.endpointId !== '' || search.model !== '' || search.query !== ''
+		search.status !== '' ||
+		search.endpointId !== '' ||
+		search.providerId !== '' ||
+		search.gatewayKeyId !== '' ||
+		search.model !== '' ||
+		search.query !== ''
 	);
 }
 

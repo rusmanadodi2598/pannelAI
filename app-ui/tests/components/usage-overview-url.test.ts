@@ -69,22 +69,22 @@ describe('UsageOverviewTab URL', () => {
 	it('writes the group-by into the URL and asks for the breakdown', async () => {
 		const stub = stubUsage({
 			summary: summaryBody({
-				group_by: 'model',
-				groups: [{ key: 'gpt-4o', totals: totals({ requests: 120 }) }]
+				group_by: 'endpoint',
+				groups: [{ key: 'ep_1', totals: totals({ requests: 120 }) }]
 			})
 		});
 		await renderOverview();
 
-		await fireEvent.change(screen.getByLabelText('Group by'), { target: { value: 'model' } });
+		await fireEvent.change(screen.getByLabelText('Group by'), { target: { value: 'endpoint' } });
 
 		await waitFor(() => {
-			expect(pageState.url.searchParams.get('group_by')).toBe('model');
+			expect(pageState.url.searchParams.get('group_by')).toBe('endpoint');
 		});
 		await waitFor(() => {
-			expect(lastQuery(stub, '/usage/summary').get('group_by')).toBe('model');
+			expect(lastQuery(stub, '/usage/summary').get('group_by')).toBe('endpoint');
 		});
 
-		expect(await screen.findByText('gpt-4o')).toBeTruthy();
+		expect(await screen.findByText('ep_1')).toBeTruthy();
 	});
 
 	it('corrects an unusable period in the URL and says so rather than failing', async () => {

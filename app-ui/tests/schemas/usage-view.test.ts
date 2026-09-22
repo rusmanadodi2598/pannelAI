@@ -281,9 +281,13 @@ describe('parseUsageSearch', () => {
 
 		expect(search).toEqual({
 			period: '24h',
-			groupBy: '',
+			groupBy: 'model',
+			sort: '',
+			order: 'asc',
 			status: '',
 			endpointId: '',
+			providerId: '',
+			gatewayKeyId: '',
 			model: '',
 			query: '',
 			page: 1,
@@ -296,15 +300,19 @@ describe('parseUsageSearch', () => {
 	it('reads every filter the Records tab writes', () => {
 		const search = parseUsageSearch(
 			new URLSearchParams(
-				'period=7d&group_by=model&status=error&endpoint_id=ep_1&model=gpt-4o&q=timeout&page=3'
+				'period=7d&group_by=model&status=error&endpoint_id=ep_1&provider_id=openai&gateway_key_id=gk_1&model=gpt-4o&q=timeout&page=3&sort=cost_usd&order=desc'
 			)
 		);
 
 		expect(search).toMatchObject({
 			period: '7d',
 			groupBy: 'model',
+			sort: 'cost_usd',
+			order: 'desc',
 			status: 'error',
 			endpointId: 'ep_1',
+			providerId: 'openai',
+			gatewayKeyId: 'gk_1',
 			model: 'gpt-4o',
 			query: 'timeout',
 			page: 3,
@@ -314,10 +322,19 @@ describe('parseUsageSearch', () => {
 		});
 	});
 
+	it('reads `none` as the operator turning the breakdown off', () => {
+		const search = parseUsageSearch(new URLSearchParams('group_by=none'));
+
+		expect(search.groupBy).toBe('none');
+		expect(search.notices).toEqual([]);
+	});
+
 	forEachCase(
 		[
 			{ name: 'rejects a period the panel does not offer', query: 'period=forever', notices: 1 },
 			{ name: 'rejects a group_by the API would reject', query: 'group_by=nonsense', notices: 1 },
+			{ name: 'rejects a sort the panel does not offer', query: 'sort=vibes', notices: 1 },
+			{ name: 'rejects an order the panel does not offer', query: 'order=sideways', notices: 1 },
 			{ name: 'rejects a status the API does not store', query: 'status=pending', notices: 1 },
 			{ name: 'rejects a page below the first', query: 'page=0', notices: 1 },
 			{ name: 'rejects a page that is not a number', query: 'page=last', notices: 1 },
@@ -333,7 +350,7 @@ describe('parseUsageSearch', () => {
 			expect(search.notices).toHaveLength(testCase.notices);
 			// Every notice names the parameter, so the operator can find it in the URL (§8.10, R-27).
 			for (const notice of search.notices) {
-				expect(notice).toMatch(/period|group_by|status|page|filter/);
+				expect(notice).toMatch(/period|group_by|sort|order|status|page|filter/);
 			}
 		}
 	);
@@ -380,6 +397,12 @@ describe('usageFiltersApplied', () => {
 			{ name: 'is false when only the period is set', query: 'period=30d', expected: false },
 			{ name: 'is true once a status is chosen', query: 'status=error', expected: true },
 			{ name: 'is true once an endpoint is named', query: 'endpoint_id=ep_1', expected: true },
+			{ name: 'is true once a provider is chosen', query: 'provider_id=openai', expected: true },
+			{
+				name: 'is true once a gateway key is chosen',
+				query: 'gateway_key_id=gk_1',
+				expected: true
+			},
 			{ name: 'is true once a model is named', query: 'model=gpt-4o', expected: true },
 			{ name: 'is true once a search term is entered', query: 'q=timeout', expected: true },
 			{

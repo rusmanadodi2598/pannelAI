@@ -9,9 +9,6 @@
 	// The period selector is the "date range" filter §6.5 lists. A native date pair would take a local
 	// calendar date against an API that reads UTC instants, and the periods are already defined at screen
 	// level, so reusing the Overview's control is both simpler and less ambiguous.
-	//
-	// The empty state's link to API Docs is deferred until that route exists, because R-24 forbids a link to
-	// a screen the panel does not have.
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -71,6 +68,8 @@
 				...periodRange(filters.period, new Date()),
 				status: filters.status,
 				endpointId: filters.endpointId,
+				providerId: filters.providerId,
+				gatewayKeyId: filters.gatewayKeyId,
 				model: filters.model,
 				query: filters.query,
 				page: filters.page
@@ -117,7 +116,7 @@
 
 	function clearFilters(): void {
 		let next = page.url.searchParams;
-		for (const key of ['status', 'endpoint_id', 'model', 'q'])
+		for (const key of ['status', 'endpoint_id', 'provider_id', 'gateway_key_id', 'model', 'q'])
 			next = nextUsageSearch(next, key, '');
 
 		perPageNotice = null;
@@ -170,11 +169,14 @@
 			description="Nothing was routed in the selected period. The gateway writes a record here once a client sends a request with a gateway key, so the likely cause is that no client has called it yet."
 		>
 			{#snippet action()}
-				{#if search.period !== '60d'}
-					<button type="button" class="underline" onclick={() => change('period', '60d')}
-						>Look back 60 days</button
-					>
-				{/if}
+				<div class="flex flex-wrap gap-3">
+					{#if search.period !== '60d'}
+						<button type="button" class="underline" onclick={() => change('period', '60d')}
+							>Look back 60 days</button
+						>
+					{/if}
+					<a href={resolve('/api-docs')} class="underline">Open API Docs</a>
+				</div>
 			{/snippet}
 		</StateMessage>
 	{:else}

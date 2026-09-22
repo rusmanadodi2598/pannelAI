@@ -313,6 +313,8 @@ describe('usage query', () => {
 				granularity: 'day',
 				status: 'error',
 				endpointId: 'ep_1',
+				providerId: 'openai',
+				gatewayKeyId: 'gky_1',
 				model: 'gpt-4o',
 				query: 'timeout',
 				page: 3
@@ -323,6 +325,8 @@ describe('usage query', () => {
 			granularity: 'day',
 			status: 'error',
 			endpoint_id: 'ep_1',
+			provider_id: 'openai',
+			gateway_key_id: 'gky_1',
 			model: 'gpt-4o',
 			q: 'timeout',
 			page: 3
@@ -333,6 +337,11 @@ describe('usage query', () => {
 		[
 			{ name: 'drops an empty group_by rather than sending it', field: 'groupBy', value: '' },
 			{ name: 'drops a whitespace-only group_by', field: 'groupBy', value: '   ' },
+			{
+				name: 'drops the breakdown selector\'s own word for "no breakdown"',
+				field: 'groupBy',
+				value: 'none'
+			},
 			{ name: 'drops an empty model filter', field: 'model', value: '' },
 			{ name: 'drops a whitespace-only search term', field: 'query', value: ' \t ' }
 		],

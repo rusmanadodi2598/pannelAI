@@ -90,9 +90,9 @@ function stubTab(options: { usageStatus?: number } = {}): { streams: LiveBody[] 
 			: {
 					from: '2026-09-21T00:00:00Z',
 					to: '2026-09-22T00:00:00Z',
-					group_by: '',
+					group_by: 'model',
 					totals: totals(REST_REQUESTS),
-					groups: []
+					groups: [{ key: 'gpt-4o', totals: totals(REST_REQUESTS) }]
 				};
 
 		return new Response(JSON.stringify(body), {

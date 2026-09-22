@@ -4,10 +4,13 @@
 // are the ones an operator will actually watch: the minute, the hour, and the day rollover. It also has
 // to stay honest about a reset instant that has already passed, which means the worker has not refreshed
 // the row yet rather than that the window is overdue.
+//
+// `elapsedText` is the same set of boundaries in the other direction, for the live list of requests that
+// have just finished.
 
 import { describe, expect, it } from 'vitest';
 import { forEachCase } from '../support/tables';
-import { countdownText, formatTimestamp } from '$lib/utils/time';
+import { countdownText, elapsedText, formatTimestamp } from '$lib/utils/time';
 
 const NOW = Date.parse('2026-09-18T12:00:00Z');
 
@@ -69,5 +72,39 @@ describe('formatTimestamp', () => {
 		// The zone is whatever the runtime is in, so the assertion is on the shape: a zone token after the
 		// date, which is what stops a reader from taking a local time for the API's UTC.
 		expect(formatTimestamp('2026-09-18T12:00:00Z')).toMatch(/,\s*\S+$/);
+	});
+});
+
+describe('elapsedText', () => {
+	forEachCase(
+		[
+			{ name: 'reads a second as just now', offset: -1_000, expected: 'just now' },
+			{
+				name: 'reads the last second before a minute as just now',
+				offset: -59_000,
+				expected: 'just now'
+			},
+			{ name: 'counts a whole minute', offset: -60_000, expected: '1m ago' },
+			{ name: 'drops the seconds rather than rounding up', offset: -119_000, expected: '1m ago' },
+			{ name: 'counts the last minute before an hour', offset: -3_599_000, expected: '59m ago' },
+			{ name: 'counts a whole hour', offset: -3_600_000, expected: '1h ago' },
+			{ name: 'counts the last hour before a day', offset: -86_340_000, expected: '23h ago' }
+		],
+		(testCase) => {
+			expect(elapsedText(at(testCase.offset), NOW)).toBe(testCase.expected);
+		}
+	);
+
+	it('falls back to the formatted date past a day, which is easier to place than 36h', () => {
+		expect(elapsedText(at(-86_400_000), NOW)).toBe(formatTimestamp(at(-86_400_000)));
+	});
+
+	it('reads a future instant as just now rather than as a negative duration', () => {
+		// A gateway whose clock is ahead is not a request that finished in the future.
+		expect(elapsedText(at(60_000), NOW)).toBe('just now');
+	});
+
+	it('states an unparseable instant instead of inventing a duration', () => {
+		expect(elapsedText('not a timestamp', NOW)).toBe('Invalid timestamp');
 	});
 });

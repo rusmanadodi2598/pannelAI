@@ -29,6 +29,8 @@ export function formatTimestamp(value: string): string {
 }
 
 const MINUTE_MS = 60_000;
+const HOUR_MS = 3_600_000;
+const DAY_MS = 86_400_000;
 
 /**
  * How long until an instant, in the largest two units that fit.
@@ -61,4 +63,28 @@ export function countdownText(resetsAt: string, now: number): string {
 	const days = Math.floor(hours / 24);
 	const restHours = hours % 24;
 	return restHours === 0 ? `in ${days}d` : `in ${days}d ${restHours}h`;
+}
+
+/**
+ * How long ago an instant was, in the largest unit that fits.
+ *
+ * The mirror of `countdownText`, and its boundary is the reference's own: under a minute reads as "just
+ * now" rather than as a count of seconds, because a live list is read at a glance and "3s ago" claims a
+ * precision the reader does not need. Past a day it falls back to `formatTimestamp`, since "36h ago" is
+ * harder to place than a date is.
+ *
+ * An instant in the future is the panel's clock running behind the gateway's, not a request that finished
+ * after it was reported, so it reads as "just now"; an unparseable value is stated as such rather than
+ * turned into a duration, for the same reason `formatTimestamp` states it.
+ */
+export function elapsedText(value: string, now: number): string {
+	const parsed = Date.parse(value);
+	if (Number.isNaN(parsed)) return 'Invalid timestamp';
+
+	const elapsed = now - parsed;
+	if (elapsed < MINUTE_MS) return 'just now';
+	if (elapsed < HOUR_MS) return `${Math.floor(elapsed / MINUTE_MS)}m ago`;
+	if (elapsed < DAY_MS) return `${Math.floor(elapsed / HOUR_MS)}h ago`;
+
+	return formatTimestamp(value);
 }

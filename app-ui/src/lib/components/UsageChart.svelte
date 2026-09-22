@@ -16,6 +16,7 @@
 		type SeriesPoint
 	} from '$lib/schemas/usage-view';
 	import { formatTimestamp } from '$lib/utils/time';
+	import type { Snippet } from 'svelte';
 
 	type Props = {
 		title: string;
@@ -24,19 +25,28 @@
 		/** One line naming what is drawn, so the chart is not the only statement of its own meaning. */
 		caption: string;
 		points: SeriesPoint[];
+		/** Renders a value. A cost series is not a count, so it brings the currency's own precision. */
+		format?: (value: number) => string;
+		/** A control that belongs to this chart's own card, such as the series toggle. */
+		controls?: Snippet;
 	};
 
-	let { title, unit, caption, points }: Props = $props();
+	let { title, unit, caption, points, format = formatCount, controls }: Props = $props();
 
 	const heights = $derived(barHeights(points));
-	const summary = $derived(seriesSummary(points, formatTimestamp, unit));
+	const summary = $derived(seriesSummary(points, formatTimestamp, unit, format));
 </script>
 
 <figure
 	class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4"
 >
 	<figcaption class="flex flex-col gap-1">
-		<span class="text-sm font-medium">{title}</span>
+		<div class="flex flex-wrap items-center justify-between gap-2">
+			<span class="text-sm font-medium">{title}</span>
+			{#if controls}
+				{@render controls()}
+			{/if}
+		</div>
 		<span class="text-sm text-[var(--color-text-muted)]">{caption}</span>
 	</figcaption>
 
@@ -67,7 +77,7 @@
 						{#each points as point (point.bucket)}
 							<tr class="border-t border-[var(--color-border)]">
 								<td class="px-3 py-2">{formatTimestamp(point.bucket)}</td>
-								<td class="px-3 py-2 tabular-nums">{formatCount(point.value)}</td>
+								<td class="px-3 py-2 tabular-nums">{format(point.value)}</td>
 							</tr>
 						{/each}
 					</tbody>

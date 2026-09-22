@@ -52,6 +52,35 @@ export const USAGE_GROUP_BY_LABELS: Record<UsageGroupBy, string> = {
 	gateway_key: 'Gateway key'
 };
 
+// The breakdown selector also offers "none". The API has no parameter for "do not break down", it has the
+// absence of one, so the URL needs a word for that absence and `group_by=none` is that word (draft 014 F1).
+// The default is a breakdown by model, because the first question the window answers is which models
+// consumed it, and the reference's own table opens on its model view.
+export const USAGE_BREAKDOWN_NONE = 'none';
+export const schemaUsageBreakdown = z.enum([...USAGE_GROUP_BYS, USAGE_BREAKDOWN_NONE] as const);
+export type UsageBreakdown = z.infer<typeof schemaUsageBreakdown>;
+export const DEFAULT_USAGE_BREAKDOWN: UsageBreakdown = 'model';
+
+// The breakdown table's own controls (draft 014 F1). The reference keeps its sort in the URL and so does
+// this screen: a sorted view is a view someone can share. `key` sorts the dimension's own text, which is
+// the only column compared as a string; the rest compare numbers.
+export const USAGE_SORTS = [
+	'key',
+	'requests',
+	'tokens_in',
+	'tokens_out',
+	'cost_usd',
+	'error_count',
+	'error_rate'
+] as const;
+export type UsageSort = (typeof USAGE_SORTS)[number];
+export const schemaUsageSort = z.enum(USAGE_SORTS);
+
+export const USAGE_ORDERS = ['asc', 'desc'] as const;
+export type UsageOrder = (typeof USAGE_ORDERS)[number];
+export const schemaUsageOrder = z.enum(USAGE_ORDERS);
+export const DEFAULT_USAGE_ORDER: UsageOrder = 'asc';
+
 export const USAGE_GRANULARITIES = ['hour', 'day'] as const;
 export type UsageGranularity = (typeof USAGE_GRANULARITIES)[number];
 

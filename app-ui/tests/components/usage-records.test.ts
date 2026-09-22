@@ -12,6 +12,8 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import UsageRecordsTab from '../../src/lib/components/UsageRecordsTab.svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
+import { keyRow } from '../support/gateway-key-stub';
+import { provider } from '../support/providers-route-stub';
 import { pageState, queryOf, visit } from '../support/page.svelte';
 
 vi.mock('$app/state', async () => {
@@ -71,6 +73,11 @@ type Stub = {
 	total: number;
 	detail: Record<string, unknown>;
 	status: number;
+	/** The rows the filter bar's own two vocabularies answer with (draft 014 F3). */
+	providers: Record<string, unknown>[];
+	keys: Record<string, unknown>[];
+	/** The vocabularies' refusal, which is separate from the record read's so one can fail alone. */
+	optionsStatus: number;
 };
 
 function stubRecords(overrides: Partial<Stub> = {}): Stub {
@@ -80,6 +87,9 @@ function stubRecords(overrides: Partial<Stub> = {}): Stub {
 		total: 1,
 		detail: { usage: record(), capture_enabled: true, log: logBody() },
 		status: 200,
+		providers: [provider()],
+		keys: [keyRow()],
+		optionsStatus: 200,
 		...overrides
 	};
 
@@ -88,6 +98,26 @@ function stubRecords(overrides: Partial<Stub> = {}): Stub {
 		stub.requested.push(url);
 
 		const path = url.split('?')[0];
+
+		// The filter bar's vocabularies are answered before the record routes' fallback, so a record read
+		// that failed cannot decide what the selects offer.
+		if (path.endsWith('/providers') || path.endsWith('/gateway-keys')) {
+			if (stub.optionsStatus !== 200) {
+				return new Response(
+					JSON.stringify({
+						error: { code: 'INTERNAL_ERROR', message: 'the store is unreachable' }
+					}),
+					{ status: stub.optionsStatus, headers: { 'content-type': 'application/json' } }
+				);
+			}
+
+			const rows = path.endsWith('/providers') ? stub.providers : stub.keys;
+			return new Response(
+				JSON.stringify({ data: rows, meta: { page: 1, per_page: 100, total: rows.length } }),
+				{ status: 200, headers: { 'content-type': 'application/json' } }
+			);
+		}
+
 		const body = path.endsWith('/usage/records')
 			? { data: stub.records, meta: { page: 1, per_page: 25, total: stub.total } }
 			: stub.detail;
@@ -135,7 +165,10 @@ describe('UsageRecordsTab', () => {
 	});
 
 	it('sends every filter the URL carries', async () => {
-		visit('/usage', 'period=7d&status=error&endpoint_id=ep_9&model=gpt-4o&q=timeout&page=2');
+		visit(
+			'/usage',
+			'period=7d&status=error&endpoint_id=ep_9&provider_id=openai&gateway_key_id=gky_1&model=gpt-4o&q=timeout&page=2'
+		);
 		const stub = stubRecords();
 		await renderRecords();
 
@@ -143,12 +176,57 @@ describe('UsageRecordsTab', () => {
 
 		expect(query.get('status')).toBe('error');
 		expect(query.get('endpoint_id')).toBe('ep_9');
+		// The two id filters the panel accepted from the URL but never sent (draft 014 F3).
+		expect(query.get('provider_id')).toBe('openai');
+		expect(query.get('gateway_key_id')).toBe('gky_1');
 		expect(query.get('model')).toBe('gpt-4o');
 		expect(query.get('q')).toBe('timeout');
 		expect(query.get('page')).toBe('2');
 		expect(Date.parse(query.get('to') ?? '') - Date.parse(query.get('from') ?? '')).toBe(
 			7 * 24 * 3_600_000
 		);
+	});
+
+	it('writes the provider and gateway key selects into the URL and the request', async () => {
+		const stub = stubRecords();
+		await renderRecords();
+
+		await fireEvent.change(screen.getByLabelText('Provider'), { target: { value: 'openai' } });
+
+		await waitFor(() => {
+			expect(pageState.url.searchParams.get('provider_id')).toBe('openai');
+		});
+
+		await fireEvent.change(screen.getByLabelText('Gateway key'), { target: { value: 'gky_1' } });
+
+		await waitFor(() => {
+			expect(pageState.url.searchParams.get('gateway_key_id')).toBe('gky_1');
+		});
+		await waitFor(() => {
+			expect(listQuery(stub).get('provider_id')).toBe('openai');
+		});
+		expect(listQuery(stub).get('gateway_key_id')).toBe('gky_1');
+	});
+
+	it('keeps a filtered id on screen when the loaded list does not carry it', async () => {
+		visit('/usage', 'provider_id=deepseek&gateway_key_id=gky_9');
+		stubRecords();
+		await renderRecords();
+
+		// A select that fell back to its empty option would state something false about the table below it,
+		// which is filtering by exactly this id.
+		expect((screen.getByLabelText('Provider') as HTMLSelectElement).value).toBe('deepseek');
+		expect((screen.getByLabelText('Gateway key') as HTMLSelectElement).value).toBe('gky_9');
+	});
+
+	it('names a vocabulary it could not read instead of showing an unfiltered select', async () => {
+		visit('/usage', 'provider_id=openai');
+		stubRecords({ optionsStatus: 500 });
+		await renderRecords();
+
+		expect(await screen.findByText(/The provider list could not be read/)).toBeTruthy();
+		expect(await screen.findByText(/The gateway key list could not be read/)).toBeTruthy();
+		expect((screen.getByLabelText('Provider') as HTMLSelectElement).value).toBe('openai');
 	});
 
 	it('renders the columns §6.5 lists, with the numbers it received', async () => {
@@ -232,7 +310,7 @@ describe('UsageRecordsTab', () => {
 	});
 
 	it('clears the filters without clearing the period', async () => {
-		visit('/usage', 'period=30d&status=error&q=timeout');
+		visit('/usage', 'period=30d&status=error&q=timeout&provider_id=openai&gateway_key_id=gky_1');
 		stubRecords();
 		await renderRecords();
 
@@ -243,6 +321,8 @@ describe('UsageRecordsTab', () => {
 		});
 
 		expect(pageState.url.searchParams.get('q')).toBeNull();
+		expect(pageState.url.searchParams.get('provider_id')).toBeNull();
+		expect(pageState.url.searchParams.get('gateway_key_id')).toBeNull();
 		expect(pageState.url.searchParams.get('period')).toBe('30d');
 	});
 
@@ -261,6 +341,8 @@ describe('UsageRecordsTab', () => {
 
 		expect(await screen.findByText('No requests in this window')).toBeTruthy();
 		expect(screen.queryByText('No requests match these filters')).toBeNull();
+		// §6.5 asks for the link here, because the likely cause is that no client has called the gateway yet.
+		expect(screen.getByRole('link', { name: 'Open API Docs' })).toBeTruthy();
 	});
 
 	it('removes a page size the screen cannot use and says what it reads instead', async () => {

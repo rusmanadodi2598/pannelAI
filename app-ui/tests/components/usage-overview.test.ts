@@ -135,7 +135,8 @@ describe('UsageOverviewTab', () => {
 	it('explains an empty window instead of drawing zeros', async () => {
 		stubUsage({
 			summary: summaryBody({
-				totals: totals({ requests: 0, error_count: 0, error_rate: '0.0000' })
+				totals: totals({ requests: 0, error_count: 0, error_rate: '0.0000' }),
+				groups: []
 			}),
 			timeseries: timeseriesBody({ buckets: [] })
 		});

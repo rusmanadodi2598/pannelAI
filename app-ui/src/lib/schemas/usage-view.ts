@@ -21,10 +21,13 @@
 
 import type { RequestStatus } from './primitives';
 import {
+	type UsageBreakdown,
 	type UsageGranularity,
-	type UsageGroupBy,
+	type UsageGroup,
+	type UsageOrder,
 	type UsagePeriod,
-	type UsageQuery
+	type UsageQuery,
+	type UsageSort
 } from './usage';
 
 // How far back each named period looks. `today` is absent because it is anchored to a calendar boundary
@@ -75,10 +78,12 @@ export function granularityFor(period: UsagePeriod): UsageGranularity {
 export type UsageQueryInput = {
 	from: string;
 	to: string;
-	groupBy?: UsageGroupBy | '';
+	groupBy?: UsageBreakdown | '';
 	granularity?: UsageGranularity | '';
 	status?: RequestStatus | '';
 	endpointId?: string;
+	providerId?: string;
+	gatewayKeyId?: string;
 	model?: string;
 	query?: string;
 	page?: number;
@@ -90,12 +95,15 @@ export type UsageQueryInput = {
  * A blank filter is dropped rather than sent as an empty parameter. That is not tidiness: the API rejects
  * an unknown `group_by` or `granularity` outright, and an empty `group_by=` is a 400 rather than "no
  * breakdown", so sending one would turn an unset selector into a failed request.
+ *
+ * `none` is the screen's word for "no breakdown" (draft 014 F1) and is dropped for the same reason: the
+ * API's way of saying it is the absence of the parameter.
  */
 export function usageQuery(input: UsageQueryInput): UsageQuery {
 	const query: UsageQuery = { from: input.from, to: input.to };
 
 	const groupBy = input.groupBy?.trim() ?? '';
-	if (groupBy !== '') query.group_by = groupBy;
+	if (groupBy !== '' && groupBy !== 'none') query.group_by = groupBy;
 
 	const granularity = input.granularity?.trim() ?? '';
 	if (granularity !== '') query.granularity = granularity;
@@ -105,6 +113,12 @@ export function usageQuery(input: UsageQueryInput): UsageQuery {
 
 	const endpointId = input.endpointId?.trim() ?? '';
 	if (endpointId !== '') query.endpoint_id = endpointId;
+
+	const providerId = input.providerId?.trim() ?? '';
+	if (providerId !== '') query.provider_id = providerId;
+
+	const gatewayKeyId = input.gatewayKeyId?.trim() ?? '';
+	if (gatewayKeyId !== '') query.gateway_key_id = gatewayKeyId;
 
 	const model = input.model?.trim() ?? '';
 	if (model !== '') query.model = model;
@@ -117,11 +131,70 @@ export function usageQuery(input: UsageQueryInput): UsageQuery {
 	return query;
 }
 
+// The value each sortable column compares. Cost and rate arrive as decimal strings, so they are parsed
+// here rather than at the comparison, and the mapping is total: every sort the URL can name has an entry.
+const SORT_VALUES: Record<UsageSort, (group: UsageGroup) => number | string> = {
+	key: (group) => group.key,
+	requests: (group) => group.totals.requests,
+	tokens_in: (group) => group.totals.tokens_in,
+	tokens_out: (group) => group.totals.tokens_out,
+	cost_usd: (group) => Number.parseFloat(group.totals.cost_usd),
+	error_count: (group) => group.totals.error_count,
+	error_rate: (group) => Number.parseFloat(group.totals.error_rate)
+};
+
+/**
+ * The breakdown rows in the operator's order, or in the API's own order when nothing was chosen.
+ *
+ * The comparison is on code points rather than on a locale, because a table's order must not depend on
+ * which locale the panel happens to run in. Ties keep the API's order: the sort is stable, and re-ordering
+ * rows the API already ranked would be the panel inventing a rank.
+ */
+export function sortGroups(
+	groups: UsageGroup[],
+	sort: UsageSort | '',
+	order: UsageOrder
+): UsageGroup[] {
+	if (sort === '') return [...groups];
+
+	const value = SORT_VALUES[sort];
+	const direction = order === 'desc' ? -1 : 1;
+
+	return [...groups].sort((left, right) => {
+		const a = value(left);
+		const b = value(right);
+
+		if (typeof a === 'string' || typeof b === 'string') {
+			const textA = String(a);
+			const textB = String(b);
+			if (textA === textB) return 0;
+			return (textA < textB ? -1 : 1) * direction;
+		}
+
+		return (a - b) * direction;
+	});
+}
+
 const COUNT_FORMAT = new Intl.NumberFormat('en-US');
+const COST_FORMAT = new Intl.NumberFormat('en-US', {
+	minimumFractionDigits: 4,
+	maximumFractionDigits: 4
+});
 
 /** Grouped digits, so a token count is readable at a glance. */
 export function formatCount(value: number): string {
 	return COUNT_FORMAT.format(value);
+}
+
+/**
+ * A cost figure with four decimals, which is the precision the API itself reports.
+ *
+ * The tiles print the API's own string, so this exists for the places that compute a number from those
+ * strings: the cost chart's summary line and its table. Rounding to four decimals is not a rounding of the
+ * API's value, it is the precision the value already carries.
+ */
+export function formatCost(value: number): string {
+	return `$${COST_FORMAT.format(value)}`;
 }
 
 /**
@@ -156,20 +229,22 @@ export function seriesTotal(points: SeriesPoint[]): number {
  *
  * `label` renders a bucket for the reader. It is a parameter because the pure part of this should not
  * depend on a locale or a time zone, and because the chart's axis and its table format buckets the same
- * way the screen's other timestamps do.
+ * way the screen's other timestamps do. `format` renders a value, and exists because a cost series is not
+ * a count: the same sentence with a currency figure in it needs the currency's own precision.
  */
 export function seriesSummary(
 	points: SeriesPoint[],
 	label: (bucket: string) => string,
-	unit: string
+	unit: string,
+	format: (value: number) => string = formatCount
 ): string {
 	const peak = seriesPeak(points);
 	if (peak === null) return `No ${unit} in this window.`;
 
-	const total = `${formatCount(seriesTotal(points))} ${unit}`;
+	const total = `${format(seriesTotal(points))} ${unit}`;
 	if (points.length === 1) return `One bucket at ${label(peak.bucket)}, ${total}.`;
 
-	return `${points.length} buckets. Highest ${formatCount(peak.value)} at ${label(peak.bucket)}; ${total} in total.`;
+	return `${points.length} buckets. Highest ${format(peak.value)} at ${label(peak.bucket)}; ${total} in total.`;
 }
 
 /**

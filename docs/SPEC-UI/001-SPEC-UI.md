@@ -412,13 +412,24 @@ absent.
 **Tab 1: Overview** (SPEC-API §7.12)
 
 - **Period selector:** `today`, `24h`, `7d`, `30d`, `60d`, mapped to `from` and `to`.
-- **Group-by selector:** provider, model, endpoint, gateway key, mapped to `group_by`.
+- **Group-by selector:** provider, model, endpoint, gateway key, mapped to `group_by`, plus **No breakdown**,
+  which is the absence of the parameter rather than a value the API accepts. The default is the model
+  breakdown, so the table below is on screen from the first read.
+- **Breakdown table:** one row per group the summary returned, with requests, tokens in, tokens out, cost,
+  errors, and error rate, under sortable headers. The sort is the panel's own: SPEC-API §7.12 has no sort
+  parameter and the summary sends the whole group block for the window, so the order is applied to every
+  group rather than to a page of them, and it is URL state so a sorted view is shareable. A provider key is
+  resolved to its registry name when the registry answers; the endpoint and gateway-key dimensions render
+  the id, which is what the API sends and what the screens that own those names display. Every value column
+  is shown at once, and the table carries no cost/token toggle (draft 014 F1, F6).
 - **Totals:** requests, tokens in, tokens out, cache read, cache write, cost (string), error rate, p50 and
   p95 latency. Every one of these comes from `GET /api/v1/usage/summary`; the panel computes nothing it
   cannot cite, and a figure the API does not return is not displayed.
 - **Chart:** requests and tokens over time from `GET /api/v1/usage/timeseries`, granularity `hour` or
-  `day`. The chart has a text summary line and an accessible table fallback, so the numbers are readable
-  without the graphic.
+  `day`. The value series switches between tokens and cost with one toggle, because a chart draws one series
+  at a time; the cost mode parses the API's decimal string and states that the figures are estimates. The
+  chart has a text summary line and an accessible table fallback, so the numbers are readable without the
+  graphic (draft 014 F2).
 - **Cost caveat:** SPEC-API §7.12 states cost figures are estimates. The cost tile carries that note.
 - **Live:** `GET /api/v1/usage/live` (server-sent events) carries the three facts a period window cannot:
   the requests in flight now, the requests that just finished, and the provider the gateway last reported an
@@ -431,12 +442,17 @@ absent.
   stream touches the totals or the chart, which stay the REST reads' own figures: the live state has no field
   for an aggregate. The connection is labelled `Live` only while frames are arriving; every other state
   names itself and, where the panel knows it, the cause (§8.6.1). A gateway that does not serve the route is
-  stated as unavailable, not replaced by a poll under the same label.
+  stated as unavailable, not replaced by a poll under the same label. The finished list dates each row by
+  how long ago it finished rather than by the instant, and keeps that reading fresh while the row is on
+  screen: the row is a claim about now, so a frozen "just now" would be a wrong figure (draft 014 F4).
 
 **Tab 2: Records**
 
 - **Table:** timestamp, request ID, model, provider, endpoint, gateway key, tokens, cost, latency, status,
-  error code. Filters: date range, status, endpoint, model, free-text `q`.
+  error code. Filters: date range, status, endpoint, model, free-text `q`, provider, and gateway key. The
+  two id filters are selects fed by the registry and the gateway-key list, and a list that cannot be read
+  leaves its select offering the value the URL carries plus one line naming the failed read, rather than
+  showing an empty selection over a filtered table (draft 014 F3).
 - **Row action:** open the request detail, which is `GET /api/v1/usage/records/{request_id}` joined with
   the captured log when capture is on. When capture is off, the detail view says so instead of showing an
   empty body area.

@@ -11,9 +11,9 @@
 	// and every other state says what it is instead. The panel reads the stream by `fetch`, so it knows the
 	// difference between a route that is not served and a connection that dropped, and it says which.
 	import { onMount } from 'svelte';
+	import UsageRecentList from '$lib/components/UsageRecentList.svelte';
 	import UsageTopology from '$lib/components/UsageTopology.svelte';
 	import { listProviders } from '$lib/api/providers';
-	import { REQUEST_STATUS_LABELS, type RequestStatus } from '$lib/schemas/primitives';
 	import { freshActive, liveMerge, streamLabel, type LiveView } from '$lib/schemas/usage-live-view';
 	import { configuredProviders } from '$lib/schemas/usage-topology-view';
 	import { openUsageLive, type LiveReport, type UsageLiveController } from '$lib/usage-live';
@@ -73,10 +73,6 @@
 	function providerName(id: string): string {
 		const match = providers.find((provider) => provider.id.toLowerCase() === id.toLowerCase());
 		return match?.name ?? id;
-	}
-
-	function statusLabel(status: RequestStatus): string {
-		return REQUEST_STATUS_LABELS[status];
 	}
 
 	async function loadProviders(): Promise<void> {
@@ -161,26 +157,6 @@
 	<!-- Rendered only when the frame carries finished requests. The absence is not silent: the drawing's
 	     summary states that nothing has finished since the screen opened. -->
 	{#if recent.length > 0}
-		<div class="flex flex-col gap-2">
-			<h3 class="text-sm font-medium">Finished requests</h3>
-			<ul class="flex max-h-48 flex-col gap-1 overflow-y-auto text-sm">
-				{#each recent as record (record.request_id)}
-					<li class="flex flex-wrap items-center gap-x-3 gap-y-1">
-						<span class="text-[var(--color-text-muted)]"
-							>{record.ts === undefined ? 'No time reported' : formatTimestamp(record.ts)}</span
-						>
-						<span class="truncate">{record.model ?? 'No model reported'}</span>
-						<span class="text-[var(--color-text-muted)]">{providerName(record.provider_id)}</span>
-						{#if record.status}
-							<span
-								class={record.status === 'error'
-									? 'text-[var(--color-danger)]'
-									: 'text-[var(--color-ok)]'}>{statusLabel(record.status)}</span
-							>
-						{/if}
-					</li>
-				{/each}
-			</ul>
-		</div>
+		<UsageRecentList {recent} {providerName} />
 	{/if}
 </section>
