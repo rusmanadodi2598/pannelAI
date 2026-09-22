@@ -256,8 +256,12 @@ zero-value service.
   menyebutkan route yang mana.)
 
 **Gate.** `go build ./...`, `go vet ./...`, `gofmt -l .` bersih; `go test -race -count=1 ./...`
-PASS penuh (handler 78 dtk, router 283 dtk); `staticcheck` 0 issue; `golangci-lint` 0 issue;
-`go-headers.sh` PASS (688 file); semua file baru <220 baris (terbesar 218 `usage_records_test.go`).
+PASS penuh, diukur dua kali pada tree yang sama: `internal/handler` 78 dtk lalu 81 dtk,
+`internal/router` 283 dtk lalu 302 dtk (durasi suite ini bervariasi antar run, bukan klaim angka
+tunggal); `staticcheck` 0 issue; `golangci-lint` 0 issue;
+`go-headers.sh` PASS (689 file, diukur pada tree setelah split `usage_route_helpers_test.go`;
+pengukuran pertama batch ini membaca 688 sebelum split terjadi); semua file baru <220 baris
+(terbesar 218 `usage_records_test.go`).
 
 ### F2 HIGH: Filter `status` menerima nilai di luar closed set, dan query diam-diam mencocokkan nol baris
 
