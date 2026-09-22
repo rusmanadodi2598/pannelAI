@@ -336,8 +336,19 @@ shell yang menjalankannya dan mematikan shell itu sendiri; PID basi dihentikan l
 berikutnya menyambung ke instance lama; profil Chrome karena itu dihapus per run dan setiap skrip sekarang
 mengakhiri browsernya sendiri.
 
-Baseline DB dihitung sebelum dan sesudah dan harus kembali persis. Ketiga proses dihentikan lewat PID yang
-dicatat dan ketiga port tertutup.
+**Teardown.** Baseline DB dihitung sebelum dan sesudah, dan hasilnya kembali persis:
+`0 0 1 1 0 2 0 0 0 0 0` (usage, logs, keys, endpoints, upkeys, nodes, caps, settings, auth_null,
+media_settings, proxies). Dua koreksi diperlukan sebelum itu tercapai, dan keduanya dicatat:
+
+1. Skrip teardown pertama menghapus baris dengan mencocokkan prefix model (`live016`), padahal baris membawa
+   **id registry** provider. Sebelas baris usage dan sebelas baris log tertinggal. Aturannya sekarang
+   menghapus lewat id node fixture dan lewat himpunan id node ber-prefix `live016`; percobaan fixture pertama
+   (yang endpoint-nya dipasang ke prefix sehingga tidak merutekan apa pun) meninggalkan dua baris lagi di
+   bawah id node pertama, dan aturan per-node yang sama menghapusnya juga.
+2. Dua berkas PID sudah basi: `stub.pid` menunjuk proses yang sudah mati (fixture me-restart stub dengan PID
+   baru) dan `app-serv.pid` menunjuk PID yang bukan proses gateway. Dua port karena itu masih menjawab
+   setelah skrip selesai. Keduanya dihentikan lewat PID yang dibaca dari `ss -ltnp`, bukan lewat berkas PID,
+   dan keempat port (3000, 8097, 9090, 9222) sekarang tertutup.
 
 ## 13. Status per 2026-09-22
 
@@ -352,4 +363,5 @@ dicatat dan ketiga port tertutup.
   click-through mana pun sebagai outstanding; F13 naik baris penyebutnya dari enam ke tujuh (bagian ini
   memakai versi runtime terukur), jumlah klaimnya tetap sembilan belas situs.
 - Commit lokal: `feat(app-ui): give the usage overview the reference's two bar charts and the live In/Out
-  split, and prove the live stream against the real gateway (draft 016 F1 to F4)`, tanpa push.
+  split, and prove the live stream against the real gateway (draft 016 F1 to F4)`, tanpa push, disusul satu
+  commit dokumen kecil yang mencatat dua koreksi teardown di §12.1.
