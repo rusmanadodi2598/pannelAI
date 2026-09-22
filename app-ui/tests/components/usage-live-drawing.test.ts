@@ -62,12 +62,12 @@ describe('UsageLivePanel drawing', () => {
 		// Awaited on the drawing's own sentence rather than on the status chip: the drawing only exists
 		// once the registry read lands, and a row about motion must not pass on an empty drawing.
 		expect(await screen.findByText(/1 in flight: OpenAI \(gpt-4o\)\./)).toBeTruthy();
-		expect(container.querySelector('.animate-flow')).toBeTruthy();
+		expect(container.querySelector('[data-beam="core"]')).toBeTruthy();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Pause live updates' }));
 
 		expect(await screen.findByText('Paused')).toBeTruthy();
-		expect(container.querySelector('.animate-flow')).toBeNull();
+		expect(container.querySelector('[data-beam="core"]')).toBeNull();
 		expect(container.querySelector('.animate-ping')).toBeNull();
 		expect(
 			(screen.getByText('OpenAI').parentElement as HTMLElement).classList.contains(

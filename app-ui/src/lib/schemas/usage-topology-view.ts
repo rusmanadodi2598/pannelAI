@@ -2,7 +2,8 @@
 //
 // Split from `usage-live-view.ts` because the two answer different questions: that file is about the
 // connection and what the panel may say about it, this one is about where a node goes and which providers
-// get one. Both are pure, so both are testable without a DOM, a clock, or a socket.
+// get one. Both are pure, so both are testable without a DOM, a clock, or a socket. The beam that travels
+// along an active edge's line is a third question, and it lives in `usage-beam.ts`.
 //
 // Two functions, and each exists because the wire's shape and the screen's question differ:
 //

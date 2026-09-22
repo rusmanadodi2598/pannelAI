@@ -1,0 +1,102 @@
+/* The live drawing's motion tokens (DESIGN.md §2.1, §11; draft 015 F1).
+ *
+ * A separate file for the same reason `quota-cap.ts` left `quota.ts`: app.css is the palette and alias
+ * layer that the contrast test reads, and these keyframes belong to one screen's drawing. app.css imports
+ * this file, so the root layout still loads one entry point and a route cannot render without it
+ * (SPEC-UI §10.6).
+ *
+ * The reference fork draws a routing edge as three strokes at different speeds and widths with particles
+ * travelling along it, and a gateway that pulses while it is routing. The panel reproduces that motion in
+ * its own tokens rather than the reference's neon. One cycle moves the dash offset exactly -100 in the
+ * path's own units (`pathLength="100"`), so every pattern below divides 100 a whole number of times and
+ * the loop has no seam. Each of these runs only while a provider is routing and only while frames are
+ * arriving, and `motion-reduce:animate-none` stops every one of them.
+ */
+
+@theme {
+	--animate-beam-halo: beam-flicker 0.18s steps(2) infinite;
+	--animate-beam-plasma: beam-dash 0.18s linear infinite, beam-flicker 0.22s steps(3) infinite;
+	--animate-beam-core: beam-dash 0.22s linear infinite;
+	--animate-beam-travel: beam-dash 0.4s linear infinite;
+	--animate-beam-spark: beam-dash 0.4s linear infinite, beam-blink 0.35s linear infinite;
+	--animate-router-pulse: router-pulse 0.75s ease-in-out infinite;
+	--animate-router-shake: router-shake 0.45s ease-in-out infinite;
+	--animate-router-flicker: router-flicker 0.7s ease-in-out infinite;
+
+	@keyframes beam-dash {
+		to {
+			stroke-dashoffset: -100;
+		}
+	}
+
+	@keyframes beam-flicker {
+		0%,
+		100% {
+			opacity: 0.85;
+		}
+		40% {
+			opacity: 1;
+		}
+		55% {
+			opacity: 0.55;
+		}
+		70% {
+			opacity: 1;
+		}
+	}
+
+	/* The sparks' own blink, which is the reference's `0;1;0;0;1;0` value list as keyframes. */
+	@keyframes beam-blink {
+		0% {
+			opacity: 0;
+		}
+		17% {
+			opacity: 1;
+		}
+		33%,
+		50% {
+			opacity: 0;
+		}
+		67% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+
+	@keyframes router-pulse {
+		0%,
+		100% {
+			transform: scale(1);
+			box-shadow: 0 0 8px color-mix(in srgb, var(--color-ok) 45%, transparent);
+		}
+		50% {
+			transform: scale(1.06);
+			box-shadow: 0 0 14px color-mix(in srgb, var(--color-ok) 70%, transparent);
+		}
+	}
+
+	@keyframes router-shake {
+		0%,
+		100% {
+			transform: rotate(0deg) scale(1);
+		}
+		25% {
+			transform: rotate(-5deg) scale(1.08);
+		}
+		75% {
+			transform: rotate(5deg) scale(1.08);
+		}
+	}
+
+	@keyframes router-flicker {
+		0%,
+		100% {
+			text-shadow: 0 0 6px color-mix(in srgb, var(--color-ok) 55%, transparent);
+		}
+		50% {
+			text-shadow: 0 0 10px color-mix(in srgb, var(--color-ok) 80%, transparent);
+		}
+	}
+}
