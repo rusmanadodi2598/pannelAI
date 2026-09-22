@@ -263,6 +263,47 @@ describe('UsageRecordsTab', () => {
 		expect(screen.queryByText('No requests match these filters')).toBeNull();
 	});
 
+	it('removes a page size the screen cannot use and says what it reads instead', async () => {
+		visit('/usage', 'per_page=100000&model=gpt-4o');
+		const stub = stubRecords();
+		await renderRecords();
+
+		await waitFor(() => {
+			expect(pageState.url.searchParams.get('per_page')).toBeNull();
+		});
+
+		expect(pageState.url.searchParams.get('model')).toBe('gpt-4o');
+		expect(await screen.findByText(/so this screen reads 25/)).toBeTruthy();
+		// The correction runs before the read, so the screen asks once and asks for the URL it kept.
+		expect(stub.requested.filter((url) => url.includes('/usage/records'))).toHaveLength(1);
+		expect(listQuery(stub).get('per_page')).toBeNull();
+		expect(listQuery(stub).get('model')).toBe('gpt-4o');
+	});
+
+	it('keeps the page size correction visible until the operator changes a filter', async () => {
+		visit('/usage', 'per_page=100000');
+		stubRecords();
+		await renderRecords();
+
+		expect(await screen.findByText(/so this screen reads 25/)).toBeTruthy();
+
+		await fireEvent.change(screen.getByLabelText('Period'), { target: { value: '7d' } });
+
+		await waitFor(() => {
+			expect(pageState.url.searchParams.get('period')).toBe('7d');
+		});
+		expect(screen.queryByText(/so this screen reads 25/)).toBeNull();
+	});
+
+	it('leaves a URL without a page size alone, so the notice is not permanent', async () => {
+		visit('/usage', 'model=gpt-4o');
+		stubRecords();
+		await renderRecords();
+
+		expect(screen.queryByText(/so this screen reads 25/)).toBeNull();
+		expect(pageState.url.searchParams.get('model')).toBe('gpt-4o');
+	});
+
 	it('reports a failure and offers a retry', async () => {
 		const stub = stubRecords({ status: 500 });
 		render(UsageRecordsTab);

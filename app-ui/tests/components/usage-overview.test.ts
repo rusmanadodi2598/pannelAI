@@ -1,10 +1,11 @@
 // Usage Overview tests (docs/SPEC-UI/001-SPEC-UI.md §6.5, §8.3, §8.4.2).
 //
-// Two things here are worth more than the markup assertions. The first is the window: the panel resolves a
-// period into `from` and `to` itself, so the test reads the URL the panel actually asked for and measures
-// the span, rather than trusting a selector label. The second is that the URL is the source of truth: a
-// period arriving in the URL has to change the request, and a control has to write the URL rather than a
-// local variable, which is what makes a filtered view shareable.
+// What is worth more than the markup assertions here is the window: the panel resolves a period into `from`
+// and `to` itself, so a test reads the URL the panel actually asked for and measures the span, rather than
+// trusting a selector label.
+//
+// The controls that write that URL are the sibling file's concern (`usage-overview-url.test.ts`), because
+// the URL being the source of truth is a different claim from the read it produces.
 //
 // `$app/state` and `$app/navigation` are mocked to a reactive stand-in that a `goto` updates, so a control
 // click exercises the same path a real navigation would.
@@ -13,7 +14,15 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import UsageOverviewTab from '../../src/lib/components/UsageOverviewTab.svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
-import { pageState, queryOf, visit } from '../support/page.svelte';
+import {
+	HOUR_MS,
+	lastQuery,
+	stubUsage,
+	summaryBody,
+	timeseriesBody,
+	totals
+} from '../support/usage-overview-stub';
+import { visit } from '../support/page.svelte';
 
 vi.mock('$app/state', async () => {
 	const { pageState: page } = await import('../support/page.svelte');
@@ -31,85 +40,6 @@ vi.mock('$app/navigation', async () => {
 		}
 	};
 });
-
-const HOUR_MS = 3_600_000;
-
-function totals(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-	return {
-		requests: 120,
-		tokens_in: 4000,
-		tokens_out: 1500,
-		tokens_cache_read: 200,
-		tokens_cache_write: 100,
-		cost_usd: '0.0042',
-		latency_ms: 2400,
-		latency_p50_ms: 210,
-		latency_p95_ms: 880,
-		error_count: 15,
-		error_rate: '0.1250',
-		...overrides
-	};
-}
-
-function summaryBody(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-	return {
-		from: '2026-09-17T00:00:00Z',
-		to: '2026-09-18T00:00:00Z',
-		group_by: '',
-		totals: totals(),
-		groups: [],
-		...overrides
-	};
-}
-
-function timeseriesBody(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-	return {
-		granularity: 'hour',
-		from: '2026-09-17T00:00:00Z',
-		to: '2026-09-18T00:00:00Z',
-		buckets: [
-			{ bucket: '2026-09-17T13:00:00Z', totals: totals({ requests: 100 }) },
-			{ bucket: '2026-09-17T14:00:00Z', totals: totals({ requests: 20 }) }
-		],
-		...overrides
-	};
-}
-
-type Stub = {
-	requested: string[];
-	summary: Record<string, unknown>;
-	timeseries: Record<string, unknown>;
-	status: number;
-};
-
-function stubUsage(overrides: Partial<Stub> = {}): Stub {
-	const stub: Stub = {
-		requested: [],
-		summary: summaryBody(),
-		timeseries: timeseriesBody(),
-		status: 200,
-		...overrides
-	};
-
-	vi.stubGlobal('fetch', async (input: unknown) => {
-		const url = String(input);
-		stub.requested.push(url);
-
-		const body = url.includes('/usage/timeseries') ? stub.timeseries : stub.summary;
-		return new Response(JSON.stringify(body), {
-			status: stub.status,
-			headers: { 'content-type': 'application/json' }
-		});
-	});
-
-	return stub;
-}
-
-/** The query of the last request the panel sent, whatever route it was for. */
-function lastQuery(stub: Stub, route: string): URLSearchParams {
-	const matches = stub.requested.filter((url) => url.includes(route));
-	return new URLSearchParams(queryOf(matches[matches.length - 1] ?? ''));
-}
 
 async function renderOverview(): Promise<void> {
 	render(UsageOverviewTab);
@@ -202,55 +132,6 @@ describe('UsageOverviewTab', () => {
 		expect(within(table).getByText('20')).toBeTruthy();
 	});
 
-	it('writes a new period into the URL and asks for it', async () => {
-		const stub = stubUsage();
-		await renderOverview();
-
-		await fireEvent.change(screen.getByLabelText('Period'), { target: { value: '30d' } });
-
-		await waitFor(() => {
-			expect(pageState.url.searchParams.get('period')).toBe('30d');
-		});
-		await waitFor(() => {
-			expect(lastQuery(stub, '/usage/timeseries').get('granularity')).toBe('day');
-		});
-
-		const query = lastQuery(stub, '/usage/summary');
-		expect(Date.parse(query.get('to') ?? '') - Date.parse(query.get('from') ?? '')).toBe(
-			30 * 24 * HOUR_MS
-		);
-	});
-
-	it('writes the group-by into the URL and asks for the breakdown', async () => {
-		const stub = stubUsage({
-			summary: summaryBody({
-				group_by: 'model',
-				groups: [{ key: 'gpt-4o', totals: totals({ requests: 120 }) }]
-			})
-		});
-		await renderOverview();
-
-		await fireEvent.change(screen.getByLabelText('Group by'), { target: { value: 'model' } });
-
-		await waitFor(() => {
-			expect(pageState.url.searchParams.get('group_by')).toBe('model');
-		});
-		await waitFor(() => {
-			expect(lastQuery(stub, '/usage/summary').get('group_by')).toBe('model');
-		});
-
-		expect(await screen.findByText('gpt-4o')).toBeTruthy();
-	});
-
-	it('corrects an unusable period in the URL and says so rather than failing', async () => {
-		visit('/usage', 'period=forever');
-		const stub = stubUsage();
-		await renderOverview();
-
-		expect(screen.getByText(/The period "forever" is not one the panel offers/)).toBeTruthy();
-		expect(lastQuery(stub, '/usage/summary').get('from')).toBeTruthy();
-	});
-
 	it('explains an empty window instead of drawing zeros', async () => {
 		stubUsage({
 			summary: summaryBody({
@@ -272,25 +153,13 @@ describe('UsageOverviewTab', () => {
 		expect(await screen.findByText('Usage could not be loaded')).toBeTruthy();
 
 		const before = stub.requested.length;
-		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+		// Scoped to the tab's own error state: the live half carries a retry control of its own, and this row
+		// is about the aggregate read's.
+		const alert = screen.getByRole('alert');
+		await fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
 
 		await waitFor(() => {
 			expect(stub.requested.length).toBeGreaterThan(before);
 		});
-	});
-
-	it('re-reads the window on screen when the operator asks for it', async () => {
-		visit('/usage', 'period=7d');
-		const stub = stubUsage();
-		await renderOverview();
-
-		const before = stub.requested.length;
-		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
-
-		// §8.6.2: the control repeats the read the URL describes. The window itself is derived from the clock
-		// at read time, so the assertion is on what the URL chose: a 7d window is read at day granularity,
-		// while a read that fell back to the default 24 hours would ask for hours.
-		await waitFor(() => expect(stub.requested.length).toBeGreaterThan(before));
-		expect(lastQuery(stub, '/usage/timeseries').get('granularity')).toBe('day');
 	});
 });

@@ -8,9 +8,19 @@
 // An unknown *key* is ignored, because a foreign query parameter is not the panel's business. A known key
 // with a value the panel cannot use falls back to its default and records a notice, which is the visible
 // half of that rule.
+//
+// The page size is the one parameter the panel corrects rather than merely reports. The screen reads a
+// fixed 25 rows while the API accepts up to 100 (SPEC-API §4), so a `per_page` a shared link carries would
+// otherwise leave the URL, the notice, and the rows actually read disagreeing three ways.
 
 import type { z } from 'zod';
-import { pageNumber, schemaRequestStatus, searchText, type RequestStatus } from './primitives';
+import {
+	pageNumber,
+	perPage,
+	schemaRequestStatus,
+	searchText,
+	type RequestStatus
+} from './primitives';
 import {
 	DEFAULT_USAGE_PERIOD,
 	schemaUsageGroupBy,
@@ -29,6 +39,10 @@ export type UsageSearch = {
 	model: string;
 	query: string;
 	page: number;
+	/** The page size the URL asked for, or the screen's own when the URL said nothing readable. */
+	perPageRequested: number;
+	/** What the panel had to correct about the page size, in the operator's terms. Null when the URL was usable. */
+	perPageNotice: string | null;
 	/** What the panel had to correct in the URL, in the operator's terms. Empty when the URL was usable. */
 	notices: string[];
 };
@@ -64,17 +78,42 @@ function pickText(raw: string | null, notices: string[]): string {
 }
 
 /**
+ * The page size the URL asked for, as far as the panel can read it.
+ *
+ * Only the notice uses this. The table reads `USAGE_RECORDS_PAGE_SIZE` whatever the URL says, so an
+ * unreadable value resolves to that size here too and the notice says so in words.
+ */
+function perPageRequested(params: URLSearchParams): number {
+	const parsed = perPage.safeParse(params.get('per_page') ?? String(USAGE_RECORDS_PAGE_SIZE));
+
+	return parsed.success ? parsed.data : USAGE_RECORDS_PAGE_SIZE;
+}
+
+/**
+ * What the panel has to say about the URL's page size, or null when there is nothing to correct.
+ *
+ * The value is not echoed when the schema refuses it: a hand-edited URL can hold a long string, and
+ * printing it back into a notice helps nobody. The number the screen reads is named in every case.
+ */
+function perPageNotice(params: URLSearchParams): string | null {
+	const raw = params.get('per_page');
+	if (raw === null) return null;
+
+	const parsed = perPage.safeParse(raw);
+	if (parsed.success && parsed.data === USAGE_RECORDS_PAGE_SIZE) return null;
+
+	const reason = parsed.success
+		? `The URL asked for ${parsed.data} records per page`
+		: 'The page size in this URL is not one the panel can read';
+
+	return `${reason}, so this screen reads ${USAGE_RECORDS_PAGE_SIZE} and the parameter was removed.`;
+}
+
+/**
  * Reads the URL into the filter state, correcting what it cannot use and reporting each correction.
  */
 export function parseUsageSearch(params: URLSearchParams): UsageSearch {
 	const notices: string[] = [];
-
-	const perPage = params.get('per_page');
-	if (perPage !== null && perPage !== String(USAGE_RECORDS_PAGE_SIZE)) {
-		notices.push(
-			`This screen reads ${USAGE_RECORDS_PAGE_SIZE} records per page, so per_page was ignored.`
-		);
-	}
 
 	return {
 		period: pick(
@@ -98,8 +137,25 @@ export function parseUsageSearch(params: URLSearchParams): UsageSearch {
 		model: pickText(params.get('model'), notices),
 		query: pickText(params.get('q'), notices),
 		page: pick(params.get('page'), pageNumber, 1, 'page', 'page 1', notices),
+		perPageRequested: perPageRequested(params),
+		perPageNotice: perPageNotice(params),
 		notices
 	};
+}
+
+/**
+ * The URL a correction asks for, or null when the URL carries no page size to correct.
+ *
+ * The caller navigates to this rather than editing the address in place, because the URL is the source of
+ * truth for the screen's filters (§8.4.2): one path writes it, and that path is a navigation.
+ */
+export function cleanedUsageSearch(current: URLSearchParams): URLSearchParams | null {
+	if (perPageNotice(current) === null) return null;
+
+	const next = new URLSearchParams(current);
+	next.delete('per_page');
+
+	return next;
 }
 
 /**

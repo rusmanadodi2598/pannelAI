@@ -44,7 +44,7 @@ spends its budget on hierarchy and density rather than on ornament.
 | ---------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **ENERGY** | 1     | An instrument states its values and stops. Density is the point, not decoration.                                                                                                                                                                                                                                                      |
 | **RHYTHM** | 2     | The shell is deliberately uniform so muscle memory holds across screens, while the sidebar's five task groups and the screen bodies vary in composition. Uniform shell plus varied content is the point of a control panel. A flat 1 would make every screen one undifferentiated strip, and a 3 would cost the operator orientation. |
-| **MOTION** | 1     | Hover, focus, and state transition only, plus the mobile drawer slide. No scroll choreography on a screen an operator opens twenty times a day.                                                                                                                                                                                       |
+| **MOTION** | 1     | Hover, focus, and state transition only, plus the mobile drawer slide. No scroll choreography on a screen an operator opens twenty times a day. One stated exception: the live routing indicator pulses while a provider has a request in flight, so it is a state that ends rather than a loop (§6.5).                               |
 
 ---
 
@@ -391,7 +391,7 @@ What this direction settles, and what the Delivery Gate therefore checks against
 | R-10, R-13 (glass, glow)   | Not used. The panel has no surface that needs either.                                                            |
 | R-11 (radius)              | Two functional values plus a dialog value and an avatar value, with a stated hierarchy.                          |
 | R-12 (shadow)              | Two floating surfaces only, plus the logo frame, each with a stated reason.                                      |
-| R-19 (animation)           | MOTION 1: hover, focus, state transition, drawer slide. No loop, no scroll choreography.                         |
+| R-19 (animation)           | MOTION 1, plus the live routing indicator while a request is in flight. No loop, no scroll choreography.         |
 | R-21 (theme)               | Both themes authored from §3.2, both verified per screen.                                                        |
 | R-25 (contrast)            | Every pair in §3.3 measured, asserted by a test that reads `src/app.css`, lowest text pair 4.87:1.               |
 | R-29 (palette cap)         | One accent. Neutrals are excluded by the rule; status colours are not brand colours.                             |

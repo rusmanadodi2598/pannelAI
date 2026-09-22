@@ -41,6 +41,10 @@ const GRAPHIC_PAIRS: { fg: string; bg: string; floor: number; label: string }[] 
 	// The changelog marks each release with a 3px bar on the row's own surface, and the bar is the only
 	// place `warn` is a graphic rather than text.
 	{ fg: 'warn', bg: 'surface', floor: 3, label: 'warning marker on a release row' },
+	// The live drawing marks a provider with a dot and an edge on the page's own surface, which is where
+	// `ok` and `danger` are graphics rather than text. `warn` is covered by the release row above.
+	{ fg: 'ok', bg: 'surface', floor: 3, label: 'in-flight marker on the live drawing' },
+	{ fg: 'danger', bg: 'surface', floor: 3, label: 'error marker on the live drawing' },
 	{ fg: 'border', bg: 'surface', floor: 1.2, label: 'surface seam' },
 	{ fg: 'border', bg: 'surface-2', floor: 1.2, label: 'raised panel seam' }
 ];

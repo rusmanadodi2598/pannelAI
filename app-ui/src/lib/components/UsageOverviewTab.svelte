@@ -19,6 +19,7 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import UsageChart from '$lib/components/UsageChart.svelte';
 	import UsageGroupTable from '$lib/components/UsageGroupTable.svelte';
+	import UsageLivePanel from '$lib/components/UsageLivePanel.svelte';
 	import UsageTotalsTiles from '$lib/components/UsageTotalsTiles.svelte';
 	import { getUsageSummary, getUsageTimeseries } from '$lib/api/usage';
 	import {
@@ -208,4 +209,9 @@
 			{/if}
 		{/if}
 	{/if}
+
+	<!-- The live half of the tab, and the one part of it that is outside the branches above. It reads the
+	     stream itself and renders in its own states, so a failed or empty aggregate read cannot take it
+	     off the screen, which is exactly when an operator most wants to see what is happening now. -->
+	<UsageLivePanel />
 </div>

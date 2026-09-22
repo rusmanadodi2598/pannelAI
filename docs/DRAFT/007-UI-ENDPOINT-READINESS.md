@@ -894,6 +894,12 @@ naik satu sementara pembilangnya tetap: pass ke-19 mengubah jalur boot (variabel
 yang di-bind), tidak menambah layar maupun kontrol, dan bagiannya mencatat lima kasus boot yang
 dijalankan langsung sebagai gantinya, jadi tidak ada click-through yang outstanding di bagian itu.
 
+Pengukuran yang sama setelah pass "Usage live surface" (2026-09-22) menemukan **sebelas dari dua
+puluh bagian**, dan perintah yang sama mencetak `11 of 20` pada commit pass itu (`10 of 19` pada tree
+sebelumnya). Bagian ke-20 menambah permukaan live di `/usage` dan menyatakan click-through
+browser-nya belum dijalankan: panel ini client-rendered, dan route `GET /api/v1/usage/live` yang
+menjadi lawan bicaranya belum ada di tree `app-serv` (F4), jadi bagian itu terhitung juga.
+
 **Risiko.** Panel bisa tampak selesai padahal setengah exit criteria-nya belum pernah
 dijalankan orang. Ini persis bentuk klaim yang R-35/R-36 larang.
 

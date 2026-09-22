@@ -420,6 +420,14 @@ absent.
   `day`. The chart has a text summary line and an accessible table fallback, so the numbers are readable
   without the graphic.
 - **Cost caveat:** SPEC-API §7.12 states cost figures are estimates. The cost tile carries that note.
+- **Live:** `GET /api/v1/usage/live` (server-sent events) carries the three facts a period window cannot:
+  the requests in flight now, the requests that just finished, and the provider the gateway last reported an
+  error for. The drawing places one node per configured provider around the gateway, marks each with its
+  state, and states the same facts in words beside it. Nothing on the stream touches the totals or the chart,
+  which stay the REST reads' own figures: the live state has no field for an aggregate. The connection is
+  labelled `Live` only while frames are arriving; every other state names itself and, where the panel knows
+  it, the cause (§8.6.1). A gateway that does not serve the route is stated as unavailable, not replaced by a
+  poll under the same label.
 
 **Tab 2: Records**
 
@@ -977,7 +985,10 @@ does not pass review.
 ### 8.6 Refresh and polling
 
 1. Polling intervals are visible, pausable, and stop when the tab is hidden. `/logs` console and `/quota`
-   use polling because management API v1 has no stream (SPEC-API §7.13).
+   use polling. `/usage` reads the live stream of §6.5, and the same three rules apply to it: the connection
+   is labelled, the read is pausable, and it stops while the tab is hidden and reads once on the way back.
+   The label is the stream's own state, never a hope: a connection that has not delivered a frame is not
+   called live (R-36), and a gateway that does not serve the route is stated as unavailable with its cause.
 2. Every list view has an explicit refresh control, because operators distrust auto-refresh they cannot
    trigger.
 3. After a write, the panel re-reads the affected resource instead of patching local state, so the view
@@ -1154,7 +1165,7 @@ defaults unmodified is a fail. Therefore:
 | Same-origin serving with a dev proxy                                           | Keeps the session cookie first-party, which removes a whole class of credentialed-CORS failures.                                                                         |
 | Filters kept in the URL                                                        | An operator's filtered view is shareable and survives back navigation.                                                                                                   |
 | Cost kept as a string end to end                                               | The API sends a decimal string; converting to a float in the panel would introduce rounding that the operator would read as a real cost.                                 |
-| Polling instead of a live stream                                               | Management API v1 exposes no stream; labelling a poll "Live" would be a false claim.                                                                                     |
+| A live stream on `/usage`, polling on `/logs` and `/quota`                     | An in-flight request exists only between two reads, so no poll can state one; the console buffer and the quota windows change on a schedule a poll states honestly.      |
 | Deprecated Caveman config not exposed                                          | A deprecated switch teaches an operator to depend on something scheduled for removal.                                                                                    |
 | Media nav item labelled Web Search, not Web Fetch & Search                     | There is no fetch endpoint in SPEC-API §7.10, and a nav label must match what exists (R-24).                                                                             |
 | Modal for the one-time gateway key                                             | The API returns the plaintext once; a modal is the only surface that makes the one-time nature explicit.                                                                 |

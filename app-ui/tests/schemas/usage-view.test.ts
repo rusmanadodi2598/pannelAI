@@ -287,6 +287,8 @@ describe('parseUsageSearch', () => {
 			model: '',
 			query: '',
 			page: 1,
+			perPageRequested: 25,
+			perPageNotice: null,
 			notices: []
 		});
 	});
@@ -306,6 +308,8 @@ describe('parseUsageSearch', () => {
 			model: 'gpt-4o',
 			query: 'timeout',
 			page: 3,
+			perPageRequested: 25,
+			perPageNotice: null,
 			notices: []
 		});
 	});
@@ -340,19 +344,6 @@ describe('parseUsageSearch', () => {
 		expect(search.period).toBe('24h');
 		expect(search.notices[0]).toContain('forever');
 	});
-
-	forEachCase(
-		[
-			{ name: 'accepts the page size the screen reads', query: 'per_page=25', notices: 0 },
-			{ name: 'refuses to widen the page size from the URL', query: 'per_page=100000', notices: 1 },
-			{ name: 'reports a page size that is not a number', query: 'per_page=lots', notices: 1 }
-		],
-		(testCase) => {
-			expect(parseUsageSearch(new URLSearchParams(testCase.query)).notices).toHaveLength(
-				testCase.notices
-			);
-		}
-	);
 
 	it('drops a filter longer than the API accepts instead of sending it', () => {
 		const search = parseUsageSearch(new URLSearchParams(`q=${'x'.repeat(300)}`));

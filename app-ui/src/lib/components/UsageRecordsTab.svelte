@@ -24,6 +24,7 @@
 	import { listUsageRecords } from '$lib/api/usage';
 	import type { UsageRecord } from '$lib/schemas/usage';
 	import {
+		cleanedUsageSearch,
 		nextUsageSearch,
 		parseUsageSearch,
 		usageFiltersApplied,
@@ -36,14 +37,30 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let opened = $state<string | null>(null);
+	// A page size the screen cannot use is corrected by navigating away from it, so the notice outlives the
+	// URL that carried the value. It stays until the operator changes a filter, which is the next time the
+	// screen writes the URL itself.
+	let perPageNotice = $state<string | null>(null);
 
 	const search = $derived(parseUsageSearch(page.url.searchParams));
 	const lastPage = $derived(Math.max(1, Math.ceil(total / USAGE_RECORDS_PAGE_SIZE)));
 	const filtered = $derived(usageFiltersApplied(search));
 
+	// Corrects the page size before anything is read, so one URL produces one read rather than a read of a
+	// URL the panel is about to replace.
+	$effect(() => {
+		const notice = search.perPageNotice;
+		if (notice === null) return;
+
+		perPageNotice = notice;
+		const cleaned = cleanedUsageSearch(page.url.searchParams);
+		if (cleaned !== null) navigate(cleaned, true);
+	});
+
 	// Reloads whenever the URL changes, which is every filter on this tab.
 	$effect(() => {
 		const filters = search;
+		if (filters.perPageNotice !== null) return;
 		untrack(() => void load(filters));
 	});
 
@@ -71,14 +88,16 @@
 		total = result.data.meta.total;
 	}
 
-	function navigate(params: URLSearchParams): void {
+	function navigate(params: URLSearchParams, replace = false): void {
 		const queryString = params.toString();
 		void goto(resolve(queryString === '' ? '/usage' : `/usage?${queryString}`), {
-			keepFocus: true
+			keepFocus: true,
+			replaceState: replace
 		});
 	}
 
 	function change(key: string, value: string): void {
+		perPageNotice = null;
 		navigate(nextUsageSearch(page.url.searchParams, key, value));
 	}
 
@@ -92,6 +111,7 @@
 		let next = page.url.searchParams;
 		for (const [key, value] of fields) next = nextUsageSearch(next, key, value.trim());
 
+		perPageNotice = null;
 		navigate(next);
 	}
 
@@ -100,6 +120,7 @@
 		for (const key of ['status', 'endpoint_id', 'model', 'q'])
 			next = nextUsageSearch(next, key, '');
 
+		perPageNotice = null;
 		navigate(next);
 	}
 </script>
@@ -109,12 +130,15 @@
 
 	<RefreshControl onrefresh={() => load(search)} />
 
-	{#if search.notices.length > 0}
+	{#if perPageNotice !== null || search.notices.length > 0}
 		<div
 			role="status"
 			aria-live="polite"
 			class="flex flex-col gap-1 rounded-[var(--radius-md)] bg-[var(--color-surface-2)] px-3 py-2 text-sm"
 		>
+			{#if perPageNotice !== null}
+				<p>{perPageNotice}</p>
+			{/if}
 			{#each search.notices as notice (notice)}
 				<p>{notice}</p>
 			{/each}
