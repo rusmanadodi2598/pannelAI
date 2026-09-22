@@ -7,12 +7,16 @@
 //
 // The cost mode is also the one place on this screen that parses the API's decimal string, because a bar
 // needs a number to size it. The assertions are on the formatted figures, which is what the operator reads.
+//
+// The mode buttons are looked up inside the series card rather than on the screen: the two bar charts below
+// it carry switches of their own, and one of them is also called "Tokens" (draft 016 F1).
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import UsageOverviewTab from '../../src/lib/components/UsageOverviewTab.svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
-import { stubUsage, timeseriesBody, totals } from '../support/usage-overview-stub';
+import { timeseriesBody, totals } from '../support/usage-fixtures';
+import { stubUsage } from '../support/usage-overview-stub';
 import { visit } from '../support/page.svelte';
 
 vi.mock('$app/state', async () => {
@@ -75,9 +79,9 @@ describe('UsageOverviewTab value chart', () => {
 		// The title is read off the disclosure table's caption, which is bound to the same `title` prop as
 		// the visible heading, and does not collide with the toggle button that carries the same word.
 		expect(within(figure).getByText('Tokens by bucket')).toBeTruthy();
-		expect(screen.getByRole('button', { name: 'Tokens' }).getAttribute('aria-pressed')).toBe(
-			'true'
-		);
+		expect(
+			within(figure).getByRole('button', { name: 'Tokens' }).getAttribute('aria-pressed')
+		).toBe('true');
 		expect(screen.getByRole('button', { name: 'Cost' }).getAttribute('aria-pressed')).toBe('false');
 		expect(screen.getByText(/Highest 5,500 at .+; 11,000 tokens in total\./)).toBeTruthy();
 	});
@@ -106,7 +110,7 @@ describe('UsageOverviewTab value chart', () => {
 		await fireEvent.click(screen.getByRole('button', { name: 'Cost' }));
 		expect(valueChart()).toBeTruthy();
 
-		await fireEvent.click(screen.getByRole('button', { name: 'Tokens' }));
+		await fireEvent.click(within(valueChart()).getByRole('button', { name: 'Tokens' }));
 
 		expect(screen.getByText(TOKENS_CAPTION)).toBeTruthy();
 		expect(screen.queryByText(COST_CAPTION)).toBeNull();

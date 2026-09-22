@@ -430,6 +430,17 @@ absent.
   at a time; the cost mode parses the API's decimal string and states that the figures are estimates. The
   chart has a text summary line and an accessible table fallback, so the numbers are readable without the
   graphic (draft 014 F2).
+- **Bar charts:** two ranked bar charts sit between the series chart and the breakdown table, one per provider
+  and one for the top models, each with its own tokens/requests switch, a text summary naming the leader, and
+  a disclosure table carrying the exact figures, so the graphic is never the only statement of a number
+  (draft 016 F1, F2). The bars themselves are hidden from assistive technology for that reason. The model
+  chart draws the reference fork's five and its sentence says how many models with usage were left out; the
+  provider chart draws every provider with usage, and its sentence counts them. A group with no usage in the
+  chosen measure is not drawn, because a zero is a group that did not happen rather than a short bar, and a
+  group that did happen never renders as an invisible bar. The figures beside the bars are compact and the
+  table's are exact; the compact formatter is the standard one with a pinned locale, not the reference's
+  hand-rolled thresholds, which print `1000.0K` for 999,999 (draft 016 F1). A chart's own read failing
+  replaces that chart with its message and leaves the other one drawn (draft 016 F2).
 - **Cost caveat:** SPEC-API §7.12 states cost figures are estimates. The cost tile carries that note.
 - **Live:** `GET /api/v1/usage/live` (server-sent events) carries the three facts a period window cannot:
   the requests in flight now, the requests that just finished, and the provider the gateway last reported an
@@ -448,7 +459,9 @@ absent.
   names itself and, where the panel knows it, the cause (§8.6.1). A gateway that does not serve the route is
   stated as unavailable, not replaced by a poll under the same label. The finished list dates each row by
   how long ago it finished rather than by the instant, and keeps that reading fresh while the row is on
-  screen: the row is a claim about now, so a frozen "just now" would be a wrong figure (draft 014 F4).
+  screen: the row is a claim about now, so a frozen "just now" would be a wrong figure (draft 014 F4). Each
+  finished row splits its tokens into in and out in the words the tiles above use, and a figure the frame did
+  not send is stated as absent rather than printed as zero (draft 016 F3).
 
 **Tab 2: Records**
 

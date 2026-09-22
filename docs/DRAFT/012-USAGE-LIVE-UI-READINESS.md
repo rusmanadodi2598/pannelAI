@@ -7,7 +7,7 @@ yang bisa diulang, rencana DURING, keputusan owner di depan implementasi.
 
 | | |
 |---|---|
-| **Status** | DURING selesai 2026-09-22. F1 CLOSED; F2 dan F3 diimplementasikan penuh dengan test dan live pass, tetapi CLOSED ditahan oleh F4; F6 dicatat sebagai follow-up LOW |
+| **Status** | **CLOSED 2026-09-22.** F1 CLOSED; F2 dan F3 CLOSED setelah F4 selesai dan live pass merekam frame nyata dari route gateway (draft 016 §12.1); F6 dicatat sebagai follow-up LOW |
 | **Mechanism** | DURING & AFTER (antislop) |
 | **Tanggal** | 2026-09-22 |
 | **Scope** | `app-ui/.` saja. `app-serv/.` tidak disentuh oleh dokumen ini |
@@ -72,7 +72,7 @@ pembacaan terjadi, dan test memaku ketiganya.
 
 ## 4. F2 MEDIUM (FE): pembaca stream Usage belum ada
 
-**Status: DURING selesai, CLOSED ditahan oleh F4.**
+**Status: CLOSED 2026-09-22.** F4 selesai, dan live pass draft 016 §12.1 merekam pembaca ini bekerja di atas route nyata.
 
 **Fakta.** Tidak ada `EventSource`, schema frame, maupun modul stream di `app-ui` (grep `EventSource`
 atas `src` dan `tests` mengembalikan nol baris). Reference membuka `EventSource("/api/usage/stream")`
@@ -105,7 +105,7 @@ pertama menunggu F4.
 
 ## 5. F3 MEDIUM (FE): topologi node belum ada, dan keputusan motion belum tertulis
 
-**Status: DURING selesai, CLOSED ditahan oleh F4.**
+**Status: CLOSED 2026-09-22.** F4 selesai, dan live pass draft 016 §12.1 merekam node menyala dari frame nyata.
 
 **Fakta.** `app-ui` tidak punya komponen topologi. Reference menggambar router di tengah plus satu
 node per provider terkonfigurasi pada elips, menandai node aktif dengan `animate-ping`, menganimasikan
@@ -134,7 +134,7 @@ aktivitas yang diklaim tanpa frame, dan click-through mencatat keadaan idle sert
 
 ## 6. F4 BLOCKER (BE): route `GET /api/v1/usage/live` belum ada di tree
 
-**Status: OPEN. Ini yang menahan CLOSED F2 dan F3.**
+**Status: CLOSED 2026-09-22 oleh `app-serv` `ede03d2`.**
 
 **Fakta.** Grep atas `app-serv/` untuk `usage/live`, `UsageLive`, dan `activeRequests` tidak
 menemukan route, handler, maupun schema apa pun; yang ada hanya SSE pada jalur chat dan playground.
@@ -262,12 +262,13 @@ adalah frame yang benar-benar tiba, karena route F4 belum ada di gateway.
 
 - F1 CLOSED dengan bukti test dan live pass: gateway menghormati `per_page=100` sementara panel
   membacanya sebagai 25, dan koreksi URL itu sekarang terlihat serta hanya satu pembacaan yang terjadi.
-- F2 dan F3 diimplementasikan penuh dengan test; status CLOSED ditahan sampai F4 selesai dan live pass
-  merekam frame nyata. Yang sudah terekam pada live pass sesi ini adalah keadaan sebaliknya, dan itu
-  memang keadaan hari ini: route menjawab 404, panel menyatakan `unavailable` beserta sebabnya, dan
-  tidak ada label live yang dipasang tanpa frame. Click-through browser dicatat sebagai blocked
-  beserta sebabnya (panel client-rendered, route lawan bicara belum ada), bukan diklaim lulus.
-- F4 OPEN, milik scope `app-serv`. Ini satu-satunya nomor yang menahan CLOSED F2 dan F3.
+- F2 dan F3 CLOSED 2026-09-22. Ketika draft ini ditulis, route lawan bicaranya belum ada, jadi yang terekam
+  saat itu adalah keadaan sebaliknya: route menjawab 404 dan panel menyatakan `unavailable` beserta
+  sebabnya. Route itu mendarat di `app-serv` `ede03d2`, dan pass panel berikutnya (draft 016 §12.1)
+  merekam frame nyata dari gateway: 21 pemeriksaan klien plus click-through browser, termasuk node yang
+  menyala dari frame dan baris selesai yang membawa token gateway.
+- F4 CLOSED 2026-09-22 oleh `app-serv` `ede03d2` (route `GET /api/v1/usage/live`, terdaftar di
+  `router.go:192`, kontrak di `docs/CONTRACT/001-CONTRACT-API-V1.yaml:7025`).
 - F5 tercatat; amandemen dokumen (SPEC-UI §6.5, §8.6.1, §9.5 dan DESIGN.md §2.1) ikut di perubahan ini.
 - F6 OPEN dan LOW: pola notice-only `per_page` yang sama masih ada di `log-search.ts` dan
   `endpoint-search.ts`, dicatat sebagai follow-up F1 untuk pass berikutnya, bukan dikerjakan di sini.

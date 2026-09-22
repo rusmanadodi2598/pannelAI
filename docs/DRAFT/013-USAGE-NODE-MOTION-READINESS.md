@@ -198,6 +198,12 @@ CLOSED. Yang tidak diklaim: klik-through browser pada route nyata tetap belum di
 scope `app-serv`; panel sudah merekam klik-through-nya di draft 013 §8.1 terhadap contract double, dan
 F2/F3 draft 012 sekarang bisa ditutup karena route yang mereka tunggu sudah menjawab.
 
+**Ditutup 2026-09-22 oleh pass panel (draft 016 §12.1).** Klik-through browser pada route nyata yang
+paragraf di atas sebut belum direkam sudah direkam: lima tangkapan layar dan tujuh kelompok nilai
+terukur di `/tmp/live016/`, plus 21 pemeriksaan klien yang menggerakkan modul panel sendiri, semuanya
+di atas gateway yang dibangun dari tree yang di-commit (`ede03d2`) dan trafik nyata lewat data plane.
+Tidak ada contract double di jalur bukti itu.
+
 **Gate `app-serv` pada tree beku.** `go build ./...` bersih; `go vet ./...` dan
 `go vet -tags=integration ./...` bersih; `go test -race -count=1 ./...` hijau di tujuh belas paket;
 `gofmt -l .` kosong; `scrypts/gates/go-headers.sh` PASS 747 file; `staticcheck` (dua build) bersih;

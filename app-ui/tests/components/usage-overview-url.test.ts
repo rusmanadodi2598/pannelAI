@@ -12,7 +12,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/sv
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import UsageOverviewTab from '../../src/lib/components/UsageOverviewTab.svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
-import { HOUR_MS, lastQuery, stubUsage, summaryBody, totals } from '../support/usage-overview-stub';
+import { HOUR_MS, summaryBody, totals } from '../support/usage-fixtures';
+import { stubUsage } from '../support/usage-overview-stub';
+import { lastQuery, lastSummaryQuery, summaryQueries } from '../support/usage-stub-queries';
 import { pageState, visit } from '../support/page.svelte';
 
 vi.mock('$app/state', async () => {
@@ -60,7 +62,9 @@ describe('UsageOverviewTab URL', () => {
 			expect(lastQuery(stub, '/usage/timeseries').get('granularity')).toBe('day');
 		});
 
-		const query = lastQuery(stub, '/usage/summary');
+		// The tab's own read, named by the dimension the URL chose: the two bar charts read the same route
+		// for their own dimensions (draft 016 F4).
+		const query = lastSummaryQuery(stub, 'model');
 		expect(Date.parse(query.get('to') ?? '') - Date.parse(query.get('from') ?? '')).toBe(
 			30 * 24 * HOUR_MS
 		);
@@ -81,7 +85,7 @@ describe('UsageOverviewTab URL', () => {
 			expect(pageState.url.searchParams.get('group_by')).toBe('endpoint');
 		});
 		await waitFor(() => {
-			expect(lastQuery(stub, '/usage/summary').get('group_by')).toBe('endpoint');
+			expect(summaryQueries(stub, 'endpoint')).toHaveLength(1);
 		});
 
 		expect(await screen.findByText('ep_1')).toBeTruthy();
@@ -93,7 +97,7 @@ describe('UsageOverviewTab URL', () => {
 		await renderOverview();
 
 		expect(screen.getByText(/The period "forever" is not one the panel offers/)).toBeTruthy();
-		expect(lastQuery(stub, '/usage/summary').get('from')).toBeTruthy();
+		expect(lastSummaryQuery(stub, 'model').get('from')).toBeTruthy();
 	});
 
 	it('re-reads the window on screen when the operator asks for it', async () => {

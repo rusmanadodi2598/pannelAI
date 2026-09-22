@@ -9,9 +9,9 @@
 	// response rather than to a page of it.
 	//
 	// The screen computes no figure of its own. Every number here comes from the summary or the timeseries,
-	// with one stated exception: the token series adds tokens in to tokens out, and its caption says so.
-	// `latency_ms` is returned by the API and deliberately not shown, because it is a sum of per-request
-	// latencies rather than a mean, and §6.5 asks for p50 and p95 rather than a total.
+	// with one stated exception: the token series and the two bar charts add tokens in to tokens out, and
+	// their captions say so. `latency_ms` is returned by the API and deliberately not shown, because it is a
+	// sum of per-request latencies rather than a mean, and §6.5 asks for p50 and p95 rather than a total.
 	//
 	// The breakdown table is on screen from the first read (draft 014 F1): the API's group block arrives
 	// with the same response, and "which models consumed this window" is the first question it answers.
@@ -22,9 +22,11 @@
 	import { untrack } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import UsageLivePanel from '$lib/components/UsageLivePanel.svelte';
+	import UsageOverviewBarCharts from '$lib/components/UsageOverviewBarCharts.svelte';
 	import UsageOverviewBreakdown from '$lib/components/UsageOverviewBreakdown.svelte';
 	import UsageOverviewCharts from '$lib/components/UsageOverviewCharts.svelte';
 	import UsageOverviewControls from '$lib/components/UsageOverviewControls.svelte';
+	import UsageOverviewEmpty from '$lib/components/UsageOverviewEmpty.svelte';
 	import UsageTotalsTiles from '$lib/components/UsageTotalsTiles.svelte';
 	import { listProviders } from '$lib/api/providers';
 	import { getUsageSummary, getUsageTimeseries } from '$lib/api/usage';
@@ -38,9 +40,10 @@
 	let timeseries = $state<UsageTimeseries | null>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
-	// The breakdown table resolves a provider key to its name, which is a second read and not a dependency:
-	// a registry that cannot be read leaves the table rendering the ids, with one line saying so. It runs
-	// only while the provider dimension is the one on screen, so a model breakdown reads nothing extra.
+	// The provider names resolve a provider key to its name, which is a second read and not a dependency: a
+	// registry that cannot be read leaves the breakdown table and the provider chart rendering the ids, with
+	// one line saying so. It runs on every load, because the provider chart is on screen whatever dimension
+	// the breakdown table is showing (draft 016 F1); before this pass only the provider dimension needed it.
 	let providerNames = $state<Map<string, string> | null>(null);
 	let namesNotice = $state<string | null>(null);
 
@@ -136,14 +139,14 @@
 
 	function refresh(): void {
 		void load(search);
-		if (search.groupBy === 'provider') void loadProviderNames();
+		void loadProviderNames();
 	}
 
-	// Names are read when, and only when, the provider dimension is the one on screen. The effect also
-	// covers the operator switching to it, which is the moment the ids stop being readable enough.
+	// Names are read once on mount, because the provider chart is on screen whatever the breakdown table is
+	// showing. The effect reads nothing reactive, so it runs when the tab mounts and not on every load; a
+	// refresh repeats the read through its own call above.
 	$effect(() => {
-		if (search.groupBy !== 'provider') return;
-		untrack(() => void loadProviderNames());
+		void loadProviderNames();
 	});
 </script>
 
@@ -160,22 +163,7 @@
 		</StateMessage>
 	{:else if summary && timeseries && totals}
 		{#if totals.requests === 0}
-			<StateMessage
-				kind="empty"
-				title="No requests in this window"
-				description="Nothing was routed in the selected period. If clients are sending requests, check that a gateway key is active and that an endpoint is healthy."
-			>
-				{#snippet action()}
-					<div class="flex flex-wrap gap-3">
-						{#if search.period !== '60d'}
-							<button type="button" class="underline" onclick={() => change('period', '60d')}
-								>Look back 60 days</button
-							>
-						{/if}
-						<a href={resolve('/endpoint-keys')} class="underline">Open Endpoint &amp; Key</a>
-					</div>
-				{/snippet}
-			</StateMessage>
+			<UsageOverviewEmpty period={search.period} onperiod={(value) => change('period', value)} />
 		{:else}
 			<p class="text-sm text-[var(--color-text-muted)]">
 				Showing {formatTimestamp(summary.from)} to {formatTimestamp(summary.to)}, bucketed by
@@ -185,6 +173,19 @@
 			<UsageTotalsTiles {totals} />
 
 			<UsageOverviewCharts {buckets} />
+
+			<!-- The pair sits with the series charts and above the table: it answers the same question at the
+			     same altitude as the series (what consumed the window) before the table lists the rows. It
+			     reads the two dimensions it draws, and reuses `groups` when the operator's own breakdown is
+			     one of them, so the API's order is what breaks a tie in the ranking. -->
+			<UsageOverviewBarCharts
+				from={summary.from}
+				to={summary.to}
+				granularity={timeseries.granularity}
+				groupBy={search.groupBy}
+				groups={summary.groups}
+				{providerNames}
+			/>
 
 			<UsageOverviewBreakdown
 				breakdown={search.groupBy}

@@ -12,7 +12,9 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import UsageOverviewTab from '../../src/lib/components/UsageOverviewTab.svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
-import { lastQuery, stubUsage, summaryBody, totals } from '../support/usage-overview-stub';
+import { summaryBody, totals } from '../support/usage-fixtures';
+import { stubUsage } from '../support/usage-overview-stub';
+import { lastSummaryQuery, summaryQueries } from '../support/usage-stub-queries';
 import { pageState, visit } from '../support/page.svelte';
 
 vi.mock('$app/state', async () => {
@@ -76,7 +78,9 @@ describe('UsageOverviewTab breakdown', () => {
 		const stub = stubUsage();
 		await renderOverview();
 
-		expect(lastQuery(stub, '/usage/summary').get('group_by')).toBe('model');
+		// Exactly one read asked for the model breakdown: the tab's own. The two bar charts reuse it rather
+		// than reading the same dimension again (draft 016 F4).
+		expect(summaryQueries(stub, 'model')).toHaveLength(1);
 
 		const table = screen.getByRole('table', { name: 'Usage broken down by model' });
 		expect(within(table).getByText('gpt-4o')).toBeTruthy();
@@ -93,7 +97,7 @@ describe('UsageOverviewTab breakdown', () => {
 		});
 		await renderOverview();
 
-		expect(lastQuery(stub, '/usage/summary').get('group_by')).toBe('gateway_key');
+		expect(summaryQueries(stub, 'gateway_key')).toHaveLength(1);
 
 		const table = screen.getByRole('table', { name: 'Usage broken down by gateway key' });
 		// The header is the button that sorts the column, so its name is the dimension's label.
@@ -106,7 +110,9 @@ describe('UsageOverviewTab breakdown', () => {
 		const stub = stubUsage();
 		await renderOverview();
 
-		expect(lastQuery(stub, '/usage/summary').get('group_by')).toBeNull();
+		// The tab's own read sends no dimension at all, which is what the URL's "none" means; the two charts
+		// still read theirs.
+		expect(summaryQueries(stub, null)).toHaveLength(1);
 		expect(screen.queryByRole('table', { name: /Usage broken down by/ })).toBeNull();
 	});
 
@@ -162,7 +168,7 @@ describe('UsageOverviewTab breakdown', () => {
 		expect(pageState.url.searchParams.get('order')).toBe('asc');
 		// The sort is the panel's: §7.12 has no sort parameter, so a screen that sent one would be asking
 		// for something the API does not offer.
-		expect(lastQuery(stub, '/usage/summary').get('sort')).toBeNull();
+		expect(lastSummaryQuery(stub, 'model').get('sort')).toBeNull();
 		await waitFor(() => {
 			expect(modelRows()).toEqual(['claude-sonnet-4', 'gpt-4o']);
 		});

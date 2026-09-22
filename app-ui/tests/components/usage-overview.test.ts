@@ -14,14 +14,9 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import UsageOverviewTab from '../../src/lib/components/UsageOverviewTab.svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
-import {
-	HOUR_MS,
-	lastQuery,
-	stubUsage,
-	summaryBody,
-	timeseriesBody,
-	totals
-} from '../support/usage-overview-stub';
+import { HOUR_MS, summaryBody, timeseriesBody, totals } from '../support/usage-fixtures';
+import { stubUsage } from '../support/usage-overview-stub';
+import { lastQuery, lastSummaryQuery } from '../support/usage-stub-queries';
 import { visit } from '../support/page.svelte';
 
 vi.mock('$app/state', async () => {
@@ -60,7 +55,9 @@ describe('UsageOverviewTab', () => {
 		const stub = stubUsage();
 		await renderOverview();
 
-		const query = lastQuery(stub, '/usage/summary');
+		// The tab's own read, named by the dimension the URL chose: the two bar charts read the same route
+		// for their own dimensions (draft 016 F4).
+		const query = lastSummaryQuery(stub, 'model');
 
 		expect(Date.parse(query.get('to') ?? '') - Date.parse(query.get('from') ?? '')).toBe(
 			24 * HOUR_MS
@@ -73,7 +70,7 @@ describe('UsageOverviewTab', () => {
 		const stub = stubUsage();
 		await renderOverview();
 
-		const query = lastQuery(stub, '/usage/summary');
+		const query = lastSummaryQuery(stub, 'model');
 
 		expect(Date.parse(query.get('to') ?? '') - Date.parse(query.get('from') ?? '')).toBe(
 			7 * 24 * HOUR_MS
@@ -86,7 +83,7 @@ describe('UsageOverviewTab', () => {
 		const stub = stubUsage();
 		await renderOverview();
 
-		expect(lastQuery(stub, '/usage/summary').get('from')).toMatch(/T00:00:00Z$/);
+		expect(lastSummaryQuery(stub, 'model').get('from')).toMatch(/T00:00:00Z$/);
 	});
 
 	it('shows the API totals and renders the error rate as a percentage', async () => {
@@ -130,6 +127,26 @@ describe('UsageOverviewTab', () => {
 
 		const table = within(details as HTMLElement).getByRole('table');
 		expect(within(table).getByText('20')).toBeTruthy();
+	});
+
+	it('draws the two bar charts between the series charts and the breakdown table', async () => {
+		stubUsage();
+		await renderOverview();
+
+		// The provider chart reads its own dimension and names its bars through the registry; the model
+		// chart draws the groups the tab's own read returned.
+		expect(
+			await screen.findByText('OpenAI leads with 4.1K tokens, across the 2 providers with usage.')
+		).toBeTruthy();
+		expect(
+			screen.getByText('gpt-4o leads with 3.4K tokens, across the 2 models with usage.')
+		).toBeTruthy();
+
+		// The placement is the claim: the pair answers the window's question at the series' altitude, before
+		// the table lists every row.
+		const provider = screen.getByText('By provider').closest('figure') as HTMLElement;
+		const table = screen.getByRole('table', { name: 'Usage broken down by model' });
+		expect(provider.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 	});
 
 	it('explains an empty window instead of drawing zeros', async () => {
