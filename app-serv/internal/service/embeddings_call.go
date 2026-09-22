@@ -36,6 +36,13 @@ import (
 // replacing the cause the client must see.
 func (s *EmbeddingsService) perform(ctx context.Context, request dataplane.MediaRequest, selection dataplane.Selection, outcome dataplane.Outcome, keyID string) (dataplane.MediaResponse, error) {
 	started := time.Now()
+	// The marker opens once the provider and its endpoint are known and closes
+	// before this call returns, whichever way it ends, so the drawing lights a
+	// node for exactly as long as the provider is being called (SPEC-UI-001
+	// §6.5). A nil seam returns a release that does nothing.
+	release := markActiveRequest(ctx, s.active, outcome.ProviderID, outcome.EndpointID, outcome.Model)
+	defer release()
+
 	answer, err := s.caller.Do(ctx, request)
 	latencyMS := time.Since(started).Milliseconds()
 

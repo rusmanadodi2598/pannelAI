@@ -312,7 +312,7 @@ Migrasi P2 (`000009`-`000011`) menambah `proxies`, `media_provider_settings`, da
 | Sumber | Isi | Catatan |
 |---|---|---|
 | PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1), `proxies` (P2, 000009), `media_provider_settings` (P2, 000010; PK `(provider_id, kind)`) | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali; `proxies.password_encrypted` disegel sama dan `has_password` satu-satunya bentuk yang dibaca kembali |
-| Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, sticky round-robin, circuit state, console ring buffer, channel Pub/Sub `pannelai:events:usage.recorded` | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut |
+| Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, sticky round-robin, circuit state, console ring buffer, sorted set `pannelai:usage:active` (penanda request in-flight, skor = `started_at`, prune 60 dtk), channel Pub/Sub `pannelai:events:usage.recorded` | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut |
 
 ---
 
@@ -327,6 +327,7 @@ Tiga worker berjalan bersama server, semuanya dipulai lewat `cmd/app-serv/worker
 | OAuth token refresh (`internal/service/oauth_refresh_worker.go`) | tick 5 menit, hanya endpoint `oauth` yang `refresh_state=due` | eksponensial dari 30 detik, jitter maksimum seperempat delay, plafon 30 menit, 5 percobaan | percobaan kelima menandai endpoint `error` lewat `MarkRefreshDeadLetter` dan berhenti di-retry |
 | Usage event publisher (`internal/service/usage_event_publish.go`) | antrean bounded 256 yang diisi `UsageService.Record` (choke point akuntansi, dipakai chat dan media/embeddings) | tanpa retry terjadwal: kegagalan publish dihitung lalu dicatat, karena Pub/Sub tidak punya tujuan durable untuk di-retry | antrean penuh = event terbaru di-drop dan dihitung (`Dropped()`); baris usage adalah rekaman durabelnya |
 | Usage event consumer (`internal/service/usage_event_consume.go`) | subscribe channel `pannelai:events:usage.recorded`; tiap event dicerminkan jadi satu baris console ring | receive timeout = idle (bukan kegagalan); kegagalan transport backoff eksponensial 250ms sampai 30s, counter reset oleh receive sukses pertama | tidak ada: subscription dibangun ulang tiap percobaan, jadi tidak ada state yang perlu di-dead-letter |
+| Live Usage stream (`internal/handler/usage_live.go`) | satu goroutine per koneksi, dipicu tick baca 1 dtk dan keepalive 20 dtk; berakhir saat klien disconnect, batas umur 30 menit, gagal tulis, atau gagal baca | tanpa retry: koneksi yang gagal ditutup dan panel punya jadwal retry sendiri yang terbatas (`app-ui/src/lib/usage-live.ts`) | tidak ada: stream adalah view, bukan rekaman; rekamannya baris `usage_records` |
 | Quota re-check | **deferred ke P2** (§7.12, register G22): belum ada worker. Penegakan cap terjadi saat seleksi endpoint, dibaca dari `quota_caps` dan `MonthlyUsage`, jadi sebuah cap berlaku pada request berikutnya tanpa re-check terpisah | — | — |
 
 Domain event `usage.recorded` (AGENTS.md §2.3, draft 010 F4) menyeberang lewat Redis Pub/Sub pada channel
@@ -336,6 +337,19 @@ menaruhnya di broker dari goroutine sendiri, dan consumer mencerminkannya ke con
 memvalidasi ulang payload dengan invariant agregat sebelum consumer boleh memakainya (channel = input tak
 terpercaya, OWASP A08). Event hanya dipancarkan setelah tulisan berhasil, jadi artinya "request ini tercatat",
 bukan "request ini dicoba".
+
+Stream Usage live (`internal/handler/usage_live.go`, `internal/service/usage_live.go`, draft 013 F4)
+dilayani `GET /api/v1/usage/live` (session-gated, `text/event-stream`, `X-Accel-Buffering: no`). Frame-nya
+full state `{active, recent, error_provider}` dan dikirim hanya saat berubah; koneksi idle menerima
+komentar SSE (`: ping`), bukan frame. Sumber `active` adalah sorted set Redis `pannelai:usage:active`
+yang diisi di seam outbound tiga bidang: leg relay chat (`internal/dataplane/engine_relay.go`), media
+(`internal/service/media_perform.go`), dan embeddings (`internal/service/embeddings_call.go`). Setiap
+penanda dilepas saat panggilan selesai (sukses maupun gagal) dan yang lebih tua dari 60 detik dipangkas
+saat dibaca, jadi gateway yang mati di tengah request tidak meninggalkan node menyala. `recent` dibaca
+dari `usage_records` dengan jendela 5 menit dan batas 20 baris; `error_provider` diturunkan dari
+pembacaan yang sama dalam jendela 10 detik, sehingga node error dan daftar kegagalan tidak bisa
+berbeda sumber. Frame tidak punya field agregat, jadi stream ini tidak bisa menimpa angka
+`summary`/`timeseries`.
 
 Penegakan kuota ada di jalur seleksi, bukan di worker: `dataplane.Selector` menerima
 `SelectorDeps.Gate` (§7.12, register G22) dan melewati endpoint yang spend bulan berjalannya

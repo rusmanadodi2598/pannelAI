@@ -38,6 +38,7 @@ type EmbeddingsService struct {
 	caller    dataplane.MediaCaller
 	overrides MediaOverrideReader
 	recorder  dataPlaneRecorder
+	active    dataplane.ActiveRequests
 }
 
 // EmbeddingsServiceDeps holds the collaborators the service needs.
@@ -60,6 +61,10 @@ type EmbeddingsServiceDeps struct {
 	Logs      RequestLogRecorder
 	Quotas    *QuotaCounter
 	RequestID RequestIDReader
+	// ActiveRequests marks one provider as in flight while its call runs, which
+	// is what the §7.12 live stream draws. Optional for the same reason as the
+	// other three: a deployment that wires none still serves.
+	ActiveRequests dataplane.ActiveRequests
 }
 
 // NewEmbeddingsService validates deps and returns a ready service.
@@ -76,6 +81,7 @@ func NewEmbeddingsService(deps EmbeddingsServiceDeps) (*EmbeddingsService, error
 	return &EmbeddingsService{
 		resolver: deps.Resolver, router: deps.Router, caller: deps.Caller, overrides: deps.Overrides,
 		recorder: newDataPlaneRecorder(deps.Usage, deps.Logs, deps.Quotas, deps.RequestID),
+		active:   deps.ActiveRequests,
 	}, nil
 }
 

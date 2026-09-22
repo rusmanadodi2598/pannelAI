@@ -74,7 +74,13 @@ type liveStack struct {
 // newLiveStack builds the gateway against the live databases, seeds one active
 // gateway key, and truncates the tables the evidence reads so the row counts
 // belong to this run alone.
-func newLiveStack(t *testing.T, upstream *liveUpstream) liveStack {
+//
+// An optional in-flight tracker is the one seam a live pass needs to add: the
+// Usage stream draws what the engine is calling, so a pass that reads that stream
+// has to hand the engine the same tracker the stream reads (draft 013 F4). The
+// variadic shape matches the fixture the data-plane tests already use, so a
+// caller that needs nothing extra passes nothing.
+func newLiveStack(t *testing.T, upstream *liveUpstream, active ...*service.ActiveRequestTracker) liveStack {
 	t.Helper()
 	dsn := os.Getenv(livePostgresEnv)
 	if dsn == "" {
@@ -139,7 +145,13 @@ func newLiveStack(t *testing.T, upstream *liveUpstream) liveStack {
 	if err != nil {
 		t.Fatalf("building the selector: %v", err)
 	}
-	engine, err := dataplane.NewEngine(dataplane.EngineDeps{Resolver: resolver, Selector: selector, Transport: transport})
+	var tracker dataplane.ActiveRequests
+	if len(active) > 0 && active[0] != nil {
+		tracker = active[0]
+	}
+	engine, err := dataplane.NewEngine(dataplane.EngineDeps{
+		Resolver: resolver, Selector: selector, Transport: transport, ActiveRequests: tracker,
+	})
 	if err != nil {
 		t.Fatalf("building the engine: %v", err)
 	}

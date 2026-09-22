@@ -145,15 +145,15 @@ func buildManagement(
 	}
 
 	// The usage, quota, and log services read the same repositories, so they are
-	// built together (see observability_wiring.go). The endpoint repository
-	// rides along because the quota service refuses a cap for an endpoint that
-	// is not configured (draft 005 F2).
-	usageSvc, quotaSvc, logSvc, eventPublisher, eventConsumer, err := buildObservability(usageRepo, quotaRepo, endpointRepo, logRepo, settingsSvc, client)
+	// built together (see observability_wiring.go). The endpoint repository rides
+	// along because the quota service refuses a cap for an unconfigured endpoint
+	// (draft 005 F2).
+	obs, err := buildObservability(usageRepo, quotaRepo, endpointRepo, logRepo, settingsSvc, client)
 	if err != nil {
 		return managementDeps{}, err
 	}
 
-	flusher, retention, err := buildWorkers(client, quotaRepo, logSvc)
+	flusher, retention, err := buildWorkers(client, quotaRepo, obs.Log)
 	if err != nil {
 		return managementDeps{}, err
 	}
@@ -170,15 +170,12 @@ func buildManagement(
 	// The data plane is assembled from the same repositories the management side
 	// writes through, so a value written by one path is readable by the other.
 	// buildDataPlane owns that construction; this function only feeds it.
-	//
-	// The index handed over is the runtime overlay, not the embedded registry:
-	// the catalog route accepts a custom node as a provider_id, so the router
-	// must resolve the same ids the route does.
 	plane, err := buildDataPlane(dataPlaneInputs{
 		Config: cfg, Index: runtimeIndex, Endpoints: endpointRepo, Combos: comboRepo,
 		ComboOrder: comboSvc, Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
-		Client: egress.Client, Redis: client, Settings: settingsSvc, Usage: usageSvc, Vision: augmenter,
-		Logs: logSvc, MediaOverrides: mediaSvc, MediaIndex: runtimeIndex, Quotas: quotaSvc,
+		Client: egress.Client, Redis: client, Settings: settingsSvc, Usage: obs.Usage, Vision: augmenter,
+		ActiveRequests: obs.Active, Logs: obs.Log, Quotas: obs.Quota,
+		MediaOverrides: mediaSvc, MediaIndex: runtimeIndex,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: data plane: %w", err)
@@ -223,9 +220,10 @@ func buildManagement(
 		Media:         handler.NewMediaHandler(plane.Media, plane.Chat),
 		VisionAdapter: handler.NewVisionAdapterHandler(visionSvc),
 		TokenSaver:    handler.NewTokenSaverHandler(tokenSaverSvc),
-		Usage:         handler.NewUsageHandler(usageSvc),
-		Quota:         handler.NewQuotaHandler(quotaSvc),
-		Log:           handler.NewLogHandler(logSvc),
+		Usage:         handler.NewUsageHandler(obs.Usage),
+		UsageLive:     handler.NewUsageLiveHandler(obs.UsageLive),
+		Quota:         handler.NewQuotaHandler(obs.Quota),
+		Log:           handler.NewLogHandler(obs.Log),
 		Settings:      handler.NewSettingsHandler(settingsSvc),
 		Chat:          handler.NewChatHandler(plane.Chat),
 		Embeddings:    handler.NewEmbeddingsHandler(plane.Embeddings, plane.Chat),
@@ -235,7 +233,7 @@ func buildManagement(
 		QuotaFlusher:       flusher,
 		LogRetention:       retention,
 		OAuthRefresh:       refreshWorker,
-		UsageEvents:        eventPublisher,
-		UsageEventConsumer: eventConsumer,
+		UsageEvents:        obs.Publisher,
+		UsageEventConsumer: obs.Consumer,
 	}, nil
 }

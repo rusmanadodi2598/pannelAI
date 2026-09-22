@@ -51,6 +51,10 @@ type MediaCallServiceDeps struct {
 	// RequestID reads the router's request id, so a media call's usage row and
 	// its log row share one identifier (SPEC-API-001 §4).
 	RequestID RequestIDReader
+	// ActiveRequests marks one provider as in flight while its call runs, which
+	// is what the §7.12 live stream draws. Optional: without one the drawing
+	// shows no active node rather than the call failing.
+	ActiveRequests dataplane.ActiveRequests
 }
 
 // MediaCallService performs one §7.10 data-plane media call for any kind.
@@ -60,6 +64,7 @@ type MediaCallService struct {
 	caller    dataplane.MediaCaller
 	overrides MediaOverrideReader
 	recorder  dataPlaneRecorder
+	active    dataplane.ActiveRequests
 }
 
 // NewMediaCallService validates deps and returns a ready service. The override
@@ -77,6 +82,7 @@ func NewMediaCallService(deps MediaCallServiceDeps) (*MediaCallService, error) {
 	return &MediaCallService{
 		index: deps.Index, router: deps.Router, caller: deps.Caller, overrides: deps.Overrides,
 		recorder: newDataPlaneRecorder(deps.Usage, deps.Logs, deps.Quotas, deps.RequestID),
+		active:   deps.ActiveRequests,
 	}, nil
 }
 

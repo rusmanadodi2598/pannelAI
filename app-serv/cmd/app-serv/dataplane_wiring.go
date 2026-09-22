@@ -98,6 +98,11 @@ type dataPlaneInputs struct {
 	// endpoint, and the counter the accounting sites advance. It is passed in
 	// because the management side reads the same rows through the same service.
 	Quotas *service.QuotaService
+	// ActiveRequests marks one provider as in flight while its call runs, which
+	// is what the §7.12 live stream draws. It is passed in because the live
+	// service reads the same store, so one tracker instance serves the stream and
+	// every plane that writes to it.
+	ActiveRequests dataplane.ActiveRequests
 }
 
 // buildDataPlane assembles the resolver, selector, transport, and engine, then the
@@ -152,6 +157,11 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 	engine, err := dataplane.NewEngine(dataplane.EngineDeps{
 		Resolver: resolver, Selector: selector, Transport: transport, Vision: in.Vision,
 		TokenSaver: saver,
+		// The chat plane opens one marker per relay leg, so a provider the engine
+		// is calling right now is a node the live drawing lights (SPEC-UI-001
+		// §6.5). The same tracker instance is handed to the media and embeddings
+		// services below, so all three planes write to one set.
+		ActiveRequests: in.ActiveRequests,
 		// The combo service owns the round-robin rule and the counter it
 		// advances, so the engine asks it for the order instead of reading the
 		// rotation state itself. It satisfies the seam directly.
@@ -193,39 +203,10 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		return dataPlane{}, err
 	}
 
-	// The package's own HTTP implementation over the guarded client, which
-	// already carries the §1.7 pool limits and the §1.6 deadlines. One instance
-	// serves every media call, so the routes share a connection pool rather than
-	// opening one each.
-	caller := dataplane.NewMediaTransport(in.Client)
-
-	embeddings, err := service.NewEmbeddingsService(service.EmbeddingsServiceDeps{
-		// The embeddings use case asks the engine only for resolution and
-		// selection, so it takes the same narrow ports the media service does
-		// (register G20: a refusal has to be recordable without the engine).
-		Resolver:  engine.Resolver(),
-		Router:    mediaRouter{engine: engine},
-		Caller:    caller,
-		Overrides: in.MediaOverrides,
-		Usage:     in.Usage,
-		Logs:      in.Logs,
-		Quotas:    quotas,
-		RequestID: router.RequestIDFrom,
-	})
-	if err != nil {
-		return dataPlane{}, err
-	}
-
-	media, err := service.NewMediaCallService(service.MediaCallServiceDeps{
-		Index:     in.MediaIndex,
-		Router:    mediaRouter{engine: engine},
-		Caller:    caller,
-		Overrides: in.MediaOverrides,
-		Usage:     in.Usage,
-		Logs:      in.Logs,
-		Quotas:    quotas,
-		RequestID: router.RequestIDFrom,
-	})
+	// The media and embeddings planes are built beside the engine they route
+	// through (see dataplane_media_wiring.go), because they share its resolver,
+	// selector, and quota counter.
+	embeddings, media, caller, err := buildMediaPlanes(in, engine, quotas)
 	if err != nil {
 		return dataPlane{}, err
 	}

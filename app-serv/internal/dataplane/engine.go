@@ -85,7 +85,11 @@ type Engine struct {
 	// saver rewrites the translated upstream body when an operator enabled a
 	// token-saver group. A nil one keeps the pipeline pass-through.
 	saver TokenSaver
-	clock func() time.Time
+	// active records one provider as in flight for as long as its call runs, so
+	// the live Usage stream can draw which nodes are routing now. A nil seam
+	// records nothing.
+	active ActiveRequests
+	clock  func() time.Time
 }
 
 // EngineDeps holds the collaborators the engine needs.
@@ -103,6 +107,10 @@ type EngineDeps struct {
 	// TokenSaver rewrites the translated upstream body when enabled. Optional:
 	// nil leaves the data plane pass-through, which is the safe default.
 	TokenSaver TokenSaver
+	// ActiveRequests marks one provider as in flight while its call runs, which
+	// is what the §7.12 live stream draws. Optional: nil leaves the drawing with
+	// no active node rather than failing a request.
+	ActiveRequests ActiveRequests
 	// Clock overrides the time source, so a test can measure latency and the
 	// circuit window without sleeping.
 	Clock func() time.Time
@@ -125,7 +133,8 @@ func NewEngine(deps EngineDeps) (*Engine, error) {
 	}
 	return &Engine{
 		resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport,
-		vision: deps.Vision, orders: deps.ComboOrder, saver: deps.TokenSaver, clock: clock,
+		vision: deps.Vision, orders: deps.ComboOrder, saver: deps.TokenSaver,
+		active: deps.ActiveRequests, clock: clock,
 	}, nil
 }
 

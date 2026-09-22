@@ -51,6 +51,13 @@ func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request 
 	}
 
 	started := time.Now()
+	// The marker opens once the provider and its endpoint are known and closes
+	// before this call returns, whichever way it ends, so the drawing lights a
+	// node for exactly as long as the provider is being called (SPEC-UI-001
+	// §6.5). A nil seam returns a release that does nothing.
+	release := markActiveRequest(ctx, s.active, call.ProviderID, call.Selection.Endpoint.ID(), call.accountingModel())
+	defer release()
+
 	answer, err := s.caller.Do(ctx, request)
 	latencyMS := time.Since(started).Milliseconds()
 

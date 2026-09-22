@@ -51,6 +51,13 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 	}
 	outcome.EndpointID = selection.Endpoint.ID()
 
+	// The marker opens once the provider and its endpoint are known and closes
+	// before this leg returns, whichever way it ends, so the drawing lights a
+	// node for exactly as long as the provider is being called (SPEC-UI-001
+	// §6.5). A nil seam returns a release that does nothing.
+	release := e.markActive(ctx, resolution.Provider.ID, outcome.EndpointID, resolution.ModelID)
+	defer release()
+
 	body, err := upstreamBody(in, resolution)
 	if err != nil {
 		return outcome, err

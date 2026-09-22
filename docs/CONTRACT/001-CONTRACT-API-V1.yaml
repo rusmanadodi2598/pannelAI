@@ -1649,6 +1649,86 @@ components:
       - data
       - meta
       additionalProperties: false
+    UsageLiveActive:
+      type: object
+      description: One request the gateway is routing right now.
+      properties:
+        provider_id:
+          type: string
+        endpoint_id:
+          type: string
+        model:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+      required:
+      - provider_id
+      - endpoint_id
+      - model
+      - started_at
+      additionalProperties: false
+    UsageLiveRecent:
+      type: object
+      description: One request that finished recently.
+      properties:
+        request_id:
+          type: string
+        provider_id:
+          type: string
+        model:
+          type: string
+        ts:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+          - success
+          - error
+        tokens_in:
+          type: integer
+          minimum: 0
+        tokens_out:
+          type: integer
+          minimum: 0
+        error_code:
+          type: string
+      required:
+      - request_id
+      - provider_id
+      - model
+      - ts
+      - status
+      - tokens_in
+      - tokens_out
+      - error_code
+      additionalProperties: false
+    UsageLiveFrame:
+      type: object
+      description: |
+        One `data:` payload of the live Usage stream. Full state rather than a delta, so a client that
+        missed a frame recovers on the next one. Both lists are always arrays, never null: an empty
+        in-flight set is a fact and `null` would be a second spelling of it.
+      properties:
+        active:
+          type: array
+          description: The in-flight set, oldest first, so the longest-running request is the first row.
+          items:
+            $ref: '#/components/schemas/UsageLiveActive'
+        recent:
+          type: array
+          description: The requests that just finished, newest first, bounded by the gateway.
+          items:
+            $ref: '#/components/schemas/UsageLiveRecent'
+        error_provider:
+          type: string
+          description: The provider the gateway last reported an error for, or an empty string.
+      required:
+      - active
+      - recent
+      - error_provider
+      additionalProperties: false
     UsageRecordDetailResponse:
       type: object
       properties:
@@ -6920,6 +7000,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UsageRecordList'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/ManagementConflictError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/usage/live:
+    get:
+      summary: Live stream of what the gateway is routing now
+      description: |
+        Server-sent events. Each frame is full state for the three facts a period window cannot carry:
+        the requests in flight now, the requests that just finished, and the provider the gateway last
+        reported an error for. A frame is sent when that state changes, and an idle connection receives
+        an SSE comment (`: ping`) rather than a frame, so a client counting frames is never told a change
+        happened. The status line and the SSE headers are committed with the first frame, so a failure
+        before it is an ordinary HTTP error in the management envelope.
+      tags:
+      - Usage
+      operationId: getApiV1UsageLive
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: An SSE stream of live frames.
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/UsageLiveFrame'
         '400':
           $ref: '#/components/responses/ManagementValidationError'
         '401':

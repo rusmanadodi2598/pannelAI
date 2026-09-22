@@ -7,10 +7,10 @@ depan implementasi.
 
 | | |
 |---|---|
-| **Status** | DURING. F1 sampai F3 diimplementasikan; F4 (route gateway) tetap OPEN dan menghalangi live pass frame nyata |
+| **Status** | CLOSED 2026-09-22. F1 sampai F3 diimplementasikan dan direkam; F4 (route gateway) ditutup di scope `app-serv` dengan bukti live pass di §6.1 |
 | **Mechanism** | DURING & AFTER (antislop) |
 | **Tanggal** | 2026-09-22 |
-| **Scope** | `app-ui/.` saja. `app-serv/.` tidak disentuh oleh dokumen ini |
+| **Scope** | `app-ui/.` untuk F1 sampai F3, lalu `app-serv/.` untuk F4 (§6.1). Keduanya dicatat di dokumen ini |
 | **Layar** | `/usage` (Overview tab, panel Live routing) |
 | **Reference fork** | `https://github.com/decolua/9router` (checkout `origin/master` di `/home/rusmanadodi/apps/9router`), `ProviderTopology.js` |
 | **Kaitan** | SPEC-UI §6.5; DESIGN.md §2.1, §11 (R-13, R-19); draft 012 F3; draft 010 §10.3 |
@@ -128,7 +128,7 @@ tidak ada glow di elemen lain.
 
 ## 6. F4 BLOCKER (BE): route `GET /api/v1/usage/live` masih belum ada di tree
 
-**Status: OPEN, diverifikasi ulang 2026-09-22 pada `e5b3016`.**
+**Status: CLOSED 2026-09-22 (scope `app-serv`; bukti live pass di bawah).**
 
 **Fakta.** Klaim sesi ini adalah F2-F3 sudah selesai di commit `app-serv` terbaru. Verifikasi ke
 tree, tiga lapis: `grep -rn "usage/live" app-serv/` mengembalikan nol baris source; daftar
@@ -154,6 +154,56 @@ tanpa stream); R-35 (klaim click-through harus direkam, bukan diasumsikan).
 **Kriteria selesai.** Route nyata menjawab dengan session, dan live pass merekam frame dari gateway
 sendiri. Sampai itu terjadi, panel tetap merender `unavailable` dengan sebabnya ketika gateway tidak
 menyediakan route.
+
+### 6.1 Bukti penutupan (2026-09-22, scope `app-serv`)
+
+Route-nya ada di tree sekarang: `mux.Handle("GET "+APIVersion+"/usage/live", ...)` di
+`internal/router/router.go`, session-gated bersama empat read Usage di sebelahnya, dengan handler
+`internal/handler/usage_live.go` dan kontrak di `docs/CONTRACT/001-CONTRACT-API-V1.yaml` (media type
+`text/event-stream`, schema `UsageLiveFrame`).
+
+**Tiga keputusan desain yang berbeda dari rencana draft 010 §10.3, masing-masing dengan alasan.**
+
+1. **Sorted set, bukan hash.** Draft 010 §10.3 mengusulkan hash `pannelai:active:<request_id>` dengan
+   TTL 60 detik. Sebuah hash memaksa `HGETALL` (tak terbatas) atau `SCAN` (dilarang di request path,
+   AGENTS.md §1.7). Yang dipakai: satu sorted set `pannelai:usage:active`, skor = `started_at`, dibaca
+   dengan `ZRANGEBYSCORE` yang menerapkan cutoff dan limit di server. Member-nya adalah bentuk
+   terenkode dari marker itu sendiri, jadi pelepasan adalah satu `ZREM` eksak dan pemangkasan adalah
+   satu `ZREMRANGEBYSCORE` pada key yang sama: tidak ada key kedua yang harus dijaga sinkron, jadi
+   tidak ada entri yatim yang bisa bocor.
+2. **Tiga seam, bukan satu choke point.** Draft 010 §10.3 meminta "satu choke point sebelum relay".
+   Gateway punya tiga bidang outbound (chat lewat `relayOnce`, media lewat `Perform`, embeddings lewat
+   `perform`) dan tidak ada satu fungsi yang dilalui semuanya. Yang dipakai: satu tipe
+   `ActiveRequestTracker` yang dipakai di tiap seam, mengikuti preseden `QuotaCounter` dan
+   `dataPlaneRecorder` yang sudah ada. Alternatifnya menaruh field akuntansi di struct `Call` dan
+   `MediaRequest`, tempat yang bukan miliknya (AGENTS.md §1.5).
+3. **`error_provider` diturunkan, bukan key sendiri.** Nilainya diambil dari pembacaan `recent` yang
+   sama dalam jendela 10 detik, bukan dari key Redis kedua. Dua sumber untuk satu fakta bisa berbeda
+   pendapat tentang request mana yang mereka maksud; satu sumber tidak bisa.
+
+**Bukti live pass (R-35), dijalankan pada tree beku dengan `-race -tags=integration`.**
+
+| # | Yang direkam | Hasil terukur |
+|---|---|---|
+| 1 | Panggilan anonim ke route | `status=401 content_type=application/json`, yaitu envelope §8, bukan stream |
+| 2 | Satu panggilan data-plane nyata, upstream menahan jawabannya | `frames=2 active=1 provider="live" model="live-model" started_at="2026-09-22T14:12:12Z" recent=0` |
+| 3 | Upstream melepas jawaban, panggilan selesai | `status=200`, lalu `active=0 recent=1 status="success" tokens_in=7 tokens_out=3` (angka upstream, bukan angka yang dikarang) |
+| 4 | Panggilan yang ditolak upstream | `status=502`, lalu `error_provider="live" recent=1 recent_status="error"` |
+| 5 | Koneksi idle | frame pertama `{"active":[],"recent":[],"error_provider":""}`, baris berikutnya `": ping\n"` (komentar SSE, bukan frame) |
+
+Panggilan data-plane di baris 2 dan 3 berjalan di atas upstream HTTP nyata lewat leg relay nyata, dan
+marker-nya dibaca dari Redis nyata melalui route nyata di atas socket nyata. Frame-nya **berasal dari
+gateway**, bukan dari double: itu perbedaan yang draft 013 catat sebagai satu-satunya yang menahan
+CLOSED. Yang tidak diklaim: klik-through browser pada route nyata tetap belum direkam, karena pass ini
+scope `app-serv`; panel sudah merekam klik-through-nya di draft 013 §8.1 terhadap contract double, dan
+F2/F3 draft 012 sekarang bisa ditutup karena route yang mereka tunggu sudah menjawab.
+
+**Gate `app-serv` pada tree beku.** `go build ./...` bersih; `go vet ./...` dan
+`go vet -tags=integration ./...` bersih; `go test -race -count=1 ./...` hijau di tujuh belas paket;
+`gofmt -l .` kosong; `scrypts/gates/go-headers.sh` PASS 747 file; `staticcheck` (dua build) bersih;
+`golangci-lint` 0 issue; `contract-openapi.sh` dan `contract-drift.sh` PASS. Satu peringatan
+§1.1 yang tersisa adalah `cmd/app-serv/management_wiring.go` (239 baris, di bawah cap 250; file ini
+241 baris di HEAD, jadi pass ini menurunkannya).
 
 ## 7. Non-findings
 
@@ -213,6 +263,10 @@ route-nyata tetap outstanding.
 ## 9. Status per 2026-09-22
 
 - F1, F2, F3 DURING selesai dengan test, verifikasi CSS hasil build, dan click-through browser di §8.1.
-- F4 OPEN, milik scope `app-serv`; ini satu-satunya yang menahan CLOSED F2 dan F3 di draft 012.
+- F4 **CLOSED** di scope `app-serv`: route `GET /api/v1/usage/live` menjawab dengan session, dan live
+  pass merekam frame dari gateway sendiri (§6.1). Ini yang menahan CLOSED F2 dan F3 di draft 012, jadi
+  keduanya tidak lagi tertahan oleh route yang tidak ada. Yang belum direkam: klik-through browser pada
+  route nyata, karena pass ini scope `app-serv`; panel sudah merekam klik-through-nya terhadap contract
+  double di §8.1.
 - Register 007: F12 bergerak ke dua belas dari dua puluh satu bagian pass, dan F13 kini menyebut empat
   baris pembuka yang mengutip `1.3.14` untuk menunjuk temuannya (klaimnya tetap sembilan belas situs).

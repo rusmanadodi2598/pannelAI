@@ -58,6 +58,7 @@ type Deps struct {
 	VisionAdapter   *handler.VisionAdapterHandler
 	TokenSaver      *handler.TokenSaverHandler
 	Usage           *handler.UsageHandler
+	UsageLive       *handler.UsageLiveHandler
 	Quota           *handler.QuotaHandler
 	Log             *handler.LogHandler
 	Settings        *handler.SettingsHandler
@@ -186,6 +187,9 @@ func New(deps Deps) *Mux {
 	mux.Handle("GET "+APIVersion+"/usage/timeseries", gateway(http.HandlerFunc(deps.Usage.Timeseries)))
 	mux.Handle("GET "+APIVersion+"/usage/records", gateway(http.HandlerFunc(deps.Usage.Records)))
 	mux.Handle("GET "+APIVersion+"/usage/records/{request_id}", gateway(http.HandlerFunc(deps.Usage.Detail)))
+	// §7.12's live stream is session-gated like the four reads beside it: it
+	// carries the same request identity, so it answers to the same credential.
+	mux.Handle("GET "+APIVersion+"/usage/live", gateway(http.HandlerFunc(deps.UsageLive.Stream)))
 	mux.Handle("GET "+APIVersion+"/quotas", gateway(http.HandlerFunc(deps.Quota.List)))
 	mux.Handle("GET "+APIVersion+"/quotas/{endpoint_id}", gateway(http.HandlerFunc(deps.Quota.Get)))
 	mux.Handle("PUT "+APIVersion+"/quotas/{endpoint_id}", gateway(http.HandlerFunc(deps.Quota.PutCap)))

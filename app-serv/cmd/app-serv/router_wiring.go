@@ -46,12 +46,16 @@ type managementDeps struct {
 	VisionAdapter *handler.VisionAdapterHandler
 	TokenSaver    *handler.TokenSaverHandler
 	Usage         *handler.UsageHandler
-	Quota         *handler.QuotaHandler
-	Log           *handler.LogHandler
-	Settings      *handler.SettingsHandler
-	Chat          *handler.ChatHandler
-	Embeddings    *handler.EmbeddingsHandler
-	TokenCount    *handler.TokenCountHandler
+	// UsageLive is the §7.12 stream. It is its own handler rather than a method
+	// on UsageHandler because it owns a connection for as long as the client
+	// holds it, which is a different lifecycle from the four reads.
+	UsageLive  *handler.UsageLiveHandler
+	Quota      *handler.QuotaHandler
+	Log        *handler.LogHandler
+	Settings   *handler.SettingsHandler
+	Chat       *handler.ChatHandler
+	Embeddings *handler.EmbeddingsHandler
+	TokenCount *handler.TokenCountHandler
 
 	// QuotaFlusher, LogRetention, and OAuthRefresh are returned so the caller
 	// can run them after the server is listening, rather than leaving
@@ -102,6 +106,7 @@ func routerDeps(
 		VisionAdapter:   mgmt.VisionAdapter,
 		TokenSaver:      mgmt.TokenSaver,
 		Usage:           mgmt.Usage,
+		UsageLive:       mgmt.UsageLive,
 		Quota:           mgmt.Quota,
 		Log:             mgmt.Log,
 		Settings:        mgmt.Settings,
