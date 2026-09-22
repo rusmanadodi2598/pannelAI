@@ -900,6 +900,14 @@ sebelumnya). Bagian ke-20 menambah permukaan live di `/usage` dan menyatakan cli
 browser-nya belum dijalankan: panel ini client-rendered, dan route `GET /api/v1/usage/live` yang
 menjadi lawan bicaranya belum ada di tree `app-serv` (F4), jadi bagian itu terhitung juga.
 
+Pengukuran yang sama setelah pass "Node motion" (2026-09-22) menemukan **dua belas dari dua puluh
+satu bagian**, dan perintah yang sama mencetak `12 of 21` pada commit pass itu (`11 of 20` pada tree
+sebelumnya). Bagian ke-21 membawa click-through browser yang direkam untuk pertama kalinya, tetapi
+di atas contract double, karena route yang sama masih belum ada; kalimatnya tetap menyebut
+click-through route-nyata sebagai outstanding, jadi bagian itu ikut terhitung. Kenaikan penyebut
+sekaligus pembilang di sini bukan regresi: yang bertambah adalah permukaan yang punya click-through
+terekam, dan yang tetap terbuka adalah setengah yang menunggu gateway.
+
 **Risiko.** Panel bisa tampak selesai padahal setengah exit criteria-nya belum pernah
 dijalankan orang. Ini persis bentuk klaim yang R-35/R-36 larang.
 
@@ -964,8 +972,8 @@ pekerjaan itu berhenti dan dicatat sebagai permintaan, bukan dikerjakan dari dra
 **Fakta.** Sembilan belas baris di `app-ui/README.md` menyatakan `1.3.14` sebagai versi yang
 dipakai: enam belas baris pembuka pass, satu baris tabel Requirements ("Bun | 1.3.14"), satu baris
 tabel di bagian Node adapter yang menyatakan boot banner mencetak versi itu, dan satu baris tabel di
-bagian verifikasi `bun run start`. Tiga baris lain menyebut angka itu justru untuk menunjuk temuan ini
-(baris pembuka pass ke-18, ke-19, dan ke-20). Klaim itu sudah ada sejak commit U0 `abf9de5`
+bagian verifikasi `bun run start`. Empat baris lain menyebut angka itu justru untuk menunjuk temuan ini
+(baris pembuka pass ke-18, ke-19, ke-20, dan ke-21). Klaim itu sudah ada sejak commit U0 `abf9de5`
 (`git log -S '1.3.14' -- app-ui/README.md`), jadi ia diwariskan dari pass ke pass, bukan diukur
 ulang.
 
@@ -989,11 +997,11 @@ mencetak 1.3.14 di sini. Yang tetap benar: `app-ui/package.json` mensyaratkan `b
 dan binary yang dipakai memenuhinya, jadi syarat panelnya tidak salah; yang cacat adalah angka
 yang tercatat, bukan jalannya panel.
 
-Baris pass ke-18 ("Custom provider surface"), ke-19 ("Panel runtime config"), dan ke-20 ("Usage live
-surface"), ketiganya 2026-09-22, sudah memakai versi terukur, `1.3.0`, dan menunjuk temuan ini. Enam
-belas baris pass sebelumnya beserta baris Requirements dan Node adapter dibiarkan apa adanya: versi yang
-benar-benar dipakai saat itu tidak dapat dibuktikan dari sini, jadi menggantinya dengan angka
-hari ini akan menulis klaim baru yang sama tidak terbuktinya.
+Baris pass ke-18 ("Custom provider surface"), ke-19 ("Panel runtime config"), ke-20 ("Usage live
+surface"), dan ke-21 ("Node motion"), keempatnya 2026-09-22, sudah memakai versi terukur, `1.3.0`, dan
+menunjuk temuan ini. Enam belas baris pass sebelumnya beserta baris Requirements dan Node adapter
+dibiarkan apa adanya: versi yang benar-benar dipakai saat itu tidak dapat dibuktikan dari sini, jadi
+menggantinya dengan angka hari ini akan menulis klaim baru yang sama tidak terbuktinya.
 
 **Risiko.** Pembaca yang mengukur ulang di mesin ini tidak menemukan 1.3.14, lalu punya alasan
 untuk tidak mempercayai seluruh catatan pass. Baris Node adapter lebih tajam lagi: ia klaim

@@ -58,6 +58,19 @@
 	--font-sans:
 		'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 	--font-mono: ui-monospace, 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+
+	/* The live drawing's edge flow (DESIGN.md §2.1, draft 013 F1). One dash period per cycle, so the loop
+	   is seamless: the edge carries `stroke-dasharray: 3 3` in the path's own units (`pathLength="100"`),
+	   and the offset travels exactly one period (-6). It runs only while a provider is routing and only
+	   while frames are arriving, and `motion-reduce:animate-none` stops it for a reader who asked for less
+	   motion. */
+	--animate-flow: flow 0.9s linear infinite;
+
+	@keyframes flow {
+		to {
+			stroke-dashoffset: -6;
+		}
+	}
 }
 
 .dark {

@@ -30,10 +30,20 @@ type Props = {
 	active: UsageLiveActive[];
 	last: string;
 	error: string;
+	live: boolean;
 };
 
+// `live: true` by default, because these rows are about which node carries a state and a frame is what
+// puts one there. The rows about motion being withheld belong to `usage-topology-motion.test.ts`.
 function draw(overrides: Partial<Props> = {}): HTMLElement {
-	const props: Props = { providers: PROVIDERS, active: [], last: '', error: '', ...overrides };
+	const props: Props = {
+		providers: PROVIDERS,
+		active: [],
+		last: '',
+		error: '',
+		live: true,
+		...overrides
+	};
 	return render(UsageTopology, { props }).container;
 }
 

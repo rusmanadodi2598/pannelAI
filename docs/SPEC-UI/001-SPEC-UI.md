@@ -423,11 +423,15 @@ absent.
 - **Live:** `GET /api/v1/usage/live` (server-sent events) carries the three facts a period window cannot:
   the requests in flight now, the requests that just finished, and the provider the gateway last reported an
   error for. The drawing places one node per configured provider around the gateway, marks each with its
-  state, and states the same facts in words beside it. Nothing on the stream touches the totals or the chart,
-  which stay the REST reads' own figures: the live state has no field for an aggregate. The connection is
-  labelled `Live` only while frames are arriving; every other state names itself and, where the panel knows
-  it, the cause (§8.6.1). A gateway that does not serve the route is stated as unavailable, not replaced by a
-  poll under the same label.
+  state, and states the same facts in words beside it. A provider that is routing is marked in three ways:
+  its dot pulses, the line to it carries a moving dash, and its node takes the status colour with a soft
+  glow, while the gateway carries the count of requests in flight. Motion belongs to the live state alone:
+  while the panel is connecting, paused, or unavailable, the drawing keeps the last known state in colour
+  and stops every moving part, and a reader who asked for reduced motion never sees it. Nothing on the
+  stream touches the totals or the chart, which stay the REST reads' own figures: the live state has no field
+  for an aggregate. The connection is labelled `Live` only while frames are arriving; every other state
+  names itself and, where the panel knows it, the cause (§8.6.1). A gateway that does not serve the route is
+  stated as unavailable, not replaced by a poll under the same label.
 
 **Tab 2: Records**
 

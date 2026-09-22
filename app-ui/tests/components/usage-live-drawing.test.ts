@@ -5,7 +5,7 @@
 // finished. The rows about a failed or shortened registry read are here because the notice for one is the
 // panel's, not the drawing's.
 
-import { cleanup, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import UsageLivePanel from '../../src/lib/components/UsageLivePanel.svelte';
 import { frameText } from '../support/live-stream';
@@ -47,6 +47,33 @@ describe('UsageLivePanel drawing', () => {
 
 		expect(await screen.findByText(/1 in flight: OpenAI \(gpt-4o\)\./)).toBeTruthy();
 		expect(container.querySelector('.animate-ping')).toBeTruthy();
+	});
+
+	it('stops the drawing when the operator pauses, and keeps the state it last saw', async () => {
+		const stub = stubPanel();
+		const container = render(UsageLivePanel).container;
+		await screen.findByText('Connecting');
+
+		stub.streams[0].send(
+			frameText(
+				frame({ active: [{ provider_id: 'openai', model: 'gpt-4o', started_at: startedNow() }] })
+			)
+		);
+		// Awaited on the drawing's own sentence rather than on the status chip: the drawing only exists
+		// once the registry read lands, and a row about motion must not pass on an empty drawing.
+		expect(await screen.findByText(/1 in flight: OpenAI \(gpt-4o\)\./)).toBeTruthy();
+		expect(container.querySelector('.animate-flow')).toBeTruthy();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Pause live updates' }));
+
+		expect(await screen.findByText('Paused')).toBeTruthy();
+		expect(container.querySelector('.animate-flow')).toBeNull();
+		expect(container.querySelector('.animate-ping')).toBeNull();
+		expect(
+			(screen.getByText('OpenAI').parentElement as HTMLElement).classList.contains(
+				'border-[var(--color-ok)]'
+			)
+		).toBe(true);
 	});
 
 	it('states that the registry could not be read, so the drawing is empty', async () => {

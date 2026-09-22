@@ -27,6 +27,10 @@ const TEXT_PAIRS: { fg: string; bg: string; label: string }[] = [
 	{ fg: 'ok', bg: 'surface-2', label: 'success status on a raised panel' },
 	{ fg: 'warn', bg: 'surface-2', label: 'warning status on a raised panel' },
 	{ fg: 'danger', bg: 'surface-2', label: 'danger status on a raised panel' },
+	// The live drawing's own two text pairs: the routing node's label on the node's own surface, and the
+	// in-flight count on the status fill it sits in (draft 013 F1).
+	{ fg: 'ok', bg: 'surface', label: 'routing provider label on the live drawing' },
+	{ fg: 'surface', bg: 'ok', label: 'in-flight count on the live drawing' },
 	// The sidebar is its own surface and carries navigation labels at the AA floor.
 	{ fg: 'sidebar-foreground', bg: 'sidebar', label: 'navigation label on the sidebar' },
 	{ fg: 'sidebar-accent-foreground', bg: 'sidebar-accent', label: 'active navigation label' }

@@ -153,7 +153,10 @@
 		<p role="status" class="text-sm text-[var(--color-text-muted)]">{providersNotice}</p>
 	{/if}
 
-	<UsageTopology {providers} {active} {last} {error} />
+	<!-- `live` is what the drawing needs to move: motion says "happening now", so it is reserved for a
+	     connection frames are arriving on. A paused or dropped stream leaves the last known state on
+	     screen in colour and stops every moving part (draft 013 F2). -->
+	<UsageTopology {providers} {active} {last} {error} live={report.status === 'live'} />
 
 	<!-- Rendered only when the frame carries finished requests. The absence is not silent: the drawing's
 	     summary states that nothing has finished since the screen opened. -->
