@@ -964,8 +964,8 @@ pekerjaan itu berhenti dan dicatat sebagai permintaan, bukan dikerjakan dari dra
 **Fakta.** Sembilan belas baris di `app-ui/README.md` menyatakan `1.3.14` sebagai versi yang
 dipakai: enam belas baris pembuka pass, satu baris tabel Requirements ("Bun | 1.3.14"), satu baris
 tabel di bagian Node adapter yang menyatakan boot banner mencetak versi itu, dan satu baris tabel di
-bagian verifikasi `bun run start`. Dua baris lain menyebut angka itu justru untuk menunjuk temuan ini
-(baris pembuka pass ke-18 dan ke-19). Klaim itu sudah ada sejak commit U0 `abf9de5`
+bagian verifikasi `bun run start`. Tiga baris lain menyebut angka itu justru untuk menunjuk temuan ini
+(baris pembuka pass ke-18, ke-19, dan ke-20). Klaim itu sudah ada sejak commit U0 `abf9de5`
 (`git log -S '1.3.14' -- app-ui/README.md`), jadi ia diwariskan dari pass ke pass, bukan diukur
 ulang.
 
@@ -989,9 +989,9 @@ mencetak 1.3.14 di sini. Yang tetap benar: `app-ui/package.json` mensyaratkan `b
 dan binary yang dipakai memenuhinya, jadi syarat panelnya tidak salah; yang cacat adalah angka
 yang tercatat, bukan jalannya panel.
 
-Baris pass ke-18 ("Custom provider surface") dan ke-19 ("Panel runtime config"), keduanya
-2026-09-22, sudah memakai versi terukur, `1.3.0`, dan menunjuk temuan ini. Enam belas baris pass
-sebelumnya beserta baris Requirements dan Node adapter dibiarkan apa adanya: versi yang
+Baris pass ke-18 ("Custom provider surface"), ke-19 ("Panel runtime config"), dan ke-20 ("Usage live
+surface"), ketiganya 2026-09-22, sudah memakai versi terukur, `1.3.0`, dan menunjuk temuan ini. Enam
+belas baris pass sebelumnya beserta baris Requirements dan Node adapter dibiarkan apa adanya: versi yang
 benar-benar dipakai saat itu tidak dapat dibuktikan dari sini, jadi menggantinya dengan angka
 hari ini akan menulis klaim baru yang sama tidak terbuktinya.
 
