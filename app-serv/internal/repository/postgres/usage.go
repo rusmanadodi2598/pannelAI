@@ -34,10 +34,15 @@ const usageRecordColumns = `id, request_id, ts, coalesce(endpoint_id, ''), provi
 
 // usageFilterClause is the shared FROM and WHERE every usage read appends. An
 // empty parameter disables its filter, which lets one statement shape serve
-// every combination instead of building SQL from caller input. model ILIKE
-// covers the free-text `q` filter, which §7.13 and the panel both scope to the
-// model name. Keeping the FROM here means a read cannot accidentally omit the
-// table and reference bare columns.
+// every combination instead of building SQL from caller input. The free-text
+// `q` filter matches a case-insensitive substring of the row's identity or
+// error code as well as its model, because the panel's placeholder promises a
+// request id and an error code and an operator searching the id on screen must
+// not read an empty table (draft 010 F8, owner decision D4 = expand). A NULL
+// error_code needs no coalesce: `false OR NULL` excludes a row exactly as
+// `false` does, and the other three columns are NOT NULL, so the OR can only
+// add a match, never lose one. Keeping the FROM here means a read cannot
+// accidentally omit the table and reference bare columns.
 const usageFilterClause = `
 	  FROM usage_records
 	 WHERE ts >= $1 AND ts <= $2
@@ -46,7 +51,10 @@ const usageFilterClause = `
 	   AND ($5 = '' OR model = $5)
 	   AND ($6 = '' OR gateway_key_id = $6)
 	   AND ($7 = '' OR status = $7)
-	   AND ($8 = '' OR model ILIKE '%' || $8 || '%')`
+	   AND ($8 = '' OR request_id ILIKE '%' || $8 || '%'
+	                OR id ILIKE '%' || $8 || '%'
+	                OR error_code ILIKE '%' || $8 || '%'
+	                OR model ILIKE '%' || $8 || '%')`
 
 // usageTotalsProjection is the aggregate every summary, group, and bucket
 // selects. cost_usd is cast to text inside the database for the same reason it

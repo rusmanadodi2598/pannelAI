@@ -20,11 +20,8 @@ package postgres
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -41,8 +38,13 @@ const logDetailColumns = logListColumns + `, coalesce(request_body, ''), coalesc
 
 // logFilterClause is the shared FROM and WHERE, always ranged so no log query is
 // ever unbounded. An empty parameter disables its filter, and the free-text `q`
-// matches the model name, which is what §7.13 and the panel both scope it to.
-// Keeping the FROM here means a read cannot reference a bare column by mistake.
+// matches a case-insensitive substring of the request id, the error text, and
+// the model, because the panel's placeholder promises a request id and an error
+// code (draft 010 F8, owner decision D4 = expand). A NULL error needs no
+// coalesce for the same reason a NULL error_code does not on the usage read:
+// `false OR NULL` excludes a row exactly as `false` does, so the OR can only
+// add a match. Keeping the FROM here means a read cannot reference a bare
+// column by mistake.
 const logFilterClause = `
 	  FROM request_logs
 	 WHERE ts >= $1 AND ts <= $2
@@ -50,7 +52,9 @@ const logFilterClause = `
 	   AND ($4 = '' OR endpoint_id = $4)
 	   AND ($5 = '' OR model = $5)
 	   AND ($6 = '' OR gateway_key_id = $6)
-	   AND ($7 = '' OR model ILIKE '%' || $7 || '%')`
+	   AND ($7 = '' OR request_id ILIKE '%' || $7 || '%'
+	                OR error ILIKE '%' || $7 || '%'
+	                OR model ILIKE '%' || $7 || '%')`
 
 // LogRepository persists captured request logs.
 type LogRepository struct {
@@ -159,60 +163,4 @@ func (r *LogRepository) count(ctx context.Context, filter domain.LogFilter) (int
 		return 0, translateLogError(err)
 	}
 	return total, nil
-}
-
-// logRow is the destination set the list projection decodes into. Keeping the
-// non-body columns in one struct means the two scanners below cannot disagree
-// about their order.
-type logRow struct {
-	requestID, gatewayKeyID, endpointID, providerID, model, status, errText string
-	ts                                                                      time.Time
-	latencyMS                                                               int64
-}
-
-// entry rehydrates the scanned fields, with the bodies the detail read adds.
-func (row *logRow) entry(requestBody, responseBody string) domain.RequestLog {
-	return domain.RehydrateRequestLog(row.requestID, row.ts, row.gatewayKeyID,
-		row.endpointID, row.providerID, row.model, domain.RequestLogStatus(row.status),
-		row.latencyMS, requestBody, responseBody, row.errText)
-}
-
-// scanLogListRow reads one list row plus the window count.
-func scanLogListRow(s scanner) (domain.RequestLog, int64, error) {
-	var (
-		row   logRow
-		total int64
-	)
-	if err := s.Scan(&row.requestID, &row.ts, &row.gatewayKeyID, &row.endpointID,
-		&row.providerID, &row.model, &row.status, &row.latencyMS, &row.errText, &total); err != nil {
-		return domain.RequestLog{}, 0, err
-	}
-	return row.entry("", ""), total, nil
-}
-
-// scanLogDetailRow reads one detail row including its captured bodies.
-func scanLogDetailRow(s scanner) (domain.RequestLog, error) {
-	var (
-		row                       logRow
-		requestBody, responseBody string
-	)
-	if err := s.Scan(&row.requestID, &row.ts, &row.gatewayKeyID, &row.endpointID,
-		&row.providerID, &row.model, &row.status, &row.latencyMS, &row.errText,
-		&requestBody, &responseBody); err != nil {
-		return domain.RequestLog{}, err
-	}
-	return row.entry(requestBody, responseBody), nil
-}
-
-// translateLogError maps a driver error to a domain error a caller can act on,
-// wrapping anything unrecognised with table context for the log (AGENTS.md
-// §1.3).
-func translateLogError(err error) error {
-	if err == nil {
-		return nil
-	}
-	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.ErrRequestLogNotFound
-	}
-	return fmt.Errorf("request_logs: %w", err)
 }

@@ -6,8 +6,8 @@ pola `003` sampai `009`: temuan bernomor F, owner memilih nomor, mode AFTER untu
 sudah ada tanpa mengubah source produksi, mode DURING untuk setiap perbaikan yang dipilih.
 
 Status pengerjaan DURING: **F5 CLOSED 2026-09-22**, lalu **F2 + F9 CLOSED 2026-09-22**, lalu
-**F1 + F6 + F7 CLOSED 2026-09-22** (bukti lengkap di §5 masing-masing temuan). Nomor lain
-menunggu pemilihan owner.
+**F1 + F6 + F7 CLOSED 2026-09-22**, lalu **F3 + F8 CLOSED 2026-09-22** (bukti lengkap di §5
+masing-masing temuan). Nomor lain menunggu pemilihan owner.
 
 Lingkup berbeda dari draft sebelumnya: audit ini **menjangkau dua aplikasi sekaligus** atas permintaan
 owner. Bagian pertama (`§3` sampai `§9`) mengaudit readiness empat endpoint Usage di `app-serv/.`.
@@ -76,6 +76,11 @@ Tetapi belum dapat dinyatakan **READY** untuk seluruh mandatory, karena:
 Usage = `TIDAK ADA`, dan status itu saat ini **sesuai spec** (`§9.5`), sehingga pertanyaannya
 adalah "apakah owner ingin mengubah spec ke arah parity 9router", bukan "apakah implementasinya
 melenceng".
+
+**Status per 2026-09-22:** butir 1, 2, 3, dan 4 di atas sudah ditutup dengan bukti (F1, F2+F9, F5,
+F3 berturut-turut), dan F8 (scope `q`, butir 4b) menyusul di batch yang sama; F6 dan F7 juga sudah
+tertutup. Butir 5 (node live / SSE) tetap keputusan owner (D5), dan F4 (domain event) tetap
+menunggu keputusan D2. Lihat §5 untuk bukti tiap penutupan dan §11 untuk sisa keputusan.
 
 ## 3. Jalur endpoint yang diperiksa
 
@@ -345,7 +350,7 @@ pASS; `gofmt -l .` bersih; `staticcheck` 0 issue; `golangci-lint` 0 issue; `go-h
 
 ### F3 MEDIUM: `latency_ms` wire adalah sum, bukan mean, dan domain tidak pernah menjelaskannya
 
-**Status: OPEN.**
+**Status: CLOSED 2026-09-22 (keputusan owner D1 = c: dokumentasikan sebagai sum; bukti di bawah).**
 
 **Fakta.** `usageTotalsProjection` menjumlahkan `latency_ms` per baris (`sum(latency_ms) AS
 latency_total`), dan `UsageTotals.LatencyMS` diisi dari situ. Karena p50/p95 dihitung di baris yang
@@ -368,6 +373,43 @@ opsi (b) breaking change kecil yang perlu dicek konsumen. Apa pun pilihannya, tu
 
 **Kriteria selesai.** Semantik `latency_ms` dinyatakan di SPEC-API §7.12 dan YAML; bila diubah,
 panel dan test disinkronkan di batch yang sama.
+
+#### Bukti penutupan F3 (2026-09-22, keputusan owner D1 = c: dokumentasikan sebagai sum)
+
+**Implementasi.** Tidak ada aritmetika yang berubah: `sum(latency_ms)` tetap jumlah, sesuai
+keputusan D1 (c). Yang berubah adalah kejujuran kontrak dan satu test yang mengunci sum supaya
+perubahan ke mean di kemudian hari tidak bisa lolos diam-diam.
+
+- `docs/CONTRACT/001-CONTRACT-API-V1.yaml`: `UsageTotals.latency_ms` menyatakan dirinya sebagai
+  sum yang tumbuh seiring jumlah request, `latency_p50_ms`/`latency_p95_ms` menyatakan gambar
+  per-request, dan `UsageRecordResponse.latency_ms` menyatakan "one call", bukan bagian dari
+  window. `openapi.json` di-regenerasi lewat `tools/openapi-gen`, tidak diedit tangan.
+- `docs/SPEC-API/001-SPEC-API.md` §7.12: satu paragraf "Aggregate latency is a sum" yang menyebut
+  keputusan, angka mana yang per-request, dan alasan field itu tidak diubah.
+- Panel tidak berubah: `UsageTotalsTiles.svelte` memang sudah menolak menampilkan `latency_ms`
+  aggregate dengan alasan yang sekarang tertulis di kontrak, jadi komentarnya tetap benar dan
+  tidak perlu disinkronkan ulang.
+
+**Test.** `internal/handler/openapi_usage_semantics_test.go`
+`TestOpenAPIContract_AggregateLatencyIsStatedAsASum` (3 subtest) membaca dokumen yang **disajikan**,
+ bukan YAML-nya. Terhadap `openapi.json` pra-perbaikan ketiganya **FAIL** (tiga properti tanpa
+`description`), hijau setelah regenerasi. `internal/repository/postgres/usage_latency_semantics_integration_test.go`
+`TestUsageRepository_AggregateLatencyIsASumNotAMean` (4 subtest) menyeed tiga baris 100/200/300 ms:
+sum = 600, mean = 200, jadi keduanya angka yang berbeda dan assertion benar-benar memilih satu.
+Test aritmetika yang sudah ada menyeed tiga baris sama-sama 100 ms, sehingga sum dan mean dua-duanya
+membaca 300 dan tidak bisa membedakannya; itulah kenapa test ini terpisah.
+
+**Mutation check (dijalankan lalu dipulihkan).** `sum(latency_ms)` dimutasi menjadi
+`avg(latency_ms)::bigint`: `TestUsageRepository_AggregateLatencyIsASumNotAMean` **FAIL**
+(`LatencyMS = 200, want 600 (the sum); a mean would read 200`, plus bucket yang sama), lalu hijau
+setelah dipulihkan. Deskripsi `UsageTotals.latency_ms` dihapus dari `openapi.json` yang disajikan:
+`TestOpenAPIContract_AggregateLatencyIsStatedAsASum` **FAIL** (`carries no description`), lalu
+hijau setelah `tools/openapi-gen` dijalankan ulang.
+
+**Gate.** `go build ./...`, `go vet ./...` (default dan `-tags=integration`), `gofmt -l .` bersih;
+`go test -race -count=1 ./...` PASS penuh; suite integrasi `-race` PASS terhadap database throwaway;
+`staticcheck` (default dan tagged) 0 issue; `golangci-lint` 0 issue; `go-headers.sh` PASS;
+`contract-openapi.sh` PASS.
 
 ### F4 MEDIUM: `UsageEvent` / `usage.recorded` domain event tidak punya publisher maupun subscriber
 
@@ -596,7 +638,7 @@ hijau setelah regenerasi. `TestOpenAPICoversEveryRegisteredRoute`
 
 ### F8 MEDIUM: Kontrak vs implementasi pada `q` scope: filter bebas yang hanya menyentuh `model`
 
-**Status: OPEN.**
+**Status: CLOSED 2026-09-22 (keputusan owner D4 = perluas; bukti di bawah).**
 
 **Fakta.** `usageFilterClause` baris terakhir: `AND ($8 = '' OR model ILIKE '%' || $8 || '%')`.
 Komentar repository menyatakan "§7.13 dan panel keduanya menscope ke nama model". Tapi placeholder
@@ -619,6 +661,58 @@ request id adalah pencarian paling wajar di layar records; tapi itu perubahan SQ
 
 **Kriteria selesai.** Scope `q` tertulis di SPEC-API §7.12 dan YAML; implementasi dan placeholder
 panel sepakat; test table `q=usg_` (id), `q=MODEL_NOT_FOUND` (error code), `q=gpt` (model).
+
+#### Bukti penutupan F8 (2026-09-22, keputusan owner D4 = perluas)
+
+**Implementasi (BE).** Predikat bebas diperluas di dua `FILTER` yang sudah ada, tanpa menambah
+parameter dan tanpa membangun SQL dari teks caller:
+
+- `internal/repository/postgres/usage.go` `usageFilterClause`: `$8` kini
+  `request_id ILIKE ... OR id ILIKE ... OR error_code ILIKE ... OR model ILIKE ...`.
+- `internal/repository/postgres/log.go` `logFilterClause`: `$7` kini
+  `request_id ILIKE ... OR error ILIKE ... OR model ILIKE ...` (baris log membawa teks error,
+  baris usage membawa kode error, jadi kedua scope memang berbeda dan disebut terpisah).
+- Nilai tetap satu bind parameter (`'%' || $n || '%'`), tetap dibatasi 200 karakter di
+  `DecodeUsageFilter`, jadi OWASP A05 tidak berubah: tidak ada teks caller yang menjadi SQL.
+- `internal/repository/postgres/log.go` (225 baris) masuk band warning §1.1 saat predikatnya
+  bertambah, jadi scanner-nya dipindah ke `log_scan.go` (83 baris) mengikuti pola `usage_scan.go`
+  yang sudah ada di package yang sama; `log.go` kini 166 baris.
+
+**Temuan tambahan saat implementasi (coalesce adalah kode mati).** Draf awal menambahkan
+`coalesce(error_code, '')` untuk menjaga NULL. Mutation check membuktikan coalesce itu **tidak
+load-bearing**: di SQL tiga-nilai, `false OR NULL` mengecualikan baris persis seperti `false`, dan
+`TRUE OR NULL` adalah `TRUE`, sementara `request_id`, `id`, dan `model` semuanya `NOT NULL`
+(dibuktikan langsung di PostgreSQL: `select (true or null), (false or null)`). Karena kode tanpa
+pembuktian itu yang antislop R-17/R-36 larang, coalesce dihapus dan komentar diganti dengan fakta
+yang benar, bukan klaim yang tidak bisa gagal.
+
+**Kontrak.** `q` kini menyatakan scope-nya di empat path (`summary`, `timeseries`, `records`,
+`logs/requests`); `openapi.json` di-regenerasi lewat `tools/openapi-gen`; `docs/SPEC-API/001-SPEC-API.md`
+§7.12 menambah paragraf "Free-text `q` scope" dengan keputusan D4 dan alasan placeholder panel.
+
+**Panel (FE).** Tidak ada perubahan kode: placeholder "Request id, error code" di
+`UsageRecordsFilters.svelte` dan `LogsFilters.svelte` sekarang **benar** karena BE melayani keduanya.
+Itu sekaligus menutup F11 sebagai konsekuensi, bukan sebagai pekerjaan FE terpisah.
+
+**Test (RED -> GREEN, semuanya table-driven, TDD §2.5).**
+
+| File | Test | Kasus |
+|---|---|---|
+| `internal/repository/postgres/usage_query_scope_integration_test.go` | `TestUsageRepository_QueryScopeMatchesIdentityAndError` | 13 kasus: 4 benign control (kosong, `req_`, `usg_`, substring bersama), id, record id, error code (dengan varian huruf kecil), model (dengan varian huruf besar), baris ber-`error_code` NULL yang cocok lewat kolom lain, nilai tak cocok -> 0 baris, dan fragmen SQL yang tetap literal |
+| sama | `TestUsageRepository_QueryScopeNarrowsTheAggregates` | scope yang sama menyempitkan `Summary` dan `Timeseries`, bukan hanya `List` |
+| `internal/repository/postgres/log_query_scope_integration_test.go` | `TestLogRepository_QueryScopeMatchesIdentityAndError` | 11 kasus dengan set yang sama untuk request_id/error/model |
+| `internal/handler/openapi_usage_semantics_test.go` | `TestOpenAPIContract_FreeTextScopeIsStated` | 4 path, membaca dokumen tersaji |
+
+Terhadap kode pra-perbaikan: 13 kasus SQL **FAIL** (`rows = 0, want N`) dan 4 assertion kontrak
+**FAIL** (`q description = ""`), hijau setelah implementasi. Mutation checks: predikat dikembalikan
+ke model-only -> FAIL; arm `error_code` dihapus sendirian -> FAIL; arm `id` dihapus -> FAIL; ini
+membuktikan tiap arm dipaku, bukan hanya salah satu.
+
+**Gate.** `go build ./...`, `go vet ./...` (default dan tagged), `gofmt -l .` bersih;
+`go test -race -count=1 ./...` PASS penuh; suite integrasi `-race` PASS terhadap database throwaway
+`pannelai_f3f8_evidence` (dibuat untuk bukti ini, dihapus setelahnya; database dev tidak disentuh);
+`staticcheck` 0 issue (default dan tagged); `golangci-lint` 0 issue; `go-headers.sh` PASS
+(694 file); `contract-openapi.sh` dan `contract-drift.sh` PASS.
 
 ### F9 LOW: `UsageStatus` tidak dipakai sebagai tipe pada `UsageFilter.Status` (string mentah lolos domain)
 
@@ -679,8 +773,8 @@ Jika owner memilih semua:
 2. **F2 + F9** (status closed set): CLOSED 2026-09-22.
 3. **F1** (handler test): CLOSED 2026-09-22 (dikerjakan setelah F2/F9, sesuai urutan ini).
 4. **F7 + F6** (kontrak): CLOSED 2026-09-22 (YAML di-edit satu pass, regenerasi, gate).
-5. **F3, F8** (semantik `latency_ms`, scope `q`): keputusan owner per poin, lalu implementasi
-   (jawaban D1/D4 sudah tercatat di §11, menunggu pengerjaan).
+5. **F3, F8** (semantik `latency_ms`, scope `q`): CLOSED 2026-09-22 (D1 = c dan D4 = perluas;
+   sum dikunci test dan ditulis di kontrak, `q` diperluas di usage dan logs).
 6. **F4** (domain event): keputusan publish-vs-hapus (D2 = publish tercatat), jangan setengah.
 
 Setiap task: analysis dulu (TDD §2.3 / OWASP §2.3 bila menyentuh security behavior), failing test
@@ -715,8 +809,7 @@ request id, status, dan hitungan baris saja (tanpa DSN/credential/body).
 | F1 | Empat route Usage tanpa HTTP handler test | HIGH | BE |
 | F2 | Filter `status` menerima nilai liar; query diam-diam cocok nol baris | HIGH | BE |
 | F3 | `latency_ms` aggregate = sum, semantik tak terdokumentasi | MEDIUM | BE (keputusan) |
-| F4 | `usage.recorded` event tanpa publisher/subscriber | MEDIUM | BE (keputusan) |
-| F5 | `http.Flusher` hilang di middleware chain; SSE tidak streaming | HIGH | BE |
+| F4 | `usage.recorded` event tanpa publisher/subscriber | MEDIUM | BE (keputusan) || F5 | `http.Flusher` hilang di middleware chain; SSE tidak streaming | HIGH | BE |
 | F6 | `per_page` klem diam vs tolak vs kontrak diam | MEDIUM | BE (keputusan) |
 | F7 | YAML tanpa `format: date-time`/enum pada param Usage | LOW | BE |
 | F8 | Scope `q` (model-only) vs janji placeholder panel | MEDIUM | BE+FE |
@@ -727,15 +820,18 @@ F9: satu perubahan tipe + satu boundary check, test table sama, kontrak jadi enu
 **CLOSED 2026-09-22** (handler + route test untuk keempat route, tiga mutation check membuktikan
 test menangkap regresi). F6 **CLOSED 2026-09-22** (D3 = tolak; decoder, kontrak, dan panel kini
 sepakat 1..100 dengan default 25). F7 **CLOSED 2026-09-22** (sisa `from`/`to` date-time dan enum
-`group_by`/`granularity`; `status` tertutup bersama F2). Nomor lain tetap OPEN.
+`group_by`/`granularity`; `status` tertutup bersama F2). F3 **CLOSED 2026-09-22** (D1 = c:
+semantik sum ditulis di YAML + SPEC-API §7.12, plus test yang membedakan sum dari mean). F8
+**CLOSED 2026-09-22** (D4 = perluas: `q` mencakup id/request_id/error_code/model pada usage dan
+request_id/error/model pada logs, kontrak menyatakan scope-nya, F11 tertutup sebagai konsekuensi).
+F4 dan temuan cross audit (F10 sampai F14) tetap OPEN.
 
 ### 9.2 Cross audit Usage vs Node Animation SSE
 
 | # | Temuan | Prioritas | Aplikasi |
 |---|---|---|---|
 | F10 | Tidak ada live/SSE pada Usage; parity 9router = desain dua sisi | MEDIUM (KEPUTUSAN) | BE+FE |
-| F11 | Placeholder Search menjanjikan scope yang tidak dilayani | LOW | FE (terkait F8) |
-| F12 | `per_page` URL diabaikan diam-diam tanpa di-reset | LOW | FE (terkait F6) |
+| F11 | Placeholder Search menjanjikan scope yang tidak dilayani | LOW | FE (terkait F8) || F12 | `per_page` URL diabaikan diam-diam tanpa di-reset | LOW | FE (terkait F6) |
 | F13 | Opsi live tanpa SSE (polling) tidak dievaluasi spec-nya | MEDIUM (KEPUTUSAN) | FE+spec |
 | F14 | Live evidence keempat route Usage belum direkam | LOW | BE |
 
@@ -874,7 +970,17 @@ label; `bun run check`/`bun run test`/gate Go hijau; SYSTEM_MAP.md diperbarui.
 
 ### F11 LOW (FE): Placeholder Search Usage & Logs menjanjikan scope yang tidak dilayani
 
-**Status: OPEN. Terhubung F8.**
+**Status: CLOSED 2026-09-22 (tertutup sebagai konsekuensi F8, keputusan owner D4 = perluas).**
+
+**Bukti penutupan.** Keputusan D4 memperluas BE sampai memenuhi janji placeholder, jadi sisi FE
+memang **tidak perlu berubah**: `UsageRecordsFilters.svelte` dan `LogsFilters.svelte` tetap menulis
+`"Request id, error code"`, dan sekarang teks itu benar karena `q` benar-benar mencocokkan request id
+(dan `id`, `error_code`, `model`). Ini kebalikan dari rencana DURING pilihan (a), yang akan menuntut
+placeholder diganti menjadi `Search model`; karena owner memilih (b), yang berubah adalah BE dan
+kontrak, bukan label panel. Tidak ada test FE baru karena tidak ada perilaku FE baru: yang diuji
+adalah predikat SQL-nya (`usage_query_scope_integration_test.go`,
+`log_query_scope_integration_test.go`) dan scope di kontrak tersaji
+(`TestOpenAPIContract_FreeTextScopeIsStated`).
 
 **Fakta.** `UsageRecordsFilters.svelte` dan `LogsFilters.svelte` menulis placeholder
 `"Request id, error code"`; implementasi BE memfilter `q` hanya terhadap `model ILIKE`. Operator
@@ -940,14 +1046,16 @@ catat error 401/400 juga. Format bukti mengikuti draft 009 §10.9.
 
 **BE (app-serv) harus mengerjakan (bila owner memilih parity atau menutup temuan audit):**
 
-- F1 handler test, F2+F9 status closed set, F5 Flusher forwarding, F7+F6+F3+F8 kontrak dan semantik,
-  F4 keputusan event, F14 live evidence.
+- F1 handler test, F2+F9 status closed set, F5 Flusher forwarding, F7+F6+F3+F8 kontrak dan semantik
+  (semuanya **CLOSED 2026-09-22**), F4 keputusan event, F14 live evidence.
 - Bila parity live: state in-flight dengan Redis TTL atau Pub/Sub, route `GET /api/v1/usage/live`
   SSE, wiring, OpenAPI, amandemen SPEC-API §7.12, SYSTEM_MAP.
 
 **FE (app-ui) harus mengerjakan:**
 
-- F11 placeholder (tergantung F8), F12 per_page notice (tergantung F6).
+- F11 placeholder: **CLOSED 2026-09-22** sebagai konsekuensi F8 (D4 memperluas BE sampai memenuhi
+  janji placeholder, jadi label panel tetap dan tidak ada pekerjaan FE). F12 per_page notice
+  (tergantung F6, yang sudah CLOSED; sisa pekerjaan FE).
 - Bila parity live: schema frame Zod, modul `usage-live.ts` (EventSource + reconnect +
   stop-on-hidden), merge field real-time tanpa menimpa stats REST, komponen topologi dengan
   keputusan MOTION eksplisit (denyut = amandemen DESIGN.md; transisi = sesuai dial), amandemen
@@ -968,6 +1076,7 @@ ada; itu dead control R-26).
 | D5 | Node live / SSE Usage: status quo dengan amandemen spec, polling (FE only), atau SSE penuh (BE+FE, F10)? | Menunggu jawaban | F10, F13 |
 | D6 | Bila SSE dipilih dan topologi node dibuat: indikator aktif sebagai transisi state (sesuai MOTION 1) atau denyut `animate-ping` (amandemen DESIGN.md)? | Transisi state | F10 FE |
 
+D1 dan D4 sudah dipakai (F3 dan F8 **CLOSED 2026-09-22**); D2, D5, dan D6 masih menunggu jawaban.
 Nomor F yang bukan keputusan (F1, F2, F5, F7, F9, F12, F14) dapat dipilih langsung tanpa D.
 
 ## 12. Catatan penutup

@@ -28,13 +28,16 @@ import (
 )
 
 // usageParamSchema is the part of a query parameter's schema these tests read.
+// Description is carried for the semantics tests (draft 010 F3/F8), which pin
+// the sentences a consumer reads rather than a bound.
 type usageParamSchema struct {
-	Type    string   `json:"type"`
-	Format  string   `json:"format"`
-	Enum    []string `json:"enum"`
-	Minimum *int     `json:"minimum"`
-	Maximum *int     `json:"maximum"`
-	Default *int     `json:"default"`
+	Type        string   `json:"type"`
+	Format      string   `json:"format"`
+	Enum        []string `json:"enum"`
+	Minimum     *int     `json:"minimum"`
+	Maximum     *int     `json:"maximum"`
+	Default     *int     `json:"default"`
+	Description string   `json:"description"`
 }
 
 // decodeParamSchema reads one parameter's schema, failing when it is absent so

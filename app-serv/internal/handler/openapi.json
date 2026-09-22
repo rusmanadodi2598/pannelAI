@@ -3872,15 +3872,18 @@
           },
           "latency_ms": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Sum of every matched request's own duration in milliseconds, so it grows with the request count. latency_p50_ms and latency_p95_ms carry the per-request picture."
           },
           "latency_p50_ms": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Median latency over the matched requests, in milliseconds."
           },
           "latency_p95_ms": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "95th percentile latency over the matched requests, in milliseconds."
           },
           "error_count": {
             "type": "integer",
@@ -3989,7 +3992,8 @@
           },
           "latency_ms": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "This request's own duration in milliseconds. Unlike UsageTotals.latency_ms, which sums a window, this field measures one call."
           },
           "status": {
             "type": "string",
@@ -10104,7 +10108,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Free-text match over a case-insensitive substring of the id, request_id, error_code, and model fields."
             }
           }
         ],
@@ -10261,7 +10266,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Free-text match over a case-insensitive substring of the id, request_id, error_code, and model fields."
             }
           }
         ],
@@ -10392,7 +10398,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Free-text match over a case-insensitive substring of the id, request_id, error_code, and model fields."
             }
           },
           {
@@ -10818,7 +10825,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Free-text match over a case-insensitive substring of the request_id, error, and model fields."
             }
           },
           {
