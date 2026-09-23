@@ -56,7 +56,10 @@
 </script>
 
 <div class="flex flex-col gap-3">
-	<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
+	<!-- relative keeps the sr-only column label (position: absolute) inside this scroll box. -->
+	<div
+		class="relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+	>
 		<table class="w-full min-w-[52rem] border-collapse text-sm">
 			<caption class="sr-only">Connected OAuth accounts for this provider</caption>
 			<thead class="bg-[var(--color-surface-2)] text-left">

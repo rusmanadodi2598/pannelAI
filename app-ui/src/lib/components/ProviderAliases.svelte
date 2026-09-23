@@ -83,7 +83,10 @@
 			description="An alias is a short name a client can send in place of a model string. Its target is a provider/model reference or a combo name."
 		/>
 	{:else}
-		<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
+		<!-- relative keeps the sr-only column label (position: absolute) inside this scroll box. -->
+		<div
+			class="relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+		>
 			<table class="w-full min-w-[36rem] border-collapse text-sm">
 				<caption class="sr-only">The alias set, every alias the gateway resolves</caption>
 				<thead class="bg-[var(--color-surface-2)] text-left">

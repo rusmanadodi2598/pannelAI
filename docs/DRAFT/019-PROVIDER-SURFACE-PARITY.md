@@ -8,7 +8,7 @@ Bukan kontrak; kontrak tetap `docs/SPEC-API/001-SPEC-API.md` (wire) dan `docs/SP
 
 |                        |                                                                                                                                                                                                   |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**             | DURING berjalan. F1, F2, dan F4 (kecuali baris Check) diperbaiki; F3 dan F5 dibangun ulang setelah owner menolak konsepnya; baris Check bergantung `app-serv` |
+| **Status**             | DURING berjalan. F1, F2, dan F4 (kecuali baris Check) diperbaiki; F3 dan F5 dibangun ulang setelah owner menolak konsepnya; F6 (label kolom tersembunyi yang melebarkan dokumen di 390 px) ditemukan dan ditutup oleh pengukuran gerbang; baris Check bergantung `app-serv` |
 | **Mechanism**          | DURING & AFTER (antislop)                                                                                                                                                                         |
 | **Scope**              | `app-ui/.` saja. `app-serv/.` tidak disentuh pass ini                                                                                                                                              |
 | **Permintaan owner**   | `Lanjut ke page: Provider`: (1) Add Anthropic Compatible & Add OpenAI Compatible belum 1:1 dengan REFERENCE; (2) pada detail page belum ada mekanisme add api key, bulk api key, serta penambahan models id, belum berjalan semestinya. Langsung FIX |
@@ -113,7 +113,7 @@ diganti, karena itu yang membuat cacat ini tidak terlihat selama ini.
 
 **Kriteria selesai.** Form membuat endpoint sungguhan lewat wire, key yang diketik tersimpan, dan
 `api_key` tanpa key ditolak panel sebelum round trip dengan pesan yang menyebut sebabnya. Terpenuhi:
-dibuktikan di click-through §8.1 (aksi 3 dan 4).
+dibuktikan di click-through §9.1 (aksi 3 dan 4).
 
 ## 4. F2 MEDIUM (FE): penambahan model id menuntut display name yang reference tidak minta
 
@@ -147,7 +147,7 @@ kembali `0` baris), jadi tidak ada sisa data pass ini di gateway owner.
 bracket tetap berlaku saat diisi, karena keduanya aturan wire juga.
 
 **Kriteria selesai.** Menambah model dengan hanya model id berhasil, dan barisnya tampil dengan nama
-model id. Terpenuhi: dibuktikan di click-through §8.1 (aksi 9).
+model id. Terpenuhi: dibuktikan di click-through §9.1 (aksi 9).
 
 **Yang tidak dikerjakan dan alasannya.** Reference juga punya **Import from /models** di section yang
 sama (`CompatibleModelsSection.js:125-159`, tombolnya `:185-186`): baca `GET /api/providers/{id}/models`
@@ -204,7 +204,7 @@ tambahan" lebih dulu untuk menyimpan key, sesuatu yang reference tidak pernah mi
    batch. Nama yang diketik operator dipertahankan apa adanya bila masih bebas, berbeda dari reference yang
    menambahkan indeks ke setiap baris (`bulkAdd.js:76-96`); alasan perbedaan itu ada di header
    `connection-plan.ts`.
-5. Batch yang ditolak tidak menyimpan apa pun (§8.1, `endpoint_bulk.go:43-91`), dan pesannya dikembalikan
+5. Batch yang ditolak tidak menyimpan apa pun (SPEC-API §8.1, `endpoint_bulk.go:43-91`), dan pesannya dikembalikan
    ke **nomor baris yang ditempel** operator, bukan ke indeks batch: `endpoint_bulk.go` melaporkan tiap
    baris lewat `results[].index` (`handler/endpoint_bulk.go:139-166`), dan dialog memetakan indeks itu ke
    baris asalnya.
@@ -213,7 +213,7 @@ tambahan" lebih dulu untuk menyimpan key, sesuatu yang reference tidak pernah mi
 
 | Hal                     | Reference                                                | Panel                                          | Sebab                                                                                                                        |
 | ----------------------- | -------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Bentuk batch            | satu request per key, sukses sebagian dihitung (`:148-182`) | satu `POST /endpoints/bulk`, semua-atau-tidak | Route batch panel memang satu transaksi (§8.1, `endpoint_bulk.go:87-89`); penolakan tetap menyebut baris yang salah           |
+| Bentuk batch            | satu request per key, sukses sebagian dihitung (`:148-182`) | satu `POST /endpoints/bulk`, semua-atau-tidak | Route batch panel memang satu transaksi (SPEC-API §8.1, `endpoint_bulk.go:87-89`); penolakan tetap menyebut baris yang salah           |
 | Field **Default Model** | ada untuk provider compatible (`:295-302`)               | tidak ada                                      | `EndpointResponse` tidak punya field model default (`endpoint_response.go:64-83`), jadi tidak ada tempat menyimpannya        |
 | Select **Proxy Pool**   | ada (`:374-389`)                                         | tidak ada                                      | Endpoint panel tidak membawa field proxy                                                                                     |
 | Tombol **Check**        | API Key lalu `POST /providers/validate` (`:263-266`)     | tidak ada                                      | Belum ada route untuk memvalidasi kredensial sebelum barisnya ada; tercatat di draft 017 F6                                   |
@@ -226,7 +226,7 @@ sebagai satu-satunya sumber `mode`.
 
 **Kriteria selesai.** Dari detail page provider, operator bisa menyimpan satu key dan beberapa key tanpa
 berpindah layar, tanpa pernah membuat "endpoint" lebih dulu, dan tiap key tampil sebagai satu baris
-connection di section itu. Terpenuhi: dibuktikan di click-through §8.1 (aksi 5 sampai 8).
+connection di section itu. Terpenuhi: dibuktikan di click-through §9.1 (aksi 5 sampai 8).
 
 ## 6. F4 LOW (FE): sisa selisih dialog Add Compatible
 
@@ -255,7 +255,7 @@ daripada selisih kata itu sendiri. Baris **Check** tidak dibangun (D3) dan terca
 selisih yang tersisa, dengan route yang ditunggu sudah punya nomor di draft 017 F6.
 
 **Kriteria selesai.** Dialog menampilkan nilai dan kalimat per varian, dan ganti API Type
-mengembalikan base URL ke default. Terpenuhi: dibuktikan di click-through §8.1 (aksi 1 dan 2).
+mengembalikan base URL ke default. Terpenuhi: dibuktikan di click-through §9.1 (aksi 1 dan 2).
 
 ## 7. F5 MEDIUM (FE): halaman detail node custom memakai bentuk halaman provider registry
 
@@ -321,14 +321,43 @@ Tidak ada tabel registry, tidak ada blok model-disabled, dan tidak ada blok alia
 
 **Kriteria selesai.** Halaman detail node menampilkan tiga blok reference dalam urutannya, tidak lagi
 menampilkan blok registry, dan import model membaca route node lalu melaporkan hasilnya apa adanya.
-Terpenuhi: dibuktikan di click-through §8.2.
+Terpenuhi: dibuktikan di click-through §9.2.
 
-## 8. Bukti gate
+## 8. F6 LOW (FE): label kolom tersembunyi melebarkan dokumen di 390 px
 
-Dijalankan di `app-ui/` pada tree beku `cfd19f1ce7e72437ae526c8c46382407` (`md5sum` atas `src/`, `tests/`,
-`static/`, dan `scripts/`, 497 berkas), sesudah F5 dan dua pemecahan berkas di gerbang ukuran. Kalimat ini
-sebelumnya menulis 490 berkas untuk definisi empat direktori yang sama; 490 adalah jumlah `src/` + `tests/`
-saja, jadi angkanya dikoreksi di sini alih-alih diwariskan.
+**Status: DURING selesai.**
+
+**Fakta.** Pengukuran gerbang di 390 px (R-03) menemukan halaman ini bisa digeser mendatar:
+`documentElement.scrollWidth` 652 px terhadap viewport 390, dan `window.scrollTo(400, 0)` benar-benar
+memindahkan halaman 262 px, di kedua tema. Pelakunya bukan tabelnya, melainkan label kolom tersembunyi di
+dalamnya. Tabel lebar permukaan provider memakai `<span class="sr-only">Actions</span>` sebagai label kolom
+aksi, dan `sr-only` Tailwind adalah `position: absolute`; karena tidak ada leluhur ber-`position: relative`,
+containing block label itu adalah initial containing block, sehingga label 1 px itu keluar dari pembungkus
+`overflow-x: auto` dan mendarat di ujung kanan tabel. Terukur: satu-satunya elemen non-`static` di luar
+viewport adalah `span.sr-only` ber-`right: 652`, sama di light dan dark
+(`/tmp/provider019/evidence-mobile-before.json`).
+
+**Perbaikan.** Pembungkus gulir di lima tabel permukaan provider dijadikan containing block dengan
+`relative`, jadi label itu tinggal di dalam kotak gulirnya dan tidak lagi menyentuh dokumen:
+`CustomModelTable.svelte`, `ModelCatalogTable.svelte`, `ProviderAliases.svelte`,
+`ProviderDisabledModels.svelte`, dan `ProviderOAuthAccounts.svelte`. Satu baris komentar di tiap berkas
+menyebut alasan `relative`-nya, karena kelas itu terlihat seperti hiasan. Pembungkus `EndpointTable.svelte`
+sengaja tidak diubah: label tersembunyinya sebuah `caption`, posisi statisnya di tepi kiri tabel, dan
+terukur tidak pernah keluar viewport (`wrapperPosition: static` di §9.3).
+
+**Kriteria selesai.** Di 390 px halaman tidak bisa digeser mendatar, di kedua tema dan di kedua bentuk
+halaman. Terpenuhi: diukur di §9.3 (`pageOverflow` 262 menjadi 0, `scrolledX` 262 menjadi 0, dan 0 elemen
+lolos dari scroller-nya).
+
+## 9. Bukti gate
+
+Dijalankan di `app-ui/` pada tree beku `a1d057db6e7084ff487831ebb61bc3cd` (`md5sum` atas `src/`, `tests/`,
+`static/`, dan `scripts/`, 497 berkas), sesudah F5, dua pemecahan berkas di gerbang ukuran, dan perbaikan
+F6 (lima pembungkus `relative`, lalu satu jalan Prettier atas berkas yang sama). Gerbang ini semula
+dijalankan pada tree `cfd19f1ce7e72437ae526c8c46382407`; pengukuran 390 px milik F6 menemukan cacatnya
+sesudah commit pass, jadi seluruh gerbang dijalankan ulang pada tree di atas dan baris-baris di bawah
+adalah hasil jalan terakhir. Kalimat ini sebelumnya menulis 490 berkas untuk definisi empat direktori yang
+sama; 490 adalah jumlah `src/` + `tests/` saja, jadi angkanya dikoreksi di sini alih-alih diwariskan.
 
 | Gate              | Hasil                                          |
 | ----------------- | ---------------------------------------------- |
@@ -336,11 +365,12 @@ saja, jadi angkanya dikoreksi di sini alih-alih diwariskan.
 | `bun run lint`    | Prettier: seluruh berkas patuh                 |
 | `bun run lint:ts` | ESLint keluar 0                                |
 | `bun run build`   | sukses, `build/index.js` tertulis              |
-| `bun run test`    | 2604 tes lulus dari 154 berkas, 1948 s di host ini, pada tree beku di atas. Jalan pertama di tree yang sama tidak hijau: dua tes kena timeout 5000 ms Vitest (satu di antaranya tes sinkron, yang tidak bisa menggantung pada promise) selagi `golangci-lint` dan proses tes Go aktor lain berjalan di host yang sama; tidak ada suntingan di antara kedua jalan, dan jalan kedua yang hijau itu yang dicatat |
-| Click-through     | dua belas tangkapan layar, dua puluh sembilan kelompok nilai (§8.1, §8.2) |
-| Ukuran berkas     | dua berkas yang pass ini dorong melewati ambang 220 dipecah, bukan dicatat: `CustomProviderCard.svelte` 232 menjadi 209 + `ProviderNodeFacts.svelte` 37, dan `AddProviderKeysDialog.svelte` 227 menjadi 177 + `api/provider-keys.ts` 126. Dua berkas lain sudah melewati ambang itu di HEAD dan tetap dilewati, dicatat apa adanya: `tests/support/model-stub.ts` 483 menjadi 652, dan `tests/components/provider-custom-models.test.ts` 273 menjadi 293 |
+| `bun run test`    | 2604 tes lulus dari 154 berkas, 1958 s di host ini, pada tree beku di atas, hijau di percobaan pertama. Jalan pada tree sebelumnya (`cfd19f1ce7e72437ae526c8c46382407`) tidak hijau di percobaan pertama: dua tes kena timeout 5000 ms Vitest (satu di antaranya tes sinkron, yang tidak bisa menggantung pada promise) selagi `golangci-lint` dan proses tes Go aktor lain berjalan di host yang sama; tidak ada suntingan di antara kedua jalan, dan jalan kedua yang hijau itu yang dicatat |
+| Uji terarah (F6)  | tujuh berkas yang memuat lima komponen itu lulus, exit 0, 310,77 s: `model-catalog.test.ts`, `provider-aliases.test.ts`, `provider-custom-models.test.ts`, `provider-custom-models-node.test.ts`, `provider-oauth.test.ts`, `provider-models.test.ts`, dan `provider-detail-node-page.test.ts` |
+| Click-through     | dua puluh tangkapan layar, lima puluh kelompok nilai (§9.1, §9.2, §9.3) |
+| Ukuran berkas     | dua berkas yang pass ini dorong melewati ambang 220 dipecah, bukan dicatat: `CustomProviderCard.svelte` 232 menjadi 209 + `ProviderNodeFacts.svelte` 37, dan `AddProviderKeysDialog.svelte` 227 menjadi 177 + `api/provider-keys.ts` 126. Dua berkas lain sudah melewati ambang itu di HEAD dan tetap dilewati, dicatat apa adanya: `tests/support/model-stub.ts` 483 menjadi 652, dan `tests/components/provider-custom-models.test.ts` 273 menjadi 293. Lima tabel yang diperbaiki F6 semuanya jauh di bawah ambang: `ProviderAliases.svelte` 149, `ProviderOAuthAccounts.svelte` 122, `ProviderDisabledModels.svelte` 113, `ModelCatalogTable.svelte` 108, dan `CustomModelTable.svelte` 85 (82 sebelum F6; dua baris tambahannya komentar dan atribut kelas yang dibungkus Prettier) |
 
-### 8.1 Click-through terekam: jalur provider registry
+### 9.1 Click-through terekam: jalur provider registry
 
 Panel dijalankan dari salinan hasil build di `/tmp/provider019/panel` pada port 3001 dengan
 `PANEL_API_TARGET=http://127.0.0.1:9090`, di atas gateway owner yang sedang berjalan. Port owner 3000 dan
@@ -364,7 +394,7 @@ jalur registry tidak tersentuh pass ini.
 | Model id saja                 | `openai/probe-019-model was added to the catalog.`, tabel custom memuat `probe-019-model`                                                                         |
 | Pembersihan                   | 4 endpoint dan 1 model dihapus lewat API dengan cookie sesi; sisa `endpoints=1` (baris `ep-live` milik aktor lain), `models=0`; muat ulang menampilkan `No connections yet` |
 
-### 8.2 Click-through terekam: halaman node custom, sebelum dan sesudah
+### 9.2 Click-through terekam: halaman node custom, sebelum dan sesudah
 
 Dua driver, satu untuk mengukur bentuk lama dan satu untuk membuktikan bentuk baru, keduanya di atas panel
 dan gateway yang sama: `/tmp/provider019/probe-node-page.ts` (sebelum, bukti
@@ -387,14 +417,43 @@ pemecahan.
 | Aliases                    | `No aliases yet`                                                                                                                                                      |
 | Pembersihan                | 1 endpoint dan 1 model dihapus, `DELETE` node `204`; sisa `endpoints=1` (`ep-live` milik aktor lain) dan 3 node milik aktor lain, tidak ada yang tersentuh             |
 
-## 9. Status per 2026-09-23
+### 9.3 Pengukuran 390 px dan dua tema (R-03, R-34)
 
-**CLOSED.** Lima temuan ditutup: F1 (form endpoint yang selalu ditolak wire), F2 (display name yang
+Driver `/tmp/provider019/probe-mobile.ts` (Chrome headless + CDP, `Emulation.setDeviceMetricsOverride`
+390x844 dengan `mobile: false`, karena `mobile: true` memberi viewport 652 px dan mengukur lebar yang
+salah). Ia membuat satu node sementara berikut satu connection dan satu model, mengukur halaman node di
+kedua tema, membuka dialog key dan mengukurnya, lalu mengukur halaman provider registry
+(`/providers/openai`) di kedua tema, lalu menghapus semua yang dibuatnya. Bukti:
+`/tmp/provider019/evidence-mobile-before.json` (sebelum F6 diperbaiki, hanya halaman node) dan
+`/tmp/provider019/evidence-mobile.json` (sesudah, empat pengukuran), tangkapan layar
+`/tmp/provider019/shots-mobile/01..05*.png`.
+
+| Ukuran                                        | Sebelum (hanya halaman node) | Sesudah (node dan registry) |
+| --------------------------------------------- | ---------------------------- | --------------------------- |
+| `documentElement.scrollWidth` / viewport      | `652 / 390` | `390 / 390` |
+| `pageOverflow`                                | 262 | 0 |
+| `scrolledX` sesudah `window.scrollTo(400, 0)` | 262 | 0 |
+| Elemen lolos scroller (non-`static`)          | 1 (`span.sr-only`, `right: 652`) | 0 |
+| `bodyOverflow`                                | 0 | 0 |
+| Dialog key                                    | 352 px di dalam 390, `dialogOverflow` 0 | sama |
+| Tema terukur                                  | light, dark | light, dark (node), dark, light (registry) |
+| Tabel lebar                                   | connections 832 px, models 704 px, `wrapperOverflowX: auto`, `wrapperScrollable: true` | sama, ditambah `wrapperPosition: relative` pada pembungkusnya |
+| Halaman registry                              | tidak diukur | `/providers/openai`, `pageOverflow` 0, `scrolledX` 0, 40 elemen di luar viewport semuanya di dalam scroller |
+| Pembersihan                                   | 1 model dan 1 endpoint dihapus, `DELETE` node 204, sisa `endpoints=1` | sama |
+
+Halaman registry diukur hanya sesudah perbaikan; sebelum perbaikan hanya halaman node yang diukur, dan
+satu elemen pelakunya sudah cukup untuk menamai sebabnya. Dua tabel lebar tetap lebih lebar dari viewport
+dan tetap bisa digulir di dalam kotaknya masing-masing, bukan melebarkan dokumen.
+
+## 10. Status per 2026-09-23
+
+**CLOSED.** Enam temuan ditutup: F1 (form endpoint yang selalu ditolak wire), F2 (display name yang
 reference tidak minta), F3 (kontrol add key di detail page, dibangun ulang mengikuti konsep reference
-setelah owner menolaknya), F4 (sisa selisih dialog Add Compatible), dan F5 (halaman detail node custom
-yang memakai bentuk provider registry, dibangun ulang ke bentuk node reference setelah owner menolaknya).
-Satu baris tetap tidak dibangun di F4: tombol **Check**, yang route-nya belum ada di `app-serv` dan sudah
-tercatat sebagai draft 017 F6. Angka pass: `app-ui/README.md` bagian ke-26, register
-`docs/DRAFT/007-UI-ENDPOINT-READINESS.md` F12 naik ke dua belas dari dua puluh enam bagian dan F13 ke
-sembilan baris penunjuk (jumlah klaimnya tetap sembilan belas). Commit lokal `app-ui` saja, tanpa push,
-sesuai aturan owner.
+setelah owner menolaknya), F4 (sisa selisih dialog Add Compatible), F5 (halaman detail node custom yang
+memakai bentuk provider registry, dibangun ulang ke bentuk node reference setelah owner menolaknya), dan F6
+(label kolom tersembunyi yang melebarkan dokumen di 390 px, ditemukan oleh pengukuran gerbang pass ini
+sendiri dan ditutup di pass yang sama). Satu baris tetap tidak dibangun di F4: tombol **Check**, yang
+route-nya belum ada di `app-serv` dan sudah tercatat sebagai draft 017 F6. Angka pass: `app-ui/README.md`
+bagian ke-26, register `docs/DRAFT/007-UI-ENDPOINT-READINESS.md` F12 naik ke dua belas dari dua puluh enam
+bagian dan F13 ke sembilan baris penunjuk (jumlah klaimnya tetap sembilan belas). Commit lokal `app-ui`
+saja, tanpa push, sesuai aturan owner.

@@ -34,7 +34,7 @@ Empat langkah, semuanya bisa diulang:
 | #   | Item (KEEP)            | Route                                    | Layar              | Endpoint SPEC-API                        | Status                                         |
 | --- | ---------------------- | ---------------------------------------- | ------------------ | ---------------------------------------- | ---------------------------------------------- |
 | 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F6 **CLOSED**, F7 **CLOSED**, F8 **CLOSED**, F9 **CLOSED** |
-| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list) **CLOSED**, F7 (list) **CLOSED**, F8 (list) **CLOSED**, Q12/Q13/Q19-Q23 tercatat; draft 017 F2-F6 OPEN (pass `app-serv`); draft 019 F1-F5 **CLOSED 2026-09-23** (baris **Check** di F4 menunggu draft 017 F6) |
+| 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list) **CLOSED**, F7 (list) **CLOSED**, F8 (list) **CLOSED**, Q12/Q13/Q19-Q23 tercatat; draft 017 F2-F6 OPEN (pass `app-serv`); draft 019 F1-F6 **CLOSED 2026-09-23** (baris **Check** di F4 menunggu draft 017 F6) |
 | 3   | Combo & Vision Adapter | `/combos`                                | ada                | §7.7, §7.8 live                          | F8 **CLOSED**; F12 (bukti); test tingkat tab ada |
 | 4   | Usage                  | `/usage`                                 | ada                | §7.12 live                               | F8 **CLOSED**; F12; draft 014 F1-F6 **DURING selesai**, F7 OPEN; draft 015 F1-F6 **CLOSED 2026-09-22**; draft 016 F1-F4 **CLOSED 2026-09-22**, F5-F7 OPEN (permintaan `app-serv`), F8 **CLOSED 2026-09-23 oleh draft 018 F1** (tabrakan node 390px diperbaiki dan diukur ulang di browser); draft 018 F1-F4 **CLOSED 2026-09-23** |
 | 5   | Quota Tracker          | `/quota`                                 | ada                | §7.12 live                               | bersih; live pass tercatat                     |
@@ -949,14 +949,17 @@ bagian itu. Yang tetap terbuka: F5 sampai F7 draft 016 dan F13 di bawah.
 
 Pengukuran yang sama setelah pass "Provider surface parity" (2026-09-23) menemukan **dua belas dari dua
 puluh enam bagian**, dan perintah yang sama mencetak `12 of 26` pada commit pass itu (`12 of 25` pada tree
-sebelumnya). Penyebutnya naik satu sementara pembilangnya tetap: bagian ke-26 membawa click-through browser
-yang direkam di atas **route nyata** lagi (dua belas tangkapan layar, dua puluh sembilan kelompok nilai
-terukur: delapan tangkapan layar dan tujuh belas kelompok untuk jalur provider registry, empat tangkapan
-layar dan dua belas kelompok untuk halaman node custom sebelum dan sesudah), jadi tidak ada click-through
-yang disebut outstanding di bagian itu. Yang ditutup bagian itu adalah tiga cacat terukur di halaman
-Provider (form endpoint yang selalu ditolak wire, display name yang diminta padahal reference tidak, dan
-kontrol add key yang tidak ada di detail page), sisa selisih copy dialog Add Compatible, dan halaman detail
-node custom yang memakai bentuk provider registry lalu dibangun ulang ke bentuk node reference; satu
+sebelumnya; diukur ulang setelah perbaikan F6 dan angkanya tidak berubah). Penyebutnya naik satu sementara
+pembilangnya tetap: bagian ke-26 membawa click-through browser yang direkam di atas **route nyata** lagi
+(dua puluh tangkapan layar, lima puluh kelompok nilai terukur: delapan tangkapan layar dan tujuh belas
+kelompok untuk jalur provider registry, empat dan dua belas untuk halaman node custom sebelum dan sesudah,
+serta delapan dan dua puluh satu untuk pengukuran 390 px di kedua tema), jadi tidak ada click-through yang
+disebut outstanding di bagian itu. Yang ditutup bagian itu adalah tiga cacat terukur di halaman Provider
+(form endpoint yang selalu ditolak wire, display name yang diminta padahal reference tidak, dan kontrol add
+key yang tidak ada di detail page), sisa selisih copy dialog Add Compatible, halaman detail node custom yang
+memakai bentuk provider registry lalu dibangun ulang ke bentuk node reference, dan satu cacat yang
+pengukuran gerbang bagian itu sendiri temukan lalu tutup di pass yang sama: dokumen bisa digeser 262 px di
+390 px karena label kolom `sr-only` keluar dari pembungkus `overflow-x: auto`-nya (draft 019 F6). Satu
 barisnya sengaja tidak dibangun: tombol **Check**, yang route-nya memang belum ada di `app-serv` dan sudah
 tercatat sebagai draft 017 F6. Yang tetap terbuka: F5 sampai F7 draft 016 dan F13 di bawah.
 

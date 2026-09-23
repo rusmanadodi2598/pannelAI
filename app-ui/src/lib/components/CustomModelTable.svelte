@@ -26,7 +26,10 @@
 	const prefix = $derived(nodePrefix !== undefined && nodePrefix !== '' ? nodePrefix : null);
 </script>
 
-<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
+<!-- relative keeps the sr-only column label (position: absolute) inside this scroll box. -->
+<div
+	class="relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+>
 	<table class="w-full min-w-[44rem] border-collapse text-sm">
 		<caption class="sr-only">Custom models declared for this provider</caption>
 		<thead class="bg-[var(--color-surface-2)] text-left">

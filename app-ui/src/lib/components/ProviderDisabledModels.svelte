@@ -56,7 +56,10 @@
 			description="Every model in the catalog can be routed. A model disabled from that list leaves it until it is enabled here."
 		/>
 	{:else}
-		<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
+		<!-- relative keeps the sr-only column label (position: absolute) inside this scroll box. -->
+		<div
+			class="relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+		>
 			<table class="w-full min-w-[28rem] border-collapse text-sm">
 				<caption class="sr-only">Models disabled for this provider</caption>
 				<thead class="bg-[var(--color-surface-2)] text-left">
