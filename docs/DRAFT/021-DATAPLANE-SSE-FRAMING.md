@@ -6,7 +6,7 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14) |
+| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
 | **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
@@ -283,3 +283,27 @@ bergerak hanya latensi upstream (non-streaming 18,1 s menjadi 72,4 s; TTFB strea
 memuat baris milik aktor lain pada 23:03 sampai 23:04 (model `big-pickle`, `gpt-4o`,
 `claude-sonnet-4-5-20250929`, semuanya `NO_PROVIDER_AVAILABLE`) dan kunci baru `probe-combo-key`, jadi bukan
 seluruhnya berasal dari pengujian ini.
+
+## 15. Cek dua model `oczen` atas permintaan owner: node itu tidak punya endpoint
+
+Owner meminta pengecekan `oczen/mimo-v2.6-flash-free` dan `oczen/muse-spark-1.3-contributor-free`
+(2026-09-23 23:14). Keduanya menjawab **503 `NO_PROVIDER_AVAILABLE`** dalam ~20 ms dengan pesan "no upstream
+endpoint is configured for provider openai-compatible-03863XJ2YM2KHF847XJP5YBSH8": prefiks `oczen/` resolve
+ke node yang benar (bukan `MODEL_NOT_FOUND`), tetapi node `oczen` ("OpenCode Zen Free",
+`https://opencode.ai/zen/v1`, `api_type responses`) tidak punya satu baris pun di `upstream_endpoints`;
+tiga endpoint yang ada semuanya milik `th-1`. Bentuk id node menjawab sama, dan provider bawaan `opencode`
+untuk model yang sama juga 503 ("no upstream endpoint is configured for provider opencode").
+
+| Uji (23:14) | Hasil terukur |
+| --- | --- |
+| `oczen/mimo-v2.6-flash-free` | 503 dalam 18 ms; baris `usg_0386F1FT3BHY5Y6RV7HSAG98P0` dan `0386F1FT2QQ28VJRF1PMB1CXMJ` |
+| `oczen/muse-spark-1.3-contributor-free` | 503 dalam 25 ms; baris `usg_0386F1FT769PTA15D9B7EYQ2VM` dan `0386F1FT640GXSKX7JFH54XDW6` |
+| Bentuk id node, `mimo-v2.6-flash-free` | 503 dalam 34 ms; baris `usg_0386F1G54D0RT2D9MS1HYX6CTG` dan `0386F1G530K9H5RPHEDCM7KER4` |
+| Provider bawaan `opencode`, `muse-spark-1.3-contributor-free` | 503 dalam 32 ms; baris `usg_0386F1GK6M5HG7F5Z4M38NMFHA` dan `0386F1GK54663HQ87HTHD2QYM0` |
+| Katalog saat diukur | 367 id: 80 di bawah id node `oczen`, 3 di bawah `opencode`, dan 0 di bawah prefiks `oczen` |
+
+Keempat penolakan tercatat jujur (`status` `error`, `latency_ms` 0, token 0), jadi yang hilang bukan
+pencatatan melainkan kredensial: tanpa endpoint dan tanpa kunci opencode.ai Zen tidak ada yang bisa
+dirutekan, sama seperti §9. Itu pekerjaan owner di panel, bukan cacat gateway. Catatan keadaan:
+`provider_nodes` sekarang 2 baris (`oczen`, `th-1`); node `occap` ("Zen Capture") yang masih ada pada §13
+sudah tidak ada lagi. Tidak ada kode yang disentuh pass ini.
