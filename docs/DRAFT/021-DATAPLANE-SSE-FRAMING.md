@@ -6,7 +6,7 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13) |
+| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
 | **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
@@ -257,4 +257,29 @@ sudah dilepas menjadi `deepseek-v4.1-flash`.
 
 Yang diukur tetap satu upstream dan satu model. Tiga baris `usage_records` dan tiga baris `request_logs`
 yang ditulis pass ini **sengaja ditinggalkan** sebagai rekaman jujur pengujian, seperti §11; menghapusnya
-berarti menghapus bukti F5 dan F6. `request_count` kunci `sandbox` sekarang 8.
+berarti menghapus bukti F5 dan F6. `request_count` kunci `sandbox` saat itu 8.
+
+## 14. Uji ulang stream 2026-09-23 23:07 sampai 23:11, setelah gateway di-restart: bentuk yang sama
+
+Owner meminta pengecekan ulang permintaan streaming pada model yang sama. Gateway tempat pengukuran
+berjalan sudah diganti sejak §13: PID `2212055` mati dan digantikan PID `2214789` pada 22:54:23 (biner dari
+cache build Go), sedangkan keadaan endpoint tidak berubah (`upstream_endpoints` 3 untuk `th-1`,
+`upstream_keys` 3). Dua percobaan pertama setelah restart tidak menerima satu byte pun selama 280 s
+(batas `curl`), dan keduanya tidak menulis baris akuntansi (tidak ada baris di antara 22:46:28 dan
+23:03:56); karena yang memutus koneksi di situ adalah klien, kejadian itu **tidak** dihitung sebagai bukti
+F6.
+
+| Uji | Hasil terukur |
+| --- | --- |
+| Non-streaming | HTTP 200 dalam 72,4 s; `content` `pong`, `finish_reason` `stop`, `usage` 38/18/56, `model` di wire `deepseek-v4.1-flash`; baris `usage_records` 38/18, `latency_ms` 72350 (23:07:53) |
+| Streaming tanpa `include_usage` | HTTP 200, TTFB 51,8 s, total 58,6 s, 4572 byte: 19 frame berframe, lalu satu frame `finish` **telanjang** dengan `data: [DONE]` menempel; `"finish_reason":"stop"` dua kali; 0 kecocokan `^data: \[DONE\]$`; baris `usage_records` 0/0, `latency_ms` 58520 (23:08:57) |
+| Streaming + `include_usage` | HTTP 200, TTFB 101,4 s, total 113,8 s, 3169 byte: 12 frame berframe, lalu satu baris telanjang berisi **dua** objek `usage` kembar (37/26/63) dengan `data: [DONE]` menempel; 0 kecocokan `^data: \[DONE\]$`; baris `usage_records` 0/0, `latency_ms` 113385 (23:10:56) |
+| Pembaca SSE panel atas kedua byte itu | `frames=19` dan `frames=12`, `seesDone=false` di keduanya; teks, model, finish, dan usage terlipat benar, dan layar tetap melaporkan alasan akhir `truncated` |
+
+Jadi pada biner yang baru di-restart, F1, F2, F3, dan F5 **tetap** dengan bentuk byte yang identik; yang
+bergerak hanya latensi upstream (non-streaming 18,1 s menjadi 72,4 s; TTFB stream 41,1 s dan 32,3 s menjadi
+51,8 s dan 101,4 s). Tidak ada kode yang disentuh pass ini. Pada penutup pengukuran, `request_count` kunci
+`sandbox` terbaca 17, `usage_records` 18 baris, dan `request_logs` 19 baris; angka tabel terakhir itu juga
+memuat baris milik aktor lain pada 23:03 sampai 23:04 (model `big-pickle`, `gpt-4o`,
+`claude-sonnet-4-5-20250929`, semuanya `NO_PROVIDER_AVAILABLE`) dan kunci baru `probe-combo-key`, jadi bukan
+seluruhnya berasal dari pengujian ini.
