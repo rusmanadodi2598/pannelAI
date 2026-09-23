@@ -57,9 +57,17 @@ func registryCapabilityNames(providerID string, model registry.Model) domain.Mod
 const capabilityVision = "vision"
 
 // matchesCatalogFilter applies the three documented query parameters.
-func matchesCatalogFilter(model domain.CatalogModel, filter CatalogFilter) bool {
-	if provider := strings.TrimSpace(filter.ProviderID); provider != "" && model.ProviderID() != provider {
-		return false
+//
+// The provider filter accepts every spelling the provider answers to — its id,
+// its registry alias, and a node's prefix — because the row it selects is one
+// model and the operator may know it by any of those names (draft 024 §3.2).
+// The canonical set is built once per filter rather than per row: the catalog is
+// a few hundred rows and a per-row lookup would repeat the same resolution.
+func matchesCatalogFilter(index CatalogIndex, model domain.CatalogModel, filter CatalogFilter) bool {
+	if names := providerNameSet(index, filter.ProviderID); names != nil {
+		if _, ok := names[model.ProviderID()]; !ok {
+			return false
+		}
 	}
 	if capability := strings.TrimSpace(filter.Capability); capability != "" && !modelHasCapability(model, capability) {
 		return false

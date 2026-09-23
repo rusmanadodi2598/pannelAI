@@ -79,17 +79,31 @@ func (s *ComboService) validateRefs(ctx context.Context, draft ComboDraft) error
 		aliasNames[alias.Alias()] = struct{}{}
 	}
 
+	// resolve answers whether one reference names something the data plane
+	// could route. A provider/model reference is canonicalized through the same
+	// index lookup the router performs, so a member spelled with a registry
+	// alias (`cc/claude-...`) or a node prefix (`oczen/...`) validates exactly
+	// when the router would route it (draft 024 §3.2).
+	//
+	// Resolving is not enough: the member must also be servable by the chat
+	// plane (draft 024 §3.4). A provider with no chat translator and a media
+	// model both resolve and both fail the first request that addresses them,
+	// so the refusal happens here, with the reason named.
 	resolve := func(ref string) error {
-		if _, ok := lookups[ref]; ok {
-			return nil
-		}
 		if _, ok := comboNames[ref]; ok {
 			return nil
 		}
 		if _, ok := aliasNames[ref]; ok {
 			return nil
 		}
-		return domain.ErrComboModelRef
+		parsed, err := domain.ParseModelRef(ref)
+		if err != nil {
+			return domain.ErrComboModelRef
+		}
+		if !resolvesIn(lookups, s.catalog.index, parsed) {
+			return domain.ErrComboModelRef
+		}
+		return chatServable(lookups, s.catalog.index, parsed)
 	}
 	for _, model := range draft.Models {
 		if err := resolve(model.Ref()); err != nil {

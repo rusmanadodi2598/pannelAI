@@ -26,9 +26,42 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// Custom returns every custom model.
-func (s *ModelCatalogService) Custom(ctx context.Context) ([]domain.CustomModel, error) {
-	return s.repo.Custom(ctx)
+// Custom returns every custom model, or one provider's when providerID is set.
+//
+// The filter accepts every spelling the provider answers to — its id, its
+// registry alias, or a node prefix — through the same canonical set the catalog
+// filter uses (draft 024 §3.2), so an operator narrowing by alias sees the same
+// rows the id form shows. An empty value means "no filter", which is distinct
+// from a filter matching nothing.
+func (s *ModelCatalogService) Custom(ctx context.Context, providerID string) ([]domain.CustomModel, error) {
+	models, err := s.repo.Custom(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := providerNameSet(s.index, providerID)
+	if names == nil {
+		return models, nil
+	}
+	// The match is two-way because a custom row may carry either spelling: the
+	// write path has accepted the node prefix as a provider_id since custom
+	// nodes existed, so rows stored under `corp` must surface when the filter
+	// names the node's id, and vice versa. Matching only the filter's names
+	// against the row would hide every prefix-stored row from the id form.
+	matched := make([]domain.CustomModel, 0, len(models))
+	for _, model := range models {
+		if _, ok := names[model.ProviderID()]; ok {
+			matched = append(matched, model)
+			continue
+		}
+		rowNames := providerNameSet(s.index, model.ProviderID())
+		for name := range rowNames {
+			if _, ok := names[name]; ok {
+				matched = append(matched, model)
+				break
+			}
+		}
+	}
+	return matched, nil
 }
 
 // AddCustom registers a user-added model (§7.6 POST). The provider must exist in
@@ -91,10 +124,11 @@ func (s *ModelCatalogService) ReplaceAliases(ctx context.Context, aliases []doma
 		if _, ok := known[alias.Alias()]; ok {
 			return domain.NewValidationError("alias " + alias.Alias() + " is already a combo name")
 		}
-		if _, ok := lookups[alias.Target()]; ok {
+		if _, ok := known[alias.Target()]; ok {
 			continue
 		}
-		if _, ok := known[alias.Target()]; ok {
+		parsed, err := domain.ParseModelRef(alias.Target())
+		if err == nil && resolvesIn(lookups, s.index, parsed) {
 			continue
 		}
 		return domain.NewValidationError("alias " + alias.Alias() + " targets an unknown model or combo: " + alias.Target())

@@ -49,6 +49,11 @@ type RefTarget struct {
 // ModelExists reports whether the catalog can name a model. A combo model ref, a
 // judge model, and a vision adapter entry all validate through this, so they
 // cannot disagree about what "exists" means.
+//
+// The reference is accepted in every form the router resolves (draft 024 §3.2):
+// the provider's id, its registry alias, or a node prefix. The first segment is
+// canonicalized through the index, which is the same lookup the data plane
+// performs, so a name the router would route is never refused here.
 func (s *ModelCatalogService) ModelExists(ctx context.Context, ref domain.ModelRef) (bool, error) {
 	if ref.IsZero() {
 		return false, nil
@@ -57,8 +62,21 @@ func (s *ModelCatalogService) ModelExists(ctx context.Context, ref domain.ModelR
 	if err != nil {
 		return false, err
 	}
-	_, ok := lookups[ref.String()]
-	return ok, nil
+	return resolvesIn(lookups, s.index, ref), nil
+}
+
+// ChatServable reports whether the chat data plane could serve a reference,
+// and why not when it cannot. It is the write-time half of the property the
+// §7.15 model list holds — listed and answerable are one property — so a
+// reference the router would refuse (a provider with no chat translator, a
+// media model) is refused here with the reason named, before it is saved as
+// part of a combo or the vision adapter (draft 024 §3.4).
+func (s *ModelCatalogService) ChatServable(ctx context.Context, ref domain.ModelRef) error {
+	lookups, err := s.lookups(ctx)
+	if err != nil {
+		return err
+	}
+	return chatServable(lookups, s.index, ref)
 }
 
 // Resolve maps a model string to what it names, in the order §7.15 fixes: combo
@@ -109,7 +127,32 @@ func (s *ModelCatalogService) Resolve(ctx context.Context, model string) (RefTar
 	if !exists {
 		return RefTarget{}, false, nil
 	}
+	// The reported reference carries the canonical id, because the caller may
+	// store or display it: a ref typed with an alias or a prefix is the
+	// operator's spelling of one model, and the id is the spelling every other
+	// surface agrees on.
+	if canonical, ok := canonicalRef(s.index, ref); ok {
+		ref = canonical
+	}
 	return RefTarget{Kind: RefKindModel, Model: ref}, true, nil
+}
+
+// canonicalRef maps a reference onto the provider's canonical id spelling.
+// A name the index does not hold is returned unchanged: the caller's own
+// validation decides what an unknown namespace means.
+func canonicalRef(index CatalogIndex, ref domain.ModelRef) (domain.ModelRef, bool) {
+	if ref.IsZero() {
+		return ref, false
+	}
+	entry, ok := index.Provider(ref.ProviderID())
+	if !ok || entry.ID == ref.ProviderID() {
+		return ref, false
+	}
+	canonical, err := domain.NewModelRef(entry.ID, ref.ModelID())
+	if err != nil {
+		return ref, false
+	}
+	return canonical, true
 }
 
 // lookupAlias finds one alias by name.
@@ -143,44 +186,4 @@ func (s *ModelCatalogService) resolveAliasTarget(ctx context.Context, alias doma
 		return RefTarget{}, false, err
 	}
 	return RefTarget{Kind: RefKindAlias, Alias: alias, ComboID: combo.ID(), ComboName: combo.Name()}, true, nil
-}
-
-// isDisabled reports whether a pair is in the disabled set.
-func (s *ModelCatalogService) isDisabled(ctx context.Context, ref domain.ModelRef) (bool, error) {
-	disabled, err := s.repo.Disabled(ctx)
-	if err != nil {
-		return false, err
-	}
-	for _, blocked := range disabled {
-		if blocked.String() == ref.String() {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// availableRefs returns every pair the catalog holds, disabled rows included.
-func (s *ModelCatalogService) availableRefs(ctx context.Context) (map[string]struct{}, error) {
-	lookups, err := s.lookups(ctx)
-	if err != nil {
-		return nil, err
-	}
-	disabled, err := s.repo.Disabled(ctx)
-	if err != nil {
-		return nil, err
-	}
-	available := make(map[string]struct{}, len(lookups)+len(disabled))
-	for key := range lookups {
-		available[key] = struct{}{}
-	}
-	for _, ref := range disabled {
-		available[ref.String()] = struct{}{}
-	}
-	return available, nil
-}
-
-// isNotFound reports whether an error is a NOT_FOUND AppError, so a caller can
-// treat "absent" differently from "the lookup failed".
-func isNotFound(err error) bool {
-	return err != nil && domain.AsAppError(err).HTTPStatus() == 404
 }

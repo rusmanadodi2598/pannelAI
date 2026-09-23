@@ -128,8 +128,9 @@ func TestResolver_Order(t *testing.T) {
 			wantUpstream: "gpt-fast", wantTarget: TargetOpenAI,
 		},
 		{
-			name:  "a nested combo is not expanded, so the outer name is refused",
-			model: "nested", wantErrCode: CodeModelNotFound,
+			name:  "a nested combo member resolves to the inner combo's member",
+			model: "nested", wantProvider: "provider-a", wantModel: "fast",
+			wantUpstream: "fast", wantTarget: TargetOpenAI, wantCombo: "nested",
 		},
 		{
 			name:  "a hidden provider's model is still resolvable by id",

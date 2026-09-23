@@ -97,7 +97,7 @@ func (s *ModelCatalogService) Catalog(ctx context.Context, filter CatalogFilter)
 	}
 	matched := make([]domain.CatalogModel, 0, len(lookups))
 	for _, model := range lookups {
-		if matchesCatalogFilter(model, filter) {
+		if matchesCatalogFilter(s.index, model, filter) {
 			matched = append(matched, model)
 		}
 	}

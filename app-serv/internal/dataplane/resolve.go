@@ -125,7 +125,7 @@ func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error
 	// A combo is addressed by a bare name, so a string carrying "/" cannot be
 	// one; that also stops a provider whose id collides with a combo name from
 	// being shadowed.
-	if indexOf(model, '/') < 0 {
+	if !hasSlash(model) {
 		combo, found, err := r.lookup.Combo(ctx, model)
 		if err != nil {
 			return Resolution{}, err

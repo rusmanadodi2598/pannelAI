@@ -53,9 +53,12 @@ func (h *ModelHandler) Catalog(w http.ResponseWriter, r *http.Request) {
 	schema.WriteJSON(w, http.StatusOK, schema.ModelCatalogResponse{Data: schema.ToModelResponses(models)})
 }
 
-// CustomList serves GET /api/v1/models/custom.
+// CustomList serves GET /api/v1/models/custom, narrowed by `?provider_id=`
+// when the parameter is present. The narrowing happens in the service, so the
+// alias and prefix spellings are accepted here exactly as the catalog accepts
+// them.
 func (h *ModelHandler) CustomList(w http.ResponseWriter, r *http.Request) {
-	models, err := h.catalog.Custom(r.Context())
+	models, err := h.catalog.Custom(r.Context(), strings.TrimSpace(r.URL.Query().Get("provider_id")))
 	if err != nil {
 		schema.WriteError(w, err)
 		return

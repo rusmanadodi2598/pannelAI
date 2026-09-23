@@ -97,6 +97,12 @@ func (s *VisionAdapterService) Get(ctx context.Context) (domain.VisionAdapter, e
 // capability predicate must accept it. The catalog check runs first so an
 // unknown model reports "unknown" rather than "not vision-capable", which is
 // the more actionable of the two.
+//
+// A model the chat plane cannot serve is refused before the capability check:
+// the adapter prepends its models to an image-bearing request, so an adapter
+// entry on a provider with no chat translator or on a media row would turn
+// every image request it is meant to save into a routing failure (draft 024
+// §3.4).
 func (s *VisionAdapterService) Replace(ctx context.Context, enabled, roundRobin bool, models []domain.ModelRef) (domain.VisionAdapter, error) {
 	for _, ref := range models {
 		exists, err := s.catalog.ModelExists(ctx, ref)
@@ -105,6 +111,9 @@ func (s *VisionAdapterService) Replace(ctx context.Context, enabled, roundRobin 
 		}
 		if !exists {
 			return domain.VisionAdapter{}, domain.NewValidationError("unknown model: " + ref.String())
+		}
+		if err := s.catalog.ChatServable(ctx, ref); err != nil {
+			return domain.VisionAdapter{}, err
 		}
 	}
 	adapter, err := domain.NewVisionAdapter(enabled, roundRobin, models, s.capable, s.clock())
