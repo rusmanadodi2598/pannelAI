@@ -35,7 +35,7 @@ premis:
 Tiga selisih lain butuh `app-serv` dan dicatat sebagai permintaan bernomor, bukan dikerjakan di sini:
 periode `All` (F5), dimensi `Account` (F6), dan drawer empat body (F7).
 
-Di tengah pass, owner memberi kabar bahwa `GET /api/v1/usage/live` sudah mendarat di `app-serv` (`ede03d2`)
+Di tengah pass, owner memberi kabar bahwa `GET /api/v1/usage/live` sudah mendarat di `app-serv` (`eeef715`)
 dan meminta panel disambungkan supaya progresnya benar-benar CLOSED. Pass ini karena itu menaikkan bukti
 live dari contract double ke **route nyata**: 21 pemeriksaan klien dan satu click-through browser yang
 direkam, keduanya di atas gateway yang dibangun dari tree yang di-commit. Itu menutup separuh gateway yang
@@ -244,7 +244,7 @@ meluber.
 - **Palet tidak bertambah.** Kedua chart memakai `--color-accent` dan token panel, bukan delapan warna
   reference.
 - **`SYSTEM_MAP.md` tidak disentuh pass ini.** Peta itu memang berubah di pass ini, tetapi oleh pass
-  `app-serv` `ede03d2` (baris 342 mendokumentasikan route live-nya), bukan oleh pass panel: tidak ada batas
+  `app-serv` `eeef715` (baris 342 mendokumentasikan route live-nya), bukan oleh pass panel: tidak ada batas
   domain, struktur data, atau topologi layanan yang pass ini ubah.
 - **Padding tabel register 007 tidak dirapikan.** Baris Usage yang pass ini perluas sudah menyimpang dari
   lebar separatornya sebelum pass ini, dan pass ini tidak meretrofit tabelnya.
@@ -271,11 +271,11 @@ yang disebut di baris `bun run test`.
 ### 12.1 Live pass: route nyata, bukan contract double
 
 Pass-pass sebelumnya merekam click-through di atas **contract double** karena `app-serv` belum melayani
-`GET /api/v1/usage/live`. Route itu sekarang ada (`app-serv` `ede03d2`, terdaftar di `router.go:192`, kontrak
+`GET /api/v1/usage/live`. Route itu sekarang ada (`app-serv` `eeef715`, terdaftar di `router.go:192`, kontrak
 di `docs/CONTRACT/001-CONTRACT-API-V1.yaml:7025`), jadi seluruh bukti di bawah berjalan di atas gateway nyata,
 registry nyata, dan trafik nyata lewat data plane.
 
-**Harness.** Gateway dibangun dari **tree yang di-commit** (`git archive HEAD app-serv` pada `ede03d2`), bukan
+**Harness.** Gateway dibangun dari **tree yang di-commit** (`git archive HEAD app-serv` pada `eeef715`), bukan
 dari working tree, karena ada pekerjaan `app-serv` lain yang belum di-commit di sana. Gateway di `:9090`,
 panel hasil `bun run build` di `:3000` dengan `PANEL_API_TARGET` menunjuk gateway, dan satu stub upstream
 berbentuk OpenAI di `:8097` yang menahan jawabannya enam detik (itu yang membuat jendela in-flight

@@ -58,7 +58,7 @@ reference (`RequestDetailsTab.js`). Keduanya butuh `app-serv` lebih dulu (AGENTS
 
 **Status: DURING selesai.**
 
-**Fakta.** Pada `9668e3c`, tab Overview hanya merender blok grup bila URL menyebut `group_by`, dan blok
+**Fakta.** Pada `4f9974c`, tab Overview hanya merender blok grup bila URL menyebut `group_by`, dan blok
 itu berupa daftar angka tanpa header yang bisa diklik. Reference, pada layar yang sama:
 `TABLE_OPTIONS` (`UsageStats.js:177-182`) adalah pemilih dimensi; `sortData` (`:87-102`) mengurutkan
 seluruh peta data di klien; `sortBy`/`sortOrder` dibaca dari URL dengan default `rawModel`/`asc`

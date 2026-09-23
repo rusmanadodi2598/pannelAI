@@ -100,7 +100,7 @@ selisih adalah F2. Setelah edit spec ini, kedua sisi 90.
 
 ## 8. Penutupan area Endpoint & Key (2026-09-20)
 
-Status **CLOSED**. Bukti perjalanan yang dipin test (commit `2b75d85` dan `45131c9`),
+Status **CLOSED**. Bukti perjalanan yang dipin test (commit `c3a2f56` dan `ca9e677`),
 semuanya table-driven sesuai TDD.md §2.5 dan dipetakan ke OWASP:
 
 | Perjalanan | Test | Bukti |
@@ -127,7 +127,7 @@ sama: Provider, Combo & Vision Adapter.
 
 Status **CLOSED**. Audit menemukan cakupan perjalanan area ini sudah menyeluruh dari
 domain sampai handler; satu-satunya gap adalah pengujian gerbang akses dan tabel verb di
-level mux, ditutup pada commit `4833d30`. Bukti per perjalanan, dipetakan ke TDD.md
+level mux, ditutup pada commit `6cd9054`. Bukti per perjalanan, dipetakan ke TDD.md
 (table-driven) dan OWASP:
 
 | Perjalanan | Test | Bukti |
@@ -141,7 +141,7 @@ level mux, ditutup pada commit `4833d30`. Bukti per perjalanan, dipetakan ke TDD
 | Probe combo: satu hasil per ref sesuai urutan tersimpan, anggota mati = hasil bukan error, judge fusion diprobe terakhir dengan role tersendiri | `TestComboTestService_Test` (tabel 4 kasus), `TestComboTestHandler_ReportsEveryReference`, `TestComboTestHandler_ADeadMemberIsAResult`, `TestComboTestHandler_UnknownCombo` | service, handler |
 | Vision adapter: PUT = replace penuh, model wajib vision-capable (ditolak VALIDATION_ERROR per nama), round-trip GET=PUT, idempoten, model yang dilepas hilang | `TestVisionAdapterService_Replace` (tabel termasuk model non-vision), `TestVisionAdapterHandler_PutRoundTrip`, `TestVisionAdapterService_ReplaceIsIdempotent`, `TestVisionAdapterService_ReplaceRemovesDroppedModels` | service, handler |
 | Augmenter: model yang sudah vision-capable atau adapter mati tidak diaugmentasi; rotasi advisory tidak menggagalkan serving | `TestVisionAugmenter_DeclinesForACapableModel`, `TestVisionAugmenter_DeclinesWhenTheAdapterIsDisabled`, `TestVisionAugmenter_AdvisoryRotationFailureDoesNotBlockServing` | service |
-| Session gate dan verb table §7.7/§7.8: 401 tanpa session untuk kedelapan route, 200 dengan session (benign control), verb tak terdaftar = 405 METHOD_NOT_ALLOWED meski session valid (OWASP A01: function-level + per-method) | `TestComboAndVisionRoutes_SessionGated`, `TestComboAndVisionRoutes_VerbEnforcement` (commit `4833d30`) | router |
+| Session gate dan verb table §7.7/§7.8: 401 tanpa session untuk kedelapan route, 200 dengan session (benign control), verb tak terdaftar = 405 METHOD_NOT_ALLOWED meski session valid (OWASP A01: function-level + per-method) | `TestComboAndVisionRoutes_SessionGated`, `TestComboAndVisionRoutes_VerbEnforcement` (commit `6cd9054`) | router |
 
 Kontrak mesin-baca: kelima verb `/combos` dan keduanya `/vision-adapter` terkunci di
 `openapi.json` yang dilayani lewat coverage test dua arah, sama seperti area Endpoint &

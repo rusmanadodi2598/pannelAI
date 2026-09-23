@@ -318,7 +318,7 @@ teks + fakta + JSON mentah), lalu dikerjakan:
   dan reader berakhir `done`, jadi klaim "panel men-streaming" punya bukti live yang tidak bergantung pada
   app-serv.
 - Tiga cacat `app-serv` ditemukan pass ini dan **dicatat sebagai permintaan ke aktor itu, bukan dikerjakan
-  dari sini**, semuanya diverifikasi terhadap `app-serv` di `7b9ac1d` (HEAD saat pass, dibangun lewat
+  dari sini**, semuanya diverifikasi terhadap `app-serv` di `f081339` (HEAD saat pass, dibangun lewat
   `git archive`): (1) `mustFrame` di `internal/dataplane/translate_stream_openai.go` mem-marshal payload
   tanpa membingkainya, sehingga stream membawa objek JSON telanjang dan `data: [DONE]` menempel padanya
   tanpa baris kosong; (2) `internal/handler/chat.go` menulis status 200 dan content type SSE sebelum model
@@ -858,7 +858,7 @@ tercatat di mana pun. U2: dua dari empat criteria terpenuhi; OAuth round trip da
 generation melalui media provider belum, dan keduanya butuh akun provider. Tujuh dari lima belas
 bagian pass di `app-ui/README.md` menyebut click-through browser sebagai masih outstanding (diukur
 ulang 2026-09-21 dengan `awk` per bagian atas README; angka draft "tujuh dari sembilan" tidak bisa
-direproduksi, karena pengukuran yang sama pada commit draft `13ea269` menemukan satu dari sembilan
+direproduksi, karena pengukuran yang sama pada commit draft `58280b3` menemukan satu dari sembilan
 bagian). Pengukuran yang sama setelah pass "API base dialog dan copy key sekali-tampil"
 (2026-09-21) menemukan delapan dari enam belas bagian: pass itu menambah bagian ke-16, dan bagian
 itu menyebut click-through dialog barunya sendiri masih outstanding, jadi angka di kalimat
@@ -925,7 +925,7 @@ sebelumnya). Penyebutnya naik satu lagi sementara pembilangnya tetap: bagian ke-
 browser yang direkam penuh (sebelas tangkapan layar, sebelas kelompok nilai terukur) dan menyatakan
 batasnya sebagai "status CLOSED di draft 012 tetap ditahan", tanpa memakai kata outstanding untuk
 click-through-nya, jadi bagian itu tidak terhitung. Yang masih terbuka di bagian itu adalah separuh
-gateway: route `GET /api/v1/usage/live` diukur ulang pada gateway yang dibangun dari `f0435bc` dan tetap
+gateway: route `GET /api/v1/usage/live` diukur ulang pada gateway yang dibangun dari `15d708b` dan tetap
 menjawab 404, jadi frame live-nya datang dari contract double.
 
 Pengukuran yang sama setelah pass "Usage sections parity and the real live route" (2026-09-22) menemukan
@@ -1070,7 +1070,7 @@ pekerjaan itu berhenti dan dicatat sebagai permintaan, bukan dikerjakan dari dra
 dipakai: enam belas baris pembuka pass, satu baris tabel Requirements ("Bun | 1.3.14"), satu baris
 tabel di bagian Node adapter yang menyatakan boot banner mencetak versi itu, dan satu baris tabel di
 bagian verifikasi `bun run start`. Tujuh baris lain menyebut angka itu justru untuk menunjuk temuan ini
-(baris pembuka pass ke-18, ke-19, ke-20, ke-21, ke-22, ke-23, dan ke-24). Klaim itu sudah ada sejak commit U0 `abf9de5`
+(baris pembuka pass ke-18, ke-19, ke-20, ke-21, ke-22, ke-23, dan ke-24). Klaim itu sudah ada sejak commit U0 `7859105`
 (`git log -S '1.3.14' -- app-ui/README.md`), jadi ia diwariskan dari pass ke pass, bukan diukur
 ulang.
 

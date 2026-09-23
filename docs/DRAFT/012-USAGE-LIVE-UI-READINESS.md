@@ -134,7 +134,7 @@ aktivitas yang diklaim tanpa frame, dan click-through mencatat keadaan idle sert
 
 ## 6. F4 BLOCKER (BE): route `GET /api/v1/usage/live` belum ada di tree
 
-**Status: CLOSED 2026-09-22 oleh `app-serv` `ede03d2`.**
+**Status: CLOSED 2026-09-22 oleh `app-serv` `eeef715`.**
 
 **Fakta.** Grep atas `app-serv/` untuk `usage/live`, `UsageLive`, dan `activeRequests` tidak
 menemukan route, handler, maupun schema apa pun; yang ada hanya SSE pada jalur chat dan playground.
@@ -155,7 +155,7 @@ kontrol yang tidak punya lawan bicara); R-36 (tidak ada klaim live tanpa stream)
 layar. Sampai itu terjadi, panel merender keadaan `unavailable` dengan sebabnya.
 
 **Catatan 2026-09-22, setelah pass di §10.** Langkah 1 baru sebagian, dan sebagiannya sudah mendarat:
-commit `62d21e1` (sisi `app-serv` draft 010 F4) memberi `usage.recorded` sebuah publisher bounded dan
+commit `1ad828d` (sisi `app-serv` draft 010 F4) memberi `usage.recorded` sebuah publisher bounded dan
 subscriber nyata lewat Redis Pub/Sub di channel `pannelai:events:usage.recorded`. Bus itu membawa
 request yang **sudah selesai**, jadi ia mengisi separuh `recent` pada frame yang direncanakan;
 himpunan in-flight yang mengisi `active` masih butuh sumbernya sendiri (TTL Redis atau hitungan di
@@ -264,10 +264,10 @@ adalah frame yang benar-benar tiba, karena route F4 belum ada di gateway.
   membacanya sebagai 25, dan koreksi URL itu sekarang terlihat serta hanya satu pembacaan yang terjadi.
 - F2 dan F3 CLOSED 2026-09-22. Ketika draft ini ditulis, route lawan bicaranya belum ada, jadi yang terekam
   saat itu adalah keadaan sebaliknya: route menjawab 404 dan panel menyatakan `unavailable` beserta
-  sebabnya. Route itu mendarat di `app-serv` `ede03d2`, dan pass panel berikutnya (draft 016 §12.1)
+  sebabnya. Route itu mendarat di `app-serv` `eeef715`, dan pass panel berikutnya (draft 016 §12.1)
   merekam frame nyata dari gateway: 21 pemeriksaan klien plus click-through browser, termasuk node yang
   menyala dari frame dan baris selesai yang membawa token gateway.
-- F4 CLOSED 2026-09-22 oleh `app-serv` `ede03d2` (route `GET /api/v1/usage/live`, terdaftar di
+- F4 CLOSED 2026-09-22 oleh `app-serv` `eeef715` (route `GET /api/v1/usage/live`, terdaftar di
   `router.go:192`, kontrak di `docs/CONTRACT/001-CONTRACT-API-V1.yaml:7025`).
 - F5 tercatat; amandemen dokumen (SPEC-UI §6.5, §8.6.1, §9.5 dan DESIGN.md §2.1) ikut di perubahan ini.
 - F6 OPEN dan LOW: pola notice-only `per_page` yang sama masih ada di `log-search.ts` dan

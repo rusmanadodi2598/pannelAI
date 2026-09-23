@@ -283,7 +283,7 @@ the catalog/source option.
 
 ## 10. Status per 2026-09-21
 
-Perubahan `app-ui` pada `7b9ac1d` ("build /skills over the served catalog and publish the seven
+Perubahan `app-ui` pada `f081339` ("build /skills over the served catalog and publish the seven
 skill documents") menyentuh temuan dokumen ini dari sisi panel dan dokumen sumber. Kondisi
 yang terukur hari ini:
 

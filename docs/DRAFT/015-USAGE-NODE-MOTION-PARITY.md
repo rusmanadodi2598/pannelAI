@@ -46,7 +46,7 @@ override yang dicatat di F3.
 
 **Status: DURING selesai.**
 
-**Fakta.** Pada `9668e3c` edge aktif adalah satu `<line>` dengan `stroke-dasharray:3 3` dan satu animasi
+**Fakta.** Pada `4f9974c` edge aktif adalah satu `<line>` dengan `stroke-dasharray:3 3` dan satu animasi
 `flow` (draft 013 F1). Reference, pada layar yang sama, menggambar tiga lapis stroke dengan filter turbulensi
 sendiri, enam orb, dan lima spark: `ProviderTopology.js:137-245`. Dash tunggal itu memang parity untuk
 "edge bergerak", bukan parity untuk bentuk geraknya.
@@ -201,7 +201,7 @@ yang dikutip tidak berubah di tip baru.
 - **Angka agregat tetap milik REST.** Tidak ada field agregat yang berpindah tangan.
 - **Frame live tetap dari contract double** selama `GET /api/v1/usage/live` belum ada di `app-serv`
   (draft 013 F4), dan itu disebut di setiap baris bukti live. Route itu diukur ulang pada gateway yang
-  dibangun dari `f0435bc` dan tetap menjawab 404.
+  dibangun dari `15d708b` dan tetap menjawab 404.
 - **Padding tabel register 007 tidak dirapikan.** Himpunan baris yang menyimpang dari lebar separatornya
   sama di `HEAD` dan di tree ini: enam baris (11, 36, 37, 38, 39, 47). Baris ke-39 adalah baris Usage yang
   pass ini perluas, dan ia sudah menyimpang sebelum pass ini, jadi pass ini tidak meretrofitnya.
@@ -227,7 +227,7 @@ Dijalankan dari `app-ui/` pada tree beku (`md5sum` atas `src/` dan `tests/`:
 ### 10.1 Live pass: click-through browser yang direkam
 
 Chrome headless menggerakkan panel hasil `bun run build` di atas pasangan proses nyata. Gateway dibangun
-dari **tree yang di-commit** (`git archive HEAD f0435bc`), bukan dari working tree, karena ada pekerjaan
+dari **tree yang di-commit** (`git archive HEAD 15d708b`), bukan dari working tree, karena ada pekerjaan
 `app-serv` yang belum di-commit di sana dan pass panel tidak boleh bergantung padanya. Route
 `GET /api/v1/usage/live` diukur ulang pada gateway itu dan tetap **404**, jadi frame live tetap datang dari
 **contract double** seperti draft 013 F4. Sebelas tangkapan layar di `/tmp/live015/shots/` dan sebelas
@@ -264,14 +264,14 @@ atribut, bukan piksel.
 **Jebakan yang tercatat.** Proses harness sesi sebelumnya masih memegang port 4100 dan 9090, sehingga
 gateway yang boot pass ini mati di `EADDRINUSE` dan rekaman pertama berjalan di atas binary gateway yang
 lebih lama. Port diperiksa, PID basi dihentikan lewat PID yang dibaca dari `ss`, dan pass dijalankan ulang
-di atas build HEAD; itulah sebabnya bukti di atas menyebut `f0435bc`.
+di atas build HEAD; itulah sebabnya bukti di atas menyebut `15d708b`.
 
 Baseline DB dihitung sebelum dan sesudah dan kembali persis: `usage=0 logs=0 keys=1 endpoints=1 upkeys=0
 nodes=2 caps=0 settings=0 auth_null=0 media_settings=0 proxies=0`. Ketiga proses dihentikan lewat PID yang
 dicatat dan ketiga port tertutup.
 
 Yang **tidak** diklaim: frame live datang dari double, bukan dari gateway. Route nyatanya masih 404 di
-`f0435bc`, jadi CLOSED F2/F3 di draft 012 tetap ditahan.
+`15d708b`, jadi CLOSED F2/F3 di draft 012 tetap ditahan.
 
 ## 11. Status per 2026-09-22
 

@@ -48,7 +48,7 @@ berdenyut seolah ada trafik.
 **Status: DURING selesai.**
 
 **Fakta.** `UsageTopology.svelte` hanya punya `animate-ping` pada titik node aktif
-(`UsageTopology.svelte:139-143` pada `e5b3016`, keadaan sebelum pass ini). Edge hanya berganti warna
+(`UsageTopology.svelte:139-143` pada `e1819cc`, keadaan sebelum pass ini). Edge hanya berganti warna
 dan lebar (`EDGE`, `:51-56` di commit yang sama), node tidak
 berganti border maupun label, gateway tidak menghitung apa pun. Reference, pada layar yang sama:
 edge aktif `animated` (`ProviderTopology.js:190`), node aktif memakai border warna state, label warna
@@ -134,9 +134,9 @@ tidak ada glow di elemen lain.
 tree, tiga lapis: `grep -rn "usage/live" app-serv/` mengembalikan nol baris source; daftar
 `mux.Handle` di `app-serv/internal/router/router.go:185-188` memuat empat read Usage tanpa route
 stream; dan `git log --all -S"usage/live"` hanya menemukan commit FE serta dokumen. Yang mendarat di
-`app-serv` adalah separuh state (`62d21e1`, bus `usage.recorded`) dan dukungan transport
-(`bccfc56`, `http.Flusher` diteruskan middleware), bukan route-nya. Commit `app-serv` terbaru di
-branch ini tetap `62d21e1`.
+`app-serv` adalah separuh state (`1ad828d`, bus `usage.recorded`) dan dukungan transport
+(`e286cb8`, `http.Flusher` diteruskan middleware), bukan route-nya. Commit `app-serv` terbaru di
+branch ini tetap `1ad828d`.
 
 **Risiko dan aturan.** AGENTS.md §2.4 (kontrak dulu, kode kemudian); R-36 (tidak ada klaim live
 tanpa stream); R-35 (klaim click-through harus direkam, bukan diasumsikan).
@@ -201,7 +201,7 @@ F2/F3 draft 012 sekarang bisa ditutup karena route yang mereka tunggu sudah menj
 **Ditutup 2026-09-22 oleh pass panel (draft 016 §12.1).** Klik-through browser pada route nyata yang
 paragraf di atas sebut belum direkam sudah direkam: lima tangkapan layar dan tujuh kelompok nilai
 terukur di `/tmp/live016/`, plus 21 pemeriksaan klien yang menggerakkan modul panel sendiri, semuanya
-di atas gateway yang dibangun dari tree yang di-commit (`ede03d2`) dan trafik nyata lewat data plane.
+di atas gateway yang dibangun dari tree yang di-commit (`eeef715`) dan trafik nyata lewat data plane.
 Tidak ada contract double di jalur bukti itu.
 
 **Gate `app-serv` pada tree beku.** `go build ./...` bersih; `go vet ./...` dan
@@ -263,7 +263,7 @@ upkeys=0 nodes=2 caps=0 settings=0 auth_null=0 media_settings=0 proxies=0`. Kedu
 double dihentikan lewat PID yang dicatat.
 
 Yang **tidak** diklaim: frame itu datang dari double, bukan dari gateway. Route nyata masih nol baris
-di `app-serv` pada `e5b3016`, jadi CLOSED F2/F3 di draft 012 tetap ditahan dan click-through
+di `app-serv` pada `e1819cc`, jadi CLOSED F2/F3 di draft 012 tetap ditahan dan click-through
 route-nyata tetap outstanding.
 
 ## 9. Status per 2026-09-22
