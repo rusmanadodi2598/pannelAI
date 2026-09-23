@@ -444,11 +444,17 @@ absent.
 - **Cost caveat:** SPEC-API §7.12 states cost figures are estimates. The cost tile carries that note.
 - **Live:** `GET /api/v1/usage/live` (server-sent events) carries the three facts a period window cannot:
   the requests in flight now, the requests that just finished, and the provider the gateway last reported an
-  error for. The drawing places one node per configured provider around the gateway, marks each with its
-  state, and states the facts that are happening (what is in flight, where the last request finished, where
-  the gateway last errored) in words beside it; an idle drawing adds no sentence, because the node labels
-  are the provider list and the caption already defines what an idle node looks like (owner's correction,
-  2026-09-23, draft 022 F2). A provider that is routing is marked in four ways:
+  error for. The drawing places one node per configured provider around the gateway and marks each with its
+  state; the facts that are happening are stated in one line above it, in the drawing's own colour rule: a
+  routing provider's name takes the status colour, as that node's label does, and the finished and error
+  facts name their provider without one, as those nodes' labels do (owner's correction, 2026-09-23, draft
+  023 F1). The paragraph that explained the colours and the beam is gone, because the reference fork draws
+  no legend either, and the line keeps one line's height while there is nothing to state, so at the widths
+  where the facts fit on one line the drawing does not move when a request starts (measured 1360 px: the
+  idle slot and the stated line both read 20 px and the drawing's top holds at 1737; at 390 px the stated
+  line reads 60 px against the same 20 px slot, draft 023). An idle drawing adds no sentence, because the
+  node labels are the provider list (owner's correction, 2026-09-23, draft 022 F2). A provider that is
+  routing is marked in four ways:
   its dot pulses, the line to it carries the reference fork's beam (a wide halo, a dashed plasma and a
   dashed core, with six orbs and five sparks travelling along it), its node takes the status colour with a
   soft glow, and the gateway pulses with its mark shaking and its label flickering while it carries the
@@ -462,9 +468,11 @@ absent.
   names itself and, where the panel knows it, the cause (§8.6.1). A gateway that does not serve the route is
   stated as unavailable, not replaced by a poll under the same label. The finished list dates each row by
   how long ago it finished rather than by the instant, and keeps that reading fresh while the row is on
-  screen: the row is a claim about now, so a frozen "just now" would be a wrong figure (draft 014 F4). Each
-  finished row splits its tokens into in and out in the words the tiles above use, and a figure the frame did
-  not send is stated as absent rather than printed as zero (draft 016 F3).
+  screen: the row is a claim about now, so a frozen "just now" would be a wrong figure (draft 014 F4). It
+  sits under the drawing, set off by the tab idiom's label and accent rule with nothing focusable in it,
+  because the owner asked for a separator rather than a control (owner's correction, 2026-09-23, draft 023
+  F2). Each finished row splits its tokens into in and out in the words the tiles above use, and a figure the
+  frame did not send is stated as absent rather than printed as zero (draft 016 F3).
 
 **Tab 2: Records**
 

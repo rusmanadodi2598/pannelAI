@@ -171,7 +171,7 @@ describe('UsageOverviewTab with the live half', () => {
 			})
 		);
 
-		expect(await screen.findByText(/1 in flight: OpenAI \(gpt-4o\)\./)).toBeTruthy();
+		expect(await screen.findByText('OpenAI (gpt-4o).')).toBeTruthy();
 		expect(container.querySelector('.animate-ping')).toBeTruthy();
 	});
 });

@@ -1,16 +1,26 @@
 <script lang="ts">
 	// The live provider drawing's frame (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md F3, extended by
-	// docs/DRAFT/013-USAGE-NODE-MOTION-READINESS.md F1 and F2, and by docs/DRAFT/015 F1).
+	// docs/DRAFT/013-USAGE-NODE-MOTION-READINESS.md F1 and F2, by docs/DRAFT/015 F1, and revised by
+	// docs/DRAFT/023 F1).
 	//
 	// The reference fork draws this on a pan-and-zoom canvas (`ProviderTopology.js`). This is not that: the
 	// panel has one screen for it, no dependency is worth adding for a dozen nodes, and a canvas an operator
 	// can lose their place in is worse than a fixed drawing they can learn. The box itself lives in
 	// `UsageTopologyDrawing.svelte`, which the beam pushed past the 220-line warning.
 	//
-	// The drawing is hidden from assistive technology, so the facts it encodes are stated in words under
+	// The drawing is hidden from assistive technology, so the facts it encodes are stated in words above
 	// it. Only the facts that are happening are stated: the provider list is what the node labels already
-	// say, and an idle screen's "no request is in flight" repeats the absence of the colour the caption
-	// defines, so neither is a sentence that never changes (owner's correction, 2026-09-23).
+	// say, and an idle screen's "no request is in flight" repeats the absence of the colour, so neither is a
+	// sentence that never changes (owner's correction, 2026-09-23).
+	//
+	// The paragraph that explained the drawing (which colour means what, what the beam does) is gone, and the
+	// reference has no legend either (owner's correction, 2026-09-23, draft 023 F1). What replaces it is one
+	// line of the facts, in the drawing's own colour rule: a routing provider's name takes the status colour,
+	// exactly as its node's label does, and the finished and error facts name their provider without one,
+	// exactly as those nodes' labels do. The line keeps one line's height while there is nothing to state,
+	// so at the widths where the facts fit on one line a request starting does not move the drawing under
+	// the reader's eyes (measured at 1360 px; at 390 px the stated line reads 60 px against the same 20 px
+	// slot, and SPEC-UI §6.5 records both).
 	//
 	// Motion here is a state indicator, not decoration, and it has two conditions rather than one (draft 013
 	// F2): the frame must name the provider, and frames must be arriving on the connection that is open now.
@@ -58,31 +68,42 @@
 		return entry.model === undefined ? name : `${name} (${entry.model})`;
 	}
 
-	const running = $derived(
-		active.length === 0 ? '' : `${active.length} in flight: ${active.map(inFlight).join(', ')}.`
-	);
+	/**
+	 * One live fact, in the drawing's own vocabulary: the label is the node's state, the value is the
+	 * provider, and `tone` is the colour the drawing gives that state's name (only a routing node's label
+	 * takes the status colour, so only this fact does).
+	 */
+	type Fact = { label: string; value: string; tone: string };
 
-	const settled = $derived(
-		last === '' ? '' : `The last request to finish went to ${nameOf(last)}.`
+	/** The live facts that are happening, in the order the stream reports them, or an empty list. */
+	const facts = $derived(
+		[
+			active.length === 0
+				? null
+				: {
+						label: `${active.length} in flight`,
+						value: active.map(inFlight).join(', '),
+						tone: 'text-[var(--color-ok)]'
+					},
+			last === '' ? null : { label: 'Last finished', value: nameOf(last), tone: '' },
+			error === '' ? null : { label: 'Last error', value: nameOf(error), tone: '' }
+		].filter((fact): fact is Fact => fact !== null)
 	);
-
-	const reported = $derived(
-		error === '' ? '' : `The gateway last reported an error on ${nameOf(error)}.`
-	);
-
-	/** The live facts as one line, or an empty string while there is nothing to report. */
-	const summary = $derived([running, settled, reported].filter((line) => line !== '').join(' '));
 </script>
 
+<!-- eslint-disable svelte/no-useless-mustaches -- a fact reads as one sentence (`Label: value.`), and Svelte
+     trims the whitespace between a mustache and the element beside it, so each `{' '}` is the space that
+     sentence needs rather than a useless mustache (draft 023 F1). -->
 <figure
 	class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4"
 >
-	<figcaption class="text-sm text-[var(--color-text-muted)]">
-		Every configured provider around the gateway. Green is routing now, amber finished last, red is
-		where the gateway last reported an error. A routing provider's line carries a beam with dots
-		running along it, its node a soft glow, and the gateway pulses while it counts the requests in
-		flight.
-	</figcaption>
+	<!-- One line's height while there is nothing to state, so the drawing does not move when a request starts
+	     wherever the facts fit on one line. `min-h-5` is the `text-sm` line box (draft 023 F1). -->
+	<p class="min-h-5 text-sm">
+		{#each facts as fact, index (fact.label)}{#if index > 0}{' '}{/if}<span
+				class="text-[var(--color-text-muted)]">{fact.label}:</span
+			>{' '}<span class={fact.tone}>{fact.value}.</span>{/each}
+	</p>
 
 	{#if providers.length === 0}
 		<StateMessage
@@ -98,12 +119,5 @@
 		<div class="mx-12 sm:mx-16">
 			<UsageTopologyDrawing {layout} inFlight={active.length} {live} />
 		</div>
-	{/if}
-
-	<!-- The live facts in words, for the drawing that is hidden from assistive technology. Left out
-	     entirely while nothing is routing: there is no fact then, and the node labels and the caption
-	     are already the statement of the idle screen. -->
-	{#if summary !== ''}
-		<p class="text-sm">{summary}</p>
 	{/if}
 </figure>

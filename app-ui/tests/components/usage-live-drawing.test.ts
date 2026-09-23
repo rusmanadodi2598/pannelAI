@@ -48,7 +48,7 @@ describe('UsageLivePanel drawing', () => {
 			)
 		);
 
-		expect(await screen.findByText(/1 in flight: OpenAI \(gpt-4o\)\./)).toBeTruthy();
+		expect(await screen.findByText('OpenAI (gpt-4o).')).toBeTruthy();
 		expect(container.querySelector('.animate-ping')).toBeTruthy();
 	});
 
@@ -62,9 +62,9 @@ describe('UsageLivePanel drawing', () => {
 				frame({ active: [{ provider_id: 'openai', model: 'gpt-4o', started_at: startedNow() }] })
 			)
 		);
-		// Awaited on the drawing's own sentence rather than on the status chip: the drawing only exists
+		// Awaited on the drawing's own facts line rather than on the status chip: the drawing only exists
 		// once the registry read lands, and a row about motion must not pass on an empty drawing.
-		expect(await screen.findByText(/1 in flight: OpenAI \(gpt-4o\)\./)).toBeTruthy();
+		expect(await screen.findByText('OpenAI (gpt-4o).')).toBeTruthy();
 		expect(container.querySelector('[data-beam="core"]')).toBeTruthy();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Pause live updates' }));
@@ -133,6 +133,36 @@ describe('UsageLivePanel drawing', () => {
 		expect(screen.getByText('claude-3-5-sonnet')).toBeTruthy();
 		expect(screen.getByText('Success')).toBeTruthy();
 		expect(screen.getByText('Error')).toBeTruthy();
+	});
+
+	it('sets the finished list off with a tab-styled label that is not a control', async () => {
+		// Draft 023 F2: the owner asked for the separator to use the tab idiom without being a tab anyone
+		// can click, so the label carries the accent rule and nothing here is focusable.
+		const stub = stubPanel();
+		render(UsageLivePanel);
+		await screen.findByText('Connecting');
+
+		stub.streams[0].send(
+			frameText(
+				frame({
+					recent: [
+						{
+							request_id: 'req_1',
+							provider_id: 'openai',
+							model: 'gpt-4o',
+							ts: '2026-09-22T09:00:00Z',
+							status: 'success'
+						}
+					]
+				})
+			)
+		);
+
+		const label = await screen.findByText('Finished requests');
+
+		expect(label.closest('button')).toBeNull();
+		expect(screen.queryByRole('tab')).toBeNull();
+		expect(label.classList.contains('border-[var(--color-accent)]')).toBe(true);
 	});
 
 	it('does not render the finished list when the frame reports none', async () => {

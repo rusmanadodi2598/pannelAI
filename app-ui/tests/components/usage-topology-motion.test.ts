@@ -9,7 +9,7 @@
 // The beam's own parts and numbers are measured next door in `usage-topology-beam.test.ts`; what is left
 // here is when anything moves, and what the gateway and the node do while it does.
 
-import { cleanup, screen, within } from '@testing-library/svelte';
+import { cleanup, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { beamAt, draw, edgeFor, entry, GLOW, gateway, nodeFor } from '../support/topology-harness';
 
@@ -115,13 +115,5 @@ describe('UsageTopology motion', () => {
 		expect(card.classList.contains('gap-[calc(8px*var(--u))]')).toBe(true);
 		expect(card.classList.contains('[font-size:calc(14px*var(--u))]')).toBe(true);
 		expect(card.querySelector('img')?.classList.contains('size-[calc(16px*var(--u))]')).toBe(true);
-	});
-
-	it('says in words what the drawing moves, since the drawing is hidden from assistive technology', () => {
-		draw();
-
-		expect(
-			screen.getByText(/carries a beam with dots running along it, its node a soft glow/)
-		).toBeTruthy();
 	});
 });
