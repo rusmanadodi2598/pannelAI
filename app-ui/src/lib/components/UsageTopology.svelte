@@ -7,9 +7,10 @@
 	// can lose their place in is worse than a fixed drawing they can learn. The box itself lives in
 	// `UsageTopologyDrawing.svelte`, which the beam pushed past the 220-line warning.
 	//
-	// The drawing is hidden from assistive technology and the sentences below it carry the same facts,
-	// which is the rule §6.5 sets for the chart and the reason this component has no `aria-label` prose of
-	// its own.
+	// The drawing is hidden from assistive technology, so the facts it encodes are stated in words under
+	// it. Only the facts that are happening are stated: the provider list is what the node labels already
+	// say, and an idle screen's "no request is in flight" repeats the absence of the colour the caption
+	// defines, so neither is a sentence that never changes (owner's correction, 2026-09-23).
 	//
 	// Motion here is a state indicator, not decoration, and it has two conditions rather than one (draft 013
 	// F2): the frame must name the provider, and frames must be arriving on the connection that is open now.
@@ -57,27 +58,20 @@
 		return entry.model === undefined ? name : `${name} (${entry.model})`;
 	}
 
-	const listing = $derived(
-		providers.length === 1
-			? `One provider is configured: ${providers[0].name}.`
-			: `${providers.length} providers are configured: ${providers.map((p) => p.name).join(', ')}.`
-	);
-
 	const running = $derived(
-		active.length === 0
-			? 'No request is in flight.'
-			: `${active.length} in flight: ${active.map(inFlight).join(', ')}.`
+		active.length === 0 ? '' : `${active.length} in flight: ${active.map(inFlight).join(', ')}.`
 	);
 
 	const settled = $derived(
-		last === ''
-			? 'No request has finished since this screen opened.'
-			: `The last request to finish went to ${nameOf(last)}.`
+		last === '' ? '' : `The last request to finish went to ${nameOf(last)}.`
 	);
 
 	const reported = $derived(
-		error === '' ? '' : ` The gateway last reported an error on ${nameOf(error)}.`
+		error === '' ? '' : `The gateway last reported an error on ${nameOf(error)}.`
 	);
+
+	/** The live facts as one line, or an empty string while there is nothing to report. */
+	const summary = $derived([running, settled, reported].filter((line) => line !== '').join(' '));
 </script>
 
 <figure
@@ -106,12 +100,10 @@
 		</div>
 	{/if}
 
-	<!-- The same facts in words. Left out when there is no node to describe: the empty state above is the
-	     statement for that case, and "0 providers are configured: ." is not a sentence. -->
-	{#if providers.length > 0}
-		<div class="flex flex-col gap-1 text-sm">
-			<p>{listing}</p>
-			<p>{running} {settled}{reported}</p>
-		</div>
+	<!-- The live facts in words, for the drawing that is hidden from assistive technology. Left out
+	     entirely while nothing is routing: there is no fact then, and the node labels and the caption
+	     are already the statement of the idle screen. -->
+	{#if summary !== ''}
+		<p class="text-sm">{summary}</p>
 	{/if}
 </figure>

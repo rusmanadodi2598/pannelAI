@@ -30,7 +30,10 @@ describe('UsageLivePanel drawing', () => {
 		});
 		render(UsageLivePanel);
 
-		expect(await screen.findByText('2 providers are configured: OpenAI, OpenCode.')).toBeTruthy();
+		// The node labels are the record: the provider list is no longer restated in words (owner's
+		// correction, 2026-09-23), and the awaited label is what says the registry read landed.
+		expect(await screen.findByText('OpenCode')).toBeTruthy();
+		expect(screen.getByText('OpenAI')).toBeTruthy();
 		expect(screen.queryByText('Anthropic')).toBeNull();
 	});
 
@@ -141,9 +144,9 @@ describe('UsageLivePanel drawing', () => {
 
 		expect(await screen.findByText('Live')).toBeTruthy();
 		expect(screen.queryByText('Finished requests')).toBeNull();
-		// Awaited, because the drawing's own sentence waits on the registry read rather than on the frame.
-		expect(
-			await screen.findByText(/No request has finished since this screen opened\./)
-		).toBeTruthy();
+		// Awaited, because the drawing's own state waits on the registry read rather than on the frame, and
+		// an idle drawing states no fact in words (owner's correction, 2026-09-23).
+		expect(await screen.findByText('OpenAI')).toBeTruthy();
+		expect(screen.queryByText(/No request has finished/)).toBeNull();
 	});
 });

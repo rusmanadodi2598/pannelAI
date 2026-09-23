@@ -36,9 +36,14 @@
 		<div class="flex min-w-0 flex-1 flex-col">
 			<PanelHeader />
 			<!-- Only this column scrolls, so the header stays put and a long table does not drag the
-			     whole shell with it. -->
+			     whole shell with it. `relative` makes this scroller the containing block for the
+			     absolutely positioned `sr-only` labels inside it. Without it such a label positions
+			     against the page instead, escapes this element's clip, and adds its own static position
+			     to the document's scroll area: measured 2026-09-23, `/usage` scrolled 591px and
+			     `/api-docs` 8638px into blank page, with `main` still the only thing the operator
+			     scrolled. -->
 			<main
-				class="min-w-0 flex-1 overflow-y-auto p-4 lg:p-6"
+				class="relative min-w-0 flex-1 overflow-y-auto p-4 lg:p-6"
 				style="padding-bottom: max(1rem, env(safe-area-inset-bottom));"
 			>
 				<div class="mx-auto w-full max-w-[1600px]">

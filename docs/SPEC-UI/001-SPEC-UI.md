@@ -445,7 +445,10 @@ absent.
 - **Live:** `GET /api/v1/usage/live` (server-sent events) carries the three facts a period window cannot:
   the requests in flight now, the requests that just finished, and the provider the gateway last reported an
   error for. The drawing places one node per configured provider around the gateway, marks each with its
-  state, and states the same facts in words beside it. A provider that is routing is marked in four ways:
+  state, and states the facts that are happening (what is in flight, where the last request finished, where
+  the gateway last errored) in words beside it; an idle drawing adds no sentence, because the node labels
+  are the provider list and the caption already defines what an idle node looks like (owner's correction,
+  2026-09-23, draft 022 F2). A provider that is routing is marked in four ways:
   its dot pulses, the line to it carries the reference fork's beam (a wide halo, a dashed plasma and a
   dashed core, with six orbs and five sparks travelling along it), its node takes the status colour with a
   soft glow, and the gateway pulses with its mark shaking and its label flickering while it carries the

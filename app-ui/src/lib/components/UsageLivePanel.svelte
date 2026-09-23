@@ -154,8 +154,9 @@
 	     screen in colour and stops every moving part (draft 013 F2). -->
 	<UsageTopology {providers} {active} {last} {error} live={report.status === 'live'} />
 
-	<!-- Rendered only when the frame carries finished requests. The absence is not silent: the drawing's
-	     summary states that nothing has finished since the screen opened. -->
+	<!-- Rendered only when the frame carries finished requests. While none has, the screen's statement of
+	     that is the drawing's colours and the status chip, not a sentence (owner's correction,
+	     2026-09-23). -->
 	{#if recent.length > 0}
 		<UsageRecentList {recent} {providerName} />
 	{/if}

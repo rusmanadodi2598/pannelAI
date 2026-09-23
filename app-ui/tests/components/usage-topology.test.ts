@@ -1,9 +1,10 @@
 // Live drawing tests (src/lib/components/UsageTopology.svelte, draft 012 F3).
 //
-// The drawing is decorative by construction: it is hidden from assistive technology and the sentences
-// beneath it carry every fact it encodes. So the rows come in pairs, one for the graphic and one for the
-// text, and the interesting ones are the states: which node pulses, and what the pulse does when the frame
-// stops naming that provider.
+// The drawing is decorative by construction: it is hidden from assistive technology, and the facts it
+// encodes that are not on the screen in words are stated in words beneath it. So the rows come in pairs,
+// one for the graphic and one for the text, and the interesting ones are the states: which node pulses,
+// what the pulse does when the frame stops naming that provider, and which facts the words state and which
+// they leave to the drawing (owner's correction, 2026-09-23).
 
 import { cleanup, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -96,22 +97,21 @@ describe('UsageTopology', () => {
 		expect(ring?.classList.contains('motion-reduce:hidden')).toBe(true);
 	});
 
-	it('states the configured providers, so the drawing is not the only record of them', () => {
+	it('states no fact in words while the drawing is idle', () => {
+		// The owner's correction of 2026-09-23: the provider list repeats the node labels, and "no request
+		// is in flight" / "no request has finished" state only an absence, so an idle screen carries no
+		// sentence that never changes.
 		draw();
 
-		expect(screen.getByText('2 providers are configured: OpenAI, Anthropic.')).toBeTruthy();
+		expect(screen.queryByText(/providers are configured/)).toBeNull();
+		expect(screen.queryByText(/No request is in flight\./)).toBeNull();
+		expect(screen.queryByText(/No request has finished since this screen opened\./)).toBeNull();
 	});
 
 	it('names what is in flight, with the model the frame reported', () => {
 		draw({ active: [entry('openai', 'gpt-4o'), entry('anthropic')] });
 
 		expect(screen.getByText(/2 in flight: OpenAI \(gpt-4o\), Anthropic\./)).toBeTruthy();
-	});
-
-	it('says nothing is in flight rather than leaving the line out', () => {
-		draw();
-
-		expect(screen.getByText(/No request is in flight\./)).toBeTruthy();
 	});
 
 	it('names the provider the last request finished on, and the one that errored', () => {
@@ -121,19 +121,13 @@ describe('UsageTopology', () => {
 		expect(screen.getByText(/The gateway last reported an error on OpenAI\./)).toBeTruthy();
 	});
 
-	it('says nothing has finished rather than claiming a last request', () => {
-		draw();
-
-		expect(screen.getByText(/No request has finished since this screen opened\./)).toBeTruthy();
-	});
-
 	it('names a provider the registry does not carry by its id', () => {
 		draw({ last: 'gone-provider' });
 
 		expect(screen.getByText(/The last request to finish went to gone-provider\./)).toBeTruthy();
 	});
 
-	it('hides the drawing from assistive technology, since the sentences carry the same facts', () => {
+	it('hides the drawing from assistive technology, since the live facts are also stated in words', () => {
 		const container = draw({ active: [entry('openai')] });
 
 		expect(container.querySelector('div[aria-hidden="true"]')).toBeTruthy();

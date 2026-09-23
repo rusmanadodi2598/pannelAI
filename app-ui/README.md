@@ -112,7 +112,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Twenty-seven passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Twenty-eight passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -174,7 +174,88 @@ inside a dialog, measured the same day: the copy button on the Endpoint & Key sc
 write while the clipboard stayed empty, because the selection path appended its scratch field to the
 document body and the one-time key modal is a native dialog opened as modal, which makes every node
 outside it inert; the field now goes into the open dialog, and the command's own answer is trusted only
-once that field took focus, filed as `docs/DRAFT/020-ENDPOINT-KEY-COPY.md`.
+once that field took focus, filed as `docs/DRAFT/020-ENDPOINT-KEY-COPY.md`. The twenty-eighth is the
+usage page's own scroll and the drawing's idle text, measured the same day: the page could be scrolled into
+blank space below its content, because every screen-reader-only label inside the one scrolling column was
+positioned against the page rather than the column, and the drawing no longer states the provider list or
+the two idle sentences, only the facts that are happening, filed as
+`docs/DRAFT/022-USAGE-SCROLL-AND-DRAWING-TEXT.md`.
+
+### The usage page's scroll and the drawing's idle text, 2026-09-23
+
+Run with Bun 1.3.0 (`bun --version`; the earlier pass rows state 1.3.14, which no binary on this machine
+reports, filed as F13 of `docs/DRAFT/007-UI-ENDPOINT-READINESS.md`). The owner's two items were about one
+screen: `/usage` could be scrolled into a blank area below its content, and the node drawing carried three
+sentences that never changed.
+
+The first item was measured before anything changed, because every state the earlier passes had recorded
+looked correct. What was measured is the document's own scroll area
+(`documentElement.scrollHeight - clientHeight`), not the content's, and it read 591 px on the Overview with
+rows in the window, 8638 px on `/api-docs`, and 822 px on `/token-saver`, against 0 on the other thirteen
+routes. `main` was still the only column that scrolled (1349 px of its own on that Overview, 9048 on
+`/api-docs`), so the second area was the whole document: a wheel or a Page Down moved the entire shell down
+into empty page while the sidebar stayed where it was. That is the blank page the owner reported.
+
+The cause is one CSS property, not one table. `main` is the scroller and it had no `position`, so it was not
+a containing block: every Tailwind `sr-only` label inside it (`position: absolute`, one pixel) positioned
+against the page, escaped the scroller's clip, and added its own static position to the document's scroll
+area. Measured on the Overview, the two labels that escaped were the breakdown table's caption
+(`Usage broken down by model`, bottom 1504) and a bar chart's (`By provider by provider`, bottom 1474), the
+second one while its disclosure was closed, because a closed `<details>` still lays its content out. The fix
+is one word in `src/lib/components/AppShell.svelte`: the scroller is now a containing block (`relative`), so
+those labels are positioned against the thing that scrolls and are clipped by it. The five
+`overflow-x: auto` wrappers that draft 019 F6 made `relative` are unchanged, and the exception that draft
+recorded for `EndpointTable` is no longer load-bearing.
+
+A survey of the panel's fifteen pages (`/login` aside, which has no table) measured the safety of that
+change rather than assuming it: every absolutely positioned element that positioned against the page and
+was not an `sr-only` label is counted, and there were none on any page (the shell's sidebar is
+`position: fixed` against the viewport, and a closed dialog is out of the flow). After the fix the three
+affected pages read 0, 0 and 0, `main` still scrolls exactly as before, and no page-positioned `sr-only`
+label remains anywhere. The measurement ran on this pass's own instance (a copy built in
+`/tmp/usageprobe/panel`, served on port 3001) and on a second instance serving the repository's `build/`,
+first at the pre-pass tree and then at this pass's own build (port 3002), both pointed at a gateway built
+from HEAD on `127.0.0.1:9091`, because the team's own gateway process comes and goes.
+
+The second item was the drawing's own text. The owner quoted three sentences and asked for them to go: the
+configured-provider list, `No request is in flight.`, and `No request has finished since this screen
+opened.`. All three state something that does not change while the screen is idle, and the first is what
+the drawing's node labels already show. `UsageTopology.svelte` now renders one line of live facts only, and
+nothing at all while nothing is routing; the live branch (what is in flight, where the last request
+finished, where the gateway last errored) is unchanged. SPEC-UI §6.5's sentence that the drawing "states the
+same facts in words beside it" is amended in the same commit to name which facts those are, with the
+owner's correction as the reason. The page with no rows in the window measures 1044 px of content before the
+change and 988 after, and the live branch stays covered by tests rather than by this pass's click-through,
+whose recorded state was the idle one.
+
+The first full suite run then failed exactly one test, and it was worth the run:
+`tests/components/usage-overview-live.test.ts` is a third consumer of the drawing and still asserted the
+sentence this pass removed (`One provider is configured: OpenAI.`). The targeted run had covered the two
+files the change was written against and never opened that one, so the assertion now syncs on the node label
+the drawing still shows, and the whole gate set was re-run on the tree after that fix. The edit is one line
+in a test file: no runtime file changed, so the measurements in this section still describe the shipped
+code.
+
+| Check             | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `bun run test`    | 2604 tests passed across 154 files (the last recorded pass was 2606 across 154, so the net is -2: the two sentence assertions this pass removed from `tests/components/usage-topology.test.ts`, which went from 14 `it(` blocks to 12, while `usage-live-drawing.test.ts` kept its 7 cases and `usage-overview-live.test.ts` its 3). The run took 952 s on this host, on the tree fingerprinted `616c6b0002592623f8c1fe7431dffc2c` (`md5sum` over `src/`, `tests/`, `static/` and `scripts/`, 497 files), and it was green on its first attempt on this tree. An earlier run on the pre-fix tree `9dc440f3f781460ac0a553c82ca55a6f` was not green: it failed the one stale assertion in `usage-overview-live.test.ts` that this pass then fixed, which is why the gate set was re-run on the tree above. |
+| `bun run lint`    | Prettier reports every file conforms                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `bun run build`   | succeeds, exit 0, output in `build/`, which is the directory the owner's own instance on port 3000 serves, so his next reload picks this pass up                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Live pass         | the page measured in both data states on a pre-fix build and a fixed build, then re-measured on this pass's own `build/` at 1360 px and at 390 px, each run reading the document's scroll area, `main`'s own scroll area, the content height, any element reaching past the content, the horizontal overflow and the gap below the content after scrolling to the bottom, with three screenshots kept; plus the page survey (fifteen pages before the fix, five after). The seeded rows were written and deleted by their `probe022-` id prefix, and the empty state was measured on both builds after the rows were gone. Two driver runs hung with no output before the measurement completed, and the cause was `/tmp` full of the probe's own Chrome profiles, not the panel                         |
+| File size         | the six files this pass touched are all under the 220 warning: `src/lib/components/AppShell.svelte` 55, `src/lib/components/UsageTopology.svelte` 109, `src/lib/components/UsageLivePanel.svelte` 163, `tests/components/usage-topology.test.ts` 168, `tests/components/usage-live-drawing.test.ts` 152, `tests/components/usage-overview-live.test.ts` 177                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Text hygiene      | 0 em dashes in the new and edited files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+
+What changed, and what is deliberately not claimed:
+
+| Behaviour                                                    | Detail                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The scroller contains its hidden labels                      | `main` carries `relative`, so an `sr-only` label inside it is positioned against the column that scrolls and is clipped by it. Measured before: `/usage` 591 px, `/api-docs` 8638 px and `/token-saver` 822 px of document scroll, all 0 after, with `main`'s own scroll unchanged                           |
+| The drawing states only what is happening                    | The provider list and the two idle sentences are gone; `N in flight: ...`, `The last request to finish went to ...` and the error sentence still render, in one line, and the block is absent while there is nothing to state. The tests assert the absence rather than the wording of the removed sentences |
+| SPEC-UI §6.5 is amended, not quietly contradicted            | The sentence that the drawing states the same facts in words now says which facts: the ones that are happening. The node labels are the provider list, and the caption already defines what an idle node looks like                                                                                          |
+| No regression test for the scroll defect                     | jsdom has no layout, so a test cannot measure it. The evidence is the recorded browser measurement above, and the comment in `AppShell.svelte` carries the figures so the property is not removed without a reason                                                                                           |
+| Not claimed: the live sentences were not driven in a browser | The click-through's state was idle. That branch is covered by the two test files, and driving it live would need a key and an endpoint on the shared development database, which another actor had truncated earlier in the session                                                                          |
 
 ### The copy control inside a dialog, 2026-09-23
 

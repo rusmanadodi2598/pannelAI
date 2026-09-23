@@ -160,7 +160,7 @@ describe('UsageOverviewTab with the live half', () => {
 		const stub = stubTab();
 		const container = render(UsageOverviewTab).container;
 
-		expect(await screen.findByText('One provider is configured: OpenAI.')).toBeTruthy();
+		expect(await screen.findByText('OpenAI')).toBeTruthy();
 		expect(container.querySelector('.animate-ping')).toBeNull();
 
 		stub.streams[0].send(
