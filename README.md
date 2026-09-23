@@ -22,22 +22,69 @@ Proyek memisahkan tanggung jawab **Control Plane** (API manajemen) dan **Data Pl
 
 ```text
 pannelAI/
-├── app-serv
-│   ├── cmd
+├── app-serv                    # Go: control plane dan data plane dalam satu proses
+│   ├── cmd/app-serv            # composition root: wiring per bidang, tanpa logika
 │   ├── internal
-│   ├── migrations
-│   ├── tools
+│   │   ├── config              # konfigurasi env bertipe, divalidasi saat boot
+│   │   ├── dataplane           # satu request chat end to end: resolve, seleksi, translasi
+│   │   ├── domain              # entitas, value object, transisi state, envelope error
+│   │   ├── handler             # decode, panggil service, encode
+│   │   ├── netguard            # guard egress: validasi tujuan sebelum konek (SSRF)
+│   │   ├── provider            # seam plugin konektivitas per provider
+│   │   ├── registry            # registry provider yang di-embed
+│   │   ├── repository          # kontrak penyimpanan dan implementasinya
+│   │   │   ├── postgres        # implementasi PostgreSQL
+│   │   │   └── redis           # implementasi Redis: sesi, counter, state sticky
+│   │   ├── router              # tabel route dan middleware lintas-potong
+│   │   ├── schema              # DTO, tag validasi, serialisasi respons
+│   │   ├── service             # orkestrasi use case, panggilan keluar dengan timeout
+│   │   └── tokensaver          # penerapan grup saver sesuai urutan referensi
+│   ├── migrations              # 000001 … 000012, pasangan up/down
+│   ├── tools                   # generator kode
+│   │   ├── openapi-gen
+│   │   ├── capability-gen.mjs
+│   │   └── registry-gen.mjs
 │   ├── .env.example
 │   ├── .golangci.yml
 │   ├── go.mod
 │   ├── go.sum
 │   └── README.md
-├── app-ui
+├── app-ui                      # SvelteKit + Bun: panel yang memanggil API manajemen
 │   ├── assets
+│   │   └── static              # aset sumber dari pemilik (logo)
 │   ├── scripts
+│   │   └── boot-log.ts
 │   ├── src
-│   ├── static
-│   ├── tests
+│   │   ├── lib
+│   │   │   ├── api             # satu-satunya tempat fetch
+│   │   │   ├── components      # shell, sidebar, dialog, tabel, form
+│   │   │   ├── hooks           # hook lintas-komponen
+│   │   │   ├── primitives      # komponen shadcn-svelte (generated)
+│   │   │   ├── schemas         # skema Zod: primitif, sanitasi, kontrak respons
+│   │   │   ├── server          # kode server-only: validasi env, forwarder /api/v1
+│   │   │   ├── stores          # state sesi, tema, preferensi sidebar
+│   │   │   ├── strings         # katalog teks per layar
+│   │   │   ├── utils           # helper tampilan bersama
+│   │   │   ├── dirty-guard.ts  # guard draft belum tersimpan
+│   │   │   ├── icons.ts        # peta ikon
+│   │   │   ├── motion.css      # token gerak untuk gambar Usage
+│   │   │   ├── navigation.ts   # pohon sidebar sebagai data
+│   │   │   ├── nav-path.ts
+│   │   │   ├── polling.ts
+│   │   │   ├── usage-live-reader.ts
+│   │   │   ├── usage-live.ts   # pemilik koneksi Usage live
+│   │   │   └── utils.ts
+│   │   ├── routes              # satu direktori per layar (api-base … usage)
+│   │   ├── app.css             # lapisan token: DESIGN.md §3 sampai §5
+│   │   ├── app.d.ts
+│   │   ├── app.html
+│   │   └── hooks.server.ts
+│   ├── static                  # aset yang disajikan
+│   │   ├── fonts               # InterVariable.woff2 (self-hosted)
+│   │   ├── favicon.png
+│   │   ├── logo-mark@128.png
+│   │   └── logo-mark.png
+│   ├── tests                   # tes per area, plus support/ untuk helper bersama
 │   ├── .env.example
 │   ├── .prettierignore
 │   ├── .prettierrc
@@ -53,25 +100,25 @@ pannelAI/
 ├── deployment
 │   └── .gitkeep
 ├── docs
-│   ├── CHANGELOG
-│   ├── CONTRACT
-│   ├── DRAFT
-│   ├── RULLES
-│   ├── SPEC-API
-│   └── SPEC-UI
-├── scrypts
-│   ├── gates
-│   ├── hooks
+│   ├── CHANGELOG               # catatan rilis
+│   ├── CONTRACT                # kontrak wire (YAML) dan turunannya
+│   ├── DRAFT                   # catatan kesiapan per slice
+│   ├── RULLES                  # TDD.md dan OWASP.md
+│   ├── SPEC-API                # spesifikasi API dan token saver
+│   └── SPEC-UI                 # spesifikasi panel
+├── scrypts                     # quality gates dan git hooks
+│   ├── gates                   # 8 gate: lint, tes, panel, secrets, contract
+│   ├── hooks                   # pre-commit, pre-push, post-commit, graphify
 │   ├── lib
 │   └── README.md
-├── skills
-│   ├── pannelai
-│   ├── pannelai-chat
-│   ├── pannelai-embeddings
-│   ├── pannelai-image
-│   ├── pannelai-stt
-│   ├── pannelai-tts
-│   └── pannelai-web-search
+├── skills                      # dokumen skill yang dilayani panel
+│   ├── pannelai/SKILL.md
+│   ├── pannelai-chat/SKILL.md
+│   ├── pannelai-embeddings/SKILL.md
+│   ├── pannelai-image/SKILL.md
+│   ├── pannelai-stt/SKILL.md
+│   ├── pannelai-tts/SKILL.md
+│   └── pannelai-web-search/SKILL.md
 ├── .gitignore
 ├── .gitleaks.toml
 ├── AGENTS.md
