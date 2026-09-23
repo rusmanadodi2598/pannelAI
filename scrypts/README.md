@@ -22,7 +22,7 @@ stale after an update.
 | `gates/go-headers.sh` | AGENTS.md §1.2 header contract on every hand-authored Go file |
 | `gates/go-test.sh` | `go test -race`, plus the tagged integration suite when a DSN is set |
 | `gates/panel-check.sh` | app-ui: prettier, ESLint, svelte-check, vitest, production build |
-| `gates/secrets.sh` | gitleaks over commits and the working tree, or the staged patch |
+| `gates/secrets.sh` | gitleaks over commits and the files a push would carry, or the staged patch |
 | `gates/contract-drift.sh` | SPEC-API §8 error codes against the panel's closed enum |
 | `gates/all.sh` | every gate above, with a summary |
 
@@ -49,6 +49,11 @@ rare and worth explaining in the pull request.
   allowlist for two values that the `generic-api-key` heuristic flags: a masking
   test fixture and the key-generation alphabet. Both are named by literal value,
   not by path, so a real credential in those same files is still caught.
+- The working-tree scan of `gates/secrets.sh` covers tracked files plus untracked
+  files that are not ignored, because that is the set a push can carry. Ignored
+  files are left out: they cannot enter a commit without `git add -f`, and the
+  staged scan catches that case at commit time. This is why the local
+  `app-serv/.env` and the generated `graphify-out/` cache do not fail the gate.
 - `golangci-lint` runs only when installed. Its absence is reported as a skip
   rather than a pass, because a gate that silently succeeds without its tool
   reports safety it never checked.
