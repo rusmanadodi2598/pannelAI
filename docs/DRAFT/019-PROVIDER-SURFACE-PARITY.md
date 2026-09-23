@@ -456,4 +456,6 @@ sendiri dan ditutup di pass yang sama). Satu baris tetap tidak dibangun di F4: t
 route-nya belum ada di `app-serv` dan sudah tercatat sebagai draft 017 F6. Angka pass: `app-ui/README.md`
 bagian ke-26, register `docs/DRAFT/007-UI-ENDPOINT-READINESS.md` F12 naik ke dua belas dari dua puluh enam
 bagian dan F13 ke sembilan baris penunjuk (jumlah klaimnya tetap sembilan belas). Commit lokal `app-ui`
-saja, tanpa push, sesuai aturan owner.
+saja, tanpa push, sesuai aturan owner. Pass ini mendarat sebagai dua commit lokal: `1215d0b` (F1 sampai
+F5) dan `b5a879d` (F6, lima pembungkus `relative` plus catatan ini), keduanya scope `app-ui` saja dan
+belum di-push.
