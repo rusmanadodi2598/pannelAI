@@ -8,7 +8,7 @@
 	// A registry provider gets the five questions an operator asks about it, in the order they ask them:
 	// what it is (facts), which models it can answer with (catalog), which of its models are turned off
 	// (disabled), which models it declares itself (custom), and what the gateway routes through it (its
-	// connections), followed by the alias table and, for an OAuth provider, the OAuth section.
+	// connections), followed by the OAuth section for an OAuth provider.
 	//
 	// A custom node gets the reference's own page instead (`providers/[id]/page.js:1447-1819`), because
 	// none of those five questions is the registry's to answer for it: the node's facts are its own details
@@ -16,8 +16,7 @@
 	// the connection that carries its credential is the first thing to set up. So the details card leads,
 	// the connections follow, and the models come after, each in the reference's shape. The registry facts
 	// table, the catalog, and the disabled-model section are not rendered for a node: they describe the
-	// embedded registry, and a node is not in it. The alias table stays, because the alias set is global
-	// and this is the screen that edits it.
+	// embedded registry, and a node is not in it.
 	//
 	// The key dialog belongs to the page rather than to the Connections section, because two places open
 	// it: the section's own button and the node's details card. A successful add has to reach the table
@@ -27,7 +26,6 @@
 	import AddProviderKeysDialog from '$lib/components/AddProviderKeysDialog.svelte';
 	import CustomProviderCard from '$lib/components/CustomProviderCard.svelte';
 	import ModelCatalogList from '$lib/components/ModelCatalogList.svelte';
-	import ProviderAliases from '$lib/components/ProviderAliases.svelte';
 	import ProviderConnectionsSection from '$lib/components/ProviderConnectionsSection.svelte';
 	import ProviderCustomModels from '$lib/components/ProviderCustomModels.svelte';
 	import ProviderDisabledModels from '$lib/components/ProviderDisabledModels.svelte';
@@ -151,11 +149,6 @@
 				<h2 class="text-base font-medium">Available Models</h2>
 				<ProviderCustomModels providerId={provider.id} {nodePrefix} onchanged={bumpCatalog} />
 			</div>
-
-			<div class="flex flex-col gap-3">
-				<h2 class="text-base font-medium">Aliases</h2>
-				<ProviderAliases />
-			</div>
 		{:else}
 			<ProviderFacts {provider} />
 
@@ -172,11 +165,6 @@
 			<div class="flex flex-col gap-3">
 				<h2 class="text-base font-medium">Custom models</h2>
 				<ProviderCustomModels {providerId} onchanged={bumpCatalog} />
-			</div>
-
-			<div class="flex flex-col gap-3">
-				<h2 class="text-base font-medium">Aliases</h2>
-				<ProviderAliases />
 			</div>
 
 			<ProviderConnectionsSection

@@ -459,3 +459,63 @@ bagian dan F13 ke sembilan baris penunjuk (jumlah klaimnya tetap sembilan belas)
 saja, tanpa push, sesuai aturan owner. Pass ini mendarat sebagai dua commit lokal: `57125b6` (F1 sampai
 F5) dan `9d7e4f2` (F6, lima pembungkus `relative` plus catatan ini), keduanya scope `app-ui` saja dan
 belum di-push.
+
+## 11. Koreksi lanjutan 2026-09-23: blok Aliases dihapus dari kedua bentuk halaman provider
+
+Owner menunjuk dua teks di halaman detail provider: judul **Add an alias** ("kenapa di semua provider ada
+ini?") dan kalimat target ("A target is a provider/model reference or a combo name. An alias that is already
+in the table is changed here rather than added twice."), dengan putusan "seharusnya tidak ada alias seperti
+ini, REFERENCE tidak ada seperti ini". Reference diukur sebelum apa pun dihapus, dan pengukuran pertamanya
+salah dengan cara yang dicatat di sini: `grep -rn -i alias` yang dibatasi ke berkas `.svelte`, `.ts`, dan
+`.tsx` mengembalikan **nol**, tetapi reference adalah aplikasi Next.js ber-ekstensi `.js`, jadi nol itu tidak
+pernah bisa mengenai berkas yang seharusnya cocok. Diukur ulang atas seluruh pohon `origin/master`
+(`21583c03`, tag `v0.5.85`), kata itu muncul di 144 berkas `open-sse/` dan 72 berkas `src/`, dan keduanya dua
+hal yang berbeda. Di bawah `providers/**` kata itu adalah prefix provider sendiri
+(`AddCustomModelModal.js:10` `providerAlias`, `:22-29` `stripAlias`), yang setara `prefix` panel dan bukan
+sebuah tabel. Fitur model-alias reference yang sebenarnya ada di layar **CLI Tools**-nya
+(`src/app/api/models/alias/route.js`, `src/lib/db/repos/aliasRepo.js`, pemetaan per-tool di
+`cli-tools/components/AntigravityToolCard.js`), yang memetakan nama model sebuah CLI tool ke target; permukaan
+itu tidak punya padanan di panel ini dan bukan blok yang owner tunjuk. Yang tidak dimiliki halaman detail
+provider reference adalah section alias sama sekali: tiga kartunya adalah details card, Connections, dan
+Available Models, sesuai pembacaan pass 26 atas `[id]/page.js:1447-1819`.
+
+| Berkas | Sebelum | Sesudah |
+| --- | --- | --- |
+| `src/lib/components/ProviderAliases.svelte` | 149 baris | dihapus |
+| `src/lib/components/ModelAliasForm.svelte` | 97 baris | dihapus |
+| `src/lib/schemas/model-alias.ts` | 124 baris | dihapus |
+| `src/lib/stores/model-alias.svelte.ts` | 130 baris | dihapus |
+| `src/routes/providers/[provider_id]/+page.svelte` | dua section `Aliases`, satu di cabang node dan satu di cabang registry | keduanya dihapus, plus impornya |
+| `src/lib/api/models.ts` | `listModelAliases` dan `replaceModelAliases` | keduanya dihapus, plus impor schema-nya |
+| `tests/components/provider-aliases.test.ts`, `tests/schemas/model-alias.test.ts`, `tests/stores/model-alias.test.ts` | 41 blok `it()` dan `forEachCase`, yang menjalankan **71 kasus** (selisih terukur pada suite: 2605/154 menjadi 2534/151) | ketiganya dihapus |
+
+Yang menyesuaikan supaya tidak ada sisa:
+
+- `CombosTab.svelte` tidak lagi membaca set alias, jadi picker referensi hanya menawarkan id katalog dan nama
+  combo di halaman itu.
+- `ComboDeleteDialog.svelte` tidak lagi menunjuk layar yang sudah tidak ada; salinannya kini hanya pesan
+  gateway, dan tesnya mengunci bahwa salinan itu tidak menyebut `Aliases` maupun `detail screen`.
+- `tests/support/model-stub.ts` kehilangan rute `/models/aliases` beserta knob-nya (652 menjadi 600 baris).
+- `ComboEditor.svelte`, `ComboModelRows.svelte`, `schemas/combo.ts`, dan `schemas/combo-test.ts` tidak lagi
+  menyebut alias sebagai bentuk ref yang ditawarkan panel.
+- SPEC-UI: bullet §6.3 diganti catatan penghapusan, §6.4 disesuaikan, baris tabel ref model menjadi "Model
+  refs", baris berkas `model_alias.ts` dihapus, dan Q20 serta Q21 ditutup oleh penghapusan ini.
+
+Yang tidak disentuh: route `GET`/`PUT /api/v1/models/aliases` di `app-serv` (milik tim lain). Alias yang
+ditulis lewat API tetap resolve di gateway; panel hanya tidak lagi membaca atau menulisnya, sehingga route
+itu kini tanpa konsumen di panel. Itu dicatat di sini untuk tim `app-serv`, bukan sebagai temuan baru.
+
+### 11.1 Bukti gate
+
+| Gerbang | Hasil |
+| --- | --- |
+| `bun run check` | 0 error, 0 warning; cache `.svelte-kit/.svelte-check` dibersihkan dulu karena masih memuat salinan berkas yang dihapus |
+| Uji terarah | 10 berkas, 111 tes lulus, 4m44s: tiga berkas yang disunting, enam konsumen lain `tests/support/model-stub.ts`, dan `usage-topology-view.test.ts` |
+| `bun run lint` | Prettier: semua berkas sesuai |
+| `bun run lint:ts` | ESLint keluar 0 |
+| `bun run build` | sukses, keluaran di `build/` |
+| `bun run test` | **2534 tes lulus dari 151 berkas**, 1945 s, pada tree beku `fb731f74e3335bf77cedbfcd935588ca` (`md5sum` atas `src/`, `tests/`, `static/`, dan `scripts/`, 490 berkas, tujuh lebih sedikit dari 497 pass sebelumnya karena tujuh berkas dihapus). Jalan pertama pada tree yang sama merah di satu baris: timeout 5000 ms di `tests/schemas/usage-topology-view.test.ts`, berkas yang tidak disentuh pass ini, selagi build panel pass ini berjalan bersamaan; uji terarah di atas menjalankan berkas itu lagi dan hijau, jadi baris merah itu starvation host, bukan cacat. `README.md`, di luar sidik jari itu, disunting sesudah jalan hijau dan `lint` dijalankan ulang di tree akhir |
+| Click-through browser | Satu jalan terekam terhadap panel yang menyajikan build pass ini di port 3001, diarahkan ke gateway tim yang hidup di `:9090`, dua bentuk halaman lewat alamatnya masing-masing: node `/providers/openai-compatible-0386BKG9Q4DYZPYC01VJH4C51G` (TH HARBOR 1, node milik owner) dan registry `/providers/openai`. Judul `h2` yang terbaca: node `OpenAI Compatible Details`, `Connections`, `Available Models`; registry `Model catalog`, `Models this provider cannot route`, `Custom models`, `Connections`. Tidak ada judul `Aliases` di keduanya, tidak ada teks `Add an alias` di keduanya, dan `performance.getEntriesByType('resource')` mencatat **0 permintaan** ke `/models/aliases` di kedua halaman. Kalimat `The set is global` juga tidak ada lagi di body registry. Dua tangkapan layar di `/tmp/alias-removal/shots/` |
+
+Tidak ada baris temuan baru: ini penghapusan permukaan, bukan perbaikan cacat. Angka pass masuk ke
+`app-ui/README.md` sebagai pass ketiga puluh.

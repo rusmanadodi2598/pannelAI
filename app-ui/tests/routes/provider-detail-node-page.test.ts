@@ -73,8 +73,7 @@ describe("a custom node's detail screen", () => {
 		expect(sectionHeadings()).toEqual([
 			'OpenAI Compatible Details',
 			'Connections',
-			'Available Models',
-			'Aliases'
+			'Available Models'
 		]);
 	});
 

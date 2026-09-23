@@ -8,9 +8,9 @@
 // rules so a save is refused before the round trip, and it hides the field a strategy ignores rather than
 // disabling it, which is what §6.4 asks for.
 //
-// A `ref` may be `provider/model`, an existing combo name, or an alias. The panel cannot tell which one it
-// is looking at without resolving all three sources, so it accepts any well-formed reference and lets the
-// API report an unresolvable one. Claiming to validate that here would be a second, weaker resolver.
+// A `ref` may be `provider/model` or an existing combo name. The panel cannot tell which one it is looking
+// at without resolving both sources, so it accepts any well-formed reference and lets the API report an
+// unresolvable one. Claiming to validate that here would be a second, weaker resolver.
 
 import { z } from 'zod';
 import { optionalTimestamp } from './primitives';

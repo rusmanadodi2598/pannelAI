@@ -1,8 +1,8 @@
 // Combo delete tests (docs/SPEC-UI/001-SPEC-UI.md §6.4).
 //
 // `DELETE /combos/{id}` answers CONFLICT when an alias still targets the combo's name, and the message names
-// that alias. §6.4 asks the screen to point at the fixed set: the set now has a table on the provider detail
-// screen, but that route takes a provider id and this refusal names none, so the sentence names the place.
+// that alias. The panel renders that answer as the reason rather than as a generic failure, and it names no
+// screen: the alias set has no screen of its own, so a sentence pointing at one would be a dead end.
 //
 // The other half of the test is the one that keeps the copy honest: only a CONFLICT means the combo is still
 // referenced, so a server failure must not read as though it did.
@@ -23,7 +23,7 @@ const combo = {
 	updated_at: '2026-09-18T00:00:00Z'
 };
 
-/** Serves the tab's three reads and answers the delete with whatever a test asks for. */
+/** Serves the tab's two reads and answers the delete with whatever a test asks for. */
 function stubFetch(deleteStatus: number, deleteCode: string, deleteMessage: string): string[] {
 	const requested: string[] = [];
 
@@ -39,10 +39,21 @@ function stubFetch(deleteStatus: number, deleteCode: string, deleteMessage: stri
 		if (init?.method === 'DELETE') {
 			return json({ error: { code: deleteCode, message: deleteMessage } }, deleteStatus);
 		}
-		if (url.includes('/models/aliases')) {
-			return json({ data: [{ alias: 'fast', target: 'openai/gpt-4o' }] });
+		if (url.includes('/models/catalog')) {
+			return json({
+				data: [
+					{
+						id: 'openai/gpt-4o',
+						provider_id: 'openai',
+						model_id: 'gpt-4o',
+						display_name: 'GPT-4o',
+						kind: 'chat',
+						capabilities: ['vision'],
+						source: 'registry'
+					}
+				]
+			});
 		}
-		if (url.includes('/models/catalog')) return json({ data: [] });
 		if (url.includes('/combos')) {
 			return json({ data: [combo], meta: { page: 1, per_page: 25, total: 1 } });
 		}
@@ -64,7 +75,7 @@ async function openDeleteDialog(): Promise<HTMLElement> {
 }
 
 describe('deleting a combo', () => {
-	it('names the alias that still references it, and where the alias set lives', async () => {
+	it('names the alias that still references it, and points at no screen', async () => {
 		stubFetch(409, 'CONFLICT', 'alias fast still references combo daily');
 		render(CombosTab);
 
@@ -77,9 +88,9 @@ describe('deleting a combo', () => {
 		const alert = within(screen.getByRole('dialog')).getByRole('alert');
 		// Squashed, because the source line break inside the sentence is a newline in the DOM.
 		expect(squashed(alert)).toContain('This combo is still referenced');
-		expect(squashed(alert)).toContain(
-			"The alias set is on any provider's detail screen, under Aliases."
-		);
+		// The alias set has no screen of its own, so the refusal must not send the operator to one.
+		expect(squashed(alert)).not.toContain('Aliases');
+		expect(squashed(alert)).not.toContain('detail screen');
 	});
 
 	it('does not claim the combo is referenced when the failure was something else', async () => {
@@ -124,7 +135,7 @@ describe('deleting a combo', () => {
 });
 
 describe('the editor reference suggestions', () => {
-	it('offers the alias names alongside the catalog ids, because a ref may be either', async () => {
+	it('offers the catalog ids and the combo names, and no alias names', async () => {
 		stubFetch(409, 'CONFLICT', 'alias fast still references combo daily');
 		render(CombosTab);
 
@@ -138,7 +149,10 @@ describe('the editor reference suggestions', () => {
 		const options = [...document.querySelectorAll('#combo-ref-suggestions option')].map((option) =>
 			option.getAttribute('value')
 		);
-		expect(options).toContain('fast');
+		expect(options).toContain('openai/gpt-4o');
 		expect(options).toContain('daily');
+		// The alias set is no longer read, so a former alias name is not offered even when the API still
+		// resolves it.
+		expect(options).not.toContain('fast');
 	});
 });

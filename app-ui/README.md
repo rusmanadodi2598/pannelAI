@@ -112,7 +112,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Twenty-nine passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Thirty passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -183,7 +183,76 @@ the two idle sentences, only the facts that are happening, filed as
 list's separator, measured the same day: the paragraph that explained the colours and the beam is gone, the
 facts that are happening are stated in one line above the drawing in the drawing's own colour rule, and the
 finished list is set off by the tab idiom's label and accent rule with nothing focusable in it, filed as
-`docs/DRAFT/023-USAGE-DRAWING-TEXT-AND-FINISHED-SEPARATOR.md`.
+`docs/DRAFT/023-USAGE-DRAWING-TEXT-AND-FINISHED-SEPARATOR.md`. The thirtieth is the alias surface's removal
+from the provider screens, measured the same day: the owner read the **Add an alias** heading and the target
+sentence under it on the provider detail page and rejected the concept, because the reference's provider page
+carries no such block, so both components, the schema, the store, the two API client calls, the three test
+files and both screens' sections were deleted, the combo consumers were re-aimed at the catalog and the combos
+on the page, and the SPEC-UI clauses that had placed the set on that screen became a removal note, filed as
+`docs/DRAFT/019-PROVIDER-SURFACE-PARITY.md` §11.
+
+### The alias surface removed from the provider screens, 2026-09-23
+
+Run with Bun 1.3.0 (`bun --version`; the earlier pass rows state 1.3.14, which no binary on this machine
+reports, filed as F13 of `docs/DRAFT/007-UI-ENDPOINT-READINESS.md`). The owner's two items were two strings
+on the provider detail page: the **Add an alias** heading, with the question of why it appeared on every
+provider, and the target sentence under it, whose text promised that an alias already in the table is
+changed there rather than added twice. His verdict was that neither should exist, because the reference's
+provider page does not have them.
+
+The reference was measured before anything was removed, and the first measurement was wrong in a way worth
+recording. A case-insensitive search for the word alias scoped to `.svelte`, `.ts`, and `.tsx` returns zero
+occurrences, but the reference is a Next.js application written in `.js`, so that zero excluded every file it
+could have matched. Re-run over the whole tree, the word appears in 144 files under `open-sse/` and 72 under
+`src/`, and the hits are two different things. Under `providers/**` it is the provider's own prefix:
+`AddCustomModelModal.js:10` takes `providerAlias` and `:22-29` strips `<providerAlias>/` off a typed model id,
+which is the panel's `prefix` and not a table. The reference's actual model-alias feature lives on its CLI
+Tools screens (`src/app/api/models/alias/route.js`, `src/lib/db/repos/aliasRepo.js`, the per-tool model
+mapping in `cli-tools/components/AntigravityToolCard.js`), where an alias maps a CLI tool's model name to a
+target; that surface has no counterpart in this panel, and it is not the block the owner pointed at. What the
+reference's provider detail page does not have is any alias section at all: its three cards are the details
+card, Connections, and Available Models.
+
+The answer to both items was deletion, so the surface went rather than moving. It had four files of its own
+and consumers on two other screens:
+
+| Removed                                                                                                              | Was                                                                                                                                |
+| -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/components/ProviderAliases.svelte`                                                                          | 149 lines, the section both page shapes rendered                                                                                   |
+| `src/lib/components/ModelAliasForm.svelte`                                                                           | 97 lines, the add or change form inside it                                                                                         |
+| `src/lib/schemas/model-alias.ts`                                                                                     | 124 lines, the alias to target set schema                                                                                          |
+| `src/lib/stores/model-alias.svelte.ts`                                                                               | 130 lines, the read and whole-set write store                                                                                      |
+| `tests/components/provider-aliases.test.ts`, `tests/schemas/model-alias.test.ts`, `tests/stores/model-alias.test.ts` | 41 `it()` blocks and `forEachCase` calls, which ran 71 cases: the measured suite delta is 2605 across 154 files to 2534 across 151 |
+
+What had to follow the removal so no consumer points at a screen that no longer exists: the combos tab's ref
+picker read the alias set to offer alias names, and now offers the catalog ids and the combo names the page
+itself lists; the combo delete dialog pointed the operator at the alias table on any provider's detail
+screen, and now renders the gateway's own CONFLICT sentence and adds nothing, with its test asserting the
+copy names no screen; and the shared test stub lost its `/models/aliases` route and the knobs that served it
+(652 lines to 600).
+
+SPEC-UI was amended rather than left describing a screen that is gone: §6.3's Aliases bullet became a
+removal note, §6.4's editor and delete bullets lost their alias sources, the ref field rule in §7.1 dropped
+aliases from the accepted forms, the `model_alias.ts` row left the schema table, the U2 phase row and its
+narrative lost the word, and the two open questions the set had opened, Q20 and Q21, are closed by the
+removal instead of answered.
+
+Two things are deliberately not claimed. The gateway routes `GET`/`PUT /api/v1/models/aliases` are
+untouched, because they belong to `app-serv`; an alias written through the API still resolves at the router,
+so what changed is that the panel no longer reads or writes one, and the route now has no consumer here.
+And nothing was rebuilt in its place, because the items were a removal request rather than a parity gap.
+
+| Check             | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings, after clearing `.svelte-kit/.svelte-check` because the cache still held copies of the deleted files and reported three errors against them                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Targeted run      | 10 files, 111 tests passed in 4m44s: the three edited files (`combo-delete.test.ts`, `combo-test.test.ts`, `provider-detail-node-page.test.ts`), the six other consumers of `tests/support/model-stub.ts` (`provider-custom-models.test.ts`, `provider-custom-models-node.test.ts`, `provider-models.test.ts`, `provider-oauth.test.ts`, `provider-detail-key-dialog.test.ts`, `model-disabled.test.ts`), and `usage-topology-view.test.ts`, whose green run here re-proves the full suite's single red row as host starvation                                                                                          |
+| `bun run lint`    | Prettier reports every file conforms, after one `prettier --write` over the README table the edit had left unpadded                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `bun run build`   | succeeds, output in `build/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `bun run test`    | 2534 tests passed across 151 files in 1945 s, on the code tree fingerprinted `fb731f74e3335bf77cedbfcd935588ca` (`md5sum` over `src/`, `tests/`, `static/` and `scripts/`, 490 files, seven fewer than the previous pass's 497 because seven files were deleted). The first run of this same tree came back with one red row, a 5000 ms timeout in `usage-topology-view.test.ts` while this pass's own panel build ran concurrently; the targeted run above re-proves that row as host starvation. README.md, which is outside the fingerprint, was edited after the green run, and `lint` was re-run on the final tree |
+| Live pass         | one recorded click-through against a panel serving this pass's own build on port 3001, pointed at the team's live gateway on `:9090`, driving both page shapes by their own addresses: the node page (`/providers/openai-compatible-0386BKG9Q4DYZPYC01VJH4C51G`, the owner's own TH HARBOR 1 node) and the registry page (`/providers/openai`). Neither page renders an `Aliases` heading, neither body carries the **Add an alias** string, and `performance.getEntriesByType('resource')` records 0 requests to `/models/aliases` on either page, which is the panel's own wire rather than its markup                |
+| File size         | every touched file is under the 220 warning; the largest is `tests/support/model-stub.ts` at 600                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Text hygiene      | 0 em dashes in the new and edited files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ### The drawing's text and the finished list's separator, 2026-09-23
 
@@ -408,15 +477,15 @@ overflow in both themes on both page shapes.
 
 What changed, and what is deliberately not claimed:
 
-| Behaviour                                      | Detail                                                                                                                                                                                                                                                                                                                                                                                       |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The endpoint form sends what the wire knows    | `createEndpointBody` in `src/lib/schemas/endpoint-write.ts` turns the form into `{provider_id, label, auth_type, priority, keys}`; the form-only `key_value` never reaches a body again, and an `api_key` form without a key is refused on screen with the same reason the gateway gives                                                                                                     |
-| A key is one connection                        | The detail page's dialog stores one `POST /endpoints` per key (Single) or one `POST /endpoints/bulk` with one element per pasted line (Bulk Add), so three pasted keys are three connections. A line without a name is gap-filled against the names already stored and the ones this paste assigned, because `(provider_id, label)` is unique and a collision would refuse the batch         |
-| A paste's refusal lands on the pasted line     | The batch answers per row by index, and the flow re-keys the server's message through the rows it sent, so the refusal for pasted line 3 is shown against line 3; nothing is stored when the batch is refused                                                                                                                                                                                |
-| The node's detail page follows the node        | A node renders its details card, then Connections, then Available Models, then Aliases; the registry blocks and the `disabled` store read are for registry providers only                                                                                                                                                                                                                    |
-| Import from /models reads the node's own route | `GET /providers/{id}/models` is read on demand, deduped against the models the node already carries, and each new row is declared with the model id as its display name when the upstream sends none; the running gateway answers `{"data":[]}` for a node, and the screen says `No models returned from /models.` rather than pretending                                                    |
-| A wide table does not widen the page           | The scroll wrapper of each provider-surface table is a containing block, so the `sr-only` action label (Tailwind's `position: absolute`) stays inside the box that scrolls instead of escaping to the page. Measured at 390 px in both themes on both page shapes: `pageOverflow` 262 before and 0 after, with the two wide tables still scrollable inside their own boxes                   |
-| Limit                                          | The reference's **Check** button is not built: `POST /provider-nodes/validate` does not exist in app-serv (405), filed as draft 017 F6. The alias table stays on the node page although the reference has no separate alias block, because SPEC-UI §6.3 puts it on this screen. The reference's per-key success counting is not copied: this panel's batch is all-or-nothing (SPEC-API §8.1) |
+| Behaviour                                      | Detail                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The endpoint form sends what the wire knows    | `createEndpointBody` in `src/lib/schemas/endpoint-write.ts` turns the form into `{provider_id, label, auth_type, priority, keys}`; the form-only `key_value` never reaches a body again, and an `api_key` form without a key is refused on screen with the same reason the gateway gives                                                                                             |
+| A key is one connection                        | The detail page's dialog stores one `POST /endpoints` per key (Single) or one `POST /endpoints/bulk` with one element per pasted line (Bulk Add), so three pasted keys are three connections. A line without a name is gap-filled against the names already stored and the ones this paste assigned, because `(provider_id, label)` is unique and a collision would refuse the batch |
+| A paste's refusal lands on the pasted line     | The batch answers per row by index, and the flow re-keys the server's message through the rows it sent, so the refusal for pasted line 3 is shown against line 3; nothing is stored when the batch is refused                                                                                                                                                                        |
+| The node's detail page follows the node        | A node renders its details card, then Connections, then Available Models; the registry blocks and the `disabled` store read are for registry providers only                                                                                                                                                                                                                          |
+| Import from /models reads the node's own route | `GET /providers/{id}/models` is read on demand, deduped against the models the node already carries, and each new row is declared with the model id as its display name when the upstream sends none; the running gateway answers `{"data":[]}` for a node, and the screen says `No models returned from /models.` rather than pretending                                            |
+| A wide table does not widen the page           | The scroll wrapper of each provider-surface table is a containing block, so the `sr-only` action label (Tailwind's `position: absolute`) stays inside the box that scrolls instead of escaping to the page. Measured at 390 px in both themes on both page shapes: `pageOverflow` 262 before and 0 after, with the two wide tables still scrollable inside their own boxes           |
+| Limit                                          | The reference's **Check** button is not built: `POST /provider-nodes/validate` does not exist in app-serv (405), filed as draft 017 F6. The alias surface is gone as of 2026-09-23, because the reference has no alias concept at all (SPEC-UI §6.3, Q20/Q21 closed). The reference's per-key success counting is not copied: this panel's batch is all-or-nothing (SPEC-API §8.1)   |
 
 ### Usage drawing sizing, 2026-09-23
 

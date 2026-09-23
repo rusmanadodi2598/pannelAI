@@ -96,8 +96,8 @@ describe('running the test', () => {
 		confirmButton().click();
 
 		await waitFor(() => expect(stub.comboTests).toEqual(['cmb_01']));
-		// The ref as stored and the identity it resolved to are two facts, and an alias is exactly the case
-		// where they differ.
+		// The ref as stored and the identity it resolved to are two facts, and a ref that names another
+		// combo is exactly the case where they differ.
 		expect(await within(dialog).findByText('The only reference answered.')).toBeTruthy();
 		expect(within(dialog).getByText('smart')).toBeTruthy();
 		// The identity shares its line with the endpoint, so it is matched as a pattern rather than as the

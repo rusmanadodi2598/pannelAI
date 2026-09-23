@@ -1,11 +1,11 @@
 // Model catalog calls, mirroring docs/SPEC-API/001-SPEC-API.md §7.6.
 //
-// §7.6 is four resources over one screen (docs/SPEC-UI/001-SPEC-UI.md §6.3): the merged catalog, the
-// custom rows, the alias set, and the disabled set. The catalog read is the only one the panel needs a
-// query for; the other three come back whole, because none of them is paginated.
+// §7.6 is three resources over one screen (docs/SPEC-UI/001-SPEC-UI.md §6.3): the merged catalog, the
+// custom rows, and the disabled set. The catalog read is the only one the panel needs a query for; the
+// other two come back whole, because neither is paginated.
 //
-// The two set writes are authoritative replaces, so every caller hands over the WHOLE set it last read
-// rather than a delta. The answer to each write is the new set, which is what the panel renders: the
+// The disabled set write is an authoritative replace, so every caller hands over the WHOLE set it last
+// read rather than a delta. The answer to the write is the new set, which is what the panel renders: the
 // server's own state, not the panel's reconstruction of it.
 
 import {
@@ -15,13 +15,6 @@ import {
 	type CustomModel,
 	type CustomModelList
 } from '$lib/schemas/custom-model';
-import {
-	aliasSetBody,
-	schemaAliasSet,
-	schemaReplaceAliasesBody,
-	type AliasSet,
-	type ModelAliasEntry
-} from '$lib/schemas/model-alias';
 import {
 	schemaDisabledSet,
 	schemaReplaceDisabledBody,
@@ -93,27 +86,5 @@ export function deleteCustomModel(id: string): Promise<ApiResult<EmptyResponse>>
 		method: 'DELETE',
 		path: `/models/custom/${encodeURIComponent(id)}`,
 		schema: emptyResponse
-	});
-}
-
-// The whole alias set. Global rather than per provider: the route reads no filter, which is why the screen
-// that renders it says so and why the merge below is over every alias rather than over a slice.
-export function listModelAliases(): Promise<ApiResult<AliasSet>> {
-	return apiRequest<void, AliasSet>({
-		method: 'GET',
-		path: '/models/aliases',
-		schema: schemaAliasSet
-	});
-}
-
-// Replaces the whole alias set. The body is built from every entry the caller last read, sorted the way the
-// read route sorts, so the answer is the set the panel already shows in the order it shows it.
-export function replaceModelAliases(entries: ModelAliasEntry[]): Promise<ApiResult<AliasSet>> {
-	return apiRequest<{ aliases: ModelAliasEntry[] }, AliasSet>({
-		method: 'PUT',
-		path: '/models/aliases',
-		schema: schemaAliasSet,
-		body: aliasSetBody(entries),
-		bodySchema: schemaReplaceAliasesBody
 	});
 }

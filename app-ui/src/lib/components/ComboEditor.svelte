@@ -169,8 +169,8 @@
 		/>
 	</div>
 
-	<!-- The suggestions are whatever the caller passes in: the catalog model ids, the combo names, and the
-	     alias names, because §7.7 lets a ref be any of the three. A typed value outside the list still works. -->
+	<!-- The suggestions are whatever the caller passes in: the catalog model ids and the combo names,
+	     because §7.7 lets a ref be either. A typed value outside the list still works. -->
 	<datalist id={REF_LIST_ID}>
 		{#each suggestions as suggestion (suggestion)}
 			<option value={suggestion}></option>

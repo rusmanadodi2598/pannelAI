@@ -90,7 +90,7 @@
 					list={listId}
 					value={entry.ref}
 					oninput={(event) => patch(index, { ref: event.currentTarget.value })}
-					placeholder="provider/model, a combo name, or an alias"
+					placeholder="provider/model or a combo name"
 					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
 				/>
 			</label>

@@ -4,12 +4,10 @@
 // rules this slice turns on are rules about state: the merged catalog EXCLUDES a disabled model, and
 // `PUT /models/disabled` replaces the WHOLE set. A stub that echoed the body back would let a panel that
 // sends one provider's slice pass, and that panel would erase every other provider's rows in production.
-// The alias set is replaced whole for the same reason, so it is faked the same way.
 //
 // It refuses what the server refuses, with the server's own sentences: `unknown model: <key>` for a
 // disabled pair the catalog does not hold, `unknown provider_id: <id>` for a custom row under a provider
-// the registry does not carry, a 409 for a pair that is already declared, `alias <name> is already a combo
-// name` and `alias <name> targets an unknown model or combo: <target>` for an alias write.
+// the registry does not carry, and a 409 for a pair that is already declared.
 //
 // It also answers the two endpoint routes the detail page's key dialog turns on: the list the Endpoints
 // section reads, and the create it posts to. That is what lets a test render the whole screen and hold the
@@ -27,9 +25,7 @@ export type ModelStub = {
 	disabled: StubModel[];
 	/** The custom rows, every provider's. */
 	custom: StubModel[];
-	/** The alias set, every alias the gateway resolves. */
-	aliases: StubModel[];
-	/** The combos, whose names are a legal alias target. */
+	/** The combos, whose names are a legal reference. */
 	combos: StubModel[];
 	/** The probe results `POST /combos/{id}/test` answers, one entry per stored reference. */
 	comboTestResults: StubModel[];
@@ -61,13 +57,10 @@ export type ModelStub = {
 	disabledWrites: StubModel[][];
 	customCreates: StubModel[];
 	customDeletes: string[];
-	aliasWrites: StubModel[][];
 	reads: string[];
 	readStatus: number;
 	/** The disabled set's own status, for a test that needs one read to fail and another to succeed. */
 	disabledReadStatus: number;
-	/** The alias set's own status, for the same reason. */
-	aliasReadStatus: number;
 	/** What `GET /combos` reports as the total, when a test needs the page to look truncated. */
 	combosTotal: number | null;
 	writeStatus: number;
@@ -125,10 +118,6 @@ export function comboRow(overrides: StubModel = {}): StubModel {
 		updated_at: '2026-09-20T03:00:00Z',
 		...overrides
 	};
-}
-
-export function aliasRow(overrides: StubModel = {}): StubModel {
-	return { alias: 'fast', target: 'openai/gpt-4o', ...overrides };
 }
 
 /** One entry of a combo test answer: a reference, what it resolved to, and how the probe went. */
@@ -202,7 +191,6 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		catalog: [],
 		disabled: [],
 		custom: [],
-		aliases: [],
 		combos: [],
 		comboTestResults: [],
 		comboTestStatus: 200,
@@ -219,11 +207,9 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		disabledWrites: [],
 		customCreates: [],
 		customDeletes: [],
-		aliasWrites: [],
 		reads: [],
 		readStatus: 200,
 		disabledReadStatus: 200,
-		aliasReadStatus: 200,
 		combosTotal: null,
 		writeStatus: 200,
 		authType: 'bearer',
@@ -537,44 +523,6 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 
 			stub.custom = stub.custom.filter((entry) => entry.id !== id);
 			return new Response(null, { status: 204 });
-		}
-
-		if (parsed.pathname.endsWith('/models/aliases')) {
-			if (method === 'PUT') {
-				const entries = (body.aliases ?? []) as StubModel[];
-				stub.aliasWrites.push(entries);
-
-				if (stub.writeStatus !== 200) {
-					return refusal('INTERNAL_ERROR', 'The set could not be stored.', stub.writeStatus);
-				}
-
-				const comboNames = new Set(stub.combos.map((combo) => String(combo.name)));
-				const available = new Set(catalogWithCustom().map(key));
-				for (const entry of entries) {
-					const name = String(entry.alias ?? '');
-					const target = String(entry.target ?? '');
-					if (comboNames.has(name)) {
-						return refusal('VALIDATION_ERROR', `alias ${name} is already a combo name`, 400);
-					}
-					if (available.has(target) || comboNames.has(target)) continue;
-					return refusal(
-						'VALIDATION_ERROR',
-						`alias ${name} targets an unknown model or combo: ${target}`,
-						400
-					);
-				}
-
-				// The server answers with the set as sent, which is why the panel sorts the body: the answer
-				// is what the table renders until the next read.
-				stub.aliases = entries.map((entry) => ({ ...entry }));
-				return json({ data: stub.aliases });
-			}
-
-			stub.reads.push('aliases');
-			if (stub.aliasReadStatus !== 200) {
-				return refusal('INTERNAL_ERROR', 'The set could not be read.', stub.aliasReadStatus);
-			}
-			return json({ data: stub.aliases });
 		}
 
 		if (method === 'GET' && parsed.pathname.endsWith('/combos')) {

@@ -8,10 +8,6 @@
 	// `conflict` is what separates that refusal from any other failure. Only the CONFLICT answer means the
 	// combo is still referenced, so the lead sentence that says so is rendered for that code alone: a
 	// server failure that read "still referenced" would be a claim the panel cannot support.
-	//
-	// There is no link to the alias set. §6.3 places that table on the provider detail screen, but the route
-	// takes a provider id and this refusal names none, so the sentence names the place instead of linking to
-	// an arbitrary provider.
 	import Modal from '$lib/components/Modal.svelte';
 	import type { Combo } from '$lib/schemas/combo';
 
@@ -44,8 +40,7 @@
 	{#if error}
 		<p class="mt-3 text-[var(--color-danger)]" role="alert">
 			{#if conflict}
-				This combo is still referenced, so it was not deleted. {error} The alias set is on any provider's
-				detail screen, under Aliases.
+				This combo is still referenced, so it was not deleted. {error}
 			{:else}
 				This combo was not deleted. {error}
 			{/if}

@@ -4,8 +4,8 @@
 	// The tab owns the page of combos, which one is being edited, and the delete confirmation. The table and
 	// the editor are their own components, so this file holds the list's states and the two writes.
 	//
-	// The reference suggestions for the editor come from three sources the panel can read: the catalog, the
-	// combo names on this page, and the alias names. A ref may be any of the three, so all three are offered.
+	// The reference suggestions for the editor come from the two sources the panel can read: the catalog
+	// and the combo names on this page. A ref may be either, so both are offered.
 	import { untrack } from 'svelte';
 	import ComboDeleteDialog from '$lib/components/ComboDeleteDialog.svelte';
 	import ComboEditor from '$lib/components/ComboEditor.svelte';
@@ -13,7 +13,7 @@
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { deleteCombo, listCombos } from '$lib/api/combos';
-	import { listModelAliases, listModelCatalog } from '$lib/api/models';
+	import { listModelCatalog } from '$lib/api/models';
 	import type { Combo } from '$lib/schemas/combo';
 
 	const PAGE_SIZE = 25;
@@ -34,7 +34,6 @@
 	let deleteConflict = $state(false);
 
 	let catalogRefs = $state<string[]>([]);
-	let aliasNames = $state<string[]>([]);
 
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 	const showEditor = $derived(creating || editing !== null);
@@ -42,7 +41,7 @@
 	// The editor's suggestions, deduplicated because a combo name may also be a catalog id and offering the
 	// same string twice is noise in a picker.
 	const suggestions = $derived(
-		[...new Set([...catalogRefs, ...aliasNames, ...combos.map((combo) => combo.name)])].sort()
+		[...new Set([...catalogRefs, ...combos.map((combo) => combo.name)])].sort()
 	);
 
 	$effect(() => {
@@ -68,12 +67,10 @@
 	}
 
 	// The suggestions are a convenience, so a failure here is silent: the editor still works with a typed
-	// reference, and a banner about a picker would be noise beside the list's own error. The alias set is
-	// global and small, so it is read whole rather than paged.
+	// reference, and a banner about a picker would be noise beside the list's own error.
 	async function loadSuggestions(): Promise<void> {
-		const [catalog, aliases] = await Promise.all([listModelCatalog({}), listModelAliases()]);
+		const catalog = await listModelCatalog({});
 		if (catalog.ok) catalogRefs = catalog.data.data.map((model) => model.id);
-		if (aliases.ok) aliasNames = aliases.data.data.map((entry) => entry.alias);
 	}
 
 	// Both halves of a delete failure are cleared together, so a stale conflict flag can never colour the

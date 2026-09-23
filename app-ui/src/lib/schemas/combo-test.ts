@@ -85,9 +85,9 @@ export function comboProbeSummary(results: readonly ComboProbeResult[]): string 
 }
 
 /**
- * What a probe resolved to. A reference may be an alias or a nested combo, so the stored ref and the
- * resolved identity are two different facts and this is the second one. A failed probe that never reached a
- * provider has neither part, and the panel says so instead of leaving a blank that reads as a defect.
+ * What a probe resolved to. A reference may be a nested combo, so the stored ref and the resolved identity
+ * are two different facts and this is the second one. A failed probe that never reached a provider has
+ * neither part, and the panel says so instead of leaving a blank that reads as a defect.
  */
 export function comboProbeIdentity(result: ComboProbeResult): string {
 	const parts = [result.provider_id, result.model_id].filter((part) => part !== '');
