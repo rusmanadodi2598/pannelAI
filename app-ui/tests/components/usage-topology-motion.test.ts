@@ -104,6 +104,19 @@ describe('UsageTopology motion', () => {
 		expect(within(gateway()).queryByText('0')).toBeNull();
 	});
 
+	it('sizes the gateway from the drawing unit too, so a narrow box cannot overlap it', () => {
+		// The gateway is a box like a node: at 390px it was 108px wide in a 228px drawing and covered part of
+		// the node beside it, so it takes the same unit (draft 018 F1).
+		draw();
+
+		const card = gateway();
+
+		expect(card.classList.contains('px-[calc(12px*var(--u))]')).toBe(true);
+		expect(card.classList.contains('gap-[calc(8px*var(--u))]')).toBe(true);
+		expect(card.classList.contains('[font-size:calc(14px*var(--u))]')).toBe(true);
+		expect(card.querySelector('img')?.classList.contains('size-[calc(16px*var(--u))]')).toBe(true);
+	});
+
 	it('says in words what the drawing moves, since the drawing is hidden from assistive technology', () => {
 		draw();
 

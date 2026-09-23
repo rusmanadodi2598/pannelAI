@@ -109,6 +109,62 @@ describe('topologyNodes', () => {
 			topologyNodes(PROVIDERS, { active: [], last: '', error: '' }).nodes.map((node) => node.id)
 		).toEqual(['openai', 'anthropic']);
 	});
+
+	function many(count: number) {
+		return Array.from({ length: count }, (_unused, index) => ({
+			id: `p${index}`,
+			name: `Provider ${index}`
+		}));
+	}
+
+	it('gives a node a fifth of the box while a fifth still leaves room between neighbours', () => {
+		// Up to nine providers the tightest pair that shares a row is more than a fifth of the box apart, so
+		// the cap is what the drawing uses. Ten is where it stops: measured, that pair is 23.5% apart and the
+		// share drops to 0.19985 (draft 018 F1).
+		for (const count of [1, 2, 3, 6, 7, 9]) {
+			expect(topologyNodes(many(count), { active: [], last: '', error: '' }).nodeShare).toBeCloseTo(
+				0.2,
+				6
+			);
+		}
+	});
+
+	it('shrinks the share once a fifth of the box would leave two neighbours touching', () => {
+		// Eleven providers is where it is visible: the node at the top and its neighbour are 21.6% of the box
+		// apart horizontally and only 6% apart vertically, which is closer than one node is tall.
+		const eleven = topologyNodes(many(11), { active: [], last: '', error: '' }).nodeShare;
+		const twelve = topologyNodes(many(12), { active: [], last: '', error: '' }).nodeShare;
+
+		expect(eleven).toBeLessThan(0.2);
+		expect(eleven).toBeGreaterThan(0.18);
+		expect(twelve).toBeLessThan(eleven);
+	});
+
+	it('keeps every pair of nodes apart at every box width, for every count it is given', () => {
+		// The drawing's own rule, modelled here: a node is at most `min(share * boxWidth, 130)` wide and
+		// 30px tall at that cap, shrinking with the same unit, so its height is 30 * width / 130. The claim
+		// is the one draft 016 F8 measured as false at 390px: no two node boxes intersect, at any width.
+		for (const width of [180, 228, 320, 480, 650, 900, 1086]) {
+			for (let count = 2; count <= 40; count += 1) {
+				const layout = topologyNodes(many(count), { active: [], last: '', error: '' });
+				const unit = Math.min(1, (layout.nodeShare * width) / 130);
+				const nodeWidth = 130 * unit;
+				const nodeHeight = 30 * unit;
+
+				for (let i = 0; i < layout.nodes.length; i += 1) {
+					for (let j = i + 1; j < layout.nodes.length; j += 1) {
+						const dx = (Math.abs(layout.nodes[i].x - layout.nodes[j].x) / 100) * width;
+						const dy = (Math.abs(layout.nodes[i].y - layout.nodes[j].y) / 100) * layout.height;
+
+						expect(
+							dx >= nodeWidth || dy >= nodeHeight,
+							`${count} nodes at ${width}px: nodes ${i} and ${j} intersect`
+						).toBe(true);
+					}
+				}
+			}
+		}
+	});
 });
 
 describe('configuredProviders', () => {

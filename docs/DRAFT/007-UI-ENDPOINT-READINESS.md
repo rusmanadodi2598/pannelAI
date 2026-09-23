@@ -8,7 +8,7 @@ owner memilih nomor yang dikerjakan.
 
 |             |                                                                                                                                                                                                                                                                                                                                                                                             |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sebelas layar daftar, D4 dijawab owner, §8.6.2 tetap), F10 **CLOSED 2026-09-21** (guard §8.4.4 di enam form berdraft, §8.4.5 diamandemen dengan alasan tertulis), F11 **CLOSED 2026-09-21** (angka dan klaim dokumen diukur ulang dengan perintahnya), F13 **OPEN 2026-09-22** (klaim versi Bun di sembilan belas baris README tidak dapat direproduksi di mesin ini; tujuh baris pass terbaru sudah memakai versi terukur). Sisa nomor tinggal F12 dan F13 |
+| **Status**  | F1 **CLOSED 2026-09-21** (layar `/api-docs` dibangun dari dokumen yang dilayani, §14 Q3 ditutup), F2 **CLOSED 2026-09-21** (layar `/skills` plus tujuh dokumen skill), F3 **CLOSED 2026-09-21** (layar `/playground` plus jalur injeksi kredensialnya), F4 **CLOSED 2026-09-21** (layar `/changelog` membaca rilis yang dilayani, §14 Q11 ditutup), F5 **CLOSED 2026-09-21** (filter tab Upstream endpoints pindah ke URL dan memfilter di server), F9 **CLOSED 2026-09-21** (`rate_limited_until` tampil sebagai countdown), F6 **CLOSED 2026-09-21** (mode baris berulang terpasang di drawer), F7 **CLOSED 2026-09-21** (empat layar tanpa test render sekarang punya, plus tiga cacat wire yang ikut tertutup), F8 **CLOSED 2026-09-21** (satu kontrol refresh bersama di sebelas layar daftar, D4 dijawab owner, §8.6.2 tetap), F10 **CLOSED 2026-09-21** (guard §8.4.4 di enam form berdraft, §8.4.5 diamandemen dengan alasan tertulis), F11 **CLOSED 2026-09-21** (angka dan klaim dokumen diukur ulang dengan perintahnya), F13 **OPEN 2026-09-22** (klaim versi Bun di sembilan belas baris README tidak dapat direproduksi di mesin ini; delapan baris pass terbaru sudah memakai versi terukur). Sisa nomor tinggal F12 dan F13 |
 | **Dibuat**  | 2026-09-20, dari `app-ui/src/routes/`, `app-ui/src/lib/`, `app-ui/tests/`, `app-ui/README.md`, `docs/SPEC-UI/001-SPEC-UI.md` §2.1/§5.1/§6/§8/§12/§14/§15, dan route P4 `app-serv`                                                                                                                                                                                                           |
 | **Kaitan**  | SPEC-UI §2.1 (KEEP), §5.1 (route table), §6.1 sampai §6.16, §8.4/§8.6, §9.4, §10.2, §12, §14; SPEC-API §7.1 sampai §7.18, §10; `docs/RULLES/TDD.md`; `DESIGN.md`                                                                                                                                                                                                                            |
 | **Lingkup** | hanya `app-ui/`. `app-serv/` dibaca sebagai sumber wire dan **tidak boleh diubah** dari draft ini: setiap kebutuhan yang jatuh di sana dicatat sebagai permintaan atau pertanyaan (F1, F2, F4), bukan dikerjakan                                                                                                                                                                            |
@@ -36,7 +36,7 @@ Empat langkah, semuanya bisa diulang:
 | 1   | Endpoint & Key         | `/endpoint-keys`                         | ada                | §7.3, §7.5 live                          | F5 **CLOSED**, F6 **CLOSED**, F7 **CLOSED**, F8 **CLOSED**, F9 **CLOSED** |
 | 2   | Provider               | `/providers`, `/providers/[provider_id]` | ada                | §7.4, §7.6 live                          | F5 (list) **CLOSED**, F7 (list) **CLOSED**, F8 (list) **CLOSED**, Q12/Q13/Q19-Q23 tercatat |
 | 3   | Combo & Vision Adapter | `/combos`                                | ada                | §7.7, §7.8 live                          | F8 **CLOSED**; F12 (bukti); test tingkat tab ada |
-| 4   | Usage                  | `/usage`                                 | ada                | §7.12 live                               | F8 **CLOSED**; F12; draft 014 F1-F6 **DURING selesai**, F7 OPEN; draft 015 F1-F6 **CLOSED 2026-09-22**; draft 016 F1-F4 **CLOSED 2026-09-22**, F5-F7 OPEN (permintaan `app-serv`), F8 OPEN (tabrakan node di 390px) |
+| 4   | Usage                  | `/usage`                                 | ada                | §7.12 live                               | F8 **CLOSED**; F12; draft 014 F1-F6 **DURING selesai**, F7 OPEN; draft 015 F1-F6 **CLOSED 2026-09-22**; draft 016 F1-F4 **CLOSED 2026-09-22**, F5-F7 OPEN (permintaan `app-serv`), F8 **CLOSED 2026-09-23 oleh draft 018 F1** (tabrakan node 390px diperbaiki dan diukur ulang di browser); draft 018 F1-F4 **CLOSED 2026-09-23** |
 | 5   | Quota Tracker          | `/quota`                                 | ada                | §7.12 live                               | bersih; live pass tercatat                     |
 | 6   | Token Saver            | `/token-saver`                           | ada                | §7.9 live                                | bersih; live pass tercatat                     |
 | 7   | Skill                  | `/skills`                                | ada                | §7.16 live sejak P4                      | F2 **CLOSED 2026-09-21**                       |
@@ -938,6 +938,15 @@ viewport 390px yang ditemukan click-through itu dan dicatat sebagai F8 draft 016
 click-through-nya sudah dijalankan dan cacatnya terukur), dan tiga selisih kontrak yang menunggu `app-serv`
 (F5 sampai F7 draft 016: periode `All`, dimensi `Account`, drawer empat body).
 
+Pengukuran yang sama setelah pass "Usage drawing sizing" (2026-09-23) menemukan **dua belas dari dua puluh
+lima bagian**, dan perintah yang sama mencetak `12 of 25` pada commit pass itu (`12 of 24` pada tree
+sebelumnya). Penyebutnya naik satu sementara pembilangnya tetap: bagian ke-25 membawa click-through browser
+yang direkam di atas **route nyata** lagi (sepuluh tangkapan layar, delapan belas kelompok nilai terukur),
+jadi tidak ada click-through yang disebut outstanding di bagian itu. Yang ditutup bagian itu adalah cacat
+yang paragraf sebelumnya catat sebagai masih terbuka: F8 draft 016 diperbaiki (gambar mengambil ukurannya
+dari lebar kotaknya) dan diukur ulang di browser pada 390px, dan cacatnya tidak lagi disebut terbuka di
+bagian itu. Yang tetap terbuka: F5 sampai F7 draft 016 dan F13 di bawah.
+
 **Risiko.** Panel bisa tampak selesai padahal setengah exit criteria-nya belum pernah
 dijalankan orang. Ini persis bentuk klaim yang R-35/R-36 larang.
 
@@ -1029,12 +1038,16 @@ dan binary yang dipakai memenuhinya, jadi syarat panelnya tidak salah; yang caca
 yang tercatat, bukan jalannya panel.
 
 Baris pass ke-18 ("Custom provider surface"), ke-19 ("Panel runtime config"), ke-20 ("Usage live
-surface"), ke-21 ("Node motion"), ke-22 ("Usage parity"), ke-23 ("Node motion parity"), dan ke-24 ("Usage
-sections parity and the real live route"), ketujuhnya 2026-09-22, sudah memakai versi terukur, `1.3.0`, dan
-menunjuk temuan ini. Enam belas baris pass sebelumnya
-beserta baris Requirements dan Node adapter dibiarkan apa adanya: versi yang benar-benar dipakai saat itu
-tidak dapat dibuktikan dari sini, jadi menggantinya dengan angka hari ini akan menulis klaim baru yang sama
-tidak terbuktinya.
+surface"), ke-21 ("Node motion"), ke-22 ("Usage parity"), ke-23 ("Node motion parity"), ke-24 ("Usage
+sections parity and the real live route"), dan ke-25 ("Usage drawing sizing", 2026-09-23), kedelapannya
+sudah memakai versi terukur, `1.3.0`, dan menunjuk temuan ini. Diukur ulang 2026-09-23 pada README yang
+memuat bagian ke-25, dengan perintahnya: `grep -c '^Run with Bun 1\.3\.14' app-ui/README.md` mencetak
+`16`, dan tiga baris tabel (Requirements, Node adapter, `bun run start`) melengkapinya menjadi sembilan
+belas baris klaim, jadi jumlah klaimnya tidak berubah oleh pass ini; yang bertambah satu adalah baris
+penunjuk, dari tujuh menjadi delapan (`grep -c '^Run with Bun 1\.3\.0' app-ui/README.md`). Enam belas baris
+pass sebelumnya beserta baris Requirements dan Node adapter dibiarkan apa adanya: versi yang benar-benar
+dipakai saat itu tidak dapat dibuktikan dari sini, jadi menggantinya dengan angka hari ini akan menulis
+klaim baru yang sama tidak terbuktinya.
 
 **Risiko.** Pembaca yang mengukur ulang di mesin ini tidak menemukan 1.3.14, lalu punya alasan
 untuk tidak mempercayai seluruh catatan pass. Baris Node adapter lebih tajam lagi: ia klaim

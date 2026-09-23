@@ -6,27 +6,32 @@
 	// together, and the seam is real rather than arithmetic. The drawing is still hidden from assistive
 	// technology, so every fact it encodes is stated by the frame's sentences.
 	//
-	// Everything positional is a percentage, so the same layout fills a phone and a desktop panel with no
-	// measurement and no resize observer. The edges are one SVG stretched over the box with
-	// `preserveAspectRatio="none"`: a linear map sends a straight line to a straight line, so a line drawn
-	// from the centre to a node's percentages ends exactly under that node, and `non-scaling-stroke` keeps
-	// its weight from being stretched with it.
+	// Three parts, and the middle one is its own file: this box and the unit it publishes, the edges
+	// (`UsageTopologyEdges.svelte`, split out by draft 018 when the beam's constants and these comments took
+	// this file past the 220-line warning), and the cards: the gateway and one box per node.
 	//
-	// A routing edge is the reference fork's beam, in the panel's tokens: a wide halo, a dashed plasma, and
-	// a dashed core, with six orbs and five sparks travelling along the same line (`ProviderTopology.js:137-245`
-	// on `origin/master`). The dots are dashes with round caps rather than circles, because a circle in this
-	// stretched box would be an ellipse of a size that depends on the box: a zero-length dash paints a dot
-	// whose diameter is the stroke width, which `non-scaling-stroke` holds constant. Every moving part is
-	// gated twice, on the state and on frames arriving, and dropped for a reader who asked for reduced motion.
+	// Everything positional is a percentage, so the same layout fills a phone and a desktop panel with no
+	// measurement and no resize observer. The box's own width is the one thing the drawing does read, through
+	// the container unit `cqw` rather than through JavaScript: every metric below is written as its own pixel
+	// value times `--u`, and `--u` is the box's width over the width at which a node reaches its cap. A node's
+	// share of the box comes from `topologyNodes`, so the drawing shrinks with a narrow box exactly as the
+	// reference fork's fitView shrinks its whole canvas, and stops shrinking once a node is as wide as the
+	// panel ever draws one. The node boxes, the gateway and the beam's strokes all take the same unit, so a
+	// phone draws a smaller drawing rather than a collided one (draft 018 F1/F2). The one metric that does not
+	// scale is the 1px box border: a hairline is the panel's token for an edge, and below a pixel it would not
+	// be drawn at all.
+	//
+	// Every metric is written on the element that uses it, and that is not a style choice: an element is not
+	// its own query container, so a metric declared on the drawing box itself resolves `cqw` against whatever
+	// contains the drawing. The first cut put the font size there, and the browser measured the result: 8.4px
+	// text inside 47px nodes at 390px, because the text resolved against the page while the padding resolved
+	// against the drawing. Both are on the node and gateway boxes now, and both resolve against the drawing.
+	import UsageTopologyEdges from './UsageTopologyEdges.svelte';
 	import {
-		BEAM_CORE_DASH,
-		BEAM_PARTICLE_DASH,
-		BEAM_PLASMA_DASH,
-		beamOrbs,
-		beamSparks,
-		type BeamTone
-	} from '$lib/schemas/usage-beam';
-	import type { TopologyLayout, TopologyState } from '$lib/schemas/usage-topology-view';
+		NODE_MAX_WIDTH,
+		type TopologyLayout,
+		type TopologyState
+	} from '$lib/schemas/usage-topology-view';
 
 	type Props = {
 		/** Where the nodes go and how tall the box is. */
@@ -38,9 +43,6 @@
 	};
 
 	let { layout, inFlight, live }: Props = $props();
-
-	const orbs = beamOrbs();
-	const sparks = beamSparks();
 
 	// Per state: the dot's fill, the node's own border, and the label's colour. Active is the only state
 	// that takes the status colour and the reference's soft glow (`ProviderTopology.js:41-42`, the same
@@ -56,111 +58,14 @@
 		error: { dot: 'bg-[var(--color-danger)]', node: 'border-[var(--color-border)]', label: '' },
 		idle: { dot: 'bg-[var(--color-border)]', node: 'border-[var(--color-border)]', label: '' }
 	};
-
-	const EDGE: Record<TopologyState, string> = {
-		active: 'stroke-[var(--color-ok)] [stroke-width:2]',
-		last: 'stroke-[var(--color-warn)] [stroke-width:1.5]',
-		error: 'stroke-[var(--color-danger)] [stroke-width:2]',
-		idle: 'stroke-[var(--color-border)] [stroke-width:1]'
-	};
-
-	/** The three strokes of a routing edge, widest and faintest first. */
-	const HALO =
-		'stroke-[var(--color-ok)] [stroke-opacity:0.35] [stroke-width:10] animate-beam-halo motion-reduce:animate-none';
-	const PLASMA =
-		'stroke-[var(--color-ok)] [stroke-opacity:0.85] [stroke-width:5] animate-beam-plasma motion-reduce:animate-none';
-	const CORE =
-		'stroke-[var(--color-text)] [stroke-width:2.2] animate-beam-core motion-reduce:animate-none';
-
-	/** A dot's travel, and the sparks' extra blink. `motion-reduce:hidden` because a dot has no rest state. */
-	const TRAVEL = 'animate-beam-travel motion-reduce:hidden';
-	const SPARK = 'animate-beam-spark motion-reduce:hidden';
-
-	const TONE: Record<BeamTone, string> = {
-		ok: 'stroke-[var(--color-ok)]',
-		text: 'stroke-[var(--color-text)]'
-	};
-
-	/** The dot's own numbers, with the shared `stroke-linecap` that turns a dash into a dot. */
-	const DOT = '[stroke-linecap:round]';
 </script>
 
-<div class="relative w-full" style={`height: ${layout.height}px`} aria-hidden="true">
-	<svg class="absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-		{#each layout.nodes as node (node.id)}
-			{@const geometry = {
-				x1: 50,
-				y1: 50,
-				x2: node.x,
-				y2: node.y,
-				pathLength: 100,
-				'vector-effect': 'non-scaling-stroke'
-			}}
-			{#if node.state === 'active' && live}
-				<!-- The reference's turbulence (`ProviderTopology.js:167-172`: baseFrequency 0.9, two
-				     octaves, seed 2), held still. It animates that frequency there with SMIL, which
-				     cannot honour a reduced-motion preference, so the wobble is a texture here and the
-				     motion comes from the dashes. The displacement is 0.4 rather than the reference's
-				     3.5 because this path lives in a 100-unit box instead of pixel coordinates. -->
-				<defs>
-					<filter
-						id={`beam-${node.id}`}
-						filterUnits="userSpaceOnUse"
-						x="0"
-						y="0"
-						width="100"
-						height="100"
-					>
-						<feTurbulence
-							type="fractalNoise"
-							baseFrequency="0.9"
-							numOctaves="2"
-							seed="2"
-							result="noise"
-						/>
-						<feDisplacementMap
-							in="SourceGraphic"
-							in2="noise"
-							scale="0.4"
-							xChannelSelector="R"
-							yChannelSelector="G"
-						/>
-					</filter>
-				</defs>
-				<line {...geometry} data-beam="halo" class={HALO} filter={`url(#beam-${node.id})`} />
-				<line
-					{...geometry}
-					data-beam="plasma"
-					class={PLASMA}
-					style={`stroke-dasharray:${BEAM_PLASMA_DASH}`}
-				/>
-				<line
-					{...geometry}
-					data-beam="core"
-					class={CORE}
-					style={`stroke-dasharray:${BEAM_CORE_DASH}`}
-				/>
-				{#each orbs as orb (orb.key)}
-					<line
-						{...geometry}
-						data-beam="orb"
-						class={`${DOT} ${TONE[orb.tone]} ${TRAVEL}`}
-						style={`stroke-width:${orb.width}; stroke-dasharray:${BEAM_PARTICLE_DASH}; animation-duration:${orb.travel}s; animation-delay:${orb.delay}s`}
-					/>
-				{/each}
-				{#each sparks as spark (spark.key)}
-					<line
-						{...geometry}
-						data-beam="spark"
-						class={`${DOT} ${TONE[spark.tone]} ${SPARK}`}
-						style={`stroke-width:${spark.width}; stroke-dasharray:${BEAM_PARTICLE_DASH}; animation-duration:${spark.travel}s, ${spark.blink}s; animation-delay:${spark.delay}s, 0s`}
-					/>
-				{/each}
-			{:else}
-				<line {...geometry} class={EDGE[node.state]} />
-			{/if}
-		{/each}
-	</svg>
+<div
+	class="relative w-full [container-type:inline-size]"
+	style={`height: ${layout.height}px; --share: ${layout.nodeShare}; --u: min(1, calc(var(--share) * tan(atan2(100cqw, ${NODE_MAX_WIDTH}px)))); line-height: 1.4286`}
+	aria-hidden="true"
+>
+	<UsageTopologyEdges nodes={layout.nodes} {live} />
 
 	<!-- The gateway, which is the reference's router node (`ProviderTopology.js:99-130`): while it is
 	     routing, the card pulses, the mark shakes, the label flickers and the count sits in a glowing
@@ -169,21 +74,21 @@
 	     dose cap R-13 asks for. -->
 	<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
 		<div
-			class={`flex items-center gap-2 rounded-[var(--radius-sm)] border bg-[var(--color-surface)] px-3 py-2 text-sm font-medium whitespace-nowrap ${
+			class={`flex items-center gap-[calc(8px*var(--u))] rounded-[var(--radius-sm)] border bg-[var(--color-surface)] px-[calc(12px*var(--u))] py-[calc(8px*var(--u))] font-medium whitespace-nowrap [font-size:calc(14px*var(--u))] ${
 				inFlight > 0 ? 'border-[var(--color-ok)]' : 'border-[var(--color-accent)]'
 			} ${inFlight > 0 && live ? 'animate-router-pulse motion-reduce:animate-none' : ''}`}
 		>
 			<img
 				src="/logo-mark@128.png"
 				alt=""
-				class={`size-4 shrink-0 ${inFlight > 0 && live ? 'animate-router-shake motion-reduce:animate-none' : ''}`}
+				class={`size-[calc(16px*var(--u))] shrink-0 ${inFlight > 0 && live ? 'animate-router-shake motion-reduce:animate-none' : ''}`}
 			/>
 			<span class={inFlight > 0 && live ? 'animate-router-flicker motion-reduce:animate-none' : ''}
 				>Gateway</span
 			>
 			{#if inFlight > 0}
 				<span
-					class="inline-flex min-w-5 justify-center rounded-[var(--radius-sm)] bg-[var(--color-ok)] px-1 text-xs font-semibold text-[var(--color-surface)] shadow-[0_0_10px_color-mix(in_srgb,var(--color-ok)_45%,transparent)]"
+					class="inline-flex min-w-[calc(20px*var(--u))] justify-center rounded-[var(--radius-sm)] bg-[var(--color-ok)] px-[calc(4px*var(--u))] text-[0.857em] font-semibold text-[var(--color-surface)] shadow-[0_0_10px_color-mix(in_srgb,var(--color-ok)_45%,transparent)]"
 					>{inFlight}</span
 				>
 			{/if}
@@ -192,20 +97,22 @@
 
 	{#each layout.nodes as node (node.id)}
 		<div
-			class={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-[var(--radius-sm)] border bg-[var(--color-surface)] px-2 py-1 transition-all duration-300 ${
+			class={`absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-[calc(8px*var(--u))] rounded-[var(--radius-sm)] border bg-[var(--color-surface)] px-[calc(8px*var(--u))] py-[calc(4px*var(--u))] transition-all duration-300 [font-size:calc(14px*var(--u))] ${
 				STATE[node.state].node
 			}`}
 			style={`left: ${node.x}%; top: ${node.y}%`}
 		>
-			<span class="relative flex size-2 shrink-0">
+			<span class="relative flex size-[calc(8px*var(--u))] shrink-0">
 				{#if node.state === 'active' && live}
 					<span
 						class="absolute inline-flex size-full animate-ping rounded-full bg-[var(--color-ok)] opacity-75 motion-reduce:hidden"
 					></span>
 				{/if}
-				<span class={`relative inline-flex size-2 rounded-full ${STATE[node.state].dot}`}></span>
+				<span class={`relative inline-flex size-full rounded-full ${STATE[node.state].dot}`}></span>
 			</span>
-			<span class={`max-w-24 truncate text-sm ${STATE[node.state].label}`}>{node.name}</span>
+			<span class={`max-w-[calc(96px*var(--u))] truncate ${STATE[node.state].label}`}
+				>{node.name}</span
+			>
 		</div>
 	{/each}
 </div>

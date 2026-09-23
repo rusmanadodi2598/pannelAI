@@ -139,6 +139,31 @@ describe('UsageTopology', () => {
 		expect(container.querySelector('div[aria-hidden="true"]')).toBeTruthy();
 	});
 
+	it('sizes a node from the drawing unit, so a narrow box draws a smaller node', () => {
+		// Draft 016 F8: the node boxes were pixel-sized inside a percentage layout, so at 390px two of them
+		// intersected by 47px. The box now carries the unit and every metric is written as its own pixel
+		// value times it (draft 018 F1).
+		const container = draw({ providers: [{ id: 'openai', name: 'OpenAI' }] });
+		const root = container.querySelector('div[aria-hidden="true"]') as HTMLElement;
+		const node = nodeFor(container, 'OpenAI');
+		const style = root.getAttribute('style') ?? '';
+
+		expect(root.classList.contains('[container-type:inline-size]')).toBe(true);
+		expect(style).toContain('--share: 0.2');
+		expect(style).toContain('--u: min(1, calc(var(--share) * tan(atan2(100cqw, 130px))))');
+		// The font size is on the box rather than on the drawing: an element is not its own query container, so
+		// a font size declared on the drawing resolved against the page and the browser measured 8.4px text in
+		// 47px nodes at 390px (draft 018 F1).
+		expect(style).not.toContain('font-size');
+		expect(node.classList.contains('[font-size:calc(14px*var(--u))]')).toBe(true);
+		expect(node.classList.contains('px-[calc(8px*var(--u))]')).toBe(true);
+		expect(node.classList.contains('gap-[calc(8px*var(--u))]')).toBe(true);
+		expect(node.querySelector('span')?.classList.contains('size-[calc(8px*var(--u))]')).toBe(true);
+		expect(within(node).getByText('OpenAI').classList.contains('max-w-[calc(96px*var(--u))]')).toBe(
+			true
+		);
+	});
+
 	it('explains the colours in words', () => {
 		draw();
 

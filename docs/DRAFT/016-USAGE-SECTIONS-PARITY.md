@@ -7,7 +7,7 @@ depan implementasi.
 
 | | |
 |---|---|
-| **Status** | **CLOSED 2026-09-22** untuk scope pass ini: F1 sampai F4 DURING selesai dan seluruh gate lulus. **F8 OPEN** (panel, cacat gambar di viewport 390px, ditemukan click-through pass ini dan bukan buatan pass ini); **F5 sampai F7 OPEN sebagai permintaan `app-serv`** |
+| **Status** | **CLOSED 2026-09-22** untuk scope pass ini: F1 sampai F4 DURING selesai dan seluruh gate lulus. **F8 CLOSED 2026-09-23 oleh draft 018 F1** (panel, cacat gambar di viewport 390px, ditemukan click-through pass ini dan bukan buatan pass ini); **F5 sampai F7 OPEN sebagai permintaan `app-serv`** |
 | **Mechanism** | DURING & AFTER (antislop) |
 | **Tanggal** | 2026-09-22 |
 | **Scope** | `app-ui/.` saja. `app-serv/.` tidak disentuh: F5 sampai F7 adalah permintaan bernomor, bukan pekerjaan pass ini |
@@ -211,7 +211,11 @@ tetap seperti sekarang: tabel yang bisa difilter dan diurut, dengan satu pasang 
 
 ## 10. F8 LOW (FE): dua node bertabrakan di viewport 390px
 
-**Status: OPEN, temuan panel, bukan buatan pass ini.**
+**Status: CLOSED 2026-09-23 oleh draft 018 F1.** Perbaikannya bukan lebar minimum plus scroll mendatar
+melainkan gambar yang menskalakan diri dari lebar kotaknya, yaitu perilaku reference sendiri (`fitView`
+dengan `minZoom={0.1}`, `ProviderTopology.js:416-434` dan `:452-455`). Diukur ulang di browser: pada 390px
+tidak ada pasangan kotak yang beririsan, termasuk saat gateway routing, dan angka 1360px tidak berubah.
+Angka sebelum dan sesudahnya ada di `docs/DRAFT/018-USAGE-DRAWING-SIZING-PARITY.md` §3 dan §8.1.
 
 **Fakta.** Click-through pass ini mengukur setiap kotak node di dua viewport. Pada 390px ada satu pasangan
 yang bertabrakan: `MiMo Code Free` (kiri 170, kanan 300) dan `Live pass 016` (kiri 94, kanan 217) beririsan
@@ -312,7 +316,8 @@ Chrome headless lewat CDP: lima tangkapan layar di `/tmp/live016/shots/` dan tuj
 4. `refused`: titik node `rgb(179, 38, 30)`, tally garisnya bergeser menjadi satu garis `rgb(179, 38, 30)`,
    baris `just now | refuse | 0 in | 0 out | Live pass 016 | Error`, dan kalimat `The gateway last reported an
    error on Live pass 016.` Panggilan yang sama menjawab 502 dengan body error stub yang diteruskan.
-5. `phone`: `scrollWidth == clientWidth == 390`, chip tetap `Live`, dan satu tabrakan node yang jadi F8.
+5. `phone`: `scrollWidth == clientWidth == 390`, chip tetap `Live`, dan satu tabrakan node yang menjadi F8
+   draft ini sebelum perbaikannya di draft 018.
 
 **Cacat yang ditemukan pass ini dan diperbaiki (dua-duanya di driver, bukan di produk).**
 
@@ -353,8 +358,10 @@ media_settings, proxies). Dua koreksi diperlukan sebelum itu tercapai, dan kedua
 ## 13. Status per 2026-09-22
 
 - **CLOSED 2026-09-22** untuk scope pass ini: F1 sampai F4 DURING selesai dan seluruh gate lulus.
-- **F8 OPEN** di scope panel: cacat gambar di viewport 390px, terukur 47px, ditemukan click-through pass ini
-  dan bukan buatan pass ini (gambar tidak disentuh pass ini).
+- **F8 CLOSED 2026-09-23 oleh draft 018 F1**: cacat gambar di viewport 390px, terukur 47px, ditemukan
+  click-through pass ini dan bukan buatan pass ini (gambar tidak disentuh pass ini). Draft 018 memperbaiki
+  gambar itu dengan menskalakan dirinya dari lebar kotaknya, dan mengukur ulang di browser bahwa tidak ada
+  pasangan kotak yang beririsan pada 390px.
 - **F5 sampai F7 OPEN sebagai permintaan `app-serv`**: periode `All`, dimensi `Account`, drawer empat body.
 - **Draft 012 F2/F3 dan draft 013 F4 ditutup**: route `GET /api/v1/usage/live` sudah ada, panel tersambung
   ke route nyata, dan buktinya 21 pemeriksaan klien plus satu click-through browser yang direkam.

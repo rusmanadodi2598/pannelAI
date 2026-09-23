@@ -11,6 +11,8 @@
 //   knows, which is not the same list as the providers that could route anything.
 //
 //   `topologyNodes` turns that set plus the live states into positions, so the drawing holds no arithmetic.
+//   It also answers how wide a node may be drawn, because that is arithmetic over the positions and the
+//   drawing must not hold any: on a narrow box the nodes shrink with it instead of colliding (draft 018).
 
 import type { Provider } from './provider';
 
@@ -30,6 +32,8 @@ export type TopologyLayout = {
 	nodes: TopologyNode[];
 	/** The drawing box's height in pixels, from the node count. */
 	height: number;
+	/** The width one node may take, as a share of the drawing box's width (draft 018). */
+	nodeShare: number;
 };
 
 export type TopologyLive = {
@@ -54,8 +58,45 @@ const MAX_HEIGHT = 640;
 const HEIGHT_PER_NODE = 22;
 const HEIGHT_BASE = 120;
 
+// The node box at its largest, in the pixels the drawing's own metrics are written in: the widest node the
+// panel draws today (padding 8 + dot 8 + gap 8 + label 96 + border 2), and the node height the reference
+// fork lays its own nodes out at (`ProviderTopology.js:265` on `origin/master`, `nodeH = 30`).
+//
+// `NODE_MAX_WIDTH` is exported because the drawing's unit is derived from it: `--u` is the box's width over
+// the width at which a node reaches this cap, so the drawing shrinks below the cap and never grows past it.
+export const NODE_MAX_WIDTH = 130;
+const NODE_HEIGHT = 30;
+
+// The widest a node may be as a share of the drawing box's width, and the clearance kept between two nodes
+// that share a row. The share is what `UsageTopologyDrawing.svelte` sizes every metric from, so a narrow box
+// draws a smaller drawing rather than a collided one, which is what the reference's fitView does with its
+// whole canvas.
+const NODE_MAX_SHARE = 0.2;
+const NODE_CLEARANCE = 0.15;
+
 function lower(value: string): string {
 	return value.toLowerCase();
+}
+
+/**
+ * The share of the drawing box's width one node may take, so that two nodes on one row never touch.
+ *
+ * Only pairs that share a row can collide whatever their horizontal distance, so the row is what this looks
+ * at: a pair whose vertical distance is a whole node height apart is clear at any width. The result is a
+ * share of the box's width, which is unitless on purpose: it holds at every width the box can take, and the
+ * drawing caps it at `NODE_MAX_WIDTH` pixels once the box is wide enough.
+ */
+function nodeShare(positions: { x: number; y: number }[], height: number): number {
+	const row = (NODE_HEIGHT / height) * 100;
+	let tightest = Number.POSITIVE_INFINITY;
+	for (let i = 0; i < positions.length; i += 1) {
+		for (let j = i + 1; j < positions.length; j += 1) {
+			if (Math.abs(positions[i].y - positions[j].y) >= row) continue;
+			tightest = Math.min(tightest, Math.abs(positions[i].x - positions[j].x));
+		}
+	}
+	if (tightest === Number.POSITIVE_INFINITY) return NODE_MAX_SHARE;
+	return Math.min(NODE_MAX_SHARE, (tightest / 100) * (1 - NODE_CLEARANCE));
 }
 
 /**
@@ -76,7 +117,7 @@ export function topologyNodes(
 	const count = providers.length;
 	const height = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, HEIGHT_BASE + HEIGHT_PER_NODE * count));
 
-	if (count === 0) return { nodes: [], height };
+	if (count === 0) return { nodes: [], height, nodeShare: NODE_MAX_SHARE };
 
 	const active = new Set(live.active.map(lower));
 	const last = lower(live.last);
@@ -102,7 +143,7 @@ export function topologyNodes(
 		};
 	});
 
-	return { nodes, height };
+	return { nodes, height, nodeShare: nodeShare(nodes, height) };
 }
 
 function byId(a: { id: string }, b: { id: string }): number {

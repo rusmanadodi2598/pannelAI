@@ -54,14 +54,32 @@ describe('UsageTopology beam', () => {
 			(line) => line.getAttribute('style') ?? ''
 		);
 
-		expect(orbs[0]).toContain('stroke-width: 8');
-		expect(orbs[1]).toContain('stroke-width: 5');
+		// The widths are the reference's own pixels at the drawing's largest, which is why each is written
+		// as that value times the drawing's unit rather than as a bare pixel count (draft 018 F2).
+		expect(orbs[0]).toContain('stroke-width: calc(8px*var(--u))');
+		expect(orbs[1]).toContain('stroke-width: calc(5px*var(--u))');
+		expect(sparks[0]).toContain('stroke-width: calc(3.6px*var(--u))');
 		expect(orbs[0]).toContain('animation-duration: 0.4s');
 		expect(orbs[0]).toContain('animation-delay: 0s');
 		expect(orbs[1]).toContain('animation-delay: -0.09s');
 		expect(orbs[5]).toContain('animation-duration: 0.8s');
 		expect(sparks[0]).toContain('animation-duration: 0.28s, 0.35s');
 		expect(sparks[2]).toContain('animation-duration: 0.38s, 0.55s');
+	});
+
+	it('draws the three strokes at the reference widths scaled by the drawing unit', () => {
+		const container = draw({ active: [entry('openai')] });
+		const strokes = [
+			{ part: 'halo', width: '10' },
+			{ part: 'plasma', width: '5' },
+			{ part: 'core', width: '2.2' }
+		];
+
+		for (const stroke of strokes) {
+			const line = beamAt(container, 'OpenAI', stroke.part)[0];
+
+			expect(line.classList.contains(`[stroke-width:calc(${stroke.width}px*var(--u))]`)).toBe(true);
+		}
 	});
 
 	it('gives every particle one dot and a bare path, so a line is a traveller, not a row of dots', () => {
