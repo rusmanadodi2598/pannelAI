@@ -6,7 +6,7 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12) |
+| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
 | **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
@@ -208,3 +208,53 @@ dengan benar, jadi ini khusus jalur streaming, bukan kegagalan pencatatan umum. 
 dan cap kuota yang menghitung token tidak pernah melihat panggilan streaming. Mekanismenya (usage dibaca
 sebelum chunk terakhir tiba, atau `Finish()` tidak menyalin usage ke akuntansi) tidak diverifikasi di sini;
 yang diukur hanya selisihnya.
+
+## 13. Uji ulang 2026-09-23 22:41: F1 sampai F3 dan F5 tetap, dan dua panggilan yang tidak selesai tidak tercatat sama sekali
+
+Owner mengirim ulang endpoint, kunci, dan model yang sama (kunci `sandbox`, hint `sk-…rmEu`; model
+`th-1/deepseek-v4.1-flash:free`). Lima panggilan dilakukan pada gateway yang berjalan. Keadaan tabel saat
+mulai: `provider_nodes` 3, `upstream_endpoints` 3 (semuanya untuk `th-1`, label `Key 1`, `Key 2`, `Key 3`,
+`priority` 1, `status` `active`), `upstream_keys` 3, `gateway_keys` 2, `usage_records` 5, `request_logs` 3,
+`models_custom` 1, `panel_auth` 1.
+
+| Uji | Hasil terukur |
+| --- | --- |
+| `GET /api/v1/models` | HTTP 200, 363 id; 0 berawalan `th-1/`, dan 80 id milik node `oczen` muncul di bawah **id node** `openai-compatible-03863XJ2YM2KHF847XJP5YBSH8`, bukan di bawah prefiksnya |
+| Non-streaming | HTTP 200 dalam 18,1 s; `content` `pong`, `reasoning_content` ada, `finish_reason` `stop`, `usage` 38/29/67; `model` di wire `deepseek-v4.1-flash` |
+| Streaming tanpa `include_usage` (ulangan, bersih) | HTTP 200, TTFB 41,1 s, total 41,1 s, 1097 byte: 4 frame berframe, lalu satu frame `finish` **telanjang** dengan `data: [DONE]` menempel; `"finish_reason":"stop"` muncul dua kali; 0 kecocokan `^data: \[DONE\]$` |
+| Streaming + `include_usage` (ulangan, bersih) | HTTP 200, TTFB 32,3 s, total 32,3 s, 1316 byte: 4 frame berframe, lalu satu baris telanjang berisi **dua** objek `usage` kembar (37/26/63) dengan `data: [DONE]` menempel |
+| Pembaca SSE panel atas kedua byte itu | `frames=4`, `seesDone=false`; teks, model, finish, dan usage terlipat benar, dan layar akan melaporkan alasan akhir `truncated` |
+
+Jadi F1, F2, F3, dan F5 tetap seperti §11; yang bergerak hanya angka usage dari upstream. Dua temuan baru
+menyertainya.
+
+### 13.1 F6 (MEDIUM): panggilan yang tidak selesai tidak menulis baris akuntansi sama sekali
+
+Dua dari lima panggilan tidak selesai, dan keduanya tidak meninggalkan satu baris pun di `usage_records`
+maupun `request_logs`, sementara `gateway_keys.request_count` kunci `sandbox` naik dari 3 menjadi 8 (lima
+panggilan terhitung semuanya):
+
+| Panggilan | Yang diterima klien | Baris akuntansi |
+| --- | --- | --- |
+| Streaming tanpa flag, percobaan pertama | HTTP 200, TTFB 119,4 s, total 125,8 s, 3905 byte, `curl` keluar 18 ("transfer closed with outstanding read data remaining"): 17 frame berframe, tanpa frame telanjang, tanpa `data: [DONE]` | tidak ada |
+| Streaming + `include_usage`, percobaan pertama | Tidak ada byte sama sekali; koneksi ditutup setelah 178,9 s, `curl` keluar 52 ("Empty reply from server") | tidak ada |
+
+Kedua percobaan itu berhasil saat diulang sendirian (tabel di atas), jadi kejadian ini
+**tidak tereproduksi** dan sisi mana yang memutus koneksi tidak bisa dipastikan dari sini. Hosti
+`tokenharbor.ai` sendiri sehat saat diukur: `GET https://tokenharbor.ai/v1/models` menjawab HTTP 401 dalam
+0,52 s. Yang bisa diklaim: pada keadaan ini panggilan yang gagal di tengah stream tidak terlihat di
+`/usage` dan tidak terlihat di log permintaan, walaupun kuncinya tetap menghitung panggilan itu.
+
+### 13.2 F5 tetap, dan satu selisih kecil
+
+Kedua stream yang selesai menulis `usage_records` dengan `tokens_in` 0 dan `tokens_out` 0 (`status`
+`success`, `latency_ms` 32281 dan 40716) padahal wire membawa 41/56/97 dan 37/26/63; panggilan
+non-streaming pada jam yang sama mencatat 38/29 dengan benar. Selisih kecil yang ikut terukur: kolom
+`model` di `usage_records` menyimpan `deepseek-v4.1-flash:free` (dengan sufiks), sedangkan `model` di wire
+sudah dilepas menjadi `deepseek-v4.1-flash`.
+
+### 13.3 Batas dan keadaan akhir
+
+Yang diukur tetap satu upstream dan satu model. Tiga baris `usage_records` dan tiga baris `request_logs`
+yang ditulis pass ini **sengaja ditinggalkan** sebagai rekaman jujur pengujian, seperti §11; menghapusnya
+berarti menghapus bukti F5 dan F6. `request_count` kunci `sandbox` sekarang 8.
