@@ -46,17 +46,17 @@ func TestComboService_Create(t *testing.T) {
 		{
 			name:    "an unresolvable reference",
 			draft:   comboDraft(t, "daily", domain.ComboFallback, 0, "", comboRef(t, "openai/ghost", 1)),
-			wantErr: "does not resolve",
+			wantErr: "is not declared",
 		},
 		{
 			name:    "a reference to a disabled model",
 			draft:   comboDraft(t, "daily", domain.ComboFallback, 0, "", comboRef(t, "anthropic/claude-3", 1)),
-			wantErr: "does not resolve",
+			wantErr: "is not declared",
 		},
 		{
 			name:    "an unresolvable judge model",
 			draft:   comboDraft(t, "panel", domain.ComboFusion, 0, "openai/ghost", comboRef(t, "openai/gpt-4o", 1)),
-			wantErr: "does not resolve",
+			wantErr: "is not declared",
 		},
 		{
 			name:    "a fusion combo without a judge",

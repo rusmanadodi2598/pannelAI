@@ -95,9 +95,10 @@ func (s *ModelCatalogService) Catalog(ctx context.Context, filter CatalogFilter)
 	if err != nil {
 		return nil, err
 	}
+	providerNames := providerNames(s.index)
 	matched := make([]domain.CatalogModel, 0, len(lookups))
 	for _, model := range lookups {
-		if matchesCatalogFilter(s.index, model, filter) {
+		if matchesCatalogFilter(providerNames, model, filter) {
 			matched = append(matched, model)
 		}
 	}

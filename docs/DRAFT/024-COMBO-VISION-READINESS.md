@@ -320,13 +320,36 @@ ambang §1.1 (`model_catalog_canonical_test.go` + `model_catalog_canonical_filte
 2. **Presets dicatat, tidak dibangun** — di luar keluhan owner, tidak ada baris SPEC-API.
 3. **Filter dua arah, bukan normalisasi penyimpanan** (§3.2).
 
-## 7. Status per 2026-09-24 (penutup pass)
+## 7. Pass perbaikan ulasan (2026-09-24)
 
-**CLOSED.** F1 (combo bersarang di runtime + guard siklus), F2 (kanonikalisasi ref di semua jalur
-tulis + filter katalog/custom dua arah), F3 (vision adapter menerima ketiga bentuk), dan F4 (ref
-harus servable chat, alasan disebut) selesai, semuanya diverifikasi hidup terhadap gateway yang
-berjalan setelah build ulang. F5 tertutup bersama F2; F6, F7, F8 non-finding dengan alasan
-tertulis. Delapan berkas sumber disentuh (5 diedit, 3 baru) plus empat berkas test baru dan satu
-pin test dibalik; dua berkas dipecah di ambang §1.1. Seluruh gerbang §4 lulus. Baris probe hidup
-dibersihkan (combos=0, aliases=0, vision adapter dinonaktifkan, gateway key probe dihapus);
-satu-satunya data tersisa milik aktor lain.
+Ulasan menyeluruh cabang ini (konteks segar, dievaluasi ulang menurut dampak) menemukan enam cacat pada
+kiriman pertama. Semua diperbaiki dalam satu pass dengan test RED→GREEN masing-masing, lalu seluruh
+gerbang dijalankan ulang:
+
+| # | Temuan ulasan | Perbaikan | Bukti |
+|---|---|---|---|
+| **C1** Critical | Resolusi combo bersarang eksponensial: guard kedalaman membatasi panjang rantai, bukan pekerjaan; pohon biner kedalaman 8 terukur 1.277 lookup, 16 terukur 262.141 | Memo per-resolusi (`resolveState`, dibuat per request, tidak pernah dibagikan — Resolver tetap aman konkuren) + `comboExpansionLimit` 256 sebagai pagar | Pohon gagal kedalaman 8: 31 lookup (dari 1.277). Live: akar 61 combo bersarang terlayani 0.23 dtk; graph yang melebihi batas berhenti MODEL_NOT_FOUND |
+| **I2** Important | `chatServable` salah dua arah: menolak id tak-terdeklarasi di provider passthrough (router melayaninya), menerima baris custom di provider non-passthrough (router menolaknya) | Aturan ditulis ulang dalam kata router: `ResolveParts` melayani model terdeklarasi, id bebas di provider passthrough, dan menolak sisanya | `openrouter/anything-at-all` kini 201 (terukur hidup); `openai/ghost-model` ditolak dengan alasan |
+| **I3** Important | Alias melewati aturan servability: alias ke model media diterima, lalu combo beranggotakan alias itu disimpan | `validateRefs` deref target alias sebelum menilai; alias yang menunjuk combo tetap diterima (combo dilayani anggota-anggotanya) | `pic → flux-kontext-max` lalu combo `pic` ditolak "is a media model (image)" |
+| **I4** Important | Id yang di-shadow alias provider lain dinilai dari provider yang salah | Tabel nama dibangun alias-dulu — aturan router sendiri (`load.go`): alias mengalahkan id | Test `shadowed/hidden` menyimpan karena router me-resolve `shadowed` ke pemilik alias (passthrough) |
+| **I5** Important | Filter katalog memanggil `Provider()` per baris → N+1 pembacaan node-list di produksi | Tabel nama dibangun sekali per request dari satu `All()`; komentar yang keliru ("sekali per filter") dibetulkan | `countingIndex` membatasi `Provider()` ≤2 per baca terfilter |
+| **M6–M9** Minor | `isDisabled` satu arah; `Update` menerima self-reference; siklus alias tanpa batas; filter custom over-match | `isDisabled` dua arah penuh; self-reference ditolak di tulis (`a combo cannot list itself`); `aliasHopLimit` 8; filter custom memakai tabel nama | Masing-masing ada test tabel |
+
+Tambahan yang menyertai: `ReplaceDisabled` kini menerima semua ejaan (konsisten F2), dan pesan
+penolakan non-passthrough kini menyebut alasannya ("does not pass model ids through, and model X is
+not declared"), bukan generik "does not resolve" — tiga pin test lama diperbarui ke pesan baru.
+
+## 8. Status final (CLOSED 2026-09-24)
+
+**CLOSED.** F1 (combo bersarang di runtime: satu deref level, memo per-resolusi, guard kedalaman dan
+ekspansi, identitas tetap combo yang dialamatkan), F2 (kanonikalisasi ref di semua jalur tulis, tabel
+nama alias-dulu mengikuti router, filter katalog/custom/disabled dua arah), F3 (vision adapter menerima
+ketiga bentuk), dan F4 (ref harus servable chat dengan alasan disebut, termasuk lewat alias dan id yang
+di-shadow) selesai, semuanya diverifikasi hidup terhadap gateway yang berjalan setelah build ulang.
+Pass perbaikan ulasan menutup enam cacat pada kiriman pertama (§7). Seluruh gerbang §4 lulus pada tree
+akhir. Baris probe hidup dibersihkan (combos=0, aliases=0, vision adapter dinonaktifkan, seluruh gateway
+key probe dihapus); satu-satunya data tersisa milik aktor lain.
+
+**Ukuran berkas.** Semua berkas pass ini ≤244 baris; tujuh berkas dipecah di ambang §1.1 selama pass
+(`model_catalog_canonical_test.go`, `combo_servable_test.go`, `model_catalog_canonical_test.go` lagi,
+`resolve_combo.go`, `model_resolve.go`).

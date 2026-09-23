@@ -118,8 +118,26 @@ func NewResolver(index ProviderRegistry, lookup ModelLookup) (*Resolver, error) 
 // Resolve applies the documented order: combo name, then alias, then
 // provider/model, then MODEL_NOT_FOUND (SPEC-API-001 §7.15).
 func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error) {
+	return r.resolveWithin(ctx, model, nil, 0)
+}
+
+// resolveWithin is Resolve carrying the resolution's working state and the
+// alias hops already followed, so a combo member or an alias target re-enters
+// resolution with the memo and the guards the outer call already built. A nil
+// state is the entry point's own start.
+//
+// The alias hop count guards the one cycle the write path refuses but a direct
+// database row can still hold: an alias whose target is another alias. The
+// guard is a count rather than a visited set because an alias chain is a line,
+// not a graph — one target per name — so a count answers the same question with
+// no map to build.
+func (r *Resolver) resolveWithin(ctx context.Context, model string, state *resolveState, aliasHops int) (Resolution, error) {
 	if model == "" {
 		return Resolution{}, dataPlaneError(CodeModelNotFound, "the model field is required")
+	}
+	if aliasHops >= aliasHopLimit {
+		return Resolution{}, dataPlaneError(CodeModelNotFound,
+			"the model chain has more alias hops than the resolver follows")
 	}
 
 	// A combo is addressed by a bare name, so a string carrying "/" cannot be
@@ -131,7 +149,7 @@ func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error
 			return Resolution{}, err
 		}
 		if found && len(combo.Refs()) > 0 {
-			return r.resolveCombo(ctx, combo)
+			return r.resolveCombo(ctx, combo, state)
 		}
 
 		target, found, err := r.lookup.Alias(ctx, model)
@@ -139,7 +157,7 @@ func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error
 			return Resolution{}, err
 		}
 		if found {
-			return r.Resolve(ctx, target)
+			return r.resolveWithin(ctx, target, state, aliasHops+1)
 		}
 		return Resolution{}, dataPlaneError(CodeModelNotFound,
 			"model "+model+" is not a known model, alias, or combo")

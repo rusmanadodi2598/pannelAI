@@ -58,7 +58,7 @@ func TestComboService_Update(t *testing.T) {
 		{
 			name:    "an unresolvable reference",
 			update:  comboDraft(t, "daily", domain.ComboFallback, 0, "", comboRef(t, "openai/ghost", 1)),
-			wantErr: "does not resolve",
+			wantErr: "is not declared",
 		},
 	}
 	for _, tc := range cases {

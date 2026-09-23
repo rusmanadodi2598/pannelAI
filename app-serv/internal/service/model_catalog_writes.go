@@ -38,8 +38,8 @@ func (s *ModelCatalogService) Custom(ctx context.Context, providerID string) ([]
 	if err != nil {
 		return nil, err
 	}
-	names := providerNameSet(s.index, providerID)
-	if names == nil {
+	trimmed := strings.TrimSpace(providerID)
+	if trimmed == "" {
 		return models, nil
 	}
 	// The match is two-way because a custom row may carry either spelling: the
@@ -47,18 +47,24 @@ func (s *ModelCatalogService) Custom(ctx context.Context, providerID string) ([]
 	// nodes existed, so rows stored under `corp` must surface when the filter
 	// names the node's id, and vice versa. Matching only the filter's names
 	// against the row would hide every prefix-stored row from the id form.
+	//
+	// Both directions read one name table, built from a single index snapshot:
+	// in production the index adapter rebuilds the node overlay on every
+	// Provider() call, so a per-row lookup would be one node-list query per row.
+	names := providerNames(s.index)
+	target, known := names[trimmed]
+	if !known {
+		return nil, nil
+	}
 	matched := make([]domain.CustomModel, 0, len(models))
 	for _, model := range models {
-		if _, ok := names[model.ProviderID()]; ok {
+		if providerAnswersTo(target, model.ProviderID()) {
 			matched = append(matched, model)
 			continue
 		}
-		rowNames := providerNameSet(s.index, model.ProviderID())
-		for name := range rowNames {
-			if _, ok := names[name]; ok {
-				matched = append(matched, model)
-				break
-			}
+		row, ok := names[model.ProviderID()]
+		if ok && providerAnswersTo(row, trimmed) {
+			matched = append(matched, model)
 		}
 	}
 	return matched, nil
@@ -108,7 +114,7 @@ func (s *ModelCatalogService) Aliases(ctx context.Context) ([]domain.ModelAlias,
 // writes applies here for the same reason — a half-replaced mapping is harder to
 // reason about than a refused one.
 func (s *ModelCatalogService) ReplaceAliases(ctx context.Context, aliases []domain.ModelAlias) error {
-	lookups, err := s.lookups(ctx)
+	view, err := newReferenceView(s, ctx)
 	if err != nil {
 		return err
 	}
@@ -128,7 +134,7 @@ func (s *ModelCatalogService) ReplaceAliases(ctx context.Context, aliases []doma
 			continue
 		}
 		parsed, err := domain.ParseModelRef(alias.Target())
-		if err == nil && resolvesIn(lookups, s.index, parsed) {
+		if err == nil && view.resolvesIn(parsed) {
 			continue
 		}
 		return domain.NewValidationError("alias " + alias.Alias() + " targets an unknown model or combo: " + alias.Target())
@@ -152,13 +158,24 @@ func (s *ModelCatalogService) ReplaceDisabled(ctx context.Context, refs []domain
 	if err != nil {
 		return err
 	}
+	view, err := newReferenceView(s, ctx)
+	if err != nil {
+		return err
+	}
 	for _, ref := range refs {
 		if ref.IsZero() {
 			return domain.NewValidationError("provider_id and model_id are required")
 		}
-		if _, ok := available[ref.String()]; !ok {
-			return domain.NewValidationError("unknown model: " + ref.String())
+		if _, ok := available[ref.String()]; ok {
+			continue
 		}
+		// A pair spelled with an alias or a node prefix names the same model as
+		// the id form, so it is accepted the same way every other write accepts
+		// it (draft 024 §3.2). The stored pair keeps the operator's spelling.
+		if view.resolvesIn(ref) {
+			continue
+		}
+		return domain.NewValidationError("unknown model: " + ref.String())
 	}
 	return s.repo.ReplaceDisabled(ctx, refs)
 }

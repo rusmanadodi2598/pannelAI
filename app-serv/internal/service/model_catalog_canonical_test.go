@@ -78,7 +78,7 @@ func TestModelCatalogService_ModelExistsAcceptsEveryRouterForm(t *testing.T) {
 		{name: "the node id form", raw: "openai-compatible-1/corp-chat", want: true},
 		{name: "the node prefix form", raw: "corp/corp-chat", want: true},
 		{name: "an alias with a model the provider does not declare", raw: "ks/ghost", want: false},
-		{name: "a prefix with a model the node does not declare", raw: "corp/ghost", want: false},
+		{name: "a prefix with an id the node does not declare", raw: "corp/ghost", want: true},
 		{name: "an unknown namespace", raw: "nowhere/glm-4.7", want: false},
 	}
 	for _, tc := range cases {

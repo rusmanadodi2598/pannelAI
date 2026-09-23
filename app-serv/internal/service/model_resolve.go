@@ -58,25 +58,26 @@ func (s *ModelCatalogService) ModelExists(ctx context.Context, ref domain.ModelR
 	if ref.IsZero() {
 		return false, nil
 	}
-	lookups, err := s.lookups(ctx)
+	view, err := newReferenceView(s, ctx)
 	if err != nil {
 		return false, err
 	}
-	return resolvesIn(lookups, s.index, ref), nil
+	return view.resolvesIn(ref), nil
 }
 
 // ChatServable reports whether the chat data plane could serve a reference,
 // and why not when it cannot. It is the write-time half of the property the
 // §7.15 model list holds — listed and answerable are one property — so a
 // reference the router would refuse (a provider with no chat translator, a
-// media model) is refused here with the reason named, before it is saved as
-// part of a combo or the vision adapter (draft 024 §3.4).
+// non-passthrough provider's undeclared id, a media model) is refused here with
+// the reason named, before it is saved as part of a combo or the vision adapter
+// (draft 024 §3.4).
 func (s *ModelCatalogService) ChatServable(ctx context.Context, ref domain.ModelRef) error {
-	lookups, err := s.lookups(ctx)
+	view, err := newReferenceView(s, ctx)
 	if err != nil {
 		return err
 	}
-	return chatServable(lookups, s.index, ref)
+	return view.chatServable(ref)
 }
 
 // Resolve maps a model string to what it names, in the order §7.15 fixes: combo

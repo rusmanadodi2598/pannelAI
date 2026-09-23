@@ -24,6 +24,7 @@ package service
 import (
 	"context"
 	"log/slog"
+	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -57,8 +58,8 @@ func (s *ComboService) Order(ctx context.Context, combo domain.Combo) ([]string,
 // ref may be a model, a combo name, or an alias, and an alias's own target may
 // not be another alias. Without that limit, validation would have to walk a
 // chain that a later write could turn into a cycle.
-func (s *ComboService) validateRefs(ctx context.Context, draft ComboDraft) error {
-	lookups, err := s.catalog.lookups(ctx)
+func (s *ComboService) validateRefs(ctx context.Context, name string, draft ComboDraft) error {
+	view, err := newReferenceView(s.catalog, ctx)
 	if err != nil {
 		return err
 	}
@@ -74,36 +75,48 @@ func (s *ComboService) validateRefs(ctx context.Context, draft ComboDraft) error
 	if err != nil {
 		return err
 	}
-	aliasNames := make(map[string]struct{}, len(aliases))
+	aliasTargets := make(map[string]string, len(aliases))
 	for _, alias := range aliases {
-		aliasNames[alias.Alias()] = struct{}{}
+		aliasTargets[alias.Alias()] = alias.Target()
 	}
 
 	// resolve answers whether one reference names something the data plane
-	// could route. A provider/model reference is canonicalized through the same
-	// index lookup the router performs, so a member spelled with a registry
-	// alias (`cc/claude-...`) or a node prefix (`oczen/...`) validates exactly
-	// when the router would route it (draft 024 §3.2).
+	// could route and serve. A provider/model reference is canonicalized through
+	// the same alias-then-id lookup the router performs, so a member spelled with
+	// a registry alias (`cc/claude-...`) or a node prefix (`oczen/...`) validates
+	// exactly when the router would route it (draft 024 §3.2).
 	//
-	// Resolving is not enough: the member must also be servable by the chat
-	// plane (draft 024 §3.4). A provider with no chat translator and a media
-	// model both resolve and both fail the first request that addresses them,
-	// so the refusal happens here, with the reason named.
+	// An alias member is judged by its target, because that is what the router
+	// serves: an alias to a media model or to an untranslatable provider is
+	// refused exactly like the direct reference to it.
+	//
+	// A member naming the combo itself is refused outright: a self-reference is
+	// the one-cycle a write can produce without touching the database, and the
+	// runtime guard is a backstop for stored rows, not the first line.
 	resolve := func(ref string) error {
+		if strings.EqualFold(strings.TrimSpace(ref), name) {
+			return domain.NewValidationError("a combo cannot list itself")
+		}
 		if _, ok := comboNames[ref]; ok {
 			return nil
 		}
-		if _, ok := aliasNames[ref]; ok {
-			return nil
+		if target, ok := aliasTargets[ref]; ok {
+			// An alias may target a combo as well as a model, and a combo is
+			// served by its members rather than by a provider of its own: it is
+			// accepted here exactly as the direct combo name above is.
+			if _, isCombo := comboNames[target]; isCombo {
+				return nil
+			}
+			if strings.EqualFold(strings.TrimSpace(target), name) {
+				return domain.NewValidationError("a combo cannot list itself")
+			}
+			ref = target
 		}
 		parsed, err := domain.ParseModelRef(ref)
 		if err != nil {
 			return domain.ErrComboModelRef
 		}
-		if !resolvesIn(lookups, s.catalog.index, parsed) {
-			return domain.ErrComboModelRef
-		}
-		return chatServable(lookups, s.catalog.index, parsed)
+		return view.chatServable(parsed)
 	}
 	for _, model := range draft.Models {
 		if err := resolve(model.Ref()); err != nil {

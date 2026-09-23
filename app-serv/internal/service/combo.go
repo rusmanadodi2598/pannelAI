@@ -70,7 +70,7 @@ func NewComboService(deps ComboServiceDeps) (*ComboService, error) {
 
 // Create registers a new combo (§7.7 POST).
 func (s *ComboService) Create(ctx context.Context, draft ComboDraft) (domain.Combo, error) {
-	if err := s.validateRefs(ctx, draft); err != nil {
+	if err := s.validateRefs(ctx, draft.Name, draft); err != nil {
 		return domain.Combo{}, err
 	}
 	now := s.clock()
@@ -112,7 +112,7 @@ func (s *ComboService) Update(ctx context.Context, id string, draft ComboDraft) 
 	if err != nil {
 		return domain.Combo{}, err
 	}
-	if err := s.validateRefs(ctx, draft); err != nil {
+	if err := s.validateRefs(ctx, draft.Name, draft); err != nil {
 		return domain.Combo{}, err
 	}
 	if !strings.EqualFold(strings.TrimSpace(draft.Name), combo.Name()) {

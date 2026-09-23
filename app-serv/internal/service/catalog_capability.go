@@ -61,11 +61,17 @@ const capabilityVision = "vision"
 // The provider filter accepts every spelling the provider answers to — its id,
 // its registry alias, and a node's prefix — because the row it selects is one
 // model and the operator may know it by any of those names (draft 024 §3.2).
-// The canonical set is built once per filter rather than per row: the catalog is
-// a few hundred rows and a per-row lookup would repeat the same resolution.
-func matchesCatalogFilter(index CatalogIndex, model domain.CatalogModel, filter CatalogFilter) bool {
-	if names := providerNameSet(index, filter.ProviderID); names != nil {
-		if _, ok := names[model.ProviderID()]; !ok {
+// The name set is built from one index snapshot per request, never per row: in
+// production the index adapter rebuilds the node overlay on every Provider()
+// call, so a per-row lookup would turn one panel request into one node-list
+// query per catalog row.
+func matchesCatalogFilter(providerNames map[string]registry.Provider, model domain.CatalogModel, filter CatalogFilter) bool {
+	if name := strings.TrimSpace(filter.ProviderID); name != "" {
+		entry, ok := providerNames[name]
+		if !ok {
+			return false
+		}
+		if model.ProviderID() != entry.ID && !providerAnswersTo(entry, model.ProviderID()) {
 			return false
 		}
 	}
@@ -78,6 +84,22 @@ func matchesCatalogFilter(index CatalogIndex, model domain.CatalogModel, filter 
 	}
 	return strings.Contains(strings.ToLower(model.ModelID()), query) ||
 		strings.Contains(strings.ToLower(model.DisplayName()), query)
+}
+
+// providerAnswersTo reports whether a provider entry answers to one of the
+// spellings a catalog row's provider id carries: its own id, or one of its
+// aliases. It exists because a row may be stored under either spelling, and the
+// filter must find it whichever one the operator typed.
+func providerAnswersTo(entry registry.Provider, name string) bool {
+	if entry.ID == name {
+		return true
+	}
+	for _, alias := range providerAliasNames(entry) {
+		if alias == name {
+			return true
+		}
+	}
+	return false
 }
 
 // modelHasCapability answers one capability question about one catalog row.
