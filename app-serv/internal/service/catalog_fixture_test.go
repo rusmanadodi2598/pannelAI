@@ -73,13 +73,22 @@ type catalogFixture struct {
 // newCatalogFixture builds the fixture described on catalogFixture. The seeding
 // calls carry the caller's context, so a test's setup answers to the same
 // cancellation its assertions do.
+//
+// The models' capability strings are the MEDIA operations the document declares
+// (`edit`, `mask`, `text2img`), never the two modality names the resolver owns.
+// Writing "vision" into this data is what made the old capability rows pass
+// while the real registry answered zero (draft 017 §4.4): the fixture proved the
+// filter matched a string it had just handed over. `vision` and `tools` are now
+// resolved from the model id by registry.Capabilities, so a fixture that wants
+// a vision model has to name one the reference agrees is vision-capable.
 func newCatalogFixture(t *testing.T, ctx context.Context) catalogFixture {
 	t.Helper()
 	index := testIndex(t,
 		testProvider("openai", "api",
-			testModel("gpt-4o", "GPT-4o", "llm", "vision", "tools"),
-			testModel("gpt-4o-mini", "GPT-4o mini", "llm", "tools")),
-		testProvider("anthropic", "api", testModel("claude-3", "Claude 3", "llm", "vision")),
+			testModel("gpt-4o", "GPT-4o", "llm"),
+			testModel("gpt-4o-mini", "GPT-4o mini", "llm")),
+		testProvider("anthropic", "api", testModel("claude-3", "Claude 3", "llm")),
+		testProvider("black-forest-labs", "media", testModel("flux-kontext-pro", "FLUX Kontext Pro", "image", "edit")),
 	)
 	repo := newStubCatalogRepo()
 	combos := newStubComboRepo()

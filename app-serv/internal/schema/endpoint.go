@@ -100,6 +100,13 @@ type UpdateEndpointRequest struct {
 	Label    *string `json:"label,omitempty" validate:"omitempty,min=1,max=120"`
 	Priority *int    `json:"priority,omitempty" validate:"omitempty,min=1,max=10000"`
 	Status   *string `json:"status,omitempty" validate:"omitempty,oneof=active disabled"`
+
+	// The connection-parity fields (draft 017 §4.1b). Each is a pointer so
+	// "omitted" stays distinct from "cleared": an operator removing a default
+	// model sends `""`, which is different from not mentioning it.
+	DefaultModel   *string `json:"default_model,omitempty" validate:"omitempty,max=200"`
+	GlobalPriority *int    `json:"global_priority,omitempty" validate:"omitempty,min=0,max=10000"`
+	ProxyPoolID    *string `json:"proxy_pool_id,omitempty" validate:"omitempty,max=64"`
 }
 
 // AddEndpointKeyRequest is the body of POST /api/v1/endpoints/{id}/keys (§7.5).

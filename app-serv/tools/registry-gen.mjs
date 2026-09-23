@@ -230,7 +230,12 @@ function rename(object) {
 function mapAuth(auth) {
   if (!isPlainObject(auth)) return undefined;
   const out = {};
-  for (const key of ["header", "scheme"]) {
+  // `authQuery` is carried because the reference reads a credential from the
+  // query string for the gemini family (models/route.js:189, :634-637) and
+  // app-serv's AuthConfig has a field for it. Without this entry the generic
+  // rename in mapTransport would have kept it and this allowlist would drop it:
+  // the allowlist runs last, which is why a key missing here is silently lost.
+  for (const key of ["header", "scheme", "authQuery"]) {
     if (auth[key] !== undefined) out[key] = auth[key];
   }
   if (Array.isArray(auth.source)) out.source = auth.source;

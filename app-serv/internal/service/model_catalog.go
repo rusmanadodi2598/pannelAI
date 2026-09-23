@@ -7,7 +7,7 @@
 //
 // @uses      internal/domain, internal/repository, internal/registry, context,
 //
-//	strings, time.
+//	time.
 //
 // @reason    §7.6 serves one catalog from three sources that disagree by
 //
@@ -25,7 +25,6 @@ package service
 import (
 	"context"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -156,33 +155,8 @@ func (s *ModelCatalogService) registryModels(blocked map[string]struct{}) map[st
 				continue
 			}
 			merged[ref.String()] = domain.NewCatalogModel(ref, registryDisplayName(model),
-				model.Kind, domain.NewModelCapabilities(model.Capabilities...), domain.CatalogSourceRegistry)
+				model.Kind, registryCapabilityNames(provider.ID, model), domain.CatalogSourceRegistry)
 		}
 	}
 	return merged
-}
-
-// matchesCatalogFilter applies the three documented query parameters.
-func matchesCatalogFilter(model domain.CatalogModel, filter CatalogFilter) bool {
-	if provider := strings.TrimSpace(filter.ProviderID); provider != "" && model.ProviderID() != provider {
-		return false
-	}
-	if capability := strings.TrimSpace(filter.Capability); capability != "" && !model.Capabilities().Has(capability) {
-		return false
-	}
-	query := strings.ToLower(strings.TrimSpace(filter.Query))
-	if query == "" {
-		return true
-	}
-	return strings.Contains(strings.ToLower(model.ModelID()), query) ||
-		strings.Contains(strings.ToLower(model.DisplayName()), query)
-}
-
-// registryDisplayName falls back to the model id when the registry declares no
-// display name, so the panel never renders an empty cell.
-func registryDisplayName(model registry.Model) string {
-	if strings.TrimSpace(model.Name) == "" {
-		return model.ID
-	}
-	return model.Name
 }

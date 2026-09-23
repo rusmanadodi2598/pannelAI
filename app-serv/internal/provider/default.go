@@ -143,6 +143,16 @@ func (d *Default) ApplyAuth(req *http.Request, cred Credential) error {
 	if !found {
 		return fmt.Errorf("provider %s: this credential has no valid header for %s", d.ID, family)
 	}
+	// A query-param placement takes precedence over a header, which is the
+	// reference's order (models/route.js:634-643): the two are exclusive, and a
+	// request that sent both would carry the credential in a URL and a header at
+	// once.
+	if name := strings.TrimSpace(auth.AuthQuery); name != "" {
+		query := req.URL.Query()
+		query.Set(name, value)
+		req.URL.RawQuery = query.Encode()
+		return nil
+	}
 	header := strings.TrimSpace(auth.Header)
 	if header == "" {
 		header = DefaultAuthHeader

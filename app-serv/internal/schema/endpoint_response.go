@@ -80,6 +80,25 @@ type EndpointResponse struct {
 	Keys             []EndpointKeyResponse       `json:"keys,omitempty"`
 	CreatedAt        string                      `json:"created_at"`
 	UpdatedAt        string                      `json:"updated_at"`
+
+	// The connection-parity fields (draft 017 §4.1b). GlobalPriority is 0 when
+	// unset; DefaultModel and ProxyPoolID are empty when unset. LastError is
+	// absent until an upstream failure that was not a connectivity test, and its
+	// message is scrubbed of credential material before it is stored.
+	GlobalPriority      int                    `json:"global_priority"`
+	DefaultModel        string                 `json:"default_model"`
+	ConsecutiveUseCount int                    `json:"consecutive_use_count"`
+	ProxyPoolID         string                 `json:"proxy_pool_id"`
+	LastError           *EndpointErrorResponse `json:"last_error,omitempty"`
+}
+
+// EndpointErrorResponse is the last non-test upstream failure. It is an object
+// rather than three sibling fields because a client renders it as one block, and
+// it is absent entirely when the endpoint has not failed.
+type EndpointErrorResponse struct {
+	Code    string `json:"code,omitempty"`
+	Message string `json:"message"`
+	At      string `json:"at"`
 }
 
 // EndpointList wraps a page of endpoints with the pagination meta block (§4).

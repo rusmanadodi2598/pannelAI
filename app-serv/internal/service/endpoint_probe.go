@@ -44,6 +44,14 @@ type ProbeOutcome struct {
 	// the aggregate stores in test_status.
 	State string
 
+	// Method names which request produced the answer: "models" for a model-list
+	// read, "chat" for the one-token chat fallback, or empty when no request
+	// completed. It is carried because the two are different evidence — a chat
+	// probe proves the upstream can serve a request, a models probe only that it
+	// can list — and an operator deciding whether a credential works needs to
+	// know which one proved it (draft 017 §4.6).
+	Method string
+
 	// LatencyMS is the round trip in milliseconds, reported even for a failure
 	// because a slow rejection is a different problem from an instant one.
 	LatencyMS int

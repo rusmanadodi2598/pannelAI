@@ -99,13 +99,24 @@ UPDATE upstream_endpoints
        test_status = $6,
        rate_limited_until = $7,
        last_used_at = $8,
-       updated_at = $9
- WHERE id = $10`
+       updated_at = $9,
+       global_priority = $10,
+       default_model = $11,
+       consecutive_use_count = $12,
+       last_error = $13,
+       last_error_at = $14,
+       error_code = $15,
+       proxy_pool_id = $16
+ WHERE id = $17`
 
-	tag, err := exec.Exec(ctx, q, endpoint.Label(), endpoint.Priority(),
-		string(endpoint.Status()), oauthJSON, accountJSON, testJSON,
-		endpoint.RateLimitedUntil(), endpoint.LastUsedAt(),
-		endpoint.UpdatedAt(), endpoint.ID())
+	args := []any{
+		endpoint.Label(), endpoint.Priority(), string(endpoint.Status()),
+		oauthJSON, accountJSON, testJSON, endpoint.RateLimitedUntil(),
+		endpoint.LastUsedAt(), endpoint.UpdatedAt(),
+	}
+	args = append(args, parityColumns(endpoint)...)
+	args = append(args, endpoint.ID())
+	tag, err := exec.Exec(ctx, q, args...)
 	if err != nil {
 		return translateEndpointError(err)
 	}

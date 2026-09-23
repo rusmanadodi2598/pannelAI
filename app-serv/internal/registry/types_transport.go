@@ -64,13 +64,22 @@ type Transport struct {
 // different header per credential family; Combined means one header carries
 // the credential for both families.
 type AuthConfig struct {
-	Header   string      `yaml:"header"`
-	Scheme   string      `yaml:"scheme"`
-	Source   []string    `yaml:"source"`
-	Combined bool        `yaml:"combined"`
-	Hooks    []string    `yaml:"hooks"`
-	OAuth    *AuthScheme `yaml:"oauth"`
-	APIKey   *AuthScheme `yaml:"api_key"`
+	Header string `yaml:"header"`
+	Scheme string `yaml:"scheme"`
+	// AuthQuery places the credential as a query parameter with this name
+	// instead of a header. Some providers read it only from the URL — the gemini
+	// family's models endpoint takes `?key=` — and the reference applies the same
+	// rule in its models route (`authQuery`, models/route.js:189, :634-637).
+	//
+	// It is mutually exclusive with Header: a request that sent both would put
+	// the credential in a URL and a header at once, and the reference's route
+	// takes the query branch before it considers a header.
+	AuthQuery string      `yaml:"auth_query"`
+	Source    []string    `yaml:"source"`
+	Combined  bool        `yaml:"combined"`
+	Hooks     []string    `yaml:"hooks"`
+	OAuth     *AuthScheme `yaml:"oauth"`
+	APIKey    *AuthScheme `yaml:"api_key"`
 }
 
 // AuthScheme is one credential family's header and prefix.

@@ -47,7 +47,11 @@ func TestModelHandler_Catalog_HappyPath(t *testing.T) {
 	}{
 		{name: "no filter", query: "", want: []string{"openai/gpt-4o", "openai/gpt-4o-mini"}},
 		{name: "by provider", query: "?provider_id=openai", want: []string{"openai/gpt-4o", "openai/gpt-4o-mini"}},
-		{name: "by capability", query: "?capability=vision", want: []string{"openai/gpt-4o"}},
+		// The reference marks gpt-4o-mini vision-capable too (`*gpt-4o*`
+		// matches it), so the filter answers both. The old expectation of one
+		// row came from a fixture that wrote "vision" into its own data.
+		{name: "by capability", query: "?capability=vision", want: []string{"openai/gpt-4o", "openai/gpt-4o-mini"}},
+		{name: "by a media capability the document declares", query: "?capability=edit", want: []string{}},
 		{name: "by free text", query: "?q=mini", want: []string{"openai/gpt-4o-mini"}},
 		{name: "a disabled model is excluded", query: "?provider_id=anthropic", want: []string{}},
 	}

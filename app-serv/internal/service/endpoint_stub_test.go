@@ -56,13 +56,24 @@ func accountKey(providerID, label string) string { return providerID + "\x00" + 
 
 // withKeys returns a copy of the endpoint carrying its stored keys, which is what
 // every read path in the real repository does with one batched key query.
+//
+// The parity fields (draft 017 §4.1b) are carried through explicitly, because
+// omitting them is the drift this double exists to avoid: the tests would keep
+// passing while every routing order, default model, proxy binding, use count, and
+// last error vanished between a write and the read that follows it.
 func (s *memEndpointStore) withKeys(endpoint domain.UpstreamEndpoint) domain.UpstreamEndpoint {
 	keys := s.keysByEndpoint[endpoint.ID()]
+	code, message, at := endpoint.LastError()
 	return domain.RehydrateUpstreamEndpoint(endpoint.ID(), endpoint.ProviderID(),
 		endpoint.Label(), endpoint.AuthType(), endpoint.Priority(), endpoint.Status(),
 		endpoint.OAuth(), endpoint.Account(), endpoint.TestStatus(),
 		endpoint.RateLimitedUntil(), endpoint.LastUsedAt(),
-		endpoint.CreatedAt(), endpoint.UpdatedAt(), keys)
+		endpoint.CreatedAt(), endpoint.UpdatedAt(), keys,
+		domain.EndpointParity{
+			GlobalPriority: endpoint.GlobalPriority(), DefaultModel: endpoint.DefaultModel(),
+			ConsecutiveUseCount: endpoint.ConsecutiveUseCount(), LastErrorCode: code,
+			LastErrorMessage: message, LastErrorAt: at, ProxyPoolID: endpoint.ProxyPoolID(),
+		})
 }
 
 // store writes an endpoint's own row, leaving its key rows untouched — the same

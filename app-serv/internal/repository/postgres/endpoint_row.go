@@ -23,16 +23,20 @@
 package postgres
 
 import (
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
 // endpointColumns is the projection every endpoint read uses, in scan order.
+//
+// The connection-parity columns (draft 017 §4.1b) are part of the projection
+// rather than a second read: they are read on every endpoint load, and a second
+// query for five scalar columns would be the N+1 shape AGENTS.md §1.7 forbids.
 const endpointColumns = `id, provider_id, label, auth_type, priority, status,
-	oauth, account, test_status, rate_limited_until, last_used_at, created_at, updated_at`
+	oauth, account, test_status, rate_limited_until, last_used_at, created_at, updated_at,
+	global_priority, default_model, consecutive_use_count,
+	last_error, last_error_at, error_code, proxy_pool_id`
 
 // endpointRow is one upstream_endpoints row, kept as raw column values rather
 // than as an aggregate so the page's keys can be attached from one batched read
@@ -48,6 +52,15 @@ type endpointRow struct {
 	rateLimitedUntil      *time.Time
 	lastUsedAt            *time.Time
 	createdAt, updatedAt  time.Time
+
+	// The connection-parity columns (draft 017 §4.1b).
+	globalPriority      *int
+	defaultModel        string
+	consecutiveUseCount int
+	lastError           *string
+	lastErrorAt         *time.Time
+	errorCode           *string
+	proxyPoolID         *string
 }
 
 // scanEndpointRow reads one endpoint row, including its window count when the
@@ -58,6 +71,8 @@ func scanEndpointRow(s scanner, extra ...any) (endpointRow, error) {
 		&row.id, &row.providerID, &row.label, &row.authType, &row.priority,
 		&row.status, &row.oauthJSON, &row.accountJSON, &row.testJSON,
 		&row.rateLimitedUntil, &row.lastUsedAt, &row.createdAt, &row.updatedAt,
+		&row.globalPriority, &row.defaultModel, &row.consecutiveUseCount,
+		&row.lastError, &row.lastErrorAt, &row.errorCode, &row.proxyPoolID,
 	}
 	dest = append(dest, extra...)
 	if err := s.Scan(dest...); err != nil {
@@ -87,141 +102,32 @@ func (row endpointRow) aggregate(keys []domain.UpstreamKey) (domain.UpstreamEndp
 		domain.UpstreamAuthType(row.authType), row.priority,
 		domain.UpstreamEndpointStatus(row.status), oauth, account, test,
 		row.rateLimitedUntil, row.lastUsedAt, row.createdAt, row.updatedAt, keys,
+		row.parity(),
 	), nil
 }
 
-// oauthPayload is the stored shape of upstream_endpoints.oauth. Both token
-// fields hold ciphertext, so the column never carries token material
-// (SPEC-API-001 §6).
-type oauthPayload struct {
-	AccessTokenEncrypted  string     `json:"access_token_encrypted,omitempty"`
-	RefreshTokenEncrypted string     `json:"refresh_token_encrypted,omitempty"`
-	ExpiresAt             *time.Time `json:"expires_at,omitempty"`
-	Scopes                []string   `json:"scopes,omitempty"`
-	ProjectID             string     `json:"project_id,omitempty"`
-	AccountID             string     `json:"account_id,omitempty"`
-	AccountEmail          string     `json:"account_email,omitempty"`
-	LastRefreshAt         *time.Time `json:"last_refresh_at,omitempty"`
-}
-
-// accountPayload is the stored shape of upstream_endpoints.account, the
-// non-secret identity that distinguishes two accounts of one provider.
-type accountPayload struct {
-	Name        string `json:"name,omitempty"`
-	Email       string `json:"email,omitempty"`
-	MachineID   string `json:"machine_id,omitempty"`
-	WorkspaceID string `json:"workspace_id,omitempty"`
-}
-
-// testStatusPayload is the stored shape of upstream_endpoints.test_status.
-type testStatusPayload struct {
-	State     string     `json:"state"`
-	LatencyMS int        `json:"latency_ms"`
-	Message   string     `json:"message,omitempty"`
-	CheckedAt *time.Time `json:"checked_at,omitempty"`
-}
-
-// marshalOAuth renders the credential set, or nil when the endpoint carries
-// none, so a key endpoint stores SQL NULL rather than an empty object that
-// would read back as "has a credential".
-func marshalOAuth(credential *domain.OAuthCredential) (*string, error) {
-	if credential == nil {
-		return nil, nil
+// parity projects the nullable parity columns onto the aggregate's carrier.
+//
+// Each column is nullable so a row created before migration 000012 reads back as
+// the zero value rather than failing: an operator who upgraded mid-flight must
+// see their endpoints, not a scan error.
+func (row endpointRow) parity() domain.EndpointParity {
+	parity := domain.EndpointParity{
+		DefaultModel:        row.defaultModel,
+		ConsecutiveUseCount: row.consecutiveUseCount,
+		LastErrorAt:         row.lastErrorAt,
 	}
-	raw, err := json.Marshal(oauthPayload{
-		AccessTokenEncrypted:  credential.AccessTokenEncrypted,
-		RefreshTokenEncrypted: credential.RefreshTokenEncrypted,
-		ExpiresAt:             credential.ExpiresAt,
-		Scopes:                credential.Scopes,
-		ProjectID:             credential.ProjectID,
-		AccountID:             credential.AccountID,
-		AccountEmail:          credential.AccountEmail,
-		LastRefreshAt:         credential.LastRefreshAt,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("upstream_endpoints: encoding oauth: %w", err)
+	if row.globalPriority != nil {
+		parity.GlobalPriority = *row.globalPriority
 	}
-	encoded := string(raw)
-	return &encoded, nil
-}
-
-// unmarshalOAuth reads the credential set back from its stored column.
-func unmarshalOAuth(raw *string) (*domain.OAuthCredential, error) {
-	if raw == nil || *raw == "" || *raw == "null" {
-		return nil, nil
+	if row.errorCode != nil {
+		parity.LastErrorCode = *row.errorCode
 	}
-	var payload oauthPayload
-	if err := json.Unmarshal([]byte(*raw), &payload); err != nil {
-		return nil, fmt.Errorf("upstream_endpoints: decoding oauth: %w", err)
+	if row.lastError != nil {
+		parity.LastErrorMessage = *row.lastError
 	}
-	return &domain.OAuthCredential{
-		AccessTokenEncrypted:  payload.AccessTokenEncrypted,
-		RefreshTokenEncrypted: payload.RefreshTokenEncrypted,
-		ExpiresAt:             payload.ExpiresAt,
-		Scopes:                payload.Scopes,
-		ProjectID:             payload.ProjectID,
-		AccountID:             payload.AccountID,
-		AccountEmail:          payload.AccountEmail,
-		LastRefreshAt:         payload.LastRefreshAt,
-	}, nil
-}
-
-// marshalAccount renders the account identity. The column is NOT NULL, so an
-// empty identity is stored as an empty object rather than as NULL.
-func marshalAccount(account domain.EndpointAccount) (string, error) {
-	raw, err := json.Marshal(accountPayload{
-		Name: account.Name, Email: account.Email,
-		MachineID: account.MachineID, WorkspaceID: account.WorkspaceID,
-	})
-	if err != nil {
-		return "", fmt.Errorf("upstream_endpoints: encoding account: %w", err)
+	if row.proxyPoolID != nil {
+		parity.ProxyPoolID = *row.proxyPoolID
 	}
-	return string(raw), nil
-}
-
-// unmarshalAccount reads the account identity back from its stored column.
-func unmarshalAccount(raw string) (domain.EndpointAccount, error) {
-	if raw == "" || raw == "null" {
-		return domain.EndpointAccount{}, nil
-	}
-	var payload accountPayload
-	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
-		return domain.EndpointAccount{}, fmt.Errorf("upstream_endpoints: decoding account: %w", err)
-	}
-	return domain.EndpointAccount{
-		Name: payload.Name, Email: payload.Email,
-		MachineID: payload.MachineID, WorkspaceID: payload.WorkspaceID,
-	}, nil
-}
-
-// marshalTestStatus renders the last connectivity result, or nil when none has
-// run, so "never tested" is distinct from "tested and failed".
-func marshalTestStatus(status domain.EndpointTestStatus) (*string, error) {
-	if status.State == "" && status.CheckedAt == nil {
-		return nil, nil
-	}
-	raw, err := json.Marshal(testStatusPayload{
-		State: status.State, LatencyMS: status.LatencyMS,
-		Message: status.Message, CheckedAt: status.CheckedAt,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("upstream_endpoints: encoding test_status: %w", err)
-	}
-	encoded := string(raw)
-	return &encoded, nil
-}
-
-// unmarshalTestStatus reads the connectivity result back from its stored column.
-func unmarshalTestStatus(raw *string) (domain.EndpointTestStatus, error) {
-	if raw == nil || *raw == "" || *raw == "null" {
-		return domain.EndpointTestStatus{}, nil
-	}
-	var payload testStatusPayload
-	if err := json.Unmarshal([]byte(*raw), &payload); err != nil {
-		return domain.EndpointTestStatus{}, fmt.Errorf("upstream_endpoints: decoding test_status: %w", err)
-	}
-	return domain.EndpointTestStatus{
-		State: payload.State, LatencyMS: payload.LatencyMS,
-		Message: payload.Message, CheckedAt: payload.CheckedAt,
-	}, nil
+	return parity
 }

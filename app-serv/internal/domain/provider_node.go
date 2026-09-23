@@ -6,7 +6,7 @@
 //
 //	or Anthropic-compatible upstream (SPEC-API-001 §7.4).
 //
-// @uses      internal/domain (ULID, error constructors), net/url, strings.
+// @uses      internal/domain (ULID, error constructors), strings.
 // @reason    A node is not an endpoint: it has no credential of its own, and
 //
 //	its prefix becomes a model-string namespace. That namespace rule is
@@ -20,7 +20,6 @@
 package domain
 
 import (
-	"net/url"
 	"strings"
 	"time"
 )
@@ -80,7 +79,8 @@ func NewProviderNode(id, name, prefix string, nodeType NodeType, apiType, baseUR
 	if err := validateNodeAPIType(nodeType, apiType); err != nil {
 		return ProviderNode{}, err
 	}
-	if err := validateNodeBaseURL(baseURL); err != nil {
+	baseURL, err := normalizeNodeBaseURL(baseURL, nodeType, apiType)
+	if err != nil {
 		return ProviderNode{}, err
 	}
 	id = nodeID(id, nodeType, now)
@@ -90,7 +90,7 @@ func NewProviderNode(id, name, prefix string, nodeType NodeType, apiType, baseUR
 		name:      name,
 		prefix:    prefix,
 		apiType:   apiType,
-		baseURL:   strings.TrimSpace(baseURL),
+		baseURL:   baseURL,
 		createdAt: now,
 		updatedAt: now,
 	}, nil
@@ -155,93 +155,11 @@ func (n *ProviderNode) Reprefix(prefix string, now time.Time) error {
 
 // Rebase changes the upstream base URL.
 func (n *ProviderNode) Rebase(baseURL string, now time.Time) error {
-	if err := validateNodeBaseURL(baseURL); err != nil {
+	normalized, err := normalizeNodeBaseURL(baseURL, n.nodeType, n.apiType)
+	if err != nil {
 		return err
 	}
-	n.baseURL = strings.TrimSpace(baseURL)
+	n.baseURL = normalized
 	n.updatedAt = now
-	return nil
-}
-
-// validateNodePrefix enforces that a prefix can serve as a model namespace.
-// A prefix containing "/" or whitespace would make "prefix/model" ambiguous or
-// unparseable, so it is rejected rather than escaped at parse time.
-func validateNodePrefix(prefix string) error {
-	if prefix == "" {
-		return NewValidationError("prefix is required")
-	}
-	if len(prefix) > 64 {
-		return NewValidationError("prefix must be at most 64 characters")
-	}
-	for _, r := range prefix {
-		switch {
-		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
-		case r == '-', r == '_', r == '.':
-		default:
-			return NewValidationError("prefix must contain only letters, digits, dots, dashes, and underscores")
-		}
-	}
-	return nil
-}
-
-// nodeID returns the node's id: a fresh one when the caller supplied none, and
-// the caller's id normalized to carry its type prefix otherwise.
-//
-// Normalizing rather than refusing follows NewCustomModel's precedent: the
-// prefix is this package's vocabulary, and a caller that passes a bare ULID
-// should not have to know it. The invariant is the id's shape, because the
-// registry reads the wire format out of it (SPEC-API-001 §7.4).
-func nodeID(id string, nodeType NodeType, now time.Time) string {
-	prefix := NodeIDPrefixOpenAI
-	if nodeType == NodeAnthropicCompatible {
-		prefix = NodeIDPrefixAnthropic
-	}
-	id = strings.TrimSpace(id)
-	if id == "" {
-		return prefix + NewULID(now)
-	}
-	if strings.HasPrefix(id, prefix) {
-		return id
-	}
-	return prefix + id
-}
-
-// validateNodeAPIType enforces the per-type rule: an OpenAI-compatible node must
-// declare chat or responses, and an Anthropic-compatible node must not, because
-// its single endpoint has no such distinction.
-func validateNodeAPIType(nodeType NodeType, apiType string) error {
-	switch nodeType {
-	case NodeOpenAICompatible:
-		if apiType != NodeAPIChat && apiType != NodeAPIResponses {
-			return NewValidationError("api_type must be chat or responses for an OpenAI-compatible node")
-		}
-	case NodeAnthropicCompatible:
-		if apiType != "" {
-			return NewValidationError("api_type does not apply to an Anthropic-compatible node")
-		}
-	default:
-		return NewValidationError("invalid type: " + string(nodeType))
-	}
-	return nil
-}
-
-// validateNodeBaseURL requires an absolute http(s) URL. A relative or
-// scheme-less value would be joined onto nothing at call time and fail as a
-// confusing transport error rather than as the configuration mistake it is.
-func validateNodeBaseURL(raw string) error {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return NewValidationError("base_url is required")
-	}
-	parsed, err := url.Parse(raw)
-	if err != nil {
-		return NewValidationError("base_url is not a valid URL")
-	}
-	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return NewValidationError("base_url must be an absolute http or https URL")
-	}
-	if parsed.Host == "" {
-		return NewValidationError("base_url must name a host")
-	}
 	return nil
 }

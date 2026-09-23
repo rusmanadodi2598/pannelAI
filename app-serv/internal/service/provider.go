@@ -38,14 +38,18 @@ type EndpointCounterByProvider interface {
 type ProviderService struct {
 	index  ProviderIndex
 	counts EndpointCounterByProvider
+	source NodeModelSource
 }
 
 // ProviderServiceDeps holds the collaborators the service needs. Counts is
 // optional: without it a provider list still renders, with every roll-up
-// reported as zero rather than the request failing.
+// reported as zero rather than the request failing. Source is optional too: a
+// deployment that wires none answers a custom node from the registry alone,
+// which is the state before draft 017 §4.2's fix rather than a failure.
 type ProviderServiceDeps struct {
 	Index  ProviderIndex
 	Counts EndpointCounterByProvider
+	Source NodeModelSource
 }
 
 // NewProviderService validates deps and returns a ready service.
@@ -53,7 +57,7 @@ func NewProviderService(deps ProviderServiceDeps) (*ProviderService, error) {
 	if deps.Index == nil {
 		return nil, domain.NewValidationError("provider index is required")
 	}
-	return &ProviderService{index: deps.Index, counts: deps.Counts}, nil
+	return &ProviderService{index: deps.Index, counts: deps.Counts, source: deps.Source}, nil
 }
 
 // ProviderFilter narrows the provider list. A zero value matches everything,
@@ -116,13 +120,19 @@ func (s *ProviderService) Detail(ctx context.Context, providerID string) (Provid
 	return ProviderRow{Entry: entry, Summary: summaries[entry.ID]}, nil
 }
 
-// Models returns one provider's model list.
-func (s *ProviderService) Models(ctx context.Context, providerID string) (registry.Provider, error) {
+// Models returns one provider's model list and the origin of that list.
+//
+// It used to return the registry entry alone, which for a custom node was an
+// entry with no models: draft 017 §4.2 measured the node appearing in four
+// surfaces with `len(entry.Models) = 0`. The list is resolved here rather than
+// in the overlay because the answer has two parts — the models and where they
+// came from — and the second belongs to the layer that decides.
+func (s *ProviderService) Models(ctx context.Context, providerID string) (ProviderModelList, error) {
 	entry, ok := s.index.Provider(strings.TrimSpace(providerID))
 	if !ok {
-		return registry.Provider{}, domain.NewNotFoundError("provider is not in the registry")
+		return ProviderModelList{}, domain.NewNotFoundError("provider is not in the registry")
 	}
-	return entry, nil
+	return s.modelsFor(ctx, entry), nil
 }
 
 // Categories returns the measured category set, which is what makes the list

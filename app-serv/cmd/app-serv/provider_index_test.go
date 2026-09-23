@@ -118,7 +118,7 @@ func TestRuntimeProviderIndex_CustomNodeIsRoutable(t *testing.T) {
 				t.Fatalf("stored id = %q, want it to carry the %q prefix", got, tc.wantPrefix)
 			}
 
-			runtimeIndex := newRuntimeProviderIndex(embeddedIndex(t), nodeListerStub{[]domain.ProviderNode{node}}, nil)
+			runtimeIndex := newRuntimeProviderIndex(embeddedIndex(t), nodeListerStub{[]domain.ProviderNode{node}}, nil, nil)
 
 			// The management side resolves the node by both of its names: the id
 			// the panel stores on an endpoint, and the prefix a model string uses.
@@ -179,7 +179,7 @@ func TestHTTPEndpointProber_ResolvesACustomNode(t *testing.T) {
 	}
 
 	prober := newHTTPEndpointProber(
-		newRuntimeProviderIndex(embeddedIndex(t), nodeListerStub{[]domain.ProviderNode{node}}, nil), connectors,
+		newRuntimeProviderIndex(embeddedIndex(t), nodeListerStub{[]domain.ProviderNode{node}}, nil, nil), connectors,
 		probeGuard(t, "127.0.0.1/32"))
 
 	entry, _, err := prober.resolve(node.ID())

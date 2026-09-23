@@ -123,9 +123,12 @@ func (h *EndpointHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	endpoint, err := h.endpoints.Update(r.Context(), id, service.UpdatePatch{
-		Label:    req.Label,
-		Priority: req.Priority,
-		Status:   req.Status,
+		Label:          req.Label,
+		Priority:       req.Priority,
+		Status:         req.Status,
+		DefaultModel:   req.DefaultModel,
+		GlobalPriority: req.GlobalPriority,
+		ProxyPoolID:    req.ProxyPoolID,
 	})
 	if err != nil {
 		schema.WriteError(w, err)

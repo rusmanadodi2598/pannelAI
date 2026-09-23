@@ -41,6 +41,17 @@ type CustomNode struct {
 	Prefix  string
 	APIType string
 	BaseURL string
+	// Models is the node's model list, and it is the upstream's answer rather
+	// than the operator's declaration: a compatible node's models are whatever
+	// its own `/models` returns (SPEC-API-001 §7.4, draft 017 §4.2). It is
+	// carried on the node so one injection reaches every index consumer — the
+	// detail route, the catalog, and the data plane all read Provider.Models
+	// and none of them has to know a node's list came from somewhere else.
+	//
+	// An empty list is legitimate and means the upstream was not asked or did
+	// not answer: the node stays routable either way, because a passthrough
+	// provider resolves any model string the operator types.
+	Models []Model
 }
 
 // OpenAITypeResponses is the api type an OpenAI-compatible node declares when
@@ -146,9 +157,26 @@ func (i *Index) Synthesize(node CustomNode) (Provider, error) {
 		AuthType:  AuthAPIKey,
 		Custom:    true,
 		Display:   Display{Name: node.Name},
+		Models:    copyModels(node.Models),
 		Transport: Transport{Format: node.format(), BaseURL: node.BaseURL, ChatPath: node.chatPath()},
 	}
 	return provider, nil
+}
+
+// copyModels returns an owned copy of a node's model list, or nil when there is
+// nothing to own.
+//
+// The index returns copies everywhere else (index.go All), and a synthesized
+// entry is read by callers that outlive the request which built it: sharing the
+// caller's slice would let a later write to a node's list change what a
+// concurrent request is already reading.
+func copyModels(models []Model) []Model {
+	if len(models) == 0 {
+		return nil
+	}
+	owned := make([]Model, len(models))
+	copy(owned, models)
+	return owned
 }
 
 // validateBaseURL requires an absolute http(s) URL. A relative or scheme-less

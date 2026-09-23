@@ -40,36 +40,37 @@ type Mux struct {
 // then panic on the first request, which is the failure mode the composition
 // root cannot see at boot.
 type Deps struct {
-	System          *handler.SystemHandler
-	Auth            *handler.AuthHandler
-	GatewayKey      *handler.GatewayKeyHandler
-	Provider        *handler.ProviderHandler
-	Endpoint        *handler.EndpointHandler
-	EndpointKey     *handler.EndpointKeyHandler
-	EndpointBulk    *handler.EndpointBulkHandler
-	OAuth           *handler.OAuthHandler
-	ProviderNode    *handler.ProviderNodeHandler
-	Model           *handler.ModelHandler
-	Combo           *handler.ComboHandler
-	ComboTest       *handler.ComboTestHandler
-	Proxy           *handler.ProxyHandler
-	MediaProvider   *handler.MediaProviderHandler
-	Media           *handler.MediaHandler
-	VisionAdapter   *handler.VisionAdapterHandler
-	TokenSaver      *handler.TokenSaverHandler
-	Usage           *handler.UsageHandler
-	UsageLive       *handler.UsageLiveHandler
-	Quota           *handler.QuotaHandler
-	Log             *handler.LogHandler
-	Settings        *handler.SettingsHandler
-	Skills          *handler.SkillsHandler
-	OpenAPI         *handler.OpenAPIHandler
-	Changelog       *handler.ChangelogHandler
-	Chat            *handler.ChatHandler
-	Embeddings      *handler.EmbeddingsHandler
-	TokenCount      *handler.TokenCountHandler
-	RateLimiter     repository.RateLimiter
-	RateLimitPerMin int
+	System           *handler.SystemHandler
+	Auth             *handler.AuthHandler
+	GatewayKey       *handler.GatewayKeyHandler
+	Provider         *handler.ProviderHandler
+	Endpoint         *handler.EndpointHandler
+	EndpointKey      *handler.EndpointKeyHandler
+	EndpointBulk     *handler.EndpointBulkHandler
+	OAuth            *handler.OAuthHandler
+	ProviderNode     *handler.ProviderNodeHandler
+	ProviderValidate *handler.ProviderValidateHandler
+	Model            *handler.ModelHandler
+	Combo            *handler.ComboHandler
+	ComboTest        *handler.ComboTestHandler
+	Proxy            *handler.ProxyHandler
+	MediaProvider    *handler.MediaProviderHandler
+	Media            *handler.MediaHandler
+	VisionAdapter    *handler.VisionAdapterHandler
+	TokenSaver       *handler.TokenSaverHandler
+	Usage            *handler.UsageHandler
+	UsageLive        *handler.UsageLiveHandler
+	Quota            *handler.QuotaHandler
+	Log              *handler.LogHandler
+	Settings         *handler.SettingsHandler
+	Skills           *handler.SkillsHandler
+	OpenAPI          *handler.OpenAPIHandler
+	Changelog        *handler.ChangelogHandler
+	Chat             *handler.ChatHandler
+	Embeddings       *handler.EmbeddingsHandler
+	TokenCount       *handler.TokenCountHandler
+	RateLimiter      repository.RateLimiter
+	RateLimitPerMin  int
 }
 
 // New registers every route and returns the assembled mux. Patterns carry the
@@ -123,12 +124,10 @@ func New(deps Deps) *Mux {
 		mux.Handle("GET "+APIVersion+"/providers/{provider_id}/oauth/status", gateway(http.HandlerFunc(deps.OAuth.Status)))
 		mux.Handle("POST "+APIVersion+"/providers/{provider_id}/oauth/refresh", gateway(http.HandlerFunc(deps.OAuth.Refresh)))
 	}
-	mux.Handle("GET "+APIVersion+"/provider-nodes", gateway(http.HandlerFunc(deps.ProviderNode.List)))
-	mux.Handle("POST "+APIVersion+"/provider-nodes", gateway(http.HandlerFunc(deps.ProviderNode.Create)))
-	mux.Handle("GET "+APIVersion+"/provider-nodes/{id}", gateway(http.HandlerFunc(deps.ProviderNode.Get)))
-	mux.Handle("PATCH "+APIVersion+"/provider-nodes/{id}", gateway(http.HandlerFunc(deps.ProviderNode.Update)))
-	mux.Handle("DELETE "+APIVersion+"/provider-nodes/{id}", gateway(http.HandlerFunc(deps.ProviderNode.Delete)))
-	mux.Handle("POST "+APIVersion+"/provider-nodes/{id}/test", gateway(http.HandlerFunc(deps.ProviderNode.Test)))
+	// §7.4's node and credential-check routes are registered together in
+	// router_provider_nodes.go, because that section now carries seven routes
+	// and registering them here would push this file past the §1.1 budget.
+	registerProviderNodeRoutes(mux, deps, gateway)
 
 	// §7.5 Upstream endpoints and their keys, including the batch onboarding
 	// routes. All-or-nothing batch semantics live in the service (§8.1), so the

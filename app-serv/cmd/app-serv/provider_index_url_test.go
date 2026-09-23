@@ -45,7 +45,7 @@ func TestRuntimeProviderIndex_CustomNodeGetsACallableURL(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			node := storedNode(t, tc.nodeType, tc.apiType)
-			runtimeIndex := newRuntimeProviderIndex(embeddedIndex(t), nodeListerStub{[]domain.ProviderNode{node}}, nil)
+			runtimeIndex := newRuntimeProviderIndex(embeddedIndex(t), nodeListerStub{[]domain.ProviderNode{node}}, nil, nil)
 			entry, ok := runtimeIndex.Provider(node.ID())
 			if !ok {
 				t.Fatalf("Provider(%q) = not found, want the custom node", node.ID())

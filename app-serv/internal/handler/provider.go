@@ -82,19 +82,28 @@ func (h *ProviderHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Models serves GET /api/v1/providers/{provider_id}/models.
 //
-// The suggested filter is accepted because §7.4 names it, and it is a no-op
-// here: the embedded registry has no suggestion flag, so every model the
-// document lists is offered. Silently ignoring the parameter would be worse than
-// this comment, which is why the behaviour is stated rather than implied.
+// The body names where the list came from. A registry provider answers from the
+// embedded document; a custom node's list is read from its own upstream, and a
+// node whose upstream cannot answer falls back to what the registry holds with a
+// warning — never a 5xx, because a node whose upstream is down still routes.
+//
+// The `?suggested` parameter is gone. §7.4 used to name it and the embedded
+// registry never carried a suggestion flag, so it filtered nothing while the
+// body answered `suggested: true` for every row; the reference has no such
+// parameter either (draft 017 §4.5). `source` is what replaced it.
 func (h *ProviderHandler) Models(w http.ResponseWriter, r *http.Request) {
 	providerID, ok := pathValue(w, r, "provider_id")
 	if !ok {
 		return
 	}
-	entry, err := h.providers.Models(r.Context(), providerID)
+	list, err := h.providers.Models(r.Context(), providerID)
 	if err != nil {
 		schema.WriteError(w, err)
 		return
 	}
-	schema.WriteJSON(w, http.StatusOK, schema.ProviderModelList{Data: schema.ProviderModelsFrom(entry)})
+	schema.WriteJSON(w, http.StatusOK, schema.ProviderModelList{
+		Data:    schema.ProviderModelsFrom(list.Entry),
+		Source:  list.Source,
+		Warning: list.Warning,
+	})
 }

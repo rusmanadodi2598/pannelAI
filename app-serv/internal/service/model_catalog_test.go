@@ -29,6 +29,7 @@ func TestModelCatalogService_MergesThreeSources(t *testing.T) {
 	}
 	got := catalogKeys(models)
 	want := []string{
+		"black-forest-labs/flux-kontext-pro",
 		"openai/gpt-4o",
 		"openai/gpt-4o-mini",
 		"openai/local-embed",
@@ -77,14 +78,29 @@ func TestModelCatalogService_CatalogFilters(t *testing.T) {
 		want   []string
 	}{
 		{name: "no filter returns everything enabled", filter: CatalogFilter{}, want: []string{
-			"openai/gpt-4o", "openai/gpt-4o-mini", "openai/local-embed",
+			"black-forest-labs/flux-kontext-pro", "openai/gpt-4o", "openai/gpt-4o-mini", "openai/local-embed",
 		}},
 		{name: "by provider", filter: CatalogFilter{ProviderID: "anthropic"}, want: []string{}},
 		{name: "by a provider that exists", filter: CatalogFilter{ProviderID: "openai"}, want: []string{
 			"openai/gpt-4o", "openai/gpt-4o-mini", "openai/local-embed",
 		}},
-		{name: "by capability", filter: CatalogFilter{Capability: "vision"}, want: []string{"openai/gpt-4o"}},
-		{name: "by capability, case-insensitively", filter: CatalogFilter{Capability: "VISION"}, want: []string{"openai/gpt-4o"}},
+		// The two modality names are resolved from the model id, so the fixture
+		// names ids the reference agrees are vision-capable rather than writing
+		// "vision" into its own data (draft 017 §4.4).
+		// anthropic/claude-3 is the fixture's disabled row, so it is correctly
+		// absent from both answers: the disabled set subtracts before the
+		// capability filter runs.
+		{name: "by capability", filter: CatalogFilter{Capability: "vision"}, want: []string{
+			"openai/gpt-4o", "openai/gpt-4o-mini",
+		}},
+		{name: "by capability, case-insensitively", filter: CatalogFilter{Capability: "VISION"}, want: []string{
+			"openai/gpt-4o", "openai/gpt-4o-mini",
+		}},
+		// A media operation is a document fact, so it filters from the declared
+		// set and not from the model-id resolver.
+		{name: "by a media capability the document declares", filter: CatalogFilter{Capability: "edit"}, want: []string{
+			"black-forest-labs/flux-kontext-pro",
+		}},
 		{name: "by an unknown capability", filter: CatalogFilter{Capability: "audio"}, want: []string{}},
 		{name: "by free text on the model id", filter: CatalogFilter{Query: "mini"}, want: []string{"openai/gpt-4o-mini"}},
 		{name: "by free text on the display name", filter: CatalogFilter{Query: "Local"}, want: []string{"openai/local-embed"}},

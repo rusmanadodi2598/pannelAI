@@ -42,6 +42,16 @@ type UpstreamEndpoint struct {
 	createdAt        time.Time
 	updatedAt        time.Time
 	keys             []UpstreamKey
+
+	// The connection-parity fields (draft 017 §4.1b). Their rules live in
+	// upstream_endpoint_parity.go.
+	globalPriority      int
+	defaultModel        string
+	consecutiveUseCount int
+	lastErrorCode       string
+	lastErrorMessage    string
+	lastErrorAt         *time.Time
+	proxyPoolID         string
 }
 
 // NewUpstreamEndpoint is the only constructor for a new endpoint.
@@ -92,6 +102,7 @@ func RehydrateUpstreamEndpoint(
 	rateLimitedUntil, lastUsedAt *time.Time,
 	createdAt, updatedAt time.Time,
 	keys []UpstreamKey,
+	parity EndpointParity,
 ) UpstreamEndpoint {
 	owned := make([]UpstreamKey, len(keys))
 	copy(owned, keys)
@@ -100,6 +111,13 @@ func RehydrateUpstreamEndpoint(
 		priority: priority, status: status, oauth: oauth, account: account,
 		testStatus: testStatus, rateLimitedUntil: rateLimitedUntil, lastUsedAt: lastUsedAt,
 		createdAt: createdAt, updatedAt: updatedAt, keys: owned,
+		globalPriority:      parity.GlobalPriority,
+		defaultModel:        parity.DefaultModel,
+		consecutiveUseCount: parity.ConsecutiveUseCount,
+		lastErrorCode:       parity.LastErrorCode,
+		lastErrorMessage:    parity.LastErrorMessage,
+		lastErrorAt:         parity.LastErrorAt,
+		proxyPoolID:         parity.ProxyPoolID,
 	}
 }
 

@@ -2,7 +2,7 @@
 //
 // @file      internal/schema/provider.go
 // @for       The provider registry read contracts (SPEC-API-001 §7.4).
-// @uses      internal/registry, internal/domain.
+// @uses      internal/registry.
 // @reason    §7.4 serves the embedded registry over HTTP, and §8.1 requires the
 //
 //	panel to read a provider's routability before configuring an endpoint that
@@ -16,9 +16,6 @@
 package schema
 
 import (
-	"sort"
-
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
@@ -74,7 +71,6 @@ type ProviderModelResponse struct {
 	Kind         string   `json:"kind"`
 	Capabilities []string `json:"capabilities"`
 	Dimensions   int      `json:"dimensions,omitempty"`
-	Suggested    bool     `json:"suggested"`
 }
 
 // ProviderMediaResponse is one non-chat service kind's endpoint and credential
@@ -110,8 +106,19 @@ type ProviderDetailResponse struct {
 }
 
 // ProviderModelList is the §7.4 model list body.
+//
+// Source states where the list came from, which is not decoration: a custom
+// node's models are read from its own upstream, so a client that could not tell
+// an upstream answer from a fallback would present a stale list as current. It
+// replaces the constant `suggested` flag, which carried no information because
+// every row answered true.
 type ProviderModelList struct {
 	Data []ProviderModelResponse `json:"data"`
+	// Source is "upstream" or "registry" (service.ModelSource*).
+	Source string `json:"source"`
+	// Warning explains why Source is not upstream, in English. It is absent when
+	// the list came from the upstream.
+	Warning string `json:"warning,omitempty"`
 }
 
 // ProviderResponseFrom maps a registry entry and its stored account counts onto
@@ -166,50 +173,4 @@ func ProviderDetailFrom(entry registry.Provider, summary ProviderStatusSummaryDT
 		DeprecationNote:  entry.Display.DeprecationNotice,
 		Website:          entry.Display.Website,
 	}
-}
-
-// ProviderModelsFrom maps a registry entry's models onto the wire shape.
-func ProviderModelsFrom(entry registry.Provider) []ProviderModelResponse {
-	out := make([]ProviderModelResponse, 0, len(entry.Models))
-	for _, model := range entry.Models {
-		out = append(out, ProviderModelResponse{
-			ID:           model.ID,
-			Name:         model.Name,
-			Kind:         model.Kind,
-			Capabilities: append([]string(nil), model.Capabilities...),
-			Dimensions:   model.Dimensions,
-			// The registry carries no suggestion flag, so every model the
-			// document lists is offered as suggested; a hardcoded subset here
-			// would be a guess the panel then renders as advice.
-			Suggested: true,
-		})
-	}
-	return out
-}
-
-// ProviderCountsFrom maps the repository's per-status counts onto the DTO.
-func ProviderCountsFrom(counts domain.EndpointStatusCounts) ProviderStatusSummaryDTO {
-	return ProviderStatusSummaryDTO{
-		Total:     counts.Total,
-		Active:    counts.Active,
-		Disabled:  counts.Disabled,
-		Error:     counts.Error,
-		RateLimit: counts.RateLimited,
-	}
-}
-
-// providerDisplayName prefers the display name and falls back to the id, so a
-// minimal entry still renders a label instead of a blank row.
-func providerDisplayName(entry registry.Provider) string {
-	if entry.Display.Name != "" {
-		return entry.Display.Name
-	}
-	return entry.ID
-}
-
-// sortMedia orders the media blocks by kind so the detail response is stable
-// across reads; the registry holds them in a map, whose iteration order is
-// deliberately random.
-func sortMedia(media []ProviderMediaResponse) {
-	sort.Slice(media, func(a, b int) bool { return media[a].Kind < media[b].Kind })
 }

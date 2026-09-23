@@ -54,6 +54,7 @@ type nodeLister interface {
 type runtimeProviderIndex struct {
 	embedded *registry.Index
 	nodes    nodeLister
+	models   service.NodeModelSource
 	logger   *slog.Logger
 
 	// mu serialises rebuilds so concurrent requests do not each build their own
@@ -62,11 +63,15 @@ type runtimeProviderIndex struct {
 }
 
 // newRuntimeProviderIndex binds the embedded registry to the node store.
-func newRuntimeProviderIndex(embedded *registry.Index, nodes nodeLister, logger *slog.Logger) *runtimeProviderIndex {
+//
+// models may be nil, in which case a node is synthesized with the models it
+// declares and nothing is dialed: a deployment that wires no source still
+// resolves every node, it just cannot read one's upstream list.
+func newRuntimeProviderIndex(embedded *registry.Index, nodes nodeLister, models service.NodeModelSource, logger *slog.Logger) *runtimeProviderIndex {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &runtimeProviderIndex{embedded: embedded, nodes: nodes, logger: logger}
+	return &runtimeProviderIndex{embedded: embedded, nodes: nodes, models: models, logger: logger}
 }
 
 // Provider resolves an id, alias, or node prefix to its entry.
@@ -112,13 +117,20 @@ func (r *runtimeProviderIndex) overlay() *registry.Index {
 	return overlaid
 }
 
-// loadNodes reads the stored nodes.
+// loadNodes reads the stored nodes, each carrying its own model list.
 //
 // The mapping goes through service.NodeCustomNode rather than repeating the
 // field list here: that helper is the one place that knows how a stored node
 // becomes a registry node, and a second copy is how the two shapes drift — the
 // drift that left every custom node unsynthesizable until the id contract was
 // fixed.
+//
+// The model list is attached here rather than resolved by each consumer because
+// every consumer reads models from the index: the detail route, the catalog, and
+// the data plane all iterate Provider.Models, so one injection reaches all three
+// (draft 017 §4.2). A source that fails leaves the node with its declared list:
+// an upstream that is down must not make the node unresolvable, or a model-list
+// problem becomes a routing outage.
 func (r *runtimeProviderIndex) loadNodes(ctx context.Context) ([]registry.CustomNode, error) {
 	rows, err := r.nodes.List(ctx)
 	if err != nil {
@@ -126,7 +138,13 @@ func (r *runtimeProviderIndex) loadNodes(ctx context.Context) ([]registry.Custom
 	}
 	out := make([]registry.CustomNode, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, service.NodeCustomNode(row))
+		node := service.NodeCustomNode(row)
+		if r.models != nil {
+			if list, listErr := r.models.ListNodeModels(ctx, row.ID()); listErr == nil {
+				node.Models = list.Models
+			}
+		}
+		out = append(out, node)
 	}
 	return out, nil
 }

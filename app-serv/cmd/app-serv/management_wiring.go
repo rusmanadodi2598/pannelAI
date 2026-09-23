@@ -7,9 +7,10 @@
 //
 // @uses      internal/config, internal/dataplane, internal/domain,
 //
-//	internal/handler, internal/provider, internal/registry,
+//	internal/provider, internal/registry,
 //	internal/repository/{postgres,redis}, internal/service,
-//	internal/router, pgxpool, redis.
+//	internal/router, pgxpool, redis. The handlers themselves are built
+//	in management_handlers.go.
 //
 // @reason    AGENTS.md §1.5 makes this file wiring only: it constructs the
 //
@@ -37,7 +38,6 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/config"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/handler"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
@@ -73,9 +73,17 @@ func buildManagement(
 	quotaRepo := postgres.NewQuotaRepository(pool)
 	logRepo := postgres.NewLogRepository(pool)
 
-	// The runtime index overlays stored custom nodes on the embedded registry,
-	// so a node created at runtime is resolvable as a provider id.
-	runtimeIndex := newRuntimeProviderIndex(index, nodeRepo, slog.Default())
+	// A node's model list comes from the node's own upstream (draft 017 §4.2),
+	// so the read is wired before the index that carries its answer: the index
+	// attaches each node's list while it synthesizes the overlay.
+	nodeModels := newNodeModelSource(
+		newNodeTargetLookup(nodeRepo), connectors, egress.Guard,
+		newNodeCredentialSource(endpointRepo, sealer), nodeModelCacheTTL,
+	)
+
+	// The runtime index overlays stored nodes on the embedded registry, so a node
+	// created at runtime is resolvable as a provider id.
+	runtimeIndex := newRuntimeProviderIndex(index, nodeRepo, nodeModels, slog.Default())
 
 	// The catalog must exist before the combo and vision services, which resolve
 	// their refs through it. It reads the runtime overlay like the rest of the
@@ -91,18 +99,27 @@ func buildManagement(
 	// The probe adapter reaches the upstream through the plugin seam, so no part
 	// of the graph special-cases a provider id. It reads the runtime overlay for
 	// the same reason the data plane does: an endpoint under a custom node must
-	// probe as that node.
+	// probe as that node. §7.4's stateless credential checks share it: they ask
+	// the same question before a row exists (draft 017 §4.6).
 	prober := newHTTPEndpointProber(runtimeIndex, connectors, egress.Guard)
+	validationSvc, err := service.NewCredentialValidationService(prober)
+	if err != nil {
+		return managementDeps{}, fmt.Errorf("management wiring: credential validation: %w", err)
+	}
 
 	providerSvc, err := service.NewProviderService(service.ProviderServiceDeps{
-		Index: runtimeIndex, Counts: endpointRepo,
+		Index: runtimeIndex, Counts: endpointRepo, Source: nodeModels,
 	})
+	if err != nil {
+		return managementDeps{}, fmt.Errorf("management wiring: providers: %w", err)
+	}
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: providers: %w", err)
 	}
 
 	endpointSvc, err := service.NewEndpointService(service.EndpointServiceDeps{
 		Store: endpointRepo, Index: runtimeIndex, Sealer: sealer, Prober: prober,
+		Proxies: proxyPoolFinder{proxies: postgres.NewProxyRepository(pool)},
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: endpoints: %w", err)
@@ -144,10 +161,8 @@ func buildManagement(
 		return managementDeps{}, fmt.Errorf("management wiring: vision augmenter: %w", err)
 	}
 
-	// The usage, quota, and log services read the same repositories, so they are
-	// built together (see observability_wiring.go). The endpoint repository rides
-	// along because the quota service refuses a cap for an unconfigured endpoint
-	// (draft 005 F2).
+	// The usage, quota, and log services share repositories, so they are built
+	// together (observability_wiring.go).
 	obs, err := buildObservability(usageRepo, quotaRepo, endpointRepo, logRepo, settingsSvc, client)
 	if err != nil {
 		return managementDeps{}, err
@@ -158,32 +173,23 @@ func buildManagement(
 		return managementDeps{}, err
 	}
 
-	// §7.10 media providers: the registry's media blocks resolved against the
-	// stored per-provider+kind overrides, counted from the same endpoint rows
-	// §7.4 reads. Built before the data plane because the media routes and the
-	// embeddings route read the same stored overrides through this service.
-	mediaSvc, mediaHandler, err := buildMediaProviders(pool, runtimeIndex, endpointRepo)
+	// The §7.7 combo test probes through the engine, and the engine asks the combo
+	// service for the round-robin order, so the probe is its own service — a
+	// method on that one would make the cycle real.
+	// §7.10 media providers and the §7.15 data plane, from the repositories the
+	// management side writes through, so a value written by one path is readable
+	// by the other.
+	mediaPlane, err := buildMediaAndDataPlane(managementDataPlaneInputs{
+		Config: cfg, Pool: pool, Redis: client, Index: runtimeIndex,
+		Endpoints: endpointRepo, Counts: endpointRepo, Combos: comboRepo, ComboOrder: comboSvc,
+		Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
+		Client: egress.Client, Settings: settingsSvc, Observability: obs, Vision: augmenter,
+	})
 	if err != nil {
 		return managementDeps{}, err
 	}
+	mediaHandler, plane := mediaPlane.MediaHandler, mediaPlane.Plane
 
-	// The data plane is assembled from the same repositories the management side
-	// writes through, so a value written by one path is readable by the other.
-	// buildDataPlane owns that construction; this function only feeds it.
-	plane, err := buildDataPlane(dataPlaneInputs{
-		Config: cfg, Index: runtimeIndex, Endpoints: endpointRepo, Combos: comboRepo,
-		ComboOrder: comboSvc, Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
-		Client: egress.Client, Redis: client, Settings: settingsSvc, Usage: obs.Usage, Vision: augmenter,
-		ActiveRequests: obs.Active, Logs: obs.Log, Quotas: obs.Quota,
-		MediaOverrides: mediaSvc, MediaIndex: runtimeIndex,
-	})
-	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: data plane: %w", err)
-	}
-
-	// The §7.7 combo test probes through the engine, and the engine asks the
-	// combo service for the round-robin order, so the probe is its own service
-	// rather than a method on that one — the cycle would otherwise be real.
 	comboTestSvc, err := service.NewComboTestService(comboSvc, plane.Engine)
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: combo test: %w", err)
@@ -204,36 +210,11 @@ func buildManagement(
 	if err != nil {
 		return managementDeps{}, err
 	}
-
-	return managementDeps{
-		Provider:      handler.NewProviderHandler(providerSvc),
-		Endpoint:      handler.NewEndpointHandler(endpointSvc),
-		EndpointKey:   handler.NewEndpointKeyHandler(endpointSvc),
-		EndpointBulk:  handler.NewEndpointBulkHandler(endpointSvc),
-		OAuth:         oauthHandler,
-		Node:          handler.NewProviderNodeHandler(nodeSvc),
-		Model:         handler.NewModelHandler(catalogSvc),
-		Combo:         handler.NewComboHandler(comboSvc),
-		ComboTest:     handler.NewComboTestHandler(comboTestSvc),
-		Proxy:         proxyHandler,
-		MediaProvider: mediaHandler,
-		Media:         handler.NewMediaHandler(plane.Media, plane.Chat),
-		VisionAdapter: handler.NewVisionAdapterHandler(visionSvc),
-		TokenSaver:    handler.NewTokenSaverHandler(tokenSaverSvc),
-		Usage:         handler.NewUsageHandler(obs.Usage),
-		UsageLive:     handler.NewUsageLiveHandler(obs.UsageLive),
-		Quota:         handler.NewQuotaHandler(obs.Quota),
-		Log:           handler.NewLogHandler(obs.Log),
-		Settings:      handler.NewSettingsHandler(settingsSvc),
-		Chat:          handler.NewChatHandler(plane.Chat),
-		Embeddings:    handler.NewEmbeddingsHandler(plane.Embeddings, plane.Chat),
-		// The estimate route dials no upstream, so it is built over its own
-		// stateless service and borrows the §4 key rule from the chat service.
-		TokenCount:         handler.NewTokenCountHandler(service.NewTokenCountService(), plane.Chat),
-		QuotaFlusher:       flusher,
-		LogRetention:       retention,
-		OAuthRefresh:       refreshWorker,
-		UsageEvents:        obs.Publisher,
-		UsageEventConsumer: obs.Consumer,
-	}, nil
+	return buildManagementHandlers(managementHandlerInputs{
+		Provider: providerSvc, Validation: validationSvc, Endpoint: endpointSvc, Node: nodeSvc, Catalog: catalogSvc,
+		Combo: comboSvc, ComboTest: comboTestSvc, Proxy: proxyHandler, Media: mediaHandler,
+		Plane: plane, Vision: visionSvc, TokenSaver: tokenSaverSvc, Settings: settingsSvc,
+		OAuth: oauthHandler, Observability: obs, Flusher: flusher, Retention: retention,
+		RefreshWorker: refreshWorker,
+	})
 }

@@ -165,14 +165,20 @@ func insertEndpoint(ctx context.Context, tx pgx.Tx, endpoint domain.UpstreamEndp
 	const q = `
 INSERT INTO upstream_endpoints
     (id, provider_id, label, auth_type, priority, status, oauth, account,
-     test_status, rate_limited_until, last_used_at, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
+     test_status, rate_limited_until, last_used_at, created_at, updated_at,
+     global_priority, default_model, consecutive_use_count,
+     last_error, last_error_at, error_code, proxy_pool_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+        $14, $15, $16, $17, $18, $19, $20)`
 
-	if _, err := tx.Exec(ctx, q, endpoint.ID(), endpoint.ProviderID(),
-		endpoint.Label(), string(endpoint.AuthType()), endpoint.Priority(),
-		string(endpoint.Status()), oauthJSON, accountJSON, testJSON,
-		endpoint.RateLimitedUntil(), endpoint.LastUsedAt(),
-		endpoint.CreatedAt(), endpoint.UpdatedAt()); err != nil {
+	args := []any{
+		endpoint.ID(), endpoint.ProviderID(), endpoint.Label(),
+		string(endpoint.AuthType()), endpoint.Priority(), string(endpoint.Status()),
+		oauthJSON, accountJSON, testJSON, endpoint.RateLimitedUntil(),
+		endpoint.LastUsedAt(), endpoint.CreatedAt(), endpoint.UpdatedAt(),
+	}
+	args = append(args, parityColumns(endpoint)...)
+	if _, err := tx.Exec(ctx, q, args...); err != nil {
 		return translateEndpointError(err)
 	}
 	return insertKeys(ctx, tx, endpoint.Keys())

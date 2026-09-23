@@ -36,11 +36,12 @@ const maxKeysPerEndpoint = 100
 
 // EndpointService implements SPEC-API-001 §7.5.
 type EndpointService struct {
-	store  EndpointStore
-	index  ProviderIndex
-	sealer CredentialSealer
-	prober EndpointProber
-	clock  func() time.Time
+	store   EndpointStore
+	index   ProviderIndex
+	sealer  CredentialSealer
+	prober  EndpointProber
+	proxies ProxyPoolFinder
+	clock   func() time.Time
 }
 
 // EndpointServiceDeps holds the collaborators the service needs. Prober may be
@@ -51,6 +52,9 @@ type EndpointServiceDeps struct {
 	Index  ProviderIndex
 	Sealer CredentialSealer
 	Prober EndpointProber
+	// Proxies is optional: a deployment that wires none refuses a
+	// `proxy_pool_id` rather than storing a name nothing can resolve.
+	Proxies ProxyPoolFinder
 }
 
 // NewEndpointService validates deps and returns a ready service.
@@ -65,11 +69,12 @@ func NewEndpointService(deps EndpointServiceDeps) (*EndpointService, error) {
 		return nil, domain.NewValidationError("credential sealer is required")
 	}
 	return &EndpointService{
-		store:  deps.Store,
-		index:  deps.Index,
-		sealer: deps.Sealer,
-		prober: deps.Prober,
-		clock:  time.Now,
+		store:   deps.Store,
+		index:   deps.Index,
+		sealer:  deps.Sealer,
+		prober:  deps.Prober,
+		proxies: deps.Proxies,
+		clock:   time.Now,
 	}, nil
 }
 
@@ -136,6 +141,11 @@ type UpdatePatch struct {
 	Label    *string
 	Priority *int
 	Status   *string
+
+	// The connection-parity fields (draft 017 §4.1b).
+	DefaultModel   *string
+	GlobalPriority *int
+	ProxyPoolID    *string
 }
 
 // Update applies a PATCH. A priority change renumbers the provider's other
@@ -163,6 +173,9 @@ func (s *EndpointService) Update(ctx context.Context, id string, patch UpdatePat
 	reordered := patch.Priority != nil && *patch.Priority != endpoint.Priority()
 
 	if err := endpoint.Update(label, priority, status, s.clock()); err != nil {
+		return domain.UpstreamEndpoint{}, err
+	}
+	if err := s.applyRouting(ctx, &endpoint, patch); err != nil {
 		return domain.UpstreamEndpoint{}, err
 	}
 	if err := s.store.Update(ctx, endpoint); err != nil {
