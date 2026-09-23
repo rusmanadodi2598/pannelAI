@@ -5,6 +5,10 @@
 // reporting "Copy failed" on an `http://<host>:3000` address, which is where the panel normally runs. So
 // each path is driven here, plus the case where neither can write. Both paths are asynchronous, so every
 // outcome is waited for rather than read off the tick the click returned on.
+//
+// The selection path is also driven inside a modal dialog, which is where the control is used on the
+// Endpoint & Key screen. jsdom cannot reproduce inertness, so the two facts a browser proved are pinned
+// directly: the scratch field's host element, and the answer when that field cannot take focus.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -30,10 +34,20 @@ async function click(): Promise<void> {
 	await fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
 }
 
+/** Renders the control inside a modal dialog, the shape the one-time key modal gives it. */
+async function clickInsideDialog(): Promise<void> {
+	const dialog = document.createElement('dialog');
+	dialog.setAttribute('open', '');
+	document.body.appendChild(dialog);
+	render(CopyButton, { props: { value: VALUE } }, { baseElement: dialog });
+	await fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+}
+
 afterEach(() => {
 	cleanup();
 	delete (navigator as { clipboard?: unknown }).clipboard;
 	delete (document as { execCommand?: unknown }).execCommand;
+	document.querySelectorAll('dialog').forEach((dialog) => dialog.remove());
 });
 
 describe('CopyButton', () => {
@@ -76,5 +90,33 @@ describe('CopyButton', () => {
 
 		expect(await screen.findByText(FAILED)).toBeTruthy();
 		expect(screen.queryByText(COPIED)).toBeNull();
+	});
+
+	it('writes its scratch field inside the open dialog, where the body is inert', async () => {
+		// A browser measured this: with a modal dialog open, a field appended to the body cannot take
+		// focus or hold a selection, so the copy leaves the clipboard empty. `execCommand` still answers
+		// true there, which is why the host element is asserted rather than the command's answer.
+		const hosts: (string | undefined)[] = [];
+		stubExecCommand(() => {
+			hosts.push(document.activeElement?.parentElement?.tagName);
+			return true;
+		});
+
+		await clickInsideDialog();
+
+		expect(hosts).toEqual(['DIALOG']);
+		expect(await screen.findByText(COPIED)).toBeTruthy();
+	});
+
+	it('reports a failure when the scratch field cannot take focus', async () => {
+		// What inertness does to the field, isolated: focus is refused, so there is no selection to copy
+		// and the command's own answer cannot be trusted. The one-time key modal stays gated on this.
+		const spy = stubExecCommand(() => true);
+		vi.spyOn(HTMLTextAreaElement.prototype, 'focus').mockImplementation(() => {});
+
+		await click();
+
+		expect(await screen.findByText(FAILED)).toBeTruthy();
+		expect(spy).not.toHaveBeenCalled();
 	});
 });
