@@ -5,13 +5,11 @@
 // from it, so a node becomes routable exactly like a registry provider, and the panel never has to
 // branch on "is this custom" downstream: it reads the same provider shapes either way.
 //
-// Two of the rules here are the API's own and are restated rather than invented, because a save the
-// panel blocks should be one the gateway would have refused: a prefix is a model-string namespace
-// (`prefix/model`), so it carries letters, digits, dots, dashes, and underscores and nothing else, and
-// `api_type` belongs to an OpenAI-compatible node alone.
+// This module is the read side plus the derivations a screen shows. Every shape the panel sends, and the
+// form copy that goes with it, lives in `./provider-node-draft`.
 
 import { z } from 'zod';
-import { absoluteUrl, label, optionalTimestamp } from './primitives';
+import { optionalTimestamp } from './primitives';
 
 /**
  * The two node id prefixes. They are part of the public contract (§7.4): a node's id appears in
@@ -126,89 +124,4 @@ export function nodeEndpointUrl(
 	node: Pick<ProviderNode, 'type' | 'api_type' | 'base_url'>
 ): string {
 	return `${node.base_url.replace(/\/+$/, '')}${nodeEndpointPath(node)}`;
-}
-
-// A model-string namespace. The API's message is mirrored so the panel and the gateway describe the
-// same rule the same way; `/` and whitespace are the values that make `prefix/model` unparseable.
-const nodePrefix = z
-	.string()
-	.transform((value) => value.trim())
-	.refine((value) => value.length > 0, { message: 'A prefix is required.' })
-	.refine((value) => value.length <= 64, { message: 'Use 64 characters or fewer.' })
-	.refine((value) => /^[A-Za-z0-9._-]+$/.test(value), {
-		message: 'Use letters, digits, dots, dashes, and underscores only.'
-	});
-
-// A trailing slash is dropped rather than kept: the gateway joins the path with one separator
-// (`provider.joinPath`), so a base ending in `/` would send `//chat/completions` to an upstream that
-// may treat it as a different path. `absoluteUrl` already strips one; this strips a run.
-const nodeBaseURL = absoluteUrl.transform((value) => value.replace(/\/+$/, ''));
-
-export const schemaCustomProviderDraft = z.strictObject({
-	name: label,
-	prefix: nodePrefix,
-	api_type: z.enum(NODE_API_TYPES),
-	base_url: nodeBaseURL
-});
-
-export type CustomProviderDraft = z.infer<typeof schemaCustomProviderDraft>;
-
-/** The vendor URL each type is most often pointed at, used as the field's placeholder, not its value. */
-export const NODE_BASE_URL_HINTS: Record<NodeType, string> = {
-	'openai-compatible': 'https://api.openai.com/v1',
-	'anthropic-compatible': 'https://api.anthropic.com/v1'
-};
-
-/** A blank draft for a new node of `type`. */
-export function customProviderDraftNew(): CustomProviderDraft {
-	return { name: '', prefix: '', api_type: 'chat', base_url: '' };
-}
-
-/** The draft seeded from a stored node, so an edit starts from what is stored rather than from blank. */
-export function customProviderDraftFrom(node: ProviderNode): CustomProviderDraft {
-	return {
-		name: node.name,
-		prefix: node.prefix,
-		api_type: node.api_type === 'responses' ? 'responses' : 'chat',
-		base_url: node.base_url
-	};
-}
-
-export type CreateProviderNodeBody = {
-	name: string;
-	prefix: string;
-	type: NodeType;
-	api_type?: NodeAPIType;
-	base_url: string;
-};
-
-/**
- * The create body for `type`.
- *
- * `api_type` is sent for an OpenAI-compatible node only: §7.4 refuses the field on an
- * Anthropic-compatible node, so carrying it would make every Anthropic create fail.
- */
-export function createProviderNodeBody(
-	type: NodeType,
-	draft: CustomProviderDraft
-): CreateProviderNodeBody {
-	const body: CreateProviderNodeBody = {
-		name: draft.name,
-		prefix: draft.prefix,
-		type,
-		base_url: draft.base_url
-	};
-	if (type === 'openai-compatible') body.api_type = draft.api_type;
-	return body;
-}
-
-export type UpdateProviderNodeBody = { name: string; prefix: string; base_url: string };
-
-/**
- * The patch body. `type` and `api_type` are absent because they decide which wire format the node
- * speaks and are part of its identity: §7.4 makes changing one a new node, so the edit form shows the
- * endpoint as a fact rather than as a control that cannot act.
- */
-export function updateProviderNodeBody(draft: CustomProviderDraft): UpdateProviderNodeBody {
-	return { name: draft.name, prefix: draft.prefix, base_url: draft.base_url };
 }

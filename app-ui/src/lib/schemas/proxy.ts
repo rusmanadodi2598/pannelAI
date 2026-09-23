@@ -18,14 +18,8 @@
 // the API sends today are mapped to readable labels rather than shown raw.
 
 import { z } from 'zod';
-import {
-	label,
-	optionalTimestamp,
-	prefixedId,
-	proxyHost,
-	proxyPort,
-	rfc3339Timestamp
-} from './primitives';
+import { prefixedId } from './identifiers';
+import { label, optionalTimestamp, proxyHost, proxyPort, rfc3339Timestamp } from './primitives';
 
 export const PROXY_PROTOCOLS = ['http', 'https', 'socks5'] as const;
 

@@ -15,7 +15,7 @@ import { cleanup, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stubProviderNodes } from '../support/provider-node-stub';
 import { renderSection, select, type } from '../support/custom-provider-harness';
-import { squashed } from '../support/dom';
+import { squashed, value } from '../support/dom';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -91,18 +91,50 @@ describe('adding a custom provider', () => {
 		});
 	});
 
+	// The reference's `Input` renders its `hint` prop under the field whatever the value is, and the value
+	// is the vendor URL, so both are on screen at once. The panel shows the joined URL as well, and a
+	// variant hint that a preview could hide would be the one piece of the reference's copy an operator
+	// never reads.
+	it('opens with the vendor URL as the value and the variant hint under the field', async () => {
+		renderSection(stubProviderNodes());
+
+		await screen.getByRole('button', { name: 'Add OpenAI Compatible' }).click();
+
+		expect(value(screen.getByLabelText('Base URL'))).toBe('https://api.openai.com/v1');
+		expect(squashed(screen.getByText(/Use the base URL/))).toContain(
+			'Use the base URL (ending in /v1) for your OpenAI-compatible API.'
+		);
+	});
+
+	it('states the Anthropic hint, which names the path the gateway appends', async () => {
+		renderSection(stubProviderNodes());
+
+		await screen.getByRole('button', { name: 'Add Anthropic Compatible' }).click();
+
+		expect(value(screen.getByLabelText('Base URL'))).toBe('https://api.anthropic.com/v1');
+		expect(squashed(screen.getByText(/Use the base URL/))).toContain(
+			'The gateway appends /messages.'
+		);
+	});
+
 	it('shows the URL the gateway will call while the base URL is typed', async () => {
 		renderSection(stubProviderNodes());
 
 		await screen.getByRole('button', { name: 'Add OpenAI Compatible' }).click();
-		expect(squashed(screen.getByText(/The base URL of your API/))).toContain(
-			'The base URL of your API'
-		);
-
 		await type('Base URL', 'https://llm.example.com/v1');
 		expect(squashed(screen.getByText(/The gateway will call/))).toContain(
 			'https://llm.example.com/v1/chat/completions'
 		);
+	});
+
+	it('puts the vendor URL back when the API type changes', async () => {
+		renderSection(stubProviderNodes());
+
+		await screen.getByRole('button', { name: 'Add OpenAI Compatible' }).click();
+		await type('Base URL', 'https://llm.example.com/v1');
+		await select('API type', 'responses');
+
+		expect(value(screen.getByLabelText('Base URL'))).toBe('https://api.openai.com/v1');
 	});
 
 	it('refuses a prefix with a slash locally, and sends nothing', async () => {

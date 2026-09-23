@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { forEachCase } from '../support/tables';
 import BulkAddKeysForm from '../../src/lib/components/BulkAddKeysForm.svelte';
 import { stubEndpoints } from '../support/endpoint-stub';
-import { schemaBulkKeyRefusal } from '$lib/schemas/endpoint-bulk';
+import { schemaBulkRefusal } from '$lib/schemas/endpoint-bulk';
 
 /** The submit control, which is the only button whose name starts with "Add " and a count. */
 function submitButton(): HTMLButtonElement {
@@ -169,9 +169,9 @@ describe('BulkAddKeysForm', () => {
 	});
 });
 
-describe('schemaBulkKeyRefusal', () => {
+describe('schemaBulkRefusal', () => {
 	it('reads the served refusal with every row reported', () => {
-		const parsed = schemaBulkKeyRefusal.safeParse({
+		const parsed = schemaBulkRefusal.safeParse({
 			error: { code: 'VALIDATION_ERROR', message: 'duplicate label in batch' },
 			results: [{ index: 0 }, { index: 1, error: 'duplicate label in batch' }]
 		});
@@ -180,7 +180,7 @@ describe('schemaBulkKeyRefusal', () => {
 	});
 
 	it('refuses a refusal body with no row list, which is not the shape §8.1 defines', () => {
-		const parsed = schemaBulkKeyRefusal.safeParse({
+		const parsed = schemaBulkRefusal.safeParse({
 			error: { code: 'VALIDATION_ERROR', message: 'duplicate label in batch' }
 		});
 

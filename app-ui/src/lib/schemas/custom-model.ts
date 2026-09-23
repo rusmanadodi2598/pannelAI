@@ -10,7 +10,7 @@
 // rule the gateway does not share would refuse a write the API would have accepted.
 
 import { z } from 'zod';
-import { label, rfc3339Timestamp, stringList } from './primitives';
+import { optionalLabel, rfc3339Timestamp, stringList } from './primitives';
 
 // The DTO's bounds for one capability entry and for the list itself.
 export const CAPABILITY_MAX_ENTRIES = 32;
@@ -76,11 +76,13 @@ export function capabilitiesText(list: readonly string[]): string {
 	return list.join(', ');
 }
 
-// What an operator types. `model_id` and `display_name` are the two the API requires; capabilities are
-// optional, and the field is free text because the API accepts any value and exposes no vocabulary.
+// What an operator types. `model_id` is the one field the API requires; the display name is optional here
+// even though the wire insists on a non-empty one, because the reference adds a model with its id alone
+// (draft 019 D2) and the body fills the name from the id. Capabilities are optional, and the field is free
+// text because the API accepts any value and exposes no vocabulary.
 export const schemaCustomModelForm = z.strictObject({
 	model_id: modelSegment,
-	display_name: label,
+	display_name: optionalLabel,
 	capabilities: z
 		.string()
 		.refine((text) => parseCapabilities(text).length <= CAPABILITY_MAX_ENTRIES, {
@@ -107,11 +109,15 @@ export type CreateCustomModelBody = {
 	capabilities: string[];
 };
 
+// The display name is filled from the model id when the field was left blank: the wire refuses an empty one
+// (`schema/model.go:47`), and the id is what the row would show anyway (`customModelLabel`), so asking for a
+// second name would be a field with no consequence (draft 019 D2).
 export function customModelBody(providerId: string, form: CustomModelForm): CreateCustomModelBody {
+	const name = form.display_name.trim();
 	return {
 		provider_id: providerId,
 		model_id: form.model_id,
-		display_name: form.display_name,
+		display_name: name === '' ? form.model_id : name,
 		capabilities: parseCapabilities(form.capabilities)
 	};
 }

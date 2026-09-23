@@ -1,35 +1,43 @@
 <script lang="ts">
 	// Provider detail (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 	//
-	// The screen answers five questions about this provider in the order an operator asks them: what it is
-	// (facts), which models it can answer with (catalog), which of its models are turned off (disabled),
-	// which models it declares itself (custom), and what the gateway routes through it (endpoints). Each is
-	// its own component, so the page's own job is the loads, the heading, the section titles, and the one
-	// piece of state two sections share.
+	// The screen has two shapes, and which one it renders is decided by the id's prefix, which is the public
+	// contract for a node (§7.4) and the only signal the panel has, because the provider response carries no
+	// `custom` flag.
 	//
-	// That shared state is the disabled set. Disabling a model removes its catalog row and enabling one
-	// brings it back, so the catalog reloads after a write in either section: `catalogToken` is what tells
-	// it to. §6.3 also places the alias table and the OAuth section here. The alias table is the sixth
-	// section and takes no provider, because the alias set is global. OAuth is the last one and appears only
-	// for a provider the registry says has OAuth, which is the one section whose presence is a provider fact.
+	// A registry provider gets the five questions an operator asks about it, in the order they ask them:
+	// what it is (facts), which models it can answer with (catalog), which of its models are turned off
+	// (disabled), which models it declares itself (custom), and what the gateway routes through it (its
+	// connections), followed by the alias table and, for an OAuth provider, the OAuth section.
 	//
-	// A custom provider node gets one section the registry providers do not: the card that owns its edit,
-	// test, and delete. Its presence is decided by the id's prefix, which is the public contract for a node
-	// (§7.4) and the only signal the panel has, because the provider response carries no `custom` flag.
+	// A custom node gets the reference's own page instead (`providers/[id]/page.js:1447-1819`), because
+	// none of those five questions is the registry's to answer for it: the node's facts are its own details
+	// card, its models are exactly the ones declared for it (there is no registry catalog behind it), and
+	// the connection that carries its credential is the first thing to set up. So the details card leads,
+	// the connections follow, and the models come after, each in the reference's shape. The registry facts
+	// table, the catalog, and the disabled-model section are not rendered for a node: they describe the
+	// embedded registry, and a node is not in it. The alias table stays, because the alias set is global
+	// and this is the screen that edits it.
+	//
+	// The key dialog belongs to the page rather than to the Connections section, because two places open
+	// it: the section's own button and the node's details card. A successful add has to reach the table
+	// inside the section, so the page bumps `endpointToken` and hands the section the notice.
 	import { resolve } from '$app/paths';
 	import { untrack } from 'svelte';
+	import AddProviderKeysDialog from '$lib/components/AddProviderKeysDialog.svelte';
 	import CustomProviderCard from '$lib/components/CustomProviderCard.svelte';
 	import ModelCatalogList from '$lib/components/ModelCatalogList.svelte';
 	import ProviderAliases from '$lib/components/ProviderAliases.svelte';
+	import ProviderConnectionsSection from '$lib/components/ProviderConnectionsSection.svelte';
 	import ProviderCustomModels from '$lib/components/ProviderCustomModels.svelte';
 	import ProviderDisabledModels from '$lib/components/ProviderDisabledModels.svelte';
-	import ProviderEndpoints from '$lib/components/ProviderEndpoints.svelte';
 	import ProviderFacts from '$lib/components/ProviderFacts.svelte';
 	import ProviderOAuth from '$lib/components/ProviderOAuth.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { getProvider } from '$lib/api/providers';
 	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import { isNodeId } from '$lib/schemas/provider-node';
+	import { REQUIRES_KEY_AUTH_TYPES } from '$lib/schemas/endpoint-write';
 	import type { ProviderDetail } from '$lib/schemas/provider';
 	import type { PageProps } from './$types';
 
@@ -38,16 +46,30 @@
 	const providerId = $derived(params.provider_id);
 
 	// Read once per id, and the node card's own read is separate: a node's prefix and api type are not in
-	// the provider response, so the card reads §7.4's route for them.
+	// the provider response, so the card reads §7.4's route for them and reports the prefix back, which is
+	// what the models section addresses its rows with.
 	const custom = $derived(isNodeId(providerId));
 
 	let provider = $state<ProviderDetail | null>(null);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 
-	// The disabled set is global, so it is read once rather than per provider.
+	// The disabled set is global, so it is read once rather than per provider. A node does not read it: the
+	// set narrows the registry catalog, and a node's screen has no catalog to narrow.
 	const disabled = createModelDisabledStore();
 	let catalogToken = $state(0);
+
+	// The Connections section's own revision, bumped by the key dialog and by nothing else: a key added here
+	// has to appear in the table below without a reload of the whole page.
+	let endpointToken = $state(0);
+	let addingKey = $state(false);
+	let keyNotice = $state<string | null>(null);
+	let nodePrefix = $state('');
+
+	// A key is only meaningful where the provider's own auth type takes one. For an OAuth provider the
+	// dialog would ask for a credential the provider does not use, and the path that fits is the endpoint
+	// form, which carries the auth type with it.
+	const offersKeys = $derived(provider !== null && REQUIRES_KEY_AUTH_TYPES.has(provider.auth_type));
 
 	// Reloads when the route's provider changes, so a hand-edited URL never leaves one provider's facts
 	// above another provider's catalog.
@@ -57,11 +79,19 @@
 	});
 
 	$effect(() => {
-		untrack(() => void disabled.load());
+		const node = custom;
+		untrack(() => {
+			if (!node) void disabled.load();
+		});
 	});
 
 	function bumpCatalog(): void {
 		catalogToken += 1;
+	}
+
+	function openKeyDialog(): void {
+		keyNotice = null;
+		addingKey = true;
 	}
 
 	async function load(id: string): Promise<void> {
@@ -102,48 +132,81 @@
 			{/snippet}
 		</StateMessage>
 	{:else if provider}
-		<ProviderFacts {provider} />
-
 		{#if custom}
-			<CustomProviderCard {providerId} onchanged={() => load(providerId)} />
-		{/if}
+			<CustomProviderCard
+				{providerId}
+				onchanged={() => load(providerId)}
+				onaddkey={offersKeys ? openKeyDialog : undefined}
+				onprefix={(prefix) => (nodePrefix = prefix)}
+			/>
 
-		<div class="flex flex-col gap-3">
-			<h2 class="text-base font-medium">Model catalog</h2>
-			<ModelCatalogList {providerId} {disabled} onchanged={bumpCatalog} token={catalogToken} />
-		</div>
+			<ProviderConnectionsSection
+				{provider}
+				token={endpointToken}
+				notice={keyNotice}
+				onaddkey={openKeyDialog}
+			/>
 
-		<div class="flex flex-col gap-3">
-			<h2 class="text-base font-medium">Models this provider cannot route</h2>
-			<ProviderDisabledModels {providerId} {disabled} onchanged={bumpCatalog} />
-		</div>
-
-		<div class="flex flex-col gap-3">
-			<h2 class="text-base font-medium">Custom models</h2>
-			<ProviderCustomModels {providerId} onchanged={bumpCatalog} />
-		</div>
-
-		<div class="flex flex-col gap-3">
-			<h2 class="text-base font-medium">Aliases</h2>
-			<ProviderAliases />
-		</div>
-
-		<div class="flex flex-col gap-3">
-			<div class="flex flex-wrap items-center justify-between gap-2">
-				<h2 class="text-base font-medium">Endpoints</h2>
-				<a
-					href={resolve(`/endpoint-keys?provider=${encodeURIComponent(provider.id)}`)}
-					class="min-h-11 content-center underline">Add an endpoint</a
-				>
-			</div>
-			<ProviderEndpoints providerId={provider.id} />
-		</div>
-
-		{#if provider.has_oauth}
 			<div class="flex flex-col gap-3">
-				<h2 class="text-base font-medium">OAuth</h2>
-				<ProviderOAuth providerId={provider.id} />
+				<h2 class="text-base font-medium">Available Models</h2>
+				<ProviderCustomModels providerId={provider.id} {nodePrefix} onchanged={bumpCatalog} />
 			</div>
+
+			<div class="flex flex-col gap-3">
+				<h2 class="text-base font-medium">Aliases</h2>
+				<ProviderAliases />
+			</div>
+		{:else}
+			<ProviderFacts {provider} />
+
+			<div class="flex flex-col gap-3">
+				<h2 class="text-base font-medium">Model catalog</h2>
+				<ModelCatalogList {providerId} {disabled} onchanged={bumpCatalog} token={catalogToken} />
+			</div>
+
+			<div class="flex flex-col gap-3">
+				<h2 class="text-base font-medium">Models this provider cannot route</h2>
+				<ProviderDisabledModels {providerId} {disabled} onchanged={bumpCatalog} />
+			</div>
+
+			<div class="flex flex-col gap-3">
+				<h2 class="text-base font-medium">Custom models</h2>
+				<ProviderCustomModels {providerId} onchanged={bumpCatalog} />
+			</div>
+
+			<div class="flex flex-col gap-3">
+				<h2 class="text-base font-medium">Aliases</h2>
+				<ProviderAliases />
+			</div>
+
+			<ProviderConnectionsSection
+				{provider}
+				token={endpointToken}
+				notice={keyNotice}
+				onaddkey={openKeyDialog}
+			/>
+
+			{#if provider.has_oauth}
+				<div class="flex flex-col gap-3">
+					<h2 class="text-base font-medium">OAuth</h2>
+					<ProviderOAuth providerId={provider.id} />
+				</div>
+			{/if}
 		{/if}
+
+		<AddProviderKeysDialog
+			providerId={provider.id}
+			providerName={provider.name}
+			authType={provider.auth_type}
+			open={addingKey}
+			onadded={(added) => {
+				endpointToken += 1;
+				keyNotice =
+					added.count === 1 && added.label !== null
+						? `✓ ${added.label} added.`
+						: `✓ ${added.count} added.`;
+			}}
+			onclose={() => (addingKey = false)}
+		/>
 	{/if}
 </section>

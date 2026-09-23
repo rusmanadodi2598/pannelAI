@@ -7,19 +7,39 @@
 	//
 	// The order is the route's own, `created_at DESC, id DESC`, which is why an added row is prepended
 	// rather than re-read: the POST answer is the row the server stored.
+	//
+	// A custom node passes its prefix, and that changes what the section is. A registry provider's custom
+	// rows sit beside a catalog the registry already ships, so the rows are a supplement and the section
+	// says so. A node has no registry catalog at all: these rows ARE its models, which is why the section
+	// then states the string each one is addressed by, offers the import the reference offers, and words
+	// its empty state for the node rather than for a supplement.
 	import { untrack } from 'svelte';
 	import CustomModelDeleteDialog from '$lib/components/CustomModelDeleteDialog.svelte';
 	import CustomModelForm from '$lib/components/CustomModelForm.svelte';
+	import CustomModelTable from '$lib/components/CustomModelTable.svelte';
+	import NodeModelsImport from '$lib/components/NodeModelsImport.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { deleteCustomModel, listCustomModels } from '$lib/api/models';
-	import {
-		customModelLabel,
-		providerCustomModels,
-		type CustomModel
-	} from '$lib/schemas/custom-model';
-	import { formatTimestamp } from '$lib/utils/time';
+	import { providerCustomModels, type CustomModel } from '$lib/schemas/custom-model';
+	import { nodeTypeOfId } from '$lib/schemas/provider-node';
 
-	let { providerId, onchanged }: { providerId: string; onchanged: () => void } = $props();
+	let {
+		providerId,
+		onchanged,
+		nodePrefix
+	}: {
+		providerId: string;
+		onchanged: () => void;
+		/** The node's model prefix, present only on a custom node's screen. */
+		nodePrefix?: string;
+	} = $props();
+
+	// A node's models are addressed as `prefix/model`, so the prefix is what makes the model string this
+	// section shows the one a client can send. Without it the rows are a registry provider's supplement.
+	const prefix = $derived(nodePrefix !== undefined && nodePrefix !== '' ? nodePrefix : null);
+	const vendor = $derived(
+		nodeTypeOfId(providerId) === 'anthropic-compatible' ? 'Anthropic' : 'OpenAI'
+	);
 
 	let rows = $state<CustomModel[]>([]);
 	let loading = $state(true);
@@ -59,6 +79,15 @@
 		onchanged();
 	}
 
+	// The import writes several rows before it answers, so it hands them over in one batch. The batch is
+	// reversed because the route orders by `created_at DESC`: the last row written is the newest, and
+	// prepending the batch in arrival order would put the oldest of them first. The import reports its own
+	// outcome beside its own control, so this does not repeat it here.
+	function imported(batch: CustomModel[]): void {
+		rows = [...batch.slice().reverse(), ...rows];
+		onchanged();
+	}
+
 	async function confirmRemove(): Promise<void> {
 		if (!pending) return;
 
@@ -81,6 +110,12 @@
 </script>
 
 <div class="flex flex-col gap-4">
+	{#if prefix !== null}
+		<p class="text-sm text-[var(--color-text-muted)]">
+			Add {vendor}-compatible models manually or import them from the node's /models endpoint.
+		</p>
+	{/if}
+
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the custom models" />
 	{:else if error}
@@ -92,62 +127,21 @@
 	{:else if mine.length === 0}
 		<StateMessage
 			kind="empty"
-			title="No custom models for this provider"
-			description="The catalog for this provider is the registry's own list. A model added below joins it."
+			title={prefix === null ? 'No custom models for this provider' : 'No models for this node yet'}
+			description={prefix === null
+				? "The catalog for this provider is the registry's own list. A model added below joins it."
+				: `A model declared here is addressed as ${prefix}/model-id. Add one below, or import the list the node's own /models endpoint answers.`}
 		/>
 	{:else}
-		<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-			<table class="w-full min-w-[44rem] border-collapse text-sm">
-				<caption class="sr-only">Custom models declared for this provider</caption>
-				<thead class="bg-[var(--color-surface-2)] text-left">
-					<tr>
-						<th scope="col" class="px-3 py-2 font-medium">Model</th>
-						<th scope="col" class="px-3 py-2 font-medium">Capabilities</th>
-						<th scope="col" class="px-3 py-2 font-medium">Added</th>
-						<th scope="col" class="px-3 py-2 font-medium">
-							<span class="sr-only">Actions</span>
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each mine as row (row.id)}
-						<tr class="border-t border-[var(--color-border)]">
-							<td class="px-3 py-2">
-								<span class="font-medium">{customModelLabel(row)}</span>
-								<br />
-								<span class="text-[var(--color-text-muted)]">{row.model_id}</span>
-							</td>
-							<td class="px-3 py-2">
-								{#if row.capabilities.length === 0}
-									<span class="text-[var(--color-text-muted)]">None declared</span>
-								{:else}
-									<span class="flex flex-wrap gap-1">
-										{#each row.capabilities as entry (entry)}
-											<span
-												class="rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-2 py-0.5"
-												>{entry}</span
-											>
-										{/each}
-									</span>
-								{/if}
-							</td>
-							<td class="px-3 py-2">{formatTimestamp(row.created_at)}</td>
-							<td class="px-3 py-2 text-end">
-								<button
-									type="button"
-									class="min-h-11 underline disabled:opacity-50"
-									disabled={removing}
-									onclick={() => {
-										pending = row;
-										removeError = null;
-									}}>Remove</button
-								>
-							</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
+		<CustomModelTable
+			rows={mine}
+			{nodePrefix}
+			{removing}
+			onremove={(row) => {
+				pending = row;
+				removeError = null;
+			}}
+		/>
 
 		<p class="text-sm text-[var(--color-text-muted)]">
 			{mine.length}
@@ -160,6 +154,14 @@
 	     panel never read, and the operator would see the add succeed with nothing to show for it. -->
 	{#if !loading && !error}
 		<CustomModelForm {providerId} onadded={added} />
+
+		{#if prefix !== null}
+			<NodeModelsImport
+				{providerId}
+				known={mine.map((row) => row.model_id)}
+				onimported={imported}
+			/>
+		{/if}
 
 		{#if notice}
 			<p class="text-sm" role="status">{notice}</p>

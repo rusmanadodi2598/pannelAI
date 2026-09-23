@@ -9,13 +9,14 @@
 	// An outcome describes the batch that was submitted, not the rows on screen now, so any edit clears it:
 	// a message left over from a batch the operator has since changed would point at the wrong row.
 	import { addEndpointKeys } from '$lib/api/endpoints';
-	import { schemaAddEndpointKeyForm, schemaBulkAddKeysForm } from '$lib/schemas/endpoint';
-	import type { BulkKeyRefusal } from '$lib/schemas/endpoint-bulk';
+	import {
+		MAX_KEYS_PER_ENDPOINT,
+		schemaAddEndpointKeyForm,
+		schemaBulkAddKeysForm
+	} from '$lib/schemas/endpoint-write';
+	import type { BulkRefusal } from '$lib/schemas/endpoint-bulk';
 
 	let { endpointId, onadded }: { endpointId: string; onadded: () => void } = $props();
-
-	/** The API's own batch limit (§7.5), so a paste of a hundred rows is refused here rather than after a round trip. */
-	const MAX_ROWS = 100;
 
 	type Row = { label: string; value: string };
 	type Outcome = { summary: string; rowMessages: Record<number, string> };
@@ -46,7 +47,7 @@
 	}
 
 	// The server's own row verdicts, keyed by the index it reported.
-	function messagesFrom(refusal: BulkKeyRefusal | undefined): Record<number, string> {
+	function messagesFrom(refusal: BulkRefusal | undefined): Record<number, string> {
 		const messages: Record<number, string> = {};
 		for (const row of refusal?.results ?? []) {
 			if (row.error) messages[row.index] = row.error;
@@ -174,7 +175,7 @@
 		<button
 			type="button"
 			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 disabled:opacity-50"
-			disabled={rows.length >= MAX_ROWS}
+			disabled={rows.length >= MAX_KEYS_PER_ENDPOINT}
 			onclick={addRow}>Add another row</button
 		>
 
@@ -188,10 +189,10 @@
 		</button>
 
 		<span class="text-sm text-[var(--color-text-muted)]">
-			{#if rows.length >= MAX_ROWS}
-				That is the gateway's own limit of {MAX_ROWS} keys per submit.
+			{#if rows.length >= MAX_KEYS_PER_ENDPOINT}
+				That is the gateway's own limit of {MAX_KEYS_PER_ENDPOINT} keys per submit.
 			{:else}
-				Up to {MAX_ROWS} keys per submit.
+				Up to {MAX_KEYS_PER_ENDPOINT} keys per submit.
 			{/if}
 		</span>
 	</div>

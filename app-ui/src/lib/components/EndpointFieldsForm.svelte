@@ -9,9 +9,9 @@
 	import {
 		ENDPOINT_STATUS_ACTIVE,
 		ENDPOINT_STATUS_DISABLED,
-		schemaUpdateEndpointForm,
 		type Endpoint
 	} from '$lib/schemas/endpoint';
+	import { schemaUpdateEndpointForm } from '$lib/schemas/endpoint-write';
 
 	let { endpoint, onsaved }: { endpoint: Endpoint; onsaved: (updated: Endpoint) => void } =
 		$props();

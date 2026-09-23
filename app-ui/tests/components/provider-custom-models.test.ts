@@ -57,7 +57,7 @@ function fillForm(fields: {
 		input.dispatchEvent(new Event('input', { bubbles: true }));
 	}
 	if (fields.display_name !== undefined) {
-		const input = screen.getByLabelText('Display name') as HTMLInputElement;
+		const input = screen.getByLabelText('Display name (optional)') as HTMLInputElement;
 		input.value = fields.display_name;
 		input.dispatchEvent(new Event('input', { bubbles: true }));
 	}
@@ -146,7 +146,7 @@ describe('adding a custom model', () => {
 
 		await waitFor(() => expect(screen.getByText('GPT-5 mini')).toBeTruthy());
 		expect(value(screen.getByLabelText('Model id'))).toBe('');
-		expect(value(screen.getByLabelText('Display name'))).toBe('');
+		expect(value(screen.getByLabelText('Display name (optional)'))).toBe('');
 		expect(value(screen.getByLabelText('Capabilities (optional)'))).toBe('');
 	});
 
@@ -157,6 +157,31 @@ describe('adding a custom model', () => {
 		fillForm({ model_id: 'gpt-5-mini', display_name: 'GPT-5 mini' });
 		screen.getByRole('button', { name: 'Add the model' }).click();
 
+		await waitFor(() =>
+			expect(screen.getByText('openai/gpt-5-mini was added to the catalog.')).toBeTruthy()
+		);
+	});
+
+	// The wire requires a non-empty display name (`schema/model.go:47`) while the reference adds a model
+	// from its id alone, so the body carries the id as the name. Blank is also the state the form opens in,
+	// which is what makes this the case an operator hits first.
+	it('stores the model id as the display name when the name is left blank', async () => {
+		renderProvider();
+		await waitForCustomTable();
+
+		fillForm({ model_id: 'gpt-5-mini' });
+		screen.getByRole('button', { name: 'Add the model' }).click();
+
+		await waitFor(() => expect(stub.customCreates).toHaveLength(1));
+		expect(stub.customCreates[0]).toEqual({
+			provider_id: 'openai',
+			model_id: 'gpt-5-mini',
+			display_name: 'gpt-5-mini',
+			capabilities: []
+		});
+		// The screen names the row it added, which is what proves the write reached the page rather than
+		// only the stub. The table's own cells are not queried: the id and the name are the same string
+		// here, so a text query would match the row twice over.
 		await waitFor(() =>
 			expect(screen.getByText('openai/gpt-5-mini was added to the catalog.')).toBeTruthy()
 		);
@@ -174,11 +199,6 @@ describe('adding a custom model', () => {
 					name: 'an empty model id',
 					fields: { model_id: '', display_name: 'GPT-5' },
 					message: 'A model id is required.'
-				},
-				{
-					name: 'an empty display name',
-					fields: { model_id: 'gpt-5', display_name: '' },
-					message: 'A name is required.'
 				},
 				{
 					name: 'a model id past the API bound',

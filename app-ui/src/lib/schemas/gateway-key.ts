@@ -5,7 +5,8 @@
 // accepts. The panel renders unknown values verbatim. See SPEC-UI §14 Q9.
 
 import { z } from 'zod';
-import { gatewayKeyId, label, optionalTimestamp, rfc3339Timestamp, tokenCount } from './primitives';
+import { gatewayKeyId } from './identifiers';
+import { label, optionalTimestamp, rfc3339Timestamp, tokenCount } from './primitives';
 
 // `last_used_at` and `revoked_at` are `omitempty` on the wire (Go omits a nil pointer), so a key that was
 // never used and never revoked omits both. `optionalTimestamp` accepts an absent field and an explicit

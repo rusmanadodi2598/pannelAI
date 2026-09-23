@@ -13,12 +13,14 @@ import {
 	schemaProviderNode,
 	schemaProviderNodeList,
 	schemaProviderNodeProbe,
-	type CreateProviderNodeBody,
 	type ProviderNode,
 	type ProviderNodeList,
-	type ProviderNodeProbe,
-	type UpdateProviderNodeBody
+	type ProviderNodeProbe
 } from '$lib/schemas/provider-node';
+import type {
+	CreateProviderNodeBody,
+	UpdateProviderNodeBody
+} from '$lib/schemas/provider-node-draft';
 import { emptyResponse, type EmptyResponse } from '$lib/schemas/primitives';
 import { apiRequest, type ApiResult } from './client';
 

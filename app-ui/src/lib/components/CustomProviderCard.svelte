@@ -6,6 +6,12 @@
 	// but not the prefix, the api type, or when the node was created. Those are the facts an operator edits
 	// against, so they are read from the node's own route (§7.4).
 	//
+	// The card is the reference's own (`providers/[id]/page.js:1447-1506`): its title names the node's type,
+	// its first line is the request the gateway will make, and the three actions that change the node sit
+	// on it. Add API Key belongs here as much as on the Connections section, because it is the first thing
+	// an operator does with a node that has no connection yet. The prefix is reported upward because the
+	// models section addresses a model as `prefix/model` and this is the read that holds it.
+	//
 	// Edit, Test, and Delete live here rather than in the list's rows, which is the reference's shape: the
 	// list is for finding a node, and this is where its state changes. Delete confirms first because it
 	// cannot be undone, and the API refuses it outright while an endpoint still references the node.
@@ -15,25 +21,31 @@
 	import CustomProviderDialog from '$lib/components/CustomProviderDialog.svelte';
 	import CustomProviderTest from '$lib/components/CustomProviderTest.svelte';
 	import Modal from '$lib/components/Modal.svelte';
+	import ProviderNodeFacts from '$lib/components/ProviderNodeFacts.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { deleteProviderNode, getProviderNode } from '$lib/api/provider-nodes';
 	import {
+		NODE_TYPE_LABELS,
 		nodeEndpointLabel,
-		nodeEndpointPath,
 		nodeEndpointUrl,
 		nodeTypeOfId,
 		type NodeType,
 		type ProviderNode
 	} from '$lib/schemas/provider-node';
-	import { formatTimestamp } from '$lib/utils/time';
 
 	let {
 		providerId,
-		onchanged
+		onchanged,
+		onaddkey,
+		onprefix
 	}: {
 		providerId: string;
 		/** Asks the page to re-read the provider, whose base URL an edit changes. */
 		onchanged: () => void | Promise<void>;
+		/** Opens the page's key dialog, which adds a connection to this node. */
+		onaddkey?: () => void;
+		/** Reports the node's model prefix, which the models section addresses its rows with. */
+		onprefix?: (prefix: string) => void;
 	} = $props();
 
 	let node = $state<ProviderNode | null>(null);
@@ -54,6 +66,10 @@
 	$effect(() => {
 		const id = providerId;
 		untrack(() => void load(id));
+	});
+
+	$effect(() => {
+		if (node !== null) onprefix?.(node.prefix);
 	});
 
 	async function load(id: string): Promise<void> {
@@ -110,13 +126,19 @@
 	>
 		<div class="flex flex-wrap items-start justify-between gap-3">
 			<div class="flex flex-col gap-1">
-				<h2 class="text-base font-medium">Custom provider</h2>
-				<p class="text-sm text-[var(--color-text-muted)]">
-					The gateway appends {nodeEndpointPath(node)} to this base URL, so it calls
-					<span class="break-all">{nodeEndpointUrl(node)}</span>.
+				<h2 class="text-base font-medium">{NODE_TYPE_LABELS[type]} Details</h2>
+				<p class="break-all text-sm text-[var(--color-text-muted)]">
+					{nodeEndpointLabel(node)} · {nodeEndpointUrl(node)}
 				</p>
 			</div>
 			<div class="flex flex-wrap gap-2">
+				{#if onaddkey}
+					<button
+						type="button"
+						class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+						onclick={onaddkey}>Add API Key</button
+					>
+				{/if}
 				<button
 					type="button"
 					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
@@ -138,34 +160,7 @@
 			</div>
 		</div>
 
-		<dl class="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-			<div class="flex flex-col gap-0.5">
-				<dt class="text-xs text-[var(--color-text-muted)]">Model prefix</dt>
-				<dd class="text-sm">
-					{node.prefix}/model
-				</dd>
-			</div>
-			<div class="flex flex-col gap-0.5">
-				<dt class="text-xs text-[var(--color-text-muted)]">Base URL</dt>
-				<dd class="break-all text-sm">{node.base_url}</dd>
-			</div>
-			<div class="flex flex-col gap-0.5">
-				<dt class="text-xs text-[var(--color-text-muted)]">Endpoint</dt>
-				<dd class="text-sm">{nodeEndpointLabel(node)}</dd>
-			</div>
-			<div class="flex flex-col gap-0.5">
-				<dt class="text-xs text-[var(--color-text-muted)]">Wire format</dt>
-				<dd class="text-sm">{node.format}</dd>
-			</div>
-			<div class="flex flex-col gap-0.5">
-				<dt class="text-xs text-[var(--color-text-muted)]">Created</dt>
-				<dd class="text-sm">{formatTimestamp(node.created_at)}</dd>
-			</div>
-			<div class="flex flex-col gap-0.5">
-				<dt class="text-xs text-[var(--color-text-muted)]">Last changed</dt>
-				<dd class="text-sm">{formatTimestamp(node.updated_at)}</dd>
-			</div>
-		</dl>
+		<ProviderNodeFacts {node} />
 
 		<CustomProviderTest providerId={node.id} />
 	</div>

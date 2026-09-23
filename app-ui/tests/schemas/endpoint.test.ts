@@ -1,24 +1,16 @@
-// Upstream endpoint schema contract tests.
+// Upstream endpoint read-shape contract tests.
 //
 // These are the tests that catch a drift between docs/SPEC-API/001-SPEC-API.md §7.5 and the panel: every
 // field the Go DTO marks `omitempty` has to be accepted when it is absent, and every field the API bounds
 // has to be refused outside that bound here rather than by the server after a round trip. The auth
 // spellings are covered explicitly because the API accepts the registry's `apikey` and `none` as well as
 // its own, and a panel that narrowed the set would fail to parse what the API just returned.
+//
+// The write forms and the body they become are in `endpoint-write.test.ts`, beside the module that holds
+// them.
 
 import { describe, expect, it } from 'vitest';
-import {
-	AUTH_TYPES,
-	ENDPOINT_STATUS_ACTIVE,
-	schemaAddEndpointKeyForm,
-	schemaBulkAddKeysForm,
-	schemaCreateEndpointForm,
-	schemaEndpoint,
-	schemaEndpointKey,
-	schemaEndpointList,
-	schemaUpdateEndpointForm,
-	schemaUpdateEndpointKeyForm
-} from '$lib/schemas/endpoint';
+import { schemaEndpoint, schemaEndpointKey, schemaEndpointList } from '$lib/schemas/endpoint';
 
 // A complete endpoint as the API returns it, so a case only states the field it is about.
 function endpoint(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -154,137 +146,5 @@ describe('schemaEndpointList', () => {
 		});
 
 		expect(result.success).toBe(true);
-	});
-});
-
-describe('schemaCreateEndpointForm', () => {
-	for (const authType of AUTH_TYPES) {
-		it(`accepts the ${authType} auth type the API publishes`, () => {
-			const result = schemaCreateEndpointForm.safeParse({
-				provider_id: 'openai',
-				label: 'Primary',
-				auth_type: authType
-			});
-
-			expect(result.success).toBe(true);
-		});
-	}
-
-	it('accepts an omitted first key, because an endpoint may be created empty', () => {
-		const result = schemaCreateEndpointForm.safeParse({
-			provider_id: 'openai',
-			label: 'Primary',
-			auth_type: 'api_key',
-			key_value: ''
-		});
-
-		expect(result.success).toBe(true);
-	});
-
-	const INVALID: { payload: Record<string, unknown>; why: string }[] = [
-		{
-			payload: { provider_id: '  ', label: 'Primary', auth_type: 'api_key' },
-			why: 'a blank provider'
-		},
-		{ payload: { provider_id: 'openai', label: '', auth_type: 'api_key' }, why: 'a blank label' },
-		{
-			payload: { provider_id: 'openai', label: 'Primary', auth_type: 'cookie' },
-			why: 'the cookie auth type, which has no v1 transport'
-		},
-		{
-			payload: { provider_id: 'openai', label: 'Primary', auth_type: 'api_key', priority: 0 },
-			why: 'a priority below the API minimum'
-		},
-		{
-			payload: {
-				provider_id: 'openai',
-				label: 'Primary',
-				auth_type: 'api_key',
-				key_value: 'short'
-			},
-			why: 'a credential shorter than the panel minimum'
-		}
-	];
-
-	for (const testCase of INVALID) {
-		it(`rejects ${testCase.why}`, () => {
-			expect(schemaCreateEndpointForm.safeParse(testCase.payload).success).toBe(false);
-		});
-	}
-});
-
-describe('schemaUpdateEndpointForm', () => {
-	it('accepts a priority-only change, which is what reorders siblings', () => {
-		const result = schemaUpdateEndpointForm.safeParse({ priority: 3 });
-
-		expect(result.success).toBe(true);
-	});
-
-	it('accepts a status change to disabled', () => {
-		expect(schemaUpdateEndpointForm.safeParse({ status: ENDPOINT_STATUS_ACTIVE }).success).toBe(
-			true
-		);
-	});
-
-	it('rejects a status outside the two the API accepts on a patch', () => {
-		expect(schemaUpdateEndpointForm.safeParse({ status: 'quarantined' }).success).toBe(false);
-	});
-
-	it('rejects an unknown field, because the API rejects it too', () => {
-		expect(schemaUpdateEndpointForm.safeParse({ provider_id: 'anthropic' }).success).toBe(false);
-	});
-});
-
-describe('schemaAddEndpointKeyForm', () => {
-	it('accepts a key with only a value', () => {
-		expect(schemaAddEndpointKeyForm.safeParse({ value: 'sk-abcdefgh' }).success).toBe(true);
-	});
-
-	it('rejects a value that is too short to be a credential', () => {
-		expect(schemaAddEndpointKeyForm.safeParse({ value: 'sk-' }).success).toBe(false);
-	});
-
-	it('rejects a missing value, because a key is the point of the form', () => {
-		expect(schemaAddEndpointKeyForm.safeParse({ label: 'backup' }).success).toBe(false);
-	});
-});
-
-describe('schemaUpdateEndpointKeyForm', () => {
-	it('accepts a label-only edit, which leaves the stored credential alone', () => {
-		expect(schemaUpdateEndpointKeyForm.safeParse({ label: 'renamed' }).success).toBe(true);
-	});
-
-	it('accepts an empty value as "keep the stored credential"', () => {
-		expect(schemaUpdateEndpointKeyForm.safeParse({ value: '' }).success).toBe(true);
-	});
-
-	it('rejects a replacement value that is too short', () => {
-		expect(schemaUpdateEndpointKeyForm.safeParse({ value: 'sk-' }).success).toBe(false);
-	});
-});
-
-describe('schemaBulkAddKeysForm', () => {
-	it('accepts the API batch maximum', () => {
-		const keys = Array.from({ length: 100 }, (_, index) => ({ value: `sk-abcdefgh${index}` }));
-
-		expect(schemaBulkAddKeysForm.safeParse({ keys }).success).toBe(true);
-	});
-
-	it('rejects an empty batch', () => {
-		expect(schemaBulkAddKeysForm.safeParse({ keys: [] }).success).toBe(false);
-	});
-
-	it('rejects a batch over the API maximum rather than letting the server refuse it', () => {
-		const keys = Array.from({ length: 101 }, (_, index) => ({ value: `sk-abcdefgh${index}` }));
-
-		expect(schemaBulkAddKeysForm.safeParse({ keys }).success).toBe(false);
-	});
-
-	it('rejects a batch where one row is invalid, naming no row but refusing the whole batch', () => {
-		const result = schemaBulkAddKeysForm.safeParse({
-			keys: [{ value: 'sk-abcdefgh' }, { value: 'bad' }]
-		});
-
-		expect(result.success).toBe(false);
 	});
 });

@@ -27,19 +27,19 @@ afterEach(() => {
 });
 
 describe('the custom provider card', () => {
-	it('states the node, including the path the gateway appends', async () => {
+	it('states the node, the request the gateway will make, and the facts the entry does not carry', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
 		renderCard(stub);
 
-		expect(await screen.findByText('Custom provider')).toBeTruthy();
+		// The heading names the node's type and the line under it is the request the gateway will make,
+		// which is the reference's own card (`providers/[id]/page.js:1451-1455`).
+		expect(await screen.findByRole('heading', { name: 'OpenAI Compatible Details' })).toBeTruthy();
+		expect(squashed(screen.getByText(/Chat Completions · https/))).toContain(
+			'Chat Completions · https://llm.example.com/v1/chat/completions'
+		);
 		expect(within(facts()).getByText('mycorp/model')).toBeTruthy();
 		expect(within(facts()).getByText('https://llm.example.com/v1')).toBeTruthy();
-		expect(within(facts()).getByText('Chat Completions')).toBeTruthy();
 		expect(within(facts()).getByText('openai')).toBeTruthy();
-		// Scoped to the card's own sentence: the dialog beside it states a similar one about base URLs.
-		expect(squashed(screen.getByText(/The gateway appends \/chat\/completions/))).toContain(
-			'https://llm.example.com/v1/chat/completions'
-		);
 	});
 
 	it('states an Anthropic node with its own endpoint', async () => {
@@ -54,8 +54,12 @@ describe('the custom provider card', () => {
 		});
 		renderCard(stub, 'anthropic-compatible-01K');
 
-		expect(await screen.findByText('Custom provider')).toBeTruthy();
-		expect(within(facts()).getByText('Messages API')).toBeTruthy();
+		expect(
+			await screen.findByRole('heading', { name: 'Anthropic Compatible Details' })
+		).toBeTruthy();
+		expect(squashed(screen.getByText(/Messages API · https/))).toContain(
+			'Messages API · https://llm.example.com/v1/messages'
+		);
 		expect(within(facts()).getByText('claude')).toBeTruthy();
 	});
 
@@ -76,7 +80,7 @@ describe('editing a custom provider', () => {
 	it('opens the dialog seeded from the stored node, then patches and re-reads', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
 		const rendered = renderCard(stub);
-		await screen.findByText('Custom provider');
+		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Edit' }).click();
 
@@ -109,7 +113,7 @@ describe('editing a custom provider', () => {
 	it('refuses a renamed prefix that would collide, and keeps the dialog open', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
 		renderCard(stub);
-		await screen.findByText('Custom provider');
+		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Edit' }).click();
 		await type('Prefix', 'mycorp/prod');

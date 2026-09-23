@@ -3,10 +3,16 @@
 	//
 	// The provider is fixed rather than chosen here. §6.3 has the Providers screen link to this form with the
 	// provider already filled in, and offering a picker would mean loading the registry into a select, which
-	// §6.3's pagination discipline rules out. The first credential is optional: an endpoint may be created
-	// empty and given keys from the detail drawer, which is the same code path either way.
+	// §6.3's pagination discipline rules out.
+	//
+	// The credential is required for the two key auth types and optional for the rest. §7.5 refuses an
+	// `api_key` endpoint with no key (`service/endpoint_create.go:53-55`) because an account that can never
+	// route is worse than a refused request, so the panel states that rule rather than letting the round trip
+	// report it. For `oauth` and the no-auth spellings the endpoint is created empty and given keys from the
+	// detail drawer, which is the same code path either way.
 	import { createEndpoint } from '$lib/api/endpoints';
-	import { AUTH_TYPES, AUTH_TYPE_LABELS, schemaCreateEndpointForm } from '$lib/schemas/endpoint';
+	import { AUTH_TYPES, AUTH_TYPE_LABELS } from '$lib/schemas/endpoint';
+	import { REQUIRES_KEY_AUTH_TYPES, schemaCreateEndpointForm } from '$lib/schemas/endpoint-write';
 
 	let { providerId, oncreated }: { providerId: string; oncreated: () => void } = $props();
 
@@ -17,13 +23,17 @@
 	let saving = $state(false);
 	let error = $state<string | null>(null);
 
+	// The field's name follows the rule it carries: for a key auth type it is the credential the endpoint
+	// cannot be created without, and for the rest it is a first key that may be left blank.
+	const keyRequired = $derived(REQUIRES_KEY_AUTH_TYPES.has(authType));
+
 	async function submit(): Promise<void> {
 		const parsed = schemaCreateEndpointForm.safeParse({
 			provider_id: providerId,
 			label,
 			auth_type: authType,
 			priority: priority === '' ? undefined : priority,
-			key_value: keyValue
+			keys: keyValue === '' ? [] : [{ value: keyValue }]
 		});
 
 		if (!parsed.success) {
@@ -88,7 +98,9 @@
 		</label>
 
 		<label class="flex flex-col gap-1">
-			<span class="text-[var(--color-text-muted)]">First key (optional)</span>
+			<span class="text-[var(--color-text-muted)]"
+				>{keyRequired ? 'Key' : 'First key (optional)'}</span
+			>
 			<input
 				bind:value={keyValue}
 				type="password"

@@ -6,8 +6,11 @@
 // returned; the panel filters by the values it sees and shows the rest verbatim. §14 Q9 records the same
 // decision for a gateway key's status.
 //
-// A provider's models are not read here. §6.3's model catalog points at §7.6, and that is the route that
-// carries the filters the screen offers, so the catalog shapes live in `model.ts`.
+// Two model routes are read from a provider's detail screen and they are not the same list. §7.6's
+// catalog carries the filters the screen offers, so its shapes live in `model.ts`. §7.4's
+// `/providers/{provider_id}/models` is the provider's own answer, which is the only list a custom node
+// has: its models come from the base URL it points at rather than from the embedded registry. The shapes
+// for that route are here, beside the provider they belong to.
 
 import { z } from 'zod';
 import { label, stringList } from './primitives';
@@ -91,6 +94,33 @@ export const schemaProviderDetail = schemaProvider.extend({
 });
 
 export type ProviderDetail = z.infer<typeof schemaProviderDetail>;
+
+// One model the provider's own `/models` answer carries (§7.4). A node's rows come from the upstream its
+// base URL points at; a registry provider answers the rows the registry already declares.
+//
+// `name`, `kind`, `capabilities`, and `dimensions` are optional because the route's own row type omits
+// them when it has nothing to say, and the panel reads only `id` and `name`. `source` and `warning` state
+// where the list came from, which is not decoration: a node whose upstream could not be reached answers a
+// fallback, and a client that could not tell that from a fresh answer would present a stale list as
+// current. Both are optional because the gateway omits them when the list is the upstream's own
+// (app-serv draft 017 F2 carries them), and the panel renders whichever it receives.
+export const schemaProviderModel = z.object({
+	id: z.string().min(1),
+	name: z.string().optional(),
+	kind: z.string().optional(),
+	capabilities: stringList.optional(),
+	dimensions: z.number().int().optional()
+});
+
+export type ProviderModel = z.infer<typeof schemaProviderModel>;
+
+export const schemaProviderModelList = z.object({
+	data: z.array(schemaProviderModel),
+	source: z.string().optional(),
+	warning: z.string().optional()
+});
+
+export type ProviderModelList = z.infer<typeof schemaProviderModelList>;
 
 // The categories the reference registry measures. Offered as filter suggestions, not as a closed set: the
 // list the API returns is authoritative, and a provider with a category outside this list still renders.

@@ -9,18 +9,13 @@
 //
 // The credential is write-only. No response shape carries `value`, only `key_hint`, and the panel never
 // puts it in a model it holds (SPEC-UI §4).
+//
+// This module is the read side. Every shape the panel sends lives in `./endpoint-write`, which is what
+// keeps a form's own field names out of a request body.
 
 import { z } from 'zod';
-import {
-	endpointId,
-	label,
-	optionalTimestamp,
-	pageMeta,
-	priority,
-	rfc3339Timestamp,
-	secretValue,
-	upstreamKeyId
-} from './primitives';
+import { endpointId, upstreamKeyId } from './identifiers';
+import { optionalTimestamp, pageMeta, priority, rfc3339Timestamp } from './primitives';
 
 // The non-secret identity an endpoint presents. Every field is optional on the wire.
 export const schemaEndpointAccount = z.object({
@@ -145,54 +140,3 @@ export const AUTH_TYPE_LABELS: Record<string, string> = {
 
 export const ENDPOINT_STATUS_ACTIVE = 'active';
 export const ENDPOINT_STATUS_DISABLED = 'disabled';
-
-// An optional credential: an empty string means "none supplied", which is legitimate on create and on
-// patch, where an absent value keeps the stored one. Modelled as a union rather than `optional()` so a
-// form field can start empty without the minimum-length rule firing on the empty case.
-export const optionalSecretValue = z.union([z.literal(''), secretValue]);
-
-export const schemaCreateEndpointForm = z.strictObject({
-	provider_id: z
-		.string()
-		.transform((value) => value.trim())
-		.refine((value) => value.length > 0, { message: 'Choose a provider.' }),
-	label,
-	auth_type: z.enum(AUTH_TYPES),
-	priority: priority.optional(),
-	key_value: optionalSecretValue.optional()
-});
-
-export type CreateEndpointForm = z.infer<typeof schemaCreateEndpointForm>;
-
-export const schemaUpdateEndpointForm = z.strictObject({
-	label: label.optional(),
-	priority: priority.optional(),
-	status: z.enum([ENDPOINT_STATUS_ACTIVE, ENDPOINT_STATUS_DISABLED]).optional()
-});
-
-export type UpdateEndpointForm = z.infer<typeof schemaUpdateEndpointForm>;
-
-export const schemaAddEndpointKeyForm = z.strictObject({
-	label: label.optional(),
-	value: secretValue,
-	priority: priority.optional()
-});
-
-export type AddEndpointKeyForm = z.infer<typeof schemaAddEndpointKeyForm>;
-
-export const schemaUpdateEndpointKeyForm = z.strictObject({
-	label: label.optional(),
-	value: optionalSecretValue.optional(),
-	priority: priority.optional(),
-	status: z.enum([ENDPOINT_STATUS_ACTIVE, ENDPOINT_STATUS_DISABLED]).optional()
-});
-
-export type UpdateEndpointKeyForm = z.infer<typeof schemaUpdateEndpointKeyForm>;
-
-// The repeatable row mode. Capped at the API's own batch limit so a paste of a hundred rows is refused
-// in the panel with a message rather than by the server after the round trip.
-export const schemaBulkAddKeysForm = z.strictObject({
-	keys: z.array(schemaAddEndpointKeyForm).min(1).max(100)
-});
-
-export type BulkAddKeysForm = z.infer<typeof schemaBulkAddKeysForm>;

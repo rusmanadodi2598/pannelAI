@@ -11,15 +11,16 @@
 // parses a response body.
 
 import { describe, expect, it } from 'vitest';
+import type { ProviderNode } from '$lib/schemas/provider-node';
 import {
-	NODE_BASE_URL_HINTS,
+	NODE_BASE_URL_DEFAULTS,
+	NODE_COPY,
 	createProviderNodeBody,
 	customProviderDraftFrom,
 	customProviderDraftNew,
 	schemaCustomProviderDraft,
-	updateProviderNodeBody,
-	type ProviderNode
-} from '$lib/schemas/provider-node';
+	updateProviderNodeBody
+} from '$lib/schemas/provider-node-draft';
 
 const node = (overrides: Partial<ProviderNode> = {}): ProviderNode => ({
 	id: 'openai-compatible-01J',
@@ -119,16 +120,20 @@ describe('the node draft', () => {
 });
 
 describe('drafts', () => {
-	it('starts a new draft blank, with chat as the api type', () => {
-		expect(customProviderDraftNew()).toEqual({
-			name: '',
-			prefix: '',
-			api_type: 'chat',
-			base_url: ''
+	// The vendor URL is the field's value, not its placeholder (draft 019 F4): the reference pre-fills it
+	// (`AddCompatibleModal.js:7`, `:19`), so the common case is a save with nothing typed.
+	for (const type of ['openai-compatible', 'anthropic-compatible'] as const) {
+		it(`starts a new ${type} draft with the vendor URL already in the field`, () => {
+			expect(customProviderDraftNew(type)).toEqual({
+				name: '',
+				prefix: '',
+				api_type: 'chat',
+				base_url: NODE_BASE_URL_DEFAULTS[type]
+			});
 		});
-	});
+	}
 
-	it('seeds an edit from the stored node', () => {
+	it('seeds an edit from the stored node, not from the vendor URL', () => {
 		expect(customProviderDraftFrom(node())).toEqual({
 			name: 'OpenAI Compatible (prod)',
 			prefix: 'mycorp',
@@ -146,8 +151,17 @@ describe('drafts', () => {
 	});
 
 	it('names the base URL each type is usually pointed at', () => {
-		expect(NODE_BASE_URL_HINTS['openai-compatible']).toBe('https://api.openai.com/v1');
-		expect(NODE_BASE_URL_HINTS['anthropic-compatible']).toBe('https://api.anthropic.com/v1');
+		expect(NODE_BASE_URL_DEFAULTS['openai-compatible']).toBe('https://api.openai.com/v1');
+		expect(NODE_BASE_URL_DEFAULTS['anthropic-compatible']).toBe('https://api.anthropic.com/v1');
+	});
+
+	it('states the copy each variant needs, and states it differently', () => {
+		// The reference keeps one table per variant (`AddCompatibleModal.js:6-28`); the two entries must not
+		// collapse into one, or the Anthropic dialog would describe an OpenAI URL.
+		expect(NODE_COPY['openai-compatible'].baseUrlHint).toContain('OpenAI-compatible');
+		expect(NODE_COPY['anthropic-compatible'].baseUrlHint).toContain('/messages');
+		expect(NODE_COPY['openai-compatible'].prefixPlaceholder).toBe('oc-prod');
+		expect(NODE_COPY['anthropic-compatible'].prefixPlaceholder).toBe('ac-prod');
 	});
 });
 

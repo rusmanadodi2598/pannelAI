@@ -6,7 +6,7 @@
 	// off, so a browser does not offer to remember a credential it must not store, and the panel never keeps
 	// the value after the submit (SPEC-UI §4).
 	import { addEndpointKey } from '$lib/api/endpoints';
-	import { schemaAddEndpointKeyForm } from '$lib/schemas/endpoint';
+	import { schemaAddEndpointKeyForm } from '$lib/schemas/endpoint-write';
 
 	let { endpointId, onadded }: { endpointId: string; onadded: () => void } = $props();
 

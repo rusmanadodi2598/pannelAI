@@ -38,7 +38,7 @@ describe('testing a custom provider', () => {
 	it('sends no credential when the field is empty, and renders the outcome', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
 		renderCard(stub);
-		await screen.findByText('Custom provider');
+		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Test the endpoint' }).click();
 
@@ -54,7 +54,7 @@ describe('testing a custom provider', () => {
 			testMessage: 'the upstream answered 401'
 		});
 		renderCard(stub);
-		await screen.findByText('Custom provider');
+		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await type('Credential (optional)', 'sk-test');
 		await screen.getByRole('button', { name: 'Test the endpoint' }).click();
@@ -67,7 +67,7 @@ describe('testing a custom provider', () => {
 	it('reports a test that could not run at all as a failure, not as a state', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
 		renderCard(stub);
-		await screen.findByText('Custom provider');
+		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		// The node is removed behind the screen, which is the one way this route answers 404.
 		stub.nodes = [];
@@ -82,7 +82,7 @@ describe('deleting a custom provider', () => {
 	it('asks first, then deletes and returns to the registry', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
 		renderCard(stub);
-		await screen.findByText('Custom provider');
+		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Delete' }).click();
 		expect(screen.getByRole('heading', { name: 'Delete this custom provider' })).toBeTruthy();
@@ -103,7 +103,7 @@ describe('deleting a custom provider', () => {
 			referenced: ['openai-compatible-01J']
 		});
 		renderCard(stub);
-		await screen.findByText('Custom provider');
+		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Delete' }).click();
 		await screen.getByRole('button', { name: 'Delete the provider' }).click();

@@ -21,8 +21,10 @@ import {
 import {
 	schemaProviderDetail,
 	schemaProviderList,
+	schemaProviderModelList,
 	type ProviderDetail,
 	type ProviderList,
+	type ProviderModelList,
 	type ProviderQuery
 } from '$lib/schemas/provider';
 import { apiRequest, type ApiResult } from './client';
@@ -48,6 +50,20 @@ export function getProvider(id: string): Promise<ApiResult<ProviderDetail>> {
 		method: 'GET',
 		path: `/providers/${encodeURIComponent(id)}`,
 		schema: schemaProviderDetail
+	});
+}
+
+// The models the provider's own upstream answers, which is the list a custom node's screen imports from
+// (§7.4, the reference's "Import from /models"). The route reads no query: it asks the provider itself,
+// so there is nothing for the panel to filter on.
+//
+// A node with no reachable connection has nothing to ask, so the answer is an empty list rather than an
+// error, and the screen renders that answer instead of predicting it.
+export function listProviderModels(providerId: string): Promise<ApiResult<ProviderModelList>> {
+	return apiRequest<void, ProviderModelList>({
+		method: 'GET',
+		path: `/providers/${encodeURIComponent(providerId)}/models`,
+		schema: schemaProviderModelList
 	});
 }
 

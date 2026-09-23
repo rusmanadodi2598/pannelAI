@@ -4,34 +4,42 @@
 // field the API renames fails the parse here rather than surfacing as `undefined` in a table cell.
 
 import {
-	schemaAddEndpointKeyForm,
-	schemaBulkAddKeysForm,
-	schemaCreateEndpointForm,
 	schemaEndpoint,
 	schemaEndpointKey,
 	schemaEndpointKeyList,
 	schemaEndpointLabelList,
 	schemaEndpointList,
 	schemaEndpointTestStatus,
-	schemaUpdateEndpointForm,
-	schemaUpdateEndpointKeyForm,
-	type AddEndpointKeyForm,
-	type BulkAddKeysForm,
-	type CreateEndpointForm,
 	type Endpoint,
 	type EndpointKey,
 	type EndpointKeyList,
 	type EndpointLabelList,
 	type EndpointList,
-	type EndpointTestStatus,
-	type UpdateEndpointForm,
-	type UpdateEndpointKeyForm
+	type EndpointTestStatus
 } from '$lib/schemas/endpoint';
 import {
-	schemaBulkKeyRefusal,
+	createEndpointBody,
+	schemaAddEndpointKeyForm,
+	schemaBulkAddKeysForm,
+	schemaBulkCreateEndpointsBody,
+	schemaCreateEndpointBody,
+	schemaUpdateEndpointForm,
+	schemaUpdateEndpointKeyForm,
+	type AddEndpointKeyForm,
+	type BulkAddKeysForm,
+	type BulkCreateEndpointsBody,
+	type CreateEndpointBody,
+	type CreateEndpointForm,
+	type UpdateEndpointForm,
+	type UpdateEndpointKeyForm
+} from '$lib/schemas/endpoint-write';
+import {
+	schemaBulkEndpointResult,
 	schemaBulkKeyResult,
-	type BulkKeyRefusal,
-	type BulkKeyResult
+	schemaBulkRefusal,
+	type BulkEndpointResult,
+	type BulkKeyResult,
+	type BulkRefusal
 } from '$lib/schemas/endpoint-bulk';
 import { emptyResponse, type EmptyResponse } from '$lib/schemas/primitives';
 import { apiRequest, type ApiResult } from './client';
@@ -57,8 +65,11 @@ export function listEndpoints(query: EndpointQuery = {}): Promise<ApiResult<Endp
 }
 
 // The label-only read screens that name endpoints beside other data use (§6.6). Same route as the list,
-// one projection fewer fields, so a screen that only names rows cannot fail on a field it never reads.
-export function listEndpointLabels(query: ListQuery = {}): Promise<ApiResult<EndpointLabelList>> {
+// one projection fewer fields, so a screen that only names rows cannot fail on a field it never reads. It
+// takes the list's own filters, because the provider detail screen reads the labels of one provider.
+export function listEndpointLabels(
+	query: EndpointQuery = {}
+): Promise<ApiResult<EndpointLabelList>> {
 	return apiRequest<void, EndpointLabelList>({
 		method: 'GET',
 		path: '/endpoints',
@@ -76,13 +87,32 @@ export function getEndpoint(id: string): Promise<ApiResult<Endpoint>> {
 	});
 }
 
+// The form is a screen's shape and the body is the route's, so the mapping is explicit: `keys` is what
+// `POST /endpoints` reads, and a body carrying a form-only field is refused by the decoder
+// (`DisallowUnknownFields`). Every create path goes through `createEndpointBody`.
 export function createEndpoint(form: CreateEndpointForm): Promise<ApiResult<Endpoint>> {
-	return apiRequest<CreateEndpointForm, Endpoint>({
+	return apiRequest<CreateEndpointBody, Endpoint>({
 		method: 'POST',
 		path: '/endpoints',
 		schema: schemaEndpoint,
-		body: form,
-		bodySchema: schemaCreateEndpointForm
+		body: createEndpointBody(form),
+		bodySchema: schemaCreateEndpointBody
+	});
+}
+
+// Several connections at one provider in one call (§7.5). The batch is all-or-nothing, so the accepted
+// answer carries the created connections and the refusal names every row by index with the message on the
+// offending one; the refusal is parsed because it is what lets a screen name the pasted line to fix.
+export function createEndpointsBulk(
+	body: BulkCreateEndpointsBody
+): Promise<ApiResult<BulkEndpointResult, BulkRefusal>> {
+	return apiRequest<BulkCreateEndpointsBody, BulkEndpointResult, BulkRefusal>({
+		method: 'POST',
+		path: '/endpoints/bulk',
+		schema: schemaBulkEndpointResult,
+		refusalSchema: schemaBulkRefusal,
+		body,
+		bodySchema: schemaBulkCreateEndpointsBody
 	});
 }
 
@@ -138,12 +168,12 @@ export function addEndpointKey(
 export function addEndpointKeys(
 	id: string,
 	form: BulkAddKeysForm
-): Promise<ApiResult<BulkKeyResult, BulkKeyRefusal>> {
-	return apiRequest<BulkAddKeysForm, BulkKeyResult, BulkKeyRefusal>({
+): Promise<ApiResult<BulkKeyResult, BulkRefusal>> {
+	return apiRequest<BulkAddKeysForm, BulkKeyResult, BulkRefusal>({
 		method: 'POST',
 		path: `/endpoints/${encodeURIComponent(id)}/keys/bulk`,
 		schema: schemaBulkKeyResult,
-		refusalSchema: schemaBulkKeyRefusal,
+		refusalSchema: schemaBulkRefusal,
 		body: form,
 		bodySchema: schemaBulkAddKeysForm
 	});

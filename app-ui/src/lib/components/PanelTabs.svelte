@@ -17,11 +17,20 @@
 	let {
 		tabs,
 		label,
-		panel
+		panel,
+		onchange
 	}: {
 		tabs: Tab[];
 		label: string;
 		panel: Snippet<[string]>;
+		/**
+		 * Told which tab is now showing, for a screen whose submit path differs by tab.
+		 *
+		 * The selection lives here rather than in the caller, so a caller that needs it for anything
+		 * beyond rendering the panel has to hear about it: a dialog whose two tabs hold two different
+		 * fields cannot read the choice back out of the markup.
+		 */
+		onchange?: (id: string) => void;
 	} = $props();
 
 	// `selected` starts unset and falls back to the first tab, so the active tab follows the tab list if it
@@ -29,6 +38,13 @@
 	let selected = $state<string | null>(null);
 	const active = $derived(selected ?? tabs[0]?.id ?? '');
 	let buttons = $state<HTMLButtonElement[]>([]);
+
+	// Every path that moves the selection goes through here, so a caller listening to `onchange` cannot
+	// miss the keyboard moves that do not pass through a click.
+	function select(id: string): void {
+		selected = id;
+		onchange?.(id);
+	}
 
 	// Arrow keys move the selection and the focus together, which is the behaviour a tablist is expected
 	// to have. Any other key is left alone so Tab and Enter keep working normally.
@@ -44,7 +60,7 @@
 		if (next === null) return;
 
 		event.preventDefault();
-		selected = tabs[next].id;
+		select(tabs[next].id);
 		buttons[next]?.focus();
 	}
 </script>
@@ -61,7 +77,7 @@
 				tabindex={active === tab.id ? 0 : -1}
 				bind:this={buttons[index]}
 				class="-mb-px min-h-11 border-b-2 border-transparent px-3 text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] aria-selected:border-[var(--color-accent)] aria-selected:font-medium aria-selected:text-[var(--color-text)]"
-				onclick={() => (selected = tab.id)}
+				onclick={() => select(tab.id)}
 				onkeydown={(event) => move(event, index)}
 			>
 				{tab.label}

@@ -15,24 +15,38 @@
 	//
 	// Validation runs on submit rather than on every keystroke (§8.4.5), and the messages are the
 	// schema's, so the panel and the gateway describe a rule the same way.
+	//
+	// The copy per type is the reference's own (`AddCompatibleModal.js:7-30`): the vendor URL is the field's
+	// value rather than its placeholder, each variant names itself in the name and prefix placeholders, and
+	// switching the API type puts the vendor URL back (`:54-62`). The variant's base URL hint is stated under
+	// the field whatever the value is, the way the reference's `Input` renders its `hint` prop (`:166`), so
+	// the copy that says which URL belongs there is never replaced by the preview; the joined URL is an extra
+	// line below it.
+	// The reference's **Check** (a key plus an optional model id, validated before the node exists; handler
+	// `:93-112`, controls `:168-194`) is deliberately not built: the route it calls
+	// has no counterpart in app-serv yet (measured 405; draft 017 F6), and a control that calls a route
+	// nothing serves is a dead control (R-26). The draft records it as the one gap this dialog still has.
 	import FormIssues from '$lib/components/FormIssues.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import { createProviderNode, updateProviderNode } from '$lib/api/provider-nodes';
 	import {
 		NODE_API_TYPES,
 		NODE_API_TYPE_LABELS,
-		NODE_BASE_URL_HINTS,
 		NODE_TYPE_LABELS,
-		createProviderNodeBody,
-		customProviderDraftFrom,
-		customProviderDraftNew,
 		nodeEndpointUrl,
-		schemaCustomProviderDraft,
-		updateProviderNodeBody,
-		type CustomProviderDraft,
 		type NodeType,
 		type ProviderNode
 	} from '$lib/schemas/provider-node';
+	import {
+		NODE_BASE_URL_DEFAULTS,
+		NODE_COPY,
+		createProviderNodeBody,
+		customProviderDraftFrom,
+		customProviderDraftNew,
+		schemaCustomProviderDraft,
+		updateProviderNodeBody,
+		type CustomProviderDraft
+	} from '$lib/schemas/provider-node-draft';
 
 	let {
 		target,
@@ -52,21 +66,33 @@
 	const editing = $derived(target !== null && target !== 'new');
 	const node = $derived(target === null || target === 'new' ? null : target);
 
-	let draft = $state<CustomProviderDraft>(customProviderDraftNew());
+	let draft = $state<CustomProviderDraft>(customProviderDraftNew('openai-compatible'));
 	let issues = $state<string[]>([]);
 	let error = $state<string | null>(null);
 	let saving = $state(false);
+
+	// The copy the dialog states for the type it is opening: the reference keeps one table per variant
+	// (`AddCompatibleModal.js:6-28`), so the name and prefix hints cannot describe the two differently.
+	const copy = $derived(NODE_COPY[type]);
 
 	// Follows the node the page opened, so a second Edit opens that node rather than the first one's
 	// draft, and a cancel leaves nothing behind for the next open.
 	$effect(() => {
 		draft =
 			target === null || target === 'new'
-				? customProviderDraftNew()
+				? customProviderDraftNew(type)
 				: customProviderDraftFrom(target);
 		issues = [];
 		error = null;
 	});
+
+	// Switching the wire format puts the vendor URL back in the field: the base URL a chat node was typed
+	// against is not the one a responses node should call, and the reference resets it the same way
+	// (`AddCompatibleModal.js:45-47`). Only an add resets, because an edit's URL is the stored one.
+	function changeAPIType(value: string): void {
+		draft.api_type = value === 'responses' ? 'responses' : 'chat';
+		if (!editing) draft.base_url = NODE_BASE_URL_DEFAULTS[type];
+	}
 
 	// The request the gateway will make, so the base URL is read as a path and not as a host.
 	const joined = $derived(
@@ -112,7 +138,7 @@
 			<input
 				bind:value={draft.name}
 				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
-				placeholder={`${NODE_TYPE_LABELS[type]} (prod)`}
+				placeholder={copy.namePlaceholder}
 			/>
 		</label>
 
@@ -121,7 +147,7 @@
 			<input
 				bind:value={draft.prefix}
 				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
-				placeholder="mycorp"
+				placeholder={copy.prefixPlaceholder}
 			/>
 		</label>
 		<p class="text-[var(--color-text-muted)]">
@@ -134,7 +160,8 @@
 			<label class="flex flex-col gap-1">
 				<span class="text-[var(--color-text-muted)]">API type</span>
 				<select
-					bind:value={draft.api_type}
+					value={draft.api_type}
+					onchange={(event) => changeAPIType(event.currentTarget.value)}
 					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
 				>
 					{#each NODE_API_TYPES as option (option)}
@@ -149,17 +176,16 @@
 			<input
 				bind:value={draft.base_url}
 				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
-				placeholder={NODE_BASE_URL_HINTS[type]}
+				placeholder={NODE_BASE_URL_DEFAULTS[type]}
 			/>
 		</label>
-		<p class="text-[var(--color-text-muted)]">
-			{#if joined}
+		<p class="text-[var(--color-text-muted)]">{copy.baseUrlHint}</p>
+
+		{#if joined}
+			<p class="text-[var(--color-text-muted)]">
 				The gateway will call <span class="font-medium break-all">{joined}</span>.
-			{:else}
-				The base URL of your API, ending in <span class="font-medium">/v1</span>. The gateway
-				appends the endpoint path to it.
-			{/if}
-		</p>
+			</p>
+		{/if}
 
 		{#if editing && node}
 			<p class="text-[var(--color-text-muted)]">

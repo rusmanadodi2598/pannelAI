@@ -72,7 +72,7 @@
 			/>
 		</label>
 		<label class="flex flex-col gap-1 text-sm">
-			<span class="text-[var(--color-text-muted)]">Display name</span>
+			<span class="text-[var(--color-text-muted)]">Display name (optional)</span>
 			<input
 				bind:value={draft.display_name}
 				class="min-h-11 w-56 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
@@ -97,7 +97,8 @@
 	</div>
 
 	<p class="text-sm text-[var(--color-text-muted)]">
-		No spaces in a model id. Capabilities are free text, comma separated, up to
+		A model id is the one field the gateway needs, so a blank display name stores the model id
+		itself. No spaces in a model id. Capabilities are free text, comma separated, up to
 		{CAPABILITY_MAX_ENTRIES}: the catalog filter offers vision and tools, and a value outside that
 		list is still stored and shown.
 	</p>

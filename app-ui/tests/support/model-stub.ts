@@ -10,8 +10,13 @@
 // disabled pair the catalog does not hold, `unknown provider_id: <id>` for a custom row under a provider
 // the registry does not carry, a 409 for a pair that is already declared, `alias <name> is already a combo
 // name` and `alias <name> targets an unknown model or combo: <target>` for an alias write.
+//
+// It also answers the two endpoint routes the detail page's key dialog turns on: the list the Endpoints
+// section reads, and the create it posts to. That is what lets a test render the whole screen and hold the
+// page's own wiring (the button, the token bump) rather than the dialog on its own.
 
 import { vi } from 'vitest';
+import { endpointRow } from './endpoint-stub';
 
 export type StubModel = Record<string, unknown>;
 
@@ -66,6 +71,33 @@ export type ModelStub = {
 	/** What `GET /combos` reports as the total, when a test needs the page to look truncated. */
 	combosTotal: number | null;
 	writeStatus: number;
+	/** The provider's own auth type, which is what decides whether the page offers the key dialog. */
+	authType: string;
+	/** The endpoint rows the Endpoints section lists. */
+	endpoints: StubModel[];
+	/**
+	 * The connections list's own status, for a test that needs the label read to fail while the rest of the
+	 * page loads. It is the same route, so the section behind the dialog reports the failure too.
+	 */
+	endpointReadStatus: number;
+	/** The bodies `POST /endpoints` received, which is where a key name the route would refuse shows up. */
+	endpointCreates: StubModel[];
+	/** The bodies `POST /endpoints/bulk` received, one per paste the screen sent as a batch. */
+	endpointBulkCreates: StubModel[];
+	/** The models `GET /providers/{id}/models` answers, which is what a custom node's import declares. */
+	providerModels: StubModel[];
+	/** The route's own status, for a test that needs the import's read to fail. */
+	providerModelsReadStatus: number;
+	/** The provider ids the route was called with, in order. */
+	providerModelsReads: string[];
+	/** When set, the answer carries this warning, which is what a list that is not the upstream's reports. */
+	providerModelsWarning: string | null;
+	/**
+	 * The custom node's own read, which the details card makes beside the provider read (§7.4). It is served
+	 * here rather than by the node stub because a node's screen needs this route and the model routes
+	 * together, and two stubs would fight over `fetch`: the node stub's own tests keep the writes.
+	 */
+	providerNode: StubModel | null;
 };
 
 export function catalogRow(overrides: StubModel = {}): StubModel {
@@ -194,6 +226,16 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		aliasReadStatus: 200,
 		combosTotal: null,
 		writeStatus: 200,
+		authType: 'bearer',
+		endpoints: [],
+		endpointReadStatus: 200,
+		endpointCreates: [],
+		endpointBulkCreates: [],
+		providerModels: [],
+		providerModelsReadStatus: 200,
+		providerModelsReads: [],
+		providerModelsWarning: null,
+		providerNode: null,
 		...overrides
 	};
 
@@ -224,19 +266,146 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		const body: StubModel = init?.body === undefined ? {} : JSON.parse(String(init.body));
 		const parsed = new URL(url, 'http://panel.test');
 
+		// The node's own read, which the details card makes when the screen is a custom node's (§7.4). It is
+		// matched before the provider read below because both end in a path segment.
+		const nodeMatch = /\/provider-nodes\/([^/?]+)$/.exec(parsed.pathname);
+		if (method === 'GET' && nodeMatch) {
+			if (stub.providerNode === null) {
+				return refusal('NOT_FOUND', 'That provider no longer exists.', 404);
+			}
+			return json(stub.providerNode);
+		}
+
 		// The page's own load, and the endpoint list its last section reads. Both answer the shape the
 		// panel's schemas expect, so a test can render the whole screen and assert on one section.
+		//
+		// The provider's own model list is checked first, because its path is the provider path plus a
+		// segment: a node's import reads it, and the answer is the rows plus, when the list is a fallback
+		// rather than a fresh answer, the warning that says so.
+		const providerModelsMatch = /\/providers\/([^/?]+)\/models$/.exec(parsed.pathname);
+		if (method === 'GET' && providerModelsMatch) {
+			stub.providerModelsReads.push(decodeURIComponent(providerModelsMatch[1]));
+
+			if (stub.providerModelsReadStatus !== 200) {
+				return refusal(
+					'INTERNAL_ERROR',
+					'The provider models could not be read.',
+					stub.providerModelsReadStatus
+				);
+			}
+
+			return json({
+				data: stub.providerModels,
+				...(stub.providerModelsWarning === null ? {} : { warning: stub.providerModelsWarning })
+			});
+		}
+
 		const providerMatch = /\/providers\/([^/?]+)$/.exec(parsed.pathname);
 		if (method === 'GET' && providerMatch) {
 			return json(
 				providerDetailRow({
 					id: decodeURIComponent(providerMatch[1]),
+					auth_type: stub.authType,
 					has_oauth: stub.hasOAuth
 				})
 			);
 		}
 		if (method === 'GET' && parsed.pathname.endsWith('/endpoints')) {
-			return json({ data: [], meta: { page: 1, per_page: 25, total: 0 } });
+			if (stub.endpointReadStatus !== 200) {
+				return refusal(
+					'INTERNAL_ERROR',
+					'The connections could not be read.',
+					stub.endpointReadStatus
+				);
+			}
+			return json({
+				data: stub.endpoints,
+				meta: { page: 1, per_page: 25, total: stub.endpoints.length }
+			});
+		}
+
+		// The create route, which is what the page's key dialog posts to. It refuses an endpoint the API
+		// would refuse (an `api_key` endpoint carries at least one key, `endpoint_create.go:53-55`) and
+		// answers the row the list then renders, so the page's own re-read is visible in a test.
+		if (method === 'POST' && parsed.pathname.endsWith('/endpoints')) {
+			stub.endpointCreates.push(body);
+
+			if (stub.writeStatus !== 200) {
+				return refusal('INTERNAL_ERROR', 'The endpoint could not be stored.', stub.writeStatus);
+			}
+
+			const keys = Array.isArray(body.keys) ? (body.keys as StubModel[]) : [];
+			if (keys.length === 0 && ['api_key', 'apikey'].includes(String(body.auth_type ?? ''))) {
+				return refusal('VALIDATION_ERROR', 'field Keys failed validation: min', 400);
+			}
+
+			const row = endpointRow({
+				id: `ep_${stub.endpoints.length + 1}`,
+				provider_id: String(body.provider_id ?? ''),
+				label: String(body.label ?? ''),
+				auth_type: String(body.auth_type ?? ''),
+				priority: typeof body.priority === 'number' ? body.priority : 1,
+				key_count: keys.length,
+				active_key_count: keys.length
+			});
+			stub.endpoints = [row, ...stub.endpoints];
+			return json(row, 201);
+		}
+
+		// The batch create the provider screen's paste posts to: one element per connection, all-or-nothing
+		// (§8.1). It refuses the two things the API refuses, a row with no key and a label already stored or
+		// repeated inside the batch (the unique index at
+		// `app-serv/migrations/000005_upstream_endpoints.up.sql:29`), and reports the offending row by
+		// index, which is what the dialog re-keys onto the pasted line.
+		if (method === 'POST' && parsed.pathname.endsWith('/endpoints/bulk')) {
+			stub.endpointBulkCreates.push(body);
+
+			if (stub.writeStatus !== 200) {
+				return refusal('INTERNAL_ERROR', 'The connections could not be stored.', stub.writeStatus);
+			}
+
+			const rows = Array.isArray(body.endpoints) ? (body.endpoints as StubModel[]) : [];
+			const seen = new Set(stub.endpoints.map((row) => String(row.label).toLowerCase()));
+
+			for (let index = 0; index < rows.length; index += 1) {
+				const item = rows[index];
+				const keys = Array.isArray(item.keys) ? (item.keys as StubModel[]) : [];
+				const label = String(item.label ?? '');
+				const failure =
+					keys.length === 0
+						? 'field Keys failed validation: min'
+						: seen.has(label.toLowerCase())
+							? 'An endpoint with this label already exists for this provider.'
+							: null;
+
+				if (failure !== null) {
+					return json(
+						{
+							error: { code: 'VALIDATION_ERROR', message: failure },
+							results: rows.map((_, position) =>
+								position === index ? { index: position, error: failure } : { index: position }
+							)
+						},
+						400
+					);
+				}
+				seen.add(label.toLowerCase());
+			}
+
+			const created = rows.map((item, index) => {
+				const keys = Array.isArray(item.keys) ? (item.keys as StubModel[]) : [];
+				return endpointRow({
+					id: `ep_bulk_${stub.endpoints.length + index + 1}`,
+					provider_id: String(body.provider_id ?? ''),
+					label: String(item.label ?? ''),
+					auth_type: String(body.auth_type ?? ''),
+					priority: typeof item.priority === 'number' ? item.priority : 1,
+					key_count: keys.length,
+					active_key_count: keys.length
+				});
+			});
+			stub.endpoints = [...created, ...stub.endpoints];
+			return json({ created, results: created.map((row, index) => ({ index, id: row.id })) }, 201);
 		}
 
 		const oauthMatch = /\/providers\/([^/]+)\/oauth\/(status|start|refresh)$/.exec(parsed.pathname);

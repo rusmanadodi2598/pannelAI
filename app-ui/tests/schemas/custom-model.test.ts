@@ -91,7 +91,6 @@ describe('schemaCustomModelForm', () => {
 		{ label: 'a model id that is whitespace', form: { ...valid, model_id: '   ' } },
 		{ label: 'a model id with an inner space', form: { ...valid, model_id: 'gpt 4o' } },
 		{ label: 'a model id past the API bound', form: { ...valid, model_id: 'a'.repeat(201) } },
-		{ label: 'an empty display name', form: { ...valid, display_name: '' } },
 		{
 			label: 'a display name past the API bound',
 			form: { ...valid, display_name: 'a'.repeat(121) }
@@ -102,6 +101,8 @@ describe('schemaCustomModelForm', () => {
 		expect(schemaCustomModelForm.safeParse(form).success).toBe(false);
 	});
 
+	// The display name is optional even though the wire requires one: the reference adds a model with its
+	// id alone (draft 019 D2). That rule and the body it produces live in `custom-model-display-name.test.ts`.
 	it('accepts a model id at the API bound', () => {
 		expect(schemaCustomModelForm.safeParse({ ...valid, model_id: 'a'.repeat(200) }).success).toBe(
 			true

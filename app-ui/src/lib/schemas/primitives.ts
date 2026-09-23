@@ -3,6 +3,8 @@
 // One primitive per field class from docs/SPEC-UI/001-SPEC-UI.md §7.2, so a label or a proxy port
 // is validated and sanitized the same way on every screen. Messages live here with the check that
 // produces them (SPEC-UI §7.1.8), so a field cannot report two different things in two places.
+//
+// The identifier shapes the API mints are not a field class and live in `./identifiers`.
 
 import { z } from 'zod';
 import {
@@ -22,6 +24,25 @@ export const label = z
 	.string()
 	.transform(normalizeLabelInput)
 	.refine((value) => value.length > 0, { message: 'A name is required.' })
+	.refine((value) => value.length <= MAX_LABEL, {
+		message: `Use ${MAX_LABEL} characters or fewer.`
+	})
+	.refine((value) => !hasAngleBrackets(value), {
+		message: 'Angle brackets are not allowed in names.'
+	});
+
+/**
+ * The same name, allowed to be empty.
+ *
+ * A field whose absence has a meaning the screen can state needs this rather than a union with the empty
+ * literal: `normalizeLabelInput` collapses a run of spaces to nothing, so a union would route a
+ * visually-empty field through the minimum-length rule and answer "A name is required." to an operator who
+ * left it blank on purpose. The bounds and the bracket rule are the ones above, so a name that *is* typed
+ * is still checked the same way on every screen.
+ */
+export const optionalLabel = z
+	.string()
+	.transform(normalizeLabelInput)
 	.refine((value) => value.length <= MAX_LABEL, {
 		message: `Use ${MAX_LABEL} characters or fewer.`
 	})
@@ -192,16 +213,3 @@ export const schemaRequestStatus = z.enum(REQUEST_STATUSES);
 // API that starts returning a body does not fail the panel.
 export const emptyResponse = z.looseObject({});
 export type EmptyResponse = z.infer<typeof emptyResponse>;
-
-export function prefixedId(prefix: string) {
-	return z
-		.string()
-		.refine((value) => value.startsWith(prefix), { message: `Expected an ${prefix} identifier.` });
-}
-
-export const gatewayKeyId = prefixedId('gky_');
-
-// The upstream identifiers the API mints (SPEC-API §7.5). Listed here beside the gateway key prefix so
-// the panel has one place that knows what an identifier looks like.
-export const endpointId = prefixedId('ep_');
-export const upstreamKeyId = prefixedId('uky_');
