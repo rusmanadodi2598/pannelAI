@@ -21,74 +21,63 @@ Proyek memisahkan tanggung jawab **Control Plane** (API manajemen) dan **Data Pl
 ## Struktur proyek
 
 ```text
-.pannelAI/
-├── AGENTS.md
+pannelAI/
 ├── app-serv
 │   ├── cmd
-│   ├── .env
+│   ├── internal
+│   ├── migrations
+│   ├── tools
 │   ├── .env.example
 │   ├── .golangci.yml
 │   ├── go.mod
 │   ├── go.sum
-│   ├── internal
-│   ├── migrations
-│   ├── README.md
-│   └── tools
+│   └── README.md
 ├── app-ui
 │   ├── assets
-│   ├── bun.lock
-│   ├── components.json
-│   ├── .env
-│   ├── .env.example
-│   ├── eslint.config.js
-│   ├── package.json
-│   ├── .prettierignore
-│   ├── .prettierrc
-│   ├── README.md
 │   ├── scripts
 │   ├── src
 │   ├── static
-│   ├── svelte.config.js
-│   ├── .svelte-kit
 │   ├── tests
+│   ├── .env.example
+│   ├── .prettierignore
+│   ├── .prettierrc
+│   ├── bun.lock
+│   ├── components.json
+│   ├── eslint.config.js
+│   ├── package.json
+│   ├── README.md
+│   ├── svelte.config.js
 │   ├── tsconfig.json
 │   ├── vite.config.ts
 │   └── vitest.config.ts
 ├── deployment
 │   └── .gitkeep
-├── DESIGN.md
 ├── docs
 │   ├── CHANGELOG
+│   ├── CONTRACT
 │   ├── DRAFT
 │   ├── RULLES
 │   ├── SPEC-API
 │   └── SPEC-UI
-├── .git
-│   ├── branches
-│   ├── COMMIT_EDITMSG
-│   ├── config
-│   ├── description
-│   ├── FETCH_HEAD
-│   ├── HEAD
-│   ├── hooks
-│   ├── index
-│   ├── info
-│   ├── objects
-│   ├── ORIG_HEAD
-│   ├── packed-refs
-│   └── refs
-├── .gitignore
-├── .gitleaks.toml
-├── go.mod
-├── lsp.json
-├── package.json
-├── pyproject.toml
-├── README.md
 ├── scrypts
 │   ├── gates
 │   ├── hooks
 │   ├── lib
 │   └── README.md
+├── skills
+│   ├── pannelai
+│   ├── pannelai-chat
+│   ├── pannelai-embeddings
+│   ├── pannelai-image
+│   ├── pannelai-stt
+│   ├── pannelai-tts
+│   └── pannelai-web-search
+├── .gitignore
+├── .gitleaks.toml
+├── AGENTS.md
+├── DESIGN.md
+├── LICENSE
+├── README.md
 └── SYSTEM_MAP.md
 ```
 
