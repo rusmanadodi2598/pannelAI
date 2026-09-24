@@ -6,7 +6,7 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18); uji request bersih 2026-09-24 16:33 (setelah `usage_records` dikosongkan atas permintaan owner, satu request per ref persis seperti yang disebut, tanpa probe) menjawab `th-1` dan `pi-agent` dengan 200 `pong` sementara tiga nama telanjang tetap 400, seluruhnya tercatat di akuntansi yang mulai dari nol (§19) |
+| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18); uji request bersih 2026-09-24 16:33 (setelah `usage_records` dikosongkan atas permintaan owner, satu request per ref persis seperti yang disebut, tanpa probe) menjawab `th-1` dan `pi-agent` dengan 200 `pong` sementara tiga nama telanjang tetap 400, seluruhnya tercatat di akuntansi yang mulai dari nol (§19); cek filtering combo dan provider aktif 2026-09-24 membandingkan empat permukaan di kedua pohon, mencatat yang sudah setara (combo tanpa syarat aktivitas di kedua pohon, predikat picker panel sama dengan picker REFERENCE, `?active=true` katalog bekerja) dan menemukan F8 (daftar klien tanpa filter provider aktif), F9 (picker combo hanya halaman tabel), dan F10 (model custom provider aktif tidak masuk daftar klien) (§20) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
 | **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
@@ -566,3 +566,78 @@ dengan dua seleksi kredensial yang keduanya jatuh ke offset 0. Walk ronde ini ti
 
 Berkas bukti: `/tmp/smoke9/req.sh`, `/tmp/smoke9/req.log`, `/tmp/smoke9/req/01.json` sampai
 `05.json`.
+
+## 20. Cek filtering combo dan provider aktif di penanganan models (2026-09-24)
+
+Permintaan owner: "Cek pada filtering `Combo` dalam penangan models. dan seharusnya filtering bekerja pada
+provider yang memamng aktif seperti REFERENCE". Pass ini mengukur keempat permukaan yang menjawab "model
+apa yang bisa dirutekan" di kedua pohon dan tidak menyentuh kode mana pun.
+
+### 20.1 Dua aturan REFERENCE yang berbeda, dan padanannya di pohon ini
+
+REFERENCE memakai dua predikat yang tidak sama di dua permukaan: daftar klien hanya menyebut provider yang
+punya koneksi `isActive !== false` (`src/app/api/v1/models/route.js:269`, `:303-306`, `:369`), sementara
+picker-nya menawarkan provider yang punya baris koneksi apa pun statusnya, karena `/api/providers`
+mengembalikan seluruh koneksi (`combos/page.js:170`; `connectionsRepo.js:92-103` tanpa filter `isActive`).
+
+| Permukaan | REFERENCE | Pohon ini |
+| --- | --- | --- |
+| Daftar model klien (`GET /api/v1/models`) | hanya provider dengan ≥1 koneksi aktif (`route.js:269`, `:369`); model = live/enabled/statis digabung model custom provider itu (`:447`, `:487`); combo tanpa syarat (`:316`) | seluruh provider chat-routable plus seluruh node (fetch live, tanpa syarat endpoint) plus combo tanpa syarat (`internal/dataplane/catalog.go:49`, `:68`) |
+| Picker combo (`/combos` ke editor) | combo di-fetch sendiri saat dibuka, seluruhnya (`ModelSelectModal.js:120-133`); filter combo hanya search (`:426-429`) | combo = halaman tabel saat ini saja (`CombosTab.svelte:55`); filter combo hanya search (`model-picker.ts:129-146`) |
+| Picker vision (`capability=vision`) | combo disembunyikan saat `capFilter` (`ModelSelectModal.js:427`) | `combos: []` (`VisionAdapterForm.svelte:57`) |
+| Katalog manajemen (`GET /models/catalog`) | tidak ada padanannya | `?active=true` menyempit ke provider dengan endpoint `status='active'` (`model_catalog.go:120`, `model_catalog_active.go:74-83`) |
+
+### 20.2 Yang sudah setara, jadi tidak ada yang perlu diperbaiki
+
+- Combo tidak pernah difilter berdasarkan aktivitas provider, di kedua pohon: daftar klien menyebut combo
+  tanpa syarat (`route.js:316` berpasangan dengan `catalog.go:68`), dan picker combo juga tidak
+  (`ModelSelectModal.js:426-429` berpasangan dengan `model-picker.ts:81-88`). Kalau harapannya "combo ikut
+  difilter ke provider aktif", REFERENCE justru tidak begitu.
+- Predikat picker panel (`endpoint_count > 0`, `model-picker.ts:46`) sama dengan aturan picker REFERENCE
+  (punya baris koneksi), bukan aturan daftar kliennya. `endpoint_count` sendiri adalah `summary.Total`
+  (`schema/provider.go:136`), jumlah semua status.
+- Katalog manajemen: `?active=true` bekerja; diukur 587 baris (67 provider) menjadi 1 baris, hanya
+  `openai-compatible-0386BKG9Q4DYZPYC01VJH4C51G/deepseek-v4.1-flash:free`. Panel tidak pernah mengirim
+  parameter ini (`schemaCatalogQuery` tanpa field `active`, `model.ts:46-50`).
+
+### 20.3 F8 (MEDIUM): daftar model klien tidak punya filter provider aktif
+
+Ini bentuk konkret dari F4 (§10), dan pengukuran hari ini menunjukkan kedua sisinya sekaligus:
+
+| Pengukuran 2026-09-24 | Hasil |
+| --- | --- |
+| `GET /api/v1/models` dengan kunci gateway | 200, 364 baris, 44 owner |
+| Baris dari node `OpenCode Zen Free` (`openai-compatible-03863XJ2YM2KHF847XJP5YBSH8`, `endpoint_count` 0) | 80 baris (fetch live upstream berhasil, 80 model) |
+| Baris dari `TH HARBOR 1` (3 endpoint, semuanya `status='active'`) | 0 baris (route model node menjawab `{"data":[],"source":"registry","warning":"the upstream answered 401"}`) |
+| Combo `pi-agent` | ada, satu baris, tanpa syarat |
+
+Jadi daftar yang dibaca klien, dan layar `/playground` yang membaca rute ini apa adanya lewat
+`playground/models/+server.ts`, menyebut 80 id yang tidak bisa dirutekan, sementara model yang terbukti
+bekerja di §19 (`th-1/deepseek-v4.1-flash:free`) tidak ada di daftar itu.
+
+### 20.4 F9 (LOW): picker combo editor hanya menawarkan combo halaman tabel yang sedang dibuka
+
+`CombosTab.svelte:55` membangun seksi combo dari `combos` halaman itu (`listCombos({page, per_page: 25})`),
+jadi combo di halaman lain tidak bisa dipilih sebagai anggota. REFERENCE tidak begitu: `ModelSelectModal`
+mengambil `/api/combos` sendiri setiap kali dibuka dan menampilkan seluruhnya (`ModelSelectModal.js:120-133`).
+Dengan satu combo hidup, selisih ini belum terlihat di layar.
+
+### 20.5 F10 (MEDIUM): model custom provider aktif tidak pernah masuk daftar klien
+
+`ModelList` hanya membaca `Provider.Models` dari indeks (`catalog.go:53`), dan indeks node diisi dari fetch
+live (`cmd/app-serv/provider_index.go:143`); `models_custom` tidak pernah dibaca rute ini. REFERENCE
+menggabungkannya: `mergedModelIds = new Set([...modelIds, ...customModelIds, ...aliasModelIds])`
+(`route.js:487`) lalu mendorong setiap id (`:489`). Terukur: 5 baris `models_custom` ada (4 di node oczen, 1
+di `th-1` dengan `model_id` `deepseek-v4.1-flash:free`), dan yang `th-1` itu tidak muncul di 364 baris daftar
+klien.
+
+F8 dan F10 saling mengunci: menerapkan filter aktif saja akan menyisakan 1 baris (combo `pi-agent`) dan tetap
+menyembunyikan model yang bekerja; menerapkan penggabungan model custom saja akan menyembunyikan 80 id mati
+tapi tetap menyebut ratusan id tanpa endpoint. Bentuk yang setara REFERENCE hari ini adalah 2 baris:
+`deepseek-v4.1-flash:free` dan `pi-agent`.
+
+### 20.6 Bukti
+
+Berkas: `/tmp/combochk/dp-models.json` (daftar klien), `cat-all.json` dan `cat-active.json` (katalog),
+`providers.json` (roll-up endpoint), `node-models-th1.json` dan `node-models-oczen.json` (route model node).
+Tidak ada kode yang disentuh pass ini.
