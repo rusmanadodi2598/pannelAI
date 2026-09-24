@@ -120,12 +120,15 @@ func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
 	entry := c.entryFor(req)
 	wire := opencodeWire(req, entry)
 
-	if endpoint, found, err := openCodeEndpointFor(entry, req.Model, wire); err != nil {
-		return "", err
-	} else if found {
+	if endpoint, found := openCodeEndpointFor(entry, req.Model, wire); found {
+		// An endpoint may declare no URL of its own: the reference's
+		// xiaomi-tokenplan table carries only a format and a credential placement
+		// per wire, and the executor composes the URL from the entry's base. So an
+		// endpoint without a base_url keeps the entry's own URL, and only the
+		// credential placement and headers come from the table.
 		base := strings.TrimSpace(endpoint.BaseURL)
 		if base == "" {
-			return "", fmt.Errorf("provider %s: the %s endpoint declares no base_url", entry.ID, wire)
+			return openCodeDefaultURL(entry, wire)
 		}
 		if !strings.HasPrefix(base, "http://") && !strings.HasPrefix(base, "https://") {
 			return "", fmt.Errorf("provider %s: the %s endpoint is not absolute", entry.ID, wire)
@@ -133,6 +136,19 @@ func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
 		return strings.TrimRight(base, "/") + strings.TrimSpace(endpoint.URLSuffix), nil
 	}
 
+	return openCodeDefaultURL(entry, wire)
+}
+
+// openCodeDefaultURL builds the URL from the entry's own base, which is what
+// answers a single-endpoint provider and a multi-endpoint request the table did
+// not match.
+//
+// A multi-endpoint entry stores a complete URL in base_url, so that URL is used
+// as written rather than composed with a leaf: appending one would build a path
+// nothing serves, which is the shape a first reading of this rule produced. A
+// single-endpoint entry may store either a complete URL or a base, so the leaf is
+// composed only when the base does not already name it.
+func openCodeDefaultURL(entry registry.Provider, wire string) (string, error) {
 	base := strings.TrimSpace(entry.Transport.BaseURL)
 	if base == "" && len(entry.Transport.BaseURLs) > 0 {
 		base = strings.TrimSpace(entry.Transport.BaseURLs[0])
@@ -144,6 +160,10 @@ func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
 		return "", fmt.Errorf("provider %s: base_url is not absolute", entry.ID)
 	}
 	base = strings.TrimRight(base, "/")
+
+	if len(entry.Transports) > 0 {
+		return base, nil
+	}
 
 	leaf := openCodeLeaf(wire)
 	if strings.HasSuffix(base, leaf) {
@@ -157,11 +177,19 @@ func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
 	return base + openCodeZenPrefix + leaf, nil
 }
 
-// opencodeWire reports the wire the model answers in: its own declared target
-// format when it has one, otherwise the provider's transport format. Deriving it
-// is what lets a model added to the registry tomorrow route correctly with no
-// change here.
+// opencodeWire reports the wire the request is being sent in.
+//
+// The translation's own answer wins when it is present, because that is the wire
+// the body actually is: a model may declare one target format while the request
+// was translated into another, and an endpoint table keyed on the wrong value
+// would send the body to a URL that cannot parse it. The model's declared target
+// is the fallback for a caller that resolved a model without translating (the
+// media and decision planes build their own bodies), and the provider's own
+// format is the last resort.
 func opencodeWire(req Request, entry registry.Provider) string {
+	if wire := strings.TrimSpace(req.Wire); wire != "" {
+		return wire
+	}
 	if target := strings.TrimSpace(req.Model.TargetFormat); target != "" {
 		return target
 	}

@@ -37,6 +37,13 @@ type Request struct {
 	// per-model rule (an upstream id override, a region from the model id).
 	Model registry.Model
 
+	// Wire is the upstream format Body was translated into. A multi-endpoint
+	// provider picks its endpoint by this value, so a connector reads the wire
+	// the request actually is rather than guessing it from the model: a model
+	// may declare one target format while the request was translated into
+	// another.
+	Wire string
+
 	// Body is the upstream-shaped request payload. Translation happened before
 	// this point, so a connector must not reinterpret it.
 	Body []byte

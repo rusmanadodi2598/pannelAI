@@ -170,21 +170,32 @@ func TestOpenCode_MultiEndpointAuthFollowsTheEndpoint(t *testing.T) {
 	}
 }
 
-// TestOpenCode_MultiEndpointRefusesAnUnsupportedWire pins the guard: a model
-// that declares `supportedFormats` and does not include the wire its target
-// format names must be refused rather than sent to an endpoint that will not
-// answer it. The reference applies the same guard in chatCore.js:89-101, where a
-// model without the source format falls back to translation instead of the
-// endpoint.
-func TestOpenCode_MultiEndpointRefusesAnUnsupportedWire(t *testing.T) {
+// TestOpenCode_MultiEndpointFallsBackWhenTheModelExcludesTheWire pins the guard's
+// real direction, which is the reference's (chatCore.js:95-101): a model that
+// declares `supportedFormats` and does not include the wire being used is served
+// on the provider's default transport, not refused.
+//
+// Refusing was the first reading of this rule and it was wrong: opencode-zen's
+// default wire is openai while 43 of its models declare claude only, so a
+// refusal removed them from routing entirely. The reference serves them on the
+// claude wire whenever the client speaks it, and on the default transport
+// otherwise.
+func TestOpenCode_MultiEndpointFallsBackWhenTheModelExcludesTheWire(t *testing.T) {
 	connector := NewOpenCode(opencodeGoEntry())
 	entry := opencodeGoEntry()
-	// kimi declares only `openai`, so a claude target has no endpoint that
-	// serves it on this provider.
+	// kimi declares only `openai`, so a claude target is not an endpoint this
+	// model may use; the provider's own chat endpoint answers instead.
 	model := registry.Model{ID: "kimi-k2.6", TargetFormat: "claude", SupportedFormats: []string{"openai"}}
 
 	got, err := connector.Endpoint(Request{Provider: entry, Model: model}, StaticKey("ep-1", "k1", "sk-go"))
-	if err == nil {
-		t.Fatalf("Endpoint() = %q, want a refusal for a wire the model does not support", got)
+	if err != nil {
+		t.Fatalf("Endpoint() error = %v, want the default transport to answer", err)
+	}
+	// The provider's own base URL answers as written, because a multi-endpoint
+	// entry stores a complete URL there. Composing a leaf onto it would build
+	// ".../chat/completions/zen/v1/messages", which is the broken shape this rule
+	// replaces.
+	if got != "https://opencode.ai/zen/go/v1/chat/completions" {
+		t.Fatalf("Endpoint() = %q, want the provider's own base URL", got)
 	}
 }

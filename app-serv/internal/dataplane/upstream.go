@@ -40,6 +40,13 @@ type Call struct {
 	// Model is the resolved model, exposed so a connector can apply a
 	// per-model rule.
 	Model registry.Model
+	// Wire is the upstream format Body was translated into, which is what a
+	// multi-endpoint provider picks its endpoint by. It is the translation's own
+	// answer rather than the model's declared target, because a model may declare
+	// one wire while the request was translated into another (a claude-only model
+	// whose client spoke openai is still served on the chat wire by the
+	// provider's default transport).
+	Wire string
 	// Credential is the account material for this one call.
 	Credential provider.Credential
 	// Body is the upstream-shaped payload.
@@ -101,6 +108,7 @@ func RequestFor(call Call) provider.Request {
 	return provider.Request{
 		Provider: call.Provider,
 		Model:    call.Model,
+		Wire:     call.Wire,
 		Body:     call.Body,
 		Stream:   call.Stream,
 	}

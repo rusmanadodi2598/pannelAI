@@ -105,8 +105,11 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		release := e.markActive(ctx, resolution.Provider.ID, outcome.EndpointID, resolution.ModelID)
 		started := e.clock()
 		upstream, callErr := e.transport.Do(ctx, Call{
-			Provider:   resolution.Provider,
-			Model:      resolution.Model,
+			Provider: resolution.Provider,
+			Model:    resolution.Model,
+			// The translation's own answer, which is what a multi-endpoint
+			// provider picks its endpoint by.
+			Wire:       resolution.Target,
 			Credential: selection.Credential,
 			Body:       body,
 			Stream:     in.Stream,

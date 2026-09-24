@@ -50,13 +50,20 @@ func buildProviderRuntime() (*registry.Index, *provider.Connectors, error) {
 	// outbound request rewritten, or that only answers a stream, cannot be served
 	// by provider.Default, so it needs an entry in this list. Each is independent,
 	// which is what makes a provider patchable in isolation.
-	opencode, ok := idx.Provider("opencode")
-	if !ok {
-		return nil, nil, fmt.Errorf("provider connectors: the opencode entry is missing from the registry")
+	// The OpenCode family shares one connector because it shares one upstream
+	// protocol: the free lane, the PAYG lane, and the subscription lane differ in
+	// credential and endpoint table, not in how a request is shaped. Each entry is
+	// registered by name, and the connector reads the entry it was built for, so a
+	// lane added to the registry is one line here.
+	plugins := make([]provider.Plugin, 0, 3)
+	for _, id := range []string{"opencode", "opencode-zen", "opencode-go"} {
+		entry, ok := idx.Provider(id)
+		if !ok {
+			return nil, nil, fmt.Errorf("provider connectors: the %s entry is missing from the registry", id)
+		}
+		plugins = append(plugins, provider.NewOpenCode(entry))
 	}
-	connectors, err := provider.NewConnectors(provider.DefaultFactory,
-		provider.NewOpenCode(opencode),
-	)
+	connectors, err := provider.NewConnectors(provider.DefaultFactory, plugins...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("provider connectors: %w", err)
 	}

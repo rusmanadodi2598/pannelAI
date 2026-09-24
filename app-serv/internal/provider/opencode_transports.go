@@ -28,7 +28,6 @@
 package provider
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
@@ -38,27 +37,38 @@ import (
 //
 // A single-endpoint provider (no `transports`) answers on its declared base URL
 // and needs no choice, so it reports not-found and the caller keeps the URL rule
-// it already had. A multi-endpoint provider chooses by the wire the model's own
-// target format names, guarded by the model's declared formats: a model that
-// lists `supportedFormats` and does not include that wire has no endpoint here,
-// and is refused rather than sent to one that will not answer it (the
-// reference's own guard, chatCore.js:89-101).
-func openCodeEndpointFor(entry registry.Provider, model registry.Model, wire string) (registry.TransportEndpoint, bool, error) {
+// it already had.
+//
+// A multi-endpoint provider chooses by the wire the request is being translated
+// into: the entry's own endpoint table names one URL per wire, and the model's
+// declared formats guard the choice. A model that lists `supportedFormats` and
+// does not include that wire is answered by the provider's own default URL, which
+// is the reference's own rule: an unmatched format leaves `useTransport` null, so
+// the request keeps the provider's `baseUrl` (chatCore.js:95-101, and
+// executors/default.js:106-109 uses `config.baseUrl` when no runtime transport was
+// attached).
+//
+// Refusing instead was tried and is wrong: it removed 43 of opencode-zen's models
+// from routing entirely (every claude-only id, because the provider's default wire
+// is openai), and the reference serves those models whenever the client speaks
+// their wire.
+func openCodeEndpointFor(entry registry.Provider, model registry.Model, wire string) (registry.TransportEndpoint, bool) {
 	if len(entry.Transports) == 0 {
-		return registry.TransportEndpoint{}, false, nil
+		return registry.TransportEndpoint{}, false
 	}
 	for _, endpoint := range entry.Transports {
 		if strings.TrimSpace(endpoint.Format) != wire {
 			continue
 		}
 		if !openCodeModelSupportsFormat(model, wire) {
-			return registry.TransportEndpoint{}, false, fmt.Errorf(
-				"provider %s: model %s does not support the %s wire", entry.ID, model.ID, wire)
+			// The model declared its own formats and this wire is not one of
+			// them, so the endpoint table cannot serve the request and the
+			// provider's default URL answers, exactly as the reference does.
+			return registry.TransportEndpoint{}, false
 		}
-		return endpoint, true, nil
+		return endpoint, true
 	}
-	return registry.TransportEndpoint{}, false, fmt.Errorf(
-		"provider %s: no endpoint serves the %s wire", entry.ID, wire)
+	return registry.TransportEndpoint{}, false
 }
 
 // openCodeModelSupportsFormat reports whether a model may be served on a wire.
