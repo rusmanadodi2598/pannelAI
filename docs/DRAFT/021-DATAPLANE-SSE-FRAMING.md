@@ -6,7 +6,7 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18) |
+| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18); uji request bersih 2026-09-24 16:33 (setelah `usage_records` dikosongkan atas permintaan owner, satu request per ref persis seperti yang disebut, tanpa probe) menjawab `th-1` dan `pi-agent` dengan 200 `pong` sementara tiga nama telanjang tetap 400, seluruhnya tercatat di akuntansi yang mulai dari nol (§19) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
 | **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
@@ -536,3 +536,33 @@ Berkas bukti: `/tmp/smoke8/` (`run.env` mode 600, `run.py`, `stream.sh`, `panel_
 `analyze.py`, `run.log`, `resp/` 11 tangkapan, `probe1.json`, `probe2.json`, `probe3.json` (kosong),
 `monitor.log`, `monitor2.log`, `used_watch.log`, `stream-combo-plain.txt` (kosong),
 `stream-combo-usage.txt`, `stream-th1-usage.txt`).
+
+## 19. Uji request bersih setelah tabel usage dikosongkan (2026-09-24 16:33)
+
+Atas permintaan owner, `usage_records` dikosongkan lebih dulu (68 baris; backup
+`/tmp/usage_records-backup-20260924-163022.sql`), lalu lima request dikirim persis seperti bentuk
+panggilan klien: satu request non-streaming per ref, tanpa probe dan tanpa instrumentasi tambahan,
+hanya empat model yang disebut plus combo `pi-agent`. Gateway yang melayani tetap PID `3053853`
+(start 15:36), dan baris `settings` `routing` tidak berubah (override `th-1` `round-robin`
+`sticky_limit` 2).
+
+| # | Ref (persis seperti diminta) | Respons app-serv |
+| --- | --- | --- |
+| 1 | `th-1/deepseek-v4.1-flash:free` | 200, 16,56 s; `model` `deepseek-v4.1-flash`, `finish` `stop`, `content` `pong`, usage 38/69/107 |
+| 2 | `space-bunny-free` | 400 `MODEL_NOT_FOUND` ("is not a known model, alias, or combo") dalam 0,01 s |
+| 3 | `mimo-v2.6-flash-free` | 400 `MODEL_NOT_FOUND` dalam 0,01 s |
+| 4 | `muse-spark-1.3-contributor-free` | 400 `MODEL_NOT_FOUND` dalam 0,01 s |
+| 5 | `pi-agent` | 200, 1,27 s; `model` `deepseek-v4.1-flash`, `finish` `stop`, `content` `pong`, usage 38/69/107 |
+
+### 19.1 Jejak akuntansi yang mulai dari nol
+
+`usage_records` (0 baris sebelum uji) menerima tepat 2 baris, keduanya endpoint
+`ep_0386EX3Z19198FTDJK4TKE97RM` (Key 1): 38/69 dengan `latency_ms` 16503 dan 910, dan baris kedua
+membawa `combo=pi-agent`. `request_logs` bertambah 5 baris (2 `success`, 3 `MODEL_NOT_FOUND`;
+baris terakhir sebelum uji 16:09:15), dan `gateway_keys.request_count` kunci `sandbox` 85 menjadi
+90. Kursor rotasi berakhir `(offset 0, used 2)` dan counter combo `pi-agent` 5 menjadi 6, konsisten
+dengan dua seleksi kredensial yang keduanya jatuh ke offset 0. Walk ronde ini tidak pernah mencapai
+`Key 2`, jadi F7 tidak terpicu ulang; itu bukan bukti F7 hilang.
+
+Berkas bukti: `/tmp/smoke9/req.sh`, `/tmp/smoke9/req.log`, `/tmp/smoke9/req/01.json` sampai
+`05.json`.
