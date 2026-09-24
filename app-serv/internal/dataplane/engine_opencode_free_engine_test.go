@@ -59,6 +59,15 @@ func (i openCodeFreeIndex) All() []registry.Provider { return []registry.Provide
 // ones, and the endpoint carries no credential because the lane needs none.
 func newOpenCodeFreeEngine(t *testing.T, upstreamURL string, seen *[]openCodeFreeCall) *Engine {
 	t.Helper()
+	return newOpenCodeFreeEngineWith(t, upstreamURL, seen, true)
+}
+
+// newOpenCodeFreeEngineWith is the same wiring with the endpoint row optional, so
+// a test can prove the virtual-endpoint rule reaches the whole pipeline rather
+// than only the selector (draft 029 F8). A run with no row is what an operator
+// gets on a fresh install, before anything is configured.
+func newOpenCodeFreeEngineWith(t *testing.T, upstreamURL string, seen *[]openCodeFreeCall, withEndpoint bool) *Engine {
+	t.Helper()
 	index, err := registry.Load()
 	if err != nil {
 		t.Fatalf("loading the embedded registry: %v", err)
@@ -82,8 +91,17 @@ func newOpenCodeFreeEngine(t *testing.T, upstreamURL string, seen *[]openCodeFre
 		t.Fatalf("building the keyless endpoint: %v", err)
 	}
 	repo := newMemEndpointRepo()
-	repo.byProvider["opencode"] = []domain.UpstreamEndpoint{endpoint}
-	selector, err := NewSelector(SelectorDeps{Endpoints: repo, Opener: opener{}})
+	if withEndpoint {
+		repo.byProvider["opencode"] = []domain.UpstreamEndpoint{endpoint}
+	}
+	selector, err := NewSelector(SelectorDeps{
+		Endpoints: repo,
+		Opener:    opener{},
+		// The registry is what makes the virtual endpoint reachable, and the
+		// fixture passes the real entry so the rule reads the same no_auth
+		// declaration the server does.
+		Registry: openCodeFreeIndex{entry: entry},
+	})
 	if err != nil {
 		t.Fatalf("NewSelector() error = %v", err)
 	}

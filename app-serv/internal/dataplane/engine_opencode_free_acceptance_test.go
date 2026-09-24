@@ -210,3 +210,34 @@ func TestOpenCodeFree_UnknownFreeIdStillPassesThrough(t *testing.T) {
 		}
 	}
 }
+
+// TestOpenCodeFree_AnswersWithNoEndpointConfigured is the F8 acceptance test: a
+// fresh install has no upstream_endpoints row, and the free lane must still
+// answer. The reference injects a virtual connection for a noAuth provider
+// (src/sse/services/auth.js:45-63), so this port answering NO_PROVIDER_AVAILABLE
+// there was a parity gap rather than a configuration requirement.
+func TestOpenCodeFree_AnswersWithNoEndpointConfigured(t *testing.T) {
+	seen := []openCodeFreeCall{}
+	server := openCodeFreeUpstream(t, &seen)
+	engine := newOpenCodeFreeEngineWith(t, server.URL, &seen, false)
+
+	sink := &recordingSink{}
+	outcome, err := engine.Relay(context.Background(), openCodeFreeRequest(t, openCodeFreeUngated), sink)
+	if err != nil {
+		t.Fatalf("Relay() error = %v, want the virtual endpoint to serve the lane", err)
+	}
+	if !strings.HasPrefix(outcome.EndpointID, VirtualEndpointIDPrefix) {
+		t.Fatalf("endpoint = %q, want the synthesized one", outcome.EndpointID)
+	}
+	if text := freeSinkText(sink); text != "pong" {
+		t.Fatalf("streamed text = %q, want pong", text)
+	}
+	// The lane must still leave without credential material, which is what makes
+	// the synthesized endpoint safe to hand out.
+	if len(seen) != 1 {
+		t.Fatalf("upstream saw %d calls, want 1", len(seen))
+	}
+	if got := seen[0].Authorization; got != "Bearer public" {
+		t.Fatalf("Authorization = %q, want the connector's own public bearer", got)
+	}
+}

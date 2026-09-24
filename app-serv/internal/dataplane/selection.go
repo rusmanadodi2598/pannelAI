@@ -103,7 +103,11 @@ type Selector struct {
 	cursor     CursorStore
 	gates      BudgetGate
 	strategies CredentialStrategy
-	clock      func() time.Time
+	// registry answers the one question the virtual-endpoint rule asks: whether
+	// this provider needs no credential. It is optional, and without it a
+	// provider with no stored endpoint is simply unavailable.
+	registry RegistryReader
+	clock    func() time.Time
 }
 
 // SelectorDeps holds the collaborators selection needs.
@@ -116,6 +120,10 @@ type SelectorDeps struct {
 	// configured endpoint, which is the behaviour a deployment without quota
 	// caps had before the check existed.
 	Gate BudgetGate
+	// Registry supplies the provider entries the virtual-endpoint rule reads. A
+	// nil one disables the rule, which is the behaviour every deployment had
+	// before it existed.
+	Registry RegistryReader
 }
 
 // NewSelector validates deps and returns a selector. The opener is optional so a
@@ -129,7 +137,7 @@ func NewSelector(deps SelectorDeps) (*Selector, error) {
 	}
 	return &Selector{
 		endpoints: deps.Endpoints, opener: deps.Opener, cursor: deps.Cursor, gates: deps.Gate,
-		strategies: deps.Strategies, clock: time.Now,
+		strategies: deps.Strategies, registry: deps.Registry, clock: time.Now,
 	}, nil
 }
 
@@ -173,6 +181,10 @@ func (s *Selector) candidates(ctx context.Context, providerID string) ([]domain.
 		ProviderID: providerID,
 		Status:     string(domain.UpstreamEndpointActive),
 	}, repository.PageQuery{Page: 1, PerPage: MaxEndpointsPerProvider})
+	// A credential-free provider with no stored row answers on the virtual
+	// endpoint, which is how a free lane becomes usable the moment its provider
+	// is listed (the reference injects the same connection).
+	found, err = s.virtualCandidates(providerID, found, err)
 	if err != nil {
 		return nil, err
 	}

@@ -142,6 +142,12 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		// is the enforcement half of the quota surface. The quota service
 		// satisfies the seam directly, so no adapter is written for it.
 		Gate: in.Quotas,
+		// A credential-free provider with no stored endpoint answers on a
+		// synthesized one, so a free lane is usable the moment its provider is
+		// listed (draft 029 F8; the reference injects the same connection).
+		// The index is the embedded registry overlaid with stored custom nodes,
+		// so a node the operator created is answerable by the same rule.
+		Registry: in.Index,
 	})
 	if err != nil {
 		return dataPlane{}, err
