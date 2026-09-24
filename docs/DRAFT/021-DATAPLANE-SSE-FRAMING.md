@@ -6,7 +6,7 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16) |
+| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
 | **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
@@ -370,3 +370,74 @@ saudara-saudaranya `muse-spark-1.2`, `muse-spark-1.2-contributor-free`, dan `mus
 
 Berkas bukti: `/tmp/smoke6/*.json` (tiga belas badan jawaban), `/tmp/smoke6/stream-plain.txt` dan
 `stream-usage.txt`, `/tmp/smoke6_run.py`, dan `/tmp/smoke6_panel_reader.ts`.
+
+## 17. Uji ulang empat model 2026-09-24 09:12: identik dengan §16, F1-F3 dan F5 tetap
+
+Owner mengirim ulang endpoint, kunci, dan empat model yang sama (kunci `sandbox`, hint `sk-…rmEu`):
+`th-1/deepseek-v4.1-flash:free`, `space-bunny-free`, `mimo-v2.6-flash-free`, dan
+`muse-spark-1.3-contributor-free`. Gateway tidak berubah sejak §16: PID `2716056` (mulai 08:38:23,
+biner cache build Go), dan keadaan tabel saat mulai (09:12) identik dengan baseline §16:
+`upstream_endpoints` 3 (semuanya milik `th-1`), `upstream_keys` 3, `provider_nodes` 2 (`oczen`, `th-1`),
+`usage_records` 46, `request_logs` 58, `request_count` kunci `sandbox` 36. Tidak ada baris baru dari
+aktor lain antara 08:47 dan 09:12. Katalog menjawab 364 id: 0 berawalan `th-1/`, 80 milik node `oczen`
+di bawah id node, 3 di bawah `opencode`; satu id baru sejak §16, `pi-agent` (owned_by `combo`).
+
+Empat model dipaste apa adanya (non-streaming, `max_tokens` 64, instruksi "Balas satu kata saja: pong"):
+
+| Model dipaste | Hasil terukur |
+| --- | --- |
+| `th-1/deepseek-v4.1-flash:free` | HTTP 200 dalam 55,5 s; `content` `pong`, `reasoning_content` ada, `finish_reason` `stop`, `usage` 38/90/128; `model` di wire `deepseek-v4.1-flash` |
+| `space-bunny-free` | HTTP 400 dalam 0,02 s: `MODEL_NOT_FOUND`, "model space-bunny-free is not a known model, alias, or combo" |
+| `mimo-v2.6-flash-free` | HTTP 400, `MODEL_NOT_FOUND` |
+| `muse-spark-1.3-contributor-free` | HTTP 400, `MODEL_NOT_FOUND` |
+
+Tujuh panggilan lanjutan memakai bentuk yang resolve; semuanya menjawab 503 `NO_PROVIDER_AVAILABLE`
+dalam 0,01-0,67 s, tetap karena node `oczen` tidak punya satu baris pun di `upstream_endpoints`:
+
+| Bentuk yang resolve | Hasil |
+| --- | --- |
+| `oczen/{space-bunny-free, mimo-v2.6-flash-free, muse-spark-1.3-contributor-free}` | 503, tiga panggilan |
+| `openai-compatible-03863XJ2YM2KHF847XJP5YBSH8/{ketiganya}` | 503, tiga panggilan |
+| `opencode/muse-spark-1.3-contributor-free` | 503, satu panggilan |
+
+### 17.1 Stream pada `th-1`: F1 sampai F3 dan F5 tetap, bentuk byte sama
+
+Dua stream diukur; tangkapan pertama rusak karena skrip (satu byte hilang di awal), lalu ditangkap ulang
+bersih dan diulang analisisnya atas byte yang baru.
+
+| Uji stream (09:24) | Hasil terukur |
+| --- | --- |
+| Tanpa `include_usage` | HTTP 200, total 3,1 s, 4337 byte: 18 frame berframe (role, 15 delta `content`, `finish`, `usage` dari upstream), lalu satu frame `finish` **telanjang** dengan `data: [DONE]` menempel; `"finish_reason":"stop"` dua kali; 0 kecocokan `^data: \[DONE\]$` |
+| Dengan `include_usage` | HTTP 200, total 35,5 s, 1316 byte: 4 frame berframe, lalu satu baris telanjang berisi **dua** objek `usage` kembar (38/48/86) dengan `data: [DONE]` menempel; 0 kecocokan `^data: \[DONE\]$` |
+| Pembaca SSE panel atas kedua byte | `frames=18` dan `frames=4`, sentinel tidak pernah menjadi frame sendiri, jawaban terlipat benar (`pong`, `deepseek-v4.1-flash`, `stop`, 38/48/86), alasan akhir `truncated` |
+
+F5 juga tetap: kedua stream menulis `usage_records` 0/0 dengan `status` `success` (`latency_ms` 2776 dan
+34648) padahal wire membawa 38/48/86, sementara panggilan non-streaming 09:17 mencatat 38/90 dengan benar
+(`latency_ms` 54822, `cost_usd` 0,00003052). Selisih kecil §13.2 juga terulang: kolom `model` di
+`usage_records` menyimpan `deepseek-v4.1-flash:free`, sedangkan `model` di wire `deepseek-v4.1-flash`.
+
+### 17.2 Pencatatan dan keadaan akhir
+
+Pass ini mengirim 24 panggilan chat dan 6 `GET /api/v1/models` (5 pengukuran katalog, 1 verifikasi
+langsung bahwa `GET /models` menaikkan counter +1 per panggilan). Semua 30 terhitung di
+`gateway_keys.request_count` kunci `sandbox` (36 menjadi 66). Rincian 24 chat itu: 4 bentuk id node dari
+loop curl pertama (503 semua), 3 nama telanjang loop kedua (400) plus satu `th-1/…` yang diputus klien
+karena batas `-m 60`, satu probe `curl -w` pada `th-1/…` yang juga diputus klien (`-m 90`), 4 nama
+telanjang dari `run.py`, 7 bentuk resolve dari `run2.py`, dan 2+2 stream dari `run3.py`/`run4.py`. Kedua
+panggilan yang diputus klien itu tidak meninggalkan baris akuntansi — bentuk yang sama dengan F6 (§13.1),
+tetapi seperti §14, karena pemutusnya klien, kejadian itu tidak dihitung sebagai bukti F6. Kelima panggilan `th-1/…` yang selesai (satu non-streaming dari
+`run.py`, dua stream `run3.py`, dua stream `run4.py`) semuanya menjawab 200; keempat stream menulis baris
+`usage_records` `success` 0/0.
+
+`request_logs` bertambah 22 baris (24 chat − 2 yang diputus): 11 `NO_PROVIDER_AVAILABLE` (4 loop pertama
++ 7 `run2.py`), 6 `MODEL_NOT_FOUND` (3 loop kedua + 3 `run.py`), 1 `success` non-streaming, dan 4
+`success` streaming. `usage_records` bertambah 16 baris: 11 `NO_PROVIDER_AVAILABLE` 0/0, 1 `success`
+non-streaming 38/90 (`latency_ms` 54822, `cost_usd` 0,00003052), dan 4 `success` streaming 0/0 (F5,
+`latency_ms` 70338/50443/2776/34648); keenam `MODEL_NOT_FOUND` tidak menulis baris usage, sesuai §13.
+Catatan pembacaan log: baris 09:12:37 mencatat `deepseek-v4.1-flash` **telanjang** padahal panggilannya
+memakai bentuk id node — router mencatat nama model tanpa prefiks — dan 503-nya mengarah ke node `oczen`;
+itu menegaskan temuan §16 bahwa hanya bentuk `<prefiks>/<model>` (di sini `th-1/…`) yang mencapai
+tokenharbor. Baris-baris itu **sengaja ditinggalkan** sebagai rekaman, seperti putaran sebelumnya.
+
+Berkas bukti: `/tmp/smoke7/` (`run.py`, `run2.py`, `run3.py`, `run4.py`, `models.json`,
+`th-1_deepseek-v4.1-flash_free.json`, `stream-plain.txt`, `stream-usage.txt`, `panel_reader.ts`).
