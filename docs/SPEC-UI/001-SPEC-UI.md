@@ -246,7 +246,7 @@ absent.
 **Gateway keys** (SPEC-API §7.3)
 
 - **Table:** name, `key_hint`, status, last used, request count, created. Row actions: rename, enable or
-  disable, revoke. Each action is an icon-only button whose accessible name is the action verb (owner
+  disable, delete. Each action is an icon-only button whose accessible name is the action verb (owner
   decision, 2026-09-24), and the glyphs are recorded with a one-line reason in `src/lib/icons.ts`.
   **Not built:** the created column and the `revoked_at` value the read schema parses are not rendered
   (`docs/PORT/001-PORT-ENDPOINT-KEYS.md` F6, decision open).
@@ -255,10 +255,16 @@ absent.
   clicking the backdrop; it closes with an explicit control or Escape after the copy control reports
   success or the acknowledgement checkbox is ticked. A refused copy does not open the modal up: the
   plaintext exists nowhere else, and a dismissal on a copy that did not land would lose it.
-- **Constraint surfaced in the UI:** revoking is a soft delete and the row leaves the active list.
-  **Not built:** the list route returns revoked rows too, and a revoked row still offers actions that
-  answer `409` (`docs/PORT/001-PORT-ENDPOINT-KEYS.md` F1, decision open).
-- **Empty state:** "No gateway keys yet. Create one to let a CLI tool reach the gateway."
+- **Constraint surfaced in the UI:** deleting a key is a soft revocation and the row leaves the list.
+  The destructive action is labelled Delete, the reference's own name for it
+  (`EndpointPageClient.js:647-668`), and it calls the terminal `DELETE` route of SPEC-API §7.3. The panel
+  filters `revoked` rows out of every page it renders, so a key that was deleted never comes back and no
+  terminal row offers a control that would answer `409`. **Not built:** the route-side filter
+  (`?status=`, `docs/PORT/001-PORT-ENDPOINT-KEYS.md` F1 option (a)), so the server still counts revoked
+  rows in `meta.total`.
+- **Empty state:** "No gateway keys yet. Create one to let a CLI tool reach the gateway." A page whose
+  keys were all deleted reads "No keys on this page. Every key on this page has been deleted." with the
+  paging controls still in place.
 - **Upstream endpoints are not on this screen** (owner decision, 2026-09-24). The reference keeps provider
   connections on the provider's own page, and so does the panel: the endpoint table, its detail drawer,
   its keys table, and the add forms render under §6.3, and this screen's only subject is the keys a CLI

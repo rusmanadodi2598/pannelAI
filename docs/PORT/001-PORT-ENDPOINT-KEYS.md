@@ -9,7 +9,7 @@ di depan implementasi.
 
 | | |
 |---|---|
-| **Status** | **OPEN, dokumen analisis; implementasi sebagian 2026-09-24.** Temuan F1-F7 tetap berlaku. D3/D4 dicatat sebagai keputusan desain dan D5 dilaksanakan; D1/D2/D6/D7 terbuka. Pekerjaan permukaan (ikon aksi + pindah upstream endpoints ke Provider) commit `0c8fa07` (§7.2) |
+| **Status** | **OPEN, dokumen analisis; implementasi sebagian 2026-09-24.** Temuan F1-F7 tetap berlaku. D3/D4 dicatat sebagai keputusan desain dan D5 dilaksanakan. D1 dilaksanakan separuh (panel: aksi Delete + baris revoked tidak dirender, §7.3); separuh route (`?status=`) tetap terbuka. D2/D6/D7 terbuka. Pekerjaan permukaan (ikon aksi + pindah upstream endpoints ke Provider) commit `0c8fa07` (§7.2), tindak lanjut aksi Delete commit `faf1455` (§7.3) |
 | **Mechanism** | DURING & AFTER (antislop) |
 | **Scope** | `app-serv/.` + `app-ui/.`, permukaan Endpoint & Key. Layar reference: `/dashboard/endpoint`, label sidebar yang sama (`Sidebar.js:21`) |
 | **Permintaan owner** | "Full analisis dan perbandingan app-serv VS 9router (reference) pada Endpoint & UI: Endpoint & Key. Cek portingan secara presisi." |
@@ -245,6 +245,12 @@ Opsi:
 Rekomendasi: (a), karena mengikuti kalimat yang sudah tertulis dan reference (hard delete) juga
 menghilangkan barisnya.
 
+**Update 2026-09-24 (arahan owner).** Owner meminta tombol (ikon) Delete dan agar apikey hilang dari
+screen, setelah tinjauannya atas §7.2 menemukan kunci `probe-debug` yang sudah ia revoke masih
+terdaftar. Separuh panel dilaksanakan di §7.3: aksi terminal dinamai Delete mengikuti reference, dan
+panel menyaring baris `revoked` dari setiap halaman yang dirender. Opsi (a) tetap rekomendasi untuk
+separuh route (`?status=` di `app-serv`), karena `meta.total` masih menghitung baris revoked.
+
 ### 4.2 F2 (MEDIUM): tiga field parity koneksi punya API, tidak punya permukaan panel
 
 `PATCH /api/v1/endpoints/{id}` menerima `default_model`, `global_priority`, `proxy_pool_id`
@@ -388,6 +394,10 @@ kontrak sudah menegakkannya; SPEC-API §7.3 kini menulis `status` ∈ `active|di
 ditutup, dan komentar `gateway-key.ts` diperbarui. **D1, D2, D6, dan D7 tetap terbuka**, dan tidak ada
 kode untuk F1/F2/F6/F7 yang ditulis di pass ini.
 
+**D1 dilaksanakan separuh pada 2026-09-24** atas arahan owner berikutnya: panel menyaring baris
+`revoked` dan aksi terminalnya dinamai Delete (§7.3). Separuh route-nya (opsi (a)) tetap terbuka dan
+tetap menjadi permintaan untuk `app-serv`.
+
 ---
 
 ## 7. Status pass ini
@@ -489,3 +499,28 @@ diberikan pass ini adalah perintah pengukuran yang bisa diulang, dan itu yang di
   panggilan gagal, tanpa tulisan) terhadap build pass sendiri dan gateway dari HEAD; rincian di
   `app-ui/README.md`. Commit `app-ui` `0c8fa07`.
 - D1, D2, D6, D7 tetap terbuka; tidak ada kode untuk F1/F2/F6/F7 di pass ini.
+
+### 7.3 Tindak lanjut 2026-09-24: aksi Delete dan baris revoked tidak dirender
+
+Owner meninjau hasil §7.2 di panelnya sendiri dan melaporkan satu kekurangan: tombol (ikon) Delete
+tidak ada, sehingga tampilan tidak bersih dan apikey tidak hilang dari screen. Kunci yang ia revoke
+sendiri (`probe-debug`, `revoked_at` 2026-09-24 22:54:40) masih terdaftar, yaitu F1 yang terjadi di
+pemakaian nyata.
+
+- **Aksi destruktif dinamai Delete**, mengikuti reference (`EndpointPageClient.js:647-668`; tombol
+  barisnya di `:1064-1070`). Ikon/aksi "Revoke" dan entri `revoke` di `ROW_ACTION_ICONS` dihapus,
+  karena dua tombol akan memanggil rute terminal yang sama; konfirmasinya berbunyi "Deleting ...
+  stops every client using it immediately. The key cannot be restored."
+- **Baris `revoked` tidak dirender.** `GatewayKeysTab` menyaring `status === 'revoked'` dari setiap
+  halaman; halaman yang seluruh barisnya sudah dihapus membaca "No keys on this page" dengan kontrol
+  paging tetap ada. `meta.total` masih menghitung baris revoked, yaitu separuh route opsi (a) F1 yang
+  tetap menjadi permintaan `app-serv`.
+- **Koreksi warna aksi destruktif.** Warna tombol Delete diukur langsung, bukan disimpulkan dari
+  atribut class: dua utilitas `text-*` yang bersaing membuat token muted menang, sehingga ikonnya
+  kelabu (`rgb(95, 87, 78)` alih-alih `rgb(179, 38, 30)`). Kedua tabel kini memakai satu base tanpa
+  warna plus tepat satu warna per varian, dan aturan itu dijaga test `row-action-icons.test.ts`.
+- **Verifikasi.** Lima gate `app-ui` hijau di pohon beku `bd0ffdc425f104f1535ff5e2de06cd8b` (496
+  berkas): check 0/0, lint:ts 0, build ok, targeted 5 berkas/44 test (182,44 dtk), suite 2551 test
+  lintas 156 berkas (1942,02 dtk). Click-through terekam di `/tmp/port034/`: delapan tangkapan build
+  final, `evidence-write-run.json` untuk jalur tulis, `evidence-settled.json` untuk pembacaan diam
+  dan warna. Rincian di `app-ui/README.md`. Commit `app-ui` `faf1455`.
