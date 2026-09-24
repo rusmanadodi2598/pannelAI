@@ -215,7 +215,9 @@ Rules:
    header strip, because a refused clipboard write has to be answered where the value is: the panel is
    commonly opened on an origin that is not a secure context, where the clipboard API is absent, so the
    control writes through a selection-based path there and reports a failure only when both paths fail
-   (R-26). No search box in the header: search is per-screen and server-side.
+   (R-26). It is icon-only, so the value and the note stay the only text in the block and the button's
+   name comes from its `aria-label` (owner decision, 2026-09-24; §8.11.9). No search box in the header:
+   search is per-screen and server-side.
 5. **Three responsive shapes** (owner requirement, 2026-09-17; DESIGN.md §8). Mobile is a drawer over a
    dimmed overlay, tablet is a 64px icon rail that expands on demand, and desktop is a 264px sidebar that
    collapses to the same rail. The collapsed state is remembered in a cookie, and the viewport decides
@@ -251,7 +253,8 @@ absent.
   **Not built:** the created column and the `revoked_at` value the read schema parses are not rendered
   (`docs/PORT/001-PORT-ENDPOINT-KEYS.md` F6, decision open).
 - **Create:** a name field, then a response modal that shows the full key once with a copy control and
-  the sentence: "This key is shown once. Store it now." The modal cannot be dismissed by
+  the sentence: "This key is shown once. Store it now." The copy control is icon-only (§8.11.9), so the
+  key and the outcome sentence are what the operator reads. The modal cannot be dismissed by
   clicking the backdrop; it closes with an explicit control or Escape after the copy control reports
   success or the acknowledgement checkbox is ticked. A refused copy does not open the modal up: the
   plaintext exists nowhere else, and a dismissal on a copy that did not land would lose it.
@@ -1182,6 +1185,11 @@ does not pass review.
    a text label only, which is better than a glyph that means nothing (R-04).
 8. The icon map holds one entry per icon plus the nav item it serves, so a reviewer can check relevance
    without opening the sidebar component.
+9. An icon-only control carries its name in the button rather than on it: the visible text goes, the
+   `aria-label` and the `title` keep the name, and the glyph is `aria-hidden`, so a screen reader reads one
+   thing rather than two. Its glyph is recorded in the same map with a one-line reason (R-04, R-31), and
+   `tests/support/icon-only.ts` asserts the contract for every surface that uses one. The row actions and
+   the copy control are the surfaces that do (owner decision, 2026-09-24).
 
 ## 9. Design direction and antislop binding
 
