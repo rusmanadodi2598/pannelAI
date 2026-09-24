@@ -8,7 +8,7 @@ request lewat sebuah provider, bukan hanya member combo. Dokumen ini mencatat ke
 
 | | |
 |---|---|
-| **Status** | **CLOSED 2026-09-24.** Kedua setengah mendarat di commit lokal `c33b468` (app-serv, panel, spec, kontrak; 36 berkas); draft ini di commit berikutnya; belum di-push |
+| **Status** | **CLOSED 2026-09-24.** Kedua setengah mendarat di commit lokal `026db28` (app-serv, panel, spec, kontrak; 37 berkas); draft ini di `58a352b`; belum di-push |
 | **Mechanism** | DURING & AFTER (antislop) |
 | **Scope** | `app-serv/` (domain, schema, service, data plane, config, wiring) dan `app-ui/` (skema, klien API, dua komponen, test), plus amandemen SPEC-API §7.5/§7.14 dan SPEC-UI §6.3/§6.13 |
 | **Permintaan owner** | "Nah, berarti tinggal satu fix lagi, benar faileover untuk round robin per provider, supaya mekanisme nya bisa 1:1, saklar ini bukan hanya aktif di mode `combo` aja. Karena di REFERENCE ada saklar per provider juga." |
