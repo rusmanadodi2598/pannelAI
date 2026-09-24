@@ -9,19 +9,16 @@
 	// a drag is mouse-only and the panel is used on a phone; the drag is the faster path where a pointer
 	// exists. Both call the same function, so the two cannot disagree about the result.
 	//
-	// The reference suggestions belong to the editor, which owns the list, so this component is told the id
-	// of the `datalist` to point at rather than rendering one of its own. Two `datalist` elements sharing an
-	// id would be a document-wide collision the moment a second editor appeared.
+	// Each row's ref is a text field rather than a picker: the editor's picker fills the list, and a ref the
+	// picker cannot offer yet (a model id an upstream has not answered with) is still typeable here.
 	import { GripVertical, Plus, Trash2 } from '@lucide/svelte';
 	import { reorderComboModels, type ComboModelEntry } from '$lib/schemas/combo';
 
 	let {
 		models,
-		listId,
 		onchange
 	}: {
 		models: ComboModelEntry[];
-		listId: string;
 		onchange: (models: ComboModelEntry[]) => void;
 	} = $props();
 
@@ -87,7 +84,6 @@
 				<span class="text-xs text-[var(--color-text-muted)]">Model reference</span>
 				<input
 					type="text"
-					list={listId}
 					value={entry.ref}
 					oninput={(event) => patch(index, { ref: event.currentTarget.value })}
 					placeholder="provider/model or a combo name"

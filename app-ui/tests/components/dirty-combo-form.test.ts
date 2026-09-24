@@ -44,7 +44,8 @@ const CASES: FormCase[] = [
 			render(ComboEditor, {
 				props: {
 					combo: comboFixture(),
-					suggestions: [],
+					sections: [],
+					pickerFailed: false,
 					onsaved: vi.fn(),
 					oncancel: vi.fn()
 				}
@@ -62,7 +63,13 @@ const CASES: FormCase[] = [
 		name: 'the Combo editor in create mode',
 		mount: async () => {
 			render(ComboEditor, {
-				props: { combo: null, suggestions: [], onsaved: vi.fn(), oncancel: vi.fn() }
+				props: {
+					combo: null,
+					sections: [],
+					pickerFailed: false,
+					onsaved: vi.fn(),
+					oncancel: vi.fn()
+				}
 			});
 			await screen.findByRole('heading', { name: 'New combo' });
 		},

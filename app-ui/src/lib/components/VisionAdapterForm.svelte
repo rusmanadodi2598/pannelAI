@@ -5,14 +5,21 @@
 	// §6.4 requires the pdf, audio-input, and video-input adapters to be absent rather than disabled, so
 	// there is no control for them and no upgrade hint: the note is text.
 	//
-	// The model list is drawn from the catalog's `vision` capability. A model that is already selected but
-	// no longer in that list is kept and shown, because dropping it silently would turn a capability change
-	// on the provider's side into a configuration the operator never chose.
+	// The picker offers the vision models of the providers that are configured right now, which is the
+	// reference's own rule for this adapter: it hands the same modal its connected providers
+	// (`ModelSelectModal.js:216-219`) and the `vision` capability (`combos/page.js:826-835`), and the
+	// capability filter drops a provider that answered with no such model (`:448-451`). A model that is
+	// already selected but no longer appears in that list is kept and shown, because dropping it silently
+	// would turn a capability change on the provider's side into a configuration the operator never chose.
 	import { untrack } from 'svelte';
 	import FormIssues from '$lib/components/FormIssues.svelte';
+	import ModelPickerDialog from '$lib/components/ModelPickerDialog.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import VisionModelPicker from '$lib/components/VisionModelPicker.svelte';
-	import { listModelCatalog } from '$lib/api/models';
+	import { loadPickerSources } from '$lib/model-picker-data';
+	import { pickerSections } from '$lib/schemas/model-picker';
+	import type { CatalogModel } from '$lib/schemas/model';
+	import type { Provider } from '$lib/schemas/provider';
 	import { getVisionAdapter, replaceVisionAdapter } from '$lib/api/vision-adapter';
 	import {
 		buildVisionAdapterBody,
@@ -26,7 +33,10 @@
 
 	let adapter = $state<VisionAdapter | null>(null);
 	let form = $state<VisionAdapterForm>({ enabled: false, roundRobin: false, models: [] });
-	let visionRefs = $state<string[]>([]);
+	let catalog = $state<CatalogModel[]>([]);
+	let providers = $state<Provider[]>([]);
+	let pickerFailed = $state(false);
+	let pickerOpen = $state(false);
 
 	let loading = $state(true);
 	let loadError = $state<string | null>(null);
@@ -38,10 +48,16 @@
 	const warning = $derived(visionAdapterWarning(form));
 	const status = $derived(visionAdapterStatusText(form));
 
+	// No placeholders and no combos: this picker was read for one capability, and the reference's own
+	// capability-filtered picker hides the combos (`ModelSelectModal.js:427`).
+	const sections = $derived(
+		pickerSections({ catalog, providers, combos: [], placeholders: false })
+	);
+
 	$effect(() => {
 		untrack(() => {
 			void load();
-			void loadVisionRefs();
+			void loadPicker();
 		});
 	});
 
@@ -60,9 +76,11 @@
 		form = visionAdapterToForm(result.data);
 	}
 
-	async function loadVisionRefs(): Promise<void> {
-		const result = await listModelCatalog({ capability: 'vision' });
-		if (result.ok) visionRefs = result.data.data.map((model) => model.id).sort();
+	async function loadPicker(): Promise<void> {
+		const sources = await loadPickerSources({ capability: 'vision' });
+		catalog = sources.catalog;
+		providers = sources.providers;
+		pickerFailed = sources.failed;
 	}
 
 	function toggleModel(ref: string): void {
@@ -168,7 +186,13 @@
 				</label>
 			</div>
 
-			<VisionModelPicker {form} {visionRefs} ontoggle={toggleModel} />
+			<VisionModelPicker
+				{form}
+				{sections}
+				{pickerFailed}
+				ontoggle={toggleModel}
+				onchoose={() => (pickerOpen = true)}
+			/>
 
 			<FormIssues {issues} />
 
@@ -194,5 +218,17 @@
 				{/if}
 			</div>
 		</form>
+
+		<!-- Outside the form on purpose: Enter in the dialog's search field must not submit the adapter. -->
+		<ModelPickerDialog
+			title="Choose vision models"
+			open={pickerOpen}
+			{sections}
+			selected={form.models}
+			failed={pickerFailed}
+			emptyText="No connected provider reports a vision-capable model right now. Connect one on the Providers screen, or declare the capability on a model you added there."
+			ontoggle={toggleModel}
+			onclose={() => (pickerOpen = false)}
+		/>
 	{/if}
 </div>

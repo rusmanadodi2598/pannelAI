@@ -363,13 +363,27 @@ absent.
   landed), delete.
 - **Editor:**
   - Model list is ordered and drag-reorderable, each row a `ref` with a priority. The `ref` field accepts
-    `provider/model` or an existing combo name, with a picker over the catalog and the combos on the page.
-    Reordering ships with two paths to the same operation: a pointer drag, and Up and Down buttons that
-    work from a keyboard or a touch screen. A drag alone would be mouse-only, and this panel is used on a
-    phone. Both call one function, so they cannot disagree about the result, and each move renumbers the
-    priorities rather than swapping two of them, because the numbers are the stored form of the order.
-    The picker's suggestions are the catalog ids and the combo names: both are sources the API resolves a
-    ref from, and both are reads the panel already has.
+    `provider/model` or an existing combo name, and stays a text field: a ref the picker cannot offer yet
+    (a model id an upstream has not answered with) is still typeable. Reordering ships with two paths to
+    the same operation: a pointer drag, and Up and Down buttons that work from a keyboard or a touch
+    screen. A drag alone would be mouse-only, and this panel is used on a phone. Both call one function, so
+    they cannot disagree about the result, and each move renumbers the priorities rather than swapping two
+    of them, because the numbers are the stored form of the order.
+  - **Model picker:** one dialog serves every model choice on the screen (the combo's members, the judge),
+    which is the reference's own shape. It offers the catalog ids of the providers that have an endpoint
+    right now (`endpoint_count > 0`) and the names of the combos on the page, and nothing else. A provider
+    with no endpoint row is not offered even when the registry marks it `no_auth`, because this gateway
+    selects an endpoint row before it routes (draft 024 §3.7 F7). A provider whose chat path needs a
+    connector is not offered, and neither is a media model (a `kind` other than empty, `llm`, or `chat`),
+    because the write path refuses both with a concrete reason (draft 024 F4). A provider that is
+    connected and routable but has no rows of its own is offered as one dashed placeholder whose model id
+    the operator then edits in the row, which is the reference's own shape. The dialog carries a search
+    that matches a model or a section name, and a section-name match keeps all of that section's options.
+    A failed read is reported as a failure rather than presented as an empty catalog, and a ref already
+    chosen shows as picked. The active set is computed in the panel from the provider list joined to the
+    catalog, because the catalog route has no "active" filter yet; the server-side equivalent is requested
+    in draft 025 F3, and until it lands the panel reads both routes.
+  - `judge_model` uses the same dialog in single-select mode.
   - `strategy` select: `fallback`, `round_robin`, `fusion`. Explaining copy per strategy comes from the
     SPEC-API §7.7 semantics table, so the panel explains the same behavior the router implements:
     - `fallback`: try models in order until one succeeds.
@@ -396,12 +410,17 @@ absent.
 
 **Tab 2: Vision Adapter** (SPEC-API §7.8)
 
-- **Form:** enabled toggle, `round_robin` toggle, and a model multi-select limited to catalog models with
-  the `vision` capability.
+- **Form:** enabled toggle, `round_robin` toggle, and a model multi-select drawn from the same dialog as
+  tab 1, in multi-select mode, limited to the `vision` models of the providers that have an endpoint right
+  now. A provider that answered with no vision model is not offered, which is what the reference's own
+  capability filter does; a selected ref the picker no longer offers is kept and labelled rather than
+  dropped, because a capability change on the provider's side must not silently rewrite a configuration.
 - **Scope note shown on screen:** v1 covers vision only. The pdf, audio-input, and video-input adapters
   from the reference are not ported, and the screen does not render controls for them.
 - **Empty state:** enabled with no models selected renders a warning that image requests will not be
-  adapted until at least one model is chosen.
+  adapted until at least one model is chosen. When no connected provider reports a vision-capable model,
+  the picker says so and names both ways out: connect a provider, or declare the capability on a model
+  added on the Providers screen.
 
 ### 6.5 `/usage`
 

@@ -189,7 +189,66 @@ sentence under it on the provider detail page and rejected the concept, because 
 carries no such block, so both components, the schema, the store, the two API client calls, the three test
 files and both screens' sections were deleted, the combo consumers were re-aimed at the catalog and the combos
 on the page, and the SPEC-UI clauses that had placed the set on that screen became a removal note, filed as
-`docs/DRAFT/019-PROVIDER-SURFACE-PARITY.md` §11.
+`docs/DRAFT/019-PROVIDER-SURFACE-PARITY.md` §11. The thirty-first is the model picker on both tabs of
+`/combos`, measured 2026-09-24: the picker offered the whole 587-ref catalog, of which exactly one ref
+belonged to a provider that had an endpoint and none of the 248 vision refs did, so both tabs now offer
+only the refs of the providers that are configured right now, with a connector-only provider and a media
+model left out for the same reason, the judge field reading the same dialog in single-select mode, and
+the server-side active filter filed as `docs/DRAFT/025-COMBO-PICKER-PARITY.md` F3.
+
+### The combo and vision model picker, 2026-09-24
+
+Run with Bun 1.3.0 (`bun --version`; the earlier pass rows state 1.3.14, which no binary on this machine
+reports, filed as F13 of `docs/DRAFT/007-UI-ENDPOINT-READINESS.md`). The owner's item was the picker on
+both tabs of `/combos`: the reference's combo builder filters its provider and model list to what is
+active at that moment, while this panel offered the whole catalog, providers that were never configured
+included.
+
+The premise was measured against the running gateway before anything was designed, and the gap is larger
+than the sentence suggests. The provider list holds 86 rows, of which exactly one has an endpoint
+(`TH HARBOR 1`, the owner's own node, three connections) and six are `no_auth`. The chat catalog holds
+587 refs across 67 providers, of which exactly one belongs to that active provider; the vision catalog
+holds 248 refs across 42 providers, of which none do. The picker was therefore offering 586 chips that
+could not answer, and the vision picker was offering 248 of them, because the gateway answers
+`NO_PROVIDER_AVAILABLE` for any provider without an endpoint row (`selection.go:141-143`).
+
+The reference's rule was read off `origin/master` at `21583c03` before the shape was fixed:
+`ModelSelectModal.js:216-219` builds the set it shows from the connected providers, `:335-339` gives a
+connected compatible node with no models one dashed placeholder chip to pre-fill, `:448-451` drops a
+provider whose models fail the capability filter (which also drops that placeholder, because a
+placeholder reports no capabilities), `:427` hides the combos under any filter, and `:453-459` keeps a
+whole section when the search matches its name. One clause was deliberately not copied: the reference
+also shows `no_auth` providers without a connection, and this gateway cannot, because it selects an
+endpoint row before it routes, the `no_auth` ones included (draft 024 §3.7 F7). Copying that clause would
+offer chips that always fail, which is the defect being removed.
+
+What replaced it is one derivation (`src/lib/schemas/model-picker.ts`) that both tabs share, so the two
+screens cannot disagree about what is offered; one loader (`src/lib/model-picker-data.ts`) that reads the
+provider list page by page, because the route caps `per_page` at 100, and reports a failed read as a
+failure rather than as a shorter active set; and one dialog (`ModelPickerDialog.svelte`) that the combo
+editor uses for its members and its judge, in single-select mode, and the vision tab uses in multi-select
+mode. Two further rules keep a chip from being an offer that cannot be saved: a provider whose chat path
+needs a connector is left out (`routability`, 11 of the 86 rows), and a media model is left out (`kind`
+outside empty, `llm`, `chat`; 135 of the 587 rows), because the write path refuses both with a concrete
+reason (draft 024 F4). Neither was reachable through the live picker, and both are applied and tested
+now rather than left as the next defect.
+
+Three files crossed the 250-line cap while this pass wrote them and were split rather than left over it:
+`ComboEditor.svelte` 252 to 215 plus `ComboIdentityFields.svelte` 52, `combo-editor.test.ts` 300 to 232
+plus `combo-editor-models.test.ts` 122, and `model-picker.test.ts` 269 to 212 plus
+`model-picker-filter.test.ts` 91.
+
+| Check             | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `bun run lint`    | Prettier reports every file conforms, after one `prettier --write` over the files this pass touched and over this section's table                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `bun run build`   | succeeds, output in `build/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Targeted run      | 10 files, 62 tests passed in 2m34s: the two derivation files, the loader, the dialog, the two editor files, the delete and test tabs that render the tab through the shared stub, the dirty-form guard, and the vision tab                                                                                                                                                                                                                                                                                                                                                            |
+| `bun run test`    | 2569 tests passed across 157 files (the previous pass was 2534 across 151), 35 more than the previous pass across six new files; this pass's own targeted run is the 62 tests across the 10 files it names, six of them new, measured on the frozen tree `1bebaefd3ae1d65d79c5996499238996` (500 files) in 1658.89 s                                                                                                                                                                                                                                                                  |
+| Live pass         | one recorded click-through against a panel serving this pass's own build on port 3002, pointed at the team's live gateway on `:9090`: the combo editor's picker renders exactly one section, `TH HARBOR 1 (1)`, with one chip, `th-1`, and the screen requests `/providers?page=1&per_page=100` and `/models/catalog`; the vision picker renders no section at all and the sentence that names both ways out, and the tab requests `/vision-adapter`, `/providers?page=1&per_page=100` and `/models/catalog?capability=vision`. Three screenshots recorded (the editor, both pickers) |
+| File size         | every file this pass wrote is under the 250-line cap; four are above the 220 the recent rows cite, and the largest is `tests/support/model-stub.ts` at 624, which was already over at HEAD (600) and grew by 24 for the provider list route the picker reads                                                                                                                                                                                                                                                                                                                          |
+| Text hygiene      | 0 em dashes in the new and edited files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 ### The alias surface removed from the provider screens, 2026-09-23
 

@@ -3,7 +3,8 @@
 // Two rules are worth asserting against the real form rather than against a helper. The first is that the
 // field a strategy ignores is hidden, not disabled, so the panel never shows a control that cannot affect
 // the save. The second is that the body the panel actually sends carries only the fields the chosen
-// strategy reads, because a leftover judge model on a fallback combo is a request the API refuses.
+// strategy reads, because a leftover judge model on a fallback combo is a request the API refuses. The
+// model list and the picker beside it have their own file (`combo-editor-models.test.ts`).
 
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -54,7 +55,7 @@ describe('ComboEditor', () => {
 
 	it('hides the sticky limit unless the strategy is round_robin', async () => {
 		render(ComboEditor, {
-			props: { combo: null, suggestions: [], onsaved: vi.fn(), oncancel: vi.fn() }
+			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
 		});
 
 		expect(screen.queryByLabelText('Sticky limit')).toBeNull();
@@ -68,7 +69,7 @@ describe('ComboEditor', () => {
 
 	it('hides the judge model unless the strategy is fusion', async () => {
 		render(ComboEditor, {
-			props: { combo: null, suggestions: [], onsaved: vi.fn(), oncancel: vi.fn() }
+			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
 		});
 
 		expect(screen.queryByLabelText('Judge model')).toBeNull();
@@ -82,7 +83,7 @@ describe('ComboEditor', () => {
 
 	it("explains the selected strategy in the router's own words", async () => {
 		render(ComboEditor, {
-			props: { combo: null, suggestions: [], onsaved: vi.fn(), oncancel: vi.fn() }
+			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
 		});
 
 		expect(screen.getByText('Try models in order until one succeeds.')).toBeTruthy();
@@ -98,7 +99,7 @@ describe('ComboEditor', () => {
 	it('refuses a fusion combo with no judge model and sends nothing', async () => {
 		const { calls } = stubFetch();
 		render(ComboEditor, {
-			props: { combo: null, suggestions: [], onsaved: vi.fn(), oncancel: vi.fn() }
+			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
 		});
 
 		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'mixed' } });
@@ -115,7 +116,7 @@ describe('ComboEditor', () => {
 		// native bound the submit never fires and no message appears at all.
 		const { calls } = stubFetch();
 		render(ComboEditor, {
-			props: { combo: null, suggestions: [], onsaved: vi.fn(), oncancel: vi.fn() }
+			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
 		});
 
 		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'mixed' } });
@@ -130,7 +131,9 @@ describe('ComboEditor', () => {
 	it('sends only the fields a fallback combo reads', async () => {
 		const { calls } = stubFetch();
 		const onsaved = vi.fn();
-		render(ComboEditor, { props: { combo: null, suggestions: [], onsaved, oncancel: vi.fn() } });
+		render(ComboEditor, {
+			props: { combo: null, sections: [], pickerFailed: false, onsaved, oncancel: vi.fn() }
+		});
 
 		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'daily' } });
 		await fireEvent.input(screen.getByLabelText('Model reference'), {
@@ -153,7 +156,7 @@ describe('ComboEditor', () => {
 	it('drops a judge model that was typed before the strategy changed away from fusion', async () => {
 		const { calls } = stubFetch();
 		render(ComboEditor, {
-			props: { combo: null, suggestions: [], onsaved: vi.fn(), oncancel: vi.fn() }
+			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
 		});
 
 		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'mixed' } });
@@ -172,31 +175,6 @@ describe('ComboEditor', () => {
 		expect(calls[0].body).not.toHaveProperty('judge_model');
 	});
 
-	it('renumbers priorities when a model is moved up the list', async () => {
-		const { calls } = stubFetch(200);
-		const existing = combo({
-			models: [
-				{ ref: 'first/m', priority: 0 },
-				{ ref: 'second/m', priority: 1 }
-			]
-		});
-
-		render(ComboEditor, {
-			props: { combo: existing, suggestions: [], onsaved: vi.fn(), oncancel: vi.fn() }
-		});
-
-		await fireEvent.click(screen.getByRole('button', { name: 'Move second/m up' }));
-		await fireEvent.click(screen.getByRole('button', { name: 'Save the combo' }));
-
-		await waitFor(() => expect(calls).toHaveLength(1));
-		expect(calls[0].body).toMatchObject({
-			models: [
-				{ ref: 'second/m', priority: 0 },
-				{ ref: 'first/m', priority: 1 }
-			]
-		});
-	});
-
 	it('reports a refused save rather than closing the editor', async () => {
 		stubFetch(409);
 		const onsaved = vi.fn();
@@ -213,7 +191,9 @@ describe('ComboEditor', () => {
 				)
 		);
 
-		render(ComboEditor, { props: { combo: null, suggestions: [], onsaved, oncancel: vi.fn() } });
+		render(ComboEditor, {
+			props: { combo: null, sections: [], pickerFailed: false, onsaved, oncancel: vi.fn() }
+		});
 
 		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'daily' } });
 		await fireEvent.input(screen.getByLabelText('Model reference'), { target: { value: 'a/b' } });
@@ -225,14 +205,21 @@ describe('ComboEditor', () => {
 
 	it('refills the form when it is handed a different combo', async () => {
 		const { rerender } = render(ComboEditor, {
-			props: { combo: combo(), suggestions: [], onsaved: vi.fn(), oncancel: vi.fn() }
+			props: {
+				combo: combo(),
+				sections: [],
+				pickerFailed: false,
+				onsaved: vi.fn(),
+				oncancel: vi.fn()
+			}
 		});
 
 		expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('daily');
 
 		await rerender({
 			combo: combo({ id: 'cmb_2', name: 'nightly', strategy: 'round_robin', sticky_limit: 3 }),
-			suggestions: [],
+			sections: [],
+			pickerFailed: false,
 			onsaved: vi.fn(),
 			oncancel: vi.fn()
 		});

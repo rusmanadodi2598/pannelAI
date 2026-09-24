@@ -12,6 +12,10 @@
 // It also answers the two endpoint routes the detail page's key dialog turns on: the list the Endpoints
 // section reads, and the create it posts to. That is what lets a test render the whole screen and hold the
 // page's own wiring (the button, the token bump) rather than the dialog on its own.
+//
+// It serves the provider list too, because the combo editor's picker reads it for its active set: the rows
+// are the test's (`providerRows`), so a picker test says which providers are configured rather than
+// inheriting the catalog's.
 
 import { vi } from 'vitest';
 import { endpointRow } from './endpoint-stub';
@@ -53,7 +57,13 @@ export type ModelStub = {
 	oauthStarts: string[];
 	/** The endpoint ids the refresh route was called with, `null` for "every due account". */
 	oauthRefreshes: (string | null)[];
+	/** The provider ids the custom-model route knows, which is what makes an unknown one a refusal. */
 	providers: string[];
+	/**
+	 * The provider list's rows, which the picker reads for its active set and its group names. Empty by
+	 * default: a test that opens a picker sets the rows it wants offered.
+	 */
+	providerRows: StubModel[];
 	disabledWrites: StubModel[][];
 	customCreates: StubModel[];
 	customDeletes: string[];
@@ -204,6 +214,7 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		oauthStarts: [],
 		oauthRefreshes: [],
 		providers: ['openai', 'anthropic'],
+		providerRows: [],
 		disabledWrites: [],
 		customCreates: [],
 		customDeletes: [],
@@ -283,6 +294,19 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 			return json({
 				data: stub.providerModels,
 				...(stub.providerModelsWarning === null ? {} : { warning: stub.providerModelsWarning })
+			});
+		}
+
+		// The provider list, which the picker reads for its active set and its group names. It is served
+		// paginated the way the route is, so a test can hold the loader's page walk rather than a
+		// one-page answer that would pass for a loader which never asked for a second page.
+		if (method === 'GET' && parsed.pathname.endsWith('/providers')) {
+			const page = Number(parsed.searchParams.get('page') ?? 1);
+			const perPage = Number(parsed.searchParams.get('per_page') ?? 25);
+			const start = (page - 1) * perPage;
+			return json({
+				data: stub.providerRows.slice(start, start + perPage),
+				meta: { page, per_page: perPage, total: stub.providerRows.length }
 			});
 		}
 

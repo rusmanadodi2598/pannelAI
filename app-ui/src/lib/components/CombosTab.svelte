@@ -4,8 +4,10 @@
 	// The tab owns the page of combos, which one is being edited, and the delete confirmation. The table and
 	// the editor are their own components, so this file holds the list's states and the two writes.
 	//
-	// The reference suggestions for the editor come from the two sources the panel can read: the catalog
-	// and the combo names on this page. A ref may be either, so both are offered.
+	// The reference suggestions for the editor are the combos on this page and the refs of the providers
+	// that are configured right now, which is the reference's own rule (`ModelSelectModal.js:216-219`). The
+	// rule and the join live in `model-picker.ts`; the reads live in `model-picker-data.ts`, and the combos
+	// half is derived here so a delete cannot leave a stale name in the picker.
 	import { untrack } from 'svelte';
 	import ComboDeleteDialog from '$lib/components/ComboDeleteDialog.svelte';
 	import ComboEditor from '$lib/components/ComboEditor.svelte';
@@ -13,8 +15,11 @@
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { deleteCombo, listCombos } from '$lib/api/combos';
-	import { listModelCatalog } from '$lib/api/models';
+	import { loadPickerSources } from '$lib/model-picker-data';
+	import { pickerSections } from '$lib/schemas/model-picker';
 	import type { Combo } from '$lib/schemas/combo';
+	import type { CatalogModel } from '$lib/schemas/model';
+	import type { Provider } from '$lib/schemas/provider';
 
 	const PAGE_SIZE = 25;
 
@@ -33,21 +38,24 @@
 	// still references the combo.
 	let deleteConflict = $state(false);
 
-	let catalogRefs = $state<string[]>([]);
+	let catalog = $state<CatalogModel[]>([]);
+	let providers = $state<Provider[]>([]);
+	let pickerFailed = $state(false);
 
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 	const showEditor = $derived(creating || editing !== null);
 
-	// The editor's suggestions, deduplicated because a combo name may also be a catalog id and offering the
-	// same string twice is noise in a picker.
-	const suggestions = $derived(
-		[...new Set([...catalogRefs, ...combos.map((combo) => combo.name)])].sort()
+	// The editor's picker sections: the combos on this page, then the refs of the providers that carry an
+	// endpoint right now. Derived rather than stored, so a delete or a page change cannot leave a name the
+	// picker still offers behind.
+	const sections = $derived(
+		pickerSections({ catalog, providers, combos: combos.map((combo) => combo.name) })
 	);
 
 	$effect(() => {
 		untrack(() => {
 			void load();
-			void loadSuggestions();
+			void loadPicker();
 		});
 	});
 
@@ -66,11 +74,14 @@
 		total = result.data.meta.total;
 	}
 
-	// The suggestions are a convenience, so a failure here is silent: the editor still works with a typed
-	// reference, and a banner about a picker would be noise beside the list's own error.
-	async function loadSuggestions(): Promise<void> {
-		const catalog = await listModelCatalog({});
-		if (catalog.ok) catalogRefs = catalog.data.data.map((model) => model.id);
+	// The picker's sources are a convenience, so a failure here does not block the screen: the editor still
+	// works with a typed reference, and the picker says its own read failed rather than showing an empty
+	// catalog as the truth.
+	async function loadPicker(): Promise<void> {
+		const sources = await loadPickerSources({});
+		catalog = sources.catalog;
+		providers = sources.providers;
+		pickerFailed = sources.failed;
 	}
 
 	// Both halves of a delete failure are cleared together, so a stale conflict flag can never colour the
@@ -130,7 +141,8 @@
 	{#if showEditor}
 		<ComboEditor
 			combo={editing}
-			{suggestions}
+			{sections}
+			{pickerFailed}
 			onsaved={() => {
 				closeEditor();
 				void load();

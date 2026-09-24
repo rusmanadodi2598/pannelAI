@@ -23,6 +23,23 @@ const combo = {
 	updated_at: '2026-09-18T00:00:00Z'
 };
 
+/** One provider row as the picker's provider read answers it. */
+function providerRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+	return {
+		id: 'openai',
+		name: 'OpenAI',
+		category: 'apikey',
+		auth_type: 'bearer',
+		auth_modes: ['api_key'],
+		has_oauth: false,
+		no_auth: false,
+		routability: 'native',
+		endpoint_count: 1,
+		status_summary: { total: 1, active: 1, disabled: 0, error: 0, rate_limited: 0 },
+		...overrides
+	};
+}
+
 /** Serves the tab's two reads and answers the delete with whatever a test asks for. */
 function stubFetch(deleteStatus: number, deleteCode: string, deleteMessage: string): string[] {
 	const requested: string[] = [];
@@ -50,8 +67,27 @@ function stubFetch(deleteStatus: number, deleteCode: string, deleteMessage: stri
 						kind: 'chat',
 						capabilities: ['vision'],
 						source: 'registry'
+					},
+					{
+						id: 'oczen/mimo-v2.6-flash-free',
+						provider_id: 'oczen',
+						model_id: 'mimo-v2.6-flash-free',
+						display_name: 'MiMo v2.6',
+						kind: 'chat',
+						capabilities: [],
+						source: 'custom'
 					}
 				]
+			});
+		}
+		// The picker's other read: only `openai` carries an endpoint, so `oczen` must not be offered.
+		if (url.includes('/providers')) {
+			return json({
+				data: [
+					providerRow({ id: 'openai', name: 'OpenAI', endpoint_count: 1 }),
+					providerRow({ id: 'oczen', name: 'OpenCode Zen Free', endpoint_count: 0 })
+				],
+				meta: { page: 1, per_page: 100, total: 2 }
 			});
 		}
 		if (url.includes('/combos')) {
@@ -134,25 +170,21 @@ describe('deleting a combo', () => {
 	});
 });
 
-describe('the editor reference suggestions', () => {
-	it('offers the catalog ids and the combo names, and no alias names', async () => {
+describe('the editor reference picker', () => {
+	it('offers the refs of a configured provider and the combo names, and nothing from an unconfigured one', async () => {
 		stubFetch(409, 'CONFLICT', 'alias fast still references combo daily');
 		render(CombosTab);
 
-		// The editor owns the list, so it has to be open for the datalist to exist.
+		// The editor owns the picker, so it has to be open for the dialog to exist.
 		await waitFor(() => expect(screen.getByRole('button', { name: 'New combo' })).toBeTruthy());
-		screen.getByRole('button', { name: 'New combo' }).click();
+		await fireEvent.click(screen.getByRole('button', { name: 'New combo' }));
+		await fireEvent.click(screen.getByRole('button', { name: 'Add models' }));
 
-		await waitFor(() =>
-			expect(document.querySelectorAll('#combo-ref-suggestions option').length).toBeGreaterThan(0)
-		);
-		const options = [...document.querySelectorAll('#combo-ref-suggestions option')].map((option) =>
-			option.getAttribute('value')
-		);
-		expect(options).toContain('openai/gpt-4o');
-		expect(options).toContain('daily');
-		// The alias set is no longer read, so a former alias name is not offered even when the API still
-		// resolves it.
-		expect(options).not.toContain('fast');
+		const dialog = await screen.findByRole('dialog');
+		expect(within(dialog).getByRole('button', { name: 'GPT-4o' })).toBeTruthy();
+		expect(within(dialog).getByRole('button', { name: 'daily' })).toBeTruthy();
+		// `oczen` has no endpoint row, so its 82 catalog rows are not offered: the reference's rule is
+		// providers that are active now, and this gateway cannot route a provider without an endpoint.
+		expect(within(dialog).queryByRole('button', { name: 'MiMo v2.6' })).toBeNull();
 	});
 });
