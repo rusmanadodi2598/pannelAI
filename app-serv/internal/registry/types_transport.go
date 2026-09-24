@@ -67,8 +67,8 @@ type AuthConfig struct {
 	Header string `yaml:"header"`
 	Scheme string `yaml:"scheme"`
 	// AuthQuery places the credential as a query parameter with this name
-	// instead of a header. Some providers read it only from the URL — the gemini
-	// family's models endpoint takes `?key=` — and the reference applies the same
+	// instead of a header. Some providers read it only from the URL (the gemini
+	// family's models endpoint takes `?key=`), and the reference applies the same
 	// rule in its models route (`authQuery`, models/route.js:189, :634-637).
 	//
 	// It is mutually exclusive with Header: a request that sent both would put

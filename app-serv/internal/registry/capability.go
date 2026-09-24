@@ -85,7 +85,7 @@ func VisionCapable(modelID string) bool {
 }
 
 // matchesGlob reports whether pattern matches value, case-insensitively, with
-// `*` standing for any run of characters and the match anchored at both ends —
+// `*` standing for any run of characters and the match anchored at both ends:
 // the rule the reference applies in pricing.js:213-216. Both arguments are
 // expected lower-cased by the caller.
 func matchesGlob(pattern, value string) bool {

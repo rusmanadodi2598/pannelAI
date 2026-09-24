@@ -28,7 +28,7 @@ package registry
 
 // visionRules is the reference's PATTERN_CAPABILITIES reduced to its vision
 // decision, in its order: the first match wins, and a match returns even when
-// the reference's entry carried no vision flag — that flag merges to the false
+// the reference's entry carried no vision flag, and that flag merges to the false
 // floor, which is why "*gpt-5*image*" answers false rather than falling through
 // to "*gpt-5*".
 var visionRules = []visionRule{

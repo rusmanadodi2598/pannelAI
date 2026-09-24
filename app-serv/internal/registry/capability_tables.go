@@ -22,7 +22,7 @@ package registry
 
 // toolsCapableIDs are the ids that answer false for tools. The reference's only
 // two sources of a false tools answer are MODEL_CAPABILITIES["gpt-image-1"] and
-// the dashboard service-kind mapping for an embedding model — and the latter is
+// the dashboard service-kind mapping for an embedding model, and the latter is
 // applied by the caller that knows a row is an embedding, not here.
 var toolsCapableIDs = map[string]bool{
 	"gpt-image-1": false,

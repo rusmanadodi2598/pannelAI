@@ -56,7 +56,7 @@ type CapabilitySet struct {
 // stops being true, that test fails by name and the layer is ported then.
 //
 // An id nothing matches answers the floor: reads no images, calls tools. That
-// direction is deliberate for the same reason VisionCapable's is — the caller
+// direction is deliberate for the same reason VisionCapable's is: the caller
 // uses vision to refuse a configuration, so guessing "capable" would let an
 // operator wire a text-only model into the vision adapter and discover it when
 // an image request fails upstream.
