@@ -19,15 +19,29 @@
 	// A caller that has to act on the outcome can pass `oncopied`, which fires only after a write
 	// succeeded. The one-time key modal uses it to unlock dismissal, so the modal opens up when the key
 	// actually reached the clipboard rather than when the button was pressed.
+	//
+	// The control has two shapes and one contract. `iconOnly` drops the visible word and keeps it as the
+	// accessible name and the title, which is the shape the two modals use so the value and the outcome
+	// sentence are the only things read beside it. The sentence is not part of the shape: a copy that
+	// reported nothing would be the dead control R-26 rejects, pressed in either shape.
+	import { CONTROL_ICONS } from '$lib/icons';
+
 	const DEFAULT_LABEL = 'Copy';
 	const COPIED = 'Copied.';
 	const FAILED = 'Copy failed. Select the text and copy it.';
 
+	const CopyIcon = CONTROL_ICONS.copy.icon;
+
+	// One base for both shapes, so the border and the hover state cannot drift apart between them.
+	const BUTTON_BASE =
+		'rounded-[var(--radius-sm)] border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]';
+
 	let {
 		value,
 		label = DEFAULT_LABEL,
+		iconOnly = false,
 		oncopied
-	}: { value: string; label?: string; oncopied?: () => void } = $props();
+	}: { value: string; label?: string; iconOnly?: boolean; oncopied?: () => void } = $props();
 
 	let state = $state<'idle' | 'copied' | 'failed'>('idle');
 
@@ -98,11 +112,21 @@
 </script>
 
 <span class="inline-flex items-center gap-2">
-	<button
-		type="button"
-		class="min-h-9 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2.5 text-xs"
-		onclick={() => void write()}>{label}</button
-	>
+	{#if iconOnly}
+		<button
+			type="button"
+			class="inline-flex size-9 items-center justify-center {BUTTON_BASE}"
+			aria-label={label}
+			title={label}
+			onclick={() => void write()}
+		>
+			<CopyIcon class="size-4" aria-hidden="true" />
+		</button>
+	{:else}
+		<button type="button" class="min-h-9 {BUTTON_BASE} px-2.5 text-xs" onclick={() => void write()}
+			>{label}</button
+		>
+	{/if}
 
 	<span class="text-xs text-[var(--color-text-muted)]" role="status" aria-live="polite">
 		{#if state === 'copied'}

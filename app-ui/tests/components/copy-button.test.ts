@@ -13,6 +13,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import CopyButton from '../../src/lib/components/CopyButton.svelte';
+import { expectIconOnly } from '../support/icon-only';
 
 const VALUE = 'http://127.0.0.1:9090/api/v1';
 const COPIED = 'Copied.';
@@ -118,5 +119,33 @@ describe('CopyButton', () => {
 
 		expect(await screen.findByText(FAILED)).toBeTruthy();
 		expect(spy).not.toHaveBeenCalled();
+	});
+});
+
+// The icon-only shape the two modals use (owner directive, 2026-09-24). The word leaves the face of the
+// button and becomes its accessible name, so the control still announces itself while the value and the
+// outcome sentence stay the only text beside it. The outcome is part of the shape: a copy that reported
+// nothing would be a dead control, pressed in either shape.
+describe('CopyButton, icon-only', () => {
+	it('carries no visible text and keeps the name on the button', () => {
+		render(CopyButton, { props: { value: VALUE, iconOnly: true } });
+
+		expectIconOnly(screen.getByRole('button', { name: 'Copy' }), 'Copy');
+	});
+
+	it('takes a caller label as the accessible name, so the shape is not hard-wired to one word', () => {
+		render(CopyButton, { props: { value: VALUE, label: 'Copy install line', iconOnly: true } });
+
+		expectIconOnly(screen.getByRole('button', { name: 'Copy install line' }), 'Copy install line');
+	});
+
+	it('reports the outcome the same way, with the value still on screen', async () => {
+		const spy = stubExecCommand(() => true);
+		render(CopyButton, { props: { value: VALUE, iconOnly: true } });
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+
+		expect(spy).toHaveBeenCalledWith('copy');
+		expect(await screen.findByText(COPIED)).toBeTruthy();
 	});
 });

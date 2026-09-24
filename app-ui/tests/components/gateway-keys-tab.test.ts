@@ -16,6 +16,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import GatewayKeysTab from '../../src/lib/components/GatewayKeysTab.svelte';
 import { keyRow, stubGatewayKeys } from '../support/gateway-key-stub';
+import { expectIconOnly } from '../support/icon-only';
 
 async function createKey(name: string): Promise<void> {
 	await fireEvent.input(screen.getByLabelText('Key name'), { target: { value: name } });
@@ -171,7 +172,12 @@ describe('gateway keys tab', () => {
 		await createKey('CI runner');
 		const dialog = await screen.findByRole('dialog');
 
-		await fireEvent.click(within(dialog).getByRole('button', { name: 'Copy' }));
+		// The copy control is icon-only here (owner directive, 2026-09-24), so the button carries the name
+		// the glyph cannot.
+		const copy = within(dialog).getByRole('button', { name: 'Copy' });
+		expectIconOnly(copy, 'Copy');
+
+		await fireEvent.click(copy);
 
 		expect(copied).toEqual(['sk-live-once-9999']);
 		expect(within(dialog).getByText('Copied.')).toBeTruthy();

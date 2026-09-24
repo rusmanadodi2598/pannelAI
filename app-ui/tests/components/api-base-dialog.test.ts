@@ -14,6 +14,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/sve
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ApiBaseDialog from '../../src/lib/components/ApiBaseDialog.svelte';
 import { BASE_URL, stubApiBase } from '../support/api-base-stub';
+import { expectIconOnly } from '../support/icon-only';
 
 const LOADING = 'Reading the gateway address from the panel server.';
 const FAILED_COPY = 'Copy failed. Select the text and copy it.';
@@ -95,6 +96,17 @@ describe('api base dialog', () => {
 			// the tick the click returned on.
 			expect(await within(panel).findByText('Copied.')).toBeTruthy();
 			expect(copied.at(-1)).toBe(testCase.expected);
+		}
+	});
+
+	it('offers the copy control as an icon-only button on every tab', async () => {
+		await openLoaded();
+
+		for (const testCase of TAB_CASES) {
+			await fireEvent.click(screen.getByRole('tab', { name: testCase.tab }));
+
+			const panel = screen.getByRole('tabpanel');
+			expectIconOnly(within(panel).getByRole('button', { name: 'Copy' }), 'Copy');
 		}
 	});
 

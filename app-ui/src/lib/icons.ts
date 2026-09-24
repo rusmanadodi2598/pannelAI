@@ -9,9 +9,10 @@
 // thin-stroke look, which is why every row below carries a reason that ties the glyph to its content
 // rather than to the library: the relevance is the decision, and the set is the implementation.
 //
-// Three maps live here: the sidebar's rows, the section headers that are not nav rows, and the row
-// actions of the Endpoint & Key tables. The third is what makes an icon-only button legible: the glyph
-// is decorative, the reason is recorded, and the button itself carries the accessible name.
+// Four maps live here: the sidebar's rows, the section headers that are not nav rows, the row actions
+// of the Endpoint & Key tables, and the controls that are neither. The last two are what make an
+// icon-only button legible: the glyph is decorative, the reason is recorded, and the button itself
+// carries the accessible name.
 
 import {
 	Activity,
@@ -21,6 +22,7 @@ import {
 	ChartLine,
 	Check,
 	CircleGauge,
+	Copy,
 	Film,
 	History,
 	Image,
@@ -139,6 +141,20 @@ export const ROW_ACTION_ICONS = {
 } as const;
 
 export type RowAction = keyof typeof ROW_ACTION_ICONS;
+
+/**
+ * The controls that are not rows.
+ *
+ * The copy control is the first of these: it carries no visible label in the modals, so its name lives
+ * in the button's `aria-label` and the glyph stays decorative, the same contract the row actions
+ * follow (R-04, R-31).
+ */
+export const CONTROL_ICONS = {
+	copy: {
+		icon: Copy,
+		reason: 'Copying puts the value on the clipboard, which is what the two stacked sheets mark.'
+	}
+} as const;
 
 export function navIcon(key: string): IconEntry | undefined {
 	return NAV_ICONS[key];

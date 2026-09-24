@@ -17,22 +17,13 @@ import EndpointKeysTable from '../../src/lib/components/EndpointKeysTable.svelte
 import GatewayKeysTab from '../../src/lib/components/GatewayKeysTab.svelte';
 import { endpointKeyRow } from '../support/endpoint-stub';
 import { stubGatewayKeys } from '../support/gateway-key-stub';
+import { expectIconOnly } from '../support/icon-only';
 import type { EndpointKey } from '$lib/schemas/endpoint';
 
 afterEach(() => {
 	cleanup();
 	vi.unstubAllGlobals();
 });
-
-/** Asserts the icon-only contract on one button. */
-function expectIconOnly(button: HTMLElement, name: string): void {
-	expect(button.textContent?.trim(), `${name} still renders text`).toBe('');
-	expect(button.getAttribute('title'), `${name} has no tooltip`).toBe(name);
-
-	const glyph = button.querySelector('svg');
-	expect(glyph, `${name} has no glyph`).toBeTruthy();
-	expect(glyph?.getAttribute('aria-hidden'), `${name} glyph is not decorative`).toBe('true');
-}
 
 async function gatewayRow(): Promise<HTMLElement> {
 	stubGatewayKeys();

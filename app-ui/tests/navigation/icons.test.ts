@@ -8,7 +8,14 @@
 // The key list comes from `src/lib/navigation.ts`, so adding a row re-checks itself with no change here.
 
 import { describe, expect, it } from 'vitest';
-import { NAV_ICONS, ROW_ACTION_ICONS, STATUS_ICONS, navIcon, rowActionIcon } from '$lib/icons';
+import {
+	CONTROL_ICONS,
+	NAV_ICONS,
+	ROW_ACTION_ICONS,
+	STATUS_ICONS,
+	navIcon,
+	rowActionIcon
+} from '$lib/icons';
 import { allNodes } from '$lib/navigation';
 
 const NAV_KEYS = allNodes().map((node) => node.key);
@@ -101,6 +108,28 @@ describe('row action icon map', () => {
 		const banned = /sparkle|star|magic|zap|lightning|diamond|bot|robot|orb|cube/i;
 
 		for (const [key, entry] of Object.entries(ROW_ACTION_ICONS)) {
+			const name = entry.icon.name ?? '';
+			expect(banned.test(name), `${key} resolves to ${name}, which R-04 rejects`).toBe(false);
+		}
+	});
+});
+
+// The controls that are not rows follow the same contract: one named glyph, a written reason, no banned
+// vocabulary. The copy control is the first entry, and it is icon-only in the two modals, so a missing
+// entry would leave those buttons with no glyph at all.
+describe('control icon map', () => {
+	it('gives every control a named glyph and a reason of at least 20 characters', () => {
+		for (const [key, entry] of Object.entries(CONTROL_ICONS)) {
+			expect(entry.icon.name, `${key} resolves to a nameless component`).toBeTruthy();
+			expect(entry.reason.length, `${key} needs a real reason`).toBeGreaterThanOrEqual(20);
+			expect(entry.reason, `${key} reason must be one sentence`).toMatch(/\.$/);
+		}
+	});
+
+	it('uses no sparkle, star, magic, lightning, diamond, robot, or orb glyph', () => {
+		const banned = /sparkle|star|magic|zap|lightning|diamond|bot|robot|orb|cube/i;
+
+		for (const [key, entry] of Object.entries(CONTROL_ICONS)) {
 			const name = entry.icon.name ?? '';
 			expect(banned.test(name), `${key} resolves to ${name}, which R-04 rejects`).toBe(false);
 		}
