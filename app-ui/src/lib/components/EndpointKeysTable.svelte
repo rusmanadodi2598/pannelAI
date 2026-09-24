@@ -41,9 +41,13 @@
 	const EnableIcon = ROW_ACTION_ICONS.enable.icon;
 	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
 
-	// One target size and one hover wash for every action, so the cell reads as a set.
-	const actionClass =
-		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50';
+	// One target size and one hover wash for every action, so the cell reads as a set. Each variant
+	// carries exactly one text colour: two competing `text-*` utilities resolve by stylesheet order, and
+	// the muted one silently won the destructive button's colour (measured live 2026-09-24).
+	const actionBase =
+		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
+	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;
+	const dangerClass = `${actionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]`;
 </script>
 
 <div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
@@ -105,7 +109,7 @@
 							</button>
 							<button
 								type="button"
-								class="{actionClass} text-[var(--color-danger)] hover:text-[var(--color-danger)]"
+								class={dangerClass}
 								aria-label="Delete"
 								title="Delete"
 								disabled={blocked}

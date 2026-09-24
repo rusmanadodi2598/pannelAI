@@ -5,6 +5,11 @@
 // name, it must say so on hover, and the glyph must be decorative so a screen reader does not read the
 // icon and the name as two things. A button that kept its glyph and lost its name would still look right
 // and be unusable, which is the failure this file exists to catch.
+//
+// The destructive action's colour is part of the same contract: it must carry exactly one `text-*`
+// utility, the danger one, because two competing utilities resolve by stylesheet order and the muted one
+// silently won the Delete button's colour until it was measured live (2026-09-24). jsdom has no Tailwind
+// cascade, so the class list is the only part of that rule a unit test can hold.
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -36,10 +41,10 @@ async function gatewayRow(): Promise<HTMLElement> {
 }
 
 describe('gateway key row actions', () => {
-	it('renders rename, disable, and revoke as named icons', async () => {
+	it('renders rename, disable, and delete as named icons', async () => {
 		const row = await gatewayRow();
 
-		for (const name of ['Rename', 'Disable', 'Revoke']) {
+		for (const name of ['Rename', 'Disable', 'Delete']) {
 			expectIconOnly(within(row).getByRole('button', { name }), name);
 		}
 	});
@@ -53,10 +58,18 @@ describe('gateway key row actions', () => {
 			expectIconOnly(within(row).getByRole('button', { name }), name);
 		}
 	});
+
+	it('gives the destructive action the danger colour, with no competing text colour', async () => {
+		const row = await gatewayRow();
+
+		const button = within(row).getByRole('button', { name: 'Delete' });
+		expect(button.className).toContain('text-[var(--color-danger)]');
+		expect(button.className).not.toContain('text-[var(--color-text-muted)]');
+	});
 });
 
 describe('endpoint key row actions', () => {
-	it('renders test, disable, and delete as named icons', () => {
+	function endpointRow(): HTMLElement {
 		const keys = [endpointKeyRow()] as unknown as EndpointKey[];
 		render(EndpointKeysTable, {
 			props: {
@@ -70,10 +83,22 @@ describe('endpoint key row actions', () => {
 			}
 		});
 
-		const row = screen.getByText('First').closest('tr') as HTMLElement;
+		return screen.getByText('First').closest('tr') as HTMLElement;
+	}
+
+	it('renders test, disable, and delete as named icons', () => {
+		const row = endpointRow();
 
 		for (const name of ['Test', 'Disable', 'Delete']) {
 			expectIconOnly(within(row).getByRole('button', { name }), name);
 		}
+	});
+
+	it('gives the destructive action the danger colour, with no competing text colour', () => {
+		const row = endpointRow();
+
+		const button = within(row).getByRole('button', { name: 'Delete' });
+		expect(button.className).toContain('text-[var(--color-danger)]');
+		expect(button.className).not.toContain('text-[var(--color-text-muted)]');
 	});
 });

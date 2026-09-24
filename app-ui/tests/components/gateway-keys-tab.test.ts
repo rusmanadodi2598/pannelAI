@@ -6,8 +6,8 @@
 // `last_used_at` (Go's `omitempty` on a nil pointer). Before the fix every create failed its parse, so the
 // one-time key never reached the modal.
 //
-// The row actions are their own file: rename, disable, and revoke are a different concern from the list and
-// the one-time key, and together they took the file past the panel's line limit.
+// The row actions are their own file: rename, disable, and delete are a different concern from the list
+// and the one-time key, and together they took the file past the panel's line limit.
 //
 // The copy cases belong to the one-time key: the modal is the only place the plaintext exists, so a copy
 // control that reports nothing on a refused write loses the one value the gateway will never show again.
@@ -56,6 +56,37 @@ describe('gateway keys tab', () => {
 
 		expect(await screen.findByText('No gateway keys yet')).toBeTruthy();
 		expect(screen.queryByRole('table')).toBeNull();
+	});
+
+	it('hides a key the gateway has already revoked, so a deleted key leaves the screen', async () => {
+		stubGatewayKeys({
+			rows: [
+				keyRow(),
+				keyRow({
+					id: 'gky_2',
+					name: 'Old laptop',
+					status: 'revoked',
+					revoked_at: '2026-09-24T15:54:40Z'
+				})
+			]
+		});
+
+		render(GatewayKeysTab);
+
+		expect(await screen.findByRole('table')).toBeTruthy();
+		expect(screen.getByText('Laptop')).toBeTruthy();
+		expect(screen.queryByText('Old laptop')).toBeNull();
+	});
+
+	it('says the page holds no keys when every key on it was deleted, and keeps the paging', async () => {
+		stubGatewayKeys({ rows: [keyRow({ status: 'revoked' })] });
+
+		render(GatewayKeysTab);
+
+		expect(await screen.findByText('No keys on this page')).toBeTruthy();
+		expect(screen.queryByRole('table')).toBeNull();
+		// The paging controls stay, because the operator may need to leave this page.
+		expect(screen.getByRole('button', { name: 'Previous' })).toBeTruthy();
 	});
 
 	it('reports a failed list read and retries it on request', async () => {

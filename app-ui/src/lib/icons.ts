@@ -15,7 +15,6 @@
 
 import {
 	Activity,
-	Ban,
 	Blocks,
 	BookOpen,
 	Binary,
@@ -121,17 +120,13 @@ export const ROW_ACTION_ICONS = {
 		icon: Play,
 		reason: 'Enabling resumes a credential that was paused, the same control read the other way.'
 	},
-	revoke: {
-		icon: Ban,
-		reason: 'Revoking is terminal, so a prohibition mark says the key can never be used again.'
-	},
 	test: {
 		icon: Activity,
 		reason: 'A test asks the upstream to answer once and reports whether it did, a liveness probe.'
 	},
 	delete: {
 		icon: Trash2,
-		reason: 'Deleting removes the stored key row itself, which is what the bin marks.'
+		reason: 'Deleting takes a key off the screen for good, which is what the bin marks.'
 	},
 	save: {
 		icon: Check,

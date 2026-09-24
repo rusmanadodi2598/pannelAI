@@ -77,7 +77,15 @@ export function stubGatewayKeys(options: GatewayKeyStubOptions = {}): GatewayKey
 
 		if (method === 'DELETE') {
 			const answer = options.revoke ?? { status: 204 };
-			if (answer.status === 204) return new Response(null, { status: 204 });
+			if (answer.status === 204) {
+				// The route is a soft revocation: the key stays in the list carrying the terminal status,
+				// and the screen is what hides it. Modelling that here is what lets a delete test assert
+				// the row leaves the table after the next read.
+				const id = url.split('/').pop();
+				const row = rows.find((candidate) => candidate.id === id);
+				if (row) row.status = 'revoked';
+				return new Response(null, { status: 204 });
+			}
 			return json(answer.body ?? {}, answer.status);
 		}
 

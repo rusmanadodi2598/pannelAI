@@ -57,6 +57,9 @@ export function updateGatewayKey(
 	});
 }
 
+// The terminal action of SPEC-API §7.3. The domain and the spec call it revocation; the reference
+// labels the control Delete (`EndpointPageClient.js:647-668`) and the screen follows the reference,
+// so the panel's button reads Delete while this function keeps the domain's word.
 export function revokeGatewayKey(id: string): Promise<ApiResult<EmptyResponse>> {
 	return apiRequest<void, EmptyResponse>({
 		method: 'DELETE',

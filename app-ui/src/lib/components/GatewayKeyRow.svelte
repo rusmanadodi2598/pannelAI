@@ -1,8 +1,10 @@
 <script lang="ts">
 	// One row of the gateway keys table.
 	//
-	// Rename and enable/disable live here because they act on a single key; revocation does not,
-	// because it needs a confirmation dialog that belongs to the screen.
+	// Rename and enable/disable live here because they act on a single key; deletion does not, because it
+	// needs a confirmation dialog that belongs to the screen. The destructive action is labelled Delete,
+	// which is the reference's own name for it (`EndpointPageClient.js:647-668`); it calls the terminal
+	// DELETE route of SPEC-API §7.3, which the domain calls revocation.
 	//
 	// Every action is icon-only (owner directive, 2026-09-24): the glyph comes from the one icon map and
 	// the button carries the action's name as its accessible name and its title, so the control reads the
@@ -19,23 +21,27 @@
 	type Props = {
 		entry: GatewayKey;
 		busy: boolean;
-		onrevoke: (entry: GatewayKey) => void;
+		ondelete: (entry: GatewayKey) => void;
 		onchanged: () => void;
 	};
 
-	let { entry, busy, onrevoke, onchanged }: Props = $props();
+	let { entry, busy, ondelete, onchanged }: Props = $props();
 
 	const RenameIcon = ROW_ACTION_ICONS.rename.icon;
 	const DisableIcon = ROW_ACTION_ICONS.disable.icon;
 	const EnableIcon = ROW_ACTION_ICONS.enable.icon;
-	const RevokeIcon = ROW_ACTION_ICONS.revoke.icon;
+	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
 	const SaveIcon = ROW_ACTION_ICONS.save.icon;
 	const CancelIcon = ROW_ACTION_ICONS.cancel.icon;
 
 	// One target size and one hover wash for every action, so the row reads as a set rather than as
-	// three differently styled controls.
-	const actionClass =
-		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50';
+	// three differently styled controls. Each variant carries exactly one text colour: two competing
+	// `text-*` utilities resolve by stylesheet order, and the muted one silently won the destructive
+	// button's colour (measured live 2026-09-24: rgb(95, 87, 78) instead of the danger token).
+	const actionBase =
+		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
+	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;
+	const dangerClass = `${actionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]`;
 
 	let renaming = $state(false);
 	let draft = $state('');
@@ -149,10 +155,10 @@
 			</button>
 			<button
 				type="button"
-				class="{actionClass} text-[var(--color-danger)] hover:text-[var(--color-danger)]"
-				aria-label="Revoke"
-				title="Revoke"
-				onclick={() => onrevoke(entry)}><RevokeIcon class="size-4" aria-hidden="true" /></button
+				class={dangerClass}
+				aria-label="Delete"
+				title="Delete"
+				onclick={() => ondelete(entry)}><DeleteIcon class="size-4" aria-hidden="true" /></button
 			>
 		{/if}
 

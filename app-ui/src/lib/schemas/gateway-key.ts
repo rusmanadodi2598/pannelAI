@@ -1,8 +1,10 @@
 // Gateway key schemas, mirroring docs/SPEC-API/001-SPEC-API.md §7.3 and the table in §6.
 //
 // `status` is a plain string on the read schema because the response carries a third value the write
-// path cannot set: `revoked`, reached only through DELETE (SPEC-API §7.3). The panel renders it
-// verbatim rather than classifying it. The write schema narrows to the two members the spec names.
+// path cannot set: `revoked`, reached only through DELETE (SPEC-API §7.3). The panel classifies that
+// one value to hide the row (a terminal key's controls would all answer 409, and the reference's own
+// list drops a deleted key), and passes every other value through verbatim. The write schema narrows
+// to the two members the spec names.
 
 import { z } from 'zod';
 import { gatewayKeyId } from './identifiers';
@@ -47,6 +49,11 @@ export const KEY_STATUS_ACTIVE = 'active';
 export const KEY_STATUS_DISABLED = 'disabled';
 export const KEY_STATUSES = [KEY_STATUS_ACTIVE, KEY_STATUS_DISABLED] as const;
 export type KeyStatus = (typeof KEY_STATUSES)[number];
+
+// The terminal read-only status. It is deliberately not a member of `KEY_STATUSES`, because nothing in
+// the panel may write it: only DELETE produces it (SPEC-API §7.3), and the list hides the rows that
+// carry it so a revoked key leaves the screen.
+export const KEY_STATUS_REVOKED = 'revoked';
 
 export const schemaUpdateGatewayKeyForm = z.strictObject({
 	name: label.optional(),
