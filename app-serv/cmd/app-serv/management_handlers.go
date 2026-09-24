@@ -75,6 +75,7 @@ func buildManagementHandlers(in managementHandlerInputs) (managementDeps, error)
 		Settings:      handler.NewSettingsHandler(in.Settings),
 		Chat:          handler.NewChatHandler(in.Plane.Chat),
 		Embeddings:    handler.NewEmbeddingsHandler(in.Plane.Embeddings, in.Plane.Chat),
+		SystemOne:     handler.NewSystemOneHandler(in.Plane.SystemOne, in.Plane.Chat),
 		// The estimate route dials no upstream, so it is built over its own
 		// stateless service and borrows the §4 key rule from the chat service.
 		TokenCount:         handler.NewTokenCountHandler(service.NewTokenCountService(), in.Plane.Chat),

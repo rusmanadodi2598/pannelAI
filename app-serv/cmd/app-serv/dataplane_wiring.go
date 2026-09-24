@@ -50,7 +50,10 @@ type dataPlane struct {
 	Chat       *service.ChatService
 	Embeddings *service.EmbeddingsService
 	Media      *service.MediaCallService
-	Engine     *dataplane.Engine
+	// SystemOne serves the decision models declaring `kind: systemone`, whose
+	// payload is the provider's own vocabulary (SPEC-API-001 §7.15).
+	SystemOne *service.SystemOneService
+	Engine    *dataplane.Engine
 	// Caller is the one media HTTP transport, shared so the embeddings and
 	// media routes draw on the same connection pool (§1.7).
 	Caller dataplane.MediaCaller
@@ -215,9 +218,12 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 	// The media and embeddings planes are built beside the engine they route
 	// through (see dataplane_media_wiring.go), because they share its resolver,
 	// selector, and quota counter.
-	embeddings, media, caller, err := buildMediaPlanes(in, engine, quotas)
+	embeddings, media, systemone, caller, err := buildMediaPlanes(in, engine, quotas)
 	if err != nil {
 		return dataPlane{}, err
 	}
-	return dataPlane{Chat: chat, Embeddings: embeddings, Media: media, Engine: engine, Caller: caller}, nil
+	return dataPlane{
+		Chat: chat, Embeddings: embeddings, Media: media, SystemOne: systemone,
+		Engine: engine, Caller: caller,
+	}, nil
 }

@@ -69,8 +69,12 @@ type Deps struct {
 	Chat             *handler.ChatHandler
 	Embeddings       *handler.EmbeddingsHandler
 	TokenCount       *handler.TokenCountHandler
-	RateLimiter      repository.RateLimiter
-	RateLimitPerMin  int
+	// SystemOne serves the decision models that declare `kind: systemone`
+	// (SPEC-API-001 §7.15). It is its own handler because its payload is the
+	// provider's own vocabulary rather than a chat body.
+	SystemOne       *handler.SystemOneHandler
+	RateLimiter     repository.RateLimiter
+	RateLimitPerMin int
 }
 
 // New registers every route and returns the assembled mux. Patterns carry the

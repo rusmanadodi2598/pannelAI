@@ -76,14 +76,20 @@ func (r *Resolver) resolveAliased(ctx context.Context, target string, depth, ali
 }
 
 // resolveReference handles the provider/model form, where the first segment may
-// be a provider id or any of its aliases.
+// be a provider id or any of its aliases. It answers for the chat plane.
 func (r *Resolver) resolveReference(ctx context.Context, model string) (Resolution, error) {
+	return r.resolveReferenceKind(ctx, model, KindChat)
+}
+
+// resolveReferenceKind is the same split with the plane carried through, so a
+// direct provider/model reference is filtered the way an alias chain is.
+func (r *Resolver) resolveReferenceKind(ctx context.Context, model, kind string) (Resolution, error) {
 	slash := indexOf(model, '/')
 	if slash <= 0 || slash == len(model)-1 {
 		return Resolution{}, dataPlaneError(CodeModelNotFound,
 			"model "+model+" is not a known model, alias, or combo")
 	}
-	return r.ResolveParts(ctx, model[:slash], model[slash+1:])
+	return r.ResolvePartsForKind(ctx, model[:slash], model[slash+1:], kind)
 }
 
 // hasSlash reports whether a model string carries the separator that makes it

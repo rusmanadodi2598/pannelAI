@@ -56,6 +56,9 @@ type managementDeps struct {
 	Settings   *handler.SettingsHandler
 	Chat       *handler.ChatHandler
 	Embeddings *handler.EmbeddingsHandler
+	// SystemOne serves the decision models declaring `kind: systemone`, whose
+	// payload is the provider's own vocabulary (SPEC-API-001 §7.15).
+	SystemOne  *handler.SystemOneHandler
 	TokenCount *handler.TokenCountHandler
 
 	// QuotaFlusher, LogRetention, and OAuthRefresh are returned so the caller
@@ -117,6 +120,7 @@ func routerDeps(
 		Changelog:        handler.NewChangelogHandler(),
 		Chat:             mgmt.Chat,
 		Embeddings:       mgmt.Embeddings,
+		SystemOne:        mgmt.SystemOne,
 		TokenCount:       mgmt.TokenCount,
 		RateLimiter:      limiter,
 		RateLimitPerMin:  cfg.RateLimitPerMin,

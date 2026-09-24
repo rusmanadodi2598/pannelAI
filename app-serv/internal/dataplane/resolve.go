@@ -116,9 +116,10 @@ func NewResolver(index ProviderRegistry, lookup ModelLookup) (*Resolver, error) 
 }
 
 // Resolve applies the documented order: combo name, then alias, then
-// provider/model, then MODEL_NOT_FOUND (SPEC-API-001 §7.15).
+// provider/model, then MODEL_NOT_FOUND (SPEC-API-001 §7.15). It answers for the
+// chat plane.
 func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error) {
-	return r.resolveWithin(ctx, model, nil, 0)
+	return r.resolveForKind(ctx, model, KindChat)
 }
 
 // resolveWithin is Resolve carrying the resolution's working state and the
@@ -132,6 +133,12 @@ func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error
 // not a graph — one target per name — so a count answers the same question with
 // no map to build.
 func (r *Resolver) resolveWithin(ctx context.Context, model string, state *resolveState, aliasHops int) (Resolution, error) {
+	return r.resolveWithinKind(ctx, model, state, aliasHops, KindChat)
+}
+
+// resolveWithinKind is the walk with the plane carried through, so an alias chain
+// cannot end on a model the caller's plane would refuse.
+func (r *Resolver) resolveWithinKind(ctx context.Context, model string, state *resolveState, aliasHops int, kind string) (Resolution, error) {
 	if model == "" {
 		return Resolution{}, dataPlaneError(CodeModelNotFound, "the model field is required")
 	}
@@ -157,18 +164,26 @@ func (r *Resolver) resolveWithin(ctx context.Context, model string, state *resol
 			return Resolution{}, err
 		}
 		if found {
-			return r.resolveWithin(ctx, target, state, aliasHops+1)
+			return r.resolveWithinKind(ctx, target, state, aliasHops+1, kind)
 		}
 		return Resolution{}, dataPlaneError(CodeModelNotFound,
 			"model "+model+" is not a known model, alias, or combo")
 	}
-	return r.resolveReference(ctx, model)
+	return r.resolveReferenceKind(ctx, model, kind)
 }
 
 // ResolveParts resolves an already-split provider identifier and model id, so a
 // combo entry, an alias target, and a client's model string all run through one
-// implementation.
-func (r *Resolver) ResolveParts(_ context.Context, providerName, modelID string) (Resolution, error) {
+// implementation. It answers for the chat plane, which is the default every
+// caller but the decision route wants.
+func (r *Resolver) ResolveParts(ctx context.Context, providerName, modelID string) (Resolution, error) {
+	return r.ResolvePartsForKind(ctx, providerName, modelID, KindChat)
+}
+
+// ResolvePartsForKind resolves a model for one plane, refusing a model that
+// declares a different kind. The chat plane and the decision route share this
+// walk so neither can accept what the other would refuse.
+func (r *Resolver) ResolvePartsForKind(_ context.Context, providerName, modelID, kind string) (Resolution, error) {
 	entry, ok := r.index.Provider(providerName)
 	if !ok {
 		return Resolution{}, dataPlaneError(CodeModelNotFound,
@@ -190,15 +205,13 @@ func (r *Resolver) ResolveParts(_ context.Context, providerName, modelID string)
 	// A declared model wins; a provider that passes model ids through, or a
 	// user-defined node with no model list, accepts the client's id as-is.
 	if declared, found := r.index.Model(entry.ID, modelID); found {
-		// A declared model that is not a chat model is refused by name rather
-		// than served: its payload is a different vocabulary (the reference's
-		// `kind: "systemone"` decision models), so a chat body sent to it is a
-		// request the upstream cannot parse. The refusal is MODEL_NOT_FOUND
-		// because the chat plane genuinely has no such model, and the message
-		// names the kind so the reason is readable.
-		if !declared.IsChat() {
-			return Resolution{}, dataPlaneError(CodeModelNotFound,
-				"model "+entry.ID+"/"+modelID+" is not a chat model (kind "+declared.Kind+")")
+		// A model that declares a different kind is refused by name rather than
+		// served: its payload is a different vocabulary (the reference's
+		// `kind: "systemone"` decision models), so a chat body sent to one, or a
+		// decision payload sent to a chat model, is a request the upstream cannot
+		// parse. The refusal names the kind so the reason is readable.
+		if !modelServesKind(declared, kind) {
+			return Resolution{}, kindRefusal(entry.ID, modelID, declared.Kind, kind)
 		}
 		resolution.Model = declared
 		resolution.UpstreamID = declared.UpstreamID()

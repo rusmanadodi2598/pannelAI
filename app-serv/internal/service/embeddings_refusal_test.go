@@ -48,6 +48,13 @@ func (r stubModelResolver) Resolve(context.Context, string) (dataplane.Resolutio
 	return r.resolution, nil
 }
 
+// ResolveForSystemOne answers the decision route's question with the same canned
+// resolution, so one stub serves both planes' tests. The context it was given is
+// the one it passes on, so a caller's cancellation reaches the answer.
+func (r stubModelResolver) ResolveForSystemOne(ctx context.Context, _ string) (dataplane.Resolution, error) {
+	return r.Resolve(ctx, "")
+}
+
 // embeddingsRefusalFixture builds the embeddings service over the collecting
 // doubles with a fixed request id, so one refusal's row can be read field by
 // field. No engine is built: the resolver and the router are the two ports the

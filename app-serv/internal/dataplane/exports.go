@@ -76,3 +76,10 @@ func ErrUnauthorized() error {
 
 // ErrNotFound is the data plane's MODEL_NOT_FOUND answer.
 func ErrNotFound(message string) error { return dataPlaneError(CodeModelNotFound, message) }
+
+// ResolveForSystemOne resolves a model for the decision route, which accepts only
+// models declaring the systemone kind. It is exported because the route lives in
+// the service layer and must ask the same resolver the chat plane does.
+func (r *Resolver) ResolveForSystemOne(ctx context.Context, model string) (Resolution, error) {
+	return r.resolveForKind(ctx, model, KindSystemOne)
+}

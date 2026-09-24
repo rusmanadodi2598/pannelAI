@@ -57,6 +57,17 @@ type ModelResolver interface {
 	Resolve(ctx context.Context, model string) (dataplane.Resolution, error)
 }
 
+// KindModelResolver is the same question asked for one plane, which is what the
+// decision route needs: it accepts only models declaring the systemone kind, so
+// asking the chat question would either serve a chat model with a decision
+// payload or refuse the model it wants. It is a separate port rather than a
+// second method on ModelResolver because the planes differ in the question they
+// ask, not in who answers it: the chat and media use cases have no reason to
+// carry a method they never call.
+type KindModelResolver interface {
+	ResolveForSystemOne(ctx context.Context, model string) (dataplane.Resolution, error)
+}
+
 // GatewayAuthenticator applies the §4 gateway-key rule to one data-plane
 // request. ChatService implements it.
 //

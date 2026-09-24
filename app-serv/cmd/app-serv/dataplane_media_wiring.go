@@ -26,9 +26,9 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
-// buildMediaPlanes assembles the embeddings and media call services over one
-// shared media caller and the engine's own resolver and selector.
-func buildMediaPlanes(in dataPlaneInputs, engine *dataplane.Engine, quotas *service.QuotaCounter) (*service.EmbeddingsService, *service.MediaCallService, *dataplane.MediaTransport, error) {
+// buildMediaPlanes assembles the embeddings, media, and decision services over
+// one shared media caller and the engine's own resolver and selector.
+func buildMediaPlanes(in dataPlaneInputs, engine *dataplane.Engine, quotas *service.QuotaCounter) (*service.EmbeddingsService, *service.MediaCallService, *service.SystemOneService, *dataplane.MediaTransport, error) {
 	// The package's own HTTP implementation over the guarded client, which
 	// already carries the §1.7 pool limits and the §1.6 deadlines. One instance
 	// serves every media call, so the routes share a connection pool rather than
@@ -50,7 +50,24 @@ func buildMediaPlanes(in dataPlaneInputs, engine *dataplane.Engine, quotas *serv
 		ActiveRequests: in.ActiveRequests,
 	})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
+	}
+
+	// The decision route takes the same two ports and the same caller, because a
+	// decision call is a media-shaped call: one request, one answer, one
+	// accounting pair (SPEC-API-001 §7.15).
+	systemone, err := service.NewSystemOneService(service.SystemOneServiceDeps{
+		Resolver:       engine.Resolver(),
+		Router:         mediaRouter{engine: engine},
+		Caller:         caller,
+		Usage:          in.Usage,
+		Logs:           in.Logs,
+		Quotas:         quotas,
+		RequestID:      router.RequestIDFrom,
+		ActiveRequests: in.ActiveRequests,
+	})
+	if err != nil {
+		return nil, nil, nil, nil, err
 	}
 
 	media, err := service.NewMediaCallService(service.MediaCallServiceDeps{
@@ -65,7 +82,7 @@ func buildMediaPlanes(in dataPlaneInputs, engine *dataplane.Engine, quotas *serv
 		ActiveRequests: in.ActiveRequests,
 	})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
-	return embeddings, media, caller, nil
+	return embeddings, media, systemone, caller, nil
 }

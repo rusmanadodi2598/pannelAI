@@ -110,3 +110,50 @@ func (r kindRegistry) All() []registry.Provider {
 	entry, _ := r.Provider("p")
 	return []registry.Provider{entry}
 }
+
+// TestResolver_RefusesAChatModelOnTheDecisionRoute pins the other direction of the
+// same rule: the decision route accepts only models declaring its own kind, so a
+// chat model named there is refused rather than served with a payload the
+// upstream reads as something else. Both directions are asserted because a guard
+// that only refused one way would let the two planes serve the same id with
+// different bodies.
+func TestResolver_RefusesAChatModelOnTheDecisionRoute(t *testing.T) {
+	cases := []struct {
+		name    string
+		kind    string
+		wantErr bool
+	}{
+		{name: "a decision model is served", kind: "systemone", wantErr: false},
+		{name: "no kind is a chat model, so refused", kind: "", wantErr: true},
+		{name: "llm is a chat model, so refused", kind: "llm", wantErr: true},
+		{name: "chat is a chat model, so refused", kind: "chat", wantErr: true},
+		{name: "an image model is refused", kind: "image", wantErr: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			index := kindRegistry{model: registry.Model{ID: "m", Kind: tc.kind}}
+			resolver, err := NewResolver(index, fakeLookup{})
+			if err != nil {
+				t.Fatalf("NewResolver() error = %v", err)
+			}
+			resolution, err := resolver.ResolveForSystemOne(context.Background(), "p/m")
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("ResolveForSystemOne() served kind %q, want a refusal", tc.kind)
+				}
+				// Every refusal on this route is PROVIDER_NOT_ROUTABLE: the route
+				// and the model both exist, and the combination is unsupported.
+				if code := AsError(err).Code; code != CodeProviderNotRoutable {
+					t.Fatalf("code = %q, want %q", code, CodeProviderNotRoutable)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ResolveForSystemOne() error = %v, want the decision model served", err)
+			}
+			if resolution.ModelID != "m" {
+				t.Fatalf("ModelID = %q, want m", resolution.ModelID)
+			}
+		})
+	}
+}

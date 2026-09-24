@@ -42,4 +42,9 @@ func registerDataPlaneRoutes(mux *routeRecorder, deps Deps) {
 	if deps.TokenCount != nil {
 		mux.HandleFunc("POST "+APIVersion+"/messages/count_tokens", deps.TokenCount.Count)
 	}
+	// The decision route serves models declaring `kind: systemone`, whose payload
+	// is the provider's own vocabulary rather than a chat body.
+	if deps.SystemOne != nil {
+		mux.HandleFunc("POST "+APIVersion+"/systemone", deps.SystemOne.Decide)
+	}
 }
