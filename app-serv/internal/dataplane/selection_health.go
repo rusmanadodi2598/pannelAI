@@ -41,14 +41,16 @@ func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error
 }
 
 // RecordFailure applies a failed attempt to the key and persists its health, so
-// the circuit the domain owns is what changes and nothing else does. A keyless
-// selection has no key to trip, so the write is skipped rather than failing the
-// request on a bookkeeping error.
-func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reason string) error {
-	if selection.Key.ID() == "" {
+// the circuit the domain owns is what changes and nothing else does. A
+// request-shaped failure writes nothing: the request is the cause, the
+// credential is healthy, and the same body would fail identically on any key. A
+// keyless selection has no key to park, so the write is skipped rather than
+// failing the request on a bookkeeping error.
+func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reason string, class domain.KeyFailureClass) error {
+	if selection.Key.ID() == "" || class == domain.KeyFailureRequest {
 		return nil
 	}
-	updated, err := selection.Endpoint.RecordKeyFailure(selection.Key.ID(), reason, s.clock())
+	updated, err := selection.Endpoint.RecordKeyFailure(selection.Key.ID(), reason, class, s.clock())
 	if err != nil {
 		return err
 	}

@@ -86,7 +86,7 @@ func (routeMediaRouter) Select(_ context.Context, providerID string) (dataplane.
 }
 
 func (routeMediaRouter) RecordSuccess(context.Context, dataplane.Selection) error { return nil }
-func (routeMediaRouter) RecordFailure(context.Context, dataplane.Selection, string) error {
+func (routeMediaRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass) error {
 	return nil
 }
 

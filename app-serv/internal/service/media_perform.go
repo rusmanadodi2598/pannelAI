@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
 // mediaAnswerReader maps one upstream answer into the bytes a route returns. A
@@ -68,12 +69,12 @@ func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request 
 	case err != nil:
 		// reason: the client's error is the upstream failure; a failed health
 		// write retries on the next call rather than replacing this one.
-		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream could not be reached")
+		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream could not be reached", domain.KeyFailureTransient)
 	case answer.Status < 200 || answer.Status >= 300:
 		failure = dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
 		// reason: same as above — the upstream rejection is what the client
 		// must see, and the health write is bookkeeping.
-		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream rejected the request")
+		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream rejected the request", dataplane.FailureClass(answer.Status))
 	default:
 		failure = s.served(ctx, call, read, &answer)
 	}
@@ -97,7 +98,7 @@ func (s *MediaCallService) served(ctx context.Context, call MediaCall, read medi
 		if err != nil {
 			// reason: the reader's error is the upstream failure the client
 			// must see; the health write is bookkeeping and retries next call.
-			_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream rejected the request")
+			_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream rejected the request", domain.KeyFailureTransient)
 			return err
 		}
 		answer.Body = body

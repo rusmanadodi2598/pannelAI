@@ -135,13 +135,13 @@ func (e *UpstreamEndpoint) SetKeyStatus(id, status string, now time.Time) (Upstr
 }
 
 // RecordKeyFailure applies a failed attempt to one key and returns its state, so
-// the caller can log which key tripped.
-func (e *UpstreamEndpoint) RecordKeyFailure(id, reason string, now time.Time) (UpstreamKey, error) {
+// the caller can log which key was parked.
+func (e *UpstreamEndpoint) RecordKeyFailure(id, reason string, class KeyFailureClass, now time.Time) (UpstreamKey, error) {
 	index := e.keyIndex(id)
 	if index < 0 {
 		return UpstreamKey{}, NewNotFoundError("upstream key not found")
 	}
-	e.keys[index].RecordFailure(reason, now)
+	e.keys[index].RecordFailure(reason, class, now)
 	e.updatedAt = now
 	return e.keys[index], nil
 }

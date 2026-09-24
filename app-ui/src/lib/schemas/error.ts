@@ -15,6 +15,7 @@ export const API_ERROR_CODES = [
 	'RATE_LIMITED',
 	'NO_PROVIDER_AVAILABLE',
 	'UPSTREAM_ERROR',
+	'UPSTREAM_REJECTED',
 	'UPSTREAM_TIMEOUT',
 	'INTERNAL_ERROR'
 ] as const;
@@ -43,6 +44,7 @@ export const API_ERROR_FALLBACK: Record<ApiErrorCode, string> = {
 	RATE_LIMITED: 'Too many attempts. Wait a moment, then try again.',
 	NO_PROVIDER_AVAILABLE: 'No upstream endpoint is healthy for that model right now.',
 	UPSTREAM_ERROR: 'The upstream provider returned an error.',
+	UPSTREAM_REJECTED: 'The upstream refused this request itself. Fix the request before retrying.',
 	UPSTREAM_TIMEOUT: 'The upstream provider did not answer in time.',
 	INTERNAL_ERROR: 'The gateway hit an unexpected error. Quote the request ID when reporting it.'
 };

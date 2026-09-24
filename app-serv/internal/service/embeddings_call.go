@@ -5,7 +5,7 @@
 //
 //	endpoint health, and its accounting pair.
 //
-// @uses      internal/dataplane, context, time.
+// @uses      internal/dataplane, internal/domain, context, time.
 // @reason    Embed already resolves and shapes the request; the call itself
 //
 //	classifies its own outcome three ways (unreachable, rejected, served)
@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
 // perform runs one outbound embeddings call, applies its result to the
@@ -51,12 +52,12 @@ func (s *EmbeddingsService) perform(ctx context.Context, request dataplane.Media
 	case err != nil:
 		// reason: the client's error is the upstream failure, and reporting a
 		// bookkeeping failure instead would hide the cause it came from.
-		_ = s.router.RecordFailure(ctx, selection, "the embeddings upstream could not be reached")
+		_ = s.router.RecordFailure(ctx, selection, "the embeddings upstream could not be reached", domain.KeyFailureTransient)
 	case answer.Status < 200 || answer.Status >= 300:
 		failure = dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
 		// reason: the upstream rejection is the client's error; a failed health
 		// write retries on the next call rather than replacing this one.
-		_ = s.router.RecordFailure(ctx, selection, "the embeddings upstream rejected the request")
+		_ = s.router.RecordFailure(ctx, selection, "the embeddings upstream rejected the request", dataplane.FailureClass(answer.Status))
 	default:
 		failure = s.router.RecordSuccess(ctx, selection)
 	}

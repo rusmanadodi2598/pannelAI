@@ -46,7 +46,7 @@ type MediaOverrideReader interface {
 type MediaRouter interface {
 	Select(ctx context.Context, providerID string) (dataplane.Selection, error)
 	RecordSuccess(ctx context.Context, selection dataplane.Selection) error
-	RecordFailure(ctx context.Context, selection dataplane.Selection, reason string) error
+	RecordFailure(ctx context.Context, selection dataplane.Selection, reason string, class domain.KeyFailureClass) error
 }
 
 // ModelResolver turns a client model string into a routable provider. It is the

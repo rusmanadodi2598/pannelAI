@@ -140,7 +140,7 @@ func buildEndpoint(t *testing.T, id string, priority int, status domain.Upstream
 			}
 		}
 		for i := 0; i < fixture.failures; i++ {
-			key.RecordFailure("upstream rejected", now.Add(-fixture.failuresAgo))
+			key.RecordFailure("upstream rejected", domain.KeyFailureAuth, now.Add(-fixture.failuresAgo))
 		}
 		endpoint.AttachKey(key)
 	}

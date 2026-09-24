@@ -24,6 +24,8 @@ package dataplane
 
 import (
 	"context"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
 // ValidationError reports a request the data plane cannot serve because of its
@@ -62,8 +64,8 @@ func (e *Engine) RecordSuccess(ctx context.Context, selection Selection) error {
 }
 
 // RecordFailure applies a failed call to a key's health.
-func (e *Engine) RecordFailure(ctx context.Context, selection Selection, reason string) error {
-	return e.selector.RecordFailure(ctx, selection, reason)
+func (e *Engine) RecordFailure(ctx context.Context, selection Selection, reason string, class domain.KeyFailureClass) error {
+	return e.selector.RecordFailure(ctx, selection, reason, class)
 }
 
 // ErrUnauthorized is the data plane's answer to a missing or invalid credential,

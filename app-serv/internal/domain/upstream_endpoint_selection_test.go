@@ -36,37 +36,32 @@ func TestUpstreamEndpoint_ValidKeysAreOrderedByPriority(t *testing.T) {
 		}
 	}
 
-	// A tripped key leaves the list. The failure runs through the aggregate root,
+	// A parked key leaves the list. The failure runs through the aggregate root,
 	// because Key returns a copy: mutating a detached value cannot affect it.
-	if _, err := endpoint.RecordKeyFailure(first.ID(), "upstream said no", keyNow); err != nil {
+	if _, err := endpoint.RecordKeyFailure(first.ID(), "upstream said no", KeyFailureAuth, keyNow); err != nil {
 		t.Fatalf("RecordKeyFailure() error = %v", err)
 	}
-	for range 2 {
-		if _, err := endpoint.RecordKeyFailure(first.ID(), "upstream said no", keyNow); err != nil {
-			t.Fatalf("RecordKeyFailure() error = %v", err)
-		}
-	}
 	if got := endpoint.ValidKeys(keyNow); len(got) != 2 {
-		t.Fatalf("ValidKeys() = %d entries with a tripped key, want 2", len(got))
+		t.Fatalf("ValidKeys() = %d entries with a parked key, want 2", len(got))
 	}
 	if got := endpoint.ValidKeys(keyNow.Add(10 * time.Minute)); len(got) != 3 {
-		t.Fatalf("ValidKeys() = %d entries after the backoff expired, want 3", len(got))
+		t.Fatalf("ValidKeys() = %d entries after the park expired, want 3", len(got))
 	}
 }
 
-func TestUpstreamEndpoint_NextKeyFollowsPriorityThenHealth(t *testing.T) {
+func TestUpstreamEndpoint_NextKeySkipsUnavailableKeys(t *testing.T) {
 	cases := []struct {
 		name        string
 		disable     []int
-		trip        []int
+		park        []int
 		wantFirst   int
 		wantPresent bool
 	}{
-		{name: "the highest priority key wins", wantFirst: 1, wantPresent: true},
+		{name: "an idle top key wins on the priority tie", wantFirst: 1, wantPresent: true},
 		{name: "a disabled top key passes to the next", disable: []int{1}, wantFirst: 2, wantPresent: true},
-		{name: "a tripped top key passes to the next", trip: []int{1}, wantFirst: 2, wantPresent: true},
-		{name: "two unavailable keys leave the third", disable: []int{1}, trip: []int{2}, wantFirst: 3, wantPresent: true},
-		{name: "every key unavailable yields nothing", disable: []int{1, 2}, trip: []int{3}},
+		{name: "a parked top key passes to the next", park: []int{1}, wantFirst: 2, wantPresent: true},
+		{name: "two unavailable keys leave the third", disable: []int{1}, park: []int{2}, wantFirst: 3, wantPresent: true},
+		{name: "every key unavailable yields nothing", disable: []int{1, 2}, park: []int{3}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -77,12 +72,10 @@ func TestUpstreamEndpoint_NextKeyFollowsPriorityThenHealth(t *testing.T) {
 					t.Fatalf("SetKeyStatus(disabled) error = %v", err)
 				}
 			}
-			for _, priority := range tc.trip {
+			for _, priority := range tc.park {
 				key := endpoint.KeyByPriority(priority)
-				for range 3 {
-					if _, err := endpoint.RecordKeyFailure(key.ID(), "nope", keyNow); err != nil {
-						t.Fatalf("RecordKeyFailure() error = %v", err)
-					}
+				if _, err := endpoint.RecordKeyFailure(key.ID(), "nope", KeyFailureAuth, keyNow); err != nil {
+					t.Fatalf("RecordKeyFailure() error = %v", err)
 				}
 			}
 

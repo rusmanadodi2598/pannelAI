@@ -5,7 +5,7 @@
 //
 //	its credential, and recording the outcome on the aggregate.
 //
-// @uses      internal/domain, context, strings, time.
+// @uses      internal/dataplane, internal/domain, context, strings, time.
 // @reason    SPEC-API-001 §7.5 tests "does this credential work right now", which
 //
 //	is a different question from "which key would routing spend": a key
@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
@@ -73,7 +74,9 @@ func (s *EndpointService) Test(ctx context.Context, id, keyID string) (domain.Up
 // recordProbe writes a probe's outcome through the aggregate's own methods and
 // persists it. Health goes through RecordKeySuccess or RecordKeyFailure so the
 // circuit breaker owns that state: a second health field would let the panel and
-// the router disagree about whether a key may be spent (§7.5).
+// the router disagree about whether a key may be spent (§7.5). A refused probe
+// is classified from the upstream's own status, so a 401 parks the key exactly
+// as the same answer would during routing.
 func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.UpstreamEndpoint, key domain.UpstreamKey, outcome ProbeOutcome, now time.Time) (domain.UpstreamEndpoint, ProbeOutcome, error) {
 	endpoint.RecordTest(outcome.State, outcome.LatencyMS, outcome.Message, now)
 	if key.ID() != "" {
@@ -86,7 +89,7 @@ func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.Upstr
 			if reason == "" {
 				reason = "connectivity test failed"
 			}
-			if _, err := endpoint.RecordKeyFailure(key.ID(), reason, now); err != nil {
+			if _, err := endpoint.RecordKeyFailure(key.ID(), reason, dataplane.FailureClass(outcome.Status), now); err != nil {
 				return domain.UpstreamEndpoint{}, ProbeOutcome{}, err
 			}
 		}

@@ -5,7 +5,7 @@
 // @uses      context, testing, time, internal/domain
 // @reason    SPEC-API-001 §7.5 fixes the selection rule: endpoints are tried in priority order, a
 //
-//	disabled endpoint is skipped, and a tripped key is skipped in favour of a healthy one.
+//	disabled endpoint is skipped, and a parked key is skipped in favour of a healthy one.
 //	It decides whether a request is served and which account pays for it, so every branch
 //	is pinned here against the in-memory double (AGENTS.md §2.1).
 //
@@ -24,7 +24,7 @@ import (
 )
 
 // TestSelector_Ordering pins SPEC-API-001 §7.5: endpoints are tried in priority
-// order, a disabled endpoint is skipped, and a tripped key is skipped in favour of
+// order, a disabled endpoint is skipped, and a parked key is skipped in favour of
 // the next healthy one.
 func TestSelector_Ordering(t *testing.T) {
 	cases := []struct {
@@ -71,30 +71,30 @@ func TestSelector_Ordering(t *testing.T) {
 			wantEndpoint: "ep_a", wantKey: "uky_on",
 		},
 		{
-			name: "a tripped key is skipped for the next one",
+			name: "a parked key is skipped for the next one",
 			endpoints: []domain.UpstreamEndpoint{
 				buildEndpoint(t, "ep_a", 1, domain.UpstreamEndpointActive, []keyFixture{
-					{id: "uky_tripped", priority: 1, failures: domain.CircuitThreshold()},
+					{id: "uky_parked", priority: 1, failures: 1},
 					{id: "uky_healthy", priority: 2},
 				}),
 			},
 			wantEndpoint: "ep_a", wantKey: "uky_healthy",
 		},
 		{
-			name: "a tripped key in the first endpoint fails over to the second",
+			name: "a parked key in the first endpoint fails over to the second",
 			endpoints: []domain.UpstreamEndpoint{
 				buildEndpoint(t, "ep_a", 1, domain.UpstreamEndpointActive, []keyFixture{
-					{id: "uky_tripped", priority: 1, failures: domain.CircuitThreshold()},
+					{id: "uky_parked", priority: 1, failures: 1},
 				}),
 				buildEndpoint(t, "ep_b", 2, domain.UpstreamEndpointActive, []keyFixture{{id: "uky_b", priority: 1}}),
 			},
 			wantEndpoint: "ep_b", wantKey: "uky_b",
 		},
 		{
-			name: "an endpoint below the circuit threshold is still used",
+			name: "a key whose park window expired is used again",
 			endpoints: []domain.UpstreamEndpoint{
 				buildEndpoint(t, "ep_a", 1, domain.UpstreamEndpointActive, []keyFixture{
-					{id: "uky_warm", priority: 1, failures: domain.CircuitThreshold() - 1},
+					{id: "uky_warm", priority: 1, failures: 1, failuresAgo: 2 * time.Minute},
 				}),
 			},
 			wantEndpoint: "ep_a", wantKey: "uky_warm",
@@ -108,11 +108,11 @@ func TestSelector_Ordering(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "an endpoint whose every key is tripped yields NO_PROVIDER_AVAILABLE",
+			name: "an endpoint whose every key is parked yields NO_PROVIDER_AVAILABLE",
 			endpoints: []domain.UpstreamEndpoint{
 				buildEndpoint(t, "ep_a", 1, domain.UpstreamEndpointActive, []keyFixture{
-					{id: "uky_1", priority: 1, failures: domain.CircuitThreshold()},
-					{id: "uky_2", priority: 2, failures: domain.CircuitThreshold()},
+					{id: "uky_1", priority: 1, failures: 1},
+					{id: "uky_2", priority: 2, failures: 1},
 				}),
 			},
 			wantErr: true,

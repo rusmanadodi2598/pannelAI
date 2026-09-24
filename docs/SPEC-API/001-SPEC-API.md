@@ -229,8 +229,11 @@ providers; the reference implements the same feature at `POST /api/provider-node
 
 ### 7.5 Upstream Endpoints & Multi API Keys (core new capability)
 
-An **upstream endpoint** holds **1..N API keys**. Routing picks endpoint by priority, then a healthy
-key inside it (priority order, circuit-broken keys skipped). This generalizes the reference 1-connection-1-key model.
+An **upstream endpoint** holds **1..N API keys**. Routing walks the provider's endpoints (round-robin
+with a sticky limit, priority order when no cursor is configured) and picks a healthy key inside one
+(least-recently-used first, ties by priority then id, parked keys skipped). Within one request a
+failed credential is followed by the provider's next healthy credential before the next model is
+tried (credential-first failover, §7.7). This generalizes the reference 1-connection-1-key model.
 
 | Method | Path | Auth | Description | Phase |
 |---|---|---|---|---|
@@ -262,8 +265,12 @@ outcome is reported by index, which is why the response carries `results` rather
 request; `/endpoints/bulk` is for several accounts at once. Both go through the same validation, so
 the invariant below holds whichever path is used.
 
-Key health model (circuit breaker per key): on repeated upstream auth/429 failures → `consecutive_errors++`;
-≥3 ⇒ key marked `error` + `rate_limited_until = now + backoff`; successful call resets. Redis-backed.
+Key health model (parking per key, class-aware): the first upstream failure parks the key with a
+window sized by its class: 401/402/403/404 ⇒ `rate_limited_until = now + 2m`; 429 ⇒ exponential `2s × 2^(n-1)` capped at 5m
+(`n` = consecutive failures, reset by a successful call); 5xx/network/timeout ⇒ 30s; any other 4xx
+records nothing because the request, not the credential, is the cause. `consecutive_errors` counts
+every parked failure and a successful call resets all of it. The health lives on the key row; only
+the rotation cursor is Redis-backed.
 
 ### 7.6 Models (catalog, custom, alias, disabled)
 
@@ -288,7 +295,11 @@ Key health model (circuit breaker per key): on repeated upstream auth/429 failur
 | POST | `/api/v1/combos/{id}/test` | S | Sends a 1-token ping through the combo chain, reports per-model result | P2 |
 
 Strategy semantics (ported from `combo.js`):
-- `fallback`: try models in priority order until success or all exhausted.
+- `fallback`: within one model the router first spends that provider's healthy credentials (next
+  endpoint, then next key) before moving to the next model in priority order. A request-scoped 4xx
+  (any 4xx except 401/402/403/404/429) stops the chain and is returned to the client, because the
+  same body would be rejected identically everywhere. When every model fails, the client receives
+  the first failure's status with the last failure's message.
 - `round_robin`: distribute; `sticky_limit` = consecutive requests kept on one model before rotating.
 - `fusion`: fan out to N models, `judge_model` synthesizes the final answer.
 
@@ -573,7 +584,8 @@ Request pipeline (port of `sse/handlers/chat.js` + `open-sse`):
 auth → schema validation → bypass detection (naming/warmup) → model resolve
   → required-capability detection → combo/adapter augmentation (§7.7, §7.8)
   → token savers (§7.9) → format translation (OpenAI↔Claude↔Gemini)
-  → endpoint+key selection (priority, circuit state, quota) → upstream call
+  → endpoint+key selection (cursor, parked keys, quota; per-request credential
+    failover within the provider, §7.7) → upstream call
   (timeout/retry/proxy) → response translation → usage + quota + log recording
   → SSE passthrough / JSON response
 ```
@@ -648,6 +660,7 @@ no database table, because the changelog describes the binary and the binary car
 | `RATE_LIMITED` | 429 | Gateway or login rate limit hit |
 | `NO_PROVIDER_AVAILABLE` | 503 | Data plane: all endpoints/keys for the model are unhealthy or quota-exhausted |
 | `UPSTREAM_ERROR` | 502 | Upstream returned unrecoverable error |
+| `UPSTREAM_REJECTED` | 400 | Data plane: the upstream rejected the request itself (a 4xx other than 401/402/403/404/429); the failover chain stops |
 | `UPSTREAM_TIMEOUT` | 504 | Upstream timeout after retries |
 | `INTERNAL_ERROR` | 500 | Unexpected; logged with `request_id` |
 
@@ -778,3 +791,5 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 *Changelog 2026-09-23: §7.7's combo write path, §7.8's adapter, and §7.6's two filters now agree with the router about what a model reference names (draft `024-COMBO-VISION-READINESS.md` F1–F4). The data plane resolves three spellings of the first segment — provider id, registry alias, node prefix — while every write path read only the id form, measured live: `cc/claude-…` and `oczen/big-pickle` were refused with "does not resolve" by the same gateway that routes them. One canonicalizer now backs `ModelExists`, the combo ref and judge checks, the alias-target check, the vision adapter, and both `provider_id` filters, so a name the router routes is a name the API accepts, and `GET /models/custom?provider_id=` — documented since P2 and ignored by its handler — narrows by every spelling with the two-way match a prefix-stored row needs. A combo member that is itself a combo now resolves at runtime: `resolveMember` skipped the combo path, so a nested member saved (the write path accepts one deref level, including a combo name) and then answered `MODEL_NOT_FOUND` as a leading member while working as a later one; resolution follows one link with a depth bound, so a stored cycle terminates instead of recursing, and the answered identity stays the combo the client addressed rather than the inner one. Finally, a combo member, judge, or adapter model must be **servable by the chat plane**: a provider whose wire format has no translator and a media model both resolved and then failed the first request (measured: `PROVIDER_NOT_ROUTABLE`, and a chat selector that never reaches an `image` row), so both are now refused at write time with the reason named, which is the same property §7.15's list already held — listed and answerable are one property. What is deliberately unchanged: the reference validates no combo reference at all (its picker offers only active connections), and this port keeps its documented write-time validation; "filter by active provider" is the panel's picker concern and stays in `app-ui`.*
 
 *Changelog 2026-09-24: §7.6's catalog read gains the `active` filter (draft `025-CATALOG-ACTIVE-FILTER.md`), which moves the reference's picker rule to the server. The reference offers only active providers because its picker filters `activeProviders` in the client; this port's catalog listed every model the registry declares, measured live as 587 rows across 67 providers while exactly one provider held an active endpoint — so 586 rows were offered that answer `NO_PROVIDER_AVAILABLE` on the first request (`opencode/muse-spark-1.2-contributor-free` and `mmf/gpt-5` both measured as 503 with no endpoint configured). `?active=true` now narrows the answer to rows whose provider holds at least one endpoint in status `active`, which is the router's own candidate population (`selection.go` selects `ProviderID: resolution.Provider.ID, Status: active`), and the predicate is asked once per read through the same `EndpointStatusCountsByProvider` roll-up the provider list already uses. "Active" is the status, not the moment: a rate-limited active endpoint keeps its provider active because the runtime skip is a rotation, not a configuration, while disabled and errored endpoints do not. `active=false` and an absent parameter both narrow nothing, so the default read is unchanged; `yes`, `1`, and `TRUE` are `VALIDATION_ERROR` rather than silently unfiltered, which is the same refusal the usage status filter already gives and the reason it was made a closed set. A deployment that wires no counter refuses the narrowed read by name instead of answering the whole catalog under a parameter that promised the opposite, and the plain read keeps working without the seam. What is deliberately not in this change: the panel's picker (the caller side, `app-ui`) and a virtual no-auth connection like the reference's, which this port's router does not have — `no_auth` without an endpoint is measured as unservable here, so it is not counted as active.
+
+*Changelog 2026-09-24: §7.5, §7.7, §7.15, and §8 re-state the failover order the data plane now implements (draft `028-FALLBACK-CREDENTIAL-PARITY.md` F1-F4, owner decision: the reference's semantics for all four). The order a failed request walks is credential-first: the provider's next healthy endpoint or key is tried inside the same request before the next combo member is, which is the account loop the reference runs (`chat.js` `excludeConnectionIds`) and this port never had. The first upstream failure parks a key for a class-specific window instead of the fixed three-strike circuit: 401/402/403/404 for 2 minutes, 429 exponentially 2s to a 5m cap driven by consecutive failures and reset by a served call, 5xx/network/timeout for 30s, and a request-scoped 4xx parks nothing because the request, not the credential, is the cause; healthy keys inside one endpoint rotate least-recently-used first so an idle second key is no longer dead weight. A request-scoped 4xx also stops the chain and answers as `UPSTREAM_REJECTED` (400), a new §8 code the panel's closed enum now carries, because the same body would be refused identically by every other member. When every member fails the client receives the first failure's status with the last failure's message, and only a member that actually reached an upstream call may own the recorded identity or the usage row, so a stale combo member (a provider whose endpoints were deleted, a model that no longer resolves) can no longer name itself in the client's error or the accounting; deleting such a provider is refused by name while a combo still references it. Deliberate deviations from the reference, recorded in the draft: parking is per key, not per key-and-model pair (`modelLock_${model}`), the failure-text rules are not ported, and media/embeddings keep their own single-call error shape because they run no chain.*

@@ -128,46 +128,12 @@ func NewSelector(deps SelectorDeps) (*Selector, error) {
 	}, nil
 }
 
-// Select returns the first available endpoint that can serve a request, in
-// priority order, rotated by the cursor when one is configured. A keyed
-// endpoint must own a usable key; a no_auth endpoint presents nothing, so it is
-// selected without one (its Availability already answered the key question).
+// Select returns the first available endpoint that can serve a request: the
+// no-history form of SelectNext, for callers that make one attempt and have
+// nothing to exclude (media, embeddings). The chat engine walks candidates
+// through SelectNext instead.
 func (s *Selector) Select(ctx context.Context, providerID string) (Selection, error) {
-	now := s.clock()
-	endpoints, err := s.candidates(ctx, providerID)
-	if err != nil {
-		return Selection{}, err
-	}
-	if len(endpoints) == 0 {
-		return Selection{}, domain.NewNoProviderAvailableError(
-			"no upstream endpoint is configured for provider " + providerID)
-	}
-
-	offset := s.offset(ctx, providerID, len(endpoints))
-	for i := range endpoints {
-		endpoint := endpoints[(offset+i)%len(endpoints)]
-		if !endpoint.Available(now) {
-			continue
-		}
-		if s.overBudget(ctx, endpoint.ID()) {
-			continue
-		}
-		var key domain.UpstreamKey
-		if endpoint.AuthType() != domain.UpstreamAuthNone {
-			picked, ok := endpoint.NextKey(now)
-			if !ok {
-				continue
-			}
-			key = picked
-		}
-		credential, err := s.credential(endpoint, key)
-		if err != nil {
-			return Selection{}, err
-		}
-		return Selection{Endpoint: endpoint, Key: key, Credential: credential}, nil
-	}
-	return Selection{}, domain.NewNoProviderAvailableError("every upstream endpoint for provider " +
-		providerID + " is unavailable, has no usable key, or has spent its budget")
+	return s.SelectNext(ctx, providerID, nil)
 }
 
 // overBudget reports whether an endpoint must be skipped for budget. A gate read

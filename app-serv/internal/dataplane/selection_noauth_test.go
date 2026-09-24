@@ -68,7 +68,7 @@ func TestSelector_SelectsAKeylessNoAuthEndpoint(t *testing.T) {
 	if err := selector.RecordSuccess(context.Background(), selection); err != nil {
 		t.Fatalf("RecordSuccess() error = %v, want a no-op", err)
 	}
-	if err := selector.RecordFailure(context.Background(), selection, "upstream rejected"); err != nil {
+	if err := selector.RecordFailure(context.Background(), selection, "upstream rejected", domain.KeyFailureAuth); err != nil {
 		t.Fatalf("RecordFailure() error = %v, want a no-op", err)
 	}
 	if len(repo.health) != 0 {

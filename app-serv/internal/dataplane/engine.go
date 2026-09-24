@@ -171,16 +171,20 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	// The §7.8 decision lives beside the seam it consults (vision.go).
 	refs, adapterCount := e.augmentForVision(ctx, in, resolution, refs)
 
-	// lastOutcome carries the identity of the last member that was actually
-	// attempted, so a failure still tells the caller which provider, endpoint,
-	// and model it failed against (register G17: the chat plane records a
-	// failed call, and a zero outcome carries nothing to record).
-	var lastErr error
+	// The walk tracks two failure kinds apart, because they answer the client
+	// differently (draft 028 F3): a member that reached an upstream call owns
+	// the error and the recorded identity, while a member refused before any
+	// call (unresolvable, no endpoints, an untranslatable body) is only the
+	// fallback answer when no member was called at all. The chain's error is
+	// the first called failure's status with the last one's message, which is
+	// how the reference reports an exhausted combo.
+	var firstErr, lastErr error
 	var lastOutcome Outcome
+	var preCallErr error
 	for index, ref := range refs {
 		member, resolveErr := e.resolver.Resolve(ctx, ref)
 		if resolveErr != nil {
-			lastErr = resolveErr
+			preCallErr = resolveErr
 			continue
 		}
 		member.Combo = resolution.Combo
@@ -191,10 +195,15 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 			}
 			return outcome, nil
 		}
-		lastErr = relayErr
-		if outcome.ProviderID != "" {
-			lastOutcome = outcome
+		if outcome.ProviderID == "" {
+			preCallErr = relayErr
+			continue
 		}
+		lastErr = relayErr
+		if firstErr == nil {
+			firstErr = relayErr
+		}
+		lastOutcome = outcome
 		// A client error is not worth failing over from: the same request body
 		// would be rejected identically by every other member, and trying them
 		// spends accounts for nothing.
@@ -202,5 +211,8 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 			return outcome, relayErr
 		}
 	}
-	return lastOutcome, lastErr
+	if lastErr != nil {
+		return lastOutcome, finalError(firstErr, lastErr)
+	}
+	return Outcome{}, preCallErr
 }

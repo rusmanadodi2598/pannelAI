@@ -3,17 +3,19 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_relay.go
-// @for       One resolved provider's leg of the §7.15 pipeline: select an
+// @for       One resolved provider's leg of the §7.15 pipeline: walk the
 //
-//	account, translate the request, call, and translate the answer back.
+//	provider's credentials, translate the request once, call, and
+//	translate the answer back.
 //
-// @uses      internal/schema, context, time.
-// @reason    SPEC-API-001 §7.12's accounting needs the identity of the call that
+// @uses      internal/domain, internal/schema, context, time.
+// @reason    SPEC-API-001 §7.7 fixes the failover order as credential-first, so
 //
-//	failed, not only of the one that succeeded (register G17), so this leg
-//	builds its outcome before the first fallible step and returns it with
-//	the error. Keeping the leg here is also what holds engine.go inside
-//	the AGENTS.md §1.1 line budget.
+//	this leg walks the provider's healthy credentials before it gives
+//	up to the next combo member, and each attempt's outcome reports the
+//	identity it was attempted with so the chat plane records a failed
+//	call (register G17). Keeping the leg here is also what holds
+//	engine.go inside the AGENTS.md §1.1 line budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -28,76 +30,103 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
-// relayOnce handles one resolved provider: select, translate, call, and translate
-// the answer back.
+// relayOnce handles one resolved provider: walk its credentials, translate,
+// call, and translate the answer back.
 //
-// The outcome is built before anything can fail, so every exit — a refused
-// selection, a failed dial, a failed translation, a broken stream — reports the
-// provider, endpoint, model, and combo the call was attempted with. The chat
-// plane records a failed call from that identity (register G17), and a zero
-// outcome would carry nothing to record.
+// The request is translated once, before any credential is spent: a translation
+// failure would repeat identically for every credential, so it fails the leg
+// with a zero outcome: no upstream call happened, so there is no identity to
+// record (draft 028 F3).
+//
+// Each credential that fails in a failover-worthy way is excluded and the next
+// healthy one is tried; a request-shaped refusal is handed back immediately,
+// because the same body would be refused identically everywhere (draft 028 F2).
+// When no credential remains, the leg reports the last in-leg failure with the
+// last attempted identity; when the very first selection is refused, it reports
+// the refusal with no identity at all.
 func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolution, sink FrameSink) (Outcome, error) {
-	outcome := Outcome{
-		Format:     in.ClientFormat,
-		ProviderID: resolution.Provider.ID,
-		Model:      resolution.ModelID,
-		Combo:      resolution.Combo.Name(),
-		Streamed:   in.Stream,
-	}
-
-	selection, err := e.selector.Select(ctx, resolution.Provider.ID)
-	if err != nil {
-		return outcome, err
-	}
-	outcome.EndpointID = selection.Endpoint.ID()
-
-	// The marker opens once the provider and its endpoint are known and closes
-	// before this leg returns, whichever way it ends, so the drawing lights a
-	// node for exactly as long as the provider is being called (SPEC-UI-001
-	// §6.5). A nil seam returns a release that does nothing.
-	release := e.markActive(ctx, resolution.Provider.ID, outcome.EndpointID, resolution.ModelID)
-	defer release()
-
 	body, err := upstreamBody(in, resolution)
 	if err != nil {
-		return outcome, err
+		return Outcome{}, err
 	}
 	if e.saver != nil {
 		body = e.saver.Apply(ctx, body, resolution.Target, resolution.UpstreamID, in.TokenSaverBypass)
 	}
 
-	started := e.clock()
-	upstream, err := e.transport.Do(ctx, Call{
-		Provider:   resolution.Provider,
-		Model:      resolution.Model,
-		Credential: selection.Credential,
-		Body:       body,
-		Stream:     in.Stream,
-		// A chat completion is never idempotent: the upstream may have begun
-		// generating, so the transport caps its retries.
-		Idempotent: false,
-	})
-	if err != nil {
-		e.recordFailure(ctx, selection, err)
-		outcome.LatencyMS = e.elapsedMS(started)
-		return outcome, e.translateCallError(err)
+	outcome := Outcome{
+		Format:   in.ClientFormat,
+		Combo:    resolution.Combo.Name(),
+		Streamed: in.Stream,
 	}
-	defer func() {
-		// reason: the body is read to completion by the caller of this function,
-		// so a close error here reports nothing a request path can act on.
-		_ = upstream.Close()
-	}()
+	// finish serves one successful call and owns its resources: the body closes
+	// and the activity marker releases when it returns, whichever way it
+	// returns. The guards live here rather than in the loop body so exactly one
+	// attempt registers them, and so the loop stays free of a defer it would
+	// otherwise carry per iteration.
+	finish := func(upstream *Upstream, release func(), selection Selection, started time.Time) (Outcome, error) {
+		defer func() {
+			// reason: the body is read to completion by the caller of this
+			// function, so a close error here reports nothing a request path
+			// can act on.
+			_ = upstream.Close()
+		}()
+		defer release()
 
-	if err := e.answer(ctx, upstream, resolution, in, sink, selection, started, &outcome); err != nil {
-		return outcome, err
+		if err := e.answer(ctx, upstream, resolution, in, sink, selection, started, &outcome); err != nil {
+			return outcome, err
+		}
+		outcome.LatencyMS = e.elapsedMS(started)
+		// A served request clears the key's parked state, which is what makes a
+		// recovered credential usable again on the next call.
+		if err := e.selector.RecordSuccess(ctx, selection); err != nil {
+			return outcome, err
+		}
+		return outcome, nil
 	}
-	outcome.LatencyMS = e.elapsedMS(started)
-	// A served request clears the key's circuit state, which is what makes a
-	// recovered credential usable again on the next call.
-	if err := e.selector.RecordSuccess(ctx, selection); err != nil {
-		return outcome, err
+	spent := make(map[string]struct{})
+	var memberErr error
+	for {
+		selection, err := e.selector.SelectNext(ctx, resolution.Provider.ID, spent)
+		if err != nil {
+			if memberErr != nil {
+				return outcome, memberErr
+			}
+			return Outcome{}, err
+		}
+		spent[CandidateID(selection)] = struct{}{}
+		outcome.ProviderID = resolution.Provider.ID
+		outcome.EndpointID = selection.Endpoint.ID()
+		outcome.Model = resolution.ModelID
+
+		// The marker opens once the credential is known and closes when this
+		// attempt ends, whichever way it ends, so the drawing lights a node for
+		// exactly as long as the provider is being called (SPEC-UI-001 §6.5).
+		// A nil seam returns a release that does nothing.
+		release := e.markActive(ctx, resolution.Provider.ID, outcome.EndpointID, resolution.ModelID)
+		started := e.clock()
+		upstream, callErr := e.transport.Do(ctx, Call{
+			Provider:   resolution.Provider,
+			Model:      resolution.Model,
+			Credential: selection.Credential,
+			Body:       body,
+			Stream:     in.Stream,
+			// A chat completion is never idempotent: the upstream may have begun
+			// generating, so the transport caps its retries.
+			Idempotent: false,
+		})
+		if callErr != nil {
+			release()
+			e.recordFailure(ctx, selection, callErr)
+			outcome.LatencyMS = e.elapsedMS(started)
+			failure := e.translateCallError(callErr)
+			if failoverWorthy(AsError(failure).Code) {
+				memberErr = failure
+				continue
+			}
+			return outcome, failure
+		}
+		return finish(upstream, release, selection, started)
 	}
-	return outcome, nil
 }
 
 // elapsedMS is the call's duration since started, clamped at zero so a clock

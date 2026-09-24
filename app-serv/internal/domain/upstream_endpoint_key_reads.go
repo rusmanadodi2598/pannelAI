@@ -79,15 +79,52 @@ func (e UpstreamEndpoint) ValidKeys(now time.Time) []UpstreamKey {
 	return valid
 }
 
-// NextKey reports the key routing would pick now: the highest-priority healthy
-// one. The panel shows the same answer, so an operator can see why a request
-// failed over without re-simulating the rule.
+// NextKey reports the key routing would pick now: the least-recently-used
+// healthy one, ties broken by priority then id. Rotation spreads spend across
+// a key set instead of pinning the highest priority; the panel shows the same
+// answer, so an operator can see why a request failed over without
+// re-simulating the rule.
 func (e UpstreamEndpoint) NextKey(now time.Time) (UpstreamKey, bool) {
+	return e.NextKeySkipping(now, nil)
+}
+
+// NextKeySkipping is NextKey over the keys outside the spent set, which is what
+// a request that already tried one credential asks: the same rule, minus the
+// candidates this request has spent.
+func (e UpstreamEndpoint) NextKeySkipping(now time.Time, spent map[string]struct{}) (UpstreamKey, bool) {
 	valid := e.ValidKeys(now)
-	if len(valid) == 0 {
+	best := -1
+	for i, key := range valid {
+		if _, ok := spent[key.ID()]; ok {
+			continue
+		}
+		if best < 0 || keyIdleBefore(key, valid[best]) {
+			best = i
+		}
+	}
+	if best < 0 {
 		return UpstreamKey{}, false
 	}
-	return valid[0], true
+	return valid[best], true
+}
+
+// keyIdleBefore orders candidates by idle time: a key never used beats a used
+// one, an older use beats a newer one, and equal instants fall back to the
+// stored priority then id so the order is stable across calls.
+func keyIdleBefore(a, b UpstreamKey) bool {
+	aUsed, bUsed := a.LastUsedAt(), b.LastUsedAt()
+	switch {
+	case aUsed == nil && bUsed != nil:
+		return true
+	case bUsed == nil && aUsed != nil:
+		return false
+	case aUsed != nil && bUsed != nil && !aUsed.Equal(*bUsed):
+		return aUsed.Before(*bUsed)
+	case a.Priority() != b.Priority():
+		return a.Priority() < b.Priority()
+	default:
+		return a.ID() < b.ID()
+	}
 }
 
 // ActiveKeyCount reports how many keys are in the active status. It is exported

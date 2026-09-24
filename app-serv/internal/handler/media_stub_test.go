@@ -60,7 +60,7 @@ func (stubMediaRouter) Select(_ context.Context, providerID string) (dataplane.S
 }
 
 func (stubMediaRouter) RecordSuccess(context.Context, dataplane.Selection) error { return nil }
-func (stubMediaRouter) RecordFailure(context.Context, dataplane.Selection, string) error {
+func (stubMediaRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass) error {
 	return nil
 }
 

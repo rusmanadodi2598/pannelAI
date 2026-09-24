@@ -152,6 +152,7 @@ const DATA_PLANE_FALLBACK: Record<string, string> = {
 	INTERNAL_ERROR: 'The gateway hit an unexpected error.',
 	NO_PROVIDER_AVAILABLE: 'No upstream endpoint is healthy for that model right now.',
 	UPSTREAM_ERROR: 'The upstream provider returned an error.',
+	UPSTREAM_REJECTED: 'The upstream refused this request itself. Fix the request before retrying.',
 	UPSTREAM_TIMEOUT: 'The upstream provider did not answer in time.',
 	MODEL_NOT_FOUND: 'The gateway routes no model by that string.',
 	PROVIDER_NOT_ROUTABLE: 'The gateway has no translator for that provider format.'

@@ -120,7 +120,7 @@ func buildManagement(
 	}
 
 	nodeSvc, err := service.NewNodeService(service.NodeServiceDeps{
-		Store: nodeRepo, Index: runtimeIndex, Counts: endpointRepo, Prober: prober,
+		Store: nodeRepo, Index: runtimeIndex, Counts: endpointRepo, Combos: comboRepo, Prober: prober,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: provider nodes: %w", err)

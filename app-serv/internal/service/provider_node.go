@@ -35,6 +35,7 @@ type NodeService struct {
 	store  repository.NodeRepository
 	index  ProviderIndex
 	counts EndpointCounter
+	combos ComboLister
 	prober NodeProber
 	clock  func() time.Time
 }
@@ -48,11 +49,13 @@ type EndpointCounter interface {
 }
 
 // NodeServiceDeps holds the collaborators the service needs. Prober may be nil: a
-// deployment without one still serves node CRUD.
+// deployment without one still serves node CRUD. Combos may be nil: a
+// deployment without a combo table skips the member check.
 type NodeServiceDeps struct {
 	Store  repository.NodeRepository
 	Index  ProviderIndex
 	Counts EndpointCounter
+	Combos ComboLister
 	Prober NodeProber
 }
 
@@ -71,6 +74,7 @@ func NewNodeService(deps NodeServiceDeps) (*NodeService, error) {
 		store:  deps.Store,
 		index:  deps.Index,
 		counts: deps.Counts,
+		combos: deps.Combos,
 		prober: deps.Prober,
 		clock:  time.Now,
 	}, nil
@@ -182,9 +186,10 @@ func (s *NodeService) Update(ctx context.Context, id string, patch NodePatch) (d
 }
 
 // Delete removes a node, refusing while an endpoint still references it
-// (domain.ErrNodeInUse). The reference is by provider id string rather than by
-// foreign key — a built-in provider has no node row at all — so the check has to
-// run here rather than be declared in the schema.
+// (domain.ErrNodeInUse) or while a combo lists the node as a member, naming the
+// combo. The reference is by provider id string rather than by foreign key (a
+// built-in provider has no node row at all), so the check has to run here
+// rather than be declared in the schema.
 func (s *NodeService) Delete(ctx context.Context, id string) error {
 	node, err := s.store.GetByID(ctx, id)
 	if err != nil {
@@ -196,6 +201,9 @@ func (s *NodeService) Delete(ctx context.Context, id string) error {
 	}
 	if count > 0 {
 		return domain.ErrNodeInUse
+	}
+	if err := s.rejectComboReference(ctx, node.ID(), node.Prefix()); err != nil {
+		return err
 	}
 	return s.store.Delete(ctx, id)
 }

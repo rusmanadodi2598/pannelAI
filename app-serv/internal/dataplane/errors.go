@@ -36,6 +36,7 @@ const (
 	CodeInternal            = "INTERNAL_ERROR"
 	CodeNoProvider          = "NO_PROVIDER_AVAILABLE"
 	CodeUpstreamError       = "UPSTREAM_ERROR"
+	CodeUpstreamRejected    = "UPSTREAM_REJECTED"
 	CodeUpstreamTimeout     = "UPSTREAM_TIMEOUT"
 	CodeModelNotFound       = "MODEL_NOT_FOUND"
 	CodeProviderNotRoutable = "PROVIDER_NOT_ROUTABLE"
@@ -89,15 +90,15 @@ func wrapDataPlaneError(code, message string, cause error) *Error {
 
 // statusFor maps a data plane code to its HTTP status.
 //
-// MODEL_NOT_FOUND is 404 and PROVIDER_NOT_ROUTABLE is 400: the spec fixes the
-// first through the §7.15 resolution order and names the second as "actionable
-// rather than a 502 that reads like an upstream outage". A request naming a
-// provider whose protocol the gateway does not translate is a request-level
-// defect the client can fix by naming another provider, which is what 400 says;
-// 503 would tell the client to retry something that can never succeed.
+// PROVIDER_NOT_ROUTABLE is 400: the spec names it as "actionable rather than a
+// 502 that reads like an upstream outage". A request naming a provider whose
+// protocol the gateway does not translate is a request-level defect the client
+// can fix by naming another provider, which is what 400 says; 503 would tell
+// the client to retry something that can never succeed. UPSTREAM_REJECTED is
+// 400 for the same reason, and §8's table is where both are published.
 func statusFor(code string) int {
 	switch code {
-	case CodeValidation, CodeModelNotFound, CodeProviderNotRoutable:
+	case CodeValidation, CodeModelNotFound, CodeProviderNotRoutable, CodeUpstreamRejected:
 		return http.StatusBadRequest
 	case CodeUnauthorized:
 		return http.StatusUnauthorized
@@ -119,7 +120,7 @@ func statusFor(code string) int {
 // keeps working.
 func typeFor(code string) string {
 	switch code {
-	case CodeValidation, CodeModelNotFound, CodeProviderNotRoutable:
+	case CodeValidation, CodeModelNotFound, CodeProviderNotRoutable, CodeUpstreamRejected:
 		return "invalid_request_error"
 	case CodeUnauthorized:
 		return "authentication_error"

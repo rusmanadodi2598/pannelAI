@@ -25,16 +25,6 @@ import (
 	"time"
 )
 
-// keyCircuitThreshold is how many consecutive failures make a key unusable.
-// SPEC-API-001 §7.5 fixes it at three.
-const keyCircuitThreshold = 3
-
-// keyCircuitBackoff is how long a tripped key is skipped before it is retried.
-// It is a fixed window rather than exponential: a key is cheap to probe again
-// (the router just tries the next one), so the cost of retrying too early is
-// one failed request, while the cost of waiting too long is an idle credential.
-const keyCircuitBackoff = 2 * time.Minute
-
 // UpstreamKeyStatus is the lifecycle state of an upstream key.
 type UpstreamKeyStatus string
 
