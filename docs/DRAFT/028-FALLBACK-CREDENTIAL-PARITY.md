@@ -8,7 +8,7 @@ menuliskan keputusan yang harus diambil supaya semantiknya 1:1. Bukan kontrak; k
 
 | | |
 |---|---|
-| **Status** | **IMPLEMENTED (2026-09-24).** F1-F4 dikerjakan 1:1 dengan reference (owner memilih (a) untuk keempatnya, §6); spec diamandemen lebih dulu, kode dan test permanen mendarat di `04e422e`, dokumen ini menyusul sebagai commit kedua |
+| **Status** | **CLOSED 2026-09-24.** F1-F4 dikerjakan 1:1 dengan reference (owner memilih (a) untuk keempatnya, §6); spec diamandemen lebih dulu, kode dan test permanen mendarat di `04e422e` (38 berkas), draft ini di `b127cbe`, plus satu commit catatan status sesudahnya; keduanya lokal, belum di-push |
 | **Mechanism** | DURING & AFTER (antislop) |
 | **Scope** | `app-serv/.` data plane: urutan failover, klasifikasi kegagalan, kesehatan kredensial. `app-ui/.` tidak disentuh |
 | **Permintaan owner** | "Ya, langsung DRAFT kan supaya 1:1 dengan REFERENCE" |
@@ -595,8 +595,8 @@ pekerjaan aktor lain yang sedang berjalan, bukan pass ini); `go-headers.sh` PASS
 `contract-drift.sh` PASS (12 kode sepakat); `panel-check.sh` PASS (prettier, eslint,
 svelte-check, vitest, vite build).
 
-Commit: `04e422e` (spec + kode + test, 38 berkas, 1541 insertions / 598 deletions), dokumen ini
-di commit kedua.
+Commit: `04e422e` (spec + kode + test, 38 berkas, 1541 insertions / 598 deletions); draft ini di
+`b127cbe` (661 baris, docs-only); catatan status ini di commit ketiga.
 
 ### 8.1 Gerbang pass implementasi (antislop, DURING & AFTER)
 
