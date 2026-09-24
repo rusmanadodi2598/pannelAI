@@ -256,7 +256,9 @@ perbaikan F5:
 
 **CLOSED 2026-09-24.** F1 dan F2 ditutup di panel dengan test masing-masing; F3 tetap OPEN sebagai
 permintaan `app-serv`, dan draft mereka untuk parameter itu sudah DURING dengan definisi yang lebih
-tajam (§3.3); F4 non-finding. Seluruh gerbang dan click-through terekam di §4, semuanya pada tree beku
-`1bebaefd3ae1d65d79c5996499238996` (500 berkas; fingerprint diukur ulang setelah suite dan tetap sama).
-Commit kerja: `729a3a8` (23 berkas, 2004 insertions, 233 deletions; `app-ui` plus SPEC-UI dan draft
-ini, tanpa berkas `app-serv` yang di-stage).
+tajam (§3.3); F4 non-finding; F5 dan F6 ditutup setelah review gerbang pass ini sendiri (§3.5, §3.6).
+Seluruh gerbang dan click-through terekam di §4, yang terakhir pada tree beku
+`a691c1e94200ccf013553fc7a093087f` (500 berkas; fingerprint diukur ulang setelah suite dan tetap sama).
+Dua commit kerja, keduanya tanpa berkas `app-serv` yang di-stage: `729a3a8` (23 berkas, 2004
+insertions, 233 deletions; `app-ui` plus SPEC-UI dan draft ini) untuk F1-F4, lalu `952c828` (11 berkas,
+197 insertions, 34 deletions) untuk F5/F6.
