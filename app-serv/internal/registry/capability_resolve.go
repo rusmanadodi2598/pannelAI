@@ -46,14 +46,6 @@ type CapabilitySet struct {
 	Tools bool
 }
 
-// toolsCapableIDs are the ids that answer false for tools. The reference's only
-// two sources of a false tools answer are MODEL_CAPABILITIES["gpt-image-1"] and
-// the dashboard service-kind mapping for an embedding model — and the latter is
-// applied by the caller that knows a row is an embedding, not here.
-var toolsCapableIDs = map[string]bool{
-	"gpt-image-1": false,
-}
-
 // Capabilities answers both questions for one model.
 //
 // The order is the reference's (capabilities.js getCapabilitiesForModel): the
@@ -83,12 +75,104 @@ func Capabilities(provider, modelID string) CapabilitySet {
 	if base == "" {
 		return floor
 	}
-	_ = provider
 
 	if known, found := toolsCapableIDs[base]; found {
 		return CapabilitySet{Vision: floor.Vision, Tools: known}
 	}
-	return CapabilitySet{Vision: visionFor(base, id), Tools: floor.Tools}
+	// The Command Code wire answers every model from one endpoint, so its
+	// vision comes from the reference's own denylist rather than from a family
+	// pattern that describes the model's native provider instead.
+	if commandCodeProviders[strings.ToLower(strings.TrimSpace(provider))] {
+		return CapabilitySet{Vision: !commandCodeTextOnlyModel(id), Tools: floor.Tools}
+	}
+	// The provider override is consulted first because the reference consults
+	// it first: an entry naming a model that a family pattern would answer
+	// differently wins, and codebuddy-cn's deepseek-v4-pro is exactly that case.
+	if vision, found := providerVision(provider, base, id); found {
+		return CapabilitySet{Vision: vision, Tools: floor.Tools}
+	}
+	// The name heuristic runs last and only in the true direction, which is the
+	// reference's own order and direction (capabilities.js:520): a table that
+	// answered false is not overridden by a name, and a model no table knows
+	// still accepts an image when its id says so.
+	return CapabilitySet{Vision: visionFor(base, id) || looksLikeVisionModel(id), Tools: floor.Tools}
+}
+
+// commandCodeProviders are the provider ids whose wire is one endpoint for
+// every model (`/alpha/generate`), so the family patterns must not decide their
+// vision: the reference answers those two ids from a dedicated branch that
+// reads a text-only denylist (capabilities.js:570-583) instead of the pattern
+// table, because a family pattern would claim e.g. deepseek-v4 reads images
+// while the Command Code CLI cannot send one.
+var commandCodeProviders = map[string]bool{"commandcode": true, "cmc": true}
+
+// commandCodeTextOnly is the reference's own denylist: ids that take no image
+// input on the Command Code wire. Everything else on that wire answers vision,
+// which is the reference's default there (new models are assumed multimodal).
+var commandCodeTextOnly = map[string]bool{
+	"deepseek/deepseek-v4-pro":              true,
+	"deepseek/deepseek-v4-flash":            true,
+	"deepseek/deepseek-v4-flash-fast":       true,
+	"zai-org/glm-5.3":                       true,
+	"zai-org/glm-5.2":                       true,
+	"zai-org/glm-5.2-fast":                  true,
+	"zai-org/glm-5.1":                       true,
+	"zai-org/glm-5":                         true,
+	"minimaxai/minimax-m2.7":                true,
+	"minimax/minimax-m2.7-free":             true,
+	"minimaxai/minimax-m2.5":                true,
+	"xiaomi/mimo-v2.5-pro":                  true,
+	"qwen/qwen3.6-max-preview":              true,
+	"qwen/qwen3.7-max":                      true,
+	"meituan/longcat-2.0:free":              true,
+	"stepfun/step-3.5-flash":                true,
+	"tencent/hy4-preview":                   true,
+	"tencent/hy3":                           true,
+	"tencent/hy3-paid":                      true,
+	"nvidia/nemotron-3-ultra-550b-a55b":     true,
+	"poolside/laguna-s-2.1-free":            true,
+	"inclusionai/ling-3.0-flash-free":       true,
+	"inclusionai/ling-3.0-flash-sante:free": true,
+}
+
+// commandCodeTextOnlyModel reports whether an id is text-only on the Command
+// Code wire. The reference matches the full id, then the last path segment,
+// then any id ending in that segment, because a client may send either the
+// namespaced id or the bare one.
+func commandCodeTextOnlyModel(id string) bool {
+	if commandCodeTextOnly[id] {
+		return true
+	}
+	for key := range commandCodeTextOnly {
+		base := key
+		if slash := strings.LastIndex(key, "/"); slash >= 0 {
+			base = key[slash+1:]
+		}
+		if id == base || strings.HasSuffix(id, "/"+base) {
+			return true
+		}
+	}
+	return false
+}
+
+// providerVision reads the (provider, model) override layer, trying the
+// provider's own spelling before the caller's. It reports false when neither
+// key is declared, which is what lets the exact and pattern layers answer.
+func providerVision(provider, base, full string) (bool, bool) {
+	name := strings.ToLower(strings.TrimSpace(provider))
+	if name == "" {
+		return false, false
+	}
+	byModel, found := providerVisionIDs[name]
+	if !found {
+		return false, false
+	}
+	for _, candidate := range []string{base, full} {
+		if vision, ok := byModel[candidate]; ok {
+			return vision, true
+		}
+	}
+	return false, false
 }
 
 // visionFor applies the exact-id layer then the ordered pattern table, on the

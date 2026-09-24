@@ -21,6 +21,12 @@
 // @since     2026-09-17
 package registry
 
+import (
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
+
 // MediaKind is a non-chat service a provider can offer. The set is closed
 // because each kind maps to one route and one request shape (SPEC-API-001 §7.10).
 type MediaKind string
@@ -76,6 +82,15 @@ type MediaConfig struct {
 	// the reference declares none here, and the route names that gap rather
 	// than answering with a model list the client would misread as voices.
 	Voices []MediaVoice `yaml:"voices"`
+	// ValidateURL is the endpoint the reference calls to check a credential
+	// before saving it, and CreditsPerResult is a metered search provider's own
+	// unit cost. Both are carried because the reference declares and reads
+	// them; a dropped field is a check that silently stops happening.
+	ValidateURL      string `yaml:"validate_url"`
+	CreditsPerResult int    `yaml:"credits_per_result"`
+	// ModelMap renames the model a request names onto the id the upstream
+	// expects, for a media service whose public ids differ from its own.
+	ModelMap map[string]ModelMapEntry `yaml:"model_map"`
 }
 
 // MediaVoice is one speech voice a provider documents.
@@ -85,6 +100,47 @@ type MediaVoice struct {
 	Lang   string `yaml:"lang"`
 	Gender string `yaml:"gender"`
 }
+
+// ModelMapEntry is one model_map value. The reference declares two shapes for
+// it: a bare path, or `{path, task}` when the request payload differs per task
+// (open-sse/providers/schema.js:40-44, read by imageProviders/huggingface.js:19-20).
+// A decoder that accepted only one shape would silently drop the other, so both
+// normalise to this struct and the task keeps its documented default.
+type ModelMapEntry struct {
+	// Path is the upstream id or route the model resolves to.
+	Path string `yaml:"path"`
+	// Task is the operation the request performs. It defaults to
+	// "text-to-image", which is the reference's own default for the bare-path
+	// shape.
+	Task string `yaml:"task"`
+}
+
+// UnmarshalYAML accepts both declared shapes: a scalar is the path with the
+// default task, and a mapping carries both fields.
+func (m *ModelMapEntry) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind == yaml.ScalarNode {
+		m.Path = node.Value
+		m.Task = ModelMapDefaultTask
+		return nil
+	}
+	if node.Kind != yaml.MappingNode {
+		return fmt.Errorf("registry: model_map value must be a string or a mapping")
+	}
+	type plain ModelMapEntry
+	var decoded plain
+	if err := node.Decode(&decoded); err != nil {
+		return err
+	}
+	*m = ModelMapEntry(decoded)
+	if m.Task == "" {
+		m.Task = ModelMapDefaultTask
+	}
+	return nil
+}
+
+// ModelMapDefaultTask is the operation a model_map entry performs when it
+// declares none, matching the reference's own default.
+const ModelMapDefaultTask = "text-to-image"
 
 // MediaModel is one model a media service offers. Dimensions applies to an
 // embedding model; the other fields are carried so the port does not silently

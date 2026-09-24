@@ -80,6 +80,12 @@ type AuthConfig struct {
 	Hooks     []string    `yaml:"hooks"`
 	OAuth     *AuthScheme `yaml:"oauth"`
 	APIKey    *AuthScheme `yaml:"api_key"`
+	// AnthropicVersion marks an endpoint that requires the Anthropic wire's
+	// `anthropic-version` header. The reference declares it on the transport's
+	// own auth object (registry/opencode-go.js:31-35), beside the header and
+	// scheme the endpoint reads, which is why it lives here rather than being
+	// derived from the URL by a connector.
+	AnthropicVersion bool `yaml:"anthropic_version"`
 }
 
 // AuthScheme is one credential family's header and prefix.
@@ -88,11 +94,40 @@ type AuthScheme struct {
 	Scheme string `yaml:"scheme"`
 }
 
+// TransportEndpoint is one wire-specific endpoint of a multi-endpoint provider.
+// It is the unit `transports[]` lists: a format, the URL that answers it, and
+// the credential placement that URL reads.
+type TransportEndpoint struct {
+	Format    string            `yaml:"format"`
+	BaseURL   string            `yaml:"base_url"`
+	Headers   map[string]string `yaml:"headers"`
+	URLSuffix string            `yaml:"url_suffix"`
+	Auth      AuthConfig        `yaml:"auth"`
+}
+
 // Quirks are per-provider request adjustments the translator must apply.
 type Quirks struct {
 	CloakToolsOnOAuth  bool `yaml:"cloak_tools_on_oauth"`
 	DropClientMetadata bool `yaml:"drop_client_metadata"`
 	DropOutputConfig   bool `yaml:"drop_output_config"`
+	// ForceAutoToolChoiceModels names the models whose `tool_choice` the
+	// provider's Responses wire refuses unless it is `auto`. The reference
+	// declares it per provider (registry/opencode.js:22-24) and the connector
+	// reads it rather than hardcoding an id, so a model that gains the quirk
+	// upstream is one registry line away.
+	ForceAutoToolChoiceModels []string `yaml:"force_auto_tool_choice_models"`
+	// PreserveCacheControl keeps the client's `cache_control` markers instead
+	// of stripping them.
+	PreserveCacheControl bool `yaml:"preserve_cache_control"`
+}
+
+// SystemOneConfig is the native decision-model endpoint a provider exposes
+// (the reference's `kind: "systemone"`). Its body is the provider's own
+// vocabulary rather than a chat payload, which is why it is a separate block
+// and a separate route instead of a chat model (SPEC-API-001 §7.15).
+type SystemOneConfig struct {
+	BaseURL string            `yaml:"base_url"`
+	Headers map[string]string `yaml:"headers"`
 }
 
 // ReasoningInject is the scope over which a provider accepts reasoning fields.
@@ -121,6 +156,9 @@ type UsageConfig struct {
 	SettingsURL            string   `yaml:"settings_url"`
 	LimitsPath             string   `yaml:"limits_path"`
 	ResetCreditsConsumeURL string   `yaml:"reset_credits_consume_url"`
+	ResetCreditsURL        string   `yaml:"reset_credits_url"`
+	QuotaSummaryAPIURL     string   `yaml:"quota_summary_api_url"`
+	UserURL                string   `yaml:"user_url"`
 	OAuthURL               string   `yaml:"oauth_url"`
 	CWHost                 string   `yaml:"cw_host"`
 	QHost                  string   `yaml:"q_host"`

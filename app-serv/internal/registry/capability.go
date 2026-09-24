@@ -40,69 +40,33 @@ import "strings"
 // both are omitted deliberately: every Claude id answers true through the
 // `*claude*` rule below, and "coder-model" answers false, which is the default.
 var visionExactIDs = map[string]bool{
-	// The one GLM variant that reads images; the `*glm*` rule says false.
-	"glm-4.6v": true,
-	// The registry's Qwen vision alias, which no pattern matches.
-	"vision-model": true,
+	// glm-4.6v/glm-4.5v read images while the `*glm*` rule answers false; the
+	// OpenCode Muse Spark pair and union-alpha are declared multimodal by the
+	// reference's own MODEL_CAPABILITIES; deepseek's vision variants and the
+	// "vision-model" alias are the remaining ids no pattern reaches.
+	"glm-4.6v": true, "glm-4.5v": true,
+	"glm-5.3-flash":                   true,
+	"muse-spark-1.2-contributor-free": true,
+	"muse-spark-1.3-contributor-free": true,
+	"union-alpha":                     true,
+	"deepseek-v4-flash-vision-exp":    true,
+	"deepseek-v4.1-flash":             true,
+	"deepseek-flash":                  true,
+	"vision-model":                    true,
+	"kimi-k3":                         true,
+	"k3":                              true,
+	"kimi-for-coding":                 true,
+	"kimi-for-coding-highspeed":       true,
+	"kimi-k2.7-code":                  true,
+	"kimi-k2.7-code-highspeed":        true,
+	// The Claude ids the reference lists explicitly all answer true through
+	// `*claude*`, so they are omitted here rather than repeated.
 }
 
 // visionRule is one ordered pattern and the answer it fixes.
 type visionRule struct {
 	pattern string
 	vision  bool
-}
-
-// visionRules is the reference's PATTERN_CAPABILITIES reduced to its vision
-// decision, in its order: the first match wins, and a match returns even when
-// the reference's entry carried no vision flag — that flag merges to the false
-// floor, which is why "*gpt-5*image*" answers false rather than falling through
-// to "*gpt-5*".
-var visionRules = []visionRule{
-	// OpenAI. The image and codex variants must stay ahead of "*gpt-5*".
-	{pattern: "*gpt-5*image*", vision: false},
-	{pattern: "*gpt-5*codex*", vision: false},
-	{pattern: "*gpt-5*", vision: true},
-	{pattern: "*gpt-4o*", vision: true},
-	{pattern: "*gpt-4.1*", vision: true},
-	{pattern: "*gpt-4-turbo*", vision: true},
-	{pattern: "*gpt-4*", vision: false},
-	{pattern: "*gpt-3.5*", vision: false},
-	{pattern: "*gpt-oss*", vision: false},
-	// The o-series: o1-mini is the one text-only member.
-	{pattern: "*o1-mini*", vision: false},
-	{pattern: "*o1*", vision: true},
-	{pattern: "*o3*", vision: true},
-	{pattern: "*o4*", vision: true},
-	// Grok, whose code and image variants are text-only.
-	{pattern: "*grok*image*", vision: false},
-	{pattern: "*grok-code*", vision: false},
-	{pattern: "*grok*", vision: true},
-	// Qwen: the vision, max, and plus variants read images; the coder and 235b
-	// families do not, and QwQ is thinking-only.
-	{pattern: "*qwen*vl*", vision: true},
-	{pattern: "*qwen*max*", vision: true},
-	{pattern: "*qwen*plus*", vision: true},
-	{pattern: "*qwen*", vision: false},
-	{pattern: "*qwq*", vision: false},
-	// Kimi: K2 reads images, the older family does not.
-	{pattern: "*kimi*k2*", vision: true},
-	{pattern: "*kimi*", vision: false},
-	// Families whose every member reads images.
-	{pattern: "*claude*", vision: true},
-	{pattern: "*gemini*", vision: true},
-	{pattern: "*gemma*", vision: true},
-	{pattern: "*nanobanana*", vision: true},
-	{pattern: "*mimo*", vision: true},
-	{pattern: "*llama-4*", vision: true},
-	{pattern: "*llama*", vision: false},
-	{pattern: "*mistral-large*", vision: true},
-	{pattern: "*codestral*", vision: false},
-	{pattern: "*mistral*", vision: false},
-	{pattern: "*command-a-vision*", vision: true},
-	{pattern: "*command*", vision: false},
-	// Everything else answers false: the reference's remaining rules (glm,
-	// deepseek, minimax, sonar, hunyuan, step, nemotron, ling) carry no vision
-	// flag at all, which merges to the same false floor.
 }
 
 // VisionCapable reports whether a model reads images.

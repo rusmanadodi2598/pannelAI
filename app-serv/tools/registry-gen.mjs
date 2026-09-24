@@ -157,6 +157,131 @@ const DROPPED_TRANSPORT_KEYS = new Set([
   "modelsFetcher",
 ]);
 
+// TRANSPORT_KEYS is the allowlist of transport members the Go Transport struct
+// reads. The generator is the only writer of this document and the loader
+// decodes it strictly, so a member the struct does not carry is a boot failure
+// rather than a silent drop. Listing the keys here makes that failure
+// impossible by construction, and the keys the reference declares beyond this
+// list are reported at the end of the run so the drift stays visible instead of
+// disappearing.
+//
+// A new reference member is added here together with its Go field, in one
+// change; that is what keeps "generated from the reference" true.
+const TRANSPORT_KEYS = new Set([
+  "baseUrl",
+  "baseUrls",
+  "format",
+  "urlSuffix",
+  "forceStream",
+  "timeoutMs",
+  "stallTimeoutMs",
+  "validateUrl",
+  "responsesUrl",
+  "chatPath",
+  "authType",
+  "noAuth",
+  "headers",
+  "auth",
+  "quirks",
+  "retry",
+  "usage",
+  "reasoningInject",
+  "regions",
+  "defaultRegion",
+  "thinkingFormat",
+  "cliVersion",
+  "clientVersion",
+  "apiClient",
+  "authUrl",
+  "copilot",
+]);
+
+// MODEL_KEYS is the same allowlist for one model entry.
+const MODEL_KEYS = new Set([
+  "id",
+  "name",
+  "upstreamModelId",
+  "kind",
+  "params",
+  "capabilities",
+  "quotaFamily",
+  "strip",
+  "targetFormat",
+  "supportedFormats",
+  "dimensions",
+  "thinking",
+  "description",
+  "contextLength",
+  "maxOutputTokens",
+  "rateMultiplier",
+  "imageGen",
+]);
+
+// PROVIDER_KEYS is the same allowlist for the entry itself.
+const PROVIDER_KEYS = new Set([
+  "id",
+  "priority",
+  "alias",
+  "aliases",
+  "uiAlias",
+  "hidden",
+  "category",
+  "authType",
+  "authModes",
+  "authHint",
+  "hasOAuth",
+  "noAuth",
+  "hasFree",
+  "passthroughModels",
+  "hasProviderSpecificData",
+  "credentialFallback",
+  "display",
+  "transport",
+  "oauth",
+  "models",
+  "features",
+  "thinkingConfig",
+  "media",
+  "serviceKinds",
+  "transports",
+  "mediaPriority",
+  "hiddenKinds",
+]);
+
+// QUIRK_KEYS is the allowlist for the transport's quirks block.
+const QUIRK_KEYS = new Set([
+  "cloakToolsOnOAuth",
+  "dropClientMetadata",
+  "dropOutputConfig",
+  "forceAutoToolChoiceModels",
+  "preserveCacheControl",
+]);
+
+// dropped records every reference key the allowlists left out, so the run
+// reports the drift instead of hiding it. A silent drop is how the port would
+// stop being a port without anyone noticing.
+const dropped = new Map();
+
+function noteDropped(where, key) {
+  const bucket = `${where}: ${key}`;
+  dropped.set(bucket, (dropped.get(bucket) || 0) + 1);
+}
+
+// pick copies the allowlisted members of one object, renamed to the YAML
+// spelling, and records every key it skipped.
+function pick(source, allowed, where) {
+  const out = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (value === undefined || value === null) continue;
+    if (!allowed.has(key)) {
+      noteDropped(where, key);
+      continue;
+    }
+    out[snake(key)] = value;
+  }
+  return out;
+}
+
 // MEDIA_KEYS are the per-kind service blocks a registry entry may declare, and
 // the registry key each maps to. They are carried because a media service
 // frequently authenticates differently from the same provider's chat transport
@@ -238,6 +363,11 @@ function mapAuth(auth) {
   for (const key of ["header", "scheme", "authQuery"]) {
     if (auth[key] !== undefined) out[key] = auth[key];
   }
+  // anthropicVersion marks the endpoint that needs the Anthropic wire's own
+  // version header. It is declared on the transport in the reference
+  // (registry/opencode-go.js:31-35) and read by the executor, so dropping it
+  // would leave that endpoint without the header it requires.
+  if (auth.anthropicVersion !== undefined) out.anthropic_version = auth.anthropicVersion;
   if (Array.isArray(auth.source)) out.source = auth.source;
   if (auth.combined !== undefined) out.combined = auth.combined;
   if (Array.isArray(auth.hooks)) out.hooks = auth.hooks;
@@ -274,6 +404,10 @@ function mapTransport(transport) {
   for (const [key, value] of Object.entries(transport)) {
     if (DROPPED_TRANSPORT_KEYS.has(key) || key === "format") continue;
     if (value === undefined || value === null) continue;
+    if (!TRANSPORT_KEYS.has(key)) {
+      noteDropped("transport", key);
+      continue;
+    }
     rest[key] = value;
   }
 
@@ -286,7 +420,9 @@ function mapTransport(transport) {
       delete renamed[key];
       continue;
     }
-    renamed[key] = rename(renamed[key]);
+    const allowed =
+      key === "quirks" ? QUIRK_KEYS : null;
+    renamed[key] = allowed ? pick(transport.quirks, allowed, "quirks") : rename(renamed[key]);
     if (Object.keys(renamed[key]).length === 0) delete renamed[key];
   }
   if (isPlainObject(renamed.headers) && Object.keys(renamed.headers).length === 0) delete renamed.headers;
@@ -304,6 +440,23 @@ function mapTransport(transport) {
   return out;
 }
 
+// mapTransportEndpoint renders one `transports[]` entry: the wire it answers,
+// its URL, and its own credential placement. The auth block is mapped by
+// mapAuth so the endpoint's header, scheme, and the Anthropic wire's version
+// flag are carried the same way the provider-level auth is.
+function mapTransportEndpoint(endpoint) {
+  const out = {};
+  if (endpoint.format !== undefined) out.format = endpoint.format;
+  if (endpoint.baseUrl !== undefined) out.base_url = endpoint.baseUrl;
+  if (isPlainObject(endpoint.headers) && Object.keys(endpoint.headers).length > 0) {
+    out.headers = { ...endpoint.headers };
+  }
+  if (endpoint.urlSuffix !== undefined) out.url_suffix = endpoint.urlSuffix;
+  const auth = mapAuth(endpoint.auth);
+  if (auth) out.auth = auth;
+  return out;
+}
+
 function mapDisplay(display) {
   if (!isPlainObject(display)) return undefined;
   const out = rename(display);
@@ -316,7 +469,10 @@ function mapDisplay(display) {
 
 function mapModels(models) {
   if (!Array.isArray(models) || models.length === 0) return undefined;
-  return models.map((model) => rename(model));
+  return models.map((model) => {
+    if (!isPlainObject(model)) return rename({ id: model });
+    return pick(model, MODEL_KEYS, "model");
+  });
 }
 
 // oauthClientFields are the credential fields a provider may declare on its
@@ -371,6 +527,7 @@ function mapEntry(entry) {
     has_free: entry.hasFree,
     passthrough_models: entry.passthroughModels,
     has_provider_specific_data: entry.hasProviderSpecificData,
+    credential_fallback: entry.credentialFallback,
     display: mapDisplay(entry.display),
     transport: mapTransport(entry.transport),
     oauth: mapOAuth(entry),
@@ -380,9 +537,32 @@ function mapEntry(entry) {
       ? { options: entry.thinkingConfig.options, default_mode: entry.thinkingConfig.defaultMode }
       : undefined,
     media: mapMedia(entry),
+    // transports is a top-level entry member in the reference (not part of
+    // `transport`), and it is what makes a multi-endpoint provider selectable
+    // per client wire without translation.
+    transports: Array.isArray(entry.transports)
+      ? entry.transports.map((endpoint) => mapTransportEndpoint(endpoint))
+      : undefined,
     service_kinds: entry.serviceKinds,
+    // SystemOne is the native decision-model endpoint. It is carried as its own
+    // block because its payload is the provider's vocabulary rather than a chat
+    // body, so it is served by the systemone route and never translated.
+    systemone: isPlainObject(entry.systemoneConfig)
+      ? {
+          base_url: entry.systemoneConfig.baseUrl,
+          headers: isPlainObject(entry.systemoneConfig.headers)
+            ? { ...entry.systemoneConfig.headers }
+            : undefined,
+        }
+      : undefined,
     media_priority: entry.mediaPriority,
+    hidden_kinds: entry.hiddenKinds,
   };
+  for (const key of Object.keys(entry)) {
+    if (!PROVIDER_KEYS.has(key) && !MEDIA_KEYS.has(key) && key !== "systemoneConfig") {
+      noteDropped("provider", key);
+    }
+  }
   for (const [key, value] of Object.entries(out)) {
     if (value === undefined || value === null) delete out[key];
   }
@@ -416,3 +596,17 @@ lines.push("");
 
 writeFileSync(outputPath, lines.join("\n"), "utf8");
 process.stdout.write(`wrote ${providers.length} providers to ${outputPath}\n`);
+
+// The dropped-key report is the generator's honesty check: the loader decodes
+// strictly, so a member the Go struct does not carry cannot reach the YAML, and
+// a run that silently left one behind would report "generated from the
+// reference" while serving less than the reference declares. Printing the list
+// keeps that gap in the open, where a reader can decide whether the field is
+// work to do or a deliberate omission.
+if (dropped.size > 0) {
+  const sorted = [...dropped.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  process.stdout.write(`\nreference members not carried (${dropped.size}):\n`);
+  for (const [key, count] of sorted) {
+    process.stdout.write(`  ${key}${count > 1 ? ` (x${count})` : ""}\n`);
+  }
+}

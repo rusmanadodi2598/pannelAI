@@ -62,6 +62,18 @@ const (
 // without exporting a constant because only its own document uses it.
 const openCodeClaudeWire = "claude"
 
+// OpenCodeAnthropicVersion is the API version the Anthropic Messages wire
+// requires on every request. It is the reference's own constant
+// (providers/shared.js:24, written at executors/opencode.js:484) and the value
+// the registry declares for the anthropic entry, so no new value is invented
+// here.
+const OpenCodeAnthropicVersion = "2023-06-01"
+
+// openCodeAnthropicVersionHeader is the header the Messages wire reads. It is
+// lowercase because HTTP header names are case-insensitive and the wire's own
+// documentation spells it that way.
+const openCodeAnthropicVersionHeader = "anthropic-version"
+
 // OpenCode is the connector for the OpenCode Free provider.
 //
 // It holds only the registry entry it was built for, so it carries no
@@ -95,14 +107,32 @@ func (c *OpenCode) entryFor(req Request) registry.Provider {
 
 // Endpoint builds the URL the resolved model answers on.
 //
-// The model's own wire decides the path, which is the rule the provider's
-// declared format cannot express: a `muse-spark-*` model answers on the
-// Responses API while the provider itself speaks chat completions, and a model
-// that declares no wire falls back to the provider's own. The base is read as an
-// operator would store it — a bare host, the documented Zen base, a full path,
-// or a trailing slash — so every shape composes into one correct URL.
+// A multi-endpoint provider answers on the endpoint its model's own wire names
+// (opencode-go and opencode-zen declare three each), and that endpoint's URL is
+// used as written because it is already complete. A single-endpoint provider
+// composes the URL from its base: the model's own wire decides the path, which
+// is the rule the provider's declared format cannot express, because a
+// `muse-spark-*` model answers on the Responses API while the provider itself
+// speaks chat completions. The base is read as an operator would store it (a
+// bare host, the documented Zen base, a full path, or a trailing slash), so
+// every shape composes into one correct URL.
 func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
 	entry := c.entryFor(req)
+	wire := opencodeWire(req, entry)
+
+	if endpoint, found, err := openCodeEndpointFor(entry, req.Model, wire); err != nil {
+		return "", err
+	} else if found {
+		base := strings.TrimSpace(endpoint.BaseURL)
+		if base == "" {
+			return "", fmt.Errorf("provider %s: the %s endpoint declares no base_url", entry.ID, wire)
+		}
+		if !strings.HasPrefix(base, "http://") && !strings.HasPrefix(base, "https://") {
+			return "", fmt.Errorf("provider %s: the %s endpoint is not absolute", entry.ID, wire)
+		}
+		return strings.TrimRight(base, "/") + strings.TrimSpace(endpoint.URLSuffix), nil
+	}
+
 	base := strings.TrimSpace(entry.Transport.BaseURL)
 	if base == "" && len(entry.Transport.BaseURLs) > 0 {
 		base = strings.TrimSpace(entry.Transport.BaseURLs[0])
@@ -115,7 +145,7 @@ func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
 	}
 	base = strings.TrimRight(base, "/")
 
-	leaf := openCodeLeaf(opencodeWire(req, entry))
+	leaf := openCodeLeaf(wire)
 	if strings.HasSuffix(base, leaf) {
 		// The base already names the endpoint, so it is used as written.
 		return base, nil
@@ -153,19 +183,11 @@ func openCodeLeaf(wire string) string {
 	}
 }
 
-// ApplyAuth places the free tier's credential and identity on the request.
-//
-// The credential is always the literal public bearer: the free tier pools
-// anonymous traffic, so a configured key would both be ignored and leak to an
-// endpoint that has no use for it. The session is derived from the endpoint so
-// one account presents one stable identity.
-func (c *OpenCode) ApplyAuth(req *http.Request, cred Credential) error {
-	req.Header.Set("Authorization", "Bearer public")
-	req.Header.Set("User-Agent", OpenCodeUserAgent)
-	req.Header.Set(openCodeClientHeader, c.clientValue(req))
-	req.Header.Set(openCodeSessionHeader, OpenCodeSession(cred.EndpointID))
-	req.Header.Set(openCodeProjectHeader, openCodeProjectValue)
-	return nil
+// isOpenCodeMessagesURL reports whether a path names the Messages leaf. The
+// comparison includes the separating slash, so a nested prefix matches while a
+// path that merely ends in the same letters ("notmessages") does not.
+func isOpenCodeMessagesURL(path string) bool {
+	return strings.HasSuffix(strings.TrimRight(path, "/"), openCodeMessagesLeaf)
 }
 
 // clientValue keeps a client identity the registry declares, so an entry naming

@@ -190,6 +190,16 @@ func (r *Resolver) ResolveParts(_ context.Context, providerName, modelID string)
 	// A declared model wins; a provider that passes model ids through, or a
 	// user-defined node with no model list, accepts the client's id as-is.
 	if declared, found := r.index.Model(entry.ID, modelID); found {
+		// A declared model that is not a chat model is refused by name rather
+		// than served: its payload is a different vocabulary (the reference's
+		// `kind: "systemone"` decision models), so a chat body sent to it is a
+		// request the upstream cannot parse. The refusal is MODEL_NOT_FOUND
+		// because the chat plane genuinely has no such model, and the message
+		// names the kind so the reason is readable.
+		if !declared.IsChat() {
+			return Resolution{}, dataPlaneError(CodeModelNotFound,
+				"model "+entry.ID+"/"+modelID+" is not a chat model (kind "+declared.Kind+")")
+		}
 		resolution.Model = declared
 		resolution.UpstreamID = declared.UpstreamID()
 		if declared.TargetFormat != "" {

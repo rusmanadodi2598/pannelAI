@@ -24,30 +24,57 @@ type Document struct {
 
 // Provider is one upstream vendor definition (SPEC-API-001 §5 "Provider").
 type Provider struct {
-	ID                      string          `yaml:"id"`
-	Priority                int             `yaml:"priority"`
-	Alias                   string          `yaml:"alias"`
-	Aliases                 []string        `yaml:"aliases"`
-	UIAlias                 string          `yaml:"ui_alias"`
-	Hidden                  bool            `yaml:"hidden"`
-	Category                string          `yaml:"category"`
-	AuthType                string          `yaml:"auth_type"`
-	AuthModes               []string        `yaml:"auth_modes"`
-	AuthHint                string          `yaml:"auth_hint"`
-	HasOAuth                bool            `yaml:"has_oauth"`
-	NoAuth                  bool            `yaml:"no_auth"`
-	HasFree                 bool            `yaml:"has_free"`
-	PassthroughModels       bool            `yaml:"passthrough_models"`
-	HasProviderSpecificData bool            `yaml:"has_provider_specific_data"`
-	Display                 Display         `yaml:"display"`
-	Transport               Transport       `yaml:"transport"`
-	OAuth                   *OAuth          `yaml:"oauth"`
-	Models                  []Model         `yaml:"models"`
-	Features                Features        `yaml:"features"`
-	ThinkingConfig          *ThinkingConfig `yaml:"thinking_config"`
-	ServiceKinds            []string        `yaml:"service_kinds"`
-	MediaPriority           int             `yaml:"media_priority"`
-	Media                   MediaConfigs    `yaml:"media"`
+	ID                      string    `yaml:"id"`
+	Priority                int       `yaml:"priority"`
+	Alias                   string    `yaml:"alias"`
+	Aliases                 []string  `yaml:"aliases"`
+	UIAlias                 string    `yaml:"ui_alias"`
+	Hidden                  bool      `yaml:"hidden"`
+	Category                string    `yaml:"category"`
+	AuthType                string    `yaml:"auth_type"`
+	AuthModes               []string  `yaml:"auth_modes"`
+	AuthHint                string    `yaml:"auth_hint"`
+	HasOAuth                bool      `yaml:"has_oauth"`
+	NoAuth                  bool      `yaml:"no_auth"`
+	HasFree                 bool      `yaml:"has_free"`
+	PassthroughModels       bool      `yaml:"passthrough_models"`
+	HasProviderSpecificData bool      `yaml:"has_provider_specific_data"`
+	Display                 Display   `yaml:"display"`
+	Transport               Transport `yaml:"transport"`
+	// Transports is a multi-endpoint provider's per-format endpoint table: one
+	// entry per client wire the provider answers natively, each carrying its own
+	// URL and credential placement. The reference picks the entry matching the
+	// client's format so the request needs no translation (chatCore.js:89-101),
+	// and guards the choice per model through Model.SupportedFormats. An empty
+	// list means a single-endpoint provider, which is what Transport.BaseURL
+	// already describes.
+	//
+	// It sits at the entry level rather than inside Transport because that is
+	// where the reference declares it (registry/opencode-go.js:31); moving it
+	// would make the generator rewrite a document shape the reference owns.
+	Transports     []TransportEndpoint `yaml:"transports"`
+	OAuth          *OAuth              `yaml:"oauth"`
+	Models         []Model             `yaml:"models"`
+	Features       Features            `yaml:"features"`
+	ThinkingConfig *ThinkingConfig     `yaml:"thinking_config"`
+	ServiceKinds   []string            `yaml:"service_kinds"`
+	// SystemOne is the native decision-model endpoint the provider exposes.
+	// A model declaring `kind: systemone` is served by the §7.15 systemone
+	// route against this URL, never by the chat data plane: the payload is the
+	// provider's own vocabulary, so translating it as chat would send the
+	// wrong body (the reference's systemoneCore.js forwards it untouched).
+	SystemOne *SystemOneConfig `yaml:"systemone"`
+	// HiddenKinds are the service kinds the panel hides for this provider.
+	HiddenKinds []string `yaml:"hidden_kinds"`
+	// CredentialFallback names another provider whose stored credential this
+	// entry borrows, which is how the reference serves a search-only entry
+	// (`ollama-search`) from the account already configured for its chat entry
+	// (src/sse/handlers/search.js:155). It is an id rather than a boolean
+	// because the fallback is a specific provider, and guessing one would send
+	// the wrong account's key.
+	CredentialFallback string       `yaml:"credential_fallback"`
+	MediaPriority      int          `yaml:"media_priority"`
+	Media              MediaConfigs `yaml:"media"`
 
 	// Custom marks a provider synthesized from a provider_nodes row rather than
 	// loaded from the embedded document (SPEC-API-001 §7.4). A synthesized
@@ -105,18 +132,39 @@ type ThinkingConfig struct {
 // document stays a faithful copy and no field is dropped at decode time.
 // Thinking is tri-state: absent means the model follows its provider's
 // thinking configuration, which is not the same as an explicit false.
+//
+// SupportedFormats is the per-model endpoint guard a multi-endpoint provider
+// needs: opencode-go's models differ in which of its three endpoints answer
+// them, so a client on the claude wire must not be sent to /chat/completions
+// for a model that only declares `openai`. An empty list means the model
+// declares nothing, which the reference reads as "every transport is allowed".
 type Model struct {
-	ID              string   `yaml:"id"`
-	Name            string   `yaml:"name"`
-	UpstreamModelID string   `yaml:"upstream_model_id"`
-	Kind            string   `yaml:"kind"`
-	Params          []string `yaml:"params"`
-	Capabilities    []string `yaml:"capabilities"`
-	QuotaFamily     string   `yaml:"quota_family"`
-	Strip           []string `yaml:"strip"`
-	TargetFormat    string   `yaml:"target_format"`
-	Dimensions      int      `yaml:"dimensions"`
-	Thinking        *bool    `yaml:"thinking"`
+	ID               string   `yaml:"id"`
+	Name             string   `yaml:"name"`
+	UpstreamModelID  string   `yaml:"upstream_model_id"`
+	Kind             string   `yaml:"kind"`
+	Params           []string `yaml:"params"`
+	Capabilities     []string `yaml:"capabilities"`
+	QuotaFamily      string   `yaml:"quota_family"`
+	Strip            []string `yaml:"strip"`
+	TargetFormat     string   `yaml:"target_format"`
+	SupportedFormats []string `yaml:"supported_formats"`
+	Dimensions       int      `yaml:"dimensions"`
+	Thinking         *bool    `yaml:"thinking"`
+	// Description is the upstream's own one-line summary of the model, which
+	// the reference carries for the panel's model list.
+	Description string `yaml:"description"`
+	// ContextLength and MaxOutputTokens are the declared limits. They are
+	// carried because the reference's catalog reports them and a client that
+	// reads a model's ceiling should read the declared one rather than a
+	// guess; zero means the entry declares none.
+	ContextLength   int `yaml:"context_length"`
+	MaxOutputTokens int `yaml:"max_output_tokens"`
+	// RateMultiplier scales a metered provider's own cost accounting when one
+	// upstream unit is not one unit of the provider's quota.
+	RateMultiplier float64 `yaml:"rate_multiplier"`
+	// ImageGen marks a model that produces an image rather than text.
+	ImageGen bool `yaml:"image_gen"`
 }
 
 // UpstreamID reports the id the upstream expects: the override when one is

@@ -119,6 +119,25 @@ type OAuth struct {
 	RefreshLeadMS     int64             `yaml:"refresh_lead_ms"`
 	MaxRefreshAgeMS   int64             `yaml:"max_refresh_age_ms"`
 	TrackRefreshAt    bool              `yaml:"track_refresh_at"`
+	// The fields below are declared by the reference on individual providers and
+	// were previously dropped. Each is carried because the reference reads it,
+	// and a dropped field is a flow that silently does less than the reference's:
+	//   - ValidationURL/WebAppURL/ModelsURL: the provider's own metadata
+	//     endpoints, which the reference surfaces to the operator.
+	//   - AuthorizeDeviceURL: the device-code flow's approval page.
+	//   - Referrer: the HTTP Referer the provider's login expects.
+	//   - RSAKeyExchange: the flow wraps its token exchange in RSA.
+	//   - Custom/Kn/CallbackParam: the provider's own exchange variant and the
+	//     query parameter its callback reads.
+	ValidationURL      string `yaml:"validation_url"`
+	WebAppURL          string `yaml:"web_app_url"`
+	ModelsURL          string `yaml:"models_url"`
+	AuthorizeDeviceURL string `yaml:"authorize_device_url"`
+	Referrer           string `yaml:"referrer"`
+	RSAKeyExchange     bool   `yaml:"rsa_key_exchange"`
+	Custom             bool   `yaml:"custom"`
+	Kn                 string `yaml:"kn"`
+	CallbackParam      string `yaml:"callback_param"`
 }
 
 // OAuthRefresh is how a provider's refresh grant encodes its request.

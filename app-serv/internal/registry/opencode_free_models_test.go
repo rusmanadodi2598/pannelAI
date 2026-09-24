@@ -21,8 +21,16 @@ import "testing"
 
 // TestEmbeddedOpenCode_FreeModels pins the opencode entry's declared models to
 // the reference registry (open-sse/providers/registry/opencode.js): each model's
-// id, display name, and the upstream wire format it speaks, because the
-// provider's own format is not the one every model answers in.
+// id, display name, the upstream wire format it speaks, and whether the chat
+// plane may serve it at all.
+//
+// The reference declares four models here, and only three of them are chat: the
+// fourth is a System One decision model (`kind: "systemone"`), whose payload is
+// the provider's own vocabulary rather than a chat body. Carrying it in the
+// entry is what makes the catalog tell the truth (the id exists), and the kind
+// is what keeps the chat plane from answering it with the wrong body. The two
+// facts are asserted together so a future edit cannot quietly promote the
+// decision model back to chat.
 func TestEmbeddedOpenCode_FreeModels(t *testing.T) {
 	index, err := Load()
 	if err != nil {
@@ -37,10 +45,12 @@ func TestEmbeddedOpenCode_FreeModels(t *testing.T) {
 		id           string
 		name         string
 		targetFormat string
+		chat         bool
 	}{
-		{id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", targetFormat: "openai-responses"},
-		{id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", targetFormat: "openai-responses"},
-		{id: "union-alpha", name: "Union Alpha Free", targetFormat: "claude"},
+		{id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", targetFormat: "openai-responses", chat: true},
+		{id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", targetFormat: "openai-responses", chat: true},
+		{id: "union-alpha", name: "Union Alpha Free", targetFormat: "claude", chat: true},
+		{id: "jev-1.13-free", name: "Jev 1.13 Free", targetFormat: "", chat: false},
 	}
 	if len(provider.Models) != len(cases) {
 		t.Fatalf("opencode declares %d models, want %d (%v)", len(provider.Models), len(cases), provider.Models)
@@ -57,13 +67,43 @@ func TestEmbeddedOpenCode_FreeModels(t *testing.T) {
 			if model.TargetFormat != tc.targetFormat {
 				t.Fatalf("target_format = %q, want %q", model.TargetFormat, tc.targetFormat)
 			}
-			if !model.IsChat() {
-				t.Fatalf("model %q must be a chat model", tc.id)
+			if model.IsChat() != tc.chat {
+				t.Fatalf("IsChat() = %v, want %v (kind %q)", model.IsChat(), tc.chat, model.Kind)
 			}
 		})
 	}
 
 	if !provider.PassthroughModels {
 		t.Fatal("opencode must stay passthrough: model ids beyond the declared list are still answerable")
+	}
+}
+
+// TestEmbeddedOpenCode_SystemOneEndpoint pins the endpoint the decision model is
+// served from. The reference declares it as systemoneConfig on the entry
+// (registry/opencode.js:34-40) rather than deriving it from the chat base, so a
+// port that guessed the URL would be one path segment away from the wrong
+// endpoint.
+func TestEmbeddedOpenCode_SystemOneEndpoint(t *testing.T) {
+	index, err := Load()
+	if err != nil {
+		t.Fatalf("loading embedded registry: %v", err)
+	}
+	provider, ok := index.Provider("opencode")
+	if !ok {
+		t.Fatal("opencode is missing from the embedded registry")
+	}
+	if provider.SystemOne == nil {
+		t.Fatal("opencode declares no systemone endpoint")
+	}
+	if got, want := provider.SystemOne.BaseURL, "https://opencode.ai/zen/v1/systemone"; got != want {
+		t.Fatalf("systemone base_url = %q, want %q", got, want)
+	}
+	// The client identity travels with the block in the reference, because the
+	// decision endpoint reads the same headers the chat lane does.
+	if got := provider.SystemOne.Headers["x-opencode-client"]; got != "desktop" {
+		t.Fatalf("systemone x-opencode-client = %q, want desktop", got)
+	}
+	if got := provider.SystemOne.Headers["User-Agent"]; got == "" {
+		t.Fatal("systemone declares no User-Agent")
 	}
 }

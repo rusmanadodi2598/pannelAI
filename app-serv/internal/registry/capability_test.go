@@ -82,11 +82,15 @@ func TestVisionCapable_MatchesTheReference(t *testing.T) {
 		{"glm-4.6", false},
 		{"glm-5", false},
 
-		// Families the reference leaves text-only.
+		// Families the reference leaves text-only, with the two members the
+		// reference's own pattern table now answers true: MiniMax M2.5+ and M3
+		// read images while the older M2 does not, which is the `*minimax-m3*`
+		// and `*minimax-m2.7*` rows in the ported table.
 		{"deepseek-chat", false},
 		{"deepseek-reasoner", false},
 		{"minimax-m2", false},
-		{"minimax-m3", false},
+		{"minimax-m2.5", true},
+		{"minimax-m3", true},
 
 		// MiMo and Llama-4 read images.
 		{"mimo-v2.5", true},

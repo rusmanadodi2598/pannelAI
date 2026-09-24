@@ -92,23 +92,42 @@ func TestCapabilities_MatchesTheReferenceCorpus(t *testing.T) {
 	t.Logf("pinned %d rows against %s: %d vision, %d without tools", len(corpus.Entries), corpus.Revision, vision, noTools)
 }
 
-// TestCapabilities_ProviderLayerDoesNotChangeTheAnswer records the measured
-// fact that makes this port small: at the pinned revision the reference's
-// PROVIDER_CAPABILITIES layer never changes vision or tools for any model the
-// registry declares.
+// TestCapabilities_ProviderLayerIsLoadBearing pins the fact that made the
+// provider layer part of the port: the reference consults PROVIDER_CAPABILITIES
+// before its exact and pattern layers (capabilities.js:586-590), and at the
+// pinned revision that layer changes the vision answer for models the embedded
+// registry declares. The first version of this port omitted the layer because
+// the older pin measured zero such rows; the corpus now proves the opposite, so
+// the test asserts the layer is reached rather than that it is harmless.
 //
-// It is a test rather than a comment because the claim is what justifies not
-// porting that layer. If a future corpus breaks it, this fails by name and the
-// layer has to be ported then — instead of a model quietly answering the floor.
-func TestCapabilities_ProviderLayerDoesNotChangeTheAnswer(t *testing.T) {
-	corpus := loadCapabilityCorpus(t)
-	for _, entry := range corpus.Entries {
-		withProvider := Capabilities(entry.Provider, entry.Model)
-		withoutProvider := Capabilities("", entry.Model)
-		if withProvider != withoutProvider {
-			t.Fatalf("Capabilities(%q, %q) = %+v but Capabilities(\"\", %q) = %+v; the provider layer now changes the answer, so it must be ported",
-				entry.Provider, entry.Model, withProvider, entry.Model, withoutProvider)
-		}
+// The list is deliberately small and named: these are the rows that fail if the
+// layer is dropped, so a reader sees exactly what the layer buys.
+func TestCapabilities_ProviderLayerIsLoadBearing(t *testing.T) {
+	cases := []struct {
+		provider string
+		model    string
+		want     bool
+	}{
+		// codebuddy-cn reads images on every model it proxies, including the
+		// ones whose family pattern would answer false.
+		{provider: "codebuddy-cn", model: "deepseek-v4-pro", want: true},
+		{provider: "codebuddy-cn", model: "glm-5.2", want: true},
+		// nvidia's MiniMax M3 is multimodal while the same family under the
+		// commandcode wire is text-only, so the answer depends on the provider.
+		{provider: "nvidia", model: "minimaxai/minimax-m3", want: true},
+		{provider: "commandcode", model: "MiniMaxAI/MiniMax-M2.5", want: false},
+		// The name heuristic must not rescue it: M2.5 carries no modality word,
+		// and the denylist is consulted before the pattern table either way.
+		{provider: "commandcode", model: "Qwen/Qwen3.7-Max", want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.provider+"/"+tc.model, func(t *testing.T) {
+			got := Capabilities(tc.provider, tc.model)
+			if got.Vision != tc.want {
+				t.Fatalf("Capabilities(%q, %q).Vision = %v, want %v; the provider layer is load-bearing at this revision",
+					tc.provider, tc.model, got.Vision, tc.want)
+			}
+		})
 	}
 }
 
