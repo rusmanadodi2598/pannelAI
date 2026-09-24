@@ -56,16 +56,27 @@ func (c *OpenCode) TransformRequest(req *Request) error {
 		return fmt.Errorf("provider %s: the request body could not be read", c.ID)
 	}
 
-	wire := opencodeWire(*req, c.entryFor(*req))
+	entry := c.entryFor(*req)
+	wire := opencodeWire(*req, entry)
+	// The client's own tool declarations are read before the decoys are added,
+	// because afterwards the two are indistinguishable.
+	clientDeclaredTools := openCodeDeclaresClientTools(body)
 	// The free tier refuses a non-streaming request on either wire, so the body
 	// always streams and the core is told to read one.
 	body["stream"] = json.RawMessage("true")
 	req.Stream = true
 
 	if wire == registry.FormatOpenAIResponses {
-		transformOpenCodeResponses(body)
+		transformOpenCodeResponses(body, req.Model, entry)
 	}
 	ensureOpenCodeDecoys(body, wire)
+	// A chat request that declared no tools gets `none`, so the decoys the gate
+	// requires can never be selected: the model is told not to call a function
+	// at all, rather than being left free to call one whose own description
+	// says it is unavailable (opencodeFingerprint.js:146-147).
+	if wire != registry.FormatOpenAIResponses {
+		forbidOpenCodeDecoysWithoutClientTools(body, clientDeclaredTools)
+	}
 
 	encoded, err := json.Marshal(body)
 	if err != nil {
@@ -87,15 +98,6 @@ func decodeOpenCodeBody(raw []byte) (map[string]json.RawMessage, bool) {
 		return nil, false
 	}
 	return body, true
-}
-
-// transformOpenCodeResponses applies the Responses wire's own rules: the output
-// ceiling is named max_output_tokens, tool_choice is normalised to auto, and the
-// statelessness rules are enforced on the input items.
-func transformOpenCodeResponses(body map[string]json.RawMessage) {
-	renameOpenCodeCeiling(body)
-	body["tool_choice"] = json.RawMessage(`"auto"`)
-	dropOpenCodeReasoning(body)
 }
 
 // renameOpenCodeCeiling moves a chat-shaped output ceiling onto the Responses

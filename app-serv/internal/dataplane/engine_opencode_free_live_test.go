@@ -31,7 +31,9 @@ package dataplane
 
 import (
 	"context"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
@@ -58,10 +60,28 @@ func TestOpenCodeFreeLive_ThreeModelsAnswerFromTheRealUpstream(t *testing.T) {
 				Model: decoded.Model, Chat: &decoded, Raw: raw, Stream: decoded.Stream,
 			}
 
+			// The free tier is shared and answers 429 once it has seen enough
+			// anonymous traffic from one address, which is a property of the
+			// upstream's capacity rather than of this pipeline. A bounded retry
+			// is what a real client does with that answer, and it keeps the
+			// assertion intact: the test still requires an answer, and reports
+			// how many attempts the lane needed. A skip would hide a genuine
+			// regression behind the same message.
+			var outcome Outcome
 			sink := &recordingSink{}
-			outcome, err := engine.Relay(context.Background(), request, sink)
+			for attempt := 1; attempt <= openCodeFreeLiveAttempts; attempt++ {
+				sink = &recordingSink{}
+				outcome, err = engine.Relay(context.Background(), request, sink)
+				if err == nil || !isOpenCodeFreeRateLimit(err) {
+					break
+				}
+				if attempt < openCodeFreeLiveAttempts {
+					time.Sleep(openCodeFreeLiveBackoff)
+				}
+			}
 			if err != nil {
-				t.Fatalf("Relay(%s) error = %v, want the live free tier to answer", model, err)
+				t.Fatalf("Relay(%s) error = %v after %d attempts, want the live free tier to answer",
+					model, err, openCodeFreeLiveAttempts)
 			}
 			if outcome.ProviderID != "opencode" || outcome.EndpointID != "ep_free" {
 				t.Fatalf("routed to %s/%s, want opencode/ep_free", outcome.ProviderID, outcome.EndpointID)
@@ -74,4 +94,27 @@ func TestOpenCodeFreeLive_ThreeModelsAnswerFromTheRealUpstream(t *testing.T) {
 			}
 		})
 	}
+}
+
+// openCodeFreeLiveAttempts and openCodeFreeLiveBackoff bound the retry a live
+// run makes against the shared free tier. Three attempts over a minute is enough
+// for a burst to clear, and a longer wait would make the run look hung rather
+// than rate-limited.
+const (
+	openCodeFreeLiveAttempts = 3
+	openCodeFreeLiveBackoff  = 20 * time.Second
+)
+
+// isOpenCodeFreeRateLimit reports whether a live failure is the shared lane
+// refusing further anonymous traffic. The free tier answers 429 once it has seen
+// enough requests from one address, which is a property of the upstream's
+// capacity rather than of this pipeline.
+func isOpenCodeFreeRateLimit(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := err.Error()
+	return strings.Contains(message, "RATE_LIMITED") ||
+		strings.Contains(message, "Rate limit exceeded") ||
+		strings.Contains(message, "Too Many Requests")
 }

@@ -17,64 +17,44 @@
 package provider
 
 import (
+	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
-// TestOpenCode_TransformForcesAutoToolChoiceOnResponses pins the rule the
-// Responses wire enforces: any tool_choice other than `auto` is a 400, so the
-// connector normalises whatever the client sent rather than forwarding it to be
-// rejected.
-func TestOpenCode_TransformForcesAutoToolChoiceOnResponses(t *testing.T) {
+// TestOpenCode_TransformKeepsAChatWiresOwnToolChoice pins the half of the rule
+// that is still unconditional: the chat wire accepts every value, so the
+// connector must not rewrite one. The Responses half moved to
+// opencode_responses_test.go when the reference's quirk list was ported, because
+// the wire only refuses a non-auto choice on the models that declare the quirk.
+func TestOpenCode_TransformKeepsAChatWiresOwnToolChoice(t *testing.T) {
 	connector := NewOpenCode(opencodeEntry("https://opencode.ai", "openai"))
 
 	cases := []struct {
-		name     string
-		choice   string
-		wantAuto bool
+		name   string
+		choice string
 	}{
-		{name: "absent", choice: "", wantAuto: true},
-		{name: "already auto", choice: `"auto"`, wantAuto: true},
-		{name: "none", choice: `"none"`, wantAuto: true},
-		{name: "required", choice: `"required"`, wantAuto: true},
-		{name: "a forced function object", choice: `{"type":"function","name":"my_tool"}`, wantAuto: true},
-		{name: "a number", choice: `1`, wantAuto: true},
+		{name: "none", choice: `"none"`},
+		{name: "required", choice: `"required"`},
+		{name: "a function object", choice: `{"type":"function","name":"my_tool"}`},
+		{name: "auto", choice: `"auto"`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			body := `{"model":"muse-spark-1.3-contributor-free","input":[]`
-			if tc.choice != "" {
-				body += `,"tool_choice":` + tc.choice
-			}
-			body += `}`
-			request := Request{
-				Model: registry.Model{ID: "muse-spark-1.3-contributor-free", TargetFormat: "openai-responses"},
-				Body:  []byte(body),
-			}
+			body := `{"model":"big-pickle","messages":[{"role":"user","content":"q"}],"tool_choice":` + tc.choice + `}`
+			request := Request{Model: registry.Model{ID: "big-pickle"}, Body: []byte(body)}
 			if err := connector.TransformRequest(&request); err != nil {
 				t.Fatalf("TransformRequest() error = %v", err)
 			}
-			got, ok := decodeBody(t, request.Body)["tool_choice"]
-			if tc.wantAuto {
-				if !ok || got != "auto" {
-					t.Fatalf("tool_choice = %v (present=%v), want auto", got, ok)
-				}
+			var want any
+			if err := json.Unmarshal([]byte(tc.choice), &want); err != nil {
+				t.Fatalf("decoding the case's own choice: %v", err)
+			}
+			if got := decodeBody(t, request.Body)["tool_choice"]; !reflect.DeepEqual(got, want) {
+				t.Fatalf("tool_choice = %#v, want the client's %#v kept on the chat wire", got, want)
 			}
 		})
 	}
-
-	// The chat wire accepts `none`, so the connector must not rewrite it there:
-	// forcing auto on a client that asked for no tool call would change its
-	// request.
-	t.Run("the chat wire keeps a client's own choice", func(t *testing.T) {
-		body := `{"model":"big-pickle","messages":[{"role":"user","content":"q"}],"tool_choice":"none"}`
-		request := Request{Model: registry.Model{ID: "big-pickle"}, Body: []byte(body)}
-		if err := connector.TransformRequest(&request); err != nil {
-			t.Fatalf("TransformRequest() error = %v", err)
-		}
-		if got := decodeBody(t, request.Body)["tool_choice"]; got != "none" {
-			t.Fatalf("tool_choice = %v, want the client's none kept on the chat wire", got)
-		}
-	})
 }

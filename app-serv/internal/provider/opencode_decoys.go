@@ -94,3 +94,37 @@ func openCodeDecoyTool(name string, responses bool) json.RawMessage {
 		"function": mustRaw(declaration),
 	})
 }
+
+// forbidOpenCodeDecoysWithoutClientTools writes `tool_choice: "none"` when the
+// client declared no tools of its own, so the decoys the gate requires can never
+// be selected (opencodeFingerprint.js:146-147). A client that did declare tools
+// keeps whatever it asked for: the decoys sit beside its own declarations, and
+// forbidding every call would break the request it actually made.
+//
+// The client's own declaration has to be read before the decoys are appended,
+// which is why this takes the flag rather than inspecting the body: once the
+// decoys are in, a client tool and an injected one are indistinguishable.
+func forbidOpenCodeDecoysWithoutClientTools(body map[string]json.RawMessage, clientDeclaredTools bool) {
+	if clientDeclaredTools {
+		return
+	}
+	if _, present := body["tool_choice"]; present {
+		return
+	}
+	body["tool_choice"] = json.RawMessage(`"none"`)
+}
+
+// openCodeDeclaresClientTools reports whether the body the client sent declared
+// any tool, which is what decides whether the decoys may be forbidden.
+func openCodeDeclaresClientTools(body map[string]json.RawMessage) bool {
+	tools, ok := decodeOpenCodeItems(body["tools"])
+	if !ok {
+		return false
+	}
+	for _, raw := range tools {
+		if openCodeToolName(raw) != "" {
+			return true
+		}
+	}
+	return false
+}
