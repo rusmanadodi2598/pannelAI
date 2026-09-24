@@ -424,7 +424,7 @@ langsung bahwa `GET /models` menaikkan counter +1 per panggilan). Semua 30 terhi
 loop curl pertama (503 semua), 3 nama telanjang loop kedua (400) plus satu `th-1/…` yang diputus klien
 karena batas `-m 60`, satu probe `curl -w` pada `th-1/…` yang juga diputus klien (`-m 90`), 4 nama
 telanjang dari `run.py`, 7 bentuk resolve dari `run2.py`, dan 2+2 stream dari `run3.py`/`run4.py`. Kedua
-panggilan yang diputus klien itu tidak meninggalkan baris akuntansi — bentuk yang sama dengan F6 (§13.1),
+panggilan yang diputus klien itu tidak meninggalkan baris akuntansi, bentuk yang sama dengan F6 (§13.1),
 tetapi seperti §14, karena pemutusnya klien, kejadian itu tidak dihitung sebagai bukti F6. Kelima panggilan `th-1/…` yang selesai (satu non-streaming dari
 `run.py`, dua stream `run3.py`, dua stream `run4.py`) semuanya menjawab 200; keempat stream menulis baris
 `usage_records` `success` 0/0.
@@ -435,7 +435,7 @@ tetapi seperti §14, karena pemutusnya klien, kejadian itu tidak dihitung sebaga
 non-streaming 38/90 (`latency_ms` 54822, `cost_usd` 0,00003052), dan 4 `success` streaming 0/0 (F5,
 `latency_ms` 70338/50443/2776/34648); keenam `MODEL_NOT_FOUND` tidak menulis baris usage, sesuai §13.
 Catatan pembacaan log: baris 09:12:37 mencatat `deepseek-v4.1-flash` **telanjang** padahal panggilannya
-memakai bentuk id node — router mencatat nama model tanpa prefiks — dan 503-nya mengarah ke node `oczen`;
+memakai bentuk id node (router mencatat nama model tanpa prefiks), dan 503-nya mengarah ke node `oczen`;
 itu menegaskan temuan §16 bahwa hanya bentuk `<prefiks>/<model>` (di sini `th-1/…`) yang mencapai
 tokenharbor. Baris-baris itu **sengaja ditinggalkan** sebagai rekaman, seperti putaran sebelumnya.
 
