@@ -6,7 +6,7 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17) |
+| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
 | **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
@@ -441,3 +441,98 @@ tokenharbor. Baris-baris itu **sengaja ditinggalkan** sebagai rekaman, seperti p
 
 Berkas bukti: `/tmp/smoke7/` (`run.py`, `run2.py`, `run3.py`, `run4.py`, `models.json`,
 `th-1_deepseek-v4.1-flash_free.json`, `stream-plain.txt`, `stream-usage.txt`, `panel_reader.ts`).
+
+## 18. Uji combo `pi-agent` pada gateway dengan rotasi per provider (2026-09-24 15:45-16:09)
+
+Paste owner kali ini sama dengan §16/§17 (endpoint, kunci `sandbox` hint `sk-…rmEu`, empat model)
+ditambah satu elemen baru: sebuah combo. Gateway sudah di-restart owner pukul 15:36 (PID `3053853`,
+`go run ./cmd/app-serv`, biner `/tmp/go-build3328289290/b001/exe/app-serv`), dan dua state berubah
+sejak §17: baris `settings` `routing` ditulis pukul 15:39:28 dengan override per provider untuk node
+`th-1` (`fallback_strategy: round-robin`, `sticky_limit: 2`) di atas default global `fill-first`, dan
+combo `pi-agent` (`cmb_0386H365H7JMRMQ7Q3D1TQGD7W`, `round_robin`, `combo_sticky_limit` 1) diperbarui
+15:38:21 dengan dua anggota: `openai-compatible-…51G/deepseek-v4.1-flash:free` (prioritas 0) dan
+`oczen/space-bunny-free` (prioritas 1). Ketiga endpoint `th-1` tetap `Key 1`/`Key 2`/`Key 3`
+(prioritas 1, `active`, dibuat 2026-09-23 22:36), dan node `oczen` tetap tanpa endpoint.
+
+| Uji (19 panggilan) | Hasil terukur |
+| --- | --- |
+| `th-1/deepseek-v4.1-flash:free` (5) | 3 menjawab 200 (857 ms; 52,5 s; stream 48,0 s) dan **2 menggantung tanpa satu byte pun** (dipotong klien di 300 s dan 90 s) |
+| tiga nama telanjang (3) | 400 `MODEL_NOT_FOUND` dalam < 0,1 s, sama seperti §16 |
+| `oczen/<ketiganya>` dan bentuk id node (6) | 503 `NO_PROVIDER_AVAILABLE`, node `oczen` masih tanpa endpoint |
+| `pi-agent` (5) | 3 menjawab 200 (2,8 s dan 0,9 s non-streaming, usage 38/55/93, `combo=pi-agent` tercatat; 1 stream 71,0 s) dan **2 menggantung** (dipotong 300 s dan 120 s) |
+
+### 18.1 Rotasi per provider bekerja, dan setiap panggilan teratribusi
+
+Kesepuluh panggilan yang mencapai `th-1` menggerakkan kursor round-robin persis seperti
+`sticky_limit` 2 mengharuskan, dan setiap hasil cocok dengan offset yang dipakai. State awal
+`(offset 0, used 2)` adalah sisa §17 yang berjalan pada default global `sticky_limit` 3 (override
+baru ditulis 15:39, setelah §17), dan urutannya:
+
+| # | Panggilan | Kursor sebelum | Offset | Endpoint | Hasil |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `th-1/…` non-stream | (0, 2) | 1 | Key 2 | menggantung, klien memotong di 300 s |
+| 2 | `pi-agent` c1 | (1, 1) | 1 | Key 2 | menggantung, klien memotong di 300 s |
+| 3 | `pi-agent` c2 | (1, 2) | 2 | Key 3 | 200, 1,5 s, 38/55 |
+| 4 | `pi-agent` c3 | (2, 1) | 2 | Key 3 | 200, 0,9 s, 38/55 |
+| 5 | `th-1/…` non-stream | (2, 2) | 0 | Key 1 | 200, 857 ms, 38/55 |
+| 6 | `th-1/…` non-stream | (0, 1) | 0 | Key 1 | 200, 52,5 s, 38/55 |
+| 7 | `th-1/…` non-stream | (0, 2) | 1 | Key 2 | menggantung, klien memotong di 90 s; marker `usage:active` menyebut `ep_0386EX3Z1D8JYP3XAHJAG8KP0A` |
+| 8 | `pi-agent` stream | (1, 1) | 1 | Key 2 | menggantung, klien memotong di 120 s |
+| 9 | `pi-agent` stream+usage | (1, 2) | 2 | Key 3 | 200, TTFB 61,6 s, total 71,0 s |
+| 10 | `th-1/…` stream+usage | (2, 1) | 2 | Key 3 | 200, TTFB 48,0 s, total 48,0 s |
+
+Kolom endpoint untuk baris 3, 4, 5, 6, 9, dan 10 datang dari `usage_records.endpoint_id`; baris 7
+dari marker `pannelai:usage:active` yang ditulis gateway saat request dimulai (MONITOR); baris 1, 2,
+dan 8 dari state kursor (offset 1) plus tidak adanya baris akuntansi apa pun. Satu koreksi metode
+yang dicatat: pembacaan kunci Redis harus memakai `${VAR}:suffix`, karena `$VAR:suffix` di zsh
+menerapkan modifier `:u` (uppercase) dan menghasilkan kunci lain (`ABCsed`), yang sempat membuat
+pembacaan `:used` terlihat kosong padahal sehat.
+
+### 18.2 F7 (HIGH): kredensial yang menggantung membekukan request, tanpa timeout, tanpa failover, tanpa baris
+
+`Key 2` (`ep_0386EX3Z1D8JYP3XAHJAG8KP0A`, hint kunci upstream `0UQv`) **menggantung setiap panggilan
+yang memakainya**: empat panggilan (tiga non-streaming, satu stream) menerima **nol byte** dan
+dipotong klien pada 300 s, 300 s, 90 s, dan 120 s. Baris 7 di atas membuktikan atribusinya lewat
+marker gateway sendiri. Kredensial ini belum pernah menyelesaikan satu panggilan pun sejak endpoint
+dibuat (2026-09-23 22:36): `usage_records` 0 baris dan `request_logs` 0 baris untuk endpoint itu,
+sementara `Key 1` dan `Key 3` masing-masing 11 dan 12 baris.
+
+Yang membuat ini kelasnya berbeda dari F6: tidak ada satu pun jalur yang memberi sinyal. Klien tidak
+menerima timeout (tidak ada 504 `UPSTREAM_TIMEOUT`); baris endpoint tetap `status active` dengan
+`last_error` kosong dan `consecutive_use_count` 0; dan tidak ada baris akuntansi. Padahal kode
+menyediakan ketiganya: `ResponseHeaderTimeout` `TotalTimeout` 120 s
+(`internal/dataplane/transport.go:42,131`), retry POST non-idempoten dibatasi satu (`retry.go:40`),
+dan timeout memang layak failover (`engine_failure.go:116-122`), sehingga rantai seharusnya berakhir
+pada kredensial berikutnya dalam sekitar 2,5 menit. Yang terukur: klien menggantung melewati 300 s.
+Mekanisme (sisi upstream yang tidak menjawab, atau jalur gateway yang tidak menerapkan deadline pada
+kasus ini) belum diverifikasi; yang terukur hanya gejalanya, dan setiap panggilan yang menggantung
+sengaja dipotong klien sehingga tidak ada bukti bahwa panggilan itu akan berakhir sendiri.
+
+### 18.3 Stream: F1 sampai F3 dan F5 tetap, pembaca panel tetap `truncated`
+
+Dua stream `include_usage` yang selesai membawa bentuk byte yang sama dengan §17: 29 frame berframe
+(stream combo) dan 4 frame berframe (stream `th-1`), lalu satu baris **telanjang** 448 byte berisi
+dua chunk gabungan (finish sintetis dan chunk usage) dengan `data: [DONE]` menempel di ujungnya, dan
+0 kecocokan `^data: \[DONE\]$`. Wire membawa usage 38/79/117. Pembaca SSE panel (`readSseData` plus
+`readStream`) melipat jawaban dengan benar (`pong`, `deepseek-v4.1-flash`, `stop`, 38/79/117) dan
+tetap melaporkan alasan akhir `truncated`. F5 juga tetap: kedua stream menulis `usage_records` 0/0
+dengan `status` `success` (`latency_ms` 69484 dan 47658), sementara empat panggilan non-streaming
+mencatat 38/55 dengan benar.
+
+### 18.4 Pencatatan dan keadaan akhir
+
+Pass ini mengirim 19 panggilan chat: 13 dari driver non-streaming, 3 probe, dan 3 stream. Semuanya
+terhitung di `gateway_keys.request_count` kunci `sandbox` (66 menjadi 85), termasuk empat panggilan
+yang menggantung dan tidak menulis baris apa pun. `request_logs` bertambah 15 baris (9 `error`: 3
+`MODEL_NOT_FOUND` dan 6 `NO_PROVIDER_AVAILABLE`; 6 `success`), `usage_records` bertambah 6 baris (4
+non-streaming 38/55 dan 2 stream 0/0). Baris-baris itu **sengaja ditinggalkan** sebagai rekaman,
+seperti putaran sebelumnya. Satu pengamatan tambahan: setelah enam panggilan sukses, ketiga baris
+endpoint tetap `consecutive_use_count` 0 dan `last_used_at` NULL, karena tidak ada pemanggil produksi
+untuk `RecordUse`/`RecordUpstreamSuccess` (grep; state rotasi hidup di Redis,
+`pannelai:cursor:endpoint:<sha256(provider)>` dengan pasangan offset dan `:used`, TTL 24 jam), jadi
+panel tidak bisa menampilkan rotasi per kredensial dari kolom itu.
+
+Berkas bukti: `/tmp/smoke8/` (`run.env` mode 600, `run.py`, `stream.sh`, `panel_reader.ts`,
+`analyze.py`, `run.log`, `resp/` 11 tangkapan, `probe1.json`, `probe2.json`, `probe3.json` (kosong),
+`monitor.log`, `monitor2.log`, `used_watch.log`, `stream-combo-plain.txt` (kosong),
+`stream-combo-usage.txt`, `stream-th1-usage.txt`).
