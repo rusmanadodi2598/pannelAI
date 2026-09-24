@@ -221,3 +221,5 @@ berkas di bawah `src/`, `tests/`, `static/`, `scripts/`):
 permintaan `app-serv`, dan draft mereka untuk parameter itu sudah DURING dengan definisi yang lebih
 tajam (§3.3); F4 non-finding. Seluruh gerbang dan click-through terekam di §4, semuanya pada tree beku
 `1bebaefd3ae1d65d79c5996499238996` (500 berkas; fingerprint diukur ulang setelah suite dan tetap sama).
+Commit kerja: `729a3a8` (23 berkas, 2004 insertions, 233 deletions; `app-ui` plus SPEC-UI dan draft
+ini, tanpa berkas `app-serv` yang di-stage).
