@@ -43,8 +43,8 @@ not code to copy.
 
 | #   | KEEP feature (owner list)                         | Panel screen                                                | API surface                                                                                        | Phase  |
 | --- | ------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------ |
-| 1   | Endpoint & Key                                    | `/endpoint-keys` (Gateway keys tab, Upstream endpoints tab) | SPEC-API §7.3, §7.5                                                                                | U0, U1 |
-| 2   | Providers                                         | `/providers`, `/providers/[provider_id]`                    | SPEC-API §7.4, §7.6                                                                                | U1, U2 |
+| 1   | Endpoint & Key                                    | `/endpoint-keys` (Gateway keys)                             | SPEC-API §7.3                                                                                      | U0, U1 |
+| 2   | Providers                                         | `/providers`, `/providers/[provider_id]`                    | SPEC-API §7.4, §7.5, §7.6                                                                          | U1, U2 |
 | 3   | Combo & Vision Adapter                            | `/combos` (Combos tab, Vision Adapter tab)                  | SPEC-API §7.7, §7.8                                                                                | U1, U2 |
 | 4   | Usage                                             | `/usage` (Overview tab, Records tab)                        | SPEC-API §7.12                                                                                     | U1     |
 | 5   | Quota Tracker                                     | `/quota`                                                    | SPEC-API §7.12                                                                                     | U1, U2 |
@@ -160,7 +160,7 @@ Rules:
 | -------------------------- | ------------------------------------------------------------------------ | ------------------------ | --------- |
 | `/login`                   | Password login (SPEC-API §7.2)                                           | Public                   | U0        |
 | `/`                        | Redirects to `/endpoint-keys`                                            | Session                  | U0        |
-| `/endpoint-keys`           | Gateway keys and upstream endpoints with their keys                      | Session                  | U0, U1    |
+| `/endpoint-keys`           | Gateway keys a CLI tool presents to the gateway                          | Session                  | U0, U1    |
 | `/providers`               | Registry list, category filter, search, status summary                   | Session                  | U1        |
 | `/providers/[provider_id]` | Provider detail, model catalog, provider-scoped endpoints, OAuth actions | Session                  | U1, U2    |
 | `/combos`                  | Combos and the vision adapter                                            | Session                  | U1, U2    |
@@ -243,39 +243,26 @@ absent.
 
 ### 6.2 `/endpoint-keys`
 
-**Tab 1: Gateway keys** (SPEC-API §7.3)
+**Gateway keys** (SPEC-API §7.3)
 
 - **Table:** name, `key_hint`, status, last used, request count, created. Row actions: rename, enable or
-  disable, revoke.
+  disable, revoke. Each action is an icon-only button whose accessible name is the action verb (owner
+  decision, 2026-09-24), and the glyphs are recorded with a one-line reason in `src/lib/icons.ts`.
+  **Not built:** the created column and the `revoked_at` value the read schema parses are not rendered
+  (`docs/PORT/001-PORT-ENDPOINT-KEYS.md` F6, decision open).
 - **Create:** a name field, then a response modal that shows the full key once with a copy control and
   the sentence: "This key is shown once. Store it now." The modal cannot be dismissed by
   clicking the backdrop; it closes with an explicit control or Escape after the copy control reports
   success or the acknowledgement checkbox is ticked. A refused copy does not open the modal up: the
   plaintext exists nowhere else, and a dismissal on a copy that did not land would lose it.
 - **Constraint surfaced in the UI:** revoking is a soft delete and the row leaves the active list.
+  **Not built:** the list route returns revoked rows too, and a revoked row still offers actions that
+  answer `409` (`docs/PORT/001-PORT-ENDPOINT-KEYS.md` F1, decision open).
 - **Empty state:** "No gateway keys yet. Create one to let a CLI tool reach the gateway."
-
-**Tab 2: Upstream endpoints** (SPEC-API §7.5)
-
-- **Table:** provider name, endpoint label, auth type, priority, status, key count with healthy count,
-  last test result. Filters: provider, status. Sort: priority.
-- **Detail drawer** for one endpoint:
-  - Endpoint fields: label, priority, status. Priority edits reorder siblings, so the UI refreshes the
-    list after a successful save and shows the new order rather than assuming it.
-  - **Keys table:** label, `key_hint`, priority, status, last used, consecutive errors, `rate_limited_until`
-    countdown. Row actions: edit (label, value, priority, status), test this key, delete.
-  - **Which key would route now:** the key the router would pick, computed from priority plus health, and
-    labelled as such. This is the panel's answer to "why did my request fail over", and it is derived from
-    the fields the API returns, not re-simulated in the panel.
-  - **Add key:** one form, plus a repeatable row mode for adding several keys in one submit loop, since
-    multi-key per endpoint is the point of this screen.
-- **Delete endpoint:** confirmation states that its keys are deleted with it.
-- **Delete last active key:** the API returns `CONFLICT` (SPEC-API §7.5). The panel disables the delete
-  control with an inline note when the endpoint has one active key and `auth_type = api_key`, and still
-  handles a `CONFLICT` response if the state changed under it.
-- **Test:** `POST /endpoints/{id}/test` with an optional key target. Result renders pass or fail with the
-  upstream status and latency, and refreshes `test_status`.
-- **Empty state:** "No upstream endpoints yet. Add a provider connection to start routing."
+- **Upstream endpoints are not on this screen** (owner decision, 2026-09-24). The reference keeps provider
+  connections on the provider's own page, and so does the panel: the endpoint table, its detail drawer,
+  its keys table, and the add forms render under §6.3, and this screen's only subject is the keys a CLI
+  tool presents to the gateway.
 
 ### 6.3 `/providers` and `/providers/[provider_id]`
 
@@ -327,11 +314,37 @@ absent.
   the gateway, but the reference has no alias concept at all and the table is global while this screen is
   provider-scoped, so the section is gone and the panel reads no alias route. Q20 and Q21 are closed by this
   removal rather than answered.
-- **Provider-scoped endpoints:** the endpoint list filtered by `provider_id`, with the same drawer as §6.2.
+- **Provider-scoped endpoints and their keys (moved here 2026-09-24):** this is the reference's own home
+  for a connection, so the surface that used to be the Endpoint & Key screen's second tab renders here,
+  scoped to the provider by the route rather than by a control.
+  - **Table:** provider name, endpoint label, auth type, priority, status, key count with healthy count,
+    last test result. Sort: priority. Filters are the provider's own scope, so there is no provider filter
+    to keep in the URL.
+  - **Detail drawer** for one endpoint: label, priority, status. Priority edits reorder siblings, so the UI
+    refreshes the list after a successful save and shows the new order rather than assuming it.
+  - **Keys table:** label, `key_hint`, priority, status, last used, consecutive errors, `rate_limited_until`
+    countdown. Row actions: test this key, enable or disable, delete, each an icon-only button whose
+    accessible name is the action verb (owner decision, 2026-09-24).
+  - **Which key would route now:** the key the router would pick, computed from priority plus health, and
+    labelled as such. This is the panel's answer to "why did my request fail over", and it is derived from
+    the fields the API returns, not re-simulated in the panel.
+  - **Add key:** one form, plus a repeatable row mode for adding several keys in one submit loop, since
+    multi-key per endpoint is the point of this surface.
+  - **Delete last active key:** the API returns `CONFLICT` (SPEC-API §7.5). The panel disables the delete
+    control with an inline note when the endpoint has one active key and `auth_type = api_key`, and still
+    handles a `CONFLICT` response if the state changed under it.
+  - **Test:** `POST /endpoints/{id}/test` with an optional key target. Result renders pass or fail with the
+    upstream status and latency, and refreshes `test_status`.
+  - **Delete endpoint:** confirmation states that its keys are deleted with it. **Not built:** the panel
+    calls the route from nowhere, so an endpoint can be created and edited but not removed from the panel.
+  - **Empty state:** "No connections yet", naming what a connection carries and that the gateway routes
+    this provider's calls with it.
 - **Connections (landed):** the reference's own block (`ConnectionsCard.js:405-427`): the heading, the
   credential rotation switch, the action that adds a connection, and the endpoint list filtered to this
-  provider. It renders on both shapes of the screen, and it is where a key is added for a provider whose
-  auth type takes one. The switch writes this provider's entry in `routing.provider_strategies`
+  provider. It renders on both shapes of the screen. The add action is split by auth type: a provider
+  whose auth type takes a key opens the key dialog, and a provider that takes none opens the inline
+  endpoint form (label, auth type, priority, optional first key), which is the form the Endpoint & Key
+  screen's second tab used to carry. The switch writes this provider's entry in `routing.provider_strategies`
   (SPEC-API §7.14) rather than a provider field: on writes `fallback_strategy: round-robin` with an
   optional `sticky_limit`, off deletes the entry so the provider inherits `routing.fallback_strategy`, and
   the whole map goes on every write because it is one settings value. The switch reports the override and
@@ -1655,11 +1668,13 @@ half carry.
    rather than inheriting the Go rules by accident. `scrypts/` exists and carries the shared gates and git
    hooks, so the panel's gate set is wired rather than assumed. The earlier sentence that made the
    absence of `scrypts/` the reason U0 could not be called complete no longer applies.
-9. **Enumerate gateway key status values.** SPEC-API §7.3 accepts `status` on PATCH but never lists the
-   allowed values, and §6 does not either. The panel therefore writes `active` and `disabled` from two
-   constants in `src/lib/schemas/gateway-key.ts` and renders any other value verbatim, so it cannot
-   reject a value the server accepts. The API spec needs the enum before U1 adds endpoint key health,
-   where the same question returns with circuit-breaker states.
+9. **Closed 2026-09-24: the enum is in the spec, and the panel mirrors it on writes.** SPEC-API §7.3 now
+   reads `status` ∈ `active|disabled` on PATCH, with `revoked` reached only through DELETE, which is what
+   the gateway's DTO already enforced; the response still carries the third value, so the read schema
+   keeps `status` as a string and renders `revoked` verbatim. The write schema in
+   `src/lib/schemas/gateway-key.ts` narrows to the two members the spec names, and its header comment now
+   states that reason instead of the old "the spec does not enumerate" premise
+   (`docs/PORT/001-PORT-ENDPOINT-KEYS.md` F5).
 10. **Panel header format.** `AGENTS.md` §1.2 defines a tagged header for Go files (`@file`, `@for`,
     `@uses`, `@reason`, `@author`, `@layer`, `@stability`, `@since`), while the panel files carry a
     free-form rationale comment plus a purpose line. Should the panel adopt the same tags so a reviewer

@@ -178,8 +178,24 @@ All management endpoints are session-gated; data plane endpoints are gateway-key
 | GET | `/api/v1/gateway-keys` | S | List (hints only) | P0 |
 | POST | `/api/v1/gateway-keys` | S | `{name}` → returns **full key once**, in `plaintext_key` (absent on every other response, which carries `key_hint` only) | P0 |
 | GET | `/api/v1/gateway-keys/{id}` | S | Detail (hint only) | P0 |
-| PATCH | `/api/v1/gateway-keys/{id}` | S | `{name?, status?}` | P0 |
+| PATCH | `/api/v1/gateway-keys/{id}` | S | `{name?, status?}`; `status` accepts only `active` or `disabled` (`revoked` is reached only through DELETE) | P0 |
 | DELETE | `/api/v1/gateway-keys/{id}` | S | Revoke (soft) | P0 |
+
+**Design decisions (owner, 2026-09-24).** Three reference behaviours are deliberately not ported,
+recorded here so their absence reads as a decision rather than a gap
+(`docs/PORT/001-PORT-ENDPOINT-KEYS.md` F3/F4):
+
+- **Keys are opaque and machine-independent.** The reference key embeds a `machineId` and a CRC over it;
+  ours is `GATEWAY_KEY_PREFIX` plus 48 random characters, and it validates at any gateway sharing the
+  database. Binding a key to the host that minted it would break the multi-host deployment this gateway
+  targets.
+- **No auto-provision of a first key.** The reference creates a `Default Key` itself when the list is
+  empty; the panel shows an empty state and asks the operator to create one, because minting a credential
+  without operator intent is the wrong default.
+- **Remote exposure (Cloudflare Tunnel, Tailscale Funnel) is out of scope.** The reference's API Endpoint
+  card, its security gate, and its seven `/api/tunnel/*` routes have no equivalent in `app-serv` or
+  `app-ui`; the panel shows the read-only base address only. An operator who needs remote exposure runs
+  the tunnel in front of the gateway.
 
 ### 7.4 Providers (registry + OAuth)
 
