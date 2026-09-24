@@ -135,10 +135,12 @@ func newLiveStack(t *testing.T, upstream *liveUpstream, active ...*service.Activ
 	if err != nil {
 		t.Fatalf("building the resolver: %v", err)
 	}
+	settings, err := service.NewSettingsService(service.SettingsServiceDeps{Repo: postgres.NewSettingsRepository(pool)})
+	if err != nil {
+		t.Fatalf("building the settings service: %v", err)
+	}
 	selector, err := dataplane.NewSelector(dataplane.SelectorDeps{
-		Endpoints:   postgres.NewEndpointRepository(pool),
-		Cursor:      redisrepo.NewCursorStore(client),
-		StickyLimit: 1,
+		Endpoints: postgres.NewEndpointRepository(pool), Cursor: redisrepo.NewCursorStore(client), Strategies: settings,
 	})
 	if err != nil {
 		t.Fatalf("building the selector: %v", err)
@@ -152,11 +154,6 @@ func newLiveStack(t *testing.T, upstream *liveUpstream, active ...*service.Activ
 	})
 	if err != nil {
 		t.Fatalf("building the engine: %v", err)
-	}
-	settingsRepo := postgres.NewSettingsRepository(pool)
-	settings, err := service.NewSettingsService(service.SettingsServiceDeps{Repo: settingsRepo})
-	if err != nil {
-		t.Fatalf("building the settings service: %v", err)
 	}
 	usageSvc, err := service.NewUsageService(service.UsageServiceDeps{
 		Usage: postgres.NewUsageRepository(pool), Logs: postgres.NewLogRepository(pool), Settings: settings,

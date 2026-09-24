@@ -102,6 +102,9 @@ describe('SettingsPage', () => {
 		);
 		expect((screen.getByLabelText('Combo sticky limit') as HTMLInputElement).value).toBe('1');
 		expect((screen.getByLabelText('Routing sticky limit') as HTMLInputElement).value).toBe('3');
+		expect((screen.getByLabelText('Credential rotation') as HTMLSelectElement).value).toBe(
+			'fill-first'
+		);
 	});
 
 	it('sends only the routing group when the Routing tab saves', async () => {
@@ -122,7 +125,8 @@ describe('SettingsPage', () => {
 		expect(stub.patches[0].routing).toEqual({
 			combo_strategy: 'fallback',
 			combo_sticky_limit: 1,
-			sticky_limit: 5
+			sticky_limit: 5,
+			fallback_strategy: 'fill-first'
 		});
 	});
 

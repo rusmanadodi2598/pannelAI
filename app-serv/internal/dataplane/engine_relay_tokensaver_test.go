@@ -89,7 +89,7 @@ func newSaverEngine(t *testing.T, providers []registry.Provider, repo *memEndpoi
 	if err != nil {
 		t.Fatalf("NewConnectors() error = %v", err)
 	}
-	selector, err := NewSelector(SelectorDeps{Endpoints: repo, Opener: opener{}, StickyLimit: 1})
+	selector, err := NewSelector(SelectorDeps{Endpoints: repo, Opener: opener{}})
 	if err != nil {
 		t.Fatalf("NewSelector() error = %v", err)
 	}

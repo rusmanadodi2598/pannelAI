@@ -229,9 +229,15 @@ providers; the reference implements the same feature at `POST /api/provider-node
 
 ### 7.5 Upstream Endpoints & Multi API Keys (core new capability)
 
-An **upstream endpoint** holds **1..N API keys**. Routing walks the provider's endpoints (round-robin
-with a sticky limit, priority order when no cursor is configured) and picks a healthy key inside one
-(least-recently-used first, ties by priority then id, parked keys skipped). Within one request a
+An **upstream endpoint** holds **1..N API keys**. Routing walks the provider's endpoints in the order
+that provider's **credential rotation policy** fixes (§7.14): `fill-first` (the default) walks
+priority order and starts every request from the first usable endpoint, `round-robin` advances the
+shared cursor and keeps one endpoint for `sticky_limit` consecutive requests. Inside the chosen
+endpoint it picks a healthy key, least-recently-used first under `round-robin` and in priority order
+under `fill-first`, skipping parked keys and breaking ties by priority then id. The policy is a
+per-provider override over a global default (`routing.fallback_strategy` plus
+`routing.provider_strategies`), and a policy that cannot be read degrades to `fill-first`, because
+rotation is an optimisation and not a correctness input. Within one request a
 failed credential is followed by the provider's next healthy credential before the next model is
 tried (credential-first failover, §7.7). This generalizes the reference 1-connection-1-key model.
 
@@ -296,7 +302,7 @@ the rotation cursor is Redis-backed.
 
 Strategy semantics (ported from `combo.js`):
 - `fallback`: within one model the router first spends that provider's healthy credentials (next
-  endpoint, then next key) before moving to the next model in priority order. A request-scoped 4xx
+  endpoint, then next key, in the order the provider's rotation policy fixes, §7.14) before moving to the next model in priority order. A request-scoped 4xx
   (any 4xx except 401/402/403/404/429) stops the chain and is returned to the client, because the
   same body would be rejected identically everywhere. When every model fails, the client receives
   the first failure's status with the last failure's message.
@@ -556,12 +562,21 @@ v1 settings surface (subset of reference `DEFAULT_SETTINGS`):
 ```json
 {
   "security": { "require_login": true, "require_api_key": true },
-  "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3 },
+  "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3, "fallback_strategy": "fill-first", "provider_strategies": {} },
   "network":  { "outbound_proxy_enabled": false, "outbound_proxy_url": "", "outbound_no_proxy": "" },
   "token_saver": { "see §7.9" },
   "logging":  { "request_capture_enabled": false, "retention_days": 7, "capture_body_max_bytes": 65536, "observability_max_records": 1000 }
 }
 ```
+
+`routing.fallback_strategy` (`fill-first` | `round-robin`, default `fill-first`) is the credential
+rotation default for every provider, and `routing.provider_strategies` overrides it per provider id,
+the reference's own `providerStrategies` shape: `{"<provider_id>": {"fallback_strategy": "...",
+"sticky_limit": N}}`. An absent entry inherits the global default; an absent `sticky_limit` inherits
+`routing.sticky_limit` (default 3). The policy governs the credential walk of any request through
+that provider (§7.5), not only combo members; the combo's own rotation stays `combo_strategy` /
+`combo_sticky_limit`. `provider_strategies` is written whole, like the reference's PATCH, so a
+read-modify-write is what changes one provider.
 
 ### 7.15 Data Plane (OpenAI/Anthropic/Gemini-compatible, gateway-key auth)
 
@@ -793,3 +808,5 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 *Changelog 2026-09-24: §7.6's catalog read gains the `active` filter (draft `025-CATALOG-ACTIVE-FILTER.md`), which moves the reference's picker rule to the server. The reference offers only active providers because its picker filters `activeProviders` in the client; this port's catalog listed every model the registry declares, measured live as 587 rows across 67 providers while exactly one provider held an active endpoint — so 586 rows were offered that answer `NO_PROVIDER_AVAILABLE` on the first request (`opencode/muse-spark-1.2-contributor-free` and `mmf/gpt-5` both measured as 503 with no endpoint configured). `?active=true` now narrows the answer to rows whose provider holds at least one endpoint in status `active`, which is the router's own candidate population (`selection.go` selects `ProviderID: resolution.Provider.ID, Status: active`), and the predicate is asked once per read through the same `EndpointStatusCountsByProvider` roll-up the provider list already uses. "Active" is the status, not the moment: a rate-limited active endpoint keeps its provider active because the runtime skip is a rotation, not a configuration, while disabled and errored endpoints do not. `active=false` and an absent parameter both narrow nothing, so the default read is unchanged; `yes`, `1`, and `TRUE` are `VALIDATION_ERROR` rather than silently unfiltered, which is the same refusal the usage status filter already gives and the reason it was made a closed set. A deployment that wires no counter refuses the narrowed read by name instead of answering the whole catalog under a parameter that promised the opposite, and the plain read keeps working without the seam. What is deliberately not in this change: the panel's picker (the caller side, `app-ui`) and a virtual no-auth connection like the reference's, which this port's router does not have — `no_auth` without an endpoint is measured as unservable here, so it is not counted as active.
 
 *Changelog 2026-09-24: §7.5, §7.7, §7.15, and §8 re-state the failover order the data plane now implements (draft `028-FALLBACK-CREDENTIAL-PARITY.md` F1-F4, owner decision: the reference's semantics for all four). The order a failed request walks is credential-first: the provider's next healthy endpoint or key is tried inside the same request before the next combo member is, which is the account loop the reference runs (`chat.js` `excludeConnectionIds`) and this port never had. The first upstream failure parks a key for a class-specific window instead of the fixed three-strike circuit: 401/402/403/404 for 2 minutes, 429 exponentially 2s to a 5m cap driven by consecutive failures and reset by a served call, 5xx/network/timeout for 30s, and a request-scoped 4xx parks nothing because the request, not the credential, is the cause; healthy keys inside one endpoint rotate least-recently-used first so an idle second key is no longer dead weight. A request-scoped 4xx also stops the chain and answers as `UPSTREAM_REJECTED` (400), a new §8 code the panel's closed enum now carries, because the same body would be refused identically by every other member. When every member fails the client receives the first failure's status with the last failure's message, and only a member that actually reached an upstream call may own the recorded identity or the usage row, so a stale combo member (a provider whose endpoints were deleted, a model that no longer resolves) can no longer name itself in the client's error or the accounting; deleting such a provider is refused by name while a combo still references it. Deliberate deviations from the reference, recorded in the draft: parking is per key, not per key-and-model pair (`modelLock_${model}`), the failure-text rules are not ported, and media/embeddings keep their own single-call error shape because they run no chain.*
+
+*Changelog 2026-09-24: §7.5 and §7.14 add the per-provider credential rotation policy (draft `030-CREDENTIAL-ROTATION-POLICY.md`), the reference's own switch read from `auth.js:139` (`providerOverride.fallbackStrategy || settings.fallbackStrategy || "fill-first"`) and edited per provider from its Connections card and globally from its profile page. Measured before the change: this port had no `fill-first` mode at all, and the panel's `routing.sticky_limit` was stored and validated but never read by the data plane, whose selector took its limit from the `DATA_PLANE_STICKY_LIMIT` environment knob, so the only rotation switch that actually reached the router was the combo's. `routing.fallback_strategy` (`fill-first` | `round-robin`, default `fill-first`) is now the global default and `routing.provider_strategies` overrides it per provider id (whole-map writes, absent entry inherits). `fill-first` serves priority order and starts every request from the first usable endpoint, picking the first healthy key by priority; `round-robin` keeps the sticky endpoint cursor and rotates keys least-recently-used first. The policy is consulted per selection, so it governs every request through a provider and not only combo members, and a policy that cannot be read degrades to `fill-first`, the same priority-order degradation the cursor already had. The environment knob is removed: the document is the single source, and it was never declared in `.env.example`.*

@@ -18,7 +18,12 @@ import {
 } from '$lib/schemas/settings';
 
 describe('schemaRoutingSettingsForm', () => {
-	const valid = { combo_strategy: 'fallback', combo_sticky_limit: 1, sticky_limit: 3 };
+	const valid = {
+		combo_strategy: 'fallback',
+		combo_sticky_limit: 1,
+		sticky_limit: 3,
+		fallback_strategy: 'fill-first'
+	};
 
 	const cases = [
 		{ name: 'accepts the documented defaults', input: valid, ok: true },
@@ -29,6 +34,16 @@ describe('schemaRoutingSettingsForm', () => {
 		},
 		{ name: 'accepts the floor of 1', input: { ...valid, sticky_limit: 1 }, ok: true },
 		{ name: 'accepts a large limit', input: { ...valid, sticky_limit: 100000 }, ok: true },
+		{
+			name: 'accepts each credential rotation mode',
+			input: { ...valid, fallback_strategy: 'round-robin' },
+			ok: true
+		},
+		{
+			name: 'rejects an unknown rotation mode',
+			input: { ...valid, fallback_strategy: 'least-used' },
+			ok: false
+		},
 		{
 			name: 'rejects zero, which the API floors at 1',
 			input: { ...valid, sticky_limit: 0 },

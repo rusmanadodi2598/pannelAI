@@ -77,7 +77,7 @@ func newChatResolver(t *testing.T, upstreamURL string) *dataplane.Resolver {
 func newChatSelector(t *testing.T) *dataplane.Selector {
 	t.Helper()
 	repo := &chatEndpointRepository{endpoint: chatEndpoint(t)}
-	selector, err := dataplane.NewSelector(dataplane.SelectorDeps{Endpoints: repo, StickyLimit: 1})
+	selector, err := dataplane.NewSelector(dataplane.SelectorDeps{Endpoints: repo})
 	if err != nil {
 		t.Fatalf("NewSelector() error = %v", err)
 	}

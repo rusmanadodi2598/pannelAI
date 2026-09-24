@@ -35,15 +35,6 @@ type SecuritySettingsPatch struct {
 	RequireAPIKey *bool `json:"require_api_key,omitempty"`
 }
 
-// RoutingSettingsPatch updates the routing group. A non-positive sticky limit
-// is rejected rather than clamped: a limit of zero would rotate on every
-// request, which is not what a caller sending 0 can have meant.
-type RoutingSettingsPatch struct {
-	ComboStrategy    *string `json:"combo_strategy,omitempty" validate:"omitempty,oneof=fallback round_robin fusion"`
-	ComboStickyLimit *int    `json:"combo_sticky_limit,omitempty" validate:"omitempty,min=1,max=100"`
-	StickyLimit      *int    `json:"sticky_limit,omitempty" validate:"omitempty,min=1,max=100"`
-}
-
 // NetworkSettingsPatch updates the network group.
 type NetworkSettingsPatch struct {
 	OutboundProxyEnabled *bool   `json:"outbound_proxy_enabled,omitempty"`
@@ -110,6 +101,9 @@ func ValidatePatch(req PatchSettingsRequest) error {
 			return err
 		}
 	}
+	if err := validateProviderStrategies(req.Routing); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -141,11 +135,7 @@ func ToSettingsPatch(req PatchSettingsRequest) domain.SettingsPatch {
 		}
 	}
 	if req.Routing != nil {
-		patch.Routing = &domain.RoutingSettingsPatch{
-			ComboStrategy:    strategyPtr(req.Routing.ComboStrategy),
-			ComboStickyLimit: req.Routing.ComboStickyLimit,
-			StickyLimit:      req.Routing.StickyLimit,
-		}
+		patch.Routing = routingPtr(req.Routing)
 	}
 	if req.Network != nil {
 		patch.Network = &domain.NetworkSettingsPatch{
@@ -180,9 +170,11 @@ func SettingsResponseFrom(s domain.Settings) SettingsResponse {
 			RequireAPIKey: s.Security.RequireAPIKey,
 		},
 		Routing: RoutingSettingsResponse{
-			ComboStrategy:    string(s.Routing.ComboStrategy),
-			ComboStickyLimit: s.Routing.ComboStickyLimit,
-			StickyLimit:      s.Routing.StickyLimit,
+			ComboStrategy:      string(s.Routing.ComboStrategy),
+			ComboStickyLimit:   s.Routing.ComboStickyLimit,
+			StickyLimit:        s.Routing.StickyLimit,
+			FallbackStrategy:   string(s.Routing.FallbackStrategy),
+			ProviderStrategies: strategiesOrEmpty(s.Routing.ProviderStrategies),
 		},
 		Network: NetworkSettingsResponse{
 			OutboundProxyEnabled: s.Network.OutboundProxyEnabled,
@@ -201,18 +193,6 @@ func SettingsResponseFrom(s domain.Settings) SettingsResponse {
 			ObservabilityMaxRecords: s.Logging.ObservabilityMaxRecords,
 		},
 	}
-}
-
-// strategyPtr parses the wire strategy into its domain value.
-func strategyPtr(s *string) *domain.ComboStrategy {
-	if s == nil {
-		return nil
-	}
-	parsed, err := domain.ParseComboStrategy(*s)
-	if err != nil {
-		return nil
-	}
-	return &parsed
 }
 
 // togglePtr lowers one saver toggle group.
@@ -236,9 +216,5 @@ func headroomPtr(in *TokenSaverHeadroomPatch) *domain.TokenSaverHeadroomPatch {
 	if in == nil {
 		return nil
 	}
-	return &domain.TokenSaverHeadroomPatch{
-		Enabled:              in.Enabled,
-		URL:                  in.URL,
-		CompressUserMessages: in.CompressUserMessages,
-	}
+	return &domain.TokenSaverHeadroomPatch{Enabled: in.Enabled, URL: in.URL, CompressUserMessages: in.CompressUserMessages}
 }

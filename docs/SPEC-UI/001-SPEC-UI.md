@@ -328,6 +328,17 @@ absent.
   provider-scoped, so the section is gone and the panel reads no alias route. Q20 and Q21 are closed by this
   removal rather than answered.
 - **Provider-scoped endpoints:** the endpoint list filtered by `provider_id`, with the same drawer as §6.2.
+- **Connections (landed):** the reference's own block (`ConnectionsCard.js:405-427`): the heading, the
+  credential rotation switch, the action that adds a connection, and the endpoint list filtered to this
+  provider. It renders on both shapes of the screen, and it is where a key is added for a provider whose
+  auth type takes one. The switch writes this provider's entry in `routing.provider_strategies`
+  (SPEC-API §7.14) rather than a provider field: on writes `fallback_strategy: round-robin` with an
+  optional `sticky_limit`, off deletes the entry so the provider inherits `routing.fallback_strategy`, and
+  the whole map goes on every write because it is one settings value. The switch reports the override and
+  not the effective policy, which is the reference's own reading, so a provider with no entry reads as off
+  even when the global default is round-robin; the section names the default it inherits, so an off switch
+  is not a mystery, and a refused write puts the switch back rather than leaving it claiming a change the
+  gateway did not store.
 - **OAuth section (U2, landed, OAuth providers only):** the section renders for a provider whose registry
   entry says `has_oauth`, and the flow `GET /api/v1/providers/{id}/oauth/status` reports decides what it
   offers: the panel starts `code` and, for `device`, `connector`, and `none`, states that flow's reason
@@ -654,13 +665,13 @@ remembers the tab finds the new home rather than an empty heading.
 
 Tabs, each mapping to one group of keys in SPEC-API §7.14.
 
-| Tab         | Fields                                                                                                                             | Notes                                                                                                                                      |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Security    | `security.require_login`, `security.require_api_key`, change password, logout all sessions if the API exposes it                   | Turning `require_login` off shows a warning that the panel becomes open on the network. Change password asks for current and new password. |
-| Routing     | `routing.combo_strategy`, `routing.combo_sticky_limit`, `routing.sticky_limit`                                                     | Defaults for new combos and routing; per-combo values win, and the tab says so.                                                            |
-| Network     | `network.outbound_proxy_enabled`, `network.outbound_proxy_url`, `network.outbound_no_proxy`                                        | Shared surface with `/proxy-pools`; both read the same endpoint, and the tab links there instead of duplicating the form.                  |
-| Logging     | `logging.request_capture_enabled`, `logging.retention_days`, `logging.capture_body_max_bytes`, `logging.observability_max_records` | Capture sets a privacy cost, so the toggle carries the warning that request bodies will be stored.                                         |
-| Token Saver | Read-only summary plus a link to `/token-saver`                                                                                    | One editor for one config. A second editor is how configs drift.                                                                           |
+| Tab         | Fields                                                                                                                             | Notes                                                                                                                                                  |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Security    | `security.require_login`, `security.require_api_key`, change password, logout all sessions if the API exposes it                   | Turning `require_login` off shows a warning that the panel becomes open on the network. Change password asks for current and new password.             |
+| Routing     | `routing.combo_strategy`, `routing.combo_sticky_limit`, `routing.sticky_limit`, `routing.fallback_strategy`                        | Defaults for new combos and for the credential walk; per-combo values win, and a provider overrides the rotation on its own screen. The tab says both. |
+| Network     | `network.outbound_proxy_enabled`, `network.outbound_proxy_url`, `network.outbound_no_proxy`                                        | Shared surface with `/proxy-pools`; both read the same endpoint, and the tab links there instead of duplicating the form.                              |
+| Logging     | `logging.request_capture_enabled`, `logging.retention_days`, `logging.capture_body_max_bytes`, `logging.observability_max_records` | Capture sets a privacy cost, so the toggle carries the warning that request bodies will be stored.                                                     |
+| Token Saver | Read-only summary plus a link to `/token-saver`                                                                                    | One editor for one config. A second editor is how configs drift.                                                                                       |
 
 - **Save behavior:** `PATCH /api/v1/settings` per changed field group, with a dirty indicator and a
   discard action. Secrets are never returned by the API, so no field renders an existing secret value.
@@ -1888,6 +1899,32 @@ A deferred item names the check and where the evidence must appear.
 | R-31 (reason per decision)                                   | §9.5                                               | The reason log, extended in the pull request for decisions this spec does not yet cover.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 ---
+
+_Changelog 2026-09-24: the credential rotation policy is per provider, and the Routing tab states the
+default it overrides._
+
+_§6.3 gained the Connections block the reference's own provider page carries, and with it the switch that
+decides how that provider's credentials rotate. §6.13's Routing row gained `routing.fallback_strategy`, the
+global default, and the note that a provider overrides it on its own screen. The wire shape is SPEC-API
+§7.14, amended the same day: `routing.fallback_strategy` is `fill-first` or `round-robin`, and
+`routing.provider_strategies` maps a provider id to its own strategy and optional sticky limit, written as
+one whole map because it is one settings value. The switch reports the override and not the effective
+policy, which is the reference's own reading (`ConnectionsCard.js:405-427`), so a provider with no entry
+reads as off even when the global default is round-robin; the section names the default it inherits, and a
+refused write puts the switch back rather than leaving it claiming a change the gateway did not store._
+
+_Measured before the change, on the tree that carried neither half: the port had no `fill-first` mode at
+all, `routing.sticky_limit` was stored and validated but never read by the data plane, and the selector
+took its limit from the `DATA_PLANE_STICKY_LIMIT` environment knob, so the only rotation switch that
+reached the router was the combo's. Both halves landed the same day: the policy is consulted per selection
+and governs every request through a provider, not only combo members, and a policy that cannot be read
+degrades to `fill-first`._
+
+_Gates pass on 2026-09-24: 2580 tests across 158 files, `svelte-check` clean, Prettier and ESLint clean, and a
+production build. The browser click-through of the switch is outstanding: the gateway that serves
+`routing.provider_strategies` is this pass's own `app-serv` half and is not deployed, so the interaction is
+covered by the jsdom cases and the wire half by the service tests, and `app-ui/README.md` records it as
+such._
 
 _Changelog 2026-09-21: the Changelog screen reads the release notes the gateway serves, closing §14 Q11._
 

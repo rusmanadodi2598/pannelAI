@@ -15,6 +15,8 @@
 	import {
 		COMBO_STRATEGIES,
 		COMBO_STRATEGY_LABELS,
+		CREDENTIAL_ROTATIONS,
+		CREDENTIAL_ROTATION_LABELS,
 		schemaRoutingSettingsForm,
 		settingsGroupDirty,
 		type RoutingSettingsForm
@@ -34,7 +36,17 @@
 	// stops reporting an unsaved change the moment the gateway has it.
 	// `untrack` marks the initial read as deliberate: the prop supplies the first value, and the save
 	// response is what updates it afterwards.
-	const initial = untrack(() => ({ ...loaded }));
+	//
+	// The tab owns four keys and nothing else. `provider_strategies` belongs to the provider screen's own
+	// switch, and carrying it here would put it in a strict form that refuses it and in a PATCH body the
+	// tab has no business writing.
+	const ownKeys = (group: RoutingSettingsForm & Record<string, unknown>): RoutingSettingsForm => ({
+		combo_strategy: group.combo_strategy,
+		combo_sticky_limit: group.combo_sticky_limit,
+		sticky_limit: group.sticky_limit,
+		fallback_strategy: group.fallback_strategy
+	});
+	const initial = untrack(() => ownKeys(loaded));
 	let draft = $state<RoutingSettingsForm>({ ...initial });
 	let server = $state<RoutingSettingsForm>({ ...initial });
 
@@ -66,7 +78,7 @@
 		// The response is the whole stored document, so its routing group is what the gateway kept. Both
 		// copies take it: the draft stops being dirty, and Discard returns to the stored value rather
 		// than to a stale read (§8.6.3).
-		const saved = { ...result.data.routing };
+		const saved = ownKeys(result.data.routing);
 		server = saved;
 		draft = saved;
 		message = 'Saved. These defaults apply to new combos and new routing decisions only.';
@@ -118,6 +130,27 @@
 	</div>
 
 	<div class="flex flex-col gap-1 text-sm">
+		<label for="settings-credential-rotation">Credential rotation</label>
+		<select
+			id="settings-credential-rotation"
+			value={draft.fallback_strategy}
+			onchange={(event) =>
+				(draft.fallback_strategy = event.currentTarget
+					.value as RoutingSettingsForm['fallback_strategy'])}
+			aria-describedby="settings-credential-rotation-help"
+			class={fieldClass}
+		>
+			{#each CREDENTIAL_ROTATIONS as rotation (rotation)}
+				<option value={rotation}>{CREDENTIAL_ROTATION_LABELS[rotation]}</option>
+			{/each}
+		</select>
+		<span id="settings-credential-rotation-help" class="text-xs text-[var(--color-text-muted)]">
+			How every provider walks its credentials: fill-first starts at the first usable account every
+			time, round-robin advances through them. A provider can override this on its own screen.
+		</span>
+	</div>
+
+	<div class="flex flex-col gap-1 text-sm">
 		<label for="settings-routing-sticky">Routing sticky limit</label>
 		<input
 			id="settings-routing-sticky"
@@ -127,8 +160,8 @@
 			class={fieldClass}
 		/>
 		<span id="settings-routing-sticky-help" class="text-xs text-[var(--color-text-muted)]">
-			How many consecutive requests one upstream endpoint serves before round-robin rotation. At
-			least 1.
+			How many consecutive requests one upstream account serves before round-robin rotation. At
+			least 1. Read only in round-robin mode; fill-first ignores it.
 		</span>
 	</div>
 

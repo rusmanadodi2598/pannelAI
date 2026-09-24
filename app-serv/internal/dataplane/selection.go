@@ -87,24 +87,31 @@ type BudgetGate interface {
 	Exhausted(ctx context.Context, endpointID string) (bool, error)
 }
 
+// CredentialStrategy answers the credential rotation policy for one provider
+// (SPEC-API-001 §7.5): fill-first, or round-robin with a sticky limit. It is a
+// one-question seam, and it keeps the data plane from importing the settings
+// service (AGENTS.md §1.5). A policy that cannot be read degrades to fill-first
+// rather than failing the request, because rotation is an optimisation.
+type CredentialStrategy interface {
+	RotationPolicy(ctx context.Context, providerID string) (domain.RotationPolicy, error)
+}
+
 // Selector picks the endpoint and key for a provider (SPEC-API-001 §7.5).
 type Selector struct {
-	endpoints repository.EndpointRepository
-	opener    SecretOpener
-	cursor    CursorStore
-	gates     BudgetGate
-	clock     func() time.Time
-	// stickyLimit is how many consecutive requests one endpoint serves before
-	// rotation moves on.
-	stickyLimit int
+	endpoints  repository.EndpointRepository
+	opener     SecretOpener
+	cursor     CursorStore
+	gates      BudgetGate
+	strategies CredentialStrategy
+	clock      func() time.Time
 }
 
 // SelectorDeps holds the collaborators selection needs.
 type SelectorDeps struct {
-	Endpoints   repository.EndpointRepository
-	Opener      SecretOpener
-	Cursor      CursorStore
-	StickyLimit int
+	Endpoints  repository.EndpointRepository
+	Opener     SecretOpener
+	Cursor     CursorStore
+	Strategies CredentialStrategy
 	// Gate is the optional §7.12 budget check. A nil one selects every
 	// configured endpoint, which is the behaviour a deployment without quota
 	// caps had before the check existed.
@@ -113,18 +120,16 @@ type SelectorDeps struct {
 
 // NewSelector validates deps and returns a selector. The opener is optional so a
 // credential-free provider can still be routed; selecting a key that needs
-// decryption without one fails rather than sending a sealed value upstream.
+// decryption without one fails rather than sending a sealed value upstream. The
+// strategy seam is optional too: without it the walk is fill-first, the
+// documented default and the degradation a failed policy read gets.
 func NewSelector(deps SelectorDeps) (*Selector, error) {
 	if deps.Endpoints == nil {
 		return nil, domain.NewValidationError("endpoint repository is required")
 	}
-	limit := deps.StickyLimit
-	if limit < 1 {
-		limit = 1
-	}
 	return &Selector{
 		endpoints: deps.Endpoints, opener: deps.Opener, cursor: deps.Cursor, gates: deps.Gate,
-		clock: time.Now, stickyLimit: limit,
+		strategies: deps.Strategies, clock: time.Now,
 	}, nil
 }
 
@@ -180,18 +185,31 @@ func (s *Selector) candidates(ctx context.Context, providerID string) ([]domain.
 	return found, nil
 }
 
-// offset asks the cursor where to start.
-//
-// Rotation is an optimisation, not a correctness input: a Redis outage must not
-// take the data plane down, so a failure here falls back to plain priority order
-// instead of failing the request.
-func (s *Selector) offset(ctx context.Context, providerID string, size int) int {
+// offset asks the cursor where to start. It is only consulted under round-robin:
+// fill-first reads neither the cursor nor the sticky limit, so it leaves no
+// rotation state behind. A Redis outage must not take the data plane down, so a
+// failure here falls back to plain priority order instead of failing the request.
+func (s *Selector) offset(ctx context.Context, providerID string, size, stickyLimit int) int {
 	if s.cursor == nil || size <= 1 {
 		return 0
 	}
-	next, err := s.cursor.NextOffset(ctx, providerID, size, s.stickyLimit)
+	next, err := s.cursor.NextOffset(ctx, providerID, size, stickyLimit)
 	if err != nil || next < 0 {
 		return 0
 	}
 	return next % size
+}
+
+// rotationPolicy resolves the credential walk for one provider. A nil seam and a
+// failed read both degrade to fill-first: the request is served in priority order
+// rather than failed, like a cursor Redis cannot answer.
+func (s *Selector) rotationPolicy(ctx context.Context, providerID string) domain.RotationPolicy {
+	if s.strategies == nil {
+		return domain.RotationPolicy{Strategy: domain.RotationFillFirst}
+	}
+	policy, err := s.strategies.RotationPolicy(ctx, providerID)
+	if err != nil {
+		return domain.RotationPolicy{Strategy: domain.RotationFillFirst}
+	}
+	return policy
 }

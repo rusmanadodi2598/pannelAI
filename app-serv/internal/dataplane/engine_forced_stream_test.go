@@ -90,7 +90,7 @@ func newForcedStreamEngine(t *testing.T, upstreamURL string, entry registry.Prov
 	}
 	repo := newMemEndpointRepo()
 	repo.byProvider[entry.ID] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-"+entry.ID, entry.ID)}
-	selector, err := NewSelector(SelectorDeps{Endpoints: repo, Opener: opener{}, StickyLimit: 1})
+	selector, err := NewSelector(SelectorDeps{Endpoints: repo, Opener: opener{}})
 	if err != nil {
 		t.Fatalf("NewSelector() error = %v", err)
 	}

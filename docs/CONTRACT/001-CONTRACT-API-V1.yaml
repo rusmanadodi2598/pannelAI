@@ -2242,6 +2242,33 @@ components:
           type: integer
           format: int64
           minimum: 0
+        fallback_strategy:
+          type: string
+          enum:
+          - fill-first
+          - round-robin
+          description: The credential rotation default for every provider (SPEC-API-001 7.5).
+        provider_strategies:
+          type: object
+          description: Per-provider overrides, keyed by provider id. Sent whole; an absent entry
+            inherits the global default.
+          additionalProperties:
+            $ref: '#/components/schemas/ProviderStrategyPatch'
+      additionalProperties: false
+    ProviderStrategyPatch:
+      type: object
+      description: One provider's override. An entry must set at least one field; deleting the entry
+        is how a provider returns to the global default.
+      properties:
+        fallback_strategy:
+          type: string
+          enum:
+          - fill-first
+          - round-robin
+        sticky_limit:
+          type: integer
+          format: int64
+          minimum: 1
       additionalProperties: false
     NetworkSettingsPatch:
       type: object
@@ -3042,10 +3069,37 @@ components:
         sticky_limit:
           type: integer
           format: int64
+        fallback_strategy:
+          type: string
+          enum:
+          - fill-first
+          - round-robin
+          description: The effective global default, never an empty string.
+        provider_strategies:
+          type: object
+          description: The stored overrides, rendered as {} rather than null when there are none.
+          additionalProperties:
+            $ref: '#/components/schemas/ProviderStrategyResponse'
       required:
       - combo_strategy
       - combo_sticky_limit
       - sticky_limit
+      - fallback_strategy
+      - provider_strategies
+      additionalProperties: false
+    ProviderStrategyResponse:
+      type: object
+      description: One provider's stored override. An absent field inherits the global default, so
+        the panel renders what is stored rather than a filled-in copy.
+      properties:
+        fallback_strategy:
+          type: string
+          enum:
+          - fill-first
+          - round-robin
+        sticky_limit:
+          type: integer
+          format: int64
       additionalProperties: false
     NetworkSettingsResponse:
       type: object

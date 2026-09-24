@@ -10,6 +10,7 @@
 import {
 	schemaLoggingSettingsPatch,
 	schemaNetworkSettingsPatch,
+	schemaProviderStrategiesPatch,
 	schemaRoutingSettingsPatch,
 	schemaSecuritySettingsPatch,
 	schemaSettings,
@@ -18,6 +19,8 @@ import {
 	type NetworkSettingsForm,
 	type NetworkSettingsPatch,
 	type PanelSettings,
+	type ProviderStrategiesPatch,
+	type ProviderStrategy,
 	type RoutingSettingsForm,
 	type RoutingSettingsPatch,
 	type SecuritySettingsForm,
@@ -77,6 +80,32 @@ export function patchLoggingSettings(form: LoggingSettingsForm): Promise<ApiResu
 		schema: schemaSettings,
 		body,
 		bodySchema: schemaLoggingSettingsPatch
+	});
+}
+
+/**
+ * Writes one provider's entry onto a fresh read of the whole map (SPEC-API §7.14), which is how the
+ * provider screen's rotation switch changes one provider's entry. The map is one settings value, so
+ * the change merges onto the map the server holds rather than onto the copy the screen loaded: another
+ * screen may have changed its own provider's entry since (the reference re-reads before it writes).
+ * A `null` next deletes the entry, which is how a provider returns to the global default.
+ */
+export async function patchProviderStrategy(
+	providerID: string,
+	next: ProviderStrategy | null
+): Promise<ApiResult<PanelSettings>> {
+	const fresh = await fetchSettings();
+	if (!fresh.ok) return fresh;
+	const updated = { ...fresh.data.routing.provider_strategies };
+	if (next === null) delete updated[providerID];
+	else updated[providerID] = next;
+	const body: ProviderStrategiesPatch = { routing: { provider_strategies: updated } };
+	return apiRequest<ProviderStrategiesPatch, PanelSettings>({
+		method: 'PATCH',
+		path: '/settings',
+		schema: schemaSettings,
+		body,
+		bodySchema: schemaProviderStrategiesPatch
 	});
 }
 

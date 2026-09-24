@@ -60,7 +60,10 @@ func (s *SettingsService) Settings(ctx context.Context) (domain.Settings, error)
 	}
 	settings := domain.DefaultSettings()
 	settings.Security = decodeOr(settings.Security, stored[domain.SettingsKeySecurity])
-	settings.Routing = decodeOr(settings.Routing, stored[domain.SettingsKeyRouting])
+	// The group decode replaces the group wholesale, so a key an older stored
+	// row predates arrives as its zero value; Normalized fills the documented
+	// defaults back in for the routing keys this contract added later.
+	settings.Routing = decodeOr(settings.Routing, stored[domain.SettingsKeyRouting]).Normalized()
 	settings.Network = decodeOr(settings.Network, stored[domain.SettingsKeyNetwork])
 	settings.TokenSaver = decodeOr(settings.TokenSaver, stored[domain.SettingsKeyTokenSaver])
 	settings.Logging = decodeOr(settings.Logging, stored[domain.SettingsKeyLogging])
@@ -78,6 +81,18 @@ func (s *SettingsService) RequireAPIKey(ctx context.Context) (bool, error) {
 		return true, err
 	}
 	return settings.Security.RequireAPIKey, nil
+}
+
+// RotationPolicy resolves the credential rotation policy for one provider
+// (§7.5, §7.14): the provider's own override over the global default. It is the
+// one settings read the data plane's selector needs, so it is a named method
+// rather than making the selector decode the whole document.
+func (s *SettingsService) RotationPolicy(ctx context.Context, providerID string) (domain.RotationPolicy, error) {
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return domain.RotationPolicy{}, err
+	}
+	return settings.Routing.RotationFor(providerID), nil
 }
 
 // Update applies a partial patch, persists only the groups the patch touched,

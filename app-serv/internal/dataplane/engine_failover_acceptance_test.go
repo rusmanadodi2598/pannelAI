@@ -155,7 +155,7 @@ func TestRelay_KeysRotateWithinAnEndpoint(t *testing.T) {
 		1, domain.UpstreamKeyActive, nil, "", 0, nil, now, now,
 	))
 	repo.byProvider["alpha"] = []domain.UpstreamEndpoint{endpoint}
-	engine := newRelayEngine(t, server.URL, repo, nil)
+	engine := rotatingEngine(t, server.URL, repo, 1)
 
 	for i := 0; i < 3; i++ {
 		if _, err := engine.Relay(context.Background(), relayRequest("alpha/m"), nil); err != nil {

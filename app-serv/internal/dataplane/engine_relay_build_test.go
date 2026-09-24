@@ -19,6 +19,7 @@
 package dataplane
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
@@ -50,6 +51,14 @@ func newEngineWith(t *testing.T, providers []registry.Provider, repo *memEndpoin
 // selector are real, and the optional seams are passed through.
 func newEngineFull(t *testing.T, providers []registry.Provider, repo *memEndpointRepo, combos map[string]domain.Combo, orders ComboOrderer, active ActiveRequests, vision ...VisionAugmenter) *Engine {
 	t.Helper()
+	return newEngineSeams(t, providers, repo, combos, orders, active, nil, vision...)
+}
+
+// newEngineSeams is newEngineFull plus the credential rotation seam, so a test
+// that measures rotation passes a policy explicitly instead of relying on a
+// default it does not control.
+func newEngineSeams(t *testing.T, providers []registry.Provider, repo *memEndpointRepo, combos map[string]domain.Combo, orders ComboOrderer, active ActiveRequests, strategies CredentialStrategy, vision ...VisionAugmenter) *Engine {
+	t.Helper()
 	resolver, err := NewResolver(
 		relayRegistry{providers: providers},
 		relayLookup{combos: combos},
@@ -61,7 +70,7 @@ func newEngineFull(t *testing.T, providers []registry.Provider, repo *memEndpoin
 	if err != nil {
 		t.Fatalf("NewConnectors() error = %v", err)
 	}
-	selector, err := NewSelector(SelectorDeps{Endpoints: repo, Opener: opener{}, StickyLimit: 1})
+	selector, err := NewSelector(SelectorDeps{Endpoints: repo, Opener: opener{}, Strategies: strategies})
 	if err != nil {
 		t.Fatalf("NewSelector() error = %v", err)
 	}
@@ -81,4 +90,28 @@ func newEngineFull(t *testing.T, providers []registry.Provider, repo *memEndpoin
 		t.Fatalf("NewEngine() error = %v", err)
 	}
 	return engine
+}
+
+// stubStrategy answers one rotation policy for every provider, which is what a
+// test asks for when it measures the walk rather than the settings document.
+type stubStrategy struct {
+	policy domain.RotationPolicy
+	err    error
+}
+
+// RotationPolicy satisfies the selector's seam.
+func (s stubStrategy) RotationPolicy(context.Context, string) (domain.RotationPolicy, error) {
+	return s.policy, s.err
+}
+
+// rotatingEngine is newRelayEngine with a round-robin policy, so probe 5's
+// rotation is asked for explicitly: the unwired default is fill-first, which
+// serves one endpoint forever and would make the probe vacuous.
+func rotatingEngine(t *testing.T, upstreamURL string, repo *memEndpointRepo, sticky int) *Engine {
+	t.Helper()
+	return newEngineSeams(t,
+		[]registry.Provider{relayProvider("alpha", upstreamURL), relayProvider("beta", upstreamURL)},
+		repo, nil, nil, nil,
+		stubStrategy{policy: domain.RotationPolicy{Strategy: domain.RotationRoundRobin, StickyLimit: sticky}},
+	)
 }

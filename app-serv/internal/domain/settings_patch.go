@@ -44,13 +44,6 @@ type SecuritySettingsPatch struct {
 	RequireAPIKey *bool
 }
 
-// RoutingSettingsPatch updates the routing group.
-type RoutingSettingsPatch struct {
-	ComboStrategy    *ComboStrategy
-	ComboStickyLimit *int
-	StickyLimit      *int
-}
-
 // NetworkSettingsPatch updates the network group.
 type NetworkSettingsPatch struct {
 	OutboundProxyEnabled *bool
@@ -108,14 +101,8 @@ func (s Settings) Validate() error {
 	if s.Logging.ObservabilityMaxRecords < 1 {
 		return NewValidationError("logging.observability_max_records must be at least 1")
 	}
-	if s.Routing.ComboStickyLimit < 1 {
-		return NewValidationError("routing.combo_sticky_limit must be at least 1")
-	}
-	if s.Routing.StickyLimit < 1 {
-		return NewValidationError("routing.sticky_limit must be at least 1")
-	}
-	if !s.Routing.ComboStrategy.IsValid() {
-		return NewValidationError("routing.combo_strategy is invalid")
+	if err := validateRouting(s.Routing); err != nil {
+		return err
 	}
 	if s.TokenSaver.Headroom.Enabled && s.TokenSaver.Headroom.URL == "" {
 		return NewValidationError("token_saver.headroom.url is required when headroom is enabled")
@@ -158,11 +145,7 @@ func (s *Settings) Update(patch SettingsPatch) error {
 		applyBool(&s.Security.RequireAPIKey, p.RequireAPIKey)
 	}
 	if p := patch.Routing; p != nil {
-		if p.ComboStrategy != nil {
-			s.Routing.ComboStrategy = *p.ComboStrategy
-		}
-		applyInt(&s.Routing.ComboStickyLimit, p.ComboStickyLimit)
-		applyInt(&s.Routing.StickyLimit, p.StickyLimit)
+		applyRouting(&s.Routing, p)
 	}
 	if p := patch.Network; p != nil {
 		applyBool(&s.Network.OutboundProxyEnabled, p.OutboundProxyEnabled)

@@ -21,15 +21,34 @@ export const COMBO_STRATEGY_LABELS: Record<(typeof COMBO_STRATEGIES)[number], st
 	fusion: 'Fusion'
 };
 
+// The credential rotation modes (SPEC-API §7.5, §7.14). `fill-first` is the default and the value a
+// document that predates the keys resolves to, so the read schema never answers an unset mode.
+export const CREDENTIAL_ROTATIONS = ['fill-first', 'round-robin'] as const;
+
+export const CREDENTIAL_ROTATION_LABELS: Record<(typeof CREDENTIAL_ROTATIONS)[number], string> = {
+	'fill-first': 'Fill first',
+	'round-robin': 'Round robin'
+};
+
 export const schemaSecuritySettings = z.object({
 	require_login: z.boolean(),
 	require_api_key: z.boolean()
 });
 
+// One provider's override of the global rotation policy. Both fields are optional because an absent
+// one inherits the global value: the panel renders what is stored rather than a filled-in copy, so a
+// provider whose entry sets only the sticky limit does not read as if it had chosen a strategy.
+export const schemaProviderStrategy = z.object({
+	fallback_strategy: z.enum(CREDENTIAL_ROTATIONS).optional(),
+	sticky_limit: z.number().int().min(1).optional()
+});
+
 export const schemaRoutingSettings = z.object({
 	combo_strategy: z.enum(COMBO_STRATEGIES),
 	combo_sticky_limit: z.number().int().min(1),
-	sticky_limit: z.number().int().min(1)
+	sticky_limit: z.number().int().min(1),
+	fallback_strategy: z.enum(CREDENTIAL_ROTATIONS),
+	provider_strategies: z.record(z.string(), schemaProviderStrategy)
 });
 
 export const schemaNetworkSettings = z.object({
@@ -80,7 +99,10 @@ export const schemaRoutingSettingsForm = z.strictObject({
 	sticky_limit: z.coerce
 		.number()
 		.int({ message: 'Use a whole number of requests.' })
-		.min(1, { message: 'The routing sticky limit must be at least 1.' })
+		.min(1, { message: 'The routing sticky limit must be at least 1.' }),
+	fallback_strategy: z.enum(CREDENTIAL_ROTATIONS, {
+		message: 'Pick the credential rotation mode.'
+	})
 });
 
 export type RoutingSettingsForm = z.infer<typeof schemaRoutingSettingsForm>;
@@ -127,6 +149,17 @@ export const schemaRoutingSettingsPatch = z.strictObject({
 	routing: schemaRoutingSettingsForm
 });
 
+// The provider screen's own write: one provider's entry inside the whole override map (SPEC-API
+// §7.14). It is a separate patch shape from the routing tab's because the two own different keys: the
+// tab writes the global defaults and must not carry an override map it never rendered, and this one
+// writes the map and must not carry the tab's fields. The map is sent whole, so a caller
+// read-modify-writes it, and deleting an entry is how a provider returns to the global default.
+export const schemaProviderStrategiesPatch = z.strictObject({
+	routing: z.strictObject({
+		provider_strategies: z.record(z.string(), schemaProviderStrategy)
+	})
+});
+
 export const schemaNetworkSettingsPatch = z.strictObject({
 	network: schemaNetworkSettingsForm
 });
@@ -138,6 +171,9 @@ export const schemaLoggingSettingsPatch = z.strictObject({
 export type RoutingSettingsPatch = z.infer<typeof schemaRoutingSettingsPatch>;
 export type NetworkSettingsPatch = z.infer<typeof schemaNetworkSettingsPatch>;
 export type LoggingSettingsPatch = z.infer<typeof schemaLoggingSettingsPatch>;
+export type ProviderStrategiesPatch = z.infer<typeof schemaProviderStrategiesPatch>;
+export type ProviderStrategy = z.infer<typeof schemaProviderStrategy>;
+export type CredentialRotation = (typeof CREDENTIAL_ROTATIONS)[number];
 
 /**
  * Whether a draft group differs from the group that was loaded.

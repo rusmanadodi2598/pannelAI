@@ -24,6 +24,7 @@ package dataplane
 
 import (
 	"context"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -32,9 +33,13 @@ import (
 // the spent set, so a request that already tried one account asks for the next
 // one rather than failing (SPEC-API-001 §7.7, credential-first failover).
 //
-// The walk visits the provider's endpoints in rotation order and picks the
-// least-recently-used healthy key inside the first usable one; a keyless
-// endpoint is itself the candidate. Each call advances the rotation cursor, so
+// The walk follows the provider's rotation policy (§7.14): fill-first serves
+// the provider's endpoints in priority order and starts every request from the
+// first usable one, while round-robin advances the shared cursor and keeps one
+// endpoint for the policy's sticky limit. Inside the endpoint the policy picks
+// the key: the first healthy one by priority under fill-first, the
+// least-recently-used one under round-robin. A keyless endpoint is itself the
+// candidate either way. Each round-robin call advances the rotation cursor, so
 // a request that walks two credentials leaves the cursor two steps on;
 // rotation stays an optimisation, not a correctness input.
 func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[string]struct{}) (Selection, error) {
@@ -48,7 +53,11 @@ func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[
 			"no upstream endpoint is configured for provider " + providerID)
 	}
 
-	offset := s.offset(ctx, providerID, len(endpoints))
+	policy := s.rotationPolicy(ctx, providerID)
+	offset := 0
+	if policy.UsesRotation() {
+		offset = s.offset(ctx, providerID, len(endpoints), policy.StickyLimit)
+	}
 	for i := range endpoints {
 		endpoint := endpoints[(offset+i)%len(endpoints)]
 		if !endpoint.Available(now) {
@@ -59,7 +68,7 @@ func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[
 		}
 		var key domain.UpstreamKey
 		if endpoint.AuthType() != domain.UpstreamAuthNone {
-			picked, ok := endpoint.NextKeySkipping(now, spent)
+			picked, ok := pickKey(endpoint, now, spent, policy)
 			if !ok {
 				continue
 			}
@@ -75,6 +84,22 @@ func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[
 	}
 	return Selection{}, domain.NewNoProviderAvailableError("every upstream endpoint for provider " +
 		providerID + " is unavailable, has no usable key, or has spent its budget")
+}
+
+// pickKey applies the policy's key rule inside one endpoint: the first healthy
+// key by priority under fill-first, the least-recently-used one under
+// round-robin. Both skip the request's spent set, so a failed credential is
+// never retried inside one request.
+func pickKey(
+	endpoint domain.UpstreamEndpoint,
+	now time.Time,
+	spent map[string]struct{},
+	policy domain.RotationPolicy,
+) (domain.UpstreamKey, bool) {
+	if policy.UsesRotation() {
+		return endpoint.NextKeySkipping(now, spent)
+	}
+	return endpoint.FirstKeySkipping(now, spent)
 }
 
 // CandidateID names the credential unit a selection stands for: the key for a

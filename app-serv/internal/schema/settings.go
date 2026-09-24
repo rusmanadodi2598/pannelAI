@@ -32,11 +32,23 @@ type SecuritySettingsResponse struct {
 	RequireAPIKey bool `json:"require_api_key"`
 }
 
-// RoutingSettingsResponse is the §7.14 routing group.
+// RoutingSettingsResponse is the §7.14 routing group. The credential policy
+// keys answer the effective values, never an empty string: a read of a document
+// that predates them still names fill-first and an empty override map.
 type RoutingSettingsResponse struct {
-	ComboStrategy    string `json:"combo_strategy"`
-	ComboStickyLimit int    `json:"combo_sticky_limit"`
-	StickyLimit      int    `json:"sticky_limit"`
+	ComboStrategy      string                              `json:"combo_strategy"`
+	ComboStickyLimit   int                                 `json:"combo_sticky_limit"`
+	StickyLimit        int                                 `json:"sticky_limit"`
+	FallbackStrategy   string                              `json:"fallback_strategy"`
+	ProviderStrategies map[string]ProviderStrategyResponse `json:"provider_strategies"`
+}
+
+// ProviderStrategyResponse is one provider's rotation override. An absent field
+// inherits the global default, so the two fields carry `omitempty` and the
+// panel renders what is stored rather than a filled-in copy.
+type ProviderStrategyResponse struct {
+	FallbackStrategy string `json:"fallback_strategy,omitempty"`
+	StickyLimit      *int   `json:"sticky_limit,omitempty"`
 }
 
 // NetworkSettingsResponse is the §7.14 network group.

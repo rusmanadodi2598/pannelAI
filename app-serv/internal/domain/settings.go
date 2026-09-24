@@ -84,13 +84,6 @@ type SecuritySettings struct {
 	RequireAPIKey bool `json:"require_api_key"`
 }
 
-// RoutingSettings is the §7.14 routing group.
-type RoutingSettings struct {
-	ComboStrategy    ComboStrategy `json:"combo_strategy"`
-	ComboStickyLimit int           `json:"combo_sticky_limit"`
-	StickyLimit      int           `json:"sticky_limit"`
-}
-
 // NetworkSettings is the §7.14 network group.
 type NetworkSettings struct {
 	OutboundProxyEnabled bool   `json:"outbound_proxy_enabled"`
@@ -198,12 +191,8 @@ type Settings struct {
 func DefaultSettings() Settings {
 	return Settings{
 		Security: SecuritySettings{RequireLogin: true, RequireAPIKey: true},
-		Routing: RoutingSettings{
-			ComboStrategy:    ComboFallback,
-			ComboStickyLimit: 1,
-			StickyLimit:      3,
-		},
-		Network: NetworkSettings{OutboundProxyEnabled: false},
+		Routing:  defaultRoutingSettings(),
+		Network:  NetworkSettings{OutboundProxyEnabled: false},
 		TokenSaver: TokenSaverSettings{
 			// Every saver ships off (owner decision, 2026-09-19): the pipeline
 			// must not rewrite a request until an operator turns a group on.

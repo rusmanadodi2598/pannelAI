@@ -108,6 +108,19 @@ func (e UpstreamEndpoint) NextKeySkipping(now time.Time, spent map[string]struct
 	return valid[best], true
 }
 
+// FirstKeySkipping is the fill-first counterpart of NextKeySkipping: the first
+// healthy key by priority that this request has not spent yet. ValidKeys is
+// already ordered by priority, so "first" is the stored order the operator set.
+func (e UpstreamEndpoint) FirstKeySkipping(now time.Time, spent map[string]struct{}) (UpstreamKey, bool) {
+	for _, key := range e.ValidKeys(now) {
+		if _, ok := spent[key.ID()]; ok {
+			continue
+		}
+		return key, true
+	}
+	return UpstreamKey{}, false
+}
+
 // keyIdleBefore orders candidates by idle time: a key never used beats a used
 // one, an older use beats a newer one, and equal instants fall back to the
 // stored priority then id so the order is stable across calls.

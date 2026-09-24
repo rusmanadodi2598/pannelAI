@@ -38,10 +38,6 @@ type Config struct {
 	LoginLockout      time.Duration
 	GatewayKeyPrefix  string
 	RateLimitPerMin   int
-	// DataPlaneStickyLimit is how many consecutive requests one upstream
-	// endpoint serves before round-robin rotation moves on (SPEC-API-001
-	// §4 settings.routing.sticky_limit, whose default is 3).
-	DataPlaneStickyLimit int
 	// PublicBaseURL is the absolute URL this gateway answers on, when it is
 	// deployed behind a proxy or on a hostname the request's Host header does
 	// not name. SPEC-API-001 §7.4 needs it to build the OAuth callback URL and
@@ -90,7 +86,6 @@ func Load() (Config, error) {
 		{"DB_POOL_MAX", &cfg.DBPoolMax, 10, 100},
 		{"LOGIN_MAX_FAILS", &cfg.LoginMaxFails, 5, 100},
 		{"RATE_LIMIT_PER_MIN", &cfg.RateLimitPerMin, 120, 10000},
-		{"DATA_PLANE_STICKY_LIMIT", &cfg.DataPlaneStickyLimit, 3, 100},
 	}
 	for _, f := range intFields {
 		v, err := getenvInt(f.name, f.def)
@@ -163,9 +158,6 @@ func (c Config) validate() error {
 	}
 	if c.RateLimitPerMin < 1 {
 		problems = append(problems, "RATE_LIMIT_PER_MIN must be >= 1")
-	}
-	if c.DataPlaneStickyLimit < 1 {
-		problems = append(problems, "DATA_PLANE_STICKY_LIMIT must be >= 1")
 	}
 	if c.PublicBaseURL != "" && !isAbsoluteHTTPURL(c.PublicBaseURL) {
 		problems = append(problems, "PUBLIC_BASE_URL must be an absolute http(s) URL, e.g. https://gateway.example.com")

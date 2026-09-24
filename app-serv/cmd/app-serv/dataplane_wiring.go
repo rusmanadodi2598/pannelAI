@@ -132,9 +132,12 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		// replica; a per-process cursor would make distribution depend on which
 		// instance answered.
 		Cursor: redisrepo.NewCursorStore(in.Redis),
-		// The global default. A combo with its own limit overrides it in the
-		// strategy layer, not here.
-		StickyLimit: in.Config.DataPlaneStickyLimit,
+		// The credential rotation policy (§7.14) resolved per provider by the
+		// settings service: fill-first or round-robin with the provider's own
+		// sticky override over the global default. Rotation is an optimisation,
+		// so a policy read that fails degrades to priority order in the
+		// selector rather than failing the request.
+		Strategies: in.Settings,
 		// §7.12: an endpoint whose stored budget cap is spent is skipped, which
 		// is the enforcement half of the quota surface. The quota service
 		// satisfies the seam directly, so no adapter is written for it.

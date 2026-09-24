@@ -19,6 +19,7 @@
 
 import { vi } from 'vitest';
 import { endpointRow } from './endpoint-stub';
+import { settingsDocument } from './settings-document';
 
 export type StubModel = Record<string, unknown>;
 
@@ -101,6 +102,16 @@ export type ModelStub = {
 	 * together, and two stubs would fight over `fetch`: the node stub's own tests keep the writes.
 	 */
 	providerNode: StubModel | null;
+	/**
+	 * The settings document the Connections section reads for its rotation switch (§7.14). It is served here
+	 * because the section renders on the same screen as the model routes, and a second stub would fight over
+	 * `fetch`.
+	 */
+	settings: StubModel;
+	/** The bodies `PATCH /settings` received, which is where the whole override map shows up. */
+	settingsPatches: StubModel[];
+	/** The settings write's own status, for a test that needs the gateway to refuse a rotation change. */
+	settingsWriteStatus: number;
 };
 
 export function catalogRow(overrides: StubModel = {}): StubModel {
@@ -233,6 +244,9 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		providerModelsReads: [],
 		providerModelsWarning: null,
 		providerNode: null,
+		settings: settingsDocument(),
+		settingsPatches: [],
+		settingsWriteStatus: 200,
 		...overrides
 	};
 
@@ -262,6 +276,31 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		const url = String(input);
 		const body: StubModel = init?.body === undefined ? {} : JSON.parse(String(init.body));
 		const parsed = new URL(url, 'http://panel.test');
+
+		// The settings document, which the Connections section reads for its rotation switch and writes to
+		// change one provider's entry. A write is applied to the stub's own document the way the server
+		// applies it, so a read-modify-write test sees its change in the answer rather than in an echo.
+		if (parsed.pathname.endsWith('/settings')) {
+			if (method === 'PATCH') {
+				stub.settingsPatches.push(body);
+
+				if (stub.settingsWriteStatus !== 200) {
+					return refusal(
+						'VALIDATION_ERROR',
+						'The gateway refused this value.',
+						stub.settingsWriteStatus
+					);
+				}
+
+				const routing = (body.routing ?? {}) as StubModel;
+				stub.settings = {
+					...stub.settings,
+					routing: { ...(stub.settings.routing as StubModel), ...routing }
+				};
+			}
+
+			return json(stub.settings);
+		}
 
 		// The node's own read, which the details card makes when the screen is a custom node's (§7.4). It is
 		// matched before the provider read below because both end in a path segment.
