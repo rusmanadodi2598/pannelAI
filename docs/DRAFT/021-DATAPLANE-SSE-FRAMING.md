@@ -6,7 +6,7 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15) |
+| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
 | **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
@@ -307,3 +307,66 @@ pencatatan melainkan kredensial: tanpa endpoint dan tanpa kunci opencode.ai Zen 
 dirutekan, sama seperti §9. Itu pekerjaan owner di panel, bukan cacat gateway. Catatan keadaan:
 `provider_nodes` sekarang 2 baris (`oczen`, `th-1`); node `occap` ("Zen Capture") yang masih ada pada §13
 sudah tidak ada lagi. Tidak ada kode yang disentuh pass ini.
+
+## 16. Uji empat model 2026-09-24 08:43: satu model menjawab, tiga menunggu koneksi `oczen`
+
+Owner meminta pengujian endpoint dengan empat model sekaligus (kunci `sandbox` yang sama, hint `sk-…rmEu`):
+`th-1/deepseek-v4.1-flash:free`, `space-bunny-free`, `mimo-v2.6-flash-free`, dan
+`muse-spark-1.3-contributor-free`. Gateway yang diukur adalah proses yang baru di-restart owner: PID
+`2716056` mulai 08:38:23 (biner dari cache build Go), menggantikan PID `2214789` di §14. Baseline saat
+mulai (08:42): `usage_records` 36, `request_logs` 45, `gateway_keys` 16 dengan `sandbox` `request_count`
+23, `upstream_endpoints` 3 (semuanya milik `th-1`, label `Key 1`/`Key 2`/`Key 3`, `priority` 1,
+`status` `active`), `upstream_keys` 3, `provider_nodes` 2 (`oczen`, `th-1`), `settings` 1, `quota_caps`
+dan `combos` 0; katalog `GET /api/v1/models` menjawab 363 id.
+
+| Model dipaste apa adanya | Hasil terukur |
+| --- | --- |
+| `th-1/deepseek-v4.1-flash:free` | HTTP 200 dalam 37,4 s; `content` `pong`, `reasoning_content` ada, `finish_reason` `stop`, `usage` 36/37/73; `model` di wire `deepseek-v4.1-flash` |
+| `space-bunny-free` | HTTP 400 dalam <0,1 s: `MODEL_NOT_FOUND`, "model space-bunny-free is not a known model, alias, or combo" |
+| `mimo-v2.6-flash-free` | HTTP 400, `MODEL_NOT_FOUND` |
+| `muse-spark-1.3-contributor-free` | HTTP 400, `MODEL_NOT_FOUND` |
+
+Ketiga nama telanjang itu ada di katalog, tetapi hanya dalam bentuk terkuantifikasi. Tujuh panggilan
+lanjutan memakai bentuk yang resolve, dan semuanya menjawab 503 `NO_PROVIDER_AVAILABLE` dalam ~0,0 sampai
+0,3 s karena node `oczen` tidak punya satu baris pun di `upstream_endpoints`:
+
+| Bentuk yang resolve | Provider yang disebut pesan | Hasil |
+| --- | --- | --- |
+| `openai-compatible-03863XJ2YM2KHF847XJP5YBSH8/{space-bunny-free, mimo-v2.6-flash-free, muse-spark-1.3-contributor-free}` | `openai-compatible-03863XJ2YM2KHF847XJP5YBSH8` | 503, tiga panggilan |
+| `oczen/{space-bunny-free, mimo-v2.6-flash-free, muse-spark-1.3-contributor-free}` | id node yang sama | 503, tiga panggilan |
+| `opencode/muse-spark-1.3-contributor-free` | `opencode` | 503, satu panggilan |
+
+Jadi prefiks `oczen/` dan id node sama-sama resolve ke node yang benar (sama seperti §15), dan
+satu-satunya yang hilang adalah koneksi OpenCode Zen untuk node itu. Itu pekerjaan owner di panel; sampai
+koneksi itu ada, ketiga model tidak bisa dirutekan, dan setelah ada pun nama telanjang tetap 400 karena
+ref yang sah adalah `<prefiks>/<model>`, id katalog, alias, atau combo.
+
+### 16.1 Stream pada `th-1`: F1 sampai F3 dan F5 tetap, bentuk byte sama
+
+| Uji stream (08:44) | Hasil terukur |
+| --- | --- |
+| Tanpa `include_usage` | HTTP 200, TTFB 0,72 s, total 0,73 s, 1074 byte: 4 frame berframe (role+content, content, `finish`, `usage` dari upstream), lalu satu frame `finish` **telanjang** dengan `data: [DONE]` menempel; `"finish_reason":"stop"` dua kali; 0 kecocokan `^data: \[DONE\]$` |
+| Dengan `include_usage` | HTTP 200, TTFB 30,3 s, total 30,3 s, 1316 byte: 4 frame berframe, lalu satu baris telanjang berisi **dua** objek `usage` kembar (36/37/73) dengan `data: [DONE]` menempel |
+| Pembaca SSE panel atas kedua byte | `frames=4` di keduanya, sentinel tidak pernah menjadi frame sendiri, jawaban terlipat benar (`pong`, `deepseek-v4.1-flash`, `stop`, 36/37/73), alasan akhir `truncated` |
+
+F5 juga tetap: kedua stream menulis `usage_records` 0/0 dengan `status` `success` (`latency_ms` 708 dan
+30299) padahal wire membawa 36/37/73, sementara panggilan non-streaming 25 detik sebelumnya mencatat 36/37
+dengan benar (`latency_ms` 37295). Yang bergerak dari §14 hanya latensi upstream (non-streaming 72,4 s
+menjadi 37,4 s; TTFB stream 51,8 s dan 101,4 s menjadi 0,72 s dan 30,3 s).
+
+### 16.2 Pencatatan dan keadaan akhir
+
+Tiga belas panggilan pass ini semuanya terhitung di `gateway_keys.request_count` kunci `sandbox` (23
+menjadi 36): empat panggilan pertama, tujuh penolakan 503, dan dua stream. `request_logs` bertambah 13
+baris (tiga `MODEL_NOT_FOUND` dengan kolom provider dan model kosong, tujuh `NO_PROVIDER_AVAILABLE`, satu
+non-streaming `success`, dua streaming `success`), dan `usage_records` bertambah 10 baris (tiga
+`MODEL_NOT_FOUND` tidak menulis baris usage, sesuai batas yang sudah tercatat di §13). Baris-baris itu
+**sengaja ditinggalkan** sebagai rekaman, seperti putaran sebelumnya. Satu catatan pengukuran: katalog
+manajemen yang dipakai pemilih panel (`GET /api/v1/models/catalog?provider_id=<id node oczen>`) menjawab
+82 baris dengan id berbentuk `<id node>/<model>`, jadi panel menawarkan ref yang terkuantifikasi; nama
+telanjang yang dipaste owner adalah id milik node itu sendiri (daftar `/models`-nya), dan satu di
+antaranya bahkan muncul sudah berprefiks (`oczen/muse-spark-1.3-contributor-free`), bersama
+saudara-saudaranya `muse-spark-1.2`, `muse-spark-1.2-contributor-free`, dan `muse-spark-1.3`.
+
+Berkas bukti: `/tmp/smoke6/*.json` (tiga belas badan jawaban), `/tmp/smoke6/stream-plain.txt` dan
+`stream-usage.txt`, `/tmp/smoke6_run.py`, dan `/tmp/smoke6_panel_reader.ts`.
