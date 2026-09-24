@@ -379,8 +379,8 @@ absent.
     connected and routable but has no rows of its own is offered as one dashed placeholder whose model id
     the operator then edits in the row, which is the reference's own shape. The dialog carries a search
     that matches a model or a section name, and a section-name match keeps all of that section's options.
-    A failed read is reported as a failure rather than presented as an empty catalog, and a ref already
-    chosen shows as picked. The active set is computed in the panel from the provider list joined to the
+    A failed read is reported as a failure rather than presented as an empty catalog, a read still in
+    flight says so rather than claiming nothing is offered, and a ref already chosen shows as picked. The active set is computed in the panel from the provider list joined to the
     catalog, because the catalog route has no "active" filter yet; the server-side equivalent is requested
     in draft 025 F3, and until it lands the panel reads both routes.
   - `judge_model` uses the same dialog in single-select mode.

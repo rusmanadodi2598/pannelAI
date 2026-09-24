@@ -41,6 +41,9 @@
 	let catalog = $state<CatalogModel[]>([]);
 	let providers = $state<Provider[]>([]);
 	let pickerFailed = $state(false);
+	// The picker's sources load beside the combos list, so the editor can be opened before they arrive.
+	// The dialog is told, rather than rendering its empty sentence over a read still in flight (R-27).
+	let pickerLoading = $state(true);
 
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 	const showEditor = $derived(creating || editing !== null);
@@ -82,6 +85,7 @@
 		catalog = sources.catalog;
 		providers = sources.providers;
 		pickerFailed = sources.failed;
+		pickerLoading = false;
 	}
 
 	// Both halves of a delete failure are cleared together, so a stale conflict flag can never colour the
@@ -142,6 +146,7 @@
 		<ComboEditor
 			combo={editing}
 			{sections}
+			{pickerLoading}
 			{pickerFailed}
 			onsaved={() => {
 				closeEditor();

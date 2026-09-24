@@ -2,8 +2,8 @@
 //
 // The dialog is deliberately dumb: it renders the sections it is handed and reports a click. These cases
 // pin the behaviour a caller relies on (the toggle, the single-select close, the search reset) and the
-// three sentences it must not blur together: a failed read, an empty catalog, and a search that matched
-// nothing.
+// four sentences it must not blur together: a read still running, a failed read, an empty catalog, and a
+// search that matched nothing.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -118,7 +118,17 @@ describe('ModelPickerDialog', () => {
 		expect(screen.queryByRole('button', { name: 'GPT-4o' })).toBeNull();
 	});
 
-	it('shows the caller own sentence when nothing can be offered', () => {
+	it('says the read is still running instead of claiming nothing is offered', async () => {
+		const { view } = renderDialog({ sections: [], loading: true });
+
+		expect(screen.getByText('Loading the catalog and the provider list.')).toBeTruthy();
+		expect(screen.queryByText('No connected provider offers a model yet.')).toBeNull();
+
+		await view.rerender({ sections: [], loading: false });
+		expect(screen.getByText('No connected provider offers a model yet.')).toBeTruthy();
+	});
+
+	it('shows the sentence the caller passed when nothing can be offered', () => {
 		renderDialog({ sections: [], emptyText: 'No connected provider offers a vision model yet.' });
 
 		expect(screen.getByText('No connected provider offers a vision model yet.')).toBeTruthy();

@@ -35,12 +35,15 @@
 	let {
 		combo,
 		sections,
+		pickerLoading,
 		pickerFailed,
 		onsaved,
 		oncancel
 	}: {
 		combo: Combo | null;
 		sections: PickerSection[];
+		/** True while the caller is still reading the picker's sources (R-27). */
+		pickerLoading: boolean;
 		pickerFailed: boolean;
 		onsaved: () => void;
 		oncancel: () => void;
@@ -169,7 +172,7 @@
 			</span>
 			<button
 				type="button"
-				class="min-h-9 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
+				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
 				onclick={() => (pickerTarget = 'models')}>Add models</button
 			>
 		</div>
@@ -208,6 +211,7 @@
 	{sections}
 	selected={picked}
 	single={pickerTarget === 'judge'}
+	loading={pickerLoading}
 	failed={pickerFailed}
 	emptyText="No connected provider offers a model yet. Add a connection on the Providers screen, or type the reference in the editor."
 	ontoggle={pickRef}

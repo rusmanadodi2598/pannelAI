@@ -36,6 +36,9 @@
 	let catalog = $state<CatalogModel[]>([]);
 	let providers = $state<Provider[]>([]);
 	let pickerFailed = $state(false);
+	// True while the capability-filtered read is in flight, so the dialog never states "no provider
+	// reports a vision model" over an answer that has not arrived (R-27).
+	let pickerLoading = $state(true);
 	let pickerOpen = $state(false);
 
 	let loading = $state(true);
@@ -81,6 +84,7 @@
 		catalog = sources.catalog;
 		providers = sources.providers;
 		pickerFailed = sources.failed;
+		pickerLoading = false;
 	}
 
 	function toggleModel(ref: string): void {
@@ -225,6 +229,7 @@
 			open={pickerOpen}
 			{sections}
 			selected={form.models}
+			loading={pickerLoading}
 			failed={pickerFailed}
 			emptyText="No connected provider reports a vision-capable model right now. Connect one on the Providers screen, or declare the capability on a model you added there."
 			ontoggle={toggleModel}

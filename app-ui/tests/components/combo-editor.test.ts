@@ -55,7 +55,14 @@ describe('ComboEditor', () => {
 
 	it('hides the sticky limit unless the strategy is round_robin', async () => {
 		render(ComboEditor, {
-			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
+			props: {
+				combo: null,
+				sections: [],
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved: vi.fn(),
+				oncancel: vi.fn()
+			}
 		});
 
 		expect(screen.queryByLabelText('Sticky limit')).toBeNull();
@@ -69,7 +76,14 @@ describe('ComboEditor', () => {
 
 	it('hides the judge model unless the strategy is fusion', async () => {
 		render(ComboEditor, {
-			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
+			props: {
+				combo: null,
+				sections: [],
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved: vi.fn(),
+				oncancel: vi.fn()
+			}
 		});
 
 		expect(screen.queryByLabelText('Judge model')).toBeNull();
@@ -83,7 +97,14 @@ describe('ComboEditor', () => {
 
 	it("explains the selected strategy in the router's own words", async () => {
 		render(ComboEditor, {
-			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
+			props: {
+				combo: null,
+				sections: [],
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved: vi.fn(),
+				oncancel: vi.fn()
+			}
 		});
 
 		expect(screen.getByText('Try models in order until one succeeds.')).toBeTruthy();
@@ -99,7 +120,14 @@ describe('ComboEditor', () => {
 	it('refuses a fusion combo with no judge model and sends nothing', async () => {
 		const { calls } = stubFetch();
 		render(ComboEditor, {
-			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
+			props: {
+				combo: null,
+				sections: [],
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved: vi.fn(),
+				oncancel: vi.fn()
+			}
 		});
 
 		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'mixed' } });
@@ -116,7 +144,14 @@ describe('ComboEditor', () => {
 		// native bound the submit never fires and no message appears at all.
 		const { calls } = stubFetch();
 		render(ComboEditor, {
-			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
+			props: {
+				combo: null,
+				sections: [],
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved: vi.fn(),
+				oncancel: vi.fn()
+			}
 		});
 
 		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'mixed' } });
@@ -132,7 +167,14 @@ describe('ComboEditor', () => {
 		const { calls } = stubFetch();
 		const onsaved = vi.fn();
 		render(ComboEditor, {
-			props: { combo: null, sections: [], pickerFailed: false, onsaved, oncancel: vi.fn() }
+			props: {
+				combo: null,
+				sections: [],
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved,
+				oncancel: vi.fn()
+			}
 		});
 
 		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'daily' } });
@@ -156,7 +198,14 @@ describe('ComboEditor', () => {
 	it('drops a judge model that was typed before the strategy changed away from fusion', async () => {
 		const { calls } = stubFetch();
 		render(ComboEditor, {
-			props: { combo: null, sections: [], pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
+			props: {
+				combo: null,
+				sections: [],
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved: vi.fn(),
+				oncancel: vi.fn()
+			}
 		});
 
 		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'mixed' } });
@@ -192,7 +241,14 @@ describe('ComboEditor', () => {
 		);
 
 		render(ComboEditor, {
-			props: { combo: null, sections: [], pickerFailed: false, onsaved, oncancel: vi.fn() }
+			props: {
+				combo: null,
+				sections: [],
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved,
+				oncancel: vi.fn()
+			}
 		});
 
 		await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'daily' } });
@@ -208,6 +264,7 @@ describe('ComboEditor', () => {
 			props: {
 				combo: combo(),
 				sections: [],
+				pickerLoading: false,
 				pickerFailed: false,
 				onsaved: vi.fn(),
 				oncancel: vi.fn()
@@ -219,6 +276,7 @@ describe('ComboEditor', () => {
 		await rerender({
 			combo: combo({ id: 'cmb_2', name: 'nightly', strategy: 'round_robin', sticky_limit: 3 }),
 			sections: [],
+			pickerLoading: false,
 			pickerFailed: false,
 			onsaved: vi.fn(),
 			oncancel: vi.fn()

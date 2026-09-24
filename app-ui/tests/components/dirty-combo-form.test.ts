@@ -45,6 +45,7 @@ const CASES: FormCase[] = [
 				props: {
 					combo: comboFixture(),
 					sections: [],
+					pickerLoading: false,
 					pickerFailed: false,
 					onsaved: vi.fn(),
 					oncancel: vi.fn()
@@ -66,6 +67,7 @@ const CASES: FormCase[] = [
 				props: {
 					combo: null,
 					sections: [],
+					pickerLoading: false,
 					pickerFailed: false,
 					onsaved: vi.fn(),
 					oncancel: vi.fn()

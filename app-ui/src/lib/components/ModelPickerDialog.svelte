@@ -24,6 +24,7 @@
 		sections,
 		selected,
 		single = false,
+		loading = false,
 		failed = false,
 		emptyText,
 		ontoggle,
@@ -36,6 +37,12 @@
 		selected: string[];
 		/** Single-select mode: picking one closes the dialog. The judge field uses it. */
 		single?: boolean;
+		/**
+		 * True while the caller's read is in flight. Without it the empty sentence would claim no
+		 * provider offers a model during the window before the answer arrives, which is a different
+		 * fact (R-27).
+		 */
+		loading?: boolean;
 		/** True when a read failed, which is its own sentence rather than an empty catalog. */
 		failed?: boolean;
 		/** What to say when nothing can be offered, in the caller's own terms. */
@@ -95,7 +102,11 @@
 			/>
 		</label>
 
-		{#if failed}
+		{#if loading}
+			<p class="text-sm text-[var(--color-text-muted)]">
+				Loading the catalog and the provider list.
+			</p>
+		{:else if failed}
 			<p
 				class="rounded-[var(--radius-sm)] border border-[var(--color-danger)] px-3 py-2 text-sm"
 				role="alert"
@@ -125,7 +136,7 @@
 										? 'Add it, then edit the model id in the editor.'
 										: undefined}
 									onclick={() => pick(option.value)}
-									class="inline-flex min-h-9 items-center gap-1.5 rounded-[var(--radius-sm)] border px-2.5 text-sm {chipClass(
+									class="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-sm)] border px-2.5 text-sm {chipClass(
 										option,
 										isSelected
 									)}"

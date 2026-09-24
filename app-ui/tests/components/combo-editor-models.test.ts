@@ -71,6 +71,7 @@ describe('the combo editor model list', () => {
 			props: {
 				combo: existing,
 				sections: [],
+				pickerLoading: false,
 				pickerFailed: false,
 				onsaved: vi.fn(),
 				oncancel: vi.fn()
@@ -91,7 +92,14 @@ describe('the combo editor model list', () => {
 
 	it('adds a member from the picker and takes it back out when the chip is clicked again', async () => {
 		render(ComboEditor, {
-			props: { combo: null, sections, pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
+			props: {
+				combo: null,
+				sections,
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved: vi.fn(),
+				oncancel: vi.fn()
+			}
 		});
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Add models' }));
@@ -108,7 +116,14 @@ describe('the combo editor model list', () => {
 
 	it('fills the judge from the picker in single-select mode and closes it', async () => {
 		render(ComboEditor, {
-			props: { combo: null, sections, pickerFailed: false, onsaved: vi.fn(), oncancel: vi.fn() }
+			props: {
+				combo: null,
+				sections,
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved: vi.fn(),
+				oncancel: vi.fn()
+			}
 		});
 
 		await selectStrategy('fusion');

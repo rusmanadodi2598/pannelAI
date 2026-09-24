@@ -39,6 +39,10 @@ seluruhnya tidak akan pernah menjawab. Pass ini membuat picker menawarkan yang b
 dengan bentuk yang sama seperti reference, dan menyebut sebabnya ketika tidak ada yang bisa
 ditawarkan.
 
+Angka hidup di atas diukur pada sesi 1. Beberapa menit kemudian, pada sesi 2, aktor lain membersihkan
+baris endpoint sehingga **0 dari 86** provider ber-endpoint; kedua picker lalu merender kalimat
+kosongnya, yang justru bukti aturan yang sama mengikuti data hidup (lihat §4).
+
 ## 2. Aturan reference dan aturan panel (baris terverifikasi)
 
 Empat aturan reference yang dipakai pass ini, semuanya dibaca dari `origin/master` `21583c03`:
@@ -172,20 +176,53 @@ Dialog menyebut sebab dan jalan keluarnya, dan baris adapter yang sudah tersimpa
 dengan label "not reported as vision-capable by the catalog" supaya konfigurasi lama tidak hilang
 diam-diam.
 
+### 3.5 F5 (LOW, FE): chip picker 36 px, di bawah target sentuh 44 px
+
+**Status: CLOSED** (ditemukan probe 390 px pass ini sendiri, diperbaiki di pass yang sama).
+
+**Fakta.** Chip di dialog picker dan tombol **Add models** di editor memakai `min-h-9` (36 px),
+sementara R-03 menuntut target sentuh 44 px dan konvensi dominan panel sendiri sudah `min-h-11`
+(input pencarian dan tombol Done di dialog yang sama). Terukur di DOM pada 390 px: chip 36 px.
+
+**Yang dikerjakan.** Keduanya menjadi `min-h-11`; tree dibekukan ulang, seluruh gerbang dijalankan
+ulang di atasnya, dan pengukuran diulang dengan satu endpoint sementara untuk node yang punya baris
+katalog (prioritas 10000, dihapus dan baseline dibaca ulang di run yang sama): seksi `OpenCode Zen
+Free (82)` muncul dan **setiap chip 44 px** (lebar minimum 58 px), input dan Done 44 px. Dua kontrol
+36 px lain di luar permukaan pass ini dilaporkan tanpa diubah (`CopyButton.svelte:103`,
+`GatewayKeyRow.svelte:82`).
+
+### 3.6 F6 (LOW, FE): kalimat kosong dirender di atas pembacaan yang belum selesai
+
+**Status: CLOSED** (ditemukan review R-27 pass ini sendiri, diperbaiki di pass yang sama).
+
+**Fakta.** Sumber picker dibaca bersamaan daftar combo, jadi editor bisa dibuka sebelum jawabannya
+tiba. Di jendela itu dialog merender kalimat kosongnya ("No connected provider offers a model yet"),
+padahal yang benar adalah "belum tahu". R-27 menuntut tiga keadaan (kosong, memuat, gagal), dan dialog
+hanya punya kosong dan gagal.
+
+**Yang dikerjakan.** `ModelPickerDialog` menerima prop `loading`; kedua pemanggil
+(`CombosTab` lewat `ComboEditor`, dan `VisionAdapterForm`) melaporkan status bacanya, dan dialog
+merender "Loading the catalog and the provider list." selama itu. Test baru di
+`model-picker-dialog.test.ts` mengunci urutannya (memuat, lalu kosong setelah selesai), dan 15 situs
+render `ComboEditor` di tiga berkas test menyatakan `pickerLoading: false` (10 di
+`combo-editor.test.ts`, 3 di `combo-editor-models.test.ts`, 2 di `dirty-combo-form.test.ts`, dihitung
+ulang setelah edit).
+
 ## 4. Gerbang
 
 Semuanya dijalankan pada working tree akhir (fingerprint `1bebaefd3ae1d65d79c5996499238996`, 500
-berkas di bawah `src/`, `tests/`, `static/`, `scripts/`):
+berkas di bawah `src/`, `tests/`, `static/`, `scripts/`), kecuali baris yang menyebut tree setelah
+perbaikan F5:
 
 | Gerbang | Hasil |
 |---|---|
-| `bun run check` | **0 errors, 0 warnings** |
+| `bun run check` | **0 errors, 0 warnings** (dijalankan ulang setelah F5) |
 | `bun run lint` | Prettier: seluruh berkas sesuai, setelah satu `prettier --write` atas berkas pass ini |
 | `bun run lint:ts` | ESLint keluar 0 |
 | `bun run build` | sukses, keluaran di `build/` |
-| Test terarah | **10 berkas, 62 test lulus** dalam 2m34s |
-| `vitest run` penuh | **157 berkas, 2569 test lulus** dalam 1658.89 s pada tree beku `1bebaefd3ae1d65d79c5996499238996` (500 berkas; fingerprint diukur ulang setelah run, sama) |
-| Click-through browser | **lulus**: satu sesi terekam, panel melayani build pass ini di `:3002` menunjuk gateway hidup `:9090`. Picker combo merender tepat satu seksi `TH HARBOR 1 (1)` dengan satu chip `th-1` dan layar meminta `/providers?page=1&per_page=100` + `/models/catalog`; picker vision tidak merender seksi dan menampilkan kalimat dua jalan keluarnya, dengan `/vision-adapter`, `/providers?page=1&per_page=100`, `/models/catalog?capability=vision`. Tiga screenshot, bukti di `/tmp/picker31/evidence.json` |
+| Test terarah | **10 berkas, 62 test lulus** dalam 2m34s; dijalankan ulang setelah F5: 62 lulus dalam 281 s; setelah F6: **63 test lulus** (kasus memuat yang baru) dalam 193 s |
+| `vitest run` penuh | **157 berkas, 2569 test lulus** dalam 1658.89 s pada tree beku `1bebaefd3ae1d65d79c5996499238996` (500 berkas; fingerprint diukur ulang setelah run, sama). Itu sebelum F5/F6; tree final `a691c1e94200ccf013553fc7a093087f` (500 berkas; fingerprint diukur ulang setelah run, sama): **157 berkas, 2570 test lulus** dalam 1261.23 s, hijau pada percobaan pertama |
+| Click-through browser | **lulus**, tiga probe terekam pada build pass ini (panel `:3002`/`:3003` menunjuk gateway hidup `:9090`). Sesi 1 (satu provider ber-endpoint): picker combo merender satu seksi `TH HARBOR 1 (1)` dengan satu chip `th-1`, meminta `/providers?page=1&per_page=100` + `/models/catalog`; picker vision tanpa seksi dengan kalimat dua jalan keluarnya, meminta `/vision-adapter`, `/providers`, `/models/catalog?capability=vision`. Sesi 2 (setelah pembersihan aktor lain: 0 dari 86 provider ber-endpoint): kedua picker merender kalimat kosongnya, aturan yang sama mengikuti data hidup. Escape menutup dialog begitu event-nya sampai ke halaman (`Page.bringToFront` + `rawKeyDown`); percobaan pertama mencatat `false` karena harness mengirim `keyDown` tanpa membawa halaman ke depan. Probe 390 px terpisah (dua tema, lima pengukuran): `documentElement.scrollWidth` 390 vs viewport 390, `scrollTo(400,0)` meninggalkan `scrollX` 0, 0 elemen keluar viewport; dialog 352 px dan isinya tidak overflow. Probe ketiga membuat satu endpoint sementara untuk node berbaris-katalog (prioritas 10000, dihapus lalu baseline dibaca ulang di run yang sama) dan mengukur chip yang muncul: seksi `OpenCode Zen Free (82)`, setiap chip **44 px** (lebar minimum 58 px), input dan Done 44 px. Bukti di `/tmp/picker31/evidence.json`, `evidence-mobile.json`, `evidence-tap.json`, 9 screenshot |
 
 ## 5. Yang sengaja TIDAK dikerjakan
 
