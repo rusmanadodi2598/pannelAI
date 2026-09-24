@@ -37,13 +37,22 @@ func NewModelHandler(catalog *service.ModelCatalogService) *ModelHandler {
 	return &ModelHandler{catalog: catalog}
 }
 
-// Catalog serves GET /api/v1/models/catalog with the §7.6 filters.
+// Catalog serves GET /api/v1/models/catalog with the §7.6 filters, including
+// the `active` boolean (draft 025): `true` narrows the answer to providers
+// holding an active endpoint, `false` narrows nothing, and any other spelling
+// is a VALIDATION_ERROR rather than a silently ignored filter.
 func (h *ModelHandler) Catalog(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
+	active, err := decodeBoolFilter(query.Get("active"))
+	if err != nil {
+		schema.WriteError(w, err)
+		return
+	}
 	filter := service.CatalogFilter{
 		ProviderID: strings.TrimSpace(query.Get("provider_id")),
 		Capability: strings.TrimSpace(query.Get("capability")),
 		Query:      strings.TrimSpace(query.Get("q")),
+		Active:     active,
 	}
 	models, err := h.catalog.Catalog(r.Context(), filter)
 	if err != nil {
@@ -51,6 +60,28 @@ func (h *ModelHandler) Catalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	schema.WriteJSON(w, http.StatusOK, schema.ModelCatalogResponse{Data: schema.ToModelResponses(models)})
+}
+
+// decodeBoolFilter reads one optional boolean query parameter. The vocabulary
+// is the two lowercase spellings; an empty value reads as absent, which is the
+// house rule every other query parameter follows, and a misspelling like `yes`
+// or `1` is refused rather than silently narrowing nothing while reading as
+// narrowed (draft 025 F5 — the same failure the usage status filter had before
+// it became a closed set).
+func decodeBoolFilter(raw string) (*bool, error) {
+	trimmed := strings.TrimSpace(raw)
+	switch trimmed {
+	case "":
+		return nil, nil
+	case "true":
+		value := true
+		return &value, nil
+	case "false":
+		value := false
+		return &value, nil
+	default:
+		return nil, domain.NewValidationError("active must be true or false")
+	}
 }
 
 // CustomList serves GET /api/v1/models/custom, narrowed by `?provider_id=`

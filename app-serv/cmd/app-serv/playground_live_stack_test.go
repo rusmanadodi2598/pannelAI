@@ -36,6 +36,7 @@ package main
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -82,10 +83,7 @@ type liveStack struct {
 // caller that needs nothing extra passes nothing.
 func newLiveStack(t *testing.T, upstream *liveUpstream, active ...*service.ActiveRequestTracker) liveStack {
 	t.Helper()
-	dsn := os.Getenv(livePostgresEnv)
-	if dsn == "" {
-		t.Fatalf("%s must be set when running with -tags=integration", livePostgresEnv)
-	}
+	dsn := liveTestDSN(t)
 	addr := os.Getenv(liveRedisEnv)
 	if addr == "" {
 		t.Fatalf("%s must be set when running with -tags=integration", liveRedisEnv)
@@ -201,3 +199,25 @@ func newLiveStack(t *testing.T, upstream *liveUpstream, active ...*service.Activ
 // TestPlaygroundLive_NonStreamedRequest is the F9 non-streamed evidence: one
 // authenticated call through the whole gateway, with the status, the machine
 // code, the request id, and the row counts it produced.
+
+// liveTestDSN reads the live-evidence PostgreSQL DSN and refuses one whose
+// database does not declare itself a test database. This stack truncates
+// upstream_endpoints CASCADE, so a run aimed at a real database deletes the
+// operator's accounts — which happened once, when the variable was pointed at
+// the dev database by copying POSTGRES_DSN. The guard runs before the pool is
+// opened, so it cannot be outrun by a later statement.
+func liveTestDSN(t *testing.T) string {
+	t.Helper()
+	dsn := os.Getenv(livePostgresEnv)
+	if dsn == "" {
+		t.Fatalf("%s must be set when running with -tags=integration", livePostgresEnv)
+	}
+	parsed, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		t.Fatalf("parsing %s: %v", livePostgresEnv, err)
+	}
+	if name := strings.ToLower(parsed.ConnConfig.Database); !strings.Contains(name, "test") {
+		t.Fatalf("refusing to run live evidence against %q: it is not a test database (expected a name containing \"test\"; this stack truncates its tables)", name)
+	}
+	return dsn
+}

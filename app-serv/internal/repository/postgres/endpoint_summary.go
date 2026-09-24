@@ -71,3 +71,40 @@ SELECT provider_id, status, (rate_limited_until IS NOT NULL AND rate_limited_unt
 func mergeStatusCount(target *domain.EndpointStatusCounts, status domain.UpstreamEndpointStatus, rateLimited bool, count int64) {
 	target.Add(status, rateLimited, count)
 }
+
+// ActiveProviders returns which of the named providers hold at least one
+// endpoint in status active, in one statement. It is the same population the
+// data plane's candidates query selects by (`selection.go` narrows
+// EndpointFilter{Status: active} per provider), so a read that asks "which
+// providers can the router still pick" gets the router's own answer rather
+// than an approximation over the roll-up, whose RateLimited bucket is not the
+// same set: health tracking moves an endpoint to error without clearing its
+// backoff window, so a stale timestamp would count a dead endpoint as pickable.
+func (r *EndpointRepository) ActiveProviders(ctx context.Context, providerIDs []string) (map[string]bool, error) {
+	if len(providerIDs) == 0 {
+		return map[string]bool{}, nil
+	}
+	const query = `
+SELECT DISTINCT provider_id
+  FROM upstream_endpoints
+ WHERE provider_id = ANY($1::text[]) AND status = 'active'`
+
+	rows, err := r.pool.Query(ctx, query, providerIDs)
+	if err != nil {
+		return nil, translateEndpointError(err)
+	}
+	defer rows.Close()
+
+	out := make(map[string]bool, len(providerIDs))
+	for rows.Next() {
+		var providerID string
+		if err := rows.Scan(&providerID); err != nil {
+			return nil, translateEndpointError(err)
+		}
+		out[providerID] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, translateEndpointError(err)
+	}
+	return out, nil
+}

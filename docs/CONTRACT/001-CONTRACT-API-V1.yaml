@@ -5340,6 +5340,18 @@ paths:
         required: false
         schema:
           type: string
+      - name: active
+        in: query
+        required: false
+        description: >-
+          When true, only rows whose provider holds at least one active
+          upstream endpoint. False and absent narrow nothing. Any other value
+          is a VALIDATION_ERROR.
+        schema:
+          type: boolean
+          enum:
+          - true
+          - false
       responses:
         '200':
           description: Successful response.

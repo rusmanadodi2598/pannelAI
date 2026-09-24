@@ -28,7 +28,6 @@ package postgres
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
@@ -43,10 +42,7 @@ import (
 func newEndpointRepo(t *testing.T) *EndpointRepository {
 	t.Helper()
 
-	dsn := os.Getenv(testDSNEnv)
-	if dsn == "" {
-		t.Fatalf("%s must be set when running with -tags=integration", testDSNEnv)
-	}
+	dsn := requireTestDSN(t)
 	ctx := context.Background()
 	if err := migrations.Apply(ctx, dsn); err != nil {
 		t.Fatalf("applying migrations: %v", err)

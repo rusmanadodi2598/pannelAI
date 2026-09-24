@@ -85,15 +85,9 @@ func buildManagement(
 	// created at runtime is resolvable as a provider id.
 	runtimeIndex := newRuntimeProviderIndex(index, nodeRepo, nodeModels, slog.Default())
 
-	// The catalog must exist before the combo and vision services, which resolve
-	// their refs through it. It reads the runtime overlay like the rest of the
-	// management graph: a model the operator registers under a custom node has
-	// to reach the catalog, or the node's models are routable but invisible.
-	catalogSvc, err := service.NewModelCatalogService(service.ModelCatalogServiceDeps{
-		Index: runtimeIndex, Repo: catalogRepo, Combos: comboRepo,
-	})
+	catalogSvc, err := buildCatalogService(runtimeIndex, catalogRepo, comboRepo, endpointRepo)
 	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: model catalog: %w", err)
+		return managementDeps{}, err
 	}
 
 	// The probe adapter reaches the upstream through the plugin seam, so no part

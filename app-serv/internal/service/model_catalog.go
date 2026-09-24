@@ -34,10 +34,16 @@ import (
 
 // CatalogFilter narrows the catalog list. A zero value means "no filter",
 // which is distinct from a filter matching nothing.
+//
+// Active is a pointer because it has three states: nil (the parameter was not
+// sent, so nothing is narrowed), true (only providers holding an active
+// endpoint), and false (the parameter was sent as false, which still narrows
+// nothing — draft 025 §6 ruling 2).
 type CatalogFilter struct {
 	ProviderID string
 	Capability string
 	Query      string
+	Active     *bool
 }
 
 // CatalogIndex is the registry view the catalog merges: every provider it can
@@ -58,14 +64,19 @@ type ModelCatalogService struct {
 	index  CatalogIndex
 	repo   repository.ModelCatalogRepository
 	combos repository.ComboRepository
+	active ActiveProviderSet
 	clock  func() time.Time
 }
 
-// ModelCatalogServiceDeps holds the collaborators the service needs.
+// ModelCatalogServiceDeps holds the collaborators the service needs. Active is
+// optional: it is the seam the `?active=true` catalog filter needs, so a
+// deployment that wires none still serves the whole catalog and the filter's
+// refusal names the missing seam (draft 025).
 type ModelCatalogServiceDeps struct {
 	Index  CatalogIndex
 	Repo   repository.ModelCatalogRepository
 	Combos repository.ComboRepository
+	Active ActiveProviderSet
 }
 
 // NewModelCatalogService validates deps and returns a ready service.
@@ -79,7 +90,7 @@ func NewModelCatalogService(deps ModelCatalogServiceDeps) (*ModelCatalogService,
 	if deps.Combos == nil {
 		return nil, domain.NewValidationError("model catalog service requires a combo repository")
 	}
-	return &ModelCatalogService{index: deps.Index, repo: deps.Repo, combos: deps.Combos, clock: time.Now}, nil
+	return &ModelCatalogService{index: deps.Index, repo: deps.Repo, combos: deps.Combos, active: deps.Active, clock: time.Now}, nil
 }
 
 // Catalog returns the merged catalog, disabled models excluded, filtered by
@@ -101,6 +112,23 @@ func (s *ModelCatalogService) Catalog(ctx context.Context, filter CatalogFilter)
 		if matchesCatalogFilter(providerNames, model, filter) {
 			matched = append(matched, model)
 		}
+	}
+	// The active predicate runs after the other filters so the roll-up measures
+	// only the providers the request actually asked about, and it is skipped
+	// entirely when the parameter was not sent or was sent as false — the plain
+	// catalog read stays free of a query it never needed (draft 025).
+	if filter.Active != nil && *filter.Active {
+		active, err := s.activeProviders(ctx, distinctProviderIDs(matched))
+		if err != nil {
+			return nil, err
+		}
+		narrowed := make([]domain.CatalogModel, 0, len(matched))
+		for _, model := range matched {
+			if active[model.ProviderID()] {
+				narrowed = append(narrowed, model)
+			}
+		}
+		matched = narrowed
 	}
 	sort.Slice(matched, func(a, b int) bool {
 		left, right := matched[a].Ref().String(), matched[b].Ref().String()

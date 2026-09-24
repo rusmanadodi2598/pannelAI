@@ -26,7 +26,6 @@ package postgres
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
@@ -41,10 +40,7 @@ import (
 // clean usage table.
 func newUsageRepo(t *testing.T) *UsageRepository {
 	t.Helper()
-	dsn := os.Getenv(testDSNEnv)
-	if dsn == "" {
-		t.Fatalf("%s must be set when running with -tags=integration", testDSNEnv)
-	}
+	dsn := requireTestDSN(t)
 	if err := migrations.Apply(context.Background(), dsn); err != nil {
 		t.Fatalf("applying migrations: %v", err)
 	}

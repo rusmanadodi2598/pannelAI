@@ -34,7 +34,9 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -49,13 +51,20 @@ const testDSNEnv = "PANNELAI_TEST_POSTGRES_DSN"
 
 // newTestPool connects to the configured database and applies migrations, so
 // every integration test in this package shares one setup path.
+//
+// The database's name must declare itself a test database. Every harness in
+// this package TRUNCATEs the tables it reads, so pointing the variable at a
+// real database destroys its data — which happened once, when a run was aimed
+// at the dev database by copying POSTGRES_DSN instead of writing a test DSN:
+// the operator's endpoints and keys were truncated away and had to be
+// recovered from WAL. A name the guard accepts is one that names itself
+// disposable (`pannelai_test`, `pannelai_test_...`); anything else is refused
+// before a single statement runs, because a guard that runs after the first
+// TRUNCATE is not a guard.
 func newTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 
-	dsn := os.Getenv(testDSNEnv)
-	if dsn == "" {
-		t.Fatalf("%s must be set when running with -tags=integration", testDSNEnv)
-	}
+	dsn := requireTestDSN(t)
 
 	ctx := context.Background()
 	if err := migrations.Apply(ctx, dsn); err != nil {
@@ -88,4 +97,38 @@ func seed(t *testing.T, repo *GatewayKeyRepository, name string) domain.GatewayK
 		t.Fatalf("seeding %q: %v", name, err)
 	}
 	return key
+}
+
+// requireTestDSN reads the integration DSN and refuses one whose database does
+// not declare itself a test database, before any statement can run. It is the
+// one entry every connection opener in this package calls, so a new harness
+// cannot skip the guard by opening its own pool.
+func requireTestDSN(t *testing.T) string {
+	t.Helper()
+	dsn := os.Getenv(testDSNEnv)
+	if dsn == "" {
+		t.Fatalf("%s must be set when running with -tags=integration", testDSNEnv)
+	}
+	if err := guardTestDatabase(dsn); err != nil {
+		t.Fatalf("refusing to run integration tests against %q: %v", dsn, err)
+	}
+	return dsn
+}
+
+// guardTestDatabase refuses a DSN whose database name does not declare itself
+// a test database. The connection parameters are parsed with the same library
+// the pool uses, so a DSN the guard accepts is a DSN the pool can open, and the
+// check happens before migrations run — which is what makes it a guard rather
+// than an apology.
+func guardTestDatabase(dsn string) error {
+	parsed, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return fmt.Errorf("parsing the DSN: %w", err)
+	}
+	name := strings.ToLower(parsed.ConnConfig.Database)
+	if strings.Contains(name, "test") {
+		return nil
+	}
+	return fmt.Errorf(
+		"%q is not a test database (expected a name containing \"test\"; the harness truncates its tables)", name)
 }
