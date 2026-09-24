@@ -1,35 +1,18 @@
 <script lang="ts">
 	// Endpoint & Key (docs/SPEC-UI/001-SPEC-UI.md §6.2).
 	//
-	// The screen is a host: it owns the title and the tablist, and each tab owns its own data, states, and
-	// dialogs. That split is what keeps the two tabs independent of each other, and it keeps every file
-	// under the project line limit. Switching tabs remounts the one being shown, so each tab loads its own
-	// data when it appears.
+	// One screen, one subject: the keys a CLI tool presents to the gateway. The provider connections this
+	// page used to carry as a second tab live on the provider's own screen, which is where the reference
+	// keeps them (its Connections card), so the tab and its table moved there on 2026-09-24 rather than
+	// being duplicated here.
 	import GatewayKeysTab from '$lib/components/GatewayKeysTab.svelte';
-	import PanelTabs from '$lib/components/PanelTabs.svelte';
-	import UpstreamEndpointsTab from '$lib/components/UpstreamEndpointsTab.svelte';
-
-	const TABS = [
-		{ id: 'gateway-keys', label: 'Gateway keys' },
-		{ id: 'upstream', label: 'Upstream endpoints' }
-	];
 </script>
 
 <section class="flex flex-col gap-5">
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Endpoint &amp; Key</h1>
-		<p class="text-sm text-[var(--color-text-muted)]">
-			Keys a CLI tool presents to the gateway, and the provider connections the gateway routes to.
-		</p>
+		<p class="text-sm text-[var(--color-text-muted)]">Keys a CLI tool presents to the gateway.</p>
 	</div>
 
-	<PanelTabs tabs={TABS} label="Endpoint and key views">
-		{#snippet panel(active)}
-			{#if active === 'upstream'}
-				<UpstreamEndpointsTab />
-			{:else}
-				<GatewayKeysTab />
-			{/if}
-		{/snippet}
-	</PanelTabs>
+	<GatewayKeysTab />
 </section>

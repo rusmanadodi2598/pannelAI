@@ -1,9 +1,9 @@
 <script lang="ts">
-	// Create one upstream endpoint (docs/SPEC-UI/001-SPEC-UI.md §6.2, tab 2).
+	// Create one upstream endpoint (docs/SPEC-UI/001-SPEC-UI.md §6.3, Connections).
 	//
-	// The provider is fixed rather than chosen here. §6.3 has the Providers screen link to this form with the
-	// provider already filled in, and offering a picker would mean loading the registry into a select, which
-	// §6.3's pagination discipline rules out.
+	// The provider is fixed rather than chosen here: the form renders inside one provider's own screen, and
+	// offering a picker would mean loading the registry into a select, which §6.3's pagination discipline
+	// rules out.
 	//
 	// The credential is required for the two key auth types and optional for the rest. §7.5 refuses an
 	// `api_key` endpoint with no key (`service/endpoint_create.go:53-55`) because an account that can never

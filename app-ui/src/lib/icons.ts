@@ -1,19 +1,26 @@
-// Navigation icon map (docs/SPEC-UI/001-SPEC-UI.md §8.11, DESIGN.md §10).
+// Icon maps (docs/SPEC-UI/001-SPEC-UI.md §8.11, DESIGN.md §10).
 //
-// One entry per navigation item, each with a written reason, because R-04 rejects an icon set chosen
-// for its library look and R-31 requires the purpose to be writable in one line. Identifier names come
-// from `@lucide/svelte`, the set the component layer ships with; a name that does not resolve is a
-// build error rather than a blank space in the sidebar.
+// One entry per icon, each with a written reason, because R-04 rejects an icon set chosen for its
+// library look and R-31 requires the purpose to be writable in one line. Identifier names come from
+// `@lucide/svelte`, the set the component layer ships with; a name that does not resolve is a build
+// error rather than a blank space in the sidebar.
 //
 // The set is one library on purpose. R-04 warns that a single installed set gives every panel the same
 // thin-stroke look, which is why every row below carries a reason that ties the glyph to its content
 // rather than to the library: the relevance is the decision, and the set is the implementation.
+//
+// Three maps live here: the sidebar's rows, the section headers that are not nav rows, and the row
+// actions of the Endpoint & Key tables. The third is what makes an icon-only button legible: the glyph
+// is decorative, the reason is recorded, and the button itself carries the accessible name.
 
 import {
+	Activity,
+	Ban,
 	Blocks,
 	BookOpen,
 	Binary,
 	ChartLine,
+	Check,
 	CircleGauge,
 	Film,
 	History,
@@ -23,23 +30,28 @@ import {
 	MessageSquareCode,
 	Mic,
 	Network,
+	Pause,
+	Pencil,
+	Play,
 	Scissors,
 	ScrollText,
 	Search,
 	Server,
 	Settings,
 	TerminalSquare,
-	Volume2
+	Trash2,
+	Volume2,
+	X
 } from '@lucide/svelte';
 
 // The type of a lucide icon, inferred from one of them. Every icon in the set shares this signature,
 // and inferring it here avoids restating the library's generics incorrectly.
-export type NavIcon = {
+export type IconEntry = {
 	icon: typeof KeyRound;
 	reason: string;
 };
 
-export const NAV_ICONS: Record<string, NavIcon> = {
+export const NAV_ICONS: Record<string, IconEntry> = {
 	'endpoint-keys': {
 		icon: KeyRound,
 		reason: 'The screen is about keys, client-facing and upstream.'
@@ -88,6 +100,55 @@ export const STATUS_ICONS = {
 	}
 } as const;
 
-export function navIcon(key: string): NavIcon | undefined {
+/**
+ * The row actions of the Endpoint & Key tables.
+ *
+ * Every button that uses one of these is icon-only, so the button's own `aria-label` carries the
+ * action's name and the glyph stays decorative. The reasons say what each shape has to communicate,
+ * which is the part a reviewer checks (R-04, R-31).
+ */
+export const ROW_ACTION_ICONS = {
+	rename: {
+		icon: Pencil,
+		reason: 'Renaming edits the stored name in place, which is what a pencil marks.'
+	},
+	disable: {
+		icon: Pause,
+		reason:
+			'Disabling stops a credential from being spent without destroying it, which is what pause means.'
+	},
+	enable: {
+		icon: Play,
+		reason: 'Enabling resumes a credential that was paused, the same control read the other way.'
+	},
+	revoke: {
+		icon: Ban,
+		reason: 'Revoking is terminal, so a prohibition mark says the key can never be used again.'
+	},
+	test: {
+		icon: Activity,
+		reason: 'A test asks the upstream to answer once and reports whether it did, a liveness probe.'
+	},
+	delete: {
+		icon: Trash2,
+		reason: 'Deleting removes the stored key row itself, which is what the bin marks.'
+	},
+	save: {
+		icon: Check,
+		reason: 'Saving commits the name being edited in the row.'
+	},
+	cancel: {
+		icon: X,
+		reason: 'Cancelling leaves the stored name as it was.'
+	}
+} as const;
+
+export type RowAction = keyof typeof ROW_ACTION_ICONS;
+
+export function navIcon(key: string): IconEntry | undefined {
 	return NAV_ICONS[key];
+}
+
+export function rowActionIcon(action: RowAction): IconEntry {
+	return ROW_ACTION_ICONS[action];
 }

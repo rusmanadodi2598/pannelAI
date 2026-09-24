@@ -66,7 +66,7 @@ describe('the key control on a provider', () => {
 		stubModels({ authType: 'oauth' });
 		renderProvider();
 
-		expect(await screen.findByRole('link', { name: 'Add a connection' })).toBeTruthy();
+		expect(await screen.findByRole('button', { name: 'Add a connection' })).toBeTruthy();
 		expect(screen.queryByRole('button', { name: 'Add API Key' })).toBeNull();
 	});
 });

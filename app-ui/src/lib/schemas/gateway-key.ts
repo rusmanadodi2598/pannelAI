@@ -1,8 +1,8 @@
 // Gateway key schemas, mirroring docs/SPEC-API/001-SPEC-API.md §7.3 and the table in §6.
 //
-// `status` is a plain string on purpose: SPEC-API §7.3 accepts `status` on PATCH but does not
-// enumerate its values, and inventing an enum here would make the panel reject a value the API
-// accepts. The panel renders unknown values verbatim. See SPEC-UI §14 Q9.
+// `status` is a plain string on the read schema because the response carries a third value the write
+// path cannot set: `revoked`, reached only through DELETE (SPEC-API §7.3). The panel renders it
+// verbatim rather than classifying it. The write schema narrows to the two members the spec names.
 
 import { z } from 'zod';
 import { gatewayKeyId } from './identifiers';
@@ -41,9 +41,16 @@ export const schemaCreateGatewayKeyForm = z.strictObject({
 
 export type CreateGatewayKeyForm = z.infer<typeof schemaCreateGatewayKeyForm>;
 
+// Values the panel writes when toggling a key, and the only members SPEC-API §7.3 accepts on PATCH
+// (`revoked` is reached only through DELETE). Listed here rather than inline so a change is one edit.
+export const KEY_STATUS_ACTIVE = 'active';
+export const KEY_STATUS_DISABLED = 'disabled';
+export const KEY_STATUSES = [KEY_STATUS_ACTIVE, KEY_STATUS_DISABLED] as const;
+export type KeyStatus = (typeof KEY_STATUSES)[number];
+
 export const schemaUpdateGatewayKeyForm = z.strictObject({
 	name: label.optional(),
-	status: z.string().min(1).optional()
+	status: z.enum(KEY_STATUSES).optional()
 });
 
 export type UpdateGatewayKeyForm = z.infer<typeof schemaUpdateGatewayKeyForm>;
@@ -61,8 +68,3 @@ export const schemaCreatedGatewayKey = z.object({
 });
 
 export type CreatedGatewayKey = z.infer<typeof schemaCreatedGatewayKey>;
-
-// Values the panel writes when toggling a key. Listed here rather than inline so a change is one
-// edit, and marked pending confirmation in SPEC-UI §14 Q9.
-export const KEY_STATUS_ACTIVE = 'active';
-export const KEY_STATUS_DISABLED = 'disabled';

@@ -6,10 +6,14 @@
 	// would refuse the call, and the note beside it says why, so the operator is not left guessing at a
 	// greyed-out button (R-26).
 	//
+	// The three actions are icon-only (owner directive, 2026-09-24): each glyph comes from the one icon
+	// map and the button carries the action's name as its accessible name and its title.
+	//
 	// `rate_limited_until` is the one field here whose value is a duration rather than a fact: §6.2 asks for
 	// a countdown, and a countdown needs a clock. The drawer owns `now` and passes it in, so the table stays
 	// a renderer and the ticking lives with the thing that is open.
 	import { ENDPOINT_STATUS_ACTIVE, type EndpointKey } from '$lib/schemas/endpoint';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { isLastActiveApiKey } from '$lib/utils/routing';
 	import { countdownText, formatTimestamp } from '$lib/utils/time';
 
@@ -31,6 +35,15 @@
 		onsettled: (key: EndpointKey, status: 'active' | 'disabled') => void;
 		onremove: (key: EndpointKey) => void;
 	} = $props();
+
+	const TestIcon = ROW_ACTION_ICONS.test.icon;
+	const DisableIcon = ROW_ACTION_ICONS.disable.icon;
+	const EnableIcon = ROW_ACTION_ICONS.enable.icon;
+	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
+
+	// One target size and one hover wash for every action, so the cell reads as a set.
+	const actionClass =
+		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50';
 </script>
 
 <div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
@@ -68,24 +81,36 @@
 					<td class="px-3 py-2">{key.last_used_at ?? 'Never'}</td>
 					<td class="px-3 py-2 tabular-nums">{key.consecutive_errors}</td>
 					<td class="px-3 py-2">
-						<div class="flex flex-wrap gap-2">
+						<div class="flex flex-wrap items-center gap-1">
 							<button
 								type="button"
-								class="min-h-11 underline disabled:opacity-50"
+								class={actionClass}
+								aria-label="Test"
+								title="Test"
 								disabled={testing !== null}
-								onclick={() => ontest(key)}>Test</button
+								onclick={() => ontest(key)}><TestIcon class="size-4" aria-hidden="true" /></button
 							>
 							<button
 								type="button"
-								class="min-h-11 underline"
+								class={actionClass}
+								aria-label={isActive ? 'Disable' : 'Enable'}
+								title={isActive ? 'Disable' : 'Enable'}
 								onclick={() => onsettled(key, isActive ? 'disabled' : 'active')}
-								>{isActive ? 'Disable' : 'Enable'}</button
 							>
+								{#if isActive}
+									<DisableIcon class="size-4" aria-hidden="true" />
+								{:else}
+									<EnableIcon class="size-4" aria-hidden="true" />
+								{/if}
+							</button>
 							<button
 								type="button"
-								class="min-h-11 underline disabled:opacity-50"
+								class="{actionClass} text-[var(--color-danger)] hover:text-[var(--color-danger)]"
+								aria-label="Delete"
+								title="Delete"
 								disabled={blocked}
-								onclick={() => onremove(key)}>Delete</button
+								onclick={() => onremove(key)}
+								><DeleteIcon class="size-4" aria-hidden="true" /></button
 							>
 						</div>
 						{#if blocked}
