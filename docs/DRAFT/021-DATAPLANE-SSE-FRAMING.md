@@ -641,3 +641,53 @@ tapi tetap menyebut ratusan id tanpa endpoint. Bentuk yang setara REFERENCE hari
 Berkas: `/tmp/combochk/dp-models.json` (daftar klien), `cat-all.json` dan `cat-active.json` (katalog),
 `providers.json` (roll-up endpoint), `node-models-th1.json` dan `node-models-oczen.json` (route model node).
 Tidak ada kode yang disentuh pass ini.
+
+## 21. Uji chat, streaming, dan tool atas daftar model owner (2026-09-24 20:28-20:38)
+
+Owner menempel endpoint, kunci, dan daftar model, meminta tiga mode uji (chat, streaming, tool) dan
+melarang menyentuh model lain. Gateway yang melayani baru di-restart 20:20:26 (`go run ./cmd/app-serv`,
+PID 3477809). Kunci yang ditempel adalah satu-satunya baris `gateway_keys` (`sandbox`, hint `sk-…rmEu`,
+`request_count` 90 menjadi 117 sepanjang ronde).Ralat owner di tengah ronde: nama ketiga yang benar adalah
+`oczen/muse-spark-1.3-contributor-free`; versi prefiks-ganda yang tertulis lebih dulu tetap diuji dan
+hasilnya identik.
+
+| Model | Non-stream | Stream | Tool (`get_weather`, Jakarta) |
+| --- | --- | --- | --- |
+| `th-1/deepseek-v4.1-flash:free` | percobaan-1 hang 60 s (0 byte); retry 200, 1,09 s, `pong`, 36/38/74 | 200, 1,29 s, 1105 byte, usage frame 36/38/74, bingkai akhir tanpa `data: ` | percobaan-1 hang 90 s (0 byte); retry 200, 3,43 s, `tool_calls` `get_weather({"city":"Jakarta"})`, `finish_reason` `tool_calls`, 305/54/359 |
+| `oczen/space-bunny-free` | 503 `NO_PROVIDER_AVAILABLE` 0,48 s | 503 0,03 s | 503 0,03 s |
+| `oczen/muse-spark-1.3-contributor-free` (ralat) | 503 0,02 s (prefiks-ganda juga 503) | 503 0,01 s | 503 0,01 s |
+| `oczen/mimo-v2.6-flash-free` | 503 0,02 s | 503 0,01 s | 503 0,02 s |
+| `pi-agent` (combo) | 200, 1,59 s, `pong` + `reasoning_content`, 36/38/74 | 200, 0,84 s, usage frame 36/38/74, bingkai akhir tanpa `data: ` | percobaan-1 hang 90 s (0 byte); retry 200, 2,93 s, `tool_calls` `get_weather({"city": "Jakarta"})`, 305/52/357 |
+
+Pesan 503 persis sama untuk keempat nama `oczen`: "no upstream endpoint is configured for provider
+`openai-compatible-03863XJ2YM2KHF847XJP5YBSH8`". Kontrol tambahan (tools terpasang, prompt tidak
+memicu): 200, 1,37 s, `pong`, 295/4/299.
+
+### 21.1 Temuan
+
+- **F1-F3 tetap hidup.** Kedua stream yang sukses mengakhiri dengan chunk JSON mentah tanpa prefiks
+  `data: ` yang menempel langsung ke `data: [DONE]`; artefak `/tmp/smoke10/stream-th1.sse` (2231 byte)
+  menyimpannya.
+- **F5 tetap hidup, dan kini lebih tajam.** Baris akuntansi kedua stream adalah 0/0, padahal gateway
+  sendiri yang mengirim usage frame 36/38/74 di kawat - data yang dibutuhkan sudah lewat tangannya.
+- **Pola hang-tanpa-baris tidak lagi bisa disematkan ke kunci tertentu (perbaikan atas F7).** Lima dari
+  23 panggilan hidup menggantung tanpa timeout gateway (60-90 s, 0 byte): `th-1` non-stream percobaan-1,
+  `th-1` tool percobaan-1, `pi-agent` tool percobaan-1, dan `pi-agent` stream dua kali berturut-turut.
+  Semua yang di-retry menjawab dalam 3,4 s. Dengan kunci `sandbox` sebagai satu-satunya kunci, hang itu
+  milik jalur gateway→upstream yang tidak punya timeout (berlawanan dengan AGENTS.md §1.6: setiap
+  panggilan keluar wajib membawa `context` timeout).
+- **Panggilan yang menggantung tak berjejak.** `request_logs` ronde ini berisi 18 baris (10 `error`
+  `NO_PROVIDER_AVAILABLE`, 8 `success`) - persis panggilan yang terjawab; lima hang tidak menulis baris
+  di `request_logs` maupun `usage_records`.
+- Node `oczen` masih tanpa endpoint (satu keluarga temuan F4/F8 yang sama): 503 pada ketiga mode,
+  termasuk dengan nama yang sudah diralat.
+
+### 21.2 Akuntansi
+
+`usage_records` 2 menjadi 9 baris, tujuh baris baru semuanya `success`: 36/38 (non-stream `pi-agent`),
+36/38 (non-stream `th-1`), 0/0 (stream `th-1`), 0/0 (stream `pi-agent`), 305/54 (tool `th-1`), 295/4
+(kontrol), 305/52 (tool `pi-agent`). `request_logs` +18. Rincian lengkap dari kueri DB pada transkrip
+ronde ini.
+
+Bukti: `/tmp/smoke10/stream-th1.sse`; `/tmp/smoke10/stream-piagent.sse` tidak pernah tercipta karena
+kedua percobaannya menggantung 0 byte. Tidak ada kode yang disentuh ronde ini.
