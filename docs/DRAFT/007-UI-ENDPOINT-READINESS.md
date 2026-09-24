@@ -1005,6 +1005,16 @@ warna `ok` pada nama provider yang sedang routing dibuktikan pada frame contract
 yang asli tidak melaporkan permintaan yang sedang berjalan selama run, dan pada 390 px baris fakta membaca
 60 px sementara slot diamnya 20 px. Yang tetap terbuka: F5 sampai F7 draft 016 dan F13 di bawah.
 
+Pengukuran yang sama setelah pass "The per-provider credential rotation switch" (2026-09-24) menemukan
+**tiga belas dari tiga puluh dua bagian**, dan perintah yang sama mencetak `13 of 32` pada tree pass itu
+(`12 of 29` pada tree sebelum pass ke-30; bagian ke-30 dan ke-31 tidak menambah baris yang cocok, dan
+keduanya tidak mengukur ulang angka ini). Pembilangnya naik satu karena bagian ke-32 menyatakan
+click-through browser saklar rotasinya outstanding beserta sebabnya (setengah `app-serv` pass itu belum
+ter-deploy, jadi probe ke gateway yang hidup hanya akan menguji jalur penolakan), sehingga bagian itu
+terhitung. Yang ditutup bagian itu adalah saklar rotasi kredensial per provider di kedua bentuk halaman
+provider plus default globalnya di tab Routing, beserta dua cacat panel dan satu selisih dari reference
+yang diperbaiki sebelum freeze (draft 030). Yang tetap terbuka: F5 sampai F7 draft 016 dan F13 di bawah.
+
 **Risiko.** Panel bisa tampak selesai padahal setengah exit criteria-nya belum pernah
 dijalankan orang. Ini persis bentuk klaim yang R-35/R-36 larang.
 
@@ -1112,7 +1122,10 @@ Diukur ulang lagi pada README yang memuat bagian ke-28: perintah pertama tetap m
 klaimnya tetap sembilan belas), dan yang bertambah satu lagi adalah baris penunjuk, dari sepuluh menjadi
 sebelas. Diukur ulang lagi pada README yang memuat bagian ke-29: perintah pertama tetap mencetak `16` (jumlah
 klaimnya tetap sembilan belas), dan yang bertambah satu lagi adalah baris penunjuk, dari sebelas menjadi dua
-belas.
+belas. Diukur ulang 2026-09-24 pada README yang memuat bagian ke-32: perintah pertama tetap mencetak `16`
+(jumlah klaimnya tetap sembilan belas), dan baris penunjuknya kini lima belas (`grep -c '^Run with Bun
+1\.3\.0' app-ui/README.md`), tiga di antaranya dari bagian ke-30, ke-31, dan ke-32 yang belum tercatat di
+rantai ini.
 Enam belas baris
 pass sebelumnya beserta baris Requirements dan Node adapter dibiarkan apa adanya: versi yang benar-benar
 dipakai saat itu tidak dapat dibuktikan dari sini, jadi menggantinya dengan angka hari ini akan menulis

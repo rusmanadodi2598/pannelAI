@@ -112,7 +112,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Thirty passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Thirty-two passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -194,7 +194,81 @@ on the page, and the SPEC-UI clauses that had placed the set on that screen beca
 belonged to a provider that had an endpoint and none of the 248 vision refs did, so both tabs now offer
 only the refs of the providers that are configured right now, with a connector-only provider and a media
 model left out for the same reason, the judge field reading the same dialog in single-select mode, and
-the server-side active filter filed as `docs/DRAFT/025-COMBO-PICKER-PARITY.md` F3.
+the server-side active filter filed as `docs/DRAFT/025-COMBO-PICKER-PARITY.md` F3. The thirty-second is the
+credential rotation switch on the provider screens and the Routing tab, measured the same day: the last gap
+in the failover mechanism, a switch that until then existed on combos only, became the reference's
+per-provider control, so `fill-first` or `round-robin` now governs every request through a provider and not
+only combo members, with the panel writing the override through the same whole-map settings value the
+gateway stores, filed as `docs/DRAFT/030-CREDENTIAL-ROTATION-POLICY.md`.
+
+### The per-provider credential rotation switch, 2026-09-24
+
+Run with Bun 1.3.0 (`bun --version`; the earlier pass rows state 1.3.14, which no binary on this machine
+reports, filed as F13 of `docs/DRAFT/007-UI-ENDPOINT-READINESS.md`). The owner's item was the last gap in
+the failover mechanism: the credential walk itself had been made 1:1 with the reference, but its switch
+lived on combos only, while the reference carries a switch per provider as well.
+
+The reference's rule was read off `origin/master` at `39e36d3d` before anything was designed:
+`src/sse/services/auth.js:139` resolves a provider's strategy as `providerOverride.fallbackStrategy ||
+settings.fallbackStrategy || "fill-first"`; the per-provider control is the Round Robin toggle and the
+Sticky box on the Connections card (`ConnectionsCard.js:405-427`), whose save writes the whole
+`providerStrategies` map through `PATCH /api/settings` and deletes the entry when the switch goes off
+(`:330-342`); and the global default is the same pair of controls on the profile page
+(`profile/page.js:1455-1480`).
+
+Measured before the change, on the tree that carried neither half: this port had no `fill-first` mode at
+all, so every credential walk rotated; `routing.sticky_limit` was stored and validated but never read by
+the data plane; and the selector took its limit from the `DATA_PLANE_STICKY_LIMIT` environment knob, which
+no `.env.example` ever declared, so the only rotation switch that reached the router was the combo's.
+
+What landed is one policy consulted per selection rather than a combo member rule:
+`routing.fallback_strategy` (`fill-first` | `round-robin`, default `fill-first`) is the global default, and
+`routing.provider_strategies` maps a provider id to its own strategy and optional sticky limit (SPEC-API
+§7.14). `fill-first` serves priority order and starts every request from the first usable endpoint, picking
+the first healthy key by priority; `round-robin` keeps the sticky endpoint cursor and rotates keys
+least-recently-used first. A provider with no entry inherits the global default, an entry with an unreadable
+limit inherits it too, and a policy that cannot be read degrades to `fill-first`, the same priority-order
+degradation the cursor already had. The environment knob is gone: the stored document is the single source.
+
+The panel half is the reference's own block on both shapes of the provider screen plus the Routing tab.
+The **Round Robin** switch and its **Sticky** box sit in the Connections section, which renders on the
+registry provider page and on a custom node's page alike; the switch reports the override and not the
+effective policy, so a provider with no entry reads as off while the sentence under it names the default it
+inherits; turning it off deletes the entry, and the whole map goes back on every write because it is one
+settings value. The Routing tab gained the same choice as a select for the global default, beside the combo
+strategy it already carried.
+
+Two defects were found and fixed in the pass, both in the panel. The Routing tab's strict form rejected the
+shared settings document once it carried `provider_strategies`, because the tab's form schema carries only
+its own four keys: the tab now projects them before parsing, and the existing dirty-form test caught it.
+The checkbox flipped before the write was answered, so a refused write left the switch claiming a change
+the gateway never stored: the switch now holds its own state and gives it back when the answer is a
+refusal, which is the case the new refusal test pins.
+
+A third difference from the reference was found while writing this record and fixed before the freeze. The
+switch merged its change onto the map the page had loaded, so an entry another screen changed in between
+was silently deleted when the whole map went back. The reference re-reads the document before it writes
+(`ConnectionsCard.js:330-342`); the panel now does the same, through one `patchProviderStrategy` call that
+reads, merges, and writes, and a new case pins it (the map gains another provider's entry after the load,
+and that entry has to survive the write).
+
+Four Go files were trimmed and one was split while this pass wrote them, to clear the line budget:
+`selection.go` 222 to 215, `settings_routing.go` 221 to 220, `schema/settings_patch.go` 224 to 220,
+`playground_live_stack_test.go` 225 to 220, and `selection_policy_test.go` 249 to 193 plus
+`selection_key_policy_test.go` 84. `engine_relay_tokensaver_test.go` stays at 229, already over the 220
+warning at HEAD and touched by this pass rather than grown, so it is disclosed rather than split here.
+
+| Check             | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `bun run lint`    | Prettier reports every file conforms, after one `prettier --write` over the files this pass touched and over this section's table                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `bun run build`   | succeeds, output in `build/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Targeted run      | 17 files, 197 tests passed in 231.74 s: the new rotation switch suite (8 cases), the Routing tab and its schema cases, the dirty-form guard, the thirteen files that consume the shared settings document and the settings stub, and the three proxy and token saver suites whose screens read the settings client this pass touched                                                                                                                                                                                                                           |
+| `bun run test`    | 2580 tests passed across 158 files (the previous pass was 2570 across 157), 10 more than the previous pass across one new file; measured on the frozen tree `9a5a611acbe432f97e5aad9debf21c2b` (1449 files) in 1053.84 s, green on the first attempt, inside the full gate run `scrypts/gates/all.sh` that also carries go lint, go headers, go test -race, secrets, and the two contract gates                                                                                                                                                                |     |
+| Live pass         | the browser click-through of the switch is outstanding, and this pass states the reason rather than claiming one: the gateway that serves `routing.provider_strategies` is this pass's own `app-serv` half, which is not deployed, so a browser click-through against the live gateway would have probed the refusal path only. The switch's interaction is covered by the eight jsdom cases against the shared stub, and the wire half by the service and selector tests; filed as F1 of `docs/DRAFT/030-CREDENTIAL-ROTATION-POLICY.md`                       |
+| File size         | every file this pass wrote is under the 250-line cap; two test files sit above the 220 the recent rows cite and both are disclosed rather than split here: `tests/components/settings.test.ts` at 234 (already over at HEAD, 230, and grew by 4 for the rotation-mode cases) and `tests/schemas/settings-forms.test.ts` at 230 (215 at HEAD, so this pass's 15 lines crossed the warning). The largest file this pass touched is `tests/support/model-stub.ts` at 663, already over at HEAD (624), which grew by 39 for the settings route and its write knobs |
+| Text hygiene      | 0 em dashes in the new and edited files                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ### The combo and vision model picker, 2026-09-24
 
