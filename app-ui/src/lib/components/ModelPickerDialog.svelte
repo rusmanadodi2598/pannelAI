@@ -11,12 +11,15 @@
 	// sentences for an empty or failed answer.
 	import { Check, Pencil } from '@lucide/svelte';
 	import Modal from '$lib/components/Modal.svelte';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import {
 		filterPickerSections,
 		pickerOptions,
 		type PickerOption,
 		type PickerSection
 	} from '$lib/schemas/model-picker';
+
+	const DoneIcon = CONTROL_ICONS.done.icon;
 
 	let {
 		title,
@@ -159,8 +162,11 @@
 	{#snippet footer()}
 		<button
 			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)]"
-			onclick={onclose}>Done</button
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)]"
+			onclick={onclose}
 		>
+			<DoneIcon class="size-4" aria-hidden="true" />
+			Done
+		</button>
 	{/snippet}
 </Modal>

@@ -16,6 +16,7 @@
 	import ModelPickerDialog from '$lib/components/ModelPickerDialog.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import VisionModelPicker from '$lib/components/VisionModelPicker.svelte';
+	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import { loadPickerSources } from '$lib/model-picker-data';
 	import { pickerSections } from '$lib/schemas/model-picker';
 	import type { CatalogModel } from '$lib/schemas/model';
@@ -30,6 +31,9 @@
 		type VisionAdapter,
 		type VisionAdapterForm
 	} from '$lib/schemas/vision-adapter';
+
+	const RetryIcon = CONTROL_ICONS.refresh.icon;
+	const SaveIcon = ROW_ACTION_ICONS.save.icon;
 
 	let adapter = $state<VisionAdapter | null>(null);
 	let form = $state<VisionAdapterForm>({ enabled: false, roundRobin: false, models: [] });
@@ -140,7 +144,10 @@
 			description={loadError}
 		>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={load}>Try again</button>
+				<button type="button" class="inline-flex items-center gap-2 underline" onclick={load}>
+					<RetryIcon class="size-4" aria-hidden="true" />
+					Try again
+				</button>
 			{/snippet}
 		</StateMessage>
 	{:else}
@@ -213,8 +220,9 @@
 				<button
 					type="submit"
 					disabled={saving}
-					class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50"
+					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50"
 				>
+					<SaveIcon class="size-4" aria-hidden="true" />
 					{saving ? 'Saving' : 'Save the adapter'}
 				</button>
 				{#if saved}

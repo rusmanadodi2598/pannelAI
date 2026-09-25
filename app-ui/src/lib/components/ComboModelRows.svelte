@@ -12,7 +12,11 @@
 	// Each row's ref is a text field rather than a picker: the editor's picker fills the list, and a ref the
 	// picker cannot offer yet (a model id an upstream has not answered with) is still typeable here.
 	import { GripVertical, Plus, Trash2 } from '@lucide/svelte';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { reorderComboModels, type ComboModelEntry } from '$lib/schemas/combo';
+
+	const MoveUpIcon = ROW_ACTION_ICONS.moveUp.icon;
+	const MoveDownIcon = ROW_ACTION_ICONS.moveDown.icon;
 
 	let {
 		models,
@@ -106,23 +110,30 @@
 			<div class="flex items-center gap-1">
 				<button
 					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] px-2 text-sm underline disabled:opacity-50"
+					class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50"
 					disabled={index === 0}
 					onclick={() => move(index, index - 1)}
-					aria-label={`Move ${labelFor(index)} up`}>Up</button
+					aria-label={`Move ${labelFor(index)} up`}
+					title={`Move ${labelFor(index)} up`}
 				>
+					<MoveUpIcon class="size-4" aria-hidden="true" />
+				</button>
 				<button
 					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] px-2 text-sm underline disabled:opacity-50"
+					class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50"
 					disabled={index === models.length - 1}
 					onclick={() => move(index, index + 1)}
-					aria-label={`Move ${labelFor(index)} down`}>Down</button
+					aria-label={`Move ${labelFor(index)} down`}
+					title={`Move ${labelFor(index)} down`}
 				>
+					<MoveDownIcon class="size-4" aria-hidden="true" />
+				</button>
 				<button
 					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] px-2 text-[var(--color-danger)]"
+					class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-danger)] hover:bg-[var(--color-surface-2)]"
 					onclick={() => remove(index)}
 					aria-label={`Remove ${labelFor(index)}`}
+					title={`Remove ${labelFor(index)}`}
 				>
 					<Trash2 class="size-4" aria-hidden="true" />
 				</button>

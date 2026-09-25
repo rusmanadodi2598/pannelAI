@@ -14,6 +14,7 @@
 	// and the dialog does not pretend to stop them. That is the other reason the spend is stated first.
 	import Modal from '$lib/components/Modal.svelte';
 	import { testCombo } from '$lib/api/combos';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import {
 		comboProbeIdentity,
 		comboProbeRoleLabel,
@@ -21,6 +22,9 @@
 		type ComboTest
 	} from '$lib/schemas/combo-test';
 	import { comboStrategyLabel, type Combo } from '$lib/schemas/combo';
+
+	const CancelIcon = ROW_ACTION_ICONS.cancel.icon;
+	const TestIcon = ROW_ACTION_ICONS.test.icon;
 
 	let { combo, onclose }: { combo: Combo | null; onclose: () => void } = $props();
 
@@ -124,13 +128,17 @@
 	{/if}
 
 	{#snippet footer()}
-		<button type="button" class="min-h-11 underline" onclick={close}>Close</button>
+		<button type="button" class="inline-flex min-h-11 items-center gap-2 underline" onclick={close}>
+			<CancelIcon class="size-4" aria-hidden="true" />
+			Close
+		</button>
 		<button
 			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50"
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50"
 			disabled={running}
 			onclick={() => void run()}
 		>
+			<TestIcon class="size-4" aria-hidden="true" />
 			{running ? 'Testing' : answer ? 'Test again' : 'Test the chain'}
 		</button>
 	{/snippet}

@@ -9,6 +9,7 @@
 	// and the delete confirmation and nothing else. The readout is a modal because it answers with a row per
 	// reference, which a table cell cannot hold.
 	import ComboTestDialog from '$lib/components/ComboTestDialog.svelte';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import {
 		comboModelSummary,
 		comboStrategyLabel,
@@ -16,6 +17,18 @@
 		usesStickyLimit,
 		type Combo
 	} from '$lib/schemas/combo';
+
+	const EditIcon = ROW_ACTION_ICONS.edit.icon;
+	const TestIcon = ROW_ACTION_ICONS.test.icon;
+	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
+
+	// One target size and one hover wash for every action, so the cell reads as a set. Each variant carries
+	// exactly one `text-*` colour: two competing utilities resolve by stylesheet order, and the muted one
+	// silently won the destructive button's colour until it was measured live (2026-09-24).
+	const actionBase =
+		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
+	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;
+	const dangerClass = `${actionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]`;
 
 	let {
 		combos,
@@ -62,20 +75,34 @@
 					</td>
 					<td class="px-3 py-2">{combo.updated_at ?? 'Unknown'}</td>
 					<td class="px-3 py-2">
-						<div class="flex flex-wrap items-center gap-2">
-							<button type="button" class="min-h-11 underline" onclick={() => onedit(combo)}
-								>Edit</button
-							>
-							<button type="button" class="min-h-11 underline" onclick={() => (testing = combo)}
-								>Test</button
-							>
+						<div class="flex flex-wrap items-center gap-1">
 							<button
 								type="button"
-								class="min-h-11 text-[var(--color-danger)] underline disabled:opacity-50"
+								class={actionClass}
+								aria-label="Edit"
+								title="Edit"
+								onclick={() => onedit(combo)}
+							>
+								<EditIcon class="size-4" aria-hidden="true" />
+							</button>
+							<button
+								type="button"
+								class={actionClass}
+								aria-label="Test"
+								title="Test"
+								onclick={() => (testing = combo)}
+							>
+								<TestIcon class="size-4" aria-hidden="true" />
+							</button>
+							<button
+								type="button"
+								class={dangerClass}
+								aria-label="Delete"
+								title="Delete"
 								disabled={deleting === combo.id}
 								onclick={() => ondelete(combo)}
 							>
-								{deleting === combo.id ? 'Deleting' : 'Delete'}
+								<DeleteIcon class="size-4" aria-hidden="true" />
 							</button>
 						</div>
 					</td>

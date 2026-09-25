@@ -22,6 +22,7 @@
 	import FormIssues from '$lib/components/FormIssues.svelte';
 	import ModelPickerDialog from '$lib/components/ModelPickerDialog.svelte';
 	import { registerDirtyForm } from '$lib/dirty-guard';
+	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import { reorderComboModels, type Combo } from '$lib/schemas/combo';
 	import {
 		buildComboBody,
@@ -31,6 +32,10 @@
 		type ComboForm
 	} from '$lib/schemas/combo-form';
 	import type { PickerSection } from '$lib/schemas/model-picker';
+
+	const AddIcon = CONTROL_ICONS.add.icon;
+	const SaveIcon = ROW_ACTION_ICONS.save.icon;
+	const CancelIcon = ROW_ACTION_ICONS.cancel.icon;
 
 	let {
 		combo,
@@ -172,9 +177,12 @@
 			</span>
 			<button
 				type="button"
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
-				onclick={() => (pickerTarget = 'models')}>Add models</button
+				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
+				onclick={() => (pickerTarget = 'models')}
 			>
+				<AddIcon class="size-4" aria-hidden="true" />
+				Add models
+			</button>
 		</div>
 		<ComboModelRows models={form.models} onchange={(models) => (form.models = models)} />
 	</div>
@@ -194,11 +202,19 @@
 		<button
 			type="submit"
 			disabled={saving}
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50"
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50"
 		>
+			<SaveIcon class="size-4" aria-hidden="true" />
 			{saving ? 'Saving' : combo === null ? 'Create the combo' : 'Save the combo'}
 		</button>
-		<button type="button" class="min-h-11 underline" onclick={oncancel}>Cancel</button>
+		<button
+			type="button"
+			class="inline-flex min-h-11 items-center gap-2 underline"
+			onclick={oncancel}
+		>
+			<CancelIcon class="size-4" aria-hidden="true" />
+			Cancel
+		</button>
 	</div>
 </form>
 

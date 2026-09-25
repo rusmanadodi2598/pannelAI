@@ -53,8 +53,9 @@
 					{/if}
 					<button
 						type="button"
-						class="min-h-11 rounded-[var(--radius-sm)] px-2 text-[var(--color-danger)]"
+						class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-danger)] hover:bg-[var(--color-surface-2)]"
 						aria-label={`Remove ${ref}`}
+						title={`Remove ${ref}`}
 						onclick={() => ontoggle(ref)}
 					>
 						<Trash2 class="size-4" aria-hidden="true" />

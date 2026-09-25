@@ -12,14 +12,20 @@
 	import ComboDeleteDialog from '$lib/components/ComboDeleteDialog.svelte';
 	import ComboEditor from '$lib/components/ComboEditor.svelte';
 	import ComboTable from '$lib/components/ComboTable.svelte';
-	import RefreshControl from '$lib/components/RefreshControl.svelte';
+	import CombosToolbar from '$lib/components/CombosToolbar.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import { deleteCombo, listCombos } from '$lib/api/combos';
 	import { loadPickerSources } from '$lib/model-picker-data';
 	import { pickerSections } from '$lib/schemas/model-picker';
 	import type { Combo } from '$lib/schemas/combo';
 	import type { CatalogModel } from '$lib/schemas/model';
 	import type { Provider } from '$lib/schemas/provider';
+
+	const AddIcon = CONTROL_ICONS.add.icon;
+	const PreviousIcon = CONTROL_ICONS.previous.icon;
+	const NextIcon = CONTROL_ICONS.next.icon;
+	const RetryIcon = CONTROL_ICONS.refresh.icon;
 
 	const PAGE_SIZE = 25;
 
@@ -124,23 +130,14 @@
 </script>
 
 <div class="flex flex-col gap-4">
-	<div class="flex flex-wrap items-center justify-between gap-2">
-		<p class="text-sm text-[var(--color-text-muted)]">
-			A combo is a model string that resolves to several upstream models.
-		</p>
-		{#if !showEditor}
-			<button
-				type="button"
-				class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)]"
-				onclick={() => {
-					editing = null;
-					creating = true;
-				}}>New combo</button
-			>
-		{/if}
-	</div>
-
-	<RefreshControl onrefresh={load} />
+	<CombosToolbar
+		hidden={showEditor}
+		onrefresh={load}
+		oncreate={() => {
+			editing = null;
+			creating = true;
+		}}
+	/>
 
 	{#if showEditor}
 		<ComboEditor
@@ -161,7 +158,10 @@
 	{:else if error}
 		<StateMessage kind="error" title="Combos could not be loaded" description={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={load}>Try again</button>
+				<button type="button" class="inline-flex items-center gap-2 underline" onclick={load}>
+					<RetryIcon class="size-4" aria-hidden="true" />
+					Try again
+				</button>
 			{/snippet}
 		</StateMessage>
 	{:else if combos.length === 0}
@@ -174,12 +174,15 @@
 				{#if !showEditor}
 					<button
 						type="button"
-						class="underline"
+						class="inline-flex items-center gap-2 underline"
 						onclick={() => {
 							editing = null;
 							creating = true;
-						}}>Create the first combo</button
+						}}
 					>
+						<AddIcon class="size-4" aria-hidden="true" />
+						Create the first combo
+					</button>
 				{/if}
 			{/snippet}
 		</StateMessage>
@@ -200,23 +203,29 @@
 		<div class="flex items-center gap-3 text-sm">
 			<button
 				type="button"
-				class="underline disabled:opacity-50"
+				class="inline-flex min-h-11 items-center gap-1 underline disabled:opacity-50"
 				disabled={pageNumber <= 1}
 				onclick={() => {
 					pageNumber -= 1;
 					void load();
-				}}>Previous</button
+				}}
 			>
+				<PreviousIcon class="size-4" aria-hidden="true" />
+				Previous
+			</button>
 			<span class="text-[var(--color-text-muted)]">Page {pageNumber} of {lastPage}</span>
 			<button
 				type="button"
-				class="underline disabled:opacity-50"
+				class="inline-flex min-h-11 items-center gap-1 underline disabled:opacity-50"
 				disabled={pageNumber >= lastPage}
 				onclick={() => {
 					pageNumber += 1;
 					void load();
-				}}>Next</button
+				}}
 			>
+				Next
+				<NextIcon class="size-4" aria-hidden="true" />
+			</button>
 		</div>
 	{/if}
 </div>

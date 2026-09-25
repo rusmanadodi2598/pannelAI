@@ -9,7 +9,11 @@
 	// combo is still referenced, so the lead sentence that says so is rendered for that code alone: a
 	// server failure that read "still referenced" would be a claim the panel cannot support.
 	import Modal from '$lib/components/Modal.svelte';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import type { Combo } from '$lib/schemas/combo';
+
+	const CancelIcon = ROW_ACTION_ICONS.cancel.icon;
+	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
 
 	let {
 		combo,
@@ -48,13 +52,21 @@
 	{/if}
 
 	{#snippet footer()}
-		<button type="button" class="min-h-11 underline" onclick={oncancel}>Keep it</button>
 		<button
 			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[var(--color-accent-text)] disabled:opacity-50"
+			class="inline-flex min-h-11 items-center gap-2 underline"
+			onclick={oncancel}
+		>
+			<CancelIcon class="size-4" aria-hidden="true" />
+			Keep it
+		</button>
+		<button
+			type="button"
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[var(--color-accent-text)] disabled:opacity-50"
 			disabled={deleting}
 			onclick={onconfirm}
 		>
+			<DeleteIcon class="size-4" aria-hidden="true" />
 			{deleting ? 'Deleting' : 'Delete the combo'}
 		</button>
 	{/snippet}

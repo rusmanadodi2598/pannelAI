@@ -21,8 +21,11 @@ import {
 	Binary,
 	ChartLine,
 	Check,
+	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
+	ChevronUp,
+	ChevronsUpDown,
 	CircleGauge,
 	Copy,
 	Download,
@@ -120,6 +123,15 @@ export const ROW_ACTION_ICONS = {
 		icon: Pencil,
 		reason: 'Renaming edits the stored name in place, which is what a pencil marks.'
 	},
+	moveUp: {
+		icon: ChevronUp,
+		reason:
+			'Moving an entry up rewrites the order, so the upward chevron marks one step toward the front.'
+	},
+	moveDown: {
+		icon: ChevronDown,
+		reason: 'Moving an entry down rewrites the order, the same step read toward the back.'
+	},
 	edit: {
 		icon: Pencil,
 		reason: 'Editing opens the form that changes the stored fields of a row or a node.'
@@ -206,6 +218,14 @@ export const CONTROL_ICONS = {
 	clear: {
 		icon: X,
 		reason: 'Clearing empties the filters, which the cross marks.'
+	},
+	choose: {
+		icon: ChevronsUpDown,
+		reason: 'Choosing opens the list the value is picked from, which the stacked chevrons mark.'
+	},
+	done: {
+		icon: Check,
+		reason: 'Done confirms the choices already made and closes the picker.'
 	}
 } as const;
 

@@ -9,7 +9,10 @@
 	// The judge is still a text field, because a ref the picker cannot offer yet is still a ref the router
 	// may resolve. Its Choose button opens the editor's picker in single-select mode, which is the
 	// reference's own shape for this field (`combos/page.js:688-698`).
+	import { CONTROL_ICONS } from '$lib/icons';
 	import { usesJudgeModel, usesStickyLimit, type ComboStrategy } from '$lib/schemas/combo';
+
+	const ChooseIcon = CONTROL_ICONS.choose.icon;
 
 	let {
 		strategy,
@@ -59,9 +62,12 @@
 			/>
 			<button
 				type="button"
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
-				onclick={onchoosejudge}>Choose</button
+				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
+				onclick={onchoosejudge}
 			>
+				<ChooseIcon class="size-4" aria-hidden="true" />
+				Choose
+			</button>
 		</div>
 		<span id="combo-judge-hint" class="text-xs text-[var(--color-text-muted)]">
 			Writes the final answer from the models' replies.
