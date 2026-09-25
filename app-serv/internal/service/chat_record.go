@@ -78,6 +78,12 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 				input.TokensCacheWrite = int64(details.CacheCreationTokens)
 			}
 		}
+		// The estimate is the rate tables' answer for the tokens this call
+		// reported, and zero for every path without one — a failed call
+		// delivered nothing, an unpriced model has no rate to apply, and a
+		// report of all zeros prices to zero. §7.12: the figure is an estimate
+		// for display, never a billed amount.
+		input.CostUSD = chatCostEstimate(outcome, errorCode)
 		// reason: a failed accounting write must not fail a request the client
 		// has already received an answer to; a lost row is reported by the
 		// panel's totals, which is where an operator can act on it.
