@@ -27,9 +27,8 @@
 //	dead-lettered: it is logged at error level with the batch identity and
 //	the last error, and the counters are LEFT IN REDIS, so a restart or a
 //	later successful tick still flushes them. Nothing is discarded, and no
-//	separate dead-letter store is invented: the counters are already the
-//	durable copy until they are cleared, and Clear runs only after a
-//	successful write.
+//	separate dead-letter store is invented: the counters are the running
+//	total in Redis, and Settle runs only after a successful write.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
@@ -43,16 +42,16 @@ import "time"
 // which AGENTS.md §1.6 requires every worker to declare explicitly.
 //
 // Retry: a flush that fails is retried on the worker's next tick with the SAME
-// batch, because the counters are only cleared after a successful durable write.
+// batch, because a counter is only settled after a successful durable write.
 // There is no in-worker retry loop and no exponential backoff: the tick itself
 // is the backoff, so a transient database outage costs one failed tick rather
 // than a hot retry storm against a database that is already struggling.
 //
 // Attempts are bounded per batch. After MaxAttempts consecutive failures on the
 // same batch, the batch is dead-lettered: it is logged at error level with the
-// batch identity and the last error, and Redis RetainAfterFailure keeps the
-// counters so the next start can still flush them. Nothing is silently dropped:
-// a counter lost is a quota an operator would under-read.
+// batch identity and the last error, and the Redis counters are left untouched,
+// so a restart or a later successful tick still flushes them. Nothing is
+// silently dropped: a counter lost is a quota an operator would under-read.
 type QuotaFlushPolicy struct {
 	// Interval is the tick between flushes.
 	Interval time.Duration

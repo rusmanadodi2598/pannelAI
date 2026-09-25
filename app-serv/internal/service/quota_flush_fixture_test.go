@@ -40,7 +40,7 @@ type countingStore struct {
 	maxInFlight atomic.Int64
 
 	pendingCalls atomic.Int64
-	clearCalls   atomic.Int64
+	settleCalls  atomic.Int64
 
 	// hold lets a test keep one flush inside the store while another arrives.
 	hold    chan struct{}
@@ -80,8 +80,8 @@ func (s *countingStore) Pending(ctx context.Context, limit int) ([]domain.QuotaW
 	return []domain.QuotaWindow{window}, nil
 }
 
-func (s *countingStore) Clear(context.Context, []domain.QuotaWindow) error {
-	s.clearCalls.Add(1)
+func (s *countingStore) Settle(context.Context, []domain.QuotaWindow) error {
+	s.settleCalls.Add(1)
 	return nil
 }
 

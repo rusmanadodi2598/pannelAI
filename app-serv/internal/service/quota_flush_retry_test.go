@@ -32,8 +32,8 @@ import (
 // endpointStore returns one batch of windows for the endpoints it is given, so
 // a test controls which endpoint a failing flush is attributed to.
 type endpointStore struct {
-	endpoints  []string
-	clearCalls atomic.Int64
+	endpoints   []string
+	settleCalls atomic.Int64
 }
 
 func (s *endpointStore) Add(context.Context, string, domain.QuotaWindowKind, int64, time.Time) error {
@@ -52,13 +52,13 @@ func (s *endpointStore) Pending(context.Context, int) ([]domain.QuotaWindow, err
 	return windows, nil
 }
 
-func (s *endpointStore) Clear(context.Context, []domain.QuotaWindow) error {
-	s.clearCalls.Add(1)
+func (s *endpointStore) Settle(context.Context, []domain.QuotaWindow) error {
+	s.settleCalls.Add(1)
 	return nil
 }
 
 // TestQuotaFlusher_RetriesThenDeadLetters covers the stated retry policy: a
-// failing batch is retried up to MaxAttempts and then abandoned WITHOUT clearing
+// failing batch is retried up to MaxAttempts and then abandoned WITHOUT settling
 // the counters, so nothing is lost.
 func TestQuotaFlusher_RetriesThenDeadLetters(t *testing.T) {
 	cases := []struct {
@@ -66,11 +66,11 @@ func TestQuotaFlusher_RetriesThenDeadLetters(t *testing.T) {
 		maxAttempts int
 		failFlushes int
 		wantUpserts int64
-		wantClears  int64
+		wantSettles int64
 	}{
-		{name: "a success on the first attempt writes once", maxAttempts: 3, failFlushes: 0, wantUpserts: 1, wantClears: 1},
-		{name: "failures below the cap never clear", maxAttempts: 3, failFlushes: 2, wantUpserts: 0, wantClears: 0},
-		{name: "hitting the cap dead-letters without clearing", maxAttempts: 2, failFlushes: 2, wantUpserts: 0, wantClears: 0},
+		{name: "a success on the first attempt writes once", maxAttempts: 3, failFlushes: 0, wantUpserts: 1, wantSettles: 1},
+		{name: "failures below the cap never clear", maxAttempts: 3, failFlushes: 2, wantUpserts: 0, wantSettles: 0},
+		{name: "hitting the cap dead-letters without clearing", maxAttempts: 2, failFlushes: 2, wantUpserts: 0, wantSettles: 0},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -92,8 +92,8 @@ func TestQuotaFlusher_RetriesThenDeadLetters(t *testing.T) {
 			if got := repo.upserts.Load(); got != tc.wantUpserts {
 				t.Fatalf("upserts = %d, want %d", got, tc.wantUpserts)
 			}
-			if got := store.clearCalls.Load(); got != tc.wantClears {
-				t.Fatalf("clears = %d, want %d", got, tc.wantClears)
+			if got := store.settleCalls.Load(); got != tc.wantSettles {
+				t.Fatalf("settles = %d, want %d", got, tc.wantSettles)
 			}
 		})
 	}

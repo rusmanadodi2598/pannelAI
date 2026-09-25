@@ -76,23 +76,25 @@ type QuotaRepository interface {
 	SetCap(ctx context.Context, cap domain.QuotaCap) error
 }
 
-// QuotaCounterStore is the Redis-side hot counter the flush worker drains.
-// Counters are incremented on every served request and written to PostgreSQL in
+// QuotaCounterStore is the Redis-side running total the flush worker mirrors
+// into PostgreSQL. Totals are advanced on every served request and mirrored in
 // batches, because a synchronous write would put a database round trip on the
 // request path (SPEC-API-001 §6: counters cached in Redis, flushed to PG).
 //
 // The store reports whether it is available so a caller can decide what to do
 // when Redis is down rather than failing the request it was accounting for.
 type QuotaCounterStore interface {
-	// Add increments one endpoint's counter for a window kind and records the
-	// reset instant the window rolls over at.
+	// Add advances one endpoint's running total for a window kind and records
+	// the instant that window rolls over at, restarting the window when the
+	// previous one has closed.
 	Add(ctx context.Context, endpointID string, kind domain.QuotaWindowKind, units int64, resetsAt time.Time) error
 
-	// Pending returns the counters waiting to be flushed, at most limit of
-	// them, oldest first. It never returns an unbounded set.
+	// Pending returns the windows whose total has not been mirrored yet, at
+	// most limit of them. It never returns an unbounded set.
 	Pending(ctx context.Context, limit int) ([]domain.QuotaWindow, error)
 
-	// Clear removes flushed counters, so a counter written but not cleared is
-	// retried rather than lost.
-	Clear(ctx context.Context, drained []domain.QuotaWindow) error
+	// Settle records what a flush has made durable: a window whose total is
+	// unchanged is marked mirrored, and one that has also closed is retired.
+	// An unsettled window is written again rather than lost.
+	Settle(ctx context.Context, drained []domain.QuotaWindow) error
 }

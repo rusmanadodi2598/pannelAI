@@ -1,15 +1,15 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush_drain.go
-// @for       One flush cycle: read a batch from Redis, write it to
+// @for       One flush cycle: read the changed windows from Redis, write them
 //
-//	PostgreSQL, clear only what was written.
+//	to PostgreSQL, and settle what was written.
 //
 // @uses      context, fmt, log/slog, sort, internal/domain.
 // @reason    The batch mechanics are the part of the flush worker whose order
 //
 //	a review checks against AGENTS.md §1.7 (bounded batch, set-based
-//	write, clear only after durability), so they live in one file apart
+//	write, settle only after durability), so they live in one file apart
 //	from the worker lifecycle (draft 005 F3). Naming the batch here is
 //	what makes retries attributable to the endpoints they belong to
 //	(draft 005 F4).
@@ -28,7 +28,7 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// drain reads one batch, writes it, and clears only what was written.
+// drain reads one batch, writes it, and settles only what was written.
 func (f *QuotaFlusher) drain(ctx context.Context) {
 	callCtx, cancel := context.WithTimeout(ctx, f.policy.Timeout)
 	defer cancel()
@@ -64,11 +64,11 @@ func (f *QuotaFlusher) drain(ctx context.Context) {
 		return
 	}
 
-	if err := f.counters.Clear(callCtx, pending); err != nil {
-		// The rows are durable; only the drain failed. Leaving them means the
-		// next flush writes the same values again, which is idempotent because
-		// UpsertWindows replaces rather than adds.
-		f.logger.Error("membersihkan counter kuota gagal", "batch", batchKey, "error", err)
+	if err := f.counters.Settle(callCtx, pending); err != nil {
+		// The rows are durable; only the settle failed. The unsettled windows
+		// are returned again next tick and rewritten, which is idempotent
+		// because UpsertWindows replaces rather than adds.
+		f.logger.Error("menandai counter kuota gagal", "batch", batchKey, "error", err)
 		return
 	}
 	f.attempts, f.lastKey = 0, ""

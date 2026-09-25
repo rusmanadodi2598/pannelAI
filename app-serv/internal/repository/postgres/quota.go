@@ -31,7 +31,9 @@ import (
 // quotaWindowColumns is the projection every window read uses, in scan order.
 // The provider id is joined, not stored: it is a property of the endpoint, and
 // copying it into a counter row would let the two disagree after a move.
-const quotaWindowColumns = `w.endpoint_id, coalesce(e.provider_id, ''), w.window,
+// "window" is quoted because it is a reserved word in PostgreSQL, as the
+// migration does for the same column.
+const quotaWindowColumns = `w.endpoint_id, coalesce(e.provider_id, ''), w."window",
 	w.used_units, w.limit_units, w.resets_at, w.source, w.updated_at`
 
 // QuotaRepository persists quota windows and budget caps.
@@ -56,7 +58,7 @@ func (r *QuotaRepository) ListWindows(ctx context.Context, endpointID string) ([
 	  FROM quota_windows w
 	  LEFT JOIN upstream_endpoints e ON e.id = w.endpoint_id
 	 WHERE ($1 = '' OR w.endpoint_id = $1)
-	 ORDER BY w.endpoint_id ASC, w.window ASC`
+	 ORDER BY w.endpoint_id ASC, w."window" ASC`
 
 	rows, err := r.pool.Query(ctx, q, endpointID)
 	if err != nil {
@@ -85,16 +87,20 @@ func (r *QuotaRepository) ListWindows(ctx context.Context, endpointID string) ([
 // an incremental update here would double-count a batch that is retried after a
 // partial failure. `resets_at` and `source` are carried through unchanged except
 // where the caller supplied them.
+//
+// "window" is quoted because it is a reserved word in PostgreSQL. `updated_at`
+// is not in the column list: the migration defaults it to now(), and the
+// conflict path sets it explicitly.
 func (r *QuotaRepository) UpsertWindows(ctx context.Context, windows []domain.QuotaWindow) error {
 	if len(windows) == 0 {
 		return nil
 	}
 	const q = `
 INSERT INTO quota_windows
-    (endpoint_id, window, used_units, limit_units, resets_at, source, updated_at)
+    (endpoint_id, "window", used_units, limit_units, resets_at, source)
 SELECT * FROM unnest($1::text[], $2::text[], $3::bigint[], $4::bigint[],
                      $5::timestamptz[], $6::text[])
-ON CONFLICT (endpoint_id, window) DO UPDATE
+ON CONFLICT (endpoint_id, "window") DO UPDATE
    SET used_units = EXCLUDED.used_units,
        limit_units = EXCLUDED.limit_units,
        resets_at = EXCLUDED.resets_at,

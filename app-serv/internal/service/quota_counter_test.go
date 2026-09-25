@@ -57,7 +57,7 @@ func (s *stubCounterStore) Pending(context.Context, int) ([]domain.QuotaWindow, 
 	return nil, nil
 }
 
-func (s *stubCounterStore) Clear(context.Context, []domain.QuotaWindow) error { return nil }
+func (s *stubCounterStore) Settle(context.Context, []domain.QuotaWindow) error { return nil }
 
 // quietLogger discards the counter's own log lines so a failing-write case does
 // not print an error the test already asserts.
