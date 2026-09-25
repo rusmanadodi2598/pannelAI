@@ -368,6 +368,13 @@ components:
           enum:
           - active
           - disabled
+        default_model:
+          type: string
+        global_priority:
+          type: integer
+          minimum: 0
+        proxy_pool_id:
+          type: string
       additionalProperties: false
     TestEndpointRequest:
       type: object
@@ -1184,6 +1191,18 @@ components:
         updated_at:
           type: string
           format: date-time
+        global_priority:
+          type: integer
+          format: int64
+        default_model:
+          type: string
+        consecutive_use_count:
+          type: integer
+          format: int64
+        proxy_pool_id:
+          type: string
+        last_error:
+          $ref: '#/components/schemas/EndpointError'
       required:
       - id
       - provider_id
@@ -1197,6 +1216,24 @@ components:
       - available
       - created_at
       - updated_at
+      - global_priority
+      - default_model
+      - consecutive_use_count
+      - proxy_pool_id
+      additionalProperties: false
+    EndpointError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        at:
+          type: string
+          format: date-time
+      required:
+      - message
+      - at
       additionalProperties: false
     EndpointList:
       type: object
@@ -1328,8 +1365,63 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProviderModelResponse'
+        source:
+          type: string
+          description: Where the list came from, "upstream" or "registry".
+        warning:
+          type: string
+          description: Why the list is not from the upstream, when it is not.
       required:
       - data
+      - source
+      additionalProperties: false
+    ValidateNodeRequest:
+      type: object
+      properties:
+        base_url:
+          type: string
+        type:
+          type: string
+        api_type:
+          type: string
+        credential:
+          type: string
+        model_id:
+          type: string
+      required:
+      - base_url
+      - type
+      additionalProperties: false
+    ValidateProviderRequest:
+      type: object
+      properties:
+        provider_id:
+          type: string
+        credential:
+          type: string
+        model_id:
+          type: string
+      required:
+      - provider_id
+      additionalProperties: false
+    ValidateResponse:
+      type: object
+      properties:
+        state:
+          type: string
+        method:
+          type: string
+        latency_ms:
+          type: integer
+          format: int64
+        status:
+          type: integer
+          format: int64
+        message:
+          type: string
+      required:
+      - state
+      - latency_ms
       additionalProperties: false
     ProviderNodeList:
       type: object
@@ -2431,14 +2523,11 @@ components:
         dimensions:
           type: integer
           format: int64
-        suggested:
-          type: boolean
       required:
       - id
       - name
       - kind
       - capabilities
-      - suggested
       additionalProperties: false
     EndpointTestStatus:
       type: object
@@ -4215,11 +4304,6 @@ paths:
         required: true
         schema:
           type: string
-      - name: suggested
-        in: query
-        required: false
-        schema:
-          type: boolean
       responses:
         '200':
           description: Successful response.
@@ -4564,6 +4648,92 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProviderNodeResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/ManagementConflictError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/provider-nodes/validate:
+    post:
+      summary: Check a credential against a base URL before storing it
+      tags:
+      - Provider Nodes
+      operationId: postApiV1Provider-NodesValidate
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateNodeRequest'
+      responses:
+        '200':
+          description: The check ran. `state` says whether the credential was accepted and `method` names the request that proved it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateResponse'
+        '400':
+          $ref: '#/components/responses/ManagementValidationError'
+        '401':
+          $ref: '#/components/responses/ManagementUnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ManagementForbiddenError'
+        '404':
+          $ref: '#/components/responses/ManagementNotFoundError'
+        '405':
+          $ref: '#/components/responses/ManagementMethodNotAllowedError'
+        '409':
+          $ref: '#/components/responses/ManagementConflictError'
+        '429':
+          $ref: '#/components/responses/ManagementRateLimitedError'
+        '500':
+          $ref: '#/components/responses/ManagementInternalError'
+        '502':
+          $ref: '#/components/responses/ManagementUpstreamError'
+        '503':
+          $ref: '#/components/responses/ManagementUnavailableError'
+        '504':
+          $ref: '#/components/responses/ManagementTimeoutError'
+  /api/v1/providers/validate:
+    post:
+      summary: Check a credential against a registry provider before storing it
+      tags:
+      - Providers
+      operationId: postApiV1ProvidersValidate
+      security:
+      - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateProviderRequest'
+      responses:
+        '200':
+          description: The check ran. `state` says whether the credential was accepted and `method` names the request that proved it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateResponse'
         '400':
           $ref: '#/components/responses/ManagementValidationError'
         '401':
