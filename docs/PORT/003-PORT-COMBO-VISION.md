@@ -8,25 +8,25 @@ simetris** pada layar itu. Bukan kontrak; kontrak tetap `docs/SPEC-API/001-SPEC-
 `002-PORT-PROVIDER.md`: temuan bernomor F, bukti yang bisa diulang, keputusan di depan implementasi,
 dan gerbang antislop di akhir.
 
-|                           |                                                                                                                                                                                                                                |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Status**                | **CLOSED 2026-09-25.** F1-F3 diimplementasi, D1-D6 dipakai, seluruh gerbang hijau, click-through hidup 29/29. Bukti gerbang dan click-through di §7; commit pekerjaan `d8a4d20`                       |
-| **Mechanism**             | DURING & AFTER (antislop)                                                                                                                                                                                                      |
-| **Scope**                 | `app-ui/.` (halaman `/combos`, kedua tab, dan setiap modalnya). `app-serv/.` tidak disentuh                                                                                                                                     |
-| **Permintaan owner**      | (1) Revisi plain teks kontrol halaman Combo & Vision menjadi ikon, tanpa emoticon: Delete, Edit, Rename, Add Api Key, Test Endpoint, Save Endpoint, Save, Cancel, Prev, Next, Add Model, Copy, Remove, Refresh Now, dan yang relevan; termasuk detail modal interaktif saat add combo & vision. (2) Tata letak compact dan simetris. (3) Commit lokal setelah progres `CLOSED` |
-| **Reference**             | `decolua/9router`, checkout `/home/rusmanadodi/apps/9router`, `39e36d3d` = tag `v0.5.86` (2026-09-23)                                                                                                                          |
-| **Kaitan**                | `docs/PORT/README.md` (keputusan desain); SPEC-UI §6.4, §8.4, §8.6, §8.11, §14 Q13; SPEC-API §7.6, §7.7, §7.8; DESIGN.md §2.1, §3.4, §10; `docs/RULLES/TDD.md`; draft 024 (combo/vision `app-serv`), draft 025 (picker + filter aktif) |
-| **Tanggal**               | 2026-09-25 (DURING)                                                                                                                                                                                                            |
+|                      |                                                                                                                                                                                                                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Status**           | **CLOSED 2026-09-25.** F1-F3 diimplementasi, D1-D6 dipakai, seluruh gerbang hijau, click-through hidup 29/29. Bukti gerbang dan click-through di §7; commit pekerjaan `d8a4d20`                                                                                                                                                                                                |
+| **Mechanism**        | DURING & AFTER (antislop)                                                                                                                                                                                                                                                                                                                                                      |
+| **Scope**            | `app-ui/.` (halaman `/combos`, kedua tab, dan setiap modalnya). `app-serv/.` tidak disentuh                                                                                                                                                                                                                                                                                    |
+| **Permintaan owner** | (1) Revisi plain teks kontrol halaman Combo & Vision menjadi ikon, tanpa emoticon: Delete, Edit, Rename, Add Api Key, Test Endpoint, Save Endpoint, Save, Cancel, Prev, Next, Add Model, Copy, Remove, Refresh Now, dan yang relevan; termasuk detail modal interaktif saat add combo & vision. (2) Tata letak compact dan simetris. (3) Commit lokal setelah progres `CLOSED` |
+| **Reference**        | `decolua/9router`, checkout `/home/rusmanadodi/apps/9router`, `39e36d3d` = tag `v0.5.86` (2026-09-23)                                                                                                                                                                                                                                                                          |
+| **Kaitan**           | `docs/PORT/README.md` (keputusan desain); SPEC-UI §6.4, §8.4, §8.6, §8.11, §14 Q13; SPEC-API §7.6, §7.7, §7.8; DESIGN.md §2.1, §3.4, §10; `docs/RULLES/TDD.md`; draft 024 (combo/vision `app-serv`), draft 025 (picker + filter aktif)                                                                                                                                         |
+| **Tanggal**          | 2026-09-25 (DURING)                                                                                                                                                                                                                                                                                                                                                            |
 
 ## 1. Ringkasan
 
 Dua permintaan owner diukur dulu sebelum satu baris diubah, karena keduanya menunjuk sebab yang lebih
 sempit dari kalimatnya.
 
-| Yang owner sebut             | Yang diukur                                                                                                                                                                                                                                                                                                                                                                                     |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plain teks harus jadi ikon   | **Benar.** Tiga belas berkas permukaan Combo & Vision merender **23 tombol berteks tanpa glyph** (inventaris §2.2). Tujuh tombol sudah berglyph dan tidak diulang (`Up`/`Down` baris model, `Remove` baris model dan vision, `Move up`/`Move down`, tutup dialog bawaan `Modal`). Reference merender setiap aksi sebagai ikon + label (`Button icon="add"`, `combos/page.js:382`, `:421`, `:463`, `:474`, `:813`; `ComboFormModal.js:155`), dan permukaan provider sudah memakai bentuk itu sejak PORT 002 (SPEC-UI §8.11 butir 10) |
-| Tata letak belum compact     | **Benar.** Toolbar tab Combos menumpuk tiga blok: kalimat pengantar + tombol New combo, lalu `<RefreshControl>` di baris sendiri; di dalam editor, baris model memakai tiga tombol berlabel teks selebar 44 px masing-masing. Pada 390 px, satu baris model menghabiskan lebar penuh sebelum field `ref` sempat terbaca                                                                          |
+| Yang owner sebut              | Yang diukur                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plain teks harus jadi ikon    | **Benar.** Tiga belas berkas permukaan Combo & Vision merender **23 tombol berteks tanpa glyph** (inventaris §2.2). Tujuh tombol sudah berglyph dan tidak diulang (`Up`/`Down` baris model, `Remove` baris model dan vision, `Move up`/`Move down`, tutup dialog bawaan `Modal`). Reference merender setiap aksi sebagai ikon + label (`Button icon="add"`, `combos/page.js:382`, `:421`, `:463`, `:474`, `:813`; `ComboFormModal.js:155`), dan permukaan provider sudah memakai bentuk itu sejak PORT 002 (SPEC-UI §8.11 butir 10)                                               |
+| Tata letak belum compact      | **Benar.** Toolbar tab Combos menumpuk tiga blok: kalimat pengantar + tombol New combo, lalu `<RefreshControl>` di baris sendiri; di dalam editor, baris model memakai tiga tombol berlabel teks selebar 44 px masing-masing. Pada 390 px, satu baris model menghabiskan lebar penuh sebelum field `ref` sempat terbaca                                                                                                                                                                                                                                                           |
 | Filter "hanya provider aktif" | **Bukan scope pass ini, dan sengaja tidak dikerjakan.** Server sudah punya `?active=true` (draft 025 CLOSED, terukur hidup menjawab 9 baris dari 4 provider), tetapi panel sudah punya aturan picker yang tertulis dan teruji: `endpoint_count > 0` atau `no_auth`, plus chip placeholder untuk provider ber-endpoint yang belum punya baris katalog (SPEC-UI §6.4, `pickerSections`). Memakai parameter itu mengganti perilaku yang terdokumentasi (placeholder terhapus, himpunan berbeda), yaitu keputusan desain yang bukan permintaan pass ini. Dicatat sebagai residu di §5 |
 
 Jadi pass ini murni panel: memperluas keluarga ikon yang sudah ada ke permukaan Combo & Vision, dan
@@ -55,34 +55,34 @@ sama sekali. Jadi tidak ada cacat yang ditutup dengan menggantinya, hanya peruba
 
 Dihitung dari tiga belas berkas yang dirender `/combos`, sebelum satu baris diubah:
 
-| Layar                                      | Kontrol berteks tanpa glyph                                            | Jumlah |
-| ------------------------------------------ | ---------------------------------------------------------------------- | ------ |
-| Tab Combos (`CombosTab.svelte`)            | New combo, Create the first combo, Try again, Previous, Next           | 5      |
-| Editor (`ComboEditor.svelte`)              | Add models, Create the combo / Save the combo, Cancel                  | 3      |
-| Baris model (`ComboModelRows.svelte`)      | Up, Down (per baris) + Add a model                                     | 3      |
-| Field judge (`ComboStrategyFields.svelte`) | Choose                                                                 | 1      |
-| Tabel combo (`ComboTable.svelte`)          | Edit, Test, Delete (per baris)                                         | 3      |
-| Dialog delete (`ComboDeleteDialog.svelte`) | Keep it, Delete the combo                                              | 2      |
-| Dialog test (`ComboTestDialog.svelte`)     | Close, Test the chain / Test again / Testing                           | 2      |
-| Tab Vision (`VisionAdapterForm.svelte`)    | Try again, Save the adapter                                            | 2      |
-| Picker vision (`VisionModelPicker.svelte`) | Add models                                                             | 1      |
-| Dialog picker (`ModelPickerDialog.svelte`) | Done                                                                   | 1      |
-| **Total**                                  |                                                                        | **23** |
+| Layar                                      | Kontrol berteks tanpa glyph                                  | Jumlah |
+| ------------------------------------------ | ------------------------------------------------------------ | ------ |
+| Tab Combos (`CombosTab.svelte`)            | New combo, Create the first combo, Try again, Previous, Next | 5      |
+| Editor (`ComboEditor.svelte`)              | Add models, Create the combo / Save the combo, Cancel        | 3      |
+| Baris model (`ComboModelRows.svelte`)      | Up, Down (per baris) + Add a model                           | 3      |
+| Field judge (`ComboStrategyFields.svelte`) | Choose                                                       | 1      |
+| Tabel combo (`ComboTable.svelte`)          | Edit, Test, Delete (per baris)                               | 3      |
+| Dialog delete (`ComboDeleteDialog.svelte`) | Keep it, Delete the combo                                    | 2      |
+| Dialog test (`ComboTestDialog.svelte`)     | Close, Test the chain / Test again / Testing                 | 2      |
+| Tab Vision (`VisionAdapterForm.svelte`)    | Try again, Save the adapter                                  | 2      |
+| Picker vision (`VisionModelPicker.svelte`) | Add models                                                   | 1      |
+| Dialog picker (`ModelPickerDialog.svelte`) | Done                                                         | 1      |
+| **Total**                                  |                                                              | **23** |
 
 Tidak ada emoticon dan tidak ada karakter Unicode pengganti ikon di permukaan ini (diperiksa: 0 tanda
 centang, 0 em dash di berkas komponen).
 
 ### 2.3 Bentuk kontrol reference
 
-| Kontrol                                    | Reference                                        | Baris                              |
-| ------------------------------------------ | ------------------------------------------------ | ---------------------------------- |
-| Create Combo                               | `Button icon="add"`                              | `combos/page.js:382`, `:421`       |
-| Bulk Delete                                | `Button icon="delete"`                           | `combos/page.js:463`               |
-| Copy / Edit / Delete (per kartu)           | glyph + label kecil di bawahnya                  | `combos/page.js:662`, `:672`, `:680` |
-| Add Model (combo)                          | glyph `add` + label di tombol lebar kartu        | `ComboFormModal.js:155`            |
-| Move up / Move down / Remove (per baris)   | tiga tombol glyph dengan `title` sebagai nama    | `ComboFormModal.js:38`, `:42`, `:46` |
-| Add Model (adapter)                        | `Button icon="add"`                              | `combos/page.js:813`               |
-| Cancel / Save (modal)                      | teks saja, tombol penuh lebar                    | `ComboFormModal.js:161`, `:162`    |
+| Kontrol                                  | Reference                                     | Baris                                |
+| ---------------------------------------- | --------------------------------------------- | ------------------------------------ |
+| Create Combo                             | `Button icon="add"`                           | `combos/page.js:382`, `:421`         |
+| Bulk Delete                              | `Button icon="delete"`                        | `combos/page.js:463`                 |
+| Copy / Edit / Delete (per kartu)         | glyph + label kecil di bawahnya               | `combos/page.js:662`, `:672`, `:680` |
+| Add Model (combo)                        | glyph `add` + label di tombol lebar kartu     | `ComboFormModal.js:155`              |
+| Move up / Move down / Remove (per baris) | tiga tombol glyph dengan `title` sebagai nama | `ComboFormModal.js:38`, `:42`, `:46` |
+| Add Model (adapter)                      | `Button icon="add"`                           | `combos/page.js:813`                 |
+| Cancel / Save (modal)                    | teks saja, tombol penuh lebar                 | `ComboFormModal.js:161`, `:162`      |
 
 Baris model reference memberi `title` (bukan label terlihat) pada ketiga aksi barisnya, yang mendukung
 D2; modal combonya sendiri tidak berglyph, tetapi permukaan provider reference (`providers/[id]/page.js`)
@@ -90,14 +90,14 @@ memang berglyph, dan SPEC-UI §8.11 butir 10 sudah menetapkan satu bentuk untuk 
 
 ## 3. Keputusan pass ini
 
-| #   | Pertanyaan                                                                    | Arah yang dipakai                                                                                                                                                                                                                                     | Dipakai oleh |
-| --- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| D1  | Glyph + label atau icon-only?                                                 | **Glyph + label untuk kontrol berdiri sendiri, icon-only untuk aksi baris.** Sama dengan PORT 002 D4 dan SPEC-UI §8.11 butir 9/10; reference memakai kedua bentuk itu (`Button icon=...` untuk kontrol berdiri, tiga tombol `title` untuk aksi baris)        | F1, F2       |
-| D2  | Apakah `Up`/`Down` baris model masuk keluarga icon-only?                      | **Ya.** Ketiganya aksi baris, dan baris model adalah tempat paling padat di layar ini. Nama pindah ke `aria-label` + `title` (sudah ada `aria-label` untuk Move), glyph `ChevronUp`/`ChevronDown` menggantikan teks                                          | F2           |
-| D3  | Apakah Save/Cancel modal ikut berglyph walau modal combo reference tidak?      | **Ya, glyph + label.** SPEC-UI §8.11 butir 10 sudah menetapkan bentuk itu untuk seluruh panel (PORT 002), dan konsistensi satu panel lebih kuat daripada meniru satu berkas reference yang berbeda dari berkas reference lainnya                              | F1           |
-| D4  | Apakah picker pindah ke `?active=true`?                                       | **Tidak, sengaja tidak dikerjakan.** Aturan picker panel sudah tertulis dan teruji (SPEC-UI §6.4, `pickerSections`), termasuk placeholder dan klausa `no_auth`; menggantinya mengubah perilaku terdokumentasi dan bukan permintaan pass ini (draft 025 §5 sudah mencatatnya sebagai pekerjaan panel terpisah) | n/a          |
-| D5  | Apakah baris tabel combo (`Edit`/`Test`/`Delete`) jadi icon-only?             | **Ya.** Baris aksi di permukaan provider sudah icon-only sejak PORT 001/002, dan tabel combo adalah satu-satunya tabel berteks yang tersisa di halaman ini                                                                                                 | F1           |
-| D6  | Apakah `Delete` dan aksi merusak lain memakai warna danger tanpa warna saingan? | **Ya.** Satu `text-*` per tombol, seperti kontrak `row-action-icons.test.ts`: dua utilitas warna bersaing diselesaikan urutan stylesheet, dan yang muted pernah menang diam-diam (terukur hidup 2026-09-24)                                                    | F1           |
+| #   | Pertanyaan                                                                      | Arah yang dipakai                                                                                                                                                                                                                                                                                             | Dipakai oleh |
+| --- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| D1  | Glyph + label atau icon-only?                                                   | **Glyph + label untuk kontrol berdiri sendiri, icon-only untuk aksi baris.** Sama dengan PORT 002 D4 dan SPEC-UI §8.11 butir 9/10; reference memakai kedua bentuk itu (`Button icon=...` untuk kontrol berdiri, tiga tombol `title` untuk aksi baris)                                                         | F1, F2       |
+| D2  | Apakah `Up`/`Down` baris model masuk keluarga icon-only?                        | **Ya.** Ketiganya aksi baris, dan baris model adalah tempat paling padat di layar ini. Nama pindah ke `aria-label` + `title` (sudah ada `aria-label` untuk Move), glyph `ChevronUp`/`ChevronDown` menggantikan teks                                                                                           | F2           |
+| D3  | Apakah Save/Cancel modal ikut berglyph walau modal combo reference tidak?       | **Ya, glyph + label.** SPEC-UI §8.11 butir 10 sudah menetapkan bentuk itu untuk seluruh panel (PORT 002), dan konsistensi satu panel lebih kuat daripada meniru satu berkas reference yang berbeda dari berkas reference lainnya                                                                              | F1           |
+| D4  | Apakah picker pindah ke `?active=true`?                                         | **Tidak, sengaja tidak dikerjakan.** Aturan picker panel sudah tertulis dan teruji (SPEC-UI §6.4, `pickerSections`), termasuk placeholder dan klausa `no_auth`; menggantinya mengubah perilaku terdokumentasi dan bukan permintaan pass ini (draft 025 §5 sudah mencatatnya sebagai pekerjaan panel terpisah) | n/a          |
+| D5  | Apakah baris tabel combo (`Edit`/`Test`/`Delete`) jadi icon-only?               | **Ya.** Baris aksi di permukaan provider sudah icon-only sejak PORT 001/002, dan tabel combo adalah satu-satunya tabel berteks yang tersisa di halaman ini                                                                                                                                                    | F1           |
+| D6  | Apakah `Delete` dan aksi merusak lain memakai warna danger tanpa warna saingan? | **Ya.** Satu `text-*` per tombol, seperti kontrak `row-action-icons.test.ts`: dua utilitas warna bersaing diselesaikan urutan stylesheet, dan yang muted pernah menang diam-diam (terukur hidup 2026-09-24)                                                                                                   | F1           |
 
 ## 4. Temuan
 
@@ -193,29 +193,32 @@ dilaporkan sebagai temuan click-through yang ditolak, bukan ditutup.
 
 ### 6.5 `app-ui` uji
 
-- `tests/components/combo-vision-icons.test.ts` (245 baris, baru): 15 test. Aksi baris tabel combo
-  diuji dengan `it.each` atas tiga nama (TDD.md §2.5), tiga aksi baris model dengan `it.each`, warna
-  danger Delete dan Remove, glyph+label pada footer tiga dialog dan pada `Choose`, plus asersi ukuran
-  kontrol tutup `Modal`.
+- `tests/components/combo-vision-icons.test.ts` (130 baris, baru): 9 kasus dari 5 blok `it`. Aksi baris
+  tabel combo diuji dengan `it.each` atas tiga nama (TDD.md §2.5) dan tiga aksi baris model dengan
+  `it.each`, plus warna danger Delete dan Remove.
+- `tests/components/combo-dialog-icons.test.ts` (158 baris, baru): 6 kasus. Glyph+label pada footer tiga
+  dialog, `Choose`, dua kontrol picker, plus asersi ukuran kontrol tutup `Modal` dengan alasan tertulis.
 - `tests/components/combo-tab-toolbar.test.ts` (170 baris, baru): 6 test. Toolbar satu baris (satu
   parent, `flex-wrap`, `min-h-11`), glyph+label New combo dan Refresh now, chevron Previous/Next, dan
   paging yang benar-benar meminta `page=2` di kawat.
 - Non-vacuity dibuktikan dengan mutasi: `aria-label="Edit"` dihapus dari `ComboTable` → tepat satu kasus
   merah (`renders Edit as a named icon`, pada asersi `title`); lalu dipulihkan dan hijau lagi.
+- Berkas uji icon sempat 253 baris saat digabung; ia dipecah pada jahitan yang komentarnya sudah
+  sebut (aksi baris vs footer dialog), mengikuti ambang §1.1 dan preseden `ed19008`.
 
 ## 7. Status pass ini
 
 ### 7.1 Gerbang
 
-| Gerbang | Hasil |
-| --- | --- |
-| `app-ui` prettier (`bun run lint`) | PASS |
-| `app-ui` eslint (`bun run lint:ts`) | PASS, 0 error (satu unused import ditemukan dan dibuang) |
-| `app-ui` svelte-check (`bun run check`) | PASS, 0 error / 0 warning |
-| `app-ui` build (`bun run build`) | PASS, exit 0 |
-| `app-ui` suite penuh (`bun run test`) | lihat §7.3 |
-| `scrypts/gates/panel-check.sh` | prettier PASS, eslint PASS, svelte-check PASS; langkah `vitest` di gate itu bertabrakan dengan run suite terpisah (keduanya menjalankan vitest di pohon yang sama) dan keluar 143, jadi suite dijalankan sendiri di §7.3 |
-| Batas baris | `CombosTab.svelte` 259 baris melewati batas keras 250 saat pass ini menambah glyph dan komentar; dipecah ke `CombosToolbar.svelte`, hasil 243 + 42. Semua berkas lain ≤ 247 |
+| Gerbang                                 | Hasil                                                                                                                                                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app-ui` prettier (`bun run lint`)      | PASS                                                                                                                                                                                                                     |
+| `app-ui` eslint (`bun run lint:ts`)     | PASS, 0 error (satu unused import ditemukan dan dibuang)                                                                                                                                                                 |
+| `app-ui` svelte-check (`bun run check`) | PASS, 0 error / 0 warning                                                                                                                                                                                                |
+| `app-ui` build (`bun run build`)        | PASS, exit 0                                                                                                                                                                                                             |
+| `app-ui` suite penuh (`bun run test`)   | lihat §7.3                                                                                                                                                                                                               |
+| `scrypts/gates/panel-check.sh`          | prettier PASS, eslint PASS, svelte-check PASS; langkah `vitest` di gate itu bertabrakan dengan run suite terpisah (keduanya menjalankan vitest di pohon yang sama) dan keluar 143, jadi suite dijalankan sendiri di §7.3 |
+| Batas baris                             | `CombosTab.svelte` 259 baris melewati batas keras 250 saat pass ini menambah glyph dan komentar; dipecah ke `CombosToolbar.svelte`, hasil 243 + 42. Semua berkas lain ≤ 247                                              |
 
 ### 7.2 Click-through hidup (R-35), 29/29
 
@@ -251,9 +254,11 @@ aktor lain di `:3001`/`:9091` tidak disentuh. Driver CDP di `/tmp/pass34/driver.
 `bun run test` dijalankan sendiri (tanpa vitest lain di pohon yang sama): **158 berkas, 2585 test,
 seluruhnya lulus**, `EXIT=0`, 2185 dtk, pada pohon final (dengan ukuran kontrol tutup dialog
 dikembalikan ke 36 px). Baseline sebelum pass ini 2564 test / 156 berkas (angka yang dicatat
-`002-PORT-PROVIDER.md` §7.1), jadi pass ini menambah **21 test di 2 berkas baru**
-(`combo-vision-icons.test.ts` 15, `combo-tab-toolbar.test.ts` 6) dan tidak menghapus satu pun: 2564 + 21
-= 2585.
+`002-PORT-PROVIDER.md` §7.1), jadi pass ini menambah **21 kasus di 3 berkas uji**
+(`combo-vision-icons.test.ts` 9, `combo-dialog-icons.test.ts` 6, `combo-tab-toolbar.test.ts` 6) dan tidak
+menghapus satu pun: 2564 + 21 = 2585. Berkas uji icon sempat digabung (253 baris, 15 kasus) sebelum
+dipecah pada ambang §1.1; pecahannya memindahkan 6 kasus tanpa mengubah jumlahnya, dan pasangan itu
+dijalankan hijau (15 kasus) bersama toolbar (6).
 
 Catatan kejujuran tentang satu kegagalan yang terlihat lalu hilang: run pertama saya bertabrakan dengan
 run suite aktor lain di pohon yang sama, dan `tests/components/proxy-pools-save.test.ts` merah di bawah
@@ -267,55 +272,55 @@ Mode: DURING & AFTER. Setiap baris PASS dengan buktinya; baris yang tidak berlak
 
 **Block 1: Hard Gate**
 
-| Aturan | Hasil | Bukti |
-| --- | --- | --- |
-| R-02 em dash | PASS | `grep -cP "\x{2014}"` = 0 di ketiga belas berkas yang disentuh dan di dokumen ini (sembilan em dash yang terbawa kutipan kode reference dibuang sebelum commit) |
-| R-03 mobile | PASS | Click-through I1-I2 pada 390 px: `scrollWidth` 390 = viewport 390, `scrollX` 0 setelah percobaan scroll 400 px, 0 elemen di luar kontainer scroll. Target sentuh: seluruh kontrol baru yang berdiri sendiri `min-h-11` (44 px), terukur di A3/B3/C2/C5/C6/C7/D1/D2/F1; kontrol tutup dialog 36 px mengikuti `DESIGN.md` §7 (§6.4) |
-| R-17 angka tanpa sumber | PASS | Setiap angka di dokumen ini punya perintahnya (GET live, `wc -l`, `grep -c`). Tidak ada statistik produk |
-| R-18 testimoni | N/A | Tidak ada permukaan testimoni di panel operator |
-| R-23 aset tanpa instruksi | N/A | Pass ini tidak membuat logo, avatar, atau statistik; ikon diambil dari set yang sudah dipasang (`@lucide/svelte`) dan dicatat alasannya |
-| R-24 nav tanpa tujuan | PASS | Pass ini tidak menyentuh `navigation.ts`; `/combos` sudah punya rute, dan `tests/navigation/navigation.test.ts` menguncinya |
-| R-25 kontras | PASS | `tests/tokens/contrast.test.ts` 60 asersi lulus, termasuk pasangan teks yang dipakai kontrol baru (teks muted di surface, danger di surface) |
-| R-26 kontrol mati | PASS | Setiap kontrol baru benar-benar bertindak: click-through mengklik Edit (C), Add models (D), Save the adapter (F), Delete (H), Cancel (E2), dan Escape (E1); tidak ada kontrol yang hanya terlihat |
-| R-27 empty/loading/error | PASS | Tab Combos merender ketiganya (`StateMessage`), tab Vision juga; test baru mengunci `Try again` berglyph pada error state dan `Create the first combo` berglyph pada empty state |
-| R-28 FAQ | N/A | Tidak ada FAQ |
-| R-32 keyboard | PASS | Probe keyboard 7/7: kontrol icon-only menerima fokus (K1), indikator fokus terlihat `outline 3px` dan bukan `outline: none` (K2), Enter mengaktifkan Edit (K3), Cancel terjangkau dan aktif lewat keyboard (K4-K5), Escape menutup picker (E1) dan dialog (H) |
-| R-33 patch via skrip | PASS | Tidak ada skrip yang menyunting sumber; seluruh perubahan ditulis di berkas sumbernya |
-| R-34 kedua tema | PASS | Probe T-light dan T-dark: kontrol yang sama terender, `scrollWidth` = viewport di keduanya, warna teks `rgb(26,22,20)` di `rgb(252,250,247)` dan `rgb(237,234,230)` di `rgb(26,25,23)` |
-| R-35 verifikasi sebelum kirim | PASS | Build dijalankan, 29/29 click-through elemen-per-elemen + 7/7 probe keyboard/tema, 0 error konsol (J1). Daftar per elemen ada di §7.2 |
-| R-36 klaim fabrikasi | PASS | Tidak ada klaim keamanan, kepatuhan, atau performa di dokumen ini |
-| R-37 arah desain | PASS | `DESIGN.md` ada dan dibaca; satu bacaan click-through (kontrol tutup 36 px) dicabut setelah arah desain tercatat dibaca, dan tidak ada arah yang ditimpa diam-diam (§6.4) |
-| R-38 konten nyata | PASS | Semua angka berasal dari pengukuran pass ini; tidak ada data yang dikarang |
+| Aturan                        | Hasil | Bukti                                                                                                                                                                                                                                                                                                                             |
+| ----------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R-02 em dash                  | PASS  | `grep -cP "\x{2014}"` = 0 di ketiga belas berkas yang disentuh dan di dokumen ini (sembilan em dash yang terbawa kutipan kode reference dibuang sebelum commit)                                                                                                                                                                   |
+| R-03 mobile                   | PASS  | Click-through I1-I2 pada 390 px: `scrollWidth` 390 = viewport 390, `scrollX` 0 setelah percobaan scroll 400 px, 0 elemen di luar kontainer scroll. Target sentuh: seluruh kontrol baru yang berdiri sendiri `min-h-11` (44 px), terukur di A3/B3/C2/C5/C6/C7/D1/D2/F1; kontrol tutup dialog 36 px mengikuti `DESIGN.md` §7 (§6.4) |
+| R-17 angka tanpa sumber       | PASS  | Setiap angka di dokumen ini punya perintahnya (GET live, `wc -l`, `grep -c`). Tidak ada statistik produk                                                                                                                                                                                                                          |
+| R-18 testimoni                | N/A   | Tidak ada permukaan testimoni di panel operator                                                                                                                                                                                                                                                                                   |
+| R-23 aset tanpa instruksi     | N/A   | Pass ini tidak membuat logo, avatar, atau statistik; ikon diambil dari set yang sudah dipasang (`@lucide/svelte`) dan dicatat alasannya                                                                                                                                                                                           |
+| R-24 nav tanpa tujuan         | PASS  | Pass ini tidak menyentuh `navigation.ts`; `/combos` sudah punya rute, dan `tests/navigation/navigation.test.ts` menguncinya                                                                                                                                                                                                       |
+| R-25 kontras                  | PASS  | `tests/tokens/contrast.test.ts` 60 asersi lulus, termasuk pasangan teks yang dipakai kontrol baru (teks muted di surface, danger di surface)                                                                                                                                                                                      |
+| R-26 kontrol mati             | PASS  | Setiap kontrol baru benar-benar bertindak: click-through mengklik Edit (C), Add models (D), Save the adapter (F), Delete (H), Cancel (E2), dan Escape (E1); tidak ada kontrol yang hanya terlihat                                                                                                                                 |
+| R-27 empty/loading/error      | PASS  | Tab Combos merender ketiganya (`StateMessage`), tab Vision juga; test baru mengunci `Try again` berglyph pada error state dan `Create the first combo` berglyph pada empty state                                                                                                                                                  |
+| R-28 FAQ                      | N/A   | Tidak ada FAQ                                                                                                                                                                                                                                                                                                                     |
+| R-32 keyboard                 | PASS  | Probe keyboard 7/7: kontrol icon-only menerima fokus (K1), indikator fokus terlihat `outline 3px` dan bukan `outline: none` (K2), Enter mengaktifkan Edit (K3), Cancel terjangkau dan aktif lewat keyboard (K4-K5), Escape menutup picker (E1) dan dialog (H)                                                                     |
+| R-33 patch via skrip          | PASS  | Tidak ada skrip yang menyunting sumber; seluruh perubahan ditulis di berkas sumbernya                                                                                                                                                                                                                                             |
+| R-34 kedua tema               | PASS  | Probe T-light dan T-dark: kontrol yang sama terender, `scrollWidth` = viewport di keduanya, warna teks `rgb(26,22,20)` di `rgb(252,250,247)` dan `rgb(237,234,230)` di `rgb(26,25,23)`                                                                                                                                            |
+| R-35 verifikasi sebelum kirim | PASS  | Build dijalankan, 29/29 click-through elemen-per-elemen + 7/7 probe keyboard/tema, 0 error konsol (J1). Daftar per elemen ada di §7.2                                                                                                                                                                                             |
+| R-36 klaim fabrikasi          | PASS  | Tidak ada klaim keamanan, kepatuhan, atau performa di dokumen ini                                                                                                                                                                                                                                                                 |
+| R-37 arah desain              | PASS  | `DESIGN.md` ada dan dibaca; satu bacaan click-through (kontrol tutup 36 px) dicabut setelah arah desain tercatat dibaca, dan tidak ada arah yang ditimpa diam-diam (§6.4)                                                                                                                                                         |
+| R-38 konten nyata             | PASS  | Semua angka berasal dari pengukuran pass ini; tidak ada data yang dikarang                                                                                                                                                                                                                                                        |
 
 **Block 2: Purpose-Gate**
 
-| Aturan | Hasil | Bukti |
-| --- | --- | --- |
-| R-04 ikon relevan | PASS | Setiap glyph baru satu kalimat alasan di `src/lib/icons.ts` (`moveUp`, `moveDown`, `choose`, `done`), dan `tests/navigation/icons.test.ts` menolak glyph terlarang serta alasan < 20 karakter. Tidak ada sparkle/star/magic/robot/orb |
-| R-01, R-06, R-07, R-08, R-09, R-10, R-12, R-13, R-14, R-19, R-22 | N/A | Pass ini tidak menambah gradien, glow, font, latar bermotif, badge, glassmorphism, bayangan, animasi, atau ilustrasi. Ikon di sini bukan hiasan: ia menggantikan teks aksi yang sudah ada |
+| Aturan                                                           | Hasil | Bukti                                                                                                                                                                                                                                 |
+| ---------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R-04 ikon relevan                                                | PASS  | Setiap glyph baru satu kalimat alasan di `src/lib/icons.ts` (`moveUp`, `moveDown`, `choose`, `done`), dan `tests/navigation/icons.test.ts` menolak glyph terlarang serta alasan < 20 karakter. Tidak ada sparkle/star/magic/robot/orb |
+| R-01, R-06, R-07, R-08, R-09, R-10, R-12, R-13, R-14, R-19, R-22 | N/A   | Pass ini tidak menambah gradien, glow, font, latar bermotif, badge, glassmorphism, bayangan, animasi, atau ilustrasi. Ikon di sini bukan hiasan: ia menggantikan teks aksi yang sudah ada                                             |
 
 **Block 3: Liveliness**
 
-| Pertanyaan | Hasil | Bukti |
-| --- | --- | --- |
-| Dial eksplisit | PASS | `DESIGN.md` §2.1: ENERGY 1 / RHYTHM 2 / MOTION 1 |
-| Konsisten dengan dial | PASS | RHYTHM 2: shell uniform, isi layar bervariasi; toolbar yang dirapatkan mengikuti bentuk `/providers` (PORT 002), bukan pola baru |
-| Satu focal point per layar | PASS | Toolbar: New combo adalah aksi utama (aksen penuh); aksi baris deferred ke glyph muted, Delete danger |
-| Whitespace struktural | PASS | Gap 2/4/5 tetap dari skala `DESIGN.md` §7; yang berubah hanya pengelompokan, bukan jarak |
-| Satu aksen sengaja | PASS | Aksen hanya pada aksi utama (New combo, Save), tidak disebar ke glyph aksi baris |
-| Motif identitas | PASS | Bentuk glyph + label untuk kontrol berdiri dan icon-only + `aria-label`/`title` untuk aksi baris, dipakai ulang dari PORT 001/002 |
-| Design Read dideklarasikan | PASS | `DESIGN.md` §1: "instrument style dengan satu aksen coral" |
+| Pertanyaan                 | Hasil | Bukti                                                                                                                             |
+| -------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Dial eksplisit             | PASS  | `DESIGN.md` §2.1: ENERGY 1 / RHYTHM 2 / MOTION 1                                                                                  |
+| Konsisten dengan dial      | PASS  | RHYTHM 2: shell uniform, isi layar bervariasi; toolbar yang dirapatkan mengikuti bentuk `/providers` (PORT 002), bukan pola baru  |
+| Satu focal point per layar | PASS  | Toolbar: New combo adalah aksi utama (aksen penuh); aksi baris deferred ke glyph muted, Delete danger                             |
+| Whitespace struktural      | PASS  | Gap 2/4/5 tetap dari skala `DESIGN.md` §7; yang berubah hanya pengelompokan, bukan jarak                                          |
+| Satu aksen sengaja         | PASS  | Aksen hanya pada aksi utama (New combo, Save), tidak disebar ke glyph aksi baris                                                  |
+| Motif identitas            | PASS  | Bentuk glyph + label untuk kontrol berdiri dan icon-only + `aria-label`/`title` untuk aksi baris, dipakai ulang dari PORT 001/002 |
+| Design Read dideklarasikan | PASS  | `DESIGN.md` §1: "instrument style dengan satu aksen coral"                                                                        |
 
 **Block 4: Craftsmanship & Quality Locks**
 
-| Aturan | Hasil | Bukti |
-| --- | --- | --- |
-| C-1 intentionality | PASS | Setiap keputusan punya satu baris alasan (§3 D1-D6); yang tidak bisa ditulis alasan tidak dikerjakan (D4) |
-| C-2 functional completeness | PASS | Setiap kontrol baru diklik hidup (§7.2) |
-| C-3 content-driven | PASS | Tidak ada seksi baru; yang dikerjakan adalah bentuk ulang kontrol yang sudah ada |
-| C-4 resilience | PASS | Tiga state, dua tema, 390 px, dan keyboard diuji (§7.2, ditambah probe keyboard 7/7 di §7.4) |
-| C-5 evidence over claims | PASS | Seluruh angka pass ini berasal dari pengukuran; kegagalan kontensi yang terlihat dicatat apa adanya (§7.3) |
-| R-05, R-11, R-15, R-16, R-20, R-21, R-29, R-30, R-31 | PASS | Tidak ada template layout, CTA marketing, buzzword, atau klon produk yang ditambahkan; radius, palet, dan tema tetap dari `DESIGN.md`; setiap entri ikon baru punya alasan tertulis (R-31) |
+| Aturan                                               | Hasil | Bukti                                                                                                                                                                                      |
+| ---------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| C-1 intentionality                                   | PASS  | Setiap keputusan punya satu baris alasan (§3 D1-D6); yang tidak bisa ditulis alasan tidak dikerjakan (D4)                                                                                  |
+| C-2 functional completeness                          | PASS  | Setiap kontrol baru diklik hidup (§7.2)                                                                                                                                                    |
+| C-3 content-driven                                   | PASS  | Tidak ada seksi baru; yang dikerjakan adalah bentuk ulang kontrol yang sudah ada                                                                                                           |
+| C-4 resilience                                       | PASS  | Tiga state, dua tema, 390 px, dan keyboard diuji (§7.2, ditambah probe keyboard 7/7 di §7.4)                                                                                               |
+| C-5 evidence over claims                             | PASS  | Seluruh angka pass ini berasal dari pengukuran; kegagalan kontensi yang terlihat dicatat apa adanya (§7.3)                                                                                 |
+| R-05, R-11, R-15, R-16, R-20, R-21, R-29, R-30, R-31 | PASS  | Tidak ada template layout, CTA marketing, buzzword, atau klon produk yang ditambahkan; radius, palet, dan tema tetap dari `DESIGN.md`; setiap entri ikon baru punya alasan tertulis (R-31) |
 
 ### 7.5 Residu
 
