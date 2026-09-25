@@ -14,7 +14,12 @@
 	//
 	// It is a plain button on purpose. There is no spinner and no "last read" stamp, because the screens
 	// already state both through their loading and error states, and a stamp written here could not tell a
-	// read that succeeded from one that failed.
+	// read that succeeded from one that failed. The glyph is the map's refresh mark (R-04, R-31): it is
+	// what the button does, not decoration, and it stays while the label reports the read in flight.
+	import { CONTROL_ICONS } from '$lib/icons';
+
+	const RefreshIcon = CONTROL_ICONS.refresh.icon;
+
 	let { onrefresh }: { onrefresh: () => void | Promise<void> } = $props();
 
 	let busy = $state(false);
@@ -36,7 +41,10 @@
 <div class="flex flex-wrap items-center gap-3">
 	<button
 		type="button"
-		class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-		onclick={run}>{busy ? 'Refreshing' : 'Refresh now'}</button
+		class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+		onclick={run}
 	>
+		<RefreshIcon class="size-4" aria-hidden="true" />
+		{busy ? 'Refreshing' : 'Refresh now'}
+	</button>
 </div>

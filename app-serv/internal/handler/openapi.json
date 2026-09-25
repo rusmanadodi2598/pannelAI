@@ -6048,6 +6048,16 @@
             }
           },
           {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Case-insensitive substring filter over provider id and display name. Blank or absent means no filter; more than 120 characters is refused.",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,

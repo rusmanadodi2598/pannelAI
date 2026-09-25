@@ -7,6 +7,7 @@
 	// operator copies into a client. Without a prefix there is no such string, so the column is absent
 	// rather than empty.
 	import CopyButton from '$lib/components/CopyButton.svelte';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { customModelLabel, type CustomModel } from '$lib/schemas/custom-model';
 	import { formatTimestamp } from '$lib/utils/time';
 
@@ -22,6 +23,11 @@
 		removing: boolean;
 		onremove: (row: CustomModel) => void;
 	} = $props();
+
+	// Icon-only like every other row action (SPEC-UI §8.11.9); "Remove" is the owner's own word for
+	// taking a declared model out of the catalog, so the accessible name keeps that word rather than
+	// "Delete".
+	const RemoveIcon = ROW_ACTION_ICONS.remove.icon;
 
 	const prefix = $derived(nodePrefix !== undefined && nodePrefix !== '' ? nodePrefix : null);
 </script>
@@ -73,10 +79,14 @@
 					<td class="px-3 py-2 text-end">
 						<button
 							type="button"
-							class="min-h-11 underline disabled:opacity-50"
+							class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50"
+							aria-label="Remove"
+							title="Remove"
 							disabled={removing}
-							onclick={() => onremove(row)}>Remove</button
+							onclick={() => onremove(row)}
 						>
+							<RemoveIcon class="size-4" aria-hidden="true" />
+						</button>
 					</td>
 				</tr>
 			{/each}

@@ -9,6 +9,7 @@
 	// A row shows the model id rather than a display name. The catalog cannot name a row it hides, and the
 	// id is what the API stores and keys on, so it is the honest thing to show.
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import { disabledRefKey, type DisabledRef } from '$lib/schemas/model-disabled';
 
@@ -21,6 +22,11 @@
 		disabled: ModelDisabledStore;
 		onchanged: () => void;
 	} = $props();
+
+	// The one action a row has, rendered like every other row action: icon-only, the name in the
+	// button, the glyph decorative (SPEC-UI §8.11.9). "Enabling" keeps the read honest while the write
+	// is in flight, so the label stays the busy state's home even though it is not visible.
+	const EnableIcon = ROW_ACTION_ICONS.enable.icon;
 
 	const mine = $derived(disabled.mine(providerId));
 	const mineKeys = $derived(new Set(mine.map((ref) => disabledRefKey(ref))));
@@ -81,11 +87,13 @@
 							<td class="px-3 py-2 text-end">
 								<button
 									type="button"
-									class="min-h-11 underline disabled:opacity-50"
+									class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50"
+									aria-label={disabled.saving === disabledRefKey(ref) ? 'Enabling' : 'Enable'}
+									title="Enable"
 									disabled={disabled.saving !== null}
 									onclick={() => enable(ref)}
 								>
-									{disabled.saving === disabledRefKey(ref) ? 'Enabling' : 'Enable'}
+									<EnableIcon class="size-4" aria-hidden="true" />
 								</button>
 							</td>
 						</tr>

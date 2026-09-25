@@ -22,6 +22,7 @@
 	import CreateEndpointForm from '$lib/components/CreateEndpointForm.svelte';
 	import ProviderEndpoints from '$lib/components/ProviderEndpoints.svelte';
 	import ProviderRotationSwitch from '$lib/components/ProviderRotationSwitch.svelte';
+	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import { REQUIRES_KEY_AUTH_TYPES } from '$lib/schemas/endpoint-write';
 	import type { ProviderDetail } from '$lib/schemas/provider';
 
@@ -38,6 +39,11 @@
 		notice?: string | null;
 		onaddkey: () => void;
 	} = $props();
+
+	const AddKeyIcon = CONTROL_ICONS.addKey.icon;
+	const CheckIcon = ROW_ACTION_ICONS.save.icon;
+	const AddIcon = CONTROL_ICONS.add.icon;
+	const CancelIcon = CONTROL_ICONS.clear.icon;
 
 	// A key is only meaningful where the provider's own auth type takes one. For an OAuth provider the
 	// dialog would ask for a credential the provider does not use, and the path that fits is the endpoint
@@ -59,16 +65,26 @@
 			{#if offersKeys}
 				<button
 					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
-					onclick={onaddkey}>Add API Key</button
+					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
+					onclick={onaddkey}
 				>
+					<AddKeyIcon class="size-4" aria-hidden="true" />
+					Add API Key
+				</button>
 			{:else}
 				<button
 					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
+					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
 					onclick={() => (creating = !creating)}
-					>{creating ? 'Hide the form' : 'Add a connection'}</button
 				>
+					{#if creating}
+						<CancelIcon class="size-4" aria-hidden="true" />
+						Hide the form
+					{:else}
+						<AddIcon class="size-4" aria-hidden="true" />
+						Add a connection
+					{/if}
+				</button>
 			{/if}
 		</div>
 	</div>
@@ -82,8 +98,13 @@
 			}}
 		/>
 	{/if}
+	<!-- The page hands this section the last add's outcome, which is always a success (the dialog only
+	     reports one), so the Check glyph marks a real state rather than decorating the line. -->
 	{#if notice}
-		<p class="text-sm" role="status">{notice}</p>
+		<p class="inline-flex items-center gap-1.5 text-sm" role="status">
+			<CheckIcon class="size-4" aria-hidden="true" />
+			{notice}
+		</p>
 	{/if}
 	{#if createMessage}
 		<p class="text-sm" role="status">{createMessage}</p>

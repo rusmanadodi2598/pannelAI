@@ -13,6 +13,7 @@ import { cleanup, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { nodeRow, stubProviderNodes } from '../support/provider-node-stub';
 import { dialogOf, renderCard, type } from '../support/custom-provider-card-harness';
+import { expectIconOnly } from '../support/icon-only';
 import { squashed } from '../support/dom';
 
 // Typed with the one argument `goto` takes, so the mock's call site type-checks and the assertion below can
@@ -75,6 +76,19 @@ describe('testing a custom provider', () => {
 
 		await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
 		expect(squashed(screen.getByRole('alert'))).toContain('The test did not run.');
+	});
+});
+
+describe("the card's verb actions", () => {
+	// Both are icon-only since 2026-09-25 (PORT 002 D4): the shared contract is that the button keeps the
+	// action's name for the screen reader and the tooltip while the glyph stays decorative.
+	it('renders Edit and Delete without visible text, with their names kept', async () => {
+		const stub = stubProviderNodes({ nodes: [nodeRow()] });
+		renderCard(stub);
+		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
+
+		expectIconOnly(screen.getByRole('button', { name: 'Edit' }), 'Edit');
+		expectIconOnly(screen.getByRole('button', { name: 'Delete' }), 'Delete');
 	});
 });
 

@@ -13,9 +13,13 @@
 	import EndpointTable from '$lib/components/EndpointTable.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listEndpoints } from '$lib/api/endpoints';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import type { Endpoint } from '$lib/schemas/endpoint';
 
 	let { providerId, token = 0 }: { providerId: string; token?: number } = $props();
+
+	const PreviousIcon = CONTROL_ICONS.previous.icon;
+	const NextIcon = CONTROL_ICONS.next.icon;
 
 	const PAGE_SIZE = 25;
 
@@ -86,23 +90,29 @@
 		<div class="flex items-center gap-3 text-sm">
 			<button
 				type="button"
-				class="underline disabled:opacity-50"
+				class="inline-flex min-h-11 items-center gap-1 underline disabled:opacity-50"
 				disabled={pageNumber <= 1}
 				onclick={() => {
 					pageNumber -= 1;
 					void load(providerId);
-				}}>Previous</button
+				}}
 			>
+				<PreviousIcon class="size-4" aria-hidden="true" />
+				Previous
+			</button>
 			<span class="text-[var(--color-text-muted)]">Page {pageNumber} of {lastPage}</span>
 			<button
 				type="button"
-				class="underline disabled:opacity-50"
+				class="inline-flex min-h-11 items-center gap-1 underline disabled:opacity-50"
 				disabled={pageNumber >= lastPage}
 				onclick={() => {
 					pageNumber += 1;
 					void load(providerId);
-				}}>Next</button
+				}}
 			>
+				Next
+				<NextIcon class="size-4" aria-hidden="true" />
+			</button>
 		</div>
 	{/if}
 </div>

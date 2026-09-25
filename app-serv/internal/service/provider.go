@@ -65,6 +65,10 @@ func NewProviderService(deps ProviderServiceDeps) (*ProviderService, error) {
 type ProviderFilter struct {
 	Category    string
 	Routability string
+	// Q is the free-text search over id and display name, matched as a
+	// case-insensitive substring. A blank value narrows nothing, which is what
+	// an empty search box means (PORT 002 D2).
+	Q string
 }
 
 // ProviderRow is one provider with its stored state roll-up.
@@ -78,7 +82,9 @@ type ProviderRow struct {
 // Category is matched against the measured set rather than a hardcoded list: an
 // unknown category is a VALIDATION_ERROR here, so a client asking for a category
 // the registry does not use learns it is unknown instead of receiving an empty
-// page it would read as "no such provider".
+// page it would read as "no such provider". The free-text term is folded once
+// here and then matched per entry; total is the filtered count, so the paging
+// window can never reach a row the filter removed.
 func (s *ProviderService) List(ctx context.Context, filter ProviderFilter, page, perPage int) ([]ProviderRow, int64, error) {
 	providers, err := s.entries(filter, true)
 	if err != nil {
@@ -156,6 +162,7 @@ func (s *ProviderService) entries(filter ProviderFilter, excludeHidden bool) ([]
 	}
 
 	out := make([]registry.Provider, 0, len(providers))
+	needle := strings.ToLower(strings.TrimSpace(filter.Q))
 	for _, entry := range providers {
 		if excludeHidden && entry.Hidden {
 			continue
@@ -164,6 +171,9 @@ func (s *ProviderService) entries(filter ProviderFilter, excludeHidden bool) ([]
 			continue
 		}
 		if filter.Routability != "" && entry.ChatRoutability() != filter.Routability {
+			continue
+		}
+		if !matchesQuery(entry, needle) {
 			continue
 		}
 		out = append(out, entry)
@@ -212,4 +222,21 @@ func containsString(values []string, target string) bool {
 		}
 	}
 	return false
+}
+
+// matchesQuery reports whether a provider answers to the search term, which the
+// caller has already trimmed and folded to lower case.
+//
+// It compares the two fields the panel shows: the id an operator matches
+// against a log line and the display name it reads first. Aliases are
+// deliberately not searched, because a row matching a string the table never
+// shows would read as a hit the operator cannot verify (PORT 002 D7).
+func matchesQuery(entry registry.Provider, needle string) bool {
+	if needle == "" {
+		return true
+	}
+	if strings.Contains(strings.ToLower(entry.ID), needle) {
+		return true
+	}
+	return strings.Contains(strings.ToLower(entry.Display.Name), needle)
 }

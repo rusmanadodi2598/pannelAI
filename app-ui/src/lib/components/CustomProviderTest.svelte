@@ -9,8 +9,11 @@
 	// the result is stored nowhere: a node has no `test_status` column, so this is an answer to a question
 	// and not a state of the object.
 	import { testProviderNode } from '$lib/api/provider-nodes';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { nodeTestStateLabel, type ProviderNodeProbe } from '$lib/schemas/provider-node';
 	import { formatTimestamp } from '$lib/utils/time';
+
+	const TestIcon = ROW_ACTION_ICONS.test.icon;
 
 	let { providerId }: { providerId: string } = $props();
 
@@ -53,10 +56,13 @@
 		</label>
 		<button
 			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-50"
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-50"
 			disabled={testing}
-			onclick={run}>{testing ? 'Testing' : 'Test the endpoint'}</button
+			onclick={run}
 		>
+			<TestIcon class="size-4" aria-hidden="true" />
+			{testing ? 'Testing' : 'Test the endpoint'}
+		</button>
 	</div>
 
 	{#if error}

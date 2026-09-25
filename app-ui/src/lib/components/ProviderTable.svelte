@@ -5,9 +5,17 @@
 	// have a working account. The name carries the id beneath it because the registry has both and an
 	// operator matching a log line needs the id, not the display name. A provider with no endpoint links
 	// straight to the create form for that provider, which is the one action its row can offer.
+	//
+	// The two row actions are links rather than buttons, because both navigate: the glyph rides beside the
+	// label (CONTROL_ICONS.open, CONTROL_ICONS.add), the way the reference renders its own provider rows'
+	// actions, and the label stays because a link's name is what the operator reads.
 	import { resolve } from '$app/paths';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import { AUTH_TYPE_LABELS } from '$lib/schemas/endpoint';
 	import { statusSummaryText, type Provider } from '$lib/schemas/provider';
+
+	const OpenIcon = CONTROL_ICONS.open.icon;
+	const AddIcon = CONTROL_ICONS.add.icon;
 
 	let { providers }: { providers: Provider[] } = $props();
 </script>
@@ -38,16 +46,22 @@
 					<td class="px-3 py-2 tabular-nums">{provider.endpoint_count}</td>
 					<td class="px-3 py-2">{statusSummaryText(provider.status_summary)}</td>
 					<td class="px-3 py-2">
-						<div class="flex flex-wrap gap-2">
+						<div class="flex flex-wrap items-center gap-2">
 							<a
 								href={resolve('/providers/[provider_id]', { provider_id: provider.id })}
-								class="min-h-11 content-center underline">Open</a
+								class="inline-flex min-h-11 items-center gap-1 underline"
 							>
+								<OpenIcon class="size-4" aria-hidden="true" />
+								Open
+							</a>
 							{#if provider.endpoint_count === 0}
 								<a
 									href={resolve('/providers/[provider_id]', { provider_id: provider.id })}
-									class="min-h-11 content-center underline">Add endpoint</a
+									class="inline-flex min-h-11 items-center gap-1 underline"
 								>
+									<AddIcon class="size-4" aria-hidden="true" />
+									Add endpoint
+								</a>
 							{/if}
 						</div>
 					</td>

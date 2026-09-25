@@ -16,12 +16,15 @@
 	import { resolve } from '$app/paths';
 	import CustomProviderDialog from '$lib/components/CustomProviderDialog.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import {
 		nodeEndpointLabel,
 		nodeEndpointUrl,
 		type NodeType,
 		type ProviderNode
 	} from '$lib/schemas/provider-node';
+
+	const AddIcon = CONTROL_ICONS.add.icon;
 
 	let {
 		nodes,
@@ -59,14 +62,20 @@
 		<div class="flex flex-wrap gap-2">
 			<button
 				type="button"
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-				onclick={() => add('anthropic-compatible')}>Add Anthropic Compatible</button
+				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+				onclick={() => add('anthropic-compatible')}
 			>
+				<AddIcon class="size-4" aria-hidden="true" />
+				Add Anthropic Compatible
+			</button>
 			<button
 				type="button"
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-				onclick={() => add('openai-compatible')}>Add OpenAI Compatible</button
+				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+				onclick={() => add('openai-compatible')}
 			>
+				<AddIcon class="size-4" aria-hidden="true" />
+				Add OpenAI Compatible
+			</button>
 		</div>
 	</div>
 

@@ -16,6 +16,7 @@
 	import { listProviderModels } from '$lib/api/providers';
 	import { customModelBody, type CustomModel } from '$lib/schemas/custom-model';
 	import { ENDPOINT_STATUS_DISABLED } from '$lib/schemas/endpoint';
+	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 
 	let {
 		providerId,
@@ -28,9 +29,16 @@
 		onimported: (rows: CustomModel[]) => void;
 	} = $props();
 
+	// The control keeps its label and gains the glyph beside it; the success notice renders the Check
+	// glyph from the same map rather than a tick character typed into the string (PORT 002 D6).
+	const ImportIcon = CONTROL_ICONS.import.icon;
+	const CheckIcon = ROW_ACTION_ICONS.save.icon;
+
 	let importing = $state(false);
 	let blocked = $state(false);
 	let notice = $state<string | null>(null);
+	// Whether the last notice was a full success, which is what the Check glyph marks.
+	let noticeOk = $state(false);
 	let error = $state<string | null>(null);
 	/** The gateway's own sentence for a list that is not the upstream's, when it sends one. */
 	let warning = $state<string | null>(null);
@@ -100,12 +108,13 @@
 		importing = false;
 		if (added.length > 0) onimported(added);
 
+		noticeOk = refusal === null && added.length > 0;
 		if (refusal === null) {
-			notice = `✓ ${added.length} imported.`;
+			notice = `${added.length} imported.`;
 		} else if (added.length === 0) {
 			notice = `Nothing was imported. The gateway refused ${refusal}`;
 		} else {
-			notice = `✓ ${added.length} imported, then the gateway refused ${refusal}`;
+			notice = `${added.length} imported, then the gateway refused ${refusal}`;
 		}
 	}
 </script>
@@ -113,10 +122,13 @@
 <div class="flex flex-wrap items-center gap-3">
 	<button
 		type="button"
-		class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 disabled:opacity-50"
+		class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 disabled:opacity-50"
 		disabled={importing || blocked}
-		onclick={() => void run()}>{importing ? 'Importing' : 'Import from /models'}</button
+		onclick={() => void run()}
 	>
+		<ImportIcon class="size-4" aria-hidden="true" />
+		{importing ? 'Importing' : 'Import from /models'}
+	</button>
 
 	{#if blocked}
 		<span class="text-sm text-[var(--color-text-muted)]">
@@ -129,7 +141,12 @@
 	{/if}
 
 	{#if notice}
-		<span class="text-sm" role="status">{notice}</span>
+		<span class="inline-flex items-center gap-1.5 text-sm" role="status">
+			{#if noticeOk}
+				<CheckIcon class="size-4" aria-hidden="true" />
+			{/if}
+			{notice}
+		</span>
 	{/if}
 
 	{#if error}

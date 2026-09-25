@@ -16,6 +16,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/svelt
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.svelte';
 import { catalogRow, stubModels, type ModelStub } from '../support/model-stub';
+import { expectIconOnly } from '../support/icon-only';
 import { squashed } from '../support/dom';
 import { forEachCase } from '../support/tables';
 
@@ -83,11 +84,12 @@ async function outcomeRegion(text: string | RegExp): Promise<HTMLElement> {
 }
 
 describe('the catalog', () => {
-	it('offers a Disable action on every row it lists', async () => {
+	it('offers a Disable action on every row it lists, rendered icon-only', async () => {
 		renderProvider();
 		await waitForCatalog();
 
-		expect(within(rowFor('gpt-4o')).getByRole('button', { name: 'Disable' })).toBeTruthy();
+		// Icon-only since 2026-09-25 (PORT 002 D7): the contract is shared with the key tables.
+		expectIconOnly(within(rowFor('gpt-4o')).getByRole('button', { name: 'Disable' }), 'Disable');
 		expect(within(rowFor('gpt-4o-mini')).getByRole('button', { name: 'Disable' })).toBeTruthy();
 	});
 
@@ -166,6 +168,7 @@ describe('the disabled list', () => {
 			expect(screen.getByRole('table', { name: /disabled for this provider/i })).toBeTruthy()
 		);
 
+		expectIconOnly(screen.getByRole('button', { name: 'Enable' }), 'Enable');
 		screen.getByRole('button', { name: 'Enable' }).click();
 
 		await waitFor(() => expect(stub.disabledWrites).toEqual([[]]));

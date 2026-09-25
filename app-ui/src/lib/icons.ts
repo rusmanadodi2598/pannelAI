@@ -21,8 +21,11 @@ import {
 	Binary,
 	ChartLine,
 	Check,
+	ChevronLeft,
+	ChevronRight,
 	CircleGauge,
 	Copy,
+	Download,
 	Film,
 	History,
 	Image,
@@ -34,6 +37,8 @@ import {
 	Pause,
 	Pencil,
 	Play,
+	Plus,
+	RefreshCw,
 	Scissors,
 	ScrollText,
 	Search,
@@ -102,25 +107,31 @@ export const STATUS_ICONS = {
 } as const;
 
 /**
- * The row actions of the Endpoint & Key tables.
+ * The row actions of the Endpoint & Key tables and the provider detail screens.
  *
  * Every button that uses one of these is icon-only, so the button's own `aria-label` carries the
  * action's name and the glyph stays decorative. The reasons say what each shape has to communicate,
- * which is the part a reviewer checks (R-04, R-31).
+ * which is the part a reviewer checks (R-04, R-31). The verb reasons read "row" rather than "key"
+ * because the same actions serve the provider screens: a disabled row is a key or a model, and the
+ * glyph means the same thing on both.
  */
 export const ROW_ACTION_ICONS = {
 	rename: {
 		icon: Pencil,
 		reason: 'Renaming edits the stored name in place, which is what a pencil marks.'
 	},
+	edit: {
+		icon: Pencil,
+		reason: 'Editing opens the form that changes the stored fields of a row or a node.'
+	},
 	disable: {
 		icon: Pause,
 		reason:
-			'Disabling stops a credential from being spent without destroying it, which is what pause means.'
+			'Disabling pauses a row without destroying it: the gateway stops spending the credential or routing the model, which is what pause means.'
 	},
 	enable: {
 		icon: Play,
-		reason: 'Enabling resumes a credential that was paused, the same control read the other way.'
+		reason: 'Enabling resumes a row that was paused, the same control read the other way.'
 	},
 	test: {
 		icon: Activity,
@@ -128,31 +139,73 @@ export const ROW_ACTION_ICONS = {
 	},
 	delete: {
 		icon: Trash2,
-		reason: 'Deleting takes a key off the screen for good, which is what the bin marks.'
+		reason: 'Deleting takes the row off the screen for good, which is what the bin marks.'
+	},
+	remove: {
+		icon: Trash2,
+		reason: 'Removing takes a declared custom model out of the catalog.'
 	},
 	save: {
 		icon: Check,
-		reason: 'Saving commits the name being edited in the row.'
+		reason: 'Saving commits the edit the form or the row holds.'
 	},
 	cancel: {
 		icon: X,
-		reason: 'Cancelling leaves the stored name as it was.'
+		reason: 'Cancelling leaves the stored values as they were.'
 	}
 } as const;
 
 export type RowAction = keyof typeof ROW_ACTION_ICONS;
 
 /**
- * The controls that are not rows.
+ * The controls that are not row actions.
  *
- * The copy control is the first of these: it carries no visible label in the modals, so its name lives
- * in the button's `aria-label` and the glyph stays decorative, the same contract the row actions
- * follow (R-04, R-31).
+ * The copy control is the oldest of these: it carries no visible label in the modals, so its name lives
+ * in the button's `aria-label` and the glyph stays decorative, the same contract the row actions follow
+ * (R-04, R-31). The rest are the provider screens' toolbar and navigation controls; those keep a visible
+ * label and gain the glyph beside it, which is the reference's own button shape (`providers/[id]/page.js`
+ * renders every action as icon + label).
  */
 export const CONTROL_ICONS = {
 	copy: {
 		icon: Copy,
 		reason: 'Copying puts the value on the clipboard, which is what the two stacked sheets mark.'
+	},
+	search: {
+		icon: Search,
+		reason: 'Search asks the list for the rows matching what was typed.'
+	},
+	refresh: {
+		icon: RefreshCw,
+		reason: 'Refreshing re-reads the same set, which the circular arrow marks.'
+	},
+	previous: {
+		icon: ChevronLeft,
+		reason: 'Previous moves one step back through an ordered, paged set.'
+	},
+	next: {
+		icon: ChevronRight,
+		reason: 'Next moves one step forward through an ordered, paged set.'
+	},
+	add: {
+		icon: Plus,
+		reason: 'Adding starts one more of the kind the control sits beside.'
+	},
+	addKey: {
+		icon: KeyRound,
+		reason: 'Adding a key stores one more credential the gateway can spend for this provider.'
+	},
+	import: {
+		icon: Download,
+		reason: 'Importing pulls the model list that the node itself answers.'
+	},
+	open: {
+		icon: ChevronRight,
+		reason: 'Opening a row moves one step into the screen that row owns.'
+	},
+	clear: {
+		icon: X,
+		reason: 'Clearing empties the filters, which the cross marks.'
 	}
 } as const;
 

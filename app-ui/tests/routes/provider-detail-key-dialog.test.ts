@@ -94,7 +94,7 @@ describe('adding one key', () => {
 		});
 		expect(stub.endpointBulkCreates).toEqual([]);
 
-		expect(await screen.findByText('✓ Primary added.')).toBeTruthy();
+		expect(await screen.findByText('Primary added.')).toBeTruthy();
 
 		// The page bumped the section's token, so the row the API just stored is in the table. This is the
 		// half a dialog-only test cannot hold.
@@ -143,7 +143,7 @@ describe('adding a pasted list', () => {
 		});
 		expect(stub.endpointCreates).toEqual([]);
 
-		expect(await screen.findByText('✓ 2 added.')).toBeTruthy();
+		expect(await screen.findByText('2 added.')).toBeTruthy();
 
 		const table = await screen.findByRole('table', { name: /Upstream endpoints/ });
 		expect(within(table).getByText('production')).toBeTruthy();

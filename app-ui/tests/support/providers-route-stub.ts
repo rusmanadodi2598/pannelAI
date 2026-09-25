@@ -79,8 +79,24 @@ export function stubProviders(options: StubOptions = {}): ProvidersStub {
 			);
 		}
 
-		const category = new URL(url, 'http://panel.test').searchParams.get('category');
-		const matching = category ? rows.filter((row) => row.category === category) : rows;
+		const params = new URL(url, 'http://panel.test').searchParams;
+		const category = params.get('category');
+		const query = params.get('q');
+		// Both filters narrow the way the API does: category by equality, the search term as a
+		// case-insensitive substring of the id or the name (PORT 002 D1). A screen that filtered in the
+		// browser would send no parameter and fail the cases that check the query.
+		const matching = rows.filter((row) => {
+			if (category && row.category !== category) return false;
+			if (query) {
+				const needle = query.toLowerCase();
+				const id = String(row.id ?? '');
+				const name = String(row.name ?? '');
+				if (!id.toLowerCase().includes(needle) && !name.toLowerCase().includes(needle)) {
+					return false;
+				}
+			}
+			return true;
+		});
 
 		return new Response(
 			JSON.stringify({

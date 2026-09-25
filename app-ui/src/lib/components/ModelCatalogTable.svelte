@@ -8,6 +8,7 @@
 	// Every row here is enabled, because the merged catalog excludes disabled models. That is what makes
 	// the row action one-way: turning a model back on happens in the disabled list, which is the only
 	// place a disabled model is visible.
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { catalogModelLabel, catalogSourceLabel, type CatalogModel } from '$lib/schemas/model';
 	import { disabledRefKey } from '$lib/schemas/model-disabled';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
@@ -21,6 +22,10 @@
 		disabled: ModelDisabledStore;
 		onchanged: () => void;
 	} = $props();
+
+	// Icon-only like every other row action (SPEC-UI §8.11.9): the table's own header names the column,
+	// the button names the action, and the glyph is decorative.
+	const DisableIcon = ROW_ACTION_ICONS.disable.icon;
 
 	const modelKeys = $derived(new Set(models.map((model) => disabledRefKey(model))));
 
@@ -83,11 +88,13 @@
 						<td class="px-3 py-2 text-end">
 							<button
 								type="button"
-								class="min-h-11 underline disabled:opacity-50"
+								class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50"
+								aria-label={disabled.saving === disabledRefKey(model) ? 'Disabling' : 'Disable'}
+								title="Disable"
 								disabled={disabled.saving !== null}
 								onclick={() => disable(model)}
 							>
-								{disabled.saving === disabledRefKey(model) ? 'Disabling' : 'Disable'}
+								<DisableIcon class="size-4" aria-hidden="true" />
 							</button>
 						</td>
 					</tr>

@@ -6,7 +6,11 @@
 	// back in the catalog rather than leaving nothing. An operator who believed the model itself was being
 	// deleted would not press this; one who knows a registry row reappears can decide.
 	import Modal from '$lib/components/Modal.svelte';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { customModelLabel, type CustomModel } from '$lib/schemas/custom-model';
+
+	const CancelIcon = ROW_ACTION_ICONS.cancel.icon;
+	const RemoveIcon = ROW_ACTION_ICONS.remove.icon;
 
 	let {
 		model,
@@ -42,13 +46,21 @@
 	{/if}
 
 	{#snippet footer()}
-		<button type="button" class="min-h-11 underline" onclick={oncancel}>Keep it</button>
 		<button
 			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[var(--color-accent-text)] disabled:opacity-50"
+			class="inline-flex min-h-11 items-center gap-2 underline"
+			onclick={oncancel}
+		>
+			<CancelIcon class="size-4" aria-hidden="true" />
+			Keep it
+		</button>
+		<button
+			type="button"
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[var(--color-accent-text)] disabled:opacity-50"
 			disabled={removing}
 			onclick={onconfirm}
 		>
+			<RemoveIcon class="size-4" aria-hidden="true" />
 			{removing ? 'Removing' : 'Remove the model'}
 		</button>
 	{/snippet}

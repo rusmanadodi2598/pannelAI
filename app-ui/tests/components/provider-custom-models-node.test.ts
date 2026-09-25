@@ -87,7 +87,7 @@ describe('importing from /models', () => {
 			display_name: 'GPT-4o',
 			capabilities: []
 		});
-		await waitFor(() => expect(screen.getByText('✓ 1 imported.')).toBeTruthy());
+		await waitFor(() => expect(screen.getByText('1 imported.')).toBeTruthy());
 		await waitFor(() => expect(changed).toBe(1));
 	});
 

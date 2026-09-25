@@ -12,6 +12,7 @@
 		type Endpoint
 	} from '$lib/schemas/endpoint';
 	import { schemaUpdateEndpointForm } from '$lib/schemas/endpoint-write';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 
 	let { endpoint, onsaved }: { endpoint: Endpoint; onsaved: (updated: Endpoint) => void } =
 		$props();
@@ -23,6 +24,8 @@
 	let priority = $state('');
 	let saving = $state(false);
 	let notice = $state<string | null>(null);
+
+	const SaveIcon = ROW_ACTION_ICONS.save.icon;
 
 	const active = $derived(endpoint.status === ENDPOINT_STATUS_ACTIVE);
 
@@ -106,9 +109,12 @@
 	<div>
 		<button
 			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-50"
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-50"
 			disabled={saving}
-			onclick={save}>Save endpoint</button
+			onclick={save}
 		>
+			<SaveIcon class="size-4" aria-hidden="true" />
+			Save endpoint
+		</button>
 	</div>
 </div>

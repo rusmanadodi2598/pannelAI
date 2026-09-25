@@ -9,6 +9,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/svelt
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.svelte';
 import { catalogRow, customRow, stubModels, type ModelStub } from '../support/model-stub';
+import { expectIconOnly } from '../support/icon-only';
 import { squashed, value } from '../support/dom';
 import { forEachCase } from '../support/tables';
 
@@ -239,6 +240,7 @@ describe('removing a custom model', () => {
 		renderProvider();
 		await waitForCustomTable();
 
+		expectIconOnly(screen.getByRole('button', { name: 'Remove' }), 'Remove');
 		screen.getByRole('button', { name: 'Remove' }).click();
 
 		const dialog = await screen.findByRole('dialog');

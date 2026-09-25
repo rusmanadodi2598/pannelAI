@@ -23,6 +23,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import ProviderNodeFacts from '$lib/components/ProviderNodeFacts.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import { deleteProviderNode, getProviderNode } from '$lib/api/provider-nodes';
 	import {
 		NODE_TYPE_LABELS,
@@ -32,6 +33,18 @@
 		type NodeType,
 		type ProviderNode
 	} from '$lib/schemas/provider-node';
+
+	// Add API Key keeps its label because it is the card's primary action; Edit and Delete are the two
+	// verb actions beside it, so they follow the panel's icon-only row-action contract (SPEC-UI §8.11.9):
+	// the glyph is decorative, and the button carries the name. Delete is the one that destroys the node,
+	// which is why it alone wears the danger colour.
+	const AddKeyIcon = CONTROL_ICONS.addKey.icon;
+	const EditIcon = ROW_ACTION_ICONS.edit.icon;
+	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
+
+	// One target size and one hover wash for the icon-only pair, so the two read as a set.
+	const iconActionBase =
+		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)]';
 
 	let {
 		providerId,
@@ -135,28 +148,39 @@
 				{#if onaddkey}
 					<button
 						type="button"
-						class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-						onclick={onaddkey}>Add API Key</button
+						class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+						onclick={onaddkey}
 					>
+						<AddKeyIcon class="size-4" aria-hidden="true" />
+						Add API Key
+					</button>
 				{/if}
 				<button
 					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+					class="{iconActionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+					aria-label="Edit"
+					title="Edit"
 					onclick={() => {
 						deleteError = null;
 						conflict = false;
 						editing = true;
-					}}>Edit</button
+					}}
 				>
+					<EditIcon class="size-4" aria-hidden="true" />
+				</button>
 				<button
 					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+					class="{iconActionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]"
+					aria-label="Delete"
+					title="Delete"
 					onclick={() => {
 						deleteError = null;
 						conflict = false;
 						confirming = true;
-					}}>Delete</button
+					}}
 				>
+					<DeleteIcon class="size-4" aria-hidden="true" />
+				</button>
 			</div>
 		</div>
 

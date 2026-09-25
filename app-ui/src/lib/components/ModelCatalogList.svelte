@@ -12,6 +12,7 @@
 	import ModelCatalogTable from '$lib/components/ModelCatalogTable.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listModelCatalog } from '$lib/api/models';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import {
 		CATALOG_CAPABILITY_FILTERS,
 		catalogQueryParams,
@@ -32,6 +33,9 @@
 		// enabling one brings it back, and a custom model joins it.
 		token?: number;
 	} = $props();
+
+	const SearchIcon = CONTROL_ICONS.search.icon;
+	const ClearIcon = CONTROL_ICONS.clear.icon;
 
 	let models = $state<CatalogModel[]>([]);
 	let loading = $state(true);
@@ -112,7 +116,10 @@
 					class="min-h-11 w-64 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
 				/>
 			</label>
-			<button type="submit" class="min-h-11 underline">Search</button>
+			<button type="submit" class="inline-flex min-h-11 items-center gap-2 underline">
+				<SearchIcon class="size-4" aria-hidden="true" />
+				Search
+			</button>
 		</form>
 
 		<div class="flex flex-wrap items-center gap-2">
@@ -126,9 +133,14 @@
 				>
 			{/each}
 			{#if filtered}
-				<button type="button" class="min-h-11 underline" onclick={clearFilters}
-					>Clear filters</button
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center gap-2 underline"
+					onclick={clearFilters}
 				>
+					<ClearIcon class="size-4" aria-hidden="true" />
+					Clear filters
+				</button>
 			{/if}
 		</div>
 	</div>

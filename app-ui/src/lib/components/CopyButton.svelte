@@ -123,9 +123,14 @@
 			<CopyIcon class="size-4" aria-hidden="true" />
 		</button>
 	{:else}
-		<button type="button" class="min-h-9 {BUTTON_BASE} px-2.5 text-xs" onclick={() => void write()}
-			>{label}</button
+		<button
+			type="button"
+			class="inline-flex min-h-9 items-center gap-1.5 {BUTTON_BASE} px-2.5 text-xs"
+			onclick={() => void write()}
 		>
+			<CopyIcon class="size-3.5" aria-hidden="true" />
+			{label}
+		</button>
 	{/if}
 
 	<span class="text-xs text-[var(--color-text-muted)]" role="status" aria-live="polite">

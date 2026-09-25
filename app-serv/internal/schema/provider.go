@@ -22,9 +22,14 @@ import (
 // ProviderListQuery is the decoded filter of GET /api/v1/providers. The
 // category is validated against the measured set rather than a hardcoded one,
 // because the reference treats category as an open string.
+//
+// Q is the free-text search over id and display name (PORT 002 D1). It is
+// bounded here rather than in the service, because a limit on external input
+// belongs with the DTO that describes it (AGENTS.md §1.4, §2.4).
 type ProviderListQuery struct {
 	Category    string `json:"category,omitempty"`
 	Routability string `json:"routability,omitempty" validate:"omitempty,oneof=native connector"`
+	Q           string `json:"q,omitempty" validate:"omitempty,max=120"`
 }
 
 // ProviderResponse is one provider row. StatusSummary reports how the stored

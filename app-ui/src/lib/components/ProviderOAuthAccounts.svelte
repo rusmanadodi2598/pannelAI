@@ -10,6 +10,7 @@
 	// accounts it moved and the operator should know which one they acted on. It is the same route either
 	// way: an id is what the API reads as "this one".
 	import { refreshProviderOAuth } from '$lib/api/providers';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import { oauthTokenState, type OAuthEndpointStatus } from '$lib/schemas/oauth';
 	import { formatTimestamp } from '$lib/utils/time';
 
@@ -23,6 +24,8 @@
 		/** Asks the section to re-read the status, because a refresh moves the state this table renders. */
 		onrefreshed: () => Promise<void>;
 	} = $props();
+
+	const RefreshIcon = CONTROL_ICONS.refresh.icon;
 
 	let refreshing = $state<string | null>(null);
 	let outcome = $state<{ ok: boolean; message: string } | null>(null);
@@ -97,10 +100,11 @@
 						<td class="px-3 py-2 text-end">
 							<button
 								type="button"
-								class="min-h-11 underline disabled:opacity-50"
+								class="inline-flex min-h-11 items-center gap-1.5 underline disabled:opacity-50"
 								disabled={refreshing !== null}
 								onclick={() => void refresh(endpoint.endpoint_id)}
 							>
+								<RefreshIcon class="size-4" aria-hidden="true" />
 								{refreshing === endpoint.endpoint_id ? 'Refreshing' : 'Refresh'}
 							</button>
 						</td>

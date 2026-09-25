@@ -126,16 +126,16 @@ export type ProviderModelList = z.infer<typeof schemaProviderModelList>;
 // list the API returns is authoritative, and a provider with a category outside this list still renders.
 export const PROVIDER_CATEGORIES = ['apikey', 'oauth', 'free', 'media', 'local'] as const;
 
-// The list query, matching exactly what the API reads: `category`, `routability`, and paging.
+// The list query, matching exactly what the API reads: `category`, `routability`, `q`, and paging.
 //
-// §6.3 also asks for a search over name and ID. The API does not accept one: `ProviderListQuery` declares
-// only category and routability, and the handler reads no other filter. §6.3's own pagination discipline
-// forbids the alternative of pulling the registry into a client-side filter, and R-26 forbids shipping a
-// search box that cannot search. So the control is absent until the API grows the parameter, which is
-// recorded as a gap rather than worked around here.
+// `q` is the free-text search §6.3 asks for, added server-side on 2026-09-25 (PORT 002 D1): the API
+// matches it as a case-insensitive substring over the id and the display name, so the panel sends what
+// was typed rather than filtering the registry in the browser, which §6.3's pagination discipline
+// forbids. The bound lives on the API side; the panel only stops sending an empty term.
 export const schemaProviderQuery = z.strictObject({
 	category: z.string().optional(),
-	routability: z.enum(['native', 'connector']).optional()
+	routability: z.enum(['native', 'connector']).optional(),
+	q: z.string().max(120).optional()
 });
 
 export type ProviderQuery = z.infer<typeof schemaProviderQuery>;

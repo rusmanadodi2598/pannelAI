@@ -17,6 +17,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
@@ -32,7 +33,13 @@ func NewProviderHandler(providers *service.ProviderService) *ProviderHandler {
 	return &ProviderHandler{providers: providers}
 }
 
-// List serves GET /api/v1/providers with the category and routability filters.
+// List serves GET /api/v1/providers with the category, routability, and
+// free-text filters.
+//
+// The search term is trimmed at the boundary, so an empty box means "everything"
+// rather than "match the empty string", and it is bounded here rather than in
+// the service because a limit on external input belongs where the input enters
+// (AGENTS.md §1.4).
 func (h *ProviderHandler) List(w http.ResponseWriter, r *http.Request) {
 	page, perPage, err := schema.DecodePage(r)
 	if err != nil {
@@ -43,10 +50,12 @@ func (h *ProviderHandler) List(w http.ResponseWriter, r *http.Request) {
 	filter := service.ProviderFilter{
 		Category:    query.Get("category"),
 		Routability: query.Get("routability"),
+		Q:           strings.TrimSpace(query.Get("q")),
 	}
-	if err := schema.ValidateStruct(struct {
-		Routability string `validate:"omitempty,oneof=native connector"`
-	}{Routability: filter.Routability}); err != nil {
+	if err := schema.ValidateStruct(schema.ProviderListQuery{
+		Routability: filter.Routability,
+		Q:           filter.Q,
+	}); err != nil {
 		schema.WriteError(w, err)
 		return
 	}

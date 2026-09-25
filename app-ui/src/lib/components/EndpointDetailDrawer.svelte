@@ -13,6 +13,7 @@
 	import EndpointFieldsForm from '$lib/components/EndpointFieldsForm.svelte';
 	import EndpointKeysTable from '$lib/components/EndpointKeysTable.svelte';
 	import Modal from '$lib/components/Modal.svelte';
+	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import {
 		deleteEndpointKey,
@@ -43,6 +44,9 @@
 	// that is not on screen is a leak.
 	const TICK_MS = 1000;
 	let now = $state(Date.now());
+
+	const TestIcon = ROW_ACTION_ICONS.test.icon;
+	const CloseIcon = CONTROL_ICONS.clear.icon;
 
 	const keys = $derived(detail?.keys ?? []);
 	const chosen = $derived(routingKey(keys));
@@ -151,10 +155,13 @@
 			<div class="flex flex-wrap items-center gap-3">
 				<button
 					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 disabled:opacity-50"
+					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 disabled:opacity-50"
 					disabled={testing !== null}
-					onclick={() => runTest()}>Test endpoint</button
+					onclick={() => runTest()}
 				>
+					<TestIcon class="size-4" aria-hidden="true" />
+					Test endpoint
+				</button>
 				{#if lastTest}
 					<span>
 						Test result: <span class="font-medium">{lastTest.state}</span>
@@ -202,8 +209,11 @@
 	{#snippet footer()}
 		<button
 			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-			onclick={onclose}>Close</button
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+			onclick={onclose}
 		>
+			<CloseIcon class="size-4" aria-hidden="true" />
+			Close
+		</button>
 	{/snippet}
 </Modal>

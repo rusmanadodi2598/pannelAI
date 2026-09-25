@@ -189,10 +189,12 @@
 			open={addingKey}
 			onadded={(added) => {
 				endpointToken += 1;
+				// The Check glyph rides beside this sentence in the Connections section; the string stays
+				// text so the screen reader reads one sentence, not a character and a half of decoration.
 				keyNotice =
 					added.count === 1 && added.label !== null
-						? `✓ ${added.label} added.`
-						: `✓ ${added.count} added.`;
+						? `${added.label} added.`
+						: `${added.count} added.`;
 			}}
 			onclose={() => (addingKey = false)}
 		/>

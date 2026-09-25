@@ -8,6 +8,7 @@
 	// The schema is the only validator (SPEC-UI §7.1). Its refusals are the API's own rules, so a save the
 	// panel blocks is a save the gateway would have rejected, and the messages say what to change.
 	import FormIssues from '$lib/components/FormIssues.svelte';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import { createCustomModel } from '$lib/api/models';
 	import {
 		CAPABILITY_MAX_ENTRIES,
@@ -16,6 +17,8 @@
 		schemaCustomModelForm,
 		type CustomModel
 	} from '$lib/schemas/custom-model';
+
+	const AddIcon = CONTROL_ICONS.add.icon;
 
 	let { providerId, onadded }: { providerId: string; onadded: (row: CustomModel) => void } =
 		$props();
@@ -89,9 +92,10 @@
 		</label>
 		<button
 			type="submit"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
 			disabled={adding}
 		>
+			<AddIcon class="size-4" aria-hidden="true" />
 			{adding ? 'Adding' : 'Add the model'}
 		</button>
 	</div>

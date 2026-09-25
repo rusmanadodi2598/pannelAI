@@ -11,10 +11,13 @@
 	// report it. For `oauth` and the no-auth spellings the endpoint is created empty and given keys from the
 	// detail drawer, which is the same code path either way.
 	import { createEndpoint } from '$lib/api/endpoints';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import { AUTH_TYPES, AUTH_TYPE_LABELS } from '$lib/schemas/endpoint';
 	import { REQUIRES_KEY_AUTH_TYPES, schemaCreateEndpointForm } from '$lib/schemas/endpoint-write';
 
 	let { providerId, oncreated }: { providerId: string; oncreated: () => void } = $props();
+
+	const AddIcon = CONTROL_ICONS.add.icon;
 
 	let label = $state('');
 	let authType = $state<string>('api_key');
@@ -111,9 +114,12 @@
 
 		<button
 			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-50"
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-50"
 			disabled={saving}
-			onclick={submit}>Add endpoint</button
+			onclick={submit}
 		>
+			<AddIcon class="size-4" aria-hidden="true" />
+			Add endpoint
+		</button>
 	</div>
 </div>

@@ -27,6 +27,7 @@
 	// has no counterpart in app-serv yet (measured 405; draft 017 F6), and a control that calls a route
 	// nothing serves is a dead control (R-26). The draft records it as the one gap this dialog still has.
 	import FormIssues from '$lib/components/FormIssues.svelte';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import Modal from '$lib/components/Modal.svelte';
 	import { createProviderNode, updateProviderNode } from '$lib/api/provider-nodes';
 	import {
@@ -62,6 +63,11 @@
 		onsaved: () => Promise<void>;
 		onclose: () => void;
 	} = $props();
+
+	// The footer's two controls: Cancel backs out, the accent-less one commits the form. Both keep their
+	// label and gain the glyph beside it, the same shape every dialog footer in the panel now holds.
+	const SaveIcon = ROW_ACTION_ICONS.save.icon;
+	const CancelIcon = ROW_ACTION_ICONS.cancel.icon;
 
 	const editing = $derived(target !== null && target !== 'new');
 	const node = $derived(target === null || target === 'new' ? null : target);
@@ -204,13 +210,21 @@
 	</div>
 
 	{#snippet footer()}
-		<button type="button" class="min-h-11 underline" onclick={onclose}>Cancel</button>
 		<button
 			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
+			class="inline-flex min-h-11 items-center gap-2 underline"
+			onclick={onclose}
+		>
+			<CancelIcon class="size-4" aria-hidden="true" />
+			Cancel
+		</button>
+		<button
+			type="button"
+			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
 			disabled={saving || draft.name.trim() === '' || draft.prefix.trim() === ''}
 			onclick={() => void submit()}
 		>
+			<SaveIcon class="size-4" aria-hidden="true" />
 			{saving ? 'Saving' : editing ? 'Save the provider' : 'Add the provider'}
 		</button>
 	{/snippet}
