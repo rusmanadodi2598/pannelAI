@@ -41,20 +41,6 @@ venv/
 .DS_Store
 Thumbs.db
 
-.agents/
-.claude
-.codex
-.omp
-.commandcode
-.pi
-.codebuddy
-.freebuff
-.opencode
-.zcode
-
-.codebuddy/
-graphify-out/
-
 # Local runtime output
 *.log
 tmp/
@@ -66,8 +52,21 @@ tmp/
 /package.json
 /pyproject.toml
 
-# Local anti-slop audit artifacts (never published)
-anti-slop/
-
 # Local dir's
 backups/
+anti-slop/
+graphify-out/
+
+# Local generate agent coding
+.agents/
+.claude
+.codex
+.omp
+.commandcode
+.pi
+.codebuddy
+.freebuff
+.opencode
+.zcode
+.superpowers
+.codebuddy/
