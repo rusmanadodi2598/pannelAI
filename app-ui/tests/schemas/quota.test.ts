@@ -91,6 +91,26 @@ describe('quota window', () => {
 		}
 	);
 
+	// A virtual endpoint (the credential-free lane) yields windows the gateway records without a
+	// provider: measured live 2026-09-25, 4 of 16 rows carried provider_id "". One such row used to
+	// refuse the whole list and blank the screen, so the field parses as a free string and the table
+	// states what a blank means (the provider-less group in QuotaCards).
+	forEachCase(
+		[
+			{ name: 'accepts a named provider', provider_id: 'anthropic', ok: true },
+			{
+				name: 'accepts a window the gateway recorded without a provider',
+				provider_id: '',
+				ok: true
+			}
+		],
+		(testCase) => {
+			expect(
+				schemaQuotaWindow.safeParse(window_({ provider_id: testCase.provider_id })).success
+			).toBe(testCase.ok);
+		}
+	);
+
 	it('rejects a reset instant that is not RFC3339', () => {
 		expect(schemaQuotaWindow.safeParse(window_({ resets_at: 'next month' })).success).toBe(false);
 	});

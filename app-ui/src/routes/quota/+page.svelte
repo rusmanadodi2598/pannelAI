@@ -12,7 +12,7 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import QuotaCaps from '$lib/components/QuotaCaps.svelte';
-	import QuotaTable from '$lib/components/QuotaTable.svelte';
+	import QuotaCards from '$lib/components/QuotaCards.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listEndpointLabels } from '$lib/api/endpoints';
 	import { listQuotaWindows } from '$lib/api/usage';
@@ -117,34 +117,40 @@
 		</p>
 	</div>
 
-	<div class="flex flex-wrap items-center gap-3">
-		<!-- Not disabled while a read is in flight: load() itself allows one read at a time, so the control
-		     always asks and the guard decides. A disabled gate here would swallow the click when a poll is
-		     mid-flight, which reads as a broken button. -->
-		<button
-			type="button"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-			onclick={() => void load()}>Refresh now</button
-		>
+	<!-- One compact row for what the operator reaches for together (owner directive, 2026-09-25): the
+	     status sentence and the two refresh controls share one baseline, and the row wraps as a block
+	     on a narrow screen. The buttons are text-only on purpose: icons are not this pass's scope, and
+	     the icon map is carrying another pass's uncommitted entries. -->
+	<div class="flex flex-wrap items-stretch justify-between gap-2">
+		<p class="flex min-w-0 flex-1 items-center text-sm text-[var(--color-text-muted)]">
+			{#if paused}
+				Refresh is paused. The countdowns keep ticking.
+			{:else}
+				This table refreshes {pollIntervalLabel(QUOTA_POLL_MS)} and stops while the tab is hidden.
+			{/if}
+			{#if readAt}
+				Last read {formatTimestamp(readAt)}.
+			{/if}
+		</p>
 
-		<button
-			type="button"
-			aria-pressed={paused}
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm aria-pressed:bg-[var(--color-surface-2)]"
-			onclick={() => (paused = !paused)}>{paused ? 'Resume refresh' : 'Pause refresh'}</button
-		>
+		<div class="flex flex-wrap items-stretch gap-2">
+			<!-- Not disabled while a read is in flight: load() itself allows one read at a time, so the control
+			     always asks and the guard decides. A disabled gate here would swallow the click when a poll is
+			     mid-flight, which reads as a broken button. -->
+			<button
+				type="button"
+				class="inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+				onclick={() => void load()}>Refresh now</button
+			>
+
+			<button
+				type="button"
+				aria-pressed={paused}
+				class="inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm aria-pressed:bg-[var(--color-surface-2)]"
+				onclick={() => (paused = !paused)}>{paused ? 'Resume refresh' : 'Pause refresh'}</button
+			>
+		</div>
 	</div>
-
-	<p class="text-sm text-[var(--color-text-muted)]">
-		{#if paused}
-			Refresh is paused. The countdowns keep ticking.
-		{:else}
-			This table refreshes {pollIntervalLabel(QUOTA_POLL_MS)} and stops while the tab is hidden.
-		{/if}
-		{#if readAt}
-			Last read {formatTimestamp(readAt)}.
-		{/if}
-	</p>
 
 	{#if labelNotice}
 		<p role="status" class="text-sm text-[var(--color-text-muted)]">{labelNotice}</p>
@@ -175,7 +181,7 @@
 			</p>
 		{/if}
 
-		<QuotaTable {windows} {labels} {now} />
+		<QuotaCards {windows} {labels} {now} />
 	{/if}
 
 	<!-- Outside the branch above: a cap is legal before the first routed request, so this section is the

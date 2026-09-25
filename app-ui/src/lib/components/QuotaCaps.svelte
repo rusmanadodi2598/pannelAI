@@ -122,67 +122,71 @@
 				: 'A cap belongs to an upstream endpoint. Add one on Endpoint & Key, then set its budget here.'}
 		/>
 	{:else}
-		<label class="flex w-fit flex-col gap-1 text-sm">
-			<span class="text-[var(--color-text-muted)]">Endpoint</span>
-			<select
-				bind:value={selected}
-				class="min-h-11 w-72 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
-			>
-				<option value="">Choose an endpoint</option>
-				{#each options as option (option.id)}
-					<option value={option.id}>{option.label}</option>
-				{/each}
-			</select>
-		</label>
+		<!-- One compact row for the whole editor once an endpoint is chosen (owner directive, 2026-09-25):
+		     the picker, the two fields, and the save action share one baseline and the row wraps as a
+		     block on a narrow screen. Before a choice the row is the picker alone, which is the same
+		     control in the same place either way. -->
+		<form
+			class="flex flex-wrap items-end gap-3"
+			onsubmit={(event) => {
+				event.preventDefault();
+				void submit();
+			}}
+		>
+			<label class="flex flex-col gap-1 text-sm">
+				<span class="text-[var(--color-text-muted)]">Endpoint</span>
+				<select
+					bind:value={selected}
+					class="min-h-11 w-72 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
+				>
+					<option value="">Choose an endpoint</option>
+					{#each options as option (option.id)}
+						<option value={option.id}>{option.label}</option>
+					{/each}
+				</select>
+			</label>
+
+			{#if selected !== ''}
+				<label class="flex flex-col gap-1 text-sm">
+					<span class="text-[var(--color-text-muted)]">Monthly cost (USD)</span>
+					<!-- Read-only until the stored cap has been read: a field the operator could type into
+					     before the answer landed would be overwritten by it. An edit also drops the save
+					     confirmation, because the sentence below then describes a value the form no
+					     longer holds. -->
+					<input
+						bind:value={draft.cost}
+						inputmode="decimal"
+						disabled={read === undefined}
+						oninput={() => (saved = false)}
+						class="min-h-11 w-40 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50"
+						placeholder="25"
+					/>
+				</label>
+				<label class="flex flex-col gap-1 text-sm">
+					<span class="text-[var(--color-text-muted)]">Monthly tokens</span>
+					<input
+						bind:value={draft.tokens}
+						inputmode="numeric"
+						disabled={read === undefined}
+						oninput={() => (saved = false)}
+						class="min-h-11 w-40 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50"
+						placeholder="1000000"
+					/>
+				</label>
+				<button
+					type="submit"
+					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
+					disabled={saving || read === undefined}
+				>
+					{saving ? 'Saving' : 'Save the cap'}
+				</button>
+			{/if}
+		</form>
 
 		{#if selected !== ''}
-			<form
-				class="flex flex-col gap-3"
-				onsubmit={(event) => {
-					event.preventDefault();
-					void submit();
-				}}
-			>
-				<div class="flex flex-wrap items-end gap-3">
-					<label class="flex flex-col gap-1 text-sm">
-						<span class="text-[var(--color-text-muted)]">Monthly cost (USD)</span>
-						<!-- Read-only until the stored cap has been read: a field the operator could type into
-						     before the answer landed would be overwritten by it. An edit also drops the save
-						     confirmation, because the sentence below then describes a value the form no
-						     longer holds. -->
-						<input
-							bind:value={draft.cost}
-							inputmode="decimal"
-							disabled={read === undefined}
-							oninput={() => (saved = false)}
-							class="min-h-11 w-40 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50"
-							placeholder="25"
-						/>
-					</label>
-					<label class="flex flex-col gap-1 text-sm">
-						<span class="text-[var(--color-text-muted)]">Monthly tokens</span>
-						<input
-							bind:value={draft.tokens}
-							inputmode="numeric"
-							disabled={read === undefined}
-							oninput={() => (saved = false)}
-							class="min-h-11 w-40 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 disabled:opacity-50"
-							placeholder="1000000"
-						/>
-					</label>
-					<button
-						type="submit"
-						class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
-						disabled={saving || read === undefined}
-					>
-						{saving ? 'Saving' : 'Save the cap'}
-					</button>
-				</div>
-
-				<p class="text-sm text-[var(--color-text-muted)]">
-					Saving replaces both caps at once: an empty field clears that cap. {QUOTA_CAP_WARNING}
-				</p>
-			</form>
+			<p class="text-sm text-[var(--color-text-muted)]">
+				Saving replaces both caps at once: an empty field clears that cap. {QUOTA_CAP_WARNING}
+			</p>
 
 			<!-- The stored state, kept on screen across the read that follows a save: blanking it would
 			     unmount the sentence that reports the save. Its name is what tells a screen reader which

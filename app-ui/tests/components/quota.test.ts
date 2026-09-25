@@ -6,7 +6,7 @@
 // operator reads: the percentage against a ceiling, the countdown, the source badge with its explanation,
 // and the endpoint label falling back to the identifier.
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import QuotaPage from '../../src/routes/quota/+page.svelte';
 import { QUOTA_POLL_MS } from '../../src/lib/polling';
@@ -76,41 +76,62 @@ describe('QuotaPage', () => {
 		stubQuota([window_()]);
 		render(QuotaPage);
 
-		const table = within(await screen.findByRole('table'));
+		// The provider group heading names the provider; the card names the endpoint.
+		expect(await screen.findByRole('heading', { name: 'anthropic' })).toBeTruthy();
+		expect(screen.getByRole('heading', { name: 'Anthropic primary' })).toBeTruthy();
+		expect(screen.getByText('monthly')).toBeTruthy();
+		expect(screen.getByText('60%')).toBeTruthy();
+		expect(screen.getByText('computed')).toBeTruthy();
+		expect(screen.getByText(/120,000 \/ 200,000/)).toBeTruthy();
+		expect(screen.getByText(/in (2h|1h 59m)/)).toBeTruthy();
+	});
 
-		expect(table.getByText('anthropic')).toBeTruthy();
-		expect(table.getByText('monthly')).toBeTruthy();
-		expect(table.getByText('120,000')).toBeTruthy();
-		expect(table.getByText('200,000')).toBeTruthy();
-		expect(table.getByText('60%')).toBeTruthy();
-		expect(table.getByText('computed')).toBeTruthy();
-		expect(table.getByText(/in (2h|1h 59m)/)).toBeTruthy();
+	it('groups endpoint cards under their provider, first seen first', async () => {
+		stubQuota([
+			window_(),
+			window_({ provider_id: 'zeta', endpoint_id: 'ep_z', window: 'daily' }),
+			window_({ window: 'daily' })
+		]);
+		render(QuotaPage);
+
+		const headings = await screen.findAllByRole('heading', { name: /anthropic|zeta/ });
+		// Two provider groups, anthropic seen first; the zeta card names its endpoint id, which the
+		// label list's first page does not cover.
+		expect(headings.map((heading) => heading.textContent)).toEqual(['anthropic', 'zeta']);
+		expect(screen.getByRole('heading', { name: 'ep_z' })).toBeTruthy();
+	});
+
+	it('names a window the gateway recorded without a provider, instead of refusing the list', async () => {
+		stubQuota([window_({ provider_id: '' })]);
+		render(QuotaPage);
+
+		// The free lane's virtual endpoint carries no provider. One row like that used to reject the
+		// whole read; now the group renders with the sentence that says the counts are local.
+		expect(await screen.findByRole('heading', { name: 'No provider' })).toBeTruthy();
+		expect(screen.getByText(/Counted locally by this gateway/)).toBeTruthy();
+		expect(screen.getByText('monthly')).toBeTruthy();
 	});
 
 	it('resolves an endpoint label, and names the identifier when it has no label', async () => {
 		stubQuota([window_(), window_({ endpoint_id: 'ep_beyond_the_page' })]);
 		render(QuotaPage);
 
-		const table = within(await screen.findByRole('table'));
-
-		expect(table.getByText('Anthropic primary')).toBeTruthy();
-		expect(table.getByText('ep_beyond_the_page')).toBeTruthy();
+		expect(await screen.findByRole('heading', { name: 'Anthropic primary' })).toBeTruthy();
+		expect(screen.getByRole('heading', { name: 'ep_beyond_the_page' })).toBeTruthy();
 	});
 
 	it('says a window has no ceiling rather than reporting 0%', async () => {
 		stubQuota([window_({ limit: undefined })]);
 		render(QuotaPage);
 
-		const table = within(await screen.findByRole('table'));
-
-		expect(table.getByText('No limit')).toBeTruthy();
-		expect(table.queryByText('0%')).toBeNull();
+		expect(await screen.findByText('No limit')).toBeTruthy();
+		expect(screen.queryByText('0%')).toBeNull();
 	});
 
 	it('explains both source values under the table', async () => {
 		stubQuota([window_()]);
 		render(QuotaPage);
-		await screen.findByRole('table');
+		await screen.findByText(/computed means this gateway counted it/);
 
 		// §6.6 calls the badge functional, so what it means cannot live in a hover-only tooltip (§8.7.5).
 		expect(screen.getByText(/computed means this gateway counted it/)).toBeTruthy();
@@ -120,7 +141,7 @@ describe('QuotaPage', () => {
 	it('states the interval it refreshes on and where it stops', async () => {
 		stubQuota([window_()]);
 		render(QuotaPage);
-		await screen.findByRole('table');
+		await screen.findByText(/refreshes every 30 seconds and stops while the tab is hidden/);
 
 		expect(
 			screen.getByText(/refreshes every 30 seconds and stops while the tab is hidden/)
@@ -149,8 +170,8 @@ describe('QuotaPage', () => {
 		render(QuotaPage);
 
 		expect(await screen.findByText(/Endpoint labels could not be read/)).toBeTruthy();
-		// The window is still rendered, named by its identifier.
-		expect(within(screen.getByRole('table')).getByText('ep_1')).toBeTruthy();
+		// The card is still rendered, named by its identifier.
+		expect(screen.getByRole('heading', { name: 'ep_1' })).toBeTruthy();
 	});
 });
 

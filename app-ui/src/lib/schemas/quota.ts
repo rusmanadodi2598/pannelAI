@@ -32,9 +32,13 @@ export const QUOTA_SOURCE_EXPLANATIONS: Record<QuotaSource, string> = {
 	reported: 'the provider published it and the quota worker read it back.'
 };
 
+// `provider_id` is a free string rather than a required identifier: the gateway records windows for
+// the credential-free lane's virtual endpoint, and those rows carry an empty provider (measured live
+// 2026-09-25: 4 of 16 rows). Refusing one such row refused the whole list and blanked the screen, so
+// the field parses and QuotaTable states what a blank means instead.
 export const schemaQuotaWindow = z.object({
 	endpoint_id: z.string().min(1),
-	provider_id: z.string().min(1),
+	provider_id: z.string(),
 	window: z.enum(QUOTA_WINDOW_KINDS),
 	used: z.number().int().min(0),
 	limit: z.number().int().min(0).nullish(),
