@@ -201,7 +201,7 @@ recorded here so their absence reads as a decision rather than a gap
 
 | Method | Path | Auth | Description | Phase |
 |---|---|---|---|---|
-| GET | `/api/v1/providers` | S | Registry list: `{id, name, category, auth_type, routability, endpoint_count, status_summary}`; filter `?category=apikey|oauth|free|media|local`, `?routability=native|connector` | P1 |
+| GET | `/api/v1/providers` | S | Registry list: `{id, name, category, auth_type, routability, endpoint_count, status_summary}`; filter `?category=apikey|oauth|free|media|local`, `?routability=native|connector`, `?q=<term>`: case-insensitive substring over id and display name, blank means no filter, over 120 characters refused (PORT 002 D1-D3, 2026-09-25) | P1 |
 | GET | `/api/v1/providers/{provider_id}` | S | Registry detail incl. transport defaults, model catalog summary, `routability` ∈ `native|connector`, and `media` (per-kind base URL and credential placement) | P1 |
 | GET | `/api/v1/providers/{provider_id}/models` | S | Full model list; `?suggested=true` returns suggested set | P1 |
 | POST | `/api/v1/providers/{provider_id}/oauth/start` | S | `{redirect_uri?}` → `{authorize_url, state}` (OAuth providers only) | P2 |

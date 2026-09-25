@@ -278,11 +278,13 @@ absent.
 **List** (SPEC-API §7.4)
 
 - **Table:** provider name, category, auth type, endpoint count, status summary. Filters: category
-  (`apikey`, `oauth`, `free`, `media`, `local`), search over name and ID.
-- **Search is not built.** `ProviderListQuery` declares only `category` and `routability` and the handler
-  reads no other filter, so a search box would either send a parameter the server ignores or pull the
-  registry into a client-side filter, which the next bullet forbids. The control is absent rather than
-  fake, and the gap is recorded in §14 Q13.
+  (`apikey`, `oauth`, `free`, `media`, `local`) and a search over name and ID. Both sit in one compact
+  row with the refresh control, each the same height, and the row wraps as a block on a narrow screen
+  (owner directive, 2026-09-25); the select keeps its name in `aria-label` rather than a stacked label.
+- **Search is server-side (landed 2026-09-25, PORT 002):** the screen sends what was typed as `?q`,
+  which `GET /api/v1/providers` matches as a case-insensitive substring over the id and the display
+  name, blank meaning no filter. The panel filters nothing in the browser: §6.3's pagination discipline
+  still holds, and a filter change restarts the paging. The closed question is §14 Q13.
 - **Pagination discipline:** the registry is a data set the API owns. The screen renders
   `GET /api/v1/providers` with the server's paging and never loads the whole registry into a client filter.
 - **Custom providers (landed):** a section above the table for the two provider types the embedded registry
@@ -1189,7 +1191,14 @@ does not pass review.
    `aria-label` and the `title` keep the name, and the glyph is `aria-hidden`, so a screen reader reads one
    thing rather than two. Its glyph is recorded in the same map with a one-line reason (R-04, R-31), and
    `tests/support/icon-only.ts` asserts the contract for every surface that uses one. The row actions and
-   the copy control are the surfaces that do (owner decision, 2026-09-24).
+   the copy control are the surfaces that do (owner decision, 2026-09-24), and the provider screens' verb
+   actions joined them on 2026-09-25 (PORT 002 D4/D7): the node card's Edit and Delete, the custom model's
+   Remove, and the model lists' Enable and Disable.
+10. A control that stands alone keeps its visible label and gains the glyph beside it, which is the
+   reference's own button shape (`providers/[id]/page.js` renders every action as icon + label). The
+   provider screens' toolbar, add, save, cancel, test, pagination, and refresh controls hold that shape
+   (PORT 002 D4), and a notification never carries a tick character inside its string: the Check glyph
+   rides beside the sentence as markup (PORT 002 D6).
 
 ## 9. Design direction and antislop binding
 
@@ -1717,11 +1726,14 @@ half carry.
     toggle and the catalog reads `GET /models/catalog` instead, which is the route that carries the search
     and capability filters §6.3 also asks for. Decide whether the registry gains a real suggestion flag or
     §6.3 drops the toggle.
-13. **The provider list has no search, and the API is why.** §6.3 asks for a search over name and ID on
-    `/providers`. SPEC-API §7.4 declares `?category` and `?routability` only, and the handler reads nothing
-    else, so the panel cannot send a search term and §6.3's own pagination discipline forbids filtering the
-    registry in the browser. The list therefore ships with the category filter alone. Decide whether
-    SPEC-API adds `?q` (the shape `/models/catalog` already uses) or §6.3 drops the requirement.
+13. **Closed 2026-09-25: SPEC-API adds `?q`, and the screen sends it.** PORT 002 measured the route
+    ignoring every free-text parameter silently (112 rows answered to `q=openai` and to a nonsense term
+    alike), and the owner asked for the search the reference has, so the parameter landed in §7.4: a
+    case-insensitive substring over id and display name, blank meaning no filter, over 120 characters
+    refused. The panel's search control sends the trimmed term and restarts the paging; the empty state
+    for a no-match names both filters and clears both. The earlier "absent rather than fake" reading
+    served the same rule (R-26) from the other side: a control the wire cannot honour must not ship, so
+    now that the wire honours it, the control ships.
 14. **The RFC3339 check is looser than §7.2 says, and it is one primitive away from every screen.** §7.2
     lists timestamps as "RFC3339 only", and `src/lib/schemas/primitives.ts` implements `rfc3339Timestamp`
     as `!Number.isNaN(Date.parse(value))`. `Date.parse` accepts strings RFC3339 does not allow, for
