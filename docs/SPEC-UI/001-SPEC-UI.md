@@ -395,7 +395,11 @@ absent.
 **Tab 1: Combos** (SPEC-API §7.7)
 
 - **Table:** name, strategy, model count, sticky limit, judge model, updated. Actions: edit, test (U2,
-  landed), delete.
+  landed), delete, all three icon-only with the action's name in `aria-label` and `title` (PORT 003 D5,
+  §8.11 butir 9); Delete carries the danger colour and no competing text colour. The tab's toolbar is one
+  row holding the sentence, the New combo action (glyph + label), and the refresh control, each the same
+  height, wrapping as a block on a narrow screen (PORT 003 F2). Pagination uses the chevron controls the
+  provider list uses.
 - **Editor:**
   - Model list is ordered and drag-reorderable, each row a `ref` with a priority. The `ref` field accepts
     `provider/model` or an existing combo name, and stays a text field: a ref the picker cannot offer yet
@@ -403,7 +407,9 @@ absent.
     the same operation: a pointer drag, and Up and Down buttons that work from a keyboard or a touch
     screen. A drag alone would be mouse-only, and this panel is used on a phone. Both call one function, so
     they cannot disagree about the result, and each move renumbers the priorities rather than swapping two
-    of them, because the numbers are the stored form of the order.
+    of them, because the numbers are the stored form of the order. The two move buttons and Remove are
+    icon-only (PORT 003 D2, §8.11 butir 9), each carrying `Move <ref> up` / `Move <ref> down` / `Remove
+    <ref>` as its accessible name and title; Add models and Add a model keep their labels and gain a glyph.
   - **Model picker:** one dialog serves every model choice on the screen (the combo's members, the judge),
     which is the reference's own shape. It offers the catalog ids of the providers that have an endpoint
     right now (`endpoint_count > 0`) and the names of the combos on the page, and nothing else. A provider
@@ -1198,7 +1204,10 @@ does not pass review.
    reference's own button shape (`providers/[id]/page.js` renders every action as icon + label). The
    provider screens' toolbar, add, save, cancel, test, pagination, and refresh controls hold that shape
    (PORT 002 D4), and a notification never carries a tick character inside its string: the Check glyph
-   rides beside the sentence as markup (PORT 002 D6).
+   rides beside the sentence as markup (PORT 002 D6). The Combo & Vision Adapter screen joined on
+   2026-09-25 (PORT 003 D1/D3): its toolbar, add, save, cancel, choose, done, test, retry, and pagination
+   controls carry glyph + label, and its row actions (the combo table's Edit/Test/Delete and the model
+   rows' move/remove) are icon-only under butir 9.
 
 ## 9. Design direction and antislop binding
 
@@ -1938,6 +1947,31 @@ A deferred item names the check and where the evidence must appear.
 | R-21 (theme choice)                                          | §8.9                                               | Both authored themes, with the dark default rationale recorded.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | R-29, R-11, R-12, R-13, R-01, R-09 (purpose-gate techniques) | §9.3                                               | Token file showing the palette cap, the radius scale, and the single accent use.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | R-31 (reason per decision)                                   | §9.5                                               | The reason log, extended in the pull request for decisions this spec does not yet cover.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+
+---
+
+_Changelog 2026-09-25: the Combo & Vision Adapter screen carries the glyph controls and one compact
+row, the way the provider screens do._
+
+_§6.4's tab one states the shape the pass left behind: the combo table's Edit, Test, and Delete are
+icon-only under §8.11 butir 9, the toolbar holds the sentence, the New combo action, and the refresh
+control in one row, and the pagination uses the same chevron controls as `/providers`. The editor's model
+rows follow: the two move buttons and Remove are icon-only with `Move <ref> up` / `Move <ref> down` /
+`Remove <ref>` as their names, and Add models and Add a model keep their labels and gain a glyph. The
+modals joined too (delete, test readout, model picker, vision picker, vision adapter form), which is the
+same glyph + label shape PORT 002 gave the provider screens' controls, so the two screens cannot drift
+apart on the same control._
+
+_What is deliberately NOT done, and why: the picker still reads the catalog and the provider list and
+joins them in the panel, rather than asking `GET /models/catalog?active=true` (draft 025, closed on the
+server). The panel's rule is documented and tested as it stands (§6.4: `endpoint_count > 0` or `no_auth`,
+plus a dashed placeholder for a connected provider whose upstream has not answered yet), so adopting the
+parameter would change documented behaviour rather than fix a measured defect. The two sets were measured
+live the same day: 4 providers from the server parameter, 6 from the panel's rule, with 0 chips wrongly
+offered, because the four extra providers carry no chat row at all._
+
+_Gates pass on 2026-09-25: see `docs/PORT/003-PORT-COMBO-VISION.md` §6 for the counts, the browser
+click-through, and the file sizes._
 
 ---
 
