@@ -226,6 +226,11 @@ export const CONTROL_ICONS = {
 	done: {
 		icon: Check,
 		reason: 'Done confirms the choices already made and closes the picker.'
+	},
+	fold: {
+		icon: ChevronDown,
+		reason:
+			'Folding tucks a card body away behind a header that already counts what is inside; the chevron marks the tucked edge and turns when the body opens.'
 	}
 } as const;
 

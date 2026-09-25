@@ -88,3 +88,30 @@ describe('the caps editor row', () => {
 		}
 	});
 });
+
+describe('the card bodies and their pagination', () => {
+	it('keeps the endpoint rows in a region that scrolls, not the page', async () => {
+		stubQuota({ windows: [quotaWindowRow()] });
+		render(QuotaPage);
+		await screen.findByRole('heading', { name: 'Anthropic primary' });
+
+		// The row heading sits inside the scroll region, which is the only element allowed to grow
+		// beyond the fold; the live click-through measures its computed overflow and height.
+		const region = screen
+			.getByRole('heading', { name: 'Anthropic primary' })
+			.closest('.overflow-y-auto');
+		expect(region?.className).toContain('max-h-80');
+	});
+
+	it('paginates the cards and parks both controls at a single page', async () => {
+		stubQuota({ windows: [quotaWindowRow()] });
+		render(QuotaPage);
+		await screen.findByRole('heading', { name: 'Anthropic primary' });
+
+		expect(screen.getByText('Page 1 of 1')).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Previous page' }).hasAttribute('disabled')).toBe(
+			true
+		);
+		expect(screen.getByRole('button', { name: 'Next page' }).hasAttribute('disabled')).toBe(true);
+	});
+});

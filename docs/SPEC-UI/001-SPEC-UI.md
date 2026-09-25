@@ -547,8 +547,24 @@ absent.
 
 - **Data:** `GET /api/v1/quotas`, `GET /api/v1/quotas/{endpoint_id}`,
   `PUT /api/v1/quotas/{endpoint_id}` (caps, U2).
-- **Table:** provider, endpoint label, window (`5h`, `daily`, `weekly`, `monthly`), used, limit, percent
-  used, resets at with a countdown, source badge.
+- **Cards (reshaped 2026-09-26, PORT 005):** one card per provider in first-seen order, and one
+  card for the windows that carry no provider. The card header names the provider, counts what is
+  inside ("N endpoints, M windows"), and carries the two card controls: a checkbox that feeds the
+  bulk fold bar, and a fold toggle (`aria-expanded`, `aria-controls`). The body lists the provider's
+  endpoints as row headings with their windows: window (`5h`, `daily`, `weekly`, `monthly`), used,
+  limit, percent used, resets at with a countdown, source badge. The body is the region that
+  scrolls (`max-h-80`, `overflow-y-auto`), because accounts and keys per provider can reach
+  hundreds or thousands and one card per key would make the page unmonitorable; the page itself
+  never scrolls sideways (§2 R-03).
+- **Fold and bulk fold:** a card folds from its header toggle and stays informative while folded
+  through the header counts; the fold is a capability, not a default. Checking cards raises a bar
+  that states the real selection ("N selected") with two actions, "Fold selected" and "Unfold
+  selected", so a large registry can be tucked away quickly. The selection clears when the page
+  turns, because a bulk action must never reach checkboxes the operator cannot currently see.
+- **Pagination:** the cards paginate client-side, five per page ("Page X of Y" with Previous and
+  Next, disabled at the bounds), which is what binds the page height at any registry size. The
+  windows route itself is unpaged; server-side paging is a separate filing if the wire scale ever
+  demands it.
 - **Source badge:** `computed` or `reported` (SPEC-API §7.12). The badge is functional, not decorative: it
   tells the operator whether the number came from local accounting or from the provider.
 - **Budget caps (U2, landed):** a picker plus one form, keyed by endpoint rather than by window, because

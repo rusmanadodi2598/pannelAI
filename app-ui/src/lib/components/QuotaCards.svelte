@@ -1,35 +1,31 @@
 <script lang="ts">
-	// The quota cards (docs/SPEC-UI/001-SPEC-UI.md §6.6; reshaped 2026-09-25 to follow the reference's
-	// ProviderLimits, owner ralat 2026-09-25): one card per endpoint, endpoints grouped by provider in
-	// first-seen order, one progress row per window kind.
+	// The quota cards (docs/SPEC-UI/001-SPEC-UI.md §6.6; card-per-provider reshape 2026-09-26,
+	// docs/PORT/005-PORT-QUOTA-CARDS.md): one card per provider in first-seen order, its endpoints
+	// and windows listed inside a body that scrolls, a header that folds, a checkbox that feeds the
+	// bulk fold bar, and five cards to a page.
 	//
-	// Two conventions are kept from the screen's own rules rather than copied from the reference:
-	// the printed percentage is percent USED (§6.6's "percent used", quotaPercentLabel), and the
-	// counters print without a unit because the wire carries none. The bar's fill is the used share;
-	// its colour is driven by the REMAINING share the reference colours on (above 70% remaining ok,
-	// 30-70 warn, below danger) in the panel's own tokens.
+	// Two conventions are kept from the screen's own rules rather than reinvented here: the printed
+	// percentage is percent USED (§6.6's "percent used"; quotaPercentLabel in QuotaCardBody), and the
+	// bar's colour is driven by the REMAINING share the reference colours on (above 70% remaining
+	// ok, 30-70 warn, below danger) in the panel's own tokens.
 	//
 	// A window the gateway recorded without a provider (the credential-free lane's virtual endpoint)
-	// cannot sit under a provider heading. It renders in its own group with a sentence saying the
-	// counts are local, which is the reference's answer for a provider whose quota it cannot fetch
-	// (the card `message` path) without hiding data the gateway did send.
-	import {
-		QUOTA_SOURCE_EXPLANATIONS,
-		quotaPercentLabel,
-		type QuotaWindow
-	} from '$lib/schemas/quota';
-	import { formatCount } from '$lib/schemas/usage-view';
-	import { countdownText, formatTimestamp } from '$lib/utils/time';
+	// cannot sit under a provider heading. It gets its own card, and its body opens with the sentence
+	// saying the counts are local, which is the reference's answer for a provider whose quota it
+	// cannot fetch (the card `message` path) without hiding data the gateway did send.
+	//
+	// The fold and selection sets are plain string arrays reassigned in place: the reactive-set lint
+	// rule this file once tripped (pass 004) is avoided by never holding a Set or Map in component
+	// state at all.
+	import { CONTROL_ICONS } from '$lib/icons';
+	import { QUOTA_SOURCE_EXPLANATIONS, type QuotaWindow } from '$lib/schemas/quota';
+	import QuotaCardBody from './QuotaCardBody.svelte';
 
 	let {
 		windows,
 		labels,
 		now
 	}: { windows: QuotaWindow[]; labels: Map<string, string>; now: number } = $props();
-
-	function endpointLabel(id: string): string {
-		return labels.get(id) ?? id;
-	}
 
 	type Group = { provider: string; endpoints: { id: string; windows: QuotaWindow[] }[] };
 
@@ -48,93 +44,176 @@
 		return out;
 	});
 
-	// The remaining share the reference colours on. Null when no ceiling was published, so the row
-	// prints the counter without a bar rather than inventing a full-width one.
-	function remainingShare(window: QuotaWindow): number | null {
-		if (window.limit === null || window.limit === undefined || window.limit <= 0) return null;
-		return Math.max(0, 100 - Math.round((window.used / window.limit) * 100));
+	// Five cards to a page (owner directive, 2026-09-26): the binding on page height is the page size,
+	// not the data set, so a registry of hundreds of providers still renders a compact screen.
+	const FOLD_PAGE_SIZE = 5;
+
+	let page = $state(1);
+	let folded: string[] = $state([]);
+	let selected: string[] = $state([]);
+
+	const pageCount = $derived(Math.max(1, Math.ceil(groups.length / FOLD_PAGE_SIZE)));
+	// Data that shrinks (a poll that answers fewer providers) must not strand the pager past the last
+	// page, so every read of the page number clamps before it slices.
+	const safePage = $derived(Math.min(page, pageCount));
+	const visible = $derived(
+		groups.slice((safePage - 1) * FOLD_PAGE_SIZE, safePage * FOLD_PAGE_SIZE)
+	);
+
+	function isFolded(key: string): boolean {
+		return folded.includes(key);
 	}
 
-	function barColor(share: number | null): string {
-		if (share === null) return '';
-		if (share > 70) return 'var(--color-ok)';
-		if (share >= 30) return 'var(--color-warn)';
-		return 'var(--color-danger)';
+	function isSelected(key: string): boolean {
+		return selected.includes(key);
 	}
 
-	function counterText(window: QuotaWindow): string {
-		if (window.limit === null || window.limit === undefined || window.limit <= 0) {
-			return formatCount(window.used);
+	function toggleFold(key: string): void {
+		folded = isFolded(key) ? folded.filter((entry) => entry !== key) : [...folded, key];
+	}
+
+	function toggleSelect(key: string, on: boolean): void {
+		if (on) {
+			selected = isSelected(key) ? selected : [...selected, key];
+		} else {
+			selected = selected.filter((entry) => entry !== key);
 		}
-		return `${formatCount(window.used)} / ${formatCount(window.limit)}`;
 	}
 
-	function usedShare(window: QuotaWindow): number {
-		if (window.limit === null || window.limit === undefined || window.limit <= 0) return 0;
-		return Math.min(100, Math.round((window.used / window.limit) * 100));
+	function foldSelected(): void {
+		folded = [...folded, ...selected.filter((entry) => !folded.includes(entry))];
 	}
+
+	function unfoldSelected(): void {
+		folded = folded.filter((entry) => !selected.includes(entry));
+	}
+
+	function goPage(delta: number): void {
+		page = Math.min(pageCount, Math.max(1, safePage + delta));
+		// A bulk action must never reach across pages unseen (D4): the checkboxes the operator cannot
+		// see right now are not theirs to act on, so the selection starts clean on every page turn.
+		selected = [];
+	}
+
+	function cardName(group: Group): string {
+		return group.provider || 'No provider';
+	}
+
+	function cardKey(group: Group): string {
+		return group.provider || 'no-provider';
+	}
+
+	// A folded card's header is its whole story, so the counts name both dimensions the body would show.
+	function countsText(group: Group): string {
+		const endpoints = group.endpoints.length;
+		const total = group.endpoints.reduce((sum, endpoint) => sum + endpoint.windows.length, 0);
+		return `${endpoints} endpoint${endpoints === 1 ? '' : 's'}, ${total} window${total === 1 ? '' : 's'}`;
+	}
+
+	const FoldIcon = CONTROL_ICONS.fold.icon;
+	const PreviousIcon = CONTROL_ICONS.previous.icon;
+	const NextIcon = CONTROL_ICONS.next.icon;
 </script>
 
 <div class="flex flex-col gap-4">
-	{#each groups as group (group.provider)}
-		<section class="flex flex-col gap-2" aria-label={group.provider || 'No provider'}>
-			{#if group.provider}
-				<h3 class="truncate text-sm font-medium">{group.provider}</h3>
-			{:else}
-				<h3 class="text-sm font-medium text-[var(--color-text-muted)]">No provider</h3>
-				<p class="text-sm text-[var(--color-text-muted)]">
-					Counted locally by this gateway; the provider behind this lane publishes no quota.
-				</p>
-			{/if}
-
-			<div class="grid gap-3 md:grid-cols-2">
-				{#each group.endpoints as endpoint (endpoint.id)}
-					<div
-						class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4"
+	{#each visible as group (cardKey(group))}
+		{@const key = cardKey(group)}
+		{@const name = cardName(group)}
+		{@const bodyId = `quota-card-body-${key}`}
+		<section
+			aria-label={name}
+			class="flex flex-col overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-border)]"
+		>
+			<div class="flex items-center gap-1 p-2">
+				<!-- The label is the tap target at 44 px; the box inside stays the native size the rest of
+				     the panel's forms use. -->
+				<label class="flex min-h-11 min-w-11 items-center justify-center">
+					<input
+						type="checkbox"
+						class="size-4"
+						aria-label={`Select ${name} for bulk folding`}
+						checked={isSelected(key)}
+						onchange={(event) => toggleSelect(key, event.currentTarget.checked)}
+					/>
+				</label>
+				<div class="flex min-w-0 flex-1 flex-col justify-center">
+					<h3 class="truncate text-sm font-medium">{name}</h3>
+					<span class="text-xs tabular-nums text-[var(--color-text-muted)]"
+						>{countsText(group)}</span
 					>
-						<h4 class="truncate text-sm font-semibold">{endpointLabel(endpoint.id)}</h4>
-						{#each endpoint.windows as window (window.window)}
-							{@const share = remainingShare(window)}
-							<div class="flex flex-col gap-1">
-								<div class="flex items-center justify-between gap-2 text-sm">
-									<span class="flex items-center gap-2">
-										<span class="font-medium">{window.window}</span>
-										<span
-											class="rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-2 py-0.5 text-xs"
-											>{window.source}</span
-										>
-									</span>
-									<span class="tabular-nums">{quotaPercentLabel(window.used, window.limit)}</span>
-								</div>
-
-								{#if share !== null}
-									<div class="h-2 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
-										<div
-											class="h-full rounded-full"
-											style={`width: ${usedShare(window)}%; background: ${barColor(share)};`}
-										></div>
-									</div>
-								{/if}
-
-								<div
-									class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]"
-								>
-									<span class="tabular-nums">{counterText(window)}</span>
-									{#if window.resets_at}
-										<span
-											>Resets {countdownText(window.resets_at, now)} (at
-											{formatTimestamp(window.resets_at)})</span
-										>
-									{/if}
-								</div>
-							</div>
-						{/each}
-					</div>
-				{/each}
+				</div>
+				<button
+					type="button"
+					class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
+					aria-label={`Fold ${name}`}
+					aria-expanded={!isFolded(key)}
+					aria-controls={bodyId}
+					title={`Fold ${name}`}
+					onclick={() => toggleFold(key)}
+				>
+					<FoldIcon class="size-4 {isFolded(key) ? '' : 'rotate-180'}" aria-hidden="true" />
+				</button>
 			</div>
+
+			{#if !isFolded(key)}
+				<div
+					id={bodyId}
+					class="flex max-h-80 flex-col gap-3 overflow-y-auto border-t border-[var(--color-border)] p-3"
+				>
+					<QuotaCardBody {group} {labels} {now} />
+				</div>
+			{/if}
 		</section>
 	{/each}
 
+	{#if selected.length > 0}
+		<div
+			role="status"
+			class="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] p-2"
+		>
+			<span class="text-sm">{selected.length} selected</span>
+			<div class="flex gap-2">
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
+					onclick={foldSelected}
+				>
+					Fold selected
+				</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm"
+					onclick={unfoldSelected}
+				>
+					Unfold selected
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	{#if groups.length > 0}
+		<nav class="flex items-center justify-between gap-2" aria-label="Quota card pages">
+			<button
+				type="button"
+				class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] text-[var(--color-text-muted)] disabled:opacity-50"
+				aria-label="Previous page"
+				disabled={safePage <= 1}
+				onclick={() => goPage(-1)}
+			>
+				<PreviousIcon class="size-4" aria-hidden="true" />
+			</button>
+			<span class="text-sm tabular-nums">Page {safePage} of {pageCount}</span>
+			<button
+				type="button"
+				class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] text-[var(--color-text-muted)] disabled:opacity-50"
+				aria-label="Next page"
+				disabled={safePage >= pageCount}
+				onclick={() => goPage(1)}
+			>
+				<NextIcon class="size-4" aria-hidden="true" />
+			</button>
+		</nav>
+	{/if}
 	<p class="text-sm text-[var(--color-text-muted)]">
 		Source: computed means {QUOTA_SOURCE_EXPLANATIONS.computed} reported means
 		{QUOTA_SOURCE_EXPLANATIONS.reported}
