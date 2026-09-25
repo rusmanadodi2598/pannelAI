@@ -864,9 +864,11 @@ disentuh ikut dibersihkan (R-02).
   - Biner pasca-patch dengan titik potong yang sama: tiga panggilan terputus yang mencapai dial menulis
     baris `UPSTREAM_TIMEOUT` 52, 59, dan 113 ms di bawah `endpoint_id` nyata, dan keenam panggilan ronde
     itu menulis enam baris `request_logs`.
-  - Catatan yang terukur: kegagalan transien memarkir kunci selama 2 menit, jadi tiga panggilan terputus
-    berturut-turut mengosongkan pool dan panggilan berikutnya menjawab `NO_PROVIDER_AVAILABLE` (0 ms,
-    hanya baris log, tanpa baris usage; itu bentuk yang benar untuk penolakan).
+  - Catatan yang terukur: setiap kegagalan memarkir kuncinya (`upstream_keys.rate_limited_until`,
+    `status` menjadi `error`), dan ronde ini mengukur jendela 2 menit pada penolakan upstream, yaitu
+    kelas kredensial `KeyFailureAuth` (401/402/403/404; kelas transien 30 detik). Tiga panggilan terputus
+    berturut-turut mengosongkan pool, sehingga panggilan berikutnya menjawab `NO_PROVIDER_AVAILABLE`
+    (0 ms, hanya baris log, tanpa baris usage; itu bentuk yang benar untuk penolakan).
 - Berkas bukti: `/tmp/smoke11/` (`gw-patched` pra-patch, `gw-patched3` pasca-patch, `probe-*.json`).
 
 ### 24.2 Yang tersisa, dan arti CLOSED
