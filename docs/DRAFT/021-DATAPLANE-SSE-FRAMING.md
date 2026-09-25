@@ -6,7 +6,7 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18); uji request bersih 2026-09-24 16:33 (setelah `usage_records` dikosongkan atas permintaan owner, satu request per ref persis seperti yang disebut, tanpa probe) menjawab `th-1` dan `pi-agent` dengan 200 `pong` sementara tiga nama telanjang tetap 400, seluruhnya tercatat di akuntansi yang mulai dari nol (§19); cek filtering combo dan provider aktif 2026-09-24 membandingkan empat permukaan di kedua pohon, mencatat yang sudah setara (combo tanpa syarat aktivitas di kedua pohon, predikat picker panel sama dengan picker REFERENCE, `?active=true` katalog bekerja) dan menemukan F8 (daftar klien tanpa filter provider aktif), F9 (picker combo hanya halaman tabel), dan F10 (model custom provider aktif tidak masuk daftar klien) (§20); uji combo `pi-agent` 2026-09-25 08:50 (tiga mode, sembilan panggilan, hanya `pi-agent` yang dipanggil) mengulang F1 sampai F3 dan F5 pada binary baru, memverifikasi rotasi tiga anggota `opencode` lewat endpoint virtual tanpa kredensial, dan memverifikasi mekanisme F5 di `engine_relay.go:168` (§22) |
+| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18); uji request bersih 2026-09-24 16:33 (setelah `usage_records` dikosongkan atas permintaan owner, satu request per ref persis seperti yang disebut, tanpa probe) menjawab `th-1` dan `pi-agent` dengan 200 `pong` sementara tiga nama telanjang tetap 400, seluruhnya tercatat di akuntansi yang mulai dari nol (§19); cek filtering combo dan provider aktif 2026-09-24 membandingkan empat permukaan di kedua pohon, mencatat yang sudah setara (combo tanpa syarat aktivitas di kedua pohon, predikat picker panel sama dengan picker REFERENCE, `?active=true` katalog bekerja) dan menemukan F8 (daftar klien tanpa filter provider aktif), F9 (picker combo hanya halaman tabel), dan F10 (model custom provider aktif tidak masuk daftar klien) (§20); uji combo `pi-agent` 2026-09-25 08:50 (tiga mode, sembilan panggilan, hanya `pi-agent` yang dipanggil) mengulang F1 sampai F3 dan F5 pada binary baru, memverifikasi rotasi tiga anggota `opencode` lewat endpoint virtual tanpa kredensial, dan memverifikasi mekanisme F5 di `engine_relay.go:168` (§22); patch F1, F2, F3, F5, timeout fold, dan F6 mendarat 2026-09-25 sebagai commit lokal `7078835` dengan suite hermetik dan lint gate hijau serta live pass di port 9091, sisa kerja di §23.2 (§23) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
 | **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
@@ -764,3 +764,67 @@ budget model reasoning, bukan kegagalan gateway.
 Bukti: `/tmp/smoke11/` (`chat-01.json`, `stream-01.sse`, `tool-01.json`, `tool-02.json`,
 `toolstream-01.sse`, `stream-02-usage.sse`, `stream-03a.sse`, `stream-03b.sse`, `stream-03c.sse`, plus
 berkas `.headers` masing-masing). Tidak ada kode yang disentuh ronde ini.
+
+## 23. Patch F1, F2, F3, F5, timeout fold, dan F6 (2026-09-25)
+
+Owner memutuskan `Termasuk timeout + F6` atas pertanyaan "apakah semuanya bekerja atau perlu kita patch
+kembali", jadi pass ini adalah yang pertama menyentuh kode `app-serv/` untuk register ini. Patch mendarat
+sebagai commit lokal `7078835` (12 berkas, +618/−73), dan gateway owner di :9090 tidak disentuh. Enam
+perubahan:
+
+| # | Perubahan | Berkas |
+| --- | --- | --- |
+| F1 | Frame buatan gateway di-SSE-frame, sehingga `data: [DONE]` menjadi baris sendiri | `translate_stream_openai.go` (`Finish`), `translate_stream_openai_frames.go` (`chunk`, `usageChunk`) |
+| F2 | `usage` bernilai `null` tidak lagi menjadi Usage nol, dan usage chunk dikirim paling banyak sekali (`usageSent`) | `translate_usage_read.go`, `translate_stream_openai.go` |
+| F3 | `finishSent` di-set saat frame finish upstream diteruskan, jadi tidak ada frame finish kedua | `translate_stream_openai.go` |
+| F5 | `answer` tidak lagi menimpa `outcome.Usage` dengan `nil` dari cabang stream | `engine_relay.go` |
+| timeout | Deadline satu attempt ditentukan bentuk CLIENT, bukan bentuk upstream setelah rewrite `force_stream`, sehingga fold tidak lagi tanpa batas total | `transport_call.go`, `transport_timeouts.go` |
+| F6 | Pasangan akuntansi ditulis di bawah context yang tidak ikut dibatalkan klien, berbatas 5 detik | `accounting_context.go`, `chat.go` |
+
+Catatan desain yang terukur:
+
+- **Cabang usage di `openAIFrames` dihapus, bukan dijaga.** Setelah F3, `finishSent` sudah true saat frame
+  finish upstream diproses, jadi cabang itu tidak pernah bisa menyala lagi; `Finish()` selalu berjalan
+  sesudah `pump`, sehingga satu-satunya tempat usage chunk dibangun adalah `Finish` lewat `usageChunk()`.
+- **`chunk()` sengaja tetap mentah.** Jalur klien Anthropic (`claudeFrames`) dan Responses
+  (`chunkFrames`) membangun eventnya sendiri dari chunk yang sama dan membingkainya di call site
+  masing-masing; menambahkan `Frame` di dalam `chunk()` sempat menghasilkan `data: data: ...` dan
+  tertangkap oleh `TestClaudeUpstreamToOpenAIClientStaysSingleFramed`.
+- **Sisa F2 yang disengaja:** klien `include_usage` masih melihat dua objek usage, yaitu frame usage milik
+  upstream yang diteruskan apa adanya dan satu usage chunk buatan gateway. Yang hilang adalah chunk kedua
+  dan chunk 0/0/0.
+- **Fold sekarang berbatas** 120 s (atau override `timeout_ms` provider) karena klien meminta satu body;
+  klien yang meminta stream tetap tanpa batas total sesuai SPEC-API §4, dengan idle read 300 s sebagai
+  batasnya.
+- **Panggilan yang klien putus di tengah tercatat `UPSTREAM_TIMEOUT`** (klasifikasi lama: context yang
+  dibatalkan dipetakan sebagai timeout). Barisnya ada, yang memang inti F6; labelnya tidak diubah pass ini.
+- **Nomor baris di §22.1 menunjuk pohon SEBELUM patch ini.** Lokasi sesudahnya: `mustFrame` pindah ke
+  `translate_stream_openai_frames.go:64`, `usageChunk` di `:48`, `chunk` di `:33`, `Finish` di
+  `translate_stream_openai.go:119`, `openAIFrames` di `:147` dengan cabang usage-nya dihapus, dan
+  `openAIUsageFromObject` di `translate_usage_read.go:39` yang kini mengembalikan `nil` untuk `null`.
+
+### 23.1 Bukti
+
+- Suite hermetik `go test -race -count=1 ./...` hijau di pohon beku (3m38s, 17 paket).
+- Lint gate hijau: vet (plain dan tagged), gofmt, staticcheck (plain dan tagged), `golangci-lint` 0 issues.
+- Live pass pada gateway kedua di `127.0.0.1:9091` (build dari working tree; gateway owner di :9090 tidak
+  disentuh), empat panggilan `pi-agent`: chat 200, stream `include_usage` 200, tool 200 (`tool_calls`
+  `get_weather({"city":"Jakarta"})`), lalu satu stream yang klien putus di 1 detik.
+- Byte stream setelah patch: 9 baris, 0 baris tanpa prefiks `data: `, tepat 1 baris `data: [DONE]`,
+  `finish_reason` sekali (milik upstream), dan tepat satu usage chunk gateway.
+- Pembaca panel sendiri (`app-ui/src/lib/api/playground-reader.ts`) atas byte sebelum dan sesudah: capture
+  ronde 11 `sentinel-as-own-frame=false end=truncated`, byte setelah patch
+  `sentinel-as-own-frame=true end=done`.
+- Akuntansi live: panggilan stream mencatat 130/27 dan 571/200 (bukan 0/0), dan panggilan yang klien putus
+  di tengah menulis satu baris `usage_records` dan satu `request_logs` (`error`, `UPSTREAM_TIMEOUT`,
+  987 ms) padahal sebelumnya tidak menulis apa pun.
+- Berkas bukti: `/tmp/smoke11/live/` (`chat.json`, `stream.sse`, `tool.json`, `killed.sse`), skrip
+  `/tmp/smoke11/live.sh`, driver panel `/tmp/smoke11/panel_reader.ts`.
+
+### 23.2 Yang belum dikerjakan
+
+- Suite ber-tag `integration` belum dijalankan: satu run (atau pre-push, yang menjalankannya) menghapus
+  Redis DB 0 lewat `FlushDB` dan mengeluarkan operator dari panel, jadi menunggu saat dia tidak memakainya.
+- Context akuntansi yang sama belum diterapkan ke tiga jalur yang masih memakai context klien:
+  `media_perform.go:81`, `embeddings_call.go:66`, `systemone.go:197`. F6 yang terukur hanya di jalur chat.
+- F4 dan F8 sampai F10 (permukaan daftar model) tidak disentuh pass ini.
