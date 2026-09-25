@@ -62,10 +62,17 @@ type StreamState struct {
 	// finishReason is the OpenAI finish reason derived from the upstream's.
 	finishReason string
 	// finishSent reports whether a finish frame was already emitted, so a stream
-	// that ends abruptly still gets exactly one.
+	// that ends abruptly still gets exactly one. The upstream's own finish frame
+	// counts as emitted the moment it is forwarded: a second, synthetic one is
+	// what a client counting finish reasons reads as a second answer.
 	finishSent bool
 	// includeUsage reports whether the client asked for a usage chunk.
 	includeUsage bool
+	// usageSent reports whether the usage chunk was already emitted. The upstream
+	// may state its numbers on the finish frame or in a frame after it, so the
+	// chunk is emitted at most once, from whichever of the two sites sees the
+	// numbers last.
+	usageSent bool
 }
 
 // NewStreamState builds the state for one client stream.
@@ -116,14 +123,15 @@ func (s *StreamState) Finish() [][]byte {
 		if reason == "" {
 			reason = FinishStop
 		}
-		frames = append(frames, s.chunk(schema.Delta{}, &reason))
+		// The frame is built by the gateway, so it is framed here: a client only
+		// flushes what arrives as a complete event, and an unframed frame glued
+		// onto the terminal marker is what made the panel read the stream as
+		// truncated (draft 021 F1).
+		frames = append(frames, Frame(s.chunk(schema.Delta{}, &reason)))
 		s.finishSent = true
 	}
-	if s.includeUsage && s.usage != nil {
-		// The usage chunk is its own frame with an empty choices array, which is
-		// the shape OpenAI documents for stream_options.include_usage: a client
-		// that reads the first choice from every frame must not read content here.
-		frames = append(frames, mustFrame(schema.UsageChunk(s.ID, s.Created, s.Model, *s.usage)))
+	if s.includeUsage && s.usage != nil && !s.usageSent {
+		frames = append(frames, s.usageChunk())
 	}
 	frames = append(frames, []byte(SSEDone))
 	return frames
@@ -154,6 +162,10 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 		if first, ok := decodeObject(choices[0]); ok {
 			if reason := stringField(first, "finish_reason"); reason != "" {
 				s.finishReason = reason
+				// The frame about to be forwarded is the client's finish frame,
+				// so the stream is finished as of now and Finish must not add a
+				// second one (draft 021 F3).
+				s.finishSent = true
 			}
 		}
 	}
@@ -175,40 +187,8 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 		encoded = payload
 	}
 
-	frames := [][]byte{Frame(encoded)}
-	if s.finishReason != "" && !s.finishSent && s.includeUsage && s.usage != nil {
-		frames = append(frames, mustFrame(schema.UsageChunk(s.ID, s.Created, s.Model, *s.usage)))
-		s.finishSent = true
-	}
-	return frames
-}
-
-// chunk builds one OpenAI frame from the stream's identity.
-func (s *StreamState) chunk(delta schema.Delta, finishReason *string) []byte {
-	return mustFrame(schema.ChatCompletionChunk{
-		ID:      s.responseID(),
-		Object:  "chat.completion.chunk",
-		Created: s.Created,
-		Model:   s.Model,
-		Choices: []schema.ChunkChoice{{Index: 0, Delta: delta, FinishReason: finishReason}},
-	})
-}
-
-// responseID returns the id reported to the client, falling back to a stable
-// placeholder when the upstream reported none.
-func (s *StreamState) responseID() string {
-	if s.ID == "" {
-		return "chatcmpl-pannelai"
-	}
-	return s.ID
-}
-
-// mustFrame marshals a frame the translator built itself, reporting a failure as
-// a JSON null rather than panicking on the request path.
-func mustFrame(value any) []byte {
-	encoded, err := json.Marshal(value)
-	if err != nil {
-		return []byte("null")
-	}
-	return encoded
+	// The usage chunk is left to Finish, which runs for every stream: emitting it
+	// here as well is what sent two of them, the first priced before the
+	// upstream's numbers had arrived (draft 021 F2).
+	return [][]byte{Frame(encoded)}
 }

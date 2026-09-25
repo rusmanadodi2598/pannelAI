@@ -166,7 +166,12 @@ func (e *Engine) answer(
 		return err
 	}
 	outcome.Body = body
-	outcome.Usage = usage
+	// A streamed answer reports its usage through the outcome inside relayStream,
+	// and hands back no separate body: overwriting here would discard the numbers
+	// the upstream sent and record the call as 0/0 (draft 021 F5).
+	if usage != nil {
+		outcome.Usage = usage
+	}
 	return nil
 }
 

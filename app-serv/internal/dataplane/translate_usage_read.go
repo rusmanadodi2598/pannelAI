@@ -32,8 +32,14 @@ func claudeUsageFromObject(usage object) schema.MessagesUsage {
 	}
 }
 
-// openAIUsageFromObject reads an OpenAI usage object from a decoded chunk.
+// openAIUsageFromObject reads an OpenAI usage object from a decoded chunk. A
+// null member decodes to a nil object, which is the upstream saying it has no
+// numbers rather than reporting zeros, so it yields nil: publishing a zero
+// usage would send a 0/0 chunk a client reads as measured (draft 021 F2).
 func openAIUsageFromObject(usage object) *schema.Usage {
+	if usage == nil {
+		return nil
+	}
 	parsed := schema.Usage{
 		PromptTokens:     intField(usage, "prompt_tokens"),
 		CompletionTokens: intField(usage, "completion_tokens"),

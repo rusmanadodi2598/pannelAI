@@ -32,7 +32,6 @@ import (
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
 // Do performs one call, retrying the same target per SPEC-API-001 §4. The
@@ -48,6 +47,12 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	// would be meaningless if the core still sent the request the provider
 	// rejects. The rewrite is mechanical and wire-agnostic because every wire
 	// the gateway translates names this member `stream`.
+	//
+	// The client's own shape is read first: it, not the rewritten upstream shape,
+	// decides the attempt's deadline, so a call a client made for one body stays
+	// bounded even when the provider answers it with a stream the gateway folds
+	// (draft 021, the missing total bound on the fold).
+	clientStream := call.Stream
 	if forcesStream(plugin) && !request.Stream {
 		streamed, err := forceStreamMember(request.Body)
 		if err != nil {
@@ -65,9 +70,10 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	// caller asked for.
 	call.Body = request.Body
 	call.Stream = request.Stream
+	deadline := attemptDeadline(clientStream, call.Provider)
 
 	for retries := 0; ; retries++ {
-		upstream, failure, err := t.attempt(ctx, plugin, call, url)
+		upstream, failure, err := t.attempt(ctx, plugin, call, url, deadline)
 		switch {
 		case err != nil:
 			decision := DecideRetry(call.Provider, plugin, Attempt{Retries: retries, Idempotent: call.Idempotent})
@@ -100,13 +106,12 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 }
 
 // attempt performs exactly one outbound call and classifies its outcome, so Do
-// only has to decide.
-func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Call, url string) (*Upstream, *UpstreamError, error) {
-	// A streamed call has no total cap, so only the non-streamed shape gets a
-	// deadline here; the idle guard covers a stalled stream instead.
+// only has to decide. deadline is what attemptDeadline reported: zero for a
+// streamed client, which SPEC-API-001 §4 bounds by the idle read instead.
+func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Call, url string, deadline time.Duration) (*Upstream, *UpstreamError, error) {
 	attemptCtx, cancel := context.WithCancel(ctx)
-	if !call.Stream {
-		attemptCtx, cancel = context.WithTimeout(ctx, totalTimeout(call.Provider))
+	if deadline > 0 {
+		attemptCtx, cancel = context.WithTimeout(ctx, deadline)
 	}
 
 	request, err := http.NewRequestWithContext(attemptCtx, http.MethodPost, url, bytes.NewReader(call.Body))
@@ -181,22 +186,4 @@ func sleep(ctx context.Context, wait time.Duration) error {
 	case <-timer.C:
 		return nil
 	}
-}
-
-// totalTimeout reports the total deadline for a non-streamed call, honouring a
-// registry override.
-func totalTimeout(entry registry.Provider) time.Duration {
-	if ms := entry.Transport.TimeoutMS; ms > 0 {
-		return time.Duration(ms) * time.Millisecond
-	}
-	return TotalTimeout
-}
-
-// idleTimeout reports how long a streamed body may stay silent, honouring a
-// registry override.
-func idleTimeout(entry registry.Provider) time.Duration {
-	if ms := entry.Transport.StallTimeoutMS; ms > 0 {
-		return time.Duration(ms) * time.Millisecond
-	}
-	return IdleTimeout
 }

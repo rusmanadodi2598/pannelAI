@@ -144,13 +144,19 @@ func (s *ChatService) Authenticate(ctx context.Context, presented string) (domai
 }
 
 // Relay runs one chat request through the pipeline and records its accounting.
+//
+// The accounting pair is written under a context the client's disconnect cannot
+// cancel: a call that died mid-flight still did the work and still counted on its
+// key, so losing its row left the two records disagreeing (draft 021 F6).
 func (s *ChatService) Relay(ctx context.Context, in dataplane.Request, sink dataplane.FrameSink, keyID string) (dataplane.Outcome, error) {
 	outcome, err := s.engine.Relay(ctx, in, sink)
+	recordCtx, cancel := accountingContext(ctx)
+	defer cancel()
 	if err != nil {
-		s.record(ctx, in, outcome, keyID, dataplane.AsError(err).Code)
+		s.record(recordCtx, in, outcome, keyID, dataplane.AsError(err).Code)
 		return dataplane.Outcome{}, err
 	}
-	s.record(ctx, in, outcome, keyID, "")
+	s.record(recordCtx, in, outcome, keyID, "")
 	return outcome, nil
 }
 
