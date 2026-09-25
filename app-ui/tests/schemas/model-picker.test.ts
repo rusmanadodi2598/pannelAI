@@ -50,9 +50,17 @@ describe('activeProviderIds', () => {
 		expect([...active]).toEqual(['openai']);
 	});
 
-	it('drops a no_auth provider with no endpoint, because this gateway still needs a row to route', () => {
+	it('drops a credential-free provider with no endpoint, because it needs no configuration to route', () => {
 		const active = activeProviderIds([
 			provider({ id: 'opencode', no_auth: true, endpoint_count: 0 })
+		]);
+
+		expect([...active]).toEqual(['opencode']);
+	});
+
+	it('still drops a keyed provider with no endpoint', () => {
+		const active = activeProviderIds([
+			provider({ id: 'anthropic', no_auth: false, endpoint_count: 0 })
 		]);
 
 		expect(active.size).toBe(0);
@@ -106,6 +114,29 @@ describe('pickerSections', () => {
 		});
 
 		expect(sections).toEqual([]);
+	});
+
+	it('offers a credential-free provider with no endpoint, because the router serves it anyway', () => {
+		const sections = pickerSections({
+			catalog: [
+				model({
+					id: 'opencode/space-bunny-free',
+					provider_id: 'opencode',
+					model_id: 'space-bunny-free',
+					display_name: 'Space Bunny'
+				})
+			],
+			providers: [
+				provider({ id: 'opencode', name: 'OpenCode Free', no_auth: true, endpoint_count: 0 })
+			],
+			combos: []
+		});
+
+		expect(sections).toHaveLength(1);
+		expect(sections[0].key).toBe('opencode');
+		expect(sections[0].options).toEqual([
+			{ value: 'opencode/space-bunny-free', label: 'Space Bunny' }
+		]);
 	});
 
 	it('sorts one provider rows by label and falls back to the model id when there is no display name', () => {

@@ -298,7 +298,7 @@ the rotation cursor is Redis-backed.
 
 | Method | Path | Auth | Description | Phase |
 |---|---|---|---|---|
-| GET | `/api/v1/models/catalog` | S | Merged catalog across providers; `?provider_id=&capability=vision|tools&q=&active=true|false`; excludes disabled. `active=true` answers only rows whose provider holds ≥1 active upstream endpoint (the router's own candidate population — `selection.go` selects status `active` under the canonical id); `active=false` and absent narrow nothing; any other spelling is `VALIDATION_ERROR` (draft 025) | P1 |
+| GET | `/api/v1/models/catalog` | S | Merged catalog across providers; `?provider_id=&capability=vision|tools&q=&active=true|false`; excludes disabled. `active=true` answers only rows whose provider the router can serve right now: a provider holding ≥1 active upstream endpoint (the router's own candidate population — `selection.go` selects status `active` under the canonical id), **or** a credential-free (`no_auth`) provider the router serves on a synthesized virtual endpoint with no row stored (draft 029 §4.8 F8 — `opencode/space-bunny-free` answers 200 on an empty endpoint table). `active=false` and absent narrow nothing; any other spelling is `VALIDATION_ERROR` (draft 025, draft 031) | P1 |
 | GET | `/api/v1/models/custom` | S | List custom models; `?provider_id=` | P2 |
 | POST | `/api/v1/models/custom` | S | `{provider_id, model_id, display_name, capabilities?}` | P2 |
 | DELETE | `/api/v1/models/custom/{id}` | S | Remove custom model | P2 |

@@ -1,15 +1,17 @@
 // The reference picker's data model (docs/SPEC-UI/001-SPEC-UI.md §6.4).
 //
 // The reference never offers its whole registry. `ModelSelectModal.js:216-219` builds the set it shows
-// from the providers that have a connection ("Only show connected providers"), and this module is that
-// rule for this panel: the catalog is the whole registry, and a provider that was never configured must
-// not be offered as if it could route.
+// from the providers that have a connection ("Only show connected providers") **plus** the no-auth
+// providers (`...noAuthIds`), and this module is that rule for this panel: the catalog is the whole
+// registry, and a provider that was never configured must not be offered as if it could route.
 //
-// The panel's own word for "configured" is the provider row's `endpoint_count`; `statusSummaryText`
-// already reads a zero as "No endpoint configured". The filter is exactly `endpoint_count > 0` and not
-// the reference's "or no_auth", because this gateway selects an endpoint row for every provider before
-// it routes, the no_auth ones included (draft 024 §3.7 F7), so a no_auth provider with no row answers
-// `NO_PROVIDER_AVAILABLE` like any other. Offering it would be the same defect this pass removes.
+// The union is the reference's own, because a credential-free provider needs no configuration to be
+// routable: the router synthesizes a virtual endpoint for it when the operator stored none (draft 029
+// §4.8 F8, `dataplane/selection_virtual.go`), so `opencode/space-bunny-free` answers 200 with an empty
+// endpoint table. Reading only `endpoint_count > 0` was this module's earlier premise — that a no_auth
+// provider with no row answers `NO_PROVIDER_AVAILABLE` like any other — and F8 made that premise false.
+// Leaving it here hid the whole free lane from the picker, which is how a custom node came to be built
+// for a provider that needs no configuration at all.
 //
 // A provider the catalog carries but the list does not (the registry's hidden entries, which the list
 // route excludes because their id is reachable only through another entry's alias) is dropped rather
@@ -40,10 +42,13 @@ export type PickerSection = {
 	options: PickerOption[];
 };
 
-/** The ids whose provider has at least one endpoint, which is this panel's "active". */
+/** The ids this panel can route right now: a provider with at least one endpoint, or a
+ * credential-free one the router serves on a synthesized endpoint without any configuration. */
 export function activeProviderIds(providers: Provider[]): Set<string> {
 	return new Set(
-		providers.filter((provider) => provider.endpoint_count > 0).map((provider) => provider.id)
+		providers
+			.filter((provider) => provider.endpoint_count > 0 || provider.no_auth)
+			.map((provider) => provider.id)
 	);
 }
 

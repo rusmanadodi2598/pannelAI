@@ -110,7 +110,7 @@ func foldResponsesEvents(events [][]byte) ([]byte, *schema.Usage, error) {
 			continue
 		}
 		switch stringField(event, "type") {
-		case EventResponseCompleted, EventResponseDone, EventResponseFailed:
+		case EventResponseCompleted, EventResponseDone, EventResponseIncomplete, EventResponseFailed:
 			if response, ok := objectField(event, "response"); ok {
 				return mustJSON(response), foldUsage(response, TargetResponses), nil
 			}

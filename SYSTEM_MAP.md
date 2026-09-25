@@ -235,6 +235,36 @@ stateDiagram-v2
 Referensi member yang tidak lagi resolve dilewati, bukan menggagalkan combo: resolusi combo memulai dari
 referensi pertama yang masih routable, dan panel melaporkan referensi rusak lewat slot yang hilang.
 
+### 3.5a Provider tanpa kredensial (satu aturan, tiga pembaca)
+
+Provider yang menjawab tanpa kredensial (`no_auth` tingkat provider atau transport, atau
+`auth_type: no_auth`) punya satu aturan yang dibaca tiga tempat, supaya panel dan router tidak bisa
+berbeda jawaban (draft 029 §4.8 F8, draft 031):
+
+- **Pemilihan endpoint** (`internal/dataplane/selection_virtual.go`) menyintesis satu `UpstreamEndpoint`
+  virtual (`virtual:<provider-id>`, labuh "Public (no credential)") bila provider itu kredensial-free
+  **dan** operator tidak menyimpan satu baris pun. Baris tersimpan selalu menang; provider ber-kunci tidak
+  pernah dibuatkan endpoint.
+- **Filter katalog `?active=true`** (`internal/service/model_catalog_active.go`) menambahkan provider
+  kredensial-free tanpa baris ke himpunan aktif, karena itulah populasi yang benar-benar dilayani router.
+  Ini yang tadinya membuat panel menyembunyikan lane free tier sementara data plane menjawab 200.
+- **Picker panel** (`app-ui/src/lib/schemas/model-picker.ts`) memakai aturan reference yang sama:
+  `endpoint_count > 0 || no_auth`.
+
+Predikatnya tinggal di satu tempat, `registry.Provider.NeedsNoCredential()`
+(`internal/registry/credential_free.go`), supaya ketiga pembaca itu tidak mengulang ejaan yang sama.
+
+**Custom node tetap ber-kunci.** `registry.Synthesize` selalu menulis `auth_type: api_key`, jadi node
+`provider_nodes` tidak pernah credential-free: sebuah node adalah base URL operator, bukan provider yang
+menjawab anonim (reference pun selalu memasang kredensial untuk node). Lane free tier bawaan (mis.
+`opencode`, alias `oc`) tidak butuh baris endpoint sama sekali, jadi operator tidak perlu membuat node
+untuk memakainya.
+
+Di jalur forced-stream, event terminal Responses yang diterima adalah
+`response.completed`, `response.done`, `response.incomplete`, dan `response.failed`. `response.incomplete`
+wajib ada: upstream OpenCode mengirimnya setiap kali jawaban berhenti di `max_output_tokens`, dan fold yang
+melewatkannya mengubah jawaban yang lengkap menjadi 502 `UPSTREAM_ERROR`.
+
 ### 3.6 Jalur media (§7.10)
 
 Enam rute data plane media (`/audio/speech`, `/audio/transcriptions`, `/audio/voices`, `/images/generations`,

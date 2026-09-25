@@ -38,6 +38,7 @@ const (
 	EventResponseCustomInputDelta = "response.custom_tool_call_input.delta"
 	EventResponseCompleted        = "response.completed"
 	EventResponseDone             = "response.done"
+	EventResponseIncomplete       = "response.incomplete"
 	EventResponseFailed           = "response.failed"
 	EventResponseError            = "error"
 )

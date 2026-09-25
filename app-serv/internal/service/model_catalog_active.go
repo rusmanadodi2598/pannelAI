@@ -58,13 +58,24 @@ type ActiveProviderSet interface {
 // the rows carry, which is the same spelling the endpoint table stores and the
 // router's candidates query selects by, so no name resolution happens here.
 //
-// The set is the router's own candidates predicate (`status = 'active'`), which
-// is deliberately not the same as "healthy this second": an active endpoint in a
-// backoff window is a candidate the router will serve again when the window
-// closes, while a disabled or errored endpoint is a configuration an operator
-// has to change. A provider whose every endpoint is the former stays offered;
-// one whose every endpoint is the latter disappears, which is what makes the
-// parameter worth asking for.
+// The set is the router's own candidates predicate, which is deliberately not the
+// same as "healthy this second": an active endpoint in a backoff window is a
+// candidate the router will serve again when the window closes, while a disabled
+// or errored endpoint is a configuration an operator has to change. A provider
+// whose every endpoint is the former stays offered; one whose every endpoint is
+// the latter disappears, which is what makes the parameter worth asking for.
+//
+// A provider that needs no credential is added to the set even with no stored
+// row, because that is what the router does: `Selector.candidates` synthesizes a
+// virtual endpoint for a credential-free entry with no active row (draft 029 §4.8
+// F8), so `opencode/space-bunny-free` answers 200 with an empty endpoint table.
+// Reading only the table answered the opposite and hid the whole free lane from
+// the panel — the picker then offered the operator nothing that works, which is
+// how a custom node came to be built for a provider that needs none.
+//
+// The credential-free half is asked of the registry rather than guessed from the
+// row, so the filter and the router cannot disagree about which providers those
+// are: both read `Provider.NeedsNoCredential`.
 //
 // A missing seam is a refusal, not an empty answer: a deployment that wired no
 // set reader can answer the whole catalog but cannot answer "which providers
@@ -79,7 +90,33 @@ func (s *ModelCatalogService) activeProviders(ctx context.Context, providerIDs [
 	if len(providerIDs) == 0 {
 		return map[string]bool{}, nil
 	}
-	return s.active.ActiveProviders(ctx, providerIDs)
+	active, err := s.active.ActiveProviders(ctx, providerIDs)
+	if err != nil {
+		return nil, err
+	}
+	return s.withCredentialFreeProviders(active, providerIDs), nil
+}
+
+// withCredentialFreeProviders adds every provider the router would serve on a
+// synthesized endpoint to the active set.
+//
+// It runs after the one table read rather than inside it, because the answer for
+// these providers does not come from a row: it comes from the registry entry, and
+// asking the table again would not find one. Only a provider absent from the set
+// is considered, so a stored active row keeps its own answer and a keyed provider
+// is never invented.
+func (s *ModelCatalogService) withCredentialFreeProviders(active map[string]bool, providerIDs []string) map[string]bool {
+	for _, id := range providerIDs {
+		if active[id] {
+			continue
+		}
+		entry, found := s.index.Provider(id)
+		if !found || !entry.NeedsNoCredential() {
+			continue
+		}
+		active[id] = true
+	}
+	return active
 }
 
 // distinctProviderIDs returns the distinct canonical ids of the given rows, in

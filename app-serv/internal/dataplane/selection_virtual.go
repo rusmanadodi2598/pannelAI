@@ -30,7 +30,6 @@
 package dataplane
 
 import (
-	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -63,7 +62,7 @@ func virtualEndpoint(reg RegistryReader, providerID string, stored []domain.Upst
 		return domain.UpstreamEndpoint{}, false
 	}
 	entry, found := reg.Provider(providerID)
-	if !found || !entryNeedsNoCredential(entry) {
+	if !found || !entry.NeedsNoCredential() {
 		return domain.UpstreamEndpoint{}, false
 	}
 	endpoint, err := domain.NewUpstreamEndpoint(
@@ -78,13 +77,6 @@ func virtualEndpoint(reg RegistryReader, providerID string, stored []domain.Upst
 		return domain.UpstreamEndpoint{}, false
 	}
 	return endpoint, true
-}
-
-// entryNeedsNoCredential reports whether a registry entry answers without a
-// credential. The two spellings the document uses are both read, because the
-// reference writes one on the provider and the other on its transport.
-func entryNeedsNoCredential(entry registry.Provider) bool {
-	return entry.NoAuth || entry.Transport.NoAuth || strings.TrimSpace(entry.AuthType) == registry.AuthNone
 }
 
 // virtualCandidates returns the provider's stored endpoints, or the single

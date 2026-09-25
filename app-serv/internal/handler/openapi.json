@@ -8156,7 +8156,7 @@
             "name": "active",
             "in": "query",
             "required": false,
-            "description": "When true, only rows whose provider holds at least one active upstream endpoint. False and absent narrow nothing. Any other value is a VALIDATION_ERROR.",
+            "description": "When true, only rows whose provider the router can serve right now: a provider holding at least one active upstream endpoint, or a credential-free provider the router serves on a synthesized endpoint with none stored. False and absent narrow nothing. Any other value is a VALIDATION_ERROR.",
             "schema": {
               "type": "boolean",
               "enum": [
