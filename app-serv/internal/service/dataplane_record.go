@@ -8,12 +8,14 @@
 // @uses      internal/dataplane, internal/domain, context, strconv, time.
 // @reason    SPEC-API-001 §7.15's pipeline ends with "usage + quota + log
 //
-//	recording", and the media plane has no token counts to record — the
+//	recording", and the media plane has no token counts to record; the
 //	owner's D3 decision (2026-09-19) is that a media call still produces
 //	both rows, with tokens 0 and the kind's own per-query price where one
 //	is declared. Writing that rule once here is what keeps the media and
 //	embeddings services from disagreeing about what a recorded call looks
-//	like, the way they would if each built its own row.
+//	like, the way they would if each built its own row. Both writes also
+//	outlive the client that asked for the call (draft 021 F6), which is
+//	why the detachment lives here rather than at each call site.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -71,6 +73,14 @@ func (r dataPlaneRecorder) record(ctx context.Context, outcome dataplane.Outcome
 	if r.usage == nil && r.logs == nil && r.quotas == nil {
 		return
 	}
+	// The write outlives the client that asked for the call: a call that died
+	// mid-flight still did the work and still counted on its key, so losing its
+	// row left the two records disagreeing (draft 021 F6). The rule lives in
+	// this recorder rather than at each call site because every media-family
+	// service writes through it, and the detached context keeps the request's
+	// values so the rows still carry the router's request id.
+	ctx, cancel := accountingContext(ctx)
+	defer cancel()
 	requestID := requestIDOrNew(ctx, r.requestID, r.clock)
 	status := domain.UsageStatusSuccess
 	code, message := "", ""
@@ -102,7 +112,7 @@ func (r dataPlaneRecorder) record(ctx context.Context, outcome dataplane.Outcome
 		r.quotas.Record(ctx, outcome.EndpointID, 1)
 	}
 	if r.logs != nil {
-		// reason: same as above — the log is the second half of the accounting
+		// reason: same as above; the log is the second half of the accounting
 		// pair, not a condition of the answer.
 		_, _ = r.logs.Record(ctx, domain.RequestLogInput{
 			RequestID:    requestID,
@@ -131,16 +141,22 @@ func requestLogStatus(status domain.UsageStatus) domain.RequestLogStatus {
 // appears in the §7.13 Logs screen the way a chat refusal already does.
 //
 // No usage row is written: nothing was spent, and the usage aggregate requires a
-// provider and a model — the same deliberate skip the chat plane makes for a
-// call refused before the pipeline ran. The stored error text is the code
+// provider and a model; that is the same deliberate skip the chat plane makes
+// for a call refused before the pipeline ran. The stored error text is the code
 // alone: the message is ours and the row must not hold text an upstream can
 // influence (the G6/G18 rule).
+//
+// The row outlives the client the same way a served call's pair does: the key
+// counter already counted the refusal, so dropping the row would leave the two
+// records disagreeing (draft 021 F6).
 func (r dataPlaneRecorder) refuse(ctx context.Context, outcome dataplane.Outcome, keyID string, failure error) {
 	if r.logs == nil || failure == nil {
 		return
 	}
+	ctx, cancel := accountingContext(ctx)
+	defer cancel()
 	// reason: the refusal's log row is bookkeeping, not a condition of the
-	// client's error — a failed write retries on the next call.
+	// client's error; a failed write retries on the next call.
 	_, _ = r.logs.Record(ctx, domain.RequestLogInput{
 		RequestID:    requestIDOrNew(ctx, r.requestID, r.clock),
 		GatewayKeyID: keyID,
