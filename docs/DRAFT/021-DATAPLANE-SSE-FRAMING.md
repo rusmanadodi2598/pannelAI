@@ -6,7 +6,7 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18); uji request bersih 2026-09-24 16:33 (setelah `usage_records` dikosongkan atas permintaan owner, satu request per ref persis seperti yang disebut, tanpa probe) menjawab `th-1` dan `pi-agent` dengan 200 `pong` sementara tiga nama telanjang tetap 400, seluruhnya tercatat di akuntansi yang mulai dari nol (§19); cek filtering combo dan provider aktif 2026-09-24 membandingkan empat permukaan di kedua pohon, mencatat yang sudah setara (combo tanpa syarat aktivitas di kedua pohon, predikat picker panel sama dengan picker REFERENCE, `?active=true` katalog bekerja) dan menemukan F8 (daftar klien tanpa filter provider aktif), F9 (picker combo hanya halaman tabel), dan F10 (model custom provider aktif tidak masuk daftar klien) (§20) |
+| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18); uji request bersih 2026-09-24 16:33 (setelah `usage_records` dikosongkan atas permintaan owner, satu request per ref persis seperti yang disebut, tanpa probe) menjawab `th-1` dan `pi-agent` dengan 200 `pong` sementara tiga nama telanjang tetap 400, seluruhnya tercatat di akuntansi yang mulai dari nol (§19); cek filtering combo dan provider aktif 2026-09-24 membandingkan empat permukaan di kedua pohon, mencatat yang sudah setara (combo tanpa syarat aktivitas di kedua pohon, predikat picker panel sama dengan picker REFERENCE, `?active=true` katalog bekerja) dan menemukan F8 (daftar klien tanpa filter provider aktif), F9 (picker combo hanya halaman tabel), dan F10 (model custom provider aktif tidak masuk daftar klien) (§20); uji combo `pi-agent` 2026-09-25 08:50 (tiga mode, sembilan panggilan, hanya `pi-agent` yang dipanggil) mengulang F1 sampai F3 dan F5 pada binary baru, memverifikasi rotasi tiga anggota `opencode` lewat endpoint virtual tanpa kredensial, dan memverifikasi mekanisme F5 di `engine_relay.go:168` (§22) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
 | **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
@@ -691,3 +691,76 @@ ronde ini.
 
 Bukti: `/tmp/smoke10/stream-th1.sse`; `/tmp/smoke10/stream-piagent.sse` tidak pernah tercipta karena
 kedua percobaannya menggantung 0 byte. Tidak ada kode yang disentuh ronde ini.
+
+## 22. Uji chat, streaming, dan tool atas combo `pi-agent` (2026-09-25 08:50-08:53)
+
+Owner menempel endpoint dan satu model, combo `pi-agent`, meminta tiga mode uji (chat, streaming, tool),
+dan melarang menyentuh model lain. Ronde ini hanya `pi-agent` yang dipanggil: tidak ada `GET /models`,
+tidak ada model lain, tidak ada probe. Gateway yang melayani adalah build baru
+(`/tmp/go-build1157667703/b001/exe/app-serv`, PID 3695333, mulai 08:43:38) dan kuncinya tetap
+satu-satunya baris `gateway_keys` yang aktif (`sandbox`, hint `sk-…rmEu`, `request_count` 117 menjadi 126).
+
+Combo berubah sejak §21: `combos.updated_at` 2026-09-25 08:48:34, `strategy` `round_robin`,
+`sticky_limit` 1, tiga anggota `opencode/space-bunny-free`, `opencode/mimo-v2.6-flash-free`, dan
+`opencode/muse-spark-1.3-contributor-free`. Ketiganya dilayani tanpa baris `upstream_endpoints`:
+`usage_records.endpoint_id` menulis `virtual:opencode` (`VirtualEndpointIDPrefix`,
+`internal/dataplane/selection_virtual.go:42`), jadi keluarga model OpenCode Free berjalan tanpa kredensial
+dan tanpa endpoint tersimpan. Tabel endpoint tetap 3 baris, semuanya `th-1`, dan tidak satu pun tersentuh
+ronde ini.
+
+Sembilan panggilan, dan rotasi combo terverifikasi berpola 0,1,2 berulang (`space-bunny-free`,
+`mimo-v2.6-flash-free`, `muse-spark-1.3-contributor-free`); setiap baris `usage_records` mencocokkan
+anggota yang menjawab, dan counter Redis `pannelai:combo:rotation:c6c85ab8…` berakhir di 9.
+
+| Uji | Anggota yang menjawab | Hasil |
+| --- | --- | --- |
+| Chat non-stream ("Balas satu kata saja: pong") | `space-bunny-free` | 200, 2,55 s, `pong` + `reasoning_content`, 414/43/457 |
+| Streaming (prompt sama) | `mimo-v2.6-flash-free` | 200, TTFB 22,2 s, 4480 byte, 13 frame ber-`data: `, teks `pong`, usage kawat 130/36/166 |
+| Tool `get_weather` (Jakarta), `max_tokens` 256 | `muse-spark-1.3-contributor-free` | 200, 5,84 s, `finish_reason` `length`, konten kosong, 639/256 (253 token reasoning) |
+| Tool yang sama, `max_tokens` 2048 (ulang) | `space-bunny-free` | 200, 1,14 s, `tool_calls` `get_weather({"city": "Jakarta"})`, `finish_reason` `tool_calls`, 488/47/535 |
+| Tool + `stream` | `mimo-v2.6-flash-free` | 200, 20,0 s, 4222 byte, `tool_calls` terakit dari delta, `finish_reason` `tool_calls` |
+| `stream` + `stream_options.include_usage`, `max_tokens` 64 | `muse-spark-1.3-contributor-free` | 200, 2,56 s, 194 byte, tanpa frame konten sama sekali |
+| `include_usage`, `max_tokens` 1024, tiga kali | ketiganya | 200, `pong` normal (1898, 4952, 1328 byte) |
+
+Tidak ada panggilan yang menggantung ronde ini (0 dari 9); lima hang §21 tidak terulang.
+
+### 22.1 Temuan: F1, F2, F3, dan F5 tetap hidup, dan mekanisme F5 kini terverifikasi
+
+- **F1.** Frame yang dibangun gateway sendiri keluar tanpa prefiks `data: ` dan tanpa baris kosong
+  penutup, lalu menempel ke byte berikutnya. Tanpa `include_usage` baris terakhir adalah
+  `{...finish_reason":"stop"}data: [DONE]`; dengan `include_usage`, baris 6 `stream-03a.sse` memuat
+  `{0/0/0}data: {usage asli}` (chunk gateway menempel ke frame upstream). Tidak ada satu pun baris yang
+  cocok `^data: \[DONE\]$`. Jalur kodenya tetap `mustFrame` yang hanya `json.Marshal`
+  (`internal/dataplane/translate_stream_openai.go:208`), sementara `Frame` yang menambahkan `data: ` dan
+  `\n\n` dipakai hanya untuk payload upstream (`internal/dataplane/stream.go:34`).
+- **F2.** Dengan `include_usage` usage chunk terkirim dua kali. `stream-03c.sse` memuat satu baris dengan
+  dua objek usage identik (571/219/790) menempel ke `data: [DONE]`; `stream-03a.sse` memuat dua chunk
+  berbeda: 0/0/0 lebih dulu, lalu 414/34/448. Mekanisme chunk nol: frame finish upstream membawa
+  `"usage":null`, `objectField` mengembalikan `(nil, true)` untuk JSON `null`
+  (`internal/dataplane/translate_wire.go:94`), dan `openAIUsageFromObject(nil)` mengembalikan Usage nol
+  yang bukan nil (`internal/dataplane/translate_usage_read.go:36`), sehingga cabang `includeUsage` di
+  `translate_stream_openai.go:179` ikut mengirim chunk sebelum angka asli tiba.
+- **F3.** `finish_reason` muncul dua kali di setiap stream: sekali dari frame finish upstream, sekali dari
+  chunk penutup sintetis gateway.
+- **F5, mekanisme terverifikasi.** Keenam baris stream adalah 0/0 dengan `status` `success`, padahal kawat
+  membawa 414/34/448, 130/34/164, dan 571/219/790. Sebabnya dua baris: `relayStream` menulis
+  `outcome.Usage = state.Usage()` (`internal/dataplane/engine_stream.go:77`), lalu `readAnswer`
+  mengembalikan `nil` untuk cabang stream (`internal/dataplane/engine_relay.go:184`) dan `answer` menimpa
+  `outcome.Usage` dengan nil itu (`internal/dataplane/engine_relay.go:168-169`). `record` membaca
+  `outcome.Usage` (`internal/service/chat_record.go:73`), jadi angka yang sudah dipegang gateway dibuang
+  sebelum dicatat. Baris non-stream pada jam yang sama mencatat token dengan benar, jadi ini khusus jalur
+  stream.
+
+### 22.2 Akuntansi
+
+`usage_records` 40 menjadi 49 (+9, semuanya `success`), `request_logs` 160 menjadi 169 (+9),
+`request_count` kunci `sandbox` 117 menjadi 126 (+9). Sembilan baris baru semuanya `provider_id` `opencode`,
+`endpoint_id` `virtual:opencode`, `combo` `pi-agent`: tiga non-stream mencatat token nyata (414/43,
+639/256, 488/47) dan enam stream mencatat 0/0. Satu di antaranya, stream `muse-spark` dengan `max_tokens`
+64, mengembalikan stream kosong (hanya chunk penutup sintetis dan `[DONE]`) tetapi tetap tercatat
+`success`; anggota yang sama menjawab `pong` normal pada `max_tokens` 1024, jadi bentuk kosong itu batas
+budget model reasoning, bukan kegagalan gateway.
+
+Bukti: `/tmp/smoke11/` (`chat-01.json`, `stream-01.sse`, `tool-01.json`, `tool-02.json`,
+`toolstream-01.sse`, `stream-02-usage.sse`, `stream-03a.sse`, `stream-03b.sse`, `stream-03c.sse`, plus
+berkas `.headers` masing-masing). Tidak ada kode yang disentuh ronde ini.
