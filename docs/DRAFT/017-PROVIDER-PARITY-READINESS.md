@@ -1018,7 +1018,7 @@ Semuanya dijalankan pada working tree akhir:
 - **Regenerasi `registry.yaml`**: `tools/registry-gen.mjs` diukur dan **tidak** mereproduksi berkas
   yang ter-commit — regenerasi dari pin `db4499d` menghasilkan `revision: 9router@db4499d6` dan
   **kehilangan** tiga model OpenCode Free serta sepuluh voice TTS yang ditambahkan tangan di
-  commit `79d7cdf`. Karena itu `auth_query` **tidak** ditulis lewat regenerasi; generator hanya
+  commit `34f2c38`. Karena itu `auth_query` **tidak** ditulis lewat regenerasi; generator hanya
   diperbaiki agar tidak menjatuhkannya bila kelak dijalankan. Ketidakreproduksian ini cacat
   tersendiri dan dicatat di sini sebagai temuan baru untuk draft 011 §8, bukan ditambal diam-diam.
 - **`app-ui`**: pass ini tidak menyentuh satu berkas pun di sana. Draft
