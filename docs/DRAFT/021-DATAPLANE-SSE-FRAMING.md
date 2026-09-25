@@ -6,10 +6,10 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner. Bukan k
 
 |                      |                                                                                                                                                                                          |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | OPEN 2026-09-23. F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18); uji request bersih 2026-09-24 16:33 (setelah `usage_records` dikosongkan atas permintaan owner, satu request per ref persis seperti yang disebut, tanpa probe) menjawab `th-1` dan `pi-agent` dengan 200 `pong` sementara tiga nama telanjang tetap 400, seluruhnya tercatat di akuntansi yang mulai dari nol (§19); cek filtering combo dan provider aktif 2026-09-24 membandingkan empat permukaan di kedua pohon, mencatat yang sudah setara (combo tanpa syarat aktivitas di kedua pohon, predikat picker panel sama dengan picker REFERENCE, `?active=true` katalog bekerja) dan menemukan F8 (daftar klien tanpa filter provider aktif), F9 (picker combo hanya halaman tabel), dan F10 (model custom provider aktif tidak masuk daftar klien) (§20); uji combo `pi-agent` 2026-09-25 08:50 (tiga mode, sembilan panggilan, hanya `pi-agent` yang dipanggil) mengulang F1 sampai F3 dan F5 pada binary baru, memverifikasi rotasi tiga anggota `opencode` lewat endpoint virtual tanpa kredensial, dan memverifikasi mekanisme F5 di `engine_relay.go:168` (§22); patch F1, F2, F3, F5, timeout fold, dan F6 mendarat 2026-09-25 sebagai commit lokal `7078835` dengan suite hermetik dan lint gate hijau serta live pass di port 9091, sisa kerja di §23.2 (§23) |
+| **Status**           | **CLOSED 2026-09-25** (dibuka 2026-09-23). F1 sampai F5 terukur di gateway yang berjalan; belum ada perbaikan, dan belum ada keputusan siapa yang memperbaiki. Uji ulang 17:50 menemukan tabel endpoint kosong (§9); setelah endpoint dibuat, uji ulang 17:55 menjawab dan F1 sampai F3 tetap (§11), plus F5 (§12); uji ulang 22:41 mengulang F1 sampai F3 dan F5 pada byte baru, plus F6 (§13); uji ulang 23:07 pada gateway yang sudah di-restart mengulang F1, F2, F3, dan F5 dengan bentuk byte yang sama (§14); cek dua model `oczen` 23:14 menjawab 503 karena node itu tanpa endpoint (§15); uji empat model 2026-09-24 08:43 menjawab `th-1` dan menolak tiga model `oczen` (400 untuk bentuk telanjang, 503 untuk bentuk terkuantifikasi, §16); uji ulang empat model yang sama 09:12 hasilnya identik dengan §16 dan F1 sampai F3 serta F5 tetap (§17); uji combo `pi-agent` 2026-09-24 15:45 (empat model yang sama plus combo, pada gateway yang di-restart 15:36 dengan override rotasi per provider) mengulang F1 sampai F3 dan F5, memverifikasi rotasi `round-robin` `sticky_limit` 2 pada ketiga kredensial `th-1`, dan menemukan F7: kredensial `Key 2` menggantung setiap panggilan tanpa timeout, tanpa failover, dan tanpa baris akuntansi (§18); uji request bersih 2026-09-24 16:33 (setelah `usage_records` dikosongkan atas permintaan owner, satu request per ref persis seperti yang disebut, tanpa probe) menjawab `th-1` dan `pi-agent` dengan 200 `pong` sementara tiga nama telanjang tetap 400, seluruhnya tercatat di akuntansi yang mulai dari nol (§19); cek filtering combo dan provider aktif 2026-09-24 membandingkan empat permukaan di kedua pohon, mencatat yang sudah setara (combo tanpa syarat aktivitas di kedua pohon, predikat picker panel sama dengan picker REFERENCE, `?active=true` katalog bekerja) dan menemukan F8 (daftar klien tanpa filter provider aktif), F9 (picker combo hanya halaman tabel), dan F10 (model custom provider aktif tidak masuk daftar klien) (§20); uji combo `pi-agent` 2026-09-25 08:50 (tiga mode, sembilan panggilan, hanya `pi-agent` yang dipanggil) mengulang F1 sampai F3 dan F5 pada binary baru, memverifikasi rotasi tiga anggota `opencode` lewat endpoint virtual tanpa kredensial, dan memverifikasi mekanisme F5 di `engine_relay.go:168` (§22); patch F1, F2, F3, F5, timeout fold, dan F6 mendarat 2026-09-25 sebagai commit lokal `7078835` dengan suite hermetik dan lint gate hijau serta live pass di port 9091, sisa kerja di §23.2 (§23); sisa akuntansi keluarga media (record dan refuse, delapan call site) ditutup 2026-09-25 sebagai commit lokal `2675852` dengan A/B live di port 9091 dan gate hijau, sehingga register ini CLOSED dengan sisa F4 dan F8-F10 tercatat di §24.2 (§24) |
 | **Permintaan owner** | "Lanjut testing server dan response AI nya: Endpoint: http://127.0.0.1:9090 \| Api Key: sk-…Ddj6 \| Models: th-1/deepseek-v4.1-flash:free" lalu "Update endpoitnya: http://127.0.0.1:9090/api/v1" (2026-09-23) |
 | **Scope**            | Pengujian gateway yang sedang berjalan di `127.0.0.1:9090`; tidak ada kode yang disunting pass ini                                                                                         |
-| **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`; dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
+| **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/stream.go`, `internal/handler/datplane_errors.go`, `internal/service/dataplane_record.go` (akuntansi); dampak panel di `app-ui/src/lib/schemas/playground-stream.ts` dan `app-ui/src/lib/api/playground-reader.ts` |
 | **Tanggal**          | 2026-09-23                                                                                                                                                                              |
 
 ## 1. Yang diuji, dan yang bekerja
@@ -828,3 +828,58 @@ Catatan desain yang terukur:
 - Context akuntansi yang sama belum diterapkan ke tiga jalur yang masih memakai context klien:
   `media_perform.go:81`, `embeddings_call.go:66`, `systemone.go:197`. F6 yang terukur hanya di jalur chat.
 - F4 dan F8 sampai F10 (permukaan daftar model) tidak disentuh pass ini.
+
+## 24. Sisa akuntansi keluarga media, dan penutupan register (2026-09-25)
+
+Owner memutuskan `patch dulu aja sisa akuntansinya, supaya data plane ini bisa kita (CLOSED)`, jadi
+§23.2 baris kedua dikerjakan dan register ini ditutup.
+
+Aturan F6 sebelumnya hidup di call site chat (`ChatService.Relay` membungkus `record` dengan
+`accountingContext`). Keluarga media punya delapan call site yang menulis lewat satu recorder bersama,
+jadi aturannya pindah ke recorder itu sendiri: `dataPlaneRecorder.record` (pasangan usage + log, dipakai
+`media_perform.go:81`, `embeddings_call.go:66`, `systemone.go:197`) dan `dataPlaneRecorder.refuse` (satu
+baris log penolakan, dipakai `embeddings.go:103`, `systemone.go:104`, `media_refusal.go:41`,
+`media_search.go:44` dan `:49`) kini memanggil `accountingContext` masing-masing. Penolakan ikut
+dibungkus karena penolakan pun dihitung `gateway_keys.request_count`, jadi kehilangan barisnya
+meninggalkan ketidakcocokan yang sama. Context hasil `context.WithoutCancel` tetap membawa nilai
+permintaan (request id router ikut ke baris) dan tetap berbatas 5 detik. Empat em dash di berkas yang
+disentuh ikut dibersihkan (R-02).
+
+### 24.1 Bukti
+
+- Dua test baru di `dataplane_record_context_test.go` menjalankan kedua tulisan dengan context klien yang
+  sudah dibatalkan dan double yang menolak tulisan pada context yang dibatalkan seperti driver DB,
+  masing-masing dengan negative control. Keduanya MERAH pada recorder pra-patch (0 baris) setelah
+  `dataplane_record.go` di-stash, dan hijau sesudahnya.
+- Gate di pohon beku: `go test -race -count=1 ./...` hijau (17 paket, 3m50s); `go-lint.sh` hijau (vet
+  plain dan tagged, gofmt, staticcheck plain dan tagged, `golangci-lint` 0 issues). Satu warning batas
+  baris ada di `repository/postgres/quota.go` (222 baris), berkas pekerjaan aktor lain, dilaporkan dan
+  tidak disentuh.
+- A/B live di gateway kedua `127.0.0.1:9091` (gateway owner tidak disentuh), `POST /api/v1/embeddings`
+  `th-1/whisper-1` dengan klien diputus di tengah panggilan (`curl --max-time`, di bawah `LC_ALL=C`
+  karena locale `id_ID` host ini menolak detik pecahan):
+  - Biner pra-patch: enam panggilan terputus menulis 0 baris `usage_records` dan 0 `request_logs`;
+    lognya menunjukkan lima mati di tahap resolve dan satu mencapai dial lalu menjawab 502 (222 ms),
+    dengan tulisan counter kuota gagal `context canceled`.
+  - Biner pasca-patch dengan titik potong yang sama: tiga panggilan terputus yang mencapai dial menulis
+    baris `UPSTREAM_TIMEOUT` 52, 59, dan 113 ms di bawah `endpoint_id` nyata, dan keenam panggilan ronde
+    itu menulis enam baris `request_logs`.
+  - Catatan yang terukur: kegagalan transien memarkir kunci selama 2 menit, jadi tiga panggilan terputus
+    berturut-turut mengosongkan pool dan panggilan berikutnya menjawab `NO_PROVIDER_AVAILABLE` (0 ms,
+    hanya baris log, tanpa baris usage; itu bentuk yang benar untuk penolakan).
+- Berkas bukti: `/tmp/smoke11/` (`gw-patched` pra-patch, `gw-patched3` pasca-patch, `probe-*.json`).
+
+### 24.2 Yang tersisa, dan arti CLOSED
+
+Register ini ditutup dengan temuan yang TIDAK dikerjakan, supaya penutupannya tidak mengklaim lebih:
+
+- F4 (LOW, pertanyaan desain): katalog data plane tidak membaca `upstream_endpoints` (§2/§10).
+- F8, F9, F10 (permukaan daftar model, §20): daftar klien tanpa filter provider aktif, picker combo
+  hanya halaman tabel, dan model custom provider aktif tidak masuk daftar klien. Bentuk perbaikannya
+  sudah dicatat di §20; belum ada keputusan owner.
+- Suite ber-tag `integration` tetap sengaja tidak dijalankan: satu run (atau pre-push) menghapus Redis
+  DB 0 lewat `FlushDB`, dan saat pass ini Redis memegang sesi panel yang aktif
+  (`pannelai:auth:session:*`), jadi menjalankannya akan mengeluarkan operator dari panelnya.
+
+Ketiganya adalah pekerjaan lanjutan yang berdiri sendiri, bukan bagian dari cacat data plane yang
+register ini ukur.
