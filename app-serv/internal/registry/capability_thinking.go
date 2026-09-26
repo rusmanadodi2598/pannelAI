@@ -28,16 +28,32 @@ package registry
 
 import "strings"
 
+// ThinkingRange is the {min, max} clamp a budget-format model documents. The
+// reference declares one for the Gemini 2.5 family; a nil range means no clamp.
+type ThinkingRange struct {
+	Min int `json:"min"`
+	Max int `json:"max"`
+}
+
 // thinkingRule is one row of a reasoning table: the pattern it matches (empty
 // for the map-keyed layers, where the key is the id), the wire format the
 // model's thinking takes, whether the model can turn thinking off, and whether
 // the row reasons at all. A row with reasons false is a stop row: the reference
 // stops its walk there, so a later reasoning row must not claim the id.
+//
+// hasRange carries the row's budget clamp; the bounds are read only when it is
+// set, so a row with no clamp is not confused with one whose bounds are zero.
+// effort marks the rows whose format also reads a reasoning_effort level on top
+// of its thinking object (the reference's thinkingEffortSupported).
 type thinkingRule struct {
 	pattern       string
 	format        string
 	cannotDisable bool
 	reasons       bool
+	hasRange      bool
+	rangeMin      int
+	rangeMax      int
+	effort        bool
 }
 
 // thinkingAnswer is the resolver's answer for one model. CanDisable is true for
@@ -47,11 +63,22 @@ type thinkingAnswer struct {
 	Reasoning  bool
 	Format     string
 	CanDisable bool
+	Range      *ThinkingRange
+	Effort     bool
 }
 
 // answer turns a table row into the resolver's value.
 func (r thinkingRule) answer() thinkingAnswer {
-	return thinkingAnswer{Reasoning: r.reasons, Format: r.format, CanDisable: !r.cannotDisable}
+	answer := thinkingAnswer{
+		Reasoning:  r.reasons,
+		Format:     r.format,
+		CanDisable: !r.cannotDisable,
+		Effort:     r.effort,
+	}
+	if r.hasRange {
+		answer.Range = &ThinkingRange{Min: r.rangeMin, Max: r.rangeMax}
+	}
+	return answer
 }
 
 // thinkingFor resolves the reasoning answer for one model, in the reference's
@@ -61,9 +88,10 @@ func (r thinkingRule) answer() thinkingAnswer {
 func thinkingFor(provider, base, id string) thinkingAnswer {
 	// The Command Code wire is one endpoint for every model, and the reference
 	// answers it from a dedicated branch before any table lookup
-	// (capabilities.js:570-583), so a family pattern must not decide it.
+	// (capabilities.js:570-583), so a family pattern must not decide it. That
+	// branch declares effort support for every model on the wire.
 	if commandCodeProviders[strings.ToLower(strings.TrimSpace(provider))] {
-		return thinkingAnswer{Reasoning: true, Format: "commandcode", CanDisable: true}
+		return thinkingAnswer{Reasoning: true, Format: "commandcode", CanDisable: true, Effort: true}
 	}
 	if overrides, found := providerThinkingIDs[strings.ToLower(strings.TrimSpace(provider))]; found {
 		if rule, ok := overrides[id]; ok {

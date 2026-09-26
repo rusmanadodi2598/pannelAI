@@ -8,14 +8,15 @@
 //	provider's credentials, translate the request once, call, and
 //	translate the answer back.
 //
-// @uses      internal/domain, internal/schema, context, time.
+// @uses      internal/domain, internal/reasoning, internal/schema, context, time.
 // @reason    SPEC-API-001 §7.7 fixes the failover order as credential-first, so
 //
 //	this leg walks the provider's healthy credentials before it gives
 //	up to the next combo member, and each attempt's outcome reports the
 //	identity it was attempted with so the chat plane records a failed
-//	call (register G17). Keeping the leg here is also what holds
-//	engine.go inside the AGENTS.md §1.1 line budget.
+//	call (register G17). It is also where the §7.15 reasoning injection
+//	runs, on the body the upstream receives. Keeping the leg here is
+//	what holds engine.go inside the AGENTS.md §1.1 line budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -27,6 +28,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/reasoning"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
@@ -48,6 +50,20 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 	body, err := upstreamBody(in, resolution)
 	if err != nil {
 		return Outcome{}, err
+	}
+	// Reasoning is normalized first and the token saver second, which is the
+	// reference's own order (chatCore.js applies thinking inside translation,
+	// then runs the savers on the final body): a saver that rewrites messages
+	// must see the body the upstream will actually receive, thinking fields
+	// included.
+	if e.thinking != nil {
+		body = e.thinking.Apply(ctx, body, reasoning.Call{
+			Wire:       resolution.Target,
+			ProviderID: resolution.Provider.ID,
+			ModelID:    resolution.ModelID,
+			ClientRaw:  in.Raw,
+			Override:   in.ThinkingOverride,
+		})
 	}
 	if e.saver != nil {
 		body = e.saver.Apply(ctx, body, resolution.Target, resolution.UpstreamID, in.TokenSaverBypass)

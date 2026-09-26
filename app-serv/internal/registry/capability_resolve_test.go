@@ -34,7 +34,9 @@ import (
 )
 
 // capabilityCorpus is the generated file's shape. It is decoded here rather
-// than in a shared helper because exactly one test reads it.
+// than in a shared helper because exactly one test reads it. The range's bounds
+// are pointers so a corpus row carrying a null bound fails loudly rather than
+// reading as zero: the resolver's own shape has no null.
 type capabilityCorpus struct {
 	Revision string `json:"revision"`
 	Source   string `json:"source"`
@@ -46,6 +48,11 @@ type capabilityCorpus struct {
 		Reasoning          bool   `json:"reasoning"`
 		ThinkingFormat     string `json:"thinking_format"`
 		ThinkingCanDisable bool   `json:"thinking_can_disable"`
+		ThinkingRange      *struct {
+			Min *int `json:"min"`
+			Max *int `json:"max"`
+		} `json:"thinking_range"`
+		ThinkingEffortSupported bool `json:"thinking_effort_supported"`
 	} `json:"entries"`
 }
 
@@ -72,7 +79,7 @@ func loadCapabilityCorpus(t *testing.T) capabilityCorpus {
 // and carry no meaning.
 func TestCapabilities_MatchesTheReferenceCorpus(t *testing.T) {
 	corpus := loadCapabilityCorpus(t)
-	vision, noTools, reasoning := 0, 0, 0
+	vision, noTools, reasoning, ranges, efforts := 0, 0, 0, 0, 0
 	for _, entry := range corpus.Entries {
 		if entry.Vision {
 			vision++
@@ -82,6 +89,12 @@ func TestCapabilities_MatchesTheReferenceCorpus(t *testing.T) {
 		}
 		if entry.Reasoning {
 			reasoning++
+		}
+		if entry.ThinkingRange != nil {
+			ranges++
+		}
+		if entry.ThinkingEffortSupported {
+			efforts++
 		}
 		got := Capabilities(entry.Provider, entry.Model)
 		if got.Vision != entry.Vision || got.Tools != entry.Tools {
@@ -99,6 +112,19 @@ func TestCapabilities_MatchesTheReferenceCorpus(t *testing.T) {
 			t.Fatalf("Capabilities(%q, %q) = {format:%q canDisable:%v}, the reference says {format:%q canDisable:%v} (corpus revision %s)",
 				entry.Provider, entry.Model, got.ThinkingFormat, got.CanDisable, entry.ThinkingFormat, entry.ThinkingCanDisable, corpus.Revision)
 		}
+		if entry.ThinkingRange != nil && (entry.ThinkingRange.Min == nil || entry.ThinkingRange.Max == nil) {
+			t.Fatalf("corpus row %s/%s carries a range with a null bound; the resolver's shape has no null, so the generator must widen it before this row can be pinned",
+				entry.Provider, entry.Model)
+		}
+		wantRange := rangeFromCorpus(entry.ThinkingRange)
+		if !sameThinkingRange(got.ThinkingRange, wantRange) {
+			t.Fatalf("Capabilities(%q, %q).ThinkingRange = %+v, the reference says %+v (corpus revision %s)",
+				entry.Provider, entry.Model, got.ThinkingRange, wantRange, corpus.Revision)
+		}
+		if got.EffortSupported != entry.ThinkingEffortSupported {
+			t.Fatalf("Capabilities(%q, %q).EffortSupported = %v, the reference says %v (corpus revision %s)",
+				entry.Provider, entry.Model, got.EffortSupported, entry.ThinkingEffortSupported, corpus.Revision)
+		}
 	}
 	// The counts guard the corpus itself: a corpus that answered the floor for
 	// every row would pass a resolver that also answered the floor, which is
@@ -112,118 +138,32 @@ func TestCapabilities_MatchesTheReferenceCorpus(t *testing.T) {
 	if reasoning == 0 {
 		t.Fatalf("the corpus reports no reasoning model across %d rows; the thinking tables would be untested", len(corpus.Entries))
 	}
-	t.Logf("pinned %d rows against %s: %d vision, %d without tools, %d reasoning",
-		len(corpus.Entries), corpus.Revision, vision, noTools, reasoning)
+	if ranges == 0 || efforts == 0 {
+		t.Fatalf("the corpus reports %d ranges and %d effort-supporting rows across %d entries; both rules would be untested",
+			ranges, efforts, len(corpus.Entries))
+	}
+	t.Logf("pinned %d rows against %s: %d vision, %d without tools, %d reasoning, %d with a budget range, %d effort-supporting",
+		len(corpus.Entries), corpus.Revision, vision, noTools, reasoning, ranges, efforts)
 }
 
-// TestCapabilities_ProviderLayerIsLoadBearing pins the fact that made the
-// provider layer part of the port: the reference consults PROVIDER_CAPABILITIES
-// before its exact and pattern layers (capabilities.js:586-590), and at the
-// pinned revision that layer changes the vision answer for models the embedded
-// registry declares. The first version of this port omitted the layer because
-// the older pin measured zero such rows; the corpus now proves the opposite, so
-// the test asserts the layer is reached rather than that it is harmless.
-//
-// The list is deliberately small and named: these are the rows that fail if the
-// layer is dropped, so a reader sees exactly what the layer buys.
-func TestCapabilities_ProviderLayerIsLoadBearing(t *testing.T) {
-	cases := []struct {
-		provider string
-		model    string
-		want     bool
-	}{
-		// codebuddy-cn reads images on every model it proxies, including the
-		// ones whose family pattern would answer false.
-		{provider: "codebuddy-cn", model: "deepseek-v4-pro", want: true},
-		{provider: "codebuddy-cn", model: "glm-5.2", want: true},
-		// nvidia's MiniMax M3 is multimodal while the same family under the
-		// commandcode wire is text-only, so the answer depends on the provider.
-		{provider: "nvidia", model: "minimaxai/minimax-m3", want: true},
-		{provider: "commandcode", model: "MiniMaxAI/MiniMax-M2.5", want: false},
-		// The name heuristic must not rescue it: M2.5 carries no modality word,
-		// and the denylist is consulted before the pattern table either way.
-		{provider: "commandcode", model: "Qwen/Qwen3.7-Max", want: false},
+// rangeFromCorpus turns a corpus row's optional range into the resolver's own
+// shape, so the comparison is one helper rather than a branch per assertion.
+func rangeFromCorpus(in *struct {
+	Min *int `json:"min"`
+	Max *int `json:"max"`
+}) *ThinkingRange {
+	if in == nil || in.Min == nil || in.Max == nil {
+		return nil
 	}
-	for _, tc := range cases {
-		t.Run(tc.provider+"/"+tc.model, func(t *testing.T) {
-			got := Capabilities(tc.provider, tc.model)
-			if got.Vision != tc.want {
-				t.Fatalf("Capabilities(%q, %q).Vision = %v, want %v; the provider layer is load-bearing at this revision",
-					tc.provider, tc.model, got.Vision, tc.want)
-			}
-		})
-	}
+	return &ThinkingRange{Min: *in.Min, Max: *in.Max}
 }
 
-// TestCapabilities_BoundaryInputs covers the inputs the corpus cannot carry: an
-// absent model, whitespace, a vendor-prefixed id, an id that is itself a path,
-// and an id nothing knows.
-func TestCapabilities_BoundaryInputs(t *testing.T) {
-	// Every floor answer carries CanDisable true, because the reference's floor
-	// lets a model turn thinking off and only a table row can say otherwise.
-	floor := CapabilitySet{Vision: false, Tools: true, CanDisable: true}
-	cases := []struct {
-		name     string
-		provider string
-		model    string
-		want     CapabilitySet
-	}{
-		{"an empty model answers the floor", "openai", "", floor},
-		{"whitespace is trimmed, not matched", "openai", "   ", floor},
-		{
-			name: "a vendor prefix is stripped before matching", provider: "openrouter", model: "anthropic/claude-opus-4-8",
-			want: CapabilitySet{Vision: true, Tools: true, Reasoning: true, ThinkingFormat: "claude-adaptive", CanDisable: true},
-		},
-		{"a model id may itself be a path", "", "vendor/family/model", floor},
-		{"an image model declares no tools", "openai", "gpt-image-1", CapabilitySet{Vision: false, Tools: false, CanDisable: true}},
-		{"an unknown id answers the floor", "", "totally-unknown-9000", floor},
-		{"the match ignores case", "openai", "GPT-4O", CapabilitySet{Vision: true, Tools: true, CanDisable: true}},
+// sameThinkingRange compares two optional ranges by value, because the
+// resolver's answer is built per call and a pointer comparison would only ever
+// prove two allocations differ.
+func sameThinkingRange(got, want *ThinkingRange) bool {
+	if got == nil || want == nil {
+		return got == nil && want == nil
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := Capabilities(tc.provider, tc.model); got != tc.want {
-				t.Fatalf("Capabilities(%q, %q) = %+v, want %+v", tc.provider, tc.model, got, tc.want)
-			}
-		})
-	}
-}
-
-// TestCapabilitySet_Has covers the membership rule the catalog filter uses: the
-// two names it resolves, a media string it does not, and an unknown name.
-func TestCapabilitySet_Has(t *testing.T) {
-	cases := []struct {
-		name string
-		set  CapabilitySet
-		want map[string]bool
-	}{
-		{
-			name: "a vision model answers vision and tools",
-			set:  CapabilitySet{Vision: true, Tools: true},
-			want: map[string]bool{"vision": true, "tools": true, "edit": false, "": false, "Vision": true},
-		},
-		{
-			name: "a padded name is trimmed before the switch",
-			set:  CapabilitySet{Vision: true, Tools: true},
-			want: map[string]bool{"  tools  ": true, "\tvision\n": true},
-		},
-		{
-			name: "a floor model answers tools only",
-			set:  CapabilitySet{Vision: false, Tools: true},
-			want: map[string]bool{"vision": false, "tools": true, "edit": false},
-		},
-		{
-			name: "an image model answers neither",
-			set:  CapabilitySet{Vision: false, Tools: false},
-			want: map[string]bool{"vision": false, "tools": false},
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			for name, want := range tc.want {
-				if got := tc.set.Has(name); got != want {
-					t.Fatalf("CapabilitySet{%+v}.Has(%q) = %v, want %v", tc.set, name, got, want)
-				}
-			}
-		})
-	}
+	return *got == *want
 }

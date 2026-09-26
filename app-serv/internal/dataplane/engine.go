@@ -7,13 +7,15 @@
 //
 //	hand back either a translated body or a stream of frames.
 //
-// @uses      internal/domain, internal/schema, context, time.
+// @uses      internal/domain, internal/reasoning, context, time.
 // @reason    SPEC-API-001 §7.15 fixes the pipeline order (model resolve → format
 //
 //	translation → endpoint and key selection → upstream call → response
-//	translation → usage recording). Keeping it in one place is what makes
-//	the order auditable, and keeping it out of the handler is what keeps
-//	the same path usable from a worker or a combo probe.
+//	translation → usage recording), and §7.15 adds the reasoning
+//	injection the client's model string and the stored mode resolve to.
+//	Keeping it in one place is what makes the order auditable, and
+//	keeping it out of the handler is what keeps the same path usable
+//	from a worker or a combo probe.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -26,50 +28,11 @@ import (
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/reasoning"
 )
 
-// FrameSink receives the frames of a streamed answer. It exists so the data plane
-// never touches an http.ResponseWriter (AGENTS.md §1.5 keeps net/http out of the
-// service layer) while still flushing each frame as it is produced.
-type FrameSink interface {
-	// WriteFrame writes one complete SSE frame. A partial write is an error the
-	// caller stops the stream on.
-	WriteFrame(frame []byte) error
-	// Flush pushes what has been written to the client.
-	Flush()
-}
-
-// TokenSaver is the request-path seam for optional body transforms. The engine
-// hands it the already translated upstream wire, so a saver cannot be undone by
-// a later format conversion.
-type TokenSaver interface {
-	Apply(ctx context.Context, body []byte, wire, model string, bypass bool) []byte
-}
-
-// Outcome reports what one relayed call produced, in the form accounting and
-// logging need.
-type Outcome struct {
-	// Format is the wire format the caller's answer is written in.
-	Format schema.DataPlaneFormat
-	// ProviderID, EndpointID, and Model are the routing identity of the call.
-	ProviderID string
-	EndpointID string
-	Model      string
-	// Combo names the combo the request addressed, or "".
-	Combo string
-	// Body is the non-streamed answer, already in Format. It is nil for a
-	// streamed answer, which the sink received frame by frame.
-	Body []byte
-	// Usage is the accounting the upstream reported, or nil when it reported
-	// none, so a caller records nothing rather than a fabricated zero.
-	Usage *schema.Usage
-	// Streamed reports whether the answer went to a FrameSink.
-	Streamed bool
-	// LatencyMS is the upstream call's duration, measured with the engine's
-	// clock.
-	LatencyMS int64
-}
+// FrameSink, TokenSaver, and ThinkingApplier are the pipeline's boundary ports,
+// declared in seams.go, and Outcome is the result shape, declared in outcome.go.
 
 // Engine executes the §7.15 pipeline for one chat request.
 type Engine struct {
@@ -85,6 +48,9 @@ type Engine struct {
 	// saver rewrites the translated upstream body when an operator enabled a
 	// token-saver group. A nil one keeps the pipeline pass-through.
 	saver TokenSaver
+	// thinking writes the resolved reasoning control into the translated body
+	// (§7.15). A nil one leaves the body exactly as translation produced it.
+	thinking ThinkingApplier
 	// active records one provider as in flight for as long as its call runs, so
 	// the live Usage stream can draw which nodes are routing now. A nil seam
 	// records nothing.
@@ -107,6 +73,10 @@ type EngineDeps struct {
 	// TokenSaver rewrites the translated upstream body when enabled. Optional:
 	// nil leaves the data plane pass-through, which is the safe default.
 	TokenSaver TokenSaver
+	// Thinking writes the resolved reasoning control into the translated body
+	// (§7.15). Optional: nil leaves the reasoning fields exactly as the client
+	// sent them, which is what a deployment without the settings service gets.
+	Thinking ThinkingApplier
 	// ActiveRequests marks one provider as in flight while its call runs, which
 	// is what the §7.12 live stream draws. Optional: nil leaves the drawing with
 	// no active node rather than failing a request.
@@ -134,7 +104,7 @@ func NewEngine(deps EngineDeps) (*Engine, error) {
 	return &Engine{
 		resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport,
 		vision: deps.Vision, orders: deps.ComboOrder, saver: deps.TokenSaver,
-		active: deps.ActiveRequests, clock: clock,
+		thinking: deps.Thinking, active: deps.ActiveRequests, clock: clock,
 	}, nil
 }
 
@@ -145,7 +115,15 @@ func (e *Engine) Resolver() *Resolver { return e.resolver }
 // Relay runs the pipeline. When the request asks for a stream, every frame is
 // written to sink as it arrives and Outcome.Body stays nil.
 func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome, error) {
-	resolution, err := e.resolver.Resolve(ctx, in.Model)
+	// A client may address a model with a trailing "(level)" reasoning suffix
+	// (SPEC-API-001 §7.15). The resolver must see the bare id — that is what
+	// the catalog and the registry declare — while the injection seam below
+	// must see the override, so the string is split once here and carried on
+	// the request for every leg of the call.
+	model, override := reasoning.ParseSuffix(in.Model)
+	in.ThinkingOverride = override
+
+	resolution, err := e.resolver.Resolve(ctx, model)
 	if err != nil {
 		return Outcome{}, err
 	}

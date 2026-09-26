@@ -24,6 +24,7 @@ type SettingsResponse struct {
 	Network    NetworkSettingsResponse    `json:"network"`
 	TokenSaver TokenSaverSettingsResponse `json:"token_saver"`
 	Logging    LoggingSettingsResponse    `json:"logging"`
+	Reasoning  ReasoningSettingsResponse  `json:"reasoning"`
 }
 
 // SecuritySettingsResponse is the §7.14 security group.
@@ -112,4 +113,19 @@ type LoggingSettingsResponse struct {
 	RetentionDays           int  `json:"retention_days"`
 	CaptureBodyMaxBytes     int  `json:"capture_body_max_bytes"`
 	ObservabilityMaxRecords int  `json:"observability_max_records"`
+}
+
+// ReasoningSettingsResponse is the §7.14 reasoning group. ProviderThinking
+// renders as an object, never null, on the routing group's precedent: a read of
+// a document that predates the group still answers {}, which is how the panel
+// renders every provider as "auto".
+type ReasoningSettingsResponse struct {
+	ProviderThinking map[string]ProviderThinkingResponse `json:"provider_thinking"`
+}
+
+// ProviderThinkingResponse is one provider's stored reasoning mode. An absent
+// entry is the "auto" state, so the panel renders the mode it reads rather than
+// a filled-in copy.
+type ProviderThinkingResponse struct {
+	Mode string `json:"mode,omitempty"`
 }

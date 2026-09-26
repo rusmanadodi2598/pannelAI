@@ -959,6 +959,9 @@
           },
           "logging": {
             "$ref": "#/components/schemas/LoggingSettingsPatch"
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/ReasoningSettingsPatch"
           }
         },
         "additionalProperties": false
@@ -1924,6 +1927,13 @@
             "type": "integer",
             "format": "int64"
           },
+          "thinking_levels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Union of the levels this provider's declared models accept (SPEC-API-001 §7.14). Absent when no declared model reasons."
+          },
           "media": {
             "type": "array",
             "items": {
@@ -2761,6 +2771,9 @@
           },
           "logging": {
             "$ref": "#/components/schemas/LoggingSettingsResponse"
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/ReasoningSettingsResponse"
           }
         },
         "required": [
@@ -2768,7 +2781,8 @@
           "routing",
           "network",
           "token_saver",
-          "logging"
+          "logging",
+          "reasoning"
         ],
         "additionalProperties": false
       },
@@ -3373,6 +3387,41 @@
             "type": "integer",
             "format": "int64",
             "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReasoningSettingsPatch": {
+        "type": "object",
+        "properties": {
+          "provider_thinking": {
+            "type": "object",
+            "description": "Per-provider thinking modes, keyed by provider id. Sent whole; deleting an entry is how a provider returns to the client's own reasoning intent.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProviderThinkingPatch"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProviderThinkingPatch": {
+        "type": "object",
+        "description": "One provider's stored reasoning mode. \"auto\" is not a value; deleting the entry is how a provider returns to the client's own reasoning intent.",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "on",
+              "off",
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max",
+              "thinking"
+            ]
           }
         },
         "additionalProperties": false
@@ -4049,6 +4098,13 @@
               "type": "string"
             }
           },
+          "thinking_levels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Levels this model accepts when appended to its name (SPEC-API-001 §7.14). Absent when the registry knows no levels for it."
+          },
           "source": {
             "type": "string",
             "enum": [
@@ -4102,6 +4158,13 @@
             "items": {
               "type": "string"
             }
+          },
+          "thinking_levels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Levels this model accepts when appended to its name (SPEC-API-001 §7.14). Absent when the registry knows no levels for it."
           },
           "created_at": {
             "type": "string",
@@ -4552,6 +4615,32 @@
           "sticky_limit": {
             "type": "integer",
             "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReasoningSettingsResponse": {
+        "type": "object",
+        "properties": {
+          "provider_thinking": {
+            "type": "object",
+            "description": "The stored modes, rendered as {} rather than null when there are none.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ProviderThinkingResponse"
+            }
+          }
+        },
+        "required": [
+          "provider_thinking"
+        ],
+        "additionalProperties": false
+      },
+      "ProviderThinkingResponse": {
+        "type": "object",
+        "description": "One provider's stored reasoning mode. An absent entry is the \"auto\" state, so the panel renders the mode it reads rather than a filled-in copy.",
+        "properties": {
+          "mode": {
+            "type": "string"
           }
         },
         "additionalProperties": false

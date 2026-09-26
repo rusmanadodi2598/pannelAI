@@ -27,6 +27,7 @@ type PatchSettingsRequest struct {
 	Network    *NetworkSettingsPatch    `json:"network,omitempty"`
 	TokenSaver *TokenSaverSettingsPatch `json:"token_saver,omitempty"`
 	Logging    *LoggingSettingsPatch    `json:"logging,omitempty"`
+	Reasoning  *ReasoningSettingsPatch  `json:"reasoning,omitempty"`
 }
 
 // SecuritySettingsPatch updates the security group.
@@ -113,7 +114,7 @@ func ValidatePatch(req PatchSettingsRequest) error {
 	if err := validateProviderStrategies(req.Routing); err != nil {
 		return err
 	}
-	return nil
+	return validateProviderThinking(req.Reasoning)
 }
 
 // validateHeadroom rejects a headroom patch that would enable an external call
@@ -170,52 +171,10 @@ func ToSettingsPatch(req PatchSettingsRequest) domain.SettingsPatch {
 			ObservabilityMaxRecords: req.Logging.ObservabilityMaxRecords,
 		}
 	}
+	if req.Reasoning != nil {
+		patch.Reasoning = reasoningPtr(req.Reasoning)
+	}
 	return patch
-}
-
-// SettingsResponseFrom maps the service-owned object to the wire shape.
-func SettingsResponseFrom(s domain.Settings) SettingsResponse {
-	return SettingsResponse{
-		Security: SecuritySettingsResponse{
-			RequireLogin:  s.Security.RequireLogin,
-			RequireAPIKey: s.Security.RequireAPIKey,
-		},
-		Routing: RoutingSettingsResponse{
-			ComboStrategy:      string(s.Routing.ComboStrategy),
-			ComboStickyLimit:   s.Routing.ComboStickyLimit,
-			StickyLimit:        s.Routing.StickyLimit,
-			FallbackStrategy:   string(s.Routing.FallbackStrategy),
-			ProviderStrategies: strategiesOrEmpty(s.Routing.ProviderStrategies),
-		},
-		Network: NetworkSettingsResponse{
-			OutboundProxyEnabled:  s.Network.OutboundProxyEnabled,
-			OutboundProxyURL:      s.Network.OutboundProxyURL,
-			OutboundNoProxy:       s.Network.OutboundNoProxy,
-			OutboundProxyStrategy: proxyStrategyOrDefault(s.Network.OutboundProxyStrategy),
-			ProviderProxies:       providerProxiesOrEmpty(s.Network.ProviderProxies),
-		},
-		TokenSaver: TokenSaverSettingsResponse{
-			RTK:      TokenSaverRTKResponse{Enabled: s.TokenSaver.RTK.Enabled, Filters: filtersOrEmpty(s.TokenSaver.RTK.Filters)},
-			Headroom: TokenSaverHeadroomResponse{Enabled: s.TokenSaver.Headroom.Enabled, URL: s.TokenSaver.Headroom.URL, CompressUserMessages: s.TokenSaver.Headroom.CompressUserMessages},
-			Ponytail: TokenSaverToggleResponse{Enabled: s.TokenSaver.Ponytail.Enabled, Level: s.TokenSaver.Ponytail.Level},
-		},
-		Logging: LoggingSettingsResponse{
-			RequestCaptureEnabled:   s.Logging.RequestCaptureEnabled,
-			RetentionDays:           s.Logging.RetentionDays,
-			CaptureBodyMaxBytes:     s.Logging.CaptureBodyMaxBytes,
-			ObservabilityMaxRecords: s.Logging.ObservabilityMaxRecords,
-		},
-	}
-}
-
-// proxyStrategyOrDefault names the strategy the engine will run, so a read of
-// a document stored before the key existed answers fallback (D2) instead of a
-// blank the panel would have to interpret.
-func proxyStrategyOrDefault(stored string) string {
-	if stored == "" {
-		return domain.DefaultProxyStrategy
-	}
-	return stored
 }
 
 // togglePtr lowers one saver toggle group.

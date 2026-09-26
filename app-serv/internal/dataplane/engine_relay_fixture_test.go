@@ -8,6 +8,8 @@
 // @uses      testing, net/http, net/http/httptest, encoding/json, context,
 //
 //	internal/domain, internal/provider, internal/registry, internal/schema.
+//	The seam engine below also wires internal/provider and the two body
+//	seams, which the relay tests share.
 //
 // @reason    The relay tests pin the pipeline as one piece, so their doubles are
 //
@@ -29,6 +31,7 @@ import (
 	"testing"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
@@ -162,6 +165,37 @@ func (a *visionAdapter) Augment(_ context.Context, providerID, modelID string) (
 	a.calls++
 	a.providerID, a.modelID = providerID, modelID
 	return a.refs, a.applies, a.err
+}
+
+// newSeamEngine wires the relay pipeline with the body seams populated, over
+// the same doubles the other relay tests use. Either seam may be nil, which is
+// the deployment that leaves it out.
+func newSeamEngine(t *testing.T, providers []registry.Provider, repo *memEndpointRepo, combos map[string]domain.Combo, saver TokenSaver, thinking ThinkingApplier) *Engine {
+	t.Helper()
+	resolver, err := NewResolver(relayRegistry{providers: providers}, relayLookup{combos: combos})
+	if err != nil {
+		t.Fatalf("NewResolver() error = %v", err)
+	}
+	connectors, err := provider.NewConnectors(provider.DefaultFactory)
+	if err != nil {
+		t.Fatalf("NewConnectors() error = %v", err)
+	}
+	selector, err := NewSelector(SelectorDeps{Endpoints: repo, Opener: opener{}})
+	if err != nil {
+		t.Fatalf("NewSelector() error = %v", err)
+	}
+	transport, err := NewTransport(TransportDeps{Connectors: connectors, Client: http.DefaultClient})
+	if err != nil {
+		t.Fatalf("NewTransport() error = %v", err)
+	}
+	engine, err := NewEngine(EngineDeps{
+		Resolver: resolver, Selector: selector, Transport: transport,
+		TokenSaver: saver, Thinking: thinking,
+	})
+	if err != nil {
+		t.Fatalf("NewEngine() error = %v", err)
+	}
+	return engine
 }
 
 // relayRequest is a client request naming the combo by bare model string.

@@ -10,7 +10,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -19,7 +21,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -28,7 +32,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -37,7 +43,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -46,7 +54,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -55,7 +65,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -64,7 +76,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -73,7 +87,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -82,7 +98,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -91,7 +109,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -100,7 +120,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -109,7 +131,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -118,7 +142,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -127,7 +153,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -136,7 +164,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -145,7 +175,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -154,7 +186,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -163,7 +197,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -172,7 +208,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -181,7 +219,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "antigravity",
@@ -190,7 +230,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "byteplus",
@@ -199,7 +241,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "byteplus",
@@ -208,7 +252,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "byteplus",
@@ -217,7 +263,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "byteplus",
@@ -226,7 +274,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "byteplus",
@@ -235,7 +285,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "byteplus",
@@ -244,7 +296,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "byteplus",
@@ -253,7 +307,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "claude",
@@ -262,7 +318,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "claude",
@@ -271,7 +329,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "claude",
@@ -280,7 +340,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "claude",
@@ -289,7 +351,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "claude",
@@ -298,7 +362,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "claude",
@@ -307,7 +373,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "cline",
@@ -316,7 +384,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "cline",
@@ -325,7 +395,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "cline",
@@ -334,7 +406,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "cline",
@@ -343,7 +417,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "cline",
@@ -352,7 +428,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "cline",
@@ -361,7 +439,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "cline",
@@ -370,7 +450,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "cline",
@@ -379,7 +461,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "clinepass",
@@ -388,7 +472,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "clinepass",
@@ -397,7 +483,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "clinepass",
@@ -406,7 +494,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "clinepass",
@@ -415,7 +505,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "clinepass",
@@ -424,7 +516,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "clinepass",
@@ -433,7 +527,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "clinepass",
@@ -442,7 +538,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "clinepass",
@@ -451,7 +549,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "clinepass",
@@ -460,7 +560,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "clinepass",
@@ -469,7 +571,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -478,7 +582,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -487,7 +593,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -496,7 +604,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -505,7 +615,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -514,7 +626,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -523,7 +637,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -532,7 +648,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -541,7 +659,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -550,7 +670,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -559,7 +681,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -568,7 +692,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -577,7 +703,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-cn",
@@ -586,7 +714,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -595,7 +725,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -604,7 +736,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "codebuddy-intl",
@@ -613,7 +747,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -622,7 +758,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -631,7 +769,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -640,7 +780,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -649,7 +791,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -658,7 +802,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -667,7 +813,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -676,7 +824,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "hunyuan",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -685,7 +835,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -694,7 +846,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -703,7 +857,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -712,7 +868,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "codebuddy-intl",
@@ -721,7 +879,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "commandcode",
@@ -730,7 +890,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -739,7 +901,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -748,7 +912,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -757,7 +923,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -766,7 +934,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -775,7 +945,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -784,7 +956,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -793,7 +967,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -802,7 +978,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -811,7 +989,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -820,7 +1000,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -829,7 +1011,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -838,7 +1022,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -847,7 +1033,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -856,7 +1044,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -865,7 +1055,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -874,7 +1066,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -883,7 +1077,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -892,7 +1088,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -901,7 +1099,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -910,7 +1110,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "commandcode",
@@ -919,7 +1121,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "commandcode",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "deepgram",
@@ -928,7 +1132,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "deepgram",
@@ -937,7 +1143,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "deepgram",
@@ -946,7 +1154,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "deepgram",
@@ -955,7 +1165,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "deepseek",
@@ -964,7 +1176,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "deepseek",
@@ -973,7 +1187,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "deepseek",
@@ -982,7 +1198,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "deepseek",
@@ -991,7 +1209,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "deepseek",
@@ -1000,7 +1220,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "deepseek",
@@ -1009,7 +1231,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "deepseek",
@@ -1018,7 +1242,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "deepseek",
@@ -1027,7 +1253,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1036,7 +1264,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1045,7 +1275,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1054,7 +1286,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1063,7 +1300,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1072,7 +1314,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1081,7 +1325,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1090,7 +1339,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1099,7 +1353,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1108,7 +1367,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1117,7 +1381,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1126,7 +1395,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1135,7 +1409,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1144,7 +1420,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1153,7 +1431,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1162,7 +1442,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1171,7 +1453,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1180,7 +1464,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1189,7 +1475,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1198,7 +1486,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1207,7 +1497,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1216,7 +1508,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1225,7 +1519,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1234,7 +1530,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1243,7 +1541,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1252,7 +1552,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini",
@@ -1261,7 +1563,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini-cli",
@@ -1270,7 +1574,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini-cli",
@@ -1279,7 +1588,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini-cli",
@@ -1288,7 +1602,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini-cli",
@@ -1297,7 +1616,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini-cli",
@@ -1306,7 +1627,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini-cli",
@@ -1315,7 +1638,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "gemini-cli",
@@ -1324,7 +1649,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1333,7 +1660,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1342,7 +1671,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1351,7 +1682,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1360,7 +1693,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1369,7 +1704,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1378,7 +1715,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1387,7 +1726,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1396,7 +1740,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1405,7 +1751,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1414,7 +1762,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1423,7 +1773,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1432,7 +1784,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1441,7 +1795,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1450,7 +1806,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1459,7 +1817,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1468,7 +1828,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1477,7 +1839,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1486,7 +1850,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "github",
@@ -1495,7 +1861,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "glm",
@@ -1504,7 +1872,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "glm",
@@ -1513,7 +1883,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "glm",
@@ -1522,7 +1894,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "glm",
@@ -1531,7 +1905,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "glm",
@@ -1540,7 +1916,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "glm",
@@ -1549,7 +1927,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "glm",
@@ -1558,7 +1938,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "glm",
@@ -1567,7 +1949,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "grok-cli",
@@ -1576,7 +1960,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "grok-cli",
@@ -1585,7 +1971,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "grok-cli",
@@ -1594,7 +1982,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "grok-cli",
@@ -1603,7 +1993,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "grok-cli",
@@ -1612,7 +2004,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "groq",
@@ -1621,7 +2015,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "groq",
@@ -1630,7 +2026,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "groq",
@@ -1639,7 +2037,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "groq",
@@ -1648,7 +2048,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "groq",
@@ -1657,7 +2059,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "groq",
@@ -1666,7 +2070,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "groq",
@@ -1675,7 +2081,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1684,7 +2092,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1693,7 +2103,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1702,7 +2114,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1711,7 +2125,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1720,7 +2136,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1729,7 +2147,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1738,7 +2158,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1747,7 +2169,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1756,7 +2180,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1765,7 +2191,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1774,7 +2202,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1783,7 +2213,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1792,7 +2224,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1801,7 +2235,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1810,7 +2246,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1819,7 +2257,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1828,7 +2268,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1837,7 +2279,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1846,7 +2290,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1855,7 +2301,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1864,7 +2312,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1873,7 +2323,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1882,7 +2334,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1891,7 +2345,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "huggingface",
@@ -1900,7 +2356,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "hunyuan",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kilocode",
@@ -1909,7 +2367,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kilocode",
@@ -1918,7 +2378,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kilocode",
@@ -1927,7 +2389,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kilocode",
@@ -1936,7 +2400,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kilocode",
@@ -1945,7 +2411,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "kilocode",
@@ -1954,7 +2425,12 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": {
+        "min": 0,
+        "max": 24576
+      },
+      "thinking_effort_supported": false
     },
     {
       "provider": "kilocode",
@@ -1963,7 +2439,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kilocode",
@@ -1972,7 +2450,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimchi",
@@ -1981,7 +2461,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimchi",
@@ -1990,7 +2472,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimchi",
@@ -1999,7 +2483,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimchi",
@@ -2008,7 +2494,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimchi",
@@ -2017,7 +2505,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimchi",
@@ -2026,7 +2516,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimchi",
@@ -2035,7 +2527,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimchi",
@@ -2044,7 +2538,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimi",
@@ -2053,7 +2549,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimi",
@@ -2062,7 +2560,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimi",
@@ -2071,7 +2571,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimi",
@@ -2080,7 +2582,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimi",
@@ -2089,7 +2593,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimi",
@@ -2098,7 +2604,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimi",
@@ -2107,7 +2615,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimi",
@@ -2116,7 +2626,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimi",
@@ -2125,7 +2637,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "kimi",
@@ -2134,7 +2648,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2143,7 +2659,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2152,7 +2670,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2161,7 +2681,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2170,7 +2692,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2179,7 +2703,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2188,7 +2714,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2197,7 +2725,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2206,7 +2736,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2215,7 +2747,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2224,7 +2758,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2233,7 +2769,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2242,7 +2780,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "minimax",
@@ -2251,7 +2791,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2260,7 +2802,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2269,7 +2813,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2278,7 +2824,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2287,7 +2835,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2296,7 +2846,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2305,7 +2857,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2314,7 +2868,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2323,7 +2879,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2332,7 +2890,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2341,7 +2901,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "nvidia",
@@ -2350,7 +2912,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2359,7 +2923,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2368,7 +2934,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2377,7 +2945,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2386,7 +2956,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2395,7 +2967,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2404,7 +2978,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2413,7 +2989,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2422,7 +3000,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2431,7 +3011,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2440,7 +3022,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2449,7 +3033,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2458,7 +3044,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2467,7 +3055,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2476,7 +3066,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2485,7 +3077,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2494,7 +3088,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2503,7 +3099,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2512,7 +3110,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2521,7 +3121,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2530,7 +3132,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2539,7 +3143,9 @@
       "tools": false,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2548,7 +3154,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2557,7 +3165,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2566,7 +3176,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2575,7 +3187,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2584,7 +3198,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2593,7 +3209,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2602,7 +3220,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2611,7 +3231,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2620,7 +3242,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2629,7 +3253,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2638,7 +3264,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2647,7 +3275,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2656,7 +3286,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2665,7 +3297,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openai",
@@ -2674,7 +3308,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode",
@@ -2683,7 +3319,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode",
@@ -2692,7 +3330,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode",
@@ -2701,7 +3341,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode",
@@ -2710,7 +3352,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2719,7 +3363,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2728,7 +3374,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "opencode-go",
@@ -2737,7 +3385,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2746,7 +3396,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "opencode-go",
@@ -2755,7 +3407,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2764,7 +3418,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2773,7 +3429,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "opencode-go",
@@ -2782,7 +3440,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2791,7 +3451,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2800,7 +3462,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2809,7 +3473,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "hunyuan",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2818,7 +3484,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2827,7 +3495,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2836,7 +3506,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2845,7 +3517,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2854,7 +3528,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2863,7 +3539,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2872,7 +3550,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2881,7 +3561,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2890,7 +3572,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2899,7 +3583,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2908,7 +3594,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2917,7 +3605,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2926,7 +3616,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2935,7 +3627,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2944,7 +3638,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2953,7 +3649,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-go",
@@ -2962,7 +3660,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -2971,7 +3671,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -2980,7 +3682,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -2989,7 +3693,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -2998,7 +3704,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3007,7 +3715,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3016,7 +3726,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3025,7 +3737,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3034,7 +3748,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3043,7 +3759,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3052,7 +3770,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3061,7 +3781,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3070,7 +3792,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3079,7 +3803,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-adaptive",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3088,7 +3814,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "opencode-zen",
@@ -3097,7 +3825,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "opencode-zen",
@@ -3106,7 +3836,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3115,7 +3847,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "opencode-zen",
@@ -3124,7 +3858,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3133,7 +3869,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3142,7 +3880,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3151,7 +3891,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3160,7 +3902,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3169,7 +3913,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3178,7 +3924,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "gemini-level",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3187,7 +3935,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3196,7 +3946,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3205,7 +3957,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3214,7 +3968,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": true
     },
     {
       "provider": "opencode-zen",
@@ -3223,7 +3979,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "zai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3232,7 +3990,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3241,7 +4001,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3250,7 +4012,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3259,7 +4023,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3268,7 +4034,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3277,7 +4045,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3286,7 +4056,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3295,7 +4067,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3304,7 +4078,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3313,7 +4089,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3322,7 +4100,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3331,7 +4111,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3340,7 +4122,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3349,7 +4133,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3358,7 +4144,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3367,7 +4155,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3376,7 +4166,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3385,7 +4177,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3394,7 +4188,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3403,7 +4199,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3412,7 +4210,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3421,7 +4221,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3430,7 +4232,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3439,7 +4243,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3448,7 +4254,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3457,7 +4265,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3466,7 +4276,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3475,7 +4287,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3484,7 +4298,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3493,7 +4309,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "kimi",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3502,7 +4320,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3511,7 +4331,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3520,7 +4342,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3529,7 +4353,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3538,7 +4364,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3547,7 +4375,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "minimax",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3556,7 +4386,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3565,7 +4397,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3574,7 +4408,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3583,7 +4419,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3592,7 +4430,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3601,7 +4441,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3610,7 +4452,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3619,7 +4463,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "opencode-zen",
@@ -3628,7 +4474,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3637,7 +4485,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3646,7 +4496,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3655,7 +4507,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3664,7 +4518,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3673,7 +4529,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3682,7 +4540,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3691,7 +4551,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3700,7 +4562,9 @@
       "tools": false,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3709,7 +4573,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3718,7 +4584,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3727,7 +4595,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3736,7 +4606,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3745,7 +4617,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3754,7 +4628,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3763,7 +4639,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3772,7 +4650,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3781,7 +4661,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "qwen",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "openrouter",
@@ -3790,7 +4672,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3799,7 +4683,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3808,7 +4694,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3817,7 +4705,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3826,7 +4716,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3835,7 +4727,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3844,7 +4738,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3853,7 +4749,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3862,7 +4760,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3871,7 +4771,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3880,7 +4782,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3889,7 +4793,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3898,7 +4804,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3907,7 +4815,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3916,7 +4826,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3925,7 +4837,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder",
@@ -3934,7 +4848,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -3943,7 +4859,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -3952,7 +4870,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -3961,7 +4881,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -3970,7 +4892,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -3979,7 +4903,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -3988,7 +4914,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -3997,7 +4925,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -4006,7 +4936,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -4015,7 +4947,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -4024,7 +4958,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -4033,7 +4969,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -4042,7 +4980,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -4051,7 +4991,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -4060,7 +5002,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -4069,7 +5013,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "qoder-cn",
@@ -4078,7 +5024,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "tencent",
@@ -4087,7 +5035,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "hunyuan",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "tencent",
@@ -4096,7 +5046,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "hunyuan",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xai",
@@ -4105,7 +5057,9 @@
       "tools": true,
       "reasoning": false,
       "thinking_format": "",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xai",
@@ -4114,7 +5068,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xai",
@@ -4123,7 +5079,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xai",
@@ -4132,7 +5090,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xai",
@@ -4141,7 +5101,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xai",
@@ -4150,7 +5112,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xai",
@@ -4159,7 +5123,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xai",
@@ -4168,7 +5134,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "openai",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xiaomi-tokenplan",
@@ -4177,7 +5145,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xiaomi-tokenplan",
@@ -4186,7 +5156,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xiaomi-tokenplan",
@@ -4195,7 +5167,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xiaomi-tokenplan",
@@ -4204,7 +5178,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xiaomi-tokenplan",
@@ -4213,7 +5189,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xiaomi-tokenplan",
@@ -4222,7 +5200,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "claude-budget",
-      "thinking_can_disable": true
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xiaomi-tokenplan",
@@ -4231,7 +5211,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xiaomi-tokenplan",
@@ -4240,7 +5222,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     },
     {
       "provider": "xiaomi-tokenplan",
@@ -4249,7 +5233,9 @@
       "tools": true,
       "reasoning": true,
       "thinking_format": "deepseek",
-      "thinking_can_disable": false
+      "thinking_can_disable": false,
+      "thinking_range": null,
+      "thinking_effort_supported": false
     }
   ]
 }

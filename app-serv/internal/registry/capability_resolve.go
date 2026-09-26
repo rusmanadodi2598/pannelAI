@@ -55,6 +55,15 @@ type CapabilitySet struct {
 	// CanDisable is false for a model that cannot turn thinking off, where a
 	// "none" mode clamps to the lowest level instead of disabling.
 	CanDisable bool
+	// ThinkingRange clamps a budget-format model's budget when the reference
+	// declares one; nil means no clamp. It is a pointer so "no clamp" and a
+	// clamp at zero stay distinguishable.
+	ThinkingRange *ThinkingRange
+	// EffortSupported marks the models whose thinking format also reads a
+	// reasoning_effort level on top of its thinking object (the reference's
+	// thinkingEffortSupported): z.ai from GLM-5.2 onward, DeepSeek V4, and
+	// every Command Code model.
+	EffortSupported bool
 }
 
 // Capabilities answers every question the resolver owns for one model.
@@ -95,11 +104,13 @@ func Capabilities(provider, modelID string) CapabilitySet {
 
 	thinking := thinkingFor(provider, base, id)
 	return CapabilitySet{
-		Vision:         visionAnswer(provider, id, base),
-		Tools:          floor.Tools,
-		Reasoning:      thinking.Reasoning,
-		ThinkingFormat: thinking.Format,
-		CanDisable:     thinking.CanDisable,
+		Vision:          visionAnswer(provider, id, base),
+		Tools:           floor.Tools,
+		Reasoning:       thinking.Reasoning,
+		ThinkingFormat:  thinking.Format,
+		CanDisable:      thinking.CanDisable,
+		ThinkingRange:   thinking.Range,
+		EffortSupported: thinking.Effort,
 	}
 }
 
@@ -122,63 +133,6 @@ func visionAnswer(provider, id, base string) bool {
 	// answered false is not overridden by a name, and a model no table knows
 	// still accepts an image when its id says so.
 	return visionFor(base, id) || looksLikeVisionModel(id)
-}
-
-// commandCodeProviders are the provider ids whose wire is one endpoint for
-// every model (`/alpha/generate`), so the family patterns must not decide their
-// vision: the reference answers those two ids from a dedicated branch that
-// reads a text-only denylist (capabilities.js:570-583) instead of the pattern
-// table, because a family pattern would claim e.g. deepseek-v4 reads images
-// while the Command Code CLI cannot send one.
-var commandCodeProviders = map[string]bool{"commandcode": true, "cmc": true}
-
-// commandCodeTextOnly is the reference's own denylist: ids that take no image
-// input on the Command Code wire. Everything else on that wire answers vision,
-// which is the reference's default there (new models are assumed multimodal).
-var commandCodeTextOnly = map[string]bool{
-	"deepseek/deepseek-v4-pro":              true,
-	"deepseek/deepseek-v4-flash":            true,
-	"deepseek/deepseek-v4-flash-fast":       true,
-	"zai-org/glm-5.3":                       true,
-	"zai-org/glm-5.2":                       true,
-	"zai-org/glm-5.2-fast":                  true,
-	"zai-org/glm-5.1":                       true,
-	"zai-org/glm-5":                         true,
-	"minimaxai/minimax-m2.7":                true,
-	"minimax/minimax-m2.7-free":             true,
-	"minimaxai/minimax-m2.5":                true,
-	"xiaomi/mimo-v2.5-pro":                  true,
-	"qwen/qwen3.6-max-preview":              true,
-	"qwen/qwen3.7-max":                      true,
-	"meituan/longcat-2.0:free":              true,
-	"stepfun/step-3.5-flash":                true,
-	"tencent/hy4-preview":                   true,
-	"tencent/hy3":                           true,
-	"tencent/hy3-paid":                      true,
-	"nvidia/nemotron-3-ultra-550b-a55b":     true,
-	"poolside/laguna-s-2.1-free":            true,
-	"inclusionai/ling-3.0-flash-free":       true,
-	"inclusionai/ling-3.0-flash-sante:free": true,
-}
-
-// commandCodeTextOnlyModel reports whether an id is text-only on the Command
-// Code wire. The reference matches the full id, then the last path segment,
-// then any id ending in that segment, because a client may send either the
-// namespaced id or the bare one.
-func commandCodeTextOnlyModel(id string) bool {
-	if commandCodeTextOnly[id] {
-		return true
-	}
-	for key := range commandCodeTextOnly {
-		base := key
-		if slash := strings.LastIndex(key, "/"); slash >= 0 {
-			base = key[slash+1:]
-		}
-		if id == base || strings.HasSuffix(id, "/"+base) {
-			return true
-		}
-	}
-	return false
 }
 
 // providerVision reads the (provider, model) override layer, trying the

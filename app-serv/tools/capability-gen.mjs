@@ -87,6 +87,10 @@ for (const provider of providers) {
       reasoning: caps.reasoning === true,
       thinking_format: caps.thinkingFormat || "",
       thinking_can_disable: caps.thinkingCanDisable !== false,
+      thinking_range: caps.thinkingRange
+        ? { min: caps.thinkingRange.min ?? null, max: caps.thinkingRange.max ?? null }
+        : null,
+      thinking_effort_supported: caps.thinkingEffortSupported === true,
     });
   }
 }

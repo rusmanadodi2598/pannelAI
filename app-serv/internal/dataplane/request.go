@@ -7,7 +7,7 @@
 //
 //	model it named, and the parameters routing needs.
 //
-// @uses      internal/schema.
+// @uses      internal/reasoning, internal/schema.
 // @reason    SPEC-API-001 §7.15 serves two client wire formats over three routes,
 //
 //	so "what the client speaks" and "what the upstream speaks" are two
@@ -20,7 +20,10 @@
 // @since     2026-09-17
 package dataplane
 
-import "github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
+import (
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/reasoning"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
+)
 
 // Route names the client-facing endpoint a request arrived on.
 type Route string
@@ -42,7 +45,9 @@ type Request struct {
 	Route Route
 	// ClientFormat is the wire format the client sent and therefore expects back.
 	ClientFormat schema.DataPlaneFormat
-	// Model is the model string the client named, before resolution.
+	// Model is the model string the client named, before resolution. It may
+	// carry a trailing "(level)" reasoning suffix, which the engine splits off
+	// before resolving (SPEC-API-001 §7.15).
 	Model string
 	// Stream reports whether the caller asked for SSE.
 	Stream bool
@@ -62,6 +67,11 @@ type Request struct {
 	// TokenSaverBypass is set by X-Token-Saver: off. It affects only this
 	// request and never changes the stored saver configuration.
 	TokenSaverBypass bool
+	// ThinkingOverride is the reasoning suffix the engine parsed off Model,
+	// filled by Relay before resolution so every relay leg of the call — combo
+	// members and a fusion judge included — carries the same override. A nil
+	// one means the model string carried no suffix.
+	ThinkingOverride *reasoning.Suffix
 }
 
 // ProviderID reports the provider the request resolved to, or "" before

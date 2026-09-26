@@ -633,6 +633,7 @@ v1 settings surface (subset of reference `DEFAULT_SETTINGS`):
   "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3, "fallback_strategy": "fill-first", "provider_strategies": {} },
   "network":  { "outbound_proxy_enabled": false, "outbound_proxy_url": "", "outbound_no_proxy": "", "outbound_proxy_strategy": "fallback", "provider_proxies": {} },
   "token_saver": { "see §7.9" },
+  "reasoning": { "provider_thinking": {} },
   "logging":  { "request_capture_enabled": false, "retention_days": 7, "capture_body_max_bytes": 65536, "observability_max_records": 1000 }
 }
 ```
@@ -672,6 +673,20 @@ sets neither field is refused (`pool_id` and `strategy` both empty), and a `pool
 stored row is refused by name, so a binding cannot be stored against a row that does not exist (a row
 deleted later leaves the binding in place, and the walk simply skips it).
 
+`reasoning.provider_thinking` sets one reasoning mode per provider, the reference's own
+`providerThinking` shape: `{"<provider_id>": {"mode": "<word>"}}`. The vocabulary is ten words: the
+two fixed states `on` (ask for thinking, the reference's 10000-token budget) and `off` (ask for no
+thinking), and the level names `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, and
+`thinking` (z.ai's own word for the same request). The mode is normalized onto the resolved model's
+wire format when a request reaches that model (§7.15), so one stored word means the same intent
+across OpenAI, Claude, Gemini, and the vendor dialects. An absent entry follows the reasoning setting
+each request already carries; the panel's picker offers `auto` for that state and deletes the entry,
+which is the reference's own rule (`saveThinkingConfig`). The levels a picker offers are the ones the
+provider's models accept, read from the model rows rather than stored here: the provider detail
+carries their union as `thinking_levels` (§7.4) and each catalog and custom-model row carries its own
+set (§7.6). The map is written whole, like `provider_strategies` and `provider_proxies`, so a
+read-modify-write changes one provider, and a mode outside the vocabulary is refused by name.
+
 ### 7.15 Data Plane (OpenAI/Anthropic/Gemini-compatible, gateway-key auth)
 
 Model string resolution order (mirrors reference `getComboModels` + aliases):
@@ -693,17 +708,37 @@ Request pipeline (port of `sse/handlers/chat.js` + `open-sse`):
 ```
 auth → schema validation → bypass detection (naming/warmup) → model resolve
   → required-capability detection → combo/adapter augmentation (§7.7, §7.8)
-  → token savers (§7.9) → format translation (OpenAI↔Claude↔Gemini)
+  → format translation (OpenAI↔Claude↔Gemini) → reasoning control (§7.14)
+  → token savers (§7.9)
   → endpoint+key selection (cursor, parked keys, quota; per-request credential
     failover within the provider, §7.7) → upstream call
   (timeout/retry/proxy) → response translation → usage + quota + log recording
   → SSE passthrough / JSON response
 ```
 
+The translation and the reasoning control both run once per leg, before any credential is spent, and
+the token savers run after them: a saver that rewrites messages sees the body the upstream will
+actually receive, thinking fields included. That is the reference's own order (`chatCore.js` applies
+thinking inside translation, then runs the savers on the final body).
+
 Authentication runs first, before the body is read or validated: an unauthenticated caller is refused
 with `401 UNAUTHORIZED` whatever its body looks like, so a malformed payload cannot be used to probe the
 request schema, and an oversized body is never read for a caller who has presented no credential
 (register F2 of draft 009).
+
+**The reasoning control and the `(level)` suffix.** A client may append a suffix to the model string
+it asks for: `model(high)`, `model(none)`, `model(auto)`, or `model(<budget>)` with an integer token
+budget. The suffix is stripped before resolution — the registry and the catalog know the bare id —
+and carried as this call's override, so every leg of a combo and the fusion judge see it. Precedence
+is suffix over the request's own reasoning setting over the stored provider mode (§7.14), the
+reference's own order (`thinkingUnified.js` `applyThinking`): a request that already carries a
+reasoning setting is never overridden by the stored mode, and a suffix always wins. The resolved mode
+is written into the translated upstream body in the model's own format — a `thinking` object with a
+budget, a `reasoning_effort` level, Gemini's `thinkingConfig`, or a vendor dialect such as z.ai's
+`thinking` object — and the levels map onto budgets and efforts through the reference's own tables.
+A model the registry does not report as reasoning is left exactly as the client sent it, because a
+field its upstream does not read is a request the upstream may refuse, and so is a body the gateway
+cannot parse.
 
 **The panel playground is a §7.15 client, not a route group.** The reference serves its basic-chat
 page from the same origin; pannelAI's panel is a separate app, so its playground calls the routes
@@ -911,6 +946,8 @@ _Changelog 2026-09-24: §7.5 and §7.14 add the per-provider credential rotation
 _Changelog 2026-09-24: §7.15 adds `POST /api/v1/systemone`, the System One (Jev) decision route, and §7.15's data-plane table records it (draft `029-OPENCODE-PROVIDER-PARITY.md` F6). The reference serves a decision model as `kind: "systemone"` on a native endpoint rather than as a chat model (`registry/opencode.js:31`, `systemoneConfig` on the entry, `src/sse/handlers/systemone.js`, `open-sse/handlers/systemoneCore.js`), because the payload is the provider's own vocabulary: `state` plus a `questions` map, forwarded untouched, with no chat translation layer. Measured before the change: this port had no such route, and `opencode/jev-1.13-free` resolved onto the chat wire and was served as a chat completion, so a chat body was sent to an endpoint that answers a decision payload. The route is gateway-key authenticated like every §7.15 route and follows the media plane's shape rather than the chat plane's: one call, no combo chain, one usage row and one log row under the router's request id. Its payload is validated at the boundary (`state` present, `questions` a non-empty object, the model naming a provider that declares a `systemone` endpoint) and forwarded verbatim, because the reference forwards it verbatim and a gateway that reshaped it would answer a different question than the one it was asked. The identity headers the reference sends with it (`x-opencode-client`, `User-Agent`) travel with the entry's own block, and the session header the Zen lanes require is written per call, which is what the reference's `generateSessionId()` does there. A model declaring `kind: systemone` is no longer routable through the chat plane: the resolver refuses it by name with `MODEL_NOT_FOUND` and the kind in the message, so the wrong-body failure cannot come back. What is deliberately not ported: the reference's credential-fallback loop for this route, because the free lane needs no credential and a keyed decision model is served by the same selector the media plane uses, which already walks the provider's accounts._
 
 _Changelog 2026-09-25: §7.11 makes PATCH /api/v1/proxies/{id} partial. Before, the patch shared the create body (`ProxyRequest` with required label, protocol, host, port), so a label-only save was refused with 400 before the service was reached. The patch now carries its own shape (`ProxyPatchRequest`, every field a pointer, no required): an omitted field keeps its stored value, an empty `{}` is refused with `nothing to update`, and the write-only password rule is unchanged (absent or empty keeps the stored secret). A repoint or credential change still clears the stored test result while an unchanged save keeps it, and the endpoint PATCH (§7.5) already worked this way, so the pool now matches its sibling. The served contract gains the `ProxyPatchRequest` schema and the PATCH route points at it._
+
+_Changelog 2026-09-26: §7.14 adds `reasoning.provider_thinking` and §7.15 applies it, so a provider can carry a reasoning mode the request path normalizes onto whatever wire the resolved model speaks. The vocabulary is the reference's own ten words — the fixed states `on` (its 10000-token budget) and `off`, plus the levels `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, and z.ai's `thinking` — and the map is written whole like `provider_strategies` and `provider_proxies`: an absent entry follows the reasoning setting each request carries, which is what the panel's picker calls `auto`, and choosing it deletes the entry. The precedence is suffix over the request's own reasoning setting over the stored mode (`thinkingUnified.js` `applyThinking`), and a `model(level)` suffix — a level name, `none`, `auto`, or an integer budget — is stripped before resolution and carried to every leg of a combo and the fusion judge. The resolved mode is written into the translated upstream body in that model's format: a `thinking` object with a budget, a `reasoning_effort` level, Gemini's `thinkingConfig`, or a vendor dialect such as z.ai's `thinking` object, through the reference's own level/budget/effort tables. A model the registry does not report as reasoning, a body the gateway cannot parse, and a settings read that fails all leave the body exactly as the client sent it, because a field an upstream does not read is a request it may refuse. Deliberate divergence from the reference, recorded rather than ported: the request's own intent wins in every field, not only in the exact field the stored mode would write, so a client's `thinking` object is never shadowed by a stored level word — the stored mode is what "follow the request" falls back to when the request carries no intent at all. §7.4 and §7.6 carry the level sets the picker offers: the union of a provider's declared models' levels as `thinking_levels` on the provider detail, and each catalog and custom-model row's own set, both computed from the registry's ported capability tables, with `none` filtered out of a picker's list because it is the absence of a level rather than a choice. The panel's provider screen gains the picker (its title is the reference's own "Appends (level) suffix to copied model names") and the two model tables append `(level)` to the string they copy only where that model accepts the level; the registry catalog table gained the address-and-copy line the custom-model table already had, because a suffix that lives only in the clipboard is a state an operator cannot see. Two corrections travel with this entry: §7.15's pipeline diagram now places the token savers after the format translation and the reasoning control, which is the order the relay has run since the savers landed, and the level sets are read from the registry's ported capability tables rather than invented here._
 
 _Changelog 2026-09-25: §7.14 lets an emptied URL clear what is stored. The panel sends `outbound_proxy_url: ""` when the operator empties the field, and the PATCH answered 400 `failed rule "url"`, so the one route that can write the value was the route that refused the clear; the same shape refused `token_saver.headroom.url: ""`. The cause is the tag layer, not the domain: `omitempty` skips a nil pointer only, so a pointer to `""` was validated as a URL and `isURL` rejects the empty string. Two rules registered on the shared engine (`clearing_url`, `clearing_http_url`) repeat the built-in `url` and `http_url` checks for a non-empty value and pass `""` through, so nothing that was accepted before is refused now and the stored document keeps its documented default (`outbound_proxy_url: ""`) as a reachable state rather than only a seed. The rest of the group is unchanged: a malformed URL is still a `VALIDATION_ERROR` naming the field, enabling headroom with no destination is still refused by the coherence rule in `ValidatePatch`, and the domain's class-level backstop still checks the merged document whichever write path stored the value._
 

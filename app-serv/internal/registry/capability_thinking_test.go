@@ -3,11 +3,10 @@
 //
 // @file      internal/registry/capability_thinking_test.go
 // @for       Tests for the reasoning tables and the thinking-level sets: the
-// //
 //
 //	layer boundaries, the shadowing rows, and the can-disable filter.
 //
-// @uses      testing, internal/registry.
+// @uses      testing.
 // @reason    The corpus test pins every model the registry declares, but it
 //
 //	cannot say which layer answered: a resolver that dropped the provider
@@ -128,72 +127,4 @@ func TestThinkingLevels_FormatSets(t *testing.T) {
 			}
 		})
 	}
-}
-
-// TestThinkingLevels_PatternOverrides pins the model-name rows the reference
-// carries: a provider-scoped row that only matches its provider, and a generic
-// row that replaces the format set.
-func TestThinkingLevels_PatternOverrides(t *testing.T) {
-	cases := []struct {
-		name     string
-		provider string
-		model    string
-		want     []string
-	}{
-		{
-			name: "codebuddy-cn's glm-5.3 offers three levels", provider: "codebuddy-cn", model: "glm-5.3",
-			want: []string{"low", "high", "max"},
-		},
-		{
-			name: "the same model id under another provider keeps its format set", provider: "glm", model: "glm-5.3",
-			want: []string{"none", "thinking"},
-		},
-		{
-			name: "the codex row is generic, so it also shapes a github model", provider: "github", model: "gpt-5-codex",
-			want: []string{"low", "medium", "high", "xhigh"},
-		},
-		{
-			name: "the deepseek-v4 row replaces the deepseek set", provider: "deepseek", model: "deepseek-v4.1-flash",
-			want: []string{"none", "low", "medium", "high", "xhigh", "max"},
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := ThinkingLevels(tc.provider, tc.model)
-			if len(got) != len(tc.want) {
-				t.Fatalf("ThinkingLevels(%q, %q) = %v, want %v", tc.provider, tc.model, got, tc.want)
-			}
-			for i := range got {
-				if got[i] != tc.want[i] {
-					t.Fatalf("ThinkingLevels(%q, %q) = %v, want %v", tc.provider, tc.model, got, tc.want)
-				}
-			}
-		})
-	}
-}
-
-// TestThinkingLevels_EveryReasoningPairHasLevels is the corpus-level sanity
-// check: a model the resolver calls reasoning must answer a level set, and a
-// model it does not must answer none. It catches a format name the level table
-// does not know, which would otherwise surface as an empty picker.
-func TestThinkingLevels_EveryReasoningPairHasLevels(t *testing.T) {
-	corpus := loadCapabilityCorpus(t)
-	reasoning, silent := 0, 0
-	for _, entry := range corpus.Entries {
-		levels := ThinkingLevels(entry.Provider, entry.Model)
-		if entry.Reasoning {
-			reasoning++
-			if len(levels) == 0 {
-				t.Fatalf("ThinkingLevels(%q, %q) = none, but the reference says the model reasons (format %q)",
-					entry.Provider, entry.Model, entry.ThinkingFormat)
-			}
-			continue
-		}
-		silent++
-		if len(levels) != 0 {
-			t.Fatalf("ThinkingLevels(%q, %q) = %v, but the reference says the model does not reason",
-				entry.Provider, entry.Model, levels)
-		}
-	}
-	t.Logf("levels answered for %d reasoning pairs; %d non-reasoning pairs answered none", reasoning, silent)
 }

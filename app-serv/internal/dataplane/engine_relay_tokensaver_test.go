@@ -8,7 +8,7 @@
 //
 // @uses      testing, context, io, net/http, net/http/httptest, strings,
 //
-//	internal/domain, internal/provider, internal/registry.
+//	internal/domain, internal/registry.
 //
 // @reason    The seam's contract is placement, and placement is only observable
 //
@@ -33,7 +33,6 @@ import (
 	"testing"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
@@ -75,35 +74,6 @@ func newSaverUpstream(t *testing.T, sent *string) *httptest.Server {
 	}))
 	t.Cleanup(server.Close)
 	return server
-}
-
-// newSaverEngine wires the relay pipeline with the saver seam populated, over
-// the same doubles the other relay tests use.
-func newSaverEngine(t *testing.T, providers []registry.Provider, repo *memEndpointRepo, combos map[string]domain.Combo, saver TokenSaver) *Engine {
-	t.Helper()
-	resolver, err := NewResolver(relayRegistry{providers: providers}, relayLookup{combos: combos})
-	if err != nil {
-		t.Fatalf("NewResolver() error = %v", err)
-	}
-	connectors, err := provider.NewConnectors(provider.DefaultFactory)
-	if err != nil {
-		t.Fatalf("NewConnectors() error = %v", err)
-	}
-	selector, err := NewSelector(SelectorDeps{Endpoints: repo, Opener: opener{}})
-	if err != nil {
-		t.Fatalf("NewSelector() error = %v", err)
-	}
-	transport, err := NewTransport(TransportDeps{Connectors: connectors, Client: http.DefaultClient})
-	if err != nil {
-		t.Fatalf("NewTransport() error = %v", err)
-	}
-	engine, err := NewEngine(EngineDeps{
-		Resolver: resolver, Selector: selector, Transport: transport, TokenSaver: saver,
-	})
-	if err != nil {
-		t.Fatalf("NewEngine() error = %v", err)
-	}
-	return engine
 }
 
 // TestRelay_TokenSaverSeam pins SPEC-API-002 §8's placement contract across the
@@ -155,8 +125,8 @@ func TestRelay_TokenSaverSeam(t *testing.T) {
 			if tc.saver != nil {
 				saver = tc.saver
 			}
-			engine := newSaverEngine(t,
-				[]registry.Provider{relayProvider("alpha", server.URL)}, repo, nil, saver)
+			engine := newSeamEngine(t,
+				[]registry.Provider{relayProvider("alpha", server.URL)}, repo, nil, saver, nil)
 			request := relayRequest("alpha/works")
 			request.TokenSaverBypass = tc.bypass
 
@@ -205,10 +175,10 @@ func TestRelay_TokenSaverSeesEachComboMember(t *testing.T) {
 	repo := newMemEndpointRepo()
 	repo.byProvider["alpha"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-alpha", "alpha")}
 	repo.byProvider["beta"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-beta", "beta")}
-	engine := newSaverEngine(t,
+	engine := newSeamEngine(t,
 		[]registry.Provider{relayProvider("alpha", failing.URL), relayProvider("beta", works.URL)},
 		repo, map[string]domain.Combo{"daily": comboRow("daily", "alpha/broken", "beta/works")},
-		saver)
+		saver, nil)
 
 	outcome, err := engine.Relay(context.Background(), relayRequest("daily"), nil)
 	if err != nil {

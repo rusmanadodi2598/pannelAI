@@ -35,6 +35,8 @@ const (
 	SettingsKeyTokenSaver SettingsKey = "token_saver"
 	// SettingsKeyLogging holds capture, retention, and buffer bounds.
 	SettingsKeyLogging SettingsKey = "logging"
+	// SettingsKeyReasoning holds the per-provider thinking modes.
+	SettingsKeyReasoning SettingsKey = "reasoning"
 	// SettingsKeyCaveman is the DEPRECATED saver key. It is a stored key rather
 	// than a field of TokenSaver: the point of freezing it is that an exported
 	// reference configuration keeps its value untouched, and a field on a
@@ -52,6 +54,7 @@ var SettingsKeys = []SettingsKey{
 	SettingsKeyNetwork,
 	SettingsKeyTokenSaver,
 	SettingsKeyLogging,
+	SettingsKeyReasoning,
 	SettingsKeyCaveman,
 }
 
@@ -102,82 +105,6 @@ type NetworkSettings struct {
 	ProviderProxies map[string]ProviderProxy `json:"provider_proxies,omitempty"`
 }
 
-// TokenSaverFilters is the canonical filter vocabulary of the native RTK engine
-// (SPEC-API-002 §4). It is the single source for the twelve names: the schema's
-// oneof tag is pinned against it by a test, and the engine's registry resolves
-// exactly these.
-var TokenSaverFilters = []string{
-	"git-diff",
-	"git-status",
-	"git-log",
-	"grep",
-	"find",
-	"ls",
-	"tree",
-	"dedup-log",
-	"smart-truncate",
-	"read-numbered",
-	"search-list",
-	"build-output",
-}
-
-// ValidTokenSaverFilter reports whether a name is one the engine implements.
-// Aliases the reference accepts on a command line (rg, fd) are not configuration
-// values: the panel picks from the canonical list, so the stored document
-// carries only names the registry resolves by itself.
-func ValidTokenSaverFilter(name string) bool {
-	for _, known := range TokenSaverFilters {
-		if name == known {
-			return true
-		}
-	}
-	return false
-}
-
-// TokenSaverLevels is the strength vocabulary the ponytail saver accepts, in
-// the order the levels escalate. The native engine's prompt table is keyed by
-// exactly these words, and a test in that package fails when the two drift
-// (SPEC-API-002 §7).
-var TokenSaverLevels = []string{"lite", "full", "ultra"}
-
-// ValidTokenSaverLevel reports whether a level is one the engine implements.
-func ValidTokenSaverLevel(level string) bool {
-	for _, known := range TokenSaverLevels {
-		if level == known {
-			return true
-		}
-	}
-	return false
-}
-
-// TokenSaverRTK is the native engine's group (§7.9): an enable flag and the
-// filter allowlist. An empty list means every filter is eligible; the engine
-// still autodetects which one applies to a given tool result (SPEC-API-002 §4).
-type TokenSaverRTK struct {
-	Enabled bool     `json:"enabled"`
-	Filters []string `json:"filters"`
-}
-
-// TokenSaverToggle is one enable/level saver group (§7.9).
-type TokenSaverToggle struct {
-	Enabled bool   `json:"enabled"`
-	Level   string `json:"level"`
-}
-
-// TokenSaverHeadroom is the external compression saver group (§7.9).
-type TokenSaverHeadroom struct {
-	Enabled              bool   `json:"enabled"`
-	URL                  string `json:"url"`
-	CompressUserMessages bool   `json:"compress_user_messages"`
-}
-
-// TokenSaverSettings is the §7.9 saver configuration, minus caveman.
-type TokenSaverSettings struct {
-	RTK      TokenSaverRTK      `json:"rtk"`
-	Headroom TokenSaverHeadroom `json:"headroom"`
-	Ponytail TokenSaverToggle   `json:"ponytail"`
-}
-
 // LoggingSettings is the §7.14 logging group.
 type LoggingSettings struct {
 	RequestCaptureEnabled   bool `json:"request_capture_enabled"`
@@ -195,6 +122,7 @@ type Settings struct {
 	Network    NetworkSettings    `json:"network"`
 	TokenSaver TokenSaverSettings `json:"token_saver"`
 	Logging    LoggingSettings    `json:"logging"`
+	Reasoning  ReasoningSettings  `json:"reasoning"`
 }
 
 // DefaultSettings is the §7.14 default document, merged at read so a stored row
@@ -221,5 +149,6 @@ func DefaultSettings() Settings {
 			CaptureBodyMaxBytes:     65536,
 			ObservabilityMaxRecords: 1000,
 		},
+		Reasoning: defaultReasoningSettings(),
 	}
 }

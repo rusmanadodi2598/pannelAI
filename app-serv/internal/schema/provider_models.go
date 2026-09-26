@@ -41,6 +41,49 @@ func ProviderModelsFrom(entry registry.Provider) []ProviderModelResponse {
 	return out
 }
 
+// providerThinkingLevels answers the union of the levels a provider's declared
+// models accept, in the reference's own order of discovery and without
+// duplicates: the §7.14 picker offers this set prefixed by "auto", and "none"
+// is filtered out because it is the absence of a level rather than one an
+// operator picks (page.js:186-203). A provider whose models declare no
+// reasoning answers nil, and the panel hides the picker then.
+func providerThinkingLevels(entry registry.Provider) []string {
+	levels := make([]string, 0, 4)
+	seen := make(map[string]bool, 4)
+	for _, model := range entry.Models {
+		for _, level := range thinkingLevelsFor(entry.ID, model.ID) {
+			if seen[level] {
+				continue
+			}
+			seen[level] = true
+			levels = append(levels, level)
+		}
+	}
+	if len(levels) == 0 {
+		return nil
+	}
+	return levels
+}
+
+// thinkingLevelsFor answers one model's pickable levels: the registry's own set
+// with "none" removed, because a picker offers choices and "none" is the
+// absence of one (the reference's own filter, thinkingLevels.js:70-73). An id
+// the registry does not know answers nil, which is what keeps a suffix off a
+// model whose upstream would refuse it.
+func thinkingLevelsFor(providerID, modelID string) []string {
+	levels := registry.ThinkingLevels(providerID, modelID)
+	pickable := make([]string, 0, len(levels))
+	for _, level := range levels {
+		if level != "none" {
+			pickable = append(pickable, level)
+		}
+	}
+	if len(pickable) == 0 {
+		return nil
+	}
+	return pickable
+}
+
 // ProviderCountsFrom maps the repository's per-status counts onto the DTO.
 func ProviderCountsFrom(counts domain.EndpointStatusCounts) ProviderStatusSummaryDTO {
 	return ProviderStatusSummaryDTO{

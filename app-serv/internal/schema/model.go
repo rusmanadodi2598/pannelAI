@@ -6,11 +6,13 @@
 //	alias set, and the disabled set (SPEC-API-001 §7.6).
 //
 // @uses      go-playground/validator/v10 through shared validation, internal/domain.
+//
 // @reason    AGENTS.md §2.4 requires a typed, validated struct before handler
 //
 //	logic, and §7.6 defines four payloads for one screen. Declaring
 //	them together keeps the merge the panel renders and the writes it
-//	sends describing the same object.
+//	sends describing the same object. The §7.14 level set is read here
+//	because the row it belongs to is projected here.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
@@ -30,7 +32,12 @@ type ModelResponse struct {
 	DisplayName  string   `json:"display_name"`
 	Kind         string   `json:"kind,omitempty"`
 	Capabilities []string `json:"capabilities"`
-	Source       string   `json:"source"`
+	// ThinkingLevels is what this model accepts when a level is appended to its
+	// name (SPEC-API-001 §7.14). It is absent for a model the registry knows no
+	// levels for, which is what keeps a suffix off a model whose upstream would
+	// refuse it.
+	ThinkingLevels []string `json:"thinking_levels,omitempty"`
+	Source         string   `json:"source"`
 }
 
 // ModelCatalogResponse is the catalog list. It is not paginated: the registry
@@ -55,7 +62,12 @@ type CustomModelResponse struct {
 	ModelID      string   `json:"model_id"`
 	DisplayName  string   `json:"display_name"`
 	Capabilities []string `json:"capabilities"`
-	CreatedAt    string   `json:"created_at"`
+	// ThinkingLevels is what the model accepts when a level is appended to its
+	// name (SPEC-API-001 §7.14). It is absent for a model the registry does not
+	// know, which is the honest answer for a node's own model id: the panel
+	// appends no suffix rather than one the upstream would refuse.
+	ThinkingLevels []string `json:"thinking_levels,omitempty"`
+	CreatedAt      string   `json:"created_at"`
 }
 
 // CustomModelList wraps the custom model rows.
@@ -124,7 +136,11 @@ func ToModelResponses(models []domain.CatalogModel) []ModelResponse {
 			DisplayName:  model.DisplayName(),
 			Kind:         model.Kind(),
 			Capabilities: model.Capabilities().List(),
-			Source:       string(model.Source()),
+			// The level set is the registry's answer for this id, so a catalog
+			// row carries the same levels the provider's own model row would
+			// (SPEC-API-001 §7.14).
+			ThinkingLevels: thinkingLevelsFor(model.ProviderID(), model.ModelID()),
+			Source:         string(model.Source()),
 		})
 	}
 	return out
@@ -138,7 +154,11 @@ func ToCustomModelResponse(model domain.CustomModel) CustomModelResponse {
 		ModelID:      model.ModelID(),
 		DisplayName:  model.DisplayName(),
 		Capabilities: model.Capabilities().List(),
-		CreatedAt:    Timestamp(model.CreatedAt()),
+		// The level set is the registry's answer for this id, so a custom model
+		// that names a known model carries the same levels the provider's own
+		// row would (SPEC-API-001 §7.14).
+		ThinkingLevels: thinkingLevelsFor(model.ProviderID(), model.ModelID()),
+		CreatedAt:      Timestamp(model.CreatedAt()),
 	}
 }
 

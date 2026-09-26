@@ -97,13 +97,18 @@ type ProviderMediaResponse struct {
 // than by the provider's display name.
 type ProviderDetailResponse struct {
 	ProviderResponse
-	BaseURL         string                  `json:"base_url"`
-	Format          string                  `json:"format"`
-	URLSuffix       string                  `json:"url_suffix"`
-	ValidateURL     string                  `json:"validate_url"`
-	TimeoutMS       int                     `json:"timeout_ms"`
-	ModelCount      int                     `json:"model_count"`
-	ChatModelCount  int                     `json:"chat_model_count"`
+	BaseURL        string `json:"base_url"`
+	Format         string `json:"format"`
+	URLSuffix      string `json:"url_suffix"`
+	ValidateURL    string `json:"validate_url"`
+	TimeoutMS      int    `json:"timeout_ms"`
+	ModelCount     int    `json:"model_count"`
+	ChatModelCount int    `json:"chat_model_count"`
+	// ThinkingLevels is the union of the levels this provider's declared models
+	// accept, which is what the §7.14 picker offers (the reference builds the
+	// same union client-side, page.js:186-203). It is absent when no declared
+	// model reasons, and the panel hides the picker then.
+	ThinkingLevels  []string                `json:"thinking_levels,omitempty"`
 	Media           []ProviderMediaResponse `json:"media"`
 	Deprecated      bool                    `json:"deprecated"`
 	DeprecationNote string                  `json:"deprecation_notice,omitempty"`
@@ -173,6 +178,7 @@ func ProviderDetailFrom(entry registry.Provider, summary ProviderStatusSummaryDT
 		TimeoutMS:        entry.Transport.TimeoutMS,
 		ModelCount:       len(entry.Models),
 		ChatModelCount:   chatModels,
+		ThinkingLevels:   providerThinkingLevels(entry),
 		Media:            media,
 		Deprecated:       entry.Display.Deprecated,
 		DeprecationNote:  entry.Display.DeprecationNotice,

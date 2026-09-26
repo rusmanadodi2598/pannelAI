@@ -113,6 +113,26 @@ linters:
       - path: internal/dataplane/(translate_.*|engine_translate)\.go
         linters: [forbidigo]
 
+      # reasoning rewrites a body the gateway forwards member by member: every
+      # field the client set has to survive untouched and only the thinking
+      # fields are replaced, so the body is held as an untyped JSON object and
+      # the values written into it are the wire's own free-form shapes (a
+      # Claude thinking block, a Gemini thinkingConfig, a bare effort string).
+      # This is the same outbound-wire boundary the dataplane translators sit
+      # on, and it is the only package outside them that reads a body this way.
+      - path: internal/reasoning/.*\.go
+        linters: [forbidigo]
+
+      # reasoning's level and suffix tables are read after lowercasing and
+      # trimming, so a test row deliberately carries surrounding whitespace:
+      # " HIGH " proves the normalization, and "gpt-5.5( high ) " proves the
+      # suffix parser trims both sides of the group. mapKey's whitespace
+      # heuristic exists to catch a typo, which is exactly what these rows
+      # prove these values are not.
+      - path: internal/reasoning/.*_test\.go
+        linters: [gocritic]
+        text: "mapKey"
+
       # noctx targets *outbound* calls that must carry a deadline. A test builds
       # an inbound request with httptest.NewRequest on purpose: it is the input
       # the handler receives, not a call the test makes, so there is no caller

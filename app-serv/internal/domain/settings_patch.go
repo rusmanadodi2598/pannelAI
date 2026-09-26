@@ -36,6 +36,7 @@ type SettingsPatch struct {
 	Network    *NetworkSettingsPatch
 	TokenSaver *TokenSaverSettingsPatch
 	Logging    *LoggingSettingsPatch
+	Reasoning  *ReasoningSettingsPatch
 }
 
 // SecuritySettingsPatch updates the security group.
@@ -120,6 +121,9 @@ func (s Settings) Validate() error {
 	if err := validateRouting(s.Routing); err != nil {
 		return err
 	}
+	if err := validateReasoning(s.Reasoning); err != nil {
+		return err
+	}
 	if s.TokenSaver.Headroom.Enabled && s.TokenSaver.Headroom.URL == "" {
 		return NewValidationError("token_saver.headroom.url is required when headroom is enabled")
 	}
@@ -185,64 +189,8 @@ func (s *Settings) Update(patch SettingsPatch) error {
 		applyInt(&s.Logging.CaptureBodyMaxBytes, p.CaptureBodyMaxBytes)
 		applyInt(&s.Logging.ObservabilityMaxRecords, p.ObservabilityMaxRecords)
 	}
+	if p := patch.Reasoning; p != nil {
+		applyReasoning(&s.Reasoning, p)
+	}
 	return s.Validate()
-}
-
-// applyBool writes a value only when the patch carried one.
-func applyBool(dst *bool, src *bool) {
-	if src != nil {
-		*dst = *src
-	}
-}
-
-// applyInt writes a value only when the patch carried one.
-func applyInt(dst *int, src *int) {
-	if src != nil {
-		*dst = *src
-	}
-}
-
-// applyString writes a value only when the patch carried one.
-func applyString(dst *string, src *string) {
-	if src != nil {
-		*dst = *src
-	}
-}
-
-// applyProviderProxies writes the per-provider binding map. It is replaced
-// wholesale when the patch carries one, so a deleted entry stays deleted; the
-// copy keeps the stored document from sharing the caller's map.
-func applyProviderProxies(dst *map[string]ProviderProxy, src *map[string]ProviderProxy) {
-	if src == nil {
-		return
-	}
-	replaced := make(map[string]ProviderProxy, len(*src))
-	for id, entry := range *src {
-		replaced[id] = entry
-	}
-	*dst = replaced
-}
-
-// applyToggle writes one saver toggle group only when the patch carried it.
-func applyToggle(dst *TokenSaverToggle, src *TokenSaverTogglePatch) {
-	if src == nil {
-		return
-	}
-	applyBool(&dst.Enabled, src.Enabled)
-	applyString(&dst.Level, src.Level)
-}
-
-// applyRTK writes the native engine's group. The filter list is replaced
-// wholesale, so an empty list in the patch is a real value (clear the allowlist)
-// rather than "leave unchanged", which the nil pointer already means.
-func applyRTK(dst *TokenSaverRTK, src *TokenSaverRTKPatch) {
-	if src == nil {
-		return
-	}
-	applyBool(&dst.Enabled, src.Enabled)
-	if src.Filters != nil {
-		replaced := make([]string, len(*src.Filters))
-		copy(replaced, *src.Filters)
-		dst.Filters = replaced
-	}
 }

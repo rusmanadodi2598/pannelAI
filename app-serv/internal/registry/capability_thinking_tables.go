@@ -47,11 +47,11 @@ var thinkingRules = []thinkingRule{
 	{pattern: "*claude*mythos*", format: "claude-budget", reasons: true},       // ref #10
 	{pattern: "*claude*", format: "claude-budget", reasons: true},              // ref #12
 	{pattern: "*gemini*image*"}, // ref #13, stop
-	{pattern: "*gemini-3.8*", format: "gemini-level", cannotDisable: true, reasons: true},   // ref #14
-	{pattern: "*gemini-3.7*", format: "gemini-level", cannotDisable: true, reasons: true},   // ref #15
-	{pattern: "*gemini-3*pro*", format: "gemini-level", cannotDisable: true, reasons: true}, // ref #16
-	{pattern: "*gemini-3*", format: "gemini-level", cannotDisable: true, reasons: true},     // ref #17
-	{pattern: "*gemini-2.5*", format: "gemini-budget", reasons: true},                       // ref #18
+	{pattern: "*gemini-3.8*", format: "gemini-level", cannotDisable: true, reasons: true},                           // ref #14
+	{pattern: "*gemini-3.7*", format: "gemini-level", cannotDisable: true, reasons: true},                           // ref #15
+	{pattern: "*gemini-3*pro*", format: "gemini-level", cannotDisable: true, reasons: true},                         // ref #16
+	{pattern: "*gemini-3*", format: "gemini-level", cannotDisable: true, reasons: true},                             // ref #17
+	{pattern: "*gemini-2.5*", format: "gemini-budget", reasons: true, hasRange: true, rangeMin: 0, rangeMax: 24576}, // ref #18
 	{pattern: "*gemini-2*"},                                                            // ref #19, stop
 	{pattern: "*gemini*"},                                                              // ref #20, stop
 	{pattern: "*gemma*"},                                                               // ref #21, stop
@@ -89,14 +89,14 @@ var thinkingRules = []thinkingRule{
 	{pattern: "*kimi*k2.7*code*", format: "kimi", cannotDisable: true, reasons: true},  // ref #57
 	{pattern: "*kimi*k2*", format: "kimi", reasons: true},                              // ref #58
 	{pattern: "*kimi*", format: "kimi", reasons: true},                                 // ref #59
-	{pattern: "*glm-5.3*", format: "zai", reasons: true},                               // ref #60
-	{pattern: "*glm-5.2*", format: "zai", reasons: true},                               // ref #61
+	{pattern: "*glm-5.3*", format: "zai", reasons: true, effort: true},                 // ref #60
+	{pattern: "*glm-5.2*", format: "zai", reasons: true, effort: true},                 // ref #61
 	{pattern: "*glm-5*", format: "zai", reasons: true},                                 // ref #62
 	{pattern: "*glm-4.7*", format: "zai", reasons: true},                               // ref #63
 	{pattern: "*glm-4*", format: "zai", reasons: true},                                 // ref #64
 	{pattern: "*glm*", format: "zai", reasons: true},                                   // ref #65
-	{pattern: "*deepseek-v4.*", format: "deepseek", reasons: true},                     // ref #66
-	{pattern: "*deepseek-v4*", format: "deepseek", reasons: true},                      // ref #67
+	{pattern: "*deepseek-v4.*", format: "deepseek", reasons: true, effort: true},       // ref #66
+	{pattern: "*deepseek-v4*", format: "deepseek", reasons: true, effort: true},        // ref #67
 	{pattern: "*reasoner*", format: "deepseek", cannotDisable: true, reasons: true},    // ref #68
 	{pattern: "*deepseek-r*", format: "deepseek", cannotDisable: true, reasons: true},  // ref #69
 	{pattern: "*deepseek-chat*"},                                                       // ref #70, stop

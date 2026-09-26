@@ -76,6 +76,7 @@ func (s *SettingsService) Settings(ctx context.Context) (domain.Settings, error)
 	settings.Network = decodeOr(settings.Network, stored[domain.SettingsKeyNetwork]).Normalized()
 	settings.TokenSaver = decodeOr(settings.TokenSaver, stored[domain.SettingsKeyTokenSaver])
 	settings.Logging = decodeOr(settings.Logging, stored[domain.SettingsKeyLogging])
+	settings.Reasoning = decodeOr(settings.Reasoning, stored[domain.SettingsKeyReasoning]).Normalized()
 	return settings, nil
 }
 
@@ -90,18 +91,6 @@ func (s *SettingsService) RequireAPIKey(ctx context.Context) (bool, error) {
 		return true, err
 	}
 	return settings.Security.RequireAPIKey, nil
-}
-
-// RotationPolicy resolves the credential rotation policy for one provider
-// (§7.5, §7.14): the provider's own override over the global default. It is the
-// one settings read the data plane's selector needs, so it is a named method
-// rather than making the selector decode the whole document.
-func (s *SettingsService) RotationPolicy(ctx context.Context, providerID string) (domain.RotationPolicy, error) {
-	settings, err := s.Settings(ctx)
-	if err != nil {
-		return domain.RotationPolicy{}, err
-	}
-	return settings.Routing.RotationFor(providerID), nil
 }
 
 // Update applies a partial patch, persists only the groups the patch touched,
@@ -171,7 +160,7 @@ func (s *SettingsService) checkBoundPools(ctx context.Context, patch domain.Sett
 // touchedGroups names the stored keys a patch changes, so an untouched group is
 // never rewritten and the deprecated caveman key is never touched at all.
 func touchedGroups(patch domain.SettingsPatch) []domain.SettingsKey {
-	groups := make([]domain.SettingsKey, 0, 5)
+	groups := make([]domain.SettingsKey, 0, 6)
 	if patch.Security != nil {
 		groups = append(groups, domain.SettingsKeySecurity)
 	}
@@ -186,6 +175,9 @@ func touchedGroups(patch domain.SettingsPatch) []domain.SettingsKey {
 	}
 	if patch.Logging != nil {
 		groups = append(groups, domain.SettingsKeyLogging)
+	}
+	if patch.Reasoning != nil {
+		groups = append(groups, domain.SettingsKeyReasoning)
 	}
 	return groups
 }
@@ -203,6 +195,8 @@ func groupValue(settings domain.Settings, group domain.SettingsKey) any {
 		return settings.TokenSaver
 	case domain.SettingsKeyLogging:
 		return settings.Logging
+	case domain.SettingsKeyReasoning:
+		return settings.Reasoning
 	default:
 		return nil
 	}
