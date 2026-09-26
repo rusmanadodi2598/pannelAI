@@ -30,7 +30,7 @@ function normalizeCost(value: string): string {
 export type QuotaStub = {
 	windows: Record<string, unknown>[];
 	/** The endpoint list the screen reads for its labels, which is also what a cap write is checked against. */
-	endpoints: Record<string, unknown>[];
+	endpoints: Record<string, unknown>[] | null;
 	/** The stored cap per endpoint. A missing key means no cap was ever stored for it. */
 	caps: Record<string, StoredCap>;
 	/** The endpoint ids the per-endpoint read was called with. */
@@ -41,6 +41,13 @@ export type QuotaStub = {
 	capWriteRefusal: { status: number; code: string; message: string } | null;
 	/** The endpoint list's own status, for a test that needs the label read to fail. */
 	endpointStatus: number;
+	/** Every paged /quotas read's URL, in order, so a test can prove what the screen asked for. */
+	quotaReads: string[];
+	/**
+	 * When set, the paged read answers as if only this many provider groups existed, standing in for a
+	 * poll that lands after the data shrank.
+	 */
+	shrinkTo: number | null;
 };
 
 export function quotaWindowRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -70,6 +77,8 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 		capReadStatus: 200,
 		capWriteRefusal: null,
 		endpointStatus: 200,
+		quotaReads: [],
+		shrinkTo: null,
 		...overrides
 	};
 
@@ -123,12 +132,31 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 			}
 			return json({
 				data: stub.endpoints,
-				meta: { page: 1, per_page: 100, total: stub.endpoints.length }
+				meta: { page: 1, per_page: 100, total: stub.endpoints?.length ?? 0 }
 			});
 		}
 
 		if (method === 'GET' && parsed.pathname.endsWith('/quotas')) {
-			return json({ data: stub.windows });
+			// The paged collection read (docs/PORT/006-PORT-QUOTA-PAGING.md D1): the page unit is the
+			// provider group, groups keep their first-seen order, and the meta block states the total
+			// group count. The grouping here mirrors the SQL the server runs, which the integration
+			// test proves against a real database.
+			stub.quotaReads.push(url);
+			const page = Number(parsed.searchParams.get('page') ?? '1');
+			const perPage = Number(parsed.searchParams.get('per_page') ?? '25');
+
+			const providers: string[] = [];
+			for (const window of stub.windows) {
+				const pid = String(window.provider_id);
+				if (!providers.includes(pid)) providers.push(pid);
+			}
+			const kept = providers.slice(0, stub.shrinkTo ?? providers.length);
+			const visible = new Set(kept.slice((page - 1) * perPage, page * perPage));
+
+			return json({
+				data: stub.windows.filter((window) => visible.has(String(window.provider_id))),
+				meta: { page, per_page: perPage, total: kept.length }
+			});
 		}
 
 		const quotaMatch = /\/quotas\/([^/?]+)$/.exec(parsed.pathname);
@@ -157,7 +185,7 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 				const { status, code, message } = stub.capWriteRefusal;
 				return refusal(code, message, status);
 			}
-			if (!stub.endpoints.some((endpoint) => endpoint.id === endpointId)) {
+			if (!stub.endpoints?.some((endpoint) => endpoint.id === endpointId)) {
 				return refusal('NOT_FOUND', 'upstream endpoint not found', 404);
 			}
 

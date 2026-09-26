@@ -6,17 +6,29 @@
 	// elapsed. `pollDue` holds that decision, so "paused" and "the tab is hidden" are rules with a test
 	// rather than conditions scattered through a component.
 	//
+	// The read is paged over provider groups (docs/PORT/006-PORT-QUOTA-PAGING.md D1/D5): the screen asks
+	// for its card page size, and the pager walks server pages. A read that discovers the data shrank
+	// below the page being read parks on the last page there is (`clampPage`) and reads that page, so a
+	// stranded page can never sit over an empty table.
+	//
 	// The endpoint labels come from the first page of the endpoint list, which is the only list route the API
 	// offers. That read is best effort: if it fails the table still renders, naming endpoints by their ids,
 	// and says why.
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import QuotaCaps from '$lib/components/QuotaCaps.svelte';
 	import QuotaCards from '$lib/components/QuotaCards.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listEndpointLabels } from '$lib/api/endpoints';
 	import { listQuotaWindows } from '$lib/api/usage';
-	import { pollDue, pollIntervalLabel, QUOTA_POLL_MS } from '$lib/polling';
+	import {
+		clampPage,
+		pollDue,
+		pollIntervalLabel,
+		QUOTA_PAGE_SIZE,
+		QUOTA_POLL_MS
+	} from '$lib/polling';
 	import type { QuotaWindow } from '$lib/schemas/quota';
 	import { formatTimestamp } from '$lib/utils/time';
 
@@ -37,11 +49,21 @@
 	let now = $state(Date.now());
 	let lastLoadedAt = $state(0);
 	let readAt = $state('');
+	let page = $state(1);
+	let totalGroups = $state(0);
 
 	// Every endpoint the window table names, so the cap picker can offer one the label list's first page
 	// does not cover. A cap belongs to an endpoint, and the window table is the other place the screen
 	// learns one exists.
 	const windowEndpointIds = $derived(windows.map((window) => window.endpoint_id));
+
+	// The pager the cards render is the gateway's page count: meta.total counts provider groups, and
+	// the screen's card page size is the read's per_page.
+	const pageCount = $derived(Math.max(1, Math.ceil(totalGroups / QUOTA_PAGE_SIZE)));
+
+	const RefreshIcon = CONTROL_ICONS.refresh.icon;
+	const PauseIcon = CONTROL_ICONS.pause.icon;
+	const ResumeIcon = CONTROL_ICONS.resume.icon;
 
 	onMount(() => {
 		const timer = setInterval(tick, TICK_MS);
@@ -66,6 +88,13 @@
 		if (document.visibilityState === 'visible') void load();
 	}
 
+	function goToPage(next: number): void {
+		const bounded = Math.min(pageCount, Math.max(1, next));
+		if (bounded === page) return;
+		page = bounded;
+		void load();
+	}
+
 	async function load(): Promise<void> {
 		// One read at a time. The interval and the manual control can otherwise overlap, and the slower
 		// response would win the race for no reason. A press that lands mid-read asks for one more read
@@ -77,7 +106,7 @@
 		busy = true;
 		try {
 			const [quotaResult, endpointResult] = await Promise.all([
-				listQuotaWindows(),
+				listQuotaWindows({ page, per_page: QUOTA_PAGE_SIZE }),
 				listEndpointLabels({ page: 1, per_page: 100 })
 			]);
 
@@ -98,6 +127,17 @@
 
 			error = null;
 			windows = quotaResult.data.data;
+			totalGroups = quotaResult.data.meta.total;
+
+			// The data can shrink between reads (a poll that answers fewer provider groups than the page
+			// being read assumes). Park on the last page there is, then let the remembered rerun read that
+			// page, so the cards always match the page indicator above them.
+			const clamped = clampPage(page, totalGroups, QUOTA_PAGE_SIZE);
+			if (clamped !== page) {
+				page = clamped;
+				rerunRequested = true;
+				return;
+			}
 		} finally {
 			busy = false;
 			loading = false;
@@ -119,8 +159,9 @@
 
 	<!-- One compact row for what the operator reaches for together (owner directive, 2026-09-25): the
 	     status sentence and the two refresh controls share one baseline, and the row wraps as a block
-	     on a narrow screen. The buttons are text-only on purpose: icons are not this pass's scope, and
-	     the icon map is carrying another pass's uncommitted entries. -->
+	     on a narrow screen. The controls carry the icon map's glyphs beside their labels (owner
+	     directive, 2026-09-26; R-04, R-31): the refresh glyph is what the button does, and the
+	     pause/resume glyphs are the state the toggle puts the poll in. -->
 	<div class="flex flex-wrap items-stretch justify-between gap-2">
 		<p class="flex min-w-0 flex-1 items-center text-sm text-[var(--color-text-muted)]">
 			{#if paused}
@@ -139,16 +180,26 @@
 			     mid-flight, which reads as a broken button. -->
 			<button
 				type="button"
-				class="inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-				onclick={() => void load()}>Refresh now</button
+				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+				onclick={() => void load()}
 			>
+				<RefreshIcon class="size-4" aria-hidden="true" />
+				Refresh now
+			</button>
 
 			<button
 				type="button"
 				aria-pressed={paused}
-				class="inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm aria-pressed:bg-[var(--color-surface-2)]"
-				onclick={() => (paused = !paused)}>{paused ? 'Resume refresh' : 'Pause refresh'}</button
+				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm aria-pressed:bg-[var(--color-surface-2)]"
+				onclick={() => (paused = !paused)}
 			>
+				{#if paused}
+					<ResumeIcon class="size-4" aria-hidden="true" />
+				{:else}
+					<PauseIcon class="size-4" aria-hidden="true" />
+				{/if}
+				{paused ? 'Resume refresh' : 'Pause refresh'}
+			</button>
 		</div>
 	</div>
 
@@ -181,7 +232,7 @@
 			</p>
 		{/if}
 
-		<QuotaCards {windows} {labels} {now} />
+		<QuotaCards {windows} {labels} {now} {page} {pageCount} onpagechange={goToPage} />
 	{/if}
 
 	<!-- Outside the branch above: a cap is legal before the first routed request, so this section is the

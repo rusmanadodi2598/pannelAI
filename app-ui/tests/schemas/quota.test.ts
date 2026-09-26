@@ -116,13 +116,27 @@ describe('quota window', () => {
 	});
 
 	it('reads a null window list as no windows', () => {
-		expect(schemaQuotaWindowList.safeParse({ data: null }).data?.data).toEqual([]);
+		// The paged list always carries the meta block (PORT 006), so a null data array inside a well
+		// formed body is "no windows on this page", not a malformed response.
+		const parsed = schemaQuotaWindowList.safeParse({
+			data: null,
+			meta: { page: 1, per_page: 5, total: 0 }
+		});
+		expect(parsed.success).toBe(true);
+		expect(parsed.success && parsed.data.data).toEqual([]);
 	});
 
 	it('tolerates a field the panel does not know yet', () => {
-		expect(schemaQuotaWindowList.safeParse({ data: [window_({ burn_rate: 1.2 })] }).success).toBe(
-			true
-		);
+		expect(
+			schemaQuotaWindowList.safeParse({
+				data: [window_({ burn_rate: 1.2 })],
+				meta: { page: 1, per_page: 25, total: 1 }
+			}).success
+		).toBe(true);
+	});
+
+	it('refuses a body without the meta block, because the read is paged', () => {
+		expect(schemaQuotaWindowList.safeParse({ data: [] }).success).toBe(false);
 	});
 });
 

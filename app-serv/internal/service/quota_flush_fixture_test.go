@@ -106,6 +106,10 @@ func (r *recordingQuotaRepo) ListWindows(context.Context, string) ([]domain.Quot
 	return nil, nil
 }
 
+func (r *recordingQuotaRepo) PageWindowsByProvider(context.Context, int, int) ([]domain.QuotaWindow, int64, error) {
+	return nil, 0, nil
+}
+
 func (r *recordingQuotaRepo) GetCap(context.Context, string) (domain.QuotaCap, error) {
 	return domain.QuotaCap{}, domain.ErrQuotaCapNotFound
 }

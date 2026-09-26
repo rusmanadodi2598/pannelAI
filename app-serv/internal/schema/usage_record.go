@@ -67,11 +67,14 @@ type QuotaWindowResponse struct {
 	Source     string  `json:"source"`
 }
 
-// QuotaWindowList is the body of GET /api/v1/quotas, which reads every
-// endpoint's windows. The collection route carries no cap: a cap belongs to one
-// endpoint, and the per-endpoint route is where a client reads it back.
+// QuotaWindowList is the body of GET /api/v1/quotas. The collection is paged
+// over provider groups (docs/PORT/006-PORT-QUOTA-PAGING.md D1): one page carries
+// every window of the page's provider groups, and per_page counts provider
+// groups on this route, so a card never splits across pages. The meta block is
+// the house Page shape (§4) with total counting groups.
 type QuotaWindowList struct {
 	Data []QuotaWindowResponse `json:"data"`
+	Meta Page                  `json:"meta"`
 }
 
 // QuotaEndpointDetail is the body of GET /api/v1/quotas/{endpoint_id}: that

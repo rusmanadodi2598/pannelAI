@@ -11,6 +11,26 @@
 export const QUOTA_POLL_MS = 30_000;
 
 /**
+ * How many provider cards the quota screen asks the gateway for per page
+ * (docs/PORT/006-PORT-QUOTA-PAGING.md D1/D5). The wire pages over provider
+ * groups, so this is both the card page size and the read's per_page.
+ */
+export const QUOTA_PAGE_SIZE = 5;
+
+/**
+ * The page to read after the data shrank.
+ *
+ * A registry that shrinks between two reads (a poll that answers fewer provider groups) must not
+ * strand the pager past the last page: the page that was legal when the operator pressed Next can
+ * answer an empty table after the groups behind it are gone. The read that discovers the shrink
+ * parks itself on the last page there is, and an empty registry is always page one.
+ */
+export function clampPage(page: number, totalGroups: number, perPage: number): number {
+	const pageCount = Math.max(1, Math.ceil(totalGroups / perPage));
+	return Math.min(page, pageCount);
+}
+
+/**
  * How often the console screen re-reads its buffer.
  *
  * Faster than the quota interval on purpose: console output is read while a request is being debugged, so

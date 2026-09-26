@@ -6,7 +6,13 @@
 
 import { describe, expect } from 'vitest';
 import { forEachCase } from '../support/tables';
-import { pollDue, pollIntervalLabel, QUOTA_POLL_MS } from '$lib/polling';
+import {
+	clampPage,
+	pollDue,
+	pollIntervalLabel,
+	QUOTA_PAGE_SIZE,
+	QUOTA_POLL_MS
+} from '$lib/polling';
 
 describe('pollIntervalLabel', () => {
 	forEachCase(
@@ -95,6 +101,40 @@ describe('pollDue', () => {
 			expect(pollDue(testCase.state, testCase.now, QUOTA_POLL_MS, testCase.visibility)).toBe(
 				testCase.expected
 			);
+		}
+	);
+});
+
+describe('clampPage', () => {
+	forEachCase(
+		[
+			{
+				name: 'keeps a page the data still covers',
+				page: 2,
+				total: 12,
+				expected: 2
+			},
+			{
+				name: 'parks a stranded page on the last page there is',
+				page: 3,
+				total: 1,
+				expected: 1
+			},
+			{
+				name: 'parks on the first page when the data is gone',
+				page: 4,
+				total: 0,
+				expected: 1
+			},
+			{
+				name: 'keeps the last page itself on an exact boundary',
+				page: 2,
+				total: 10,
+				expected: 2
+			}
+		],
+		(testCase) => {
+			expect(clampPage(testCase.page, testCase.total, QUOTA_PAGE_SIZE)).toBe(testCase.expected);
 		}
 	);
 });

@@ -473,19 +473,31 @@ failure this setting exists to prevent.
 
 ### 7.12 Usage & Quota Tracker
 
-| Method | Path | Auth | Description | Phase |
-|---|---|---|---|---|
-| GET | `/api/v1/usage/summary` | S | Totals + group-by; `?from=&to=&group_by=provider|model|endpoint|gateway_key` | P1 |
-| GET | `/api/v1/usage/timeseries` | S | Buckets; `?granularity=hour|day&from=&to=` | P1 |
-| GET | `/api/v1/usage/records` | S | Paginated raw records; filters as summary | P1 |
-| GET | `/api/v1/usage/records/{request_id}` | S | Single request detail (joins request log if captured) | P1 |
-| GET | `/api/v1/usage/live` | S | Server-sent events: the requests in flight now, the requests that just finished, and the provider the gateway last reported an error for | P1 |
-| GET | `/api/v1/quotas` | S | All quota windows: `{endpoint_id, provider_id, window, used, limit, resets_at, source}`; `source` ∈ `computed|reported` | P1 |
-| GET | `/api/v1/quotas/{endpoint_id}` | S | Windows for one endpoint | P1 |
-| PUT | `/api/v1/quotas/{endpoint_id}` | S | Set budget caps `{monthly_cost_usd?, monthly_tokens?}`: router stops picking exhausted endpoints | P2 |
+| Method | Path                                 | Auth | Description                                                                                                                              | Phase                                                               |
+| ------ | ------------------------------------ | ---- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| GET    | `/api/v1/usage/summary`              | S    | Totals + group-by; `?from=&to=&group_by=provider                                                                                         | model                                                               | endpoint | gateway_key` | P1  |
+| GET    | `/api/v1/usage/timeseries`           | S    | Buckets; `?granularity=hour                                                                                                              | day&from=&to=`                                                      | P1       |
+| GET    | `/api/v1/usage/records`              | S    | Paginated raw records; filters as summary                                                                                                | P1                                                                  |
+| GET    | `/api/v1/usage/records/{request_id}` | S    | Single request detail (joins request log if captured)                                                                                    | P1                                                                  |
+| GET    | `/api/v1/usage/live`                 | S    | Server-sent events: the requests in flight now, the requests that just finished, and the provider the gateway last reported an error for | P1                                                                  |
+| GET    | `/api/v1/quotas`                     | S    | Quota windows, paged over provider groups: `{endpoint_id, provider_id, window, used, limit, resets_at, source}`; `source` ∈ `computed    | reported`; `?page=&per_page=`(house bounds §4) with the`meta` block | P1       |
+| GET    | `/api/v1/quotas/{endpoint_id}`       | S    | Windows for one endpoint                                                                                                                 | P1                                                                  |
+| PUT    | `/api/v1/quotas/{endpoint_id}`       | S    | Set budget caps `{monthly_cost_usd?, monthly_tokens?}`: router stops picking exhausted endpoints                                         | P2                                                                  |
 
 Quota worker re-checks windows per provider cadence (5h/daily/weekly/monthly), refresh countdowns,
 and records `resets_at`. Cost figures are estimates for display only (reference parity).
+
+**The collection read pages over provider groups (PORT 006, 2026-09-26).** `GET /api/v1/quotas`
+carries the house pagination (`?page=&per_page=`, §4 bounds, refusal not clamping) and the `meta`
+block, but on this route `per_page` counts **provider groups**, not rows: one page carries every
+window of the page's groups, so a provider's card never splits across pages however many keys it
+holds (the owner's monitoring scale: hundreds to thousands of keys per provider). `meta.total`
+counts groups, and the provider-less lane (windows whose endpoint row is gone, the credential-free
+virtual endpoint) is one group like any other. Groups are ordered by their smallest endpoint id
+(first-seen in the endpoint ordering), windows keep the endpoint-then-kind order, so a client
+grouping the page first-seen reproduces the server's group order. Defaults are the house ones
+(page 1, per_page 25); the panel sends its card page size explicitly. The per-endpoint routes are
+unchanged.
 
 **The live stream (draft 013 F4, 2026-09-22).** `GET /api/v1/usage/live` is the one Usage read that is
 not a period window: an in-flight request exists only between two reads, so no poll can state one, and

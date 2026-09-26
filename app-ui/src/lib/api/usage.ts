@@ -66,11 +66,16 @@ export function getUsageRecord(requestId: string): Promise<ApiResult<UsageRecord
 	});
 }
 
-export function listQuotaWindows(): Promise<ApiResult<QuotaWindowList>> {
+// The collection read is paged over provider groups (docs/PORT/006-PORT-QUOTA-PAGING.md D1): the
+// caller sends its card page size, and the answer's meta.total counts the groups the pager walks.
+export function listQuotaWindows(
+	query: { page: number; per_page: number } = { page: 1, per_page: 25 }
+): Promise<ApiResult<QuotaWindowList>> {
 	return apiRequest<void, QuotaWindowList>({
 		method: 'GET',
 		path: '/quotas',
-		schema: schemaQuotaWindowList
+		schema: schemaQuotaWindowList,
+		query
 	});
 }
 

@@ -80,6 +80,65 @@ func (r *QuotaRepository) ListWindows(ctx context.Context, endpointID string) ([
 	return windows, nil
 }
 
+// PageWindowsByProvider returns one page of the collection read: every window
+// of the page's provider groups, with the total group count the meta block
+// needs (docs/PORT/006-PORT-QUOTA-PAGING.md D1).
+//
+// The page unit is the provider group, so a provider's card never splits across
+// pages no matter how many keys it holds. Groups are ordered by their smallest
+// endpoint id, which is the first-seen order the client's grouping reproduces
+// from the endpoint-ordered window rows; the windows themselves keep the
+// ListWindows ordering. The no-provider lane (empty provider id, the
+// credential-free virtual endpoint) is one group like any other. The count and
+// the page are two statements: a window written between them shifts a boundary
+// at worst, never loses a group the count promised.
+func (r *QuotaRepository) PageWindowsByProvider(ctx context.Context, page, perPage int) ([]domain.QuotaWindow, int64, error) {
+	const countQ = `SELECT count(*) FROM (
+    SELECT DISTINCT coalesce(e.provider_id, '') AS provider_id
+      FROM quota_windows w
+      LEFT JOIN upstream_endpoints e ON e.id = w.endpoint_id
+  ) groups`
+
+	const pageQ = `WITH page_groups AS (
+    SELECT coalesce(e.provider_id, '') AS provider_id
+      FROM quota_windows w
+      LEFT JOIN upstream_endpoints e ON e.id = w.endpoint_id
+     GROUP BY 1
+     ORDER BY min(w.endpoint_id) ASC
+     LIMIT $1 OFFSET $2
+  )
+  SELECT ` + quotaWindowColumns + `
+    FROM quota_windows w
+    LEFT JOIN upstream_endpoints e ON e.id = w.endpoint_id
+   WHERE coalesce(e.provider_id, '') IN (SELECT provider_id FROM page_groups)
+   ORDER BY w.endpoint_id ASC, w."window" ASC`
+
+	var total int64
+	if err := r.pool.QueryRow(ctx, countQ).Scan(&total); err != nil {
+		return nil, 0, translateQuotaError(err)
+	}
+
+	offset := (page - 1) * perPage
+	rows, err := r.pool.Query(ctx, pageQ, perPage, offset)
+	if err != nil {
+		return nil, 0, translateQuotaError(err)
+	}
+	defer rows.Close()
+
+	windows := make([]domain.QuotaWindow, 0, perPage)
+	for rows.Next() {
+		window, err := scanQuotaWindow(rows)
+		if err != nil {
+			return nil, 0, err
+		}
+		windows = append(windows, window)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, translateQuotaError(err)
+	}
+	return windows, total, nil
+}
+
 // UpsertWindows persists a flushed batch in one statement.
 //
 // The row is the durable record, and the flush overwrites `used_units` rather

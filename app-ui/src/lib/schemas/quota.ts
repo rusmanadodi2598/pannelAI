@@ -17,7 +17,7 @@
 // window, and its form carries rules this read shape has no opinion about.
 
 import { z } from 'zod';
-import { nullableList, optionalTimestamp } from './primitives';
+import { nullableList, optionalTimestamp, pageMeta } from './primitives';
 
 export const QUOTA_WINDOW_KINDS = ['5h', 'daily', 'weekly', 'monthly'] as const;
 export type QuotaWindowKind = (typeof QUOTA_WINDOW_KINDS)[number];
@@ -48,8 +48,12 @@ export const schemaQuotaWindow = z.object({
 
 export type QuotaWindow = z.infer<typeof schemaQuotaWindow>;
 
+// The collection read is paged over provider groups (docs/PORT/006-PORT-QUOTA-PAGING.md D1):
+// `data` carries every window of the page's groups, and the house meta block's `total` counts
+// provider groups on this route, which is the number the pager walks.
 export const schemaQuotaWindowList = z.object({
-	data: nullableList(schemaQuotaWindow)
+	data: nullableList(schemaQuotaWindow),
+	meta: pageMeta
 });
 
 export type QuotaWindowList = z.infer<typeof schemaQuotaWindowList>;

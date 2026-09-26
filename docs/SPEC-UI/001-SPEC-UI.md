@@ -561,10 +561,16 @@ absent.
   that states the real selection ("N selected") with two actions, "Fold selected" and "Unfold
   selected", so a large registry can be tucked away quickly. The selection clears when the page
   turns, because a bulk action must never reach checkboxes the operator cannot currently see.
-- **Pagination:** the cards paginate client-side, five per page ("Page X of Y" with Previous and
-  Next, disabled at the bounds), which is what binds the page height at any registry size. The
-  windows route itself is unpaged; server-side paging is a separate filing if the wire scale ever
-  demands it.
+- **Pagination (server-driven, 2026-09-26, PORT 006):** the read is paged over provider groups
+  (`?page=&per_page=5`, SPEC-API §7.12), so a page of the wire IS a page of cards and no page turn
+  ever splits a provider across two pages. The screen sends its card page size on every read (the
+  poll included), the pager walks the answered meta ("Page X of Y" with Previous and Next, disabled
+  at the bounds), and a read that finds the data shrank below the page it read parks on the last
+  page there is and reads it. This is what binds both the page height and the wire size at any
+  registry scale.
+- **Toolbar controls (PORT 006):** "Refresh now" carries the icon map's refresh glyph and the
+  refresh pause/resume toggle carries the map's pause and resume glyphs beside their labels (R-04,
+  R-31): the glyph is what the control does to the poll, never an emoticon.
 - **Source badge:** `computed` or `reported` (SPEC-API §7.12). The badge is functional, not decorative: it
   tells the operator whether the number came from local accounting or from the provider.
 - **Budget caps (U2, landed):** a picker plus one form, keyed by endpoint rather than by window, because

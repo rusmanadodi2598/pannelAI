@@ -36,9 +36,27 @@ func NewQuotaHandler(quotas *service.QuotaService) *QuotaHandler {
 	return &QuotaHandler{quotas: quotas}
 }
 
-// List serves GET /api/v1/quotas: every endpoint's windows.
+// List serves GET /api/v1/quotas: the collection read, paged over provider
+// groups (docs/PORT/006-PORT-QUOTA-PAGING.md D1). The page unit is the provider
+// group, so one page carries whole cards; per_page counts groups on this route,
+// and the meta block reports the total group count. The params go through the
+// house decoder, so an out-of-range value is a refusal rather than a clamp
+// (SPEC-API-001 §4, draft 010 F6).
 func (h *QuotaHandler) List(w http.ResponseWriter, r *http.Request) {
-	h.writeWindows(w, r, "")
+	page, perPage, err := schema.DecodePage(r)
+	if err != nil {
+		schema.WriteError(w, err)
+		return
+	}
+	windows, total, err := h.quotas.ListWindowsPaged(r.Context(), page, perPage)
+	if err != nil {
+		schema.WriteError(w, err)
+		return
+	}
+	schema.WriteJSON(w, http.StatusOK, schema.QuotaWindowList{
+		Data: windowResponses(windows),
+		Meta: schema.Page{Page: page, PerPage: perPage, Total: total},
+	})
 }
 
 // Get serves GET /api/v1/quotas/{endpoint_id}: one endpoint's windows plus the
@@ -100,17 +118,6 @@ func (h *QuotaHandler) PutCap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	schema.WriteJSON(w, http.StatusOK, schema.QuotaCapResponseFrom(cap))
-}
-
-// writeWindows reads and renders every endpoint's windows for the collection
-// route.
-func (h *QuotaHandler) writeWindows(w http.ResponseWriter, r *http.Request, endpointID string) {
-	windows, err := h.quotas.ListWindows(r.Context(), endpointID)
-	if err != nil {
-		schema.WriteError(w, err)
-		return
-	}
-	schema.WriteJSON(w, http.StatusOK, schema.QuotaWindowList{Data: windowResponses(windows)})
 }
 
 // windowResponses maps stored windows onto their wire shape, always as a

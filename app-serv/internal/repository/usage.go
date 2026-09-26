@@ -63,6 +63,14 @@ type QuotaRepository interface {
 	// collection route reads.
 	ListWindows(ctx context.Context, endpointID string) ([]domain.QuotaWindow, error)
 
+	// PageWindowsByProvider returns one page of the collection read: every
+	// window of the page's provider groups, ordered by endpoint then kind,
+	// with the total number of provider groups. The page unit is the provider
+	// group, the shape the panel's cards render (docs/PORT/006-PORT-QUOTA-
+	// PAGING.md D1), and groups are ordered by their smallest endpoint id so
+	// the walk is stable across reads.
+	PageWindowsByProvider(ctx context.Context, page, perPage int) ([]domain.QuotaWindow, int64, error)
+
 	// UpsertWindows persists flushed counters. It is set-based: one statement
 	// writes the whole batch, so flushing a thousand endpoints is one round
 	// trip rather than a thousand (AGENTS.md §1.7).

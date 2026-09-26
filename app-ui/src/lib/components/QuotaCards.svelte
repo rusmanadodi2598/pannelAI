@@ -1,8 +1,9 @@
 <script lang="ts">
 	// The quota cards (docs/SPEC-UI/001-SPEC-UI.md §6.6; card-per-provider reshape 2026-09-26,
-	// docs/PORT/005-PORT-QUOTA-CARDS.md): one card per provider in first-seen order, its endpoints
-	// and windows listed inside a body that scrolls, a header that folds, a checkbox that feeds the
-	// bulk fold bar, and five cards to a page.
+	// docs/PORT/005-PORT-QUOTA-CARDS.md; server-driven paging docs/PORT/006-PORT-QUOTA-PAGING.md):
+	// one card per provider in first-seen order, its endpoints and windows listed inside a body that
+	// scrolls, a header that folds, a checkbox that feeds the bulk fold bar, and a pager that walks
+	// pages the gateway performs: the windows prop is already the page's groups, five to a page.
 	//
 	// Two conventions are kept from the screen's own rules rather than reinvented here: the printed
 	// percentage is percent USED (§6.6's "percent used"; quotaPercentLabel in QuotaCardBody), and the
@@ -24,8 +25,18 @@
 	let {
 		windows,
 		labels,
-		now
-	}: { windows: QuotaWindow[]; labels: Map<string, string>; now: number } = $props();
+		now,
+		page,
+		pageCount,
+		onpagechange
+	}: {
+		windows: QuotaWindow[];
+		labels: Map<string, string>;
+		now: number;
+		page: number;
+		pageCount: number;
+		onpagechange: (next: number) => void;
+	} = $props();
 
 	type Group = { provider: string; endpoints: { id: string; windows: QuotaWindow[] }[] };
 
@@ -44,21 +55,17 @@
 		return out;
 	});
 
-	// Five cards to a page (owner directive, 2026-09-26): the binding on page height is the page size,
-	// not the data set, so a registry of hundreds of providers still renders a compact screen.
-	const FOLD_PAGE_SIZE = 5;
-
-	let page = $state(1);
 	let folded: string[] = $state([]);
 	let selected: string[] = $state([]);
 
-	const pageCount = $derived(Math.max(1, Math.ceil(groups.length / FOLD_PAGE_SIZE)));
-	// Data that shrinks (a poll that answers fewer providers) must not strand the pager past the last
-	// page, so every read of the page number clamps before it slices.
-	const safePage = $derived(Math.min(page, pageCount));
-	const visible = $derived(
-		groups.slice((safePage - 1) * FOLD_PAGE_SIZE, safePage * FOLD_PAGE_SIZE)
-	);
+	// A bulk action must never reach across pages unseen (005 D4): the checkboxes the operator cannot
+	// see right now are not theirs to act on, so the selection starts clean whenever the pager lands
+	// on another server page. A poll over the SAME page must not wipe it, which is why the effect
+	// tracks the page and nothing else.
+	$effect(() => {
+		void page;
+		selected = [];
+	});
 
 	function isFolded(key: string): boolean {
 		return folded.includes(key);
@@ -88,13 +95,6 @@
 		folded = folded.filter((entry) => !selected.includes(entry));
 	}
 
-	function goPage(delta: number): void {
-		page = Math.min(pageCount, Math.max(1, safePage + delta));
-		// A bulk action must never reach across pages unseen (D4): the checkboxes the operator cannot
-		// see right now are not theirs to act on, so the selection starts clean on every page turn.
-		selected = [];
-	}
-
 	function cardName(group: Group): string {
 		return group.provider || 'No provider';
 	}
@@ -116,7 +116,7 @@
 </script>
 
 <div class="flex flex-col gap-4">
-	{#each visible as group (cardKey(group))}
+	{#each groups as group (cardKey(group))}
 		{@const key = cardKey(group)}
 		{@const name = cardName(group)}
 		{@const bodyId = `quota-card-body-${key}`}
@@ -197,18 +197,18 @@
 				type="button"
 				class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] text-[var(--color-text-muted)] disabled:opacity-50"
 				aria-label="Previous page"
-				disabled={safePage <= 1}
-				onclick={() => goPage(-1)}
+				disabled={page <= 1}
+				onclick={() => onpagechange(page - 1)}
 			>
 				<PreviousIcon class="size-4" aria-hidden="true" />
 			</button>
-			<span class="text-sm tabular-nums">Page {safePage} of {pageCount}</span>
+			<span class="text-sm tabular-nums">Page {page} of {pageCount}</span>
 			<button
 				type="button"
 				class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] text-[var(--color-text-muted)] disabled:opacity-50"
 				aria-label="Next page"
-				disabled={safePage >= pageCount}
-				onclick={() => goPage(1)}
+				disabled={page >= pageCount}
+				onclick={() => onpagechange(page + 1)}
 			>
 				<NextIcon class="size-4" aria-hidden="true" />
 			</button>

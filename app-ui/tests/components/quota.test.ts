@@ -4,53 +4,18 @@
 // here with fake timers: a visible tab reads again when the interval elapses, a hidden tab does not, coming
 // back reads once, and the pause control stops it while saying so. The card shape is one card per provider
 // (docs/PORT/005-PORT-QUOTA-CARDS.md D1) with a foldable body, a checkbox per card feeding a bulk fold bar,
-// and five cards to a page; the tests here lock the parts an operator can act on: folding, the bulk bar,
-// the paging bounds, and what the operator reads inside a card.
+// and pagination the gateway now performs (docs/PORT/006-PORT-QUOTA-PAGING.md D1/D5): the screen asks for a
+// page of provider groups, five to a page, and the pager walks server pages. The tests here lock the parts
+// an operator can act on: folding, the bulk bar, the paged reads, and what the operator reads inside a card.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import QuotaPage from '../../src/routes/quota/+page.svelte';
 import { QUOTA_POLL_MS } from '../../src/lib/polling';
+import { quotaEndpointRow, quotaWindowRow, stubQuota } from '../support/quota-stub';
 import { visit } from '../support/page.svelte';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
-
-function window_(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-	return {
-		endpoint_id: 'ep_1',
-		provider_id: 'anthropic',
-		window: 'monthly',
-		used: 120000,
-		limit: 200000,
-		resets_at: new Date(Date.now() + 2 * 3_600_000).toISOString(),
-		source: 'computed',
-		...overrides
-	};
-}
-
-function endpoint(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-	return { id: 'ep_1', label: 'Anthropic primary', ...overrides };
-}
-
-function stubQuota(windows: unknown[], endpoints: unknown[] = [endpoint()]): string[] {
-	const requested: string[] = [];
-
-	vi.stubGlobal('fetch', async (input: unknown) => {
-		const url = String(input);
-		requested.push(url);
-
-		const body = url.includes('/quotas')
-			? { data: windows }
-			: { data: endpoints, meta: { page: 1, per_page: 100, total: endpoints.length } };
-
-		return new Response(JSON.stringify(body), {
-			status: 200,
-			headers: { 'content-type': 'application/json' }
-		});
-	});
-
-	return requested;
-}
 
 function setVisibility(state: 'visible' | 'hidden'): void {
 	Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
@@ -60,6 +25,35 @@ function setVisibility(state: 'visible' | 'hidden'): void {
 function resetVisibility(): void {
 	// The stand-in is an own property shadowing jsdom's prototype getter, so deleting it restores 'visible'.
 	delete (document as { visibilityState?: string }).visibilityState;
+}
+
+function providers(count: number): {
+	windows: Record<string, unknown>[];
+	endpoints: Record<string, unknown>[];
+} {
+	const names = [
+		'anthropic',
+		'zeta',
+		'alpha',
+		'bravo',
+		'charlie',
+		'delta',
+		'echo',
+		'foxtrot',
+		'golf',
+		'hotel',
+		'india',
+		'juliet'
+	];
+	const windows = names
+		.slice(0, count)
+		.map((provider, index) =>
+			quotaWindowRow({ provider_id: provider, endpoint_id: `ep_${index}`, window: 'daily' })
+		);
+	const endpoints = names
+		.slice(0, count)
+		.map((_, index) => quotaEndpointRow({ id: `ep_${index}` }));
+	return { windows, endpoints };
 }
 
 describe('QuotaPage', () => {
@@ -74,18 +68,18 @@ describe('QuotaPage', () => {
 	});
 
 	it('renders one card per provider, its endpoints as rows inside', async () => {
-		stubQuota(
-			[
-				window_(),
-				window_({ window: 'daily', endpoint_id: 'ep_1b' }),
-				window_({ provider_id: 'zeta', endpoint_id: 'ep_z' })
+		stubQuota({
+			windows: [
+				quotaWindowRow(),
+				quotaWindowRow({ window: 'daily', endpoint_id: 'ep_1b' }),
+				quotaWindowRow({ provider_id: 'zeta', endpoint_id: 'ep_z' })
 			],
-			[
-				endpoint(),
-				endpoint({ id: 'ep_1b', label: 'Anthropic secondary' }),
-				endpoint({ id: 'ep_z', label: 'Zeta primary' })
+			endpoints: [
+				quotaEndpointRow(),
+				quotaEndpointRow({ id: 'ep_1b', label: 'Anthropic secondary' }),
+				quotaEndpointRow({ id: 'ep_z', label: 'Zeta primary' })
 			]
-		);
+		});
 		render(QuotaPage);
 
 		// One card heading per provider, first seen first; the endpoints inside are row headings, not cards.
@@ -100,7 +94,7 @@ describe('QuotaPage', () => {
 	});
 
 	it('renders a window with its ceiling, percentage, countdown, and source', async () => {
-		stubQuota([window_()]);
+		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 
 		expect(await screen.findByRole('heading', { name: 'anthropic' })).toBeTruthy();
@@ -112,11 +106,13 @@ describe('QuotaPage', () => {
 	});
 
 	it('keeps the provider order first seen', async () => {
-		stubQuota([
-			window_(),
-			window_({ provider_id: 'zeta', endpoint_id: 'ep_z', window: 'daily' }),
-			window_({ window: 'daily' })
-		]);
+		stubQuota({
+			windows: [
+				quotaWindowRow(),
+				quotaWindowRow({ provider_id: 'zeta', endpoint_id: 'ep_z', window: 'daily' }),
+				quotaWindowRow({ window: 'daily' })
+			]
+		});
 		render(QuotaPage);
 
 		const headings = await screen.findAllByRole('heading', { name: /anthropic|zeta/ });
@@ -124,7 +120,7 @@ describe('QuotaPage', () => {
 	});
 
 	it('folds a card from its header control and brings it back', async () => {
-		stubQuota([window_()]);
+		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 		await screen.findByText('monthly');
 
@@ -141,10 +137,13 @@ describe('QuotaPage', () => {
 	});
 
 	it('folds the checked cards in one action, and unfolds them the same way', async () => {
-		stubQuota(
-			[window_(), window_({ provider_id: 'zeta', endpoint_id: 'ep_z', window: 'daily' })],
-			[endpoint(), endpoint({ id: 'ep_z', label: 'Zeta primary' })]
-		);
+		stubQuota({
+			windows: [
+				quotaWindowRow(),
+				quotaWindowRow({ provider_id: 'zeta', endpoint_id: 'ep_z', window: 'daily' })
+			],
+			endpoints: [quotaEndpointRow(), quotaEndpointRow({ id: 'ep_z', label: 'Zeta primary' })]
+		});
 		render(QuotaPage);
 		await screen.findByText('monthly');
 
@@ -170,7 +169,7 @@ describe('QuotaPage', () => {
 	});
 
 	it('keeps the fold action available without a selection', async () => {
-		stubQuota([window_()]);
+		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 		await screen.findByText('monthly');
 
@@ -180,17 +179,17 @@ describe('QuotaPage', () => {
 		expect(screen.queryByText('monthly')).toBeNull();
 	});
 
-	it('paginates provider cards five to a page', async () => {
-		const providers = ['anthropic', 'zeta', 'alpha', 'bravo', 'charlie', 'delta', 'echo'];
-		stubQuota(
-			providers.map((provider, index) =>
-				window_({ provider_id: provider, endpoint_id: `ep_${index}`, window: 'daily' })
-			),
-			providers.map((_, index) => endpoint({ id: `ep_${index}` }))
-		);
+	it('asks the gateway for its card page, five provider groups to a page', async () => {
+		const { windows, endpoints } = providers(7);
+		const stub = stubQuota({ windows, endpoints });
 		render(QuotaPage);
 
 		expect(await screen.findByRole('heading', { name: 'anthropic' })).toBeTruthy();
+
+		// The read itself is paged: the screen sends its own card page size, and the pager is driven by
+		// the meta the gateway answers with, not by how many rows happen to be in the response.
+		expect(stub.quotaReads[0]).toContain('page=1');
+		expect(stub.quotaReads[0]).toContain('per_page=5');
 		expect(screen.getByText('Page 1 of 2')).toBeTruthy();
 		const pageOne = screen
 			.getAllByRole('heading', { name: /anthropic|zeta|alpha|bravo|charlie|delta|echo/ })
@@ -202,27 +201,37 @@ describe('QuotaPage', () => {
 			'bravo',
 			'charlie'
 		]);
+	});
+
+	it('walks to the next server page and back', async () => {
+		const { windows, endpoints } = providers(7);
+		const stub = stubQuota({ windows, endpoints });
+		render(QuotaPage);
+		await screen.findByRole('heading', { name: 'anthropic' });
 
 		const next = screen.getByRole('button', { name: 'Next page' });
 		expect(next.hasAttribute('disabled')).toBe(false);
 		await fireEvent.click(next);
+		await screen.findByRole('heading', { name: 'delta' });
 
+		// The turn is a read: the second card page comes from the gateway, not from slicing what the
+		// first read left behind.
+		expect(stub.quotaReads.some((url) => url.includes('page=2'))).toBe(true);
 		const pageTwo = screen
 			.getAllByRole('heading', { name: /anthropic|zeta|alpha|bravo|charlie|delta|echo/ })
 			.filter((heading) => heading.tagName === 'H3');
 		expect(pageTwo.map((heading) => heading.textContent)).toEqual(['delta', 'echo']);
 		expect(screen.getByText('Page 2 of 2')).toBeTruthy();
 		expect(next.hasAttribute('disabled')).toBe(true);
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
+		await screen.findByRole('heading', { name: 'anthropic' });
+		expect(screen.getByText('Page 1 of 2')).toBeTruthy();
 	});
 
-	it('clears the bulk selection when the page changes', async () => {
-		const providers = ['anthropic', 'zeta', 'alpha', 'bravo', 'charlie', 'delta'];
-		stubQuota(
-			providers.map((provider, index) =>
-				window_({ provider_id: provider, endpoint_id: `ep_${index}`, window: 'daily' })
-			),
-			providers.map((_, index) => endpoint({ id: `ep_${index}` }))
-		);
+	it('clears the bulk selection when the page turns', async () => {
+		const { windows, endpoints } = providers(6);
+		const stub = stubQuota({ windows, endpoints });
 		render(QuotaPage);
 		await screen.findByRole('heading', { name: 'anthropic' });
 
@@ -232,12 +241,50 @@ describe('QuotaPage', () => {
 		expect(screen.getByText('1 selected')).toBeTruthy();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+		await screen.findByRole('heading', { name: 'delta' });
 
 		expect(screen.queryByText('1 selected')).toBeNull();
+		expect(stub.quotaReads.some((url) => url.includes('page=2'))).toBe(true);
+	});
+
+	it('parks on the last page when the data shrank below the page being read', async () => {
+		const { windows, endpoints } = providers(7);
+		const stub = stubQuota({ windows, endpoints });
+		render(QuotaPage);
+		await screen.findByRole('heading', { name: 'anthropic' });
+		await fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+		await screen.findByRole('heading', { name: 'delta' });
+
+		// A poll that answers fewer providers must not strand the pager past the last page: the next
+		// read answers one group, so the screen parks itself on the only page there is.
+		stub.shrinkTo = 1;
+		await fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
+		await screen.findByText('Page 1 of 1');
+
+		const lastRead = stub.quotaReads[stub.quotaReads.length - 1];
+		expect(lastRead).toContain('page=1');
+		expect(screen.getByRole('heading', { name: 'anthropic' })).toBeTruthy();
+	});
+
+	it('carries the icon map glyphs on the refresh and pause controls, never an emoticon', async () => {
+		stubQuota({ windows: [quotaWindowRow()] });
+		render(QuotaPage);
+		await screen.findByRole('heading', { name: 'anthropic' });
+
+		// R-04: the glyphs are the map's marks, rendered as svg markup; an emoji in the label would be
+		// the generated-page tell the icon map exists to prevent.
+		const refresh = screen.getByRole('button', { name: 'Refresh now' });
+		expect(refresh.querySelector('svg')).toBeTruthy();
+		const pause = screen.getByRole('button', { name: 'Pause refresh' });
+		expect(pause.querySelector('svg')).toBeTruthy();
+
+		await fireEvent.click(pause);
+		const resume = screen.getByRole('button', { name: 'Resume refresh' });
+		expect(resume.querySelector('svg')).toBeTruthy();
 	});
 
 	it('names a window the gateway recorded without a provider, instead of refusing the list', async () => {
-		stubQuota([window_({ provider_id: '' })]);
+		stubQuota({ windows: [quotaWindowRow({ provider_id: '' })] });
 		render(QuotaPage);
 
 		// The free lane's virtual endpoint carries no provider. One row like that used to reject the
@@ -248,7 +295,9 @@ describe('QuotaPage', () => {
 	});
 
 	it('resolves an endpoint label, and names the identifier when it has no label', async () => {
-		stubQuota([window_(), window_({ endpoint_id: 'ep_beyond_the_page' })]);
+		stubQuota({
+			windows: [quotaWindowRow(), quotaWindowRow({ endpoint_id: 'ep_beyond_the_page' })]
+		});
 		render(QuotaPage);
 
 		expect(await screen.findByRole('heading', { name: 'Anthropic primary' })).toBeTruthy();
@@ -256,7 +305,7 @@ describe('QuotaPage', () => {
 	});
 
 	it('says a window has no ceiling rather than reporting 0%', async () => {
-		stubQuota([window_({ limit: undefined })]);
+		stubQuota({ windows: [quotaWindowRow({ limit: undefined })] });
 		render(QuotaPage);
 
 		expect(await screen.findByText('No limit')).toBeTruthy();
@@ -264,7 +313,7 @@ describe('QuotaPage', () => {
 	});
 
 	it('explains both source values under the cards', async () => {
-		stubQuota([window_()]);
+		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 		await screen.findByText(/computed means this gateway counted it/);
 
@@ -274,7 +323,7 @@ describe('QuotaPage', () => {
 	});
 
 	it('states the interval it refreshes on and where it stops', async () => {
-		stubQuota([window_()]);
+		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 		await screen.findByText(/refreshes every 30 seconds and stops while the tab is hidden/);
 
@@ -284,7 +333,7 @@ describe('QuotaPage', () => {
 	});
 
 	it('shows the empty state §6.6 specifies', async () => {
-		stubQuota([]);
+		stubQuota({ windows: [] });
 		render(QuotaPage);
 
 		expect(await screen.findByText('No quota windows yet')).toBeTruthy();
@@ -292,15 +341,7 @@ describe('QuotaPage', () => {
 	});
 
 	it('keeps the cards and says so when the endpoint labels cannot be read', async () => {
-		vi.stubGlobal('fetch', async (input: unknown) => {
-			const url = String(input);
-			const body = url.includes('/quotas') ? { data: [window_()] } : { data: null };
-
-			return new Response(JSON.stringify(body), {
-				status: 200,
-				headers: { 'content-type': 'application/json' }
-			});
-		});
+		stubQuota({ windows: [quotaWindowRow()], endpoints: null });
 
 		render(QuotaPage);
 
@@ -324,84 +365,84 @@ describe('QuotaPage polling', () => {
 	});
 
 	it('reads again once the interval elapses while the tab is visible', async () => {
-		const requested = stubQuota([window_()]);
+		const stub = stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 
 		await vi.waitFor(() => {
-			expect(requested.length).toBeGreaterThan(0);
+			expect(stub.quotaReads.length).toBeGreaterThan(0);
 		});
-		const afterFirstRead = requested.length;
+		const afterFirstRead = stub.quotaReads.length;
 
 		await vi.advanceTimersByTimeAsync(QUOTA_POLL_MS + 1000);
 
-		expect(requested.length).toBeGreaterThan(afterFirstRead);
+		expect(stub.quotaReads.length).toBeGreaterThan(afterFirstRead);
 	});
 
 	it('stops reading while the tab is hidden', async () => {
-		const requested = stubQuota([window_()]);
+		const stub = stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 
 		await vi.waitFor(() => {
-			expect(requested.length).toBeGreaterThan(0);
+			expect(stub.quotaReads.length).toBeGreaterThan(0);
 		});
 		setVisibility('hidden');
-		const afterFirstRead = requested.length;
+		const afterFirstRead = stub.quotaReads.length;
 
 		await vi.advanceTimersByTimeAsync(5 * QUOTA_POLL_MS);
 
-		expect(requested.length).toBe(afterFirstRead);
+		expect(stub.quotaReads.length).toBe(afterFirstRead);
 	});
 
 	it('reads once when the tab becomes visible again', async () => {
-		const requested = stubQuota([window_()]);
+		const stub = stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 
 		await vi.waitFor(() => {
-			expect(requested.length).toBeGreaterThan(0);
+			expect(stub.quotaReads.length).toBeGreaterThan(0);
 		});
 		setVisibility('hidden');
 		await vi.advanceTimersByTimeAsync(5 * QUOTA_POLL_MS);
-		const whileHidden = requested.length;
+		const whileHidden = stub.quotaReads.length;
 
 		setVisibility('visible');
 		await vi.advanceTimersByTimeAsync(0);
 
-		expect(requested.length).toBeGreaterThan(whileHidden);
+		expect(stub.quotaReads.length).toBeGreaterThan(whileHidden);
 	});
 
 	it('stops reading while paused and says the refresh is paused', async () => {
-		const requested = stubQuota([window_()]);
+		const stub = stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 
 		await vi.waitFor(() => {
-			expect(requested.length).toBeGreaterThan(0);
+			expect(stub.quotaReads.length).toBeGreaterThan(0);
 		});
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Pause refresh' }));
-		const whilePaused = requested.length;
+		const whilePaused = stub.quotaReads.length;
 
 		expect(screen.getByText(/Refresh is paused/)).toBeTruthy();
 
 		await vi.advanceTimersByTimeAsync(5 * QUOTA_POLL_MS);
 
-		expect(requested.length).toBe(whilePaused);
+		expect(stub.quotaReads.length).toBe(whilePaused);
 		expect(screen.getByRole('button', { name: 'Resume refresh' })).toBeTruthy();
 	});
 
 	it('reads on demand from the refresh control even while paused', async () => {
-		const requested = stubQuota([window_()]);
+		const stub = stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 
 		await vi.waitFor(() => {
-			expect(requested.length).toBeGreaterThan(0);
+			expect(stub.quotaReads.length).toBeGreaterThan(0);
 		});
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Pause refresh' }));
-		const whilePaused = requested.length;
+		const whilePaused = stub.quotaReads.length;
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
 		await vi.advanceTimersByTimeAsync(0);
 
-		expect(requested.length).toBeGreaterThan(whilePaused);
+		expect(stub.quotaReads.length).toBeGreaterThan(whilePaused);
 	});
 });

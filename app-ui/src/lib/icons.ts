@@ -231,6 +231,16 @@ export const CONTROL_ICONS = {
 		icon: ChevronDown,
 		reason:
 			'Folding tucks a card body away behind a header that already counts what is inside; the chevron marks the tucked edge and turns when the body opens.'
+	},
+	pause: {
+		icon: Pause,
+		reason:
+			'Pausing stops the auto-refresh timer, holding the screen on the last read the operator chose to keep.'
+	},
+	resume: {
+		icon: Play,
+		reason:
+			'Resuming restarts the auto-refresh timer the operator paused, the same control read the other way.'
 	}
 } as const;
 

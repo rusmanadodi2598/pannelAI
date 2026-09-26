@@ -69,6 +69,14 @@ func (s *QuotaService) ListWindows(ctx context.Context, endpointID string) ([]do
 	return s.quotas.ListWindows(ctx, endpointID)
 }
 
+// ListWindowsPaged returns one page of the collection read with the total
+// provider-group count. The page unit is the provider group
+// (docs/PORT/006-PORT-QUOTA-PAGING.md D1): one page carries every window of the
+// page's groups, so a provider's card never splits across pages.
+func (s *QuotaService) ListWindowsPaged(ctx context.Context, page, perPage int) ([]domain.QuotaWindow, int64, error) {
+	return s.quotas.PageWindowsByProvider(ctx, page, perPage)
+}
+
 // SetCap replaces one endpoint's budget cap and returns the stored value.
 //
 // The endpoint must exist first: a cap on an endpoint that is not configured is
