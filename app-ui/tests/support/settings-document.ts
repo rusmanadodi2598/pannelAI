@@ -1,9 +1,10 @@
 // The settings document fixture (docs/SPEC-API/001-SPEC-API.md §7.14).
 //
-// Three screens read this document: Settings, which edits four of its groups (§6.13), Proxy Pools,
-// which edits the network group (§6.9), and a provider's detail screen, whose rotation switch and
-// proxy card each own one key of it. One definition, so a change to the API's shape fails all three
-// test files at once instead of one of them quietly.
+// Four screens read this document: Settings, which edits four of its groups (§6.13), Proxy Pools,
+// which edits the network group (§6.9), a provider's detail screen, whose rotation switch, proxy card,
+// and reasoning picker each own one key of it, and the model tables that read the reasoning map for
+// the suffix they copy. One definition, so a change to the API's shape fails all of them at once
+// instead of one quietly.
 
 export function settingsDocument(overrides: Record<string, unknown> = {}): Record<string, unknown> {
 	return {
@@ -28,6 +29,7 @@ export function settingsDocument(overrides: Record<string, unknown> = {}): Recor
 			capture_body_max_bytes: 65536,
 			observability_max_records: 1000
 		},
+		reasoning: { provider_thinking: {} },
 		...overrides
 	};
 }
@@ -43,6 +45,18 @@ export function settingsDocument(overrides: Record<string, unknown> = {}): Recor
 export function networkGroup(overrides: Record<string, unknown> = {}): Record<string, unknown> {
 	const network = settingsDocument().network as Record<string, unknown>;
 	return { ...network, ...overrides };
+}
+
+/**
+ * The reasoning group as the API answers it: the per-provider mode map (SPEC-API §7.14, §7.14).
+ *
+ * A test that stores a mode uses this rather than a bare map, because the response schema requires
+ * `provider_thinking`: a group without it is drift the read schema refuses, not a stored document the
+ * screen would ever see.
+ */
+export function reasoningGroup(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+	const reasoning = settingsDocument().reasoning as Record<string, unknown>;
+	return { ...reasoning, ...overrides };
 }
 
 /**

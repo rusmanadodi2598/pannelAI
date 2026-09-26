@@ -8,18 +8,28 @@
 	// Every row here is enabled, because the merged catalog excludes disabled models. That is what makes
 	// the row action one-way: turning a model back on happens in the disabled list, which is the only
 	// place a disabled model is visible.
+	//
+	// Each row shows the string a client sends, `provider/model`, with the `(level)` suffix the reasoning
+	// picker set when THIS model accepts that level (SPEC-API §7.15, the reference's `resolveThinkingSuffix`
+	// at page.js:177-182). The suffix is rendered, not only copied: a value that lived in the clipboard
+	// alone would be a state the operator cannot see.
+	import CopyButton from '$lib/components/CopyButton.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { catalogModelLabel, catalogSourceLabel, type CatalogModel } from '$lib/schemas/model';
 	import { disabledRefKey } from '$lib/schemas/model-disabled';
+	import { thinkingSuffix } from '$lib/schemas/settings';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
+	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 
 	let {
 		models,
 		disabled,
+		thinking,
 		onchanged
 	}: {
 		models: CatalogModel[];
 		disabled: ModelDisabledStore;
+		thinking: ProviderThinkingStore;
 		onchanged: () => void;
 	} = $props();
 
@@ -64,11 +74,19 @@
 			</thead>
 			<tbody>
 				{#each models as model (model.id)}
+					{@const address = `${model.provider_id}/${model.model_id}${thinkingSuffix(
+						model.thinking_levels,
+						thinking.modeFor(model.provider_id)
+					)}`}
 					<tr class="border-t border-[var(--color-border)]">
 						<td class="px-3 py-2">
 							<span class="font-medium">{catalogModelLabel(model)}</span>
 							<br />
 							<span class="text-[var(--color-text-muted)]">{model.model_id}</span>
+							<span class="mt-1 flex flex-wrap items-center gap-2">
+								<code class="break-all text-xs">{address}</code>
+								<CopyButton value={address} />
+							</span>
 						</td>
 						<td class="px-3 py-2">{model.kind ?? 'Not declared'}</td>
 						<td class="px-3 py-2">

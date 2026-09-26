@@ -10,6 +10,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ModelCatalogList from '../../src/lib/components/ModelCatalogList.svelte';
 import { createModelDisabledStore } from '../../src/lib/stores/model-disabled.svelte';
+import { createProviderThinkingStore } from '../../src/lib/stores/provider-thinking.svelte';
 
 function catalogRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
 	return {
@@ -48,12 +49,14 @@ async function renderCatalog(
 	status = 200
 ): Promise<{ requested: string[]; container: HTMLElement }> {
 	const requested = stubCatalog(data, status);
-	// The disabled set is the page's to load, so a store that was never loaded is what this component
-	// sees here: it renders the Disable action and refuses the write, which the page-level tests cover.
+	// The disabled set and the reasoning store are the page's to load, so stores that were never loaded
+	// are what this component sees here: it renders the Disable action and refuses the write, and the
+	// copied address carries no suffix. Both are covered by the page-level tests.
 	const { container } = render(ModelCatalogList, {
 		props: {
 			providerId: 'openai',
 			disabled: createModelDisabledStore(),
+			thinking: createProviderThinkingStore(),
 			onchanged: () => {}
 		}
 	});
@@ -180,6 +183,7 @@ describe('ModelCatalogList', () => {
 			props: {
 				providerId: 'openai',
 				disabled: createModelDisabledStore(),
+				thinking: createProviderThinkingStore(),
 				onchanged: () => {}
 			}
 		});

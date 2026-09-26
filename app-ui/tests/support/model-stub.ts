@@ -112,6 +112,13 @@ export type ModelStub = {
 	settingsPatches: StubModel[];
 	/** The settings write's own status, for a test that needs the gateway to refuse a rotation change. */
 	settingsWriteStatus: number;
+	/** The settings read's own status, for a test that needs the reasoning picker's read to fail. */
+	settingsReadStatus: number;
+	/**
+	 * The provider detail's `thinking_levels` (SPEC-API §7.14), which is what renders the reasoning
+	 * picker. `null` is the absent field, which is what a provider whose models do not reason answers.
+	 */
+	thinkingLevels: string[] | null;
 	/**
 	 * The proxy pool rows the detail screen's proxy card reads for its pool select (§7.11). Served here
 	 * because the card renders on the same screen as the model routes, and a second stub would fight
@@ -255,6 +262,8 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		settings: settingsDocument(),
 		settingsPatches: [],
 		settingsWriteStatus: 200,
+		settingsReadStatus: 200,
+		thinkingLevels: null,
 		proxies: [],
 		proxyReadStatus: 200,
 		...overrides
@@ -287,10 +296,11 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		const body: StubModel = init?.body === undefined ? {} : JSON.parse(String(init.body));
 		const parsed = new URL(url, 'http://panel.test');
 
-		// The settings document, which the Connections section reads for its rotation switch and the
-		// proxy card reads for its binding map, and both write to change one provider's entry. A write is
-		// applied to the stub's own document the way the server applies it (each group merged over the
-		// stored one), so a read-modify-write test sees its change in the answer rather than in an echo.
+		// The settings document, which the Connections section reads for its rotation switch, the proxy
+		// card reads for its binding map, and the reasoning picker reads and writes for one provider's
+		// mode. A write is applied to the stub's own document the way the server applies it (each group
+		// merged over the stored one), so a read-modify-write test sees its change in the answer rather
+		// than in an echo.
 		if (parsed.pathname.endsWith('/settings')) {
 			if (method === 'PATCH') {
 				stub.settingsPatches.push(body);
@@ -308,6 +318,14 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 					merged[group] = { ...(stub.settings[group] as StubModel), ...(value as StubModel) };
 				}
 				stub.settings = merged;
+			}
+
+			if (stub.settingsReadStatus !== 200) {
+				return refusal(
+					'INTERNAL_ERROR',
+					'The settings store is unreachable.',
+					stub.settingsReadStatus
+				);
 			}
 
 			return json(stub.settings);
@@ -376,7 +394,10 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 				providerDetailRow({
 					id: decodeURIComponent(providerMatch[1]),
 					auth_type: stub.authType,
-					has_oauth: stub.hasOAuth
+					has_oauth: stub.hasOAuth,
+					// Absent when the test declared no levels, which is the shape a provider whose models
+					// do not reason answers (the DTO marks the field `omitempty`).
+					...(stub.thinkingLevels === null ? {} : { thinking_levels: stub.thinkingLevels })
 				})
 			);
 		}

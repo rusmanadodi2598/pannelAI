@@ -22,13 +22,16 @@
 	import { deleteCustomModel, listCustomModels } from '$lib/api/models';
 	import { providerCustomModels, type CustomModel } from '$lib/schemas/custom-model';
 	import { nodeTypeOfId } from '$lib/schemas/provider-node';
+	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 
 	let {
 		providerId,
+		thinking,
 		onchanged,
 		nodePrefix
 	}: {
 		providerId: string;
+		thinking: ProviderThinkingStore;
 		onchanged: () => void;
 		/** The node's model prefix, present only on a custom node's screen. */
 		nodePrefix?: string;
@@ -135,6 +138,7 @@
 	{:else}
 		<CustomModelTable
 			rows={mine}
+			{thinking}
 			{nodePrefix}
 			{removing}
 			onremove={(row) => {

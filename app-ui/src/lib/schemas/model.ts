@@ -20,6 +20,11 @@ import { stringList } from './primitives';
 // built with an empty kind, so the field is genuinely absent rather than merely unknown. It is kept
 // because a non-chat model is not routable through the chat data plane (§7.15), which is a distinction an
 // operator choosing a model string needs to see.
+//
+// `thinking_levels` is the per-model half of the reasoning control (SPEC-API §7.14): the levels this
+// model accepts when appended to its name, absent when the registry knows none for it. It is optional
+// rather than defaulted because absent and empty answer different questions — absent means "append no
+// suffix", and a defaulted `[]` would say the same thing but hide that the API never answered.
 export const schemaCatalogModel = z.object({
 	id: z.string().min(1),
 	provider_id: z.string().min(1),
@@ -27,6 +32,7 @@ export const schemaCatalogModel = z.object({
 	display_name: z.string(),
 	kind: z.string().optional(),
 	capabilities: stringList,
+	thinking_levels: stringList.optional(),
 	source: z.string().min(1)
 });
 

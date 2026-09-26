@@ -6,18 +6,26 @@
 	// registry provider's do not: the string the model is addressed by, `prefix/model`, which is what an
 	// operator copies into a client. Without a prefix there is no such string, so the column is absent
 	// rather than empty.
+	//
+	// The copied string carries the `(level)` suffix the reasoning picker set when this model accepts that
+	// level (SPEC-API §7.15, the reference's `resolveThinkingSuffix` at page.js:177-182), and the row shows
+	// the same string it copies.
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { customModelLabel, type CustomModel } from '$lib/schemas/custom-model';
+	import { thinkingSuffix } from '$lib/schemas/settings';
+	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 	import { formatTimestamp } from '$lib/utils/time';
 
 	let {
 		rows,
+		thinking,
 		nodePrefix,
 		removing,
 		onremove
 	}: {
 		rows: CustomModel[];
+		thinking: ProviderThinkingStore;
 		/** The node's model prefix, present only on a custom node's screen. */
 		nodePrefix?: string;
 		removing: boolean;
@@ -50,6 +58,13 @@
 		</thead>
 		<tbody>
 			{#each rows as row (row.id)}
+				{@const address =
+					prefix === null
+						? ''
+						: `${prefix}/${row.model_id}${thinkingSuffix(
+								row.thinking_levels,
+								thinking.modeFor(row.provider_id)
+							)}`}
 				<tr class="border-t border-[var(--color-border)]">
 					<td class="px-3 py-2">
 						<span class="font-medium">{customModelLabel(row)}</span>
@@ -57,8 +72,8 @@
 						<span class="text-[var(--color-text-muted)]">{row.model_id}</span>
 						{#if prefix !== null}
 							<span class="mt-1 flex flex-wrap items-center gap-2">
-								<code class="break-all text-xs">{prefix}/{row.model_id}</code>
-								<CopyButton value={`${prefix}/${row.model_id}`} />
+								<code class="break-all text-xs">{address}</code>
+								<CopyButton value={address} />
 							</span>
 						{/if}
 					</td>

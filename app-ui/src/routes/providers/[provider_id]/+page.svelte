@@ -32,9 +32,11 @@
 	import ProviderFacts from '$lib/components/ProviderFacts.svelte';
 	import ProviderOAuth from '$lib/components/ProviderOAuth.svelte';
 	import ProviderProxyCard from '$lib/components/ProviderProxyCard.svelte';
+	import ProviderThinkingControl from '$lib/components/ProviderThinkingControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { getProvider } from '$lib/api/providers';
 	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
+	import { createProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 	import { isNodeId } from '$lib/schemas/provider-node';
 	import { REQUIRES_KEY_AUTH_TYPES } from '$lib/schemas/endpoint-write';
 	import type { ProviderDetail } from '$lib/schemas/provider';
@@ -57,6 +59,12 @@
 	// set narrows the registry catalog, and a node's screen has no catalog to narrow.
 	const disabled = createModelDisabledStore();
 	let catalogToken = $state(0);
+
+	// The reasoning mode is the models section's own setting (SPEC-API §7.14, §7.15): the picker writes it
+	// and the two model tables read it for the `(level)` suffix they copy, so the page owns the one store
+	// both halves share. It is read for every provider, including one whose picker does not render: a
+	// custom node's rows carry levels too, and the tables below still append the suffix.
+	const thinking = createProviderThinkingStore();
 
 	// The Connections section's own revision, bumped by the key dialog and by nothing else: a key added here
 	// has to appear in the table below without a reload of the whole page.
@@ -82,6 +90,13 @@
 		untrack(() => {
 			if (!node) void disabled.load();
 		});
+	});
+
+	// Reloads with the provider, like the detail read above: the store answers a mode only for the provider
+	// it was last asked about, so a route swap shows no suffix until the new answer lands.
+	$effect(() => {
+		const id = providerId;
+		untrack(() => void thinking.load(id));
 	});
 
 	function bumpCatalog(): void {
@@ -153,14 +168,35 @@
 
 			<div class="flex flex-col gap-3">
 				<h2 class="text-base font-medium">Available Models</h2>
-				<ProviderCustomModels providerId={provider.id} {nodePrefix} onchanged={bumpCatalog} />
+				<ProviderThinkingControl
+					providerId={provider.id}
+					levels={provider.thinking_levels}
+					{thinking}
+				/>
+				<ProviderCustomModels
+					providerId={provider.id}
+					{thinking}
+					{nodePrefix}
+					onchanged={bumpCatalog}
+				/>
 			</div>
 		{:else}
 			<ProviderFacts {provider} />
 
 			<div class="flex flex-col gap-3">
 				<h2 class="text-base font-medium">Model catalog</h2>
-				<ModelCatalogList {providerId} {disabled} onchanged={bumpCatalog} token={catalogToken} />
+				<ProviderThinkingControl
+					providerId={provider.id}
+					levels={provider.thinking_levels}
+					{thinking}
+				/>
+				<ModelCatalogList
+					{providerId}
+					{disabled}
+					{thinking}
+					onchanged={bumpCatalog}
+					token={catalogToken}
+				/>
 			</div>
 
 			<div class="flex flex-col gap-3">
@@ -170,7 +206,7 @@
 
 			<div class="flex flex-col gap-3">
 				<h2 class="text-base font-medium">Custom models</h2>
-				<ProviderCustomModels {providerId} onchanged={bumpCatalog} />
+				<ProviderCustomModels providerId={provider.id} {thinking} onchanged={bumpCatalog} />
 			</div>
 
 			<ProviderConnectionsSection

@@ -12,6 +12,7 @@ import {
 	schemaNetworkSettingsPatch,
 	schemaProviderProxiesPatch,
 	schemaProviderStrategiesPatch,
+	schemaProviderThinkingPatch,
 	schemaRoutingSettingsPatch,
 	schemaSecuritySettingsPatch,
 	schemaSettings,
@@ -24,10 +25,12 @@ import {
 	type ProviderProxyPatch,
 	type ProviderStrategiesPatch,
 	type ProviderStrategy,
+	type ProviderThinkingPatch,
 	type RoutingSettingsForm,
 	type RoutingSettingsPatch,
 	type SecuritySettingsForm,
-	type SecuritySettingsPatch
+	type SecuritySettingsPatch,
+	type ThinkingMode
 } from '$lib/schemas/settings';
 import { emptyResponse, type EmptyResponse } from '$lib/schemas/primitives';
 import { apiRequest, type ApiResult } from './client';
@@ -137,6 +140,33 @@ export async function patchProviderProxies(
 		schema: schemaSettings,
 		body,
 		bodySchema: schemaProviderProxiesPatch
+	});
+}
+
+/**
+ * Writes one provider's entry onto a fresh read of the whole reasoning map (SPEC-API §7.14), which
+ * is how the provider screen's reasoning control changes one provider's mode (SPEC-API §7.14). The
+ * map is one settings value, so the change merges onto the map the server holds rather than onto the
+ * copy the screen loaded: another screen may have changed its own provider's entry since (the
+ * reference re-reads before it writes, page.js:419-436). A `null` next deletes the entry, which is
+ * how a provider returns to following the client's own request.
+ */
+export async function patchProviderThinking(
+	providerID: string,
+	next: ThinkingMode | null
+): Promise<ApiResult<PanelSettings>> {
+	const fresh = await fetchSettings();
+	if (!fresh.ok) return fresh;
+	const updated = { ...fresh.data.reasoning.provider_thinking };
+	if (next === null) delete updated[providerID];
+	else updated[providerID] = { mode: next };
+	const body: ProviderThinkingPatch = { reasoning: { provider_thinking: updated } };
+	return apiRequest<ProviderThinkingPatch, PanelSettings>({
+		method: 'PATCH',
+		path: '/settings',
+		schema: schemaSettings,
+		body,
+		bodySchema: schemaProviderThinkingPatch
 	});
 }
 

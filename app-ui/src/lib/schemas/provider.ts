@@ -84,6 +84,10 @@ export const schemaProviderDetail = schemaProvider.extend({
 	timeout_ms: z.number().int(),
 	model_count: z.number().int().min(0),
 	chat_model_count: z.number().int().min(0),
+	// The union of the levels this provider's declared models accept (SPEC-API §7.14). The
+	// server omits it when no declared model reasons, which is what hides the reasoning
+	// control rather than offering a picker with nothing in it.
+	thinking_levels: stringList.optional(),
 	media: z
 		.array(schemaProviderMedia)
 		.nullish()

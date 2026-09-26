@@ -19,15 +19,18 @@
 		type CatalogModel
 	} from '$lib/schemas/model';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
+	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 
 	let {
 		providerId,
 		disabled,
+		thinking,
 		onchanged,
 		token = 0
 	}: {
 		providerId: string;
 		disabled: ModelDisabledStore;
+		thinking: ProviderThinkingStore;
 		onchanged: () => void;
 		// Bumped by the page when a write elsewhere changes this list: disabling a model removes its row,
 		// enabling one brings it back, and a custom model joins it.
@@ -172,7 +175,7 @@
 			description="The catalog reports nothing for this provider. A model the gateway has disabled is left out of the catalog, so check the disabled set before treating this as an empty registry entry."
 		/>
 	{:else}
-		<ModelCatalogTable {models} {disabled} {onchanged} />
+		<ModelCatalogTable {models} {disabled} {thinking} {onchanged} />
 
 		<p class="text-sm text-[var(--color-text-muted)]">
 			{models.length}

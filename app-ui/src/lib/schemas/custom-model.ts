@@ -43,6 +43,10 @@ export const schemaCustomModel = z.object({
 	model_id: z.string().min(1),
 	display_name: z.string(),
 	capabilities: stringList,
+	// The levels this model accepts when appended to its name (SPEC-API §7.14). Absent when
+	// the registry knows none for the id, which is the answer that keeps a suffix off a
+	// model whose upstream would refuse it.
+	thinking_levels: stringList.optional(),
 	created_at: rfc3339Timestamp
 });
 

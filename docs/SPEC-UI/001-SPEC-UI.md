@@ -320,6 +320,22 @@ absent.
   `PUT /api/v1/models/disabled` (phase U2). The search and the two capability filters read
   `GET /api/v1/models/catalog` with `provider_id`, `capability`, and `q`, because that is the only route
   that accepts them. **The "suggested" toggle is not built** and the reason is recorded in §14 Q12.
+- **Reasoning control (landed 2026-09-26):** the models section carries one select that writes this
+  provider's entry in `reasoning.provider_thinking` (SPEC-API §7.14, §7.15). Its options are
+  `Auto (follow the request)` plus the levels this provider's models accept, which the provider detail
+  answers as `thinking_levels`; `auto` deletes the entry, so following the request is a state rather
+  than a stored word, and every write sends the whole map because it is one settings value. A stored
+  mode the current model set no longer accepts stays on the list, labelled as not accepted now, rather
+  than falling back to `Auto`: a select that hid it would misreport a setting the gateway still
+  applies, and the operator could not clear it from here. The select carries the reference's own title
+  ("Appends (level) suffix to copied model names") and the line under it states what the stored mode
+  will do. A provider whose declared models accept no level shows no picker, which is the reference's
+  own rule, and a settings read that failed is reported rather than guessed at. The suffix it announces
+  is per model: the catalog and custom-model rows render the string a client sends (`provider/model`,
+  or `prefix/model` on a node) and their copy control appends `(level)` only where that row's own
+  `thinking_levels` carries the level, so a model the registry knows no levels for copies without one.
+  The gateway, not the panel, normalizes the stored mode onto the resolved model's wire format; the
+  panel states the rule rather than re-deriving it.
 - **Custom models** (U2): add and remove rows through `POST /api/v1/models/custom` and its delete route.
 - **The alias set is not built here** (removed 2026-09-23): `GET`/`PUT /api/v1/models/aliases` still exist in
   the gateway, but the reference has no alias concept at all and the table is global while this screen is
@@ -2010,6 +2026,25 @@ A deferred item names the check and where the evidence must appear.
 | R-31 (reason per decision)                                   | §9.5                                               | The reason log, extended in the pull request for decisions this spec does not yet cover.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 ---
+
+_Changelog 2026-09-26: the provider screen carries the reasoning picker, and a copied model name carries the level it was set to._
+
+_§6.3's models section gains one select that writes this provider's entry in
+`reasoning.provider_thinking` (SPEC-API §7.14, §7.15). Its options are `Auto (follow the request)`
+plus the levels the provider's own models accept, which the provider detail answers as
+`thinking_levels`; `auto` deletes the entry, so following the request is a state rather than a stored
+word, and every write sends the whole map because it is one settings value. A stored mode the current
+model set no longer accepts stays on the list, labelled as not accepted now, rather than falling back
+to `Auto`: a select that hid it would misreport a setting the gateway still applies, and the operator
+could not clear it from here. The select carries the reference's own title ("Appends (level) suffix
+to copied model names") and the line under it states what the stored mode will do; a provider whose
+models declare no reasoning shows no picker, which is the reference's own rule. The suffix is per
+model: the catalog and custom-model rows now render the string a client sends and copy it with
+`(level)` appended only where that row's own levels carry the level, so a model the registry knows no
+levels for copies without one. The registry catalog table gained that address-and-copy line, because
+a suffix that lives only in the clipboard is a state an operator cannot see. The gateway, not the
+panel, normalizes the stored mode onto the resolved model's wire format, and the panel states the
+rule rather than re-deriving it._
 
 _Changelog 2026-09-25: the batch-add paste reads the lines a proxy list actually ships._
 
