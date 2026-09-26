@@ -104,8 +104,10 @@ statis; uji baru menambahkan kasus ini). `ReportFailure` memarkir best-effort.
 **Dataplane.** `internal/dataplane/proxy_route.go`: port `ProxyRoutePlanner`, `ProxyDialer`
 (rencana kosong → shared client; walk terbatas 3; per-attempt client = kloning
 `*http.Transport` shared yang di-cache per URL kandidat + `http.ProxyURL`; body dipulihkan lewat
-`GetBody`; `isProxyConnectFailure` = `*net.OpError` atau `net.Error.Timeout()`; galat non-connect
-mengakhiri walk; `ReportFailure` per kandidat yang gagal connect). `TransportDeps.Routes` dan
+`GetBody`; `isProxyConnectFailure` = penolakan CONNECT bertipe (`proxyConnectRejected` lewat
+`OnProxyConnectResponse`), `*net.OpError`, atau `net.Error.Timeout()` (kelas penolakan CONNECT
+ditambahkan draft 033, 2026-09-26); galat non-connect mengakhiri walk; `ReportFailure` per
+kandidat yang gagal connect). `TransportDeps.Routes` dan
 `NewMediaTransport(client, routes)` (dua call site diperbarui); `attempt()`/`MediaTransport.Do`
 memakai dialer.
 
@@ -132,7 +134,9 @@ kualifikasi switch: "Add one to route upstream calls through it once proxying is
 **Uji baru.** `proxy_rotation_test.go` (domain), `proxy_rotation_test.go` (redis),
 `proxy_route_test.go` (service, tabel Plan + round-robin + degradasi + ReportFailure),
 `proxy_route_test.go` (dataplane: failover httptest lewat proxy mati `127.0.0.1:1`, walk
-terbatas, body utuh, klasifikasi kegagalan), `proxy_route_planner_test.go` (cmd: D8 guard +
+terbatas, body utuh, klasifikasi kegagalan), `proxy_connect_rejection_test.go` (dataplane: kandidat
+yang menolak CONNECT non-200 diparkir dan walk lanjut ke kandidat berikutnya, draft 033),
+`proxy_route_planner_test.go` (cmd: D8 guard +
 pass-through parkir), `settings_strategy_patch_test.go` (schema: tag, drift-pin oneof↔domain,
 lowering, nilai efektif), `settings_strategy_test.go` (domain backstop). Panel:
 `settings-forms.test.ts` (kasus flip: proxy on tanpa URL diterima; strategi ditolak/diterima),
@@ -191,3 +195,7 @@ Semua dijalankan pada pohon beku (tidak ada suntingan kode setelah gerbang terak
   jadi drift kontraknya nol.
 - **F12/F13 register app-ui** (readiness) belum diukur ulang untuk kartu outbound ini; kandidat
   baris pointer bila pass berikutnya menyentuh register itu.
+- **Tindak lanjut 2026-09-26 (draft 033):** kelas penolakan CONNECT non-200 (proxy hidup yang
+  menolak tunnel) ditemukan oleh uji failover live setelah pass ini CLOSED; D6/D7 kini
+  mengimplementasikannya penuh. Diperbaiki `d1c2a81` dan dibuktikan ulang live; rinciannya di
+  `docs/DRAFT/033-PROXY-CONNECT-FAILOVER.md`.

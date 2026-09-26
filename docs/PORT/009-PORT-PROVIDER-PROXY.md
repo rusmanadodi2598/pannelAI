@@ -139,7 +139,7 @@ Semua dijalankan pada pohon beku (tidak ada suntingan kode setelah gerbang terak
   perubahan migrasi maupun repository postgres/redis pada pass ini, dan suite bertag menyapu Redis
   DB 0 yang dipakai gateway live.
 - **verifikasi state commit** (pohon terpisah dari indeks staged lewat `git checkout-index --all
-  --prefix`): `gofmt -l` bersih, `go build ./...`, `go vet ./...`, dan `go test ./...` EXIT=0,
+--prefix`): `gofmt -l` bersih, `go build ./...`, `go vet ./...`, dan `go test ./...` EXIT=0,
   termasuk `tools/openapi-gen -check` (drift nol pada pasangan kontrak YAML + `openapi.json` yang
   di-stage).
 - **contract drift** (`scrypts/gates/contract-drift.sh`): PASS, 12 kode error sepakat di dua sisi.
@@ -208,6 +208,10 @@ Semua dijalankan pada pohon beku (tidak ada suntingan kode setelah gerbang terak
   tes merah.
 - **Suite integrasi** tidak dijalankan (alasan di §6); jalankan `PANNELAI_TEST_POSTGRES_DSN` +
   `PANNELAI_TEST_REDIS_ADDR` bila pass berikutnya menyentuh migrasi atau repository.
+- **Tindak lanjut 2026-09-26 (draft 033):** pembuktian live multi-proxy di gateway owner (rotasi
+  dua baris, kursor +1 per request, byte counter per socket) dan uji failover pada baris mati
+  menemukan cacat klasifikasi CONNECT di engine pass 008; cacat itu diperbaiki sebagai `d1c2a81`
+  dan dibuktikan ulang live, direkam di `docs/DRAFT/033-PROXY-CONNECT-FAILOVER.md`.
 - **Em dash: diukur, bukan diklaim.** Dari 47 berkas commit ini, em dash hanya tersisa di baris
   yang sudah ada di `HEAD` sebelum pass ini (`dataplane/media.go` 1, `media_perform.go` 3,
   `docs/SPEC-API` 4). Tiga em dash milik teks pass ini (satu kalimat copy kartu outbound dan dua
