@@ -83,10 +83,58 @@ const LINE_CASES: LineCase[] = [
 		row: { port: 1080 }
 	},
 	{
-		name: 'rejects a line with no scheme, which URL would read as a scheme of its own',
+		name: 'reads a schemeless host:port as http, which is what a proxy list holds',
 		line: 'proxy.example.com:8080',
+		ok: true,
+		row: { protocol: 'http', host: 'proxy.example.com', port: 8080, username: '', password: '' }
+	},
+	{
+		name: 'reads a schemeless user:pass@host:port line, the pasted-list format',
+		line: 'operator:hunter2@proxy.example.com:3129',
+		ok: true,
+		row: {
+			protocol: 'http',
+			host: 'proxy.example.com',
+			port: 3129,
+			username: 'operator',
+			password: 'hunter2'
+		}
+	},
+	{
+		name: 'reads a schemeless host with no port on the http default',
+		line: 'proxy.example.com',
+		ok: true,
+		row: { protocol: 'http', port: 80 }
+	},
+	{
+		name: 'never guesses socks5 for a schemeless line, because nothing in it says so',
+		line: 'proxy.example.com:1080',
+		ok: true,
+		row: { protocol: 'http', port: 1080 }
+	},
+	{
+		name: 'rejects a schemeless line with a path',
+		line: 'proxy.example.com:8080/path',
 		ok: false,
-		reason: 'Start the line with http://, https://, or socks5://.'
+		reason: 'A proxy URL has no path.'
+	},
+	{
+		name: 'rejects a schemeless port past the high boundary',
+		line: 'proxy.example.com:99999',
+		ok: false,
+		reason: 'Ports run from 1 to 65535.'
+	},
+	{
+		name: 'rejects a schemeless credential with an invalid percent escape',
+		line: 'operator:p%zz@proxy.example.com:3128',
+		ok: false,
+		reason: 'The credentials contain an invalid percent escape.'
+	},
+	{
+		name: 'rejects a bare IPv6 literal with no scheme, naming the brackets',
+		line: '2001:db8::1',
+		ok: false,
+		reason: 'Write an IPv6 address in square brackets, for example [::1].'
 	},
 	{
 		name: 'rejects a scheme the API does not accept',
@@ -189,13 +237,13 @@ describe('parseProxyLines', () => {
 		// The line number is the only way back from the preview to the paste, so a blank line still
 		// advances the count.
 		const result = parseProxyLines(
-			'http://a.example.com:8080\n\nnot-a-url\nsocks5://b.example.com:1080\n'
+			'http://a.example.com:8080\n\nftp://not-a-url\nsocks5://b.example.com:1080\n'
 		);
 
 		expect(result.rows.length).toBe(2);
 		expect(result.rejected.length).toBe(1);
 		expect(result.rejected[0]?.line).toBe(3);
-		expect(result.rejected[0]?.raw).toBe('not-a-url');
+		expect(result.rejected[0]?.raw).toBe('ftp://not-a-url');
 	});
 
 	it('keeps two identical lines as two candidates, because the API accepts both', () => {

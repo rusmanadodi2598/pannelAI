@@ -141,12 +141,12 @@ describe('ProxyPoolsPage', () => {
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Add several at once' }));
 		await fireEvent.input(screen.getByLabelText('Proxy URLs, one per line'), {
-			target: { value: 'http://a.example.com:8080\nnot-a-url\nsocks5://b.example.com:1080\n' }
+			target: { value: 'http://a.example.com:8080\nftp://not-a-url\nsocks5://b.example.com:1080\n' }
 		});
 
 		expect(await screen.findByText('2 ready, 1 rejected.')).toBeTruthy();
 		expect(
-			screen.getByText('Line 2: Start the line with http://, https://, or socks5://.')
+			screen.getByText('Line 2: Only http, https, and socks5 are supported, not ftp.')
 		).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Add 2 proxies' })).toBeTruthy();
 	});

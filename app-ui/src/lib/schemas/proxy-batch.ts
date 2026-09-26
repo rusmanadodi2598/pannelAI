@@ -8,8 +8,9 @@
 // The parse delegates: `new URL` reads the structure, `normalizeHost` lowercases the host, and
 // `schemaProxyCandidate` is the final gate, so a row this module accepts is a row the test route
 // would accept too. The only rules written here are the ones a URL does not express: a proxy URL has
-// no path, a default port stands in for an omitted one, and a line whose scheme is missing or
-// unsupported is named as such rather than reported as a broken URL.
+// no path, a default port stands in for an omitted one, a line with no scheme at all is read as the
+// plain HTTP list it usually is (`user:pass@host:port` is how those lists ship), and a scheme that
+// exists but is unsupported is named as such rather than reported as a broken URL.
 
 import {
 	PROXY_DEFAULT_PORTS,
@@ -48,6 +49,11 @@ export type ProxyParseResult = {
 };
 
 const SCHEME_PREFIX = /^([a-z][a-z0-9+.-]*):\/\//i;
+// The scheme a line that carries none is read as: a proxy list pasted wholesale
+// (`user:pass@host:port`, one per line) names no scheme anywhere, and HTTP is
+// the protocol those lists hold. The preview shows the parsed protocol on every
+// row, so a misread is visible before anything is submitted.
+const PASTE_DEFAULT_SCHEME: ProxyProtocol = 'http';
 // A port at the very end of the line. Read before `new URL`, because an out-of-range port makes the
 // URL constructor throw and the operator would otherwise read "not a URL" for a port they can fix.
 const TRAILING_PORT = /:(\d+)$/;
@@ -91,21 +97,27 @@ function decodeCredential(value: string): string | null {
 /**
  * Parses one pasted line into a candidate, or reports why it could not be read.
  *
+ * A line that starts with a scheme is read with it; a line that starts with none
+ * (`proxy.example.com:8080`, `user:pass@host:3129`) is read as HTTP, because that is
+ * what a pasted list holds, and the preview shows the protocol before anything is saved.
  * The port resolution is the part worth naming: `new URL` drops a default port from `.port`, so
  * `https://proxy.example:443` reads back with an empty port and the scheme's default restores it.
  * SOCKS5 has no default, so such a line has to name its port.
  */
 export function parseProxyLine(raw: string, line: number): ProxyLineResult {
-	const text = raw.trim();
+	let text = raw.trim();
 
 	const scheme = SCHEME_PREFIX.exec(text);
-	if (!scheme) {
-		return reject(line, raw, 'Start the line with http://, https://, or socks5://.');
-	}
-
-	const protocol = scheme[1].toLowerCase();
-	if (!isProxyProtocol(protocol)) {
-		return reject(line, raw, `Only http, https, and socks5 are supported, not ${protocol}.`);
+	let protocol: ProxyProtocol;
+	if (scheme) {
+		const named = scheme[1].toLowerCase();
+		if (!isProxyProtocol(named)) {
+			return reject(line, raw, `Only http, https, and socks5 are supported, not ${named}.`);
+		}
+		protocol = named;
+	} else {
+		protocol = PASTE_DEFAULT_SCHEME;
+		text = `${PASTE_DEFAULT_SCHEME}://${text}`;
 	}
 
 	if (bareIpv6Authority(text)) {
