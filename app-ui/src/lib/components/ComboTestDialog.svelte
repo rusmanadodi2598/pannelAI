@@ -74,8 +74,8 @@
 	{#if combo}
 		<p>
 			Test <span class="font-medium">{combo.name}</span> ({comboStrategyLabel(combo.strategy)})?
-			Each reference is probed in turn with a one-token request, so the test spends one account at a
-			time. The probes are not recorded in usage.
+			Each reference is probed in turn with a small capped request, so the test spends one account
+			at a time. The probes are not recorded in usage.
 		</p>
 	{/if}
 

@@ -28,7 +28,9 @@ import (
 // TestOpenCode_TransformNamesTheResponsesOutputCeiling pins the field rename the
 // Responses wire requires: it answers 400 to `max_tokens`, so a chat-shaped
 // ceiling has to become `max_output_tokens`, and an already-correct one must not
-// be overwritten.
+// be overwritten. It also pins the Console API's floor: a ceiling below 16 is
+// refused with "max_output_tokens The number must be >= 16", which is what a
+// one-token probe (the combo test's ping) sent before this rule existed.
 func TestOpenCode_TransformNamesTheResponsesOutputCeiling(t *testing.T) {
 	connector := NewOpenCode(opencodeEntry("https://opencode.ai", "openai"))
 
@@ -54,6 +56,27 @@ func TestOpenCode_TransformNamesTheResponsesOutputCeiling(t *testing.T) {
 			name:     "an existing max_output_tokens wins",
 			body:     `{"model":"muse-spark-1.3-contributor-free","input":[],"max_output_tokens":128,"max_tokens":999}`,
 			wantCeil: 128, wantAbsent: []string{"max_tokens"},
+		},
+		{
+			name:       "a chat ceiling below the Console floor is raised to it",
+			body:       `{"model":"muse-spark-1.3-contributor-free","input":[],"max_tokens":1}`,
+			wantCeil:   16,
+			wantAbsent: []string{"max_tokens"},
+		},
+		{
+			name:     "a Responses ceiling below the floor is raised too",
+			body:     `{"model":"muse-spark-1.3-contributor-free","input":[],"max_output_tokens":8}`,
+			wantCeil: 16,
+		},
+		{
+			name:     "a ceiling at the floor is kept",
+			body:     `{"model":"muse-spark-1.3-contributor-free","input":[],"max_output_tokens":16}`,
+			wantCeil: 16,
+		},
+		{
+			name:     "a ceiling above the floor is kept",
+			body:     `{"model":"muse-spark-1.3-contributor-free","input":[],"max_output_tokens":4096}`,
+			wantCeil: 4096,
 		},
 		{
 			name:       "no ceiling at all",

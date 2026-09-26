@@ -450,7 +450,7 @@ absent.
   screen (Q20). The dialog's lead sentence depends on the error code, not the message: only `CONFLICT` means
   the combo is still referenced, so another failure does not read as though it did.
 - **Test (U2, landed):** each row has a Test action that opens a confirmation before sending anything. The
-  panel states that the route sends one-token, non-streaming probes sequentially and that probe spend is
+  panel states that the route sends small capped, non-streaming probes sequentially and that probe spend is
   not written to `usage_records`, because one click spends one upstream account at a time as an operator
   diagnostic. After confirmation, the readout has one row per stored reference, with its role (`model` or
   `judge`), the stored ref, the resolved provider/model and endpoint when the probe reached them, latency,

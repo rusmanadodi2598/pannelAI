@@ -3,7 +3,7 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/ping.go
-// @for       The one-token probe the combo test route runs against one model
+// @for       The bounded probe the combo test route runs against one model
 //
 //	reference (SPEC-API-001 §7.7).
 //
@@ -31,11 +31,15 @@ import (
 // content is not read: the probe reports whether the pipeline completed.
 const PingPrompt = "ping"
 
-// PingMaxTokens bounds the probe's answer to a single token, so testing a combo
-// spends the least an upstream will bill for.
-const PingMaxTokens = 1
+// PingMaxTokens bounds the probe's answer, so testing a combo spends little
+// upstream budget. It is 1024, the reference's own model-test ceiling
+// (src/app/api/models/test/ping.js:174): a one-token probe starves a reasoning
+// model — the answer is spent before any text arrives — and the OpenCode
+// Console API refuses an output ceiling below 16 outright, so the probe would
+// report a provider failure that is really a probe-shaped request.
+const PingMaxTokens = 1024
 
-// Ping runs a one-token chat against one model reference and reports what the
+// Ping runs a bounded chat against one model reference and reports what the
 // data plane answered, which is what the combo test route reports per member.
 //
 // It calls Relay directly rather than going through the chat service, so no
@@ -50,9 +54,9 @@ func (e *Engine) Ping(ctx context.Context, ref string) (Outcome, error) {
 	return e.Relay(ctx, request, nil)
 }
 
-// pingRequest is the probe's request: an OpenAI chat with one user turn and a
-// one-token ceiling, carrying the raw body the way a client's request does, so
-// a same-format target forwards it and a cross-format one translates it.
+// pingRequest is the probe's request: an OpenAI chat with one user turn and the
+// bounded ceiling, carrying the raw body the way a client's request does, so a
+// same-format target forwards it and a cross-format one translates it.
 func pingRequest(ref string) (Request, error) {
 	maxTokens := PingMaxTokens
 	chat := &schema.ChatRequest{

@@ -7,12 +7,13 @@
 // @reason    The free tier answers 403 unless the outbound body both streams and
 //
 //	carries the bash and read decoy tools, and the Responses wire answers
-//	400 to `max_tokens` and to a `tool_choice` other than `auto`. Those
-//	rules are the provider's, so they are applied here rather than by a
-//	branch on the provider id in the translation layer. Everything is a
-//	set union or a rename over the client's own body: the client's tools,
-//	ceiling, and items all survive, because a gateway that dropped them
-//	would answer a different question than the one it was asked.
+//	400 to `max_tokens`, to a `tool_choice` other than `auto`, and to an
+//	output ceiling below 16. Those rules are the provider's, so they are
+//	applied here rather than by a branch on the provider id in the
+//	translation layer. Everything is a set union or a rename over the
+//	client's own body: the client's tools, ceiling, and items all survive,
+//	because a gateway that dropped them would answer a different question
+//	than the one it was asked.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
@@ -23,6 +24,7 @@ package provider
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
@@ -103,11 +105,14 @@ func decodeOpenCodeBody(raw []byte) (map[string]json.RawMessage, bool) {
 // renameOpenCodeCeiling moves a chat-shaped output ceiling onto the Responses
 // field name. The Responses wire answers 400 to `max_tokens`, and an already
 // present `max_output_tokens` wins because it is the client's own explicit
-// choice for this wire.
+// choice for this wire. The renamed value is then clamped to the Console API's
+// floor, because a smaller number is refused by the upstream rather than
+// rounded by it.
 func renameOpenCodeCeiling(body map[string]json.RawMessage) {
 	if _, present := body["max_output_tokens"]; present {
 		delete(body, "max_tokens")
 		delete(body, "max_completion_tokens")
+		clampOpenCodeCeiling(body)
 		return
 	}
 	for _, key := range []string{"max_completion_tokens", "max_tokens"} {
@@ -118,6 +123,31 @@ func renameOpenCodeCeiling(body map[string]json.RawMessage) {
 	}
 	delete(body, "max_tokens")
 	delete(body, "max_completion_tokens")
+	clampOpenCodeCeiling(body)
+}
+
+// openCodeMinOutputTokens is the floor the OpenCode Console API accepts for a
+// Responses-wire output ceiling. A lower value is refused with
+// "max_output_tokens The number must be >= 16" (measured live, 2026-09-26),
+// which is what the combo test's one-token ping used to send.
+const openCodeMinOutputTokens = 16
+
+// clampOpenCodeCeiling raises an integer ceiling below the Console floor. A
+// member that is not a JSON integer is left exactly as the client wrote it: the
+// upstream's own validation answers for it, and rewriting a malformed value
+// would hide the client's bug instead of reporting it.
+func clampOpenCodeCeiling(body map[string]json.RawMessage) {
+	raw, present := body["max_output_tokens"]
+	if !present {
+		return
+	}
+	var value int
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return
+	}
+	if value < openCodeMinOutputTokens {
+		body["max_output_tokens"] = json.RawMessage(strconv.Itoa(openCodeMinOutputTokens))
+	}
 }
 
 // dropOpenCodeReasoning removes the prior-turn reasoning items and every

@@ -1,7 +1,7 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/combo_probe.go
-// @for       The combo test route: a one-token probe of every reference a combo
+// @for       The combo test route: a bounded probe of every reference a combo
 //
 //	depends on (SPEC-API-001 §7.7).
 //

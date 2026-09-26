@@ -1,7 +1,7 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/ping_test.go
-// @for       The one-token probe: the request it invents and the outcome the
+// @for       The bounded probe: the request it invents and the outcome the
 //
 //	pipeline reports for it (SPEC-API-001 §7.7).
 //
@@ -69,10 +69,10 @@ func pingUpstream(t *testing.T, recorder *pingRecorder) *httptest.Server {
 	return server
 }
 
-// TestPing_SendsAOneTokenProbe pins the invented request: one user turn reading
-// "ping", a one-token ceiling, and no streaming — the cheapest call an upstream
+// TestPing_SendsABoundedProbe pins the invented request: one user turn reading
+// "ping", a bounded ceiling, and no streaming — the cheapest call an upstream
 // bills for, sent through the same pipeline every other request runs.
-func TestPing_SendsAOneTokenProbe(t *testing.T) {
+func TestPing_SendsABoundedProbe(t *testing.T) {
 	recorder := &pingRecorder{}
 	server := pingUpstream(t, recorder)
 	repo := newMemEndpointRepo()
