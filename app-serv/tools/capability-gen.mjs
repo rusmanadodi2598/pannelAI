@@ -84,6 +84,9 @@ for (const provider of providers) {
       model,
       vision: caps.vision === true,
       tools: caps.tools === true,
+      reasoning: caps.reasoning === true,
+      thinking_format: caps.thinkingFormat || "",
+      thinking_can_disable: caps.thinkingCanDisable !== false,
     });
   }
 }
@@ -102,6 +105,7 @@ const payload = {
 fs.writeFileSync(outFile, JSON.stringify(payload, null, 2) + "\n");
 const vision = entries.filter((e) => e.vision).length;
 const tools = entries.filter((e) => e.tools).length;
+const reasoning = entries.filter((e) => e.reasoning).length;
 console.log(
-  `${entries.length} entries from ${providers.length} providers at ${revision}: vision ${vision}, tools ${tools}`
+  `${entries.length} entries from ${providers.length} providers at ${revision}: vision ${vision}, tools ${tools}, reasoning ${reasoning}`
 );

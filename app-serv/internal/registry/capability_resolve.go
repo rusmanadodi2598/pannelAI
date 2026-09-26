@@ -30,13 +30,14 @@ package registry
 import "strings"
 
 // CapabilitySet is what the resolver answers for one model: the two
-// capabilities a client can filter on. It is a value, so it compares with ==
-// and a test can state an expectation as a literal.
+// capabilities a client can filter on, plus the reasoning decision the thinking
+// control reads. It is a value, so it compares with == and a test can state an
+// expectation as a literal.
 //
 // The reference resolves eleven fields (modalities, reasoning, search, limits,
-// thinking wire format). Only these two are ported, because they are the two
-// §7.6 offers as filters; the rest would be carried data no caller reads, which
-// is the state `transport.force_stream` is already in (draft 011 §2).
+// thinking wire format). Only these are ported, because they are the ones a
+// caller reads: vision and tools are the two §7.6 offers as filters, and the
+// reasoning trio is what the reasoning control (§7.14) and the relay path need.
 type CapabilitySet struct {
 	// Vision reports whether the model reads images.
 	Vision bool
@@ -44,9 +45,19 @@ type CapabilitySet struct {
 	// every model, which is the reference's floor; only an image-generation
 	// model declares false.
 	Tools bool
+	// Reasoning reports whether the model thinks before answering.
+	Reasoning bool
+	// ThinkingFormat names the wire shape the model's thinking takes, as the
+	// reference's thinkingUnified.js dispatches on it. An empty value means the
+	// reference declared none, and the caller falls back to the target wire's
+	// own default.
+	ThinkingFormat string
+	// CanDisable is false for a model that cannot turn thinking off, where a
+	// "none" mode clamps to the lowest level instead of disabling.
+	CanDisable bool
 }
 
-// Capabilities answers both questions for one model.
+// Capabilities answers every question the resolver owns for one model.
 //
 // The order is the reference's (capabilities.js getCapabilitiesForModel): the
 // exact-id layer first, then the ordered pattern table, then the floor. The
@@ -55,13 +66,13 @@ type CapabilitySet struct {
 // layer changes neither answer for any model the registry declares. When that
 // stops being true, that test fails by name and the layer is ported then.
 //
-// An id nothing matches answers the floor: reads no images, calls tools. That
-// direction is deliberate for the same reason VisionCapable's is: the caller
-// uses vision to refuse a configuration, so guessing "capable" would let an
-// operator wire a text-only model into the vision adapter and discover it when
-// an image request fails upstream.
+// An id nothing matches answers the floor: reads no images, calls tools, and
+// does not reason. That direction is deliberate for the same reason
+// VisionCapable's is: the caller uses vision to refuse a configuration, so
+// guessing "capable" would let an operator wire a text-only model into the
+// vision adapter and discover it when an image request fails upstream.
 func Capabilities(provider, modelID string) CapabilitySet {
-	floor := CapabilitySet{Vision: false, Tools: true}
+	floor := CapabilitySet{Vision: false, Tools: true, CanDisable: true}
 	id := strings.ToLower(strings.TrimSpace(modelID))
 	if id == "" {
 		return floor
@@ -76,26 +87,41 @@ func Capabilities(provider, modelID string) CapabilitySet {
 		return floor
 	}
 
+	// The one id that declares no tool calling is also the one image model the
+	// reference's tables answer false for, so the row decides both fields.
 	if known, found := toolsCapableIDs[base]; found {
-		return CapabilitySet{Vision: floor.Vision, Tools: known}
+		return CapabilitySet{Vision: false, Tools: known, CanDisable: true}
 	}
+
+	thinking := thinkingFor(provider, base, id)
+	return CapabilitySet{
+		Vision:         visionAnswer(provider, id, base),
+		Tools:          floor.Tools,
+		Reasoning:      thinking.Reasoning,
+		ThinkingFormat: thinking.Format,
+		CanDisable:     thinking.CanDisable,
+	}
+}
+
+// visionAnswer resolves the vision decision alone, in the reference's order.
+func visionAnswer(provider, id, base string) bool {
 	// The Command Code wire answers every model from one endpoint, so its
 	// vision comes from the reference's own denylist rather than from a family
 	// pattern that describes the model's native provider instead.
 	if commandCodeProviders[strings.ToLower(strings.TrimSpace(provider))] {
-		return CapabilitySet{Vision: !commandCodeTextOnlyModel(id), Tools: floor.Tools}
+		return !commandCodeTextOnlyModel(id)
 	}
 	// The provider override is consulted first because the reference consults
 	// it first: an entry naming a model that a family pattern would answer
 	// differently wins, and codebuddy-cn's deepseek-v4-pro is exactly that case.
 	if vision, found := providerVision(provider, base, id); found {
-		return CapabilitySet{Vision: vision, Tools: floor.Tools}
+		return vision
 	}
 	// The name heuristic runs last and only in the true direction, which is the
 	// reference's own order and direction (capabilities.js:520): a table that
 	// answered false is not overridden by a name, and a model no table knows
 	// still accepts an image when its id says so.
-	return CapabilitySet{Vision: visionFor(base, id) || looksLikeVisionModel(id), Tools: floor.Tools}
+	return visionFor(base, id) || looksLikeVisionModel(id)
 }
 
 // commandCodeProviders are the provider ids whose wire is one endpoint for

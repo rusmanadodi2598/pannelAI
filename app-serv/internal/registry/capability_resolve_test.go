@@ -39,10 +39,13 @@ type capabilityCorpus struct {
 	Revision string `json:"revision"`
 	Source   string `json:"source"`
 	Entries  []struct {
-		Provider string `json:"provider"`
-		Model    string `json:"model"`
-		Vision   bool   `json:"vision"`
-		Tools    bool   `json:"tools"`
+		Provider           string `json:"provider"`
+		Model              string `json:"model"`
+		Vision             bool   `json:"vision"`
+		Tools              bool   `json:"tools"`
+		Reasoning          bool   `json:"reasoning"`
+		ThinkingFormat     string `json:"thinking_format"`
+		ThinkingCanDisable bool   `json:"thinking_can_disable"`
 	} `json:"entries"`
 }
 
@@ -63,10 +66,13 @@ func loadCapabilityCorpus(t *testing.T) capabilityCorpus {
 }
 
 // TestCapabilities_MatchesTheReferenceCorpus is the pin: every model the
-// embedded registry declares, answered the way the reference answers it.
+// embedded registry declares, answered the way the reference answers it. The
+// reasoning trio is compared only when the model reasons, because a
+// non-reasoning row's format and can-disable fields are the reference's floor
+// and carry no meaning.
 func TestCapabilities_MatchesTheReferenceCorpus(t *testing.T) {
 	corpus := loadCapabilityCorpus(t)
-	vision, noTools := 0, 0
+	vision, noTools, reasoning := 0, 0, 0
 	for _, entry := range corpus.Entries {
 		if entry.Vision {
 			vision++
@@ -74,10 +80,24 @@ func TestCapabilities_MatchesTheReferenceCorpus(t *testing.T) {
 		if !entry.Tools {
 			noTools++
 		}
+		if entry.Reasoning {
+			reasoning++
+		}
 		got := Capabilities(entry.Provider, entry.Model)
 		if got.Vision != entry.Vision || got.Tools != entry.Tools {
 			t.Fatalf("Capabilities(%q, %q) = {vision:%v tools:%v}, the reference says {vision:%v tools:%v} (corpus revision %s)",
 				entry.Provider, entry.Model, got.Vision, got.Tools, entry.Vision, entry.Tools, corpus.Revision)
+		}
+		if got.Reasoning != entry.Reasoning {
+			t.Fatalf("Capabilities(%q, %q).Reasoning = %v, the reference says %v (corpus revision %s)",
+				entry.Provider, entry.Model, got.Reasoning, entry.Reasoning, corpus.Revision)
+		}
+		if !entry.Reasoning {
+			continue
+		}
+		if got.ThinkingFormat != entry.ThinkingFormat || got.CanDisable != entry.ThinkingCanDisable {
+			t.Fatalf("Capabilities(%q, %q) = {format:%q canDisable:%v}, the reference says {format:%q canDisable:%v} (corpus revision %s)",
+				entry.Provider, entry.Model, got.ThinkingFormat, got.CanDisable, entry.ThinkingFormat, entry.ThinkingCanDisable, corpus.Revision)
 		}
 	}
 	// The counts guard the corpus itself: a corpus that answered the floor for
@@ -89,7 +109,11 @@ func TestCapabilities_MatchesTheReferenceCorpus(t *testing.T) {
 	if noTools == 0 {
 		t.Fatalf("the corpus reports no model without tool calling across %d rows; the tools rule would be untested", len(corpus.Entries))
 	}
-	t.Logf("pinned %d rows against %s: %d vision, %d without tools", len(corpus.Entries), corpus.Revision, vision, noTools)
+	if reasoning == 0 {
+		t.Fatalf("the corpus reports no reasoning model across %d rows; the thinking tables would be untested", len(corpus.Entries))
+	}
+	t.Logf("pinned %d rows against %s: %d vision, %d without tools, %d reasoning",
+		len(corpus.Entries), corpus.Revision, vision, noTools, reasoning)
 }
 
 // TestCapabilities_ProviderLayerIsLoadBearing pins the fact that made the
@@ -135,19 +159,25 @@ func TestCapabilities_ProviderLayerIsLoadBearing(t *testing.T) {
 // absent model, whitespace, a vendor-prefixed id, an id that is itself a path,
 // and an id nothing knows.
 func TestCapabilities_BoundaryInputs(t *testing.T) {
+	// Every floor answer carries CanDisable true, because the reference's floor
+	// lets a model turn thinking off and only a table row can say otherwise.
+	floor := CapabilitySet{Vision: false, Tools: true, CanDisable: true}
 	cases := []struct {
 		name     string
 		provider string
 		model    string
 		want     CapabilitySet
 	}{
-		{"an empty model answers the floor", "openai", "", CapabilitySet{Vision: false, Tools: true}},
-		{"whitespace is trimmed, not matched", "openai", "   ", CapabilitySet{Vision: false, Tools: true}},
-		{"a vendor prefix is stripped before matching", "openrouter", "anthropic/claude-opus-4-8", CapabilitySet{Vision: true, Tools: true}},
-		{"a model id may itself be a path", "", "vendor/family/model", CapabilitySet{Vision: false, Tools: true}},
-		{"an image model declares no tools", "openai", "gpt-image-1", CapabilitySet{Vision: false, Tools: false}},
-		{"an unknown id answers the floor", "", "totally-unknown-9000", CapabilitySet{Vision: false, Tools: true}},
-		{"the match ignores case", "openai", "GPT-4O", CapabilitySet{Vision: true, Tools: true}},
+		{"an empty model answers the floor", "openai", "", floor},
+		{"whitespace is trimmed, not matched", "openai", "   ", floor},
+		{
+			name: "a vendor prefix is stripped before matching", provider: "openrouter", model: "anthropic/claude-opus-4-8",
+			want: CapabilitySet{Vision: true, Tools: true, Reasoning: true, ThinkingFormat: "claude-adaptive", CanDisable: true},
+		},
+		{"a model id may itself be a path", "", "vendor/family/model", floor},
+		{"an image model declares no tools", "openai", "gpt-image-1", CapabilitySet{Vision: false, Tools: false, CanDisable: true}},
+		{"an unknown id answers the floor", "", "totally-unknown-9000", floor},
+		{"the match ignores case", "openai", "GPT-4O", CapabilitySet{Vision: true, Tools: true, CanDisable: true}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

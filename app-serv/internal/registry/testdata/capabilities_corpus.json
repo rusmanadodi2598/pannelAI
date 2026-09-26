@@ -7,2833 +7,4249 @@
       "provider": "antigravity",
       "model": "claude-opus-4-6-thinking",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "antigravity",
       "model": "claude-sonnet-4-6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "antigravity",
       "model": "gemini-3-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3-flash-agent",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.1-flash-image",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.1-pro-low",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.5-flash-extra-low",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.5-flash-high",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.5-flash-low",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.6-flash-high",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.6-flash-low",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.6-flash-medium",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.7-flash-high",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.7-flash-low",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.7-flash-medium",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.8-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.8-flash-high",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.8-flash-low",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-3.8-flash-medium",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "antigravity",
       "model": "gemini-pro-agent",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "antigravity",
       "model": "gpt-oss-120b-medium",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "byteplus",
       "model": "glm-4-7-251222",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "byteplus",
       "model": "gpt-oss-120b-250805",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "byteplus",
       "model": "kimi-k2-thinking-251104",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "byteplus",
       "model": "seed-2-0-code-preview-260328",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "byteplus",
       "model": "seed-2-0-lite-260228",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "byteplus",
       "model": "seed-2-0-mini-260215",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "byteplus",
       "model": "seed-2-0-pro-260328",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "claude",
       "model": "claude-fable-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "claude",
       "model": "claude-fable-5-1",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": false
     },
     {
       "provider": "claude",
       "model": "claude-haiku-4-5-20251001",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "claude",
       "model": "claude-opus-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "claude",
       "model": "claude-opus-5-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "claude",
       "model": "claude-sonnet-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "cline",
       "model": "anthropic/claude-opus-4.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "cline",
       "model": "anthropic/claude-opus-4.7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "cline",
       "model": "anthropic/claude-sonnet-4.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "cline",
       "model": "google/gemini-3.1-flash-lite-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "cline",
       "model": "google/gemini-3.1-pro-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "cline",
       "model": "kwaipilot/kat-coder-pro",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "cline",
       "model": "openai/gpt-5.3-codex",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "cline",
       "model": "openai/gpt-5.4",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "clinepass",
       "model": "cline-pass/deepseek-v4-flash",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "clinepass",
       "model": "cline-pass/deepseek-v4-pro",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "clinepass",
       "model": "cline-pass/glm-5.2",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": false
     },
     {
       "provider": "clinepass",
       "model": "cline-pass/kimi-k2.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "clinepass",
       "model": "cline-pass/kimi-k2.7-code",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "clinepass",
       "model": "cline-pass/mimo-v2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "clinepass",
       "model": "cline-pass/mimo-v2.5-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "clinepass",
       "model": "cline-pass/minimax-m3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": true
     },
     {
       "provider": "clinepass",
       "model": "cline-pass/qwen3.7-max",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "clinepass",
       "model": "cline-pass/qwen3.7-plus",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-cn",
       "model": "deepseek-v4-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-cn",
       "model": "deepseek-v4.1-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-cn",
       "model": "glm-5.1",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "codebuddy-cn",
       "model": "glm-5.2",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-cn",
       "model": "glm-5.3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-cn",
       "model": "glm-5.3-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-cn",
       "model": "glm-5v-turbo",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "codebuddy-cn",
       "model": "hy3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "codebuddy-cn",
       "model": "hy4-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "codebuddy-cn",
       "model": "kimi-k2.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "codebuddy-cn",
       "model": "kimi-k2.7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "codebuddy-cn",
       "model": "kimi-k3-1",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "codebuddy-cn",
       "model": "minimax-m3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "codebuddy-intl",
       "model": "deepseek-v3-2-volc",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "deepseek-v4-pro",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "deepseek-v4.1-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "glm-4.7",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "glm-5.0",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "glm-5.0-turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "glm-5.1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "glm-5.2",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": false
     },
     {
       "provider": "codebuddy-intl",
       "model": "glm-5v-turbo",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "hy3-preview",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "hunyuan",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "kimi-k2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "kimi-k2.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "kimi-k2.7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "codebuddy-intl",
       "model": "minimax-m2.7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": false
     },
     {
       "provider": "codebuddy-intl",
       "model": "minimax-m3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "MiniMaxAI/MiniMax-M2.5",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "MiniMaxAI/MiniMax-M2.7",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "MiniMaxAI/MiniMax-M3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "Qwen/Qwen3.6-Max-Preview",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "Qwen/Qwen3.6-Plus",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "Qwen/Qwen3.7-Max",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "Qwen/Qwen3.7-Plus",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "deepseek/deepseek-v4-flash",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "deepseek/deepseek-v4-pro",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "moonshotai/Kimi-K2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "moonshotai/Kimi-K2.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "moonshotai/Kimi-K2.7-Code",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "moonshotai/Kimi-K2.7-Code-Highspeed",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "nvidia/nemotron-3-ultra-550b-a55b",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "stepfun/Step-3.5-Flash",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "stepfun/Step-3.7-Flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "xiaomi/mimo-v2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "xiaomi/mimo-v2.5-pro",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "zai-org/GLM-5",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "zai-org/GLM-5.1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "zai-org/GLM-5.2",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "commandcode",
       "model": "zai-org/GLM-5.2-Fast",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "commandcode",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepgram",
       "model": "nova",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepgram",
       "model": "nova-2",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepgram",
       "model": "nova-3",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepgram",
       "model": "whisper-large",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepseek",
       "model": "deepseek-chat",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepseek",
       "model": "deepseek-reasoner",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4-flash",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4-flash-vision-exp",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4-pro",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4-pro-max",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4-pro-none",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4.1-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "embedding-001",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-2.0-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-2.5-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-2.5-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-2.5-flash-image",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-2.5-flash-lite",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-2.5-flash-lite",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-2.5-flash-preview-tts",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-2.5-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-2.5-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-2.5-pro-preview-tts",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-3-flash-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini",
       "model": "gemini-3-pro-image-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-3.1-flash-image-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-3.1-flash-lite-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini",
       "model": "gemini-3.1-flash-tts-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini",
       "model": "gemini-3.1-pro-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini",
       "model": "gemini-3.5-flash-lite",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini",
       "model": "gemini-3.6-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini",
       "model": "gemini-3.7-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini",
       "model": "gemini-3.8-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini",
       "model": "gemini-embedding-001",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemini-embedding-2-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "gemma-4-31b-it",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "text-embedding-004",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini",
       "model": "text-embedding-005",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini-cli",
       "model": "gemini-2.5-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini-cli",
       "model": "gemini-2.5-flash-lite",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini-cli",
       "model": "gemini-2.5-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "gemini-cli",
       "model": "gemini-3-flash-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini-cli",
       "model": "gemini-3-pro-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini-cli",
       "model": "gemini-3.1-flash-lite-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "gemini-cli",
       "model": "gemini-3.1-pro-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "github",
       "model": "claude-haiku-4.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "claude-opus-4.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "claude-opus-4.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "claude-opus-4.7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "claude-sonnet-4.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "claude-sonnet-4.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "gemini-2.5-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "gemini-3-flash-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "github",
       "model": "gemini-3.1-pro-preview",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "github",
       "model": "goldeneye-free-auto",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "gpt-5.2",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "gpt-5.2-codex",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "gpt-5.3-codex",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "gpt-5.4",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "gpt-5.4-mini",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "grok-code-fast-1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "oswe-vscode-prime",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "text-embedding-3-large",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "github",
       "model": "text-embedding-3-small",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "glm",
       "model": "glm-4.6v",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "glm",
       "model": "glm-4.7",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "glm",
       "model": "glm-5",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "glm",
       "model": "glm-5-turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "glm",
       "model": "glm-5.1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "glm",
       "model": "glm-5.2",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": false
     },
     {
       "provider": "glm",
       "model": "glm-5.3",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "glm",
       "model": "glm-5.3-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "grok-cli",
       "model": "grok-4.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "grok-cli",
       "model": "grok-4.5-high",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "grok-cli",
       "model": "grok-4.5-low",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "grok-cli",
       "model": "grok-4.5-medium",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "grok-cli",
       "model": "grok-build",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "groq",
       "model": "distil-whisper-large-v3-en",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "groq",
       "model": "llama-3.3-70b-versatile",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "groq",
       "model": "meta-llama/llama-4-maverick-17b-128e-instruct",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "groq",
       "model": "openai/gpt-oss-120b",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "groq",
       "model": "qwen/qwen3-32b",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "groq",
       "model": "whisper-large-v3",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "groq",
       "model": "whisper-large-v3-turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "HiDream-ai/HiDream-I1-Fast",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "Qwen/Qwen-Image",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "Qwen/Qwen-Image-2512",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "Qwen/Qwen-Image-Edit",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "Qwen/Qwen-Image-Edit-2509",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "Qwen/Qwen-Image-Edit-2511",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "Tongyi-MAI/Z-Image-Turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "black-forest-labs/FLUX.1-Kontext-dev",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "black-forest-labs/FLUX.1-Krea-dev",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "black-forest-labs/FLUX.1-dev",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "black-forest-labs/FLUX.1-schnell",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "black-forest-labs/FLUX.2-dev",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "black-forest-labs/FLUX.2-klein-4B",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "black-forest-labs/FLUX.2-klein-9B",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "black-forest-labs/FLUX.2-klein-base-4B",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "black-forest-labs/FLUX.2-klein-base-9B",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "ideogram-ai/ideogram-4-fp8",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "krea/Krea-2-Turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "openai/whisper-large-v3",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "openai/whisper-large-v3-turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "playgroundai/playground-v2.5-1024px-aesthetic",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "stabilityai/stable-diffusion-3.5-large",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "stabilityai/stable-diffusion-3.5-large-turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "stabilityai/stable-diffusion-xl-base-1.0",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "huggingface",
       "model": "tencent/HunyuanImage-3.0",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "hunyuan",
+      "thinking_can_disable": true
     },
     {
       "provider": "kilocode",
       "model": "anthropic/claude-opus-4-20250514",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "kilocode",
       "model": "anthropic/claude-sonnet-4-20250514",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "kilocode",
       "model": "deepseek/deepseek-chat",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "kilocode",
       "model": "deepseek/deepseek-reasoner",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "kilocode",
       "model": "google/gemini-2.5-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "kilocode",
       "model": "google/gemini-2.5-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "kilocode",
       "model": "openai/gpt-4.1",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "kilocode",
       "model": "openai/o3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimchi",
       "model": "claude-opus-4-6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimchi",
       "model": "claude-sonnet-4-6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimchi",
       "model": "kimi-k2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimchi",
       "model": "kimi-k2.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimchi",
       "model": "kimi-k2.7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimchi",
       "model": "minimax-m2.7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": false
     },
     {
       "provider": "kimchi",
       "model": "minimax-m3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimchi",
       "model": "nemotron-3-ultra-fp4",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimi",
       "model": "k3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "kimi",
       "model": "kimi-for-coding",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "kimi",
       "model": "kimi-for-coding-highspeed",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "kimi",
       "model": "kimi-k2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimi",
       "model": "kimi-k2.5-thinking",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimi",
       "model": "kimi-k2.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "kimi",
       "model": "kimi-k2.7-code",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "kimi",
       "model": "kimi-k2.7-code-highspeed",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "kimi",
       "model": "kimi-k3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "kimi",
       "model": "kimi-latest",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "minimax",
       "model": "MiniMax-M2.1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": false
     },
     {
       "provider": "minimax",
       "model": "MiniMax-M2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": false
     },
     {
       "provider": "minimax",
       "model": "MiniMax-M2.7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": false
     },
     {
       "provider": "minimax",
       "model": "MiniMax-M3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": true
     },
     {
       "provider": "minimax",
       "model": "minimax-image-01",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "minimax",
       "model": "speech-01-hd",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "minimax",
       "model": "speech-01-turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "minimax",
       "model": "speech-02-hd",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "minimax",
       "model": "speech-02-turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "minimax",
       "model": "speech-2.6-hd",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "minimax",
       "model": "speech-2.6-turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "minimax",
       "model": "speech-2.8-hd",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "minimax",
       "model": "speech-2.8-turbo",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "nvidia",
       "model": "deepseek-ai/deepseek-v4-flash",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "nvidia",
       "model": "deepseek-ai/deepseek-v4-pro",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "nvidia",
       "model": "fastpitch",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "nvidia",
       "model": "minimaxai/minimax-m2.7",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "nvidia",
       "model": "minimaxai/minimax-m3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "nvidia",
       "model": "moonshotai/kimi-k2.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "nvidia",
       "model": "nvidia/nemotron-3-ultra-550b-a55b",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "nvidia",
       "model": "nvidia/nv-embedqa-e5-v5",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "nvidia",
       "model": "nvidia/parakeet-ctc-1.1b-asr",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "nvidia",
       "model": "tacotron2",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "nvidia",
       "model": "z-ai/glm-5.2",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "dall-e-2",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "dall-e-3",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-4-turbo",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-4.1",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-4.1-mini",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-4.1-nano",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-4o",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-4o-mini",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-4o-mini-transcribe",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-4o-mini-tts",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-4o-transcribe",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-5-mini",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-5-nano",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-5.1",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-5.2",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-5.4",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-5.4-mini",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-5.4-nano",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-5.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-image-1",
       "vision": false,
-      "tools": false
+      "tools": false,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-image-2.5",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-image-2.5-flare",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "gpt-image-2.5-sunburst",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "o1",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "o1-mini",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "o3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "o3-mini",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "o3-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "o4-mini",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "text-embedding-3-large",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "text-embedding-3-small",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "text-embedding-ada-002",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "tts-1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "tts-1-hd",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openai",
       "model": "whisper-1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode",
       "model": "jev-1.13-free",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode",
       "model": "muse-spark-1.2-contributor-free",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode",
       "model": "muse-spark-1.3-contributor-free",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode",
       "model": "union-alpha",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "deepseek-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "deepseek-v4-flash",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "deepseek-v4-flash-vision-exp",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "deepseek-v4-pro",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "glm-5.1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "glm-5.2",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-go",
       "model": "glm-5.3",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "glm-5.3-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-go",
       "model": "gpt-5.6-luna",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "grok-4.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "hy3",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "hunyuan",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "hy4-preview",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "kimi-k2.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "kimi-k2.7-code",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-go",
       "model": "kimi-k3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-go",
       "model": "longcat-2.0",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "mimo-v2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-go",
       "model": "mimo-v2.5-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-go",
       "model": "minimax-m2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-go",
       "model": "minimax-m2.7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-go",
       "model": "minimax-m3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "muse-spark-1.2-contributor",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "muse-spark-1.3-contributor",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "qwen3.6-plus",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "qwen3.7-max",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "qwen3.7-plus",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "qwen3.8-flash",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-go",
       "model": "qwen3.8-max",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "big-pickle",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-fable-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-fable-5-1",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "claude-haiku-4-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-opus-4-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-opus-4-6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-opus-4-7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-opus-4-8",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-opus-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-sonnet-4",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-sonnet-4-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-sonnet-4-6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "claude-sonnet-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-adaptive",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "deepseek-v4-flash",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "deepseek-v4-flash-free",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "deepseek-v4-flash-vision-exp",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "deepseek-v4-pro",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gemini-3-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "gemini-3.1-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "gemini-3.5-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "gemini-3.5-flash-lite",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "gemini-3.6-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "gemini-3.7-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "gemini-3.8-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "gemini-level",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "glm-5",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "glm-5.1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "glm-5.2",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "glm-5.3",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "glm-5.3-flash",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "zai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5-codex",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5-nano",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.1",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.1-codex",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.1-codex-max",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.1-codex-mini",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.2",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.2-codex",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.3-codex",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.3-codex-spark",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.4",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.4-mini",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.4-nano",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.4-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.5-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.6-luna",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.6-sol",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-5.6-terra",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "gpt-6-astra",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "grok-4.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "grok-4.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "grok-build-0.1",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "jev-1.13",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "jev-1.13-free",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "kimi-k2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "kimi-k2.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "kimi-k2.7-code",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "kimi-k3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "kimi",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "ling-3.0-flash-fin-free",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "mimo-v2.5-free",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "mimo-v2.6-flash-free",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "minimax-m2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "minimax-m2.7",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": false
     },
     {
       "provider": "opencode-zen",
       "model": "minimax-m3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "minimax",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "muse-spark-1.2",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "muse-spark-1.2-contributor-free",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "muse-spark-1.3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "muse-spark-1.3-contributor-free",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "nemotron-3-ultra-free",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "nemotron-3.5-lightning-free",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "qwen3.5-plus",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "qwen3.6-plus",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "opencode-zen",
       "model": "union-alpha",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "black-forest-labs/FLUX.1-schnell",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "bytedance/seedance-2.0",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "google/imagen-3.0-generate-002",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "google/veo-3.1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "nvidia/llama-nemotron-embed-vl-1b-v2:free",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "openai/dall-e-3",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "openai/gpt-4o-mini-tts",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "openai/gpt-image-1",
       "vision": false,
-      "tools": false
+      "tools": false,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "openai/sora-2-pro",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "openai/text-embedding-3-large",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "openai/text-embedding-3-small",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "openai/text-embedding-ada-002",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "openai/tts-1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "openai/tts-1-hd",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "perplexity/pplx-embed-v1-0.6b",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "perplexity/pplx-embed-v1-4b",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "qwen/qwen3-embedding-8b",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "qwen",
+      "thinking_can_disable": true
     },
     {
       "provider": "openrouter",
       "model": "typesafe/jev-1.13",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "auto",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "dfmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "dmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "efficient",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "gfmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "gmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "kmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "kmodel_latest",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "lite",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "mmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "performance",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "qfmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "qmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "qmodel_38max",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "qmodel_latest",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder",
       "model": "ultimate",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "auto",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "dfmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "dmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "efficient",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "gfmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "gmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "kmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "kmodel_latest",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "lite",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "mmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "performance",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "qfmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "qmodel",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "qmodel_38max",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "qmodel_latest",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "qoder-cn",
       "model": "ultimate",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "tencent",
       "model": "hunyuan-t1-latest",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "hunyuan",
+      "thinking_can_disable": true
     },
     {
       "provider": "tencent",
       "model": "hunyuan-turbos-latest",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "hunyuan",
+      "thinking_can_disable": true
     },
     {
       "provider": "xai",
       "model": "grok-2-image-1212",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true
     },
     {
       "provider": "xai",
       "model": "grok-3",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "xai",
       "model": "grok-4",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "xai",
       "model": "grok-4-fast-reasoning",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "xai",
       "model": "grok-4.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "xai",
       "model": "grok-4.6",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "xai",
       "model": "grok-code-fast-1",
       "vision": false,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "xai",
       "model": "grok-imagine-video",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "openai",
+      "thinking_can_disable": true
     },
     {
       "provider": "xiaomi-tokenplan",
       "model": "mimo-v2-omni",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "xiaomi-tokenplan",
       "model": "mimo-v2-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "xiaomi-tokenplan",
       "model": "mimo-v2-tts",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "xiaomi-tokenplan",
       "model": "mimo-v2.5",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "xiaomi-tokenplan",
       "model": "mimo-v2.5-pro",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "xiaomi-tokenplan",
       "model": "mimo-v2.5-pro-claude",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "claude-budget",
+      "thinking_can_disable": true
     },
     {
       "provider": "xiaomi-tokenplan",
       "model": "mimo-v2.5-tts",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "xiaomi-tokenplan",
       "model": "mimo-v2.5-tts-voiceclone",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     },
     {
       "provider": "xiaomi-tokenplan",
       "model": "mimo-v2.5-tts-voicedesign",
       "vision": true,
-      "tools": true
+      "tools": true,
+      "reasoning": true,
+      "thinking_format": "deepseek",
+      "thinking_can_disable": false
     }
   ]
 }
