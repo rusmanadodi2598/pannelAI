@@ -20,6 +20,7 @@
 	// changing shape.
 	import { onMount } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import { fetchSettings, patchNetworkSettings } from '$lib/api/settings';
 	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
@@ -27,6 +28,8 @@
 		settingsGroupDirty,
 		type NetworkSettingsForm
 	} from '$lib/schemas/settings';
+
+	const SaveIcon = CONTROL_ICONS.save.icon;
 
 	let server = $state<NetworkSettingsForm | null>(null);
 	let draft = $state<NetworkSettingsForm>({
@@ -185,9 +188,12 @@
 			<button
 				type="button"
 				disabled={saving}
-				class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
-				onclick={() => void save()}>Save outbound settings</button
+				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-60"
+				onclick={() => void save()}
 			>
+				<SaveIcon class="size-4" aria-hidden="true" />
+				Save outbound settings
+			</button>
 			{#if dirty}
 				<button type="button" class="min-h-11 underline" onclick={discard}>Discard changes</button>
 				<span class="text-sm font-medium text-[var(--color-text-muted)]">Unsaved changes</span>

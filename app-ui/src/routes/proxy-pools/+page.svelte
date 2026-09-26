@@ -21,8 +21,12 @@
 	import ProxyTable from '$lib/components/ProxyTable.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import { deleteProxy, listProxies, testProxy } from '$lib/api/proxies';
 	import { proxyTestStateLabel, type Proxy } from '$lib/schemas/proxy';
+
+	const AddIcon = CONTROL_ICONS.add.icon;
+	const AddManyIcon = CONTROL_ICONS.addMany.icon;
 
 	let proxies = $state<Proxy[] | null>(null);
 	let loading = $state(true);
@@ -128,16 +132,24 @@
 				     anyone reading the screen rather than looking at it. -->
 				<button
 					type="button"
-					class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)]"
-					onclick={() => (formTarget = 'new')}>Add a proxy</button
+					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 text-sm font-medium text-[var(--color-accent-text)]"
+					onclick={() => (formTarget = 'new')}
 				>
+					<AddIcon class="size-4" aria-hidden="true" />
+					Add a proxy
+				</button>
 			{/if}
-			<button type="button" class="min-h-11 underline" onclick={() => (showBatch = !showBatch)}>
+			<button
+				type="button"
+				class="inline-flex min-h-11 items-center gap-2 underline"
+				onclick={() => (showBatch = !showBatch)}
+			>
+				<AddManyIcon class="size-4" aria-hidden="true" />
 				{showBatch ? 'Hide the paste box' : 'Add several at once'}
 			</button>
-			<button type="button" class="min-h-11 underline" onclick={() => void load()}>
-				Refresh
-			</button>
+			<!-- Refresh lives only in the shared control above (owner directive, 2026-09-26): a second
+			     plain "Refresh" here was the same action written twice, and the shared control renders in
+			     every state this toolbar can appear in. -->
 		</div>
 
 		{#if showBatch}
@@ -151,7 +163,12 @@
 				description="Add one to keep and test an address before you point the outbound setting at it."
 			>
 				{#snippet action()}
-					<button type="button" class="underline" onclick={() => (formTarget = 'new')}>
+					<button
+						type="button"
+						class="inline-flex min-h-11 items-center gap-2 underline"
+						onclick={() => (formTarget = 'new')}
+					>
+						<AddIcon class="size-4" aria-hidden="true" />
 						Add a proxy
 					</button>
 				{/snippet}

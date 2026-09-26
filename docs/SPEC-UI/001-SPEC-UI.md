@@ -624,7 +624,14 @@ absent.
 
 - **Data:** SPEC-API §7.11.
 - **Table:** label, protocol, host, port, username, enabled, last test state and latency. Actions: edit,
-  test, delete.
+  test, delete, each rendered as an icon-only row action whose accessible name carries the row it acts
+  on, with the destructive action in the danger colour (2026-09-26, PORT 007).
+- **Toolbar controls (2026-09-26, PORT 007):** "Add a proxy", "Add several at once", and
+  "Save outbound settings" carry the icon map's glyphs beside their labels, never an emoticon and never
+  bare text (R-04, R-31). The screen carries exactly one refresh control, the shared "Refresh now": the
+  toolbar's plain "Refresh" is removed, because a second control for the same action was a duplicate
+  the operator could not tell apart, and the shared control renders in every state the toolbar can
+  appear in.
 - **Form:** label, protocol (`http`, `https`, `socks5`), host, port, username, password. Password is
   write-only; after save the row shows no password, only that one is set.
 - **Batch add:** multi-line paste of proxy URLs, parsed in the panel, previewed as a table, then submitted

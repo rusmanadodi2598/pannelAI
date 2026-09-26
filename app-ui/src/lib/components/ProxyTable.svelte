@@ -9,16 +9,22 @@
 	// says whether one is stored rather than showing a value the panel does not have.
 	//
 	// A row that was never tested reads "Not tested", which is not the same as a failure and must not
-	// look like one. The three actions carry an accessible name that includes the row, because
-	// "Edit / Test / Delete" repeated down a table is ambiguous to a screen reader even though it is
-	// clear to the eye.
+	// look like one. The three actions are icon-only (owner directive, 2026-09-26): the glyph comes
+	// from the row-action map, and the accessible name carries the row, because "Edit / Test / Delete"
+	// repeated down a table is ambiguous to a screen reader even with tooltips. While a probe is in
+	// flight the row's Test button is disabled, which is how the other tables show the same wait.
 	import {
 		PROXY_PROTOCOL_LABELS,
 		proxyTestStateLabel,
 		type Proxy,
 		type ProxyProtocol
 	} from '$lib/schemas/proxy';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { formatTimestamp } from '$lib/utils/time';
+
+	const EditIcon = ROW_ACTION_ICONS.edit.icon;
+	const TestIcon = ROW_ACTION_ICONS.test.icon;
+	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
 
 	let {
 		proxies,
@@ -39,7 +45,13 @@
 		return PROXY_PROTOCOL_LABELS[protocol as ProxyProtocol] ?? protocol;
 	}
 
-	const actionClass = 'min-h-11 underline';
+	// One target size and one hover wash for every action, so the cell reads as a set. Each variant
+	// carries exactly one text colour: two competing `text-*` utilities resolve by stylesheet order,
+	// and the muted one silently won the destructive button's colour (measured live 2026-09-24).
+	const actionBase =
+		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
+	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;
+	const dangerClass = `${actionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]`;
 </script>
 
 <div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
@@ -88,28 +100,35 @@
 						{/if}
 					</td>
 					<td class="px-3 py-2">
-						<div class="flex flex-wrap gap-x-3">
+						<div class="flex flex-wrap gap-x-1">
 							<button
 								type="button"
 								class={actionClass}
 								aria-label={`Edit ${proxy.label}`}
-								onclick={() => onedit(proxy)}>Edit</button
+								title={`Edit ${proxy.label}`}
+								onclick={() => onedit(proxy)}
 							>
+								<EditIcon class="size-4" aria-hidden="true" />
+							</button>
 							<button
 								type="button"
 								class={actionClass}
 								disabled={testingId === proxy.id}
 								aria-label={`Test ${proxy.label}`}
+								title={`Test ${proxy.label}`}
 								onclick={() => ontest(proxy)}
 							>
-								{testingId === proxy.id ? 'Testing' : 'Test'}
+								<TestIcon class="size-4" aria-hidden="true" />
 							</button>
 							<button
 								type="button"
-								class={actionClass}
+								class={dangerClass}
 								aria-label={`Delete ${proxy.label}`}
-								onclick={() => ondelete(proxy)}>Delete</button
+								title={`Delete ${proxy.label}`}
+								onclick={() => ondelete(proxy)}
 							>
+								<DeleteIcon class="size-4" aria-hidden="true" />
+							</button>
 						</div>
 					</td>
 				</tr>

@@ -34,6 +34,7 @@ import {
 	Image,
 	KeyRound,
 	Layers,
+	ListPlus,
 	MessageSquareCode,
 	Mic,
 	Network,
@@ -203,6 +204,11 @@ export const CONTROL_ICONS = {
 		icon: Plus,
 		reason: 'Adding starts one more of the kind the control sits beside.'
 	},
+	addMany: {
+		icon: ListPlus,
+		reason:
+			'Adding several at once stores many rows from one paste, which the list-plus glyph marks.'
+	},
 	addKey: {
 		icon: KeyRound,
 		reason: 'Adding a key stores one more credential the gateway can spend for this provider.'
@@ -241,6 +247,10 @@ export const CONTROL_ICONS = {
 		icon: Play,
 		reason:
 			'Resuming restarts the auto-refresh timer the operator paused, the same control read the other way.'
+	},
+	save: {
+		icon: Check,
+		reason: 'Saving commits the form draft into the stored document the gateway serves.'
 	}
 } as const;
 
