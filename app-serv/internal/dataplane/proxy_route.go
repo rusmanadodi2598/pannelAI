@@ -7,7 +7,10 @@
 //
 //	connect-stage failover and per-candidate transports.
 //
-// @uses      internal/domain, context, errors, net, net/http, net/url, sync.
+// @uses      internal/domain, context, errors, fmt, net, net/http, net/url,
+//
+//	sync.
+//
 // @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1/D7-D9: the pool rows are the
 //
 //	route when proxying is on, so the walk is what makes them serve
@@ -27,6 +30,7 @@ package dataplane
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -141,6 +145,7 @@ func (d *ProxyDialer) clientFor(candidate *url.URL) (*http.Client, error) {
 	}
 	clone := base.Clone()
 	clone.Proxy = http.ProxyURL(candidate)
+	clone.OnProxyConnectResponse = rejectConnectResponse
 	client := &http.Client{Transport: clone}
 	if actual, loaded := d.transports.LoadOrStore(key, client); loaded {
 		if existing, ok := actual.(*http.Client); ok {
@@ -150,13 +155,41 @@ func (d *ProxyDialer) clientFor(candidate *url.URL) (*http.Client, error) {
 	return client, nil
 }
 
+// proxyConnectRejected marks a candidate whose CONNECT the proxy answered with
+// a non-200 status (docs/PORT/008-PORT-PROXY-ENGINE.md D7): the tunnel never
+// opened, so the request was not delivered and the walk may spend the next
+// candidate. Go reports that answer as a plain error, which the classifier
+// below would otherwise read as the upstream's failure.
+type proxyConnectRejected struct {
+	status int
+}
+
+func (e *proxyConnectRejected) Error() string {
+	return fmt.Sprintf("the proxy refused the CONNECT with status %d", e.status)
+}
+
+// rejectConnectResponse is the transport hook every candidate's clone carries:
+// a proxy that does not answer 200 to the CONNECT is recorded as the typed
+// rejection the walk fails over on.
+func rejectConnectResponse(_ context.Context, _ *url.URL, _ *http.Request, response *http.Response) error {
+	if response.StatusCode != http.StatusOK {
+		return &proxyConnectRejected{status: response.StatusCode}
+	}
+	return nil
+}
+
 // isProxyConnectFailure classifies the failures the walk may fail over on: a
+// proxy that refused the CONNECT (the typed rejection the hook records), a
 // dial error through the proxy (the OpError the transport wraps in url.Error)
 // or a timeout waiting for it. A TLS failure the destination answered for and
 // every mid-response error are the upstream's, not the pool's.
 func isProxyConnectFailure(err error) bool {
 	if err == nil {
 		return false
+	}
+	var rejected *proxyConnectRejected
+	if errors.As(err, &rejected) {
+		return true
 	}
 	var opErr *net.OpError
 	if errors.As(err, &opErr) {
