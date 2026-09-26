@@ -51,11 +51,15 @@ type ProviderStrategyResponse struct {
 	StickyLimit      *int   `json:"sticky_limit,omitempty"`
 }
 
-// NetworkSettingsResponse is the §7.14 network group.
+// NetworkSettingsResponse is the §7.14 network group. The strategy answers the
+// effective value, never an empty string, on the routing group's precedent: a
+// read of a document that predates the key still names fallback, so the panel
+// renders what the engine will do rather than a blank it must guess about.
 type NetworkSettingsResponse struct {
-	OutboundProxyEnabled bool   `json:"outbound_proxy_enabled"`
-	OutboundProxyURL     string `json:"outbound_proxy_url"`
-	OutboundNoProxy      string `json:"outbound_no_proxy"`
+	OutboundProxyEnabled  bool   `json:"outbound_proxy_enabled"`
+	OutboundProxyURL      string `json:"outbound_proxy_url"`
+	OutboundNoProxy       string `json:"outbound_no_proxy"`
+	OutboundProxyStrategy string `json:"outbound_proxy_strategy"`
 }
 
 // TokenSaverSettingsResponse carries the §7.9 groups.

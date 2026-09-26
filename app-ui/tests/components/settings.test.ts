@@ -186,7 +186,7 @@ describe('SettingsPage', () => {
 
 		const link = screen.getByRole('link', { name: 'Open Proxy Pools' });
 		expect(link.getAttribute('href')).toBe('/proxy-pools');
-		expect(screen.queryByLabelText('Outbound proxy URL')).toBeNull();
+		expect(screen.queryByLabelText('Last-resort proxy URL')).toBeNull();
 
 		// Nothing is written from this tab any more, so a click here must not produce a PATCH.
 		await fireEvent.click(link);

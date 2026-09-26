@@ -125,7 +125,7 @@ func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Ca
 		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "upstream credential could not be applied", err)
 	}
 
-	response, err := t.client.Do(request)
+	response, err := t.dialer.Do(ctx, request)
 	if err != nil {
 		cancel()
 		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {

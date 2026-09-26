@@ -126,15 +126,17 @@ const CASES: FormCase[] = [
 			render(ProxyOutboundSettings);
 			// The URL field only exists once the stored document has landed, and until it has, the card
 			// has nothing to be dirty against.
-			await screen.findByLabelText('Outbound proxy URL');
+			await screen.findByLabelText('Last-resort proxy URL');
 		},
 		edit: async () => {
-			await fireEvent.input(screen.getByLabelText('Outbound proxy URL'), {
+			await fireEvent.input(screen.getByLabelText('Last-resort proxy URL'), {
 				target: { value: 'http://proxy.internal:8080' }
 			});
 		},
 		undo: async () => {
-			await fireEvent.input(screen.getByLabelText('Outbound proxy URL'), { target: { value: '' } });
+			await fireEvent.input(screen.getByLabelText('Last-resort proxy URL'), {
+				target: { value: '' }
+			});
 		}
 	}
 ];

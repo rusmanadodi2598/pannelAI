@@ -80,7 +80,12 @@ type dataPlaneInputs struct {
 	// Client is the guarded upstream client from egress_wiring.go. Chat, media,
 	// and embeddings all draw on it, so every upstream dial goes through the one
 	// guard and the one connection pool (OWASP A01, AGENTS.md §1.7).
-	Client   *http.Client
+	Client *http.Client
+	// Routes plans the proxy pool's attempts per destination (PORT 008). The
+	// composition root builds it beside the proxy handler so the plan draws on
+	// the same rows the operator edits; a nil value keeps the shared client's
+	// own routing, which is what the tests and any pre-pool wiring rely on.
+	Routes   dataplane.ProxyRoutePlanner
 	Redis    redis.UniversalClient
 	Settings *service.SettingsService
 	Usage    *service.UsageService
@@ -156,7 +161,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		return dataPlane{}, err
 	}
 
-	transport, err := dataplane.NewTransport(dataplane.TransportDeps{Connectors: in.Connectors, Client: in.Client})
+	transport, err := dataplane.NewTransport(dataplane.TransportDeps{Connectors: in.Connectors, Client: in.Client, Routes: in.Routes})
 	if err != nil {
 		return dataPlane{}, err
 	}

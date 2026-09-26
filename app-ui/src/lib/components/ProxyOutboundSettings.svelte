@@ -1,11 +1,13 @@
 <script lang="ts">
 	// The global outbound proxy settings (docs/SPEC-UI/001-SPEC-UI.md §6.9, §6.13).
 	//
-	// These three keys decide the path every upstream call takes, and they are the only proxy setting
-	// the gateway routes with: the pool above holds tested candidates, and a candidate does not become
-	// the outbound path until its address is set here. That is stated on the card rather than left for
-	// an operator to work out, because adding a row to a pool and finding traffic still going direct
-	// is the failure this screen would otherwise cause.
+	// These keys decide the path every upstream call takes. With the pool engine
+	// (docs/PORT/008-PORT-PROXY-ENGINE.md D1/D10) the pool above IS the route while proxying is on:
+	// each call walks its rows in the strategy's order and the URL below is the last-resort attempt
+	// after them, tried only when every pool candidate failed to connect. That ordering is stated on
+	// the card rather than left for an operator to work out, because a URL that silently outranks a
+	// tested pool, or a pool an operator adds rows to without learning they now carry traffic, is
+	// the confusion this screen would otherwise cause.
 	//
 	// §6.9 also asks for the deferred per-endpoint binding to be named. SPEC-API §7.11 assigns one
 	// proxy globally in v1, so no control for it ships and the card says so instead of leaving a
@@ -24,6 +26,8 @@
 	import { fetchSettings, patchNetworkSettings } from '$lib/api/settings';
 	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
+		PROXY_STRATEGIES,
+		PROXY_STRATEGY_LABELS,
 		schemaNetworkSettingsForm,
 		settingsGroupDirty,
 		type NetworkSettingsForm
@@ -35,7 +39,8 @@
 	let draft = $state<NetworkSettingsForm>({
 		outbound_proxy_enabled: false,
 		outbound_proxy_url: '',
-		outbound_no_proxy: ''
+		outbound_no_proxy: '',
+		outbound_proxy_strategy: 'fallback'
 	});
 	let loading = $state(true);
 	let error = $state<string | null>(null);
@@ -50,11 +55,11 @@
 	// has been read there is nothing to be dirty against, so the loading window is not a draft.
 	$effect(() => registerDirtyForm(() => server !== null && dirty));
 
-	// A stored document with proxying on and no URL. The API accepts it and the egress path then dials
-	// direct, so the panel cannot prevent a state it did not write; it states the state instead, with
-	// both ways out (R-27). Derived from what was read, not from the draft, so flipping the switch does
-	// not claim the stored document is already broken.
-	const brokenStoredState = $derived(
+	// A stored document with proxying on and no URL. That is a valid pool-only deployment (D1), so it
+	// is stated as what will happen rather than alarmed over: the pool routes, and an empty pool
+	// dials direct. Derived from what was read, not from the draft, so flipping the switch does not
+	// claim the stored document is already in this state.
+	const poolOnlyStoredState = $derived(
 		server !== null && server.outbound_proxy_enabled && server.outbound_proxy_url === ''
 	);
 
@@ -111,11 +116,10 @@
 <div class="flex flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4">
 	<h2 class="text-sm font-semibold">Outbound proxy</h2>
 	<p class="text-sm text-[var(--color-text-muted)]">
-		Global, and the setting the gateway actually routes with. Every upstream call the gateway makes
-		goes through this URL, whichever endpoint it is for, unless its host is in the bypass list
-		below. A candidate in the pool above is a stored, tested address; it does not carry traffic
-		until you put it here. One proxy applies to everything in v1, so there is no per-endpoint
-		control.
+		Global, and the setting the gateway actually routes with. While proxying is on, every upstream
+		call walks the pool above in the strategy's order, unless its host is in the bypass list below.
+		The URL field is the last resort: it is tried after the pool has failed to connect, never before
+		a pool candidate. One proxy applies to everything in v1, so there is no per-endpoint control.
 	</p>
 
 	{#if loading}
@@ -135,26 +139,46 @@
 			<p role="alert" class="text-sm text-[var(--color-danger)]">{error}</p>
 		{/if}
 
-		{#if brokenStoredState}
-			<p role="alert" class="text-sm text-[var(--color-danger)]">
-				Proxying is on with no URL, so upstream calls go direct rather than through a proxy. Set a
-				URL below, or turn the switch off.
+		{#if poolOnlyStoredState}
+			<p role="status" class="text-sm text-[var(--color-text-muted)]">
+				Proxying is on with no URL, so the pool above is the whole route. If the pool has no rows
+				yet, upstream calls go direct until you add one.
 			</p>
 		{/if}
 
 		<label class="flex items-start gap-3 text-sm">
 			<input type="checkbox" class="mt-1 size-4" bind:checked={draft.outbound_proxy_enabled} />
 			<span>
-				Send upstream calls through a proxy
+				Route upstream calls through the proxy pool
 				<span class="block text-xs text-[var(--color-text-muted)]">
-					When this is on, a URL is required. The panel will not save the switch on its own, because
-					calls would then go direct while the setting reads as proxied.
+					While this is on, the pool's rows carry traffic in the strategy's order. Turning it off
+					sends every call direct and leaves the pool stored but unused.
 				</span>
 			</span>
 		</label>
 
 		<div class="flex flex-col gap-1 text-sm">
-			<label for="outbound-proxy-url">Outbound proxy URL</label>
+			<label for="outbound-proxy-strategy">Pool strategy</label>
+			<select
+				id="outbound-proxy-strategy"
+				bind:value={draft.outbound_proxy_strategy}
+				aria-describedby="outbound-proxy-strategy-help"
+				class={fieldClass}
+			>
+				{#each PROXY_STRATEGIES as strategy (strategy)}
+					<option value={strategy}>{PROXY_STRATEGY_LABELS[strategy]}</option>
+				{/each}
+			</select>
+			<span id="outbound-proxy-strategy-help" class="text-xs text-[var(--color-text-muted)]">
+				Fallback tries the rows in the order you saved them and sits a row out for two minutes after
+				its connection fails. Round robin starts each request at the next row in line. Either way, a
+				row whose connection fails hands the call to the next candidate, and the URL below is tried
+				after the pool.
+			</span>
+		</div>
+
+		<div class="flex flex-col gap-1 text-sm">
+			<label for="outbound-proxy-url">Last-resort proxy URL</label>
 			<input
 				id="outbound-proxy-url"
 				type="text"
@@ -164,7 +188,8 @@
 				class={fieldClass}
 			/>
 			<span id="outbound-proxy-url-help" class="text-xs text-[var(--color-text-muted)]">
-				An absolute http or https URL, credentials included if the proxy needs them.
+				An absolute http or https URL, credentials included if the proxy needs them. Optional: with
+				no URL, the pool alone carries traffic.
 			</span>
 		</div>
 

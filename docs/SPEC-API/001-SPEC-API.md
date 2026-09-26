@@ -463,13 +463,27 @@ Proxy assignment to upstream endpoints rides on `settings.network.outbound_proxy
 per-endpoint proxy binding is deferred (not in the reference either: reference assigns pools globally
 with per-provider strategy overrides in `settings.providerStrategies`).
 
+**The pool rows are the route (PORT 008, 2026-09-26).** While `outbound_proxy_enabled` is on, an
+outbound call walks the pool's rows in the order `outbound_proxy_strategy` picks: `fallback` (the
+default; the stored order, which is the operator's own) or `round_robin` (each request starts at the
+next row in line, with the cursor in Redis so replicas share it), and `outbound_proxy_url` is the
+**last-resort attempt after the pool**, never before a row. Only a candidate whose connection fails
+hands the call to the next one: an upstream that answered, or a caller that cancelled, ends the walk,
+because re-sending a request the wire may already have delivered is not a failover. The walk is
+bounded at three attempts per request; a candidate whose connect stage failed is parked for two
+minutes and skipped while any unparked candidate remains (a fully parked pool still serves, because a
+cooldown is a hint about the past); a row whose stored test is a failure is not a candidate until it
+is re-tested; and an empty pool with no URL dials direct exactly as before. The strategy is a closed
+set (`fallback`, `round_robin`), and an empty stored value reads as `fallback`, so a document that
+predates the key keeps working.
+
 The settings are read per request, so enabling a proxy takes effect on the next outbound call rather than
-the next boot. `outbound_proxy_url` is the proxy for every outbound call except the hosts named in
-`outbound_no_proxy`: a comma-separated list of hosts or domain suffixes, with `*` exempting everything.
-A proxied call still has its destination validated against the egress allowlist (§9), because the dialer's
-guard sees the proxy's address rather than the destination's; a settings read or a proxy URL that fails
-refuses the call rather than dialing direct, since quietly bypassing a proxy the operator enabled is the
-failure this setting exists to prevent.
+the next boot. `outbound_no_proxy` exempts hosts from both the pool and the static URL: a comma-separated
+list of hosts or domain suffixes, with `*` exempting everything. A proxied call still has its destination
+validated against the egress allowlist (§9), because the dialer's guard sees the proxy's address rather
+than the destination's; a settings read or a proxy URL that fails refuses the call rather than dialing
+direct, since quietly bypassing a proxy the operator enabled is the failure this setting exists to
+prevent.
 
 ### 7.12 Usage & Quota Tracker
 
@@ -591,7 +605,7 @@ v1 settings surface (subset of reference `DEFAULT_SETTINGS`):
 {
   "security": { "require_login": true, "require_api_key": true },
   "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3, "fallback_strategy": "fill-first", "provider_strategies": {} },
-  "network":  { "outbound_proxy_enabled": false, "outbound_proxy_url": "", "outbound_no_proxy": "" },
+  "network":  { "outbound_proxy_enabled": false, "outbound_proxy_url": "", "outbound_no_proxy": "", "outbound_proxy_strategy": "fallback" },
   "token_saver": { "see §7.9" },
   "logging":  { "request_capture_enabled": false, "retention_days": 7, "capture_body_max_bytes": 65536, "observability_max_records": 1000 }
 }
@@ -605,6 +619,20 @@ the reference's own `providerStrategies` shape: `{"<provider_id>": {"fallback_st
 that provider (§7.5), not only combo members; the combo's own rotation stays `combo_strategy` /
 `combo_sticky_limit`. `provider_strategies` is written whole, like the reference's PATCH, so a
 read-modify-write is what changes one provider.
+
+An emptied URL clears the stored value: `network.outbound_proxy_url: ""` and
+`token_saver.headroom.url: ""` both store the clear, because the panel sends `""` when the operator
+empties the field and the value is only writable through this PATCH. A malformed URL is still
+refused, and enabling headroom with no destination is still refused (`url is required when
+headroom is enabled`). Enabling the outbound proxy with no URL is accepted: since PORT 008 the pool
+rows are the route and the URL is the last resort, so a pool-only deployment stores `""` and the
+panel states the pool (or, with an empty pool, direct) rather than refusing the save.
+
+`network.outbound_proxy_strategy` (`fallback` | `round_robin`, default `fallback`) picks the pool
+walk's order (§7.11). The read answers the effective value, never a blank: a document stored before
+the key reads as `fallback`. The write is the closed set (the reference's `random` is deliberately
+not ported), and a non-nil empty string is refused at the boundary, unlike the URL fields, because
+the strategy has no empty member: the reset lever is sending `fallback`, the default's own name.
 
 ### 7.15 Data Plane (OpenAI/Anthropic/Gemini-compatible, gateway-key auth)
 
@@ -842,3 +870,4 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 
 *Changelog 2026-09-24: §7.15 adds `POST /api/v1/systemone`, the System One (Jev) decision route, and §7.15's data-plane table records it (draft `029-OPENCODE-PROVIDER-PARITY.md` F6). The reference serves a decision model as `kind: "systemone"` on a native endpoint rather than as a chat model (`registry/opencode.js:31`, `systemoneConfig` on the entry, `src/sse/handlers/systemone.js`, `open-sse/handlers/systemoneCore.js`), because the payload is the provider's own vocabulary: `state` plus a `questions` map, forwarded untouched, with no chat translation layer. Measured before the change: this port had no such route, and `opencode/jev-1.13-free` resolved onto the chat wire and was served as a chat completion, so a chat body was sent to an endpoint that answers a decision payload. The route is gateway-key authenticated like every §7.15 route and follows the media plane's shape rather than the chat plane's: one call, no combo chain, one usage row and one log row under the router's request id. Its payload is validated at the boundary (`state` present, `questions` a non-empty object, the model naming a provider that declares a `systemone` endpoint) and forwarded verbatim, because the reference forwards it verbatim and a gateway that reshaped it would answer a different question than the one it was asked. The identity headers the reference sends with it (`x-opencode-client`, `User-Agent`) travel with the entry's own block, and the session header the Zen lanes require is written per call, which is what the reference's `generateSessionId()` does there. A model declaring `kind: systemone` is no longer routable through the chat plane: the resolver refuses it by name with `MODEL_NOT_FOUND` and the kind in the message, so the wrong-body failure cannot come back. What is deliberately not ported: the reference's credential-fallback loop for this route, because the free lane needs no credential and a keyed decision model is served by the same selector the media plane uses, which already walks the provider's accounts.*
 
+_Changelog 2026-09-26: §7.11 and §7.14 record the proxy pool engine (docs/PORT/008-PORT-PROXY-ENGINE.md), which makes the pool rows the route while proxying is on and demotes `outbound_proxy_url` to the last-resort attempt after them. Before this change the pool was a stored, tested candidate list and only the static URL carried traffic, which made §7.11's own earlier sentence about the pool true for the first time. The strategy is a closed set (`fallback` | `round_robin`, empty reads as `fallback`) written through the §7.14 PATCH and answered as the effective value; round-robin's cursor lives in Redis so replicas share it; a connect-stage failure fails over (bounded at three attempts) and parks the candidate for two minutes; a non-connect failure or a cancelled caller ends the walk, because a request the wire may already have delivered must not be re-sent. The security posture is unchanged and re-stated where the walk owns it: a proxied request never dials its destination, so the planner validates the destination against the egress allowlist once per planned request, and a malformed stored URL refuses the plan rather than being dropped, exactly as the static route refuses it._

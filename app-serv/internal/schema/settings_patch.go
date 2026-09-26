@@ -37,9 +37,10 @@ type SecuritySettingsPatch struct {
 
 // NetworkSettingsPatch updates the network group.
 type NetworkSettingsPatch struct {
-	OutboundProxyEnabled *bool   `json:"outbound_proxy_enabled,omitempty"`
-	OutboundProxyURL     *string `json:"outbound_proxy_url,omitempty" validate:"omitempty,url,max=2048"`
-	OutboundNoProxy      *string `json:"outbound_no_proxy,omitempty" validate:"omitempty,max=2048"`
+	OutboundProxyEnabled  *bool   `json:"outbound_proxy_enabled,omitempty"`
+	OutboundProxyURL      *string `json:"outbound_proxy_url,omitempty" validate:"omitempty,url,max=2048"`
+	OutboundNoProxy       *string `json:"outbound_no_proxy,omitempty" validate:"omitempty,max=2048"`
+	OutboundProxyStrategy *string `json:"outbound_proxy_strategy,omitempty" validate:"omitempty,oneof=fallback round_robin"`
 }
 
 // TokenSaverSettingsPatch updates the §7.9 groups. The caveman key is absent by
@@ -139,9 +140,10 @@ func ToSettingsPatch(req PatchSettingsRequest) domain.SettingsPatch {
 	}
 	if req.Network != nil {
 		patch.Network = &domain.NetworkSettingsPatch{
-			OutboundProxyEnabled: req.Network.OutboundProxyEnabled,
-			OutboundProxyURL:     req.Network.OutboundProxyURL,
-			OutboundNoProxy:      req.Network.OutboundNoProxy,
+			OutboundProxyEnabled:  req.Network.OutboundProxyEnabled,
+			OutboundProxyURL:      req.Network.OutboundProxyURL,
+			OutboundNoProxy:       req.Network.OutboundNoProxy,
+			OutboundProxyStrategy: req.Network.OutboundProxyStrategy,
 		}
 	}
 	if req.TokenSaver != nil {
@@ -177,9 +179,10 @@ func SettingsResponseFrom(s domain.Settings) SettingsResponse {
 			ProviderStrategies: strategiesOrEmpty(s.Routing.ProviderStrategies),
 		},
 		Network: NetworkSettingsResponse{
-			OutboundProxyEnabled: s.Network.OutboundProxyEnabled,
-			OutboundProxyURL:     s.Network.OutboundProxyURL,
-			OutboundNoProxy:      s.Network.OutboundNoProxy,
+			OutboundProxyEnabled:  s.Network.OutboundProxyEnabled,
+			OutboundProxyURL:      s.Network.OutboundProxyURL,
+			OutboundNoProxy:       s.Network.OutboundNoProxy,
+			OutboundProxyStrategy: proxyStrategyOrDefault(s.Network.OutboundProxyStrategy),
 		},
 		TokenSaver: TokenSaverSettingsResponse{
 			RTK:      TokenSaverRTKResponse{Enabled: s.TokenSaver.RTK.Enabled, Filters: filtersOrEmpty(s.TokenSaver.RTK.Filters)},
@@ -193,6 +196,16 @@ func SettingsResponseFrom(s domain.Settings) SettingsResponse {
 			ObservabilityMaxRecords: s.Logging.ObservabilityMaxRecords,
 		},
 	}
+}
+
+// proxyStrategyOrDefault names the strategy the engine will run, so a read of
+// a document stored before the key existed answers fallback (D2) instead of a
+// blank the panel would have to interpret.
+func proxyStrategyOrDefault(stored string) string {
+	if stored == "" {
+		return domain.DefaultProxyStrategy
+	}
+	return stored
 }
 
 // togglePtr lowers one saver toggle group.

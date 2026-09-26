@@ -14,7 +14,12 @@ export function settingsDocument(overrides: Record<string, unknown> = {}): Recor
 			fallback_strategy: 'fill-first',
 			provider_strategies: {}
 		},
-		network: { outbound_proxy_enabled: false, outbound_proxy_url: '', outbound_no_proxy: '' },
+		network: {
+			outbound_proxy_enabled: false,
+			outbound_proxy_url: '',
+			outbound_no_proxy: '',
+			outbound_proxy_strategy: 'fallback'
+		},
 		logging: {
 			request_capture_enabled: false,
 			retention_days: 7,

@@ -117,7 +117,7 @@ func TestSystemOneLive_DecisionModelAnswersFromTheRealUpstream(t *testing.T) {
 	svc, err := NewSystemOneService(SystemOneServiceDeps{
 		Resolver: liveResolver{index: index},
 		Router:   &liveKeylessRouter{endpoint: endpoint, credential: provider.NoCredential("ep_free")},
-		Caller:   dataplane.NewMediaTransport(nil),
+		Caller:   dataplane.NewMediaTransport(nil, nil),
 	})
 	if err != nil {
 		t.Fatalf("NewSystemOneService() error = %v", err)

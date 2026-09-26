@@ -30,10 +30,11 @@ import (
 // one shared media caller and the engine's own resolver and selector.
 func buildMediaPlanes(in dataPlaneInputs, engine *dataplane.Engine, quotas *service.QuotaCounter) (*service.EmbeddingsService, *service.MediaCallService, *service.SystemOneService, *dataplane.MediaTransport, error) {
 	// The package's own HTTP implementation over the guarded client, which
-	// already carries the §1.7 pool limits and the §1.6 deadlines. One instance
-	// serves every media call, so the routes share a connection pool rather than
-	// opening one each.
-	caller := dataplane.NewMediaTransport(in.Client)
+	// already carries the §1.7 pool limits and the §1.6 deadlines, walking the
+	// proxy pool's plan the same way the chat transport does (PORT 008). One
+	// instance serves every media call, so the routes share a connection pool
+	// rather than opening one each.
+	caller := dataplane.NewMediaTransport(in.Client, in.Routes)
 
 	embeddings, err := service.NewEmbeddingsService(service.EmbeddingsServiceDeps{
 		// The embeddings use case asks the engine only for resolution and

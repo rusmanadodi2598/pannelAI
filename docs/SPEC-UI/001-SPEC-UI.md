@@ -639,10 +639,15 @@ absent.
 - **Test:** per row and for a candidate before saving (`POST /api/v1/proxies/test`). The result shows
   state, latency, and checked time.
 - **Outbound assignment:** the global settings from SPEC-API §7.14 (`network.outbound_proxy_enabled`,
-  `outbound_proxy_url`, `outbound_no_proxy`) are edited on this screen, and they are marked as global.
-  Per-endpoint binding is deferred by SPEC-API §7.11 and the screen says so, so nobody hunts for a
-  control that does not exist.
-- **Empty state:** "No proxies yet. Add one to route upstream calls through it."
+  `outbound_proxy_url`, `outbound_no_proxy`, `outbound_proxy_strategy`) are edited on this screen, and
+  they are marked as global. While proxying is on, the pool's rows are the route (SPEC-API §7.11,
+  PORT 008): the card carries the strategy picker and states that the URL field is the last-resort
+  attempt after the pool, never before a row. Per-endpoint binding is deferred by SPEC-API §7.11 and
+  the screen says so, so nobody hunts for a control that does not exist.
+- **Empty state:** "No proxies yet. Add one to route upstream calls through it once proxying is on."
+  (Amended 2026-09-26: the sentence was §6.9's original "Add one to route upstream calls through it",
+  qualified because a row carries traffic only while the outbound switch is on. Q15's divergence is
+  closed by the pool engine, which made the original promise true.)
 
 ### 6.10 `/skills`
 
@@ -728,7 +733,7 @@ Tabs, each mapping to one group of keys in SPEC-API §7.14.
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Security    | `security.require_login`, `security.require_api_key`, change password, logout all sessions if the API exposes it                   | Turning `require_login` off shows a warning that the panel becomes open on the network. Change password asks for current and new password.             |
 | Routing     | `routing.combo_strategy`, `routing.combo_sticky_limit`, `routing.sticky_limit`, `routing.fallback_strategy`                        | Defaults for new combos and for the credential walk; per-combo values win, and a provider overrides the rotation on its own screen. The tab says both. |
-| Network     | `network.outbound_proxy_enabled`, `network.outbound_proxy_url`, `network.outbound_no_proxy`                                        | Shared surface with `/proxy-pools`; both read the same endpoint, and the tab links there instead of duplicating the form.                              |
+| Network     | `network.outbound_proxy_enabled`, `network.outbound_proxy_url`, `network.outbound_no_proxy`, `network.outbound_proxy_strategy`     | Shared surface with `/proxy-pools`; both read the same endpoint, and the tab links there instead of duplicating the form.                              |
 | Logging     | `logging.request_capture_enabled`, `logging.retention_days`, `logging.capture_body_max_bytes`, `logging.observability_max_records` | Capture sets a privacy cost, so the toggle carries the warning that request bodies will be stored.                                                     |
 | Token Saver | Read-only summary plus a link to `/token-saver`                                                                                    | One editor for one config. A second editor is how configs drift.                                                                                       |
 
@@ -1550,11 +1555,12 @@ one stale row could refuse is no longer a write the panel offers (Q21). The gate
 an alias written through the API still resolves.
 
 Five facts were settled by reading the implementation rather than the spec, and all five are recorded in
-§14 instead of worked around. The pool routes nothing: the egress path reads
-`settings.network.outbound_proxy_url` and nothing else, so §6.9's empty-state sentence promised
-behaviour the API does not have, and the screen states the truth (Q15). An enabled proxy with an empty
-URL dials direct, which is the bypass §7.11 says the setting exists to prevent, so the panel refuses to
-write that combination and names it when a stored document already holds it (Q16). A kind that declares
+§14 instead of worked around. Two of the five are now closed by the pool engine (2026-09-26, PORT 008):
+the pool routes (the egress path used to read `settings.network.outbound_proxy_url` and nothing else, so
+§6.9's empty-state sentence promised behaviour the API did not have; the rows are now the route while
+proxying is on, and Q15 records the closure), and an enabled proxy with an empty URL is a pool-only
+deployment rather than a bypass (the panel's cross-field refusal is gone with it, and Q16 records the
+resolution). A kind that declares
 no models cannot have a default model set from the panel, because a selector over an empty set is a dead
 control and §6.8 asks for no other shape (Q17). Clearing a `base_url` override is a save the panel cannot
 check, because the registry's own value is not on the wire while an override exists (Q18).
@@ -1782,30 +1788,31 @@ half carry.
     in the panel, so tightening it is a change across unrelated screens rather than a fix in one. Decide
     whether the primitive gains a real RFC3339 pattern, with every schema re-checked in one pass, or §7.2
     accepts `Date.parse` as the panel's reading of "RFC3339 only".
-15. **The pool's empty state promises routing the API does not do.** §6.9 gives the empty state as "No
-    proxies yet. Add one to route upstream calls through it.", while the same section's outbound bullet
-    says the global `network.outbound_proxy_*` settings are what this screen edits. SPEC-API §7.11
-    settles which of the two carries traffic: the outbound URL does, per-endpoint binding is deferred, and
-    a pool row is a stored candidate. Checked against the implementation rather than inferred: the egress
-    path reads `settings.network.outbound_proxy_url` and nothing else
-    (`app-serv/cmd/app-serv/egress_wiring.go`), and the pool repository is read by the proxy CRUD service
-    alone. The screen therefore ships "No proxies yet" with "Add one to keep and test an address before
-    you point the outbound setting at it.", states the same fact on the outbound card, and says in the
-    page header that the pool routes nothing. Decide whether §6.9's sentence is corrected, or whether a
-    later phase makes a pool row routable and the original sentence becomes true.
+15. **The pool's empty state promises routing the API does not do.** **CLOSED 2026-09-26 (PORT 008).**
+    §6.9 gives the empty state as "No proxies yet. Add one to route upstream calls through it.", while
+    the same section's outbound bullet said the global `network.outbound_proxy_*` settings are what this
+    screen edits. SPEC-API §7.11 settled which of the two carried traffic at the time: the outbound URL
+    did, per-endpoint binding is deferred, and a pool row was a stored candidate. Checked against the
+    implementation rather than inferred: the egress path read `settings.network.outbound_proxy_url` and
+    nothing else (`app-serv/cmd/app-serv/egress_wiring.go`), and the pool repository was read by the
+    proxy CRUD service alone. The pool engine made the original sentence true: the rows are the route
+    while proxying is on, the URL is the last-resort attempt after them, and the screen ships "No
+    proxies yet. Add one to route upstream calls through it once proxying is on." That is §6.9's sentence,
+    qualified by the switch that gates it.
 16. **An enabled proxy with no URL dials direct, which is the bypass §7.11 says the setting exists to
-    prevent.** SPEC-API §7.11 states the intent plainly: "a settings read or a proxy URL that fails
-    refuses the call rather than dialing direct, since quietly bypassing a proxy the operator enabled is
-    the failure this setting exists to prevent." The implementation covers the failing read and the
-    unparseable URL, and not the empty one: `proxyRoute` returns `nil, nil` when
-    `outbound_proxy_enabled` is true and `outbound_proxy_url` is empty
-    (`app-serv/cmd/app-serv/egress_wiring.go`), so the call goes direct while the setting reads as
-    proxied. Nothing in `domain.Settings.Validate()` or `NetworkSettingsPatch` rejects the combination
-    either, so the API stores it. The panel refuses to write it (a cross-field rule in
-    `src/lib/schemas/settings.ts`, with a message naming both ways out) and states it when a document
-    already holds it, because the panel cannot prevent a state it did not write. Decide whether
-    `proxyRoute` refuses an empty URL when proxying is enabled, or §7.11 records the empty value as
-    "off" and the panel's rule is dropped.
+    prevent.** **CLOSED 2026-09-26 (PORT 008).** SPEC-API §7.11 states the intent plainly: "a settings
+    read or a proxy URL that fails refuses the call rather than dialing direct, since quietly bypassing
+    a proxy the operator enabled is the failure this setting exists to prevent." The implementation
+    covered the failing read and the unparseable URL, and not the empty one: `proxyRoute` returned
+    `nil, nil` when `outbound_proxy_enabled` was true and `outbound_proxy_url` was empty
+    (`app-serv/cmd/app-serv/egress_wiring.go`), so the call went direct while the setting read as
+    proxied. Nothing in `domain.Settings.Validate()` or `NetworkSettingsPatch` rejected the combination
+    either, so the API stored it. The engine resolved the question by giving the state a meaning instead
+    of a refusal: with pool rows present the pool carries the call, and only an empty pool with an empty
+    URL dials direct, the empty-URL bypass preserved as the documented floor (SPEC-API §7.11, D1). The
+    panel's cross-field refusal is removed with it, the stored state is stated as what will happen, and
+    the malformed-URL refusal the question was really about is preserved and re-pinned on the plan path
+    (a malformed stored URL refuses the plan rather than being dropped).
 17. **A kind that declares no models cannot have its default model set from the panel.** §6.8 asks for a
     default model selector. `validateMediaModel` returns early when the kind declares no models
     (`app-serv/internal/service/media_provider_resolve.go`), so the API accepts any string for such a

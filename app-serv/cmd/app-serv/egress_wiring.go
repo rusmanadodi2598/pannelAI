@@ -121,7 +121,7 @@ func proxyRoute(network domain.NetworkSettings, host string) (*url.URL, error) {
 		return nil, nil
 	}
 	raw := strings.TrimSpace(network.OutboundProxyURL)
-	if raw == "" || exemptFromProxy(network.OutboundNoProxy, host) {
+	if raw == "" || domain.ProxyExempt(network.OutboundNoProxy, host) {
 		return nil, nil
 	}
 	parsed, err := url.Parse(raw)
@@ -129,21 +129,4 @@ func proxyRoute(network domain.NetworkSettings, host string) (*url.URL, error) {
 		return nil, fmt.Errorf("egress wiring: outbound_proxy_url %q is not a usable proxy URL", raw)
 	}
 	return parsed, nil
-}
-
-// exemptFromProxy reports whether the destination skips the proxy. The list is
-// comma-separated; `*` exempts everything, and an entry matches the host
-// exactly or as a domain suffix, which is the spelling NO_PROXY uses.
-func exemptFromProxy(list, host string) bool {
-	host = strings.ToLower(strings.TrimSuffix(host, "."))
-	for _, entry := range strings.Split(list, ",") {
-		entry = strings.ToLower(strings.Trim(strings.TrimSpace(entry), "."))
-		if entry == "" {
-			continue
-		}
-		if entry == "*" || host == entry || strings.HasSuffix(host, "."+entry) {
-			return true
-		}
-	}
-	return false
 }

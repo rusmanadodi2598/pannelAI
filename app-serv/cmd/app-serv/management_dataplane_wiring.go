@@ -59,8 +59,9 @@ func buildMediaAndDataPlane(in managementDataPlaneInputs) (mediaAndDataPlane, er
 	plane, err := buildDataPlane(dataPlaneInputs{
 		Config: in.Config, Index: in.Index, Endpoints: in.Endpoints, Combos: in.Combos,
 		ComboOrder: in.ComboOrder, Catalog: in.Catalog, Keys: in.Keys, Sealer: in.Sealer,
-		Connectors: in.Connectors, Client: in.Client, Redis: in.Redis, Settings: in.Settings,
-		Usage: in.Observability.Usage, Vision: in.Vision,
+		Connectors: in.Connectors, Client: in.Client, Routes: in.Routes, Redis: in.Redis,
+		Settings: in.Settings,
+		Usage:    in.Observability.Usage, Vision: in.Vision,
 		ActiveRequests: in.Observability.Active, Logs: in.Observability.Log,
 		Quotas: in.Observability.Quota, MediaOverrides: mediaSvc, MediaIndex: in.Index,
 	})
@@ -74,19 +75,23 @@ func buildMediaAndDataPlane(in managementDataPlaneInputs) (mediaAndDataPlane, er
 // needs. It is a struct rather than a parameter list because the set is a dozen
 // wide and a positional call would be a row of same-typed arguments.
 type managementDataPlaneInputs struct {
-	Config        config.Config
-	Pool          *pgxpool.Pool
-	Redis         redis.UniversalClient
-	Index         *runtimeProviderIndex
-	Endpoints     repository.EndpointRepository
-	Counts        service.EndpointCounterByProvider
-	Combos        repository.ComboRepository
-	ComboOrder    dataplane.ComboOrderer
-	Catalog       repository.ModelCatalogRepository
-	Keys          repository.GatewayKeyRepository
-	Sealer        service.CredentialSealer
-	Connectors    *provider.Connectors
-	Client        *http.Client
+	Config     config.Config
+	Pool       *pgxpool.Pool
+	Redis      redis.UniversalClient
+	Index      *runtimeProviderIndex
+	Endpoints  repository.EndpointRepository
+	Counts     service.EndpointCounterByProvider
+	Combos     repository.ComboRepository
+	ComboOrder dataplane.ComboOrderer
+	Catalog    repository.ModelCatalogRepository
+	Keys       repository.GatewayKeyRepository
+	Sealer     service.CredentialSealer
+	Connectors *provider.Connectors
+	Client     *http.Client
+	// Routes is the pool-driven proxy planner (PORT 008), built beside the
+	// proxy handler so one pool serves both the management routes and the
+	// data plane's walk.
+	Routes        dataplane.ProxyRoutePlanner
 	Settings      *service.SettingsService
 	Observability observability
 	Vision        *service.VisionAugmenter

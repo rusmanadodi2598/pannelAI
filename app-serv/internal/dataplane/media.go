@@ -68,16 +68,18 @@ type MediaCaller interface {
 
 // MediaTransport is the HTTP implementation of MediaCaller.
 type MediaTransport struct {
-	client *http.Client
+	dialer *ProxyDialer
 }
 
 // NewMediaTransport binds the caller to an HTTP client, defaulting to the shared
 // pool configuration so a media call has the same §1.7 limits as a chat call.
-func NewMediaTransport(client *http.Client) *MediaTransport {
+// routes plans the proxy pool's attempts per destination; a nil value keeps the
+// client's own routing.
+func NewMediaTransport(client *http.Client, routes ProxyRoutePlanner) *MediaTransport {
 	if client == nil {
 		client = NewHTTPClient(HTTPClientDeps{})
 	}
-	return &MediaTransport{client: client}
+	return &MediaTransport{dialer: &ProxyDialer{client: client, routes: routes}}
 }
 
 // Do performs one media call under a context deadline (AGENTS.md §1.6).
@@ -97,7 +99,7 @@ func (t *MediaTransport) Do(ctx context.Context, request MediaRequest) (MediaRes
 		built.Header.Set(key, value)
 	}
 
-	response, err := t.client.Do(built)
+	response, err := t.dialer.Do(callCtx, built)
 	if err != nil {
 		if callCtx.Err() != nil {
 			return MediaResponse{}, timeoutError(err)

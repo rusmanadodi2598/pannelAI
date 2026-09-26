@@ -5,11 +5,11 @@
 	// because a test stores its result: the row's "last test" column is what the API recorded, not
 	// what this page saw. §8.6.3 is why the write path ends in `load()` rather than in a local patch.
 	//
-	// The empty state is not §6.9's sentence as written. The spec gives "Add one to route upstream
-	// calls through it", and SPEC-API §7.11 says the opposite about what routes: the global
-	// `network.outbound_proxy_url` carries traffic and a pool row is a stored candidate, which the
-	// egress path confirms. The copy below says what is true, the outbound card says the same thing,
-	// and the divergence is recorded as SPEC-UI §14 Q15 rather than quietly followed.
+	// The empty state is not §6.9's sentence as written, and it no longer needs to be reconciled the
+	// old way: SPEC-API §7.11 used to route only the global `network.outbound_proxy_url`, which made
+	// "Add one to route upstream calls through it" false. The pool engine
+	// (docs/PORT/008-PORT-PROXY-ENGINE.md D1) made the rows the route, so the spec's sentence is now
+	// true and the copy below says what is true again; SPEC-UI §14 Q15 records the resolution.
 	//
 	// The outbound settings are their own card with their own load, so a settings failure cannot stop
 	// the pool from rendering. §6.13 links here from Settings instead of duplicating that form.
@@ -160,7 +160,7 @@
 			<StateMessage
 				kind="empty"
 				title="No proxies yet"
-				description="Add one to keep and test an address before you point the outbound setting at it."
+				description="Add one to route upstream calls through it once proxying is on."
 			>
 				{#snippet action()}
 					<button

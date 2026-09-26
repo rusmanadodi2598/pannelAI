@@ -64,6 +64,7 @@ type SecretOpener interface {
 type Transport struct {
 	connectors *provider.Connectors
 	client     *http.Client
+	dialer     *ProxyDialer
 }
 
 // TransportDeps holds the collaborators the transport needs.
@@ -75,6 +76,10 @@ type TransportDeps struct {
 	// egress guard refused; the default carries the §1.6 deadlines and explicit
 	// pool limits.
 	Client *http.Client
+	// Routes plans the proxy pool's attempts per destination (PORT 008). A nil
+	// value keeps the shared client's own routing, which is what the hermetic
+	// tests and any wiring that has not adopted the pool rely on.
+	Routes ProxyRoutePlanner
 }
 
 // NewTransport validates deps and returns a transport.
@@ -86,7 +91,11 @@ func NewTransport(deps TransportDeps) (*Transport, error) {
 	if client == nil {
 		client = NewHTTPClient(HTTPClientDeps{})
 	}
-	return &Transport{connectors: deps.Connectors, client: client}, nil
+	return &Transport{
+		connectors: deps.Connectors,
+		client:     client,
+		dialer:     &ProxyDialer{client: client, routes: deps.Routes},
+	}, nil
 }
 
 // HTTPClientDeps holds the seams the shared upstream client is built from.

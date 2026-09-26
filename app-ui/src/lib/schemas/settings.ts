@@ -30,6 +30,16 @@ export const CREDENTIAL_ROTATION_LABELS: Record<(typeof CREDENTIAL_ROTATIONS)[nu
 	'round-robin': 'Round robin'
 };
 
+// The proxy pool's rotation strategy (docs/PORT/008-PORT-PROXY-ENGINE.md D2). The API answers the
+// effective value, never a blank (a document stored before the key reads as fallback), so the read
+// schema takes the same closed set the write does.
+export const PROXY_STRATEGIES = ['fallback', 'round_robin'] as const;
+
+export const PROXY_STRATEGY_LABELS: Record<(typeof PROXY_STRATEGIES)[number], string> = {
+	fallback: 'Fallback',
+	round_robin: 'Round robin'
+};
+
 export const schemaSecuritySettings = z.object({
 	require_login: z.boolean(),
 	require_api_key: z.boolean()
@@ -54,7 +64,8 @@ export const schemaRoutingSettings = z.object({
 export const schemaNetworkSettings = z.object({
 	outbound_proxy_enabled: z.boolean(),
 	outbound_proxy_url: optionalAbsoluteUrl,
-	outbound_no_proxy: noProxyList
+	outbound_no_proxy: noProxyList,
+	outbound_proxy_strategy: z.enum(PROXY_STRATEGIES)
 });
 
 export const schemaLoggingSettings = z.object({
@@ -107,23 +118,17 @@ export const schemaRoutingSettingsForm = z.strictObject({
 
 export type RoutingSettingsForm = z.infer<typeof schemaRoutingSettingsForm>;
 
-// The one cross-field rule in the settings surface: proxying on with no URL. The API accepts that
-// state, and the egress path then dials direct, which is the quiet bypass SPEC-API §7.11 says the
-// setting exists to prevent. The panel refuses to save it rather than mirroring the API into a trap,
-// and the message names both ways out.
-//
-// The *response* schema above deliberately carries no such rule, because a document stored that way
-// still has to parse: the screen states it rather than rejecting the read.
-export const schemaNetworkSettingsForm = z
-	.strictObject({
-		outbound_proxy_enabled: z.boolean(),
-		outbound_proxy_url: optionalAbsoluteUrl,
-		outbound_no_proxy: noProxyList
-	})
-	.refine((form) => !form.outbound_proxy_enabled || form.outbound_proxy_url !== '', {
-		message: 'A URL is required when proxying is on. Set one, or turn the switch off to go direct.',
-		path: ['outbound_proxy_url']
-	});
+// Proxying on with an empty URL is a real state the pool engine made useful (docs/PORT/
+// 008-PORT-PROXY-ENGINE.md D1): the pool rows are the route and the URL is the last-resort attempt
+// after them, so a pool-only deployment has no URL at all. The form therefore carries no
+// cross-field refusal here; what the engine will actually do is stated on the card, and a document
+// the API stored still has to read on the response side.
+export const schemaNetworkSettingsForm = z.strictObject({
+	outbound_proxy_enabled: z.boolean(),
+	outbound_proxy_url: optionalAbsoluteUrl,
+	outbound_no_proxy: noProxyList,
+	outbound_proxy_strategy: z.enum(PROXY_STRATEGIES, { message: 'Pick the pool strategy.' })
+});
 
 export type NetworkSettingsForm = z.infer<typeof schemaNetworkSettingsForm>;
 

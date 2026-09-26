@@ -44,11 +44,14 @@ type SecuritySettingsPatch struct {
 	RequireAPIKey *bool
 }
 
-// NetworkSettingsPatch updates the network group.
+// NetworkSettingsPatch updates the network group. The strategy is a closed
+// set (docs/PORT/008-PORT-PROXY-ENGINE.md D2); Validate is the backstop that
+// refuses an out-of-set value whichever write path carries it.
 type NetworkSettingsPatch struct {
-	OutboundProxyEnabled *bool
-	OutboundProxyURL     *string
-	OutboundNoProxy      *string
+	OutboundProxyEnabled  *bool
+	OutboundProxyURL      *string
+	OutboundNoProxy       *string
+	OutboundProxyStrategy *string
 }
 
 // TokenSaverSettingsPatch updates the §7.9 groups. It has no caveman field: the
@@ -101,6 +104,12 @@ func (s Settings) Validate() error {
 	if s.Logging.ObservabilityMaxRecords < 1 {
 		return NewValidationError("logging.observability_max_records must be at least 1")
 	}
+	// An empty strategy is the stored default (D2): a document that predates
+	// the key stays valid, and ParseProxyStrategy reads it as fallback. A
+	// non-empty value must be in the closed set, whichever path wrote it.
+	if _, err := ParseProxyStrategy(s.Network.OutboundProxyStrategy); err != nil {
+		return err
+	}
 	if err := validateRouting(s.Routing); err != nil {
 		return err
 	}
@@ -151,6 +160,7 @@ func (s *Settings) Update(patch SettingsPatch) error {
 		applyBool(&s.Network.OutboundProxyEnabled, p.OutboundProxyEnabled)
 		applyString(&s.Network.OutboundProxyURL, p.OutboundProxyURL)
 		applyString(&s.Network.OutboundNoProxy, p.OutboundNoProxy)
+		applyString(&s.Network.OutboundProxyStrategy, p.OutboundProxyStrategy)
 	}
 	if p := patch.TokenSaver; p != nil {
 		applyRTK(&s.TokenSaver.RTK, p.RTK)

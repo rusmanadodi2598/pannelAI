@@ -67,7 +67,12 @@ describe('schemaRoutingSettingsForm', () => {
 });
 
 describe('schemaNetworkSettingsForm', () => {
-	const valid = { outbound_proxy_enabled: false, outbound_proxy_url: '', outbound_no_proxy: '' };
+	const valid = {
+		outbound_proxy_enabled: false,
+		outbound_proxy_url: '',
+		outbound_no_proxy: '',
+		outbound_proxy_strategy: 'fallback'
+	};
 
 	const cases = [
 		{ name: 'accepts an unset proxy', input: valid, ok: true },
@@ -87,6 +92,29 @@ describe('schemaNetworkSettingsForm', () => {
 			ok: true
 		},
 		{
+			// The pool engine made this a real state (docs/PORT/008-PORT-PROXY-ENGINE.md D1): the pool
+			// rows are the route and the URL is the last-resort attempt after them, so a pool-only
+			// deployment has no URL at all.
+			name: 'accepts an enabled proxy with no URL, because the pool routes',
+			input: { ...valid, outbound_proxy_enabled: true, outbound_proxy_url: '' },
+			ok: true
+		},
+		{
+			name: 'accepts the round robin strategy',
+			input: { ...valid, outbound_proxy_strategy: 'round_robin' },
+			ok: true
+		},
+		{
+			name: 'rejects a strategy the engine does not run',
+			input: { ...valid, outbound_proxy_strategy: 'random' },
+			ok: false
+		},
+		{
+			name: 'rejects a missing strategy',
+			input: { outbound_proxy_enabled: false, outbound_proxy_url: '', outbound_no_proxy: '' },
+			ok: false
+		},
+		{
 			name: 'rejects a proxy URL with no scheme',
 			input: { ...valid, outbound_proxy_url: 'proxy.internal:8080' },
 			ok: false
@@ -94,22 +122,6 @@ describe('schemaNetworkSettingsForm', () => {
 		{
 			name: 'rejects a non-http scheme',
 			input: { ...valid, outbound_proxy_url: 'socks5://proxy.internal:1080' },
-			ok: false
-		},
-		{
-			name: 'accepts an enabled proxy that has a URL',
-			input: {
-				...valid,
-				outbound_proxy_enabled: true,
-				outbound_proxy_url: 'http://p.internal:8080'
-			},
-			ok: true
-		},
-		{
-			// The API stores this combination happily, and the egress path then dials direct, which is
-			// the quiet bypass SPEC-API §7.11 says the setting exists to prevent.
-			name: 'rejects an enabled proxy with no URL',
-			input: { ...valid, outbound_proxy_enabled: true, outbound_proxy_url: '' },
 			ok: false
 		},
 		{ name: 'rejects an unknown key', input: { ...valid, extra: true }, ok: false }
@@ -121,26 +133,15 @@ describe('schemaNetworkSettingsForm', () => {
 		);
 	});
 
-	it('names both ways out of an enabled proxy with no URL', () => {
-		const parsed = schemaNetworkSettingsForm.safeParse({
-			...valid,
-			outbound_proxy_enabled: true,
-			outbound_proxy_url: ''
-		});
-
-		expect(parsed.success ? '' : parsed.error.issues[0]?.message).toBe(
-			'A URL is required when proxying is on. Set one, or turn the switch off to go direct.'
-		);
-	});
-
 	it('still parses that combination on the response side, because a stored document must read', () => {
-		// The form rule is a refusal to write, not a refusal to read. A document the API accepted has to
-		// render, and the screen states the problem rather than failing the load.
+		// The form carries no cross-field refusal, and the response schema carries no cross-field rule
+		// at all: a document the API accepted has to render, and the screen states what it will do.
 		expect(
 			schemaNetworkSettings.safeParse({
 				outbound_proxy_enabled: true,
 				outbound_proxy_url: '',
-				outbound_no_proxy: ''
+				outbound_no_proxy: '',
+				outbound_proxy_strategy: 'round_robin'
 			}).success
 		).toBe(true);
 	});

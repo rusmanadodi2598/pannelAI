@@ -36,7 +36,7 @@ describe('ProxyPoolsPage', () => {
 		render(ProxyPoolsPage);
 
 		expect(await screen.findByText('No proxies yet')).toBeTruthy();
-		expect(screen.getByText(/keep and test an address/)).toBeTruthy();
+		expect(screen.getByText(/route upstream calls through it once proxying is on/)).toBeTruthy();
 		expect(screen.getAllByRole('button', { name: 'Add a proxy' }).length).toBeGreaterThan(0);
 	});
 
@@ -190,8 +190,8 @@ describe('the outbound card', () => {
 	});
 
 	it('states that the settings are global and that per-endpoint binding is deferred', async () => {
-		// The two claims §6.9 requires. Without them an operator reads the pool as the routing table and
-		// hunts for a per-endpoint control that SPEC-API §7.11 does not implement.
+		// The two claims §6.9 requires. Without them an operator reads the pool as a decoration or hunts
+		// for a per-endpoint control that SPEC-API §7.11 does not implement.
 		stubProxies();
 		render(ProxyPoolsPage);
 
@@ -199,17 +199,18 @@ describe('the outbound card', () => {
 		expect(
 			screen.getByText(/Global, and the setting the gateway actually routes with/)
 		).toBeTruthy();
+		expect(screen.getByText(/URL field is the last resort/)).toBeTruthy();
 		expect(screen.getByText(/there is no per-endpoint control/)).toBeTruthy();
-		expect(screen.getByText(/it does not carry traffic until you put it here/)).toBeTruthy();
 	});
 
-	it('shows the stored outbound values', async () => {
+	it('shows the stored outbound values, strategy included', async () => {
 		stubProxies({
 			settings: settingsDocument({
 				network: {
 					outbound_proxy_enabled: true,
 					outbound_proxy_url: 'http://proxy.internal:8080',
-					outbound_no_proxy: 'localhost'
+					outbound_no_proxy: 'localhost',
+					outbound_proxy_strategy: 'round_robin'
 				}
 			})
 		});

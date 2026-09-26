@@ -2375,6 +2375,11 @@ components:
           type: string
         outbound_no_proxy:
           type: string
+        outbound_proxy_strategy:
+          type: string
+          enum:
+          - fallback
+          - round_robin
       additionalProperties: false
     TokenSaverSettingsPatch:
       type: object
@@ -3203,10 +3208,16 @@ components:
           type: string
         outbound_no_proxy:
           type: string
+        outbound_proxy_strategy:
+          type: string
+          enum:
+          - fallback
+          - round_robin
       required:
       - outbound_proxy_enabled
       - outbound_proxy_url
       - outbound_no_proxy
+      - outbound_proxy_strategy
       additionalProperties: false
     TokenSaverSettingsResponse:
       type: object

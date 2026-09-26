@@ -172,12 +172,16 @@ func buildManagement(
 	// method on that one would make the cycle real.
 	// §7.10 media providers and the §7.15 data plane, from the repositories the
 	// management side writes through, so a value written by one path is readable
-	// by the other.
+	// by the other. The proxy route planner (PORT 008) is built beside the
+	// proxy handler below, so the pool the operator edits is the pool the data
+	// plane walks.
+	proxyRoutes := buildProxyRoutePlanner(pool, client, settingsSvc, sealer, egress.Guard)
 	mediaPlane, err := buildMediaAndDataPlane(managementDataPlaneInputs{
 		Config: cfg, Pool: pool, Redis: client, Index: runtimeIndex,
 		Endpoints: endpointRepo, Counts: endpointRepo, Combos: comboRepo, ComboOrder: comboSvc,
 		Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
-		Client: egress.Client, Settings: settingsSvc, Observability: obs, Vision: augmenter,
+		Client: egress.Client, Routes: proxyRoutes, Settings: settingsSvc,
+		Observability: obs, Vision: augmenter,
 	})
 	if err != nil {
 		return managementDeps{}, err

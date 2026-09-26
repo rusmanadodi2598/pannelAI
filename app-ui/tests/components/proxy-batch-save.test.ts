@@ -106,9 +106,9 @@ describe('outbound settings', () => {
 	it('sends only the network group, so another settings tab cannot be overwritten', async () => {
 		const stub = stubProxies();
 		render(ProxyPoolsPage);
-		await screen.findByLabelText('Outbound proxy URL');
+		await screen.findByLabelText('Last-resort proxy URL');
 
-		await fireEvent.input(screen.getByLabelText('Outbound proxy URL'), {
+		await fireEvent.input(screen.getByLabelText('Last-resort proxy URL'), {
 			target: { value: 'http://proxy.internal:8080' }
 		});
 		await fireEvent.click(screen.getByRole('button', { name: 'Save outbound settings' }));
@@ -118,51 +118,66 @@ describe('outbound settings', () => {
 		expect(stub.settingsPatches[0].network).toEqual({
 			outbound_proxy_enabled: false,
 			outbound_proxy_url: 'http://proxy.internal:8080',
-			outbound_no_proxy: ''
+			outbound_no_proxy: '',
+			outbound_proxy_strategy: 'fallback'
 		});
 	});
 
-	it('says a URL is required when the proxy is switched on with none set', async () => {
+	it('saves proxying on with no URL, because the pool is the route (D1)', async () => {
+		// The pool engine made pool-only routing a real state: the walk serves the call and the URL is
+		// the last resort after it. The form used to refuse this; now it stores it.
 		const stub = stubProxies();
 		render(ProxyPoolsPage);
-		await screen.findByLabelText('Outbound proxy URL');
+		await screen.findByLabelText('Last-resort proxy URL');
 
 		await fireEvent.click(
-			screen.getByRole('checkbox', { name: /Send upstream calls through a proxy/ })
+			screen.getByRole('checkbox', { name: /Route upstream calls through the proxy pool/ })
 		);
 		await fireEvent.click(screen.getByRole('button', { name: 'Save outbound settings' }));
 
-		expect(text(await screen.findByRole('alert'))).toContain(
-			'A URL is required when proxying is on.'
-		);
-		expect(stub.settingsPatches).toEqual([]);
+		await waitFor(() => expect(stub.settingsPatches.length).toBe(1));
+		expect(stub.settingsPatches[0]).toEqual({
+			network: {
+				outbound_proxy_enabled: true,
+				outbound_proxy_url: '',
+				outbound_no_proxy: '',
+				outbound_proxy_strategy: 'fallback'
+			}
+		});
 	});
 
-	it('states a stored document that has proxying on with no URL, with both ways out', async () => {
-		// The API accepts this state and the egress path then dials direct, so the panel cannot prevent
-		// it. It states it instead, because an operator who flipped the switch expects proxying.
+	it('states a stored document that has proxying on with no URL, so the pool is the whole route', async () => {
+		// A pool-only deployment is valid (D1), so the card states what will happen rather than
+		// alarming: the pool carries traffic, and an empty pool dials direct.
 		stubProxies({
 			settings: settingsDocument({
-				network: { outbound_proxy_enabled: true, outbound_proxy_url: '', outbound_no_proxy: '' }
+				network: {
+					outbound_proxy_enabled: true,
+					outbound_proxy_url: '',
+					outbound_no_proxy: '',
+					outbound_proxy_strategy: 'round_robin'
+				}
 			})
 		});
 		render(ProxyPoolsPage);
 
-		expect(await screen.findByText(/Proxying is on with no URL/)).toBeTruthy();
-		expect(screen.getByText(/Set a URL below, or turn the switch off/)).toBeTruthy();
+		expect(await screen.findByText(/the pool above is the whole route/)).toBeTruthy();
+		expect(screen.getByText(/upstream calls go direct until you add one/)).toBeTruthy();
 	});
 
 	it('shows the server message when a save is refused and keeps the draft', async () => {
 		stubProxies({ writeStatus: 400 });
 		render(ProxyPoolsPage);
-		await screen.findByLabelText('Outbound proxy URL');
+		await screen.findByLabelText('Last-resort proxy URL');
 
-		await fireEvent.input(screen.getByLabelText('Outbound proxy URL'), {
+		await fireEvent.input(screen.getByLabelText('Last-resort proxy URL'), {
 			target: { value: 'http://proxy.internal:8080' }
 		});
 		await fireEvent.click(screen.getByRole('button', { name: 'Save outbound settings' }));
 
 		expect(text(await screen.findByRole('alert'))).toContain('The gateway refused this value.');
-		expect(value(screen.getByLabelText('Outbound proxy URL'))).toBe('http://proxy.internal:8080');
+		expect(value(screen.getByLabelText('Last-resort proxy URL'))).toBe(
+			'http://proxy.internal:8080'
+		);
 	});
 });

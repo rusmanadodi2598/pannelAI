@@ -89,6 +89,12 @@ type NetworkSettings struct {
 	OutboundProxyEnabled bool   `json:"outbound_proxy_enabled"`
 	OutboundProxyURL     string `json:"outbound_proxy_url"`
 	OutboundNoProxy      string `json:"outbound_no_proxy"`
+	// OutboundProxyStrategy is how the pool's enabled candidates route traffic
+	// when proxying is on (docs/PORT/008-PORT-PROXY-ENGINE.md D2): fallback
+	// walks them in insertion order, round_robin rotates the head per request.
+	// An empty stored value reads as the default, so documents written before
+	// the key existed stay valid.
+	OutboundProxyStrategy string `json:"outbound_proxy_strategy"`
 }
 
 // TokenSaverFilters is the canonical filter vocabulary of the native RTK engine
@@ -192,7 +198,7 @@ func DefaultSettings() Settings {
 	return Settings{
 		Security: SecuritySettings{RequireLogin: true, RequireAPIKey: true},
 		Routing:  defaultRoutingSettings(),
-		Network:  NetworkSettings{OutboundProxyEnabled: false},
+		Network:  NetworkSettings{OutboundProxyEnabled: false, OutboundProxyStrategy: DefaultProxyStrategy},
 		TokenSaver: TokenSaverSettings{
 			// Every saver ships off (owner decision, 2026-09-19): the pipeline
 			// must not rewrite a request until an operator turns a group on.
