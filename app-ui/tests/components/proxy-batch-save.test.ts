@@ -10,7 +10,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProxyPoolsPage from '../../src/routes/proxy-pools/+page.svelte';
 import { text, value } from '../support/dom';
 import { stubProxies } from '../support/proxy-stub';
-import { settingsDocument } from '../support/settings-document';
+import { settingsDocument, networkGroup } from '../support/settings-document';
 
 async function openBatch(paste: string): Promise<void> {
 	await screen.findByText('No proxies yet');
@@ -146,17 +146,50 @@ describe('outbound settings', () => {
 		});
 	});
 
+	it('narrows the group it read, so a provider binding cannot block its own save', async () => {
+		// The network group grew `provider_proxies` (docs/PORT/009-PORT-PROVIDER-PROXY.md D1), which
+		// belongs to the provider screen's card. This form is strict and owns four keys, so it must
+		// narrow the group the way the routing tab narrows its own: a spread of the whole group would
+		// carry a key the form refuses, and the save would be blocked by a setting this card never
+		// rendered, and the PATCH body must not carry the map either, or this screen would overwrite
+		// bindings it did not read.
+		const stub = stubProxies({
+			settings: settingsDocument({
+				network: networkGroup({
+					provider_proxies: { openai: { pool_id: 'prx_01HZZ9K2', strategy: 'round_robin' } }
+				})
+			})
+		});
+		render(ProxyPoolsPage);
+		await screen.findByLabelText('Last-resort proxy URL');
+
+		await fireEvent.input(screen.getByLabelText('Last-resort proxy URL'), {
+			target: { value: 'http://proxy.internal:8080' }
+		});
+		await fireEvent.click(screen.getByRole('button', { name: 'Save outbound settings' }));
+
+		await waitFor(() => expect(stub.settingsPatches.length).toBe(1));
+		expect(stub.settingsPatches[0]).toEqual({
+			network: {
+				outbound_proxy_enabled: false,
+				outbound_proxy_url: 'http://proxy.internal:8080',
+				outbound_no_proxy: '',
+				outbound_proxy_strategy: 'fallback'
+			}
+		});
+	});
+
 	it('states a stored document that has proxying on with no URL, so the pool is the whole route', async () => {
 		// A pool-only deployment is valid (D1), so the card states what will happen rather than
 		// alarming: the pool carries traffic, and an empty pool dials direct.
 		stubProxies({
 			settings: settingsDocument({
-				network: {
+				network: networkGroup({
 					outbound_proxy_enabled: true,
 					outbound_proxy_url: '',
 					outbound_no_proxy: '',
 					outbound_proxy_strategy: 'round_robin'
-				}
+				})
 			})
 		});
 		render(ProxyPoolsPage);

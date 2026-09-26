@@ -112,6 +112,14 @@ export type ModelStub = {
 	settingsPatches: StubModel[];
 	/** The settings write's own status, for a test that needs the gateway to refuse a rotation change. */
 	settingsWriteStatus: number;
+	/**
+	 * The proxy pool rows the detail screen's proxy card reads for its pool select (§7.11). Served here
+	 * because the card renders on the same screen as the model routes, and a second stub would fight
+	 * over `fetch`.
+	 */
+	proxies: StubModel[];
+	/** The pool list's own status, for a test that needs the card to survive a pool read failure. */
+	proxyReadStatus: number;
 };
 
 export function catalogRow(overrides: StubModel = {}): StubModel {
@@ -247,6 +255,8 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		settings: settingsDocument(),
 		settingsPatches: [],
 		settingsWriteStatus: 200,
+		proxies: [],
+		proxyReadStatus: 200,
 		...overrides
 	};
 
@@ -277,9 +287,10 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		const body: StubModel = init?.body === undefined ? {} : JSON.parse(String(init.body));
 		const parsed = new URL(url, 'http://panel.test');
 
-		// The settings document, which the Connections section reads for its rotation switch and writes to
-		// change one provider's entry. A write is applied to the stub's own document the way the server
-		// applies it, so a read-modify-write test sees its change in the answer rather than in an echo.
+		// The settings document, which the Connections section reads for its rotation switch and the
+		// proxy card reads for its binding map, and both write to change one provider's entry. A write is
+		// applied to the stub's own document the way the server applies it (each group merged over the
+		// stored one), so a read-modify-write test sees its change in the answer rather than in an echo.
 		if (parsed.pathname.endsWith('/settings')) {
 			if (method === 'PATCH') {
 				stub.settingsPatches.push(body);
@@ -292,14 +303,24 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 					);
 				}
 
-				const routing = (body.routing ?? {}) as StubModel;
-				stub.settings = {
-					...stub.settings,
-					routing: { ...(stub.settings.routing as StubModel), ...routing }
-				};
+				const merged = { ...stub.settings };
+				for (const [group, value] of Object.entries(body)) {
+					merged[group] = { ...(stub.settings[group] as StubModel), ...(value as StubModel) };
+				}
+				stub.settings = merged;
 			}
 
 			return json(stub.settings);
+		}
+
+		// The proxy pool list, which the proxy card reads for its pool select. The card renders on this
+		// screen too, so the route is served here rather than by a second stub that would fight over
+		// `fetch`.
+		if (method === 'GET' && parsed.pathname.endsWith('/proxies')) {
+			if (stub.proxyReadStatus !== 200) {
+				return refusal('INTERNAL_ERROR', 'The pool could not be read.', stub.proxyReadStatus);
+			}
+			return json({ data: stub.proxies });
 		}
 
 		// The node's own read, which the details card makes when the screen is a custom node's (§7.4). It is

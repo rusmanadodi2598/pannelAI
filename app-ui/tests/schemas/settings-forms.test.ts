@@ -136,12 +136,15 @@ describe('schemaNetworkSettingsForm', () => {
 	it('still parses that combination on the response side, because a stored document must read', () => {
 		// The form carries no cross-field refusal, and the response schema carries no cross-field rule
 		// at all: a document the API accepted has to render, and the screen states what it will do.
+		// `provider_proxies` is the one key this form does not own (docs/PORT/009-PORT-PROVIDER-PROXY.md
+		// D1); the API always sends it, so a stored document reads with it.
 		expect(
 			schemaNetworkSettings.safeParse({
 				outbound_proxy_enabled: true,
 				outbound_proxy_url: '',
 				outbound_no_proxy: '',
-				outbound_proxy_strategy: 'round_robin'
+				outbound_proxy_strategy: 'round_robin',
+				provider_proxies: {}
 			}).success
 		).toBe(true);
 	});

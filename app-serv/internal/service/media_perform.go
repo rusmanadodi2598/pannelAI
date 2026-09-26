@@ -46,6 +46,10 @@ func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request 
 	if strings.TrimSpace(request.URL) == "" {
 		request.URL = call.Target
 	}
+	// The provider's own proxy binding decides this call's route (docs/PORT/
+	// 009-PORT-PROVIDER-PROXY.md D7): stamping it here is what lets every media
+	// kind inherit the rule without each builder knowing about it.
+	request.ProviderID = call.ProviderID
 	request.Headers = mergeHeaders(call.Headers, request.Headers)
 	if request.TimeoutMS == 0 {
 		request.TimeoutMS = call.Media.TimeoutMS

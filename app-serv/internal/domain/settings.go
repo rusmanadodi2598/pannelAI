@@ -95,6 +95,11 @@ type NetworkSettings struct {
 	// An empty stored value reads as the default, so documents written before
 	// the key existed stay valid.
 	OutboundProxyStrategy string `json:"outbound_proxy_strategy"`
+	// ProviderProxies is the per-provider binding (docs/PORT/
+	// 009-PORT-PROVIDER-PROXY.md D1): the pool one provider's calls egress
+	// through, and the strategy that orders them. It is written whole, like
+	// the routing group's override map.
+	ProviderProxies map[string]ProviderProxy `json:"provider_proxies,omitempty"`
 }
 
 // TokenSaverFilters is the canonical filter vocabulary of the native RTK engine
@@ -198,7 +203,11 @@ func DefaultSettings() Settings {
 	return Settings{
 		Security: SecuritySettings{RequireLogin: true, RequireAPIKey: true},
 		Routing:  defaultRoutingSettings(),
-		Network:  NetworkSettings{OutboundProxyEnabled: false, OutboundProxyStrategy: DefaultProxyStrategy},
+		Network: NetworkSettings{
+			OutboundProxyEnabled:  false,
+			OutboundProxyStrategy: DefaultProxyStrategy,
+			ProviderProxies:       map[string]ProviderProxy{},
+		},
 		TokenSaver: TokenSaverSettings{
 			// Every saver ships off (owner decision, 2026-09-19): the pipeline
 			// must not rewrite a request until an operator turns a group on.

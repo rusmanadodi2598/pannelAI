@@ -459,9 +459,13 @@ and Local Device TTS (spawns host binaries).
 | POST | `/api/v1/proxies/{id}/test` | S | Connectivity test → `{state, latency_ms, checked_at}` | P2 |
 | POST | `/api/v1/proxies/test` | S | Test an unsaved `{protocol, host, port, ...}` candidate | P2 |
 
-Proxy assignment to upstream endpoints rides on `settings.network.outbound_proxy_*` (global) in v1;
-per-endpoint proxy binding is deferred (not in the reference either: reference assigns pools globally
-with per-provider strategy overrides in `settings.providerStrategies`).
+Proxy assignment rides on `settings.network.outbound_proxy_*` (the global switch and URL) plus
+`settings.network.provider_proxies` (per provider, §7.14) in v1. Per-endpoint binding is deferred: the
+`upstream_endpoints.proxy_pool_id` column is stored and validated but no request path reads it. The
+reference binds per provider for a provider with no auth (`settings.providerStrategies[providerId]`,
+`auth.js:45-71`) and per connection for a keyed one (`providerSpecificData.proxyPoolId`,
+`AddApiKeyModal.js:31`, resolved at `connectionProxy.js:66-187`), so the earlier claim here that the
+reference assigns pools only globally was wrong on the connection half.
 
 **The pool rows are the route (PORT 008, 2026-09-26).** While `outbound_proxy_enabled` is on, an
 outbound call walks the pool's rows in the order `outbound_proxy_strategy` picks: `fallback` (the
@@ -476,6 +480,19 @@ cooldown is a hint about the past); a row whose stored test is a failure is not 
 is re-tested; and an empty pool with no URL dials direct exactly as before. The strategy is a closed
 set (`fallback`, `round_robin`), and an empty stored value reads as `fallback`, so a document that
 predates the key keeps working.
+
+**Per-provider binding (PORT 009, 2026-09-26).** `provider_proxies[<provider_id>]` binds one
+provider's egress. `pool_id` is a stored row id (the **pin**: the first candidate of every walk for
+that provider), the sentinel `__none__` (**None**: dial direct, which also bypasses a global switch
+that is on), or absent (**Global**: follow `outbound_proxy_*`). `strategy` overrides the walk order
+for that provider (`fallback` | `round_robin`), and absent inherits `outbound_proxy_strategy`. A pin
+is the FIRST candidate and the other usable rows follow with the provider's strategy, so a pin never
+disables multi-pool failover; it also works while the global switch is off, because it is an explicit
+per-provider instruction. The static `outbound_proxy_url` joins the walk only while the global switch
+is on, because it belongs to the global setting. The rotation cursor is per provider
+(`pannelai:proxy:rotation:<provider_id>`, `global` for a caller with no provider), because two
+providers can now run two orders over one pool. A write refuses a `pool_id` that names no stored row
+and an entry that sets neither field.
 
 The settings are read per request, so enabling a proxy takes effect on the next outbound call rather than
 the next boot. `outbound_no_proxy` exempts hosts from both the pool and the static URL: a comma-separated
@@ -605,7 +622,7 @@ v1 settings surface (subset of reference `DEFAULT_SETTINGS`):
 {
   "security": { "require_login": true, "require_api_key": true },
   "routing":  { "combo_strategy": "fallback", "combo_sticky_limit": 1, "sticky_limit": 3, "fallback_strategy": "fill-first", "provider_strategies": {} },
-  "network":  { "outbound_proxy_enabled": false, "outbound_proxy_url": "", "outbound_no_proxy": "", "outbound_proxy_strategy": "fallback" },
+  "network":  { "outbound_proxy_enabled": false, "outbound_proxy_url": "", "outbound_no_proxy": "", "outbound_proxy_strategy": "fallback", "provider_proxies": {} },
   "token_saver": { "see §7.9" },
   "logging":  { "request_capture_enabled": false, "retention_days": 7, "capture_body_max_bytes": 65536, "observability_max_records": 1000 }
 }
@@ -633,6 +650,18 @@ walk's order (§7.11). The read answers the effective value, never a blank: a do
 the key reads as `fallback`. The write is the closed set (the reference's `random` is deliberately
 not ported), and a non-nil empty string is refused at the boundary, unlike the URL fields, because
 the strategy has no empty member: the reset lever is sending `fallback`, the default's own name.
+
+`network.provider_proxies` binds proxy pools per provider (PORT 009, §7.11), the reference's own
+per-provider shape: `{"<provider_id>": {"pool_id": "<row id>" | "__none__", "strategy": "fallback" |
+"round_robin"}}`. Both fields are optional because an absent one inherits the global setting:
+`pool_id` absent means **Global** (follow `outbound_proxy_*`), the sentinel `__none__` means **None**
+(dial direct, past a global switch that is on), and a stored row id is a **pin** that leads the
+provider's walk with the other usable rows after it. `strategy` absent inherits
+`outbound_proxy_strategy`. The map is written whole, like `provider_strategies`, so a read-modify-write
+changes one provider, and deleting an entry returns that provider to the global setting. An entry that
+sets neither field is refused (`pool_id` and `strategy` both empty), and a `pool_id` that names no
+stored row is refused by name, so a binding cannot be stored against a row that does not exist (a row
+deleted later leaves the binding in place, and the walk simply skips it).
 
 ### 7.15 Data Plane (OpenAI/Anthropic/Gemini-compatible, gateway-key auth)
 
@@ -871,3 +900,5 @@ client sends and rewriting it later would mean rewriting the DTOs and every call
 *Changelog 2026-09-24: §7.15 adds `POST /api/v1/systemone`, the System One (Jev) decision route, and §7.15's data-plane table records it (draft `029-OPENCODE-PROVIDER-PARITY.md` F6). The reference serves a decision model as `kind: "systemone"` on a native endpoint rather than as a chat model (`registry/opencode.js:31`, `systemoneConfig` on the entry, `src/sse/handlers/systemone.js`, `open-sse/handlers/systemoneCore.js`), because the payload is the provider's own vocabulary: `state` plus a `questions` map, forwarded untouched, with no chat translation layer. Measured before the change: this port had no such route, and `opencode/jev-1.13-free` resolved onto the chat wire and was served as a chat completion, so a chat body was sent to an endpoint that answers a decision payload. The route is gateway-key authenticated like every §7.15 route and follows the media plane's shape rather than the chat plane's: one call, no combo chain, one usage row and one log row under the router's request id. Its payload is validated at the boundary (`state` present, `questions` a non-empty object, the model naming a provider that declares a `systemone` endpoint) and forwarded verbatim, because the reference forwards it verbatim and a gateway that reshaped it would answer a different question than the one it was asked. The identity headers the reference sends with it (`x-opencode-client`, `User-Agent`) travel with the entry's own block, and the session header the Zen lanes require is written per call, which is what the reference's `generateSessionId()` does there. A model declaring `kind: systemone` is no longer routable through the chat plane: the resolver refuses it by name with `MODEL_NOT_FOUND` and the kind in the message, so the wrong-body failure cannot come back. What is deliberately not ported: the reference's credential-fallback loop for this route, because the free lane needs no credential and a keyed decision model is served by the same selector the media plane uses, which already walks the provider's accounts.*
 
 _Changelog 2026-09-26: §7.11 and §7.14 record the proxy pool engine (docs/PORT/008-PORT-PROXY-ENGINE.md), which makes the pool rows the route while proxying is on and demotes `outbound_proxy_url` to the last-resort attempt after them. Before this change the pool was a stored, tested candidate list and only the static URL carried traffic, which made §7.11's own earlier sentence about the pool true for the first time. The strategy is a closed set (`fallback` | `round_robin`, empty reads as `fallback`) written through the §7.14 PATCH and answered as the effective value; round-robin's cursor lives in Redis so replicas share it; a connect-stage failure fails over (bounded at three attempts) and parks the candidate for two minutes; a non-connect failure or a cancelled caller ends the walk, because a request the wire may already have delivered must not be re-sent. The security posture is unchanged and re-stated where the walk owns it: a proxied request never dials its destination, so the planner validates the destination against the egress allowlist once per planned request, and a malformed stored URL refuses the plan rather than being dropped, exactly as the static route refuses it._
+
+_Changelog 2026-09-26: §7.11 and §7.14 add the per-provider proxy binding (docs/PORT/009-PORT-PROVIDER-PROXY.md). `network.provider_proxies[<provider_id>]` holds `{pool_id, strategy}`, both optional: `pool_id` absent is **Global** (follow `outbound_proxy_*`), the sentinel `__none__` is **None** (dial direct, past a global switch that is on), and a stored row id is a **pin** that leads that provider's walk while the other usable rows follow with the provider's strategy, so a pin never disables multi-pool failover; `strategy` absent inherits `outbound_proxy_strategy`. The map is written whole, so a read-modify-write changes one provider and deleting an entry returns it to the global setting; a `pool_id` that names no stored row and an entry that sets neither field are refused. The rotation cursor is now per provider (`pannelai:proxy:rotation:<provider_id>`), because two providers can run two orders over one pool. §7.11's earlier claim that the reference assigns pools only globally is corrected: the reference binds per provider for a no-auth provider and per connection for a keyed one, and this port's per-endpoint column (`upstream_endpoints.proxy_pool_id`) stays stored-but-unread, which is the deferred half._

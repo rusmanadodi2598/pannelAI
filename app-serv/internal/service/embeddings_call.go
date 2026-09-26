@@ -44,6 +44,9 @@ func (s *EmbeddingsService) perform(ctx context.Context, request dataplane.Media
 	release := markActiveRequest(ctx, s.active, outcome.ProviderID, outcome.EndpointID, outcome.Model)
 	defer release()
 
+	// The provider's own proxy binding decides this call's route (docs/PORT/
+	// 009-PORT-PROVIDER-PROXY.md D7).
+	request.ProviderID = outcome.ProviderID
 	answer, err := s.caller.Do(ctx, request)
 	latencyMS := time.Since(started).Milliseconds()
 

@@ -107,14 +107,14 @@ func plannerAdapter(t *testing.T, address string, allowed []string, enabled bool
 func TestGuardedProxyPlanner_ValidatesThePlannedDestination(t *testing.T) {
 	t.Run("a refused destination stops the plan", func(t *testing.T) {
 		adapter, _ := plannerAdapter(t, "127.0.0.1", nil, true)
-		if _, err := adapter.Plan(context.Background(), "destination.example"); err == nil {
+		if _, err := adapter.Plan(context.Background(), "", "destination.example"); err == nil {
 			t.Fatal("Plan() = nil error, want the loopback destination refused before any attempt")
 		}
 	})
 
 	t.Run("an allowlisted destination plans through the pool", func(t *testing.T) {
 		adapter, _ := plannerAdapter(t, "127.0.0.1", []string{"127.0.0.0/8"}, true)
-		plan, err := adapter.Plan(context.Background(), "destination.example")
+		plan, err := adapter.Plan(context.Background(), "", "destination.example")
 		if err != nil {
 			t.Fatalf("Plan() error = %v", err)
 		}
@@ -129,7 +129,7 @@ func TestGuardedProxyPlanner_ValidatesThePlannedDestination(t *testing.T) {
 // at connect time, so the adapter must not refuse it here.
 func TestGuardedProxyPlanner_EmptyPlanSkipsTheCheck(t *testing.T) {
 	adapter, _ := plannerAdapter(t, "127.0.0.1", nil, false)
-	plan, err := adapter.Plan(context.Background(), "destination.example")
+	plan, err := adapter.Plan(context.Background(), "", "destination.example")
 	if err != nil {
 		t.Fatalf("Plan() error = %v, want the disabled proxy to plan nothing without a check", err)
 	}

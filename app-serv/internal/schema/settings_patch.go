@@ -35,12 +35,16 @@ type SecuritySettingsPatch struct {
 	RequireAPIKey *bool `json:"require_api_key,omitempty"`
 }
 
-// NetworkSettingsPatch updates the network group.
+// NetworkSettingsPatch updates the network group. ProviderProxies replaces
+// the whole per-provider binding map when present (docs/PORT/009-PORT-PROVIDER-
+// PROXY.md D1): dive reaches into every entry, so a bad value is refused at the
+// boundary rather than by the backstop.
 type NetworkSettingsPatch struct {
-	OutboundProxyEnabled  *bool   `json:"outbound_proxy_enabled,omitempty"`
-	OutboundProxyURL      *string `json:"outbound_proxy_url,omitempty" validate:"omitempty,url,max=2048"`
-	OutboundNoProxy       *string `json:"outbound_no_proxy,omitempty" validate:"omitempty,max=2048"`
-	OutboundProxyStrategy *string `json:"outbound_proxy_strategy,omitempty" validate:"omitempty,oneof=fallback round_robin"`
+	OutboundProxyEnabled  *bool                          `json:"outbound_proxy_enabled,omitempty"`
+	OutboundProxyURL      *string                        `json:"outbound_proxy_url,omitempty" validate:"omitempty,url,max=2048"`
+	OutboundNoProxy       *string                        `json:"outbound_no_proxy,omitempty" validate:"omitempty,max=2048"`
+	OutboundProxyStrategy *string                        `json:"outbound_proxy_strategy,omitempty" validate:"omitempty,oneof=fallback round_robin"`
+	ProviderProxies       *map[string]ProviderProxyPatch `json:"provider_proxies,omitempty" validate:"omitempty,dive"`
 }
 
 // TokenSaverSettingsPatch updates the §7.9 groups. The caveman key is absent by
@@ -144,6 +148,7 @@ func ToSettingsPatch(req PatchSettingsRequest) domain.SettingsPatch {
 			OutboundProxyURL:      req.Network.OutboundProxyURL,
 			OutboundNoProxy:       req.Network.OutboundNoProxy,
 			OutboundProxyStrategy: req.Network.OutboundProxyStrategy,
+			ProviderProxies:       providerProxiesPtr(req.Network.ProviderProxies),
 		}
 	}
 	if req.TokenSaver != nil {
@@ -183,6 +188,7 @@ func SettingsResponseFrom(s domain.Settings) SettingsResponse {
 			OutboundProxyURL:      s.Network.OutboundProxyURL,
 			OutboundNoProxy:       s.Network.OutboundNoProxy,
 			OutboundProxyStrategy: proxyStrategyOrDefault(s.Network.OutboundProxyStrategy),
+			ProviderProxies:       providerProxiesOrEmpty(s.Network.ProviderProxies),
 		},
 		TokenSaver: TokenSaverSettingsResponse{
 			RTK:      TokenSaverRTKResponse{Enabled: s.TokenSaver.RTK.Enabled, Filters: filtersOrEmpty(s.TokenSaver.RTK.Filters)},

@@ -10,7 +10,7 @@ import ProxyPoolsPage from '../../src/routes/proxy-pools/+page.svelte';
 import { formatTimestamp } from '$lib/utils/time';
 import { value, text } from '../support/dom';
 import { proxyRow, stubProxies } from '../support/proxy-stub';
-import { settingsDocument } from '../support/settings-document';
+import { settingsDocument, networkGroup } from '../support/settings-document';
 
 async function loaded(): Promise<void> {
 	await screen.findByRole('heading', { name: 'Proxy Pools' });
@@ -200,26 +200,35 @@ describe('the outbound card', () => {
 			screen.getByText(/Global, and the setting the gateway actually routes with/)
 		).toBeTruthy();
 		expect(screen.getByText(/URL field is the last resort/)).toBeTruthy();
-		expect(screen.getByText(/there is no per-endpoint control/)).toBeTruthy();
+		// The card names where the per-provider control lives (docs/PORT/009-PORT-PROVIDER-PROXY.md D9)
+		// and what is still deferred, so neither is left for a reader to hunt for.
+		expect(
+			screen.getByText(/unless a provider has its own binding on its provider screen/)
+		).toBeTruthy();
+		expect(screen.getByText(/Per-endpoint binding is still deferred/)).toBeTruthy();
 	});
 
 	it('shows the stored outbound values, strategy included', async () => {
 		stubProxies({
 			settings: settingsDocument({
-				network: {
+				network: networkGroup({
 					outbound_proxy_enabled: true,
 					outbound_proxy_url: 'http://proxy.internal:8080',
 					outbound_no_proxy: 'localhost',
 					outbound_proxy_strategy: 'round_robin'
-				}
+				})
 			})
 		});
 		render(ProxyPoolsPage);
 
-		expect(value(await screen.findByLabelText('Outbound proxy URL'))).toBe(
+		// The label the component carries at HEAD ('Last-resort proxy URL') and the strategy the test's
+		// own name promises: HEAD shipped the rename in the component without the matching query here,
+		// so this pass adopts the one-line repair rather than committing a red test.
+		expect(value(await screen.findByLabelText('Last-resort proxy URL'))).toBe(
 			'http://proxy.internal:8080'
 		);
 		expect(value(screen.getByLabelText('Bypass the proxy for these hosts'))).toBe('localhost');
+		expect(value(screen.getByLabelText('Pool strategy'))).toBe('round_robin');
 	});
 
 	it('says so when the settings document cannot be read, without hiding the pool', async () => {

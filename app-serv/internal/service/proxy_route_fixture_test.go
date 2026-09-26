@@ -41,9 +41,13 @@ type fakeRouteStore struct {
 	nextErr   error
 	parked    map[string]bool
 	parkedIDs []string
+	// nextKeys records every cursor key the plan consulted, so the per-provider
+	// key rule is asserted rather than assumed.
+	nextKeys []string
 }
 
-func (f *fakeRouteStore) Next(_ context.Context, _ string, ids []string) ([]string, error) {
+func (f *fakeRouteStore) Next(_ context.Context, key string, ids []string) ([]string, error) {
+	f.nextKeys = append(f.nextKeys, key)
 	if f.nextErr != nil {
 		return nil, f.nextErr
 	}

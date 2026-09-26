@@ -49,6 +49,10 @@ type MediaRequest struct {
 	URL     string
 	Headers map[string]string
 	Body    []byte
+	// ProviderID is the registry entry that answers, so the provider's own
+	// proxy binding decides this call's route (docs/PORT/
+	// 009-PORT-PROVIDER-PROXY.md D7). Empty follows the global setting.
+	ProviderID string
 	// TimeoutMS overrides the total deadline for this call, or zero for the
 	// service default.
 	TimeoutMS int
@@ -99,7 +103,7 @@ func (t *MediaTransport) Do(ctx context.Context, request MediaRequest) (MediaRes
 		built.Header.Set(key, value)
 	}
 
-	response, err := t.dialer.Do(callCtx, built)
+	response, err := t.dialer.Do(callCtx, built, request.ProviderID)
 	if err != nil {
 		if callCtx.Err() != nil {
 			return MediaResponse{}, timeoutError(err)

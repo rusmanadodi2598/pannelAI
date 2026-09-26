@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
@@ -31,11 +32,19 @@ import (
 // SettingsService implements SPEC-API-001 §7.14.
 type SettingsService struct {
 	repo repository.SettingsRepository
+	// proxies answers whether a provider_proxies pool id names a stored row.
+	// A nil value refuses a non-empty id, the endpoint parity direction
+	// (docs/PORT/009-PORT-PROVIDER-PROXY.md D6): a deployment that cannot check
+	// must not store a name nothing resolves.
+	proxies ProxyPoolFinder
 }
 
 // SettingsServiceDeps holds the collaborators the service needs.
 type SettingsServiceDeps struct {
 	Repo repository.SettingsRepository
+	// Proxies is optional: a deployment without a proxy store still serves
+	// every setting except a provider binding that names a pool row.
+	Proxies ProxyPoolFinder
 }
 
 // NewSettingsService validates deps and returns a ready service.
@@ -43,7 +52,7 @@ func NewSettingsService(deps SettingsServiceDeps) (*SettingsService, error) {
 	if deps.Repo == nil {
 		return nil, domain.NewValidationError("settings repository is required")
 	}
-	return &SettingsService{repo: deps.Repo}, nil
+	return &SettingsService{repo: deps.Repo, proxies: deps.Proxies}, nil
 }
 
 // Settings returns the typed document: the stored values merged over the
@@ -64,7 +73,7 @@ func (s *SettingsService) Settings(ctx context.Context) (domain.Settings, error)
 	// row predates arrives as its zero value; Normalized fills the documented
 	// defaults back in for the routing keys this contract added later.
 	settings.Routing = decodeOr(settings.Routing, stored[domain.SettingsKeyRouting]).Normalized()
-	settings.Network = decodeOr(settings.Network, stored[domain.SettingsKeyNetwork])
+	settings.Network = decodeOr(settings.Network, stored[domain.SettingsKeyNetwork]).Normalized()
 	settings.TokenSaver = decodeOr(settings.TokenSaver, stored[domain.SettingsKeyTokenSaver])
 	settings.Logging = decodeOr(settings.Logging, stored[domain.SettingsKeyLogging])
 	return settings, nil
@@ -111,6 +120,9 @@ func (s *SettingsService) Update(ctx context.Context, patch domain.SettingsPatch
 	if err := next.Update(patch); err != nil {
 		return domain.Settings{}, err
 	}
+	if err := s.checkBoundPools(ctx, patch); err != nil {
+		return domain.Settings{}, err
+	}
 
 	touched := touchedGroups(patch)
 	for _, group := range touched {
@@ -123,6 +135,37 @@ func (s *SettingsService) Update(ctx context.Context, patch domain.SettingsPatch
 		}
 	}
 	return next, nil
+}
+
+// checkBoundPools refuses a provider binding that names no stored pool row
+// (docs/PORT/009-PORT-PROVIDER-PROXY.md D6). Only a patch that carries the map
+// is checked: an untouched binding was validated when it was written, and a
+// deployment that never bound a provider pays for nothing. An empty id (the
+// global default) and the none sentinel are values rather than references, so
+// neither needs a row.
+func (s *SettingsService) checkBoundPools(ctx context.Context, patch domain.SettingsPatch) error {
+	if patch.Network == nil || patch.Network.ProviderProxies == nil {
+		return nil
+	}
+	for id, entry := range *patch.Network.ProviderProxies {
+		poolID := strings.TrimSpace(entry.PoolID)
+		if poolID == "" || poolID == domain.ProxyPoolNone {
+			continue
+		}
+		if s.proxies == nil {
+			return domain.NewValidationError("network.provider_proxies[" + id +
+				"].pool_id cannot be set because no proxy store is configured")
+		}
+		exists, err := s.proxies.ProxyPoolExists(ctx, poolID)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return domain.NewValidationError("network.provider_proxies[" + id +
+				"].pool_id does not name a stored proxy pool")
+		}
+	}
+	return nil
 }
 
 // touchedGroups names the stored keys a patch changes, so an untouched group is

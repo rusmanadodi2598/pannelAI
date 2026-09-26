@@ -175,6 +175,9 @@ func (s *SystemOneService) perform(ctx context.Context, call systemOneCall, keyI
 	release := markActiveRequest(ctx, s.active, call.outcome.ProviderID, call.outcome.EndpointID, call.outcome.Model)
 	defer release()
 
+	// The provider's own proxy binding decides this call's route (docs/PORT/
+	// 009-PORT-PROVIDER-PROXY.md D7).
+	call.request.ProviderID = call.outcome.ProviderID
 	answer, err := s.caller.Do(ctx, call.request)
 	latencyMS := time.Since(started).Milliseconds()
 

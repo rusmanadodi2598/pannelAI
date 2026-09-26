@@ -6,7 +6,7 @@
 //	request dials through, in which order (docs/PORT/
 //	008-PORT-PROXY-ENGINE.md D1-D6).
 //
-// @uses      internal/domain, internal/repository, context, net/url, sort,
+// @uses      internal/domain, internal/repository, context, net/url,
 //
 //	strings, time.
 //
@@ -29,7 +29,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
@@ -87,20 +86,35 @@ func NewProxyRouteService(deps ProxyRouteDeps) *ProxyRouteService {
 	}
 }
 
-// Plan returns the proxy attempts one request to destHost walks, in order
-// (docs/PORT/008-PORT-PROXY-ENGINE.md D1-D7).
+// Plan returns the proxy attempts one request from providerID to destHost
+// walks, in order (docs/PORT/008-PORT-PROXY-ENGINE.md D1-D7, docs/PORT/
+// 009-PORT-PROVIDER-PROXY.md D2-D5).
+//
+// The provider's binding decides the candidate set before the walk is ordered:
+// `__none__` dials direct, an empty pool follows the global setting (the
+// switch is its gate), and a named pool leads the walk while the remaining
+// usable rows follow. A pin works while the global switch is off, because the
+// pin is the operator's explicit instruction for that provider; the static URL
+// stays a candidate only while the global switch is on, because it belongs to
+// the global configuration.
 //
 // An empty plan is a decision, not an error: it means the shared client serves
 // the request exactly as it does today (the static URL, or direct under the
-// empty-URL bypass). The static URL is appended as the last attempt only when
-// the pool produced a plan of its own, so "last resort" is a property of the
-// walk rather than a second setting.
-func (s *ProxyRouteService) Plan(ctx context.Context, destHost string) ([]domain.ProxyRouteAttempt, error) {
+// empty-URL bypass).
+func (s *ProxyRouteService) Plan(ctx context.Context, providerID, destHost string) ([]domain.ProxyRouteAttempt, error) {
 	document, err := s.settings.Settings(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if !document.Network.OutboundProxyEnabled {
+	binding, err := document.Network.ProviderProxyFor(providerID)
+	if err != nil {
+		return nil, err
+	}
+	if binding.PoolID == domain.ProxyPoolNone {
+		// The provider's own binding exempts it: no pool, no static URL.
+		return nil, nil
+	}
+	if binding.PoolID == "" && !document.Network.OutboundProxyEnabled {
 		return nil, nil
 	}
 	if domain.ProxyExempt(document.Network.OutboundNoProxy, destHost) {
@@ -125,48 +139,11 @@ func (s *ProxyRouteService) Plan(ctx context.Context, destHost string) ([]domain
 		return nil, nil
 	}
 
-	strategy, err := domain.ParseProxyStrategy(document.Network.OutboundProxyStrategy)
-	if err != nil {
-		return nil, err
-	}
-
-	// Stable order: insertion order is the operator's fallback order (D4).
-	sort.SliceStable(usable, func(i, j int) bool {
-		if !usable[i].CreatedAt().Equal(usable[j].CreatedAt()) {
-			return usable[i].CreatedAt().Before(usable[j].CreatedAt())
-		}
-		return usable[i].ID() < usable[j].ID()
-	})
-
-	ids := make([]string, len(usable))
 	byID := make(map[string]domain.Proxy, len(usable))
-	for i, row := range usable {
-		ids[i] = row.ID()
+	for _, row := range usable {
 		byID[row.ID()] = row
 	}
-
-	// Parked candidates sit out while an unparked one remains (D6); when every
-	// usable candidate is parked the list stays whole, because a cooldown is a
-	// hint about the past, not proof about the next dial.
-	unparked := make([]string, 0, len(ids))
-	for _, id := range ids {
-		parked, err := s.routes.Parked(ctx, id)
-		if err != nil {
-			parked = false
-		}
-		if !parked {
-			unparked = append(unparked, id)
-		}
-	}
-	if len(unparked) > 0 {
-		ids = unparked
-	}
-
-	if strategy == domain.ProxyStrategyRoundRobin {
-		if rotated, err := s.routes.Next(ctx, domain.ProxyRoutePoolKey, ids); err == nil {
-			ids = rotated
-		}
-	}
+	ids := s.candidateOrder(ctx, providerID, binding, usable)
 
 	attempts := make([]domain.ProxyRouteAttempt, 0, len(ids)+1)
 	for _, id := range ids {
@@ -191,15 +168,17 @@ func (s *ProxyRouteService) Plan(ctx context.Context, destHost string) ([]domain
 		return nil, nil
 	}
 
-	if raw := strings.TrimSpace(document.Network.OutboundProxyURL); raw != "" {
-		parsed, err := url.Parse(raw)
-		if err != nil || parsed.Host == "" {
-			// The static route refuses a URL it cannot dial rather than dialing
-			// direct; dropping the tail here would quietly weaken that, so a
-			// malformed stored value refuses the plan like any broken setting.
-			return nil, fmt.Errorf("the stored outbound proxy url %q is not a usable proxy URL", raw)
+	if document.Network.OutboundProxyEnabled {
+		if raw := strings.TrimSpace(document.Network.OutboundProxyURL); raw != "" {
+			parsed, err := url.Parse(raw)
+			if err != nil || parsed.Host == "" {
+				// The static route refuses a URL it cannot dial rather than dialing
+				// direct; dropping the tail here would quietly weaken that, so a
+				// malformed stored value refuses the plan like any broken setting.
+				return nil, fmt.Errorf("the stored outbound proxy url %q is not a usable proxy URL", raw)
+			}
+			attempts = append(attempts, domain.ProxyRouteAttempt{ID: "", URL: parsed})
 		}
-		attempts = append(attempts, domain.ProxyRouteAttempt{ID: "", URL: parsed})
 	}
 	return attempts, nil
 }

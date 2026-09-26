@@ -114,7 +114,7 @@ func TestProxyRouteService_Plan(t *testing.T) {
 			if host == "" {
 				host = "api.destination.example"
 			}
-			plan, err := svc.Plan(context.Background(), host)
+			plan, err := svc.Plan(context.Background(), "", host)
 			if tc.wantErr {
 				if err == nil {
 					t.Fatal("Plan() = nil error, want the malformed stored url refused")

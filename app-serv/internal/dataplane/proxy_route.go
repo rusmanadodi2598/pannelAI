@@ -36,10 +36,12 @@ import (
 )
 
 // ProxyRoutePlanner plans the proxy attempts one request may walk. Plan is
-// consulted once per request with the destination host; ReportFailure parks a
-// candidate whose connect stage died so the next request skips it.
+// consulted once per request with the provider that will answer and the
+// destination host, because the provider's binding decides the candidate set
+// (docs/PORT/009-PORT-PROVIDER-PROXY.md D2-D5); ReportFailure parks a candidate
+// whose connect stage died so the next request skips it.
 type ProxyRoutePlanner interface {
-	Plan(ctx context.Context, host string) ([]domain.ProxyRouteAttempt, error)
+	Plan(ctx context.Context, providerID, host string) ([]domain.ProxyRouteAttempt, error)
 	ReportFailure(ctx context.Context, proxyID string)
 }
 
@@ -55,13 +57,16 @@ type ProxyDialer struct {
 	transports sync.Map // map[string]*http.Client
 }
 
-// Do performs the request through the plan. The returned body is the caller's
-// to close, exactly as http.Client.Do would hand it over.
-func (d *ProxyDialer) Do(ctx context.Context, request *http.Request) (*http.Response, error) {
+// Do performs the request through the plan. providerID is the registry entry
+// that will answer, which the plan resolves the binding against; an empty value
+// is a caller with no provider (an unscoped probe), which follows the global
+// setting. The returned body is the caller's to close, exactly as
+// http.Client.Do would hand it over.
+func (d *ProxyDialer) Do(ctx context.Context, request *http.Request, providerID string) (*http.Response, error) {
 	if d.routes == nil {
 		return d.client.Do(request)
 	}
-	plan, err := d.routes.Plan(ctx, request.URL.Host)
+	plan, err := d.routes.Plan(ctx, providerID, request.URL.Host)
 	if err != nil {
 		return nil, wrapDataPlaneError(CodeUpstreamError, "the proxy plan could not be read", err)
 	}

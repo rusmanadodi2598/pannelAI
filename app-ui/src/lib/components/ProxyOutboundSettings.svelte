@@ -9,9 +9,10 @@
 	// tested pool, or a pool an operator adds rows to without learning they now carry traffic, is
 	// the confusion this screen would otherwise cause.
 	//
-	// §6.9 also asks for the deferred per-endpoint binding to be named. SPEC-API §7.11 assigns one
-	// proxy globally in v1, so no control for it ships and the card says so instead of leaving a
-	// reader to hunt for one.
+	// §6.9 also asks for the deferred per-endpoint binding to be named, and for the per-provider binding
+	// to be pointed at: SPEC-API §7.11 defers the per-endpoint column, while a provider's own screen
+	// (PORT 009) can pin that provider to one pool or to none. The card says both, so nobody hunts for a
+	// control that does not exist or misses the one that does.
 	//
 	// §6.13 gives the Settings screen's Network tab a link to this surface rather than a second copy
 	// of the form, so this is the one editor for these keys. It loads its own document, which keeps
@@ -49,6 +50,16 @@
 	let refusal = $state<string | null>(null);
 	let saved = $state(false);
 
+	// This card owns four keys and nothing else. `provider_proxies` belongs to the provider screen's own
+	// proxy card (docs/PORT/009-PORT-PROVIDER-PROXY.md D1), and carrying it here would put it in a strict
+	// form that refuses it and in a PATCH body this card has no business writing.
+	const ownKeys = (group: NetworkSettingsForm & Record<string, unknown>): NetworkSettingsForm => ({
+		outbound_proxy_enabled: group.outbound_proxy_enabled,
+		outbound_proxy_url: group.outbound_proxy_url,
+		outbound_no_proxy: group.outbound_no_proxy,
+		outbound_proxy_strategy: group.outbound_proxy_strategy
+	});
+
 	const dirty = $derived(settingsGroupDirty(server, draft));
 
 	// §8.4.4: the shared guard asks before a navigation takes this draft away. Until the stored document
@@ -76,8 +87,8 @@
 		}
 
 		error = null;
-		server = { ...result.data.network };
-		draft = { ...result.data.network };
+		server = ownKeys(result.data.network);
+		draft = { ...server };
 	}
 
 	async function save(): Promise<void> {
@@ -98,8 +109,8 @@
 			return;
 		}
 
-		server = { ...result.data.network };
-		draft = { ...result.data.network };
+		server = ownKeys(result.data.network);
+		draft = { ...server };
 		saved = true;
 	}
 
@@ -116,10 +127,11 @@
 <div class="flex flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4">
 	<h2 class="text-sm font-semibold">Outbound proxy</h2>
 	<p class="text-sm text-[var(--color-text-muted)]">
-		Global, and the setting the gateway actually routes with. While proxying is on, every upstream
-		call walks the pool above in the strategy's order, unless its host is in the bypass list below.
-		The URL field is the last resort: it is tried after the pool has failed to connect, never before
-		a pool candidate. One proxy applies to everything in v1, so there is no per-endpoint control.
+		Global, and the setting the gateway actually routes with, unless a provider has its own binding
+		on its provider screen. While proxying is on, every upstream call walks the pool above in the
+		strategy's order, unless its host is in the bypass list below. The URL field is the last resort:
+		it is tried after the pool has failed to connect, never before a pool candidate. Per-endpoint
+		binding is still deferred.
 	</p>
 
 	{#if loading}

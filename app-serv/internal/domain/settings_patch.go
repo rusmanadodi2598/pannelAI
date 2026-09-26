@@ -46,12 +46,16 @@ type SecuritySettingsPatch struct {
 
 // NetworkSettingsPatch updates the network group. The strategy is a closed
 // set (docs/PORT/008-PORT-PROXY-ENGINE.md D2); Validate is the backstop that
-// refuses an out-of-set value whichever write path carries it.
+// refuses an out-of-set value whichever write path carries it. ProviderProxies
+// replaces the whole per-provider binding map when present, so an empty map is
+// a real value (clear every binding) rather than "leave unchanged", which the
+// nil pointer already means (docs/PORT/009-PORT-PROVIDER-PROXY.md D1).
 type NetworkSettingsPatch struct {
 	OutboundProxyEnabled  *bool
 	OutboundProxyURL      *string
 	OutboundNoProxy       *string
 	OutboundProxyStrategy *string
+	ProviderProxies       *map[string]ProviderProxy
 }
 
 // TokenSaverSettingsPatch updates the §7.9 groups. It has no caveman field: the
@@ -110,6 +114,9 @@ func (s Settings) Validate() error {
 	if _, err := ParseProxyStrategy(s.Network.OutboundProxyStrategy); err != nil {
 		return err
 	}
+	if err := validateProviderProxies(s.Network.ProviderProxies); err != nil {
+		return err
+	}
 	if err := validateRouting(s.Routing); err != nil {
 		return err
 	}
@@ -161,6 +168,7 @@ func (s *Settings) Update(patch SettingsPatch) error {
 		applyString(&s.Network.OutboundProxyURL, p.OutboundProxyURL)
 		applyString(&s.Network.OutboundNoProxy, p.OutboundNoProxy)
 		applyString(&s.Network.OutboundProxyStrategy, p.OutboundProxyStrategy)
+		applyProviderProxies(&s.Network.ProviderProxies, p.ProviderProxies)
 	}
 	if p := patch.TokenSaver; p != nil {
 		applyRTK(&s.TokenSaver.RTK, p.RTK)
@@ -199,6 +207,20 @@ func applyString(dst *string, src *string) {
 	if src != nil {
 		*dst = *src
 	}
+}
+
+// applyProviderProxies writes the per-provider binding map. It is replaced
+// wholesale when the patch carries one, so a deleted entry stays deleted; the
+// copy keeps the stored document from sharing the caller's map.
+func applyProviderProxies(dst *map[string]ProviderProxy, src *map[string]ProviderProxy) {
+	if src == nil {
+		return
+	}
+	replaced := make(map[string]ProviderProxy, len(*src))
+	for id, entry := range *src {
+		replaced[id] = entry
+	}
+	*dst = replaced
 }
 
 // applyToggle writes one saver toggle group only when the patch carried it.

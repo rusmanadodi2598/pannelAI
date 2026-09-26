@@ -1,7 +1,8 @@
 // The settings document fixture (docs/SPEC-API/001-SPEC-API.md §7.14).
 //
-// Two screens read this document: Settings, which edits four of its groups (§6.13), and Proxy Pools,
-// which edits the network group (§6.9). One definition, so a change to the API's shape fails both
+// Three screens read this document: Settings, which edits four of its groups (§6.13), Proxy Pools,
+// which edits the network group (§6.9), and a provider's detail screen, whose rotation switch and
+// proxy card each own one key of it. One definition, so a change to the API's shape fails all three
 // test files at once instead of one of them quietly.
 
 export function settingsDocument(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -18,7 +19,8 @@ export function settingsDocument(overrides: Record<string, unknown> = {}): Recor
 			outbound_proxy_enabled: false,
 			outbound_proxy_url: '',
 			outbound_no_proxy: '',
-			outbound_proxy_strategy: 'fallback'
+			outbound_proxy_strategy: 'fallback',
+			provider_proxies: {}
 		},
 		logging: {
 			request_capture_enabled: false,
@@ -28,6 +30,19 @@ export function settingsDocument(overrides: Record<string, unknown> = {}): Recor
 		},
 		...overrides
 	};
+}
+
+/**
+ * The network group as the API answers it: the four keys the outbound form owns plus the
+ * per-provider binding map (docs/PORT/009-PORT-PROVIDER-PROXY.md D1).
+ *
+ * A test that stores a proxy state uses this rather than a four-key literal, because the response
+ * schema requires `provider_proxies`: a group without it is drift the read schema refuses, not a
+ * stored document the screen would ever see.
+ */
+export function networkGroup(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+	const network = settingsDocument().network as Record<string, unknown>;
+	return { ...network, ...overrides };
 }
 
 /**

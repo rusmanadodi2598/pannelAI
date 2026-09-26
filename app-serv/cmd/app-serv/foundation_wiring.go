@@ -40,7 +40,14 @@ import (
 // key, so a second instance would be a second source of truth for it.
 func buildFoundation(cfg config.Config, pool *pgxpool.Pool) (*service.SettingsService, egress, *domain.Sealer, error) {
 	settingsRepo := postgres.NewSettingsRepository(pool)
-	settingsSvc, err := service.NewSettingsService(service.SettingsServiceDeps{Repo: settingsRepo})
+	settingsSvc, err := service.NewSettingsService(service.SettingsServiceDeps{
+		Repo: settingsRepo,
+		// The per-provider binding (docs/PORT/009-PORT-PROVIDER-PROXY.md D6)
+		// names a stored pool row, so the settings write needs the same one
+		// question the endpoint parity check asks. It is built from the same
+		// pool, so both services refuse a dangling id identically.
+		Proxies: proxyPoolFinder{proxies: postgres.NewProxyRepository(pool)},
+	})
 	if err != nil {
 		return nil, egress{}, nil, fmt.Errorf("management wiring: settings: %w", err)
 	}

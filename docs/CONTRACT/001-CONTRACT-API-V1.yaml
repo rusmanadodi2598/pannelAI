@@ -2380,6 +2380,27 @@ components:
           enum:
           - fallback
           - round_robin
+        provider_proxies:
+          type: object
+          description: Per-provider proxy bindings, keyed by provider id. Sent whole; an absent entry
+            inherits the global setting, `__none__` dials direct, and any other pool_id names a stored
+            proxy row to try first.
+          additionalProperties:
+            $ref: '#/components/schemas/ProviderProxyPatch'
+      additionalProperties: false
+    ProviderProxyPatch:
+      type: object
+      description: One provider's proxy binding. An entry must set at least one field; deleting the
+        entry is how a provider returns to the global setting.
+      properties:
+        pool_id:
+          type: string
+          maxLength: 64
+        strategy:
+          type: string
+          enum:
+          - fallback
+          - round_robin
       additionalProperties: false
     TokenSaverSettingsPatch:
       type: object
@@ -3213,11 +3234,30 @@ components:
           enum:
           - fallback
           - round_robin
+        provider_proxies:
+          type: object
+          description: The stored bindings, rendered as {} rather than null when there are none.
+          additionalProperties:
+            $ref: '#/components/schemas/ProviderProxyResponse'
       required:
       - outbound_proxy_enabled
       - outbound_proxy_url
       - outbound_no_proxy
       - outbound_proxy_strategy
+      - provider_proxies
+      additionalProperties: false
+    ProviderProxyResponse:
+      type: object
+      description: One provider's stored binding. An absent field inherits the global setting, so
+        the panel renders what is stored rather than a filled-in copy.
+      properties:
+        pool_id:
+          type: string
+        strategy:
+          type: string
+          enum:
+          - fallback
+          - round_robin
       additionalProperties: false
     TokenSaverSettingsResponse:
       type: object

@@ -55,8 +55,22 @@ const ProxyFailureCooldown = 2 * time.Minute
 const MaxProxyRouteAttempts = 3
 
 // ProxyRoutePoolKey is the rotation cursor's pool name (D5): v1 routes one
-// global pool, so one counter serves every destination.
+// global pool, so one counter serves every destination. It is also the key an
+// unscoped caller keeps (docs/PORT/009-PORT-PROVIDER-PROXY.md D8).
 const ProxyRoutePoolKey = "global"
+
+// ProxyRoutePoolKeyFor names the cursor one provider's round-robin walk reads
+// (docs/PORT/009-PORT-PROVIDER-PROXY.md D8). The key is per provider because
+// the strategy is now per provider too: a shared cursor would let one
+// provider's traffic advance another provider's position, and the reference
+// keys its rotation state the same way. A caller with no provider keeps the
+// pass-008 key, so an unscoped call still shares one rotation.
+func ProxyRoutePoolKeyFor(providerID string) string {
+	if providerID == "" {
+		return ProxyRoutePoolKey
+	}
+	return providerID
+}
 
 // ProxyExempt reports whether a destination skips the proxy. The list is
 // comma-separated; `*` exempts everything, and an entry matches the host

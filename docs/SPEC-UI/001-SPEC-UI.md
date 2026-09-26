@@ -363,6 +363,18 @@ absent.
   even when the global default is round-robin; the section names the default it inherits, so an off switch
   is not a mystery, and a refused write puts the switch back rather than leaving it claiming a change the
   gateway did not store.
+- **Proxy binding (landed 2026-09-26, PORT 009):** one card below the Connections section, on both shapes
+  of the screen, writing this provider's entry in `network.provider_proxies` (SPEC-API §7.14). Two selects:
+  the pool (`Global`, `None (direct)`, or one stored row) and the strategy (`Follow the global strategy`,
+  `Fallback`, `Round robin`). A write sends the whole binding map, so it is a read-modify-write over what
+  the server holds rather than over the copy this screen loaded; returning both selects to the default
+  deletes the entry, which is how a provider inherits the global setting again. The card states what the
+  engine will do with the stored binding: a pin leads every attempt and the other usable rows follow with
+  the strategy, `None` dials direct past a global switch that is on, and a pin whose row was deleted from
+  the pool is named as missing rather than silently read as `Global`, so a later strategy change cannot
+  drop it. The reference's own per-provider card (`NoAuthProxyCard.js`) renders only for a provider with
+  no auth and disables its pool select while a rotation strategy is on; this card renders for every
+  provider and keeps both selects editable, because here the pin and multi-pool failover coexist.
 - **OAuth section (U2, landed, OAuth providers only):** the section renders for a provider whose registry
   entry says `has_oauth`, and the flow `GET /api/v1/providers/{id}/oauth/status` reports decides what it
   offers: the panel starts `code` and, for `device`, `connector`, and `none`, states that flow's reason
@@ -643,7 +655,9 @@ absent.
   they are marked as global. While proxying is on, the pool's rows are the route (SPEC-API §7.11,
   PORT 008): the card carries the strategy picker and states that the URL field is the last-resort
   attempt after the pool, never before a row. Per-endpoint binding is deferred by SPEC-API §7.11 and
-  the screen says so, so nobody hunts for a control that does not exist.
+  the screen says so; the per-provider binding (PORT 009) lives on the provider's own screen (§6.3),
+  and this card names that too, so nobody hunts for a control that does not exist or misses the one
+  that does.
 - **Empty state:** "No proxies yet. Add one to route upstream calls through it once proxying is on."
   (Amended 2026-09-26: the sentence was §6.9's original "Add one to route upstream calls through it",
   qualified because a row carries traffic only while the outbound switch is on. Q15's divergence is
@@ -1895,6 +1909,15 @@ half carry.
     decimal the panel parses. Decide whether SPEC-API narrows the wire to a decimal grammar (which would
     make the panel's rule a copy rather than a stricter one), or whether the panel should accept the
     parser's full grammar and display whatever it is given.
+25. **The reference binds a keyed provider's pool per connection, and this port binds the provider
+    itself.** The owner's decision for PORT 009 was per-provider (the settings map), so one pool setting
+    applies to every endpoint of a provider. The reference binds per connection instead
+    (`providerSpecificData.proxyPoolId`, `AddApiKeyModal.js:31`, resolved at `connectionProxy.js:66-187`)
+    for a provider that carries keys, and per provider only where there is no connection to carry one
+    (`NoAuthProxyCard.js`). The `upstream_endpoints.proxy_pool_id` column exists in this port and is
+    stored and validated, but no request path reads it (SPEC-API §7.11). Decide whether per-endpoint
+    binding follows, which would let two connections of one provider leave through different pools, or
+    whether the per-provider binding stays the only one and the column is documented as vestigial.
 
 ## 15. Evidence for numbers and paths used here
 

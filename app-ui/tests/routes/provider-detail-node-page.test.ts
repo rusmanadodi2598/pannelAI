@@ -70,9 +70,12 @@ describe("a custom node's detail screen", () => {
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 		await waitFor(() => expect(screen.getByText('GPT-4o mini')).toBeTruthy());
 
+		// The proxy card sits between the connections and the models (docs/PORT/009-PORT-PROVIDER-PROXY.md
+		// D9): it is read beside the connections, and it belongs to no registry block.
 		expect(sectionHeadings()).toEqual([
 			'OpenAI Compatible Details',
 			'Connections',
+			'Proxy',
 			'Available Models'
 		]);
 	});

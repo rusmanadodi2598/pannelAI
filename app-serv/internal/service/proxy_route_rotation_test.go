@@ -38,7 +38,7 @@ func TestProxyRouteService_PlanRoundRobin(t *testing.T) {
 		svc := routeFixture([]domain.Proxy{oldest, middle, newest}, planDocument(domain.ProxyStrategyRoundRobin, ""))
 		svc.routes.(*fakeRouteStore).nextOrder = []string{"prx_c", "prx_a", "prx_b"}
 
-		plan, err := svc.Plan(context.Background(), "api.destination.example")
+		plan, err := svc.Plan(context.Background(), "", "api.destination.example")
 		if err != nil {
 			t.Fatalf("Plan() error = %v", err)
 		}
@@ -55,7 +55,7 @@ func TestProxyRouteService_PlanRoundRobin(t *testing.T) {
 		svc := routeFixture([]domain.Proxy{oldest, middle, newest}, planDocument(domain.ProxyStrategyRoundRobin, ""))
 		svc.routes.(*fakeRouteStore).nextErr = errors.New("redis down")
 
-		plan, err := svc.Plan(context.Background(), "api.destination.example")
+		plan, err := svc.Plan(context.Background(), "", "api.destination.example")
 		if err != nil {
 			t.Fatalf("Plan() error = %v, want a degraded plan", err)
 		}
@@ -71,7 +71,7 @@ func TestProxyRouteService_PlanDegrades(t *testing.T) {
 		svc := routeFixture(nil, planDocument("", "http://static.example.com:3128"))
 		svc.proxies.(*fakeProxyLister).err = errors.New("db down")
 
-		plan, err := svc.Plan(context.Background(), "api.destination.example")
+		plan, err := svc.Plan(context.Background(), "", "api.destination.example")
 		if err != nil {
 			t.Fatalf("Plan() error = %v, want a degraded plan", err)
 		}
@@ -84,14 +84,14 @@ func TestProxyRouteService_PlanDegrades(t *testing.T) {
 		svc := routeFixture(nil, domain.Settings{})
 		svc.settings.(*fakePlanSettings).err = errors.New("db down")
 
-		if _, err := svc.Plan(context.Background(), "api.destination.example"); err == nil {
+		if _, err := svc.Plan(context.Background(), "", "api.destination.example"); err == nil {
 			t.Fatal("Plan() accepted a request without being able to read the proxy settings")
 		}
 	})
 
 	t.Run("a strategy outside the closed set refuses the plan", func(t *testing.T) {
 		svc := routeFixture([]domain.Proxy{poolRow(t, "prx_a", time.Hour, true, "", "", "")}, planDocument("random", ""))
-		if _, err := svc.Plan(context.Background(), "api.destination.example"); err == nil {
+		if _, err := svc.Plan(context.Background(), "", "api.destination.example"); err == nil {
 			t.Fatal("Plan() accepted an out-of-set strategy")
 		}
 	})
@@ -104,7 +104,7 @@ func TestProxyRouteService_PlanDegrades(t *testing.T) {
 		svc := routeFixture(rows, planDocument("", ""))
 		svc.opener.(*fakePlanOpener).err = errors.New("seal broken")
 
-		plan, err := svc.Plan(context.Background(), "api.destination.example")
+		plan, err := svc.Plan(context.Background(), "", "api.destination.example")
 		if err != nil {
 			t.Fatalf("Plan() error = %v", err)
 		}
@@ -118,7 +118,7 @@ func TestProxyRouteService_Credentials(t *testing.T) {
 	row := poolRow(t, "prx_a", time.Hour, true, "", "operator", "sealed-a")
 	svc := routeFixture([]domain.Proxy{row}, planDocument("", ""))
 
-	plan, err := svc.Plan(context.Background(), "api.destination.example")
+	plan, err := svc.Plan(context.Background(), "", "api.destination.example")
 	if err != nil {
 		t.Fatalf("Plan() error = %v", err)
 	}

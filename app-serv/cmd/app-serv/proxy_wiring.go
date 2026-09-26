@@ -86,9 +86,11 @@ type guardedProxyPlanner struct {
 }
 
 // Plan returns the proxy attempts one request walks, after validating the
-// destination the plan would hide behind the proxy.
-func (p guardedProxyPlanner) Plan(ctx context.Context, host string) ([]domain.ProxyRouteAttempt, error) {
-	plan, err := p.routes.Plan(ctx, host)
+// destination the plan would hide behind the proxy. providerID is passed
+// through to the route service, whose plan resolves that provider's binding
+// (docs/PORT/009-PORT-PROVIDER-PROXY.md D7).
+func (p guardedProxyPlanner) Plan(ctx context.Context, providerID, host string) ([]domain.ProxyRouteAttempt, error) {
+	plan, err := p.routes.Plan(ctx, providerID, host)
 	if err != nil {
 		return nil, err
 	}

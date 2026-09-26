@@ -55,11 +55,22 @@ type ProviderStrategyResponse struct {
 // effective value, never an empty string, on the routing group's precedent: a
 // read of a document that predates the key still names fallback, so the panel
 // renders what the engine will do rather than a blank it must guess about.
+// ProviderProxies renders as an object, never null (docs/PORT/
+// 009-PORT-PROVIDER-PROXY.md D10).
 type NetworkSettingsResponse struct {
-	OutboundProxyEnabled  bool   `json:"outbound_proxy_enabled"`
-	OutboundProxyURL      string `json:"outbound_proxy_url"`
-	OutboundNoProxy       string `json:"outbound_no_proxy"`
-	OutboundProxyStrategy string `json:"outbound_proxy_strategy"`
+	OutboundProxyEnabled  bool                             `json:"outbound_proxy_enabled"`
+	OutboundProxyURL      string                           `json:"outbound_proxy_url"`
+	OutboundNoProxy       string                           `json:"outbound_no_proxy"`
+	OutboundProxyStrategy string                           `json:"outbound_proxy_strategy"`
+	ProviderProxies       map[string]ProviderProxyResponse `json:"provider_proxies"`
+}
+
+// ProviderProxyResponse is one provider's proxy binding. Both fields carry
+// omitempty because an absent one inherits the global setting: the panel
+// renders what is stored rather than a filled-in copy.
+type ProviderProxyResponse struct {
+	PoolID   string `json:"pool_id,omitempty"`
+	Strategy string `json:"strategy,omitempty"`
 }
 
 // TokenSaverSettingsResponse carries the §7.9 groups.

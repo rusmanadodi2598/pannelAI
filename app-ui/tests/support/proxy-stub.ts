@@ -106,7 +106,17 @@ export function stubProxies(overrides: Partial<ProxyStub> = {}): ProxyStub {
 				if (stub.writeStatus !== 200) {
 					return refusal('VALIDATION_ERROR', 'The gateway refused this value.', stub.writeStatus);
 				}
-				stub.settings = { ...stub.settings, ...body };
+				// A PATCH carries only the groups it owns, and the server merges each group's keys over
+				// the stored document. Replacing the document wholesale would drop the keys the request
+				// never mentioned, and a panel that reads the answer back would then fail its own schema.
+				const merged = { ...stub.settings };
+				for (const [group, value] of Object.entries(body)) {
+					merged[group] = {
+						...(stub.settings[group] as Record<string, unknown>),
+						...(value as Record<string, unknown>)
+					};
+				}
+				stub.settings = merged;
 				return json(stub.settings);
 			}
 			if (stub.settingsStatus !== 200) {

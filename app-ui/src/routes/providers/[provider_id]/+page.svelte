@@ -8,7 +8,7 @@
 	// A registry provider gets the five questions an operator asks about it, in the order they ask them:
 	// what it is (facts), which models it can answer with (catalog), which of its models are turned off
 	// (disabled), which models it declares itself (custom), and what the gateway routes through it (its
-	// connections), followed by the OAuth section for an OAuth provider.
+	// connections), followed by the proxy binding and the OAuth section for an OAuth provider.
 	//
 	// A custom node gets the reference's own page instead (`providers/[id]/page.js:1447-1819`), because
 	// none of those five questions is the registry's to answer for it: the node's facts are its own details
@@ -31,6 +31,7 @@
 	import ProviderDisabledModels from '$lib/components/ProviderDisabledModels.svelte';
 	import ProviderFacts from '$lib/components/ProviderFacts.svelte';
 	import ProviderOAuth from '$lib/components/ProviderOAuth.svelte';
+	import ProviderProxyCard from '$lib/components/ProviderProxyCard.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { getProvider } from '$lib/api/providers';
 	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
@@ -146,6 +147,11 @@
 			/>
 
 			<div class="flex flex-col gap-3">
+				<h2 class="text-base font-medium">Proxy</h2>
+				<ProviderProxyCard providerId={provider.id} />
+			</div>
+
+			<div class="flex flex-col gap-3">
 				<h2 class="text-base font-medium">Available Models</h2>
 				<ProviderCustomModels providerId={provider.id} {nodePrefix} onchanged={bumpCatalog} />
 			</div>
@@ -173,6 +179,11 @@
 				notice={keyNotice}
 				onaddkey={openKeyDialog}
 			/>
+
+			<div class="flex flex-col gap-3">
+				<h2 class="text-base font-medium">Proxy</h2>
+				<ProviderProxyCard providerId={provider.id} />
+			</div>
 
 			{#if provider.has_oauth}
 				<div class="flex flex-col gap-3">

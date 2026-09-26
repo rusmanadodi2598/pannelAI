@@ -45,11 +45,13 @@ type fakePlanner struct {
 	plans    [][]domain.ProxyRouteAttempt
 	planErr  error
 	seen     []string
+	seenIDs  []string
 	reported []string
 }
 
-func (f *fakePlanner) Plan(_ context.Context, host string) ([]domain.ProxyRouteAttempt, error) {
+func (f *fakePlanner) Plan(_ context.Context, providerID, host string) ([]domain.ProxyRouteAttempt, error) {
 	f.seen = append(f.seen, host)
+	f.seenIDs = append(f.seenIDs, providerID)
 	if f.planErr != nil {
 		return nil, f.planErr
 	}
@@ -76,7 +78,7 @@ func TestProxyDialer_WithoutRoutes(t *testing.T) {
 	var planner ProxyRoutePlanner
 	dialer := &ProxyDialer{client: http.DefaultClient, routes: planner}
 	request, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://127.0.0.1:1/x", strings.NewReader("body"))
-	response, err := dialer.Do(context.Background(), request)
+	response, err := dialer.Do(context.Background(), request, "")
 	if err == nil {
 		_ = response.Body.Close()
 		t.Fatal("Do() reached a closed port without failing")
@@ -93,13 +95,33 @@ func TestProxyDialer_EmptyPlanUsesTheSharedClient(t *testing.T) {
 	dialer := &ProxyDialer{client: server.Client(), routes: planner}
 	request, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, server.URL+"/x", strings.NewReader("body"))
 
-	response, err := dialer.Do(context.Background(), request)
+	response, err := dialer.Do(context.Background(), request, "")
 	if err != nil {
 		t.Fatalf("Do() error = %v", err)
 	}
 	_ = response.Body.Close()
 	if len(planner.seen) != 1 {
 		t.Fatalf("Plan was consulted %d times, want once", len(planner.seen))
+	}
+}
+
+func TestProxyDialer_PassesTheProviderToThePlan(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, "shared")
+	}))
+	defer server.Close()
+
+	planner := &fakePlanner{}
+	dialer := &ProxyDialer{client: server.Client(), routes: planner}
+	request, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, server.URL+"/x", strings.NewReader("body"))
+
+	response, err := dialer.Do(context.Background(), request, "openai")
+	if err != nil {
+		t.Fatalf("Do() error = %v", err)
+	}
+	_ = response.Body.Close()
+	if len(planner.seenIDs) != 1 || planner.seenIDs[0] != "openai" {
+		t.Fatalf("Plan saw providers %v, want the request's own provider", planner.seenIDs)
 	}
 }
 
@@ -118,7 +140,7 @@ func TestProxyDialer_FailsOverOnAConnectFailure(t *testing.T) {
 	dialer := &ProxyDialer{client: server.Client(), routes: planner}
 	request, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://destination.example/x", strings.NewReader("the-body"))
 
-	response, err := dialer.Do(context.Background(), request)
+	response, err := dialer.Do(context.Background(), request, "")
 	if err != nil {
 		t.Fatalf("Do() error = %v, want the live attempt to serve", err)
 	}
@@ -148,7 +170,7 @@ func TestProxyDialer_WalkIsBounded(t *testing.T) {
 	dialer := &ProxyDialer{client: server.Client(), routes: planner}
 	request, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://destination.example/x", strings.NewReader("body"))
 
-	response, err := dialer.Do(context.Background(), request)
+	response, err := dialer.Do(context.Background(), request, "")
 	if err == nil {
 		_ = response.Body.Close()
 		t.Fatal("Do() succeeded past the attempt bound")
@@ -166,7 +188,7 @@ func TestProxyDialer_PlanFailureRefusesTheRequest(t *testing.T) {
 	dialer := &ProxyDialer{client: http.DefaultClient, routes: planner}
 	request, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://destination.example/x", strings.NewReader("body"))
 
-	response, err := dialer.Do(context.Background(), request)
+	response, err := dialer.Do(context.Background(), request, "")
 	if err == nil {
 		_ = response.Body.Close()
 		t.Fatal("Do() accepted a request whose plan could not be read")

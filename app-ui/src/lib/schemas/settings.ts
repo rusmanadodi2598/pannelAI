@@ -53,6 +53,26 @@ export const schemaProviderStrategy = z.object({
 	sticky_limit: z.number().int().min(1).optional()
 });
 
+// One provider's proxy binding (docs/PORT/009-PORT-PROVIDER-PROXY.md D1-D3). `__none__` is the
+// reference's own sentinel for "None (direct)" (`NoAuthProxyCard.js`), and it is a real mode here:
+// the provider dials direct even while the global switch is on. An absent `pool_id` is what Global
+// looks like on the wire, not `''`, because an entry that sets neither field is the one shape the
+// gateway refuses by name.
+export const PROXY_POOL_NONE = '__none__';
+
+// Both fields are optional because an absent one inherits the global setting: the panel renders what
+// is stored rather than a filled-in copy, so an entry that only pins a pool does not read as if it
+// had also chosen a strategy.
+export const schemaProviderProxy = z.object({
+	pool_id: z.string().optional(),
+	strategy: z.enum(PROXY_STRATEGIES).optional()
+});
+
+export const schemaProviderProxyPatch = z.strictObject({
+	pool_id: z.string().max(64, { message: 'Use 64 characters or fewer.' }).optional(),
+	strategy: z.enum(PROXY_STRATEGIES).optional()
+});
+
 export const schemaRoutingSettings = z.object({
 	combo_strategy: z.enum(COMBO_STRATEGIES),
 	combo_sticky_limit: z.number().int().min(1),
@@ -65,7 +85,10 @@ export const schemaNetworkSettings = z.object({
 	outbound_proxy_enabled: z.boolean(),
 	outbound_proxy_url: optionalAbsoluteUrl,
 	outbound_no_proxy: noProxyList,
-	outbound_proxy_strategy: z.enum(PROXY_STRATEGIES)
+	outbound_proxy_strategy: z.enum(PROXY_STRATEGIES),
+	// The per-provider bindings, which the API always answers as an object (SPEC-API §7.14), so a
+	// document without the key is drift rather than an older answer.
+	provider_proxies: z.record(z.string(), schemaProviderProxy)
 });
 
 export const schemaLoggingSettings = z.object({
@@ -165,6 +188,18 @@ export const schemaProviderStrategiesPatch = z.strictObject({
 	})
 });
 
+// The provider screen's proxy card: one provider's entry inside the whole binding map (SPEC-API
+// §7.14). Separate from the network tab's patch for the same reason the strategies patch above is
+// separate from the routing tab's: the tab writes the four outbound keys and must not carry a map it
+// never rendered, and this one writes the map and must not carry the tab's fields. The map is sent
+// whole, so a caller read-modify-writes it, and deleting an entry is how a provider returns to the
+// global proxy setting.
+export const schemaProviderProxiesPatch = z.strictObject({
+	network: z.strictObject({
+		provider_proxies: z.record(z.string(), schemaProviderProxyPatch)
+	})
+});
+
 export const schemaNetworkSettingsPatch = z.strictObject({
 	network: schemaNetworkSettingsForm
 });
@@ -178,7 +213,11 @@ export type NetworkSettingsPatch = z.infer<typeof schemaNetworkSettingsPatch>;
 export type LoggingSettingsPatch = z.infer<typeof schemaLoggingSettingsPatch>;
 export type ProviderStrategiesPatch = z.infer<typeof schemaProviderStrategiesPatch>;
 export type ProviderStrategy = z.infer<typeof schemaProviderStrategy>;
+export type ProviderProxy = z.infer<typeof schemaProviderProxy>;
+export type ProviderProxyPatch = z.infer<typeof schemaProviderProxyPatch>;
+export type ProviderProxiesPatch = z.infer<typeof schemaProviderProxiesPatch>;
 export type CredentialRotation = (typeof CREDENTIAL_ROTATIONS)[number];
+export type ProviderProxyStrategy = (typeof PROXY_STRATEGIES)[number];
 
 /**
  * Whether a draft group differs from the group that was loaded.

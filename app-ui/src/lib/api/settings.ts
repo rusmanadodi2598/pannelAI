@@ -10,6 +10,7 @@
 import {
 	schemaLoggingSettingsPatch,
 	schemaNetworkSettingsPatch,
+	schemaProviderProxiesPatch,
 	schemaProviderStrategiesPatch,
 	schemaRoutingSettingsPatch,
 	schemaSecuritySettingsPatch,
@@ -19,6 +20,8 @@ import {
 	type NetworkSettingsForm,
 	type NetworkSettingsPatch,
 	type PanelSettings,
+	type ProviderProxiesPatch,
+	type ProviderProxyPatch,
 	type ProviderStrategiesPatch,
 	type ProviderStrategy,
 	type RoutingSettingsForm,
@@ -106,6 +109,34 @@ export async function patchProviderStrategy(
 		schema: schemaSettings,
 		body,
 		bodySchema: schemaProviderStrategiesPatch
+	});
+}
+
+/**
+ * Writes one provider's entry onto a fresh read of the whole binding map (SPEC-API §7.14), which is
+ * how the provider screen's proxy card changes one provider's pool and strategy
+ * (docs/PORT/009-PORT-PROVIDER-PROXY.md D9). The map is one settings value, so the change merges onto
+ * the map the server holds rather than onto the copy the screen loaded: another screen may have
+ * changed its own provider's binding since. A `null` next deletes the entry, which is how a provider
+ * returns to the global proxy setting; an entry with neither field is the one shape the gateway
+ * refuses by name, so the caller sends `null` rather than an empty object.
+ */
+export async function patchProviderProxies(
+	providerID: string,
+	next: ProviderProxyPatch | null
+): Promise<ApiResult<PanelSettings>> {
+	const fresh = await fetchSettings();
+	if (!fresh.ok) return fresh;
+	const updated = { ...fresh.data.network.provider_proxies };
+	if (next === null) delete updated[providerID];
+	else updated[providerID] = next;
+	const body: ProviderProxiesPatch = { network: { provider_proxies: updated } };
+	return apiRequest<ProviderProxiesPatch, PanelSettings>({
+		method: 'PATCH',
+		path: '/settings',
+		schema: schemaSettings,
+		body,
+		bodySchema: schemaProviderProxiesPatch
 	});
 }
 
