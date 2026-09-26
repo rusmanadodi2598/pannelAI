@@ -26,8 +26,8 @@ func TestLoad_EmbeddedRegistryDecodes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if idx.Count() < 90 {
-		t.Fatalf("Count() = %d, want the full ported registry", idx.Count())
+	if idx.Count() != 34 {
+		t.Fatalf("Count() = %d, want the owner's KEEP set of 34 providers", idx.Count())
 	}
 	if idx.Revision() == "" {
 		t.Fatal("Revision() must name the reference revision the document came from")
@@ -48,10 +48,10 @@ func TestLoad_EmbeddedRegistryDecodes(t *testing.T) {
 		hasOAuth bool
 	}{
 		{id: "deepseek", format: "openai", auth: AuthAPIKey},
-		{id: "anthropic", format: "claude", auth: AuthAPIKey},
-		{id: "codex", format: "openai-responses", auth: AuthOAuth, hasOAuth: true},
+		{id: "minimax", format: "claude", auth: AuthAPIKey},
+		{id: "grok-cli", format: "openai-responses", auth: AuthOAuth, hasOAuth: true},
 		{id: "xai", format: "openai", auth: AuthOAuth, hasOAuth: true},
-		{id: "kiro", format: "kiro", auth: AuthOAuth, hasOAuth: true},
+		{id: "commandcode", format: "commandcode", auth: AuthAPIKey},
 		{id: "opencode", format: "openai", auth: AuthNone},
 	}
 	for _, tc := range cases {

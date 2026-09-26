@@ -34,11 +34,12 @@ var toolsCapableIDs = map[string]bool{
 // (capabilities.js:586-590).
 //
 // The port carries it because the pinned revision proves it is load-bearing:
-// four models the embedded registry declares answer differently with it than
-// without (codebuddy-cn's deepseek-v4-pro and the two MiniMax entries under
-// nvidia and commandcode), and the corpus test fails by name if that changes.
-// Only the rows that declare a vision answer are listed; the reference's other
-// provider overrides set thinking and limit fields the port does not model.
+// models the embedded registry declares answer differently with it than without
+// it (codebuddy-cn's deepseek-v4-pro among them), and the corpus test fails by
+// name if that changes. Only the rows that declare a vision answer are listed;
+// the reference's other provider overrides set thinking and limit fields the
+// port does not model. Rows for providers outside the owner's KEEP set
+// (2026-09-26) are not carried, because no endpoint can select them.
 var providerVisionIDs = map[string]map[string]bool{
 	"nvidia": {
 		"minimaxai/minimax-m2.7":        false,
@@ -49,29 +50,6 @@ var providerVisionIDs = map[string]map[string]bool{
 	},
 	"opencode-go": {
 		"glm-5.3-flash": true,
-	},
-	"codex": {
-		"gpt-6-astra":          true,
-		"gpt-5.6-sol":          true,
-		"gpt-5.6-sol-review":   true,
-		"gpt-5.6-terra":        true,
-		"gpt-5.6-terra-review": true,
-		"gpt-5.6-luna":         true,
-		"gpt-5.6-luna-review":  true,
-	},
-	"kiro": {
-		"gpt-5.6-sol":                    true,
-		"gpt-5.6-terra":                  true,
-		"gpt-5.6-luna":                   true,
-		"gpt-5.6-sol-thinking":           true,
-		"gpt-5.6-terra-thinking":         true,
-		"gpt-5.6-luna-thinking":          true,
-		"gpt-5.6-sol-agentic":            true,
-		"gpt-5.6-terra-agentic":          true,
-		"gpt-5.6-luna-agentic":           true,
-		"gpt-5.6-sol-thinking-agentic":   true,
-		"gpt-5.6-terra-thinking-agentic": true,
-		"gpt-5.6-luna-thinking-agentic":  true,
 	},
 	"codebuddy-cn": {
 		"glm-5.2":             true,
@@ -93,12 +71,5 @@ var providerVisionIDs = map[string]map[string]bool{
 		"kimi-k3-1":           true,
 		"deepseek-v4-pro":     true,
 		"deepseek-v4.1-flash": true,
-	},
-	"poolside": {
-		"laguna-s-2.1":  false,
-		"laguna-xs-2.1": false,
-	},
-	"ollama": {
-		"deepseek-v4.1-flash:cloud": true,
 	},
 }

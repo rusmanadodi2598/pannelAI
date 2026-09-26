@@ -45,10 +45,13 @@ func TestCatalog_CapabilityFiltersAnswerOverTheRealRegistry(t *testing.T) {
 	service := realCatalogService(t)
 	ctx := context.Background()
 
-	// The two the panel renders, plus the three media operations the document
-	// declares. All five must answer: a filter that returns nothing is a
-	// control that does nothing.
-	for _, capability := range []string{"vision", "tools", "edit", "mask", "text2img"} {
+	// The two the panel renders, plus the media operations the curated
+	// document still declares. All must answer: a filter that returns
+	// nothing is a control that does nothing. `mask` and `text2img` are not
+	// in the list because the owner's 2026-09-26 KEEP set removed the
+	// providers that declared them; an unknown name is pinned separately
+	// below.
+	for _, capability := range []string{"vision", "tools", "edit", "textToImage"} {
 		rows, err := service.Catalog(ctx, CatalogFilter{Capability: capability})
 		if err != nil {
 			t.Fatalf("Catalog(capability=%q) error = %v", capability, err)

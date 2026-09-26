@@ -139,8 +139,8 @@ func TestPlanFor_CoversMostOfTheRealRegistry(t *testing.T) {
 			t.Fatalf("%s has a URL but no method; a plan must say how to ask", entry.ID)
 		}
 	}
-	if covered < 37 {
-		t.Fatalf("only %d entries have a checkable surface; task 8's derivation alone reached 37", covered)
+	if covered < 23 {
+		t.Fatalf("only %d entries have a checkable surface; the curated 34-provider KEEP set derives 23", covered)
 	}
 	if claudeTotal > 0 && claudeCovered != claudeTotal {
 		t.Fatalf("%d of %d claude-format providers have no plan; that wire is the case draft 017 §4.6 names", claudeTotal-claudeCovered, claudeTotal)

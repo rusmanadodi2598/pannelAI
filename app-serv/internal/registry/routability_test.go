@@ -69,9 +69,8 @@ func TestProvider_ChatRoutabilityOnEmbeddedRegistry(t *testing.T) {
 	// "commandcode" and `gemini-cli` declares "gemini-cli", both bespoke
 	// protocols, so they are in the connector-only bucket below.
 	nativelyServed := []string{
-		"deepseek", "anthropic", "openai", "openrouter", "nvidia",
-		"glm", "glm-cn", "minimax", "minimax-cn", "xiaomi-mimo",
-		"kimi", "codex",
+		"deepseek", "openai", "openrouter", "nvidia",
+		"glm", "minimax", "kimi", "grok-cli", "tencent",
 	}
 	for _, id := range nativelyServed {
 		p, ok := idx.Provider(id)
@@ -84,9 +83,9 @@ func TestProvider_ChatRoutabilityOnEmbeddedRegistry(t *testing.T) {
 	}
 
 	// These speak protocols P1 does not translate, so a connector is required.
-	// Four are on the owner's list and would otherwise be "configured but always
-	// failing".
-	needsConnector := []string{"kiro", "cursor", "antigravity", "gemini", "gemini-cli", "commandcode"}
+	// All four are on the owner's list and would otherwise be "configured but
+	// always failing".
+	needsConnector := []string{"antigravity", "gemini", "gemini-cli", "commandcode"}
 	for _, id := range needsConnector {
 		p, ok := idx.Provider(id)
 		if !ok {

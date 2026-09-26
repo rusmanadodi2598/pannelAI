@@ -137,17 +137,17 @@ func TestForcedStream_ProviderWithoutAConnectorUsesTheDefault(t *testing.T) {
 		t.Fatalf("NewConnectors() error = %v", err)
 	}
 
-	// The three entries whose registry document declares a forced stream, none
-	// of which has a connector in this build.
-	declared := []string{"openai", "codex", "commandcode"}
-	for _, id := range declared {
-		entry, ok := index.Provider(id)
-		if !ok {
-			t.Fatalf("provider %q is missing from the embedded registry", id)
-		}
+	// Every entry whose registry document declares a forced stream, none of
+	// which has a connector in this build. The list is read from the document
+	// rather than hand-written, so the 2026-09-26 curation cannot leave this
+	// test asserting a removed provider.
+	declared := 0
+	for _, entry := range index.All() {
 		if !entry.Transport.ForceStream {
-			t.Fatalf("provider %q no longer declares force_stream; this test needs a new example", id)
+			continue
 		}
+		declared++
+		id := entry.ID
 		if connectors.Registered(id) {
 			t.Fatalf("provider %q now has a connector; update this test's premise", id)
 		}
@@ -156,7 +156,9 @@ func TestForcedStream_ProviderWithoutAConnectorUsesTheDefault(t *testing.T) {
 			t.Fatalf("provider %q declares a forced stream through the default connector, want the registry field left unread", id)
 		}
 	}
-
+	if declared == 0 {
+		t.Fatal("no embedded provider declares force_stream; this test needs an example")
+	}
 }
 
 // TestForcedStream_RegisteredConnectorDeclaresTheSeam pins the other half of the

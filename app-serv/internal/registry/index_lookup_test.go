@@ -119,34 +119,19 @@ providers:
 	}
 }
 
-// TestIndex_RealRegistryResolvesMMFLikeTheReference drives the embedded document
-// through the exact collision it carries, so the port is checked against real
-// data and not only against a fixture.
-func TestIndex_RealRegistryResolvesMMFLikeTheReference(t *testing.T) {
-	idx, err := Load()
-	if err != nil {
-		t.Fatalf("Load() error = %v", err)
-	}
-	got, ok := idx.Provider("mmf")
-	if !ok {
-		t.Fatal("mmf must resolve in the embedded registry")
-	}
-	if got.ID != "mimo-free" {
-		t.Fatalf("Provider(mmf).ID = %q, want mimo-free, which is what the reference resolves", got.ID)
-	}
-}
-
+// TestProvider_UpstreamIDAndIsChat drives the embedded document, so the port is
+// checked against real data and not only against a fixture.
 func TestProvider_UpstreamIDAndIsChat(t *testing.T) {
 	idx, err := Load()
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	provider, ok := idx.Provider("codex")
+	provider, ok := idx.Provider("deepseek")
 	if !ok {
-		t.Fatal("codex must be present in the embedded registry")
+		t.Fatal("deepseek must be present in the embedded registry")
 	}
 	if len(provider.Models) == 0 {
-		t.Fatal("codex must declare models")
+		t.Fatal("deepseek must declare models")
 	}
 	for _, model := range provider.Models {
 		// Every model must resolve to the id the upstream expects.

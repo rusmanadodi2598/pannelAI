@@ -148,6 +148,9 @@ than a boot failure.
 
 Provider **registry is static config embedded in the Go binary** (YAML generated from the reference
 registry port), not a DB table. DB rows reference registry IDs; unknown provider ID ⇒ `VALIDATION_ERROR`.
+The document carries the owner's curated provider set (2026-09-26): the 34 providers on the owner's
+KEEP list, enforced by the generator's allowlist so a regeneration cannot reintroduce one the owner
+removed. A provider outside that set is unknown in every sense above.
 
 ## 7. Endpoint Catalog
 
@@ -837,6 +840,8 @@ _Changelog 2026-09-17: §7.4 publishes `routability` (`native` / `connector`) an
 1. Default listen port for `app-serv` (reference used 20128): propose **8080**.
 2. Session token format: opaque random nonce + HMAC-SHA256 signature in `pannel_session`; Redis stores the nonce digest with TTL for revocation. JWT is not used because immediate revocation is required.
 3. Registry port scope: all 120+ providers in P1, or apikey-category first (~40) and OAuth set in P2?
+   **Resolved 2026-09-26:** neither — the owner's KEEP list fixes the served set at 34 providers (see §6
+   and the changelog); the generator's allowlist is where the set lives.
 
 ---
 
@@ -914,3 +919,5 @@ _Changelog 2026-09-26: §7.11 and §7.14 record the proxy pool engine (docs/PORT
 _Changelog 2026-09-26: §7.11 and §7.14 add the per-provider proxy binding (docs/PORT/009-PORT-PROVIDER-PROXY.md). `network.provider_proxies[<provider_id>]` holds `{pool_id, strategy}`, both optional: `pool_id` absent is **Global** (follow `outbound_proxy_*`), the sentinel `__none__` is **None** (dial direct, past a global switch that is on), and a stored row id is a **pin** that leads that provider's walk while the other usable rows follow with the provider's strategy, so a pin never disables multi-pool failover; `strategy` absent inherits `outbound_proxy_strategy`. The map is written whole, so a read-modify-write changes one provider and deleting an entry returns it to the global setting; a `pool_id` that names no stored row and an entry that sets neither field are refused. The rotation cursor is now per provider (`pannelai:proxy:rotation:<provider_id>`), because two providers can run two orders over one pool. §7.11's earlier claim that the reference assigns pools only globally is corrected: the reference binds per provider for a no-auth provider and per connection for a keyed one, and this port's per-endpoint column (`upstream_endpoints.proxy_pool_id`) stays stored-but-unread, which is the deferred half._
 
 _Changelog 2026-09-26: §7.7's combo probe raises its ceiling from one token to 1024, and the OpenCode connector clamps the Responses-wire output ceiling to the Console API's floor of 16. Measured live: Muse Spark (OpenCode Free) answered the combo test's probe with `UPSTREAM_REJECTED` because the Console API refuses `max_output_tokens` below 16, so the probe reported a provider failure that was really a probe-shaped request. The probe's ceiling is now the reference's own model-test value (`src/app/api/models/test/ping.js:174`), which also stops the probe from starving a reasoning model, and the connector raises any smaller integer ceiling to the floor rather than forwarding a body the upstream rejects. A ceiling that is not a JSON integer is left exactly as the client wrote it, because the upstream's validation answers for it and rewriting it would hide the client's bug._
+
+_Changelog 2026-09-26: §6 and §7.4 carry the owner's curated provider set. The registry is regenerated from the reference through the generator's KEEP allowlist (34 providers: antigravity, byteplus, cline, clinepass, claude, codebuddy-cn, codebuddy-intl, commandcode, deepgram, deepseek, elevenlabs, gemini, gemini-cli, github, glm, grok-cli, groq, huggingface, kilocode, kimchi, kimi, minimax, nvidia, openai, opencode, opencode-go, opencode-zen, openrouter, qoder, qoder-cn, tencent, xai, xiaomi-tokenplan, zed), and the 87 entries outside it are dropped rather than merely hidden, so no endpoint can be created for them and no model string resolves to them. The two "Compatible" nodes on the owner's list are the custom node types of §7.4, not registry entries. Both generated corpora were regenerated against the curated document (472 provider-model pairs), and the vision override table no longer carries rows for providers outside the set. Open Question 12.3 is resolved by the same decision: the served set is the owner's list, not "all 120+ in P1"._
