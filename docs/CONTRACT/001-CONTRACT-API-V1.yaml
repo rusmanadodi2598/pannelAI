@@ -609,6 +609,30 @@ components:
       - host
       - port
       additionalProperties: false
+    ProxyPatchRequest:
+      type: object
+      properties:
+        label:
+          type: string
+        protocol:
+          type: string
+          enum:
+          - http
+          - https
+          - socks5
+        host:
+          type: string
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+        username:
+          type: string
+        password:
+          type: string
+        enabled:
+          type: boolean
+      additionalProperties: false
     ProxyCandidateRequest:
       type: object
       properties:
@@ -6909,7 +6933,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ProxyRequest'
+              $ref: '#/components/schemas/ProxyPatchRequest'
       responses:
         '200':
           description: Successful response.

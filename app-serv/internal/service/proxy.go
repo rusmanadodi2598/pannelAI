@@ -65,6 +65,18 @@ type ProxyDraft struct {
 	Enabled *bool
 }
 
+// ProxyPatch is a partial change to a stored candidate. A nil field means
+// "leave unchanged"; an empty non-nil password means "keep the secret".
+type ProxyPatch struct {
+	Label    *string
+	Protocol *string
+	Host     *string
+	Port     *int
+	Username *string
+	Password *string
+	Enabled  *bool
+}
+
 // ProxyServiceDeps holds the collaborators the service needs.
 type ProxyServiceDeps struct {
 	Repo   repository.ProxyRepository
@@ -119,47 +131,59 @@ func (s *ProxyService) Create(ctx context.Context, draft ProxyDraft) (domain.Pro
 	return proxy, nil
 }
 
-// Update applies the full-field patch of §7.11.
+// Update applies the partial patch of §7.11. An omitted field keeps its
+// stored value, which is what makes a label-only save possible.
 //
 // A repoint or a credential change clears the stored test result, so each is
 // applied only when the value actually changed: saving an unchanged form must
 // not erase the last proof the candidate was tested. An empty password keeps
 // the stored secret, because the panel renders has_password and never the value.
-func (s *ProxyService) Update(ctx context.Context, id string, draft ProxyDraft) (domain.Proxy, error) {
+func (s *ProxyService) Update(ctx context.Context, id string, patch ProxyPatch) (domain.Proxy, error) {
+	if patch.Label == nil && patch.Protocol == nil && patch.Host == nil &&
+		patch.Port == nil && patch.Username == nil && patch.Password == nil &&
+		patch.Enabled == nil {
+		return domain.Proxy{}, domain.NewValidationError("nothing to update")
+	}
 	proxy, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return domain.Proxy{}, err
 	}
 	now := s.clock().UTC()
-	if err := proxy.Relabel(draft.Label, now); err != nil {
+	if patch.Label != nil {
+		if err := proxy.Relabel(*patch.Label, now); err != nil {
+			return domain.Proxy{}, err
+		}
+	}
+	protocol := proxy.Protocol()
+	if patch.Protocol != nil {
+		parsed, err := domain.ParseProxyProtocol(*patch.Protocol)
+		if err != nil {
+			return domain.Proxy{}, err
+		}
+		protocol = parsed
+	}
+	host := proxy.Host()
+	if patch.Host != nil {
+		host = *patch.Host
+	}
+	port := proxy.Port()
+	if patch.Port != nil {
+		port = *patch.Port
+	}
+	if protocol != proxy.Protocol() || host != proxy.Host() || port != proxy.Port() {
+		if err := proxy.Repoint(protocol, host, port, now); err != nil {
+			return domain.Proxy{}, err
+		}
+	}
+	username := proxy.Username()
+	if patch.Username != nil {
+		username = *patch.Username
+	}
+	if err := s.applyCredentials(&proxy, patch, username, now); err != nil {
 		return domain.Proxy{}, err
 	}
-	if proxy.Protocol() != draft.Protocol || proxy.Host() != draft.Host || proxy.Port() != draft.Port {
-		if err := proxy.Repoint(draft.Protocol, draft.Host, draft.Port, now); err != nil {
-			return domain.Proxy{}, err
-		}
-	}
-	switch {
-	case draft.Password != "":
-		// A retyped password is compared against the stored one, so a client
-		// that resends the same secret — rather than the panel, which never
-		// holds it — does not invalidate the last test result.
-		if !s.sameSecret(proxy, draft.Password) || proxy.Username() != draft.Username {
-			sealed, err := s.seal(draft.Password)
-			if err != nil {
-				return domain.Proxy{}, err
-			}
-			if err := proxy.SetCredentials(draft.Username, sealed, now); err != nil {
-				return domain.Proxy{}, err
-			}
-		}
-	case proxy.Username() != draft.Username:
-		if err := proxy.SetCredentials(draft.Username, proxy.PasswordEncrypted(), now); err != nil {
-			return domain.Proxy{}, err
-		}
-	}
-	if draft.Enabled != nil && *draft.Enabled != proxy.Enabled() {
-		proxy.SetEnabled(*draft.Enabled, now)
+	if patch.Enabled != nil && *patch.Enabled != proxy.Enabled() {
+		proxy.SetEnabled(*patch.Enabled, now)
 	}
 	if err := s.repo.Update(ctx, proxy); err != nil {
 		return domain.Proxy{}, err
@@ -167,43 +191,28 @@ func (s *ProxyService) Update(ctx context.Context, id string, draft ProxyDraft) 
 	return proxy, nil
 }
 
+// applyCredentials seals a retyped password or reuses the stored secret for a
+// username-only change. A client that resends the same secret — rather than
+// the panel, which never holds it — does not invalidate the last test result.
+func (s *ProxyService) applyCredentials(proxy *domain.Proxy, patch ProxyPatch, username string, now time.Time) error {
+	switch {
+	case patch.Password != nil && *patch.Password != "":
+		if s.sameSecret(*proxy, *patch.Password) && proxy.Username() == username {
+			return nil
+		}
+		sealed, err := s.seal(*patch.Password)
+		if err != nil {
+			return err
+		}
+		return proxy.SetCredentials(username, sealed, now)
+	case proxy.Username() != username:
+		return proxy.SetCredentials(username, proxy.PasswordEncrypted(), now)
+	default:
+		return nil
+	}
+}
+
 // Delete removes one candidate.
 func (s *ProxyService) Delete(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
-}
-
-// seal seals a plaintext password, or returns "" for an absent one.
-func (s *ProxyService) seal(password string) (string, error) {
-	if password == "" {
-		return "", nil
-	}
-	sealed, err := s.sealer.Seal(password)
-	if err != nil {
-		return "", domain.NewInternalError("the proxy password could not be stored")
-	}
-	return sealed, nil
-}
-
-// sameSecret reports whether the typed password is the stored one.
-//
-// A secret that cannot be opened compares as different: it is already broken,
-// and refusing the save would leave the operator no way to replace it.
-func (s *ProxyService) sameSecret(proxy domain.Proxy, plaintext string) bool {
-	if !proxy.HasPassword() {
-		return false
-	}
-	current, err := s.sealer.Open(proxy.PasswordEncrypted())
-	return err == nil && current == plaintext
-}
-
-// open unseals a stored password for the duration of one probe.
-func (s *ProxyService) open(proxy domain.Proxy) (string, error) {
-	if !proxy.HasPassword() {
-		return "", nil
-	}
-	password, err := s.sealer.Open(proxy.PasswordEncrypted())
-	if err != nil {
-		return "", domain.NewInternalError("the stored proxy password could not be read")
-	}
-	return password, nil
 }

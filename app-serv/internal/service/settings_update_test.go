@@ -173,6 +173,62 @@ func TestSettingsService_InvalidPatchPersistsNothing(t *testing.T) {
 	}
 }
 
+// TestSettingsService_UpdateClearsAStoredOutboundProxy pins that an empty URL
+// is stored as the clear and not as a refusal: the panel sends "" when the
+// operator empties the field, and the stored value is the only thing a
+// following read can report, so the switch and the URL clear independently.
+func TestSettingsService_UpdateClearsAStoredOutboundProxy(t *testing.T) {
+	cases := []struct {
+		name        string
+		stored      string
+		patch       domain.NetworkSettingsPatch
+		wantURL     string
+		wantEnabled bool
+	}{
+		{name: "clearing a stored proxy", stored: "http://proxy.internal:8080",
+			patch:   domain.NetworkSettingsPatch{OutboundProxyURL: strPtr("")},
+			wantURL: "", wantEnabled: true},
+		{name: "disabling beside a stored proxy", stored: "http://proxy.internal:8080",
+			patch:   domain.NetworkSettingsPatch{OutboundProxyEnabled: boolPtr(false)},
+			wantURL: "http://proxy.internal:8080", wantEnabled: false},
+		{name: "storing a proxy over an empty one", stored: "",
+			patch: domain.NetworkSettingsPatch{OutboundProxyURL: strPtr("http://proxy.internal:9090"),
+				OutboundProxyEnabled: boolPtr(true)},
+			wantURL: "http://proxy.internal:9090", wantEnabled: true},
+		{name: "clearing a proxy that was never set", stored: "",
+			patch:   domain.NetworkSettingsPatch{OutboundProxyURL: strPtr("")},
+			wantURL: "", wantEnabled: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := newStubSettingsStore()
+			if err := repo.Save(context.Background(), domain.SettingsKeyNetwork,
+				`{"outbound_proxy_enabled":true,"outbound_proxy_url":"`+tc.stored+`","outbound_no_proxy":""}`); err != nil {
+				t.Fatalf("seeding the network row: %v", err)
+			}
+			svc := newSettingsUpdateFixture(t, repo)
+
+			next, err := svc.Update(context.Background(), domain.SettingsPatch{Network: &tc.patch})
+			if err != nil {
+				t.Fatalf("Update() error = %v, want the patch stored", err)
+			}
+			if next.Network.OutboundProxyURL != tc.wantURL {
+				t.Fatalf("outbound_proxy_url = %q, want %q", next.Network.OutboundProxyURL, tc.wantURL)
+			}
+			if next.Network.OutboundProxyEnabled != tc.wantEnabled {
+				t.Fatalf("outbound_proxy_enabled = %v, want %v", next.Network.OutboundProxyEnabled, tc.wantEnabled)
+			}
+			read, err := svc.Settings(context.Background())
+			if err != nil {
+				t.Fatalf("Settings() error = %v", err)
+			}
+			if read.Network.OutboundProxyURL != tc.wantURL {
+				t.Fatalf("read-back outbound_proxy_url = %q, want %q", read.Network.OutboundProxyURL, tc.wantURL)
+			}
+		})
+	}
+}
+
 // newSettingsUpdateFixture builds the settings service over the shared stub
 // store, which records which keys a patch wrote.
 func newSettingsUpdateFixture(t *testing.T, repo *stubSettingsStore) *SettingsService {

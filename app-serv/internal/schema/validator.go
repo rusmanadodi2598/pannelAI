@@ -18,6 +18,9 @@ package schema
 import (
 	"encoding/json"
 	"io"
+	"net/url"
+	"reflect"
+	"strings"
 	"sync"
 
 	val "github.com/go-playground/validator/v10"
@@ -33,9 +36,59 @@ func engine() *val.Validate {
 	engOnce.Do(func() {
 		v := val.New()
 		v.SetTagName("validate")
+		registerClearingURLRules(v)
 		eng = v
 	})
 	return eng
+}
+
+// registerClearingURLRules adds the two URL rules the §7.14 PATCH needs, where
+// an empty string clears a stored value rather than being a malformed URL.
+//
+// The built-in `url` and `http_url` reject "", and a pointer field the panel
+// sends to clear one would be refused with a validation error the operator has
+// no way around: the field is only writable through this PATCH. The rules
+// below repeat the built-in checks for a non-empty value and let "" through.
+func registerClearingURLRules(v *val.Validate) {
+	for _, rule := range []struct {
+		tag      string
+		httpOnly bool
+	}{
+		{tag: "clearing_url"},
+		{tag: "clearing_http_url", httpOnly: true},
+	} {
+		httpOnly := rule.httpOnly
+		if err := v.RegisterValidation(rule.tag, func(fl val.FieldLevel) bool {
+			return clearingURL(fl, httpOnly)
+		}); err != nil {
+			panic("schema: registering the clearing URL rule " + rule.tag + ": " + err.Error())
+		}
+	}
+}
+
+// clearingURL reports whether a URL field is either empty (the clear) or a URL
+// the dialer can use. The check mirrors the validator's own `url` and
+// `http_url` so a value that was accepted before this rule still is.
+func clearingURL(fl val.FieldLevel, httpOnly bool) bool {
+	field := fl.Field()
+	if field.Kind() != reflect.String {
+		return false
+	}
+	raw := strings.ToLower(field.String())
+	if raw == "" {
+		return true
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme == "" {
+		return false
+	}
+	if httpOnly {
+		return parsed.Host != "" && (parsed.Scheme == "http" || parsed.Scheme == "https")
+	}
+	if parsed.Scheme == "file" {
+		return parsed.Path != "" && parsed.Path != "/"
+	}
+	return parsed.Host != "" || parsed.Fragment != "" || parsed.Opaque != ""
 }
 
 // jsonDecoder wraps encoding/json with the settings this package relies on:

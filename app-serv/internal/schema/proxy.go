@@ -23,7 +23,7 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// ProxyRequest is the body of POST /api/v1/proxies and PATCH /api/v1/proxies/{id}.
+// ProxyRequest is the body of POST /api/v1/proxies.
 //
 // Password is write-only: on a patch an empty value keeps the stored secret, so
 // a panel that renders has_password without the value cannot erase it by saving.
@@ -37,6 +37,19 @@ type ProxyRequest struct {
 	Username string `json:"username" validate:"omitempty,max=200"`
 	Password string `json:"password" validate:"omitempty,max=1024"`
 	Enabled  *bool  `json:"enabled,omitempty"`
+}
+
+// ProxyPatchRequest is the body of PATCH /api/v1/proxies/{id}. Every field is
+// a pointer so "omitted" stays distinct from "set": an absent field keeps
+// the stored value, while an empty password keeps the stored secret.
+type ProxyPatchRequest struct {
+	Label    *string `json:"label,omitempty"    validate:"omitempty,min=1,max=120"`
+	Protocol *string `json:"protocol,omitempty" validate:"omitempty,oneof=http https socks5"`
+	Host     *string `json:"host,omitempty"     validate:"omitempty,max=253"`
+	Port     *int    `json:"port,omitempty"     validate:"omitempty,min=1,max=65535"`
+	Username *string `json:"username,omitempty" validate:"omitempty,max=200"`
+	Password *string `json:"password,omitempty" validate:"omitempty,max=1024"`
+	Enabled  *bool   `json:"enabled,omitempty"`
 }
 
 // ProxyCandidateRequest is the body of POST /api/v1/proxies/test: an unsaved

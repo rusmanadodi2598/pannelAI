@@ -194,6 +194,10 @@ func translateTag(tag string) string {
 		return "is too long"
 	case "oneof":
 		return "has an unexpected value"
+	case "clearing_url":
+		return "is not a URL that can be used, or empty to clear it"
+	case "clearing_http_url":
+		return "is not an absolute http or https URL, or empty to clear it"
 	default:
 		return fmt.Sprintf("failed rule %q", tag)
 	}

@@ -59,19 +59,19 @@ func (h *ProxyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	schema.WriteJSON(w, http.StatusCreated, schema.ToProxyResponse(proxy))
 }
 
-// Update serves PATCH /api/v1/proxies/{id}. An empty password keeps the stored
-// secret; the service decides that, not this layer.
+// Update serves PATCH /api/v1/proxies/{id}. An omitted field keeps its stored
+// value, and an empty password keeps the stored secret.
 func (h *ProxyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathValue(w, r, "id")
 	if !ok {
 		return
 	}
-	draft, err := decodeProxyRequest(r)
+	patch, err := decodeProxyPatch(r)
 	if err != nil {
 		schema.WriteError(w, err)
 		return
 	}
-	proxy, err := h.proxies.Update(r.Context(), id, draft)
+	proxy, err := h.proxies.Update(r.Context(), id, patch)
 	if err != nil {
 		schema.WriteError(w, err)
 		return
@@ -124,9 +124,8 @@ func (h *ProxyHandler) TestCandidate(w http.ResponseWriter, r *http.Request) {
 	schema.WriteJSON(w, http.StatusOK, toProxyTestResponse(status))
 }
 
-// decodeProxyRequest decodes and validates a create or patch body and converts
-// it into the service input. Both routes carry the same shape, so they share
-// the decode path too and cannot diverge.
+// decodeProxyRequest decodes and validates a create body and converts it
+// into the service input.
 func decodeProxyRequest(r *http.Request) (service.ProxyDraft, error) {
 	var req schema.ProxyRequest
 	if err := schema.DecodeJSON(r, &req); err != nil {
@@ -142,6 +141,33 @@ func decodeProxyRequest(r *http.Request) (service.ProxyDraft, error) {
 	return service.ProxyDraft{
 		Label:    req.Label,
 		Protocol: protocol,
+		Host:     req.Host,
+		Port:     req.Port,
+		Username: req.Username,
+		Password: req.Password,
+		Enabled:  req.Enabled,
+	}, nil
+}
+
+// decodeProxyPatch decodes and validates a partial patch body. Omitted
+// fields stay nil so the service can keep their stored values, and an empty
+// patch is refused here — before the service — because the body said nothing.
+func decodeProxyPatch(r *http.Request) (service.ProxyPatch, error) {
+	var req schema.ProxyPatchRequest
+	if err := schema.DecodeJSON(r, &req); err != nil {
+		return service.ProxyPatch{}, err
+	}
+	if err := schema.ValidateStruct(req); err != nil {
+		return service.ProxyPatch{}, err
+	}
+	if req.Label == nil && req.Protocol == nil && req.Host == nil &&
+		req.Port == nil && req.Username == nil && req.Password == nil &&
+		req.Enabled == nil {
+		return service.ProxyPatch{}, domain.NewValidationError("nothing to update")
+	}
+	return service.ProxyPatch{
+		Label:    req.Label,
+		Protocol: req.Protocol,
 		Host:     req.Host,
 		Port:     req.Port,
 		Username: req.Username,

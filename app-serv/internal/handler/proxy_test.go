@@ -120,8 +120,8 @@ func TestProxyHandler_List(t *testing.T) {
 	}
 }
 
-// TestProxyHandler_Update pins the full-field patch and that an omitted
-// password keeps the stored secret.
+// TestProxyHandler_Update pins the partial patch: an omitted field keeps its
+// value, a full body still applies, and an omitted password keeps the secret.
 func TestProxyHandler_Update(t *testing.T) {
 	f := newManagementFixture(t)
 	id := createProxy(t, f, "pool-a")
@@ -134,6 +134,52 @@ func TestProxyHandler_Update(t *testing.T) {
 	body := decodeBody(t, rr)
 	if body["label"] != "pool-b" || body["has_password"] != true {
 		t.Fatalf("label/has_password = %v/%v, want pool-b/true", body["label"], body["has_password"])
+	}
+}
+
+// TestProxyHandler_Update_Partial pins the label-only patch: omitted fields
+// keep their stored values instead of failing validation.
+func TestProxyHandler_Update_Partial(t *testing.T) {
+	f := newManagementFixture(t)
+	id := createProxy(t, f, "pool-a")
+
+	rr := do(t, http.MethodPatch, "/api/v1/proxies/"+id,
+		`{"label":"pool-b"}`, withPathID(f.proxy.Update, id))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rr.Code, rr.Body.String())
+	}
+	body := decodeBody(t, rr)
+	if body["label"] != "pool-b" {
+		t.Fatalf("label = %v, want pool-b", body["label"])
+	}
+	if body["host"] != "proxy.example.com" || body["has_password"] != true {
+		t.Fatalf("host/has_password = %v/%v, want the omitted fields kept", body["host"], body["has_password"])
+	}
+}
+
+// TestProxyHandler_Update_Validation pins the patch refusals: an empty patch
+// names nothing to change, and an unknown protocol is rejected.
+func TestProxyHandler_Update_Validation(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+	}{
+		{name: "an empty patch", body: `{}`},
+		{name: "an unknown protocol", body: `{"label":"pool","protocol":"ftp"}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newManagementFixture(t)
+			id := createProxy(t, f, "pool-a")
+			rr := do(t, http.MethodPatch, "/api/v1/proxies/"+id, tc.body, withPathID(f.proxy.Update, id))
+			if rr.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want 400 (body: %s)", rr.Code, rr.Body.String())
+			}
+			errorBody, _ := decodeBody(t, rr)["error"].(map[string]any)
+			if errorBody["code"] != "VALIDATION_ERROR" {
+				t.Fatalf("error = %v, want VALIDATION_ERROR", errorBody)
+			}
+		})
 	}
 }
 

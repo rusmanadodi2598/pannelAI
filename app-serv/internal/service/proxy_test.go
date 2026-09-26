@@ -82,14 +82,15 @@ func TestProxyService_Create(t *testing.T) {
 	}
 }
 
-// TestProxyService_Update pins the patch rules: a save that changes nothing
-// keeps the last test result, a repoint clears it, and an empty password keeps
-// the stored secret.
+// TestProxyService_Update pins the partial patch rules: an omitted field keeps
+// its value, an empty patch is refused, a save that changes nothing keeps the
+// last test result, a repoint clears it, and an empty password keeps the
+// stored secret.
 func TestProxyService_Update(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("renaming keeps the last test result", func(t *testing.T) {
-		service, repo := newProxyFixture(t, nil)
+	t.Run("a label-only patch keeps the address, secret, and test result", func(t *testing.T) {
+		service, _ := newProxyFixture(t, nil)
 		created, err := service.Create(ctx, proxyDraft("pool", "proxy.example.com", 3128))
 		if err != nil {
 			t.Fatalf("Create() error = %v", err)
@@ -98,19 +99,34 @@ func TestProxyService_Update(t *testing.T) {
 			t.Fatalf("Test() error = %v", err)
 		}
 
-		draft := proxyDraft("renamed", "proxy.example.com", 3128)
-		updated, err := service.Update(ctx, created.ID(), draft)
+		updated, err := service.Update(ctx, created.ID(), ProxyPatch{Label: strPtr("renamed")})
 		if err != nil {
 			t.Fatalf("Update() error = %v", err)
 		}
 		if updated.Label() != "renamed" {
 			t.Fatalf("Update() label = %q, want renamed", updated.Label())
 		}
+		if updated.Host() != "proxy.example.com" || updated.Port() != 3128 {
+			t.Fatalf("Update() repointed an omitted address: %+v", updated)
+		}
+		if updated.PasswordEncrypted() != created.PasswordEncrypted() {
+			t.Fatal("Update() replaced a secret the caller did not send")
+		}
 		if updated.Status().State != domain.EndpointTestOK {
 			t.Fatalf("Update() cleared a status it did not invalidate: %+v", updated.Status())
 		}
-		if _, err := repo.GetByID(ctx, created.ID()); err != nil {
-			t.Fatalf("GetByID() error = %v", err)
+	})
+
+	t.Run("an empty patch is refused", func(t *testing.T) {
+		service, _ := newProxyFixture(t, nil)
+		created, err := service.Create(ctx, proxyDraft("pool", "proxy.example.com", 3128))
+		if err != nil {
+			t.Fatalf("Create() error = %v", err)
+		}
+		if _, err := service.Update(ctx, created.ID(), ProxyPatch{}); err == nil {
+			t.Fatal("Update() accepted an empty patch")
+		} else if !strings.Contains(err.Error(), "nothing to update") {
+			t.Fatalf("Update() error = %v, want it to name nothing to update", err)
 		}
 	})
 
@@ -124,9 +140,12 @@ func TestProxyService_Update(t *testing.T) {
 			t.Fatalf("Test() error = %v", err)
 		}
 
-		updated, err := service.Update(ctx, created.ID(), proxyDraft("pool", "other.example.com", 3128))
+		updated, err := service.Update(ctx, created.ID(), ProxyPatch{Host: strPtr("other.example.com")})
 		if err != nil {
 			t.Fatalf("Update() error = %v", err)
+		}
+		if updated.Host() != "other.example.com" {
+			t.Fatalf("Update() host = %q, want other.example.com", updated.Host())
 		}
 		if updated.Status().State != "" || updated.Status().CheckedAt != nil {
 			t.Fatalf("Update() kept a status measured against the old address: %+v", updated.Status())
@@ -139,9 +158,7 @@ func TestProxyService_Update(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Create() error = %v", err)
 		}
-		draft := proxyDraft("pool", "proxy.example.com", 3128)
-		draft.Password = ""
-		updated, err := service.Update(ctx, created.ID(), draft)
+		updated, err := service.Update(ctx, created.ID(), ProxyPatch{Label: strPtr("pool"), Password: strPtr("")})
 		if err != nil {
 			t.Fatalf("Update() error = %v", err)
 		}
@@ -156,9 +173,7 @@ func TestProxyService_Update(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Create() error = %v", err)
 		}
-		draft := proxyDraft("pool", "proxy.example.com", 3128)
-		draft.Password = "rotated-value"
-		updated, err := service.Update(ctx, created.ID(), draft)
+		updated, err := service.Update(ctx, created.ID(), ProxyPatch{Password: strPtr("rotated-value")})
 		if err != nil {
 			t.Fatalf("Update() error = %v", err)
 		}
@@ -171,6 +186,24 @@ func TestProxyService_Update(t *testing.T) {
 		}
 	})
 
+	t.Run("a username-only change keeps the secret", func(t *testing.T) {
+		service, _ := newProxyFixture(t, nil)
+		created, err := service.Create(ctx, proxyDraft("pool", "proxy.example.com", 3128))
+		if err != nil {
+			t.Fatalf("Create() error = %v", err)
+		}
+		updated, err := service.Update(ctx, created.ID(), ProxyPatch{Username: strPtr("rotated-operator")})
+		if err != nil {
+			t.Fatalf("Update() error = %v", err)
+		}
+		if updated.Username() != "rotated-operator" {
+			t.Fatalf("Update() username = %q, want rotated-operator", updated.Username())
+		}
+		if updated.PasswordEncrypted() != created.PasswordEncrypted() {
+			t.Fatal("Update() replaced a secret the caller did not send")
+		}
+	})
+
 	t.Run("disabling keeps the address", func(t *testing.T) {
 		service, _ := newProxyFixture(t, nil)
 		created, err := service.Create(ctx, proxyDraft("pool", "proxy.example.com", 3128))
@@ -178,9 +211,7 @@ func TestProxyService_Update(t *testing.T) {
 			t.Fatalf("Create() error = %v", err)
 		}
 		disabled := false
-		draft := proxyDraft("pool", "proxy.example.com", 3128)
-		draft.Enabled = &disabled
-		updated, err := service.Update(ctx, created.ID(), draft)
+		updated, err := service.Update(ctx, created.ID(), ProxyPatch{Enabled: &disabled})
 		if err != nil {
 			t.Fatalf("Update() error = %v", err)
 		}
@@ -191,7 +222,7 @@ func TestProxyService_Update(t *testing.T) {
 
 	t.Run("an unknown id", func(t *testing.T) {
 		service, _ := newProxyFixture(t, nil)
-		if _, err := service.Update(ctx, "prx_missing", proxyDraft("pool", "proxy.example.com", 3128)); !errors.Is(err, domain.ErrProxyNotFound) {
+		if _, err := service.Update(ctx, "prx_missing", ProxyPatch{Label: strPtr("pool")}); !errors.Is(err, domain.ErrProxyNotFound) {
 			t.Fatalf("Update() error = %v, want ErrProxyNotFound", err)
 		}
 	})

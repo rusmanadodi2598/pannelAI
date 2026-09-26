@@ -84,6 +84,7 @@ func dtoRegistry() map[string]reflect.Type {
 		{"TokenSaverHeadroom", schema.TokenSaverHeadroomRequest{}},
 		{"TokenSaverLevel", schema.TokenSaverLevelRequest{}},
 		{"ProxyRequest", schema.ProxyRequest{}},
+		{"ProxyPatchRequest", schema.ProxyPatchRequest{}},
 		{"ProxyCandidateRequest", schema.ProxyCandidateRequest{}},
 		{"ProxyResponse", schema.ProxyResponse{}},
 		{"ProxyList", schema.ProxyList{}},

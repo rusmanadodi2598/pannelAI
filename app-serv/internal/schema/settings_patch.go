@@ -35,13 +35,16 @@ type SecuritySettingsPatch struct {
 	RequireAPIKey *bool `json:"require_api_key,omitempty"`
 }
 
-// NetworkSettingsPatch updates the network group. ProviderProxies replaces
-// the whole per-provider binding map when present (docs/PORT/009-PORT-PROVIDER-
-// PROXY.md D1): dive reaches into every entry, so a bad value is refused at the
-// boundary rather than by the backstop.
+// NetworkSettingsPatch updates the network group. An empty outbound_proxy_url
+// clears the stored URL, which is the only way an operator removes one. The
+// strategy's oneof is pinned against domain.ParseProxyStrategy by a test, and
+// the domain's Validate is the class-level backstop for both write paths.
+// ProviderProxies replaces the whole per-provider binding map when present
+// (docs/PORT/009-PORT-PROVIDER-PROXY.md D1): dive reaches into every entry, so
+// a bad value is refused at the boundary rather than by the backstop.
 type NetworkSettingsPatch struct {
 	OutboundProxyEnabled  *bool                          `json:"outbound_proxy_enabled,omitempty"`
-	OutboundProxyURL      *string                        `json:"outbound_proxy_url,omitempty" validate:"omitempty,url,max=2048"`
+	OutboundProxyURL      *string                        `json:"outbound_proxy_url,omitempty" validate:"omitempty,clearing_url,max=2048"`
 	OutboundNoProxy       *string                        `json:"outbound_no_proxy,omitempty" validate:"omitempty,max=2048"`
 	OutboundProxyStrategy *string                        `json:"outbound_proxy_strategy,omitempty" validate:"omitempty,oneof=fallback round_robin"`
 	ProviderProxies       *map[string]ProviderProxyPatch `json:"provider_proxies,omitempty" validate:"omitempty,dive"`
@@ -73,11 +76,12 @@ type TokenSaverTogglePatch struct {
 }
 
 // TokenSaverHeadroomPatch updates the external compression saver group. The
-// URL tag matches the §7.9 PUT: both write paths reject a scheme the saver
-// cannot dial, and the domain rule is the class-level backstop for both.
+// URL rule refuses a scheme the saver cannot dial, as the §7.9 PUT does, and
+// lets an empty string through as the clear; the domain rule is the
+// class-level backstop for both write paths.
 type TokenSaverHeadroomPatch struct {
 	Enabled              *bool   `json:"enabled,omitempty"`
-	URL                  *string `json:"url,omitempty" validate:"omitempty,http_url,max=2048"`
+	URL                  *string `json:"url,omitempty" validate:"omitempty,clearing_http_url,max=2048"`
 	CompressUserMessages *bool   `json:"compress_user_messages,omitempty"`
 }
 
