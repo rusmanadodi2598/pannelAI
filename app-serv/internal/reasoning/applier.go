@@ -184,15 +184,23 @@ var nativeOnlyFormats = map[string]bool{
 
 // resolveFormat names the shape the config is written in: the model's own
 // declared format, unless the wire cannot carry it, and the wire's native
-// format otherwise. It is the reference's resolveFormat.
+// format otherwise. It is the reference's resolveFormat, plus the Responses
+// wire's own rule: that wire reads one member only — reasoning:{effort,summary}
+// — so the wire decides the shape and the declared format never names the chat
+// field there, which is how the reasoning control died on muse (the upstream
+// ignores reasoning_effort; the reference's executors rewrite it into the
+// object instead).
 func resolveFormat(wire string, caps registry.CapabilitySet) string {
+	if wire == "openai-responses" {
+		return "openai-responses"
+	}
 	if format := caps.ThinkingFormat; format != "" {
 		if !isOpenAIWire(wire) || !nativeOnlyFormats[format] {
 			return format
 		}
 	}
 	switch wire {
-	case "openai", "openai-responses":
+	case "openai":
 		return "openai"
 	case "claude":
 		return "claude-budget"

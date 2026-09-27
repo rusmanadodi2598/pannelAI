@@ -23,6 +23,9 @@ package reasoning
 
 import "encoding/json"
 
+// stripAll removes every thinking field this port knows, so a re-applied config
+// cannot leave a stale member from the client's own shape beside the new one.
+// It is the reference's stripAll, including the nested generationConfig and the
 // commandcode params envelope.
 func stripAll(body map[string]json.RawMessage) {
 	for _, key := range []string{

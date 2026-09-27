@@ -127,9 +127,10 @@ func TestResolveFormat(t *testing.T) {
 		{"a Claude format on the Claude wire is used", "claude", "claude-adaptive", "claude-adaptive"},
 		{"a Claude format on the OpenAI wire falls back", "openai", "claude-budget", "openai"},
 		{"a Gemini format on the OpenAI wire falls back", "openai", "gemini-level", "openai"},
-		{"a Gemini format on the Responses wire falls back", "openai-responses", "gemini-budget", "openai"},
+		{"the Responses wire reads its own object", "openai-responses", "openai", "openai-responses"},
+		{"a Gemini format on the Responses wire reads the object", "openai-responses", "gemini-budget", "openai-responses"},
 		{"no declared format on the OpenAI wire", "openai", "", "openai"},
-		{"no declared format on the Responses wire", "openai-responses", "", "openai"},
+		{"no declared format on the Responses wire", "openai-responses", "", "openai-responses"},
 		{"no declared format on the Claude wire", "claude", "", "claude-budget"},
 	}
 	for _, tc := range cases {

@@ -54,6 +54,30 @@ func TestApplyFormat_WireFamilies(t *testing.T) {
 			want: `{"reasoning_effort":"xhigh"}`,
 		},
 		{
+			name: "openai-responses writes the object and forces the summary", body: `{}`, format: "openai-responses",
+			cfg:  Config{Mode: "level", Level: "high"},
+			caps: modelCaps{canDisable: true},
+			want: `{"reasoning":{"effort":"high","summary":"auto"}}`,
+		},
+		{
+			name: "openai-responses none disables inside the object", body: `{}`, format: "openai-responses",
+			cfg:  Config{Mode: "none"},
+			caps: modelCaps{canDisable: true},
+			want: `{"reasoning":{"effort":"none","summary":"auto"}}`,
+		},
+		{
+			name: "openai-responses none on a model that cannot disable clamps", body: `{}`, format: "openai-responses",
+			cfg:  Config{Mode: "none"},
+			caps: modelCaps{canDisable: false},
+			want: `{"reasoning":{"effort":"minimal","summary":"auto"}}`,
+		},
+		{
+			name: "openai-responses max clamps to the model's list", body: `{}`, format: "openai-responses",
+			cfg:  Config{Mode: "level", Level: "max"},
+			caps: modelCaps{canDisable: true, levels: []string{"low", "high", "xhigh"}},
+			want: `{"reasoning":{"effort":"xhigh","summary":"auto"}}`,
+		},
+		{
 			name: "claude-adaptive writes the switch and the effort", body: `{}`, format: "claude-adaptive",
 			cfg:  Config{Mode: "level", Level: "high"},
 			caps: modelCaps{canDisable: true},

@@ -64,6 +64,24 @@ func applyFormat(body map[string]json.RawMessage, format string, cfg Config, cap
 			setValue(body, "reasoning_effort", NormalizeOpenAILevel(level, caps.levels))
 		}
 
+	case "openai-responses":
+		// The Responses API reads reasoning:{effort,summary}, not the chat
+		// field: the reference's opencode and codex executors rewrite the
+		// effort into this object and force the summary on, because a
+		// Responses upstream reasons anyway but streams no summary text a
+		// client could carry until the request asks for one
+		// (executors/opencode.js normalizeOpencodeReasoning, codex.js:459).
+		if none && caps.canDisable {
+			setValue(body, "reasoning", map[string]any{"effort": "none", "summary": "auto"})
+			return
+		}
+		if level := toLevel(eff); level != "" {
+			setValue(body, "reasoning", map[string]any{
+				"effort":  NormalizeOpenAILevel(level, caps.levels),
+				"summary": "auto",
+			})
+		}
+
 	case "claude-adaptive":
 		if none && caps.canDisable {
 			setClaudeThinking(body, "disabled", 0, display)
@@ -211,7 +229,3 @@ func applyFormat(body map[string]json.RawMessage, format string, cfg Config, cap
 		body["params"] = mustJSON(params)
 	}
 }
-
-// stripAll removes every thinking field this port knows, so a re-applied config
-// cannot leave a stale member from the client's own shape beside the new one.
-// It is the reference's stripAll, including the nested generationConfig and the
