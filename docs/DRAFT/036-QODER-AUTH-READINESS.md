@@ -8,7 +8,7 @@ depan implementasi.
 
 |                    |                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**         | **Slice A selesai 2026-09-27 (commit `0d519fa`). Slice B selesai lebih dulu (commit `c0e3034`). Slice C (modal device di panel) selesai 2026-09-27 (commit `0bd3b7c`). Slice D: langkah 1 (primitif COSY + encoder, terbukti hidup) `63a445a`, langkah 2 (konektor + exchange PAT + plumbing machine_id) selesai 2026-09-27; langkah 3 (body agent + decoder envelope SSE + kuota) TERBUKA.** |
+| **Status**         | **Slice A selesai 2026-09-27 (commit `0d519fa`). Slice B selesai lebih dulu (commit `c0e3034`). Slice C (modal device di panel) selesai 2026-09-27 (commit `0bd3b7c`). Slice D: langkah 1 (primitif COSY + encoder, terbukti hidup) `63a445a`, langkah 2 (konektor + exchange PAT + plumbing machine_id) `e4e4d30`, langkah 3a (decoder envelope + seam) `33d5fda`, langkah 3b (body agent + katalog) `7cdd7e8`, langkah 3c (baca kuota) menyusul commit ini.** |
 | **Mechanism**      | PORT (reference → Go) + TDD                                                                                                                                                          |
 | **Scope**          | `app-serv/.` (service, repository, handler, schema, router, kontrak) dan `app-ui/.` (schema, api, sections OAuth). Slice D menambah `internal/provider` + `internal/dataplane` + `internal/service/quotafetch`.                                     |
 | **Permintaan owner** | (1) Qoder bisa di-OAuth. (2) Qoder bisa diisi PAT. (3) Paritas dengan reference. (4) Verifier device flow dipegang server, panel hanya mengirim `device_code`. (5) Qoder harus benar-benar terpakai — COSY, exchange PAT, dan baca kuota ikut pass ini (keputusan owner 2026-09-27). |
@@ -102,8 +102,15 @@ Konstanta yang dipindah dari reference (semuanya diuji, tidak ada yang dikira-ki
   `provider.Credential.Metadata` tersedia), dan round-trip `account.machine_id` lewat JSONB
   (`internal/repository/postgres/endpoint_jsonb.go:111,126`) **belum punya test** — COSY akan memakai ulang
   nilai itu di setiap request, jadi hilangnya ia di jalur baca tidak boleh ketemu nanti.
-- **Slice D langkah 3 — executor chat.** Diukur 2026-09-27 (§5.1): endpoint chat menolak body hasil translasi
-  OpenAI (`400 None flow nodes found for router agent_router`) dan menjawab sebagai **envelope SSE**
+- **Slice D langkah 3 sudah dikerjakan (3a envelope, 3b body+katalog, 3c kuota). Yang tersisa darinya, dan
+  belum diport:** rewrite lampiran (`rewriteQoderMessageAttachments` + upload gambar ke
+  `/api/v2/image/upload`, multipart field `file`) sehingga turn bergambar mengirim URL OSS alih-alih base64
+  inline; pemilihan **context tier** (200K/400K/1M) dari `model_config.context_config`; dan satu
+  completion hidup, yang butuh akun dengan kuota. Body ter-encode (`Encode=1`) juga belum dipakai — vendor
+  menerima body polos (§5.1) dan reference memakai encoder untuk menghindari pola WAF, bukan karena
+  wajib; ini kandidat perubahan berikutnya, bukan bug yang diketahui.
+- **Catatan lama, sudah lewat.** Endpoint chat menolak body hasil translasi OpenAI
+  (`400 None flow nodes found for router agent_router`) dan menjawab sebagai **envelope SSE**
   (`{headers, body, statusCodeValue, statusCode}` per frame, plus `event:finish` berisi timing), bukan chunk
   OpenAI. Jadi ini port nyata — builder body agent (chat record id stabil, `model_config` dari katalog hidup,
   konteks tier, penanganan gambar) dan decoder envelope — bukan perubahan konfigurasi reader yang ada.
@@ -225,6 +232,23 @@ dengan status vendor, dan jalur failover + klasifikasi kuota (`IsQuotaError`) me
 kegagalan HTTP biasa. Seam-nya opsional (`provider.StreamEnvelope` di `internal/provider/plugin.go`); test
 di `internal/dataplane/transport_envelope_test.go` menjaga tiga hal: body ter-unwrap sampai ke klien,
 refusal jadi kegagalan, dan provider yang tidak mendeklarasi seam menerima body-nya utuh tanpa perubahan.
+
+### 5.3 Rantai penuh, terbukti hidup (langkah 3b + 3c)
+
+```
+$ PANNELAI_QODER_PAT='pt-…' go test -tags=integration ./internal/provider/ -run QoderLiveChat -v
+the vendor refused the call: status=403 quota=true message={"pricingUrl":"https://qoder.com/pricing?client=qoder"}
+--- PASS: TestQoderLiveChatBodyIsAcceptedByTheVendor
+```
+
+Yang dilewati rantai ini, satu per satu: katalog dibaca dengan tanda tangan akun → body agent dibangun
+dari hasil translasi OpenAI → vendor **menerima** request (tidak ada lagi "flow nodes") → jawaban dibongkar
+dari envelope → block penagihan dikenali sebagai kegagalan kuota, bukan jawaban sukses. Urutannya penting:
+sebelum langkah 3b, request yang sama ditolak di lapisan routing; sebelum envelope decoder, penolakan itu
+akan mengalir ke klien sebagai konten dan tercatat sebagai jawaban yang ditagih.
+
+Yang **tidak** bisa dibuktikan akun ini: satu completion sukses. Kuotanya habis (`code 112`), dan itu
+justru menguji jalur yang benar untuk pembukuan. Konsekuensinya tercatat di §7.
 
 ## 6. Gerbang
 

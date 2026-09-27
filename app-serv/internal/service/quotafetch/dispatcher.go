@@ -32,6 +32,8 @@ var familyEndpoints = map[string]string{
 	"vercel-ai-gateway": "https://ai-gateway.vercel.sh/v1/credits",
 	"codebuddy-cn":      "https://copilot.tencent.com/v2/billing/meter/get-user-resource",
 	"codebuddy-intl":    "https://www.codebuddy.ai/v2/billing/meter/get-user-resource",
+	"qoder":             "https://openapi.qoder.sh/api/v2/quota/usage",
+	"qoder-cn":          "https://openapi.qoder.com.cn/api/v2/quota/usage",
 }
 
 // endpointFor overrides the scheme and host of a family's endpoint while keeping the
@@ -70,6 +72,11 @@ var familyFetchers = map[string]func(context.Context, Credentials) Result{
 	"vercel-ai-gateway": fetchVercel,
 	"codebuddy-cn":      fetchCodeBuddy(codebuddyCN),
 	"codebuddy-intl":    fetchCodeBuddy(codebuddyIntl),
+	// The Qoder pair shares one handler: the CN site answers the same shape from a
+	// different service, and the exchange host follows the endpoint rather than a
+	// table of regions.
+	"qoder":    fetchQoder("qoder", "https://openapi.qoder.sh"),
+	"qoder-cn": fetchQoder("qoder-cn", "https://openapi.qoder.com.cn"),
 }
 
 type codebuddyFamily struct {
