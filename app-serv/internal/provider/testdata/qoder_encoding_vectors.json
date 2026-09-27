@@ -1,0 +1,38 @@
+{
+  "source": "9router open-sse/shared/qoder/encoding.js qoderEncodeBody",
+  "captured": "2026-09-27",
+  "vectors": [
+    {
+      "plain": "",
+      "encoded": ""
+    },
+    {
+      "plain": "a",
+      "encoded": "$p$#"
+    },
+    {
+      "plain": "hi",
+      "encoded": "$HzP"
+    },
+    {
+      "plain": "hello world",
+      "encoded": "YuHp$Hq&J(WPHFru"
+    },
+    {
+      "plain": "{\"model\":\"ultimate\",\"messages\":[{\"role\":\"user\",\"content\":\"halo\"}]}",
+      "encoded": "YB*f*#(WhJHFhJoByBOiiuHq*eF.WSF^N(gEDxV*lLtXBEKbuHa*l*K.N(FmYKtu(CLuoByBEFrJHLt#xCLB*f*u"
+    },
+    {
+      "plain": "éà",
+      "encoded": "$$ERn_fy"
+    },
+    {
+      "plain": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "encoded": "mZiImZiImZiImZiImZiImZiImZiImZiImZiImZiIm_$$mZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiI"
+    },
+    {
+      "plain": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "encoded": "mZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiImZiI"
+    }
+  ]
+}

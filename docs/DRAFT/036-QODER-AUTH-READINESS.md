@@ -142,9 +142,64 @@ Dipanggil langsung dari mesin kerja, hanya bentuk jawabannya yang dicatat (token
    reference lakukan, dan itu yang port ini ikuti. Yang tidak boleh: menyimpan `jt-` sebagai credential dan
    membuang `pt-`-nya, karena `jt-` mati dalam 24 jam.
 
-**Yang masih belum dibuktikan:** COSY (signature + body encode) dan respons `/api/v2/quota/usage`, keduanya
-butuh panggilan bertanda tangan — vector emas diambil dari JS reference, lalu dibandingkan dengan implementasi
-Go sebelum ada bukti hidup.
+**Yang sudah dibuktikan hidup (slice D langkah 1, `internal/provider/qoder_live_test.go`):**
+
+```
+$ PANNELAI_QODER_PAT='pt-…' go test -tags=integration ./internal/provider/ -run QoderLive -v
+exchange    PASS  expires_in=86400000 ms, expires_at=2026-09-28T14:17:01Z, refresh token ada
+userinfo    PASS  id + name="Dodi Rusmana" + email, organization_id kosong
+model list  PASS  200, 61.542 byte katalog — request ditanda tangani port Go
+```
+
+Model list yang menjawab 200 itu adalah bukti tanda tangan COSY-nya benar: vendor memvalidasi
+`Authorization: Bearer COSY.<payload>.<md5>`, `Cosy-Key` yang membungkus kunci AES, `Cosy-Bodyhash`, dan
+casing header (`Cosy-Machineid`, bukan `Cosy-MachineID`). Satu byte meleset di komposisi signature, satu
+padding PKCS#7 salah, atau satu header salah huruf, jawabannya 401/403 — bukan 200 dengan katalog.
+
+**Temuan yang membatalkan satu aturan reference:** `api3.qoder.sh` (host token device) **melayani job token
+`jt-`** untuk `/algo/api/v2/model/list` hari ini — reference mengklaim host itu menolak `jt-` dengan 403
+"Login expired" sehingga trafik job token harus ke `api2`. Yang diuji adalah model list; jalur chat belum
+diukur, jadi pemilihan host per jenis token tetap diporting (ia tidak berbahaya) tapi tidak boleh dianggap
+aturan vendor yang sudah dipastikan. Test-nya mencatat dua-duanya supaya perubahan upstream ketahuan, bukan
+dilupakan.
+
+**Yang masih belum dibuktikan:** body chat `agent_chat_generation` (bukan bentuk OpenAI — record id stabil,
+`model_config` dari katalog hidup, konteks tier, upload gambar) dan unwrap SSE-nya, tanda tangan pada request
+ber-body, serta respons `/api/v2/quota/usage`.
+
+### 5.1 Probe bentuk body chat (2026-09-27, sekali jalan, lalu dibuang)
+
+Pertanyaan yang dijawab: apakah gateway bisa mengirim hasil translasi OpenAI mentah ke endpoint chat Qoder,
+atau executor bespoke reference itu wajib? Jawabannya **wajib**, dan probe-nya juga menghasilkan dua fakta
+lain yang tidak ada di catatan reference:
+
+```
+POST https://api2.qoder.sh/algo/.../agent_chat_generation?FetchKeys=llm_model_result&AgentId=agent_common
+     body = {"model":"ultimate","stream":true,"messages":[{"role":"user","content":"Say OK."}]}
+     COSY-signed oleh port Go, dikirim polos dan dikirim lewat encoder → dua-duanya sama
+
+HTTP 200
+data:{"headers":{"Content-Type":["application/json"]},
+     "body":"{\"code\":\"400\",\"message\":\"[FAIL]node:agent_router msg:None flow nodes found for router agent_router\"}",
+     "statusCodeValue":400,"statusCode":"BAD_REQUEST"}
+
+event:finish
+data:{"firstTokenDuration":…,"totalDuration":…,"serverDuration":…}
+```
+
+1. **Tanda tangan diterima pada POST ber-body.** Vendor menolak di lapisan *routing agent* (`flow nodes`),
+   bukan di lapisan autentikasi — artinya `Cosy-Bodyhash` atas byte yang benar-benar keluar sudah cocok. Ini
+   membuktikan jalur tanda tangan untuk request ber-body, yang model list (body kosong) tidak bisa buktikan.
+2. **Encoder body juga diterima.** Versi `Encode=1` dijawab identik dengan versi polos, jadi obfuscation-nya
+   benar menurut server, bukan hanya menurut vector reference.
+3. **SSE-nya adalah envelope, bukan stream OpenAI.** Frame `data:` berisi `{headers, body, statusCodeValue,
+   statusCode}` — body jawaban dibungkus JSON di dalam string — plus satu `event:finish` berisi timing.
+   Reader stream gateway tidak bisa membaca bentuk ini apa adanya, jadi `wrapQoderSSE` reference memang
+   diperlukan dan tidak bisa dipangkas jadi konfigurasi.
+
+Konsekuensinya untuk slice D: executor Qoder butuh (a) builder body agent, (b) decoder envelope SSE, dan (c)
+peta `model_config` dari katalog hidup. Itu unit berikutnya; primitif yang diuji di atas (exchange, identity,
+encoder, signer) adalah fondasinya dan sudah terbukti sampai sini.
 
 ## 6. Gerbang
 
@@ -155,3 +210,9 @@ Go sebelum ada bukti hidup.
   masing-masing dipecah jadi start/poll karena melewati batas.
 - Uang muka aturan lama dipertahankan: `router_session_sweep_test.go` tidak perlu daftar baru — kedua
   route device menjawab 401 untuk anonim, dan itu justru yang diuji sapuan itu.
+- **SYSTEM_MAP untuk langkah 1 slice D: N/A, tidak ada perubahan struktural.** Belum ada route baru, tidak
+  ada tipe data baru, tidak ada worker baru — primitif provider (`qoder_constants.go`, `qoder_encoding.go`,
+  `qoder_cosy.go`, `qoder_crypto.go`) belum dipanggil siapa pun. Peta pemanggilan Qoder (konektor →
+  `provider.Connectors` → `dataplane.Transport`) masuk ke §5 SYSTEM_MAP pada commit konektor, bukan di sini.
+- Supresi linter hanya satu dan beralasan: `rsa.EncryptPKCS1v15` dan `DecryptPKCS1v15`deprecated di Go 1.26,
+  dan skema vendor memang membaca padding itu — tiap suppressed call punya `reason:` sesuai AGENTS.md §1.4.
