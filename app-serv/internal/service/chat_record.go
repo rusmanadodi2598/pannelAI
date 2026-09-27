@@ -115,6 +115,35 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 	}
 }
 
+// RecordRefusal writes the one request-log row a chat call leaves when the
+// handler refused it before the pipeline: a body the schema would not accept
+// (draft 034 F4). It is the same treatment an engine refusal already gets from
+// record(), so the panel's error surfaces see a client that repeats a
+// malformed call the way they see one a route could not serve. No usage row is
+// written: the call reached no attempt, so there is no provider or model to
+// bill (register G17). The stored error text is the code alone, matching the
+// rule that a stored row must not hold text an upstream can influence. A
+// recording failure is deliberately not returned, for the reason record() keeps.
+func (s *ChatService) RecordRefusal(ctx context.Context, raw []byte, keyID, model string, failure error) {
+	if s.logs == nil || failure == nil {
+		return
+	}
+	code := dataplane.AsError(failure).Code
+	recordCtx, cancel := accountingContext(ctx)
+	defer cancel()
+	// reason: the refusal's log row is bookkeeping, not a condition of the
+	// client's error; a failed write retries on the next call.
+	_, _ = s.logs.Record(recordCtx, domain.RequestLogInput{
+		RequestID:    s.requestIDFrom(recordCtx),
+		TS:           s.clock().UTC(),
+		GatewayKeyID: keyID,
+		Model:        model,
+		Status:       domain.RequestLogError,
+		RequestBody:  string(raw),
+		Error:        code,
+	})
+}
+
 // chatQuotaUnits is what one chat call spends against a quota window: every
 // token the upstream billed, prompt and completion alike, because a window is a
 // budget of work rather than of one direction. Cached reads count too, since the

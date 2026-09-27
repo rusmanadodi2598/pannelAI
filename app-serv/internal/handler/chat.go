@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
@@ -54,6 +55,16 @@ func (h *ChatHandler) Responses(w http.ResponseWriter, r *http.Request) {
 	h.serve(w, r, dataplane.RouteResponses, schema.FormatOpenAIResponses)
 }
 
+// refuse records the one log row a schema refusal leaves and then writes the
+// client's error, so a request the gateway rejected before the pipeline is
+// still visible on the Logs screen the way an engine refusal already is
+// (draft 034 F4). Authentication failures stay unrecorded: they happen before
+// a body is read and carry no key to own the row.
+func (h *ChatHandler) refuse(w http.ResponseWriter, r *http.Request, raw []byte, key domain.GatewayKey, model string, failure error) {
+	h.chat.RecordRefusal(r.Context(), raw, key.ID(), model, failure)
+	writeDataPlaneError(w, failure)
+}
+
 // serve authenticates at the request boundary, then reads and validates the
 // route body before handing the typed request to the relay. Auth comes first per
 // SPEC-API-001 §7.15, so an unauthenticated caller cannot use malformed payloads
@@ -67,7 +78,7 @@ func (h *ChatHandler) serve(w http.ResponseWriter, r *http.Request, route datapl
 
 	raw, err := schema.ReadBody(r)
 	if err != nil {
-		writeDataPlaneError(w, err)
+		h.refuse(w, r, nil, key, "", err)
 		return
 	}
 
@@ -79,11 +90,11 @@ func (h *ChatHandler) serve(w http.ResponseWriter, r *http.Request, route datapl
 	case schema.FormatAnthropic:
 		decoded, decodeErr := schema.DecodeMessagesRequest(raw)
 		if decodeErr != nil {
-			writeDataPlaneError(w, decodeErr)
+			h.refuse(w, r, raw, key, "", decodeErr)
 			return
 		}
 		if validateErr := schema.ValidateStruct(decoded); validateErr != nil {
-			writeDataPlaneError(w, validateErr)
+			h.refuse(w, r, raw, key, decoded.Model, validateErr)
 			return
 		}
 		request.Messages = &decoded
@@ -92,11 +103,11 @@ func (h *ChatHandler) serve(w http.ResponseWriter, r *http.Request, route datapl
 	case schema.FormatOpenAIResponses:
 		decoded, decodeErr := schema.DecodeResponsesRequest(raw)
 		if decodeErr != nil {
-			writeDataPlaneError(w, decodeErr)
+			h.refuse(w, r, raw, key, "", decodeErr)
 			return
 		}
 		if validateErr := schema.ValidateStruct(decoded); validateErr != nil {
-			writeDataPlaneError(w, validateErr)
+			h.refuse(w, r, raw, key, decoded.Model, validateErr)
 			return
 		}
 		request.Responses = &decoded
@@ -105,11 +116,11 @@ func (h *ChatHandler) serve(w http.ResponseWriter, r *http.Request, route datapl
 	default:
 		decoded, decodeErr := schema.DecodeChatRequest(raw)
 		if decodeErr != nil {
-			writeDataPlaneError(w, decodeErr)
+			h.refuse(w, r, raw, key, "", decodeErr)
 			return
 		}
 		if validateErr := schema.ValidateStruct(decoded); validateErr != nil {
-			writeDataPlaneError(w, validateErr)
+			h.refuse(w, r, raw, key, decoded.Model, validateErr)
 			return
 		}
 		request.Chat = &decoded
