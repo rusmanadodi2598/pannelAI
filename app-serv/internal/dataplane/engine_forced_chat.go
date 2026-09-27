@@ -132,6 +132,16 @@ func (f *foldedChat) response() schema.ChatCompletionResponse {
 			message.Content = schema.MessageContent{}
 		}
 	}
+	// The reference strips the reasoning a folded stream accumulated once the
+	// answer has content, and keeps it only when content is empty — the
+	// reasoning is then the only output a client can show
+	// (sseToJsonHandler.js: "strip reasoning_content only when content is
+	// non-empty"; unconditional, it hid the Qwen-style answers that are all
+	// thinking). A streaming client sees the deltas instead; this guard shapes
+	// the one-body answer only.
+	if message.Reasoning != "" && message.Content.Text != "" {
+		message.Reasoning = ""
+	}
 	finish := f.finish
 	if finish == "" {
 		finish = FinishStop

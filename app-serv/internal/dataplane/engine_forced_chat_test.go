@@ -110,6 +110,24 @@ func TestFoldedChat_AbsorbsReasoningFromEveryVendorShape(t *testing.T) {
 		{"shapes mix across deltas", []object{chunk(`{"reasoning":"a"}`), chunk(`{"reasoning_content":"b"}`)}, "ab"},
 		{"a content-only delta carries no reasoning", []object{chunk(`{"content":"pong"}`)}, ""},
 		{"empty shapes stay empty", []object{chunk(`{"reasoning":""}`), chunk(`{"reasoning_details":[]}`), chunk(`{"reasoning_details":[{}]}`)}, ""},
+		{
+			name:   "reasoning yields to content in the folded answer",
+			deltas: []object{chunk(`{"reasoning":"th"}`), chunk(`{"content":"pong"}`)},
+			want:   "",
+		},
+		{
+			name:   "reasoning stays when the answer carries none",
+			deltas: []object{chunk(`{"reasoning":"th"}`)},
+			want:   "th",
+		},
+		{
+			name: "reasoning stays beside tool calls with no content",
+			deltas: []object{
+				chunk(`{"reasoning":"th"}`),
+				chunk(`{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"get_weather","arguments":"{}"}}]}`),
+			},
+			want: "th",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
