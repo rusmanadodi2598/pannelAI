@@ -59,7 +59,7 @@ graphify-out/
 proxy/
 
 # Local generate agent coding
-.agents/
+.agents
 .claude
 .codex
 .omp
@@ -70,4 +70,5 @@ proxy/
 .opencode
 .zcode
 .superpowers
-.codebuddy/
+.codebuddy
+.qoder
