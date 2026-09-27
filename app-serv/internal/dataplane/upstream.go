@@ -106,11 +106,12 @@ func AsUpstreamError(err error) (*UpstreamError, bool) {
 // assert the seam receives the resolved model and the stream flag.
 func RequestFor(call Call) provider.Request {
 	return provider.Request{
-		Provider: call.Provider,
-		Model:    call.Model,
-		Wire:     call.Wire,
-		Body:     call.Body,
-		Stream:   call.Stream,
+		Provider:   call.Provider,
+		Model:      call.Model,
+		Wire:       call.Wire,
+		Body:       call.Body,
+		Stream:     call.Stream,
+		Credential: call.Credential,
 	}
 }
 

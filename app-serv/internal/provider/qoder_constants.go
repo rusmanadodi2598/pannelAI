@@ -47,6 +47,7 @@ const qoderSigPathPrefix = "/algo"
 // one gateway for every kind and is never rewritten.
 const (
 	qoderChatBaseIntlDevice = "https://api3.qoder.sh"
+	qoderModelListPath      = "/api/v2/model/list"
 	qoderChatBaseIntlJob    = "https://api2.qoder.sh"
 )
 

@@ -36,9 +36,11 @@ import (
 type Qoder struct {
 	Base
 
-	entry  registry.Provider
-	tokens QoderJobToken
-	signer cosySigner
+	entry   registry.Provider
+	tokens  QoderJobToken
+	signer  cosySigner
+	catalog *qoderCatalog
+	client  *http.Client
 }
 
 // NewQoder builds the connector for one registry entry. The exchange client is the
@@ -53,11 +55,16 @@ func NewQoder(entry registry.Provider, client *http.Client) (*Qoder, error) {
 	if err != nil {
 		return nil, fmt.Errorf("provider %s: %w", entry.ID, err)
 	}
+	if client == nil {
+		client = &http.Client{Timeout: qoderCatalogTimeout}
+	}
 	return &Qoder{
-		Base:   Base{ID: entry.ID, Auth: entry.AuthType, Format: entry.Transport.Format},
-		entry:  entry,
-		tokens: tokens,
-		signer: qoderCosy,
+		Base:    Base{ID: entry.ID, Auth: entry.AuthType, Format: entry.Transport.Format},
+		entry:   entry,
+		tokens:  tokens,
+		signer:  qoderCosy,
+		catalog: newQoderCatalog(),
+		client:  client,
 	}, nil
 }
 

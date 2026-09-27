@@ -55,6 +55,14 @@ type Request struct {
 	// Headers are the request headers already assembled from the registry entry.
 	// A connector may add to them, never replace them.
 	Headers http.Header
+
+	// Credential is the account this call presents. It is here because a
+	// provider's request shape is not always a function of the request alone:
+	// Qoder's chat body carries a model configuration the vendor publishes only
+	// to the authenticated account, so shaping that body needs the credential
+	// that will sign the read. A connector must not put any part of it into
+	// `Body` — the body leaves the process as the client's prompt would.
+	Credential Credential
 }
 
 // Response is what a connector returns. The body is streamed rather than

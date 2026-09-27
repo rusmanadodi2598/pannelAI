@@ -146,7 +146,7 @@ func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Ca
 		// inside the body, so the first frame is read before anything is piped:
 		// a refusal there is an upstream failure the router can act on, not a
 		// served answer that gets billed.
-		var stream io.ReadCloser = response.Body
+		stream := response.Body
 		if envelope, ok := plugin.(provider.StreamEnvelope); ok {
 			unwrapped, failure := envelope.OpenStream(response.Body)
 			if failure != nil {
