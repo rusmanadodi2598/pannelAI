@@ -6,7 +6,7 @@ berkas `app-serv/` maupun `app-ui/` mana pun; tidak ada satu pun patch yang mend
 
 |                      |                                                                                                                                                                                                                                                                                                       |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | **F1 CLOSED 2026-09-27** — patch `50340a8` (TDD merah-hijau, gerbang hijau); F2, F4, F5 terukur dan menunggu keputusan owner; F3 CLOSED dari 021                                                                                                                                                      |
+| **Status**           | **F1 CLOSED 2026-09-27** — patch `50340a8` (TDD merah-hijau, gerbang hijau); F2 terukur di REFERENCE: **parity**, menunggu keputusan (A/B/C); F4, F5 menunggu keputusan owner; F3 CLOSED dari 021                                                                                                     |
 | **Mechanism**        | AFTER (register temuan; F1 sudah diperbaiki, sisanya keputusan)                                                                                                                                                                                                                                       |
 | **Scope**            | Pengujian gateway yang berjalan di `127.0.0.1:9090` atas `th-1/deepseek-v4.1-flash:free`, `opencode/mimo-v2.6-flash-free(high)`, `opencode/muse-spark-1.3-contributor-free(high)`, `opencode/space-bunny-free`, combo `pi-agent`                                                                      |
 | **Permintaan owner** | "Testing request response: Chat Completion, Tool, Streaming, Reasoning" atas endpoint + kunci + daftar model itu, lalu "Cek lebih details: F2. F3, dan F5" (2026-09-27)                                                                                                                               |
@@ -150,6 +150,35 @@ jawaban atau menunggu usage **setelah** finish akan salah baca. Kontrol langsung
 403 `FreeTierError: OpenCode's free tier can only be used from within OpenCode`, dan percobaan lewat
 klien lain tidak dilakukan. Atribusi di atas karena itu bertumpu pada sidik byte §2, bukan pada
 perbandingan dua ujung.
+
+**Pengukuran REFERENCE 9Router (2026-09-27, atas perintah owner "Cek pada REFERENCE dulu").** Checkout
+`/home/rusmanadodi/apps/9router` @ `39e36d3d` (v0.5.86); `git diff 39e36d3d..f01fb909` (v0.5.91, tip
+origin/master) kosong atas keempat file yang diukur, jadi pembacaan valid di tip. Jalur yang setara
+dengan lane `mimo` — upstream OpenAI chat → klien OpenAI — **bukan translator melainkan passthrough**:
+`buildTransformStream` memilih `createPassthroughStreamWithLogger` bila `needsTranslation` salah, dan
+`needsTranslation` hanyalah `sourceFormat !== targetFormat` (`translator/index.js:226-228`;
+`handlers/chatCore/streamingHandler.js:37-41`). Loop passthrough (`utils/stream.js:141-247`) tetap
+parse tiap baris `data:` dan menulis ulang sebagian frame, tetapi **tidak pernah memangkas atau
+mendedup finish**:
+
+- `hasValuableContent` (`utils/streamHelpers.js:41-50`) hanya menjatuhkan delta yang benar-benar kosong
+  tanpa `finish_reason` dan tanpa `role` — **kedua chunk penutup `mimo` lolos** dan diteruskan.
+- Di setiap frame finish ia justru **menulis ulang usage**: tanpa usage valid → suntik
+  `estimateUsage` + penanda `estimated: true` (`stream.js:210-217`, `usageTracking.js:396-402`); dengan
+  usage → timpa dengan `addBufferToUsage(usage)` yang menambah **BUFFER_TOKENS = 2000** ke
+  `prompt_tokens` dan `total_tokens` (`stream.js:217-221`, `usageTracking.js:21`, `:33-57`).
+- `[DONE]` diteruskan, dan flush menjamin satu bila upstream tak mengirimnya (`stream.js:391-414`).
+
+Jadi untuk bentuk `mimo` persis, kawat REFERENCE berakhir `finish(usage estimasi)`,
+`finish(usage asli + 2000)`, `[DONE]` — **duplikasi `finish_reason` yang sama** dengan app-serv, malah
+lebih berat: usage menempel di kedua frame, angka kedua dinaikkan 2000, dan angka pertama karangan.
+**Vonis: F2 adalah PARITY.** app-serv sudah meneruskan kedua chunk persis seperti reference; tidak ada
+pola "chunk penutup tanpa konten" yang dipangkas di sisi reference, dan kebijakan suntik-estimasi-nya
+berlawanan dengan aturan app-serv (021 F2/§5: kawat dan akuntansi hanya membawa angka yang benar-benar
+dilihat, tidak pernah yang dikarang). Yang terbuka untuk keputusan owner tinggal tiga: (A) terima
+parity, tutup F2 tanpa kode; (B) menyimpang dari reference — pangkas chunk penutup yang delta-nya
+kosong kecuali yang terakhir, perbaikan kontrak klien yang tidak dimiliki reference; (C) port kebijakan
+usage-di-frame-finish ala reference (estimasi + buffer 2000) — menabrak aturan no-fabrication.
 
 ## 5. F3 (CLOSED): 021 F5 — stream tidak lagi dicatat 0/0
 
