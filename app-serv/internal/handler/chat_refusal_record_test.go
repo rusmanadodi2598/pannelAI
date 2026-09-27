@@ -64,7 +64,7 @@ var _ service.RequestLogRecorder = (*recordingLogs)(nil)
 // schema refuses after authentication still leaves its request-log row, with
 // the same code the client was served, and still leaves no usage row.
 func TestChatCompletionsHTTP_RefusalRecorded(t *testing.T) {
-	const effortProbe = `{"model":"test/model","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"none"}`
+	const effortProbe = `{"model":"test/model","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"banana"}`
 
 	cases := []struct {
 		name          string
@@ -76,9 +76,11 @@ func TestChatCompletionsHTTP_RefusalRecorded(t *testing.T) {
 		wantUsageRows int
 	}{
 		{
-			// The register's own probe: reasoning_effort "none" is rejected by
-			// the validator after the decoder named the model, so the row can
-			// carry it.
+			// Draft 034 F4's own probe shape: an effort word the validator
+			// refuses, after the decoder named the model, so the row can carry
+			// it. The register's original probe value "none" became a served
+			// word when F5 widened the vocabulary to the engine's own set, so
+			// the pin uses a word the vocabulary still refuses.
 			name:          "a refusal the reasoning vocabulary rejects is recorded with its model",
 			body:          effortProbe,
 			wantStatus:    http.StatusBadRequest,

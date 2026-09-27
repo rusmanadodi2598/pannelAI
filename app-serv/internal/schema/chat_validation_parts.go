@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/reasoning"
 )
 
 // validateMessage checks one turn. An assistant turn carrying tool calls is
@@ -97,14 +98,19 @@ func validImageDetail(detail string) bool {
 	}
 }
 
-// validReasoningEffort reports whether effort is one of the documented values.
-// The set is OpenAI's own rather than a guess: the field is forwarded verbatim
-// on the same-format path, so an unknown value would reach the provider as-is.
+// validReasoningEffort reports whether effort is one of the values the
+// reasoning engine itself acts on, derived from the engine's own level map
+// (draft 034 F5): a body word and a model-name suffix are two doors to the
+// same machinery, so the set is read from reasoning.LevelToBudget instead of
+// restated here, plus the off and auto words configFromEffort answers. The
+// suffix door additionally accepts "ultra" and a numeric budget, which stay
+// suffix-only: ultra is normalized per model on the OpenAI wire alone, and a
+// budget belongs to the parenthesised form rather than the enum field. The
+// field is forwarded verbatim on the same-format path, so an unknown value
+// would reach the provider as-is and stays refused.
 func validReasoningEffort(effort string) bool {
-	switch effort {
-	case "minimal", "low", "medium", "high":
+	if _, known := reasoning.LevelToBudget[effort]; known {
 		return true
-	default:
-		return false
 	}
+	return effort == "off" || effort == "auto"
 }

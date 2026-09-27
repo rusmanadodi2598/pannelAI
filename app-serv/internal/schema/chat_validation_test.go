@@ -36,6 +36,20 @@ func TestChatRequestSemanticValidation(t *testing.T) {
 		{name: "image without url", body: `{"model":"gpt-4o","messages":[{"role":"user","content":[{"type":"image_url","image_url":{}}]}]}`, valid: false},
 		{name: "invalid stop object", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"stop":{"value":"END"}}`, valid: false},
 		{name: "invalid reasoning effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"banana"}`, valid: false},
+		// Draft 034 F5: the body door must admit every word the reasoning
+		// engine itself acts on, which is the LevelToBudget set plus the off
+		// and auto words — the same vocabulary the model-name suffix accepts.
+		{name: "xhigh effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"xhigh"}`, valid: true},
+		{name: "max effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"max"}`, valid: true},
+		{name: "none effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"none"}`, valid: true},
+		{name: "off effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"off"}`, valid: true},
+		{name: "auto effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"auto"}`, valid: true},
+		// The suffix-only spellings stay refused on the body door: "ultra" is
+		// normalized per model on the OpenAI wire alone, and a budget belongs
+		// to the parenthesised form, not to the enum field.
+		{name: "ultra effort stays suffix-only", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"ultra"}`, valid: false},
+		{name: "budget effort stays suffix-only", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"1024"}`, valid: false},
+		{name: "uppercase effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"HIGH"}`, valid: false},
 		{name: "schema format without schema", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"response_format":{"type":"json_schema"}}`, valid: false},
 		{name: "both token limits", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"max_tokens":10,"max_completion_tokens":20}`, valid: false},
 	}
