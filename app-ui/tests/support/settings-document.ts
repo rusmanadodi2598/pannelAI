@@ -48,7 +48,7 @@ export function networkGroup(overrides: Record<string, unknown> = {}): Record<st
 }
 
 /**
- * The reasoning group as the API answers it: the per-provider mode map (SPEC-API §7.14, §7.14).
+ * The reasoning group as the API answers it: the per-provider mode map (SPEC-API §7.14).
  *
  * A test that stores a mode uses this rather than a bare map, because the response schema requires
  * `provider_thinking`: a group without it is drift the read schema refuses, not a stored document the

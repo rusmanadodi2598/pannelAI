@@ -14,6 +14,7 @@ import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.s
 import { endpointRow } from '../support/endpoint-stub';
 import { customRow, stubModels, type ModelStub } from '../support/model-stub';
 import { nodeRow } from '../support/provider-node-stub';
+import { reasoningGroup, settingsDocument } from '../support/settings-document';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -107,5 +108,35 @@ describe("a custom node's detail screen", () => {
 
 		buttons[0].click();
 		expect(await screen.findByText('Add OpenAI API Key')).toBeTruthy();
+	});
+
+	it('carries the reasoning picker, offering the levels its declared rows accept', async () => {
+		// A node has no registry models, so the union the server answers is the whole answer: without it
+		// this screen carries no picker at all (the owner's report, 2026-09-27). The mode is stored, so the
+		// case also holds the suffix the node's own table copies.
+		stub.thinkingLevels = ['low', 'medium', 'high', 'max'];
+		stub.settings = settingsDocument({
+			reasoning: reasoningGroup({ provider_thinking: { [NODE_ID]: { mode: 'high' } } })
+		});
+		stub.custom = [
+			customRow({
+				provider_id: NODE_ID,
+				model_id: 'gpt-4o-mini',
+				display_name: 'GPT-4o mini',
+				thinking_levels: ['low', 'medium', 'high', 'max']
+			})
+		];
+		renderNode();
+
+		const select = (await screen.findByLabelText('Reasoning mode')) as HTMLSelectElement;
+		await waitFor(() => expect(select.value).toBe('high'));
+		expect(
+			screen.getByText(
+				'Every request to this provider asks for the high level; a copied model name gains the (high) suffix when that model accepts it.'
+			)
+		).toBeTruthy();
+
+		// The addressed string the node's table shows carries the level, because this row accepts it.
+		await waitFor(() => expect(screen.getByText('mycorp/gpt-4o-mini(high)')).toBeTruthy());
 	});
 });

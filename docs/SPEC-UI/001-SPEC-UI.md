@@ -320,22 +320,23 @@ absent.
   `PUT /api/v1/models/disabled` (phase U2). The search and the two capability filters read
   `GET /api/v1/models/catalog` with `provider_id`, `capability`, and `q`, because that is the only route
   that accepts them. **The "suggested" toggle is not built** and the reason is recorded in §14 Q12.
-- **Reasoning control (landed 2026-09-26):** the models section carries one select that writes this
-  provider's entry in `reasoning.provider_thinking` (SPEC-API §7.14, §7.15). Its options are
-  `Auto (follow the request)` plus the levels this provider's models accept, which the provider detail
-  answers as `thinking_levels`; `auto` deletes the entry, so following the request is a state rather
-  than a stored word, and every write sends the whole map because it is one settings value. A stored
-  mode the current model set no longer accepts stays on the list, labelled as not accepted now, rather
-  than falling back to `Auto`: a select that hid it would misreport a setting the gateway still
-  applies, and the operator could not clear it from here. The select carries the reference's own title
-  ("Appends (level) suffix to copied model names") and the line under it states what the stored mode
-  will do. A provider whose declared models accept no level shows no picker, which is the reference's
-  own rule, and a settings read that failed is reported rather than guessed at. The suffix it announces
-  is per model: the catalog and custom-model rows render the string a client sends (`provider/model`,
-  or `prefix/model` on a node) and their copy control appends `(level)` only where that row's own
-  `thinking_levels` carries the level, so a model the registry knows no levels for copies without one.
-  The gateway, not the panel, normalizes the stored mode onto the resolved model's wire format; the
-  panel states the rule rather than re-deriving it.
+- **Reasoning control (landed 2026-09-26, carried by both screen shapes):** the models section carries
+  one select that writes this provider's entry in `reasoning.provider_thinking` (SPEC-API §7.14, §7.15).
+  Its options are `Auto (follow the request)` plus the levels this provider's models accept, which the
+  provider detail answers as `thinking_levels`; on a custom node's screen that union comes from the rows
+  the node declares, because a node has no registry models to answer for it (2026-09-27). `auto` deletes
+  the entry, so following the request is a state rather than a stored word, and every write sends the
+  whole map because it is one settings value. A stored mode the current model set no longer accepts
+  stays on the list, labelled as not accepted now, rather than falling back to `Auto`: a select that hid
+  it would misreport a setting the gateway still applies, and the operator could not clear it from here.
+  The select carries the reference's own title ("Appends (level) suffix to copied model names") and the
+  line under it states what the stored mode will do. A provider whose models accept no level shows no
+  picker, which is the reference's own rule, and a settings read that failed is reported rather than
+  guessed at. The suffix it announces is per model: the catalog and custom-model rows render the string
+  a client sends (`provider/model`, or `prefix/model` on a node) and their copy control appends `(level)`
+  only where that row's own `thinking_levels` carries the level, so a model the registry knows no levels
+  for copies without one. The gateway, not the panel, normalizes the stored mode onto the resolved
+  model's wire format; the panel states the rule rather than re-deriving it.
 - **Custom models** (U2): add and remove rows through `POST /api/v1/models/custom` and its delete route.
 - **The alias set is not built here** (removed 2026-09-23): `GET`/`PUT /api/v1/models/aliases` still exist in
   the gateway, but the reference has no alias concept at all and the table is global while this screen is
@@ -2026,6 +2027,18 @@ A deferred item names the check and where the evidence must appear.
 | R-31 (reason per decision)                                   | §9.5                                               | The reason log, extended in the pull request for decisions this spec does not yet cover.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 ---
+
+_Changelog 2026-09-27: the reasoning picker also reaches a custom node's screen._
+
+_§6.3's models section carries the control on both screen shapes. The picker renders only when the
+provider detail answers a non-empty `thinking_levels`, and that union was computed from the registry
+entry's declared models alone, which a synthesized node does not have: the field was absent on the one
+screen whose rows are the node's own models, so the control never appeared there (the owner's report,
+found by clicking the screen). The gateway now computes the union from both halves of a provider's
+model set, so a node's rows supply the options and the registry's page is unchanged in the ordinary
+case. The panel needed no change beyond this: the control was already mounted under "Available Models"
+on a node's screen, and the suffix it announces is still per row, read from the `thinking_levels` the
+row itself carries._
 
 _Changelog 2026-09-26: the provider screen carries the reasoning picker, and a copied model name carries the level it was set to._
 
