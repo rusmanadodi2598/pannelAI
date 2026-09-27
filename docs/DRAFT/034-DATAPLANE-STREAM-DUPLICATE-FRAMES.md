@@ -4,15 +4,15 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner atas emp
 `pi-agent`, empat mode uji (chat completion, tool, streaming, reasoning). Pass ini **tidak mengubah**
 berkas `app-serv/` maupun `app-ui/` mana pun; tidak ada satu pun patch yang mendarat di sini.
 
-|                      |                                                                                                                                                                                                                                                                                                       |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | **F1 CLOSED 2026-09-27** (`50340a8`); **F2 CLOSED lewat opsi B 2026-09-27** (`6b68bb4` — duplikat finish upstream di-null, usage tetap lewat); F4, F5 menunggu keputusan owner; F3 CLOSED dari 021                                                                                                    |
-| **Mechanism**        | AFTER (register temuan; F1 sudah diperbaiki, sisanya keputusan)                                                                                                                                                                                                                                       |
-| **Scope**            | Pengujian gateway yang berjalan di `127.0.0.1:9090` atas `th-1/deepseek-v4.1-flash:free`, `opencode/mimo-v2.6-flash-free(high)`, `opencode/muse-spark-1.3-contributor-free(high)`, `opencode/space-bunny-free`, combo `pi-agent`                                                                      |
-| **Permintaan owner** | "Testing request response: Chat Completion, Tool, Streaming, Reasoning" atas endpoint + kunci + daftar model itu, lalu "Cek lebih details: F2. F3, dan F5" (2026-09-27)                                                                                                                               |
-| **Reference**        | register lama `docs/DRAFT/021-DATAPLANE-SSE-FRAMING.md`: §2 (F1 framing), §3 (F2 usage dobel), §4 (F3 finish dobel), §12 + §22.1 (F5 akuntansi stream); patch ketiganya 021 §23 (commit `7078835`)                                                                                                    |
-| **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/translate_stream_openai_frames.go`, `internal/schema/chat_validation_parts.go`, `internal/reasoning/levels.go`, `internal/reasoning/suffix.go`; panel `app-ui/src/lib/schemas/playground-stream.ts` |
-| **Tanggal**          | 2026-09-27                                                                                                                                                                                                                                                                                            |
+|                      |                                                                                                                                                                                                                                                                                                                                         |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**           | **F1 CLOSED 2026-09-27** (`50340a8`); **F2 CLOSED lewat opsi B 2026-09-27** (`6b68bb4` — duplikat finish upstream di-null, usage tetap lewat); **F4 CLOSED 2026-09-27** (`a091c4b` — tolakan skema pasca-aut menulis baris request_logs ala refusal engine, tanpa baris usage per G17); F5 menunggu keputusan owner; F3 CLOSED dari 021 |
+| **Mechanism**        | AFTER (register temuan; F1 sudah diperbaiki, sisanya keputusan)                                                                                                                                                                                                                                                                         |
+| **Scope**            | Pengujian gateway yang berjalan di `127.0.0.1:9090` atas `th-1/deepseek-v4.1-flash:free`, `opencode/mimo-v2.6-flash-free(high)`, `opencode/muse-spark-1.3-contributor-free(high)`, `opencode/space-bunny-free`, combo `pi-agent`                                                                                                        |
+| **Permintaan owner** | "Testing request response: Chat Completion, Tool, Streaming, Reasoning" atas endpoint + kunci + daftar model itu, lalu "Cek lebih details: F2. F3, dan F5" (2026-09-27)                                                                                                                                                                 |
+| **Reference**        | register lama `docs/DRAFT/021-DATAPLANE-SSE-FRAMING.md`: §2 (F1 framing), §3 (F2 usage dobel), §4 (F3 finish dobel), §12 + §22.1 (F5 akuntansi stream); patch ketiganya 021 §23 (commit `7078835`)                                                                                                                                      |
+| **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/translate_stream_openai_frames.go`, `internal/schema/chat_validation_parts.go`, `internal/reasoning/levels.go`, `internal/reasoning/suffix.go`; panel `app-ui/src/lib/schemas/playground-stream.ts`                                   |
+| **Tanggal**          | 2026-09-27                                                                                                                                                                                                                                                                                                                              |
 
 ---
 
@@ -233,6 +233,24 @@ Sebagai pembanding, 021 §21 mencatat 503 `NO_PROVIDER_AVAILABLE` sebagai baris 
 panel, ini berarti kartu "error rate" dan daftar request tidak akan pernah melihat request yang ditolak
 validasi, termasuk percobaan klien yang salah kirim `reasoning_effort` berulang-ulang. Belum ada
 keputusan apakah ini memang disengaja.
+
+**Penutupan F4 (2026-09-27, `a091c4b`).** Keputusan owner: "Lanjut kerjakan F4 sekarang". Akarnya
+terpetakan: `ChatHandler.serve` menolak di batas HTTP (baca body, decode, validate) **sebelum**
+`ChatService.Relay`, sementara satu-satunya penulis baris akuntansi chat (`chat_record.go` `record`)
+berjalan di dalam Relay; padahal plane media sudah punya pola persisnya untuk refusal sebelum percobaan
+(`dataplane_record.go` `refuse`: satu baris `request_logs` berstatus error, teks error kode saja,
+tanpa baris usage, konteks terlepas dari pembatalan klien). Patch meniru pola itu:
+`ChatService.RecordRefusal` menulis satu baris log untuk tolakan pasca-autentikasi (status error,
+kode yang dilayani ke klien, id kunci, body mentah, model bila decode sempat menamainya), dan
+`ChatHandler.refuse` mengarahkan ketujuh situs tolak post-auth ke sana. Baris `usage_records` tetap
+sengaja tidak ditulis, sesuai aturan register G17 yang sudah tercatat di `record()`: panggilan yang
+tidak pernah mencapai percobaan tidak punya provider/model untuk ditagih. Kegagalan autentikasi tetap
+tidak direkam: terjadi sebelum body dibaca dan tidak punya kunci pemilik baris. TDD merah-hijau:
+`TestChatCompletionsHTTP_RefusalRecorded` (tiga sel di `chat_refusal_record_test.go` — probe
+`reasoning_effort` register dengan modelnya, body yang gagal di-decode tanpa model, dan sisi negatif
+panggilan yang dilayani yang barisnya tetap success; asersi mengikat kode di baris dengan kode yang
+dilayani di kawat), merah terbukti `log rows = 0, want 1` pada source lama, hijau pada handler +
+service dan `go test -race ./...` lengkap.
 
 ## 7. F5 (MEDIUM): `reasoning_effort` menolak kosakata yang diterima sufiks model
 
