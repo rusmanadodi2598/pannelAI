@@ -4832,6 +4832,81 @@
         ],
         "additionalProperties": false
       },
+      "OAuthDeviceStartResponse": {
+        "type": "object",
+        "properties": {
+          "device_code": {
+            "type": "string",
+            "description": "The single-use handle every poll of this round carries back."
+          },
+          "verification_url": {
+            "type": "string",
+            "description": "The vendor's device page, shown as a link the operator opens. The panel never fetches it."
+          },
+          "user_code": {
+            "type": "string",
+            "description": "The short code the operator recognizes. Display only; the vendor does not read it."
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expires_in": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "device_code",
+          "verification_url",
+          "user_code",
+          "interval_seconds",
+          "expires_in"
+        ],
+        "additionalProperties": false
+      },
+      "OAuthDevicePollRequest": {
+        "type": "object",
+        "properties": {
+          "device_code": {
+            "type": "string",
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "device_code"
+        ],
+        "additionalProperties": false
+      },
+      "OAuthDevicePollResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "connected"
+            ],
+            "description": "pending means the operator has not finished the vendor page yet and the caller keeps polling at the start's interval."
+          },
+          "endpoint_id": {
+            "type": "string",
+            "description": "Present only when connected — the upstream endpoint the flow landed."
+          },
+          "token_hint": {
+            "type": "string",
+            "description": "The masked credential hint of the connected account. The token itself never crosses this boundary."
+          },
+          "created": {
+            "type": "boolean",
+            "description": "True when this login created the endpoint, false when it refreshed a known account onto it."
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
       "ChatMessage": {
         "type": "object",
         "properties": {
@@ -6864,6 +6939,154 @@
                 "$ref": "#/components/schemas/OAuthRefreshRequest"
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/providers/{provider_id}/oauth/device/start": {
+      "post": {
+        "summary": "Begin a device authorization flow; returns the verification round",
+        "tags": [
+          "OAuth"
+        ],
+        "operationId": "postApiV1ProvidersByProvider_IdOauthDeviceStart",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthDeviceStartResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ManagementValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/ManagementUnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ManagementForbiddenError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ManagementNotFoundError"
+          },
+          "405": {
+            "$ref": "#/components/responses/ManagementMethodNotAllowedError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ManagementConflictError"
+          },
+          "429": {
+            "$ref": "#/components/responses/ManagementRateLimitedError"
+          },
+          "500": {
+            "$ref": "#/components/responses/ManagementInternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/ManagementUpstreamError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ManagementUnavailableError"
+          },
+          "504": {
+            "$ref": "#/components/responses/ManagementTimeoutError"
+          }
+        }
+      }
+    },
+    "/api/v1/providers/{provider_id}/oauth/device/poll": {
+      "post": {
+        "summary": "Poll one device authorization attempt; pending keeps the caller waiting",
+        "tags": [
+          "OAuth"
+        ],
+        "operationId": "postApiV1ProvidersByProvider_IdOauthDevicePoll",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OAuthDevicePollRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthDevicePollResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ManagementValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/ManagementUnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ManagementForbiddenError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ManagementNotFoundError"
+          },
+          "405": {
+            "$ref": "#/components/responses/ManagementMethodNotAllowedError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ManagementConflictError"
+          },
+          "429": {
+            "$ref": "#/components/responses/ManagementRateLimitedError"
+          },
+          "500": {
+            "$ref": "#/components/responses/ManagementInternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/ManagementUpstreamError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ManagementUnavailableError"
+          },
+          "504": {
+            "$ref": "#/components/responses/ManagementTimeoutError"
           }
         }
       }

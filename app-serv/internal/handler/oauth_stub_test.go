@@ -170,10 +170,33 @@ func (s *oauthStubStates) Take(_ context.Context, state string) ([]byte, bool, e
 	return payload, true, nil
 }
 
+// Peek reads a staged state without consuming it, the way a polled flow must.
+func (s *oauthStubStates) Peek(_ context.Context, state string) ([]byte, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	payload, ok := s.staged[state]
+	if !ok {
+		return nil, false, nil
+	}
+	return payload, true, nil
+}
+
 // oauthStubTokens serves scripted grants and identities.
 type oauthStubTokens struct {
-	grantFn func(service.TokenGrant) (service.TokenResponse, error)
-	infoFn  func() (service.OAuthIdentity, error)
+	grantFn       func(service.TokenGrant) (service.TokenResponse, error)
+	infoFn        func() (service.OAuthIdentity, error)
+	devicePollFn  func(nonce, verifier string) (service.DeviceTokenResponse, bool, error)
+	devicePollArg []string
+}
+
+// DevicePoll answers one device poll from the script, recording the round it was
+// asked about so a test can prove the handler passed the code through.
+func (s *oauthStubTokens) DevicePoll(_ context.Context, _, nonce, verifier string) (service.DeviceTokenResponse, bool, error) {
+	s.devicePollArg = []string{nonce, verifier}
+	if s.devicePollFn != nil {
+		return s.devicePollFn(nonce, verifier)
+	}
+	return service.DeviceTokenResponse{}, true, nil
 }
 
 func (s *oauthStubTokens) Grant(_ context.Context, _ string, _ string, grant service.TokenGrant) (service.TokenResponse, error) {

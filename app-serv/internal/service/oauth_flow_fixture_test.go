@@ -70,13 +70,25 @@ func (f *fakeStateStore) Take(_ context.Context, state string) ([]byte, bool, er
 	return staged.payload, true, nil
 }
 
+// Peek reads a staged payload and leaves it in place, which is what a polled
+// device flow depends on: only a success may consume the state.
+func (f *fakeStateStore) Peek(_ context.Context, state string) ([]byte, bool, error) {
+	staged, ok := f.staged[state]
+	if !ok {
+		return nil, false, nil
+	}
+	return staged.payload, true, nil
+}
+
 // fakeTokenClient serves scripted token grants and identities, capturing the
 // grants it received so a test can assert the wire values.
 type fakeTokenClient struct {
-	grantCalls []TokenGrant
-	grantFn    func(TokenGrant) (TokenResponse, error)
-	infoCalls  int
-	infoFn     func() (OAuthIdentity, error)
+	grantCalls     []TokenGrant
+	grantFn        func(TokenGrant) (TokenResponse, error)
+	infoCalls      int
+	infoFn         func() (OAuthIdentity, error)
+	devicePollCall []string
+	devicePollFn   func(nonce, verifier string) (DeviceTokenResponse, bool, error)
 }
 
 func (f *fakeTokenClient) Grant(_ context.Context, _ string, _ string, grant TokenGrant) (TokenResponse, error) {
@@ -93,6 +105,16 @@ func (f *fakeTokenClient) UserInfo(context.Context, string, string) (OAuthIdenti
 		return f.infoFn()
 	}
 	return OAuthIdentity{}, nil
+}
+
+// DevicePoll records the nonce and verifier the flow spent, so a test can prove
+// the poll upstream carries the values the start staged rather than the caller's.
+func (f *fakeTokenClient) DevicePoll(_ context.Context, _, nonce, verifier string) (DeviceTokenResponse, bool, error) {
+	f.devicePollCall = []string{nonce, verifier}
+	if f.devicePollFn != nil {
+		return f.devicePollFn(nonce, verifier)
+	}
+	return DeviceTokenResponse{}, true, nil
 }
 
 // oauthFlowFixture is one assembled flow service plus its seams.

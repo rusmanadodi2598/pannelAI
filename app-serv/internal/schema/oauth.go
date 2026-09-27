@@ -80,6 +80,35 @@ type OAuthRefreshResponse struct {
 	ExpiresAt   *string  `json:"expires_at,omitempty"`
 }
 
+// OAuthDevicePollRequest is the body of POST .../oauth/device/poll. The device
+// code is the whole credential the panel holds: the PKCE verifier and machine id
+// behind it stayed in the state the start staged.
+type OAuthDevicePollRequest struct {
+	DeviceCode string `json:"device_code" validate:"required,max=64"`
+}
+
+// OAuthDeviceStartResponse is the verification round the panel renders: the URL
+// it shows and lets the operator open (never follows itself), the short code the
+// operator recognizes, the device code every poll carries, and the cadence plus
+// window the poll loop runs on.
+type OAuthDeviceStartResponse struct {
+	DeviceCode      string `json:"device_code"`
+	VerificationURL string `json:"verification_url"`
+	UserCode        string `json:"user_code"`
+	IntervalSeconds int    `json:"interval_seconds"`
+	ExpiresIn       int    `json:"expires_in"`
+}
+
+// OAuthDevicePollResponse is one poll's answer. "pending" means keep polling;
+// "connected" names the endpoint the flow landed and, on a first login, that it
+// was created rather than refreshed onto a known account.
+type OAuthDevicePollResponse struct {
+	Status     string `json:"status"`
+	EndpointID string `json:"endpoint_id,omitempty"`
+	TokenHint  string `json:"token_hint,omitempty"`
+	Created    bool   `json:"created,omitempty"`
+}
+
 // DecodeOAuthStartRequest decodes a start body into its typed contract.
 func DecodeOAuthStartRequest(raw []byte) (OAuthStartRequest, error) {
 	var req OAuthStartRequest

@@ -32,6 +32,11 @@ var ErrStateAlreadyStaged = errors.New("oauth state is already staged")
 type OAuthStateStore interface {
 	// Stage records the state's payload and refuses a value already staged.
 	Stage(ctx context.Context, state string, payload []byte, ttl time.Duration) error
+	// Peek reads the state's payload without consuming it, so a polled flow
+	// (a device authorization the same client asks about every few seconds)
+	// can re-read its private context until it succeeds. A state that never
+	// existed or expired reports ok=false.
+	Peek(ctx context.Context, state string) (payload []byte, ok bool, err error)
 	// Take removes and returns the state's payload. A state that never existed,
 	// expired, or was already taken reports ok=false — the replay answer.
 	Take(ctx context.Context, state string) (payload []byte, ok bool, err error)

@@ -6,7 +6,7 @@
 //	consumption, code exchange, identity matching, and sealing
 //	(SPEC-API-001 §7.4 GET .../oauth/callback).
 //
-// @uses      encoding/json, errors, net/url, strings, time, internal/domain,
+// @uses      encoding/json, net/url, strings, internal/domain,
 //
 //	internal/registry.
 //
@@ -26,10 +26,8 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
@@ -168,42 +166,10 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 	}
 
 	now := s.clock()
-	credential, err := sealTokenSet(s.sealer, token, oauth.ScopeList(), account, now)
-	if err != nil {
-		return OAuthConnect{}, err
-	}
-	hint := domain.MaskSecret(token.AccessToken)
-
-	existingID, err := s.store.FindOAuthEndpoint(ctx, providerID, account.Email, account.WorkspaceID)
-	if err != nil && !errors.Is(err, domain.ErrEndpointNotFound) {
-		return OAuthConnect{}, err
-	}
-	if existingID != "" {
-		endpoint, err := s.store.GetByID(ctx, existingID)
-		if err != nil {
-			return OAuthConnect{}, err
-		}
-		endpoint.SetOAuth(credential, now)
-		endpoint.SetAccount(account, now)
-		if err := s.store.Update(ctx, endpoint); err != nil {
-			return OAuthConnect{}, err
-		}
-		return OAuthConnect{Endpoint: endpoint, Created: false, TokenHint: hint, RedirectBase: payload.Origin}, nil
-	}
-
-	label := connectLabel(providerID, account)
-	endpoint, err := domain.NewUpstreamEndpoint(
-		domain.IDPrefixUpstreamEndpoint+domain.NewULID(now), providerID, label,
-		domain.UpstreamAuthOAuth, 1, now)
-	if err != nil {
-		return OAuthConnect{}, err
-	}
-	endpoint.SetOAuth(credential, now)
-	endpoint.SetAccount(account, now)
-	if err := s.store.Create(ctx, endpoint); err != nil {
-		return OAuthConnect{}, err
-	}
-	return OAuthConnect{Endpoint: endpoint, Created: true, TokenHint: hint, RedirectBase: payload.Origin}, nil
+	return s.connectAccount(ctx, providerID, connectTokens{
+		AccessToken: token.AccessToken, RefreshToken: token.RefreshToken,
+		Scopes: oauth.ScopeList(), ExpiresAt: tokenExpiry(token, now),
+	}, account, payload.Origin, now)
 }
 
 // connectLabel names a fresh account after the identity that distinguishes it,
@@ -214,33 +180,4 @@ func connectLabel(providerID string, account domain.EndpointAccount) string {
 		return defaultOAuthLabel(account)
 	}
 	return providerID + " oauth"
-}
-
-// sealTokenSet seals both tokens and stamps the expiry and refresh instant, so
-// the aggregate receives ciphertext only (SPEC-API-001 §6). An expires_in of
-// zero or less leaves the expiry unknown rather than inventing one.
-func sealTokenSet(sealer SecretSealer, token TokenResponse, scopes []string, account domain.EndpointAccount, now time.Time) (*domain.OAuthCredential, error) {
-	accessSealed, err := sealer.Seal(token.AccessToken)
-	if err != nil {
-		return nil, domain.NewInternalError("the access token could not be stored")
-	}
-	refreshSealed := ""
-	if refresh := strings.TrimSpace(token.RefreshToken); refresh != "" {
-		if refreshSealed, err = sealer.Seal(refresh); err != nil {
-			return nil, domain.NewInternalError("the refresh token could not be stored")
-		}
-	}
-	credential := &domain.OAuthCredential{
-		AccessTokenEncrypted:  accessSealed,
-		RefreshTokenEncrypted: refreshSealed,
-		Scopes:                scopes,
-		AccountEmail:          account.Email,
-		AccountID:             account.WorkspaceID,
-		LastRefreshAt:         &now,
-	}
-	if token.ExpiresIn > 0 {
-		expires := now.Add(time.Duration(token.ExpiresIn) * time.Second)
-		credential.ExpiresAt = &expires
-	}
-	return credential, nil
 }

@@ -53,12 +53,19 @@ func (emptyOAuthStore) FindOAuthEndpoint(context.Context, string, string, string
 type emptyOAuthStates struct{}
 
 func (emptyOAuthStates) Stage(context.Context, string, []byte, time.Duration) error { return nil }
+func (emptyOAuthStates) Peek(context.Context, string) ([]byte, bool, error)         { return nil, false, nil }
 func (emptyOAuthStates) Take(context.Context, string) ([]byte, bool, error)         { return nil, false, nil }
 
 type emptyOAuthTokens struct{}
 
 func (emptyOAuthTokens) Grant(context.Context, string, string, service.TokenGrant) (service.TokenResponse, error) {
 	return service.TokenResponse{}, nil
+}
+
+// DevicePoll answers a pending poll: like the other empty seams, no case here
+// reaches it.
+func (emptyOAuthTokens) DevicePoll(context.Context, string, string, string) (service.DeviceTokenResponse, bool, error) {
+	return service.DeviceTokenResponse{}, true, nil
 }
 
 func (emptyOAuthTokens) UserInfo(context.Context, string, string) (service.OAuthIdentity, error) {
@@ -100,7 +107,7 @@ func newOAuthRouter(t *testing.T) *Mux {
 	})
 }
 
-// TestOAuthRoutes pins the §7.4 surface: the three management routes refuse an
+// TestOAuthRoutes pins the §7.4 surface: the five management routes refuse an
 // anonymous caller, the callback serves one without a session (it answers the
 // browser redirect with the failure reason rather than a 401), and a wrong verb
 // is a 405 rather than a 404 on every one of them.
@@ -118,6 +125,12 @@ func TestOAuthRoutes(t *testing.T) {
 			path: "/api/v1/providers/acme/oauth/status", wantStatus: http.StatusUnauthorized},
 		{name: "refresh requires a session", method: http.MethodPost,
 			path: "/api/v1/providers/acme/oauth/refresh", wantStatus: http.StatusUnauthorized},
+		{name: "a device start requires a session", method: http.MethodPost,
+			path: "/api/v1/providers/acme/oauth/device/start", wantStatus: http.StatusUnauthorized},
+		{name: "a device poll requires a session", method: http.MethodPost,
+			path: "/api/v1/providers/acme/oauth/device/poll", wantStatus: http.StatusUnauthorized},
+		{name: "a wrong verb on a device route is a 405", method: http.MethodGet,
+			path: "/api/v1/providers/acme/oauth/device/start", wantStatus: http.StatusMethodNotAllowed},
 		{name: "the callback is public and redirects a browser", method: http.MethodGet,
 			path: "/api/v1/providers/acme/oauth/callback?state=gone", wantStatus: http.StatusFound},
 		{name: "the callback answers a headless caller", method: http.MethodGet,

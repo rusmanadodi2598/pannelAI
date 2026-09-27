@@ -127,6 +127,7 @@ func New(deps Deps) *Mux {
 		mux.HandleFunc("GET "+APIVersion+"/providers/{provider_id}/oauth/callback", deps.OAuth.Callback)
 		mux.Handle("GET "+APIVersion+"/providers/{provider_id}/oauth/status", gateway(http.HandlerFunc(deps.OAuth.Status)))
 		mux.Handle("POST "+APIVersion+"/providers/{provider_id}/oauth/refresh", gateway(http.HandlerFunc(deps.OAuth.Refresh)))
+		registerOAuthDeviceRoutes(mux, deps, gateway)
 	}
 	// §7.4's node and credential-check routes are registered together in
 	// router_provider_nodes.go, because that section now carries seven routes

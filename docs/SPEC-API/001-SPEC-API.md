@@ -211,6 +211,8 @@ recorded here so their absence reads as a decision rather than a gap
 | GET    | `/api/v1/providers/{provider_id}/oauth/callback` | P    | Completes flow (validates `state` replay-guard), creates upstream endpoint + tokens; `302` redirect for browsers, `200` JSON body for headless callers (`Accept: application/json`) | P2                                                                   |
 | GET    | `/api/v1/providers/{provider_id}/oauth/status`   | S    | Token expiry / refresh state per endpoint                                                                                                                                           | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/refresh`  | S    | Force token refresh (worker also auto-refreshes at `refresh_lead`)                                                                                                                  | P2                                                                   |
+| POST   | `/api/v1/providers/{provider_id}/oauth/device/start` | S | `{}` → `{device_code, verification_url, user_code, interval_seconds, expires_in}` (device-flow providers: the registry entry declares no authorize URL)                            | P2                                                                   |
+| POST   | `/api/v1/providers/{provider_id}/oauth/device/poll`  | S | `{device_code}` → `{status: "pending"}` while the operator is still authorizing, then `{status: "connected", endpoint_id, token_hint, created}`                                        | P2                                                                   |
 
 **The callback's two answers.** `GET .../oauth/callback` is the one route in §7.4 that is **public**: the
 provider redirects a browser to it, and a browser cannot present the dashboard session cookie for that
@@ -227,6 +229,36 @@ created}`; a failure is the §8 envelope at its own status.
 its `redirect_uri`, and only when that is an absolute http(s) URL. With neither, the callback answers the
 JSON shape rather than redirecting to a host it cannot vouch for, which is what keeps this route from
 being an open redirect.
+
+**The device flow has no callback.** A provider whose registry `oauth` block declares a
+`device_token_url` and a `login_url` but no `authorize_url` (Qoder, Qoder CN) never redirects a browser
+through the gateway: the operator opens the vendor's own device page. `POST .../oauth/device/start` mints
+the round — a PKCE pair, a nonce, and a machine id — stages the private context under the nonce with a
+six-minute TTL, and answers the verification URL carrying the S256 challenge plus the `device_code`, the
+display-only `user_code` (the nonce's first eight characters, uppercased), and the cadence the reference
+uses: `interval_seconds: 2`, `expires_in: 300`. **The verifier and the machine id never leave the
+gateway**: the panel's only handle is the device code, which is unguessable, single-use, and bound to the
+provider that staged it. A wrong-provider or spent code is a `VALIDATION_ERROR`, as is a code the gateway
+never minted.
+
+`POST .../oauth/device/poll` performs **exactly one** upstream attempt per call, so the panel's cadence is
+the only thing deciding how often the vendor is asked. The upstream's `202` and `404` both mean
+"not yet" and answer `{status: "pending"}` with the staged round left intact; any other non-2xx is a
+terminal `UPSTREAM_ERROR` (quoting the vendor's own `message` when it sends one) and still leaves the round
+retryable. Only a success consumes the state, and it consumes **before** writing, so a token the vendor
+hands out twice is stored once. The connected account then follows the same identity match as the callback
+(§7.4's dedup), with one deliberate difference: the device flow reads `user_info_url` **fail-open** — an
+unreadable identity must not void a login the vendor already granted — and falls back to the synthetic
+`qoder-user-<user_id>` email the match still recognizes. The machine id the round minted is persisted on
+the account, because every later signed request replays it.
+
+A device token's expiry arrives in any of four shapes (a millisecond epoch as number or numeric string, an
+RFC3339 string, or `expires_in` seconds) and is parsed in that order, falling back to thirty days and
+floored at one day so a skewed upstream cannot store an already-dead token. Those tokens are **not
+refreshable**: the vendor refuses the refresh the panel's worker would attempt, so `oauth/refresh` answers
+`VALIDATION_ERROR` for a provider with no `token_url`, and re-running the device login is the renewal path
+(`docs/DRAFT/036-QODER-AUTH-READINESS.md` §3, reference `src/lib/oauth/services/qoder.js`,
+`src/lib/oauth/providers/qoder.js`).
 
 **Custom endpoints (owner requirement).** Besides the embedded registry, an operator defines their
 own OpenAI-compatible or Anthropic-compatible base URL. A provider node is that definition: it is

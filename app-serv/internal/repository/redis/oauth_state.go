@@ -95,6 +95,24 @@ func (s *OAuthStateStore) Take(ctx context.Context, state string) ([]byte, bool,
 	return []byte(payload), true, nil
 }
 
+// Peek reads the state's payload without consuming it. A polled flow — the
+// device authorization the panel asks about every couple of seconds — re-reads
+// this until the upstream answers, so the read must leave the key and its TTL
+// untouched. A key that never existed or expired reports ok=false, the same
+// replay answer Take gives.
+func (s *OAuthStateStore) Peek(ctx context.Context, state string) ([]byte, bool, error) {
+	callCtx, cancel := context.WithTimeout(ctx, redisCallTimeout)
+	defer cancel()
+	payload, err := s.client.Get(callCtx, oauthStateKey(state)).Bytes()
+	if errors.Is(err, redis.Nil) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("peeking oauth state: %w", err)
+	}
+	return payload, true, nil
+}
+
 func oauthStateKey(state string) string {
 	return oauthStateKeyPrefix + state
 }

@@ -46,6 +46,7 @@ const grantCallTimeout = 15 * time.Second
 type OAuthTokenClient interface {
 	Grant(ctx context.Context, tokenURL, encoding string, grant TokenGrant) (TokenResponse, error)
 	UserInfo(ctx context.Context, infoURL, accessToken string) (OAuthIdentity, error)
+	DevicePoll(ctx context.Context, deviceTokenURL, nonce, verifier string) (DeviceTokenResponse, bool, error)
 }
 
 // OAuthHTTPClient is the net/http implementation of OAuthTokenClient.
