@@ -8,7 +8,7 @@ depan implementasi.
 
 |                    |                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**         | **Slice A selesai 2026-09-27 (commit `0d519fa`). Slice B selesai lebih dulu (commit `c0e3034`). Slice C (modal device di panel) selesai 2026-09-27 (commit `0bd3b7c`). Slice D (data plane Qoder: COSY + pertukaran PAT + baca kuota) TERBUKA — bentuk jawabannya sudah diukur hidup di §5.** |
+| **Status**         | **Slice A selesai 2026-09-27 (commit `0d519fa`). Slice B selesai lebih dulu (commit `c0e3034`). Slice C (modal device di panel) selesai 2026-09-27 (commit `0bd3b7c`). Slice D: langkah 1 (primitif COSY + encoder, terbukti hidup) selesai 2026-09-27 (commit `63a445a`); langkah 2 (konektor) dan langkah 3 (body chat + decoder envelope SSE + kuota) TERBUKA.** |
 | **Mechanism**      | PORT (reference → Go) + TDD                                                                                                                                                          |
 | **Scope**          | `app-serv/.` (service, repository, handler, schema, router, kontrak) dan `app-ui/.` (schema, api, sections OAuth). Slice D menambah `internal/provider` + `internal/dataplane` + `internal/service/quotafetch`.                                     |
 | **Permintaan owner** | (1) Qoder bisa di-OAuth. (2) Qoder bisa diisi PAT. (3) Paritas dengan reference. (4) Verifier device flow dipegang server, panel hanya mengirim `device_code`. (5) Qoder harus benar-benar terpakai — COSY, exchange PAT, dan baca kuota ikut pass ini (keputusan owner 2026-09-27). |
@@ -87,18 +87,27 @@ Konstanta yang dipindah dari reference (semuanya diuji, tidak ada yang dikira-ki
 
 ## 4. Yang sengaja TIDAK dikerjakan pass ini
 
-- **Slice D — data plane Qoder.** Menyambungkan akun bukan bagian yang membuatnya dipakai. Belum ada:
-  tanda tangan COSY (17 header + body ter-encode), pemilihan host berdasar jenis token
-  (`dt-` → `api3.qoder.sh`, `jt-` → `api2.qoder.sh` di intl), pertukaran PAT `pt-` → `jt-` lewat
-  `POST /api/v1/jobToken/exchange` dengan cache TTL (satu hari, buffer lima menit), daftar model, dan
-  baca kuota. Titik masuknya sudah dipetakan: `provider.Plugin` (`internal/provider/plugin.go:39`),
-  peta konektor per provider id (`internal/provider/connectors.go:35`, `cmd/app-serv/provider_wiring.go:58`),
-  preseden penuh `provider.NewOpenCode`.
-  Dua hal yang harus dibuktikan lebih dulu di slice D: `Credential` saat ini tidak membawa machine_id
+- **Slice D langkah 1 selesai (commit `63a445a`): primitifnya.** Encoder body, payload terenkripsi, dan
+  komposisi tanda tangan COSY sudah ada di `internal/provider/qoder_{constants,encoding,cosy,crypto}.go` dan
+  sudah diuji sampai vendor benar-benar menerima request bertanda tangan Go ini (§5). Doc reference menyebut
+  "17 header"; yang klien kirim sebenarnya 19 (`Authorization`, 15 `Cosy-*`, `Login-Version`, `X-Request-Id`)
+  dan itu yang diporting.
+- **Slice D langkah 2 — konektor.** Belum ada yang memanggil primitif di atas. Yang dibutuhkan:
+  `provider.Plugin` (`internal/provider/plugin.go:39`) per id provider lewat peta konektor
+  (`internal/provider/connectors.go:35`, `cmd/app-serv/provider_wiring.go:58`, preseden penuh
+  `provider.NewOpenCode`), dengan `Endpoint()` memilih host berdasar awalan token (`dt-` → `api3`,
+  `jt-` → `api2` di intl; CN satu gateway) dan `ApplyAuth()` menandatangani byte yang benar-benar keluar.
+  Dua hal yang harus diselesaikan lebih dulu: `Credential` saat ini tidak membawa machine_id
   (`internal/dataplane/credential.go:37` hanya mengisi `Account` dan `ProjectID`, padahal
   `provider.Credential.Metadata` tersedia), dan round-trip `account.machine_id` lewat JSONB
   (`internal/repository/postgres/endpoint_jsonb.go:111,126`) **belum punya test** — COSY akan memakai ulang
   nilai itu di setiap request, jadi hilangnya ia di jalur baca tidak boleh ketemu nanti.
+- **Slice D langkah 3 — executor chat.** Diukur 2026-09-27 (§5.1): endpoint chat menolak body hasil translasi
+  OpenAI (`400 None flow nodes found for router agent_router`) dan menjawab sebagai **envelope SSE**
+  (`{headers, body, statusCodeValue, statusCode}` per frame, plus `event:finish` berisi timing), bukan chunk
+  OpenAI. Jadi ini port nyata — builder body agent (chat record id stabil, `model_config` dari katalog hidup,
+  konteks tier, penanganan gambar) dan decoder envelope — bukan perubahan konfigurasi reader yang ada.
+  Keputusan `Encode=1` duduk di sisi builder, karena body ter-encode dan parameter itu satu pilihan.
 - **Kuota Qoder — ikut slice D (keputusan owner 2026-09-27).** `internal/service/quotafetch/` belum punya
   keluarga `qoder`, URL-nya di sana masih hardcoded (tidak membaca `transport.usage.url`), **dan tidak ada
   satu pun pemanggil `Fetch`** — jadi yang ditagih keputusan ini bukan hanya Qoder, tapi wiring kuota
