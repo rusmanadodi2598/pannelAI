@@ -68,7 +68,7 @@ func TestQoderLiveCOSYSignedModelListIsServed(t *testing.T) {
 	jobToken := qoderLiveExchange(t, qoderLivePAT(t))
 	account := qoderLiveAccount(t, jobToken)
 
-	response, body := qoderLiveSignedGet(t, qoderLiveJobHost, account, jobToken)
+	response, body := qoderLiveSignedGet(t, qoderChatBaseIntlJob, account, jobToken)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("model list = HTTP %d: %s", response.StatusCode,
 			truncateForLive(string(body), qoderLiveRefusalPreview))
@@ -88,7 +88,7 @@ func TestQoderLiveJobTokenOnTheDeviceHost(t *testing.T) {
 	jobToken := qoderLiveExchange(t, qoderLivePAT(t))
 	account := qoderLiveAccount(t, jobToken)
 
-	response, body := qoderLiveSignedGet(t, qoderLiveDeviceHost, account, jobToken)
+	response, body := qoderLiveSignedGet(t, qoderChatBaseIntlDevice, account, jobToken)
 	t.Logf("device host answer to a job token: HTTP %d — %s", response.StatusCode,
 		truncateForLive(string(body), 200))
 	if response.StatusCode == http.StatusOK {

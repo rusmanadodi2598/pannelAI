@@ -55,13 +55,29 @@ func buildProviderRuntime() (*registry.Index, *provider.Connectors, error) {
 	// credential and endpoint table, not in how a request is shaped. Each entry is
 	// registered by name, and the connector reads the entry it was built for, so a
 	// lane added to the registry is one line here.
-	plugins := make([]provider.Plugin, 0, 3)
+	plugins := make([]provider.Plugin, 0, 5)
 	for _, id := range []string{"opencode", "opencode-zen", "opencode-go"} {
 		entry, ok := idx.Provider(id)
 		if !ok {
 			return nil, nil, fmt.Errorf("provider connectors: the %s entry is missing from the registry", id)
 		}
 		plugins = append(plugins, provider.NewOpenCode(entry))
+	}
+	// The Qoder pair shares one connector and differs only in the registry entry it
+	// reads, the same way the OpenCode lanes do: the CN site declares one gateway for
+	// every token kind. A client is not passed, so the Personal Access Token exchange
+	// runs on the connector's own timeout-bounded client rather than the guarded one,
+	// which is built later in boot (draft 036 §4).
+	for _, id := range []string{"qoder", "qoder-cn"} {
+		entry, ok := idx.Provider(id)
+		if !ok {
+			return nil, nil, fmt.Errorf("provider connectors: the %s entry is missing from the registry", id)
+		}
+		connector, err := provider.NewQoder(entry, nil)
+		if err != nil {
+			return nil, nil, fmt.Errorf("provider connectors: %w", err)
+		}
+		plugins = append(plugins, connector)
 	}
 	connectors, err := provider.NewConnectors(provider.DefaultFactory, plugins...)
 	if err != nil {

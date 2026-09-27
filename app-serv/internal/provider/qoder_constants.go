@@ -40,6 +40,25 @@ const (
 // signing, so the signature describes the origin path rather than the routed one.
 const qoderSigPathPrefix = "/algo"
 
+// The two intl inference hosts, split by the kind of token they serve: a device
+// token on the first, an exchanged job token on the second. Measured against the
+// vendor (draft 036 §5) the device host answers a job token today, so the swap is
+// the reference's rule kept rather than a proven requirement; the CN entry declares
+// one gateway for every kind and is never rewritten.
+const (
+	qoderChatBaseIntlDevice = "https://api3.qoder.sh"
+	qoderChatBaseIntlJob    = "https://api2.qoder.sh"
+)
+
+// The credential prefixes the connector reads: a device token from a device login, a
+// job token from an exchange, and a Personal Access Token, which cannot sign and is
+// exchanged first.
+const (
+	qoderTokenDevice = "dt-"
+	qoderTokenJob    = "jt-"
+	qoderTokenPAT    = "pt-"
+)
+
 // The two 64-character alphabets of the body obfuscation: standard base64's
 // characters mapped one-to-one onto the vendor's own. The padding character is
 // mapped too, so an encoded body never carries "=".

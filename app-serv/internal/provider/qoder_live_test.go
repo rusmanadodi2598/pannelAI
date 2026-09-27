@@ -40,18 +40,13 @@ import (
 	"time"
 )
 
-// The vendor's intl endpoints, named here because a live proof has to state the
-// address it asks. The connector lands in the next slice of draft 036, and these
-// graduate into the file beside it when it does.
+// The live proof's own addresses. The token prefixes, the inference hosts and the
+// exchange path are the connector's constants, read from the production file so a
+// probe cannot pass against a URL the gateway would never call.
 const (
 	qoderLiveOpenAPI       = "https://openapi.qoder.sh"
-	qoderLiveExchangePath  = "/api/v1/jobToken/exchange"
 	qoderLiveUserInfoPath  = "/api/v1/userinfo"
 	qoderLiveModelListPath = "/algo/api/v2/model/list"
-	qoderLiveDeviceHost    = "https://api3.qoder.sh"
-	qoderLiveJobHost       = "https://api2.qoder.sh"
-	qoderTokenPAT          = "pt-"
-	qoderTokenJob          = "jt-"
 	qoderLiveCLIClient     = "qodercli/1.0.0"
 )
 
@@ -123,7 +118,7 @@ func qoderLiveExchangeRequest(t *testing.T, pat string) *http.Request {
 	if err != nil {
 		t.Fatalf("encoding the exchange body: %v", err)
 	}
-	request, err := http.NewRequest(http.MethodPost, qoderLiveOpenAPI+qoderLiveExchangePath, bytes.NewReader(raw))
+	request, err := http.NewRequest(http.MethodPost, qoderLiveOpenAPI+qoderJobTokenExchangePath, bytes.NewReader(raw))
 	if err != nil {
 		t.Fatalf("building the exchange request: %v", err)
 	}

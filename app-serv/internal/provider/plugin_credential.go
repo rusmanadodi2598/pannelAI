@@ -95,8 +95,18 @@ type Credential struct {
 	// needs: a region, a client version, an editor identity. It is a map rather
 	// than a typed struct because only the owning connector interprets it, and
 	// a shared struct would accumulate every provider's fields.
+	//
+	// The keys a caller may rely on are declared beside the constants below
+	// rather than invented per connector, so a writer and its reader cannot
+	// spell them differently.
 	Metadata map[string]string
 }
+
+// MetadataMachineID names the account's persisted device-fingerprint id. A
+// provider whose signed requests replay it (Qoder's COSY layer) reads it from a
+// device login's stored account; nothing else in the Credential describes it,
+// because it is neither a secret nor a workspace.
+const MetadataMachineID = "machine_id"
 
 // StaticKey builds a credential presenting a long-lived key.
 func StaticKey(endpointID, keyID, value string) Credential {

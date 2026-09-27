@@ -86,6 +86,8 @@ Setiap provider berbeda dalam konektivitas: ada yang **api_key**, ada yang **OAu
 
 **Batasan yang diketahui:** `Connectors.Unsupported()` sengaja melaporkan provider ber-format khusus (mis. `kiro`, `cursor`, `antigravity`) selama connector-nya belum ditulis; laporan itu adalah daftar kerja, bukan kegagalan diam.
 
+**Qoder (`qoder`, `qoder-cn`) punya connector khusus, tapi belum bisa menjawab.** Provider ini tidak membaca bearer token: setiap request ditanda tangani (COSY — payload user info terenkripsi + MD5 atas lima bagian, lihat `internal/provider/qoder_cosy.go`), host inference dipilih dari jenis kredensial (`dt-` di `api3`, `jt-`/`pt-` di `api2` untuk intl; CN satu gateway), dan sebuah Personal Access Token lebih dulu ditukar menjadi job token lewat `POST /api/v1/jobToken/exchange` dengan cache berdasar expiry yang vendor nyatakan dalam **milidetik** (draft 036 §5). Yang masih terbuka: body chat. Endpoint vendor menolak hasil translasi OpenAI (`400 None flow nodes found for router agent_router`) dan menjawab sebagai envelope SSE, jadi request Qoder hari ini mencapai vendor dalam keadaan terautentikasi lalu ditolak di lapisan agent — bukan kegagalan kredensial (draft 036 §5.1).
+
 ---
 
 ## 3. Alur Data

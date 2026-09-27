@@ -41,6 +41,12 @@ func (s *Selector) credential(endpoint domain.UpstreamEndpoint, key domain.Upstr
 		Account:    endpoint.Account().Email,
 		ProjectID:  endpoint.Account().WorkspaceID,
 	}
+	// The machine id a device login minted is not a secret and describes no
+	// workspace, so it rides in the slot Credential declares for provider-specific
+	// identity rather than in a field every provider would ignore.
+	if machine := endpoint.Account().MachineID; machine != "" {
+		credential.Metadata = map[string]string{provider.MetadataMachineID: machine}
+	}
 	switch endpoint.AuthType() {
 	case domain.UpstreamAuthNone:
 		return credential, nil
