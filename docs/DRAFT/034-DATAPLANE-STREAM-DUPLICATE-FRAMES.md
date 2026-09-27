@@ -4,15 +4,15 @@ Register temuan `app-serv` dari pengujian data plane yang diminta owner atas emp
 `pi-agent`, empat mode uji (chat completion, tool, streaming, reasoning). Pass ini **tidak mengubah**
 berkas `app-serv/` maupun `app-ui/` mana pun; tidak ada satu pun patch yang mendarat di sini.
 
-|                      |                                                                                                                                                                                                                                                                                                                                         |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | **F1 CLOSED 2026-09-27** (`50340a8`); **F2 CLOSED lewat opsi B 2026-09-27** (`6b68bb4` — duplikat finish upstream di-null, usage tetap lewat); **F4 CLOSED 2026-09-27** (`a091c4b` — tolakan skema pasca-aut menulis baris request_logs ala refusal engine, tanpa baris usage per G17); F5 menunggu keputusan owner; F3 CLOSED dari 021 |
-| **Mechanism**        | AFTER (register temuan; F1 sudah diperbaiki, sisanya keputusan)                                                                                                                                                                                                                                                                         |
-| **Scope**            | Pengujian gateway yang berjalan di `127.0.0.1:9090` atas `th-1/deepseek-v4.1-flash:free`, `opencode/mimo-v2.6-flash-free(high)`, `opencode/muse-spark-1.3-contributor-free(high)`, `opencode/space-bunny-free`, combo `pi-agent`                                                                                                        |
-| **Permintaan owner** | "Testing request response: Chat Completion, Tool, Streaming, Reasoning" atas endpoint + kunci + daftar model itu, lalu "Cek lebih details: F2. F3, dan F5" (2026-09-27)                                                                                                                                                                 |
-| **Reference**        | register lama `docs/DRAFT/021-DATAPLANE-SSE-FRAMING.md`: §2 (F1 framing), §3 (F2 usage dobel), §4 (F3 finish dobel), §12 + §22.1 (F5 akuntansi stream); patch ketiganya 021 §23 (commit `7078835`)                                                                                                                                      |
-| **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/translate_stream_openai_frames.go`, `internal/schema/chat_validation_parts.go`, `internal/reasoning/levels.go`, `internal/reasoning/suffix.go`; panel `app-ui/src/lib/schemas/playground-stream.ts`                                   |
-| **Tanggal**          | 2026-09-27                                                                                                                                                                                                                                                                                                                              |
+|                      |                                                                                                                                                                                                                                                                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**           | **CLOSED 2026-09-27.** F1 `50340a8`; F2 lewat opsi B `6b68bb4`; F4 `a091c4b`; F5 `a87984f` (kosakata `reasoning_effort` diturunkan dari `LevelToBudget` + `off`/`auto`; `ultra`/angka tetap khusus sufiks); F3 CLOSED dari 021. Pengukuran efek sufiks `(level)` ke upstream tetap terbuka sebagai pertanyaan terpisah |
+| **Mechanism**        | AFTER (register temuan; F1 sudah diperbaiki, sisanya keputusan)                                                                                                                                                                                                                                                        |
+| **Scope**            | Pengujian gateway yang berjalan di `127.0.0.1:9090` atas `th-1/deepseek-v4.1-flash:free`, `opencode/mimo-v2.6-flash-free(high)`, `opencode/muse-spark-1.3-contributor-free(high)`, `opencode/space-bunny-free`, combo `pi-agent`                                                                                       |
+| **Permintaan owner** | "Testing request response: Chat Completion, Tool, Streaming, Reasoning" atas endpoint + kunci + daftar model itu, lalu "Cek lebih details: F2. F3, dan F5" (2026-09-27)                                                                                                                                                |
+| **Reference**        | register lama `docs/DRAFT/021-DATAPLANE-SSE-FRAMING.md`: §2 (F1 framing), §3 (F2 usage dobel), §4 (F3 finish dobel), §12 + §22.1 (F5 akuntansi stream); patch ketiganya 021 §23 (commit `7078835`)                                                                                                                     |
+| **Kaitan**           | SPEC-API §4 baris Streaming; `internal/dataplane/translate_stream_openai.go`, `internal/dataplane/translate_stream_openai_frames.go`, `internal/schema/chat_validation_parts.go`, `internal/reasoning/levels.go`, `internal/reasoning/suffix.go`; panel `app-ui/src/lib/schemas/playground-stream.ts`                  |
+| **Tanggal**          | 2026-09-27                                                                                                                                                                                                                                                                                                             |
 
 ---
 
@@ -271,6 +271,25 @@ mesin mengenalnya dan `intent_test.go:40` menguji bentuk itu. Yang belum diukur:
 vs `(low)` pada `mimo`: `completion_tokens_details.reasoning_tokens` = 35 / 37 / 37 — perbedaan yang
 tidak bisa dibaca sebagai efek level. Kesimpulan ditahan; itu pertanyaan lain, dan bukan bagian dari
 empat mode yang diminta.
+
+**Penutupan F5 (2026-09-27, `a87984f`).** Peta akarnya melengket: mesin membaca intent reasoning dari
+raw body lewat `reasoning.Extract` → `configFromEffort`, yang mengenal `none`/`off` (mode none),
+`auto` (default upstream), dan kata apa pun sebagai level yang kemudian diuji terhadap `LevelToBudget`
+— sementara `reasoning_effort` sama sekali tidak dikonsumsi di luar validasi (`ReasoningEffort` hanya
+dibaca `chat_validation.go:66`), dan lintasan `/responses` bahkan tidak memvalidasi effort sedikit pun.
+Jadi validatorlah satu-satunya gerbang ketat, dan menutup `xhigh`/`max`/`none` membuat dua pintu yang
+melayani mesin yang sama tidak setara. Perbaikannya menurunkan kosakata dari sumbernya sendiri:
+`validReasoningEffort` kini menghitung keanggotaan dari `reasoning.LevelToBudget` (tujuh kunci:
+`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`) plus `off` dan `auto`, sehingga level baru
+di peta otomatis teradopsi dan kedua pintu tidak bisa menyimpang lagi; `ultra` dan angka budget tetap
+khusus pintu sufiks (ultra dinormalisasi per-model hanya di kawat OpenAI lewat `NormalizeOpenAILevel`;
+budget bukan enum), dan `HIGH` huruf besar tetap ditolak karena field diteruskan verbatim pada jalur
+same-format. TDD merah-hijau: lima sel valid baru (`xhigh`, `max`, `none`, `off`, `auto`) di tabel
+`TestChatRequestSemanticValidation` merah pada source lama, tiga sel refusal baru (`ultra`, `1024`,
+`HIGH`) tetap hijau. Efek samping yang justru membuktikan: probe F4 `reasoning_effort: "none"` kini
+dijawab 200 lewat mesin sungguhan di test handler, jadi probenya dipindah ke kata yang masih ditolak.
+Pertanyaan terukur register ini (apakah sufiks `(xhigh)`/`(max)`/`(none)` benar-benar mengubah jawaban
+upstream) tetap terbuka — itu pengukuran live, bukan bagian patch.
 
 ## 8. Cara mengulang
 
