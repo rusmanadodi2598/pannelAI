@@ -77,6 +77,11 @@ export type ModelStub = {
 	writeStatus: number;
 	/** The provider's own auth type, which is what decides whether the page offers the key dialog. */
 	authType: string;
+	/**
+	 * The registry's credential-format sentence the detail row carries, or null for the omitempty
+	 * shape where the key is absent entirely (draft 036 slice B).
+	 */
+	authHint: string | null;
 	/** The endpoint rows the Endpoints section lists. */
 	endpoints: StubModel[];
 	/**
@@ -250,6 +255,7 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		combosTotal: null,
 		writeStatus: 200,
 		authType: 'bearer',
+		authHint: null,
 		endpoints: [],
 		endpointReadStatus: 200,
 		endpointCreates: [],
@@ -395,6 +401,9 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 					id: decodeURIComponent(providerMatch[1]),
 					auth_type: stub.authType,
 					has_oauth: stub.hasOAuth,
+					// Absent when no hint is declared, which is the shape Go's omitempty answers and the
+					// schema's nullableText normalizes to null.
+					...(stub.authHint === null ? {} : { auth_hint: stub.authHint }),
 					// Absent when the test declared no levels, which is the shape a provider whose models
 					// do not reason answers (the DTO marks the field `omitempty`).
 					...(stub.thinkingLevels === null ? {} : { thinking_levels: stub.thinkingLevels })

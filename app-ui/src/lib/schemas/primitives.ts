@@ -151,6 +151,15 @@ export function nullableList<T extends z.ZodType>(item: T) {
 
 export const stringList = nullableList(z.string());
 
+// The string case of the same rule: an absent key and an explicit null both read as "no value", so
+// no caller has to handle both spellings of an optional sentence. Draft 036's auth_hint is the first
+// consumer; the device flow's optional response strings are the next.
+export const nullableText = z
+	.string()
+	.min(1)
+	.nullish()
+	.transform((value) => value ?? null);
+
 // The pagination block SPEC-API §4 returns beside every list. It lives here rather than in each resource
 // file because a second definition would be a second answer to "what does the panel expect from `meta`".
 export const pageMeta = z.object({

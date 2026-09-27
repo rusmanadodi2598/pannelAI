@@ -88,6 +88,12 @@
 			{/if}
 		</div>
 	</div>
+	<!-- The registry's credential-format sentence (draft 036 slice B): what the key looks like and
+	     where the operator mints one. Text, never a link — the panel does not navigate to a third
+	     party on the operator's behalf. -->
+	{#if provider.auth_hint}
+		<p class="text-sm text-[var(--color-text-muted)]">{provider.auth_hint}</p>
+	{/if}
 	{#if creating}
 		<CreateEndpointForm
 			providerId={provider.id}

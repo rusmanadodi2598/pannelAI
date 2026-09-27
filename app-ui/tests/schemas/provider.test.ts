@@ -58,6 +58,28 @@ describe('schemaProvider', () => {
 		expect(schemaProvider.safeParse(provider({ category: 'aggregator' })).success).toBe(true);
 	});
 
+	it('carries auth_hint through verbatim, which is the credential-format sentence (draft 036)', () => {
+		const hint = 'Personal Access Token (pt-...) từ https://qoder.com/account/integrations';
+		const result = schemaProvider.safeParse(provider({ auth_hint: hint }));
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.auth_hint).toBe(hint);
+	});
+
+	it('accepts an omitted auth_hint and reads it back as null, which is how omitempty arrives', () => {
+		const payload = provider();
+		delete payload.auth_hint;
+
+		const result = schemaProvider.safeParse(payload);
+
+		expect(result.success).toBe(true);
+		expect(result.success && result.data.auth_hint).toBeNull();
+	});
+
+	it('rejects a non-string auth_hint, so a wire shape change fails here first', () => {
+		expect(schemaProvider.safeParse(provider({ auth_hint: 7 })).success).toBe(false);
+	});
+
 	const INVALID: { payload: Record<string, unknown>; why: string }[] = [
 		{ payload: provider({ id: '' }), why: 'an empty provider id' },
 		{ payload: provider({ name: '' }), why: 'an empty display name' },

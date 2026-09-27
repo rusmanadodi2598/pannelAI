@@ -1322,6 +1322,11 @@ components:
           type: array
           items:
             type: string
+        auth_hint:
+          type: string
+          description: The registry's credential-format sentence (draft 036 slice
+            B), served verbatim — it names the upstream URL where the operator
+            mints the credential. Absent when the provider declares none.
         has_oauth:
           type: boolean
         no_auth:
@@ -2536,6 +2541,11 @@ components:
           type: array
           items:
             type: string
+        auth_hint:
+          type: string
+          description: The registry's credential-format sentence (draft 036 slice
+            B), served verbatim — it names the upstream URL where the operator
+            mints the credential. Absent when the provider declares none.
         has_oauth:
           type: boolean
         no_auth:

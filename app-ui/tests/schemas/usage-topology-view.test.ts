@@ -174,6 +174,7 @@ describe('configuredProviders', () => {
 			category: 'apikey',
 			auth_type: 'api_key',
 			auth_modes: [],
+			auth_hint: null,
 			has_oauth: false,
 			no_auth: false,
 			routability: 'routable',

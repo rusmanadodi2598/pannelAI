@@ -13,7 +13,7 @@
 // for that route are here, beside the provider they belong to.
 
 import { z } from 'zod';
-import { label, stringList } from './primitives';
+import { label, nullableText, stringList } from './primitives';
 
 // The pagination block SPEC-API §4 returns beside a paginated list.
 const pageMeta = z.object({
@@ -40,6 +40,9 @@ export const schemaProvider = z.object({
 	category: z.string().min(1),
 	auth_type: z.string(),
 	auth_modes: stringList,
+	// The registry's credential-format sentence (draft 036 slice B), served verbatim and absent
+	// for providers that declare none — which Go's omitempty delivers as a missing key.
+	auth_hint: nullableText,
 	has_oauth: z.boolean(),
 	no_auth: z.boolean(),
 	routability: z.string(),

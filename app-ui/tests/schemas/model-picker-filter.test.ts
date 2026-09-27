@@ -15,6 +15,7 @@ function provider(overrides: Partial<Provider> = {}): Provider {
 		category: 'apikey',
 		auth_type: 'bearer',
 		auth_modes: ['api_key'],
+		auth_hint: null,
 		has_oauth: false,
 		no_auth: false,
 		routability: 'native',

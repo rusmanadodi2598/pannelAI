@@ -37,11 +37,16 @@ type ProviderListQuery struct {
 // accounts for this provider are doing, which is why it is a nested object and
 // not three sibling fields: a client renders it as one block.
 type ProviderResponse struct {
-	ID            string                   `json:"id"`
-	Name          string                   `json:"name"`
-	Category      string                   `json:"category"`
-	AuthType      string                   `json:"auth_type"`
-	AuthModes     []string                 `json:"auth_modes"`
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Category  string   `json:"category"`
+	AuthType  string   `json:"auth_type"`
+	AuthModes []string `json:"auth_modes"`
+	// AuthHint is the registry's credential-format sentence (what a PAT looks
+	// like and where the operator mints one). It is served verbatim and absent
+	// for providers that declare none, because an empty hint would read as an
+	// instruction to invent one.
+	AuthHint      string                   `json:"auth_hint,omitempty"`
 	HasOAuth      bool                     `json:"has_oauth"`
 	NoAuth        bool                     `json:"no_auth"`
 	Routability   string                   `json:"routability"`
@@ -142,6 +147,7 @@ func ProviderResponseFrom(entry registry.Provider, summary ProviderStatusSummary
 		Category:      entry.Category,
 		AuthType:      entry.AuthType,
 		AuthModes:     append([]string(nil), entry.AuthModes...),
+		AuthHint:      entry.AuthHint,
 		HasOAuth:      entry.HasOAuth,
 		NoAuth:        entry.NoAuth,
 		Routability:   entry.ChatRoutability(),
