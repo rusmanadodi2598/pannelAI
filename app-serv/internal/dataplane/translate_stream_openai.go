@@ -64,7 +64,9 @@ type StreamState struct {
 	// finishSent reports whether a finish frame was already emitted, so a stream
 	// that ends abruptly still gets exactly one. The upstream's own finish frame
 	// counts as emitted the moment it is forwarded: a second, synthetic one is
-	// what a client counting finish reasons reads as a second answer.
+	// what a client counting finish reasons reads as a second answer. A second
+	// finish frame the upstream itself sends is the same harm, so its reason is
+	// stripped while its other members forward (draft 034 F2).
 	finishSent bool
 	// includeUsage reports whether the client asked for a usage chunk.
 	includeUsage bool
@@ -170,11 +172,22 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 	if choices, ok := arrayField(chunk, "choices"); ok && len(choices) > 0 {
 		if first, ok := decodeObject(choices[0]); ok {
 			if reason := stringField(first, "finish_reason"); reason != "" {
-				s.finishReason = reason
-				// The frame about to be forwarded is the client's finish frame,
-				// so the stream is finished as of now and Finish must not add a
-				// second one (draft 021 F3).
-				s.finishSent = true
+				// A second frame that closes again repeats the finish reason,
+				// which a client counting finish reasons reads as a second
+				// answer (draft 034 F2). The duplicate member is nulled and
+				// every other member, the usage it may carry included, still
+				// forwards; the first reason stays the stream's finish.
+				if s.finishSent {
+					first["finish_reason"] = mustJSON(nil)
+					choices[0] = mustJSON(first)
+					chunk["choices"] = mustJSON(choices)
+				} else {
+					// The frame about to be forwarded is the client's finish
+					// frame, so the stream is finished as of now and Finish
+					// must not add a second one (draft 021 F3).
+					s.finishReason = reason
+					s.finishSent = true
+				}
 			}
 		}
 	}

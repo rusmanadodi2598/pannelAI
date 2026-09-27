@@ -124,3 +124,85 @@ func TestOpenAIStream_UsageIsDeliveredOnce(t *testing.T) {
 		})
 	}
 }
+
+// TestOpenAIStream_SecondFinishIsStripped pins the one-finish invariant against
+// an upstream that closes twice (draft 034 F2): the first finish reason is the
+// stream's end, and a second closing frame forwards with its finish_reason
+// nulled while the usage it may carry, and every other member, still reaches
+// the client.
+func TestOpenAIStream_SecondFinishIsStripped(t *testing.T) {
+	const numbers = `"prompt_tokens":7,"completion_tokens":2,"total_tokens":9`
+	content := `{"id":"up-1","choices":[{"index":0,"delta":{"content":"pong"},"finish_reason":null}]}`
+	finish := `{"id":"up-1","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}`
+	finishUsage := `{"id":"up-1","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{` + numbers + `}}`
+	finishLength := `{"id":"up-1","choices":[{"index":0,"delta":{},"finish_reason":"length"}]}`
+
+	cases := []struct {
+		name         string
+		includeUsage bool
+		chunks       []string
+		wantStop     int
+		wantLength   int
+		wantUsage    int
+		wantNull     int
+	}{
+		{
+			// The register 034 §4 shape: mimo closes once to write the trailing
+			// role delta and once to deliver usage, both with the same reason.
+			name:         "a second closing frame keeps its usage and loses its reason",
+			includeUsage: true,
+			chunks:       []string{content, finish, finishUsage},
+			wantStop:     1, wantUsage: 1, wantNull: 2,
+		},
+		{
+			// The same upstream shape on a client that never asked for usage:
+			// the forwarded frame still carries the usage member, and the
+			// duplicate reason is still the client's problem.
+			name:         "the duplicate is stripped whether or not usage was asked",
+			includeUsage: false,
+			chunks:       []string{content, finish, finishUsage},
+			wantStop:     1, wantUsage: 1, wantNull: 2,
+		},
+		{
+			// A different reason value on the second close is a duplicate all
+			// the same: the first reason is the answer's end.
+			name:         "a second close with a different reason is stripped too",
+			includeUsage: false,
+			chunks:       []string{content, finish, finishLength},
+			wantStop:     1, wantUsage: 0, wantNull: 2,
+		},
+		{
+			// A stream whose upstream closes once is untouched.
+			name:         "a single finish forwards exactly as the upstream wrote it",
+			includeUsage: true,
+			chunks:       []string{content, finish},
+			wantStop:     1, wantUsage: 0, wantNull: 1,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			state := NewStreamState("", "model-x", 1700000000, tc.includeUsage)
+			var frames [][]byte
+			for _, payload := range tc.chunks {
+				frames = append(frames, state.Frames(TargetOpenAI, []byte(payload))...)
+			}
+			frames = append(frames, state.Finish()...)
+			rendered := frameText(frames)
+
+			assertSSEStream(t, rendered)
+			if got := strings.Count(rendered, `"finish_reason":"stop"`); got != tc.wantStop {
+				t.Fatalf("stop finish frames = %d, want %d: %s", got, tc.wantStop, rendered)
+			}
+			if got := strings.Count(rendered, `"finish_reason":"length"`); got != tc.wantLength {
+				t.Fatalf("length finish frames = %d, want %d: %s", got, tc.wantLength, rendered)
+			}
+			if got := strings.Count(rendered, `"total_tokens"`); got != tc.wantUsage {
+				t.Fatalf("usage objects = %d, want %d: %s", got, tc.wantUsage, rendered)
+			}
+			if got := strings.Count(rendered, `"finish_reason":null`); got != tc.wantNull {
+				t.Fatalf("nulled finish reasons = %d, want %d: %s", got, tc.wantNull, rendered)
+			}
+		})
+	}
+}
