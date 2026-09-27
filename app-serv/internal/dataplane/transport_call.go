@@ -142,13 +142,31 @@ func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Ca
 	}
 
 	if call.Stream {
+		// A provider that wraps its answer in an envelope states its real status
+		// inside the body, so the first frame is read before anything is piped:
+		// a refusal there is an upstream failure the router can act on, not a
+		// served answer that gets billed.
+		var stream io.ReadCloser = response.Body
+		if envelope, ok := plugin.(provider.StreamEnvelope); ok {
+			unwrapped, failure := envelope.OpenStream(response.Body)
+			if failure != nil {
+				cancel()
+				return nil, &UpstreamError{
+					Status:  failure.Status,
+					Header:  response.Header,
+					Message: failure.Message,
+					Body:    []byte(failure.Message),
+				}, nil
+			}
+			stream = unwrapped
+		}
 		// The guard owns the cancel: it fires when reads stall, and it releases
 		// the context when the caller closes the body.
 		return &Upstream{
 			Status: response.StatusCode,
 			Header: response.Header,
 			Usage:  usage,
-			Body:   newIdleGuard(response.Body, idleTimeout(call.Provider), cancel),
+			Body:   newIdleGuard(stream, idleTimeout(call.Provider), cancel),
 		}, nil, nil
 	}
 

@@ -25,6 +25,7 @@
 package provider
 
 import (
+	"io"
 	"net/http"
 	"time"
 )
@@ -103,6 +104,34 @@ type StreamForcer interface {
 	// ForcesStream reports whether this provider refuses a non-streaming
 	// request.
 	ForcesStream() bool
+}
+
+// StreamEnvelope is the optional seam a connector implements when its provider
+// answers a stream inside an envelope: the HTTP status says the call was accepted
+// while the first frame says whether it actually succeeded. A connector that needs
+// none is unchanged, exactly as with Transformer — the core type-asserts for it and
+// otherwise pipes the body through as it always has.
+//
+// An implementation must be safe for concurrent use and must not keep per-request
+// state on itself: the state belongs to the reader it returns.
+type StreamEnvelope interface {
+	// OpenStream consumes the envelope's first frame and reports what it said. A
+	// non-nil failure means the call did not succeed and the body is closed; the
+	// caller treats it as an upstream failure rather than piping it. Otherwise the
+	// returned body yields the provider's answer as ordinary SSE, replaying every
+	// byte the peek took.
+	OpenStream(body io.ReadCloser) (io.ReadCloser, *StreamFailure)
+}
+
+// StreamFailure is a provider's own answer that a streamed call did not succeed,
+// carried out of a body the HTTP status does not describe. Status is what the
+// provider reported, Quota says the account is spent rather than transiently
+// failing, and Message is the reason in the provider's words — English, and safe to
+// hand to the client's error envelope (AGENTS.md §1.3).
+type StreamFailure struct {
+	Status  int
+	Message string
+	Quota   bool
 }
 
 // RetryDecision is a connector's answer about retrying one target.

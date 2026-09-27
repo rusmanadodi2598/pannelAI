@@ -210,6 +210,22 @@ Konsekuensinya untuk slice D: executor Qoder butuh (a) builder body agent, (b) d
 peta `model_config` dari katalog hidup. Itu unit berikutnya; primitif yang diuji di atas (exchange, identity,
 encoder, signer) adalah fondasinya dan sudah terbukti sampai sini.
 
+### 5.2 Slice D langkah 3a — decoder envelope sudah landed
+
+**Coalescer reference sengaja tidak diport.** Decoder ditulis sebagai transform baris yang melestarikan JSON
+jawaban apa adanya, tanpa menggabungkan frame finish dengan frame usage. Alasannya bukan menghemat kerja:
+gateway ini sudah menegakkan "satu `finish_reason` di wire" dan sudah mengambil usage dari frame penutup
+kedua (draft 034 F2, commit `6b68bb4` dan `50340a8`) — persis pola finish-then-usage Qoder. Coalescer kedua
+di jalur ini berarti aturan yang sama ditulis dua kali, dan yang kedua selalu jadi yang melenceng.
+
+**Yang memang harus ada: peek frame pertama.** Vendor menyembunyikan status sebenarnya di dalam body — `200`
+di HTTP, `403`/`code 112` di frame (§5.1). Kalau frame itu di-pipe apa adanya, akun habis kuota tercatat
+sebagai jawaban sukses dan ditagih. Jadi refusal sebelum frame pertama kembali sebagai `*UpstreamError`
+dengan status vendor, dan jalur failover + klasifikasi kuota (`IsQuotaError`) memperlakukannya seperti
+kegagalan HTTP biasa. Seam-nya opsional (`provider.StreamEnvelope` di `internal/provider/plugin.go`); test
+di `internal/dataplane/transport_envelope_test.go` menjaga tiga hal: body ter-unwrap sampai ke klien,
+refusal jadi kegagalan, dan provider yang tidak mendeklarasi seam menerima body-nya utuh tanpa perubahan.
+
 ## 6. Gerbang
 
 - Tidak ada `any`/`interface{}` baru; setiap tubuh request masuk struct tervalidasi
