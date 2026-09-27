@@ -8,10 +8,10 @@ depan implementasi.
 
 |                    |                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**         | **Slice A selesai 2026-09-27 (commit `0d519fa`). Slice B selesai lebih dulu (commit `c0e3034`). Slice C (modal device di panel) selesai 2026-09-27. Slice D (data plane Qoder: COSY + pertukaran PAT + kuota) TERBUKA.** |
+| **Status**         | **Slice A selesai 2026-09-27 (commit `0d519fa`). Slice B selesai lebih dulu (commit `c0e3034`). Slice C (modal device di panel) selesai 2026-09-27 (commit `0bd3b7c`). Slice D (data plane Qoder: COSY + pertukaran PAT + baca kuota) TERBUKA — bentuk jawabannya sudah diukur hidup di §5.** |
 | **Mechanism**      | PORT (reference → Go) + TDD                                                                                                                                                          |
-| **Scope**          | `app-serv/.` (service, repository, handler, schema, router, kontrak). `app-ui/.` tidak disentuh pada slice A.                                                                       |
-| **Permintaan owner** | (1) Qoder bisa di-OAuth. (2) Qoder bisa diisi PAT. (3) Paritas dengan reference. (4) Verifier device flow dipegang server, panel hanya mengirim `device_code` (keputusan owner 2026-09-27). |
+| **Scope**          | `app-serv/.` (service, repository, handler, schema, router, kontrak) dan `app-ui/.` (schema, api, sections OAuth). Slice D menambah `internal/provider` + `internal/dataplane` + `internal/service/quotafetch`.                                     |
+| **Permintaan owner** | (1) Qoder bisa di-OAuth. (2) Qoder bisa diisi PAT. (3) Paritas dengan reference. (4) Verifier device flow dipegang server, panel hanya mengirim `device_code`. (5) Qoder harus benar-benar terpakai — COSY, exchange PAT, dan baca kuota ikut pass ini (keputusan owner 2026-09-27). |
 | **Reference**      | `decolua/9router`, checkout `/home/rusmanadodi/apps/9router`; `src/lib/oauth/services/qoder.js`, `src/lib/oauth/providers/qoder.js`, `open-sse/services/qoderModels.js`, `open-sse/shared/qoder/constants.js` |
 | **Kaitan**         | SPEC-API §7.4 (baris device + blok "The device flow has no callback"), §6 (credential tersegel), §4 (replay guard sekali pakai); draft 017/019 (permukaan Provider), draft 028 (fallback credential) |
 | **Tanggal**        | 2026-09-27                                                                                                                                                                         |
@@ -99,15 +99,54 @@ Konstanta yang dipindah dari reference (semuanya diuji, tidak ada yang dikira-ki
   `provider.Credential.Metadata` tersedia), dan round-trip `account.machine_id` lewat JSONB
   (`internal/repository/postgres/endpoint_jsonb.go:111,126`) **belum punya test** — COSY akan memakai ulang
   nilai itu di setiap request, jadi hilangnya ia di jalur baca tidak boleh ketemu nanti.
-- **Kuota Qoder.** `internal/service/quotafetch/` belum punya keluarga `qoder`, URL-nya di sana masih
-  hardcoded (tidak membaca `transport.usage.url`), **dan tidak ada satu pun pemanggil `Fetch`** — jadi
-  kuota Qoder menunggu wiring itu, bukan menunggu Qoder. DTO `Quota`/`QuotaWindowResponse` juga tidak
-  punya `unit`, padahal kuota Qoder dilaporkan dalam kredit (`userQuota` + `orgResourcePackage`) dan
-  `remaining`-nya jumlah absolut, bukan persen (SPEC gap Q15).
+- **Kuota Qoder — ikut slice D (keputusan owner 2026-09-27).** `internal/service/quotafetch/` belum punya
+  keluarga `qoder`, URL-nya di sana masih hardcoded (tidak membaca `transport.usage.url`), **dan tidak ada
+  satu pun pemanggil `Fetch`** — jadi yang ditagih keputusan ini bukan hanya Qoder, tapi wiring kuota
+  keseluruhan. DTO `Quota`/`QuotaWindowResponse` juga tidak punya `unit`, padahal kuota Qoder dilaporkan
+  dalam kredit (`userQuota` + `orgResourcePackage`) dan `remaining`-nya jumlah absolut, bukan persen (SPEC
+  gap Q15). Baca kuota memakai bearer biasa, bukan COSY: `GET .../api/v2/quota/usage`, dan sebuah PAT harus
+  bertukar ke job token lebih dulu karena endpoint itu menolak `pt-`.
 - **`Features.UsageAPIKey`.** Sudah ada di registry dan sudah aktif untuk qoder/qoder-cn
   (`registry.yaml:745`), tetapi belum ada kode Go yang membacanya.
 
-## 5. Gerbang
+## 5. Bukti hidup slice D (2026-09-27, PAT owner, endpoint intl)
+
+Dipanggil langsung dari mesin kerja, hanya bentuk jawabannya yang dicatat (token dipotong 4 karakter).
+
+**`POST https://openapi.qoder.sh/api/v1/jobToken/exchange`** → `200`:
+
+| field                        | bentuk nyata                                   |
+| ---------------------------- | ---------------------------------------------- |
+| `token`                      | `jt-…`, 27 karakter                             |
+| `refresh_token`              | `jrt-…`, 28 karakter                            |
+| `expires_at`                 | string RFC3339 UTC 20 karakter (`2026-09-…`)    |
+| `expires_in`                 | **86400000** — milidetik, bukan detik           |
+| `refresh_token_expires_at`   | string RFC3339 UTC                              |
+| `refresh_token_expires_in`   | 172800000 (48 jam, dalam ms)                    |
+| `created_at`                 | string RFC3339 UTC                              |
+
+`GET https://openapi.qoder.sh/api/v1/userinfo` dengan `Authorization: Bearer jt-…` → `200` berisi `id`,
+`name`, `username`, `email`, `organization_id` (string kosong untuk akun ini), `avatar`, `source`,
+`current_sign_in_at` (objek `{seconds, nanos}`), `is_highest_tier`. Jadi `OAuthIdentity` yang membaca
+`id`/`name`/`email` sudah cocok; tidak ada field identitas baru yang perlu.
+
+**Dua hal yang ini ubah dari asumsi reference:**
+
+1. `expires_in` di jalur PAT adalah **milidetik**. Reference (`open-sse/services/qoderModels.js:99`)
+   menjumlahkannya ke `Date.now()` tanpa `*1000`, jadi cabang itu salah hitung — ia tidak ketahuan karena
+   upstream selalu mengirim `expires_at`. Port Go memakai `expires_at` sebagai sumber benar dan memperlakukan
+   `expires_in` sebagai ms, bukan mengikuti bug-nya.
+2. Job token **bisa di-refresh**: ada `refresh_token` (`jrt-…`) berumur 48 jam dengan expiry sendiri, padahal
+   reference tidak pernah menyentuhnya (ia cache 24 jam lalu bertukar ulang dari PAT). Slice D boleh memilih
+   jalur yang lebih sederhana — tukar ulang dari PAT saat dekat expiry — selama PAT-nya tersimpan; itu yang
+   reference lakukan, dan itu yang port ini ikuti. Yang tidak boleh: menyimpan `jt-` sebagai credential dan
+   membuang `pt-`-nya, karena `jt-` mati dalam 24 jam.
+
+**Yang masih belum dibuktikan:** COSY (signature + body encode) dan respons `/api/v2/quota/usage`, keduanya
+butuh panggilan bertanda tangan — vector emas diambil dari JS reference, lalu dibandingkan dengan implementasi
+Go sebelum ada bukti hidup.
+
+## 6. Gerbang
 
 - Tidak ada `any`/`interface{}` baru; setiap tubuh request masuk struct tervalidasi
   (`OAuthDevicePollRequest` dengan `validate:"required,max=64"`).
