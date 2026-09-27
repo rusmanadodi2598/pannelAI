@@ -59,9 +59,8 @@ func encryptCosyInfo(aesKey string, info cosyInfoPayload) (string, error) {
 // reason: the vendor's COSY scheme, not this gateway's choice of cipher (draft 036
 // slice D). OAEP, which Go now recommends, would arrive as ciphertext their server
 // cannot open, so the deprecated call is the only correct one here.
-//
-//lint:ignore SA1019 the vendor's server unwraps PKCS#1 v1.5 only
 func wrapAESKey(public *rsa.PublicKey, aesKey string) (string, error) {
+	//lint:ignore SA1019 the vendor's server unwraps PKCS#1 v1.5 only
 	sealed, err := rsa.EncryptPKCS1v15(rand.Reader, public, []byte(aesKey)) //nolint:staticcheck // the vendor's padding, not our preference
 	if err != nil {
 		return "", fmt.Errorf("wrapping the cosy aes key: %w", err)
