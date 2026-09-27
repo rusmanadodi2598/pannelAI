@@ -1932,7 +1932,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Union of the levels this provider's declared models accept (SPEC-API-001 §7.14). Absent when no declared model reasons."
+            "description": "Union of the levels this provider's models accept, registry models and custom rows alike (SPEC-API-001 §7.14). Absent when no model reasons."
           },
           "media": {
             "type": "array",

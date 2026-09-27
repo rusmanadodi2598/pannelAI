@@ -41,23 +41,39 @@ func ProviderModelsFrom(entry registry.Provider) []ProviderModelResponse {
 	return out
 }
 
-// providerThinkingLevels answers the union of the levels a provider's declared
-// models accept, in the reference's own order of discovery and without
-// duplicates: the §7.14 picker offers this set prefixed by "auto", and "none"
-// is filtered out because it is the absence of a level rather than one an
-// operator picks (page.js:186-203). A provider whose models declare no
-// reasoning answers nil, and the panel hides the picker then.
-func providerThinkingLevels(entry registry.Provider) []string {
+// providerThinkingLevels answers the union of the levels a provider's models
+// accept, in the reference's own order of discovery and without duplicates: the
+// §7.14 picker offers this set prefixed by "auto", and "none" is filtered out
+// because it is the absence of a level rather than one an operator picks
+// (page.js:186-203).
+//
+// Both halves of a provider's model set are read. A synthesized custom node
+// carries no registry models at all — the overlay fills only its transport and
+// display fields — so without the operator's declared rows its detail would
+// answer no level set and the panel would hide the picker on exactly the screen
+// whose rows the suffix is copied from. A registry provider's declared rows
+// join its registry models in the same union, for the same reason: the panel
+// copies the suffix onto those rows too.
+//
+// A provider whose models declare no reasoning answers nil, and the panel hides
+// the picker then.
+func providerThinkingLevels(entry registry.Provider, declared []domain.CustomModel) []string {
 	levels := make([]string, 0, 4)
 	seen := make(map[string]bool, 4)
-	for _, model := range entry.Models {
-		for _, level := range thinkingLevelsFor(entry.ID, model.ID) {
+	collect := func(providerID, modelID string) {
+		for _, level := range thinkingLevelsFor(providerID, modelID) {
 			if seen[level] {
 				continue
 			}
 			seen[level] = true
 			levels = append(levels, level)
 		}
+	}
+	for _, model := range entry.Models {
+		collect(entry.ID, model.ID)
+	}
+	for _, model := range declared {
+		collect(model.ProviderID(), model.ModelID())
 	}
 	if len(levels) == 0 {
 		return nil

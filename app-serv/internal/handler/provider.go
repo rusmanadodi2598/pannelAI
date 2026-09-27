@@ -76,6 +76,10 @@ func (h *ProviderHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get serves GET /api/v1/providers/{provider_id}.
+//
+// The declared rows travel with the entry because §7.14's level union is
+// computed from both: a custom node has no registry models at all, and a
+// registry provider's declared rows are callable models too.
 func (h *ProviderHandler) Get(w http.ResponseWriter, r *http.Request) {
 	providerID, ok := pathValue(w, r, "provider_id")
 	if !ok {
@@ -86,7 +90,8 @@ func (h *ProviderHandler) Get(w http.ResponseWriter, r *http.Request) {
 		schema.WriteError(w, err)
 		return
 	}
-	schema.WriteJSON(w, http.StatusOK, schema.ProviderDetailFrom(row.Entry, schema.ProviderCountsFrom(row.Summary)))
+	schema.WriteJSON(w, http.StatusOK,
+		schema.ProviderDetailFrom(row.Entry, schema.ProviderCountsFrom(row.Summary), row.CustomModels))
 }
 
 // Models serves GET /api/v1/providers/{provider_id}/models.

@@ -39,17 +39,22 @@ type ProviderService struct {
 	index  ProviderIndex
 	counts EndpointCounterByProvider
 	source NodeModelSource
+	custom CustomModelLister
 }
 
 // ProviderServiceDeps holds the collaborators the service needs. Counts is
 // optional: without it a provider list still renders, with every roll-up
 // reported as zero rather than the request failing. Source is optional too: a
 // deployment that wires none answers a custom node from the registry alone,
-// which is the state before draft 017 §4.2's fix rather than a failure.
+// which is the state before draft 017 §4.2's fix rather than a failure. Custom
+// is optional for the same reason: a deployment that never declares a custom
+// model answers the registry's own level set, which is the union before the
+// operator's rows existed.
 type ProviderServiceDeps struct {
 	Index  ProviderIndex
 	Counts EndpointCounterByProvider
 	Source NodeModelSource
+	Custom CustomModelLister
 }
 
 // NewProviderService validates deps and returns a ready service.
@@ -57,7 +62,7 @@ func NewProviderService(deps ProviderServiceDeps) (*ProviderService, error) {
 	if deps.Index == nil {
 		return nil, domain.NewValidationError("provider index is required")
 	}
-	return &ProviderService{index: deps.Index, counts: deps.Counts, source: deps.Source}, nil
+	return &ProviderService{index: deps.Index, counts: deps.Counts, source: deps.Source, custom: deps.Custom}, nil
 }
 
 // ProviderFilter narrows the provider list. A zero value matches everything,
@@ -71,10 +76,15 @@ type ProviderFilter struct {
 	Q string
 }
 
-// ProviderRow is one provider with its stored state roll-up.
+// ProviderRow is one provider with its stored state roll-up and the custom
+// rows the operator declared for it. The rows travel with the entry because the
+// detail route projects both into one body: the §7.14 level union is computed
+// from the entry's registry models and these rows together (schema's
+// ProviderDetailFrom).
 type ProviderRow struct {
-	Entry   registry.Provider
-	Summary domain.EndpointStatusCounts
+	Entry        registry.Provider
+	Summary      domain.EndpointStatusCounts
+	CustomModels []domain.CustomModel
 }
 
 // List returns one page of registry providers, filtered and ordered.
@@ -111,19 +121,6 @@ func (s *ProviderService) List(ctx context.Context, filter ProviderFilter, page,
 		rows = append(rows, ProviderRow{Entry: entry, Summary: summaries[entry.ID]})
 	}
 	return rows, total, nil
-}
-
-// Detail returns one provider by id, alias, or node prefix.
-func (s *ProviderService) Detail(ctx context.Context, providerID string) (ProviderRow, error) {
-	entry, ok := s.index.Provider(strings.TrimSpace(providerID))
-	if !ok {
-		return ProviderRow{}, domain.NewNotFoundError("provider is not in the registry")
-	}
-	summaries, err := s.summariesFor(ctx, []registry.Provider{entry})
-	if err != nil {
-		return ProviderRow{}, err
-	}
-	return ProviderRow{Entry: entry, Summary: summaries[entry.ID]}, nil
 }
 
 // Models returns one provider's model list and the origin of that list.

@@ -33,6 +33,17 @@ import (
 // created_at the assertions do not have to read.
 func thinkingTestTime() time.Time { return time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC) }
 
+// declaredModel builds one row the operator declared, which is the union's
+// second source.
+func declaredModel(t *testing.T, id, providerID, modelID string) domain.CustomModel {
+	t.Helper()
+	model, err := domain.NewCustomModel(id, providerID, modelID, modelID, nil, thinkingTestTime())
+	if err != nil {
+		t.Fatalf("NewCustomModel(%q, %q, %q) error = %v", id, providerID, modelID, err)
+	}
+	return model
+}
+
 // TestProviderDetailFrom_CarriesTheThinkingLevelUnion pins the union rule: the
 // levels of every declared model, in discovery order, without duplicates and
 // without "none" — which is the absence of a level rather than a choice.
@@ -49,7 +60,7 @@ func TestProviderDetailFrom_CarriesTheThinkingLevelUnion(t *testing.T) {
 			{ID: "gpt-image-1", Name: "Image", Kind: "llm"},
 		},
 	}
-	got := ProviderDetailFrom(entry, ProviderStatusSummaryDTO{}).ThinkingLevels
+	got := ProviderDetailFrom(entry, ProviderStatusSummaryDTO{}, nil).ThinkingLevels
 	want := []string{"low", "medium", "high", "max", "xhigh"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("ProviderDetailFrom(...).ThinkingLevels = %v, want %v", got, want)
@@ -58,8 +69,45 @@ func TestProviderDetailFrom_CarriesTheThinkingLevelUnion(t *testing.T) {
 	silent := registry.Provider{ID: "openai", Category: "apikey", Priority: 1,
 		Transport: registry.Transport{Format: "openai"},
 		Models:    []registry.Model{{ID: "gpt-image-1", Name: "Image", Kind: "llm"}}}
-	if got := ProviderDetailFrom(silent, ProviderStatusSummaryDTO{}).ThinkingLevels; got != nil {
+	if got := ProviderDetailFrom(silent, ProviderStatusSummaryDTO{}, nil).ThinkingLevels; got != nil {
 		t.Fatalf("a provider whose models do not reason answered %v, want no levels", got)
+	}
+}
+
+// TestProviderDetailFrom_UnionIncludesTheDeclaredRows pins the union's second
+// source. A synthesized custom node carries no registry models at all, so
+// without its declared rows its detail answers no level set and the panel hides
+// the reasoning picker on exactly the screen whose rows copy the suffix — the
+// gap the owner reported on 2026-09-27. A registry provider's declared rows
+// join its registry models in the same union, because the panel copies the
+// suffix onto those rows too.
+func TestProviderDetailFrom_UnionIncludesTheDeclaredRows(t *testing.T) {
+	node := registry.Provider{ID: "openai-compatible-01TEST", Category: "apikey", Custom: true,
+		Transport: registry.Transport{Format: "openai"}}
+	declared := []domain.CustomModel{
+		declaredModel(t, "cm_1", node.ID, "claude-opus-4-8"),
+		// An id the registry does not know contributes nothing, and the union
+		// must not report an empty string for it.
+		declaredModel(t, "cm_2", node.ID, "mystery-1"),
+	}
+	want := []string{"low", "medium", "high", "max"}
+	if got := ProviderDetailFrom(node, ProviderStatusSummaryDTO{}, declared).ThinkingLevels; !reflect.DeepEqual(got, want) {
+		t.Fatalf("a node's declared rows answered %v, want %v", got, want)
+	}
+
+	// A node whose rows are all unknown answers none, which is what hides the picker.
+	if got := ProviderDetailFrom(node, ProviderStatusSummaryDTO{},
+		[]domain.CustomModel{declared[1]}).ThinkingLevels; got != nil {
+		t.Fatalf("a node with only unknown rows answered %v, want no levels", got)
+	}
+
+	// A registry provider whose own models do not reason still offers the levels
+	// its declared rows accept.
+	silent := registry.Provider{ID: "openai", Category: "apikey", Priority: 1,
+		Transport: registry.Transport{Format: "openai"},
+		Models:    []registry.Model{{ID: "gpt-image-1", Name: "Image", Kind: "llm"}}}
+	if got := ProviderDetailFrom(silent, ProviderStatusSummaryDTO{}, declared[:1]).ThinkingLevels; !reflect.DeepEqual(got, want) {
+		t.Fatalf("a registry provider's declared rows answered %v, want %v", got, want)
 	}
 }
 

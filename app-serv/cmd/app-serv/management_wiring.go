@@ -102,7 +102,7 @@ func buildManagement(
 	}
 
 	providerSvc, err := service.NewProviderService(service.ProviderServiceDeps{
-		Index: runtimeIndex, Counts: endpointRepo, Source: nodeModels,
+		Index: runtimeIndex, Counts: endpointRepo, Source: nodeModels, Custom: catalogSvc,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: providers: %w", err)

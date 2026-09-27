@@ -2,7 +2,7 @@
 //
 // @file      internal/schema/provider.go
 // @for       The provider registry read contracts (SPEC-API-001 §7.4).
-// @uses      internal/registry.
+// @uses      internal/domain, internal/registry.
 // @reason    §7.4 serves the embedded registry over HTTP, and §8.1 requires the
 //
 //	panel to read a provider's routability before configuring an endpoint that
@@ -16,6 +16,7 @@
 package schema
 
 import (
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
@@ -104,10 +105,11 @@ type ProviderDetailResponse struct {
 	TimeoutMS      int    `json:"timeout_ms"`
 	ModelCount     int    `json:"model_count"`
 	ChatModelCount int    `json:"chat_model_count"`
-	// ThinkingLevels is the union of the levels this provider's declared models
-	// accept, which is what the §7.14 picker offers (the reference builds the
-	// same union client-side, page.js:186-203). It is absent when no declared
-	// model reasons, and the panel hides the picker then.
+	// ThinkingLevels is the union of the levels this provider's models accept,
+	// the registry's declared models and the operator's custom rows alike, which
+	// is what the §7.14 picker offers (the reference builds the same union
+	// client-side, page.js:186-203). It is absent when no model reasons, and the
+	// panel hides the picker then.
 	ThinkingLevels  []string                `json:"thinking_levels,omitempty"`
 	Media           []ProviderMediaResponse `json:"media"`
 	Deprecated      bool                    `json:"deprecated"`
@@ -148,8 +150,9 @@ func ProviderResponseFrom(entry registry.Provider, summary ProviderStatusSummary
 	}
 }
 
-// ProviderDetailFrom maps a registry entry onto the detail shape.
-func ProviderDetailFrom(entry registry.Provider, summary ProviderStatusSummaryDTO) ProviderDetailResponse {
+// ProviderDetailFrom maps a registry entry and the custom rows the operator
+// declared for it onto the detail shape.
+func ProviderDetailFrom(entry registry.Provider, summary ProviderStatusSummaryDTO, declared []domain.CustomModel) ProviderDetailResponse {
 	chatModels := 0
 	for _, model := range entry.Models {
 		if model.IsChat() {
@@ -178,7 +181,7 @@ func ProviderDetailFrom(entry registry.Provider, summary ProviderStatusSummaryDT
 		TimeoutMS:        entry.Transport.TimeoutMS,
 		ModelCount:       len(entry.Models),
 		ChatModelCount:   chatModels,
-		ThinkingLevels:   providerThinkingLevels(entry),
+		ThinkingLevels:   providerThinkingLevels(entry, declared),
 		Media:            media,
 		Deprecated:       entry.Display.Deprecated,
 		DeprecationNote:  entry.Display.DeprecationNotice,
