@@ -78,9 +78,7 @@ func (f *foldedChat) absorb(chunk object) {
 		return
 	}
 	f.content += stringField(delta, "content")
-	if reasoning := stringField(delta, "reasoning_content"); reasoning != "" {
-		f.reason += reasoning
-	}
+	f.reason += reasoningText(delta)
 	f.absorbCalls(delta)
 }
 
