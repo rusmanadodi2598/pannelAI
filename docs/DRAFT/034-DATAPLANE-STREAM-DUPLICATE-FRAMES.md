@@ -6,7 +6,7 @@ berkas `app-serv/` maupun `app-ui/` mana pun; tidak ada satu pun patch yang mend
 
 |                      |                                                                                                                                                                                                                                                                                                       |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | **F1 CLOSED 2026-09-27** — patch `50340a8` (TDD merah-hijau, gerbang hijau); F2 terukur di REFERENCE: **parity**, menunggu keputusan (A/B/C); F4, F5 menunggu keputusan owner; F3 CLOSED dari 021                                                                                                     |
+| **Status**           | **F1 CLOSED 2026-09-27** (`50340a8`); **F2 CLOSED lewat opsi B 2026-09-27** (`6b68bb4` — duplikat finish upstream di-null, usage tetap lewat); F4, F5 menunggu keputusan owner; F3 CLOSED dari 021                                                                                                    |
 | **Mechanism**        | AFTER (register temuan; F1 sudah diperbaiki, sisanya keputusan)                                                                                                                                                                                                                                       |
 | **Scope**            | Pengujian gateway yang berjalan di `127.0.0.1:9090` atas `th-1/deepseek-v4.1-flash:free`, `opencode/mimo-v2.6-flash-free(high)`, `opencode/muse-spark-1.3-contributor-free(high)`, `opencode/space-bunny-free`, combo `pi-agent`                                                                      |
 | **Permintaan owner** | "Testing request response: Chat Completion, Tool, Streaming, Reasoning" atas endpoint + kunci + daftar model itu, lalu "Cek lebih details: F2. F3, dan F5" (2026-09-27)                                                                                                                               |
@@ -180,6 +180,23 @@ parity, tutup F2 tanpa kode; (B) menyimpang dari reference — pangkas chunk pen
 kosong kecuali yang terakhir, perbaikan kontrak klien yang tidak dimiliki reference; (C) port kebijakan
 usage-di-frame-finish ala reference (estimasi + buffer 2000) — menabrak aturan no-fabrication.
 
+**Penutupan F2 lewat opsi B (2026-09-27, `6b68bb4`).** Pertanyaan lanjutan owner, "secara source jika
+tidak ambil REFERENCE apakah sudah benar?", membuka celah yang diukur dulu: invarian satu-finish yang
+sudah dinyatakan source (`translate_stream_openai.go:64-68`, alasan 021 F3) hanya dijaga terhadap
+frame buatan gateway — frame kedua upstream tetap membawa `finish_reason` kedua ke kawat, padahal
+gateway bukan passthrough byte murni (tiap frame sudah di-decode dan re-marshal), jadi kontrak yang
+kita layankan (SPEC-API §4, satu chunk finish lalu opsional chunk usage) dilanggar oleh terusan itu.
+Owner memilih B ("gas aja B supaya solid di source kita"), dan patch-nya minimal: saat `finishSent`
+sudah `true` dan frame yang diteruskan masih membawa `finish_reason`, anggota duplikat itu di-null dan
+pilihan di-re-marshal (`translate_stream_openai.go:166-180`) — usage yang dibawanya tetap lewat
+(penanda `usageSent` F1 tidak berubah), semua anggota lain tetap lewat, `finishReason` state tetap
+milik finish pertama, dan nol angka dikarang. Kawat `mimo` kini: `finish(stop)`,
+`finish(null, usage)`, `[DONE]` — satu finish, satu usage, tanpa menyentuh reference. TDD
+merah-hijau: tabel `TestOpenAIStream_SecondFinishIsStripped` (empat sel — bentuk `mimo` dengan usage,
+bentuk yang sama tanpa `include_usage`, tutup kedua dengan nilai berbeda `length`, dan satu-finish
+yang tak tersentuh); merah terbukti pada source lama (2 finish di kawat, atau `length` lolos), hijau
+pada dataplane dan `go test -race ./...` lengkap.
+
 ## 5. F3 (CLOSED): 021 F5 — stream tidak lagi dicatat 0/0
 
 Permintaan owner adalah memeriksa F5, dan F5 **beres**. Kolom `usage_records` bukan `prompt_tokens`
@@ -248,6 +265,7 @@ curl -sS -N -m 90 -H "Authorization: Bearer <kunci gateway>" -H "Content-Type: a
 # F1: sebelum 50340a8 — dua frame usage identik, satu bersidik struct (id lebih dulu) dan satu bersidik map (choices lebih dulu)
 # F1: setelah 50340a8 — satu frame usage saja (yang diteruskan); chunk sintetis tidak lagi ditambah
 # F2: grep -c '"finish_reason":"stop"'  → 2 pada mimo, 1 pada tiga lane lain
+# F2: setelah 6b68bb4 — 1 di semua lane; chunk penutup kedua membawa finish_reason:null (usage-nya tetap)
 ```
 
 Penanda frame buatan gateway vs milik upstream: lihat §2. Akuntansi: cocokkan `tokens_in`/`tokens_out`
