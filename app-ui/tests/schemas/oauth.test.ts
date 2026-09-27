@@ -9,10 +9,15 @@
 import { describe, expect, it } from 'vitest';
 import {
 	hasOAuthReturn,
+	oauthDeviceConnected,
 	oauthFlowCopy,
+	oauthFlowDevice,
 	oauthFlowStartable,
 	oauthTokenState,
 	parseOAuthReturn,
+	schemaOAuthDevicePoll,
+	schemaOAuthDevicePollBody,
+	schemaOAuthDeviceStart,
 	schemaOAuthRefresh,
 	schemaOAuthRefreshBody,
 	schemaOAuthStart,
@@ -24,7 +29,7 @@ const NOW = Date.parse('2026-09-20T12:00:00Z');
 describe('oauthFlowCopy', () => {
 	const cases = [
 		{ name: 'code', flow: 'code', contains: 'can start the authorization' },
-		{ name: 'device', flow: 'device', contains: 'device endpoint instead' },
+		{ name: 'device', flow: 'device', contains: 'device page' },
 		{ name: 'connector', flow: 'connector', contains: 'needs a connector' },
 		{ name: 'none', flow: 'none', contains: 'no authorize URL' },
 		{ name: 'a flow the panel does not know', flow: 'hybrid', contains: 'hybrid' }
@@ -49,6 +54,22 @@ describe('oauthFlowStartable', () => {
 	for (const testCase of cases) {
 		it(`${testCase.want ? 'offers' : 'refuses'} the start action for ${testCase.name}`, () => {
 			expect(oauthFlowStartable(testCase.flow)).toBe(testCase.want);
+		});
+	}
+});
+
+describe('oauthFlowDevice', () => {
+	const cases = [
+		{ name: 'device', flow: 'device', want: true },
+		{ name: 'code', flow: 'code', want: false },
+		{ name: 'connector', flow: 'connector', want: false },
+		{ name: 'none', flow: 'none', want: false },
+		{ name: 'a flow the panel does not know', flow: 'hybrid', want: false }
+	];
+
+	for (const testCase of cases) {
+		it(`${testCase.want ? 'offers' : 'refuses'} a device round for ${testCase.name}`, () => {
+			expect(oauthFlowDevice(testCase.flow)).toBe(testCase.want);
 		});
 	}
 });
@@ -224,5 +245,68 @@ describe('the read schemas', () => {
 		expect(schemaOAuthRefreshBody.safeParse({ endpoint_id: 'ep_1', force: true }).success).toBe(
 			false
 		);
+	});
+
+	it('reads a device round and treats its URL as the vendor address it is', () => {
+		const parsed = schemaOAuthDeviceStart.safeParse({
+			device_code: 'dev_1',
+			verification_url: 'https://qoder.test/device/selectAccounts?challenge=c1',
+			user_code: 'AB12CD34',
+			interval_seconds: 2,
+			expires_in: 300
+		});
+		expect(parsed.success).toBe(true);
+	});
+
+	const deviceStartCases = [
+		{ name: 'a script URL as the device page', patch: { verification_url: 'javascript:alert(1)' } },
+		{ name: 'a relative device page', patch: { verification_url: '/device/selectAccounts' } },
+		{ name: 'no device code', patch: { device_code: '' } },
+		{ name: 'an interval past a minute', patch: { interval_seconds: 61 } },
+		{ name: 'a round that never expires', patch: { expires_in: 0 } },
+		{ name: 'a fractional interval', patch: { interval_seconds: 0.5 } }
+	];
+
+	for (const testCase of deviceStartCases) {
+		it(`refuses ${testCase.name} on a device round`, () => {
+			expect(
+				schemaOAuthDeviceStart.safeParse({
+					device_code: 'dev_1',
+					verification_url: 'https://qoder.test/device/selectAccounts',
+					user_code: 'AB12CD34',
+					interval_seconds: 2,
+					expires_in: 300,
+					...testCase.patch
+				}).success
+			).toBe(false);
+		});
+	}
+
+	it('reads a pending poll with no account fields', () => {
+		const parsed = schemaOAuthDevicePoll.safeParse({ status: 'pending' });
+		expect(parsed.success && parsed.data.endpoint_id).toBeUndefined();
+		expect(parsed.success && parsed.data.created).toBe(false);
+	});
+
+	it('reads a connected poll with the endpoint it landed', () => {
+		const parsed = schemaOAuthDevicePoll.safeParse({
+			status: 'connected',
+			endpoint_id: 'ep_1',
+			token_hint: 'dt-…7c2f',
+			created: true
+		});
+		expect(parsed.success && parsed.data.endpoint_id).toBe('ep_1');
+		expect(parsed.success && oauthDeviceConnected(parsed.data)).toBe(true);
+	});
+
+	it('reads a verdict the panel does not know without failing, and does not treat it as a connect', () => {
+		const parsed = schemaOAuthDevicePoll.safeParse({ status: 'slow_down' });
+		expect(parsed.success).toBe(true);
+		expect(parsed.success && oauthDeviceConnected(parsed.data)).toBe(false);
+	});
+
+	it('refuses a poll body that names no device code', () => {
+		expect(schemaOAuthDevicePollBody.safeParse({}).success).toBe(false);
+		expect(schemaOAuthDevicePollBody.safeParse({ device_code: 'dev_1' }).success).toBe(true);
 	});
 });

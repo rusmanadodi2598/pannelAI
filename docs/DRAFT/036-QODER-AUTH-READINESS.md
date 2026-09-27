@@ -8,7 +8,7 @@ depan implementasi.
 
 |                    |                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**         | **Slice A selesai 2026-09-27; slice B selesai lebih dulu (commit `c0e3034`). Slice C (modal device di panel) dan slice D (data plane Qoder: COSY + pertukaran PAT + kuota) TERBUKA.** |
+| **Status**         | **Slice A selesai 2026-09-27 (commit `0d519fa`). Slice B selesai lebih dulu (commit `c0e3034`). Slice C (modal device di panel) selesai 2026-09-27. Slice D (data plane Qoder: COSY + pertukaran PAT + kuota) TERBUKA.** |
 | **Mechanism**      | PORT (reference → Go) + TDD                                                                                                                                                          |
 | **Scope**          | `app-serv/.` (service, repository, handler, schema, router, kontrak). `app-ui/.` tidak disentuh pada slice A.                                                                       |
 | **Permintaan owner** | (1) Qoder bisa di-OAuth. (2) Qoder bisa diisi PAT. (3) Paritas dengan reference. (4) Verifier device flow dipegang server, panel hanya mengirim `device_code` (keputusan owner 2026-09-27). |
@@ -53,6 +53,20 @@ diulang), `oauth_client_device_test.go` (bentuk wire poll di upstream httptest +
 floor satu hari), `handler/oauth_device_test.go` (kontrak HTTP kedua route), `router_oauth_test.go` (kedua
 route sesi-gated, verb salah = 405).
 
+### 2.3 Slice C — panel (setelah)
+
+```
+$ cd app-ui && npm run check          # svelte-check: 0 errors, 0 warnings
+$ npx eslint <berkas yang disentuh>    # bersih
+$ npx prettier --check src tests       # bersih
+$ npx vitest run tests/schemas/oauth.test.ts   # 56 lulus (16 di antaranya kasus device baru)
+$ npx vitest run tests/components/provider-oauth.test.ts  # 4 kasus device baru
+```
+
+Bukti slice C masih stub yang digerakkan (`tests/support/model-stub.ts` menambah antrean jawaban
+`POST .../oauth/device/poll`), bukan login nyata ke `qoder.com`; yang terakhir itu butuh akun dan masuk
+bagian dari K8/SPEC-UI Q23.
+
 ## 3. Keputusan
 
 | #   | Keputusan                                                                                                                                     | Alasan                                                                                                                                                                                                                       |
@@ -64,6 +78,7 @@ route sesi-gated, verb salah = 405).
 | K5  | **Kegagalan upstream dilaporkan, tidak ditelan.**                                                                                                | Reference memetakan semua kegagalan poll ke `poll_failed` lalu modal-nya terus polling sampai timeout 5 menit. Panel menjawab `UPSTREAM_ERROR` dengan alasan vendor, dan rondenya tetap bisa dicoba lagi — operator tahu, bukan menunggu buta. |
 | K6  | **Token device tidak di-refresh.**                                                                                                              | Reference: `needsRefresh() === false`, upstream membalas 403. `oauth/refresh` sudah menolak provider tanpa `token_url`, dan entri registry Qoder tidak mendeklarasikannya. Perpanjangan = login ulang.                       |
 | K7  | **`connectAccount` diekstrak** dan dipakai callback + device poll.                                                                            | Ekor connect (seal → cari akun → update/create) sebelumnya ada dua salinannya (callback dan import bulk). Aturan dedup yang sama dua kali akan melenceng.                                                                  |
+| K8  | **Panel tidak memanggil `window.open`; loop poll satu timer, bukan interval.**                                                                  | Paritas reference berhenti di sini: modal reference membuka tab vendor sendiri dan memakai `setInterval`. Panel sudah punya aturan untuk URL pihak ketiga (tautan, bukan navigasi otomatis — lihat §6.3 dan `docs/PORT/README.md` §3), dan timer yang hanya di-re-arm setelah jawaban tiba tidak bisa menumpuk dua ask yang bersamaan. Reference: `src/shared/components/OAuthModal.js:135-196`. |
 
 Konstanta yang dipindah dari reference (semuanya diuji, tidak ada yang dikira-kira): `expires_in: 300`,
 `interval: 2` detik, TTL state 6 menit, `user_code` = 8 karakter pertama nonce (uppercase), PKCE verifier
@@ -72,11 +87,6 @@ Konstanta yang dipindah dari reference (semuanya diuji, tidak ada yang dikira-ki
 
 ## 4. Yang sengaja TIDAK dikerjakan pass ini
 
-- **Slice C — modal device di panel.** `app-ui` belum punya jalan untuk memulai maupun mem-poll alur ini.
-  Yang dibutuhkan: panel "Login URL" (teks + Copy + Open), "Your Code", `Waiting for authorization...`,
-  dan batas `expires_in`. Reference: `src/shared/components/OAuthModal.js:135-196, 896-944`.
-  Panel sudah punya signal untuk memilih modal ini: `GET .../oauth/status` menjawab `flow: "device"`
-  (`flowKind`, `oauth_flow_refresh.go:236`).
 - **Slice D — data plane Qoder.** Menyambungkan akun bukan bagian yang membuatnya dipakai. Belum ada:
   tanda tangan COSY (17 header + body ter-encode), pemilihan host berdasar jenis token
   (`dt-` → `api3.qoder.sh`, `jt-` → `api2.qoder.sh` di intl), pertukaran PAT `pt-` → `jt-` lewat

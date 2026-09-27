@@ -158,7 +158,6 @@ describe('the start action', () => {
 
 describe('the flows the panel cannot start', () => {
 	for (const testCase of [
-		{ flow: 'device', contains: 'device endpoint instead' },
 		{ flow: 'connector', contains: 'needs a connector' },
 		{ flow: 'none', contains: 'no authorize URL' }
 	]) {
@@ -171,6 +170,80 @@ describe('the flows the panel cannot start', () => {
 			expect(screen.queryByRole('button', { name: 'Start the authorization' })).toBeNull();
 		});
 	}
+});
+
+describe('the device round', () => {
+	beforeEach(() => {
+		stub.oauthFlow = 'device';
+	});
+
+	it('shows the vendor page as a link and a code, and opens nothing itself', async () => {
+		renderProvider();
+		await waitForAccounts();
+
+		screen.getByRole('button', { name: 'Start the device authorization' }).click();
+		await waitFor(() => expect(stub.oauthDeviceStarts).toEqual(['xai']));
+
+		const link = await waitFor(() => screen.getByRole('link', { name: 'Open the device page' }));
+		expect(link.getAttribute('href')).toBe(stub.oauthDeviceStart.verification_url as string);
+		// The address is readable without following it, which is why the link is not its only copy.
+		expect(screen.getByText(stub.oauthDeviceStart.verification_url as string)).toBeTruthy();
+		expect(screen.getByTestId('device-user-code').textContent).toBe('AB12CD34');
+		// The round is polled with the single-use code alone: the verifier and the machine id the
+		// gateway staged never reach this screen.
+		expect(JSON.stringify(stub.oauthDevicePolls)).not.toContain('challenge');
+	});
+
+	it('asks until the vendor grants the token, then re-reads the accounts', async () => {
+		stub.oauthDevicePollAnswers = [
+			{ status: 'pending' },
+			{ status: 'connected', endpoint_id: 'ep_qoder_1', token_hint: 'dt-…7c2f', created: true }
+		];
+		renderProvider();
+		await waitForAccounts();
+
+		screen.getByRole('button', { name: 'Start the device authorization' }).click();
+
+		await waitFor(() => expect(screen.getByText(/waiting for the vendor/i)).toBeTruthy());
+		await waitFor(() => expect(screen.getByText(/Connected \(ep_qoder_1\)/)).toBeTruthy());
+		expect(stub.oauthDevicePolls.map((ask) => ask.device_code)).toEqual(['dev_1', 'dev_1']);
+		// The connect moved a row, so the section read the state again rather than guessing it.
+		await waitFor(() =>
+			expect(stub.reads.filter((read) => read === 'oauth:status').length).toBeGreaterThan(1)
+		);
+	});
+
+	it('reports a refused ask and stops asking', async () => {
+		stub.oauthDevicePollRefusalAt = 1;
+		renderProvider();
+		await waitForAccounts();
+
+		screen.getByRole('button', { name: 'Start the device authorization' }).click();
+
+		await waitFor(() =>
+			expect(screen.getByRole('alert').textContent).toMatch(/device token endpoint refused/)
+		);
+		expect(screen.queryByText(/waiting for the vendor/i)).toBeNull();
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		expect(stub.oauthDevicePolls).toHaveLength(1);
+	});
+
+	it('reports a round the gateway could not start and offers another attempt', async () => {
+		stub.oauthDeviceStartRefusal = {
+			status: 400,
+			code: 'VALIDATION_ERROR',
+			message: 'provider xai does not declare a complete device flow'
+		};
+		renderProvider();
+		await waitForAccounts();
+
+		screen.getByRole('button', { name: 'Start the device authorization' }).click();
+
+		await waitFor(() =>
+			expect(screen.getByRole('alert').textContent).toMatch(/complete device flow/)
+		);
+		expect(screen.queryByText('Your code')).toBeNull();
+	});
 });
 
 describe('refreshing an account', () => {

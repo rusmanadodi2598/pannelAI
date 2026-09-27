@@ -42,8 +42,8 @@ export type ModelStub = {
 	hasOAuth: boolean;
 	/**
 	 * The flow `GET /oauth/status` reports, which is what decides what the section offers. The default is
-	 * `code`, the one flow that offers the start action, because no live provider reports it today
-	 * (SPEC-UI §14 Q23); a test that needs the dormant case sets `device` or `connector`.
+	 * `code`, the flow that finishes by callback; a test that needs the device round sets `device`, and
+	 * one that needs the dormant case sets `connector` (SPEC-UI §14 Q23).
 	 */
 	oauthFlow: string;
 	/** The connected accounts the status route answers. */
@@ -56,8 +56,25 @@ export type ModelStub = {
 	oauthRefreshRefusal: { status: number; code: string; message: string } | null;
 	/** The provider ids the start route was called with. */
 	oauthStarts: string[];
+	/** The round `POST /oauth/device/start` answers; a test overwrites the fields it cares about. */
+	oauthDeviceStart: StubModel;
+	/** When set, the device start route answers this refusal instead of a round. */
+	oauthDeviceStartRefusal: { status: number; code: string; message: string } | null;
+	/**
+	 * The answers `POST /oauth/device/poll` serves, one per ask, in order. An exhausted queue keeps
+	 * answering `pending`, because that is what an unanswered round really is.
+	 */
+	oauthDevicePollAnswers: StubModel[];
+	/** When above zero, that numbered ask (1-based) answers a refusal instead of a verdict. */
+	oauthDevicePollRefusalAt: number;
+	/** When set, the refusal `oauthDevicePollRefusalAt` answers. */
+	oauthDevicePollRefusal: { status: number; code: string; message: string } | null;
 	/** The endpoint ids the refresh route was called with, `null` for "every due account". */
 	oauthRefreshes: (string | null)[];
+	/** The provider ids the device start route was called with. */
+	oauthDeviceStarts: string[];
+	/** The bodies the device poll route was asked with, in order. */
+	oauthDevicePolls: StubModel[];
 	/** The provider ids the custom-model route knows, which is what makes an unknown one a refusal. */
 	providers: string[];
 	/**
@@ -243,6 +260,19 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		oauthStartRefusal: null,
 		oauthRefreshRefusal: null,
 		oauthStarts: [],
+		oauthDeviceStart: {
+			device_code: 'dev_1',
+			verification_url: 'https://vendor.test/device/selectAccounts?challenge=c1&nonce=dev_1',
+			user_code: 'AB12CD34',
+			interval_seconds: 0,
+			expires_in: 300
+		},
+		oauthDeviceStartRefusal: null,
+		oauthDevicePollAnswers: [],
+		oauthDevicePollRefusalAt: 0,
+		oauthDevicePollRefusal: null,
+		oauthDeviceStarts: [],
+		oauthDevicePolls: [],
 		oauthRefreshes: [],
 		providers: ['openai', 'anthropic'],
 		providerRows: [],
@@ -560,6 +590,33 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 			});
 
 			return json({ refreshed: moved.length, endpoint_ids: moved });
+		}
+
+		const deviceMatch = /\/providers\/([^/]+)\/oauth\/device\/(start|poll)$/.exec(parsed.pathname);
+
+		if (method === 'POST' && deviceMatch?.[2] === 'start') {
+			stub.oauthDeviceStarts.push(decodeURIComponent(deviceMatch[1]));
+			if (stub.oauthDeviceStartRefusal) {
+				const { status, code, message } = stub.oauthDeviceStartRefusal;
+				return refusal(code, message, status);
+			}
+			return json(stub.oauthDeviceStart);
+		}
+
+		if (method === 'POST' && deviceMatch?.[2] === 'poll') {
+			stub.oauthDevicePolls.push({ device_code: (body.device_code as string | undefined) ?? '' });
+			const ask = stub.oauthDevicePolls.length;
+			if (stub.oauthDevicePollRefusalAt > 0 && ask === stub.oauthDevicePollRefusalAt) {
+				const { status, code, message } = stub.oauthDevicePollRefusal ?? {
+					status: 502,
+					code: 'UPSTREAM_ERROR',
+					message: 'The device token endpoint refused the poll.'
+				};
+				return refusal(code, message, status);
+			}
+			// Each ask consumes one scripted answer; past the end of the queue the round is still
+			// unanswered, which is what `pending` means on the wire too.
+			return json(stub.oauthDevicePollAnswers.shift() ?? { status: 'pending' });
 		}
 
 		if (parsed.pathname.endsWith('/models/disabled')) {

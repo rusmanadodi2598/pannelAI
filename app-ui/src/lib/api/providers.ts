@@ -4,15 +4,22 @@
 // the list is always read with the server's paging. Nothing here fetches the whole registry for the panel
 // to filter, which is what §6.3's pagination discipline rules out.
 //
-// The three OAuth routes are here rather than in a module of their own because their paths are the
-// provider's: §7.4 nests them under `/providers/{provider_id}`, and the section that calls them is the
-// provider detail screen.
+// The OAuth routes are here rather than in a module of their own because their paths are the provider's:
+// §7.4 nests them under `/providers/{provider_id}`, and the section that calls them is the provider detail
+// screen. The two device routes belong beside the other four for the same reason, even though the panel
+// drives those by asking repeatedly instead of once.
 
 import {
+	schemaOAuthDevicePoll,
+	schemaOAuthDevicePollBody,
+	schemaOAuthDeviceStart,
 	schemaOAuthRefresh,
 	schemaOAuthRefreshBody,
 	schemaOAuthStart,
 	schemaOAuthStatus,
+	type OAuthDevicePoll,
+	type OAuthDevicePollBody,
+	type OAuthDeviceStart,
 	type OAuthRefresh,
 	type OAuthRefreshBody,
 	type OAuthStart,
@@ -75,6 +82,31 @@ export function startProviderOAuth(providerId: string): Promise<ApiResult<OAuthS
 		method: 'POST',
 		path: `/providers/${encodeURIComponent(providerId)}/oauth/start`,
 		schema: schemaOAuthStart
+	});
+}
+
+// Starts a device round. The gateway mints the PKCE pair, the nonce and the machine id and keeps them; the
+// answer is the link the operator opens plus the code every later poll comes back with.
+export function startProviderOAuthDevice(providerId: string): Promise<ApiResult<OAuthDeviceStart>> {
+	return apiRequest<void, OAuthDeviceStart>({
+		method: 'POST',
+		path: `/providers/${encodeURIComponent(providerId)}/oauth/device/start`,
+		schema: schemaOAuthDeviceStart
+	});
+}
+
+// Asks about one device round once. The gateway performs exactly one upstream attempt per call, so how
+// often the vendor is asked is this screen's schedule, not a queue the gateway holds.
+export function pollProviderOAuthDevice(
+	providerId: string,
+	deviceCode: string
+): Promise<ApiResult<OAuthDevicePoll>> {
+	return apiRequest<OAuthDevicePollBody, OAuthDevicePoll>({
+		method: 'POST',
+		path: `/providers/${encodeURIComponent(providerId)}/oauth/device/poll`,
+		schema: schemaOAuthDevicePoll,
+		body: { device_code: deviceCode },
+		bodySchema: schemaOAuthDevicePollBody
 	});
 }
 

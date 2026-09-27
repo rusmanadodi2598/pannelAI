@@ -3,8 +3,9 @@
 	//
 	// The section appears for a provider whose registry entry says it has OAuth (`has_oauth`), which is the
 	// API's own answer to that question, and the flow the status route reports decides what it offers: the
-	// panel can start `code` and nothing else, so the other three flows get their reason instead of a
-	// control that cannot act (R-26).
+	// `code` flow starts an authorization the gateway finishes by callback, the `device` flow starts a round
+	// this screen polls (§6.3, draft 036). The two remaining flows get their reason instead of a control
+	// that cannot act (R-26).
 	//
 	// It reads the status once per visit, as §6.3 asks, and re-reads it after a refresh or after the
 	// callback returns, because both move the state it renders. The callback's outcome arrives in this
@@ -20,12 +21,14 @@
 	import { untrack } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import ProviderOAuthAccounts from '$lib/components/ProviderOAuthAccounts.svelte';
+	import ProviderOAuthDevice from '$lib/components/ProviderOAuthDevice.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { providerOAuthStatus, startProviderOAuth } from '$lib/api/providers';
 	import {
 		OAUTH_RETURN_KEYS,
 		hasOAuthReturn,
 		oauthFlowCopy,
+		oauthFlowDevice,
 		oauthFlowStartable,
 		parseOAuthReturn,
 		type OAuthReturn,
@@ -168,6 +171,8 @@
 			{#if startError}
 				<p class="text-sm text-[var(--color-danger)]" role="alert">{startError}</p>
 			{/if}
+		{:else if oauthFlowDevice(status.flow)}
+			<ProviderOAuthDevice {providerId} onconnected={() => load(providerId, true)} />
 		{/if}
 
 		{#if status.endpoints.length === 0}

@@ -11,12 +11,13 @@
 import { z } from 'zod';
 import { absoluteUrl, optionalTimestamp } from './primitives';
 
-// The flows `flowKind` reports: the panel can start `code` and nothing else, and the other three each have
-// a reason the operator needs rather than a control that cannot act.
+// The flows `flowKind` reports: the panel can start `code` on the gateway's behalf and `device` by asking
+// the vendor in rounds, and the other two each have a reason the operator needs rather than a control that
+// cannot act.
 export const OAUTH_FLOW_COPY: Record<string, string> = {
 	code: 'The gateway can start the authorization for this provider.',
 	device:
-		'This provider uses a device authorization flow, so the gateway has no authorize URL to send a browser to. Connect it through its device endpoint instead.',
+		'This provider authorizes on its own device page: the panel mints a round, you open the link and approve it, and the panel asks the gateway until the vendor grants the token.',
 	connector:
 		'This provider needs a connector for its token exchange, so the gateway cannot complete the authorization on its own.',
 	none: 'The gateway has no authorize URL for this provider, so there is nothing to start here.'
@@ -30,9 +31,14 @@ export function oauthFlowCopy(flow: string): string {
 	);
 }
 
-/** Whether the panel can offer the start action for this flow. */
+/** Whether the panel can offer the code-flow start action for this flow. */
 export function oauthFlowStartable(flow: string): boolean {
 	return flow === 'code';
+}
+
+/** Whether the panel can offer a device round for this flow. */
+export function oauthFlowDevice(flow: string): boolean {
+	return flow === 'device';
 }
 
 // The start answer. The state is carried for completeness; the panel does not echo it anywhere, because
@@ -43,6 +49,45 @@ export const schemaOAuthStart = z.object({
 });
 
 export type OAuthStart = z.infer<typeof schemaOAuthStart>;
+
+// The device round the panel starts and then asks about. `device_code` is the only handle the panel holds:
+// the PKCE verifier and the machine id behind it stay in the state the gateway staged, so there is nothing
+// here to keep off the screen beyond a single use. `verification_url` is rendered as a link the operator
+// opens, never followed by the panel, so it is parsed as an absolute http(s) URL first.
+export const schemaOAuthDeviceStart = z.object({
+	device_code: z.string().min(1),
+	verification_url: absoluteUrl,
+	user_code: z.string().min(1),
+	interval_seconds: z.number().int().min(0).max(60),
+	expires_in: z.number().int().min(1)
+});
+
+export type OAuthDeviceStart = z.infer<typeof schemaOAuthDeviceStart>;
+
+// The poll body. The device code is the whole ask: the round it belongs to, and the provider that staged
+// it, are the gateway's to know.
+export const schemaOAuthDevicePollBody = z.strictObject({
+	device_code: z.string().min(1)
+});
+
+export type OAuthDevicePollBody = z.infer<typeof schemaOAuthDevicePollBody>;
+
+// One poll's answer. `status` stays an open string for the same reason `flow` does: the gateway names the
+// verdicts it has today (`pending`, `connected`) and a new one should read as its own word rather than
+// fail the screen. The account fields ride only with a success.
+export const schemaOAuthDevicePoll = z.object({
+	status: z.string().min(1),
+	endpoint_id: z.string().nullish(),
+	token_hint: z.string().nullish(),
+	created: z.boolean().default(false)
+});
+
+export type OAuthDevicePoll = z.infer<typeof schemaOAuthDevicePoll>;
+
+/** Whether a poll answer is the one that ends the round with a connected account. */
+export function oauthDeviceConnected(answer: OAuthDevicePoll): boolean {
+	return answer.status === 'connected';
+}
 
 // One connected account. `expires_at` and `last_refresh_at` are absent when the gateway knows no such
 // instant, which is not the same as a zero instant, so both stay nullish.

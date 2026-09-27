@@ -41,3 +41,9 @@ Yang di ammbil portingan ke Go (Golang, dan Svelte UI:
 - **"Upstream endpoints" bukan isi halaman Endpoint & Key**: endpoint beserta kuncinya hidup di halaman
   Provider, tempat reference menyimpannya sebagai kartu Connections (keputusan owner 2026-09-24,
   SPEC-UI §6.2/§6.3). Generalisasi 1-akun-1-endpoint berisi 1..N kunci tetap berlaku (SPEC-API §7.5).
+- **Device flow Qoder tidak membuka halaman vendor sendiri, dan verifier-nya tidak lewat browser**:
+  reference melempar `codeVerifier` + `machineId` ke modal lalu memintanya balik di tiap poll, dan
+  `OAuthModal` langsung memanggil `window.open`. Panel menyimpan satu `device_code` yang sekali pakai,
+  verifier serta machine_id tinggal di state Redis gateway, dan alamat perangkat ditampilkan sebagai tautan
+  yang operator buka sendiri (draft 036 K1, SPEC-UI §6.3). Kegagalan poll juga tidak lagi ditelan menjadi
+  "continue polling until timeout" seperti reference: panel menyebut alasannya dan tetap bisa mencoba lagi.

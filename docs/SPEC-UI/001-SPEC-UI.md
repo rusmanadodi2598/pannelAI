@@ -394,13 +394,25 @@ absent.
   provider and keeps both selects editable, because here the pin and multi-pool failover coexist.
 - **OAuth section (U2, landed, OAuth providers only):** the section renders for a provider whose registry
   entry says `has_oauth`, and the flow `GET /api/v1/providers/{id}/oauth/status` reports decides what it
-  offers: the panel starts `code` and, for `device`, `connector`, and `none`, states that flow's reason
+  offers: the panel starts `code` and `device`, and for `connector` and `none` states that flow's reason
   instead of drawing a control that cannot act. `POST /api/v1/providers/{id}/oauth/start` is called with no
   body, because the gateway derives its own callback from its base URL, and the returned authorize URL is
   rendered as a link rather than followed by the panel: a scripted navigation to a third party is a redirect
-  the operator did not ask for, and a link shows the host before it is followed. The registry's one
-  `has_oauth` provider declares no `authorize_url`, so the flow it reports is `device` and the start path is
-  dormant until a provider declares one (Q23).
+  the operator did not ask for, and a link shows the host before it is followed.
+- **The device round (draft 036, landed):** a provider that authorizes on its own device page (Qoder, Qoder
+  CN) has no callback to wait for, so the section drives it by asking. `POST …/oauth/device/start` is
+  likewise called with no body and answers `device_code`, `verification_url`, `user_code`,
+  `interval_seconds`, and `expires_in`. The screen shows the vendor address as a link the operator opens and
+  as text beside it, and the code as text with its copy control — the panel never calls `window.open`, which
+  is the reference's behaviour and a deliberate deviation (the same rule the authorize link keeps). What the
+  screen holds is the single-use `device_code`: the PKCE verifier and the machine id behind it stay in the
+  state the gateway staged, so they appear on no screen and in no request body. `POST …/oauth/device/poll`
+  is then asked on `interval_seconds` until it answers `connected` (the row then appears in the account
+  table through the section's own re-read) or the round's `expires_in` window closes, which the screen
+  reports as an expired round rather than retrying silently. The loop is one timer that is re-armed only
+  after an answer arrives, so an in-flight ask can never stack a second one; it stops at the deadline, when
+  the operator presses **Stop waiting**, and when the section unmounts. A refused ask ends the loop and
+  shows the gateway's reason: a vendor that said no is not a vendor to keep polling (Q22).
 - **The callback return (U2, landed):** the gateway returns the browser to the provider detail page with
   `oauth`, `oauth_error`, and `endpoint_id` in its query. The section reads the outcome once, renders it as
   the gateway's report, and drops those three keys from the address with `replaceState`, so a reload does not
@@ -530,15 +542,22 @@ absent.
 - **Live:** `GET /api/v1/usage/live` (server-sent events) carries the three facts a period window cannot:
   the requests in flight now, the requests that just finished, and the provider the gateway last reported an
   error for. The drawing places one node per configured provider around the gateway and marks each with its
-  state; the facts that are happening are stated in one line above it, in the drawing's own colour rule: a
-  routing provider's name takes the status colour, as that node's label does, and the finished and error
-  facts name their provider without one, as those nodes' labels do (owner's correction, 2026-09-23, draft
-  023 F1). The paragraph that explained the colours and the beam is gone, because the reference fork draws
-  no legend either, and the line keeps one line's height while there is nothing to state, so at the widths
-  where the facts fit on one line the drawing does not move when a request starts (measured 1360 px: the
-  idle slot and the stated line both read 20 px and the drawing's top holds at 1737; at 390 px the stated
-  line reads 60 px against the same 20 px slot, draft 023). An idle drawing adds no sentence, because the
-  node labels are the provider list (owner's correction, 2026-09-23, draft 022 F2). A provider that is
+  state. The facts that are happening are stated in one tab of the live controls row, beside the connection
+  chip and the pause control, and never inside the drawing's frame: the sentence used to sit above the nodes
+  and moved the drawing every time a request started or finished, which is what the owner's correction of
+  2026-09-27 (draft 035 F2) ended. The tab is a statement, not a control (nothing in it is focusable, the
+  rule draft 023 F2 set for tab-idiom labels), and it carries the drawing's own colour rule: a routing
+  provider's name in the status colour, as that node's label does, and the finished and error facts naming
+  their provider plainly, as those nodes' labels do (draft 023 F1, kept through the move). No fact renders
+  no tab, because an idle screen states its absences with the colour rule and the connection chip, never
+  with a sentence that never changes (owner's correction, 2026-09-23, draft 022 F2). Every tab the row
+  renders carries the same box, 44px as its minimum height with the panel's chip radius, one border and
+  matching padding, so chip, facts, pause and retry read as a matched set rather than a chip of one size
+  beside buttons of another (draft 035 F1). A long fact value shrinks and wraps inside its own tab
+  (`min-w-0`, `break-words`) so the page never widens for it, and where the row itself wraps it grows by a
+  tab height: that is the row's own reflow, and what left the drawing's frame is the sentence that used to
+  move the drawing (draft 035 F2). The paragraph that explained the colours and the beam is gone, because the
+  reference fork draws no legend either (draft 023 F1). A provider that is
   routing is marked in four ways:
   its dot pulses, the line to it carries the reference fork's beam (a wide halo, a dashed plasma and a
   dashed core, with six orbs and five sparks travelling along it), its node takes the status colour with a
@@ -1617,8 +1636,9 @@ candidate test's live, refused, and protocol-mismatch answers, and the outbound 
 re-read. "OAuth round trip from the panel" and "an image generation request routed through a media
 provider" stay open, and now for a different reason than when the pass ran: both screens exist, so what is
 missing is the evidence rather than the surface. The OAuth round trip additionally needs a provider account
-the pass does not have, since the registry marks one provider (`xai`) as `has_oauth`, and that provider
-reports the `device` flow, so no provider currently offers the start path at all (Q23). The quota budget
+the pass does not have; draft 036 changed which paths that evidence covers, since Qoder and Qoder CN now
+offer the device round and only the `code` round-trip still has no provider to exercise it against (Q23). The
+quota budget
 caps landed after that pass, so they were checked in a separate one: a driver logged in, created an
 endpoint, and drove the cap routes while parsing every response through the panel's own schemas, 23 checks
 with 0 failures, covering the null cap, both amounts written and read back, the form's round trip, an
@@ -1905,19 +1925,22 @@ half carry.
     only control that re-reads is a row's Refresh, which also refreshes the token, plus a page reload. Decide
     whether §6.3's "polls" means a timer the panel should run, or whether the read-on-visit and
     re-read-on-action is the intent and the sentence is amended to say so.
-23. **The one provider with `has_oauth` reports the `device` flow, so the panel's start action has no provider
-    to act on.** `xai` is the only registry entry with `has_oauth: true`, and its `oauth` block declares
-    `client_id`, `token_url`, and `refresh_url` and no `authorize_url`
-    (`app-serv/internal/registry/registry.yaml`). `flowKind` classifies a provider by its exchange, its
-    authorize URL, and nothing else: `RequiresCustomExchange` is false for xai (no `state_url`,
-    `initiate_url`, or `poll_url_base`), so the empty authorize URL falls through to `device`
-    (`app-serv/internal/service/oauth_flow_refresh.go`). The panel follows the API's classification, which
-    means the section renders for xai, states the device reason, and offers no start button, and the start
-    path is dormant until a provider declares an authorize URL. The same classification is imprecise for this
-    entry: xai declares no device endpoint either, so the copy's "connect it through its device endpoint"
-    points at something the registry does not carry. Decide whether the registry gains an `authorize_url` for
-    xai (or another provider gains `has_oauth`), whether `flowKind` distinguishes a refresh-only block from a
-    device flow, or whether the start path stays dormant by design and §6.3 records it as such.
+    Draft 036 does not reopen it: the status read stays timer-free. The device round (§6.3) is a separate
+    loop the operator started by pressing a control, bounded by the window that start stated, and stopped by
+    an answer, by the operator, or by leaving the screen — which is the shape this rule was protecting
+    against, an open-ended repeating read nobody asked for.
+23. **Two providers report the `device` flow and only one pair of them can answer it.** Qoder and Qoder CN
+    declare `device_token_url` + `login_url` with no `authorize_url`, so `flowKind` classifies them as
+    `device` and the section offers the device round (§6.3) — the path draft 036 built them for. `xai` also
+    reports `device`: its `oauth` block declares `client_id`, `token_url`, and `refresh_url` and no
+    `authorize_url` (`app-serv/internal/registry/registry.yaml`), and `flowKind` distinguishes flows by the
+    exchange and the authorize URL and nothing else — `RequiresCustomExchange` is false for xai (no
+    `state_url`, `initiate_url`, or `poll_url_base`), so the empty authorize URL falls through to `device`
+    (`app-serv/internal/service/oauth_flow_refresh.go`). The panel still offers the round for xai, because
+    reading the registry to predict which refusal the gateway would give is the second classification §6.3
+    rules out; the operator starts it and gets the gateway's own sentence — *"provider xai does not declare a
+    complete device flow"* — as an alert. Open question: whether `flowKind` gains a `device`/`incomplete`
+    split so an entry with no device endpoint behind it stops offering a control that can only be refused.
 24. **The cap form accepts a narrower spelling than the API's parser does, and the two are not the same
     rule.** `PUT /quotas/{endpoint_id}` takes the cost as a string and parses it with
     `big.Rat.SetString` (`app-serv/internal/domain/decimal.go`), which accepts forms a budget field should
