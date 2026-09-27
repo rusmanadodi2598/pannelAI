@@ -5,8 +5,9 @@
 // @file      internal/dataplane/translate_stream_framing_test.go
 // @for       The SSE shape of the frames the gateway builds itself: each one is
 //
-//	a complete event, the usage chunk is emitted once, and the finish
-//	frame is emitted once (draft 021 F1, F2, F3).
+//	a complete event, the usage the upstream already delivered is not
+//	repeated, and the finish frame is emitted once (draft 021 F1, F2,
+//	F3; 034 F1).
 //
 // @uses      encoding/json, strings, testing.
 // @reason    The gateway's own frames left without `data: ` and without the
@@ -115,9 +116,10 @@ func TestOpenAIStream_SyntheticFinishIsFramed(t *testing.T) {
 	}
 }
 
-// TestOpenAIStream_UsageChunkIsEmittedOnce pins F2 for the shape where the
-// upstream states its numbers on the finish frame: the client sees the upstream's
-// frame and exactly one usage chunk the gateway adds, never a second copy.
+// TestOpenAIStream_UsageChunkIsEmittedOnce pins F2 and 034 F1 for the shape
+// where the upstream states its numbers on the finish frame: that forwarded
+// frame is the one delivery, and the gateway adds no second copy of the same
+// numbers, which is what a client summing every usage object would double.
 func TestOpenAIStream_UsageChunkIsEmittedOnce(t *testing.T) {
 	state := NewStreamState("", "model-x", 1700000000, true)
 	var frames [][]byte
@@ -131,21 +133,19 @@ func TestOpenAIStream_UsageChunkIsEmittedOnce(t *testing.T) {
 	rendered := frameText(append(frames, state.Finish()...))
 
 	assertSSEStream(t, rendered)
-	// Two usage objects reach the client, both the upstream's numbers: the frame
-	// the upstream sent, and the single usage chunk the gateway adds for a client
-	// that asked for one.
-	if got := strings.Count(rendered, `"total_tokens"`); got != 2 {
-		t.Fatalf("usage objects = %d, want the upstream's frame plus one chunk: %s", got, rendered)
+	if got := strings.Count(rendered, `"total_tokens"`); got != 1 {
+		t.Fatalf("usage objects = %d, want only the upstream's frame: %s", got, rendered)
 	}
-	if !strings.Contains(rendered, `"choices":[]`) {
-		t.Fatalf("the usage chunk must carry an empty choices array: %s", rendered)
+	if strings.Contains(rendered, `"choices":[]`) {
+		t.Fatalf("the gateway added an empty-choices usage chunk the upstream did not send: %s", rendered)
 	}
 }
 
-// TestOpenAIStream_NullUsageNeverBecomesAZeroChunk pins F2's other half on the
-// shape the free tier actually sent: the finish frame marks `usage` null and the
-// numbers arrive in a later frame, so the gateway must not read the null as a
-// zero-valued usage and publish a 0/0 chunk before the real numbers land.
+// TestOpenAIStream_NullUsageNeverBecomesAZeroChunk pins F2's other half and 034
+// F1 on the shape the free tier actually sent: the finish frame marks `usage`
+// null and the numbers arrive in a later usage-only frame, so the null must
+// never become a 0/0 chunk, and that later frame is the one delivery — Finish
+// adds no second copy of the numbers it already forwarded.
 func TestOpenAIStream_NullUsageNeverBecomesAZeroChunk(t *testing.T) {
 	state := NewStreamState("", "model-x", 1700000000, true)
 	var frames [][]byte
@@ -162,10 +162,10 @@ func TestOpenAIStream_NullUsageNeverBecomesAZeroChunk(t *testing.T) {
 	if got := strings.Count(rendered, `"prompt_tokens":0`); got != 0 {
 		t.Fatalf("a null usage became a zero usage chunk (%d): %s", got, rendered)
 	}
-	if got := strings.Count(rendered, `"total_tokens"`); got != 2 {
-		t.Fatalf("usage objects = %d, want the upstream's frame plus one chunk: %s", got, rendered)
+	if got := strings.Count(rendered, `"total_tokens"`); got != 1 {
+		t.Fatalf("usage objects = %d, want only the upstream's frame: %s", got, rendered)
 	}
 	if !strings.Contains(rendered, `"prompt_tokens":7`) {
-		t.Fatalf("the usage chunk must carry the numbers the upstream reported: %s", rendered)
+		t.Fatalf("the stream must carry the numbers the upstream reported: %s", rendered)
 	}
 }

@@ -68,10 +68,12 @@ type StreamState struct {
 	finishSent bool
 	// includeUsage reports whether the client asked for a usage chunk.
 	includeUsage bool
-	// usageSent reports whether the usage chunk was already emitted. The upstream
-	// may state its numbers on the finish frame or in a frame after it, so the
-	// chunk is emitted at most once, from whichever of the two sites sees the
-	// numbers last.
+	// usageSent reports whether the client's stream already carried usage: the
+	// gateway's own chunk marks it when emitted, and so does a forwarded frame
+	// that itself carries a usage object, so one stream carries at most one
+	// delivery of the numbers (draft 021 F2, 034 F1). The upstream may state
+	// them on the finish frame or in a frame after it; whichever form the
+	// client saw, Finish adds nothing once the numbers are on the wire.
 	usageSent bool
 }
 
@@ -157,6 +159,13 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 	}
 	if usage, ok := objectField(chunk, "usage"); ok {
 		s.usage = openAIUsageFromObject(usage)
+		// A forwarded frame that itself carries usage is the delivery the client
+		// asked for, so it marks usageSent and Finish appends nothing (draft 034
+		// F1). A null or empty member is not numbers on the wire, which leaves
+		// the decision to Finish's own guard.
+		if len(usage) > 0 {
+			s.usageSent = true
+		}
 	}
 	if choices, ok := arrayField(chunk, "choices"); ok && len(choices) > 0 {
 		if first, ok := decodeObject(choices[0]); ok {

@@ -43,8 +43,9 @@ func (s *StreamState) chunk(delta schema.Delta, finishReason *string) []byte {
 // usageChunk builds the usage chunk a client that asked for one receives. It is
 // its own frame with an empty choices array, which is the shape OpenAI documents
 // for stream_options.include_usage: a client that reads the first choice from
-// every frame must not read content here. Emitting it marks usageSent, so one
-// stream carries at most one (draft 021 F2).
+// every frame must not read content here. Emitting it marks usageSent, and so
+// does forwarding an upstream frame that already carries usage, so one stream
+// carries at most one delivery of the numbers (draft 021 F2, 034 F1).
 func (s *StreamState) usageChunk() []byte {
 	s.usageSent = true
 	return Frame(mustFrame(schema.UsageChunk(s.ID, s.Created, s.Model, *s.usage)))
