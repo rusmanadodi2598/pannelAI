@@ -86,6 +86,11 @@ type UpstreamError struct {
 	// Body is bounded and kept for classification and for the log; it never
 	// reaches the client verbatim (AGENTS.md §1.3).
 	Body []byte
+	// Replayable records that the refusal arrived before any byte of the answer
+	// reached the caller, so sending the request again cannot duplicate an answer
+	// the client already saw. A provider that states its real status inside the
+	// first frame of a 200 (Qoder's envelope) answers through this path.
+	Replayable bool
 }
 
 // Error renders the status and the upstream message.

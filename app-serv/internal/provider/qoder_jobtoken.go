@@ -120,7 +120,7 @@ func (c *qoderJobTokenClient) JobToken(ctx context.Context, personalToken string
 	if pat == "" {
 		return "", fmt.Errorf("provider: qoder needs a personal access token to exchange")
 	}
-	key := hashPersonalToken(pat)
+	key := hashCredentialToken(pat)
 	if cached, ok := c.read(key, c.now()); ok {
 		return cached, nil
 	}
@@ -216,11 +216,11 @@ func (c *qoderJobTokenClient) write(key, token string, validUntil time.Time) {
 	c.cache[key] = cachedJobToken{token: token, validUntil: validUntil}
 }
 
-// hashPersonalToken keys the cache by a digest of the token rather than by the token
+// hashCredentialToken keys the cache by a digest of the token rather than by the token
 // itself, so a heap snapshot of the gateway does not carry every stored Personal
 // Access Token in plain text. The cache is still per-token: the digest is stable for
 // one credential and different for another.
-func hashPersonalToken(personalToken string) string {
-	sum := sha256.Sum256([]byte(personalToken))
+func hashCredentialToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
 }

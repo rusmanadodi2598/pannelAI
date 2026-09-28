@@ -36,11 +36,12 @@ import (
 type Qoder struct {
 	Base
 
-	entry   registry.Provider
-	tokens  QoderJobToken
-	signer  cosySigner
-	catalog *qoderCatalog
-	client  *http.Client
+	entry    registry.Provider
+	tokens   QoderJobToken
+	signer   cosySigner
+	catalog  *qoderCatalog
+	identity *qoderIdentityCache
+	client   *http.Client
 }
 
 // NewQoder builds the connector for one registry entry. The exchange client is the
@@ -59,12 +60,13 @@ func NewQoder(entry registry.Provider, client *http.Client) (*Qoder, error) {
 		client = &http.Client{Timeout: qoderCatalogTimeout}
 	}
 	return &Qoder{
-		Base:    Base{ID: entry.ID, Auth: entry.AuthType, Format: entry.Transport.Format},
-		entry:   entry,
-		tokens:  tokens,
-		signer:  qoderCosy,
-		catalog: newQoderCatalog(),
-		client:  client,
+		Base:     Base{ID: entry.ID, Auth: entry.AuthType, Format: entry.Transport.Format},
+		entry:    entry,
+		tokens:   tokens,
+		signer:   qoderCosy,
+		catalog:  newQoderCatalog(),
+		identity: newQoderIdentityCache(),
+		client:   client,
 	}, nil
 }
 
@@ -107,12 +109,11 @@ func (c *Qoder) ApplyAuth(req *http.Request, cred Credential) error {
 	if err != nil {
 		return err
 	}
-	header, err := c.signer.headers(body, req.URL.String(), cosyIdentity{
-		UserID:    cred.ProjectID,
-		AuthToken: token,
-		Email:     cred.Account,
-		MachineID: cred.Metadata[MetadataMachineID],
-	})
+	identity, err := c.signingIdentity(req.Context(), cred, token)
+	if err != nil {
+		return err
+	}
+	header, err := c.signer.headers(body, req.URL.String(), identity)
 	if err != nil {
 		return err
 	}

@@ -381,3 +381,67 @@ termasuk `used` sebagai JSON number ditolak, dan `total: "0"` tetap bernilai. `t
 quota-published.test.ts` (10) mengemudikan layarnya: nol permintaan sebelum diminta, satu permintaan untuk
 dua klik saat permintaan pertama masih di udara (stub menahan jawabannya), jawaban per endpoint yang tidak
 saling menimpa, dan lane tanpa provider yang tidak menawarkan apa pun.
+
+## 9. Qoder dipakai lewat gateway: bug identitas dan pool free yang flaky (2026-09-28)
+
+Permintaan owner diuji lewat data plane (`POST /api/v1/chat/completions`, model `qoder/qfmodel`).
+Gateway menjawab `400 VALIDATION_ERROR "the request could not be shaped for this provider"` dalam
+25 ms — terlalu cepat untuk disebut kegagalan jaringan, dan pesan itu hanya bisa datang dari
+`applyShape` (`internal/dataplane/transport_shape.go:45`), yaitu `TransformRequest`.
+
+### 9.1 F11 — konektor tidak pernah menyelesaikan user id akun
+
+Signature COSY membawa `uid` milik akun, dan vendor menolak request tanpa itu. Konektor membacanya
+dari baris endpoint (`account.workspace_id` / `oauth.project_id`). Untuk koneksi device flow itu
+ada — flow-nya sendiri yang menyimpannya. Untuk **PAT yang ditempel operator ke panel tidak ada
+apa pun**: baris itu hanya menyimpan token. Akibatnya `uid` kosong dan setiap request mati sebelum
+dikirim.
+
+Reference menyelesaikannya dengan bertanya ke vendor: `qoderModels.js:105 fetchUserIdForJobToken`
+memanggil `/userinfo` dengan job token hasil exchange, dan executor menolak dengan
+"qoder credential is missing userId; reconnect the account" bila tetap tidak dapat.
+
+Port: `internal/provider/qoder_identity.go` — id tersimpan menang, kalau kosong baca `/userinfo`
+(endpoint dari registry, fallback host openapi), cache per digest token 1 jam, dan refusal bernama
+bila vendor tidak menyebut akun mana pun. Diverifikasi hidup dengan kredensial **tanpa identitas
+tersimpan**: `Cosy-User` terisi dan panggilan lolos ke lapisan serving
+(`qoder_identity_live_test.go`).
+
+### 9.2 F12 — "Workspace allocated quota exceeded" bukan akun habis, dan cap retry membunuhnya
+
+Setelah identitas selesai, jawaban vendor muncul utuh (selama ini tersembunyi di balik pesan generik):
+
+```
+statusCodeValue 429  {"code":"provider_error","message":"Error in upstream response",
+  "details":"{\"error\":{\"message\":\"Workspace allocated quota exceeded, please increase your quota limit.\",
+              \"type\":\"insufficient_quota\"}}"}
+```
+
+Katalog live mengatakan modelnya memang free (`display_name "Qwen3.8-Flash"`, `is_free true`,
+`price_factor 0.0`, `enable true`) — klaim owner benar. Yang habis adalah alokasi free di sisi
+Qoder, dan itu pulih: percobaan berjarak 25 detik pada request yang **sama persis** ditolak dua kali
+lalu **dijawab** pada percobaan ketiga (18033 byte stream, reasoning + content). Semua varian lain
+(host api2/api3, dengan/tanpa `FetchKeys&AgentId`, uid tersimpan vs resolve, lima bentuk body)
+menghasilkan respons yang identik — bentuk request bukan penyebab.
+
+Dua keputusan salah yang saling menutupi lalu dibetulkan:
+
+- **Salah tandai sebagai kuota.** `insufficient_quota` bersarang sempat dipetakan ke `Quota: true`
+  + 403. Itu membuat `IsQuotaError` benar → `Do` berhenti dan kredensial diparkir, justru pada
+  kasus yang butuh percobaan ulang. Sekarang: status envelope (429) dipertahankan, kalimat vendor
+  diambil sebagai pesan, dan jalur parkir tidak disentuh. Hanya kode numerik (110/112/10605) dan
+  `pricingUrl` yang tetap blok penagihan.
+- **Cap POST terlalu ketat.** `retry.go` membatasi POST non-idempoten pada 1 retry, jadi gateway
+  berhenti di percobaan kedua — satu langkah sebelum jawaban datang. Refusal yang dilaporkan
+  `StreamEnvelope` terjadi **sebelum satu byte pun sampai ke pemanggil** (memang itu gunanya peek),
+  jadi mengulang tidak mungkin menduplikasi jawaban. `UpstreamError.Replayable` sekarang membawa
+  fakta itu dan `retryBudget` melepas cap untuknya; budget milik entry tetap berlaku.
+  SPEC-API §4 diperbarui (baris Retries + changelog).
+
+Perbaikan ikutan: `code` di envelope vendor datang sebagai angka, string angka, dan kata
+(`provider_error`) — struct yang hanya bisa menampung satu bentuk membuang **seluruh** payload saat
+melihat sisanya. Field `code`/`details` kini dibaca sebagai raw member.
+
+Test: `qoder_identity_test.go` (13 kasus), `qoder_identity_live_test.go` (bukti hidup token-only),
+`qoder_envelope_quota_test.go` (7 kasus memisahkan blok penagihan dari pool short), dua kasus baru
+`TestDecideRetry` untuk `Replayable`. `-race` bersih.

@@ -166,7 +166,7 @@ func TestJobTokenFallsBackToADayWhenTheVendorStatesNothing(t *testing.T) {
 	if len(*calls) != 1 {
 		t.Fatalf("the default lifetime cached for %d calls, want a day of reuse", len(*calls))
 	}
-	if until := client.cache[hashPersonalToken("pt-a")].validUntil; !until.Equal(now.Add(qoderJobTokenDefaultTTL - qoderJobTokenBuffer)) {
+	if until := client.cache[hashCredentialToken("pt-a")].validUntil; !until.Equal(now.Add(qoderJobTokenDefaultTTL - qoderJobTokenBuffer)) {
 		t.Fatalf("valid until %v, want the default day minus the buffer", until)
 	}
 }
@@ -232,11 +232,11 @@ func TestNewQoderJobTokenClientRefusesNoBase(t *testing.T) {
 // per credential, different across them, and no substring of the secret.
 func TestHashPersonalTokenNeverCarriesTheSecret(t *testing.T) {
 	secret := "pt-very-specific-value"
-	key := hashPersonalToken(secret)
-	if key != hashPersonalToken(secret) {
+	key := hashCredentialToken(secret)
+	if key != hashCredentialToken(secret) {
 		t.Fatal("the cache key is not stable for one credential")
 	}
-	if key == hashPersonalToken("pt-other") {
+	if key == hashCredentialToken("pt-other") {
 		t.Fatal("two credentials share one cache key")
 	}
 	if strings.Contains(key, "very-specific") || len(key) != 64 {

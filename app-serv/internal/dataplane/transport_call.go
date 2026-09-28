@@ -91,7 +91,8 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 				return nil, failure
 			}
 			decision := DecideRetry(call.Provider, plugin, Attempt{
-				Retries: retries, Status: failure.Status, Header: failure.Header, Idempotent: call.Idempotent,
+				Retries: retries, Status: failure.Status, Header: failure.Header,
+				Idempotent: call.Idempotent, Replayable: failure.Replayable,
 			})
 			if !decision.Retry {
 				return nil, failure
@@ -151,11 +152,15 @@ func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Ca
 			unwrapped, failure := envelope.OpenStream(response.Body)
 			if failure != nil {
 				cancel()
+				// Nothing was piped: the refusal was read out of the first frame
+				// precisely so that nothing could be. Repeating the call is
+				// therefore safe, which is what the budget below is told.
 				return nil, &UpstreamError{
-					Status:  failure.Status,
-					Header:  response.Header,
-					Message: failure.Message,
-					Body:    []byte(failure.Message),
+					Status:     failure.Status,
+					Header:     response.Header,
+					Message:    failure.Message,
+					Body:       []byte(failure.Message),
+					Replayable: true,
 				}, nil
 			}
 			stream = unwrapped

@@ -53,6 +53,10 @@ type Attempt struct {
 	// Status is the upstream HTTP status, or 0 when the call produced no
 	// response at all (a transport failure or a timeout).
 	Status int
+	// Replayable says the refusal came before the caller saw any answer, so
+	// repeating the request cannot duplicate one. It lifts the POST cap: a chat
+	// call the upstream never served is a call the client has no answer for.
+	Replayable bool
 	// Header is the upstream response header, for an upstream Retry-After hint.
 	Header http.Header
 	// Idempotent reports whether repeating the request is safe. A chat
@@ -114,7 +118,7 @@ func retryBudget(entry registry.Provider, attempt Attempt) int {
 		attempts = DefaultAttempts
 	}
 	budget := attempts - 1
-	if !attempt.Idempotent && budget > MaxPOSTRetries {
+	if !attempt.Idempotent && !attempt.Replayable && budget > MaxPOSTRetries {
 		budget = MaxPOSTRetries
 	}
 	if budget < 0 {
