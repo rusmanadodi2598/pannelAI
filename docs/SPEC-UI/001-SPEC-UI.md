@@ -594,7 +594,8 @@ absent.
 ### 6.6 `/quota`
 
 - **Data:** `GET /api/v1/quotas`, `GET /api/v1/quotas/{endpoint_id}`,
-  `PUT /api/v1/quotas/{endpoint_id}` (caps, U2).
+  `PUT /api/v1/quotas/{endpoint_id}` (caps, U2), `GET /api/v1/quotas/{endpoint_id}/usage`
+  (the provider's own answer, on demand).
 - **Cards (reshaped 2026-09-26, PORT 005):** one card per provider in first-seen order, and one
   card for the windows that carry no provider. The card header names the provider, counts what is
   inside ("N endpoints, M windows"), and carries the two card controls: a checkbox that feeds the
@@ -621,6 +622,23 @@ absent.
   R-31): the glyph is what the control does to the poll, never an emoticon.
 - **Source badge:** `computed` or `reported` (SPEC-API §7.12). The badge is functional, not decorative: it
   tells the operator whether the number came from local accounting or from the provider.
+- **Published quota, asked for (2026-09-28, draft 036 §7):** under each endpoint's counted rows, one
+  control reads `GET /api/v1/quotas/{endpoint_id}/usage` — what the provider itself reports this
+  connection has left. It is a fetch the operator starts, never a fetch on render: the read is one call
+  per endpoint, a card lists every endpoint of one provider, and the owner's scale is hundreds to
+  thousands of keys per provider, which is the same N+1 the caps editor refuses for the same reason. The
+  lane whose windows carry no provider gets no control, because there is no provider behind it to ask.
+  The answer keeps the three things that make it a different kind of fact: the note saying the number is
+  the provider's and the rows above are this gateway's count, the instant it was read (a live figure
+  without a stamp is indistinguishable from one the screen left there), and the plan the provider names
+  when it names one. Amounts print exactly as reported — `12.5 / 3000`, not a rounded integer and not a
+  padded one — because they arrive as decimal strings and a credit balance has no integer spelling; only
+  the bar and the percentage parse them, and both reuse the counted rows' helpers so the two halves of
+  one screen cannot disagree about what "percent used" means. A bucket with no ceiling prints its amount
+  with "No limit" and no bar; a ceiling of zero prints 100%, because those are opposite states. A
+  provider that publishes nothing answers with its own sentence rather than an empty card, and a refusal
+  (no such endpoint, this family publishes nothing, a key under a token-only endpoint) is the gateway's
+  sentence in an alert, with the control still usable to ask again.
 - **Budget caps (U2, landed):** a picker plus one form, keyed by endpoint rather than by window, because
   the collection route carries no cap and reading one per endpoint to fill a column would be an N+1
   (SPEC-API §7.12). The picker offers the endpoints the label read returned plus any endpoint the window

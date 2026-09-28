@@ -4,9 +4,10 @@
 // `from` and `to` on every usage read rather than relying on the API's default window, because a period
 // the operator chose has to mean the same thing on two consecutive reads.
 //
-// The cap read is per endpoint and is called when the operator picks one, not on every load: the
-// collection route carries no cap (SPEC-API §7.12), and reading one per endpoint to fill a list would be
-// an N+1 the screen has no use for.
+// Two of these are per endpoint and are called when the operator asks, not on every load: the cap read,
+// and the published-quota read that asks the provider itself. Both for the same reason — the collection
+// route carries neither, and reading one endpoint at a time to fill a list is an N+1 the screen has no
+// use for (SPEC-API §7.12).
 
 import { apiRequest, type ApiResult } from './client';
 import {
@@ -17,6 +18,7 @@ import {
 	type QuotaEndpointDetail
 } from '$lib/schemas/quota-cap';
 import { schemaQuotaWindowList, type QuotaWindowList } from '$lib/schemas/quota';
+import { schemaPublishedQuotaUsage, type PublishedQuotaUsage } from '$lib/schemas/quota-published';
 import {
 	schemaUsageRecordDetail,
 	schemaUsageRecordList,
@@ -100,5 +102,17 @@ export function replaceQuotaCap(
 		path: `/quotas/${encodeURIComponent(endpointId)}`,
 		body,
 		schema: schemaQuotaCap
+	});
+}
+
+// The provider's own answer for one connection, read live (SPEC-API §7.12's published-read block). Called
+// when the operator asks a card, never on load: one read per endpoint to fill a list of hundreds would be
+// the N+1 this screen already refuses on the cap read, and a provider's number ages slowly enough that a
+// stale one beside a fresh count teaches the operator nothing.
+export function getPublishedQuota(endpointId: string): Promise<ApiResult<PublishedQuotaUsage>> {
+	return apiRequest<void, PublishedQuotaUsage>({
+		method: 'GET',
+		path: `/quotas/${encodeURIComponent(endpointId)}/usage`,
+		schema: schemaPublishedQuotaUsage
 	});
 }

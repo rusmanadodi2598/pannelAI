@@ -9,6 +9,10 @@
 //
 // An endpoint the registry does not carry is refused with the server's own sentence and status, so the
 // panel's handling of that answer is exercised rather than assumed.
+//
+// The published read is stubbed as the on-demand call it is: a per-endpoint payload table, and a list of
+// the ids the screen asked about. A stub that answered it on every load would let a screen that fired one
+// read per endpoint pass, and that screen would be the N+1 the route exists to avoid.
 
 import { vi } from 'vitest';
 
@@ -48,6 +52,20 @@ export type QuotaStub = {
 	 * poll that lands after the data shrank.
 	 */
 	shrinkTo: number | null;
+	/**
+	 * The published-quota payload per endpoint id. A missing key answers the server's own refusal, which
+	 * is what an endpoint the gateway does not carry produces.
+	 */
+	published: Record<string, Record<string, unknown>>;
+	/** The endpoint ids the published read was called with, in order — the read is on demand, not on load. */
+	publishedReads: string[];
+	/**
+	 * When set, the published read's response is withheld until `releasePublished` runs. A screen that
+	 * fired a second read while the first was still in flight is otherwise invisible to a test.
+	 */
+	holdPublished: boolean;
+	/** Set once a held read has been asked for; the test calls it with the payload to answer with. */
+	releasePublished: ((payload: Record<string, unknown>) => void) | null;
 };
 
 export function quotaWindowRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -67,6 +85,34 @@ export function quotaEndpointRow(overrides: Record<string, unknown> = {}): Recor
 	return { id: 'ep_1', label: 'Anthropic primary', ...overrides };
 }
 
+/**
+ * A published-quota payload, shaped the way the API shapes one: amounts as decimal strings, a bucket
+ * with no ceiling carrying no `total` key at all, and a soft outcome as a sentence beside an empty list.
+ *
+ * The reset is built from the wall clock the way `quotaWindowRow` is, so a countdown assertion stays
+ * true whenever the suite runs.
+ */
+export function publishedUsage(
+	endpointId: string,
+	overrides: Record<string, unknown> = {}
+): Record<string, unknown> {
+	return {
+		endpoint_id: endpointId,
+		provider_id: 'qoder',
+		plan: 'personal_standard',
+		fetched_at: '2026-09-28T12:00:00Z',
+		data: [
+			{
+				label: 'Personal',
+				used: '12.5',
+				total: '3000',
+				resets_at: new Date(Date.now() + 2 * 3_600_000).toISOString()
+			}
+		],
+		...overrides
+	};
+}
+
 export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 	const stub: QuotaStub = {
 		windows: [],
@@ -79,6 +125,10 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 		endpointStatus: 200,
 		quotaReads: [],
 		shrinkTo: null,
+		published: {},
+		publishedReads: [],
+		holdPublished: false,
+		releasePublished: null,
 		...overrides
 	};
 
@@ -157,6 +207,26 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 				data: stub.windows.filter((window) => visible.has(String(window.provider_id))),
 				meta: { page, per_page: perPage, total: kept.length }
 			});
+		}
+
+		const publishedMatch = /\/quotas\/([^/?]+)\/usage$/.exec(parsed.pathname);
+
+		if (method === 'GET' && publishedMatch) {
+			const endpointId = decodeURIComponent(publishedMatch[1]);
+			stub.publishedReads.push(endpointId);
+
+			const payload = stub.published[endpointId];
+			if (stub.holdPublished) {
+				return new Promise<Response>((resolve) => {
+					stub.releasePublished = (held: Record<string, unknown>) => resolve(json(held));
+				});
+			}
+			if (!payload) {
+				// The server refuses an endpoint it does not carry before any provider call, and the
+				// sentence is its own rather than one the panel writes.
+				return refusal('NOT_FOUND', 'upstream endpoint not found', 404);
+			}
+			return json(payload);
 		}
 
 		const quotaMatch = /\/quotas\/([^/?]+)$/.exec(parsed.pathname);

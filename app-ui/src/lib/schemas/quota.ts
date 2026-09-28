@@ -74,3 +74,25 @@ export function quotaPercentLabel(used: number, limit: number | null | undefined
 	if (percent === 0 && used > 0) return '<1%';
 	return `${Math.min(100, percent)}%`;
 }
+
+/**
+ * The bar one quota row draws, or null when the row has no ceiling to draw against.
+ *
+ * The width is the share used and the colour is the share REMAINING, which is the split the reference
+ * colours on and the reason both numbers leave one function: a row that painted a red bar at 10% used
+ * would warn about the opposite of what it shows. Kept here rather than in the card so the counted rows
+ * and the provider's published rows cannot drift apart on the same screen.
+ */
+export function quotaBar(
+	used: number,
+	limit: number | null | undefined
+): { width: number; color: string } | null {
+	if (limit === null || limit === undefined || limit <= 0) return null;
+
+	const remaining = Math.max(0, 100 - Math.round((used / limit) * 100));
+	let color = 'var(--color-danger)';
+	if (remaining > 70) color = 'var(--color-ok)';
+	else if (remaining >= 30) color = 'var(--color-warn)';
+
+	return { width: Math.min(100, Math.round((used / limit) * 100)), color };
+}

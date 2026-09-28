@@ -122,8 +122,8 @@ Konstanta yang dipindah dari reference (semuanya diuji, tidak ada yang dikira-ki
   dan panel belum bisa menulis "12.5 dari 3000 kredit" — hanya "12.5 dari 3000" (SPEC gap Q15). Route ini
   sengaja tidak menulis ke `quota_windows` untuk alasan yang sama; membaca `transport.usage.url` dari
   registry juga belum — endpoint keluarga masih di-cache di `dispatcher.go`.
-- **Yang tersisa dari kuota: tampilan panel.** Kartu koneksi belum memanggil route baru ini; yang selesai
-  adalah sisi backend dan kontraknya. Ini pekerjaan berikutnya di area ini, bukan bagian dari 3d.
+- **Tampilan panel — selesai (2026-09-28, §8).** Kartu koneksi sekarang punya kontrol "Ask the provider"
+  per endpoint yang memanggil route ini; aturannya ada di SPEC-UI §6.6.
 - **`Features.UsageAPIKey` — sudah dibaca.** Route kuota terbit memakainya sebagai gate sebelum panggilan
   keluar (§7.2): akun kunci di bawah provider yang endpoint kuotanya membaca token akun ditolak di dalam
   service, bukan setelah vendor menjawab 401.
@@ -346,3 +346,38 @@ Empat berkas probe sekali-pakai dari sesi ini dibuang, dan dua di antaranya dipr
 ber-tag permanen: `qoder_live_test.go` di `quotafetch` dan `TestQoderLiveFreeModelAnswers` di
 `internal/provider` (§5.4). Probe kunci katalog tidak dipromosikan — ia hanya mencatat bentuk, dan
 bentuk itu sudah jadi enam kasus di `qoder_measured_test.go`.
+
+## 8. Kartu panel untuk pembacaan kuota (2026-09-28)
+
+Sisi backend §7 belum berarti apa-apa di layar: tidak ada satu pun tempat yang memanggil route itu.
+Yang sekarang ada: satu kontrol di bawah baris terhitung setiap endpoint, `Ask {provider}`, dan jawabannya
+tepat di bawah kontrol itu.
+
+**Kenapa diminta, bukan diambil otomatis.** Route-nya satu panggilan per endpoint; satu kartu memuat
+setiap endpoint milik satu provider; skala yang owner nyatakan ratusan sampai ribuan key per provider.
+Itu N+1 yang layar ini sudah tolak untuk pembacaan cap (SPEC-API §7.12), dan angkanya tidak basi dalam
+satu putaran poll. Lane tanpa provider tidak mendapat kontrol sama sekali — tidak ada siapa pun yang bisa
+ditanya di belakangnya.
+
+**Tiga hal yang membuat angka ini bukan angka yang lain, dan ikut ditampilkan:** catatan bahwa yang di
+bawah adalah hitungan gateway dan yang ini laporan provider; stempel kapan dibaca (angka live tanpa
+stempel tidak bisa dibedakan dari angka yang ditinggalkan layar); dan plan bila provider menamainya.
+
+**Aturan angka.** `12.5 / 3000` dicetak apa yang provider kirim, bukan hasil render ulang lewat number —
+satu presisi yang hilang, satu saldo yang terbaca lebih tepat dari kenyataannya. Hanya bar dan persentase
+yang mem-parse, dan keduanya memakai helper baris terhitung (`quotaPercentLabel`, `quotaBar`), supaya dua
+setengah layar yang sama tidak bisa berbeda arti tentang "percent used". `quotaBar` adalah aturan yang
+sebelumnya hidup tiga fungsi lokal di `QuotaCardBody`; memindahkannya ke `schemas/quota.ts` adalah cara
+paling kecil agar baris provider tidak menyalin ambang warna 70/30 untuk kedua kalinya.
+
+**Yang state, bukan nol.** Bucket tanpa batas mencetak jumlah dan "No limit" tanpa bar; ceiling nol
+mencetak 100%. Keduanya terbaca sama kalau `null` dan `0` diperlakukan sama. Provider yang tidak
+mempublikasikan apa pun menampilkan kalimatnya sendiri (`message`), bukan kartu kosong; refusal (endpoint
+tidak dikenal, keluarga tidak mempublish kuota, kunci di bawah endpoint bertoken) memakai kalimat gateway
+di `role="alert"` dan kontrolnya tetap bisa dipakai bertanya lagi.
+
+**Test.** `tests/schemas/quota-published.test.ts` (27) memegang kontrak wire dan tiga mapping-nya —
+termasuk `used` sebagai JSON number ditolak, dan `total: "0"` tetap bernilai. `tests/components/
+quota-published.test.ts` (10) mengemudikan layarnya: nol permintaan sebelum diminta, satu permintaan untuk
+dua klik saat permintaan pertama masih di udara (stub menahan jawabannya), jawaban per endpoint yang tidak
+saling menimpa, dan lane tanpa provider yang tidak menawarkan apa pun.

@@ -3,9 +3,15 @@
 	// lane opens with, then one row group per endpoint with its windows. Split out of QuotaCards so
 	// the card (fold, checkbox, pagination) and the rows stay under the file-size cap on their own;
 	// the scrolling wrapper stays in QuotaCards because `aria-controls` points at it.
-	import { quotaPercentLabel, type QuotaWindow } from '$lib/schemas/quota';
+	//
+	// Under each endpoint's counted rows sits the published read for that one endpoint, which the operator
+	// asks for. The two are kept apart on purpose: the rows say what this gateway sent, the read says what
+	// the provider reports, and neither is the other's correction (SPEC-API §7.12). The lane whose windows
+	// carry no provider gets no control, because there is no provider behind it to ask.
+	import { quotaBar, quotaPercentLabel, type QuotaWindow } from '$lib/schemas/quota';
 	import { formatCount } from '$lib/schemas/usage-view';
 	import { countdownText, formatTimestamp } from '$lib/utils/time';
+	import QuotaPublished from './QuotaPublished.svelte';
 
 	let {
 		group,
@@ -21,30 +27,11 @@
 		return labels.get(id) ?? id;
 	}
 
-	// The remaining share the reference colours on. Null when no ceiling was published, so the row
-	// prints the counter without a bar rather than inventing a full-width one.
-	function remainingShare(window: QuotaWindow): number | null {
-		if (window.limit === null || window.limit === undefined || window.limit <= 0) return null;
-		return Math.max(0, 100 - Math.round((window.used / window.limit) * 100));
-	}
-
-	function barColor(share: number | null): string {
-		if (share === null) return '';
-		if (share > 70) return 'var(--color-ok)';
-		if (share >= 30) return 'var(--color-warn)';
-		return 'var(--color-danger)';
-	}
-
 	function counterText(window: QuotaWindow): string {
 		if (window.limit === null || window.limit === undefined || window.limit <= 0) {
 			return formatCount(window.used);
 		}
 		return `${formatCount(window.used)} / ${formatCount(window.limit)}`;
-	}
-
-	function usedShare(window: QuotaWindow): number {
-		if (window.limit === null || window.limit === undefined || window.limit <= 0) return 0;
-		return Math.min(100, Math.round((window.used / window.limit) * 100));
 	}
 </script>
 
@@ -57,7 +44,7 @@
 	<div class="flex flex-col gap-2">
 		<h4 class="truncate text-sm font-semibold">{endpointLabel(endpoint.id)}</h4>
 		{#each endpoint.windows as window (window.window)}
-			{@const share = remainingShare(window)}
+			{@const bar = quotaBar(window.used, window.limit)}
 			<div class="flex flex-col gap-1">
 				<div class="flex items-center justify-between gap-2 text-sm">
 					<span class="flex items-center gap-2">
@@ -69,11 +56,11 @@
 					<span class="tabular-nums">{quotaPercentLabel(window.used, window.limit)}</span>
 				</div>
 
-				{#if share !== null}
+				{#if bar !== null}
 					<div class="h-2 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
 						<div
 							class="h-full rounded-full"
-							style={`width: ${usedShare(window)}%; background: ${barColor(share)};`}
+							style={`width: ${bar.width}%; background: ${bar.color};`}
 						></div>
 					</div>
 				{/if}
@@ -91,5 +78,14 @@
 				</div>
 			</div>
 		{/each}
+
+		{#if group.provider}
+			<QuotaPublished
+				endpointId={endpoint.id}
+				provider={group.provider}
+				label={endpointLabel(endpoint.id)}
+				{now}
+			/>
+		{/if}
 	</div>
 {/each}
