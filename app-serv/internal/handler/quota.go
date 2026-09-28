@@ -1,16 +1,17 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/quota.go
-// @for       The quota window reads and the budget-cap write (SPEC-API-001
+// @for       The quota window reads, the published-quota read, and the budget-cap
 //
-//	§7.12).
+//	write (SPEC-API-001 §7.12).
 //
 // @uses      internal/domain, internal/schema, internal/service, net/http.
-// @reason    §7.12 exposes every endpoint's windows, one endpoint's windows, and
+// @reason    §7.12 exposes every endpoint's windows, one endpoint's windows, the
 //
-//	the cap that makes the router skip an exhausted endpoint. The cap
-//	body is validated before the service sees it (AGENTS.md §2.4), and
-//	the cost is a decimal string on the wire, never a float (§4).
+//	provider's own answer about one connection, and the cap that makes
+//	the router skip an exhausted endpoint. The cap body is validated
+//	before the service sees it (AGENTS.md §2.4), and the cost is a
+//	decimal string on the wire, never a float (§4).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
@@ -118,6 +119,48 @@ func (h *QuotaHandler) PutCap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	schema.WriteJSON(w, http.StatusOK, schema.QuotaCapResponseFrom(cap))
+}
+
+// GetUsage serves GET /api/v1/quotas/{endpoint_id}/usage: the provider's own
+// answer about one connection's allocation, read live rather than counted here.
+// It is a separate body from Get because the two answers disagree by nature and
+// neither is the other's correction (draft 036 §6): §7.12's windows say what this
+// gateway sent, this says what the provider sold.
+func (h *QuotaHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
+	usage, err := h.quotas.PublishedUsage(r.Context(), r.PathValue("endpoint_id"))
+	if err != nil {
+		schema.WriteError(w, err)
+		return
+	}
+	schema.WriteJSON(w, http.StatusOK, schema.PublishedQuotaUsageResponse{
+		EndpointID: usage.EndpointID,
+		ProviderID: usage.ProviderID,
+		Plan:       usage.Plan,
+		FetchedAt:  schema.Timestamp(usage.FetchedAt),
+		Message:    usage.Message,
+		Data:       publishedWindowResponses(usage.Windows),
+	})
+}
+
+// publishedWindowResponses maps the provider's buckets onto the wire shape, always
+// as a non-nil slice so an account with nothing published answers an empty array
+// beside the message that says why.
+func publishedWindowResponses(windows []service.PublishedWindow) []schema.PublishedQuotaWindowResponse {
+	resp := make([]schema.PublishedQuotaWindowResponse, 0, len(windows))
+	for _, window := range windows {
+		row := schema.PublishedQuotaWindowResponse{
+			Label: window.Label,
+			Used:  schema.PublishedQuotaAmount(window.Used),
+		}
+		if window.HasTotal {
+			row.Total = ptr(schema.PublishedQuotaAmount(window.Total))
+		}
+		if window.ResetsAt != nil {
+			row.ResetsAt = ptr(schema.Timestamp(*window.ResetsAt))
+		}
+		resp = append(resp, row)
+	}
+	return resp
 }
 
 // windowResponses maps stored windows onto their wire shape, always as a

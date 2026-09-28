@@ -555,6 +555,7 @@ prevent.
 | GET    | `/api/v1/quotas`                     | S    | Quota windows, paged over provider groups: `{endpoint_id, provider_id, window, used, limit, resets_at, source}`; `source` ∈ `computed    | reported`; `?page=&per_page=`(house bounds §4) with the`meta` block | P1       |
 | GET    | `/api/v1/quotas/{endpoint_id}`       | S    | Windows for one endpoint                                                                                                                 | P1                                                                  |
 | PUT    | `/api/v1/quotas/{endpoint_id}`       | S    | Set budget caps `{monthly_cost_usd?, monthly_tokens?}`: router stops picking exhausted endpoints                                         | P2                                                                  |
+| GET    | `/api/v1/quotas/{endpoint_id}/usage` | S    | The provider's own answer for one connection, read live: `{endpoint_id, provider_id, plan, fetched_at, message?, data[]}` — amounts as decimal strings, `total` absent for an unbounded bucket | P2 |
 
 Quota worker re-checks windows per provider cadence (5h/daily/weekly/monthly), refresh countdowns,
 and records `resets_at`. Cost figures are estimates for display only (reference parity).
@@ -636,6 +637,28 @@ are validated against one rule set shared by the wire boundary and the domain co
 so the two cannot return different errors for one body: non-negative, at most 1,000,000,000
 USD for the cost and at most 1,000,000,000,000 tokens for the token cap (a value past either
 is a typo, not a budget), and a zero cost cap with no token cap beside it is refused.
+
+**The published read is not a window (draft 036 §7, 2026-09-28).** `GET
+/api/v1/quotas/{endpoint_id}/usage` asks the provider what it sells this connection, and it
+is a separate body from the routes above rather than another row among them. The reason is
+the shape of `quota_windows`: `window` is a closed enum of reporting cadences, `used` and
+`limit` are integers, and there is no unit column (Q15). A Qoder `credits` balance with one
+reset does not fit that without being recorded as a percentage of something it is not, and
+the two answers legitimately disagree — a gateway counter knows what it sent, a provider
+knows what it sold. So neither corrects the other.
+
+Rules of the route: the endpoint's `auth_type` decides which sealed secret is opened, exactly
+as routing decides it, and an account token is never handed over as an `APIKey` or the reverse.
+A provider whose registry entry lacks `features.usage`, a key account under a provider whose
+usage endpoint reads an account token (`features.usageApikey` false), and an account with no
+stored credential are all refused before any outbound call, so the answer is this gateway's
+fact rather than the provider's 401. Amounts cross the wire as decimal strings at the
+precision the provider reported (§4 applies to reported money too), `total` is **absent** for a
+bucket the provider leaves unbounded — which is a different state from a ceiling of zero — and
+`resets_at` is the refill instant, or the expiry for a pack that never refills. A provider that
+answers with an error, a refusal, or nothing publishable is a `200` carrying `message` and an
+empty `data`, because the card renders that sentence rather than failing the page; only the
+refusals above are non-2xx.
 
 ### 7.13 Logs
 
@@ -995,3 +1018,5 @@ _Changelog 2026-09-26: §7.11 and §7.14 add the per-provider proxy binding (doc
 _Changelog 2026-09-26: §7.7's combo probe raises its ceiling from one token to 1024, and the OpenCode connector clamps the Responses-wire output ceiling to the Console API's floor of 16. Measured live: Muse Spark (OpenCode Free) answered the combo test's probe with `UPSTREAM_REJECTED` because the Console API refuses `max_output_tokens` below 16, so the probe reported a provider failure that was really a probe-shaped request. The probe's ceiling is now the reference's own model-test value (`src/app/api/models/test/ping.js:174`), which also stops the probe from starving a reasoning model, and the connector raises any smaller integer ceiling to the floor rather than forwarding a body the upstream rejects. A ceiling that is not a JSON integer is left exactly as the client wrote it, because the upstream's validation answers for it and rewriting it would hide the client's bug._
 
 _Changelog 2026-09-26: §6 and §7.4 carry the owner's curated provider set. The registry is regenerated from the reference through the generator's KEEP allowlist (34 providers: antigravity, byteplus, cline, clinepass, claude, codebuddy-cn, codebuddy-intl, commandcode, deepgram, deepseek, elevenlabs, gemini, gemini-cli, github, glm, grok-cli, groq, huggingface, kilocode, kimchi, kimi, minimax, nvidia, openai, opencode, opencode-go, opencode-zen, openrouter, qoder, qoder-cn, tencent, xai, xiaomi-tokenplan, zed), and the 87 entries outside it are dropped rather than merely hidden, so no endpoint can be created for them and no model string resolves to them. The two "Compatible" nodes on the owner's list are the custom node types of §7.4, not registry entries. Both generated corpora were regenerated against the curated document (472 provider-model pairs), and the vision override table no longer carries rows for providers outside the set. Open Question 12.3 is resolved by the same decision: the served set is the owner's list, not "all 120+ in P1"._
+
+_Changelog 2026-09-28: §7.12 adds the published-quota read `GET /api/v1/quotas/{endpoint_id}/usage` (draft 036 §7). It is a separate body from the counted windows, not another window: `quota_windows` has a closed `window` enum, integer amounts, and no unit column (Q15), so a provider-reported `credits` balance cannot be written there without being recorded as a percentage of something it is not. The route opens the credential the endpoint's own `auth_type` names, gates on `features.usage` and `features.usageApikey` before any outbound call, renders amounts as decimal strings at the precision the provider reported, omits `total` for an unbounded bucket rather than writing zero, and answers a provider error or an empty publication as `200` with `message` and `data: []` so the panel renders the sentence instead of failing the page._

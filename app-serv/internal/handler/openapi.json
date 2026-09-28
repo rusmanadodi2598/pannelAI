@@ -2438,6 +2438,69 @@
         "additionalProperties": false,
         "description": "The stored cap (null when none is set) plus every window for one endpoint."
       },
+      "PublishedQuotaWindowResponse": {
+        "type": "object",
+        "description": "One bucket the provider published about its own account. Amounts are\ndecimal strings at the precision the provider reported (SPEC-API-001 §4),\nnot the fixed eight-place scale the counted windows use, because a credit\nbalance of 3000 is not known to eight places. `total` is absent when the\nprovider states no ceiling, which is not a ceiling of zero.\n",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "used": {
+            "type": "string",
+            "description": "Decimal string."
+          },
+          "total": {
+            "type": "string",
+            "description": "Decimal string. Absent when the bucket is unbounded."
+          },
+          "resets_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the bucket refills, or expires when it never refills."
+          }
+        },
+        "required": [
+          "label",
+          "used"
+        ],
+        "additionalProperties": false
+      },
+      "PublishedQuotaUsageResponse": {
+        "type": "object",
+        "description": "The provider's own answer about one connection. `message` carries the\nsoft outcome — the family publishes nothing, the credential was refused,\nthe provider errored — and is then the whole answer with `data` empty.\n",
+        "properties": {
+          "endpoint_id": {
+            "type": "string"
+          },
+          "provider_id": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string",
+            "description": "The tier the provider names this account by, when it names one."
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishedQuotaWindowResponse"
+            }
+          }
+        },
+        "required": [
+          "endpoint_id",
+          "provider_id",
+          "fetched_at",
+          "data"
+        ],
+        "additionalProperties": false
+      },
       "UsageSummaryResponse": {
         "type": "object",
         "properties": {
@@ -11664,6 +11727,76 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonObject"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ManagementValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/ManagementUnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ManagementForbiddenError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ManagementNotFoundError"
+          },
+          "405": {
+            "$ref": "#/components/responses/ManagementMethodNotAllowedError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ManagementConflictError"
+          },
+          "429": {
+            "$ref": "#/components/responses/ManagementRateLimitedError"
+          },
+          "500": {
+            "$ref": "#/components/responses/ManagementInternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/ManagementUpstreamError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ManagementUnavailableError"
+          },
+          "504": {
+            "$ref": "#/components/responses/ManagementTimeoutError"
+          }
+        }
+      }
+    },
+    "/api/v1/quotas/{endpoint_id}/usage": {
+      "get": {
+        "summary": "The provider's own quota for one endpoint",
+        "description": "Reads the connection's published allocation live from the provider, as\nopposed to GET /api/v1/quotas/{endpoint_id}, which reports the windows\nthis gateway counted. The two answers disagree by nature and neither\ncorrects the other, so they are separate bodies. A provider that\npublishes no usage endpoint, or an endpoint with no stored credential,\nis refused; a provider that answers with an error or nothing at all is\na 200 with `message` and an empty `data`.\n",
+        "tags": [
+          "Quota Tracker"
+        ],
+        "operationId": "getApiV1QuotasByEndpoint_IdUsage",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "endpoint_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishedQuotaUsageResponse"
                 }
               }
             }

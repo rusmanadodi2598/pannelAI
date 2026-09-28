@@ -58,6 +58,8 @@ func buildObservability(
 	logRepo repository.RequestLogRepository,
 	settings *service.SettingsService,
 	client redis.UniversalClient,
+	index service.ProviderIndex,
+	sealer service.CredentialSealer,
 ) (observability, error) {
 	// The bus is built once and shared by both halves, so a publisher and a
 	// subscriber cannot end up on different channels.
@@ -74,8 +76,14 @@ func buildObservability(
 	// The endpoint repository is the quota service's existence seam: a cap is
 	// only accepted for an endpoint the router could actually pick (draft 005
 	// F2), and this is the same store every endpoint route reads.
+	//
+	// The index and the sealer are what make the published read answerable: the
+	// first says whether the endpoint's family publishes a usage endpoint at all,
+	// the second opens the stored credential the read asks with. Both are the
+	// same process-wide objects the endpoint and OAuth routes already use.
 	quotaSvc, err := service.NewQuotaService(service.QuotaServiceDeps{
 		Quotas: quotaRepo, Usage: usageRepo, Endpoints: endpointRepo,
+		Providers: index, Sealer: sealer,
 	})
 	if err != nil {
 		return observability{}, fmt.Errorf("management wiring: quotas: %w", err)

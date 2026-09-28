@@ -197,6 +197,11 @@ func New(deps Deps) *Mux {
 	mux.Handle("GET "+APIVersion+"/quotas", gateway(http.HandlerFunc(deps.Quota.List)))
 	mux.Handle("GET "+APIVersion+"/quotas/{endpoint_id}", gateway(http.HandlerFunc(deps.Quota.Get)))
 	mux.Handle("PUT "+APIVersion+"/quotas/{endpoint_id}", gateway(http.HandlerFunc(deps.Quota.PutCap)))
+	// The published read lives under the endpoint's own path rather than as a
+	// /quotas/live sibling because it answers one connection, like the two routes
+	// above it, and {endpoint_id}/usage is the shape the reference's per-connection
+	// usage route already uses (draft 036 §6).
+	mux.Handle("GET "+APIVersion+"/quotas/{endpoint_id}/usage", gateway(http.HandlerFunc(deps.Quota.GetUsage)))
 	mux.Handle("GET "+APIVersion+"/logs/requests", gateway(http.HandlerFunc(deps.Log.Requests)))
 	mux.Handle("DELETE "+APIVersion+"/logs/requests", gateway(http.HandlerFunc(deps.Log.Purge)))
 	mux.Handle("GET "+APIVersion+"/logs/requests/{request_id}", gateway(http.HandlerFunc(deps.Log.Detail)))

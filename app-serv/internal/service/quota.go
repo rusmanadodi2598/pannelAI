@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/quotafetch"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -39,17 +40,28 @@ type EndpointFinder interface {
 
 // QuotaService implements SPEC-API-001 §7.12.
 type QuotaService struct {
-	quotas    repository.QuotaRepository
-	usage     repository.UsageRecordRepository
-	endpoints EndpointFinder
-	clock     func() time.Time
+	quotas     repository.QuotaRepository
+	usage      repository.UsageRecordRepository
+	endpoints  EndpointFinder
+	providers  ProviderIndex
+	sealer     CredentialSealer
+	usageFetch PublishedQuotaFetcher
+	clock      func() time.Time
 }
 
 // QuotaServiceDeps holds the collaborators the service needs.
+// The published-quota collaborators are optional by design: a wiring that does not
+// pass them keeps every §7.12 read working and refuses only the live provider read,
+// rather than forcing every caller of this service to grow a provider index.
 type QuotaServiceDeps struct {
 	Quotas    repository.QuotaRepository
 	Usage     repository.UsageRecordRepository
 	Endpoints EndpointFinder
+	Providers ProviderIndex
+	Sealer    CredentialSealer
+	// FetchUsage reads a provider family's published allocation. Nil means the
+	// service uses `quotafetch.Fetch`.
+	FetchUsage PublishedQuotaFetcher
 }
 
 // NewQuotaService validates deps and returns a ready service.
@@ -60,7 +72,14 @@ func NewQuotaService(deps QuotaServiceDeps) (*QuotaService, error) {
 	if deps.Endpoints == nil {
 		return nil, domain.NewValidationError("endpoint finder is required")
 	}
-	return &QuotaService{quotas: deps.Quotas, usage: deps.Usage, endpoints: deps.Endpoints, clock: time.Now}, nil
+	fetch := deps.FetchUsage
+	if fetch == nil {
+		fetch = quotafetch.Fetch
+	}
+	return &QuotaService{
+		quotas: deps.Quotas, usage: deps.Usage, endpoints: deps.Endpoints,
+		providers: deps.Providers, sealer: deps.Sealer, usageFetch: fetch, clock: time.Now,
+	}, nil
 }
 
 // ListWindows returns the quota windows for one endpoint, or for every endpoint

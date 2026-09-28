@@ -86,7 +86,7 @@ Setiap provider berbeda dalam konektivitas: ada yang **api_key**, ada yang **OAu
 
 **Batasan yang diketahui:** `Connectors.Unsupported()` sengaja melaporkan provider ber-format khusus (mis. `kiro`, `cursor`, `antigravity`) selama connector-nya belum ditulis; laporan itu adalah daftar kerja, bukan kegagalan diam.
 
-**Qoder (`qoder`, `qoder-cn`) punya connector khusus dan sudah dilayani end-to-end.** Provider ini tidak membaca bearer token: setiap request ditanda tangani (COSY — payload user info terenkripsi + MD5 atas lima bagian, lihat `internal/provider/qoder_cosy.go`), host inference dipilih dari jenis kredensial (`dt-` di `api3`, `jt-`/`pt-` di `api2` untuk intl; CN satu gateway), dan sebuah Personal Access Token lebih dulu ditukar menjadi job token lewat `POST /api/v1/jobToken/exchange` dengan cache berdasar expiry yang vendor nyatakan dalam **milidetik** (draft 036 §5). Body chat bukan hasil translasi OpenAI: `TransformRequest` membangun payload agent (`qoder_body.go`) dengan `model_config` yang dibaca dari katalog hidup milik akun (`qoder_catalog.go`, di-cache satu jam), dan jawaban vendor tiba sebagai **envelope SSE** (`{statusCodeValue, body}` per frame) sehingga dibongkar sebelum di-pipe — penolakan di frame pertama jadi kegagalan upstream, bukan jawaban yang ditagih (`qoder_envelope.go`, seam opsional `provider.StreamEnvelope`). Kuota dibaca lewat `internal/service/quotafetch/qoder.go` (dua bucket kredit, PAT ditukar lebih dulu). Yang masih belum terbukti: satu completion sukses — akun yang dipakai mengukur kehabisan kuota (`code 112`), jadi jalur live berhenti di block penagihan yang dikenali benar (draft 036 §5.1, §5.3).
+**Qoder (`qoder`, `qoder-cn`) punya connector khusus dan sudah dilayani end-to-end.** Provider ini tidak membaca bearer token: setiap request ditanda tangani (COSY — payload user info terenkripsi + MD5 atas lima bagian, lihat `internal/provider/qoder_cosy.go`), host inference dipilih dari jenis kredensial (`dt-` di `api3`, `jt-`/`pt-` di `api2` untuk intl; CN satu gateway), dan sebuah Personal Access Token lebih dulu ditukar menjadi job token lewat `POST /api/v1/jobToken/exchange` dengan cache berdasar expiry yang vendor nyatakan dalam **milidetik** (draft 036 §5). Body chat bukan hasil translasi OpenAI: `TransformRequest` membangun payload agent (`qoder_body.go`) dengan `model_config` yang dibaca dari katalog hidup milik akun (`qoder_catalog.go`, di-cache satu jam), dan jawaban vendor tiba sebagai **envelope SSE** (`{statusCodeValue, body}` per frame) sehingga dibongkar sebelum di-pipe — penolakan di frame pertama jadi kegagalan upstream, bukan jawaban yang ditagih (`qoder_envelope.go`, seam opsional `provider.StreamEnvelope`). Kuota dibaca lewat `internal/service/quotafetch/qoder.go` (dua bucket kredit, PAT ditukar lebih dulu) dan sejak 2026-09-28 punya pemanggil produksi: `GET /api/v1/quotas/{endpoint_id}/usage` (§7.12, aturannya di §3.7). Satu completion sukses kini terbukti — lewat model yang vendor tagih nol (`qfmodel`), karena akun pengukur tetap kehabisan kuota untuk model berbayar (`code 112`) dan penolakan itu datang sebagai kegagalan kuota, bukan jawaban (draft 036 §5.4).
 
 ---
 
@@ -292,6 +292,41 @@ Enam rute data plane media (`/audio/speech`, `/audio/transcriptions`, `/audio/vo
   kredensial non-bearer (`basic`, `playht`, header yang dideklarasikan registry) ditangani
   `media_credential.go`. Sebelas format sudah punya adapter; lima masih ditolak dengan nama karena satu
   panggilan butuh lebih dari satu request (G21: AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device).
+
+### 3.7 Pembacaan kuota terbit (§7.12)
+
+Satu route manajemen yang menghubungi provider langsung, bukan membaca counter gateway:
+
+```
+handler.QuotaHandler.GetUsage
+  → service.QuotaService.PublishedUsage        (existence + feature gate)
+      → repository.EndpointRepository.GetByID  (baris koneksi + auth_type)
+      → registry.Provider.Features             (usage, usageApikey)
+      → domain.Sealer.Open                     (access token ATAU NextKey, satu sisi)
+  → service/quotafetch.Fetch(family, creds)    → HTTP ke endpoint kuota provider
+```
+
+Aturan yang berlaku untuk semua keluarga, bukan hanya Qoder:
+
+- **Tidak ada jalur tulis.** Hasil provider tidak masuk `quota_windows`; kolom itu menampung hitungan
+  gateway atas traffic yang dilewatinya (enum `window` tertutup, `used`/`limit` integer, tanpa satuan),
+  dan saldo `credits` yang dilaporkan vendor tidak bisa ditulis ke sana tanpa berubah menjadi persentase
+  dari sesuatu yang bukan kredit. Dua jawaban itu boleh berbeda dan tidak saling mengoreksi.
+- **Keputusan kredensial mengikuti `auth_type`, sama seperti routing.** Akun flow menyajikan access
+  token-nya, akun kunci menyajikan `NextKey` — dan `quotafetch.Credentials` diisi satu sisi saja, karena
+  device token yang diserahkan pada field kunci ditanya dengan bentuk yang salah.
+- **Gate sebelum keluar.** Provider tanpa `features.usage`, akun kunci di bawah provider yang endpoint
+  kuotanya membaca token akun (`features.usageApikey` false), dan akun tanpa kredensial tersimpan
+  ditolak di dalam service; `features.usageApikey` dengan ini punya pembaca pertamanya sejak registry ada.
+- **Hasil lunak adalah `200`.** Provider yang error, menolak, atau tidak mempublikasikan apa pun menjadi
+  `{message, data: []}` — kartu merender kalimat itu, bukan kegagalan halaman. Hanya refusal di atas yang non-2xx.
+- **Angka sebagai decimal string** pada presisi yang provider laporkan, dan `total` **absent** untuk bucket
+  tanpa batas — keadaan itu bukan angka nol.
+
+`Fetch` diberi seam per-service (`PublishedQuotaFetcher`), sehingga keputusan routing di atas diuji tanpa
+jaringan; wiring produksi memakainya lewat `cmd/app-serv/observability_wiring.go` dengan index dan sealer
+proses yang sama seperti route endpoint dan OAuth.
+
 
 ---
 

@@ -40,7 +40,14 @@ import (
 // qoderPatPrefix is the credential shape the quota endpoint will not read. It is
 // spelled here rather than imported from the connector because this package owns its
 // own credential rules, and a quota read must not depend on a connector being wired.
-const qoderPatPrefix = "pt-"
+const (
+	qoderPatPrefix = "pt-"
+
+	// qoderResetHorizon caps how far ahead a published reset is believed. The vendor
+	// answers a non-rolling plan with a year-9999 sentinel, which is a way of saying
+	// "no reset date" rather than a date.
+	qoderResetHorizon = 5 * 365 * 24 * time.Hour
+)
 
 // qoderUsage is one published bucket. `remaining` is read and deliberately dropped:
 // the panel renders a window as used over a limit, and an absolute credit count
@@ -107,6 +114,9 @@ func fetchQoder(family string, openAPIBase string) func(context.Context, Credent
 		}
 
 		var payload struct {
+			UserType           string          `json:"userType"`
+			UsageType          string          `json:"usageType"`
+			IsQuotaExceeded    bool            `json:"isQuotaExceeded"`
 			UserQuota          qoderUsage      `json:"userQuota"`
 			OrganizationBucket qoderUsage      `json:"orgResourcePackage"`
 			ExpiresAt          json.RawMessage `json:"expiresAt"`
@@ -114,8 +124,21 @@ func fetchQoder(family string, openAPIBase string) func(context.Context, Credent
 		if err := json.NewDecoder(io.LimitReader(response.Body, 1<<20)).Decode(&payload); err != nil {
 			return Result{Message: fmt.Sprintf("%s error: %s", family, err)}
 		}
-		return qoderResult(payload.UserQuota, payload.OrganizationBucket, parseReset(payload.ExpiresAt))
+		return qoderResult(payload.UserType, payload.IsQuotaExceeded,
+			payload.UserQuota, payload.OrganizationBucket, qoderReset(payload.ExpiresAt))
 	}
+}
+
+// qoderReset reads the expiry the vendor publishes, dropping its "never resets"
+// sentinel. The measured answer carries 253402214400000 — the year 9999 — for a
+// plan whose allocation does not roll over, and a card that printed that as a reset
+// date would show a number nobody can act on.
+func qoderReset(raw json.RawMessage) time.Time {
+	resets := parseReset(raw)
+	if resets.IsZero() || resets.After(time.Now().Add(qoderResetHorizon)) {
+		return time.Time{}
+	}
+	return resets
 }
 
 // qoderQuotaToken is the bearer the quota endpoint reads: a device or job token as
@@ -151,11 +174,12 @@ func qoderQuotaToken(ctx context.Context, endpoint, openAPIBase string, creds Cr
 	return jobToken, ""
 }
 
-// qoderResult renders the two buckets as windows. A bucket that states no total and no
-// use is not reported at all, because a row of zeros reads as a spent account rather
-// than an absent allocation — the same rule the reference applies when it drops an
-// empty organization bucket.
-func qoderResult(personal, organization qoderUsage, resetsAt time.Time) Result {
+// qoderResult renders the published buckets as windows. A bucket that states no total
+// and no use is not reported, because a row of zeros reads as a spent allocation
+// rather than an absent one. When nothing publishes but the vendor says the quota is
+// exceeded, that is the fact worth reporting — the measured answer for a credits plan
+// with no credits does exactly this.
+func qoderResult(userType string, exceeded bool, personal, organization qoderUsage, resetsAt time.Time) Result {
 	quotas := make([]Quota, 0, 2)
 	for _, bucket := range []struct {
 		label string
@@ -174,10 +198,16 @@ func qoderResult(personal, organization qoderUsage, resetsAt time.Time) Result {
 			ResetAt: resetsAt,
 		})
 	}
-	if len(quotas) == 0 {
-		return Result{Message: "Qoder published no quota for this account."}
+	result := Result{Plan: strings.TrimSpace(userType), Quotas: quotas}
+	switch {
+	case len(quotas) > 0:
+		return result
+	case exceeded:
+		result.Message = "Qoder reports this account's quota as exceeded."
+	default:
+		result.Message = "Qoder published no quota for this account."
 	}
-	return Result{Quotas: quotas}
+	return result
 }
 
 // quotaDetail renders a provider error body for a message, with the leading separator

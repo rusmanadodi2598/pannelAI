@@ -8,7 +8,7 @@ depan implementasi.
 
 |                    |                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**         | **Slice A selesai 2026-09-27 (commit `0d519fa`). Slice B selesai lebih dulu (commit `c0e3034`). Slice C (modal device di panel) selesai 2026-09-27 (commit `0bd3b7c`). Slice D: langkah 1 (primitif COSY + encoder, terbukti hidup) `63a445a`, langkah 2 (konektor + exchange PAT + plumbing machine_id) `e4e4d30`, langkah 3a (decoder envelope + seam) `33d5fda`, langkah 3b (body agent + katalog) `7cdd7e8`, langkah 3c (baca kuota) menyusul commit ini.** |
+| **Status**         | **Slice A selesai 2026-09-27 (commit `0d519fa`). Slice B selesai lebih dulu (commit `c0e3034`). Slice C (modal device di panel) selesai 2026-09-27 (commit `0bd3b7c`). Slice D: langkah 1 (primitif COSY + encoder, terbukti hidup) `63a445a`, langkah 2 (konektor + exchange PAT + plumbing machine_id) `e4e4d30`, langkah 3a (decoder envelope + seam) `33d5fda`, langkah 3b (body agent + katalog) `7cdd7e8`, langkah 3c (baca kuota) `bcbdd07`, langkah 3d (route kuota terbit dipakai produksi) menyusul commit ini.** |
 | **Mechanism**      | PORT (reference → Go) + TDD                                                                                                                                                          |
 | **Scope**          | `app-serv/.` (service, repository, handler, schema, router, kontrak) dan `app-ui/.` (schema, api, sections OAuth). Slice D menambah `internal/provider` + `internal/dataplane` + `internal/service/quotafetch`.                                     |
 | **Permintaan owner** | (1) Qoder bisa di-OAuth. (2) Qoder bisa diisi PAT. (3) Paritas dengan reference. (4) Verifier device flow dipegang server, panel hanya mengirim `device_code`. (5) Qoder harus benar-benar terpakai — COSY, exchange PAT, dan baca kuota ikut pass ini (keputusan owner 2026-09-27). |
@@ -105,8 +105,8 @@ Konstanta yang dipindah dari reference (semuanya diuji, tidak ada yang dikira-ki
 - **Slice D langkah 3 sudah dikerjakan (3a envelope, 3b body+katalog, 3c kuota). Yang tersisa darinya, dan
   belum diport:** rewrite lampiran (`rewriteQoderMessageAttachments` + upload gambar ke
   `/api/v2/image/upload`, multipart field `file`) sehingga turn bergambar mengirim URL OSS alih-alih base64
-  inline; pemilihan **context tier** (200K/400K/1M) dari `model_config.context_config`; dan satu
-  completion hidup, yang butuh akun dengan kuota. Body ter-encode (`Encode=1`) juga belum dipakai — vendor
+  inline; pemilihan **context tier** (200K/400K/1M) dari `model_config.context_config`. Satu completion hidup
+  **sudah terbukti** — bukan dengan membeli kuota, tapi dengan model yang vendor tagih nol (§5.4). Body ter-encode (`Encode=1`) juga belum dipakai — vendor
   menerima body polos (§5.1) dan reference memakai encoder untuk menghindari pola WAF, bukan karena
   wajib; ini kandidat perubahan berikutnya, bukan bug yang diketahui.
 - **Catatan lama, sudah lewat.** Endpoint chat menolak body hasil translasi OpenAI
@@ -115,15 +115,18 @@ Konstanta yang dipindah dari reference (semuanya diuji, tidak ada yang dikira-ki
   OpenAI. Jadi ini port nyata — builder body agent (chat record id stabil, `model_config` dari katalog hidup,
   konteks tier, penanganan gambar) dan decoder envelope — bukan perubahan konfigurasi reader yang ada.
   Keputusan `Encode=1` duduk di sisi builder, karena body ter-encode dan parameter itu satu pilihan.
-- **Kuota Qoder — ikut slice D (keputusan owner 2026-09-27).** `internal/service/quotafetch/` belum punya
-  keluarga `qoder`, URL-nya di sana masih hardcoded (tidak membaca `transport.usage.url`), **dan tidak ada
-  satu pun pemanggil `Fetch`** — jadi yang ditagih keputusan ini bukan hanya Qoder, tapi wiring kuota
-  keseluruhan. DTO `Quota`/`QuotaWindowResponse` juga tidak punya `unit`, padahal kuota Qoder dilaporkan
-  dalam kredit (`userQuota` + `orgResourcePackage`) dan `remaining`-nya jumlah absolut, bukan persen (SPEC
-  gap Q15). Baca kuota memakai bearer biasa, bukan COSY: `GET .../api/v2/quota/usage`, dan sebuah PAT harus
-  bertukar ke job token lebih dulu karena endpoint itu menolak `pt-`.
-- **`Features.UsageAPIKey`.** Sudah ada di registry dan sudah aktif untuk qoder/qoder-cn
-  (`registry.yaml:745`), tetapi belum ada kode Go yang membacanya.
+- **Kuota Qoder — selesai, dua bagian (3c baca, 3d route).** `internal/service/quotafetch/` punya keluarga
+  `qoder`/`qoder-cn`, dan `Fetch` akhirnya dipanggil produksi lewat
+  `GET /api/v1/quotas/{endpoint_id}/usage` (§7). Yang masih terbuka bukan lagi kode backend: **DTO
+  `Quota`/`QuotaWindowResponse` tidak punya `unit`**, jadi satuan `credits` tidak ikut menyeberang ke wire
+  dan panel belum bisa menulis "12.5 dari 3000 kredit" — hanya "12.5 dari 3000" (SPEC gap Q15). Route ini
+  sengaja tidak menulis ke `quota_windows` untuk alasan yang sama; membaca `transport.usage.url` dari
+  registry juga belum — endpoint keluarga masih di-cache di `dispatcher.go`.
+- **Yang tersisa dari kuota: tampilan panel.** Kartu koneksi belum memanggil route baru ini; yang selesai
+  adalah sisi backend dan kontraknya. Ini pekerjaan berikutnya di area ini, bukan bagian dari 3d.
+- **`Features.UsageAPIKey` — sudah dibaca.** Route kuota terbit memakainya sebagai gate sebelum panggilan
+  keluar (§7.2): akun kunci di bawah provider yang endpoint kuotanya membaca token akun ditolak di dalam
+  service, bukan setelah vendor menjawab 401.
 
 ## 5. Bukti hidup slice D (2026-09-27, PAT owner, endpoint intl)
 
@@ -250,6 +253,42 @@ akan mengalir ke klien sebagai konten dan tercatat sebagai jawaban yang ditagih.
 Yang **tidak** bisa dibuktikan akun ini: satu completion sukses. Kuotanya habis (`code 112`), dan itu
 justru menguji jalur yang benar untuk pembukuan. Konsekuensinya tercatat di §7.
 
+### 5.4 Model gratis: rantai penuh sampai konten (2026-09-28)
+
+§5.3 berhenti di "vendor mengenali penolakan". Owner mengarahkan satu langkah lagi — pakai
+`qfmodel` (Qwen3.8-Flash), yang registry publikasikan sebagai `is_free` dengan `price_factor: 0.0` —
+dan di akun yang sama, dengan kuota yang sama habisnya, permintaan itu **dijawab**:
+
+```
+$ PANNELAI_QODER_PAT='pt-…' go test -tags=integration ./internal/provider/ -run QoderLive -v
+the vendor refused the call: status=403 quota=true message={"pricingUrl":"https://qoder.com/pricing?client=qoder"}
+--- PASS: TestQoderLiveChatBodyIsAcceptedByTheVendor
+qfmodel answered with 2828 bytes of unwrapped stream
+--- PASS: TestQoderLiveFreeModelAnswers
+```
+
+Isi jawabannya, dalam urutan datang: satu frame pembuka (`delta.role: "assistant"`), sembilan delta
+`reasoning_content`, satu delta `content: "PONG"`, satu frame `"finish_reason":"stop"`, satu frame
+usage dengan `choices: []` (`completion_tokens: 30`, `credits: 9.6e-4`), lalu satu frame telemetry.
+Tidak ada satu pun `statusCodeValue` yang lolos — decoder envelope bekerja pada jawaban nyata, bukan
+hanya pada stub.
+
+Ini juga jawaban untuk pertanyaan yang §5.3 tinggalkan terbuka: rantai ini memang bisa menghasilkan
+konten, dan yang menghalanginya adalah harga, bukan bentuk body.
+
+**F9 — vendor tidak pernah mengirim `data: [DONE]`.** Bukan stream rusak: `StreamState.Finish()`
+menulis penanda penutup untuk setiap stream yang berakhir tanpa dia
+(`internal/dataplane/translate_stream_openai.go:122`), jadi klien tetap menerima stream yang tertutup
+rapi. Yang akan salah adalah port yang mengira penanda itu datang dari hulu dan menunggu selamanya.
+Test hidup menjaganya sebagai fakta vendor, bukan sebagai asersi yang dipaksakan ke `qoder_envelope.go`.
+
+**F10 — frame terakhir adalah telemetry vendor**: `{"firstTokenDuration":804,"totalDuration":1309,
+"serverDuration":29}`. `openAIFrames` forwards objek yang tidak dia pahami apa adanya, ditambah `id`,
+`object`, dan `model` yang dipaksa, jadi klien melihat satu chunk tanpa `choices`. **Dibiarkan.**
+Aturan "forward apa yang provider kirim, jangan buang jawabannya" berdiri di atas kenyamanan
+menampilkan, dan frame itu tidak menyentuh finish reason, usage, maupun pembukuan. Kalau suatu saat
+panel merendernya sebagai jawaban kosong, itu temuan tersendiri — bukan yang ini.
+
 ## 6. Gerbang
 
 - Tidak ada `any`/`interface{}` baru; setiap tubuh request masuk struct tervalidasi
@@ -265,3 +304,45 @@ justru menguji jalur yang benar untuk pembukuan. Konsekuensinya tercatat di §7.
   `provider.Connectors` → `dataplane.Transport`) masuk ke §5 SYSTEM_MAP pada commit konektor, bukan di sini.
 - Supresi linter hanya satu dan beralasan: `rsa.EncryptPKCS1v15` dan `DecryptPKCS1v15`deprecated di Go 1.26,
   dan skema vendor memang membaca padding itu — tiap suppressed call punya `reason:` sesuai AGENTS.md §1.4.
+
+## 7. Langkah 3d — pembacaan kuota publish dipakai produksi (2026-09-28)
+
+`internal/service/quotafetch/` sudah ada sejak slice D langkah 3c dan tidak punya satu pun pemanggil
+produksi: ia membaca kuota, hasilnya tidak ke mana-mana. Yang berubah sekarang adalah jalur pemanggilnya.
+
+**Bentuknya: `GET /api/v1/quotas/{endpoint_id}/usage`.** Bukan penulisan ke `quota_windows`. Alasannya
+bukan selera — `quota_windows.window` adalah enum tertutup (`5h|daily|weekly|monthly`) dan tidak ada
+kolom satuan sama sekali (SPEC-API Q15), sementara yang Qoder publish adalah saldo `credits` dengan
+satu reset. Memaksanya masuk berarti menulis angka ke kolom yang berbohong tentang apa angkanya;
+`domain.QuotaWindow.Report` sengaja ditinggalkan tanpa penulis. Karena itu dua jawaban ini hidup berdampingan
+dan tidak dicampur: §7.12 yang lama berkata "ini yang gateway kirim", route baru berkata "ini yang
+provider jual". Reference punya bentuk yang sama — kartu pemakaian per koneksi, dibaca live, bukan tabel.
+
+**Keputusan yang diambil dari pengukuran, bukan dari asumsi:**
+
+|                 |                                                                                                                                                                               |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Kredensial      | auth type endpoint yang memutuskan, sama seperti routing: `oauth` membuka access token tersegel, key account membuka `NextKey`. `quotafetch.Credentials` diisi satu sisi saja — device token yang diserahkan sebagai `APIKey` akan ditanya dengan bentuk yang salah. |
+| `usageApikey`   | gate pertama field ini sejak registry ada. Provider yang endpoint kuotanya membaca token akun ditolak **sebelum** keluar, supaya jawabannya adalah fakta registry, bukan 401 dari Qoder yang terbaca sebagai kredensial mati. |
+| Access token kosong | dibuka dulu, baru diperiksa. Sebuah baris bisa menyimpan token tersegel yang isinya kosong, dan bertanya tanpa bearer menghasilkan 401 vendor, bukan refusal kita. |
+| Amount          | decimal string pada presisi yang provider laporkan (`12.5`, `3000`), bukan float (§4) dan bukan skala tetap 8 tempat — saldo kredit 3000 tidak dikenal sampai delapan desimal. |
+| Ceiling         | `total` **absent** untuk bucket tanpa batas. Nol adalah angka; tidak punya batas adalah keadaan, dan kartu yang menampilkan keduanya sebagai bar kosong adalah kartu yang salah. |
+
+**Bukti hidup** (2026-09-28, akun owner, intl):
+
+```
+$ PANNELAI_QODER_PAT='pt-…' go test -tags=integration ./internal/service/quotafetch/ -run Live -v
+qoder published plan "personal_standard" over 0 bucket(s): [] (message "Qoder reports this account's quota as exceeded.")
+--- PASS: TestFetchQoderLive
+```
+
+Yang lewat di jalur ini, satu per satu: baris endpoint → registry (`features.usage`) → sealer →
+exchange PAT menjadi job token → `GET /api/v2/quota/usage` → `userType` + `isQuotaExceeded` → kalimat
+yang bisa dibaca operator. Yang dijaga test hidup itu adalah tiga hal yang tidak bisa dipastikan dari
+source reference: exchange harus terjadi lebih dulu, plan datang dari `userType`, dan sentinel tahun-9999
+tidak boleh lolos ke window.
+
+Empat berkas probe sekali-pakai dari sesi ini dibuang, dan dua di antaranya dipromosikan jadi test
+ber-tag permanen: `qoder_live_test.go` di `quotafetch` dan `TestQoderLiveFreeModelAnswers` di
+`internal/provider` (§5.4). Probe kunci katalog tidak dipromosikan — ia hanya mencatat bentuk, dan
+bentuk itu sudah jadi enam kasus di `qoder_measured_test.go`.

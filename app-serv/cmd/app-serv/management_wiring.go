@@ -157,7 +157,7 @@ func buildManagement(
 
 	// The usage, quota, and log services share repositories, so they are built
 	// together (observability_wiring.go).
-	obs, err := buildObservability(usageRepo, quotaRepo, endpointRepo, logRepo, settingsSvc, client)
+	obs, err := buildObservability(usageRepo, quotaRepo, endpointRepo, logRepo, settingsSvc, client, runtimeIndex, sealer)
 	if err != nil {
 		return managementDeps{}, err
 	}
