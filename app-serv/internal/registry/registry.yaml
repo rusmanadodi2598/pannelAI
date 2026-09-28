@@ -698,6 +698,23 @@ providers:
       base_url: https://api3.qoder.sh/algo/api/v2/service/pro/sse/agent_chat_generation
       timeout_ms: 120000
       stall_timeout_ms: 120000
+      retry:
+        # Qoder's free model (qfmodel) answers the signed request with "all backends
+        # failed" / "Workspace allocated quota exceeded" while its shared free pool is
+        # momentarily out, and serves the identical request seconds later (draft 036
+        # §9.2). These refusals arrive before any byte reaches the caller, so repeating
+        # is safe; they are spaced on a seconds-scale ladder so a retry does not re-fire
+        # inside the same fail-streak. A real spend (403, the paid "auto" refusal) is
+        # NOT here — it parks the credential instead of retrying.
+        429:
+          attempts: 5
+          backoff_ms: 2000
+        502:
+          attempts: 5
+          backoff_ms: 2000
+        503:
+          attempts: 5
+          backoff_ms: 2000
       usage:
         url: https://openapi.qoder.sh/api/v2/quota/usage
     oauth:
@@ -767,6 +784,19 @@ providers:
       base_url: https://gateway.qoder.com.cn/algo/api/v2/service/pro/sse/agent_chat_generation
       timeout_ms: 120000
       stall_timeout_ms: 120000
+      retry:
+        # Same free-pool ladder as the intl entry: the CN site answers the spent free
+        # model with the same transient refusal and recovers seconds later. A 403 spend
+        # still parks the credential rather than retrying.
+        429:
+          attempts: 5
+          backoff_ms: 2000
+        502:
+          attempts: 5
+          backoff_ms: 2000
+        503:
+          attempts: 5
+          backoff_ms: 2000
       usage:
         url: https://openapi.qoder.com.cn/api/v2/quota/usage
     oauth:

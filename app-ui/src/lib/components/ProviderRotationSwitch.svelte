@@ -116,21 +116,40 @@
 
 	const fieldClass =
 		'min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm';
+	// The switch reads as a control the same height and border as the section's action buttons, so it no
+	// longer sits as a bare checkbox beside a full-height one. A `role="switch"` button is the accessible
+	// equivalent of the checkbox it replaces: the on/off state is announced, and one click toggles it.
+	const trackClass =
+		'relative inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 text-sm disabled:opacity-50';
 </script>
 
 <div class="flex flex-col gap-1">
 	<div class="flex flex-wrap items-center gap-2">
-		<label for="provider-round-robin" class="text-xs text-[var(--color-text-muted)]">
-			Round Robin
-		</label>
-		<input
-			id="provider-round-robin"
-			type="checkbox"
-			class="size-4"
-			checked={rotationOn}
+		<button
+			type="button"
+			class="{trackClass} {rotationOn
+				? 'border-[var(--color-accent)] text-[var(--color-text)]'
+				: 'text-[var(--color-text-muted)]'}"
+			role="switch"
+			aria-checked={rotationOn}
 			disabled={rotationLoading || saving}
-			onchange={(event) => toggleRotation(event.currentTarget.checked)}
-		/>
+			onclick={() => toggleRotation(!rotationOn)}
+		>
+			<span class="me-2">Round Robin</span>
+			<span class="flex w-9 items-center" aria-hidden="true">
+				<span
+					class="relative inline-block h-5 w-9 rounded-full transition-colors {rotationOn
+						? 'bg-[var(--color-accent)]'
+						: 'bg-[var(--color-surface-2)] border border-[var(--color-border)]'}"
+				>
+					<span
+						class="absolute top-0.5 size-4 rounded-full bg-[var(--color-surface)] transition-all {rotationOn
+							? 'left-[1.125rem]'
+							: 'left-0.5'}"
+					></span>
+				</span>
+			</span>
+		</button>
 		{#if rotationOn}
 			<label for="provider-sticky" class="text-xs text-[var(--color-text-muted)]">Sticky:</label>
 			<input

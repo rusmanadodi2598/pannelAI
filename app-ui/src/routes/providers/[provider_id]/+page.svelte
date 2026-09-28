@@ -38,7 +38,11 @@
 	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import { createProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 	import { isNodeId } from '$lib/schemas/provider-node';
-	import { REQUIRES_KEY_AUTH_TYPES } from '$lib/schemas/endpoint-write';
+	import {
+		REQUIRES_KEY_AUTH_TYPES,
+		keyCredentialLabel,
+		takesKeyCredential
+	} from '$lib/schemas/endpoint-write';
 	import type { ProviderDetail } from '$lib/schemas/provider';
 	import type { PageProps } from './$types';
 
@@ -73,10 +77,31 @@
 	let keyNotice = $state<string | null>(null);
 	let nodePrefix = $state('');
 
-	// A key is only meaningful where the provider's own auth type takes one. For an OAuth provider the
-	// dialog would ask for a credential the provider does not use, and the path that fits is the endpoint
-	// form, which carries the auth type with it.
-	const offersKeys = $derived(provider !== null && REQUIRES_KEY_AUTH_TYPES.has(provider.auth_type));
+	// A key is meaningful wherever the provider can carry one — its derived auth type, or a key mode it lists
+	// alongside OAuth. Qoder declares `oauth` and `apikey`, so it can be connected through a Personal Access
+	// Token pasted into the dialog as well as through the device flow. The same rules the Connections section
+	// renders its button by: one home for "does this provider take a key", and one for what the dialog calls
+	// the credential it collects.
+	const offersKeys = $derived(
+		provider !== null && takesKeyCredential(provider.auth_type, provider.auth_modes)
+	);
+
+	// The auth type the dialog submits a pasted credential as. A key provider keeps its own; an OAuth provider
+	// that also lists a key mode stores the PAT as an `api_key` connection, because the credential the
+	// operator typed is a static key, not the OAuth token the device flow would have minted.
+	const keyAuthType = $derived(
+		provider === null || REQUIRES_KEY_AUTH_TYPES.has(provider.auth_type)
+			? (provider?.auth_type ?? 'api_key')
+			: 'api_key'
+	);
+
+	// The field the operator pastes the credential into, named for what it is: a Personal Access Token for a
+	// provider that is OAuth with a key mode too (Qoder), a plain API key otherwise.
+	const credentialLabel = $derived(
+		provider === null
+			? 'API Key'
+			: keyCredentialLabel(provider.auth_type, provider.auth_modes, provider.has_oauth)
+	);
 
 	// Reloads when the route's provider changes, so a hand-edited URL never leaves one provider's facts
 	// above another provider's catalog.
@@ -232,7 +257,9 @@
 		<AddProviderKeysDialog
 			providerId={provider.id}
 			providerName={provider.name}
-			authType={provider.auth_type}
+			authType={keyAuthType}
+			authHint={provider.auth_hint}
+			{credentialLabel}
 			open={addingKey}
 			onadded={(added) => {
 				endpointToken += 1;

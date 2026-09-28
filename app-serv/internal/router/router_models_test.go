@@ -41,6 +41,8 @@ var managementRoutes = []struct {
 	{"combo update", http.MethodPatch, "/api/v1/combos/cmb_x", `{"name":"daily","strategy":"fallback","models":[{"ref":"openai/gpt-4o","priority":1}]}`},
 	{"combo delete", http.MethodDelete, "/api/v1/combos/cmb_x", ""},
 	{"combo test", http.MethodPost, "/api/v1/combos/cmb_x/test", ""},
+	{"provider model test", http.MethodPost, "/api/v1/providers/openai/models/test", `{"model_id":"gpt-4o"}`},
+	{"provider model sweep", http.MethodPost, "/api/v1/providers/openai/test-models", ""},
 	{"vision get", http.MethodGet, "/api/v1/vision-adapter", ""},
 	{"vision put", http.MethodPut, "/api/v1/vision-adapter", `{"enabled":false,"round_robin":false,"models":[]}`},
 }

@@ -39,7 +39,10 @@ import (
 // endpoint for the policy's sticky limit. Inside the endpoint the policy picks
 // the key: the first healthy one by priority under fill-first, the
 // least-recently-used one under round-robin. A keyless endpoint is itself the
-// candidate either way. Each round-robin call advances the rotation cursor, so
+// candidate either way, which covers both the credential-free accounts and the
+// oauth ones a login flow built: those carry their token in the endpoint
+// rather than in a key row, so demanding a key of them skipped the one
+// account a provider had. Each round-robin call advances the rotation cursor, so
 // a request that walks two credentials leaves the cursor two steps on;
 // rotation stays an optimisation, not a correctness input.
 func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[string]struct{}) (Selection, error) {
@@ -67,7 +70,7 @@ func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[
 			continue
 		}
 		var key domain.UpstreamKey
-		if endpoint.AuthType() != domain.UpstreamAuthNone {
+		if endpoint.AuthType() == domain.UpstreamAuthAPIKey {
 			picked, ok := pickKey(endpoint, now, spent, policy)
 			if !ok {
 				continue

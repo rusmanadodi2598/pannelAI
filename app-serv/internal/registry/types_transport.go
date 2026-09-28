@@ -16,13 +16,6 @@
 // @since     2026-09-17
 package registry
 
-import (
-	"fmt"
-	"strconv"
-
-	"gopkg.in/yaml.v3"
-)
-
 // Transport is the runtime HTTP configuration for one provider.
 //
 // AuthType and NoAuth are declared here as well as on Provider because the
@@ -162,70 +155,4 @@ type UsageConfig struct {
 	OAuthURL               string   `yaml:"oauth_url"`
 	CWHost                 string   `yaml:"cw_host"`
 	QHost                  string   `yaml:"q_host"`
-}
-
-// Retry is a provider's attempt override. The reference declares three shapes
-// for one field: a count, a per-status count, and a per-status object. Both
-// are normalised here, because a decoder that accepted only one would silently
-// drop the others.
-type Retry struct {
-	DefaultAttempts int
-
-	// ByStatus overrides DefaultAttempts for one upstream status code.
-	ByStatus map[int]int
-}
-
-// Attempts reports how many times to retry a given upstream status.
-func (r Retry) Attempts(status int) int {
-	if n, ok := r.ByStatus[status]; ok {
-		return n
-	}
-	return r.DefaultAttempts
-}
-
-// UnmarshalYAML accepts the scalar and mapping shapes of the retry field.
-func (r *Retry) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind == yaml.ScalarNode {
-		n, err := strconv.Atoi(node.Value)
-		if err != nil {
-			return fmt.Errorf("registry: retry must be a number or a map: %q", node.Value)
-		}
-		r.DefaultAttempts = n
-		return nil
-	}
-	if node.Kind != yaml.MappingNode {
-		return fmt.Errorf("registry: retry must be a number or a map")
-	}
-
-	var raw map[string]yaml.Node
-	if err := node.Decode(&raw); err != nil {
-		return err
-	}
-	r.ByStatus = make(map[int]int, len(raw))
-	for key, value := range raw {
-		status, err := strconv.Atoi(key)
-		if err != nil {
-			return fmt.Errorf("registry: retry key %q is not a status code", key)
-		}
-		attempts, err := retryAttempts(value)
-		if err != nil {
-			return err
-		}
-		r.ByStatus[status] = attempts
-	}
-	return nil
-}
-
-// retryAttempts reads either the count form or the {attempts: n} form.
-func retryAttempts(node yaml.Node) (int, error) {
-	if node.Kind == yaml.ScalarNode {
-		return strconv.Atoi(node.Value)
-	}
-	var shaped struct {
-		Attempts int `yaml:"attempts"`
-	}
-	if err := node.Decode(&shaped); err != nil {
-		return 0, err
-	}
-	return shaped.Attempts, nil
 }

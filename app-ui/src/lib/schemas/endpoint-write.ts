@@ -35,6 +35,41 @@ export const MAX_KEYS_PER_ENDPOINT = 100;
  */
 export const REQUIRES_KEY_AUTH_TYPES = new Set(['api_key', 'apikey']);
 
+/** The auth-mode spelling that means the provider answers through OAuth. */
+export const OAUTH_AUTH_MODE = 'oauth';
+
+/** A provider takes a key when its derived auth type is a key type or it lists a key mode. */
+export function takesKeyCredential(authType: string, authModes: string[]): boolean {
+	return (
+		REQUIRES_KEY_AUTH_TYPES.has(authType) ||
+		authModes.some((mode) => REQUIRES_KEY_AUTH_TYPES.has(mode))
+	);
+}
+
+/** A provider answers through OAuth when the registry says so or it lists the OAuth mode. */
+export function takesOAuthCredential(hasOAuth: boolean, authModes: string[]): boolean {
+	return hasOAuth || authModes.includes(OAUTH_AUTH_MODE);
+}
+
+/**
+ * What the key dialog calls the credential the operator pastes.
+ *
+ * A provider that takes a key AND answers through OAuth — Qoder lists `oauth` and `apikey` — is not
+ * handed a plain API key: the value it wants is a Personal Access Token minted on the provider's own
+ * account page, and labelling the field "API Key" hides that and sends the operator hunting for the
+ * wrong kind of secret. A provider that takes a key alone keeps the generic name, so nothing else
+ * changes. The button beside the switch and the field inside the dialog both read this one rule.
+ */
+export function keyCredentialLabel(
+	authType: string,
+	authModes: string[],
+	hasOAuth: boolean
+): string {
+	return takesKeyCredential(authType, authModes) && takesOAuthCredential(hasOAuth, authModes)
+		? 'Personal Access Token'
+		: 'API Key';
+}
+
 /** One key as a form row and as a wire row: the two shapes are the same, so there is one rule. */
 export const schemaAddEndpointKeyForm = z.strictObject({
 	label: label.optional(),

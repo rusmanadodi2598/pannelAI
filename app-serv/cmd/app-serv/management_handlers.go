@@ -5,7 +5,7 @@
 //
 //	function stays about composing services.
 //
-// @uses      internal/handler, internal/service.
+// @uses      fmt, internal/handler, internal/service.
 // @reason    buildManagement was approaching the AGENTS.md §1.1 line limit, and
 //
 //	the handler construction is the part that grows every time a route is
@@ -19,6 +19,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/handler"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
@@ -52,6 +54,16 @@ type managementHandlerInputs struct {
 // buildManagementHandlers assembles the §7 route groups' handlers and the workers
 // the boot sequence starts after the server is listening.
 func buildManagementHandlers(in managementHandlerInputs) (managementDeps, error) {
+	// §7.4 model tests probe through the same engine a client request uses, so a
+	// model the gateway cannot route never reports healthy from a route it would
+	// not take (draft 017 §4.10). It is built here rather than in the wiring file
+	// for the reason the estimate route is: the inputs this function already holds
+	// are exactly the two it needs.
+	modelTestSvc, err := service.NewProviderModelTestService(in.Provider, in.Plane.Engine)
+	if err != nil {
+		return managementDeps{}, fmt.Errorf("management wiring: model test: %w", err)
+	}
+
 	return managementDeps{
 		Provider:      handler.NewProviderHandler(in.Provider),
 		Validate:      handler.NewProviderValidateHandler(in.Validation),
@@ -63,6 +75,7 @@ func buildManagementHandlers(in managementHandlerInputs) (managementDeps, error)
 		Model:         handler.NewModelHandler(in.Catalog),
 		Combo:         handler.NewComboHandler(in.Combo),
 		ComboTest:     handler.NewComboTestHandler(in.ComboTest),
+		ModelTest:     handler.NewProviderModelTestHandler(modelTestSvc),
 		Proxy:         in.Proxy,
 		MediaProvider: in.Media,
 		Media:         handler.NewMediaHandler(in.Plane.Media, in.Plane.Chat),

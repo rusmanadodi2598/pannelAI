@@ -10,6 +10,12 @@
 // drives those by asking repeatedly instead of once.
 
 import {
+	schemaModelTestResult,
+	schemaModelTestSweep,
+	type ModelTestResult,
+	type ModelTestSweep
+} from '$lib/schemas/model-test';
+import {
 	schemaOAuthDevicePoll,
 	schemaOAuthDevicePollBody,
 	schemaOAuthDeviceStart,
@@ -71,6 +77,35 @@ export function listProviderModels(providerId: string): Promise<ApiResult<Provid
 		method: 'GET',
 		path: `/providers/${encodeURIComponent(providerId)}/models`,
 		schema: schemaProviderModelList
+	});
+}
+
+// Probes one model of one provider through the data plane (§7.4, draft 017 §4.10). A model that refused is
+// an answered row, not a failed request, so only a refusal of the request itself reaches `error`.
+export function testProviderModel(
+	providerId: string,
+	modelId: string
+): Promise<ApiResult<ModelTestResult>> {
+	return apiRequest<{ model_id: string }, ModelTestResult>({
+		method: 'POST',
+		path: `/providers/${encodeURIComponent(providerId)}/models/test`,
+		schema: schemaModelTestResult,
+		body: { model_id: modelId }
+	});
+}
+
+// Probes a bounded sweep of the provider's chat models. The limit is sent explicitly rather than left to
+// the server's default, so the button's own words and the request cannot disagree about what one click
+// spends.
+export function testProviderModels(
+	providerId: string,
+	limit: number
+): Promise<ApiResult<ModelTestSweep>> {
+	return apiRequest<{ limit: number }, ModelTestSweep>({
+		method: 'POST',
+		path: `/providers/${encodeURIComponent(providerId)}/test-models`,
+		schema: schemaModelTestSweep,
+		body: { limit }
 	});
 }
 

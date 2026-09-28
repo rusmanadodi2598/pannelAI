@@ -899,9 +899,12 @@ Di luar cakupan pass ini: **F1** (sudah dijawab), **F7** dan **F9/F10** (menungg
 
 1. **F7 `custom-embedding`**: dikerjakan (butuh migration `00000N` + `down`) atau tetap ditolak
    seperti sekarang? Ini satu-satunya tipe node reference yang belum ada di `app-serv`.
-2. **F10**: `/models/availability` dan `/models/test` masuk pass ini, atau dicatat saja? Empat route
-   siklus hidup lainnya (`DELETE /models/alias`, `POST/DELETE /models/disabled`,
-   `POST /providers/test-batch`, `POST /providers/[id]/test-models`) juga menunggu.
+2. **F10**: **sebagian dijawab 2026-09-27** — owner meminta permukaan "test by models id" dikerjakan
+   1:1 dengan reference. Dua route mendarat: `POST /providers/{provider_id}/models/test` (satu model)
+   dan `POST /providers/{provider_id}/test-models` (sapuan terbatas), plus kolom Test per baris di
+   katalog `app-ui`. Rekornya di draft `037-PROVIDER-MODEL-TEST-READINESS.md`.
+   Yang **masih terbuka**: `/models/availability` (cooldown per model), `DELETE /models/alias`,
+   `POST/DELETE /models/disabled`, dan `POST /providers/test-batch`.
 3. **Regenerasi registry**: `registry.yaml` masih di `db4499d` (94 entri) sementara sasaran v0.5.85
    punya 121. F2–F6 dikerjakan terhadap **mekanisme** v0.5.85, jadi keputusan ini tidak memblokir
    pass ini — tetapi ia tetap terbuka, dan draft 011 §8 sudah menanyakannya lebih dulu.

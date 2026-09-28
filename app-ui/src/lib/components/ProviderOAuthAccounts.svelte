@@ -9,8 +9,15 @@
 	// The refresh is per account rather than a single button for the provider, because the answer names the
 	// accounts it moved and the operator should know which one they acted on. It is the same route either
 	// way: an id is what the API reads as "this one".
+	//
+	// Removing an account is the same id read once more, through the delete route: a connected OAuth account
+	// is an endpoint to this gateway, so its token goes when the endpoint does. The confirmation is the one
+	// the connection list uses, so an account and an API-key connection cannot ask two different questions
+	// about the same removal.
+	import EndpointDeleteDialog from '$lib/components/EndpointDeleteDialog.svelte';
+	import { deleteEndpoint } from '$lib/api/endpoints';
 	import { refreshProviderOAuth } from '$lib/api/providers';
-	import { CONTROL_ICONS } from '$lib/icons';
+	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import { oauthTokenState, type OAuthEndpointStatus } from '$lib/schemas/oauth';
 	import { formatTimestamp } from '$lib/utils/time';
 
@@ -26,9 +33,17 @@
 	} = $props();
 
 	const RefreshIcon = CONTROL_ICONS.refresh.icon;
+	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
 
 	let refreshing = $state<string | null>(null);
 	let outcome = $state<{ ok: boolean; message: string } | null>(null);
+
+	// The account awaiting confirmation, held as the `{ id, label }` the shared dialog names. The row carries
+	// `endpoint_id`; the dialog speaks `id`, so it is mapped at the hand-off rather than by widening the
+	// dialog to two field names.
+	let pendingDelete = $state<OAuthEndpointStatus | null>(null);
+	let deleting = $state(false);
+	let deleteError = $state<string | null>(null);
 
 	// The instant the expiry column is read against. Taken once for the render rather than from a ticking
 	// clock: a live countdown would be a second clock disagreeing with the gateway's own classification.
@@ -54,6 +69,24 @@
 				ids.length === 0 ? 'none' : ids.join(', ')
 			}.`
 		};
+		await onrefreshed();
+	}
+
+	async function confirmDelete(): Promise<void> {
+		if (!pendingDelete) return;
+
+		deleting = true;
+		const result = await deleteEndpoint(pendingDelete.endpoint_id);
+		deleting = false;
+
+		if (!result.ok) {
+			deleteError = result.error.message;
+			return;
+		}
+
+		pendingDelete = null;
+		deleteError = null;
+		outcome = null;
 		await onrefreshed();
 	}
 </script>
@@ -98,15 +131,30 @@
 							{oauthTokenState(endpoint.refresh_state, endpoint.expires_at, now)}
 						</td>
 						<td class="px-3 py-2 text-end">
-							<button
-								type="button"
-								class="inline-flex min-h-11 items-center gap-1.5 underline disabled:opacity-50"
-								disabled={refreshing !== null}
-								onclick={() => void refresh(endpoint.endpoint_id)}
-							>
-								<RefreshIcon class="size-4" aria-hidden="true" />
-								{refreshing === endpoint.endpoint_id ? 'Refreshing' : 'Refresh'}
-							</button>
+							<div class="flex flex-wrap items-center justify-end gap-1">
+								<button
+									type="button"
+									class="inline-flex min-h-11 items-center gap-1.5 underline disabled:opacity-50"
+									disabled={refreshing !== null}
+									onclick={() => void refresh(endpoint.endpoint_id)}
+								>
+									<RefreshIcon class="size-4" aria-hidden="true" />
+									{refreshing === endpoint.endpoint_id ? 'Refreshing' : 'Refresh'}
+								</button>
+								<button
+									type="button"
+									class="inline-flex min-h-11 items-center gap-1 text-[var(--color-danger)] underline"
+									aria-label="Delete"
+									title="Delete"
+									disabled={deleting}
+									onclick={() => {
+										deleteError = null;
+										pendingDelete = endpoint;
+									}}
+								>
+									<DeleteIcon class="size-4" aria-hidden="true" />
+								</button>
+							</div>
 						</td>
 					</tr>
 				{/each}
@@ -124,3 +172,19 @@
 		</p>
 	{/if}
 </div>
+
+{#if pendingDelete}
+	<EndpointDeleteDialog
+		entry={{
+			id: pendingDelete.endpoint_id,
+			label: pendingDelete.label || pendingDelete.endpoint_id
+		}}
+		error={deleteError}
+		{deleting}
+		onconfirm={() => void confirmDelete()}
+		oncancel={() => {
+			pendingDelete = null;
+			deleteError = null;
+		}}
+	/>
+{/if}

@@ -320,6 +320,17 @@ absent.
   `PUT /api/v1/models/disabled` (phase U2). The search and the two capability filters read
   `GET /api/v1/models/catalog` with `provider_id`, `capability`, and `q`, because that is the only route
   that accepts them. **The "suggested" toggle is not built** and the reason is recorded in §14 Q12.
+- **Model test (landed 2026-09-27, draft 017 §4.10):** each catalog row carries a Test action that probes
+  that one model by id and renders its answer **on the row it names** (state, latency, then the gateway's own
+  error code and message), rather than in a banner that says something on the page failed. `Activity` is the
+  glyph, icon-only like every other row action (§8.11.9). A sweep control beside the filters tests the first
+  6 chat models and states that number on the button, because each row is a real inference call against the
+  provider account's quota (§8.11.10: a control says what it costs). Both entrances write one store, so a
+  sweep fills the rows and a row can be re-tested without repeating the sweep. Three states are distinct:
+  `Not tested`, `Testing`, and an answer; a model the registry declares non-chat is marked
+  `Not a chat model` and carries no button, since the chat probe cannot reach it (R-26). Verdicts are
+  transient like the node test: nothing is stored, so the screen shows what the last probe said. A read of
+  the catalog drops the previous answers.
 - **Reasoning control (landed 2026-09-26, carried by both screen shapes):** the models section carries
   one select that writes this provider's entry in `reasoning.provider_thinking` (SPEC-API §7.14, §7.15).
   Its options are `Auto (follow the request)` plus the levels this provider's models accept, which the
@@ -363,16 +374,29 @@ absent.
     handles a `CONFLICT` response if the state changed under it.
   - **Test:** `POST /endpoints/{id}/test` with an optional key target. Result renders pass or fail with the
     upstream status and latency, and refreshes `test_status`.
-  - **Delete endpoint:** confirmation states that its keys are deleted with it. **Not built:** the panel
-    calls the route from nowhere, so an endpoint can be created and edited but not removed from the panel.
+  - **Delete endpoint:** `DELETE /endpoints/{id}` removes the endpoint and, per the API, its keys with it —
+    which covers an API-key connection, a pasted Personal Access Token, and a connected OAuth account alike,
+    because each is one endpoint row. The confirmation names the endpoint and states the cascade. It is
+    offered from the connection row (icon action), from the detail drawer footer, and from the OAuth account
+    row; all three open the same confirmation, and a success reloads the list.
   - **Empty state:** "No connections yet", naming what a connection carries and that the gateway routes
     this provider's calls with it.
 - **Connections (landed):** the reference's own block (`ConnectionsCard.js:405-427`): the heading, the
   credential rotation switch, the action that adds a connection, and the endpoint list filtered to this
-  provider. It renders on both shapes of the screen. The add action is split by auth type: a provider
-  whose auth type takes a key opens the key dialog, and a provider that takes none opens the inline
-  endpoint form (label, auth type, priority, optional first key), which is the form the Endpoint & Key
-  screen's second tab used to carry. The switch writes this provider's entry in `routing.provider_strategies`
+  provider. It renders on both shapes of the screen. The add action is split by the provider's declared
+  `auth_modes` (SPEC-API §7.4), not its single derived auth type: a provider that lists a key mode opens the
+  key dialog (which stores the pasted credential as an `api_key` connection — a Personal Access Token is a
+  static key, not the OAuth token a device flow would mint), and a provider that lists `oauth` or reports
+  `has_oauth` opens the inline endpoint form (label, auth type, priority, optional first key). A provider
+  that declares both — Qoder lists `oauth` and `apikey` — offers the two affordances side by side, so the
+  operator can paste a PAT or connect through OAuth from the same place. The key affordance is named for the
+  credential it collects: a provider that takes a key **and** answers through OAuth labels the button and the
+  dialog field "Personal Access Token" (a plain "API Key" would send the operator hunting for the wrong kind
+  of secret), while a key-only provider keeps "API Key". The header row aligns the actions to the top of the
+  rotation switch, so the buttons sit level with the switch's control line rather than centered against the
+  caption beneath it. The rotation switch reads as a
+  `role="switch"` control at the action buttons' height, so it no longer sits as a bare checkbox beside a
+  full-height one. The switch writes this provider's entry in `routing.provider_strategies`
   (SPEC-API §7.14) rather than a provider field: on writes `fallback_strategy: round-robin` with an
   optional `sticky_limit`, off deletes the entry so the provider inherits `routing.fallback_strategy`, and
   the whole map goes on every write because it is one settings value. The switch reports the override and

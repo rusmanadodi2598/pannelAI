@@ -38,6 +38,18 @@ export type ModelStub = {
 	comboTestStatus: number;
 	/** The combo ids the test route was called with. */
 	comboTests: string[];
+	/** Every `provider/model` the panel asked to probe, in the order it asked. */
+	modelTests: string[];
+	/** Every sweep the panel asked for, with the limit it sent. */
+	modelSweeps: { provider: string; limit: number }[];
+	/** The rows the probe answers with. */
+	modelTestRows: StubModel[];
+	/** How many chat models the swept provider offers, which sets `tested` below `total`. */
+	modelTestTotal: number | null;
+	/** The sweep's own truncation notice, `deadline` when the budget ran out. */
+	modelTestStopped: string | null;
+	/** The status every probe route answers with, for a refusal case. */
+	modelTestStatus: number;
 	/** Whether the provider detail says this provider has OAuth, which is what renders the section. */
 	hasOAuth: boolean;
 	/**
@@ -95,6 +107,12 @@ export type ModelStub = {
 	/** The provider's own auth type, which is what decides whether the page offers the key dialog. */
 	authType: string;
 	/**
+	 * The auth modes the provider declares (SPEC-API: `oauth`, `apikey`/`api_key`). Empty means "derive from
+	 * `authType`/`hasOAuth`", which is what keeps an `authType: 'oauth'` test free of a stray key mode. A
+	 * test that means a provider offering BOTH paths (Qoder: `['oauth','apikey']`) sets it explicitly.
+	 */
+	authModes: string[];
+	/**
 	 * The registry's credential-format sentence the detail row carries, or null for the omitempty
 	 * shape where the key is absent entirely (draft 036 slice B).
 	 */
@@ -108,6 +126,10 @@ export type ModelStub = {
 	endpointReadStatus: number;
 	/** The bodies `POST /endpoints` received, which is where a key name the route would refuse shows up. */
 	endpointCreates: StubModel[];
+	/** The endpoint ids `DELETE /endpoints/{id}` received, in order — what the connection list's removal calls. */
+	endpointDeletes: string[];
+	/** The delete's own status, for a test that needs the gateway to refuse a removal. */
+	endpointDeleteStatus: number;
 	/** The bodies `POST /endpoints/bulk` received, one per paste the screen sent as a batch. */
 	endpointBulkCreates: StubModel[];
 	/** The models `GET /providers/{id}/models` answers, which is what a custom node's import declares. */
@@ -218,6 +240,19 @@ export function customRow(overrides: StubModel = {}): StubModel {
 	};
 }
 
+/**
+ * The auth modes a provider detail carries when the test declared none. Derived from the auth type the test
+ * set, so `authType: 'oauth'` alone does not drag in a stray `api_key` mode that would make the section
+ * offer a key dialog the test never asked for.
+ */
+function deriveAuthModes(authType: string, hasOAuth: boolean): string[] {
+	const modes: string[] = [];
+	if (authType === 'api_key' || authType === 'apikey' || authType === 'bearer')
+		modes.push('api_key');
+	if (authType === 'oauth' || hasOAuth) modes.push('oauth');
+	return modes;
+}
+
 /** The provider detail body the page loads before any of the model sections render. */
 export function providerDetailRow(overrides: StubModel = {}): StubModel {
 	return {
@@ -253,6 +288,12 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		comboTestResults: [],
 		comboTestStatus: 200,
 		comboTests: [],
+		modelTests: [],
+		modelSweeps: [],
+		modelTestRows: [],
+		modelTestTotal: null,
+		modelTestStopped: null,
+		modelTestStatus: 200,
 		hasOAuth: false,
 		oauthFlow: 'code',
 		oauthEndpoints: [],
@@ -285,10 +326,13 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		combosTotal: null,
 		writeStatus: 200,
 		authType: 'bearer',
+		authModes: [],
 		authHint: null,
 		endpoints: [],
 		endpointReadStatus: 200,
 		endpointCreates: [],
+		endpointDeletes: [],
+		endpointDeleteStatus: 200,
 		endpointBulkCreates: [],
 		providerModels: [],
 		providerModelsReadStatus: 200,
@@ -431,6 +475,10 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 					id: decodeURIComponent(providerMatch[1]),
 					auth_type: stub.authType,
 					has_oauth: stub.hasOAuth,
+					auth_modes:
+						stub.authModes.length > 0
+							? stub.authModes
+							: deriveAuthModes(stub.authType, stub.hasOAuth),
 					// Absent when no hint is declared, which is the shape Go's omitempty answers and the
 					// schema's nullableText normalizes to null.
 					...(stub.authHint === null ? {} : { auth_hint: stub.authHint }),
@@ -439,6 +487,19 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 					...(stub.thinkingLevels === null ? {} : { thinking_levels: stub.thinkingLevels })
 				})
 			);
+		}
+		// The single-endpoint detail read the drawer makes when a connection is opened, so the drawer's own
+		// controls (fields, keys, and its Delete button) render in a page-level test.
+		if (method === 'GET') {
+			const detailMatch = /\/endpoints\/([^/?]+)$/.exec(parsed.pathname);
+			if (detailMatch && !parsed.pathname.endsWith('/endpoints')) {
+				const id = decodeURIComponent(detailMatch[1]);
+				const row = stub.endpoints.find((candidate) => String(candidate.id) === id);
+				if (!row) {
+					return refusal('NOT_FOUND', 'The endpoint was not found.', 404);
+				}
+				return json({ keys: [], ...row });
+			}
 		}
 		if (method === 'GET' && parsed.pathname.endsWith('/endpoints')) {
 			if (stub.endpointReadStatus !== 200) {
@@ -480,6 +541,29 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 			});
 			stub.endpoints = [row, ...stub.endpoints];
 			return json(row, 201);
+		}
+
+		// The removal route the Connections list calls: one id in, the row gone from the list the next read
+		// answers. It is the same endpoint object whether it carried an API key, a Personal Access Token, or
+		// an OAuth account's token, so one handler covers all three, as the real route does.
+		if (method === 'DELETE') {
+			const deleteMatch = /\/endpoints\/([^/?]+)$/.exec(parsed.pathname);
+			if (deleteMatch) {
+				const id = decodeURIComponent(deleteMatch[1]);
+				stub.endpointDeletes.push(id);
+				if (stub.endpointDeleteStatus !== 200) {
+					return refusal(
+						'INTERNAL_ERROR',
+						'The endpoint could not be deleted.',
+						stub.endpointDeleteStatus
+					);
+				}
+				stub.endpoints = stub.endpoints.filter((row) => String(row.id) !== id);
+				stub.oauthEndpoints = stub.oauthEndpoints.filter((row) => String(row.endpoint_id) !== id);
+				// 204 carries no body; the client parses the empty answer itself, so a body here would throw
+				// on Response construction and read as a failed delete.
+				return new Response(null, { status: 204 });
+			}
 		}
 
 		// The batch create the provider screen's paste posts to: one element per connection, all-or-nothing
@@ -732,6 +816,47 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 				combo: combo.name,
 				strategy: combo.strategy,
 				results: stub.comboTestResults
+			});
+		}
+
+		// The model probe. The single-model route answers from `modelTestRows`, keyed by the model id the
+		// panel named, so a row that failed is reported for the model it belongs to rather than echoed back
+		// from the request. The sweep answers for the provider's whole list and reports how much of it ran.
+		const modelTestMatch = /\/providers\/([^/?]+)\/models\/test$/.exec(parsed.pathname);
+		if (method === 'POST' && modelTestMatch) {
+			const providerId = decodeURIComponent(modelTestMatch[1]);
+			const modelId = String(body.model_id ?? '');
+			stub.modelTests.push(`${providerId}/${modelId}`);
+
+			if (stub.modelTestStatus !== 200) {
+				return refusal('VALIDATION_ERROR', 'The model test was refused.', stub.modelTestStatus);
+			}
+
+			const row = stub.modelTestRows.find((entry) => entry.model_id === modelId);
+			if (row) return json(row);
+			return json({ model_id: modelId, name: modelId, ok: true, latency_ms: 40 });
+		}
+
+		const sweepMatch = /\/providers\/([^/?]+)\/test-models$/.exec(parsed.pathname);
+		if (method === 'POST' && sweepMatch) {
+			const providerId = decodeURIComponent(sweepMatch[1]);
+			stub.modelSweeps.push({ provider: providerId, limit: Number(body.limit ?? 0) });
+
+			if (stub.modelTestStatus !== 200) {
+				return refusal(
+					'VALIDATION_ERROR',
+					'This provider offers no chat model to test.',
+					stub.modelTestStatus
+				);
+			}
+
+			return json({
+				provider_id: providerId,
+				source: 'registry',
+				tested: stub.modelTestRows.length,
+				total: stub.modelTestTotal ?? stub.modelTestRows.length,
+				stopped: stub.modelTestStopped ?? '',
+				results: stub.modelTestRows
 			});
 		}
 

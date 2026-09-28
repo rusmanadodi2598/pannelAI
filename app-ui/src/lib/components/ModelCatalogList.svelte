@@ -9,6 +9,7 @@
 	// The rows and their Disable action are the table's business (ModelCatalogTable). This component
 	// fetches, filters, and reports the states a fetch can be in.
 	import { untrack } from 'svelte';
+	import ModelCatalogSweep from '$lib/components/ModelCatalogSweep.svelte';
 	import ModelCatalogTable from '$lib/components/ModelCatalogTable.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listModelCatalog } from '$lib/api/models';
@@ -18,6 +19,7 @@
 		catalogQueryParams,
 		type CatalogModel
 	} from '$lib/schemas/model';
+	import { createModelTestStore } from '$lib/stores/model-test.svelte';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 
@@ -39,6 +41,10 @@
 
 	const SearchIcon = CONTROL_ICONS.search.icon;
 	const ClearIcon = CONTROL_ICONS.clear.icon;
+
+	// The probe answers belong to this component, not to the table: the sweep is a request, and the rows it
+	// fills are the table's. One owner keeps the summary line and the row states saying the same thing.
+	const tests = createModelTestStore();
 
 	let models = $state<CatalogModel[]>([]);
 	let loading = $state(true);
@@ -64,6 +70,9 @@
 
 	async function load(provider: string, revision: number): Promise<void> {
 		loading = true;
+		// A fresh read may hold a different set of models, so the last probe's answers are dropped rather
+		// than left beside rows they never named.
+		tests.clear();
 		const result = await listModelCatalog(
 			catalogQueryParams({ providerId: provider, capability, query: applied })
 		);
@@ -175,7 +184,10 @@
 			description="The catalog reports nothing for this provider. A model the gateway has disabled is left out of the catalog, so check the disabled set before treating this as an empty registry entry."
 		/>
 	{:else}
-		<ModelCatalogTable {models} {disabled} {thinking} {onchanged} />
+		<!-- The sweep sits with the rows it fills, not beside the filters: it spends upstream budget, and
+		     it only has something to say when there is a catalog to read. -->
+		<ModelCatalogSweep {providerId} {tests} />
+		<ModelCatalogTable {models} {disabled} {thinking} {tests} {onchanged} />
 
 		<p class="text-sm text-[var(--color-text-muted)]">
 			{models.length}

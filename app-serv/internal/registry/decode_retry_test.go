@@ -15,7 +15,10 @@
 // @since     2026-09-17
 package registry
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestDecode_RetryShapes(t *testing.T) {
 	cases := []struct {
@@ -107,6 +110,36 @@ providers:
 					if got := p.Transport.Retry.Attempts(status); got != want {
 						t.Fatalf("attempts(%d) = %d, want %d", status, got, want)
 					}
+				}
+			},
+		},
+		{
+			name: "retry accepts a per-status backoff base",
+			yaml: `
+providers:
+  - id: p
+    category: apikey
+    transport:
+      base_url: https://example.test
+      retry:
+        "429":
+          attempts: 5
+          backoff_ms: 2000
+`,
+			check: func(t *testing.T, idx *Index) {
+				t.Helper()
+				p, _ := idx.Provider("p")
+				if got := p.Transport.Retry.Attempts(429); got != 5 {
+					t.Fatalf("attempts(429) = %d, want 5", got)
+				}
+				base, ok := p.Transport.Retry.BackoffBase(429)
+				if !ok || base != 2*time.Second {
+					t.Fatalf("BackoffBase(429) = %v,%v, want 2s,true", base, ok)
+				}
+				// A status with no declared base must fall to the gateway default, not a
+				// zero wait — the second return is what keeps the change Qoder-only.
+				if _, ok := p.Transport.Retry.BackoffBase(503); ok {
+					t.Fatal("BackoffBase(503) reported a base for an undeclared status")
 				}
 			},
 		},

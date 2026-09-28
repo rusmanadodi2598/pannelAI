@@ -7,6 +7,7 @@
 	// in the dialog, so the wire shape has one home.
 	let {
 		mode,
+		credentialLabel = 'API Key',
 		name = $bindable(),
 		keyValue = $bindable(),
 		priority = $bindable(),
@@ -16,6 +17,8 @@
 		maxConnections
 	}: {
 		mode: string;
+		/** What the credential is called: 'API Key', or 'Personal Access Token' for an OAuth+key provider. */
+		credentialLabel?: string;
 		name: string;
 		keyValue: string;
 		priority: string;
@@ -70,7 +73,7 @@ sk-key-only-auto-named`;
 		<input bind:value={name} placeholder="Production Key" class={fieldClass} />
 	</label>
 	<label class="flex flex-col gap-1">
-		<span class="text-[var(--color-text-muted)]">API Key</span>
+		<span class="text-[var(--color-text-muted)]">{credentialLabel}</span>
 		<input bind:value={keyValue} type="password" autocomplete="off" class={fieldClass} />
 	</label>
 	<label class="flex flex-col gap-1">

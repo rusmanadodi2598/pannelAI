@@ -62,6 +62,9 @@ type managementFixture struct {
 	model     *ModelHandler
 	combo     *ComboHandler
 	comboTest *ComboTestHandler
+	// modelTest is the §7.4 model test handler, over the same prober so a case
+	// can make one model fail without rebuilding the fixture.
+	modelTest *ProviderModelTestHandler
 	vision    *VisionAdapterHandler
 	proxy     *ProxyHandler
 	// prober is the combo test route's seam double, exposed so a case can make
@@ -119,6 +122,14 @@ func newManagementFixture(t *testing.T) managementFixture {
 	if err != nil {
 		t.Fatalf("NewComboTestService() error = %v", err)
 	}
+	providerService, err := service.NewProviderService(service.ProviderServiceDeps{Index: index})
+	if err != nil {
+		t.Fatalf("NewProviderService() error = %v", err)
+	}
+	modelTestService, err := service.NewProviderModelTestService(providerService, prober)
+	if err != nil {
+		t.Fatalf("NewProviderModelTestService() error = %v", err)
+	}
 	proxyProber := &stubProxyProber{result: service.ProxyProbeResult{State: domain.EndpointTestOK, LatencyMS: 7}}
 	proxyService, proxyRepo := newStubProxyService(t, proxyProber)
 	seedHandlerFixture(t, catalog, comboRepo)
@@ -126,6 +137,7 @@ func newManagementFixture(t *testing.T) managementFixture {
 		model:       NewModelHandler(catalog),
 		combo:       NewComboHandler(comboService),
 		comboTest:   NewComboTestHandler(comboTestService),
+		modelTest:   NewProviderModelTestHandler(modelTestService),
 		vision:      NewVisionAdapterHandler(adapterService),
 		proxy:       NewProxyHandler(proxyService),
 		prober:      prober,

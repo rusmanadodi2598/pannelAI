@@ -23,7 +23,11 @@
 	import ProviderEndpoints from '$lib/components/ProviderEndpoints.svelte';
 	import ProviderRotationSwitch from '$lib/components/ProviderRotationSwitch.svelte';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
-	import { REQUIRES_KEY_AUTH_TYPES } from '$lib/schemas/endpoint-write';
+	import {
+		keyCredentialLabel,
+		takesKeyCredential,
+		takesOAuthCredential
+	} from '$lib/schemas/endpoint-write';
 	import type { ProviderDetail } from '$lib/schemas/provider';
 
 	let {
@@ -45,10 +49,19 @@
 	const AddIcon = CONTROL_ICONS.add.icon;
 	const CancelIcon = CONTROL_ICONS.clear.icon;
 
-	// A key is only meaningful where the provider's own auth type takes one. For an OAuth provider the
-	// dialog would ask for a credential the provider does not use, and the path that fits is the endpoint
-	// form, which carries the auth type with it.
-	const offersKeys = $derived(REQUIRES_KEY_AUTH_TYPES.has(provider.auth_type));
+	// The add action is split by capability, read from the provider's declared auth modes rather than its
+	// single derived auth type. A provider that takes a key offers the page-owned dialog; one that answers
+	// through OAuth offers this section's inline endpoint form. A provider that declares both — Qoder lists
+	// `oauth` and `apikey` — offers the two side by side, and the key affordance is named for the credential
+	// it actually collects (a Personal Access Token, not a generic API key) by the one shared rule the dialog
+	// field uses too.
+	const supportsKey = $derived(takesKeyCredential(provider.auth_type, provider.auth_modes));
+	const supportsOAuth = $derived(takesOAuthCredential(provider.has_oauth, provider.auth_modes));
+	const credentialLabel = $derived(
+		keyCredentialLabel(provider.auth_type, provider.auth_modes, provider.has_oauth)
+	);
+	const showKeyButton = $derived(supportsKey);
+	const showConnectionButton = $derived(!supportsKey || supportsOAuth);
 
 	// The inline create form's own state: the add button toggles it, and a successful create bumps a local
 	// revision so the list below re-reads without a page reload.
@@ -58,20 +71,21 @@
 </script>
 
 <div class="flex flex-col gap-3">
-	<div class="flex flex-wrap items-center justify-between gap-2">
+	<div class="flex flex-wrap items-start justify-between gap-2">
 		<h2 class="text-base font-medium">Connections</h2>
-		<div class="flex flex-wrap items-center gap-3">
+		<div class="flex flex-wrap items-start gap-3">
 			<ProviderRotationSwitch providerId={provider.id} />
-			{#if offersKeys}
+			{#if showKeyButton}
 				<button
 					type="button"
 					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
 					onclick={onaddkey}
 				>
 					<AddKeyIcon class="size-4" aria-hidden="true" />
-					Add API Key
+					Add {credentialLabel}
 				</button>
-			{:else}
+			{/if}
+			{#if showConnectionButton}
 				<button
 					type="button"
 					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"

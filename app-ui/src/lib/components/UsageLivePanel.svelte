@@ -14,7 +14,14 @@
 	import UsageRecentList from '$lib/components/UsageRecentList.svelte';
 	import UsageTopology from '$lib/components/UsageTopology.svelte';
 	import { listProviders } from '$lib/api/providers';
-	import { freshActive, liveMerge, streamLabel, type LiveView } from '$lib/schemas/usage-live-view';
+	import {
+		freshActive,
+		liveFacts,
+		liveMerge,
+		providerDisplayName,
+		streamLabel,
+		type LiveView
+	} from '$lib/schemas/usage-live-view';
 	import { configuredProviders } from '$lib/schemas/usage-topology-view';
 	import { openUsageLive, type LiveReport, type UsageLiveController } from '$lib/usage-live';
 	import { formatTimestamp } from '$lib/utils/time';
@@ -24,6 +31,13 @@
 	// on screen until the next frame arrived, which could be never. The timer exists only while a request
 	// is in flight, so an idle screen runs no clock at all.
 	const ACTIVE_TICK_MS = 1_000;
+
+	// The one box every tab on this row wears. The two controls already carried it; the owner's
+	// correction of 2026-09-27 asked the chip and the new facts tab to join them rather than sit at
+	// their own text size (draft 035 F1), and 44px is the panel's floor for a control's touch target
+	// (SPEC-UI §8.6 rule 3).
+	const TAB_BOX =
+		'inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm';
 
 	let providers = $state<{ id: string; name: string }[]>([]);
 	let providersNotice = $state<string | null>(null);
@@ -40,6 +54,7 @@
 	const error = $derived(live?.errorProvider ?? '');
 
 	const hasActive = $derived(active.length > 0);
+	const facts = $derived(liveFacts(providers, active, last, error));
 
 	$effect(() => {
 		if (!hasActive) return;
@@ -71,8 +86,7 @@
 	});
 
 	function providerName(id: string): string {
-		const match = providers.find((provider) => provider.id.toLowerCase() === id.toLowerCase());
-		return match?.name ?? id;
+		return providerDisplayName(providers, id);
 	}
 
 	async function loadProviders(): Promise<void> {
@@ -119,17 +133,38 @@
 		</p>
 	</div>
 
-	<div class="flex flex-wrap items-center gap-3">
-		<span
-			class="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-sm"
-			role="status"
-			aria-live="polite">{streamLabel(report.status)}</span
-		>
+	<div class="flex flex-wrap items-stretch gap-3">
+		<span class={TAB_BOX} role="status" aria-live="polite">{streamLabel(report.status)}</span>
+
+		<!-- eslint-disable svelte/no-useless-mustaches -- label and value sit in adjacent spans and
+		     Svelte drops the whitespace between elements on separate lines, so each `{' '}` below is the
+		     space the sentence needs when a screen reader reads its text content (draft 035, review
+		     line 30). A flex container lays whitespace-only runs out as nothing, so the `gap-1` spacing
+		     is unchanged. -->
+		<!-- The live facts, stated in the row rather than in the drawing's frame (draft 035 F2): a
+		     statement in the matched tab box, not a control. It wraps inside its own box and shrinks
+		     below its content (`min-w-0`), so a long joined provider list breaks at the row's edge
+		     instead of widening the page (review lines 1 and 31). No fact means no tab at all, which
+		     keeps the owner's rule that a screen states what happened and never what did not
+		     (2026-09-23). -->
+		{#if facts.length > 0}
+			<span class={`${TAB_BOX} min-w-0 flex-wrap gap-1`}>
+				{#each facts as fact, index (fact.label)}
+					{#if index > 0}
+						{' '}<span aria-hidden="true">·</span>{' '}
+					{/if}
+					<span class="text-[var(--color-text-muted)]">{fact.label}:</span>
+					{' '}<span class={`break-words ${fact.tone === 'status' ? 'text-[var(--color-ok)]' : ''}`}
+						>{fact.value}</span
+					>
+				{/each}
+			</span>
+		{/if}
 
 		<button
 			type="button"
 			aria-pressed={paused}
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm aria-pressed:bg-[var(--color-surface-2)]"
+			class={`${TAB_BOX} hover:bg-[var(--color-surface-2)] aria-pressed:bg-[var(--color-surface-2)]`}
 			onclick={() => (paused ? controller?.resume() : controller?.pause())}
 			>{paused ? 'Resume live updates' : 'Pause live updates'}</button
 		>
@@ -137,7 +172,7 @@
 		{#if report.status === 'unavailable'}
 			<button
 				type="button"
-				class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+				class={`${TAB_BOX} hover:bg-[var(--color-surface-2)]`}
 				onclick={() => controller?.retry()}>Try again</button
 			>
 		{/if}

@@ -225,7 +225,66 @@ holding the sentence, the create action and the refresh control at one height, a
 glyph + label, filed as `docs/PORT/003-PORT-COMBO-VISION.md`. Its click-through found one reading that
 stopped as a decision rather than a fix: the dialog close control measures 36px, which `DESIGN.md` §7 fixes
 deliberately for a dialog's own controls, so it was left alone and pinned by a test with the reason
-written down instead of being silently changed to 44px.
+written down instead of being silently changed to 44px. The thirty-eighth is the live row on `/usage`,
+measured 2026-09-27: the connection chip and the two buttons beside it had been drawn at two heights, and
+the sentence stating the in-flight and finished facts sat inside the node drawing's frame and moved the
+animation every time a request started or finished, so every tab the row renders now carries one box and
+that sentence became a tab of the row itself, filed as `docs/DRAFT/035-USAGE-LIVE-ROW-TABS.md`.
+
+### The Qoder device round, 2026-09-27
+
+Run with Bun 1.3.0. Qoder and Qoder CN report `flow: device`, which until this pass meant the OAuth section
+rendered for them, explained that the panel could not start anything, and offered no control (the copy even
+pointed at a device endpoint that did not exist). `app-serv` grew the two device routes (draft 036 slice A),
+and this section now uses them: `ProviderOAuthDevice.svelte` starts a round, shows the vendor's address as a
+link the operator opens and as text beside it, shows the short code with the shared copy control, and then
+asks the gateway once per `interval_seconds` until the vendor grants the token.
+
+Two rules shaped the loop. The panel does not call `window.open`, which the reference does: an automatic
+navigation to a third party is a redirect the operator did not ask for, and the address is on screen so they
+can read the host first — the same rule the code flow's authorize link already kept, and recorded as a
+deliberate deviation in `docs/PORT/README.md` §3. And the loop is one timer re-armed only after an answer
+arrives, never an interval, so an in-flight ask cannot stack a second one behind it; it stops at the
+round's own `expires_in` deadline, when the operator presses Stop waiting, and when the section unmounts.
+A refused ask ends the loop and shows the gateway's reason rather than polling a vendor that said no. The
+screen holds only the single-use `device_code`: the PKCE verifier and the machine id stay in the state the
+gateway staged, so they appear in no body this panel sends.
+
+`tests/schemas/oauth.test.ts` gained the round's read (16 cases: the URL parsed as an absolute URL, a
+fractional or over-long interval refused, an unknown verdict read without failing and not mistaken for a
+connect), and `tests/components/provider-oauth.test.ts` gained four device cases against the shared stub's
+new scripted poll queue, including the positive premise that the recorded poll bodies carry no verifier.
+`svelte-check` 0 errors, `eslint` clean, `prettier` clean. The evidence is a driven stub, not a live
+`qoder.com` login: the round trip against the vendor still needs an account (SPEC-UI §14 Q23), and so does
+the data plane that spends the token (`docs/DRAFT/036-QODER-AUTH-READINESS.md` §4).
+
+### The Usage live row and its facts tab, 2026-09-27
+
+Run with Bun 1.3.0. The owner named the `/usage` live row twice over: the tabs on it (the status chip,
+Pause, and the conditional Try again) should be one size and symmetric, and the dynamic in-flight and
+finished text should stop interfering with the node drawing by becoming a tab of that row instead. Both
+readings were measured before a line changed, and both were real: the chip was `px-2 py-1` against two
+`min-h-11` buttons, and the facts paragraph lived inside the drawing's `<figure>`, where the slot rule of
+draft 023 kept its height only while the sentence stayed on one line (at 390px the stated line read 60px
+against the 20px slot, so a request starting did move the drawing).
+
+The row now states one box for every tab it renders, `min-h-11` with the panel's chip radius, one border
+and matching padding, and only the two real controls carry the hover affordance that tells a statement
+from something clickable. The facts are derived by a pure `liveFacts` in `src/lib/schemas/usage-live-view.ts`
+and rendered between the connection chip and the pause control as a statement, not a control (no button
+ancestor, nothing focusable, the same rule draft 023 F2 set for tab-idiom labels); the tab shrinks and
+wraps inside its own box (`min-w-0`, `break-words`) so a long joined value can never widen the page, and
+its label and value keep real spaces between the spans so the sentence reads whole aloud. The routing
+fact keeps the status colour and the finished and error facts stay plain, which is the drawing's own rule
+carried over untouched, and an idle screen still renders no facts tab at all because absence is not a
+fact. The drawing's frame lost its paragraph and keeps the drawing alone.
+`tests/components/usage-live-row.test.ts` (10 cases) pins the box across the facts tab too, the row
+parentage, the tab-not-a-control rule, the hover split, and the idle silence with its positive premise
+(tab count 2); `tests/schemas/usage-live-facts.test.ts` (10 cases, table-driven per TDD §2.5) pins the
+derivation, including that a blank model on the wire prints no empty parenthesis and that no value ends
+with a sentence period because a tab is a label; the five fact rows in `usage-topology.test.ts` were
+replaced by one frame-silence row with a positive premise and one node-label colour row, the rest of the
+coverage moving to the two new files. SPEC-UI §6.5 and DESIGN.md §11 amended in the same pass.
 
 ### The Combo & Vision icons and the compact toolbar, 2026-09-25
 
@@ -643,14 +702,14 @@ and nothing focusable inside, so the tab idiom separates the section without pre
 
 What changed, and what is deliberately not claimed:
 
-| Behaviour                                                    | Detail                                                                                                                                                                                                                                                                                                   |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The drawing states its facts, not a paragraph                | The colour and beam explanation is gone because the reference draws no legend. The three facts render in one line above the drawing, terse labels in the muted colour and only the routing provider's name in the status colour, which is the rule the drawing's own node labels follow                  |
-| The line holds its slot while nothing is happening           | `min-h-5` reserves one `text-sm` line box, measured 20 px idle and 20 px stated at 1360 px with the drawing's top unchanged at 1737. At 390 px the stated line reads 60 px, so the drawing moves there, and SPEC-UI §6.5 records that instead of claiming the slot always holds                          |
-| The finished list's separator is not a control               | It is a `span` with the accent rule, no `role`, and 0 focusable descendants, asserted by a test that queries for a button and for `role=tab`. A clickable tab was offered and declined by the owner, so the idiom separates rather than navigates                                                        |
-| SPEC-UI §6.5 and DESIGN.md §11 are amended, not bypassed     | The paragraph's removal, the one-line facts rule, the measured slot and the separator's shape are written into the spec of record, and the three decisions are appended to the reason log                                                                                                                |
-| Not claimed: the in-flight colour on the gateway's stream    | The gateway's own route reported nothing in flight while the run watched it, so the ok-coloured name is proven on the double's frames and the empty slot is proven on the gateway's. Both readings are named above                                                                                       |
-| Not claimed: the harness needed a fix that is not panel code | The double forwarded the incoming `transfer-encoding` header to the gateway, so every write through the panel answered `400 invalid request body: i/o timeout` while the same request straight to the double answered 204. The double now drops the hop-by-hop headers; no panel file was changed for it |
+| Behaviour                                                    | Detail                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The drawing states its facts, not a paragraph                | The colour and beam explanation is gone because the reference draws no legend. The three facts render in one line above the drawing, terse labels in the muted colour and only the routing provider's name in the status colour, which is the rule the drawing's own node labels follow. Superseded 2026-09-27 by draft 035 F2: the sentence left the frame and became a tab of the live row, keeping its colour rule |
+| The line holds its slot while nothing is happening           | `min-h-5` reserves one `text-sm` line box, measured 20 px idle and 20 px stated at 1360 px with the drawing's top unchanged at 1737. At 390 px the stated line reads 60 px, so the drawing moves there, and SPEC-UI §6.5 records that instead of claiming the slot always holds. Retired by draft 035 F2: the frame no longer carries the paragraph, so the slot went with it                                         |
+| The finished list's separator is not a control               | It is a `span` with the accent rule, no `role`, and 0 focusable descendants, asserted by a test that queries for a button and for `role=tab`. A clickable tab was offered and declined by the owner, so the idiom separates rather than navigates                                                                                                                                                                     |
+| SPEC-UI §6.5 and DESIGN.md §11 are amended, not bypassed     | The paragraph's removal, the one-line facts rule, the measured slot and the separator's shape are written into the spec of record, and the three decisions are appended to the reason log                                                                                                                                                                                                                             |
+| Not claimed: the in-flight colour on the gateway's stream    | The gateway's own route reported nothing in flight while the run watched it, so the ok-coloured name is proven on the double's frames and the empty slot is proven on the gateway's. Both readings are named above                                                                                                                                                                                                    |
+| Not claimed: the harness needed a fix that is not panel code | The double forwarded the incoming `transfer-encoding` header to the gateway, so every write through the panel answered `400 invalid request body: i/o timeout` while the same request straight to the double answered 204. The double now drops the hop-by-hop headers; no panel file was changed for it                                                                                                              |
 
 ### The usage page's scroll and the drawing's idle text, 2026-09-23
 

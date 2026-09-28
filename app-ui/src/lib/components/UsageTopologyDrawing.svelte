@@ -2,9 +2,10 @@
 	// The live drawing's box (docs/DRAFT/012 F3, extended by draft 013 F1/F2 and draft 015 F1).
 	//
 	// Split from `UsageTopology.svelte` when the beam arrived: the frame around the drawing (caption, empty
-	// state, the sentences that carry the same facts) and the drawing itself crossed the 220-line warning
-	// together, and the seam is real rather than arithmetic. The drawing is still hidden from assistive
-	// technology, so every fact it encodes is stated by the frame's sentences.
+	// state, and the sentences that carried the same facts until draft 035 F2 moved them into the live row)
+	// and the drawing itself crossed the 220-line warning together, and the seam is real rather than
+	// arithmetic. The drawing is still hidden from assistive technology; the facts it encodes are now
+	// stated by the live row above the frame.
 	//
 	// Three parts, and the middle one is its own file: this box and the unit it publishes, the edges
 	// (`UsageTopologyEdges.svelte`, split out by draft 018 when the beam's constants and these comments took

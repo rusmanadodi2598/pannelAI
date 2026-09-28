@@ -33,6 +33,8 @@
 		providerId,
 		providerName,
 		authType,
+		authHint = null,
+		credentialLabel = 'API Key',
 		open,
 		onadded,
 		onclose
@@ -40,8 +42,19 @@
 		providerId: string;
 		/** The registry's own name for the provider, which is what the title says the key is added to. */
 		providerName: string;
-		/** The provider's own auth type, which is the connection's: a key is only asked for where it applies. */
+		/** The auth type the connection is stored as — a key type, since a key is what this dialog takes. */
 		authType: string;
+		/**
+		 * The registry's credential-format sentence (what a Personal Access Token looks like and where to
+		 * mint one). Shown beside the field the operator pastes into, so the format is read where it is
+		 * acted on, not only back on the section. Text, never a link.
+		 */
+		authHint?: string | null;
+		/**
+		 * What the credential field is called. 'API Key' for a key-only provider; 'Personal Access Token'
+		 * for one that is OAuth with a key mode too (Qoder). The page derives it from the shared rule.
+		 */
+		credentialLabel?: string;
 		open: boolean;
 		/** Hands back what was stored, so the section can say it (§8.6.3). */
 		onadded: (added: { count: number; label: string | null }) => void;
@@ -136,8 +149,11 @@
 	}
 </script>
 
-<Modal title={`Add ${providerName} API Key`} {open} {onclose}>
+<Modal title={`Add ${providerName} ${credentialLabel}`} {open} {onclose}>
 	<div class="flex flex-col gap-3">
+		{#if open && authHint}
+			<p class="text-sm text-[var(--color-text-muted)]">{authHint}</p>
+		{/if}
 		<PanelTabs
 			tabs={TABS}
 			label="How many keys"
@@ -149,6 +165,7 @@
 			{#snippet panel(active)}
 				<ProviderKeyFields
 					mode={active}
+					{credentialLabel}
 					bind:name
 					bind:keyValue
 					bind:priority

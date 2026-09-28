@@ -27,8 +27,19 @@
 	let {
 		entry,
 		onclose,
-		onchanged
-	}: { entry: Endpoint | null; onclose: () => void; onchanged: () => void } = $props();
+		onchanged,
+		ondelete
+	}: {
+		entry: Endpoint | null;
+		onclose: () => void;
+		onchanged: () => void;
+		/**
+		 * Present when the list this drawer sits in can remove the endpoint it opened. The confirmation is the
+		 * caller's (one dialog for row and drawer alike), so this only hands the endpoint up and lets the
+		 * caller close the drawer with it.
+		 */
+		ondelete?: (endpoint: Endpoint) => void;
+	} = $props();
 
 	let detail = $state<Endpoint | null>(null);
 	let loading = $state(false);
@@ -47,6 +58,7 @@
 
 	const TestIcon = ROW_ACTION_ICONS.test.icon;
 	const CloseIcon = CONTROL_ICONS.clear.icon;
+	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
 
 	const keys = $derived(detail?.keys ?? []);
 	const chosen = $derived(routingKey(keys));
@@ -207,6 +219,16 @@
 	{/if}
 
 	{#snippet footer()}
+		{#if ondelete && detail}
+			<button
+				type="button"
+				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-sm text-[var(--color-accent-text)]"
+				onclick={() => ondelete(detail!)}
+			>
+				<DeleteIcon class="size-4" aria-hidden="true" />
+				Delete connection
+			</button>
+		{/if}
 		<button
 			type="button"
 			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"

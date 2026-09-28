@@ -29,23 +29,24 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
-// ComboProber runs one probe against one model reference and reports what the
-// data plane answered. It is a one-method seam so this service is testable
-// without an engine, a registry, or an upstream.
-type ComboProber interface {
+// ModelProber runs one bounded probe against one model reference and reports what
+// the data plane answered. It is a one-method seam so a probe service is testable
+// without an engine, a registry, or an upstream. Combo and provider-model tests
+// are the same question asked of different sets, so they share this port.
+type ModelProber interface {
 	Ping(ctx context.Context, ref string) (dataplane.Outcome, error)
 }
 
 // ComboTestService implements the combo test route (§7.7).
 type ComboTestService struct {
 	combos *ComboService
-	prober ComboProber
+	prober ModelProber
 }
 
 // NewComboTestService validates deps and returns a ready service. Both are
 // required: without the combo service there is nothing to probe, and without a
 // prober the route would report a result it never obtained.
-func NewComboTestService(combos *ComboService, prober ComboProber) (*ComboTestService, error) {
+func NewComboTestService(combos *ComboService, prober ModelProber) (*ComboTestService, error) {
 	if combos == nil {
 		return nil, domain.NewValidationError("combo test service requires the combo service")
 	}

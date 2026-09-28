@@ -50,9 +50,14 @@ function renderSection(): void {
 	render(ProviderConnectionsSection, { props: { provider, onaddkey: () => {} } });
 }
 
-/** The checkbox the switch is, found by its own label so a second control cannot satisfy the query. */
-function toggle(): HTMLInputElement {
-	return screen.getByLabelText('Round Robin') as HTMLInputElement;
+/** The switch, found by its role + accessible name so a second control cannot satisfy the query. */
+function toggle(): HTMLButtonElement {
+	return screen.getByRole('switch', { name: 'Round Robin' }) as HTMLButtonElement;
+}
+
+/** The switch's on/off state, read the way a `role="switch"` reports it. */
+function isOn(control: HTMLElement): boolean {
+	return control.getAttribute('aria-checked') === 'true';
 }
 
 /** The routing group for these cases; the combo keys are not what this suite is about. */
@@ -70,14 +75,14 @@ describe('the provider rotation switch', () => {
 	it('reports an inheriting provider as off and names the default it follows', async () => {
 		await openWith({ fallback_strategy: 'fill-first', provider_strategies: {} });
 
-		expect(toggle().checked).toBe(false);
+		expect(isOn(toggle())).toBe(false);
 		expect(screen.getByText('Credentials follow the global default (Fill first).')).toBeTruthy();
 	});
 
 	it('reports the override, not the effective policy, when the global default is round-robin', async () => {
 		await openWith({ fallback_strategy: 'round-robin', provider_strategies: {} });
 
-		expect(toggle().checked).toBe(false);
+		expect(isOn(toggle())).toBe(false);
 		expect(screen.getByText('Credentials follow the global default (Round robin).')).toBeTruthy();
 	});
 
@@ -87,7 +92,7 @@ describe('the provider rotation switch', () => {
 			provider_strategies: { [PROVIDER]: { fallback_strategy: 'round-robin', sticky_limit: 5 } }
 		});
 
-		expect(toggle().checked).toBe(true);
+		expect(isOn(toggle())).toBe(true);
 		expect((screen.getByLabelText('Sticky:') as HTMLInputElement).value).toBe('5');
 		expect(
 			screen.getByText('This provider overrides the global default (Fill first).')
@@ -111,7 +116,7 @@ describe('the provider rotation switch', () => {
 				}
 			}
 		});
-		await waitFor(() => expect(toggle().checked).toBe(true));
+		await waitFor(() => expect(isOn(toggle())).toBe(true));
 	});
 
 	it('merges onto a fresh read, so an entry another screen added since the load survives', async () => {
@@ -151,7 +156,7 @@ describe('the provider rotation switch', () => {
 		expect(stub.settingsPatches[0]).toEqual({
 			routing: { provider_strategies: { anthropic: { sticky_limit: 2 } } }
 		});
-		await waitFor(() => expect(toggle().checked).toBe(false));
+		await waitFor(() => expect(isOn(toggle())).toBe(false));
 	});
 
 	it('writes an explicit sticky limit while rotating, and refuses a value below the floor', async () => {
@@ -185,6 +190,6 @@ describe('the provider rotation switch', () => {
 		await fireEvent.click(toggle());
 
 		expect(await screen.findByText('The gateway refused this value.')).toBeTruthy();
-		expect(toggle().checked).toBe(false);
+		expect(isOn(toggle())).toBe(false);
 	});
 });

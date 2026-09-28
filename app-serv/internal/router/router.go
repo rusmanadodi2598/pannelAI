@@ -50,6 +50,7 @@ type Deps struct {
 	OAuth            *handler.OAuthHandler
 	ProviderNode     *handler.ProviderNodeHandler
 	ProviderValidate *handler.ProviderValidateHandler
+	ModelProbe       *handler.ProviderModelTestHandler
 	Model            *handler.ModelHandler
 	Combo            *handler.ComboHandler
 	ComboTest        *handler.ComboTestHandler
@@ -133,6 +134,7 @@ func New(deps Deps) *Mux {
 	// router_provider_nodes.go, because that section now carries seven routes
 	// and registering them here would push this file past the §1.1 budget.
 	registerProviderNodeRoutes(mux, deps, gateway)
+	registerProviderModelTestRoutes(mux, deps, gateway)
 
 	// §7.5 Upstream endpoints and their keys, including the batch onboarding
 	// routes. All-or-nothing batch semantics live in the service (§8.1), so the

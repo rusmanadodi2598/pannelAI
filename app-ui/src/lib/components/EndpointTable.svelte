@@ -5,10 +5,25 @@
 	// the routing order. Provider and endpoint come first to identify the row, priority and status decide
 	// whether it needs attention, and the key and test columns say what the router last saw. Detail is a
 	// button rather than a clickable row, so the action is reachable by keyboard and announced as a control.
+	//
+	// Delete is a per-row icon-only action that appears only when the caller handles it: this table is the
+	// endpoint list of §6.2 and the provider's connection list of §6.3, and only the latter wires a removal.
+	// The confirmation lives with the caller, so this only asks.
 	import { AUTH_TYPE_LABELS, ENDPOINT_STATUS_ACTIVE, type Endpoint } from '$lib/schemas/endpoint';
+	import { ROW_ACTION_ICONS } from '$lib/icons';
 
-	let { endpoints, onopen }: { endpoints: Endpoint[]; onopen: (entry: Endpoint) => void } =
-		$props();
+	let {
+		endpoints,
+		onopen,
+		ondelete
+	}: {
+		endpoints: Endpoint[];
+		onopen: (entry: Endpoint) => void;
+		/** Present when this list can remove a connection; renders the Delete column. */
+		ondelete?: (entry: Endpoint) => void;
+	} = $props();
+
+	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
 
 	function statusLabel(status: string): string {
 		return status === ENDPOINT_STATUS_ACTIVE ? 'Active' : status;
@@ -28,6 +43,11 @@
 				<th scope="col" class="px-3 py-2 font-medium">Keys</th>
 				<th scope="col" class="px-3 py-2 font-medium">Last test</th>
 				<th scope="col" class="px-3 py-2 font-medium">Detail</th>
+				{#if ondelete}
+					<th scope="col" class="px-3 py-2 font-medium">
+						<span class="sr-only">Actions</span>
+					</th>
+				{/if}
 			</tr>
 		</thead>
 		<tbody>
@@ -53,6 +73,19 @@
 							>Open</button
 						>
 					</td>
+					{#if ondelete}
+						<td class="px-3 py-2 text-end">
+							<button
+								type="button"
+								class="inline-flex min-h-11 items-center gap-1 text-[var(--color-danger)] underline"
+								aria-label="Delete"
+								title="Delete"
+								onclick={() => ondelete(entry)}
+							>
+								<DeleteIcon class="size-4" aria-hidden="true" />
+							</button>
+						</td>
+					{/if}
 				</tr>
 			{/each}
 		</tbody>

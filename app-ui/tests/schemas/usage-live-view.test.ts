@@ -2,7 +2,8 @@
 //
 // Three subjects, one describe each: the fold that keeps the stream away from the aggregates, the guard
 // that ages out a marker the gateway never cleared, and the label rule that stops the panel calling a dead
-// socket Live. The drawing's own derivations are in `usage-topology-view.test.ts`.
+// socket Live. The drawing's own derivations are in `usage-topology-view.test.ts`, and the live facts that
+// the row states are in `usage-live-facts.test.ts`, split out when draft 035 F2 added them (§1.1).
 
 import { describe, expect, it } from 'vitest';
 import type { UsageLiveActive } from '$lib/schemas/usage-live';

@@ -8,11 +8,17 @@
 	// The section's own copy calls a row a connection, which is the reference's word for it and the one
 	// the operator adds (`AddApiKeyModal.js` on that same screen); the table keeps the API's own word for
 	// the row, because it is §6.2's table and the drawer behind it edits an endpoint.
+	//
+	// Removing a connection lives here: a delete requested from a row or from the drawer opens one
+	// confirmation this list owns, so the two paths cannot disagree about what a delete means. The
+	// cascade — the endpoint's keys go with it — is stated in the dialog; here a success reloads the page's
+	// own window and closes any drawer that was showing the row that left.
 	import { untrack } from 'svelte';
+	import EndpointDeleteDialog from '$lib/components/EndpointDeleteDialog.svelte';
 	import EndpointDetailDrawer from '$lib/components/EndpointDetailDrawer.svelte';
 	import EndpointTable from '$lib/components/EndpointTable.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
-	import { listEndpoints } from '$lib/api/endpoints';
+	import { deleteEndpoint, listEndpoints } from '$lib/api/endpoints';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import type { Endpoint } from '$lib/schemas/endpoint';
 
@@ -29,6 +35,12 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let selected = $state<Endpoint | null>(null);
+
+	// The connection awaiting confirmation, and the outcome of the delete attempt, held here so the
+	// dialog's "Deleting" state and a refused delete both survive the round trip.
+	let pendingDelete = $state<Endpoint | null>(null);
+	let deleting = $state(false);
+	let deleteError = $state<string | null>(null);
 
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 
@@ -63,6 +75,33 @@
 		endpoints = result.data.data;
 		total = result.data.meta.total;
 	}
+
+	function askDelete(entry: Endpoint): void {
+		// A delete from the row closes any open drawer first, so the confirmation is the only modal on
+		// screen and the row that leaves cannot stay selected behind it.
+		selected = null;
+		deleteError = null;
+		pendingDelete = entry;
+	}
+
+	async function confirmDelete(): Promise<void> {
+		if (!pendingDelete) return;
+
+		deleting = true;
+		const result = await deleteEndpoint(pendingDelete.id);
+		deleting = false;
+
+		if (!result.ok) {
+			deleteError = result.error.message;
+			return;
+		}
+
+		// The named row is gone; reload the window rather than splice it locally, so the total and the
+		// paging the server owns stay truthful. Clearing the pending row closes the dialog.
+		pendingDelete = null;
+		deleteError = null;
+		await load(providerId);
+	}
 </script>
 
 <div class="flex flex-col gap-4">
@@ -85,7 +124,7 @@
 			description="A connection carries the credential the gateway routes this provider's calls with. Add one to start using it."
 		/>
 	{:else}
-		<EndpointTable {endpoints} onopen={(entry) => (selected = entry)} />
+		<EndpointTable {endpoints} onopen={(entry) => (selected = entry)} ondelete={askDelete} />
 
 		<div class="flex items-center gap-3 text-sm">
 			<button
@@ -121,4 +160,18 @@
 	entry={selected}
 	onclose={() => (selected = null)}
 	onchanged={() => load(providerId)}
+	ondelete={askDelete}
 />
+
+{#if pendingDelete}
+	<EndpointDeleteDialog
+		entry={pendingDelete}
+		error={deleteError}
+		{deleting}
+		onconfirm={() => void confirmDelete()}
+		oncancel={() => {
+			pendingDelete = null;
+			deleteError = null;
+		}}
+	/>
+{/if}

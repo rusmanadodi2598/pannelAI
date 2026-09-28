@@ -43,6 +43,12 @@ const (
 	// backoffCeiling bounds one wait so a long chain cannot park a request for
 	// minutes on end.
 	backoffCeiling = 5 * time.Second
+	// retryWaitCeiling bounds one floored wait for an entry that declared a
+	// seconds-scale backoff base. It is above backoffCeiling because such an entry
+	// asks for spacing wide enough to cross an upstream's slow oscillation (Qoder's
+	// free pool recovers over ~tens of seconds), yet still bounded so a dead
+	// upstream cannot park a request.
+	retryWaitCeiling = 30 * time.Second
 )
 
 // Attempt describes what one upstream call did, which is all the retry decision
@@ -100,7 +106,7 @@ func DecideRetry(entry registry.Provider, plugin provider.Plugin, attempt Attemp
 		// re-hits the limit, waiting more idles a slot.
 		return RetryDecision{Retry: true, After: decision.After}
 	}
-	return RetryDecision{Retry: true, After: Backoff(attempt.Retries)}
+	return RetryDecision{Retry: true, After: retryWait(entry, status, attempt.Retries)}
 }
 
 // retryBudget reports how many retries this attempt is allowed.
@@ -147,6 +153,32 @@ func Backoff(retries int) time.Duration {
 		return 0
 	}
 	return time.Duration(rand.Int64N(int64(window) + 1)) //nolint:gosec // jitter, not a secret
+}
+
+// retryWait is the pause before the next attempt of one status for one entry.
+//
+// An entry that declares no backoff base retries on the shared sub-second
+// full-jitter ladder — every provider keeps its current behavior. An entry that
+// declares one (Qoder, whose free-model pool answers "all backends failed" and
+// serves the same request seconds later) spaces retries by a floored exponential
+// built from that base: the floor is what makes the retry useful, because a wait
+// drawn uniformly from zero could fire straight back into the same fail-streak
+// and change nothing. The window still doubles per attempt and is bounded, so a
+// genuinely dead upstream cannot park a request.
+func retryWait(entry registry.Provider, status, retries int) time.Duration {
+	base, ok := entry.Transport.Retry.BackoffBase(status)
+	if !ok {
+		return Backoff(retries)
+	}
+	if retries < 0 {
+		retries = 0
+	}
+	window := float64(base) * math.Pow(2, float64(retries))
+	if window > float64(retryWaitCeiling) {
+		window = float64(retryWaitCeiling)
+	}
+	half := window / 2
+	return time.Duration(half + rand.Float64()*half)
 }
 
 // RetryableStatuses lists the statuses §4 names as retryable, so a test can

@@ -5,7 +5,8 @@
 // decides whether the screen keeps claiming a provider is routing, and a rule about time has to be
 // testable without waiting for it.
 //
-// Three functions, and each exists because the wire's shape and the screen's question differ:
+// Five derivations and one label table, and each exists because the wire's shape and the screen's question
+// differ:
 //
 //   `liveMerge` folds a frame into the live state. The frame is full state for three fields and says
 //   nothing about the rest, so the fold is where "the stream can never touch an aggregate" becomes
@@ -16,6 +17,10 @@
 //
 //   `streamStatus` decides what the connection label may say, which is what keeps the panel from labelling
 //   a poll or a broken socket "Live" (R-36).
+//
+//   `liveFacts` says what the live row's facts tab may state, and `providerDisplayName` resolves the ids
+//   it names. Together they carry the sentence that left the drawing's frame (owner's correction,
+//   2026-09-27, draft 035 F2).
 //
 // The drawing's own derivations live in `usage-topology-view.ts`.
 
@@ -123,4 +128,75 @@ const STREAM_LABELS: Record<StreamStatus, string> = {
  */
 export function streamLabel(status: StreamStatus): string {
 	return STREAM_LABELS[status];
+}
+
+/** A provider row as the panel's registry read carries it: an id and the name to draw. */
+export type ProviderRow = { id: string; name: string };
+
+/**
+ * One live fact as the row states it: the label names the state, the value names the providers, and the
+ * tone is the drawing's own colour rule, `status` for what is routing and plain for what merely happened
+ * (draft 023 F1, which the move to the row kept).
+ */
+export type LiveFact = {
+	label: string;
+	value: string;
+	tone: 'status' | 'plain';
+};
+
+/** A provider's display name, or its id when the registry has no entry for it. */
+export function providerDisplayName(providers: ProviderRow[], id: string): string {
+	const match = providers.find((provider) => provider.id.toLowerCase() === id.toLowerCase());
+	return match?.name ?? id;
+}
+
+/**
+ * The live facts that are happening, in the order the stream reports them.
+ *
+ * Absence is not a fact: a screen with nothing in flight and nothing finished states none of these, and
+ * the connection chip is what says what the state is (owner's correction, 2026-09-23, carried with the
+ * sentence when it moved out of the drawing's frame and into the row, draft 035 F2). A value carries no
+ * sentence-final period because the tab reads as a label, not as a paragraph.
+ */
+export function liveFacts(
+	providers: ProviderRow[],
+	active: UsageLiveActive[],
+	last: string,
+	error: string
+): LiveFact[] {
+	const facts: LiveFact[] = [];
+
+	if (active.length > 0) {
+		facts.push({
+			label: `${active.length} in flight`,
+			value: active
+				.map((entry) => {
+					const name = providerDisplayName(providers, entry.provider_id);
+					// A frame may carry model as an empty string, and ' ()' after a name is a typo the
+					// wire should not be allowed to put on the screen.
+					const model = entry.model?.trim() ?? '';
+					return model === '' ? name : `${name} (${model})`;
+				})
+				.join(', '),
+			tone: 'status'
+		});
+	}
+
+	if (last !== '') {
+		facts.push({
+			label: 'Last finished',
+			value: providerDisplayName(providers, last),
+			tone: 'plain'
+		});
+	}
+
+	if (error !== '') {
+		facts.push({
+			label: 'Last error',
+			value: providerDisplayName(providers, error),
+			tone: 'plain'
+		});
+	}
+
+	return facts;
 }

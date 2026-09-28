@@ -1,10 +1,11 @@
 // Live drawing tests (src/lib/components/UsageTopology.svelte, draft 012 F3).
 //
 // The drawing is decorative by construction: it is hidden from assistive technology, and the facts it
-// encodes that are not on the screen in words are stated in words above it. So the rows come in pairs,
-// one for the graphic and one for the text, and the interesting ones are the states: which node pulses,
-// what the pulse does when the frame stops naming that provider, and which facts the words state and which
-// they leave to the drawing (owner's correction, 2026-09-23, draft 022 F2 and draft 023 F1).
+// encodes are stated in words by the live row above it (draft 035 F2 moved that sentence out of this
+// frame, where it had been pushing the node animation around). The rows are about the graphic and about
+// what the graphic must not carry: which node pulses, what the pulse does when the frame stops naming
+// that provider, and which sentences the frame no longer states (owner's corrections, 2026-09-23 and
+// 2026-09-27).
 
 import { cleanup, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -97,50 +98,24 @@ describe('UsageTopology', () => {
 		expect(ring?.classList.contains('motion-reduce:hidden')).toBe(true);
 	});
 
-	it('states no fact in words while the drawing is idle', () => {
-		// The owner's correction of 2026-09-23: the provider list repeats the node labels, and "no request
-		// is in flight" / "no request has finished" state only an absence, so an idle screen carries no
-		// sentence that never changes. The line keeps its slot, which is why the absence is asserted on the
-		// facts rather than on an empty paragraph.
-		draw();
+	it('carries no sentence of its own, since the live row states the facts', () => {
+		// Draft 035 F2: the owner's node animation lost the paragraph that pushed it around. The frame now
+		// draws, and the words that name what is happening live in the row above (usage-live-row.test.ts).
+		// The absence is asserted even with every fact in motion, because a fact in motion is exactly when
+		// the paragraph used to appear.
+		const container = draw({
+			active: [entry('openai', 'gpt-4o')],
+			last: 'anthropic',
+			error: 'openai'
+		});
+		const figure = container.querySelector('figure');
 
-		expect(screen.queryByText(/in flight:/)).toBeNull();
-		expect(screen.queryByText(/Last finished:/)).toBeNull();
-		expect(screen.queryByText(/Last error:/)).toBeNull();
+		// The frame is the positive premise: the silence below only means something while it is drawn.
+		expect(figure).toBeTruthy();
+		expect(figure?.textContent).not.toMatch(/in flight|Last finished|Last error/);
 	});
 
-	it('names what is in flight, with the model the frame reported', () => {
-		draw({ active: [entry('openai', 'gpt-4o'), entry('anthropic')] });
-
-		expect(screen.getByText('2 in flight:')).toBeTruthy();
-		expect(screen.getByText('OpenAI (gpt-4o), Anthropic.')).toBeTruthy();
-	});
-
-	it('names the provider the last request finished on, and the one that errored', () => {
-		draw({ last: 'anthropic', error: 'openai' });
-
-		expect(screen.getByText('Last finished:')).toBeTruthy();
-		expect(screen.getByText('Anthropic.')).toBeTruthy();
-		expect(screen.getByText('Last error:')).toBeTruthy();
-		expect(screen.getByText('OpenAI.')).toBeTruthy();
-	});
-
-	it('names a provider the registry does not carry by its id', () => {
-		draw({ last: 'gone-provider' });
-
-		expect(screen.getByText('gone-provider.')).toBeTruthy();
-	});
-
-	it('states the facts above the drawing, where the explanation used to sit', () => {
-		// Draft 023 F1: the paragraph moved out, the facts moved up, and the drawing is the thing below.
-		const container = draw({ active: [entry('openai')] });
-		const line = within(container).getByText('1 in flight:');
-		const drawing = container.querySelector('div[aria-hidden="true"]') as HTMLElement;
-
-		expect(line.compareDocumentPosition(drawing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-	});
-
-	it('hides the drawing from assistive technology, since the live facts are also stated in words', () => {
+	it('hides the drawing from assistive technology, since the live row states the facts in words', () => {
 		const container = draw({ active: [entry('openai')] });
 
 		expect(container.querySelector('div[aria-hidden="true"]')).toBeTruthy();
@@ -171,11 +146,11 @@ describe('UsageTopology', () => {
 		);
 	});
 
-	it('gives the routing name the status colour, and no colour to the other two facts', () => {
-		// Draft 023 F1: the paragraph that defined the colours is gone, so the line carries the drawing's
-		// own rule instead. In the drawing only a routing node's label takes the status colour; the
-		// finished and error nodes keep the default label colour, and so do their facts here.
-		draw({
+	it('draws the routing node label in the status colour and the other states plainly', () => {
+		// Draft 023 F1's colour rule, kept where it always lived: only a routing node's label takes the
+		// status colour, and the finished and error nodes keep the default label colour. The row copy of
+		// this rule travels with the facts (usage-live-row.test.ts, draft 035 F2).
+		const container = draw({
 			providers: [
 				{ id: 'openai', name: 'OpenAI' },
 				{ id: 'anthropic', name: 'Anthropic' },
@@ -186,8 +161,14 @@ describe('UsageTopology', () => {
 			error: 'google'
 		});
 
-		expect(screen.getByText('OpenAI.').classList.contains('text-[var(--color-ok)]')).toBe(true);
-		expect(screen.getByText('Anthropic.').classList.contains('text-[var(--color-ok)]')).toBe(false);
-		expect(screen.getByText('Google.').classList.contains('text-[var(--color-ok)]')).toBe(false);
+		expect(within(container).getByText('OpenAI').classList.contains('text-[var(--color-ok)]')).toBe(
+			true
+		);
+		expect(
+			within(container).getByText('Anthropic').classList.contains('text-[var(--color-ok)]')
+		).toBe(false);
+		expect(within(container).getByText('Google').classList.contains('text-[var(--color-ok)]')).toBe(
+			false
+		);
 	});
 });

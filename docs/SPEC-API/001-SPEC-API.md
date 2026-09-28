@@ -207,12 +207,27 @@ recorded here so their absence reads as a decision rather than a gap
 | GET    | `/api/v1/providers`                              | S    | Registry list: `{id, name, category, auth_type, routability, endpoint_count, status_summary}`; filter `?category=apikey                                                             | oauth                                                                | free | media | local`, `?routability=native | connector`, `?q=<term>`: case-insensitive substring over id and display name, blank means no filter, over 120 characters refused (PORT 002 D1-D3, 2026-09-25) | P1  |
 | GET    | `/api/v1/providers/{provider_id}`                | S    | Registry detail incl. transport defaults, model catalog summary, `routability` ∈ `native                                                                                            | connector`, and `media` (per-kind base URL and credential placement) | P1   |
 | GET    | `/api/v1/providers/{provider_id}/models`         | S    | Full model list; `?suggested=true` returns suggested set                                                                                                                            | P1                                                                   |
+| POST   | `/api/v1/providers/{provider_id}/models/test`    | S    | `{model_id}` probes one model through the data plane; answers one row: `{model_id, name, ok, latency_ms, endpoint_id?, status?, error_code?, error?}` (draft 017 §4.10)              | P1                                                                   |
+| POST   | `/api/v1/providers/{provider_id}/test-models`    | S    | `{limit?}` sweeps the provider's chat models in catalog order; answers `{provider_id, source, warning?, tested, total, stopped?, results[]}`                                              | P1                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/start`    | S    | `{redirect_uri?}` → `{authorize_url, state}` (OAuth providers only)                                                                                                                 | P2                                                                   |
 | GET    | `/api/v1/providers/{provider_id}/oauth/callback` | P    | Completes flow (validates `state` replay-guard), creates upstream endpoint + tokens; `302` redirect for browsers, `200` JSON body for headless callers (`Accept: application/json`) | P2                                                                   |
 | GET    | `/api/v1/providers/{provider_id}/oauth/status`   | S    | Token expiry / refresh state per endpoint                                                                                                                                           | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/refresh`  | S    | Force token refresh (worker also auto-refreshes at `refresh_lead`)                                                                                                                  | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/device/start` | S | `{}` → `{device_code, verification_url, user_code, interval_seconds, expires_in}` (device-flow providers: the registry entry declares no authorize URL)                            | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/device/poll`  | S | `{device_code}` → `{status: "pending"}` while the operator is still authorizing, then `{status: "connected", endpoint_id, token_hint, created}`                                        | P2                                                                   |
+
+**A model test answers per model, and a refusal is not an error.** `POST /models/test` and
+`/test-models` ask a question the connectivity test cannot: not "does this credential reach the provider"
+but "does this model answer". The probe is the real data plane call (`dataplane.Engine.Ping`, one chat turn,
+`max_tokens=1024`), so a model the gateway cannot route never reports healthy from a route it would not
+take. A model that failed is therefore a **row in a 200 answer**, carrying the data plane's own machine
+code; only a malformed request is 4xx. Budget: probes run **sequentially**, 20s each, 90s for a whole sweep
+(under the server's 120s write timeout), the sweep defaults to 6 models and clamps a larger `limit` to 20 —
+one click has a stated worst-case cost against the provider account's quota. `tested < total` says the sweep
+was cut short, and `stopped="deadline"` names why. Nothing is persisted: the verdict belongs to the last
+probe, not to a stored row, which is the same rule `POST /provider-nodes/{id}/test` follows. A model the
+registry declares non-chat (an embedding or image kind) is refused with `VALIDATION_ERROR`, because the chat
+probe's failure would describe the probe rather than the model.
 
 **The callback's two answers.** `GET .../oauth/callback` is the one route in §7.4 that is **public**: the
 provider redirects a browser to it, and a browser cannot present the dashboard session cookie for that

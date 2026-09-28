@@ -2001,6 +2001,115 @@
         ],
         "additionalProperties": false
       },
+      "TestProviderModelRequest": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "maxLength": 191,
+            "description": "The model string a client would send, without the provider prefix."
+          }
+        },
+        "required": [
+          "model_id"
+        ],
+        "additionalProperties": false
+      },
+      "TestProviderModelsRequest": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Models to probe. Absent asks for the default budget; a larger value is clamped to the ceiling, and the answer reports how many ran."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProviderModelTestResult": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "latency_ms": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "endpoint_id": {
+            "type": "string",
+            "description": "The connection that answered, when the routing got that far."
+          },
+          "status": {
+            "type": "integer",
+            "description": "The upstream's own HTTP code, present only when the failure carried one."
+          },
+          "error_code": {
+            "type": "string",
+            "description": "The data plane's machine code, or MODEL_TEST_TIMEOUT when the probe ran out of its budget. Present only on a failed row."
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id",
+          "ok",
+          "latency_ms"
+        ],
+        "additionalProperties": false
+      },
+      "ProviderModelTestResponse": {
+        "type": "object",
+        "properties": {
+          "provider_id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "Where the tested list came from, \"upstream\" or \"registry\"."
+          },
+          "warning": {
+            "type": "string",
+            "description": "Why the list is not from the upstream, when it is not."
+          },
+          "tested": {
+            "type": "integer",
+            "description": "Rows returned. Less than total means the budget or the limit stopped it."
+          },
+          "total": {
+            "type": "integer",
+            "description": "Chat models the provider offers."
+          },
+          "stopped": {
+            "type": "string",
+            "enum": [
+              "deadline"
+            ],
+            "description": "Set when the sweep ran out of budget before reaching every model."
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProviderModelTestResult"
+            }
+          }
+        },
+        "required": [
+          "provider_id",
+          "source",
+          "tested",
+          "total",
+          "results"
+        ],
+        "additionalProperties": false
+      },
       "ValidateNodeRequest": {
         "type": "object",
         "properties": {
@@ -6563,6 +6672,164 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProviderModelList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ManagementValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/ManagementUnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ManagementForbiddenError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ManagementNotFoundError"
+          },
+          "405": {
+            "$ref": "#/components/responses/ManagementMethodNotAllowedError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ManagementConflictError"
+          },
+          "429": {
+            "$ref": "#/components/responses/ManagementRateLimitedError"
+          },
+          "500": {
+            "$ref": "#/components/responses/ManagementInternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/ManagementUpstreamError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ManagementUnavailableError"
+          },
+          "504": {
+            "$ref": "#/components/responses/ManagementTimeoutError"
+          }
+        }
+      }
+    },
+    "/api/v1/providers/{provider_id}/models/test": {
+      "post": {
+        "summary": "Probe one model of a provider by id",
+        "tags": [
+          "Providers"
+        ],
+        "operationId": "postApiV1ProvidersByProvider_IdModelsTest",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestProviderModelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderModelTestResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ManagementValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/ManagementUnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ManagementForbiddenError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ManagementNotFoundError"
+          },
+          "405": {
+            "$ref": "#/components/responses/ManagementMethodNotAllowedError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ManagementConflictError"
+          },
+          "429": {
+            "$ref": "#/components/responses/ManagementRateLimitedError"
+          },
+          "500": {
+            "$ref": "#/components/responses/ManagementInternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/ManagementUpstreamError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ManagementUnavailableError"
+          },
+          "504": {
+            "$ref": "#/components/responses/ManagementTimeoutError"
+          }
+        }
+      }
+    },
+    "/api/v1/providers/{provider_id}/test-models": {
+      "post": {
+        "summary": "Probe a bounded sweep of a provider's chat models",
+        "tags": [
+          "Providers"
+        ],
+        "operationId": "postApiV1ProvidersByProvider_IdTestModels",
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestProviderModelsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderModelTestResponse"
                 }
               }
             }

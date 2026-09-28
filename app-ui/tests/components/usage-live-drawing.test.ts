@@ -48,7 +48,12 @@ describe('UsageLivePanel drawing', () => {
 			)
 		);
 
-		expect(await screen.findByText('OpenAI (gpt-4o).')).toBeTruthy();
+		// Awaited on the row's facts tab for the frame and on the gateway card for the drawing itself:
+		// the tab renders from the stream alone, while the motion below belongs to nodes the registry
+		// read put there, and a row about motion must not pass on an empty drawing (draft 035 F2 moved
+		// the facts await from the drawing's frame to the row).
+		expect(await screen.findByText('OpenAI (gpt-4o)')).toBeTruthy();
+		expect(await screen.findByText('Gateway')).toBeTruthy();
 		expect(container.querySelector('.animate-ping')).toBeTruthy();
 	});
 
@@ -62,9 +67,10 @@ describe('UsageLivePanel drawing', () => {
 				frame({ active: [{ provider_id: 'openai', model: 'gpt-4o', started_at: startedNow() }] })
 			)
 		);
-		// Awaited on the drawing's own facts line rather than on the status chip: the drawing only exists
-		// once the registry read lands, and a row about motion must not pass on an empty drawing.
-		expect(await screen.findByText('OpenAI (gpt-4o).')).toBeTruthy();
+		// Awaited on the row's facts tab, which is where the panel states a routing frame now (draft 035
+		// F2), and on the gateway card, which only a drawing that has nodes can carry.
+		expect(await screen.findByText('OpenAI (gpt-4o)')).toBeTruthy();
+		expect(await screen.findByText('Gateway')).toBeTruthy();
 		expect(container.querySelector('[data-beam="core"]')).toBeTruthy();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Pause live updates' }));
