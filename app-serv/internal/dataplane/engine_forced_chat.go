@@ -49,7 +49,10 @@ func (f *foldedChat) absorb(chunk object) {
 	if id := stringField(chunk, "id"); id != "" {
 		f.id = id
 	}
-	if model := stringField(chunk, "model"); model != "" {
+	// The resolved model arrives seeded, and an upstream alias only fills a name
+	// that was never resolved: Qoder labels every model it serves `auto`, and a
+	// caller that reads it back gets a model it cannot ask for again.
+	if model := stringField(chunk, "model"); model != "" && f.model == "" {
 		f.model = model
 	}
 	if created := intField(chunk, "created"); created > 0 {

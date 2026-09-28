@@ -39,19 +39,24 @@ const maxFoldEvents = 1 << 16
 // answer it carried, in the upstream's own wire format, so the caller's existing
 // non-streamed translation applies unchanged.
 //
+// The resolved model is passed to the chat fold because a chat stream reports no
+// answer object to name: the model a client reads is assembled here, and an
+// upstream's own label (Qoder answers every model as `auto`) is not one the
+// caller can send back.
+//
 // The two wires are folded differently because they carry the answer
 // differently: a Responses stream states the whole response in its terminal
 // event, while a chat stream reports the answer as deltas that have to be
 // accumulated.
-func foldStream(upstream *Upstream, target string) ([]byte, *schema.Usage, error) {
+func foldStream(upstream *Upstream, resolution Resolution) ([]byte, *schema.Usage, error) {
 	events, err := readFoldEvents(upstream.Body)
 	if err != nil {
 		return nil, nil, err
 	}
-	if target == TargetResponses {
+	if resolution.Target == TargetResponses {
 		return foldResponsesEvents(events)
 	}
-	return foldChatEvents(events)
+	return foldChatEvents(events, resolution.ModelID)
 }
 
 // readFoldEvents reads every data payload of an SSE body, in order. The terminal
@@ -137,10 +142,10 @@ func foldUsage(response object, target string) *schema.Usage {
 // stands for: content and reasoning fragments join, tool-call fragments attach to
 // the call index they belong to, the last finish reason wins, and the usage frame
 // is taken as reported.
-func foldChatEvents(events [][]byte) ([]byte, *schema.Usage, error) {
+func foldChatEvents(events [][]byte, model string) ([]byte, *schema.Usage, error) {
 	answer := foldedChat{
 		id:    "chatcmpl-pannelai",
-		model: "",
+		model: model,
 		calls: map[int]*schema.ToolCall{},
 	}
 	for _, payload := range events {

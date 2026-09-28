@@ -35,7 +35,7 @@ import (
 // upstream's, the folded body is forwarded as written, which is the same rule
 // translateAnswer applies.
 func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in Request) ([]byte, *schema.Usage, error) {
-	raw, usage, err := foldStream(upstream, resolution.Target)
+	raw, usage, err := foldStream(upstream, resolution)
 	if err != nil {
 		return nil, nil, err
 	}
