@@ -156,8 +156,15 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 	if id := stringField(chunk, "id"); id != "" && s.ID == "" {
 		s.ID = id
 	}
-	if model := stringField(chunk, "model"); model != "" {
-		s.Model = model
+	// The name the client is given is the one it asked for, which is what this
+	// field's own comment has always claimed. Adopting the upstream's `model`
+	// member broke that: Qoder answers every model it serves as `auto`, so a
+	// client that asked `qoder/qfmodel` was told its answer came from `auto` —
+	// a name it cannot re-send, and one that routes to a pool the vendor
+	// answers 429 for. The echo is only used when nothing was asked for, where
+	// it is the sole name available.
+	if s.Model == "" {
+		s.Model = stringField(chunk, "model")
 	}
 	if usage, ok := objectField(chunk, "usage"); ok {
 		s.usage = openAIUsageFromObject(usage)

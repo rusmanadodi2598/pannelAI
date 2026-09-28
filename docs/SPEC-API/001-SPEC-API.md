@@ -779,6 +779,15 @@ the token savers run after them: a saver that rewrites messages sees the body th
 actually receive, thinking fields included. That is the reference's own order (`chatCore.js` applies
 thinking inside translation, then runs the savers on the final body).
 
+**What a served answer names as its model (2026-09-28).** `POST /chat/completions` and `POST /messages`
+report the model the caller asked for, not the name the upstream echoed in its answer. An upstream is
+entitled to answer a routed model under its own label — Qoder answers every model it serves as `auto` —
+and that label is frequently not something the caller can send back: a client that reads `auto` off the
+answer and retries it reaches a pool the vendor refuses with `429`. The id the gateway resolved is the
+one that travels, in the streamed frames and in the folded answer alike. The Responses-emulating client
+route keeps the opposite convention deliberately (it reports the answer as the upstream named it), so a
+caller that wants the provider's own label asks there.
+
 Authentication runs first, before the body is read or validated: an unauthenticated caller is refused
 with `401 UNAUTHORIZED` whatever its body looks like, so a malformed payload cannot be used to probe the
 request schema, and an oversized body is never read for a caller who has presented no credential
@@ -1022,3 +1031,5 @@ _Changelog 2026-09-26: §6 and §7.4 carry the owner's curated provider set. The
 _Changelog 2026-09-28: §7.12 adds the published-quota read `GET /api/v1/quotas/{endpoint_id}/usage` (draft 036 §7). It is a separate body from the counted windows, not another window: `quota_windows` has a closed `window` enum, integer amounts, and no unit column (Q15), so a provider-reported `credits` balance cannot be written there without being recorded as a percentage of something it is not. The route opens the credential the endpoint's own `auth_type` names, gates on `features.usage` and `features.usageApikey` before any outbound call, renders amounts as decimal strings at the precision the provider reported, omits `total` for an unbounded bucket rather than writing zero, and answers a provider error or an empty publication as `200` with `message` and `data: []` so the panel renders the sentence instead of failing the page._
 
 _Changelog 2026-09-28: §4's POST retry cap gains the one exception it always implicitly assumed. A refusal the connector reports from the first frame of a wrapped stream is a refusal the client never saw an answer for, so repeating it cannot duplicate anything, and the entry's full attempt budget applies instead of the single-POST cap. Measured the same day against Qoder: the free model refused the identical request twice with a nested capacity complaint and served it on the third attempt, which the cap had stopped at two._
+
+_Changelog 2026-09-28: §7.6 states which model name a served answer carries. The chat-completions and messages surfaces now report the model the caller asked for; they had been overwriting it with the upstream's own echo frame by frame, and Qoder answers every model it serves as `auto` — a label that is neither the requested model nor re-sendable, since retrying `auto` reaches a pool the vendor refuses with 429. The Responses-emulating route keeps reporting the answer as the upstream named it, which is that surface's documented convention and is left alone._

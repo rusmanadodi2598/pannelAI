@@ -157,8 +157,10 @@ func (s *ClaudeStreamState) fromOpenAI(chunk object) [][]byte {
 	if id := stringField(chunk, "id"); id != "" && s.ID == "" {
 		s.ID = id
 	}
-	if model := stringField(chunk, "model"); model != "" {
-		s.Model = model
+	// The name reported to the client is the one it asked for; the upstream's
+	// echo is used only when nothing was asked for. See StreamState.openAIFrames.
+	if s.Model == "" {
+		s.Model = stringField(chunk, "model")
 	}
 	if usage, ok := objectField(chunk, "usage"); ok {
 		s.usage = openAIUsageFromObject(usage)
