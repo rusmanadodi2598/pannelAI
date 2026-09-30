@@ -74,17 +74,19 @@ type Request struct {
 	ThinkingOverride *reasoning.Suffix
 }
 
-// stopSequences returns the `stop` members the caller asked the answer to end at,
-// read from whichever client body the route decoded.
-//
-// Only the OpenAI wire spells the control this way; an Anthropic caller sends
-// `stop_sequences`, which its upstream enforces itself, so a request that carried
-// no OpenAI body simply has nothing to cut.
+// stopSequences returns the sequences the caller asked the answer to end at, read
+// from whichever client body the route decoded. Both wires spell the control
+// differently — OpenAI's `stop` takes a string or a list, Anthropic's
+// `stop_sequences` only a list — and both are the same request: do not show me the
+// marker or anything after it.
 func (r Request) stopSequences() []string {
-	if r.Chat == nil {
-		return nil
+	if r.Chat != nil {
+		return r.Chat.StopSequences()
 	}
-	return r.Chat.StopSequences()
+	if r.Messages != nil {
+		return r.Messages.StopSequences
+	}
+	return nil
 }
 
 // ProviderID reports the provider the request resolved to, or "" before

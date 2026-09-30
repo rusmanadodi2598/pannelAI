@@ -35,7 +35,7 @@ import (
 // upstream's, the folded body is forwarded as written apart from the model name a
 // combo re-claims, which is the same rule translateAnswer applies.
 func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in Request, outcome *Outcome) ([]byte, *schema.Usage, error) {
-	raw, usage, err := foldStream(upstream, resolution, in.stopSequences())
+	raw, usage, err := foldStream(upstream, resolution, foldStopSequences(in))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -73,6 +73,23 @@ func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in R
 		body, encodeErr := encode(translated)
 		return body, usage, encodeErr
 	}
+}
+
+// foldStopSequences answers whether the fold itself should cut the answer to the
+// caller's stop sequences.
+//
+// An Anthropic client is cut after translation instead. The fold produces the
+// upstream's own OpenAI-shaped body, and a marker removed there is gone before the
+// Anthropic answer is built — so the text would be cut correctly while the answer
+// still claimed `stop_reason: "end_turn"` with no `stop_sequence`, which is the one
+// thing that wire has a field to say. Measured live on 2026-09-30: cutting in the
+// fold produced exactly that half-truth, so the cut moved to the shape that can
+// report it whole.
+func foldStopSequences(in Request) []string {
+	if in.ClientFormat == schema.FormatAnthropic {
+		return nil
+	}
+	return in.stopSequences()
 }
 
 // translateAnswer converts a non-streamed upstream answer into the client's wire

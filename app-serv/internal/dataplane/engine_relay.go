@@ -200,15 +200,36 @@ func (e *Engine) readAnswer(
 	sink FrameSink,
 	outcome *Outcome,
 ) ([]byte, *schema.Usage, error) {
-	switch {
-	case in.Stream:
+	if in.Stream {
 		return nil, nil, e.relayStream(ctx, upstream, resolution, in, sink, outcome)
-	case e.transport.ForcesStream(resolution.Provider):
+	}
+	body, usage, err := e.readOneBody(upstream, resolution, in, outcome)
+	if err != nil {
+		return nil, nil, err
+	}
+	// A stream is cut frame by frame at the translator; a single body is cut here,
+	// after translation, because the Anthropic answer reports a cut as
+	// `stop_reason: "stop_sequence"` and only the served shape knows the text the
+	// client will actually read.
+	if in.ClientFormat == schema.FormatAnthropic {
+		return cutClaudeAnswer(body, in.stopSequences()), usage, nil
+	}
+	return body, usage, nil
+}
+
+// readOneBody folds or translates the upstream answer into the single body a
+// non-streamed client receives, whichever of the two shapes it came in.
+func (e *Engine) readOneBody(
+	upstream *Upstream,
+	resolution Resolution,
+	in Request,
+	outcome *Outcome,
+) ([]byte, *schema.Usage, error) {
+	if e.transport.ForcesStream(resolution.Provider) {
 		// The provider only answers a stream, so the single body the client
 		// asked for is folded back out of it. The fold returns the upstream's
 		// own non-streamed wire, so the same answer translator serves it.
 		return e.translateFolded(upstream, resolution, in, outcome)
-	default:
-		return e.translateAnswer(upstream, resolution, in, outcome)
 	}
+	return e.translateAnswer(upstream, resolution, in, outcome)
 }

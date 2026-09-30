@@ -49,7 +49,8 @@ func (e *Engine) relayStream(
 
 	switch in.ClientFormat {
 	case schema.FormatAnthropic:
-		state := NewClaudeStreamState("", answerModel(resolution, resolution.UpstreamID))
+		state := NewClaudeStreamState("", answerModel(resolution, resolution.UpstreamID)).
+			WithStopSequences(in.stopSequences())
 		if err := e.pump(ctx, upstream, sink, resolution.Target, state.Frames); err != nil {
 			return err
 		}

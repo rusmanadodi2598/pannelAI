@@ -39,6 +39,9 @@ type stopGuard struct {
 	// hit reports a sequence already found: everything after it belongs to the
 	// vendor's draft, not to the answer.
 	hit bool
+	// matched is the sequence that ended the answer, which the Anthropic wire
+	// reports back to the client as `stop_sequence`.
+	matched string
 }
 
 // newStopGuard builds the guard for one call. No sequences means nothing to cut
@@ -68,8 +71,9 @@ func (g *stopGuard) write(fragment string) string {
 	}
 	buffered := g.pending + fragment
 	g.pending = ""
-	if at := firstStop(buffered, g.sequences); at >= 0 {
+	if at, sequence := firstStopSequence(buffered, g.sequences); at >= 0 {
 		g.hit = true
+		g.matched = sequence
 		return buffered[:at]
 	}
 	hold := heldBackLen(buffered, g.sequences)
@@ -94,27 +98,36 @@ func (g *stopGuard) stopped() bool {
 	return g != nil && g.hit
 }
 
-// cutAtStop trims a whole answer to before its first marker and reports whether it
-// found one. It serves the folded shape, where the text is complete before anyone
-// reads it.
-func cutAtStop(text string, sequences []string) (string, bool) {
-	at := firstStop(text, sequences)
-	if at < 0 {
-		return text, false
+// sequence names the marker that ended the answer, or "" when nothing was cut.
+func (g *stopGuard) sequence() string {
+	if g == nil {
+		return ""
 	}
-	return text[:at], true
+	return g.matched
 }
 
-// firstStop returns the earliest position of any sequence in text, or -1.
-func firstStop(text string, sequences []string) int {
-	earliest := -1
+// cutAtStop trims a whole answer to before its first marker, reporting the marker
+// that matched and whether one did. It serves the folded and one-body shapes,
+// where the text is complete before anyone reads it.
+func cutAtStop(text string, sequences []string) (trimmed string, matched string, cut bool) {
+	at, sequence := firstStopSequence(text, sequences)
+	if at < 0 {
+		return text, "", false
+	}
+	return text[:at], sequence, true
+}
+
+// firstStopSequence returns the earliest position of any sequence in text and the
+// sequence that holds it, or -1 when none appears.
+func firstStopSequence(text string, sequences []string) (int, string) {
+	earliest, matched := -1, ""
 	for _, sequence := range sequences {
 		at := strings.Index(text, sequence)
 		if at >= 0 && (earliest < 0 || at < earliest) {
-			earliest = at
+			earliest, matched = at, sequence
 		}
 	}
-	return earliest
+	return earliest, matched
 }
 
 // heldBackLen returns the length of the longest tail of text that could still grow

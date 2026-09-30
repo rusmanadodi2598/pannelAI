@@ -56,6 +56,19 @@ type ClaudeStreamState struct {
 	usage *schema.Usage
 	// stopReason is the Anthropic stop reason derived from the upstream's.
 	stopReason string
+	// stop is the guard that ends the answer at a `stop_sequences` member the
+	// caller named, and stopSequence is the marker that did. Anthropic reports
+	// both on the closing message_delta, so a cut is distinguishable from a model
+	// that simply finished — which is the one thing the OpenAI wire cannot say.
+	stop         *stopGuard
+	stopSequence string
+}
+
+// WithStopSequences arms the guard that ends the stream at a `stop_sequences`
+// member the caller asked for.
+func (s *ClaudeStreamState) WithStopSequences(sequences []string) *ClaudeStreamState {
+	s.stop = newStopGuard(sequences)
+	return s
 }
 
 // NewClaudeStreamState builds the state for one client stream.
@@ -108,6 +121,11 @@ func (s *ClaudeStreamState) fromResponses(payload []byte) [][]byte {
 func (s *ClaudeStreamState) Finish() [][]byte {
 	frames := make([][]byte, 0, 4)
 	frames = append(frames, s.startFrame())
+	// Text the guard was still holding back was never a marker. It is released
+	// before the blocks close, so the caller keeps the real end of its answer.
+	if s.stop != nil && !s.stop.stopped() {
+		frames = append(frames, s.emitText(s.stop.flush())...)
+	}
 	frames = append(frames, s.closeBlocks()...)
 
 	usage := schema.MessagesUsage{}
@@ -118,10 +136,16 @@ func (s *ClaudeStreamState) Finish() [][]byte {
 	if stopReason == "" {
 		stopReason = StopEndTurn
 	}
+	// The marker itself travels only when a marker ended the answer; otherwise
+	// Anthropic's `stop_sequence` is null, which is what an untouched turn reads.
+	var stopSequence any
+	if s.stopSequence != "" {
+		stopSequence = s.stopSequence
+	}
 	frames = append(frames,
 		eventFrame(schema.EventMessageDelta, mustFrame(map[string]any{
 			"type":  schema.EventMessageDelta,
-			"delta": map[string]any{"stop_reason": stopReason, "stop_sequence": nil},
+			"delta": map[string]any{"stop_reason": stopReason, "stop_sequence": stopSequence},
 			"usage": usage,
 		})),
 		eventFrame(schema.EventMessageStop, mustFrame(map[string]any{"type": schema.EventMessageStop})),
@@ -184,7 +208,12 @@ func (s *ClaudeStreamState) fromOpenAI(chunk object) [][]byte {
 	}
 
 	if reason := stringField(choice, "finish_reason"); reason != "" {
-		s.stopReason = claudeStopReason(reason)
+		// A cut the guard made is the caller's own end of the answer. The
+		// upstream's reason arrives after text the caller asked not to receive, so
+		// it cannot rewrite a stop sequence into an end turn.
+		if s.stopReason != StopStopSequence {
+			s.stopReason = claudeStopReason(reason)
+		}
 	}
 	return frames
 }

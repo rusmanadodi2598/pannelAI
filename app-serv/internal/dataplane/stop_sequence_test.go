@@ -107,18 +107,23 @@ func TestCutAtStop_TrimsAFoldedAnswer(t *testing.T) {
 	cases := []struct {
 		text     string
 		want     string
+		wantMark string
 		wantCut  bool
 		sequence []string
 	}{
-		{text: "keep CUT drop", want: "keep ", wantCut: true, sequence: []string{"CUT"}},
+		{text: "keep CUT drop", want: "keep ", wantMark: "CUT", wantCut: true, sequence: []string{"CUT"}},
 		{text: "no marker here", want: "no marker here", wantCut: false, sequence: []string{"CUT"}},
-		{text: "CUT at the very start", want: "", wantCut: true, sequence: []string{"CUT"}},
+		{text: "CUT at the very start", want: "", wantMark: "CUT", wantCut: true, sequence: []string{"CUT"}},
 		{text: "nothing to cut", want: "nothing to cut", wantCut: false, sequence: nil},
+		// Two markers in play: the earliest one ends the answer, and it is the one
+		// the Anthropic wire reports back as `stop_sequence`.
+		{text: "bb then aa", want: "", wantMark: "bb", wantCut: true, sequence: []string{"aa", "bb"}},
 	}
 	for _, tc := range cases {
-		got, cut := cutAtStop(tc.text, tc.sequence)
-		if got != tc.want || cut != tc.wantCut {
-			t.Fatalf("cutAtStop(%q) = (%q, %v), want (%q, %v)", tc.text, got, cut, tc.want, tc.wantCut)
+		got, matched, cut := cutAtStop(tc.text, tc.sequence)
+		if got != tc.want || cut != tc.wantCut || matched != tc.wantMark {
+			t.Fatalf("cutAtStop(%q) = (%q, %q, %v), want (%q, %q, %v)",
+				tc.text, got, matched, cut, tc.want, tc.wantMark, tc.wantCut)
 		}
 	}
 }

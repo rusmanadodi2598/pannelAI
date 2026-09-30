@@ -134,7 +134,7 @@ func (f *foldedChat) response() schema.ChatCompletionResponse {
 	// The caller's `stop` is honoured here even when the upstream answered past
 	// it, and a cut is a stop: an upstream that ran on to its own ceiling after
 	// the marker would otherwise report `length` for text it never showed.
-	trimmed, stopped := cutAtStop(message.Content.Text, f.stop)
+	trimmed, _, stopped := cutAtStop(message.Content.Text, f.stop)
 	message.Content.Text = trimmed
 	if len(f.calls) > 0 {
 		message.ToolCalls = f.callsByIndex()

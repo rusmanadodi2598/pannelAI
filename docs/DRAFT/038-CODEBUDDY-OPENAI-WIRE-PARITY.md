@@ -2,12 +2,12 @@
 
 Register temuan `app-serv` dari pengujian data plane yang diminta owner atas satu model
 `codebuddy-intl/deepseek-v4.1-flash`, empat mode uji (chat completion, tool, streaming, reasoning).
-Register ini **mengubah** kode: ketujuh temuan ditutup di ronde ini, satu temuan sejenis dicatat
-sebagai sisa (§9).
+Register ini **mengubah** kode: ketujuh temuan ditutup di ronde ini, dan temuan sejenis yang semula
+dicatat sebagai sisa — `stop_sequences` pada wire Anthropic — ikut ditutup (§9).
 
 |                      |                                                                                                                                                                                                                                                                                                          |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | **CLOSED 2026-09-30.** F1 `stop_sequence.go` + `translate_stream_openai_sanitize.go`; F2 `normalizeStopMember`; F3 `codebuddy_choice.go`; F4 lepasnya strip pada `foldedChat.response()`; F5 `Resolution.Requested` + `ClientModel()`; F6 prune delta; F7 `jsonErrorTail`. Sisa: wire Anthropic untuk `stop_sequences` (§9) |
+| **Status**           | **CLOSED 2026-09-30.** F1 `stop_sequence.go` + `translate_stream_openai_sanitize.go`; F2 `normalizeStopMember`; F3 `codebuddy_choice.go`; F4 lepasnya strip pada `foldedChat.response()`; F5 `Resolution.Requested` + `ClientModel()`; F6 prune delta; F7 `jsonErrorTail`. **Ditutup kemudian (commit §9):** `stop_sequences` pada wire Anthropic — `stop_claude_answer.go` + guard pada `ClaudeStreamState` |
 | **Mechanism**        | AFTER (temuan diukur live, patch mendarat di working tree, diverifikasi ulang live)                                                                                                                                                                                                                       |
 | **Scope**            | Pengujian gateway di `127.0.0.1:9090` atas `codebuddy-intl/deepseek-v4.1-flash` pada `POST /api/v1/chat/completions` (stream + non-stream, tools, reasoning). Daftar model `/api/v1/models` menjawab 314 entri; model target ada di dalamnya                                                                 |
 | **Permintaan owner** | "Testing request response: Chat Completion, Tool, Streaming, Reasoning" atas endpoint + kunci + satu model itu (2026-09-30), lalu "Fix temuannya"                                                                                                                                                        |
@@ -149,20 +149,45 @@ Yang diambil adalah member yang salah bentuk (`json.UnmarshalTypeError.Field`):
 `invalid request body: field messages holds a value of the wrong type`. Pesan syntax yang pendek tetap
 diteruskan apa adanya; yang panjang diringkas jadi `the body is not valid JSON`.
 
-## 9. Yang tetap terbuka — `stop_sequences` pada wire Anthropic
+## 9. Sisa — `stop_sequences` pada wire Anthropic: **CLOSED 2026-09-30**
 
-`GET /api/v1/messages` dengan `stop_sequences:["STOPHERE"]` masih mengembalikan
-`A STOPHERE B` (`stop_reason: end_turn`). Ini cacat kelas sama — vendor yang mengabaikan `stop` — tapi
-sengaja tidak ditutup di sini bersama F1, karena:
+Semula tercatat sebagai sisa karena setengah menutupnya justru salah: memotong teks tapi tetap
+melaporkan `end_turn`. Sekarang ditutup dengan semantik Anthropic yang sesungguhnya.
 
-* `Request.stopSequences()` hanya membaca `in.Chat`, dan fold memang memotong lewat jalur itu;
-* setengah menutup (memotong teks tapi melaporkan `end_turn`) akan **salah dalam cara baru**: wire
-  Anthropic menuntut `stop_reason: "stop_sequence"` plus `stop_sequence` yang cocok, dan itu pekerjaan
-  `claudeAnswer`/`ClaudeStreamState`, bukan tempelan pada guard;
-* titik potongnya berbeda lagi: `translate_stream_claude_delta.go:48` untuk stream, dan pita terjemah
-  `raw` OpenAI di `engine_translate.go:124` untuk jawaban tunggal.
+* `Request.stopSequences()` membaca kedua wire: `stop` OpenAI (string atau list) dan
+  `stop_sequences` Anthropic.
+* **Jawaban tunggal** — `stop_claude_answer.go:cutClaudeAnswer` memotong body yang sudah
+  dilayani, sesudah translasi, sehingga bentuknya tahu teks mana yang benar-benar dibaca klien:
+  `stop_reason: "stop_sequence"` dan `stop_sequence: <marker>`. Rewrite dilakukan pada objek
+  ter-decode, bukan pada DTO, supaya member tak bermodel ikut lolos — alasan yang sama dengan
+  `stampAnswerModel`. Yang dipotong dan dibuang hanya blok `text`; blok `tool_use` di belakang marker
+  **tetap ada**, karena itu kerjaan yang harus klien jalankan, bukan prosa yang diminta dihentikan.
+  Marker yang terpecah di antara dua blok text juga tertangkap (guard-nya membawa sisa antar-blok).
+* **Stream** — guard dipasang pada `ClaudeStreamState.emitText`, satu titik keluar untuk teks dari
+  upstream OpenAI mapupun Responses. Saat memotong: blok text ditutup, `stopReason` menjadi
+  `stop_sequence`, dan `stopSequence` dibawa ke `message_delta`. Alasannya **tidak boleh**
+  ditimpa finish frame upstream yang datang belakangan, karena ia lahir dari teks yang justru
+  diminta tidak dilihat. Ekor yang masih ditahan dilepas di `Finish()` kalau ternyata bukan marker,
+  dan blok yang terbuka selalu ditutup berpasangan.
+* **Urutan potong adalah temuannya, bukan detail.** Percobaan pertama memotong di fold dan
+  menjawab `text='A '` dengan `stop_reason: end_turn` — teks benar, alasan salah. Penyebabnya: fold
+  menghasilkan body OpenAI, sehingga marker sudah hilang sebelum jawaban Anthropic dibuat.
+  `foldStopSequences()` kini menolak memotong di fold untuk klien Anthropic; potongnya terjadi di
+  bentuk yang bisa melaporkan marker itu. Test `TestFoldStopSequences_DefersTheCutToTheAnthropicShape`
+  mengunci urutan ini supaya tidak balik lagi.
 
-Pekerjaannya: umpan `Messages.StopSequences` ke guard yang sama, dan pemetaan alasan berhenti yang benar.
+**Verifikasi live (instance sendiri di `:9091`, server owner di `:9090` tidak disentuh):**
+
+| bentuk | hasil |
+| --- | --- |
+| Anthropic jawaban tunggal | `text='A '` · `stop_reason=stop_sequence` · `stop_sequence='STOPHERE'` |
+| Anthropic stream | sama, `content_block_start/stop` 1/1, `message_stop` ada |
+| OpenAI wire, non-stream (regresi) | `text='A '` · `finish=stop` |
+| OpenAI wire, stream (regresi) | `text='A '` · finish `['stop']` · `[DONE]` |
+| Anthropic tanpa `stop_sequences` | `A STOPHERE B STOPHERE C` · `end_turn` — tidak disentuh |
+
+Test baru: 10 fungsi (`stop_claude_test.go` 5 stream, `stop_claude_answer_test.go` 4 + 1 urutan).
+Berkas test sempat menyentuh 264 baris — AGENTS.md §1.1 — lalu dipecah dua (195 + 115).
 
 ## 10. Test, batas, dan peta
 

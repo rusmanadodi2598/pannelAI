@@ -46,27 +46,48 @@ func (s *ClaudeStreamState) deltaFrames(delta object) [][]byte {
 	}
 
 	if content := stringField(delta, "content"); content != "" {
-		frames = append(frames, s.closeThinking()...)
-		if s.textIndex < 0 {
-			s.textIndex = s.nextIndex
-			s.nextIndex++
-			frames = append(frames, eventFrame(schema.EventContentBlockStart, mustFrame(map[string]any{
-				"type":  schema.EventContentBlockStart,
-				"index": s.textIndex,
-				"content_block": map[string]any{
-					"type": schema.BlockText, "text": "",
-				},
-			})))
+		// The guard sees every fragment, so a marker the upstream splits across two
+		// of them is caught at the second one instead of reaching the client.
+		frames = append(frames, s.emitText(s.stop.write(content))...)
+		if s.stop.stopped() {
+			// The marker ended the answer: the text block closes here and the
+			// stream reports a stop sequence rather than the reason the upstream
+			// eventually gave.
+			frames = append(frames, s.closeText()...)
+			s.stopReason = StopStopSequence
+			s.stopSequence = s.stop.sequence()
 		}
-		frames = append(frames, eventFrame(schema.EventContentBlockDelta, mustFrame(map[string]any{
-			"type":  schema.EventContentBlockDelta,
-			"index": s.textIndex,
-			"delta": map[string]any{"type": schema.DeltaText, "text": content},
-		})))
 	}
 
 	frames = append(frames, s.toolCallFrames(delta)...)
 	return frames
+}
+
+// emitText appends text to the answer, opening the text block when none is open.
+// Empty text emits nothing and opens nothing, which is what keeps a fragment the
+// guard is still holding back from becoming an empty block a client must pair.
+func (s *ClaudeStreamState) emitText(text string) [][]byte {
+	if text == "" {
+		return nil
+	}
+	frames := make([][]byte, 0, 2)
+	frames = append(frames, s.closeThinking()...)
+	if s.textIndex < 0 {
+		s.textIndex = s.nextIndex
+		s.nextIndex++
+		frames = append(frames, eventFrame(schema.EventContentBlockStart, mustFrame(map[string]any{
+			"type":  schema.EventContentBlockStart,
+			"index": s.textIndex,
+			"content_block": map[string]any{
+				"type": schema.BlockText, "text": "",
+			},
+		})))
+	}
+	return append(frames, eventFrame(schema.EventContentBlockDelta, mustFrame(map[string]any{
+		"type":  schema.EventContentBlockDelta,
+		"index": s.textIndex,
+		"delta": map[string]any{"type": schema.DeltaText, "text": text},
+	})))
 }
 
 // toolCallFrames opens a tool_use block for a new tool call and feeds argument
