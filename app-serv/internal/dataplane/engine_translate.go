@@ -38,9 +38,38 @@ func upstreamBody(in Request, resolution Resolution) ([]byte, error) {
 		(in.ClientFormat == schema.FormatOpenAIResponses && resolution.Target == TargetResponses)
 
 	if sameFormat {
-		return replaceModel(in.Raw, resolution.UpstreamID)
+		body, err := replaceModel(in.Raw, resolution.UpstreamID)
+		if err != nil {
+			return nil, err
+		}
+		return normalizeStopMember(body)
 	}
 	return translateUpstreamBody(in, resolution)
+}
+
+// normalizeStopMember rewrites a forwarded `stop` given as one string into the
+// one-element array the same wire also accepts.
+//
+// The two spellings mean the same thing, so the rewrite decides nothing the caller
+// did not already ask for; it exists because the OpenAI wire documents both and
+// vendors on it implement only one. Measured live on codebuddy-intl on 2026-09-30:
+// `"stop":"green"` drew `11101 Bad Request` from the vendor while
+// `"stop":["green"]` was accepted, and the gateway decodes either shape.
+func normalizeStopMember(body []byte) ([]byte, error) {
+	decoded, ok := decodeObject(body)
+	if !ok {
+		return body, nil
+	}
+	raw, present := decoded["stop"]
+	if !present || len(raw) == 0 || raw[0] != '"' {
+		return body, nil
+	}
+	decoded["stop"] = mustJSON([]string{stringField(decoded, "stop")})
+	encoded, err := json.Marshal(decoded)
+	if err != nil {
+		return nil, wrapDataPlaneError(CodeValidation, "the request body could not be re-encoded", err)
+	}
+	return encoded, nil
 }
 
 // replaceModel swaps only the model member of a forwarded body, leaving every
@@ -122,31 +151,34 @@ func readUsage(raw []byte, upstreamTarget string) *schema.Usage {
 // claudeAnswer translates a non-streamed upstream answer into the Anthropic
 // wire, whichever format the upstream wrote it in.
 func claudeAnswer(raw []byte, resolution Resolution) (schema.MessagesResponse, error) {
+	reported := answerModel(resolution, resolution.ModelID)
 	if resolution.Target == TargetResponses {
-		return ResponsesToClaudeResponse(raw, resolution.ModelID)
+		return ResponsesToClaudeResponse(raw, reported)
 	}
-	return OpenAIToClaudeResponse(raw, resolution.ModelID)
+	return OpenAIToClaudeResponse(raw, reported)
 }
 
 // openAIAnswer translates a non-streamed upstream answer into the OpenAI wire,
 // whichever format the upstream wrote it in.
 func openAIAnswer(raw []byte, resolution Resolution, created int64) (schema.ChatCompletionResponse, error) {
+	reported := answerModel(resolution, resolution.ModelID)
 	if resolution.Target == TargetResponses {
-		return ResponsesToOpenAIResponse(raw, resolution.ModelID, created)
+		return ResponsesToOpenAIResponse(raw, reported, created)
 	}
-	return ClaudeToOpenAIResponse(raw, resolution.ModelID, created)
+	return ClaudeToOpenAIResponse(raw, reported, created)
 }
 
 // responsesClientAnswer translates a non-streamed upstream answer into the Responses
 // wire, whichever format the upstream wrote it in.
 func responsesClientAnswer(raw []byte, resolution Resolution, created int64) (schema.ResponsesAnswer, error) {
+	reported := answerModel(resolution, resolution.ModelID)
 	switch resolution.Target {
 	case TargetOpenAI:
-		return OpenAIToResponsesAnswer(raw, resolution.ModelID, created)
+		return OpenAIToResponsesAnswer(raw, reported, created)
 	case TargetClaude:
-		return ClaudeToResponsesAnswer(raw, resolution.ModelID, created)
+		return ClaudeToResponsesAnswer(raw, reported, created)
 	default:
-		return ResponsesToResponsesAnswer(raw, resolution.ModelID)
+		return ResponsesToResponsesAnswer(raw, reported)
 	}
 }
 

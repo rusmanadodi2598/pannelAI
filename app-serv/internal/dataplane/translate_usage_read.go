@@ -45,15 +45,18 @@ func openAIUsageFromObject(usage object) *schema.Usage {
 		CompletionTokens: intField(usage, "completion_tokens"),
 		TotalTokens:      intField(usage, "total_tokens"),
 	}
-	if details, ok := objectField(usage, "prompt_tokens_details"); ok {
-		cached := intField(details, "cached_tokens")
-		creation := intField(details, "cache_creation_tokens")
-		if cached > 0 || creation > 0 {
-			parsed.PromptTokensDetails = &schema.PromptTokensDetails{
-				CachedTokens:         cached,
-				CacheCreationTokens:  creation,
-				CacheReadInputTokens: cached,
-			}
+	// The details block is read as possibly absent rather than as a gate, because a
+	// vendor may state its cache split only at the usage top level — a call that
+	// reports `cache_creation_input_tokens` with no details block at all still owns
+	// a cache write the panel has to show.
+	details, _ := objectField(usage, "prompt_tokens_details")
+	cached := openAICacheReadCount(usage, details)
+	creation := openAICacheWriteCount(usage, details)
+	if cached > 0 || creation > 0 {
+		parsed.PromptTokensDetails = &schema.PromptTokensDetails{
+			CachedTokens:         cached,
+			CacheCreationTokens:  creation,
+			CacheReadInputTokens: cached,
 		}
 	}
 	if details, ok := objectField(usage, "completion_tokens_details"); ok {
@@ -62,4 +65,52 @@ func openAIUsageFromObject(usage object) *schema.Usage {
 		}
 	}
 	return &parsed
+}
+
+// openAICacheReadCount and openAICacheWriteCount read the two cache splits from
+// every place the OpenAI wire is seen to state them, and answer the one quantity
+// those places describe.
+//
+// The candidate spellings are alternative reports of a single number, never parts
+// of it: codebuddy-intl states its read as `prompt_tokens_details.cached_tokens`
+// while its top-level `cached_tokens` and `cache_read_input_tokens` stay 0
+// (measured 2026-09-30), and the write sits at the top level as
+// `cache_creation_input_tokens` or `prompt_cache_write_tokens` rather than in the
+// details block. Summing the spellings would bill the same token twice, so the
+// first one that carries a number wins, in the order OpenAI documents its own
+// field first.
+func openAICacheReadCount(usage, details object) int {
+	return firstCounted(
+		usageMember{details, "cached_tokens"},
+		usageMember{details, "cache_read_input_tokens"},
+		usageMember{usage, "cache_read_input_tokens"},
+		usageMember{usage, "cached_tokens"},
+	)
+}
+
+func openAICacheWriteCount(usage, details object) int {
+	return firstCounted(
+		usageMember{details, "cache_creation_tokens"},
+		usageMember{usage, "cache_creation_input_tokens"},
+		usageMember{usage, "prompt_cache_write_tokens"},
+	)
+}
+
+// usageMember is one place a usage object may state a count: the object to read
+// and the member name it uses there.
+type usageMember struct {
+	from object
+	key  string
+}
+
+// firstCounted returns the first of the candidates that is above zero. A nil
+// object reads as absent, so a vendor that sends no details block still answers
+// from its top level.
+func firstCounted(candidates ...usageMember) int {
+	for _, candidate := range candidates {
+		if count := intField(candidate.from, candidate.key); count > 0 {
+			return count
+		}
+	}
+	return 0
 }

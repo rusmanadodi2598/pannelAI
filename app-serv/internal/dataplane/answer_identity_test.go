@@ -133,7 +133,7 @@ func TestFoldChatStreamNamesTheCombo(t *testing.T) {
 		Combo:    comboRow("pi-agent", "alpha/works"),
 	}
 
-	folded, _, err := foldStream(upstream, resolution)
+	folded, _, err := foldStream(upstream, resolution, nil)
 	if err != nil {
 		t.Fatalf("foldStream() error = %v", err)
 	}
@@ -200,10 +200,11 @@ func TestRelay_ComboStreamNamesTheComboInEveryFrame(t *testing.T) {
 	}
 }
 
-// TestRelay_PlainModelKeepsTheUpstreamsLabel guards the breadth of the change: a
-// request that addressed no combo is forwarded exactly as it was before, because
-// there is no name the caller authored that it could be answered under.
-func TestRelay_PlainModelKeepsTheUpstreamsLabel(t *testing.T) {
+// TestRelay_PlainModelNamesTheAddressedModel guards the other half of the rule: a
+// request that addressed no combo still gets back the name it sent. The vendor's
+// label is not one — it answers `alpha/works` as a bare or aliased id the gateway
+// will not route — so a caller that read it back and re-sent it got MODEL_NOT_FOUND.
+func TestRelay_PlainModelNamesTheAddressedModel(t *testing.T) {
 	var calls int
 	server := newLabelingUpstream(t, &calls)
 	repo := newMemEndpointRepo()
@@ -214,8 +215,16 @@ func TestRelay_PlainModelKeepsTheUpstreamsLabel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Relay() error = %v", err)
 	}
-	if !strings.Contains(string(outcome.Body), `"model":"`+vendorLabel+`"`) {
-		t.Fatalf("a plain request must still be served the way it was, got: %s", outcome.Body)
+	if !strings.Contains(string(outcome.Body), `"model":"alpha/works"`) {
+		t.Fatalf("a plain request was not served the name it addressed, got: %s", outcome.Body)
+	}
+	if strings.Contains(string(outcome.Body), vendorLabel) {
+		t.Fatalf("the upstream's label reached the caller: %s", outcome.Body)
+	}
+	// Billing still names what actually ran, which is the resolved member rather
+	// than the address the caller used.
+	if outcome.Model != "works" {
+		t.Fatalf("Outcome.Model = %q, want the served member so billing names what ran", outcome.Model)
 	}
 }
 

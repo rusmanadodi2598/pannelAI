@@ -24,11 +24,16 @@ package schema
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
+
+// maxJSONErrorTail bounds the codec text a client-facing message may carry when
+// the error names no JSON member, so a driver-specific dump cannot ride along.
+const maxJSONErrorTail = 128
 
 // DataPlaneFormat names the wire format a data plane request or response is
 // written in (SPEC-API-001 §7.15: OpenAI and Anthropic in P1).
@@ -174,12 +179,23 @@ func DecodeChatRequest(raw []byte) (ChatRequest, error) {
 	return req, nil
 }
 
-// jsonErrorTail keeps a bounded English tail of a codec error so the envelope
-// never echoes a large or driver-specific message.
+// jsonErrorTail renders a codec error as an English client message that names the
+// member at fault and nothing else.
+//
+// The Go message for a type mismatch carries the destination Go type
+// (`[]schema.ChatMessage`), which is a fact about this process rather than about
+// the caller's body: it cannot be sent back, and it tells a client nothing it can
+// fix. The offending JSON member is the actionable half, so that is what survives.
 func jsonErrorTail(err error) string {
-	msg := err.Error()
-	if len(msg) > 128 {
-		return msg[len(msg)-128:]
+	var mismatch *json.UnmarshalTypeError
+	if errors.As(err, &mismatch) {
+		if mismatch.Field == "" {
+			return "the body holds a member of the wrong type"
+		}
+		return "field " + mismatch.Field + " holds a value of the wrong type"
 	}
-	return msg
+	if msg := err.Error(); len(msg) <= maxJSONErrorTail {
+		return msg
+	}
+	return "the body is not valid JSON"
 }

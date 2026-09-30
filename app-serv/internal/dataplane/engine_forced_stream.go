@@ -48,7 +48,7 @@ const maxFoldEvents = 1 << 16
 // differently: a Responses stream states the whole response in its terminal
 // event, while a chat stream reports the answer as deltas that have to be
 // accumulated.
-func foldStream(upstream *Upstream, resolution Resolution) ([]byte, *schema.Usage, error) {
+func foldStream(upstream *Upstream, resolution Resolution, stop []string) ([]byte, *schema.Usage, error) {
 	events, err := readFoldEvents(upstream.Body)
 	if err != nil {
 		return nil, nil, err
@@ -56,7 +56,7 @@ func foldStream(upstream *Upstream, resolution Resolution) ([]byte, *schema.Usag
 	if resolution.Target == TargetResponses {
 		return foldResponsesEvents(events)
 	}
-	return foldChatEvents(events, answerModel(resolution, resolution.ModelID))
+	return foldChatEvents(events, answerModel(resolution, resolution.ModelID), stop)
 }
 
 // readFoldEvents reads every data payload of an SSE body, in order. The terminal
@@ -140,13 +140,15 @@ func foldUsage(response object, target string) *schema.Usage {
 
 // foldChatEvents accumulates a chat stream into the non-streamed completion it
 // stands for: content and reasoning fragments join, tool-call fragments attach to
-// the call index they belong to, the last finish reason wins, and the usage frame
-// is taken as reported.
-func foldChatEvents(events [][]byte, model string) ([]byte, *schema.Usage, error) {
+// the call index they belong to, the last finish reason wins, the usage frame is
+// taken as reported, and the caller's stop sequences cut the text the upstream
+// answered past.
+func foldChatEvents(events [][]byte, model string, stop []string) ([]byte, *schema.Usage, error) {
 	answer := foldedChat{
 		id:    "chatcmpl-pannelai",
 		model: model,
 		calls: map[int]*schema.ToolCall{},
+		stop:  stop,
 	}
 	for _, payload := range events {
 		chunk, ok := decodeObject(payload)

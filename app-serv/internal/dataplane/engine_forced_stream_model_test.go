@@ -80,7 +80,7 @@ func TestFoldChatStreamNamesTheResolvedModel(t *testing.T) {
 				Target:   TargetOpenAI,
 			}
 
-			folded, _, err := foldStream(upstream, resolution)
+			folded, _, err := foldStream(upstream, resolution, nil)
 			if err != nil {
 				t.Fatalf("foldStream() error = %v", err)
 			}

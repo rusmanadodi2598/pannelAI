@@ -127,6 +127,11 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	if err != nil {
 		return Outcome{}, err
 	}
+	// The name the answer carries is the string this caller sent, so a client that
+	// reads `model` back can send it again: the resolved id drops the provider
+	// prefix and an upstream alias (`auto`, `deepseek-v4.1-flash`) is not a name
+	// the gateway routes.
+	resolution.Requested = model
 
 	// A fusion combo fans out to every member and has a judge synthesize the
 	// final answer (SPEC-API-001 §7.7, strategy fusion), so it never walks the
@@ -180,6 +185,7 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 			continue
 		}
 		member.Combo = resolution.Combo
+		member.Requested = resolution.Requested
 		outcome, relayErr := e.relayOnce(ctx, in, member, sink)
 		if relayErr == nil {
 			// An adapter model the request did not address is not the model that

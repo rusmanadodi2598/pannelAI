@@ -62,6 +62,9 @@ func (c *CodeBuddy) TransformRequest(req *Request) error {
 	if err := mirrorCodeBuddyReasoning(body); err != nil {
 		return fmt.Errorf("provider %s: %w", c.ID, err)
 	}
+	if err := mirrorCodeBuddyToolChoice(body); err != nil {
+		return fmt.Errorf("provider %s: %w", c.ID, err)
+	}
 
 	encoded, err := json.Marshal(body)
 	if err != nil {

@@ -39,6 +39,10 @@ type foldedChat struct {
 	// argument fragment lands on the call it belongs to.
 	calls map[int]*schema.ToolCall
 	usage *schema.Usage
+	// stop holds the sequences the caller asked the answer to end at, which an
+	// upstream on this wire may ignore; the fold is where the cut still applies
+	// because the whole text is assembled before anyone reads it.
+	stop []string
 	// seen counts the chunks that carried a choice, so a stream that produced
 	// nothing is reported rather than answered with an empty completion.
 	seen int
@@ -127,6 +131,11 @@ func (f *foldedChat) response() schema.ChatCompletionResponse {
 		Content:   schema.MessageContent{Text: f.content},
 		Reasoning: f.reason,
 	}
+	// The caller's `stop` is honoured here even when the upstream answered past
+	// it, and a cut is a stop: an upstream that ran on to its own ceiling after
+	// the marker would otherwise report `length` for text it never showed.
+	trimmed, stopped := cutAtStop(message.Content.Text, f.stop)
+	message.Content.Text = trimmed
 	if len(f.calls) > 0 {
 		message.ToolCalls = f.callsByIndex()
 		if message.Content.Text == "" {
@@ -135,17 +144,16 @@ func (f *foldedChat) response() schema.ChatCompletionResponse {
 			message.Content = schema.MessageContent{}
 		}
 	}
-	// The reference strips the reasoning a folded stream accumulated once the
-	// answer has content, and keeps it only when content is empty — the
-	// reasoning is then the only output a client can show
-	// (sseToJsonHandler.js: "strip reasoning_content only when content is
-	// non-empty"; unconditional, it hid the Qwen-style answers that are all
-	// thinking). A streaming client sees the deltas instead; this guard shapes
-	// the one-body answer only.
-	if message.Reasoning != "" && message.Content.Text != "" {
-		message.Reasoning = ""
-	}
+	// The thinking a folded stream accumulated stays on the answer. The reference
+	// strips it once content is non-empty (sseToJsonHandler.js), but this gateway
+	// bills it either way: a caller charged for 120 reasoning tokens that it can
+	// neither read nor cite is charged for something that never reached it, and a
+	// streaming client of the same model sees the same text frame by frame. One
+	// body and one stream now say the same thing.
 	finish := f.finish
+	if stopped {
+		finish = FinishStop
+	}
 	if finish == "" {
 		finish = FinishStop
 	}

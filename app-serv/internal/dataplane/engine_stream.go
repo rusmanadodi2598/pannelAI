@@ -71,7 +71,8 @@ func (e *Engine) relayStream(
 		}
 		outcome.Usage = state.Usage()
 	default:
-		state := NewStreamState("", answerModel(resolution, resolution.UpstreamID), e.clock().Unix(), in.IncludeUsage)
+		state := NewStreamState("", answerModel(resolution, resolution.UpstreamID), e.clock().Unix(), in.IncludeUsage).
+			WithStopSequences(in.stopSequences())
 		if err := e.pump(ctx, upstream, sink, resolution.Target, state.Frames); err != nil {
 			return err
 		}

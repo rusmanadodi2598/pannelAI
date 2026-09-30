@@ -65,6 +65,12 @@ type Resolution struct {
 	// UpstreamID is the id the upstream expects, with any registry override
 	// applied.
 	UpstreamID string
+	// Requested is the model string the client addressed, suffix stripped, before
+	// any alias hop or provider split. It is filled by the relay rather than the
+	// resolver because the resolver is entered again for combo members and alias
+	// targets, and the name a caller should get back is the one it sent, not the
+	// next hop's.
+	Requested string
 	// Target is the wire format to translate into.
 	Target string
 	// Combo is the combo a model string addressed, or the zero combo. Its

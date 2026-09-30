@@ -35,7 +35,7 @@ import (
 // upstream's, the folded body is forwarded as written apart from the model name a
 // combo re-claims, which is the same rule translateAnswer applies.
 func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in Request, outcome *Outcome) ([]byte, *schema.Usage, error) {
-	raw, usage, err := foldStream(upstream, resolution)
+	raw, usage, err := foldStream(upstream, resolution, in.stopSequences())
 	if err != nil {
 		return nil, nil, err
 	}

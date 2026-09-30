@@ -111,9 +111,9 @@ func TestFoldedChat_AbsorbsReasoningFromEveryVendorShape(t *testing.T) {
 		{"a content-only delta carries no reasoning", []object{chunk(`{"content":"pong"}`)}, ""},
 		{"empty shapes stay empty", []object{chunk(`{"reasoning":""}`), chunk(`{"reasoning_details":[]}`), chunk(`{"reasoning_details":[{}]}`)}, ""},
 		{
-			name:   "reasoning yields to content in the folded answer",
+			name:   "reasoning stays beside content in the folded answer",
 			deltas: []object{chunk(`{"reasoning":"th"}`), chunk(`{"content":"pong"}`)},
-			want:   "",
+			want:   "th",
 		},
 		{
 			name:   "reasoning stays when the answer carries none",

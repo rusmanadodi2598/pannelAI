@@ -25,27 +25,33 @@ package dataplane
 import "encoding/json"
 
 // ClientModel reports the name the client addressed: the combo a model string
-// resolved through, and "" when the request addressed a model directly.
+// resolved through, otherwise the model string itself.
 //
 // It is a method rather than a stored field because it is derived from the combo
 // the resolution already carries: a second field holding the same answer is a
 // second thing to keep in step, and resolveCombo already overwrites Combo with the
 // combo the client addressed precisely so this question has one source.
+//
+// The direct-model half answers a question the resolution cannot: a combo is a
+// name an operator wrote and a client sends, but so is `provider/model`, while
+// ModelID has already lost the prefix and UpstreamID carries the vendor's own
+// alias. Only the string the caller sent round-trips, so that is the one an answer
+// is named by.
 func (r Resolution) ClientModel() string {
 	if r.IsCombo() {
 		return r.Combo.Name()
 	}
-	return ""
+	return r.Requested
 }
 
-// answerModel is the model name one answer carries: the combo the client
-// addressed when a combo answered, otherwise the name the calling surface already
-// used.
+// answerModel is the model name one answer carries: the name the client addressed,
+// which is a combo name or the model string it sent, and only failing that the name
+// the calling surface already used.
 //
-// The fallback stays with the caller rather than being fixed here because the
-// surfaces genuinely disagree today — a translated answer reports the resolved
-// model id and a re-framed stream reports the upstream id — and this function
-// exists to override both for a combo, not to redefine what a plain model reports.
+// The fallback stays with the caller rather than being fixed here because a
+// Resolution built outside the relay — a test, or a seam that resolves one member
+// on its own — carries no addressed string at all, and such a surface knows which
+// of its own identifiers stands in.
 func answerModel(r Resolution, fallback string) string {
 	if name := r.ClientModel(); name != "" {
 		return name

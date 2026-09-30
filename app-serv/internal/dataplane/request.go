@@ -74,6 +74,19 @@ type Request struct {
 	ThinkingOverride *reasoning.Suffix
 }
 
+// stopSequences returns the `stop` members the caller asked the answer to end at,
+// read from whichever client body the route decoded.
+//
+// Only the OpenAI wire spells the control this way; an Anthropic caller sends
+// `stop_sequences`, which its upstream enforces itself, so a request that carried
+// no OpenAI body simply has nothing to cut.
+func (r Request) stopSequences() []string {
+	if r.Chat == nil {
+		return nil
+	}
+	return r.Chat.StopSequences()
+}
+
 // ProviderID reports the provider the request resolved to, or "" before
 // resolution.
 type ResolvedCall struct {

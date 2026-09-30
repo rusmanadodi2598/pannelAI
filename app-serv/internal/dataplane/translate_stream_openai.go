@@ -70,6 +70,14 @@ type StreamState struct {
 	finishSent bool
 	// includeUsage reports whether the client asked for a usage chunk.
 	includeUsage bool
+	// stop is the guard that cuts the answer at the caller's `stop` sequences,
+	// armed only when the client named some. It is nil for a call with nothing to
+	// cut, which is the same stream as one from a vendor that honours the member.
+	stop *stopGuard
+	// cutAnnounced reports whether the frame that carried the caller's stop
+	// sequence already closed the stream, so the frames after it are emptied
+	// without each declaring a second finish reason.
+	cutAnnounced bool
 	// usageSent reports whether the client's stream already carried usage: the
 	// gateway's own chunk marks it when emitted, and so does a forwarded frame
 	// that itself carries a usage object, so one stream carries at most one
@@ -85,6 +93,15 @@ func NewStreamState(id, model string, created int64, includeUsage bool) *StreamS
 		ID: id, Model: model, Created: created, includeUsage: includeUsage,
 		toolIndex: make(map[int]int, 4),
 	}
+}
+
+// WithStopSequences arms the guard that ends the answer at a `stop` sequence the
+// caller asked for. It is a separate call rather than a fifth constructor argument
+// because most streams carry nothing to cut, and the eleven existing call sites of
+// NewStreamState have no sequence to name.
+func (s *StreamState) WithStopSequences(sequences []string) *StreamState {
+	s.stop = newStopGuard(sequences)
+	return s
 }
 
 // Frames re-frames one upstream payload into the frames the client receives.
@@ -122,6 +139,13 @@ func (s *StreamState) responsesFrames(payload []byte) [][]byte {
 // is what a client waiting for [DONE] needs in order to release its connection.
 func (s *StreamState) Finish() [][]byte {
 	frames := make([][]byte, 0, 3)
+	// Text the stop guard was still holding back was never a marker, and dropping
+	// it would cost the caller real characters at the end of the answer.
+	if s.stop != nil && !s.stop.stopped() {
+		if tail := s.stop.flush(); tail != "" {
+			frames = append(frames, Frame(s.chunk(schema.Delta{Content: tail}, nil)))
+		}
+	}
 	if !s.finishSent {
 		reason := s.finishReason
 		if reason == "" {
@@ -197,6 +221,13 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 				}
 			}
 		}
+	}
+
+	// The vendor's own members are shaped last, after the stream's finish and
+	// usage have been read from what actually arrived: the guard decides what the
+	// client sees, not what this call is billed for.
+	if !s.sanitizeChunk(chunk) {
+		return nil
 	}
 
 	// The identity is rewritten in place and every other member is forwarded
