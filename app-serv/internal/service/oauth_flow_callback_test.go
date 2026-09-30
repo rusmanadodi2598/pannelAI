@@ -28,19 +28,6 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// startFlow drives a real Start so every callback test stages its state the
-// same way production would, rather than hand-crafting a payload.
-func startFlow(t *testing.T, fixture oauthFlowFixture, providerID string) string {
-	t.Helper()
-	started, err := fixture.service.Start(context.Background(), OAuthStartInput{
-		ProviderID: providerID, BaseURL: "https://panel.example.com",
-	})
-	if err != nil {
-		t.Fatalf("Start(): %v", err)
-	}
-	return started.State
-}
-
 func TestOAuthCallback(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -137,7 +124,7 @@ func TestOAuthCallback(t *testing.T) {
 			},
 		},
 		{
-			name:       "provider without userinfo still connects under a default label",
+			name:       "provider without userinfo still connects under a numbered label",
 			providerID: "pkce-provider",
 			setup: func(t *testing.T, fixture oauthFlowFixture) OAuthCallbackInput {
 				state := startFlow(t, fixture, "pkce-provider")
@@ -147,8 +134,11 @@ func TestOAuthCallback(t *testing.T) {
 				if !result.Created {
 					t.Fatal("want created=true")
 				}
-				if result.Endpoint.Label() != "pkce-provider oauth" {
-					t.Fatalf("label = %q", result.Endpoint.Label())
+				// No identity from the vendor means no identity to name the row by, and
+				// the store enforces UNIQUE (provider_id, label): a constant label here
+				// would make the next identity-less login an insert error.
+				if result.Endpoint.Label() != "Account 1" {
+					t.Fatalf("label = %q, want the numbered account", result.Endpoint.Label())
 				}
 				if fixture.tokens.infoCalls != 0 {
 					t.Fatalf("userinfo called %d times without a declared endpoint", fixture.tokens.infoCalls)
@@ -247,37 +237,5 @@ func TestOAuthCallback(t *testing.T) {
 			}
 			tc.check(t, fixture, result)
 		})
-	}
-}
-
-func TestOAuthCallbackRefusesUnknownProvider(t *testing.T) {
-	fixture := newOAuthFlowFixture(t, providerWithIdentity("identity-provider"))
-	_, err := fixture.service.Callback(context.Background(),
-		OAuthCallbackInput{ProviderID: "nope", Code: "c", State: "s"})
-	mustAppError(t, err, "VALIDATION_ERROR")
-}
-
-func TestOAuthCallbackExchangesTheStagedRedirect(t *testing.T) {
-	fixture := newOAuthFlowFixture(t, providerWithIdentity("identity-provider"))
-	state := startFlow(t, fixture, "identity-provider")
-	if _, err := fixture.service.Callback(context.Background(),
-		OAuthCallbackInput{ProviderID: "identity-provider", Code: "the-code", State: state}); err != nil {
-		t.Fatalf("Callback(): %v", err)
-	}
-	if len(fixture.tokens.grantCalls) != 1 {
-		t.Fatalf("grant calls = %d, want 1", len(fixture.tokens.grantCalls))
-	}
-	grant := fixture.tokens.grantCalls[0]
-	if grant.GrantType != "authorization_code" || grant.Code != "the-code" {
-		t.Fatalf("grant = %+v", grant)
-	}
-	if grant.RedirectURI != "https://panel.example.com/api/v1/providers/identity-provider/oauth/callback" {
-		t.Fatalf("redirect = %q, want the staged value", grant.RedirectURI)
-	}
-	if grant.ClientID != "client-identity-provider" {
-		t.Fatalf("client id = %q", grant.ClientID)
-	}
-	if len(grant.CodeVerifier) < 43 {
-		t.Fatalf("PKCE verifier missing: %d chars", len(grant.CodeVerifier))
 	}
 }

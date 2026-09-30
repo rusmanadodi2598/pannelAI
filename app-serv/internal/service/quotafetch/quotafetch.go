@@ -50,6 +50,15 @@ type Credentials struct {
 	APIKey               string
 	ProviderSpecificData map[string]string
 
+	// UsageURL is the endpoint the provider's own registry entry declares
+	// (`transport.usage.url`), which is where the reference reads it from too.
+	// Empty means the entry declares none, and the family's built-in applies.
+	UsageURL string
+	// UsageHeaders are the entry's transport headers: this billing endpoint is
+	// reached with the same product identification the chat gateway demands, and
+	// reading it from the entry keeps one declaration rather than two.
+	UsageHeaders map[string]string
+
 	// Endpoint overrides the family's real endpoint URL. It is the test seam: httptest
 	// servers point a family at a stub this way, and production leaves it empty.
 	Endpoint string

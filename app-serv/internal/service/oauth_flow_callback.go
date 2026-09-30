@@ -171,13 +171,3 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 		Scopes: oauth.ScopeList(), ExpiresAt: tokenExpiry(token, now),
 	}, account, payload.Origin, now)
 }
-
-// connectLabel names a fresh account after the identity that distinguishes it,
-// falling back to the provider plus a fixed marker when the flow learned no
-// identity at all (no userinfo endpoint, or one that reports none).
-func connectLabel(providerID string, account domain.EndpointAccount) string {
-	if account.Email != "" || account.WorkspaceID != "" || account.Name != "" {
-		return defaultOAuthLabel(account)
-	}
-	return providerID + " oauth"
-}

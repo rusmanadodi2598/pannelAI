@@ -156,11 +156,13 @@
 				{round.verification_url}
 			</p>
 
-			<h4 class="pt-1 text-sm font-semibold">Your code</h4>
-			<p class="flex flex-wrap items-center gap-2">
-				<span class="font-mono text-lg" data-testid="device-user-code">{round.user_code}</span>
-				<CopyButton value={round.user_code} label="Copy your code" />
-			</p>
+			{#if round.user_code}
+				<h4 class="pt-1 text-sm font-semibold">Your code</h4>
+				<p class="flex flex-wrap items-center gap-2">
+					<span class="font-mono text-lg" data-testid="device-user-code">{round.user_code}</span>
+					<CopyButton value={round.user_code} label="Copy your code" />
+				</p>
+			{/if}
 		</div>
 
 		{#if polling}

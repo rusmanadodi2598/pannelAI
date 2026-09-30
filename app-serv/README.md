@@ -22,7 +22,7 @@ P0 (selesai):
 
 P1 sampai P4 (selesai; seluruh permukaan §7 terpasang dan teruji):
 
-- **Registry provider di-embed**: `internal/registry/registry.yaml` dihasilkan `tools/registry-gen.mjs` dari referensi 9Router, 94 provider, di-decode ketat (`KnownFields`) sehingga field yang tidak dikenal menggagalkan boot, bukan hilang diam-diam
+- **Registry provider di-embed**: `internal/registry/registry.yaml` dihasilkan `tools/registry-gen.mjs` dari referensi 9Router, 34 provider (revisi `9router@39e36d3d`, disaring daftar KEEP owner 2026-09-26), di-decode ketat (`KnownFields`) sehingga field yang tidak dikenal menggagalkan boot, bukan hilang diam-diam
 - **Seam plugin provider** (`internal/provider`): lookup `provider id → Plugin`, connector fallback untuk vendor OpenAI/Claude-compatible, dan `Unsupported()` yang melaporkan provider ber-protokol khusus yang belum punya connector
 - **Agregat endpoint**: `UpstreamEndpoint` menahan 1..N `UpstreamKey`; endpoint `api_key` wajib menyisakan minimal satu key aktif; circuit breaker per key (3 kegagalan → backoff 2 menit, sukses mereset)
 - **Migrasi** (000001-000011): gateway keys, auth, provider nodes, upstream endpoints + keys, combos dan katalog model, usage dan quota, request logs dan settings, proxies, media provider settings, dan ownership P2

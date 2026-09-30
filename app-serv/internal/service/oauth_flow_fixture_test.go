@@ -89,6 +89,14 @@ type fakeTokenClient struct {
 	infoFn         func() (OAuthIdentity, error)
 	devicePollCall []string
 	devicePollFn   func(nonce, verifier string) (DeviceTokenResponse, bool, error)
+
+	stateRoundCalls    int
+	stateRoundPlatform string
+	stateRoundFn       func(*registry.OAuth) (StateRound, error)
+	statePollCall      []string
+	statePollFn        func(state string) (DeviceTokenResponse, bool, error)
+	stateRefreshCall   []string
+	stateRefreshFn     func(refreshToken string) (TokenResponse, error)
 }
 
 func (f *fakeTokenClient) Grant(_ context.Context, _ string, _ string, grant TokenGrant) (TokenResponse, error) {
@@ -182,18 +190,6 @@ func providerWithDeviceFlow(id string) registry.Provider {
 	return registry.Provider{
 		ID: id, Transport: registry.Transport{Format: "openai"},
 		OAuth: &registry.OAuth{DeviceAuthURL: "https://oidc.example.com/device", TokenURL: "https://oidc.example.com/token"},
-	}
-}
-
-// providerNeedingConnector declares a poll-style state URL: its exchange is
-// connector territory, not the shared client's.
-func providerNeedingConnector(id string) registry.Provider {
-	return registry.Provider{
-		ID: id, Transport: registry.Transport{Format: "openai"},
-		OAuth: &registry.OAuth{
-			ClientID: "client-" + id, AuthorizeURL: "https://auth.example.com/authorize",
-			StateURL: "https://relay.example.com/state", TokenURL: "https://auth.example.com/token",
-		},
 	}
 }
 

@@ -23,7 +23,11 @@
 //	same-format body, which the data plane's lossless rule otherwise
 //	leaves alone (engine_translate.go:32-34). The licence is narrow: only
 //	members the upstream refuses are touched, and every rewrite is a
-//	rename or a clamp rather than a removal of the client's content.
+//	rename or a clamp rather than a removal of the client's content. The one
+//	exception is a ceiling below the floor the model declares: the upstream
+//	accepts that number and answers it with an empty body, so raising it to
+//	the model's floor is the difference between an answer and no answer, and
+//	it stays bounded to a ceiling the client already sent.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
@@ -52,7 +56,7 @@ const openCodeCallIDLimit = 64
 // field is the Responses shape, and the input and tools are corrected to the
 // shapes the upstream parses.
 func transformOpenCodeResponses(body map[string]json.RawMessage, model registry.Model, entry registry.Provider) {
-	renameOpenCodeCeiling(body)
+	renameOpenCodeCeiling(body, model)
 	normalizeOpenCodeToolChoice(body, model, entry)
 	normalizeOpenCodeReasoning(body)
 	normalizeOpenCodeInput(body)

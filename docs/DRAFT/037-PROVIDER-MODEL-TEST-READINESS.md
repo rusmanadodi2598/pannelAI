@@ -284,3 +284,114 @@ Error`** ketika permintaannya tidak punya cookie sesi, padahal `app-serv` membal
 pembaca yang belum login melihat error, bukan halaman login. Ini bukan efek pass ini (tidak satu
 pun berkas auth/layout/page disentuh; tiga rute yang sama persis perilakunya tidak tersentuh
 pekerjaan ini) dan masuk kategori R-27 untuk pemiliknya putuskan.
+
+## 12. Susulan (2026-09-29): node compatible belum ikut teruji
+
+Owner melaporkan OpenAI-Compatible dan Anthropic-Compatible belum punya mekanisme test by models.
+Ternyata gap-nya dua lapis, dan yang pertama tidak terlihat dari layar:
+
+1. **Backend.** `ProviderService.Models()` menjawab daftar model node dari **upstream**-nya
+   (`modelsFor` → `ListNodeModels`), dan itu kosong ketika upstream tidak menjawab — sementara baris
+   yang operator deklarasikan di `models_custom` justru yang tampil di layar node dan justru yang
+   bisa di-route. Sapuan atas node seperti itu menjawab `VALIDATION_ERROR: provider … offers no chat
+   model to test` di samping tabel yang penuh model.
+2. **Panel.** Cabang node di `/providers/[provider_id]` tidak memakai `ModelCatalogList` sama sekali;
+   bagiannya adalah `ProviderCustomModels` → `CustomModelTable`, yang belum punya kolom Test.
+
+**Perbaikan.** Aturan "model mana yang bisa diuji" ditaruh di pemilik daftar model, bukan diduplikasi
+di service probe: `ProviderService.ProbeTargets(ctx, providerID)` menjawab `(list, targets)` dengan
+`targets` = daftar ter-resolve ∪ baris deklarasi, dedupe by model id, urutan daftar dulu. Kalau kedua
+sisi menyebut satu model, baris ter-resolve **dipertahankan** karena ia yang membawa `kind` (penentu
+apakah probe chat bisa menjangkau model itu); baris deklarasi hanya mengisi nama yang diam. Preseden
+urutan dan override diambil dari `ModelCatalogService.lookups` (§7.6), dengan satu perbedaan yang
+ditulis di komentar: katalog meng-override baris registry dengan baris custom, sedangkan probe tidak
+boleh kehilangan `kind`-nya.
+
+**Panel.** `CustomModelTable` mendapat kolom Test; `ProviderCustomModels` membuat tombol sapuan
+**hanya untuk node** (`prefix !== null`), karena layar registry provider sudah punya satu di atas.
+Store probe dipindah ke halaman (`+page.svelte`) dan dioper ke kedua bagian: baris deklarasi sebuah
+registry provider tampil dua kali di layar itu (sebagai custom row dan di dalam catalog gabungan),
+dan dua verdict untuk satu model adalah dua pendapat tentang satu fakta. Sel keadaan diangkat ke
+`ModelTestState.svelte` supaya kedua tabel tidak punya cara sendiri untuk menampilkan kegagalan.
+
+Satu perubahan kecil yang perlu disebut: `store.running` kini getter, bukan `$derived`. Store dibuat
+di luar component (halaman mengopernya ke test, dan test membuatnya sendiri) tidak boleh butuh effect
+scope agar bisa ada.
+
+**Nuansa yang sengaja dibiarkan terbaca.** Pada node yang upstream-nya menjawab 40 model, tabel ini
+hanya menampilkan baris deklarasi operator, sementara sapuan berjalan atas gabungan (union) dan bisa
+saja menguji 6 model yang tidak ada di tabel. Itu bukan bug yang ditutupi: ringkasan menjawab
+`Tested 6 of 40 models`, jadi angkanya yang mengatakan bahwa yang diuji bukan isi tabel saja, dan baris
+yang tidak tersentuh tetap terbaca `Not tested`. Meng-clip sapuan ke baris yang tampil saja berarti
+menyembunyikan separuh dari kebenaran demi angka yang lebih enak dibaca.
+
+**Bukti.** `internal/service/provider_model_probe_node_test.go` (6 fungsi, termasuk satu tabel): node
+tanpa upstream tetap menyapu baris deklarasi; union tanpa duplikat dan urutan `gpt-4o, gpt-4o-mini,
+deepseek-v3`; baris deklarasi registry ikut tersapu; gagal baca `models_custom` adalah error, bukan
+daftar yang tampak kosong; nama model datang dari baris deklarasi; string passthrough tetap diuji.
+`tests/components/provider-node-model-test.test.ts` (7 tes): aksi per baris di layar node, tombol
+sapuan yang menyebut budget, permintaan `providers/<node>/models/test` atas id yang baris itu sebut,
+`UNAUTHORIZED` + pesan di barisnya, satu sapuan mengisi dua baris, penolakan sapuan menampilkan
+kalimat server, dan bagian supplement registry tidak menawarkan sapuan kedua.
+
+## 13. Susulan (2026-09-29): round-robin tiga member terverifikasi, satu temuan ditambal
+
+Uji live atas combo `round_robin` tiga member free (space-bunny-free → mimo-v2.6-flash-free →
+muse-spark-1.3-contributor-free) mengonfirmasi distribusinya: urutan rotasi tepat dan
+`sticky_limit: 1` berperilaku benar (satu request = satu member, cursor maju). Yang terbawa dari
+uji itu tiga temuan, dan hanya satu yang menjadi milik gateway.
+
+**1. muse-spark menghabiskan ceiling untuk reasoning — ditambal.** Dengan `max_tokens: 60` model
+ini menjawab **200** dengan `content: ""` + `finish_reason: "length"`: 60 token habis untuk
+thinking, nol untuk jawaban. Walk combo (`engine.go`) hanya pindah member ketika sebuah member
+**gagal**, jadi kosong itu dihidangkan apa adanya; clamp 16 token yang ada di connector pun adalah
+floor agar upstream tidak menjawab 400, bukan floor agar jawaban muat. Tambalnya dua lapis, dan
+sengaja dua lapis karena keduanya menjawab sisi yang berbeda dari satu gejala:
+
+- **Sisi request.** `min_output_tokens` menjadi field deklarasi per model di registry, dan
+  connector OpenCode menaikkan ceiling yang sudah dikirim client ke nilai itu (512 untuk
+  muse-spark 1.3 free). Ceiling yang tidak dikirim tidak di-inject; yang sudah di atas floor
+  lewat apa adanya.
+- **Sisi respons.** Jawaban non-stream yang kosong dan berhenti karena ceiling ditandai lewat
+  `Outcome.Truncated`, dan combo walk mencoba member berikutnya sebelum body itu dihidangkan.
+  Sengaja **bukan** error: `answer()` mencatat setiap error sebagai kegagalan kredensial
+  (`engine_relay.go:179` → `failureClass`), padahal yang terjadi adalah model yang menjawab sesuai
+  permintaannya — mem-park key karena itu salah sasaran. Kalau semua member sama kosongnya, body
+  kosong terakhir yang dihidangkan (dengan `finish_reason: length` utuh), bukan 502: itu persis
+  yang client dapat sebelumnya, dan itu yang memberi tahunya bahwa ceiling-nya terlalu kecil.
+  Client streaming tidak di-walk ulang — frame-nya sudah sampai.
+
+**2. Reasoning tidak muncul sebagai konten — dicatat.** Pada space-bunny dan mimo, thinking hanya
+terlihat sebagai `usage.completion_tokens_details.reasoning_tokens`; tidak ada `reasoning_content`
+seperti pada qoder/qfmodel, baik di mode non-stream maupun stream. Ini kemampuan upstream, bukan
+perilaku gateway: gateway meneruskan yang ada. Konsekuensinya tercatat di §7.7: jawaban
+reasoning-only tetap dihitung "menjawab", karena fold memang mempertahankan reasoning saat
+content kosong.
+
+**3. Format response id tidak seragam — dicatat.** `070a…` (space-bunny), `gen-…` (mimo),
+`resp_…` (muse) karena tiga upstream berbeda. Tidak ada satu pun kode gateway yang mem-parse id
+jawab, jadi tidak ada yang perlu ditambal; yang tidak boleh dilakukan pemakai adalah mengandalkan
+formatnya. Yang justru sudah dinormalkan adalah **nama model** (§7.6, 2026-09-28), bukan id.
+
+**Bukti.** `internal/registry/opencode_free_models_test.go` (floor ter-decode, dan id yang sama
+di bawah dua entry OpenCode wajib menyebut angka yang sama);
+`internal/provider/opencode_wire_test.go` (60 → 512, ceiling di atas floor tidak berubah, ceiling
+yang absent tetap absent, tanpa floor tetap clamp 16);
+`internal/dataplane/engine_answer_completeness_test.go` (22 kasus lintas tiga wire: kosong+length
+vs ada content, tool call, reasoning-only, `finish: stop`);
+`internal/dataplane/engine_truncated_failover_test.go` (lima kasus: combo skip ke member sehat
+tanpa mem-park key, semua kosong → body kosong terhidang, member tunggal tidak berubah, jawaban
+kosong mengalahkan error member berikutnya, client stream tidak diulang).
+Gerbang: `go build ./...`, `go vet ./...`, `go test -race ./...` bersih (`go-headers.sh` dan
+`go-lint.sh` PASS; staticcheck + golangci-lint 0 issue).
+
+**Batas yang tidak diklaim.** Pengukuran live atas combo tiga member dengan `max_tokens: 60` **masih
+milik operator** dan belum dijalankan untuk pass ini: gateway di `:9090` adalah proses `go run`
+yang binary-nya lebih tua dari patch ini, sehingga panggilan apa pun ke sana hari ini menguji kode
+lama, dan norma draft 034 §9 melarang proses itu dihentikan atau dimulai ulang oleh pass pengujian.
+Kunci gateway juga tidak tersimpan di repo. Yang terbukti di dalam repo bukan pengganti pengukuran
+itu, hanya rantainya: `engine_opencode_free_floor_test.go` menjalankan pipeline nyata (registry
+ter-embed + connector OpenCode asli + engine) dan membaca body yang sampai ke upstream — 60 menjadi
+512 untuk muse-spark 1.3, dan tetap 60 untuk member combo di sebelahnya;
+`engine_truncated_failover_test.go` menjalankan walk combo nyata atas jawaban kosong. Yang tersisa untuk mata kepala: apakah upstream sungguhan menjawab 512 itu dengan konten, dan apakah
+`reasoning_content` tetap tidak muncul di lane space-bunny/mimo (temuan #2).

@@ -56,7 +56,7 @@ func foldStream(upstream *Upstream, resolution Resolution) ([]byte, *schema.Usag
 	if resolution.Target == TargetResponses {
 		return foldResponsesEvents(events)
 	}
-	return foldChatEvents(events, resolution.ModelID)
+	return foldChatEvents(events, answerModel(resolution, resolution.ModelID))
 }
 
 // readFoldEvents reads every data payload of an SSE body, in order. The terminal

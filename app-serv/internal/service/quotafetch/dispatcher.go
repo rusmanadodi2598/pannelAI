@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -34,6 +35,21 @@ var familyEndpoints = map[string]string{
 	"codebuddy-intl":    "https://www.codebuddy.ai/v2/billing/meter/get-user-resource",
 	"qoder":             "https://openapi.qoder.sh/api/v2/quota/usage",
 	"qoder-cn":          "https://openapi.qoder.com.cn/api/v2/quota/usage",
+}
+
+// usageEndpoint resolves the one URL a family's quota read goes to: the endpoint
+// the provider's registry entry declares when it declares one, and the family's
+// built-in otherwise. vercel-ai-gateway is the entry with no declared usage URL,
+// so the built-in is not a legacy to delete but the fallback for that case.
+//
+// The order matters for correctness rather than taste: the reference reads
+// `transport.usage.url` off the registry, so a second copy here would silently
+// keep asking the old host after an operator or an upstream moved the endpoint.
+func usageEndpoint(creds Credentials, family string) string {
+	if declared := strings.TrimSpace(creds.UsageURL); declared != "" {
+		return declared
+	}
+	return familyEndpoints[family]
 }
 
 // endpointFor overrides the scheme and host of a family's endpoint while keeping the
@@ -80,11 +96,13 @@ var familyFetchers = map[string]func(context.Context, Credentials) Result{
 }
 
 type codebuddyFamily struct {
+	id      string            // the registry family key, which is where its usage endpoint is declared
 	name    string            // human-facing region word for messages
-	headers map[string]string // the registry transport headers the billing endpoint expects
+	headers map[string]string // the transport headers the billing endpoint expects, as the registry declares them
 }
 
 var codebuddyCN = codebuddyFamily{
+	id:   "codebuddy-cn",
 	name: "CN",
 	headers: map[string]string{
 		"User-Agent":          "CLI/2.108.1 CodeBuddy/2.108.1",
@@ -97,6 +115,7 @@ var codebuddyCN = codebuddyFamily{
 }
 
 var codebuddyIntl = codebuddyFamily{
+	id:   "codebuddy-intl",
 	name: "Intl",
 	headers: map[string]string{
 		"User-Agent":          "IDE/2.108.1 CodeBuddy/2.108.1",

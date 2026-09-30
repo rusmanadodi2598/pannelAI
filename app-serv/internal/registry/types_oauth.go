@@ -168,13 +168,37 @@ func (o *OAuth) SupportsFlow() bool {
 	return o.AuthorizeURL != "" || o.DeviceCodeURL != "" || o.DeviceAuthURL != "" || o.StateURL != ""
 }
 
+// StateExchangeFlow reports whether this provider authorizes by a state round:
+// the gateway asks the vendor for a state plus the browser URL that carries it,
+// hands that URL to the operator, and then polls the token endpoint with the
+// state until the vendor grants a token.
+//
+// It is a device flow in shape and in the panel's eyes — the operator opens a
+// link and the screen polls — but it shares no wire with the PKCE round the
+// generic device flow runs: no challenge, no nonce, and the round is minted by
+// the vendor rather than locally. That difference is why it gets its own name
+// instead of a flag on the older predicate.
+func (o *OAuth) StateExchangeFlow() bool {
+	if o == nil {
+		return false
+	}
+	return o.StateURL != "" && o.TokenURL != ""
+}
+
 // RequiresCustomExchange reports whether this provider's token exchange cannot
 // be performed by a generic OAuth client. A poll-based or pre-authenticated
 // flow does not answer a standard authorization-code request, so it needs a
 // connector rather than the shared fallback.
+//
+// A state round is deliberately NOT in this set. It looked like one because the
+// two predicates were conflated under a single field, and the cost landed on
+// CodeBuddy: the panel was told its credentials needed a connector that nothing
+// in this port requires, since the chat endpoint is plain OpenAI with a bearer
+// token, and the connect flow it does have is servable by the shared client.
+// The URLs below are the exchanges with no shared shape at all.
 func (o *OAuth) RequiresCustomExchange() bool {
 	if o == nil {
 		return false
 	}
-	return o.StateURL != "" || o.InitiateURL != "" || o.PollURLBase != ""
+	return o.InitiateURL != "" || o.PollURLBase != ""
 }

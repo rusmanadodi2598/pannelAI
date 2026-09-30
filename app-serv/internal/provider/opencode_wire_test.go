@@ -28,15 +28,21 @@ import (
 // TestOpenCode_TransformNamesTheResponsesOutputCeiling pins the field rename the
 // Responses wire requires: it answers 400 to `max_tokens`, so a chat-shaped
 // ceiling has to become `max_output_tokens`, and an already-correct one must not
-// be overwritten. It also pins the Console API's floor: a ceiling below 16 is
-// refused with "max_output_tokens The number must be >= 16", which is what a
-// one-token probe (the combo test's ping) sent before this rule existed.
+// be overwritten. It also pins the two floors a ceiling is raised to: the
+// Console API's own, because a value below 16 is refused with
+// "max_output_tokens The number must be >= 16" (what a one-token probe sent
+// before this rule existed), and the model's declared one, because a reasoning
+// model spends a smaller ceiling on thinking and answers an empty body the
+// upstream counts as success.
 func TestOpenCode_TransformNamesTheResponsesOutputCeiling(t *testing.T) {
 	connector := NewOpenCode(opencodeEntry("https://opencode.ai", "openai"))
 
 	cases := []struct {
-		name       string
-		body       string
+		name string
+		body string
+		// minOutput is what the model entry declares; zero declares none, which
+		// is every model but the reasoning ones.
+		minOutput  int
 		wantCeil   float64
 		wantAbsent []string
 	}{
@@ -83,11 +89,20 @@ func TestOpenCode_TransformNamesTheResponsesOutputCeiling(t *testing.T) {
 			body:       `{"model":"muse-spark-1.3-contributor-free","input":[]}`,
 			wantAbsent: []string{"max_tokens", "max_completion_tokens", "max_output_tokens"},
 		},
+		{name: "a ceiling below the model's floor is raised to it", minOutput: 512, wantCeil: 512, wantAbsent: []string{"max_tokens"},
+			body: `{"model":"muse-spark-1.3-contributor-free","input":[],"max_tokens":60}`},
+		{name: "the model's floor applies to an already-named ceiling", minOutput: 512, wantCeil: 512,
+			body: `{"model":"muse-spark-1.3-contributor-free","input":[],"max_output_tokens":128}`},
+		{name: "a ceiling above the model's floor is left alone", minOutput: 512, wantCeil: 1024,
+			body: `{"model":"muse-spark-1.3-contributor-free","input":[],"max_output_tokens":1024}`},
+		{name: "a declared floor injects no ceiling the client omitted", minOutput: 512,
+			wantAbsent: []string{"max_tokens", "max_completion_tokens", "max_output_tokens"},
+			body:       `{"model":"muse-spark-1.3-contributor-free","input":[]}`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			request := Request{
-				Model: registry.Model{ID: "muse-spark-1.3-contributor-free", TargetFormat: "openai-responses"},
+				Model: registry.Model{ID: "muse-spark-1.3-contributor-free", TargetFormat: "openai-responses", MinOutputTokens: tc.minOutput},
 				Body:  []byte(tc.body),
 			}
 			if err := connector.TransformRequest(&request); err != nil {

@@ -19,12 +19,12 @@
 	// picker set when THIS model accepts that level (SPEC-API §7.15, the reference's `resolveThinkingSuffix`
 	// at page.js:177-182). The suffix is rendered, not only copied: a value that lived in the clipboard
 	// alone would be a state the operator cannot see.
-	import { LoaderCircle } from '@lucide/svelte';
 	import CopyButton from '$lib/components/CopyButton.svelte';
+	import ModelTestState from '$lib/components/ModelTestState.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { catalogModelLabel, catalogSourceLabel, type CatalogModel } from '$lib/schemas/model';
 	import { disabledRefKey } from '$lib/schemas/model-disabled';
-	import { isChatRoutable, modelTestLine } from '$lib/schemas/model-test';
+	import { isChatRoutable } from '$lib/schemas/model-test';
 	import { thinkingSuffix } from '$lib/schemas/settings';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
@@ -127,35 +127,7 @@
 						</td>
 						<td class="px-3 py-2">{catalogSourceLabel(model.source)}</td>
 						<td class="max-w-72 px-3 py-2">
-							{#if probe === undefined}
-								<span class="text-[var(--color-text-muted)]">
-									{routable ? 'Not tested' : 'Not a chat model'}
-								</span>
-							{:else if probe.phase === 'running'}
-								<span class="inline-flex items-center gap-2" role="status">
-									<LoaderCircle class="size-4 animate-spin" aria-hidden="true" />
-									Testing
-								</span>
-							{:else if probe.phase === 'unreachable'}
-								<span class="text-[var(--color-danger)]" role="alert">
-									The panel could not ask
-									<br />
-									<span class="break-words text-xs">{probe.message}</span>
-								</span>
-							{:else}
-								<span
-									class={probe.result.ok ? '' : 'text-[var(--color-danger)]'}
-									role={probe.result.ok ? 'status' : 'alert'}
-								>
-									{modelTestLine(probe.result)}
-									{#if probe.result.error_code !== ''}
-										<br />
-										<span class="break-words text-xs">
-											{probe.result.error_code}: {probe.result.error}
-										</span>
-									{/if}
-								</span>
-							{/if}
+							<ModelTestState {probe} {routable} />
 						</td>
 						<td class="px-3 py-2 text-end">
 							<div class="flex flex-wrap items-center justify-end gap-1">

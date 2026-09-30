@@ -41,6 +41,23 @@ type Outcome struct {
 	Usage *schema.Usage
 	// Streamed reports whether the answer went to a FrameSink.
 	Streamed bool
+	// Truncated reports a non-streamed answer that stopped at its own output
+	// ceiling with nothing in it for the client to show. It is not a failure:
+	// the upstream answered 200 and the credential served the call. The combo
+	// walk reads it to try the next member before serving an empty body.
+	Truncated bool
+	// VisionAdapted reports that the model which answered came from the §7.8
+	// vision adapter rather than from anything the request addressed. It is the
+	// one fact the gateway holds about an image answer it cannot otherwise
+	// prove: whether the picture was actually read is the upstream's business,
+	// but which model it was handed to is routing, and routing is known here.
+	//
+	// It exists because the answer's own model name is deliberately the one the
+	// caller sent (SPEC-API-001 §7.6), so a substitution that changes who looked
+	// at the image would otherwise leave no trace a client or an operator could
+	// query — which is how a blind adapter model came to be serving red images as
+	// "gray" for a whole combo without anyone being able to see it happen.
+	VisionAdapted bool
 	// LatencyMS is the upstream call's duration, measured with the engine's
 	// clock.
 	LatencyMS int64

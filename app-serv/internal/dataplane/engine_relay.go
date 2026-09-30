@@ -207,8 +207,8 @@ func (e *Engine) readAnswer(
 		// The provider only answers a stream, so the single body the client
 		// asked for is folded back out of it. The fold returns the upstream's
 		// own non-streamed wire, so the same answer translator serves it.
-		return e.translateFolded(upstream, resolution, in)
+		return e.translateFolded(upstream, resolution, in, outcome)
 	default:
-		return e.translateAnswer(upstream, resolution, in)
+		return e.translateAnswer(upstream, resolution, in, outcome)
 	}
 }

@@ -25,7 +25,7 @@ import (
 const monthlyCredit = 5.0
 
 func fetchVercel(ctx context.Context, creds Credentials) Result {
-	endpoint := endpointFor(familyEndpoints["vercel-ai-gateway"], creds.Endpoint)
+	endpoint := endpointFor(usageEndpoint(creds, "vercel-ai-gateway"), creds.Endpoint)
 
 	if creds.APIKey == "" {
 		return Result{Message: "Vercel AI Gateway API key not available."}

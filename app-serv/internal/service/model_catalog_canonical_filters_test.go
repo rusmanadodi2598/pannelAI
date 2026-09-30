@@ -27,12 +27,26 @@ import (
 
 // TestVisionAdapterService_ReplaceAcceptsEveryRouterForm pins F3: the adapter's
 // model list is written through the same predicate, so the alias and prefix
-// forms save there too. The capability predicate is stubbed permissive because
-// the question under test is the name form, not the capability decision.
+// forms save there too. The capability question is answered by the catalog now,
+// so the two rows these spellings resolve to declare vision — which makes this
+// test pin two things at once: a name the router resolves is a name the write
+// path accepts, and the capability read canonicalizes through the same view
+// rather than probing the catalog with the spelling the caller typed.
 func TestVisionAdapterService_ReplaceAcceptsEveryRouterForm(t *testing.T) {
 	ctx := context.Background()
 	repo := newStubCatalogRepo()
 	combos := newStubComboRepo()
+	// Both rows are seeded under the provider's canonical id, which is what the
+	// catalog keys on, and neither model is vision-capable by name: only the
+	// operator's declaration makes them so.
+	for _, seed := range []struct{ providerID, modelID string }{
+		{"kserve", "glm-4.7"}, {"openai-compatible-1", "corp-chat"},
+	} {
+		if err := repo.AddCustom(ctx, mustCustomModel(t,
+			seed.providerID, seed.modelID, "Seeded "+seed.modelID, "vision")); err != nil {
+			t.Fatalf("seeding a vision-declaring custom model: %v", err)
+		}
+	}
 	catalog, err := NewModelCatalogService(ModelCatalogServiceDeps{
 		Index: canonicalNodeIndex(t), Repo: repo, Combos: combos,
 	})

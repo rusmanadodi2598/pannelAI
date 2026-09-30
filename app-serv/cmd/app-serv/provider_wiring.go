@@ -55,7 +55,7 @@ func buildProviderRuntime() (*registry.Index, *provider.Connectors, error) {
 	// credential and endpoint table, not in how a request is shaped. Each entry is
 	// registered by name, and the connector reads the entry it was built for, so a
 	// lane added to the registry is one line here.
-	plugins := make([]provider.Plugin, 0, 5)
+	plugins := make([]provider.Plugin, 0, 7)
 	for _, id := range []string{"opencode", "opencode-zen", "opencode-go"} {
 		entry, ok := idx.Provider(id)
 		if !ok {
@@ -78,6 +78,19 @@ func buildProviderRuntime() (*registry.Index, *provider.Connectors, error) {
 			return nil, nil, fmt.Errorf("provider connectors: %w", err)
 		}
 		plugins = append(plugins, connector)
+	}
+	// CodeBuddy needs a connector for two things: the reference forces every request on
+	// this service to a stream, and the vendor answers a plain OpenAI message list with
+	// `11101 invalid request`, so the body has to be rebuilt before it leaves. Forced
+	// streaming is declared by a connector here rather than read from the registry entry.
+	// Everything else about the provider — URL, headers, bearer credential — is the plain
+	// OpenAI wire the fallback already serves.
+	for _, id := range []string{"codebuddy-cn", "codebuddy-intl"} {
+		entry, ok := idx.Provider(id)
+		if !ok {
+			return nil, nil, fmt.Errorf("provider connectors: the %s entry is missing from the registry", id)
+		}
+		plugins = append(plugins, provider.NewCodeBuddy(entry))
 	}
 	connectors, err := provider.NewConnectors(provider.DefaultFactory, plugins...)
 	if err != nil {

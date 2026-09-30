@@ -11,9 +11,11 @@
 	// level (SPEC-API §7.15, the reference's `resolveThinkingSuffix` at page.js:177-182), and the row shows
 	// the same string it copies.
 	import CopyButton from '$lib/components/CopyButton.svelte';
+	import ModelTestState from '$lib/components/ModelTestState.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { customModelLabel, type CustomModel } from '$lib/schemas/custom-model';
 	import { thinkingSuffix } from '$lib/schemas/settings';
+	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
 	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 	import { formatTimestamp } from '$lib/utils/time';
 
@@ -21,11 +23,14 @@
 		rows,
 		thinking,
 		nodePrefix,
+		tests,
 		removing,
 		onremove
 	}: {
 		rows: CustomModel[];
 		thinking: ProviderThinkingStore;
+		/** The probe answers, owned by the section so its sweep and these rows agree. */
+		tests: ModelTestStore;
 		/** The node's model prefix, present only on a custom node's screen. */
 		nodePrefix?: string;
 		removing: boolean;
@@ -36,6 +41,11 @@
 	// taking a declared model out of the catalog, so the accessible name keeps that word rather than
 	// "Delete".
 	const RemoveIcon = ROW_ACTION_ICONS.remove.icon;
+	const TestIcon = ROW_ACTION_ICONS.test.icon;
+
+	// One tap target and one hover wash for both row actions, the rule the key table states.
+	const actionClass =
+		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50';
 
 	const prefix = $derived(nodePrefix !== undefined && nodePrefix !== '' ? nodePrefix : null);
 </script>
@@ -51,6 +61,7 @@
 				<th scope="col" class="px-3 py-2 font-medium">Model</th>
 				<th scope="col" class="px-3 py-2 font-medium">Capabilities</th>
 				<th scope="col" class="px-3 py-2 font-medium">Added</th>
+				<th scope="col" class="px-3 py-2 font-medium">Test</th>
 				<th scope="col" class="px-3 py-2 font-medium">
 					<span class="sr-only">Actions</span>
 				</th>
@@ -65,6 +76,7 @@
 								row.thinking_levels,
 								thinking.modeFor(row.provider_id)
 							)}`}
+				{@const probe = tests.row(row.provider_id, row.model_id)}
 				<tr class="border-t border-[var(--color-border)]">
 					<td class="px-3 py-2">
 						<span class="font-medium">{customModelLabel(row)}</span>
@@ -91,17 +103,32 @@
 						{/if}
 					</td>
 					<td class="px-3 py-2">{formatTimestamp(row.created_at)}</td>
+					<td class="max-w-72 px-3 py-2">
+						<ModelTestState {probe} />
+					</td>
 					<td class="px-3 py-2 text-end">
-						<button
-							type="button"
-							class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50"
-							aria-label="Remove"
-							title="Remove"
-							disabled={removing}
-							onclick={() => onremove(row)}
-						>
-							<RemoveIcon class="size-4" aria-hidden="true" />
-						</button>
+						<div class="flex flex-wrap items-center justify-end gap-1">
+							<button
+								type="button"
+								class={actionClass}
+								aria-label={probe?.phase === 'running' ? 'Testing' : 'Test'}
+								title="Test"
+								disabled={probe?.phase === 'running'}
+								onclick={() => void tests.testOne(row.provider_id, row.model_id)}
+							>
+								<TestIcon class="size-4" aria-hidden="true" />
+							</button>
+							<button
+								type="button"
+								class={actionClass}
+								aria-label="Remove"
+								title="Remove"
+								disabled={removing}
+								onclick={() => onremove(row)}
+							>
+								<RemoveIcon class="size-4" aria-hidden="true" />
+							</button>
+						</div>
 					</td>
 				</tr>
 			{/each}

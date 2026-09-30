@@ -31,13 +31,24 @@ import (
 
 // VisionAugmenter is the seam an engine consults for an image-bearing request.
 //
-// Augment reports the model references to try BEFORE the request's own model,
-// and whether augmentation applies at all. Everything §7.8 layers on top — the
-// stored configuration, the capability judgement, the round-robin state — lives
-// behind the seam, so the engine neither reads the adapter's configuration nor
-// knows whether one is enabled.
+// Augment reports the order the request should walk and which entries in that
+// order came from the adapter rather than from the request itself. Everything
+// §7.8 layers on top — the stored configuration, the capability judgement, the
+// round-robin state — lives behind the seam, so the engine neither reads the
+// adapter's configuration nor knows whether one is enabled.
+//
+// It is handed every candidate because the question is not "can the model this
+// request landed on see" but "can anything this request could be served by see".
+// A combo asks that about a list, and answering it about the leading member alone
+// put the adapter in front of a member that reads images perfectly well: measured
+// live 2026-09-29, an image request aimed at a combo was taken by the adapter and
+// answered "gray" for a solid-red image, while the combo's own member answered it
+// correctly.
+//
+// An empty adapted list means no augmentation happened, which is what a disabled
+// adapter, a capable candidate, or a failed read all answer.
 type VisionAugmenter interface {
-	Augment(ctx context.Context, providerID, modelID string) (refs []string, applies bool, err error)
+	Augment(ctx context.Context, candidates []string) (refs []string, adapted []string, err error)
 }
 
 // carriesImages reports whether the decoded client body carries image content.
@@ -65,20 +76,32 @@ func carriesImages(in Request) bool {
 	return false
 }
 
-// augmentForVision prepends the adapter's model references when the request
-// carries images, and reports how many of the list's leading members are
-// adapter models. It is the engine's only contact with the §7.8 policy, so the
-// relay loop stays about the pipeline and not about the adapter.
+// augmentForVision re-orders an image-bearing request's candidates through the
+// §7.8 seam and reports which of them came from the adapter. It is the engine's
+// only contact with the policy, so the relay loop stays about the pipeline and not
+// about the adapter.
 //
-// A seam failure fails open: the request is served un-augmented, which is the
-// behaviour the adapter being disabled would have produced.
-func (e *Engine) augmentForVision(ctx context.Context, in Request, resolution Resolution, refs []string) ([]string, int) {
+// A seam failure fails open: the request is served in the order the request itself
+// produced, which is the behaviour the adapter being disabled would have produced.
+func (e *Engine) augmentForVision(ctx context.Context, in Request, refs []string) ([]string, []string) {
 	if e.vision == nil || !carriesImages(in) {
-		return refs, 0
+		return refs, nil
 	}
-	adapterRefs, applies, err := e.vision.Augment(ctx, resolution.Provider.ID, resolution.ModelID)
-	if err != nil || !applies || len(adapterRefs) == 0 {
-		return refs, 0
+	order, adapted, err := e.vision.Augment(ctx, refs)
+	if err != nil || len(adapted) == 0 {
+		return refs, nil
 	}
-	return append(adapterRefs, refs...), len(adapterRefs)
+	return order, adapted
+}
+
+// containsRef reports whether one reference is in a list. The adapter's model list
+// is bounded by §7.8's own configuration and searched once per served answer, so
+// a set would cost more than it saves.
+func containsRef(refs []string, ref string) bool {
+	for _, candidate := range refs {
+		if candidate == ref {
+			return true
+		}
+	}
+	return false
 }

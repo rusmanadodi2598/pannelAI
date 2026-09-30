@@ -141,11 +141,18 @@ Plaintext key hanya muncul pada response create. Request berikutnya memakai `key
 | GET | `/api/v1/providers/{provider_id}/oauth/callback` | Public | `200 OAuthConnectResult` atau redirect browser |
 | GET | `/api/v1/providers/{provider_id}/oauth/status` | Session | `200` |
 | POST | `/api/v1/providers/{provider_id}/oauth/refresh` | Session | `200` |
+| POST | `/api/v1/providers/{provider_id}/oauth/device/start` | Session | `200 OAuthDeviceStartResponse` |
+| POST | `/api/v1/providers/{provider_id}/oauth/device/poll` | Session | body `OAuthDevicePollRequest` → `200 OAuthDevicePollResponse` |
 | POST | `/api/v1/providers/{provider_id}/oauth/bulk` | Session | `201 BulkOAuthResponse` |
 
 `GET /oauth/callback` memakai replay guard `state` single-use. Caller headless dapat mengirim `Accept: application/json`; browser menerima redirect ke panel.
 
 `GET /providers` mendukung filter `category`, `routability`, `page`, dan `per_page`. `routability` bernilai `native` atau `connector`.
+
+Dua rute device melayani **dua bentuk ronde** dari satu kontrak. Ronde nonce (qoder, qoder-cn) mencetak
+PKCE sendiri dan karena itu punya `user_code` tampilan; ronde state yang dicetak vendor
+(codebuddy-cn, codebuddy-intl) tidak punya code singkat, jadi `user_code` **tidak ikut terbit** sama
+sekali, bukan string kosong. Aturan lengkapnya di `docs/SPEC-API/001-SPEC-API.md` §7.4.
 
 ### 3.5 Provider nodes
 

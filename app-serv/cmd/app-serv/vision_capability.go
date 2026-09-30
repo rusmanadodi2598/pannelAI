@@ -32,6 +32,12 @@ import (
 // It judges the model id the operator selected, which is the id the catalog
 // lists, rather than the upstream id an override may point at: the question the
 // panel asks is "can this model, as this gateway names it, read an image".
+//
+// The provider travels with it. registry.VisionCapable takes only a model id,
+// which silently skips the per-provider override layer inside the resolver —
+// measured here, that layer is where an entry's own answer differs from the
+// family pattern, so dropping it made the gateway route on a weaker answer than
+// the catalog it was built from.
 func visionCapabilityCheck(ref domain.ModelRef) bool {
-	return registry.VisionCapable(ref.ModelID())
+	return registry.Capabilities(ref.ProviderID(), ref.ModelID()).Vision
 }

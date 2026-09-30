@@ -5,7 +5,7 @@
 //
 //	match, and the update-or-create write both connect paths share.
 //
-// @uses      context, errors, strings, time, internal/domain.
+// @uses      context, errors, fmt, strings, time, internal/domain, internal/repository.
 // @reason    A code callback and a device poll produce the same thing — one
 //
 //	account's credentials — and the rule that keeps them agreeing is
@@ -22,10 +22,12 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
 
 // connectTokens is the credential material an account is connected with, in
@@ -66,8 +68,13 @@ func (s *OAuthFlowService) connectAccount(ctx context.Context, providerID string
 		return OAuthConnect{Endpoint: endpoint, Created: false, TokenHint: hint, RedirectBase: origin}, nil
 	}
 
+	label, err := s.accountLabel(ctx, providerID, account)
+	if err != nil {
+		return OAuthConnect{}, err
+	}
+
 	endpoint, err := domain.NewUpstreamEndpoint(
-		domain.IDPrefixUpstreamEndpoint+domain.NewULID(now), providerID, connectLabel(providerID, account),
+		domain.IDPrefixUpstreamEndpoint+domain.NewULID(now), providerID, label,
 		domain.UpstreamAuthOAuth, 1, now)
 	if err != nil {
 		return OAuthConnect{}, err
@@ -79,6 +86,47 @@ func (s *OAuthFlowService) connectAccount(ctx context.Context, providerID string
 	}
 	return OAuthConnect{Endpoint: endpoint, Created: true, TokenHint: hint, RedirectBase: origin}, nil
 }
+
+// accountLabel names a freshly created OAuth account.
+//
+// A vendor that stated an identity gives the new row that identity's own name. A vendor
+// that stated nothing — a state round whose token answer carries only tokens, which is
+// how CodeBuddy answers — gets the smallest `Account N` its provider does not already
+// use, because the store enforces UNIQUE (provider_id, label)
+// (migrations/000005_upstream_endpoints.up.sql:29) and a name already taken would turn a
+// login the vendor granted into an insert error. Counting rows instead of reading their
+// names is the bug: delete `Account 1` and the next login recomputes `Account 2`, which
+// the surviving second account already holds. The reference labels the same way
+// (`connectionsRepo.js:181`, "Account N") but has no unique index to trip over.
+//
+// The scan window is the selector's own ceiling for one provider
+// (`dataplane.MaxEndpointsPerProvider`), so the names of every row that can be routed are
+// read here, and a free name always exists inside it plus one.
+func (s *OAuthFlowService) accountLabel(ctx context.Context, providerID string, account domain.EndpointAccount) (string, error) {
+	if account.Email != "" || account.WorkspaceID != "" || account.Name != "" {
+		return defaultOAuthLabel(account), nil
+	}
+	endpoints, _, err := s.store.List(ctx, repository.EndpointFilter{ProviderID: providerID},
+		repository.PageQuery{Page: 1, PerPage: accountLabelScanLimit})
+	if err != nil {
+		return "", err
+	}
+	taken := make(map[string]bool, len(endpoints))
+	for _, endpoint := range endpoints {
+		taken[endpoint.Label()] = true
+	}
+	for candidate := 1; candidate <= accountLabelScanLimit+1; candidate++ {
+		name := fmt.Sprintf("Account %d", candidate)
+		if !taken[name] {
+			return name, nil
+		}
+	}
+	return "", domain.NewInternalError("no free account label is left for this provider")
+}
+
+// accountLabelScanLimit is how many of a provider's rows are read to decide which
+// `Account N` names are already used.
+const accountLabelScanLimit = 100
 
 // sealConnectTokens seals both tokens and stamps the expiry and refresh instant,
 // so the aggregate receives ciphertext only (SPEC-API-001 §6). A nil ExpiresAt

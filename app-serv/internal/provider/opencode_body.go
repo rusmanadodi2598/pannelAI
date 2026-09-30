@@ -13,7 +13,9 @@
 //	translation layer. Everything is a set union or a rename over the
 //	client's own body: the client's tools, ceiling, and items all survive,
 //	because a gateway that dropped them would answer a different question
-//	than the one it was asked.
+//	than the one it was asked. A ceiling that survives is still raised to the
+//	minimum the model declares, because a reasoning model spends a smaller one
+//	on thinking and returns an empty body the upstream counts as success.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
@@ -105,14 +107,15 @@ func decodeOpenCodeBody(raw []byte) (map[string]json.RawMessage, bool) {
 // renameOpenCodeCeiling moves a chat-shaped output ceiling onto the Responses
 // field name. The Responses wire answers 400 to `max_tokens`, and an already
 // present `max_output_tokens` wins because it is the client's own explicit
-// choice for this wire. The renamed value is then clamped to the Console API's
-// floor, because a smaller number is refused by the upstream rather than
-// rounded by it.
-func renameOpenCodeCeiling(body map[string]json.RawMessage) {
+// choice for this wire. The renamed value is then raised to the floor this
+// request's model declares, because a ceiling below it is refused by the
+// upstream rather than rounded by it, or answered with nothing at all.
+func renameOpenCodeCeiling(body map[string]json.RawMessage, model registry.Model) {
+	floor := openCodeOutputFloor(model)
 	if _, present := body["max_output_tokens"]; present {
 		delete(body, "max_tokens")
 		delete(body, "max_completion_tokens")
-		clampOpenCodeCeiling(body)
+		clampOpenCodeCeiling(body, floor)
 		return
 	}
 	for _, key := range []string{"max_completion_tokens", "max_tokens"} {
@@ -123,7 +126,7 @@ func renameOpenCodeCeiling(body map[string]json.RawMessage) {
 	}
 	delete(body, "max_tokens")
 	delete(body, "max_completion_tokens")
-	clampOpenCodeCeiling(body)
+	clampOpenCodeCeiling(body, floor)
 }
 
 // openCodeMinOutputTokens is the floor the OpenCode Console API accepts for a
@@ -132,11 +135,25 @@ func renameOpenCodeCeiling(body map[string]json.RawMessage) {
 // which is what the combo test's one-token ping used to send.
 const openCodeMinOutputTokens = 16
 
-// clampOpenCodeCeiling raises an integer ceiling below the Console floor. A
-// member that is not a JSON integer is left exactly as the client wrote it: the
-// upstream's own validation answers for it, and rewriting a malformed value
-// would hide the client's bug instead of reporting it.
-func clampOpenCodeCeiling(body map[string]json.RawMessage) {
+// openCodeOutputFloor is the ceiling the smallest accepted request must carry:
+// the wire's own floor, raised to whatever the model declares it needs to answer
+// at all. muse-spark-1.3-contributor-free spends a small ceiling entirely on
+// reasoning and returns an empty body with finish_reason "length" (measured live,
+// 2026-09-28), which the upstream counts as a successful answer.
+func openCodeOutputFloor(model registry.Model) int {
+	if model.MinOutputTokens > openCodeMinOutputTokens {
+		return model.MinOutputTokens
+	}
+	return openCodeMinOutputTokens
+}
+
+// clampOpenCodeCeiling raises an integer ceiling below the floor this request's
+// model needs. A ceiling the client never sent stays absent — raising a value
+// that exists is the narrow licence, inventing one the client did not ask for is
+// not. A member that is not a JSON integer is left exactly as the client wrote
+// it: the upstream's own validation answers for it, and rewriting a malformed
+// value would hide the client's bug instead of reporting it.
+func clampOpenCodeCeiling(body map[string]json.RawMessage, floor int) {
 	raw, present := body["max_output_tokens"]
 	if !present {
 		return
@@ -145,8 +162,8 @@ func clampOpenCodeCeiling(body map[string]json.RawMessage) {
 	if err := json.Unmarshal(raw, &value); err != nil {
 		return
 	}
-	if value < openCodeMinOutputTokens {
-		body["max_output_tokens"] = json.RawMessage(strconv.Itoa(openCodeMinOutputTokens))
+	if value < floor {
+		body["max_output_tokens"] = json.RawMessage(strconv.Itoa(floor))
 	}
 }
 

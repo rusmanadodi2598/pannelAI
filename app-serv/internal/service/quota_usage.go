@@ -128,7 +128,9 @@ func (s *QuotaService) publishedCredential(endpoint domain.UpstreamEndpoint, ent
 		if strings.TrimSpace(token) == "" {
 			return quotafetch.Credentials{}, domain.NewValidationError("the account's stored access token is empty")
 		}
-		return quotafetch.Credentials{AccessToken: token}, nil
+		return quotafetch.Credentials{
+			AccessToken: token, UsageURL: entry.Transport.Usage.URL, UsageHeaders: entry.Transport.Headers,
+		}, nil
 	case domain.UpstreamAuthNone:
 		return quotafetch.Credentials{}, domain.NewValidationError("the account presents no credential to ask with")
 	default:
@@ -148,7 +150,9 @@ func (s *QuotaService) publishedCredential(endpoint domain.UpstreamEndpoint, ent
 		if err != nil {
 			return quotafetch.Credentials{}, err
 		}
-		return quotafetch.Credentials{APIKey: value}, nil
+		return quotafetch.Credentials{
+			APIKey: value, UsageURL: entry.Transport.Usage.URL, UsageHeaders: entry.Transport.Headers,
+		}, nil
 	}
 }
 

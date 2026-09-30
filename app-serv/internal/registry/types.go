@@ -160,6 +160,12 @@ type Model struct {
 	// guess; zero means the entry declares none.
 	ContextLength   int `yaml:"context_length"`
 	MaxOutputTokens int `yaml:"max_output_tokens"`
+	// MinOutputTokens is the smallest output ceiling this model can still
+	// answer within. A reasoning model that spends the ceiling thinking returns
+	// an empty body under a small one, which is the model's behaviour rather
+	// than anything the client did wrong, so the floor is declared per model and
+	// a connector raises a ceiling below it. Zero declares none.
+	MinOutputTokens int `yaml:"min_output_tokens"`
 	// RateMultiplier scales a metered provider's own cost accounting when one
 	// upstream unit is not one unit of the provider's quota.
 	RateMultiplier float64 `yaml:"rate_multiplier"`

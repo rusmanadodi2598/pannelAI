@@ -184,3 +184,52 @@ func TestCodeBuddy_RefillAndBonusPacksStaySeparate(t *testing.T) {
 		t.Fatalf("second bonus = %+v", second)
 	}
 }
+
+// TestCodeBuddy_ReadsItsEndpointAndHeadersFromTheEntry pins the single source: the
+// reference asks the registry for `transport.usage.url` and the transport headers,
+// so a declaration moved in the registry has to move the call. The family's built-in
+// stays the fallback for a caller that hands over no entry at all, which is what the
+// vercel entry — the one provider that declares no usage URL — still relies on.
+func TestCodeBuddy_ReadsItsEndpointAndHeadersFromTheEntry(t *testing.T) {
+	var path, agent atomic.Value
+	path.Store("")
+	agent.Store("")
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path.Store(r.URL.Path)
+		agent.Store(r.Header.Get("User-Agent"))
+		_, _ = w.Write([]byte(billingAnswer(`{"Accounts":[]}`)))
+	}))
+	defer server.Close()
+
+	cases := []struct {
+		name     string
+		creds    Credentials
+		wantPath string
+		wantUA   string
+	}{
+		{
+			name: "the entry's declared usage URL and headers win",
+			creds: Credentials{
+				AccessToken: "token-1", UsageURL: server.URL + "/moved/billing",
+				UsageHeaders: map[string]string{"User-Agent": "IDE/9.9.9"},
+			},
+			wantPath: "/moved/billing", wantUA: "IDE/9.9.9",
+		},
+		{
+			name:     "no declared usage URL falls back to the family's built-in path",
+			creds:    Credentials{AccessToken: "token-1", Endpoint: server.URL},
+			wantPath: "/v2/billing/meter/get-user-resource", wantUA: "CLI/2.108.1 CodeBuddy/2.108.1",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			readCodeBuddy(context.Background(), codebuddyCN, tc.creds)
+			if got := path.Load().(string); got != tc.wantPath {
+				t.Fatalf("requested path = %q, want %q", got, tc.wantPath)
+			}
+			if got := agent.Load().(string); got != tc.wantUA {
+				t.Fatalf("User-Agent = %q, want %q", got, tc.wantUA)
+			}
+		})
+	}
+}

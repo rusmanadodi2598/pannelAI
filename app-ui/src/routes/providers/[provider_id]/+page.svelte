@@ -36,6 +36,7 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { getProvider } from '$lib/api/providers';
 	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
+	import { createModelTestStore } from '$lib/stores/model-test.svelte';
 	import { createProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 	import { isNodeId } from '$lib/schemas/provider-node';
 	import {
@@ -61,6 +62,9 @@
 
 	// The disabled set is global, so it is read once rather than per provider. A node does not read it: the
 	// set narrows the registry catalog, and a node's screen has no catalog to narrow.
+	// One probe store for the screen: a node's declared rows and a registry provider's catalog rows are
+	// the same models addressed the same way, so they carry one verdict rather than one per table.
+	const modelTests = createModelTestStore();
 	const disabled = createModelDisabledStore();
 	let catalogToken = $state(0);
 
@@ -201,6 +205,7 @@
 				<ProviderCustomModels
 					providerId={provider.id}
 					{thinking}
+					tests={modelTests}
 					{nodePrefix}
 					onchanged={bumpCatalog}
 				/>
@@ -216,6 +221,7 @@
 					{thinking}
 				/>
 				<ModelCatalogList
+					tests={modelTests}
 					{providerId}
 					{disabled}
 					{thinking}
@@ -231,7 +237,12 @@
 
 			<div class="flex flex-col gap-3">
 				<h2 class="text-base font-medium">Custom models</h2>
-				<ProviderCustomModels providerId={provider.id} {thinking} onchanged={bumpCatalog} />
+				<ProviderCustomModels
+					providerId={provider.id}
+					{thinking}
+					tests={modelTests}
+					onchanged={bumpCatalog}
+				/>
 			</div>
 
 			<ProviderConnectionsSection

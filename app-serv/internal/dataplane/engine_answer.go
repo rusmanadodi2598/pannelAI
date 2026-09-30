@@ -32,9 +32,9 @@ import (
 // The fold produced the upstream's own non-streamed wire, so this reuses the
 // non-streamed translation unchanged rather than duplicating every mapping: only
 // the body it reads differs. When the client's format already matches the
-// upstream's, the folded body is forwarded as written, which is the same rule
-// translateAnswer applies.
-func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in Request) ([]byte, *schema.Usage, error) {
+// upstream's, the folded body is forwarded as written apart from the model name a
+// combo re-claims, which is the same rule translateAnswer applies.
+func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in Request, outcome *Outcome) ([]byte, *schema.Usage, error) {
 	raw, usage, err := foldStream(upstream, resolution)
 	if err != nil {
 		return nil, nil, err
@@ -42,11 +42,12 @@ func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in R
 	if usage == nil {
 		usage = readUsage(raw, resolution.Target)
 	}
+	outcome.Truncated = emptyTruncatedAnswer(raw, resolution)
 
 	switch in.ClientFormat {
 	case schema.FormatAnthropic:
 		if resolution.Target == TargetClaude {
-			return raw, usage, nil
+			return stampAnswerModel(raw, resolution.ClientModel()), usage, nil
 		}
 		translated, err := claudeAnswer(raw, resolution)
 		if err != nil {
@@ -63,7 +64,7 @@ func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in R
 		return body, usage, encodeErr
 	default:
 		if resolution.Target == TargetOpenAI {
-			return raw, usage, nil
+			return stampAnswerModel(raw, resolution.ClientModel()), usage, nil
 		}
 		translated, err := openAIAnswer(raw, resolution, e.clock().Unix())
 		if err != nil {
@@ -76,17 +77,18 @@ func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in R
 
 // translateAnswer converts a non-streamed upstream answer into the client's wire
 // format and reads its accounting.
-func (e *Engine) translateAnswer(upstream *Upstream, resolution Resolution, in Request) ([]byte, *schema.Usage, error) {
+func (e *Engine) translateAnswer(upstream *Upstream, resolution Resolution, in Request, outcome *Outcome) ([]byte, *schema.Usage, error) {
 	raw, err := io.ReadAll(upstream.Body)
 	if err != nil {
 		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "the upstream response could not be read", err)
 	}
 	usage := readUsage(raw, resolution.Target)
+	outcome.Truncated = emptyTruncatedAnswer(raw, resolution)
 
 	switch in.ClientFormat {
 	case schema.FormatAnthropic:
 		if resolution.Target == TargetClaude {
-			return raw, usage, nil
+			return stampAnswerModel(raw, resolution.ClientModel()), usage, nil
 		}
 		translated, err := claudeAnswer(raw, resolution)
 		if err != nil {
@@ -103,7 +105,7 @@ func (e *Engine) translateAnswer(upstream *Upstream, resolution Resolution, in R
 		return body, usage, encodeErr
 	default:
 		if resolution.Target == TargetOpenAI {
-			return raw, usage, nil
+			return stampAnswerModel(raw, resolution.ClientModel()), usage, nil
 		}
 		translated, err := openAIAnswer(raw, resolution, e.clock().Unix())
 		if err != nil {

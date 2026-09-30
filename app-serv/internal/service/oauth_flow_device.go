@@ -59,6 +59,10 @@ type oauthDeviceStatePayload struct {
 	Nonce        string `json:"nonce"`
 	CodeVerifier string `json:"code_verifier"`
 	MachineID    string `json:"machine_id"`
+	// State is the vendor-minted handle a state round polls with. It is empty for
+	// the PKCE shape, where the round is local and `Nonce` is the handle; the two
+	// never share a round, so one staged payload can carry either.
+	State string `json:"state,omitempty"`
 }
 
 // OAuthDeviceStartInput is one start request.
@@ -96,6 +100,13 @@ func (s *OAuthFlowService) requireDeviceFlow(providerID string) (registry.Provid
 	if entry.OAuth.AuthorizeURL != "" {
 		return registry.Provider{}, nil, domain.NewValidationError("provider " + name + " uses an authorize URL; start it through the code flow")
 	}
+	// Two shapes reach a device round: the local PKCE round, which needs the
+	// vendor's login and token endpoints to build and spend it, and the state round,
+	// where the vendor mints the handle and the poll returns the token. Anything
+	// else claiming a device flow is an entry that declares neither pair.
+	if entry.OAuth.StateExchangeFlow() {
+		return entry, entry.OAuth, nil
+	}
 	if entry.OAuth.DeviceTokenURL == "" || entry.OAuth.LoginURL == "" {
 		return registry.Provider{}, nil, domain.NewValidationError("provider " + name + " does not declare a complete device flow")
 	}
@@ -109,6 +120,9 @@ func (s *OAuthFlowService) DeviceStart(ctx context.Context, in OAuthDeviceStartI
 	provider, oauth, err := s.requireDeviceFlow(in.ProviderID)
 	if err != nil {
 		return OAuthDeviceStart{}, err
+	}
+	if oauth.StateExchangeFlow() {
+		return s.stateDeviceStart(ctx, provider.ID, oauth)
 	}
 
 	nonce, err := newUUIDv4()
@@ -149,6 +163,48 @@ func (s *OAuthFlowService) DeviceStart(ctx context.Context, in OAuthDeviceStartI
 		UserCode:        userCodeOf(nonce),
 		IntervalSeconds: deviceInterval,
 		ExpiresIn:       deviceFlowWindow,
+	}, nil
+}
+
+// stateDeviceStart mints the round the way its vendor does: ask, get a state and
+// the URL that carries it, and stage the state under itself. No PKCE pair and no
+// nonce are generated, because this vendor never sees either — the handle the
+// panel holds IS the vendor's own state, and the poll is that one value.
+//
+// A machine id is still generated: the account this round connects is deduped by
+// it, so a re-login lands on the same endpoint rather than stacking a new one per
+// round, which is the behavior the reference gets from storing one credential
+// per provider.
+func (s *OAuthFlowService) stateDeviceStart(ctx context.Context, providerID string, oauth *registry.OAuth) (OAuthDeviceStart, error) {
+	client, ok := s.tokens.(StateRoundClient)
+	if !ok {
+		return OAuthDeviceStart{}, domain.NewInternalError("the state round needs a token client that speaks it")
+	}
+	round, err := client.StateRound(ctx, oauth)
+	if err != nil {
+		return OAuthDeviceStart{}, err
+	}
+	machineID, err := newUUIDv4()
+	if err != nil {
+		return OAuthDeviceStart{}, domain.NewInternalError("the device machine id could not be generated")
+	}
+	payload, err := json.Marshal(oauthDeviceStatePayload{
+		ProviderID: providerID, MachineID: machineID, State: round.State,
+	})
+	if err != nil {
+		return OAuthDeviceStart{}, domain.NewInternalError("the device flow state could not be encoded")
+	}
+	// The vendor's state keys the staged round, so a poll that arrives with it
+	// finds the machine id it belongs to without the client ever holding one.
+	if err := s.states.Stage(ctx, round.State, payload, deviceFlowTTL); err != nil {
+		if errors.Is(err, repository.ErrStateAlreadyStaged) {
+			return OAuthDeviceStart{}, domain.NewConflictError("a device flow is already in flight")
+		}
+		return OAuthDeviceStart{}, err
+	}
+	return OAuthDeviceStart{
+		DeviceCode: round.State, VerificationURL: round.AuthURL,
+		IntervalSeconds: int(round.Interval / time.Second), ExpiresIn: round.Expires,
 	}, nil
 }
 

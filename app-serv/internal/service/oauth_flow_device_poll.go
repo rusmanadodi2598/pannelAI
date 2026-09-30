@@ -77,7 +77,7 @@ func (s *OAuthFlowService) DevicePoll(ctx context.Context, in OAuthDevicePollInp
 		return OAuthDevicePoll{}, domain.NewValidationError("the device code belongs to another provider")
 	}
 
-	token, pending, err := s.tokens.DevicePoll(ctx, oauth.DeviceTokenURL, payload.Nonce, payload.CodeVerifier)
+	token, pending, err := s.pollRound(ctx, oauth, payload)
 	if err != nil {
 		return OAuthDevicePoll{}, err
 	}
@@ -104,14 +104,48 @@ func (s *OAuthFlowService) DevicePoll(ctx context.Context, in OAuthDevicePollInp
 	}, nil
 }
 
-// deviceAccount builds the account a device poll connects, fail-open: the
-// reference treats its userinfo read as best-effort, so an unreadable identity
-// falls back to the synthetic email the dedup match still recognizes instead of
-// blocking a login the vendor already granted.
+// pollRound spends one round against the shape its provider declared.
+//
+// The two shapes differ in what the poll sends and in who minted the handle: the
+// PKCE round polls with a nonce and the verifier this service generated, the
+// state round polls with the value the vendor handed back at start.
+func (s *OAuthFlowService) pollRound(ctx context.Context, oauth *registry.OAuth, payload oauthDeviceStatePayload) (DeviceTokenResponse, bool, error) {
+	if !oauth.StateExchangeFlow() {
+		return s.tokens.DevicePoll(ctx, oauth.DeviceTokenURL, payload.Nonce, payload.CodeVerifier)
+	}
+	client, ok := s.tokens.(StateRoundClient)
+	if !ok {
+		return DeviceTokenResponse{}, false, domain.NewInternalError("the state round needs a token client that speaks it")
+	}
+	return client.StatePoll(ctx, oauth, payload.State)
+}
+
+// deviceAccountEmail names the synthetic account a PKCE device login lands on.
+//
+// A state round answers no identity at all, and it gets no synthetic email either:
+// the reference dedups a connection only when the vendor stated an email
+// (connectionsRepo.js:133) and otherwise inserts a fresh row per login. A constant
+// stand-in here would be a key every account of the region shares, so the second
+// login would spend the first one's credential. The PKCE round does read a user id
+// from the vendor, so its long-standing prefix stays exactly as it was — stored
+// accounts are matched on this string.
+func deviceAccountEmail(oauth *registry.OAuth, userID string) string {
+	if oauth.StateExchangeFlow() {
+		return ""
+	}
+	return deviceUserEmail + userID
+}
+
+// deviceAccount builds the account a device poll connects, fail-open: the reference
+// treats its userinfo read as best-effort, so an unreadable identity falls back to
+// whatever the token answer itself stated rather than blocking a login the vendor
+// already granted. A vendor that states nothing in either place leaves the account
+// with no identity, which is the honest answer and the one that keeps the next login
+// a separate account.
 func (s *OAuthFlowService) deviceAccount(ctx context.Context, oauth *registry.OAuth, token DeviceTokenResponse, machineID string) domain.EndpointAccount {
 	account := domain.EndpointAccount{
 		Name:        token.UserID,
-		Email:       deviceUserEmail + token.UserID,
+		Email:       deviceAccountEmail(oauth, token.UserID),
 		MachineID:   machineID,
 		WorkspaceID: token.UserID,
 	}

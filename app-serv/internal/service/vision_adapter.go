@@ -84,6 +84,22 @@ func NewVisionAdapterService(deps VisionAdapterServiceDeps) (*VisionAdapterServi
 // that drops it.
 func RejectAllVisionCapability(domain.ModelRef) bool { return false }
 
+// VisionCapable answers §7.8's one capability question for one model, asked the
+// same way by the write path that validates a configuration and by the data plane
+// that decides whether to adapt a request.
+//
+// The catalog answers first because it holds the operator's own statement: a
+// custom model row declaring vision is believed, and one that omits it is not
+// overridden by a name pattern. The injected predicate answers only for a model no
+// catalog row speaks for, which is what a pass-through provider's id is.
+func (s *VisionAdapterService) VisionCapable(ctx context.Context, ref domain.ModelRef) (bool, error) {
+	capable, found, err := s.catalog.VisionCapable(ctx, ref)
+	if err != nil || found {
+		return capable, err
+	}
+	return s.capable(ref), nil
+}
+
 // Get returns the stored configuration, or the disabled default when nothing has
 // been written yet.
 func (s *VisionAdapterService) Get(ctx context.Context) (domain.VisionAdapter, error) {
@@ -116,7 +132,16 @@ func (s *VisionAdapterService) Replace(ctx context.Context, enabled, roundRobin 
 			return domain.VisionAdapter{}, err
 		}
 	}
-	adapter, err := domain.NewVisionAdapter(enabled, roundRobin, models, s.capable, s.clock())
+	// The domain aggregate takes a synchronous predicate, so the catalog read this
+	// request owns is closed over rather than threaded through the domain's
+	// signature. A failed read answers "not capable": refusing a save is the safe
+	// direction on a write path, where the data plane's opposite choice (serve
+	// un-adapted) is safe on a request path.
+	capable := func(ref domain.ModelRef) bool {
+		answer, err := s.VisionCapable(ctx, ref)
+		return err == nil && answer
+	}
+	adapter, err := domain.NewVisionAdapter(enabled, roundRobin, models, capable, s.clock())
 	if err != nil {
 		return domain.VisionAdapter{}, err
 	}

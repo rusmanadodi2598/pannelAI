@@ -88,13 +88,16 @@ type OAuthDevicePollRequest struct {
 }
 
 // OAuthDeviceStartResponse is the verification round the panel renders: the URL
-// it shows and lets the operator open (never follows itself), the short code the
-// operator recognizes, the device code every poll carries, and the cadence plus
-// window the poll loop runs on.
+// it shows and lets the operator open (never follows itself), the device code
+// every poll carries, and the cadence plus window the poll loop runs on.
+//
+// `user_code` rides only with a round whose flow mints a short code the operator
+// recognizes. A vendor-minted state round has no such code, and writing an empty
+// one would hand the panel a value its own contract refuses.
 type OAuthDeviceStartResponse struct {
 	DeviceCode      string `json:"device_code"`
 	VerificationURL string `json:"verification_url"`
-	UserCode        string `json:"user_code"`
+	UserCode        string `json:"user_code,omitempty"`
 	IntervalSeconds int    `json:"interval_seconds"`
 	ExpiresIn       int    `json:"expires_in"`
 }

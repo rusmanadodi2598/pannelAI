@@ -5017,7 +5017,8 @@
           },
           "user_code": {
             "type": "string",
-            "description": "The short code the operator recognizes. Display only; the vendor does not read it."
+            "minLength": 1,
+            "description": "The short code the operator recognizes. Display only; the vendor does not read it. Present only when the round's flow mints one; a vendor-minted state round has no short code and omits the key."
           },
           "interval_seconds": {
             "type": "integer",
@@ -5031,7 +5032,6 @@
         "required": [
           "device_code",
           "verification_url",
-          "user_code",
           "interval_seconds",
           "expires_in"
         ],

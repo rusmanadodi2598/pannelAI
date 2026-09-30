@@ -103,8 +103,12 @@ func TestVisionAdapterService_Replace(t *testing.T) {
 			capable: openaiOnly, wantStored: []string{"openai/gpt-4o"},
 		},
 		{
-			name: "a custom model the catalog holds", enabled: true, models: []string{"openai/local-embed"},
-			capable: acceptAll, wantStored: []string{"openai/local-embed"},
+			// The operator's stored declaration is the answer, so an embedding row
+			// cannot be wired as a vision adapter even when the caller hands in a
+			// predicate that accepts everything. This is the case that the live
+			// gateway measured backwards on 2026-09-29.
+			name: "a custom row that declares no vision", enabled: true, models: []string{"openai/local-embed"},
+			capable: acceptAll, wantErr: "not vision-capable: openai/local-embed", wantCodes: "VALIDATION_ERROR",
 		},
 		{
 			name: "disabling with an empty list", enabled: false, models: nil,
@@ -119,13 +123,17 @@ func TestVisionAdapterService_Replace(t *testing.T) {
 			capable: acceptAll, wantErr: "unknown model", wantCodes: "VALIDATION_ERROR",
 		},
 		{
-			name: "a model the predicate rejects", enabled: true, models: []string{"openai/gpt-4o"},
-			capable: func(domain.ModelRef) bool { return false },
-			wantErr: "not vision-capable: openai/gpt-4o", wantCodes: "VALIDATION_ERROR",
+			// A listed model is answered by the catalog, not by the injected
+			// predicate: the predicate exists for the pass-through ids the catalog
+			// does not list, and outvoting a row the operator can see in the panel
+			// would make the route disagree with the screen.
+			name: "a predicate cannot outvote a capable catalog row", enabled: true, models: []string{"openai/gpt-4o"},
+			capable:    func(domain.ModelRef) bool { return false },
+			wantStored: []string{"openai/gpt-4o"},
 		},
 		{
-			name: "a nil predicate accepts nothing", enabled: true, models: []string{"openai/gpt-4o"},
-			capable: nil, wantErr: "not vision-capable", wantCodes: "VALIDATION_ERROR",
+			name: "a nil predicate still answers a listed row", enabled: true, models: []string{"openai/gpt-4o"},
+			capable: nil, wantStored: []string{"openai/gpt-4o"},
 		},
 	}
 	for _, tc := range cases {

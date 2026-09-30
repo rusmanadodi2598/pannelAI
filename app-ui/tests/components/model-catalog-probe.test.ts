@@ -9,6 +9,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ModelCatalogList from '../../src/lib/components/ModelCatalogList.svelte';
 import { createModelDisabledStore } from '../../src/lib/stores/model-disabled.svelte';
+import { createModelTestStore } from '../../src/lib/stores/model-test.svelte';
 import { createProviderThinkingStore } from '../../src/lib/stores/provider-thinking.svelte';
 import { catalogRow, stubModels, type ModelStub } from '../support/model-stub';
 import { expectIconOnly } from '../support/icon-only';
@@ -24,9 +25,13 @@ const imageRow = catalogRow({
 });
 
 let stub: ModelStub;
+let tests: ReturnType<typeof createModelTestStore>;
 
 beforeEach(() => {
 	stub = stubModels({ catalog: [chatRow, imageRow] });
+	// The page owns the probe store, so the test owns it too: the sweep's answers and the rows'
+	// states must be one record for the assertions to mean anything.
+	tests = createModelTestStore();
 });
 
 afterEach(() => {
@@ -43,6 +48,7 @@ async function renderCatalog(token = 0): Promise<HTMLElement> {
 			providerId: 'openai',
 			disabled: createModelDisabledStore(),
 			thinking: createProviderThinkingStore(),
+			tests,
 			onchanged: () => {},
 			token
 		}

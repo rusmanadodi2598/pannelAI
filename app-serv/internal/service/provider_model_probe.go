@@ -90,11 +90,11 @@ func (s *ProviderModelTestService) TestModels(
 	if trimmed == "" {
 		return schema.ProviderModelTestResponse{}, domain.NewValidationError("a provider id is required")
 	}
-	list, err := s.providers.Models(ctx, trimmed)
+	list, targets, err := s.providers.ProbeTargets(ctx, trimmed)
 	if err != nil {
 		return schema.ProviderModelTestResponse{}, err
 	}
-	candidates := chatModels(list.Entry.Models)
+	candidates := chatModels(targets)
 	if len(candidates) == 0 {
 		return schema.ProviderModelTestResponse{}, domain.NewValidationError(
 			"provider " + list.Entry.ID + " offers no chat model to test")
@@ -141,11 +141,11 @@ func (s *ProviderModelTestService) chatModel(
 		return registry.Provider{}, registry.Model{}, domain.NewValidationError("a model id is required")
 	}
 
-	list, err := s.providers.Models(ctx, trimmedProvider)
+	list, targets, err := s.providers.ProbeTargets(ctx, trimmedProvider)
 	if err != nil {
 		return registry.Provider{}, registry.Model{}, err
 	}
-	model, found := modelByID(list.Entry.Models, trimmedModel)
+	model, found := modelByID(targets, trimmedModel)
 	if found && !model.IsChat() {
 		return registry.Provider{}, registry.Model{}, domain.NewValidationError(
 			"model " + trimmedModel + " is not a chat model, so the chat probe does not test it")

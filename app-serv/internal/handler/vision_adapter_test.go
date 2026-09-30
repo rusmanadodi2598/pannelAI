@@ -6,8 +6,8 @@
 // @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path
 //
 //	per route. §7.8's write is a whole replacement whose models come
-//	from the catalog, and the capability table is not in the registry
-//	yet, so the tests pin the exact refusals an operator sees today.
+//	from the catalog, and the catalog is what answers the vision
+//	question, so the tests pin the exact refusals an operator meets.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
@@ -41,10 +41,12 @@ func TestVisionAdapterHandler_GetServesTheDefault(t *testing.T) {
 
 // TestVisionAdapterHandler_Put covers every rejection the route owes its client.
 //
-// The capability predicate is the service's placeholder until the registry
-// carries capability data, so every model is refused as not vision-capable; the
-// reachable failures are therefore pinned here exactly as an operator meets
-// them, and the seam's future state is covered by the service tests.
+// Capability is answered by the catalog, and every model this fixture's registry
+// declares is vision-capable, so no reachable body here produces the capability
+// refusal — that refusal is pinned in the service's own tests, where the catalog
+// can hold a row that declares something else. What the route is held to here is
+// its HTTP contract: the catalog refusals it can actually meet, and the shape the
+// handler must not invent.
 func TestVisionAdapterHandler_Put(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -52,10 +54,10 @@ func TestVisionAdapterHandler_Put(t *testing.T) {
 		status int
 	}{
 		{name: "disabling with no models", body: `{"enabled":false,"round_robin":false,"models":[]}`, status: http.StatusOK},
+		{name: "a model the catalog declares vision for", body: `{"enabled":true,"round_robin":false,"models":["openai/gpt-4o"]}`, status: http.StatusOK},
 		{name: "a missing models field", body: `{"enabled":false,"round_robin":false}`, status: http.StatusBadRequest},
 		{name: "a model outside the catalog", body: `{"enabled":true,"round_robin":false,"models":["openai/ghost"]}`, status: http.StatusBadRequest},
 		{name: "a model that is not provider/model", body: `{"enabled":true,"round_robin":false,"models":["gpt-4o"]}`, status: http.StatusBadRequest},
-		{name: "a model the capability check refuses", body: `{"enabled":true,"round_robin":false,"models":["openai/gpt-4o"]}`, status: http.StatusBadRequest},
 		{name: "a disabled catalog model", body: `{"enabled":true,"round_robin":false,"models":["anthropic/claude-3"]}`, status: http.StatusBadRequest},
 		{name: "an unknown field", body: `{"enabled":false,"round_robin":false,"models":[],"extra":1}`, status: http.StatusBadRequest},
 		{name: "a malformed body", body: `{"enabled":`, status: http.StatusBadRequest},

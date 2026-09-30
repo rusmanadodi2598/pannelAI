@@ -17,24 +17,29 @@
 	import CustomModelDeleteDialog from '$lib/components/CustomModelDeleteDialog.svelte';
 	import CustomModelForm from '$lib/components/CustomModelForm.svelte';
 	import CustomModelTable from '$lib/components/CustomModelTable.svelte';
+	import ModelCatalogSweep from '$lib/components/ModelCatalogSweep.svelte';
 	import NodeModelsImport from '$lib/components/NodeModelsImport.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { deleteCustomModel, listCustomModels } from '$lib/api/models';
 	import { providerCustomModels, type CustomModel } from '$lib/schemas/custom-model';
 	import { nodeTypeOfId } from '$lib/schemas/provider-node';
+	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
 	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 
 	let {
 		providerId,
 		thinking,
 		onchanged,
-		nodePrefix
+		nodePrefix,
+		tests
 	}: {
 		providerId: string;
 		thinking: ProviderThinkingStore;
 		onchanged: () => void;
 		/** The node's model prefix, present only on a custom node's screen. */
 		nodePrefix?: string;
+		/** The probe answers, owned by the page so this section and the catalog state one truth. */
+		tests: ModelTestStore;
 	} = $props();
 
 	// A node's models are addressed as `prefix/model`, so the prefix is what makes the model string this
@@ -64,6 +69,9 @@
 
 	async function load(): Promise<void> {
 		loading = true;
+		// A fresh read may list different rows, so the last probe's answers are dropped rather than left
+		// beside a model they never named.
+		tests.clear();
 		const result = await listCustomModels();
 		loading = false;
 
@@ -136,9 +144,17 @@
 				: `A model declared here is addressed as ${prefix}/model-id. Add one below, or import the list the node's own /models endpoint answers.`}
 		/>
 	{:else}
+		<!-- A node has no catalog section at all, so the sweep belongs here: these rows ARE its models. A
+		     registry provider's supplement is swept by the catalog above it, and a second button on the
+		     same screen would only offer the same spend twice. -->
+		{#if prefix !== null}
+			<ModelCatalogSweep {providerId} {tests} />
+		{/if}
+
 		<CustomModelTable
 			rows={mine}
 			{thinking}
+			{tests}
 			{nodePrefix}
 			{removing}
 			onremove={(row) => {

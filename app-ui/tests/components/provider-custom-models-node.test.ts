@@ -9,6 +9,7 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ProviderCustomModels from '$lib/components/ProviderCustomModels.svelte';
+import { createModelTestStore } from '$lib/stores/model-test.svelte';
 import { createProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 import { endpointRow } from '../support/endpoint-stub';
 import { customRow, stubModels, type ModelStub } from '../support/model-stub';
@@ -43,6 +44,7 @@ function renderSection(): void {
 			// The reasoning store is the page's to load, so a store that was never loaded is what this
 			// section sees here: the copied string carries no suffix, which the page-level tests cover.
 			thinking: createProviderThinkingStore(),
+			tests: createModelTestStore(),
 			nodePrefix: PREFIX,
 			onchanged: () => {
 				changed += 1;

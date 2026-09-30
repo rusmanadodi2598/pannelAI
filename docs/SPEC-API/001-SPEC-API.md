@@ -213,7 +213,7 @@ recorded here so their absence reads as a decision rather than a gap
 | GET    | `/api/v1/providers/{provider_id}/oauth/callback` | P    | Completes flow (validates `state` replay-guard), creates upstream endpoint + tokens; `302` redirect for browsers, `200` JSON body for headless callers (`Accept: application/json`) | P2                                                                   |
 | GET    | `/api/v1/providers/{provider_id}/oauth/status`   | S    | Token expiry / refresh state per endpoint                                                                                                                                           | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/refresh`  | S    | Force token refresh (worker also auto-refreshes at `refresh_lead`)                                                                                                                  | P2                                                                   |
-| POST   | `/api/v1/providers/{provider_id}/oauth/device/start` | S | `{}` → `{device_code, verification_url, user_code, interval_seconds, expires_in}` (device-flow providers: the registry entry declares no authorize URL)                            | P2                                                                   |
+| POST   | `/api/v1/providers/{provider_id}/oauth/device/start` | S | `{}` → `{device_code, verification_url, user_code?, interval_seconds, expires_in}` (device-flow providers: the registry entry declares no authorize URL; `user_code` rides only with a round whose flow mints a short code)                            | P2                                                                   |
 | POST   | `/api/v1/providers/{provider_id}/oauth/device/poll`  | S | `{device_code}` → `{status: "pending"}` while the operator is still authorizing, then `{status: "connected", endpoint_id, token_hint, created}`                                        | P2                                                                   |
 
 **A model test answers per model, and a refusal is not an error.** `POST /models/test` and
@@ -228,6 +228,15 @@ was cut short, and `stopped="deadline"` names why. Nothing is persisted: the ver
 probe, not to a stored row, which is the same rule `POST /provider-nodes/{id}/test` follows. A model the
 registry declares non-chat (an embedding or image kind) is refused with `VALIDATION_ERROR`, because the chat
 probe's failure would describe the probe rather than the model.
+
+**The set a sweep walks is the provider's own, in both halves.** `GET /providers/{id}/models` resolves a
+compatible node's list from its upstream, and that answer is empty when the node is unreachable (§7.4,
+draft 017 §4.2). The rows the operator declared in `models_custom` are routable and are on the node's screen,
+so the sweep walks the resolved list **plus** those rows, deduped by model id, resolved rows first. Where
+both name one model the resolved row is kept, because it carries the kind that decides whether the chat
+probe can reach it at all; the declared row supplies a display name only where the resolved row is silent.
+A declared row is chat-routable by the catalog's own rule (§7.6 gives custom rows no kind), so it is offered
+to the probe like any other.
 
 **The callback's two answers.** `GET .../oauth/callback` is the one route in §7.4 that is **public**: the
 provider redirects a browser to it, and a browser cannot present the dashboard session cookie for that
@@ -255,6 +264,17 @@ uses: `interval_seconds: 2`, `expires_in: 300`. **The verifier and the machine i
 gateway**: the panel's only handle is the device code, which is unguessable, single-use, and bound to the
 provider that staged it. A wrong-provider or spent code is a `VALIDATION_ERROR`, as is a code the gateway
 never minted.
+
+**A round can also be minted by the vendor.** A provider whose `oauth` block declares a `state_url` and a
+`token_url` (CodeBuddy CN, CodeBuddy) authorizes through the same two routes, but the handle is the
+vendor's own: `.../oauth/device/start` asks the vendor's state endpoint, stages the round under the state
+it returned, and answers that state as `device_code` with the vendor's authorization page as
+`verification_url`. This shape has **no short code**, because nothing in the vendor's flow asks the
+operator to enter one: the `user_code` key is **absent** rather than empty, and minting a display string
+out of the state would put a value on the screen that no party can act on. A round whose flow does mint a
+code always carries it non-empty. `interval_seconds` and `expires_in` keep the same meaning for both
+shapes: the cadence the panel waits at, and the window within which the staged round can still be
+approved.
 
 `POST .../oauth/device/poll` performs **exactly one** upstream attempt per call, so the panel's cadence is
 the only thing deciding how often the vendor is asked. The upstream's `202` and `404` both mean
@@ -397,6 +417,16 @@ default); it serves the returned leader and fails over through the rest of the r
 optimisation: an order that cannot be produced, or one of a different length, serves the stored priority
 order instead of failing the request.
 
+**A member that answers nothing (2026-09-29).** A member can succeed on the wire and still have nothing to
+show: a reasoning model that spends the whole output ceiling on thinking answers 200 with an empty message
+and `finish_reason: length`. The walk treats that as worth continuing over — the next member is tried before
+the body is served — and it is **not** an error: the credential answered, so it is recorded as a success and
+is not parked, and the rotation cursor advances once per request, not once per attempt. When no member has
+an answer, the last empty body is served with its ceiling stop intact, in preference to any member's error,
+because that is the response the first member would have produced and it tells the client the truth: the
+ceiling was too small. A streamed client is never re-walked: its frames have already been delivered, so the
+answer it started on is the answer it keeps.
+
 ### 7.8 Vision Adapter
 
 | Method | Path                     | Auth | Description                                                                                                                             | Phase |
@@ -404,9 +434,35 @@ order instead of failing the request.
 | GET    | `/api/v1/vision-adapter` | S    | `{enabled, round_robin, models, updated_at}`                                                                                            | P1    |
 | PUT    | `/api/v1/vision-adapter` | S    | Replace config; `models` entries validated against catalog (`vision` capability, and the entry must name a model the chat plane serves) | P1    |
 
-Behavior (ported from `capacityAdapter.vision`): when a request carries image content and the resolved
-model lacks vision, the router prepends adapter models (respecting `round_robin`) and strips the
-adapter model from the response identity. v1 ships **vision only**; the adapter framework is
+Behavior (ported from `capacityAdapter.vision`): when a request carries image content, the router asks
+the adapter about **every** reference the request could be served by — a combo contributes its whole
+member list, not the member the rotation happened to put first — and the adapter is inserted after
+every candidate that reads images itself and before every candidate that cannot. Nothing is inserted
+when no candidate is blind, and the adapter's rotation is not spent on a request that did not need it.
+A blind candidate still puts the adapter first, because a candidate that answers 200 without seeing the
+image ends the walk before anything behind it is tried. An adapter model that serves is stripped from the
+response identity and recorded under the model the caller addressed — and because that is exactly where the
+substitution stops being visible, the outcome carries `VisionAdapted` and the chat recorder writes it as a
+structured warning naming the request, the combo, the addressed model and the serving endpoint. The gateway
+can prove which model it handed the image to; it cannot prove what that model did with the image, so this is
+an operator's log line and not a client-facing field.
+
+Capability is answered by the catalog rather than by a model-id pattern alone: a custom row its operator
+declared `vision` is believed — the lever no pattern can supply, because a pattern cannot know a model an
+operator created — and a model no catalog row covers falls back to the resolver asked **with** its provider
+id, so the per-provider override layer is actually reached. A row that merely does not mention vision is
+**not** read as denying it: every custom node's models are such rows, and reading silence as denial made
+`omp-agent`'s `deepseek-v4.1-flash` — listed vision-capable by the reference itself — route its images to
+the adapter. Measured live 2026-09-29: the configured adapter model answered a solid-red image as `gray`
+and once narrated that it had no visual access, while `opencode/space-bunny-free`, which no table knows
+about, answered `Red` three times out of three; the same adapter model later answered `Red` twice, which is
+why the ported tables were left at the reference's answer rather than corrected — see the 2026-09-29
+entries recording both the correction and its reversal. Owner decision 2026-09-29: Muse Spark reads images,
+and what varies is the free lane carrying them, so `vision: true` stands and the tables stay at reference
+parity. This is deliberately **not** `modelHasCapability`,
+the panel's `?capability=vision` filter predicate, which treats a custom row's declared set as the whole
+answer and can veto: on a screen a declaration is a statement, while on the route a wrong answer ships
+live image content to the wrong model. v1 ships **vision only**; the adapter framework is
 capability-generic internally (pdf/audio/video adapters from the reference are **not** ported).
 
 ### 7.9 Token Saver
@@ -794,14 +850,34 @@ the token savers run after them: a saver that rewrites messages sees the body th
 actually receive, thinking fields included. That is the reference's own order (`chatCore.js` applies
 thinking inside translation, then runs the savers on the final body).
 
-**What a served answer names as its model (2026-09-28).** `POST /chat/completions` and `POST /messages`
-report the model the caller asked for, not the name the upstream echoed in its answer. An upstream is
-entitled to answer a routed model under its own label — Qoder answers every model it serves as `auto` —
-and that label is frequently not something the caller can send back: a client that reads `auto` off the
-answer and retries it reaches a pool the vendor refuses with `429`. The id the gateway resolved is the
-one that travels, in the streamed frames and in the folded answer alike. The Responses-emulating client
-route keeps the opposite convention deliberately (it reports the answer as the upstream named it), so a
-caller that wants the provider's own label asks there.
+**What a served answer names as its model (2026-09-28, extended 2026-09-29).** `POST /chat/completions`
+and `POST /messages` report the model the caller asked for, not the name the upstream echoed in its
+answer. An upstream is entitled to answer a routed model under its own label — Qoder answers every model
+it serves as `auto` — and that label is frequently not something the caller can send back: a client that
+reads `auto` off the answer and retries it reaches a pool the vendor refuses with `429`.
+
+When the model string addressed a **combo**, the answer carries the combo's name. A combo is a model
+name the operator wrote and the client sends, and a `round_robin` combo hands the same client a
+different member on every request, so naming the resolved member answers the caller with a routing fact
+it cannot use and cannot re-send. Resolution stays a backend concern: the usage row, the quota window,
+and the rotation are still keyed by the member that actually served the call, and the combo name travels
+separately as the log's combo identity. The Responses-emulating client route names the answer by its own
+resolved id rather than the upstream's echo, and a combo overrides that too.
+
+Where the client's wire already matches the upstream's, the body is forwarded as written apart from this
+one name, which is stamped onto it: a gateway that re-encoded the answer to relabel it would drop fields
+its schema does not model, and a gateway that forwarded it untouched would hand back the vendor's label
+and answer the whole rule nowhere on the most-travelled path.
+
+**The smallest ceiling a model can answer within (2026-09-29).** A model entry may declare
+`min_output_tokens` in the registry: the output ceiling it still answers within. A connector raises a ceiling
+the client sent to that floor (and never below the wire's own minimum) instead of forwarding one the model
+spends entirely on thinking. This is the one case the gateway writes a number the upstream would have
+accepted, so it is bounded three ways: it applies only to a ceiling the client already sent, never to an
+absent one; the floor is declared per model, so a model that does not declare one is untouched; and it
+raises rather than replaces, so a ceiling above the floor is forwarded byte for byte. Muse Spark 1.3
+Contributor Free declares 512 after answering `content: ""` with `finish_reason: length` under a 60-token
+ceiling (measured live, 2026-09-28).
 
 Authentication runs first, before the body is read or validated: an unauthenticated caller is refused
 with `401 UNAUTHORIZED` whatever its body looks like, so a malformed payload cannot be used to probe the
@@ -1048,3 +1124,18 @@ _Changelog 2026-09-28: §7.12 adds the published-quota read `GET /api/v1/quotas/
 _Changelog 2026-09-28: §4's POST retry cap gains the one exception it always implicitly assumed. A refusal the connector reports from the first frame of a wrapped stream is a refusal the client never saw an answer for, so repeating it cannot duplicate anything, and the entry's full attempt budget applies instead of the single-POST cap. Measured the same day against Qoder: the free model refused the identical request twice with a nested capacity complaint and served it on the third attempt, which the cap had stopped at two._
 
 _Changelog 2026-09-28: §7.6 states which model name a served answer carries. The chat-completions and messages surfaces now report the model the caller asked for; they had been overwriting it with the upstream's own echo frame by frame, and Qoder answers every model it serves as `auto` — a label that is neither the requested model nor re-sendable, since retrying `auto` reaches a pool the vendor refuses with 429. The Responses-emulating route keeps reporting the answer as the upstream named it, which is that surface's documented convention and is left alone._
+
+_Changelog 2026-09-29: §7.15 gives a model entry the right to declare `min_output_tokens`, and the OpenCode connector now raises a client's ceiling to it. Measured on a three-member round-robin combo: Muse Spark 1.3 Contributor Free spent a 60-token ceiling entirely on reasoning and answered `content: ""` with `finish_reason: length` — a 200 the gateway had no reason to distrust. The floor is 512 for that model and it is declared, not hardcoded, so the other two members are untouched and a model that gains the same behavior is one registry line away. Three bounds keep it from becoming the gateway answering a different question than it was asked: an absent ceiling stays absent, a ceiling above the floor travels unchanged, and the wire's own 16-token minimum is still the floor for every model that declares none. The one licence this borrows from the connector's rewrite rules is stated in them rather than worked around._
+
+_Changelog 2026-09-29: §7.7 records the walk over a member that answers nothing. A combo used to move on only when a member failed, so a round-robin request that landed on the model above was served an empty body as if it had succeeded. An empty ceiling-stopped answer now continues the walk, and continues **without** being an error: `Outcome.Truncated` is a flag on the answer, not a failure, because reading it as one would park a credential that answered exactly as asked. Anything showable counts as an answer — text, a tool call, or reasoning, which the fold already keeps when content is empty. When no member has one, the last empty body wins over any member's error and keeps its `finish_reason: length`, which is the client's own signal that its ceiling was too small; a single-member combo and a streamed client are unchanged, the second because frames already delivered cannot be rewound._
+
+_Changelog 2026-09-29: §7.6 gives a combo its own name back. Three operator-authored combos answered every request with whichever member the rotation had picked — `space-bunny-free`, `mimo-v2.6-flash-free`, `muse-spark-1.3-contributor-free` across four calls on one combo — while `/api/v1/models` listed the combo as a model and the client had sent exactly that. The previous fix moved the name from the vendor's echo to the resolved member, which is the same class of answer: a routing fact the caller cannot re-send, and one that changes per request on purpose. The answer now carries the combo the caller addressed on every surface — translated, folded, re-framed stream, and the same-wire passthrough, which reached no translation step at all and had to be stamped rather than translated. Resolution stays in the backend: the usage row, quota window and rotation are still keyed by the member that ran, and `Outcome.Combo` already carried the combo separately, so nothing that bills or rotates moved. Plain model requests are byte-for-byte what they were; there is no operator-authored name above them to answer with._
+
+_Changelog 2026-09-29: §7.8's capability answer moved to the catalog. Two measured faults, one configuration. The panel's adapter model is declared vision-capable by the ported reference tables — by exact id and by the `*muse*spark*` rule — and answered a solid-red image as `gray`, saying in its own reasoning that it had **no visual access to the image**; three repeats, same result, while `opencode/space-bunny-free`, which no table knows about, answered `Red` three times out of three. So the guard that exists to refuse a blind adapter model had been handed a model the operator could not have justified. Capability is now resolved from the catalog through the same reference canonicalizer `ModelExists` uses, so an operator's declaration is believed for models no pattern can know; a row that does not mention vision is not read as denying it, which is a deliberate divergence from the panel's `?capability=vision` filter and is argued in §7.8 and the entry below; a model no catalog row covers falls back to the resolver asked **with** its provider id, where the per-provider override layer had been unreachable because the call site dropped the provider. The seam is handed every candidate rather than the leading one and places the adapter after anything that can see, and an answer the adapter served — and that no candidate of the request itself covered — is flagged as `Outcome.VisionAdapted` and written to the log, because the response now names the combo and the usage row names the addressed model, so a substitution would otherwise leave no trace at all. Measured on the live gateway with `pi-agent`, `pc-agent`, and `omp-agent`._
+
+_Changelog 2026-09-29: the vision resolver was tested against the live gateway and the ported tables were left alone, for a reason worth recording. `muse-spark-1.3-contributor-free` answered a solid-red image as `white` and narrated **no visual access to the image**, twice, which reads as the reference's `vision: true` being wrong — and the first cut of this change corrected `visionExactIDs` and declared the deviation in the parity test. Repeating it told a different story: the same model, reached as a combo member, answered `Red` on two further calls, and the direct lane alternated between `white` and an empty body at its ceiling. A model that answers correctly sometimes does read images; what is intermittent is the free lane carrying
+them. So `vision: true` is a defensible interface claim and the correction was reverted, with the owner
+confirming it the same day — `capabilities_corpus.json` and the resolver are byte-identical to the
+reference pin again, and this entry is the record of why the change was not made. What the gateway does instead is refuse to let the uncertainty be invisible: `Outcome.VisionAdapted` plus its log line says when an image was handed to a model the caller did not address, and the catalog is now the authority an operator can override in one direction (§7.8 above), which is the only honest place to record "this lane is not trustworthy for images" — a routing judgement, not a capability fact._
+
+_Changelog 2026-09-29: a custom catalog row no longer vetoes a capability it does not mention. Resolving §7.8's capability question through the catalog first reused `modelHasCapability`, the panel filter's predicate, which treats a custom row's declared set as the whole answer — but every custom node's models are such rows, and they say nothing about images. Measured on the live gateway: `omp-agent`'s `deepseek-v4.1-flash`, which the reference itself lists as vision-capable, was read as blind, its image was handed to the adapter, and the combo answered `white` for a solid-red image on two runs; making the answer additive — a row can turn a capability on, silence is not denial — restored `Red` on two runs, with no adapter substitution recorded. The panel's filter keeps its veto deliberately: there a declared set is a statement an operator made on a screen, while here a wrong answer routes live image content to the wrong model._

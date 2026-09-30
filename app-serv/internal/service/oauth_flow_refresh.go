@@ -156,16 +156,7 @@ func (s *OAuthFlowService) refreshEndpoint(ctx context.Context, oauth *registry.
 	if err != nil {
 		return nil, err
 	}
-	grant := TokenGrant{
-		GrantType:    "refresh_token",
-		RefreshToken: opened,
-		ClientID:     oauth.ClientID,
-		ClientSecret: oauth.ClientSecret,
-	}
-	if oauth.Refresh != nil {
-		grant.Scope = oauth.Refresh.Scope
-	}
-	token, err := s.tokens.Grant(ctx, oauth.TokenURL, tokenEncoding(oauth), grant)
+	token, err := s.refreshGrant(ctx, oauth, opened)
 	if err != nil {
 		return nil, err
 	}
@@ -230,50 +221,4 @@ func (s *OAuthFlowService) listOAuthEndpoints(ctx context.Context, providerID st
 		}
 	}
 	return collected, nil
-}
-
-// flowKind names the flow the panel should offer for a provider's oauth block.
-func flowKind(oauth *registry.OAuth) string {
-	switch {
-	case oauth == nil:
-		return "none"
-	case oauth.RequiresCustomExchange():
-		return "connector"
-	case oauth.AuthorizeURL == "":
-		return "device"
-	default:
-		return "code"
-	}
-}
-
-// refreshLead converts the registry's millisecond lead to a duration.
-func refreshLead(oauth *registry.OAuth) time.Duration {
-	if oauth == nil {
-		return 0
-	}
-	return time.Duration(oauth.RefreshLeadMS) * time.Millisecond
-}
-
-// tokenEncoding selects the token endpoint's body encoding: JSON when the
-// provider's refresh block declares it, form otherwise (§8.1).
-func tokenEncoding(oauth *registry.OAuth) string {
-	if oauth != nil && oauth.Refresh != nil && strings.EqualFold(oauth.Refresh.Encoding, "json") {
-		return "json"
-	}
-	return ""
-}
-
-// credentialExpiry and lastRefresh keep nil-safety in one place.
-func credentialExpiry(credential *domain.OAuthCredential) *time.Time {
-	if credential == nil {
-		return nil
-	}
-	return credential.ExpiresAt
-}
-
-func lastRefresh(credential *domain.OAuthCredential) *time.Time {
-	if credential == nil {
-		return nil
-	}
-	return credential.LastRefreshAt
 }

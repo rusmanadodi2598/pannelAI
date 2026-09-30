@@ -258,6 +258,32 @@ describe('the read schemas', () => {
 		expect(parsed.success).toBe(true);
 	});
 
+	// A vendor-minted state round has no short code at all: the vendor hands out a state
+	// and an authorization page, and there is nothing for the operator to recognize. The
+	// round is still startable and pollable, so the absence is read, not refused.
+	it('reads a vendor-minted round that carries no short code', () => {
+		const parsed = schemaOAuthDeviceStart.safeParse({
+			device_code: 'vendor-state-7f3a',
+			verification_url: 'https://www.codebuddy.test/auth?state=vendor-state-7f3a',
+			interval_seconds: 5,
+			expires_in: 300
+		});
+		expect(parsed.success && parsed.data.user_code).toBeUndefined();
+		expect(parsed.success && parsed.data.device_code).toBe('vendor-state-7f3a');
+	});
+
+	it('refuses a device round whose short code is present but empty', () => {
+		expect(
+			schemaOAuthDeviceStart.safeParse({
+				device_code: 'dev_1',
+				verification_url: 'https://qoder.test/device/selectAccounts',
+				user_code: '',
+				interval_seconds: 2,
+				expires_in: 300
+			}).success
+		).toBe(false);
+	});
+
 	const deviceStartCases = [
 		{ name: 'a script URL as the device page', patch: { verification_url: 'javascript:alert(1)' } },
 		{ name: 'a relative device page', patch: { verification_url: '/device/selectAccounts' } },

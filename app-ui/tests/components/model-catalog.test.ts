@@ -10,6 +10,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ModelCatalogList from '../../src/lib/components/ModelCatalogList.svelte';
 import { createModelDisabledStore } from '../../src/lib/stores/model-disabled.svelte';
+import { createModelTestStore } from '../../src/lib/stores/model-test.svelte';
 import { createProviderThinkingStore } from '../../src/lib/stores/provider-thinking.svelte';
 
 function catalogRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -57,6 +58,7 @@ async function renderCatalog(
 			providerId: 'openai',
 			disabled: createModelDisabledStore(),
 			thinking: createProviderThinkingStore(),
+			tests: createModelTestStore(),
 			onchanged: () => {}
 		}
 	});
@@ -184,6 +186,7 @@ describe('ModelCatalogList', () => {
 				providerId: 'openai',
 				disabled: createModelDisabledStore(),
 				thinking: createProviderThinkingStore(),
+				tests: createModelTestStore(),
 				onchanged: () => {}
 			}
 		});

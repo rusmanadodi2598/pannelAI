@@ -148,7 +148,6 @@ func buildManagement(
 	// seam, and this is what answers it (SPEC-API-001 §7.8).
 	augmenter, err := service.NewVisionAugmenter(service.VisionAugmenterDeps{
 		Adapter:  visionSvc,
-		Capable:  visionCapabilityCheck,
 		Rotation: redisrepo.NewVisionRotationStore(client),
 	})
 	if err != nil {

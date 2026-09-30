@@ -46,9 +46,13 @@ func TestEmbeddedOpenCode_FreeModels(t *testing.T) {
 		name         string
 		targetFormat string
 		chat         bool
+		// minOutput is the ceiling the model still answers within, measured live
+		// on 2026-09-28: muse-spark 1.3 spends a small one entirely on thinking
+		// and answers an empty body.
+		minOutput int
 	}{
 		{id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", targetFormat: "openai-responses", chat: true},
-		{id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", targetFormat: "openai-responses", chat: true},
+		{id: "muse-spark-1.3-contributor-free", name: "Muse Spark 1.3 Contributor Free", targetFormat: "openai-responses", chat: true, minOutput: 512},
 		{id: "union-alpha", name: "Union Alpha Free", targetFormat: "claude", chat: true},
 		{id: "jev-1.13-free", name: "Jev 1.13 Free", targetFormat: "", chat: false},
 	}
@@ -70,11 +74,41 @@ func TestEmbeddedOpenCode_FreeModels(t *testing.T) {
 			if model.IsChat() != tc.chat {
 				t.Fatalf("IsChat() = %v, want %v (kind %q)", model.IsChat(), tc.chat, model.Kind)
 			}
+			if model.MinOutputTokens != tc.minOutput {
+				t.Fatalf("min_output_tokens = %d, want %d", model.MinOutputTokens, tc.minOutput)
+			}
 		})
 	}
 
 	if !provider.PassthroughModels {
 		t.Fatal("opencode must stay passthrough: model ids beyond the declared list are still answerable")
+	}
+}
+
+// TestEmbeddedMuseSparkFloorPinsEveryEntry asserts that a muse-spark id declared
+// under more than one OpenCode entry carries the same output floor under both.
+// The free tier and the zen entry route the same upstream model, so a floor
+// declared on one and forgotten on the other would answer the same small ceiling
+// with an empty body on only one of the two lanes.
+func TestEmbeddedMuseSparkFloorPinsEveryEntry(t *testing.T) {
+	index, err := Load()
+	if err != nil {
+		t.Fatalf("loading embedded registry: %v", err)
+	}
+	const modelID = "muse-spark-1.3-contributor-free"
+	declared := 0
+	for _, providerID := range []string{"opencode", "opencode-zen"} {
+		model, found := index.Model(providerID, modelID)
+		if !found {
+			continue
+		}
+		declared++
+		if model.MinOutputTokens != 512 {
+			t.Fatalf("%s/%s min_output_tokens = %d, want 512", providerID, modelID, model.MinOutputTokens)
+		}
+	}
+	if declared == 0 {
+		t.Fatalf("%s is declared under neither OpenCode entry", modelID)
 	}
 }
 

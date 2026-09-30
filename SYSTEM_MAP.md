@@ -5,7 +5,7 @@ Diperbarui pada PR yang sama ketika topologi atau alur data berubah (AGENTS.md �
 
 | | |
 |---|---|
-| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (94 provider, decode ketat), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (§7.4-§7.8, §7.12-§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis → PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API. **P2 CLOSED**: seluruh permukaan §7.4–§7.15 terpasang dan terverifikasi live terhadap PostgreSQL 14 + Redis nyata dengan stub upstream dan stub proxy loopback — OAuth round-trip (start, callback, status, refresh per endpoint + due sweep), combo test, proxy pools (dua rute test + guard egress), token-saver, budget caps (cap terbaca kembali), katalog model + custom/alias/disabled, media §7.10 (speech, transcriptions, voices, images, search), embeddings lewat node kustom, dan jalur chat + media + embeddings yang menulis usage/log. Media plane memakai satu `MediaTransport` bersama embeddings di atas satu egress guard proses (`EGRESS_ALLOWED_TARGETS`), dan `settings.network.outbound_proxy_*` kini menentukan rute tiap panggilan keluar (§7.11). Sebelas format media non-OpenAI sudah punya adapter (Deepgram STT; NVIDIA NIM, Cartesia, ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS, Gemini STT). Register gap P2 (`docs/DRAFT/001-P2-GAPS.md`) menutup 20 dari 21 item; yang terbuka bukan kriteria keluar fase: lima format media sisa (G21 — AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device, yang butuh lebih dari satu request per panggilan) dan pemeliharaan dokumen ini (G10, baris ini). `go test -race ./...` bersih (13 paket + `cmd`), tagged integration hijau, `go-lint.sh` dan `go-headers.sh` PASS |
+| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (34 provider, decode ketat), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (§7.4-§7.8, §7.12-§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis → PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API. **P2 CLOSED**: seluruh permukaan §7.4–§7.15 terpasang dan terverifikasi live terhadap PostgreSQL 14 + Redis nyata dengan stub upstream dan stub proxy loopback — OAuth round-trip (start, callback, status, refresh per endpoint + due sweep), combo test, proxy pools (dua rute test + guard egress), token-saver, budget caps (cap terbaca kembali), katalog model + custom/alias/disabled, media §7.10 (speech, transcriptions, voices, images, search), embeddings lewat node kustom, dan jalur chat + media + embeddings yang menulis usage/log. Media plane memakai satu `MediaTransport` bersama embeddings di atas satu egress guard proses (`EGRESS_ALLOWED_TARGETS`), dan `settings.network.outbound_proxy_*` kini menentukan rute tiap panggilan keluar (§7.11). Sebelas format media non-OpenAI sudah punya adapter (Deepgram STT; NVIDIA NIM, Cartesia, ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS, Gemini STT). Register gap P2 (`docs/DRAFT/001-P2-GAPS.md`) menutup 20 dari 21 item; yang terbuka bukan kriteria keluar fase: lima format media sisa (G21 — AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device, yang butuh lebih dari satu request per panggilan) dan pemeliharaan dokumen ini (G10, baris ini). `go test -race ./...` bersih (13 paket + `cmd`), tagged integration hijau, `go-lint.sh` dan `go-headers.sh` PASS |
 | **Terakhir diperbarui** | 2026-09-24 |
 | **Kontrak** | `docs/SPEC-API/001-SPEC-API.md` (semantik), `docs/CONTRACT/001-CONTRACT-API-V1.yaml` (wire contract), `app-serv/internal/handler/openapi.json` (generated served artifact) |
 
@@ -85,6 +85,10 @@ Setiap provider berbeda dalam konektivitas: ada yang **api_key**, ada yang **OAu
 **Konsekuensi operasional:** menambah provider = menambah entri di `registry.yaml` (speak format standar) atau satu berkas connector (protokol khusus). Tidak ada `switch` pada provider id di core, sehingga provider A bisa di-patch tanpa menyentuh provider B.
 
 **Batasan yang diketahui:** `Connectors.Unsupported()` sengaja melaporkan provider ber-format khusus (mis. `kiro`, `cursor`, `antigravity`) selama connector-nya belum ditulis; laporan itu adalah daftar kerja, bukan kegagalan diam.
+
+**Forced stream diputuskan oleh deklarasi connector, bukan oleh field registry.** Seam-nya `provider.StreamForcer` (`ForcesStream() bool`), dan `transport.force_stream` pada entri hanyalah data yang belum dibaca siapa-siapa di jalur request. Yang saat ini mendeklarasikannya: OpenCode (`internal/provider/opencode.go`) dan CodeBuddy CN + Intl (`internal/provider/codebuddy.go`; connector itu ada karena dua hal — stream paksa dan bentuk body — sisanya wire OpenAI biasa yang sudah dilayani `Default`). Empat entri lain mendeklarasikan `force_stream: true` di registry tanpa connector yang memutuskannya (`openai`, `commandcode`, `grok-cli`, `zed`), tercatat sebagai F5 di `docs/DRAFT/011-CODEBUDDY-PROVIDER-READINESS.md` §10.7.
+
+**Bentuk body adalah seam terpisah: `provider.Transformer` (`TransformRequest(req *Request) error`).** Ini jalan bagi vendor yang tidak menerima list pesan OpenAI apa adanya; core tidak pernah bercabang pada provider id, dan `applyShape` (`internal/dataplane/transport_shape.go`) memanggilnya sebelum URL dibangun. Yang mengimplementasikannya hari ini: OpenCode (`opencode_body.go`), Qoder (`qoder_body.go`), dan CodeBuddy (`codebuddy_body.go`: satu turn `system` leading yang membawa prompt vendor **plus** instruksi system milik caller, konten `user` string diangkat jadi typed blocks, `reasoning_effort` none/off dihapus dan yang lain dicerminkan sebagai `reasoning_summary: "auto"`) karena vendor itu menjawab body polos dengan `11101 invalid request`.
 
 **Qoder (`qoder`, `qoder-cn`) punya connector khusus dan sudah dilayani end-to-end.** Provider ini tidak membaca bearer token: setiap request ditanda tangani (COSY — payload user info terenkripsi + MD5 atas lima bagian, lihat `internal/provider/qoder_cosy.go`), host inference dipilih dari jenis kredensial (`dt-` di `api3`, `jt-`/`pt-` di `api2` untuk intl; CN satu gateway), dan sebuah Personal Access Token lebih dulu ditukar menjadi job token lewat `POST /api/v1/jobToken/exchange` dengan cache berdasar expiry yang vendor nyatakan dalam **milidetik** (draft 036 §5). Body chat bukan hasil translasi OpenAI: `TransformRequest` membangun payload agent (`qoder_body.go`) dengan `model_config` yang dibaca dari katalog hidup milik akun (`qoder_catalog.go`, di-cache satu jam), dan jawaban vendor tiba sebagai **envelope SSE** (`{statusCodeValue, body}` per frame) sehingga dibongkar sebelum di-pipe — penolakan di frame pertama jadi kegagalan upstream, bukan jawaban yang ditagih (`qoder_envelope.go`, seam opsional `provider.StreamEnvelope`). Kuota dibaca lewat `internal/service/quotafetch/qoder.go` (dua bucket kredit, PAT ditukar lebih dulu) dan sejak 2026-09-28 punya pemanggil produksi: `GET /api/v1/quotas/{endpoint_id}/usage` (§7.12, aturannya di §3.7). Satu completion sukses kini terbukti — lewat model yang vendor tagih nol (`qfmodel`), karena akun pengukur tetap kehabisan kuota untuk model berbayar (`code 112`) dan penolakan itu datang sebagai kegagalan kuota, bukan jawaban (draft 036 §5.4).
 
@@ -237,6 +241,53 @@ stateDiagram-v2
 Referensi member yang tidak lagi resolve dilewati, bukan menggagalkan combo: resolusi combo memulai dari
 referensi pertama yang masih routable, dan panel melaporkan referensi rusak lewat slot yang hilang.
 
+Satu kasus lagi pindah member, dan ia **bukan** kegagalan: model reasoning yang menghabiskan seluruh
+`max_output_tokens` untuk thinking menjawab **200** dengan pesan kosong dan `finish_reason: length`. Walk
+membacanya lewat flag `Outcome.Truncated` (bukan error) dan mencoba member berikutnya sebelum body itu
+dihidangkan; menandainya sebagai error akan mem-park kredensial yang justru menjawab sesuai permintaan, dan
+`failureClass` tidak bisa membedakan keduanya. Aturan turunan yang menahan flag dari menyalah: apa pun yang
+bisa ditampilkan client dihitung jawaban (teks, tool call, atau reasoning — fold memang mempertahankan
+reasoning saat content kosong); hanya berhenti karena ceiling yang memicu, bukan `stop`; client streaming
+tidak di-walk ulang karena frame-nya sudah sampai; dan bila semua member sama kosongnya, body kosong terakhir
+yang dihidangkan, mengalahkan error member mana pun, supaya `finish_reason: length` tetap menjadi sinyal
+pemakai bahwa ceiling-nya terlalu kecil. Rotasi tetap maju satu langkah per request, bukan per percobaan,
+karena urutan dibaca sekali sebelum walk.
+
+**Nama yang dijawab combo ke klien.** `Resolution.ClientModel()` melaporkan nama yang klien kirim — nama
+combo bila combo yang menjawab — dan setiap tempat yang *menamai* jawaban (`openAIAnswer`, `claudeAnswer`,
+`responsesClientAnswer`, `foldChatEvents`, ketiga `New*StreamState`, dan `stampAnswerModel` di jalur
+passthrough satu-wire) membacanya. `Resolution.ModelID`/`UpstreamID` tetap milik routing, rotasi, dan
+reasoning, dan `Outcome.Model`/`Outcome.Combo` tetap baris pemakaian atas nama member yang benar-benar
+dipanggil: penamaan jawaban dan penagihan adalah dua pertanyaan berbeda, dan memindahkan yang pertama
+tidak boleh menyeret yang kedua. Jalur passthrough adalah pengecualian yang perlu dicatat karena ia
+mengirim body apa adanya — tidak ada terjemahan tempat nama bisa dipilih, jadi nomornya ditulis ulang,
+bukan body-nya disalin ulang.
+
+**Adapter visi di walk yang sama (§7.8).** Seam `dataplane.VisionAugmenter` kini menerima **seluruh**
+kandidat request, bukan member terdepan saja, dan menjawab urutan plus daftar mana yang berasal dari
+adapter. Adapter disisipkan setelah kandidat yang bisa membaca gambar dan sebelum yang tidak; ia tetap
+pertama bila tidak ada yang bisa, dan tidak dikonsultasikan sama sekali (juga tidak menghabiskan langkah
+rotasi Redis) bila tidak ada yang buta. Keputusan kapabilitas tidak lagi berasal dari pola nama model-id:
+ia dibaca dari **katalog** lewat `ModelCatalogService.VisionCapable` — jalur baca baru dari data plane ke
+`models_custom`/katalog di atas satu `referenceView` yang sama dengan `ModelExists`, jadi satu pembacaan
+per request dan tanpa tabel kedua. Konsekuensi alirannya perlu disebut eksplisit karena ini pembacaan
+baru di jalur request: permintaan bergambar kini melakukan satu pembacaan katalog per kandidat, bukan nol.
+Jawaban jalur ini **additive** dan sengaja berbeda satu arah dari predicate filter panel
+(`modelHasCapability`): baris katalog boleh menyalakan kapabilitas, tapi baris yang tidak menyebut vision
+tidak dibaca sebagai penolakan — karena seluruh model custom node adalah baris semacam itu, dan membaca
+diam sebagai tolak membuat `deepseek-v4.1-flash` (yang reference sendiri nyatakan capable) mengirim
+gambarnya ke adapter. Di layar panel sebuah deklarasi adalah pernyataan operator; di jalur request jawaban
+salah mengirim konten gambar nyata ke model yang salah.
+Model yang tidak punya baris katalog jatuh ke predicate yang di-inject dari komposisi (`registry.Capabilities`
+dengan provider id, yang sebelumnya dipanggil tanpa provider sehingga lapisan override per provider tidak
+pernah aktif). Satu fakta ikut menyeberang kembali ke pemakai: `Outcome.VisionAdapted` menandai bahwa yang
+menjawab adalah model adapter, bukan model yang request address, dan `service/chat_record.go` menuliskannya
+sebagai WARN terstruktur. Alasannya struktural, bukan kosmetik: baris usage dan log ditulis di bawah model
+yang diminta (bukan model adapter), dan jawaban klien kini menamai combo — jadi substitusi untuk permintaan
+bergambar tidak meninggalkan jejak sama sekali di permukaan panel tanpa flag ini. Gateway bisa membuktikan
+kepada siapa gambar diserahkan; ia tidak bisa membuktikan apa yang model itu lakukan dengannya, sehingga
+inyinya log operator, bukan field kontrak klien.
+
 ### 3.5a Provider tanpa kredensial (satu aturan, tiga pembaca)
 
 Provider yang menjawab tanpa kredensial (`no_auth` tingkat provider atau transport, atau
@@ -265,7 +316,12 @@ untuk memakainya.
 Di jalur forced-stream, event terminal Responses yang diterima adalah
 `response.completed`, `response.done`, `response.incomplete`, dan `response.failed`. `response.incomplete`
 wajib ada: upstream OpenCode mengirimnya setiap kali jawaban berhenti di `max_output_tokens`, dan fold yang
-melewatkannya mengubah jawaban yang lengkap menjadi 502 `UPSTREAM_ERROR`.
+melewatkannya mengubah jawaban yang lengkap menjadi 502 `UPSTREAM_ERROR`. Di sisi request, ceiling yang
+sudah dikirim client dinaikkan ke `min_output_tokens` yang model deklarasikan di registry (connector
+memakai `registry.Model` yang memang sudah sampai padanya, jadi tidak ada kolom baru): floor wire 16 token
+hanya menjaga agar upstream tidak menjawab 400, sedangkan floor per model menjaga agar jawabannya muat.
+Tiga batas menjadikannya kenaikan, bukan penulisan: ceiling yang tidak dikirim tetap tidak ada, ceiling di
+atas floor lewat apa adanya, dan model yang tidak mendeklarasikan floor tidak tersentuh.
 
 ### 3.6 Jalur media (§7.10)
 
@@ -315,6 +371,11 @@ Aturan yang berlaku untuk semua keluarga, bukan hanya Qoder:
 - **Keputusan kredensial mengikuti `auth_type`, sama seperti routing.** Akun flow menyajikan access
   token-nya, akun kunci menyajikan `NextKey` — dan `quotafetch.Credentials` diisi satu sisi saja, karena
   device token yang diserahkan pada field kunci ditanya dengan bentuk yang salah.
+- **Endpoint dan header kuota datang dari entri registry lebih dulu.** `transport.usage.url` dan
+  `transport.headers` entri provider mengisi `Credentials.UsageURL`/`UsageHeaders`, dan
+  `quotafetch.usageEndpoint()` memakainya sebelum tabel bawaan per keluarga; tabel itu tinggal
+  fallback bagi keluarga yang tidak mendeklarasikannya (`vercel-ai-gateway`). Satu sumber untuk
+  alamat yang ditanya, supaya memindah endpoint di registry tidak diabaikan pembacaan kuota.
 - **Gate sebelum keluar.** Provider tanpa `features.usage`, akun kunci di bawah provider yang endpoint
   kuotanya membaca token akun (`features.usageApikey` false), dan akun tanpa kredensial tersimpan
   ditolak di dalam service; `features.usageApikey` dengan ini punya pembaca pertamanya sejak registry ada.
@@ -429,6 +490,8 @@ untuk setiap request yang dilayani, lewat seam yang dipakai bersama oleh chat
 Alur OAuth §7.4 (`internal/service/oauth_flow*.go`) memakai dua state eksternal: `state` single-use 10 menit di Redis (`pannelai:oauth:state:*`, `SET NX` + `GETDEL`) sebagai replay guard, dan token yang disegel AES-GCM pada `upstream_endpoints.oauth`. `POST .../oauth/start`, `GET .../oauth/status`, dan `POST .../oauth/refresh` adalah rute sesi; `GET .../oauth/callback` publik karena browser provider tidak bisa membawa cookie sesi. Tujuan redirect browser tidak pernah diambil dari request: `PUBLIC_BASE_URL` menang, origin `redirect_uri` hanya fallback absolut http(s), dan bila keduanya tidak ada callback menjawab JSON.
 
 Provider tanpa `authorize_url` tetapi dengan `device_token_url` + `login_url` di blok `oauth`-nya (qoder, qoder-cn) dilayani **device flow** (`oauth_flow_device.go`, `oauth_flow_device_poll.go`) di kunci state yang sama: `POST .../oauth/device/start` mencetak pasangan PKCE + nonce + machine_id lalu mementaskan konteks privatnya di bawah nonce dengan TTL 6 menit, dan hanya mengembalikan `device_code` ke panel — verifier dan machine_id tidak pernah keluar, sehingga `Peek` (`GET`, tanpa menyentuh TTL) dipakai bersama `Take` (`GETDEL`) karena satu ronde bisa di-poll berulang kali; `Peek` ada di seam repository justru supaya konsumsi tetap satu titik. `POST .../oauth/device/poll` melakukan tepat satu percobaan upstream per panggilan (`202`/`404` = pending, non-2xx lain = `UPSTREAM_ERROR` dan rondenya tetap bisa dicoba), dan mengonsumsi state **sebelum** menulis saat sukses sehingga token yang diberikan dua kali hanya tersimpan sekali. Connect device memakai `connectAccount` yang sama dengan callback (`oauth_flow_connect.go`) — aturan dedup identitas tidak boleh punya dua salinan — kecuali pembacaan userinfo yang di sini **fail-open** dengan email sintetis `qoder-user-<user_id>`, dan machine_id ronde disimpan di `upstream_endpoints.account` karena setiap request bertanda tangan setelahnya memakai ulang nilai itu. Token device tidak di-refresh: `oauth/refresh` menolak provider tanpa `token_url`, dan login ulang adalah jalur perpanjangannya (draft 036).
+
+**Ronde kedua di rute yang sama: state round vendor (`codebuddy-cn`, `codebuddy-intl`).** Provider yang blok `oauth`-nya mendeklarasikan `state_url` + `token_url` (`registry.OAuth.StateExchangeFlow()`) dilayani lewat dua rute device yang sama, tapi handle-nya dicetak vendor: start menanyakan state ke endpoint vendor, mementaskan round di bawah state itu (TTL 6 menit yang sama), dan menjawab state tersebut sebagai `device_code` dengan halaman otorisasi vendor sebagai `verification_url`. Bentuk ini **tidak punya code singkat**: `user_code` dijawab **absent**, bukan string kosong, karena tidak ada pihak yang pernah meminta operator mengetiknya (kontraknya di SPEC-API §7.4; panel menggambar card tanpa blok code bila field tidak ada). Poll dan refresh mengikuti bentuknya: `StatePoll` membandingkan `code 11217` sebagai pending, dan `StateRefresh` mengirim refresh token lewat header ke `refresh_url`, jadi kalimat "token device tidak di-refresh" di atas berlaku untuk shape PKCE saja.
 
 Setiap goroutine baru wajib memulihkan panic dan punya kondisi terminasi eksplisit (AGENTS.md §1.6).
 

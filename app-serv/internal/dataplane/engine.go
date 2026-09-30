@@ -146,8 +146,15 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	// keeps the stored order.
 	refs = e.rotate(ctx, resolution, refs)
 
-	// The §7.8 decision lives beside the seam it consults (vision.go).
-	refs, adapterCount := e.augmentForVision(ctx, in, resolution, refs)
+	// The §7.8 decision lives beside the seam it consults (vision.go). The list the
+	// request itself produced is kept, because an adapter ref that happens to also
+	// be one of this request's own members is not a substitution: the combo chose
+	// that model on its own and the seam merely moved it. Measured live with
+	// opencode/muse-spark-1.3-contributor-free, which is both a member of the
+	// operator's combo and the configured adapter — reporting it as adapted would
+	// say the gateway reached for something the caller never named when it did not.
+	own := refs
+	refs, adapted := e.augmentForVision(ctx, in, refs)
 
 	// The walk tracks two failure kinds apart, because they answer the client
 	// differently (draft 028 F3): a member that reached an upstream call owns
@@ -159,6 +166,13 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	var firstErr, lastErr error
 	var lastOutcome Outcome
 	var preCallErr error
+	// A member can answer 200 with nothing the client can read, which is a success
+	// to the transport and so is not a failure to fail over *from*. It is held
+	// aside instead: a later member may answer properly, and if none does, the
+	// body is still what the first member would have served. Recording it as an
+	// error would park a credential that answered exactly as asked.
+	var truncated Outcome
+	var hasTruncated bool
 	for index, ref := range refs {
 		member, resolveErr := e.resolver.Resolve(ctx, ref)
 		if resolveErr != nil {
@@ -168,8 +182,19 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 		member.Combo = resolution.Combo
 		outcome, relayErr := e.relayOnce(ctx, in, member, sink)
 		if relayErr == nil {
-			if index < adapterCount {
+			// An adapter model the request did not address is not the model that
+			// billed, and the usage row belongs to the one the client asked for.
+			// Membership of the adapter's own list answers that wherever the seam
+			// placed it — which a leading-count test could not once a capable
+			// member is allowed to go first — and the second test keeps a member
+			// the combo already addressed from being reported as borrowed.
+			if containsRef(adapted, ref) && !containsRef(own, ref) {
 				outcome.Model = resolution.ModelID
+				outcome.VisionAdapted = true
+			}
+			if outcome.Truncated && index < len(refs)-1 {
+				truncated, hasTruncated = outcome, true
+				continue
 			}
 			return outcome, nil
 		}
@@ -188,6 +213,9 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 		if failure := AsError(relayErr); !failoverWorthy(failure.Code) {
 			return outcome, relayErr
 		}
+	}
+	if hasTruncated {
+		return truncated, nil
 	}
 	if lastErr != nil {
 		return lastOutcome, finalError(firstErr, lastErr)

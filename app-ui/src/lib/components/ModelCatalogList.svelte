@@ -19,7 +19,7 @@
 		catalogQueryParams,
 		type CatalogModel
 	} from '$lib/schemas/model';
-	import { createModelTestStore } from '$lib/stores/model-test.svelte';
+	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 
@@ -28,12 +28,15 @@
 		disabled,
 		thinking,
 		onchanged,
+		tests,
 		token = 0
 	}: {
 		providerId: string;
 		disabled: ModelDisabledStore;
 		thinking: ProviderThinkingStore;
 		onchanged: () => void;
+		// Owned by the page, because the custom-model section below lists rows this catalog also lists.
+		tests: ModelTestStore;
 		// Bumped by the page when a write elsewhere changes this list: disabling a model removes its row,
 		// enabling one brings it back, and a custom model joins it.
 		token?: number;
@@ -41,10 +44,6 @@
 
 	const SearchIcon = CONTROL_ICONS.search.icon;
 	const ClearIcon = CONTROL_ICONS.clear.icon;
-
-	// The probe answers belong to this component, not to the table: the sweep is a request, and the rows it
-	// fills are the table's. One owner keeps the summary line and the row states saying the same thing.
-	const tests = createModelTestStore();
 
 	let models = $state<CatalogModel[]>([]);
 	let loading = $state(true);

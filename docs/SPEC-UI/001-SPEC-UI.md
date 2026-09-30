@@ -320,6 +320,13 @@ absent.
   `PUT /api/v1/models/disabled` (phase U2). The search and the two capability filters read
   `GET /api/v1/models/catalog` with `provider_id`, `capability`, and `q`, because that is the only route
   that accepts them. **The "suggested" toggle is not built** and the reason is recorded in §14 Q12.
+- **Model test on a node's own rows (landed 2026-09-29, draft 037 §12):** a compatible node has no catalog
+  section, so the same Test action, the same store, and the same sweep button live in its
+  *Available Models* section instead. The store is created once by the page and handed to both model
+  sections, because a registry provider's declared rows are listed twice on that screen (once as custom
+  rows, once inside the merged catalog) and two verdicts for one model would be two opinions about one
+  fact. The sweep button appears in the node's section only: a registry provider's catalog already offers
+  it above, and a second button would offer the same spend twice.
 - **Model test (landed 2026-09-27, draft 017 §4.10):** each catalog row carries a Test action that probes
   that one model by id and renders its answer **on the row it names** (state, latency, then the gateway's own
   error code and message), rather than in a banner that says something on the page failed. `Activity` is the
@@ -422,13 +429,19 @@ absent.
   instead of drawing a control that cannot act. `POST /api/v1/providers/{id}/oauth/start` is called with no
   body, because the gateway derives its own callback from its base URL, and the returned authorize URL is
   rendered as a link rather than followed by the panel: a scripted navigation to a third party is a redirect
-  the operator did not ask for, and a link shows the host before it is followed.
+  the operator did not ask for, and a link shows the host before it is followed. The account table lists
+  every stored account of that provider, one row per connect, and a vendor whose token answer states no
+  identity is numbered instead (`Account 1`, `Account 2`) rather than given a shared name: a second login is
+  a second account, and the first one keeps its own credential and its own refresh.
 - **The device round (draft 036, landed):** a provider that authorizes on its own device page (Qoder, Qoder
-  CN) has no callback to wait for, so the section drives it by asking. `POST …/oauth/device/start` is
+  CN), or through a vendor-minted state round (CodeBuddy CN, CodeBuddy), has no callback to wait for, so the
+  section drives it by asking. `POST …/oauth/device/start` is
   likewise called with no body and answers `device_code`, `verification_url`, `user_code`,
-  `interval_seconds`, and `expires_in`. The screen shows the vendor address as a link the operator opens and
-  as text beside it, and the code as text with its copy control — the panel never calls `window.open`, which
-  is the reference's behaviour and a deliberate deviation (the same rule the authorize link keeps). What the
+  `interval_seconds`, and `expires_in`, with `user_code` present only when the round's flow mints a short
+  code. The screen shows the vendor address as a link the operator opens and as text beside it, and the code
+  as text with its copy control when the round carries one; a round that carries none draws no code block,
+  rather than inventing a string no party asks the operator to type. The panel never calls `window.open`,
+  which is the reference's behaviour and a deliberate deviation (the same rule the authorize link keeps). What the
   screen holds is the single-use `device_code`: the PKCE verifier and the machine id behind it stay in the
   state the gateway staged, so they appear on no screen and in no request body. `POST …/oauth/device/poll`
   is then asked on `interval_seconds` until it answers `connected` (the row then appears in the account

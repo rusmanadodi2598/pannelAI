@@ -24,6 +24,7 @@ package service
 import (
 	"context"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
@@ -77,4 +78,56 @@ func (s *ProviderService) modelsFor(ctx context.Context, entry registry.Provider
 	resolved := entry
 	resolved.Models = list.Models
 	return ProviderModelList{Entry: resolved, Source: ModelSourceUpstream}
+}
+
+// ProbeTargets answers the model set a per-model probe can walk: the resolved
+// list plus the rows the operator declared for the same provider.
+//
+// The two halves are not interchangeable. A compatible node's resolved list is
+// its upstream's answer, which is empty when that upstream is unreachable,
+// while the rows the operator declared are on the node's own screen and are
+// routable (draft 017 §4.2). A registry provider's declared rows are its
+// supplement, and the catalog already treats them as models a client can call
+// (§7.6). A probe that walked only the resolved half would tell the operator
+// there was nothing to test beside a table full of models.
+//
+// Where both halves name one model, the resolved row is kept: it carries the
+// kind that decides whether the chat probe can reach the model at all, which a
+// declared row cannot say. The declared row's display name fills the resolved
+// row's silence, never its opinion.
+func (s *ProviderService) ProbeTargets(
+	ctx context.Context, providerID string,
+) (ProviderModelList, []registry.Model, error) {
+	list, err := s.Models(ctx, providerID)
+	if err != nil {
+		return ProviderModelList{}, nil, err
+	}
+	declared, err := s.declaredModels(ctx, list.Entry)
+	if err != nil {
+		return ProviderModelList{}, nil, err
+	}
+	return list, mergeProbeTargets(list.Entry.Models, declared), nil
+}
+
+// mergeProbeTargets joins the two halves in the provider's own order: resolved
+// rows first, then the declared rows no resolved row names.
+func mergeProbeTargets(resolved []registry.Model, declared []domain.CustomModel) []registry.Model {
+	merged := make([]registry.Model, 0, len(resolved)+len(declared))
+	seen := make(map[string]int, len(resolved)+len(declared))
+	for _, model := range resolved {
+		seen[model.ID] = len(merged)
+		merged = append(merged, model)
+	}
+	for _, row := range declared {
+		id := row.ModelID()
+		if index, known := seen[id]; known {
+			if merged[index].Name == "" {
+				merged[index].Name = row.DisplayName()
+			}
+			continue
+		}
+		seen[id] = len(merged)
+		merged = append(merged, registry.Model{ID: id, Name: row.DisplayName()})
+	}
+	return merged
 }

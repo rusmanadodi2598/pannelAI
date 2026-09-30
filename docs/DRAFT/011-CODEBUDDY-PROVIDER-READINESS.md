@@ -4,11 +4,13 @@ Dokumen kerja hasil pemeriksaan registry `app-serv/.` untuk dua provider yang di
 2026-09-22. Bukan kontrak; kontrak tetap `docs/SPEC-API/001-SPEC-API.md` (wire) dan
 `docs/SPEC-UI/001-SPEC-UI.md` (perilaku panel). Dokumen ini mengikuti pola
 `008-SKILL-ENDPOINT-READINESS.md` dan seterusnya: temuan bernomor F, bukti yang bisa diulang,
-rencana DURING, dan keputusan owner di depan implementasi. Tidak ada kode produksi yang diubah.
+rencana DURING, dan keputusan owner di depan implementasi. Tidak ada kode produksi yang diubah
+**pada tanggal audit ini**; pekerjaan yang dikerjakan sesudahnya dicatat di §10 tanpa menulis ulang
+§1-§9, karena bagian itu adalah hasil pengukuran 2026-09-22.
 
 | | |
 |---|---|
-| **Status** | Terbuka; menunggu keputusan owner (§8). Sisi panel sudah CLOSED di scope-nya sendiri |
+| **Status** | F1, F2, F4 CLOSED per 2026-09-29 (§10), dan F3 tertutup lewat jalur keempat yang tidak ada di §8. F6 CLOSED: akun OAuth tanpa identitas kini jadi baris sendiri (§10.11). F7 CLOSED: vendor menolak list pesan OpenAI polos, connector sekarang membentuknya (§10.12). Yang masih terbuka satu: **F5**, gap connector untuk `force_stream` di empat entri lain (§10.7). Round state CodeBuddy sudah terbit lewat rute aslinya terhadap vendor dan panel tidak lagi menolaknya (§10.10). Sisi panel sudah CLOSED di scope-nya sendiri |
 | **Scope** | hanya `app-serv/.` (registry dan generatornya). Panel `app-ui/` sudah selesai di scope-nya sendiri dan tidak disentuh oleh draft ini |
 | **Kebutuhan** | Dua provider bawaan registry yang terlihat di halaman Provider panel: CodeBuddy CN dan CodeBuddy Int |
 | **Kaitan** | SPEC-API §6, §7.4, §7.12; SPEC-UI §6.3; AGENTS.md §1.9; `app-serv/tools/registry-gen.mjs`; `app-serv/internal/registry/registry.yaml` |
@@ -320,3 +322,325 @@ Tidak ada source `app-serv` yang boleh diubah sebelum owner memilih nomor dan ja
   CodeBuddy Int) adalah pekerjaan registry `app-serv` dan tercatat di dokumen ini sebagai F1 sampai
   F4, belum dikerjakan.
 - **F1, F2, F3, F4 terbuka.** Tidak ada yang CLOSED per tanggal dokumen ini.
+
+## 10. Status per 2026-09-29: F1, F2, F4 CLOSED; F3 tertutup lewat jalur keempat; F5 dibuka
+
+Bagian ini menutup temuan yang dibuka §3-§6 dan mengoreksi klaim §2/§7 yang sudah tidak benar di
+hari pengukuran ini. §1-§9 dibiarkan apa adanya sebagai hasil pengukuran 2026-09-22.
+
+### 10.1 Yang berubah pada registry
+
+Registry yang di-embed hari ini diukur dengan perintah yang sama seperti di §2:
+
+```bash
+grep -c '^  - id: ' app-serv/internal/registry/registry.yaml          # 34 entri
+grep -c 'hidden: true' app-serv/internal/registry/registry.yaml       # 0
+grep -c 'has_oauth: true' app-serv/internal/registry/registry.yaml    # 11
+sed -n '1,8p' app-serv/internal/registry/registry.yaml                # revision + catatan generator
+```
+
+- Header: `revision: 9router@39e36d3d (2026-09-23)` dan satu baris tambahan `# Provider set: the
+  owner's KEEP list (2026-09-26), enforced in the generator.`
+- `codebuddy-cn` ada di `registry.yaml:1580`, `codebuddy-intl` di `:1653`. Keduanya `hidden: false`,
+  `category: oauth`, `has_oauth: true`, `auth_modes: [oauth, apikey]`, alias `cbcn`/`cbai`,
+  base URL `/v2/chat/completions`, `force_stream: true`, `thinking_format: openai`, enam header
+  transport per wilayah (termasuk `x-codebuddy-request: "1"`), `usage.url` di domain wilayahnya
+  masing-masing, dan blok `oauth` dengan `base_url`, `state_url`, `token_url`, `refresh_url`,
+  `user_agent`, `platform`, `poll_interval`.
+- Tidak ada entri `codebuddy` gabungan: `grep -n '^  - id: codebuddy$'` mengembalikan nol.
+
+### 10.2 F1 CLOSED
+
+Kriteria §3 terpenuhi, termasuk test yang sebelumnya belum ada. Yang membuktikannya sekarang:
+`app-serv/internal/service/provider_codebuddy_listed_test.go`, yang memuat registry yang di-embed
+(bukan index fixture) dan memaku:
+
+- `List` tanpa filter melayani kedua entri, dan `Detail` menjawab untuk kedua id;
+- field yang panel pakai untuk memutuskan tampilan: `has_oauth`, `auth_modes`, `category`, alias;
+- bentuk yang port ini bergantung padanya: `base_url`, `force_stream`, `usage.url`, enam header,
+  dan `OAuth.StateExchangeFlow()` benar untuk kedua wilayah;
+- `List(q=codebuddy)` mengembalikan tepat dua entri, jadi tidak ada provider ketiga yang muncul
+  dari nama yang sama.
+
+Test itu gagal bila salah satu entri ditandai hidden atau salah satu field kehilangan nilainya, yang
+persis perbedaan antara "YAML hari ini benar" dan "YAML hari ini tetap benar saat ada yang menyunting".
+
+### 10.3 F2 CLOSED
+
+Reference diikuti apa adanya: dua entri, dua id, dua alias, dua domain. Kriteria "tidak ada entri
+`codebuddy` gabungan yang tersisa" terukur di §10.1, dan alias `cbcn`/`cbai` hanya muncul pada
+`alias` dan `ui_alias` masing-masing wilayah (`grep -c -E 'cbcn|cbai'` = 4).
+
+### 10.4 F3 tertutup lewat jalur yang tidak ada di §8
+
+Owner tidak memilih A, B, atau C. Yang dikerjakan adalah regenerasi penuh dari revisi reference yang
+sekarang dipin (`39e36d3d`) **plus** satu aturan penyaring di generator: `KEEP_PROVIDERS`
+(`app-serv/tools/registry-gen.mjs:44`), yang berisi id yang port ini layani, termasuk kedua id
+CodeBuddy. Hasilnya registry lebih kecil dari kedua angka yang §5 bandingkan (34, bukan 94 atau 119),
+dan generator mencetak laporan entri reference yang berada di luar KEEP set supaya penyaringan itu
+terlihat, bukan tersembunyi.
+
+Aturan "do not edit by hand" di header YAML tetap pegang: kedua entri CodeBuddy masuk lewat
+generator, bukan lewat tambalan pada YAML. Itu yang membuat pilihan C di §5 tidak perlu diambil.
+
+### 10.5 F4 CLOSED
+
+Angka 94 masih tertulis di tiga tempat hidup dan semuanya sudah dibetulkan di perubahan ini:
+
+| Tempat | Sebelum | Sesudah |
+|---|---|---|
+| `app-serv/README.md:25` | "94 provider" | "34 provider (revisi `9router@39e36d3d`, disaring daftar KEEP owner 2026-09-26)" |
+| `app-serv/internal/schema/provider.go:69` | "94 entries in the P1 document" | tidak menyebut angka lagi: komentar itu menjelaskan *sifat* daftar (seluruh set dijawab satu response), jumlah bukan bagian dari poinnya |
+| `SYSTEM_MAP.md:8` | "(94 provider, decode ketat)" | "(34 provider, decode ketat)" |
+| `docs/DRAFT/010-USAGE-ENDPOINT-READINESS.md:1084` | "94 provider" | tetap 94, dengan catatan bahwa angka itu diukur pada tanggal dokumen dan menunjuk ke §10 ini |
+
+Satu kalimat yang bagian "Kriteria selesai" F4 tunggu juga sudah tidak benar bentuknya:
+`docs/SPEC-UI/001-SPEC-UI.md`
+tidak lagi mengklaim "one `has_oauth` provider", dan yang benar adalah 11 entri `has_oauth` (terukur
+di §10.1), jadi angka itu tidak lagi ditulis sebagai klaim tunggal.
+
+### 10.6 Koreksi untuk satu klaim §2 dan tiga klaim §7 yang sudah basi
+
+Klaim-klaim ini ditulis 2026-09-22 dan tidak lagi benar; dicatat di sini supaya pembaca tidak
+memakainya sebagai fakta hari ini.
+
+- §2 bullet "ThinkingFormat dan Transport.Usage hanya dideklarasikan, tidak ada pembaca runtime":
+  **tidak berlaku lagi.** `ThinkingFormat` dibaca `internal/reasoning/applier.go:197` dan
+  `internal/registry/capability_levels.go:95`. `Transport.Usage.URL` dibaca
+  `internal/service/quota_usage.go:132` dan `:154`, lalu dipakai `quotafetch.usageEndpoint()`, yang
+  membuat registry sumber tunggal endpoint kuota dan `familyEndpoints` hanya fallback bagi keluarga
+  yang tidak mendeklarasikannya (vercel-ai-gateway). Header transport ikut dibaca untuk hal yang
+  sama lewat `Credentials.UsageHeaders`.
+- §7 bullet "Section OAuth akan hidup sendiri, jalur start tetap dorman": **tidak berlaku lagi.**
+  State round CodeBuddy sudah diport di `internal/service/oauth_client_state.go` dengan poll
+  `?state=`, kode `11217` sebagai pending, dan refresh lewat header. `flowKind`
+  (`internal/service/oauth_flow_refresh_policy.go:33-41`) menggolongkannya sebagai `device`, jadi
+  panel menawarkan flow yang bisa dijalankan. Yang terbukti adalah round-trip terhadap vendor palsu
+  di `oauth_flow_state_test.go` dan `oauth_client_state_test.go`; **connect live terhadap layanan
+  Tencent belum pernah dijalankan.**
+- §7 bullet "`force_stream: true` tidak akan berlaku dari registry; provider dilayani connector
+  default": **sebagian tidak berlaku lagi.** Keputusan masih di connector (test
+  `TestTransport_ForcesStreamIsDeclaredByTheConnector` tidak diubah), tapi CodeBuddy sekarang punya
+  connector sendiri: `internal/provider/codebuddy.go` mendeklarasikan `ForcesStream() == true` dan
+  didaftarkan untuk kedua wilayah di `cmd/app-serv/provider_wiring.go:86-92`. Boot log membuktikan
+  `connectors:7`.
+
+- §7 bullet "`thinking_format` dan `usage.url` bukan blocker untuk daftar; keduanya inert dan hanya
+  relevan bila nanti ada pekerjaan penalaran dan kuota": **tidak berlaku lagi untuk `usage.url`.**
+  Field itu sekarang punya pemanggil: `internal/service/quota_usage.go:132` dan `:154` menyalin
+  `transport.usage.url` dan `transport.headers` entri ke `quotafetch.Credentials`, dan
+  `usageEndpoint()` (`internal/service/quotafetch/dispatcher.go:48`) memakainya sebelum tabel bawaan
+  per keluarga. Artinya alamat endpoint kuota CodeBuddy cukup dideklarasikan sekali, di entri;
+  `familyEndpoints` tinggal fallback bagi keluarga yang tidak mendeklarasikannya
+  (`vercel-ai-gateway`). Header yang sama ikut dipakai karena endpoint dan identitas harus datang
+  dari satu deklarasi yang sama: test `TestCodeBuddy_ReadsItsEndpointAndHeadersFromTheEntry` menahan
+  keduanya, termasuk arah sebaliknya (tanpa deklarasi, path keluarga yang jalan).
+
+### 10.7 F5 (LOW, TERBUKA): empat entri mendeklarasikan `force_stream` tanpa connector yang memutuskannya
+
+Fakta, terukur dengan:
+
+```bash
+awk '/^  - id: /{id=$3} /^      force_stream: true/{print id}' \
+  app-serv/internal/registry/registry.yaml
+# openai, opencode, codebuddy-cn, codebuddy-intl, commandcode, grok-cli, zed
+```
+
+Yang punya connector mendeklarasikan forced stream: `opencode` (`internal/provider/opencode.go`) dan
+`codebuddy-cn`/`codebuddy-intl`. Yang tidak: **`openai`, `commandcode`, `grok-cli`, `zed`.** Untuk
+empat provider itu, jawaban non-stream dibaca berbeda dari reference, yang persis alasan test
+`TestTransport_ForcesStreamIsDeclaredByTheConnector` menahan field registry agar tidak dibaca
+langsung.
+
+Ini pekerjaan terpisah dari draft ini dan tidak ada satu pun provider CodeBuddy yang terpengaruh.
+Yang dibutuhkan untuk menutupnya: satu connector per provider (atau satu connector bersama yang
+membaca deklarasi itu), masing-masing dengan test yang membuktikan frame stream sampai ke client.
+Belum ada keputusan owner tentang apakah keempatnya memang akan dilayani port ini; entri ini dibuka
+supaya gap itu tercatat di register dan tidak hilang sebagai pengetahuan lisan.
+
+### 10.8 Satu catatan bentuk: pembaca kuota CodeBuddy kini dua berkas
+
+Setelah `transport.usage.url` dan `transport.headers` ikut dibaca (§10.6), `internal/service/quotafetch/codebuddy.go`
+tepat menyentuh batas 250 baris yang AGENTS.md §1.1 pasang. Ia dibagi pada batas concern yang sudah ada,
+bukan pada batas yang dicari-cari:
+
+- `codebuddy.go` (132 baris): request, dua kegagalan lunak yang tetap lunak (`refusedCredential`,
+  `billingRejected`), dan pembukaan envelope berlapis.
+- `codebuddy_packs.go` (142 baris): bentuk paket kredit dan aturan yang memisahkan refill dari bonus,
+  konstanta `refillGap`, dan urutan window berdasarkan expiry.
+
+Tidak ada perilaku yang berubah; test `internal/service/quotafetch` hijau tanpa mengubah satu assertion
+pun, karena pembagian ini hanya memindahkan kode ke berkas yang alasannya satu hal.
+
+### 10.9 Apa yang jalur request baca dari kedua entri, plus satu field yang belum punya pembaca
+
+Diperiksa setelah connector masuk, supaya klaim "terintegrasi" bisa disebut per field dan bukan per
+perasaan. Untuk `codebuddy-intl` (`registry.yaml:1653`):
+
+| Field entri | Pembacanya | Bentuk yang dikirim |
+|---|---|---|
+| `transport.base_url` | connector `Default` lewat seam `Endpoint()` | `https://www.codebuddy.ai/v2/chat/completions` |
+| `transport.headers` | `Default` (dataplane menyalinnya ke request keluar) | enam header wilayah itu, termasuk `x-codebuddy-request: "1"` |
+| `transport.auth` (`header`, `scheme`) | `internal/provider/default.go:160-173` | `Authorization: Bearer <token>`; skema kosong dinormalisasi ke `bearer` di sana, bukan dibiarkan telanjang |
+| `transport.force_stream` | tidak dibaca sebagai field; keputusan di connector (§10.6) | jawaban selalu dialirkan sebagai stream |
+| `transport.usage.url` + `transport.headers` | `quota_usage.go:132`/`:154` → `usageEndpoint()` | endpoint kuota dan identitasnya datang dari entri yang sama |
+| `oauth.*` | `oauth_client_state.go` (state round, poll, refresh per header) | flow `device` yang bisa dijalankan |
+
+Satu field belum punya pembaca di jalur request: `transport.auth.combined: true`, yang reference
+pasang di kedua entri CodeBuddy. Di `internal/registry/types_transport.go:72` field itu dideklarasikan
+dan dideskripsikan ("one header carries the credential and the scheme"), tapi `grep` atas
+`internal/provider` dan `internal/dataplane` tidak menemukan pemakainya. Untuk CodeBuddy itu tidak
+mengubah apa pun: `Bearer ` + token adalah juga hasil yang sudah dikirim untuk provider ini. Yang
+perlu dicatat adalah batas klaimnya: kalau ada vendor yang butuh bentuk `combined` berbeda, field itu
+hari ini tidak melakukan apa-apa, dan itu pekerjaan terpisah, bukan sesuatu yang sudah "terport".
+
+### 10.10 Koreksi §10.6 dari kenyataan: panel menolak round CodeBuddy, dan itu bug kontrak
+
+Bulet §10.6 yang mengklaim state round sudah bisa dijalankan panel ("`flowKind` ... jadi panel
+menawarkan flow yang bisa dijalankan") **sebagian salah**, dan owner menemukannya sendiri pada
+2026-09-29: menekan Start di section OAuth CodeBuddy menjawab
+
+> Gagal OAuth: Unexpected response from the gateway at user_code: Too small: expected string to have >=1 characters
+
+Yang benar adalah: panel **menawarkan** round itu, lalu **menolak** hasilnya. Penyebabnya bukan service
+layer. Bentuk state round memang tidak punya code singkat (`oauth_client_state.go` `StateRound` hanya
+mengembalikan `state` + `authUrl`; `oauth_flow_state_test.go:62-63` sudah memaku `UserCode` kosong sebagai
+jawaban yang benar), tapi wire-nya masih menjanjikan field itu sebagai wajib: `internal/schema/oauth.go`
+menulis `"user_code": ""` dan kontrak `docs/CONTRACT/001-CONTRACT-API-V1.yaml` mencantumkannya di daftar
+`required:`. Schema panel (`src/lib/schemas/oauth.ts`, `user_code: z.string().min(1)`) menolak sebelum
+render, dan `src/lib/api/client.ts:120` memformat issue Zod itu menjadi kalimat yang owner baca.
+
+Dua jalan keluar yang **tidak** diambil, dengan alasannya: meniru code dari state (delapan karakter
+pertama, misalnya) memberi operator sesuatu yang tidak pernah diminta vendor, dan code fiktif bukan data
+nyata; kata flow baru (`state`) menuntut panel mengenal nilai baru padahal perilaku yang operator lihat
+identik — buka link, setujui, panel bertanya sampai vendor memberi token.
+
+Yang dikerjakan: `user_code` menjadi **kondisional di kontrak** (dihapus dari `required:`, `minLength: 1`
+tetap menahan nilai yang hadir, `internal/handler/openapi.json` di-regenerate), `omitempty` pada tag Go,
+`.optional()` pada schema Zod, dan blok "Your code" di `ProviderOAuthDevice.svelte` hanya dirender bila
+round memang membawa code. Aturan "panel tidak memanggil `window.open`" dan bentuk round nonce tidak diubah.
+
+Dibuktikan dari dua sisi. `TestDeviceStartAnswersAVendorMintedRoundCarriesNoShortCode`
+(`internal/handler/oauth_device_state_round_test.go`) gagal sebelum fix dengan persis body `user_code:`
+kosong dan kini menuntut key itu **tidak ada**, sementara
+`TestDeviceStartAnswersTheVerificationRound` tetap memaku code nonce. Di panel: satu kasus schema menerima
+round tanpa code, satu kasus menolak code berupa string kosong, dan satu kasus komponen memastikan link
+plus loop polling tetap jalan tanpa blok code. SPEC-API §7.4 (bab "A round can also be minted by the
+vendor"), SPEC-UI §6.3, dan `SYSTEM_MAP.md` ikut disesuaikan.
+
+Sisa yang belum terbukti dari luar tinggal satu lapis: round live memang sudah dijalankan. Pada
+2026-09-29 `POST /api/v1/providers/{id}/oauth/device/start` didorong lewat `http.ServeMux` nyata dengan
+handler, service, index dan `OAuthHTTPClient` produksi (driver sekali-pakai di luar tree, tidak
+di-commit), terhadap vendor aslinya untuk kedua wilayah:
+
+```
+codebuddy-intl -> status 200, keys [device_code expires_in interval_seconds verification_url]
+                  body {"device_code":"3d09a2a0-…","verification_url":"https://www.codebuddy.ai/login?platform=ide&state=3d09a2a0-…","interval_seconds":5,"expires_in":300}
+codebuddy-cn   -> status 200, keys [device_code expires_in interval_seconds verification_url]
+                  body {"device_code":"041cca22-…","verification_url":"https://copilot.tencent.com/login?platform=CLI&state=041cca22-…","interval_seconds":5,"expires_in":300}
+```
+
+`user_code` **absent** di kedua jawaban, dan `verification_url` adalah halaman login vendor yang
+membawa state itu — jadi body yang dulu ditolak schema panel sekarang terbit apa adanya dari jalur
+handler yang sama. Yang masih menunggu akun owner hanyalah langkah sesudahnya: operator membuka link
+itu dan menyetujui, sampai poll menjawab `connected`.
+
+### 10.11 F6 CLOSED (2026-09-29): akun OAuth tanpa identitas kini jadi baris sendiri
+
+Temuannya, sebagaimana dicatat saat dibuka: `StatePoll` tidak pernah punya identitas untuk
+dikembalikan, dan kita **mengarang** satu email sintetis (`codebuddy-intl-user-`) yang nilainya sama
+untuk setiap login di region itu. Karena `connectAccount` mendedup lewat
+`FindOAuthEndpoint(providerID, account.Email, account.WorkspaceID)` — SQL-nya
+`(($2 <> '' AND account->>'email' = $2) OR ($3 <> '' AND account->>'workspace_id' = $3)) ORDER BY
+created_at, id LIMIT 1` (`internal/repository/postgres/endpoint_batch.go:130-146`) — login kedua selalu
+cocok ke baris tertua dan **menimpa** kredensial akun pertama. `UNIQUE (provider_id, label)`
+(`migrations/000005_upstream_endpoints.up.sql:29`) bahkan menahan baris kedua kalau pun dedupnya lewat.
+
+Yang menentukan arah perbaikan adalah reading atas reference, bukan ide kita sendiri: di sana
+`createProviderConnection` **hanya** mendedup ketika `data.email` ada
+(`9router/src/lib/db/repos/connectionsRepo.js:133`), dan CodeBuddy `mapTokens` memang mengembalikan
+`providerSpecificData: {}` tanpa email (`src/lib/oauth/providers/codebuddy-intl.js:65-70`) — jadi tiap
+login di reference adalah baris UUID baru, dan label akun kedua `"Account ${all.length+1}"` (`:181`).
+Artinya multi-akun reference bukan mekanisme identitas, melainkan **ketiadaan kunci dedup**. Fix yang
+benar: berhenti mengarang kunci.
+
+Yang dikerjakan:
+
+- `deviceAccountEmail` (`internal/service/oauth_flow_device_poll.go:123-136`) mengembalikan string kosong
+  untuk state round, dan kehilangan parameter `providerID` yang tidak lagi dipakai. Round PKCE tetap
+  `qoder-user-<user_id>` apa adanya, karena baris yang sudah tersimpan di DB dicocokkan lewat nilai itu.
+  Konsekuensinya enak: dengan email dan workspace kosong, kedua branch SQL di atas tidak aktif, jadi
+  **tidak ada perubahan repository** untuk mendapat "selalu baris baru".
+- `accountLabel` (`internal/service/oauth_flow_connect.go`) menamai baris baru: identitas dari vendor →
+  label seperti sebelumnya; tidak ada identitas → `Account N`, N **nama pertama yang belum dipakai** oleh
+  provider itu, dibaca lewat `Store.List` satu halaman (`internal/repository/postgres/endpoint.go:60-66`).
+  Bukan `jumlah baris + 1`: hitungan itu adalah bug yang sama dengan bentuk rupangan — kalau `Account 1`
+  dihapus dan `Account 2` masih ada, login berikutnya mendapat nama yang sudah dipegang baris tersisa,
+  dan `UNIQUE (provider_id, label)` menolak akun yang vendor baru saja berikan. `connectLabel` yang lama
+  dihapus karena cabang fallback-nya menjadi unreachable; dua fungsi bernama sama adalah cara lain untuk
+  membuat aturan ini bercabang lagi.
+- Label akun yang **tidak** diberi identitas oleh vendor kini tidak melewati `schema/endpoint.go:170-175`
+  (`omitempty,email`), jadi email sintetis yang dulu juga tidak pernah bisa round-trip lewat API.
+
+Dibuktikan oleh `internal/service/oauth_flow_multiaccount_test.go`: tiga login berurutan menghasilkan
+tiga endpoint berbeda dengan credential masing-masing (`access-state-1/2/3`), label `Account 1/2/3`,
+tanpa field identitas (`Email`/`Name`/`WorkspaceID` kosong) dan `machine_id` yang beda per ronde;
+`TestStateRound_NumberedLabelTakesAFreeName` menutup lubang rupangan (baris yang tersisa hanya
+`Account 2` → login baru memakai `Account 1`);
+`TestDeviceAccountEmail_LeavesIdentitylessRoundsUnKeyed` menahan kedua arah (state: kosong, PKCE:
+prefix historis). Satu case lama di `oauth_flow_callback_test.go` dipaksa berubah ekspektasi: provider
+callback tanpa userinfo dulu memakai label konstan `pkce-provider oauth`, sekarang `Account 1` — dan itu
+bukan regresi, karena label konstan itu membuat login identitas-kosong **kedua** pada provider yang sama
+gagal di index UNIQUE.
+
+Sweep refresh tidak perlu disentuh: ia sudah berjalan per `endpoint.EndpointID`
+(`internal/service/oauth_refresh_worker.go:94-118`), jadi tiap akun renewed sendiri. Panel juga tidak:
+tabel akun di-key `endpoint.endpoint_id` (`app-ui/src/lib/components/ProviderOAuthAccounts.svelte:99-160`).
+
+### 10.12 F7 CLOSED (2026-09-29): vendor menolak list pesan OpenAI polos dengan `11101`
+
+Login berhasil, `oauth/status` 200, `models/test` 200 — dan provider tetap tidak bisa dipakai. Penyebabnya
+bukan kredensial: CodeBuddy menjawab body OpenAI polos dengan **`11101 invalid request`** dan reference
+menghindarinya dengan menyusun ulang `messages` di
+`open-sse/executors/codebuddy-intl.js:20-38` — satu turn `system` pembuka `"You are CodeBuddy Code."`,
+`system`/`developer` milik klien dibuang, konten `user` berupa string diangkat jadi typed blocks
+`[{type:"text",text:…}]`, `reasoning_effort` `none`/`off` dihapus dan effort lain dicerminkan sebagai
+`reasoning_summary: "auto"`. Connector kita justru mendeskripsikan dirinya "tidak melakukan rewriting"
+(`internal/provider/codebuddy.go`) dan komentar wiring mengulang klaim yang sama
+(`cmd/app-serv/provider_wiring.go`) — dua pernyataan itu salah dan sudah diganti.
+
+Keputusan owner (2026-09-29): **jangan buang instruksi klien.** System/developer text caller digabung ke
+satu turn `system` leading (`"You are CodeBuddy Code.\n\n<punya klien>"`), jadi request tetap punya satu
+system message seperti yang vendor minta tanpa kehilangan steering yang dipakai agent/combo. Konten yang
+sudah berbentuk blok (jalur vision kita) disalin apa adanya; turn `assistant`/`tool` dipertahankan lengkap
+dengan field-nya; body yang bukan object, `messages` yang bukan list, dan `reasoning_effort` non-string
+**ditolak**, tidak diteruskan dalam keadaan separuh diubah.
+
+Implementasinya `internal/provider/codebuddy_body.go`, menempel di seam opsional
+`provider.Transformer` (`internal/provider/plugin.go:85-92`) yang dipanggil `applyShape`
+(`internal/dataplane/transport_shape.go:39-49`) sebelum URL dibangun — jadi core tetap tidak bercabang pada
+provider id, dan jalur `models/test` ikut terbaiki karena probe adalah panggilan data plane sungguhan
+(`internal/service/provider_model_probe.go:15-16`).
+
+Dibuktikan dua lapis: unit (`internal/provider/codebuddy_body_test.go`: merge system, typed blocks, array
+utuh, turn lain tidak disentuh, mirror reasoning tiga kasus, body tak terbaca ditolak, byte-stable) dan
+wire (`internal/dataplane/engine_codebuddy_wire_test.go`: body yang benar-benar keluar dari transport
+membawa satu system leading gabungan, user sebagai blok bertipe, `stream: true`, dan jawaban stream
+ter-lipat jadi satu completion untuk klien non-stream).
+
+Dan live, 2026-09-29, dua panggilan ke `https://www.codebuddy.ai/v2/chat/completions` memakai akun yang
+sudah tersimpan di DB lokal (`ep_0387DB1598…`, satu baris untuk region itu) lewat driver sekali-pakai yang
+menjalani transform, endpoint, dan auth connector itu sendiri — bukan HTTP body yang ditulis tangan. Driver
+itu sudah dihapus dan tidak pernah ada di tree:
+
+1. `{"role":"user","content":"Reply with one word only: pong"}` → **200**, stream berisi delta `pong`,
+   `finish_reason: stop`, usage 33/2/35. Body yang keluar: satu `system` leading berisi prompt vendor
+   **plus** instruksi caller, dan `user` sebagai `[{type:"text",…}]`. Ini jawaban atas pertanyaan yang
+   membuat §10.11 dibuka: vendor menerima system turn gabungan, jadi instruksi klien tidak perlu dibuang
+   seperti reference melakukannya.
+2. `reasoning_effort: "high"` → **200** dengan `reasoning_content` yang mengalir per delta, dan body yang
+   keluar membawa `reasoning_summary: "auto"` di samping effort-nya — persis bentuk yang reference kirim.
+
+Yang belum bisa diukur dari sini: login **kedua** pada region yang lain, karena ronde state butuh operator
+membuka halaman vendor dan menyetujuinya di browser. Yang terbukti adalah sisi gateway-nya: akun kedua tidak
+lagi cocok ke baris pertama (dedup tidak punya kunci), dan labelnya `Account 2`.

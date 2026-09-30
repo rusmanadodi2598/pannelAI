@@ -83,7 +83,7 @@ func (c *qoderCount) UnmarshalJSON(raw []byte) error {
 // their own service and never each other's.
 func fetchQoder(family string, openAPIBase string) func(context.Context, Credentials) Result {
 	return func(ctx context.Context, creds Credentials) Result {
-		endpoint := endpointFor(familyEndpoints[family], creds.Endpoint)
+		endpoint := endpointFor(usageEndpoint(creds, family), creds.Endpoint)
 		token, message := qoderQuotaToken(ctx, endpoint, openAPIBase, creds)
 		if message != "" {
 			return Result{Message: message}

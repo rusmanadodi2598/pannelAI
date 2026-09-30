@@ -29,8 +29,6 @@ export function createModelTestStore() {
 	let summary = $state('');
 	let error = $state<string | null>(null);
 
-	const running = $derived(Object.values(rows).some((row) => row.phase === 'running') || sweeping);
-
 	// A fresh read of the catalog drops the last probe's answers: the rows may no longer be the same set,
 	// and a verdict left beside a model it never named is the lie this file exists to avoid.
 	function clear(): void {
@@ -87,8 +85,10 @@ export function createModelTestStore() {
 		get sweeping(): boolean {
 			return sweeping;
 		},
+		// Read rather than derived: a control asks this only while it renders, and a store built outside a
+		// component (a test, or a page that hands one down) must not need an effect scope to exist.
 		get running(): boolean {
-			return running;
+			return sweeping || Object.values(rows).some((row) => row.phase === 'running');
 		},
 		get summary(): string {
 			return summary;

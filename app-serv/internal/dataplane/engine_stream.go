@@ -49,7 +49,7 @@ func (e *Engine) relayStream(
 
 	switch in.ClientFormat {
 	case schema.FormatAnthropic:
-		state := NewClaudeStreamState("", resolution.UpstreamID)
+		state := NewClaudeStreamState("", answerModel(resolution, resolution.UpstreamID))
 		if err := e.pump(ctx, upstream, sink, resolution.Target, state.Frames); err != nil {
 			return err
 		}
@@ -58,7 +58,11 @@ func (e *Engine) relayStream(
 		}
 		outcome.Usage = state.Usage()
 	case schema.FormatOpenAIResponses:
-		state := NewResponsesStreamState("", resolution.UpstreamID, e.clock().Unix())
+		// This surface names the answer by the upstream id rather than the
+		// resolved one, which §7.6 records as its own convention. A combo is not
+		// that convention's case: the caller addressed a name it can re-send, so
+		// the combo name overrides it and a plain model keeps what it had.
+		state := NewResponsesStreamState("", answerModel(resolution, resolution.UpstreamID), e.clock().Unix())
 		if err := e.pump(ctx, upstream, sink, resolution.Target, state.Frames); err != nil {
 			return err
 		}
@@ -67,7 +71,7 @@ func (e *Engine) relayStream(
 		}
 		outcome.Usage = state.Usage()
 	default:
-		state := NewStreamState("", resolution.UpstreamID, e.clock().Unix(), in.IncludeUsage)
+		state := NewStreamState("", answerModel(resolution, resolution.UpstreamID), e.clock().Unix(), in.IncludeUsage)
 		if err := e.pump(ctx, upstream, sink, resolution.Target, state.Frames); err != nil {
 			return err
 		}

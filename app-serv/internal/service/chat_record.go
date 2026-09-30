@@ -5,7 +5,10 @@
 //
 //	request log under the request's own identifier.
 //
-// @uses      internal/dataplane, internal/domain, context, time.
+// @uses      internal/dataplane, internal/domain, internal/schema, context,
+//
+//	log/slog, time.
+//
 // @reason    SPEC-API-001 §7.12/§7.13 make one recorded row per request part of
 //
 //	the §7.15 pipeline, and register G18 found the chat plane writing only
@@ -21,6 +24,7 @@ package service
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -43,6 +47,26 @@ import (
 // answer, and failing the request over an accounting write would turn a served
 // call into an error the client cannot act on.
 func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome dataplane.Outcome, keyID, errorCode string) {
+	// An image request answered by the §7.8 adapter is the one served call whose
+	// identity the accounting pair cannot show: the row is written under the model
+	// the caller addressed, so the model that actually received the picture
+	// appears nowhere — and whether that model reads images at all is exactly the
+	// question an operator needs to answer when an image comes back described
+	// wrong. Measured live 2026-09-29: a combo's image requests were answered
+	// "gray" for a solid-red image by an adapter model that cannot see, and nothing
+	// in the panel's rows said a substitution had happened.
+	//
+	// This is a log line, not a client-facing field: the gateway can prove which
+	// model it handed the image to, and cannot prove what that model did with it.
+	if outcome.VisionAdapted {
+		slog.Warn("image request answered by the vision adapter",
+			"request_id", s.requestIDFrom(ctx),
+			"combo", outcome.Combo,
+			"addressed_model", outcome.Model,
+			"served_endpoint", outcome.EndpointID,
+			"served_provider", outcome.ProviderID,
+			"streamed", outcome.Streamed)
+	}
 	if s.usage == nil && s.logs == nil && s.quotas == nil {
 		return
 	}

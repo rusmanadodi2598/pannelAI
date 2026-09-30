@@ -155,16 +155,21 @@ func relayEndpoint(t *testing.T, id, providerID string) domain.UpstreamEndpoint 
 type visionAdapter struct {
 	calls      int
 	refs       []string
-	applies    bool
+	adapted    []string
+	candidates []string
 	err        error
-	providerID string
-	modelID    string
 }
 
-func (a *visionAdapter) Augment(_ context.Context, providerID, modelID string) ([]string, bool, error) {
+func (a *visionAdapter) Augment(_ context.Context, candidates []string) ([]string, []string, error) {
 	a.calls++
-	a.providerID, a.modelID = providerID, modelID
-	return a.refs, a.applies, a.err
+	a.candidates = candidates
+	if a.err != nil {
+		return nil, nil, a.err
+	}
+	if len(a.refs) == 0 {
+		return candidates, nil, nil
+	}
+	return a.refs, a.adapted, nil
 }
 
 // newSeamEngine wires the relay pipeline with the body seams populated, over

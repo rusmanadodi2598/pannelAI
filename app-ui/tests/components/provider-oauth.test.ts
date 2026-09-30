@@ -194,6 +194,35 @@ describe('the device round', () => {
 		expect(JSON.stringify(stub.oauthDevicePolls)).not.toContain('challenge');
 	});
 
+	// A vendor-minted state round has no short code: the screen shows the page to open and
+	// waits, and does not invent a code the vendor never asked the operator to enter.
+	it('renders a round that carries no short code without a code block', async () => {
+		stub.oauthDeviceStart = {
+			device_code: 'vendor-state-7f3a',
+			verification_url: 'https://www.codebuddy.test/auth?state=vendor-state-7f3a',
+			interval_seconds: 0,
+			expires_in: 300
+		};
+		stub.oauthDevicePollAnswers = [{ status: 'pending' }];
+		renderProvider();
+		await waitForAccounts();
+
+		screen.getByRole('button', { name: 'Start the device authorization' }).click();
+
+		const link = await waitFor(() => screen.getByRole('link', { name: 'Open the device page' }));
+		expect(link.getAttribute('href')).toBe(
+			'https://www.codebuddy.test/auth?state=vendor-state-7f3a'
+		);
+		await waitFor(() => expect(screen.getByText(/waiting for the vendor/i)).toBeTruthy());
+		expect(screen.queryByText('Your code')).toBeNull();
+		expect(screen.queryByTestId('device-user-code')).toBeNull();
+		// The round still polls with the handle it was given, which here is the vendor's state.
+		await waitFor(() => expect(stub.oauthDevicePolls.length).toBeGreaterThan(0));
+		expect(
+			stub.oauthDevicePolls.every((ask) => ask.device_code === 'vendor-state-7f3a')
+		).toBeTruthy();
+	});
+
 	it('asks until the vendor grants the token, then re-reads the accounts', async () => {
 		stub.oauthDevicePollAnswers = [
 			{ status: 'pending' },

@@ -54,10 +54,14 @@ export type OAuthStart = z.infer<typeof schemaOAuthStart>;
 // the PKCE verifier and the machine id behind it stay in the state the gateway staged, so there is nothing
 // here to keep off the screen beyond a single use. `verification_url` is rendered as a link the operator
 // opens, never followed by the panel, so it is parsed as an absolute http(s) URL first.
+//
+// `user_code` rides only with a round whose flow mints a short code. A vendor-minted state round has none,
+// and the screen renders its link and waiting state without a code block rather than showing a code the
+// vendor never asked for.
 export const schemaOAuthDeviceStart = z.object({
 	device_code: z.string().min(1),
 	verification_url: absoluteUrl,
-	user_code: z.string().min(1),
+	user_code: z.string().min(1).optional(),
 	interval_seconds: z.number().int().min(0).max(60),
 	expires_in: z.number().int().min(1)
 });

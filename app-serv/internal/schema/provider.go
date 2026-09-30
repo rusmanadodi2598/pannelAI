@@ -66,7 +66,7 @@ type ProviderStatusSummaryDTO struct {
 }
 
 // ProviderList is the §7.4 list body. It carries a meta block because the
-// registry is a large filtered set (94 entries in the P1 document), unlike the
+// registry answers the whole provider set in one response, unlike the
 // provider-node list which is hand-configured.
 type ProviderList struct {
 	Data []ProviderResponse `json:"data"`
