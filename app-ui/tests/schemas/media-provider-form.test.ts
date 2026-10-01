@@ -342,12 +342,12 @@ describe('the field hints', () => {
 			{
 				name: 'tells the operator how to undo an override',
 				block: block({ base_url: 'http://127.0.0.1:8095/v1', base_url_source: 'override' }),
-				help: 'Set here. Clear it to go back to the value the registry declares.'
+				help: 'Set here. Clear it to use the registry value.'
 			},
 			{
 				name: 'says the registry declares none, which is the case the save is blocked in',
 				block: block({ base_url: '', base_url_source: 'registry' }),
-				help: 'The registry declares no base URL for this kind, so this provider needs one here.'
+				help: 'This kind has no base URL. Set one here.'
 			},
 			{
 				name: 'names the registry value it would fall back to',
@@ -365,12 +365,12 @@ describe('the field hints', () => {
 			{
 				name: 'says there is nothing to choose when the service declares no models',
 				block: block(),
-				help: 'This service declares no models, so there is nothing to choose. The registry default applies.'
+				help: 'No models here, so the registry default applies.'
 			},
 			{
 				name: 'describes the choice when models are declared',
 				block: block({ models: [{ id: 'tts-1' }] }),
-				help: 'The registry default, or one of the models this service declares.'
+				help: 'The registry default, or a model this service declares.'
 			}
 		],
 		({ block: loaded, help }) => {

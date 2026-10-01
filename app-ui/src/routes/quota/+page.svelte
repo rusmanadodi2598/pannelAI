@@ -117,7 +117,7 @@
 				labelNotice = null;
 				labels = new Map(endpointResult.data.data.map((endpoint) => [endpoint.id, endpoint.label]));
 			} else {
-				labelNotice = `Endpoint labels could not be read (${endpointResult.error.message}), so endpoints are named by their ids.`;
+				labelNotice = `Endpoint labels could not be read, so ids show. ${endpointResult.error.message}`;
 			}
 
 			if (!quotaResult.ok) {
@@ -153,7 +153,7 @@
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Quota Tracker</h1>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			How much of each provider's window this gateway has spent, and when the window reopens.
+			Window spend per provider, and when it reopens.
 		</p>
 	</div>
 
@@ -165,14 +165,17 @@
 	<div class="flex flex-wrap items-stretch justify-between gap-2">
 		<p class="flex min-w-0 flex-1 items-center text-sm text-[var(--color-text-muted)]">
 			{#if paused}
-				Refresh is paused. The countdowns keep ticking.
+				Refresh is paused. Countdowns still tick.
 			{:else}
-				This table refreshes {pollIntervalLabel(QUOTA_POLL_MS)} and stops while the tab is hidden.
-			{/if}
-			{#if readAt}
-				Last read {formatTimestamp(readAt)}.
+				Auto-refresh {pollIntervalLabel(QUOTA_POLL_MS)}.
 			{/if}
 		</p>
+
+		{#if readAt}
+			<p class="flex items-center text-sm text-[var(--color-text-muted)]">
+				Last read {formatTimestamp(readAt)}.
+			</p>
+		{/if}
 
 		<div class="flex flex-wrap items-stretch gap-2">
 			<!-- Not disabled while a read is in flight: load() itself allows one read at a time, so the control
@@ -219,7 +222,7 @@
 		<StateMessage
 			kind="empty"
 			title="No quota windows yet"
-			description="Quota tracking starts after the first routed request. Send one through the gateway with a key from Endpoint & Key, then this table fills in."
+			description="No traffic yet. Send one request, then rows appear here."
 		>
 			{#snippet action()}
 				<a href={resolve('/endpoint-keys')} class="underline">Open Endpoint &amp; Key</a>
@@ -240,8 +243,7 @@
 	<div class="flex flex-col gap-3">
 		<h2 class="text-base font-medium">Budget caps</h2>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			A monthly ceiling per endpoint, in USD or in tokens. The gateway checks it before every routed
-			request.
+			Monthly ceiling per endpoint, in USD or tokens.
 		</p>
 		<QuotaCaps {labels} {windowEndpointIds} labelsUnread={labelNotice !== null} />
 	</div>

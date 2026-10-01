@@ -62,7 +62,7 @@ export const schemaComboForm = z
 			ctx.addIssue({
 				code: 'custom',
 				path: ['judgeModel'],
-				message: 'A fusion combo needs a judge model to write the final answer.'
+				message: 'Fusion needs a judge model.'
 			});
 		}
 
@@ -70,8 +70,7 @@ export const schemaComboForm = z
 			ctx.addIssue({
 				code: 'custom',
 				path: ['stickyLimit'],
-				message:
-					'A round robin combo keeps at least one request on a model, so the sticky limit starts at 1.'
+				message: 'Round robin spreads requests, so the sticky limit starts at 1.'
 			});
 		}
 	});

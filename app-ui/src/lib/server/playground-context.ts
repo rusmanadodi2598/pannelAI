@@ -50,7 +50,7 @@ export async function playgroundContext(
 			ok: false,
 			response: playgroundError(
 				'PLAYGROUND_KEY_MISSING',
-				`The panel has no gateway key configured. Set ${PLAYGROUND_KEY_VARIABLE} in the panel's server environment.`
+				`Set ${PLAYGROUND_KEY_VARIABLE} on the panel server.`
 			)
 		};
 	}

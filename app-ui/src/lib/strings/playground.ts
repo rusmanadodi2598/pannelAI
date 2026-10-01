@@ -16,20 +16,17 @@ import {
 
 export const PLAYGROUND_COPY = {
 	title: 'Playground Chat',
-	subtitle:
-		'Send one message through the data plane and read what the gateway answers. The panel server holds the key; this screen never does.',
+	subtitle: 'Send one message and read what the gateway answers.',
 
 	models: {
-		loading: 'Reading the models this key can route',
-		errorTitle: 'The model list could not be read',
+		loading: 'Loading the models this key routes',
+		errorTitle: 'Could not read the model list',
 		retry: 'Try again',
 		/** The key is unset. The description the screen renders is the panel's own sentence, which names it. */
 		unavailableTitle: 'The panel has no gateway key',
-		unavailableNote:
-			'The browser is not asked for one. The panel server reads the key from its own environment and attaches it to the call it makes.',
+		unavailableNote: 'This screen never holds a key.',
 		emptyTitle: 'This key routes no model',
-		emptyDescription:
-			'The gateway answered with an empty list, so there is nothing to send to. That is a fact about the key, not a filter on this screen.',
+		emptyDescription: 'The gateway listed no models, so there is nothing to send.',
 		/** What was read, stated as a fact about this screen rather than a claim about the gateway. */
 		readFrom: (path: string) => `Read from GET ${path}.`,
 		count: (count: number) => (count === 1 ? '1 model' : `${count} models`)
@@ -37,21 +34,21 @@ export const PLAYGROUND_COPY = {
 
 	composer: {
 		modelLabel: 'Model',
-		modelNote: 'The string this screen puts on the wire, exactly as the gateway listed it.',
+		modelNote: 'The model id exactly as the gateway lists it.',
 		messageLabel: 'Message',
-		messagePlaceholder: 'Write one message. The gateway receives it as a single user turn.',
+		messagePlaceholder: 'Write one message to send.',
 		send: 'Send',
 		stop: 'Stop',
 		/** The cost, stated before the send rather than reported after it (§6.15 rule 4). */
-		cost: 'Sending routes to a real provider: it consumes the key quota and writes a usage record.'
+		cost: 'This calls a real provider, uses quota, and is logged.'
 	},
 
 	answer: {
 		heading: 'Answer',
-		waiting: 'Waiting for the first frame',
+		waiting: 'Waiting for the first token',
 		streaming: 'Streaming the answer',
 		/** A stream that carried no text at all, which is a fact about the answer rather than an error. */
-		empty: 'The stream ended without any text.',
+		empty: 'The answer came back with no text.',
 		facts: {
 			model: 'Resolved model',
 			finish: 'Finish reason',
@@ -61,16 +58,15 @@ export const PLAYGROUND_COPY = {
 			notReported: 'not reported'
 		},
 		end: {
-			done: 'The stream ended with the sentinel the data plane documents.',
-			stopped: 'You stopped the stream. The text above is what had arrived.',
-			truncated:
-				'The stream closed without the sentinel, so the answer above may be cut off rather than complete.'
+			done: 'The answer ended cleanly.',
+			stopped: 'You stopped it. The text above is what arrived.',
+			truncated: 'The answer stopped early, so the text above may be partial.'
 		},
 		/** A stream that broke mid-read: the failure block above says why, and this says what is on screen. */
-		interrupted: 'The stream stopped before it reached an end. The text above is what had arrived.',
+		interrupted: 'The answer never finished. The text above is what arrived.',
 		raw: {
-			summary: 'Raw stream',
-			intro: 'The frames exactly as they arrived, before this screen read them.'
+			summary: 'Raw frames',
+			intro: 'The frames exactly as they arrived.'
 		}
 	},
 

@@ -77,9 +77,7 @@ describe('Quota caps', () => {
 		// The API prints a stored amount with all 8 places, and the form shows the amount itself.
 		expect(input('Monthly cost (USD)').value).toBe('25');
 		expect(input('Monthly tokens').value).toBe('1000000');
-		expect(
-			screen.getByText('This endpoint is capped at 25 USD and 1,000,000 tokens a month.')
-		).toBeTruthy();
+		expect(screen.getByText('Capped at 25 USD and 1,000,000 tokens a month.')).toBeTruthy();
 		expect(screen.getByText(/Stored /)).toBeTruthy();
 	});
 
@@ -92,11 +90,7 @@ describe('Quota caps', () => {
 		expect(input('Monthly cost (USD)').value).toBe('');
 		expect(input('Monthly tokens').value).toBe('');
 		// No cap is a rule, not a ceiling of zero: the sentence says which one it is.
-		expect(
-			screen.getByText(
-				'No cap is stored for this endpoint, so the router picks it whenever it is healthy.'
-			)
-		).toBeTruthy();
+		expect(screen.getByText('No cap set. The router picks it whenever healthy.')).toBeTruthy();
 	});
 
 	it('writes a cap for an endpoint whose windows are all still empty', async () => {
@@ -115,9 +109,7 @@ describe('Quota caps', () => {
 
 		// The read after the write is what makes the sentence the stored state rather than the draft.
 		await waitFor(() => expect(stub.capReads).toEqual(['ep_1', 'ep_1']));
-		expect(
-			await screen.findByText(/^Saved\. This endpoint is capped at 40 USD a month\./)
-		).toBeTruthy();
+		expect(await screen.findByText(/^Saved\. Capped at 40 USD a month\./)).toBeTruthy();
 	});
 
 	it('drops the save confirmation once the form is edited again', async () => {
@@ -127,14 +119,14 @@ describe('Quota caps', () => {
 		await choose('ep_1');
 		await fireEvent.input(input('Monthly cost (USD)'), { target: { value: '40' } });
 		await fireEvent.click(screen.getByRole('button', { name: 'Save the cap' }));
-		await screen.findByText(/^Saved\. This endpoint is capped at 40 USD a month\./);
+		await screen.findByText(/^Saved\. Capped at 40 USD a month\./);
 
 		// The sentence would otherwise keep claiming a save while the field holds a value that was never
 		// sent, so an edit takes the confirmation away and leaves the stored state stated.
 		await fireEvent.input(input('Monthly cost (USD)'), { target: { value: '50' } });
 
 		expect(screen.queryByText(/^Saved\./)).toBeNull();
-		expect(screen.getByText(/This endpoint is capped at 40 USD a month\./)).toBeTruthy();
+		expect(screen.getByText(/Capped at 40 USD a month\./)).toBeTruthy();
 	});
 
 	it('clears the cap whose field was blanked, and reports the cap that remains', async () => {
@@ -162,9 +154,7 @@ describe('Quota caps', () => {
 		// The read after the write is what makes this the stored state rather than the draft: the amount is
 		// gone from the gateway, so the sentence names the token cap alone.
 		await waitFor(() => expect(stub.capReads).toEqual(['ep_1', 'ep_1']));
-		expect(
-			await screen.findByText(/This endpoint is capped at 1,000,000 tokens a month\./)
-		).toBeTruthy();
+		expect(await screen.findByText(/Capped at 1,000,000 tokens a month\./)).toBeTruthy();
 		expect(input('Monthly cost (USD)').value).toBe('');
 	});
 
@@ -174,8 +164,8 @@ describe('Quota caps', () => {
 
 		await choose('ep_1');
 
-		expect(screen.getByText(/an empty field clears that cap/)).toBeTruthy();
-		expect(screen.getByText(/once the month-to-date spend reaches it/)).toBeTruthy();
+		expect(screen.getByText(/An empty field clears one\./)).toBeTruthy();
+		expect(screen.getByText(/Once spend reaches a cap/)).toBeTruthy();
 	});
 
 	it('refuses a zero cost that stands alone without calling the API', async () => {
@@ -188,9 +178,7 @@ describe('Quota caps', () => {
 		await fireEvent.click(screen.getByRole('button', { name: 'Save the cap' }));
 
 		expect(
-			await screen.findByText(
-				'A cost cap of zero would stop the router picking this endpoint, so set a token cap beside it or leave the cost empty.'
-			)
+			await screen.findByText('Zero cost blocks this endpoint. Set a token cap too.')
 		).toBeTruthy();
 		expect(stub.capWrites).toEqual([]);
 	});
@@ -210,7 +198,7 @@ describe('Quota caps', () => {
 
 		expect(await screen.findByText('No endpoints to cap')).toBeTruthy();
 		// The section says why it has nothing to offer, which is not the same reason as "no endpoints exist".
-		expect(await screen.findByText(/there is nothing to choose here/)).toBeTruthy();
+		expect(await screen.findByText(/nothing to choose\. Refresh to retry\./)).toBeTruthy();
 	});
 
 	it('surfaces the gateway sentence when the endpoint is not one it carries', async () => {

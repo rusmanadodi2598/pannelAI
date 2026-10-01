@@ -79,8 +79,7 @@
 		<span>
 			Capture request and response bodies
 			<span class="block text-[var(--color-text-muted)]">
-				With this on, the gateway stores the full request and response body with every logged
-				request, which can include sensitive content. With it off, it records the outcome only.
+				Stores full request and response bodies, which can be sensitive.
 			</span>
 		</span>
 	</label>
@@ -95,7 +94,7 @@
 			class={fieldClass}
 		/>
 		<span id="settings-retention-days-help" class="text-xs text-[var(--color-text-muted)]">
-			How long a captured log row stays before the retention worker purges it. At least 1.
+			How long a log row is kept. At least 1.
 		</span>
 	</div>
 
@@ -109,8 +108,7 @@
 			class={fieldClass}
 		/>
 		<span id="settings-capture-bytes-help" class="text-xs text-[var(--color-text-muted)]">
-			A body longer than this is stored up to this point, with a marker saying it was cut. At least
-			1.
+			Longer bodies are cut here. At least 1.
 		</span>
 	</div>
 
@@ -124,7 +122,7 @@
 			class={fieldClass}
 		/>
 		<span id="settings-console-records-help" class="text-xs text-[var(--color-text-muted)]">
-			How many lines the console ring buffer holds before older lines fall out. At least 1.
+			How many console lines are kept. At least 1.
 		</span>
 	</div>
 

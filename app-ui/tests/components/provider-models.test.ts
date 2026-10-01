@@ -159,7 +159,7 @@ describe('the disabled list', () => {
 		);
 
 		expect(screen.getByText('claude-3-haiku')).toBeTruthy();
-		expect(screen.getByText(/Another provider's disabled models are not listed here/)).toBeTruthy();
+		expect(screen.getByText(/Other providers not listed here/)).toBeTruthy();
 	});
 
 	it('turns a model back on and returns it to the catalog', async () => {
@@ -181,7 +181,7 @@ describe('the disabled list', () => {
 	it('renders an empty state when nothing is disabled for this provider', async () => {
 		renderProvider();
 		await waitFor(() =>
-			expect(screen.getByText(/No models are disabled for this provider/)).toBeTruthy()
+			expect(screen.getByText(/No disabled models for this provider/)).toBeTruthy()
 		);
 	});
 
@@ -189,14 +189,14 @@ describe('the disabled list', () => {
 		stub.disabledReadStatus = 500;
 		renderProvider();
 		await waitFor(() =>
-			expect(screen.getByText(/The disabled models could not be loaded/)).toBeTruthy()
+			expect(screen.getByText(/Could not load the disabled models/)).toBeTruthy()
 		);
 
 		stub.disabledReadStatus = 200;
 		screen.getByRole('button', { name: 'Try again' }).click();
 
 		await waitFor(() =>
-			expect(screen.getByText(/No models are disabled for this provider/)).toBeTruthy()
+			expect(screen.getByText(/No disabled models for this provider/)).toBeTruthy()
 		);
 	});
 });

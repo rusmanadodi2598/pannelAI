@@ -129,7 +129,7 @@
 
 		if (!result.ok) {
 			providerNames = null;
-			namesNotice = `Provider names could not be read (${result.error.message}), so provider ids are shown.`;
+			namesNotice = `Provider names could not be read, so ids show. ${result.error.message}`;
 			return;
 		}
 

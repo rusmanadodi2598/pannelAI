@@ -108,7 +108,7 @@ describe('editing a proxy', () => {
 
 		// Never prefilled: the API does not return the value, so the panel cannot show it.
 		expect(value(screen.getByLabelText('Password'))).toBe('');
-		expect(screen.getByText(/Leave this empty to keep it/)).toBeTruthy();
+		expect(screen.getByText(/Leave empty to keep it/)).toBeTruthy();
 
 		await fireEvent.input(screen.getByLabelText('Label'), {
 			target: { value: 'Frankfurt egress two' }
@@ -206,7 +206,7 @@ describe('testing and deleting a stored proxy', () => {
 		const dialog = squashed(screen.getByRole('dialog'));
 		expect(dialog).toContain('Frankfurt egress');
 		expect(dialog).toContain('proxy.example.com:8443');
-		expect(dialog).toContain('does not change the path upstream calls take');
+		expect(dialog).toContain('does not change the outbound path');
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Delete the proxy' }));
 

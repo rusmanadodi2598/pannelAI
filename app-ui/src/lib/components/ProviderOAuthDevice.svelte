@@ -105,7 +105,7 @@
 		}
 		if (result.data.status !== 'pending') {
 			stop();
-			pollError = `The gateway answered “${result.data.status}”, which this screen cannot act on. Start another round.`;
+			pollError = `The gateway answered “${result.data.status}”. Start another round.`;
 			return;
 		}
 		schedule(current.interval_seconds * 1000);
@@ -136,7 +136,7 @@
 		>
 			<h4 class="text-sm font-semibold">Device page</h4>
 			<p class="text-sm text-[var(--color-text-muted)]">
-				Open this address and approve the request there. The panel does not open it for you.
+				Open this address and approve the request there.
 			</p>
 			<p class="flex flex-wrap items-center gap-2">
 				<!-- eslint-disable svelte/no-navigation-without-resolve -- the device page is the vendor's

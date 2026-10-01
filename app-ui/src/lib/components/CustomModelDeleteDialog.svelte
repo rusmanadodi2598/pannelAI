@@ -31,11 +31,10 @@
 	{#if model}
 		<p>
 			Remove <span class="font-medium">{customModelLabel(model)}</span>
-			({model.provider_id}/{model.model_id})? The panel's declaration goes with it.
+			({model.provider_id}/{model.model_id})? This custom declaration goes with it.
 		</p>
 		<p class="mt-3 text-[var(--color-text-muted)]">
-			If the registry also declares this model, the registry's version is what the catalog lists
-			afterwards. Requests naming it keep resolving either way.
+			If a registry model shares this name, it returns. Requests still resolve.
 		</p>
 	{/if}
 

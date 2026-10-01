@@ -37,7 +37,7 @@
 
 {#if !group.provider}
 	<p class="text-sm text-[var(--color-text-muted)]">
-		Counted locally by this gateway; the provider behind this lane publishes no quota.
+		Counted locally by this gateway. This lane has no provider quota.
 	</p>
 {/if}
 {#each group.endpoints as endpoint (endpoint.id)}

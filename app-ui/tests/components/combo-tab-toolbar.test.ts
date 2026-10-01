@@ -91,9 +91,7 @@ describe('the combos toolbar', () => {
 
 		const create = await screen.findByRole('button', { name: 'New combo' });
 		const refresh = screen.getByRole('button', { name: 'Refresh now' });
-		const sentence = screen.getByText(
-			'A combo is a model string that resolves to several upstream models.'
-		);
+		const sentence = screen.getByText('One model name, several upstream models.');
 
 		// One row means one parent: the sentence's block and the controls' block are siblings inside the
 		// same flex row, so the controls cannot be pushed onto a line of their own by the copy above them.

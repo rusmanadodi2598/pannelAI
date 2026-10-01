@@ -74,13 +74,13 @@
 		if (providerResult.ok) {
 			providers = providerResult.data.data.map((row) => ({ id: row.id, name: row.name }));
 		} else {
-			providersNotice = `The provider list could not be read (${providerResult.error.message}), so this filter lists only the id the URL carries.`;
+			providersNotice = `The provider list could not be read, so ids show. ${providerResult.error.message}`;
 		}
 
 		if (keyResult.ok) {
 			gatewayKeys = keyResult.data.data.map((row) => ({ id: row.id, name: row.name }));
 		} else {
-			keysNotice = `The gateway key list could not be read (${keyResult.error.message}), so this filter lists only the id the URL carries.`;
+			keysNotice = `The key list could not be read, so ids show. ${keyResult.error.message}`;
 		}
 	}
 

@@ -118,8 +118,8 @@
 			kind="empty"
 			title="No endpoints to cap"
 			description={labelsUnread
-				? 'The endpoint list could not be read, so there is nothing to choose here. Refresh now reads it again.'
-				: 'A cap belongs to an upstream endpoint. Add one on Endpoint & Key, then set its budget here.'}
+				? 'Could not read endpoints, so nothing to choose. Refresh to retry.'
+				: 'Add one on Endpoint & Key, then set its budget.'}
 		/>
 	{:else}
 		<!-- One compact row for the whole editor once an endpoint is chosen (owner directive, 2026-09-25):
@@ -185,8 +185,9 @@
 
 		{#if selected !== ''}
 			<p class="text-sm text-[var(--color-text-muted)]">
-				Saving replaces both caps at once: an empty field clears that cap. {QUOTA_CAP_WARNING}
+				Saving replaces both caps. An empty field clears one.
 			</p>
+			<p class="text-sm text-[var(--color-text-muted)]">{QUOTA_CAP_WARNING}</p>
 
 			<!-- The stored state, kept on screen across the read that follows a save: blanking it would
 			     unmount the sentence that reports the save. Its name is what tells a screen reader which

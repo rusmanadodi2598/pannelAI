@@ -61,8 +61,8 @@ describe('the custom provider list', () => {
 		renderSection(stubProviderNodes());
 
 		expect(screen.getByText('No custom provider yet')).toBeTruthy();
-		expect(squashed(screen.getByText(/Use the buttons above/))).toContain(
-			'Use the buttons above to add a base URL the registry does not carry.'
+		expect(squashed(screen.getByText(/Add a base URL/))).toContain(
+			'Add a base URL the registry lacks.'
 		);
 	});
 
@@ -77,7 +77,7 @@ describe('the custom provider list', () => {
 		const stub = stubProviderNodes({ readStatus: 500 });
 		const rendered = renderSection(stub, { error: 'The node store is unreachable.' });
 
-		expect(screen.getByText('The custom providers could not be loaded')).toBeTruthy();
+		expect(screen.getByText('Could not load the custom providers')).toBeTruthy();
 		expect(screen.getByText('The node store is unreachable.')).toBeTruthy();
 
 		await screen.getByRole('button', { name: 'Try again' }).click();

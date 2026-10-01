@@ -81,7 +81,7 @@
 		const saved = ownKeys(result.data.routing);
 		server = saved;
 		draft = saved;
-		message = 'Saved. These defaults apply to new combos and new routing decisions only.';
+		message = 'Saved. Applies to new combos and decisions.';
 		await onrefresh();
 	}
 
@@ -97,7 +97,7 @@
 <div class="flex flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4">
 	<h2 class="text-sm font-semibold">Routing</h2>
 	<p class="text-sm text-[var(--color-text-muted)]">
-		Defaults for new combos and for routing decisions. A value set on a combo wins over these.
+		Defaults for new combos and decisions. A combo value wins.
 	</p>
 
 	<div class="flex flex-col gap-1 text-sm">
@@ -125,7 +125,7 @@
 			class={fieldClass}
 		/>
 		<span id="settings-combo-sticky-help" class="text-xs text-[var(--color-text-muted)]">
-			How many requests a round-robin combo keeps on one model before rotating. At least 1.
+			Requests kept on one model before rotating. At least 1.
 		</span>
 	</div>
 
@@ -145,8 +145,7 @@
 			{/each}
 		</select>
 		<span id="settings-credential-rotation-help" class="text-xs text-[var(--color-text-muted)]">
-			How every provider walks its credentials: fill-first starts at the first usable account every
-			time, round-robin advances through them. A provider can override this on its own screen.
+			Fill-first: first usable account. Round-robin rotates. A provider can override.
 		</span>
 	</div>
 
@@ -160,8 +159,7 @@
 			class={fieldClass}
 		/>
 		<span id="settings-routing-sticky-help" class="text-xs text-[var(--color-text-muted)]">
-			How many consecutive requests one upstream account serves before round-robin rotation. At
-			least 1. Read only in round-robin mode; fill-first ignores it.
+			Requests per account before rotating. Round-robin only. At least 1.
 		</span>
 	</div>
 

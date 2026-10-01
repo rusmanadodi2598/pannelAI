@@ -103,7 +103,7 @@
 		<StateMessage
 			kind="empty"
 			title="No gateway keys yet"
-			description="Create one to let a CLI tool reach the gateway."
+			description="Create one to let a client reach the gateway."
 		/>
 	{:else}
 		{#if keys.length === 0}
@@ -174,7 +174,7 @@
 	{#if pendingDelete}
 		<p class="text-sm">
 			Deleting <span class="font-medium">{pendingDelete.name}</span> ({pendingDelete.key_hint})
-			stops every client using it immediately. The key cannot be restored.
+			stops its clients. It cannot be undone.
 		</p>
 	{/if}
 

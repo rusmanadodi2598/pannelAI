@@ -123,9 +123,8 @@ describe('deleting a custom provider', () => {
 		await screen.getByRole('button', { name: 'Delete the provider' }).click();
 
 		await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
-		expect(squashed(screen.getByRole('alert'))).toContain(
-			'This provider is still referenced, so it was not deleted.'
-		);
+		expect(squashed(screen.getByRole('alert'))).toContain('Still referenced');
+		expect(squashed(screen.getByRole('alert'))).toContain('Remove or move its endpoints first');
 		expect(squashed(screen.getByRole('alert'))).toContain(
 			'an endpoint still references this provider'
 		);

@@ -225,7 +225,7 @@ describe('UsageRecordsTab', () => {
 		await renderRecords();
 
 		expect(await screen.findByText(/The provider list could not be read/)).toBeTruthy();
-		expect(await screen.findByText(/The gateway key list could not be read/)).toBeTruthy();
+		expect(await screen.findByText(/The key list could not be read/)).toBeTruthy();
 		expect((screen.getByLabelText('Provider') as HTMLSelectElement).value).toBe('openai');
 	});
 
@@ -282,7 +282,7 @@ describe('UsageRecordsTab', () => {
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Open' }));
 
-		expect(await screen.findByText(/no stored log row for this request/)).toBeTruthy();
+		expect(await screen.findByText(/no log remains for this request/)).toBeTruthy();
 		expect(screen.queryByText(/Capture is off/)).toBeNull();
 	});
 

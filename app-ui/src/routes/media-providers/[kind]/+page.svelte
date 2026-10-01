@@ -78,8 +78,7 @@
 			{kind === null ? 'Media providers' : mediaKindLabel(kind)}
 		</h1>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			The registry's providers for this kind, with the address each one is dialed at. An override
-			here changes what the gateway uses for this kind on the next request.
+			Providers for this kind, and the address each uses.
 		</p>
 	</div>
 
@@ -93,7 +92,7 @@
 		<StateMessage
 			kind="error"
 			title={`There is no ${slug} media kind`}
-			description="The panel has six media kinds, and the address names one of them."
+			description="Six media kinds; this page shows one."
 		>
 			{#snippet action()}
 				<ul class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -120,7 +119,7 @@
 		<StateMessage
 			kind="empty"
 			title="No provider configured for this kind."
-			description="The registry declares no provider that offers this kind, so there is nothing to configure here yet."
+			description="No provider offers this kind. Open Providers to add one."
 		>
 			{#snippet action()}
 				<a href={resolve('/providers')} class="underline">Open Providers</a>

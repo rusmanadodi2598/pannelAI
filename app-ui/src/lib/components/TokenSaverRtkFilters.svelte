@@ -54,8 +54,7 @@
 
 	{#if unknown.length > 0}
 		<p class="text-xs text-[var(--color-warn)]">
-			Stored but not offered here: {unknown.join(', ')}. They are kept as they are, because saving
-			must not delete a filter this panel does not know.
+			Stored but not offered here: {unknown.join(', ')}. Kept unchanged on save.
 		</p>
 	{/if}
 </fieldset>

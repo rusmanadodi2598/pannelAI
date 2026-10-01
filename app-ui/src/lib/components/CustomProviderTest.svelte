@@ -40,10 +40,9 @@
 </script>
 
 <div class="flex flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] p-3">
-	<p class="text-sm">
-		The gateway calls the node's base URL and reports whether it answered. A node has no stored
-		credential, so the field below is optional: leave it empty to test an upstream that needs none.
-	</p>
+	<p class="text-sm">The gateway tests the node's base URL.</p>
+	<p class="text-sm">A node stores no credential, so the field is optional.</p>
+	<p class="text-sm">Leave it empty to test an upstream that needs none.</p>
 
 	<div class="flex flex-wrap items-end gap-3">
 		<label class="flex flex-col gap-1 text-sm">

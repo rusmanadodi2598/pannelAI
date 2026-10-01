@@ -159,7 +159,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the model catalog" />
 	{:else if error}
-		<StateMessage kind="error" title="The model catalog could not be loaded" description={error}>
+		<StateMessage kind="error" title="Could not load the model catalog" description={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load(providerId, token)}
 					>Try again</button
@@ -180,7 +180,7 @@
 		<StateMessage
 			kind="empty"
 			title="This provider offers no models"
-			description="The catalog reports nothing for this provider. A model the gateway has disabled is left out of the catalog, so check the disabled set before treating this as an empty registry entry."
+			description="No models listed. Check disabled models before assuming the registry is empty."
 		/>
 	{:else}
 		<!-- The sweep sits with the rows it fills, not beside the filters: it spends upstream budget, and

@@ -12,33 +12,29 @@ import type { SourceCause } from '$lib/schemas/skill-source';
 
 export const SKILLS_COPY = {
 	title: 'Skills',
-	subtitle:
-		'One document per capability, for an AI client to read. The gateway serves the catalog; the documents live in the product repository.',
+	subtitle: 'One document per capability, for an AI client to read.',
 
 	catalog: {
 		/** The catalog names itself and its route; the panel only labels them. */
 		readFrom: (path: string) => `Read from GET ${path}.`,
 		rows: (count: number) => (count === 1 ? '1 row' : `${count} rows`),
 		loading: 'Loading the skill catalog',
-		errorTitle: 'The skill catalog could not be read',
+		errorTitle: 'Could not read the skill catalog',
 		retry: 'Try again',
 		emptyTitle: 'The gateway serves no skill',
-		emptyDescription:
-			'The catalog answered with no rows, so there is nothing to hand out here. That is a fact about the catalog, not a filter on this screen.'
+		emptyDescription: 'The catalog returned no rows, so there is nothing to hand out.'
 	},
 
 	entry: {
 		heading: 'Paste this into an AI client',
-		intro: 'The entry skill indexes every other one, so this single line is enough to start.',
+		intro: 'This line points the client to every other skill.',
 		/** Shown when the catalog carries no row marked `entry`. */
-		absent:
-			'This catalog carries no entry skill, so there is no single line to hand out. The rows below are the capabilities it does carry.'
+		absent: 'No entry skill here. The rows below list its capabilities.'
 	},
 
 	sources: {
 		heading: 'Capability skills',
-		intro:
-			'One row per capability. The agent address is what a client fetches; the GitHub link is for reading.',
+		intro: 'One row per capability. The address is what clients fetch.',
 		/**
 		 * How many of the catalog's sources are published, measured rather than claimed. The number is
 		 * the published count rather than the answered count: every probe answers, so "answered" would
@@ -47,8 +43,8 @@ export const SKILLS_COPY = {
 		 */
 		summary: (published: number, total: number) =>
 			published === 1
-				? `1 of ${total} sources is published at the ref the catalog names.`
-				: `${published} of ${total} sources are published at the ref the catalog names.`,
+				? `1 of ${total} sources is published.`
+				: `${published} of ${total} sources are published.`,
 		checking: (total: number) => (total === 1 ? 'Checking 1 source' : `Checking ${total} sources`),
 		checkAgain: 'Check again',
 		checkingRow: 'Checking the source',
@@ -63,12 +59,10 @@ export const SKILLS_COPY = {
 
 	cause: {
 		missing: (status: number) =>
-			`The source host has no file at that path (HTTP ${status}), so this document is not published at the ref the catalog names. Publishing it is a change in the product repository, not in this panel.`,
+			`No file at that path (HTTP ${status}). Publish it in the repository.`,
 		http: (status: number) => `The source host answered HTTP ${status} for that path.`,
-		timeout: (seconds: number) =>
-			`The source host did not answer within ${seconds} seconds, so the row is left unreported rather than called broken.`,
-		network: (detail: string) =>
-			`The request to the source host did not complete: ${detail}. This panel asks from the browser, so an offline network or a blocking proxy reads the same way.`
+		timeout: (seconds: number) => `The source host did not answer within ${seconds} seconds.`,
+		network: (detail: string) => `Source request did not complete: ${detail}. Check the network.`
 	}
 } as const;
 

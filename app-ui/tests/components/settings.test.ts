@@ -173,8 +173,8 @@ describe('SettingsPage', () => {
 		await openTab('Logging');
 
 		// The warning names what is stored and the risk, per §6.13's "capture sets a privacy cost".
-		expect(screen.getByText(/stores the full request and response body/i)).toBeTruthy();
-		expect(screen.getByText(/can include sensitive content/i)).toBeTruthy();
+		expect(screen.getByText(/Stores full request and response bodies/i)).toBeTruthy();
+		expect(screen.getByText(/can be sensitive/i)).toBeTruthy();
 	});
 
 	it('links the Network tab to Proxy Pools instead of repeating the outbound form', async () => {

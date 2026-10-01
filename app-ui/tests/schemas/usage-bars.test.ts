@@ -155,7 +155,7 @@ describe('barsSummary', () => {
 
 	it('says when the chart is drawing only the head of the ranking', () => {
 		expect(barsSummary(limited, { measure: 'requests', noun: 'provider' })).toBe(
-			'openai leads with 80 requests; the top 2 of 3 providers with usage are drawn.'
+			'openai leads with 80 requests; top 2 of 3 shown.'
 		);
 	});
 

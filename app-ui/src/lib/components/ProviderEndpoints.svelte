@@ -110,7 +110,7 @@
 	{:else if error}
 		<StateMessage
 			kind="error"
-			title="This provider's connections could not be loaded"
+			title="Could not load this provider's connections"
 			description={error}
 		>
 			{#snippet action()}
@@ -121,7 +121,7 @@
 		<StateMessage
 			kind="empty"
 			title="No connections yet"
-			description="A connection carries the credential the gateway routes this provider's calls with. Add one to start using it."
+			description="Connections hold the credential used to route. Add one to start."
 		/>
 	{:else}
 		<EndpointTable {endpoints} onopen={(entry) => (selected = entry)} ondelete={askDelete} />

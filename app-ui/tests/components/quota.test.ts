@@ -315,21 +315,19 @@ describe('QuotaPage', () => {
 	it('explains both source values under the cards', async () => {
 		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
-		await screen.findByText(/computed means this gateway counted it/);
+		await screen.findByText(/Computed: counted by this gateway/);
 
 		// §6.6 calls the badge functional, so what it means cannot live in a hover-only tooltip (§8.7.5).
-		expect(screen.getByText(/computed means this gateway counted it/)).toBeTruthy();
-		expect(screen.getByText(/reported means the provider published it/)).toBeTruthy();
+		expect(screen.getByText(/Computed: counted by this gateway/)).toBeTruthy();
+		expect(screen.getByText(/Reported: published by the provider/)).toBeTruthy();
 	});
 
 	it('states the interval it refreshes on and where it stops', async () => {
 		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
-		await screen.findByText(/refreshes every 30 seconds and stops while the tab is hidden/);
+		await screen.findByText(/Auto-refresh every 30 seconds/);
 
-		expect(
-			screen.getByText(/refreshes every 30 seconds and stops while the tab is hidden/)
-		).toBeTruthy();
+		expect(screen.getByText(/Auto-refresh every 30 seconds/)).toBeTruthy();
 	});
 
 	it('shows the empty state §6.6 specifies', async () => {
@@ -337,7 +335,7 @@ describe('QuotaPage', () => {
 		render(QuotaPage);
 
 		expect(await screen.findByText('No quota windows yet')).toBeTruthy();
-		expect(screen.getByText(/Quota tracking starts after the first routed request/)).toBeTruthy();
+		expect(screen.getByText(/No traffic yet\. Send one request/)).toBeTruthy();
 	});
 
 	it('keeps the cards and says so when the endpoint labels cannot be read', async () => {

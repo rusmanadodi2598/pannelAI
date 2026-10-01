@@ -30,8 +30,7 @@
 			test result goes with it.
 		</p>
 		<p class="mt-3 text-[var(--color-text-muted)]">
-			The outbound proxy setting is a separate value, so this does not change the path upstream
-			calls take.
+			Deleting here does not change the outbound path.
 		</p>
 	{/if}
 

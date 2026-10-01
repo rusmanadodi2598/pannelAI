@@ -123,14 +123,14 @@
 <div class="flex flex-col gap-4">
 	{#if prefix !== null}
 		<p class="text-sm text-[var(--color-text-muted)]">
-			Add {vendor}-compatible models manually or import them from the node's /models endpoint.
+			Add {vendor} models here, or import from the node's /models.
 		</p>
 	{/if}
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the custom models" />
 	{:else if error}
-		<StateMessage kind="error" title="The custom models could not be loaded" description={error}>
+		<StateMessage kind="error" title="Could not load the custom models" description={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load()}>Try again</button>
 			{/snippet}
@@ -140,8 +140,8 @@
 			kind="empty"
 			title={prefix === null ? 'No custom models for this provider' : 'No models for this node yet'}
 			description={prefix === null
-				? "The catalog for this provider is the registry's own list. A model added below joins it."
-				: `A model declared here is addressed as ${prefix}/model-id. Add one below, or import the list the node's own /models endpoint answers.`}
+				? 'Registry models show here. Add a model below to join them.'
+				: `A model declared here is addressed as ${prefix}/model-id. Add or import below.`}
 		/>
 	{:else}
 		<!-- A node has no catalog section at all, so the sweep belongs here: these rows ARE its models. A
@@ -165,8 +165,8 @@
 
 		<p class="text-sm text-[var(--color-text-muted)]">
 			{mine.length}
-			{mine.length === 1 ? 'custom model' : 'custom models'} for this provider. Another provider's rows
-			are not listed here.
+			{mine.length === 1 ? 'custom model' : 'custom models'} for this provider. Other providers not listed
+			here.
 		</p>
 	{/if}
 

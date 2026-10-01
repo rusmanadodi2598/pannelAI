@@ -168,7 +168,7 @@
 		<StateMessage
 			kind="empty"
 			title="No combos yet"
-			description="A combo is a model string that resolves to several upstream models."
+			description="One model name, several upstream models."
 		>
 			{#snippet action()}
 				{#if !showEditor}

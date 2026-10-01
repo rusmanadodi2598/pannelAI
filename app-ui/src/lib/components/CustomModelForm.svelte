@@ -61,8 +61,7 @@
 >
 	<span class="font-medium">Add a custom model</span>
 	<p class="text-sm text-[var(--color-text-muted)]">
-		A custom model is one the registry does not carry. It is routable like any other model and the
-		catalog lists it as custom.
+		A model the registry lacks. It routes like any other.
 	</p>
 
 	<div class="flex flex-wrap items-end gap-3">
@@ -100,11 +99,10 @@
 		</button>
 	</div>
 
+	<p class="text-sm text-[var(--color-text-muted)]">Model id is required. No spaces.</p>
+	<p class="text-sm text-[var(--color-text-muted)]">A blank display name stores the model id.</p>
 	<p class="text-sm text-[var(--color-text-muted)]">
-		A model id is the one field the gateway needs, so a blank display name stores the model id
-		itself. No spaces in a model id. Capabilities are free text, comma separated, up to
-		{CAPABILITY_MAX_ENTRIES}: the catalog filter offers vision and tools, and a value outside that
-		list is still stored and shown.
+		Capabilities: comma separated, up to {CAPABILITY_MAX_ENTRIES}.
 	</p>
 
 	<FormIssues {issues} />

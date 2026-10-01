@@ -127,21 +127,17 @@
 <div class="flex flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4">
 	<h2 class="text-sm font-semibold">Outbound proxy</h2>
 	<p class="text-sm text-[var(--color-text-muted)]">
-		Global, and the setting the gateway actually routes with, unless a provider has its own binding
-		on its provider screen. While proxying is on, every upstream call walks the pool above in the
-		strategy's order, unless its host is in the bypass list below. The URL field is the last resort:
-		it is tried after the pool has failed to connect, never before a pool candidate. Per-endpoint
-		binding is still deferred.
+		Global. Routes every upstream call; the URL is the fallback.
 	</p>
+	<p class="text-sm text-[var(--color-text-muted)]">
+		A provider can override this on its own screen.
+	</p>
+	<p class="text-sm text-[var(--color-text-muted)]">Per-endpoint binding is not available yet.</p>
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the outbound proxy settings" />
 	{:else if error && server === null}
-		<StateMessage
-			kind="error"
-			title="The outbound proxy settings could not be loaded"
-			description={error}
-		>
+		<StateMessage kind="error" title="Outbound settings not loaded" description={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}>Try again</button>
 			{/snippet}
@@ -153,8 +149,7 @@
 
 		{#if poolOnlyStoredState}
 			<p role="status" class="text-sm text-[var(--color-text-muted)]">
-				Proxying is on with no URL, so the pool above is the whole route. If the pool has no rows
-				yet, upstream calls go direct until you add one.
+				Proxying is on with no URL: the pool routes, or direct.
 			</p>
 		{/if}
 
@@ -163,8 +158,7 @@
 			<span>
 				Route upstream calls through the proxy pool
 				<span class="block text-xs text-[var(--color-text-muted)]">
-					While this is on, the pool's rows carry traffic in the strategy's order. Turning it off
-					sends every call direct and leaves the pool stored but unused.
+					On: pool rows carry traffic. Off: calls go direct.
 				</span>
 			</span>
 		</label>
@@ -182,10 +176,7 @@
 				{/each}
 			</select>
 			<span id="outbound-proxy-strategy-help" class="text-xs text-[var(--color-text-muted)]">
-				Fallback tries the rows in the order you saved them and sits a row out for two minutes after
-				its connection fails. Round robin starts each request at the next row in line. Either way, a
-				row whose connection fails hands the call to the next candidate, and the URL below is tried
-				after the pool.
+				Fallback rests a failed row for 2 minutes. Round robin rotates.
 			</span>
 		</div>
 
@@ -200,8 +191,7 @@
 				class={fieldClass}
 			/>
 			<span id="outbound-proxy-url-help" class="text-xs text-[var(--color-text-muted)]">
-				An absolute http or https URL, credentials included if the proxy needs them. Optional: with
-				no URL, the pool alone carries traffic.
+				Absolute http or https URL.
 			</span>
 		</div>
 
@@ -216,8 +206,7 @@
 				class={fieldClass}
 			/>
 			<span id="outbound-no-proxy-help" class="text-xs text-[var(--color-text-muted)]">
-				Comma-separated hosts or domain suffixes. A single * exempts everything. Duplicates and
-				empty entries are removed on save.
+				Comma-separated hosts or suffixes. A single * bypasses everything.
 			</span>
 		</div>
 

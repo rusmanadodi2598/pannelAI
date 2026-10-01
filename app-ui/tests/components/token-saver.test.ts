@@ -92,7 +92,7 @@ describe('TokenSaverPage', () => {
 		await loaded();
 
 		expect(screen.getByText('Planned')).toBeTruthy();
-		expect(screen.getByText(/specified in 002-TOKEN-SAVER/)).toBeTruthy();
+		expect(screen.getByText(/RTK, Headroom, and Ponytail run today/)).toBeTruthy();
 	});
 
 	it('offers the per-request bypass header as copyable text', async () => {
@@ -108,9 +108,7 @@ describe('TokenSaverPage', () => {
 		stubTokenSaver({ readStatus: 500 });
 		render(TokenSaverPage);
 
-		expect(
-			await screen.findByText('The token saver configuration could not be loaded')
-		).toBeTruthy();
+		expect(await screen.findByText('Token saver settings not loaded')).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
 	});
 

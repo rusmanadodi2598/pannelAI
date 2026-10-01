@@ -16,18 +16,15 @@ import { absoluteUrl, optionalTimestamp } from './primitives';
 // cannot act.
 export const OAUTH_FLOW_COPY: Record<string, string> = {
 	code: 'The gateway can start the authorization for this provider.',
-	device:
-		'This provider authorizes on its own device page: the panel mints a round, you open the link and approve it, and the panel asks the gateway until the vendor grants the token.',
-	connector:
-		'This provider needs a connector for its token exchange, so the gateway cannot complete the authorization on its own.',
-	none: 'The gateway has no authorize URL for this provider, so there is nothing to start here.'
+	device: 'This provider authorizes on its device page. Open the link and approve.',
+	connector: "This provider needs a connector; the gateway can't authorize alone.",
+	none: 'This provider has no authorize URL, so nothing to start.'
 };
 
 /** The reason the flow is what it is, or the gateway's own word when the panel does not know it. */
 export function oauthFlowCopy(flow: string): string {
 	return (
-		OAUTH_FLOW_COPY[flow] ??
-		`The gateway reports this provider's flow as ${flow}, which the panel cannot start.`
+		OAUTH_FLOW_COPY[flow] ?? `The gateway reports this flow as ${flow}, which can't be started.`
 	);
 }
 
@@ -153,7 +150,7 @@ export function oauthTokenState(
 		if (!Number.isNaN(expiry) && expiry <= now) {
 			return 'This token has expired. Refresh it to route through this account again.';
 		}
-		return 'This token is inside its refresh window, so the gateway refreshes it on its own schedule or now by hand.';
+		return 'This token is inside its refresh window; it refreshes automatically.';
 	}
 	return `The gateway reports this token as ${state}.`;
 }

@@ -12,7 +12,7 @@
 // so a draft that was saved or discarded stops warning without any bookkeeping in the form.
 
 /** What the operator is asked before a draft is left behind. One sentence, and it names the loss. */
-export const LEAVE_WARNING = 'You have unsaved changes on this screen. Leave and discard them?';
+export const LEAVE_WARNING = 'Unsaved changes. Leave and discard them?';
 
 const forms = new Set<() => boolean>();
 

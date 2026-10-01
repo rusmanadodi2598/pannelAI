@@ -12,7 +12,7 @@
 export const API_BASE_COPY = {
 	title: 'API base',
 	tabsLabel: 'API base formats',
-	intro: 'Where a client sends its calls, and the two forms a client is usually configured with.',
+	intro: 'Where a client sends its calls, and the forms it uses.',
 
 	tabs: {
 		baseUrl: 'Base URL',
@@ -20,22 +20,22 @@ export const API_BASE_COPY = {
 		openai: 'OpenAI client'
 	},
 
-	loading: 'Reading the gateway address from the panel server.',
+	loading: 'Reading the gateway address.',
 	retry: 'Try again',
 
 	baseUrl: {
-		note: 'The gateway address this panel server forwards /api/v1 to, read from the panel configuration rather than from the browser. A client on another machine substitutes the host name this gateway answers on for a loopback address here.'
+		note: 'On another machine, use the gateway host name.'
 	},
 
 	curl: {
 		/** One line, so the copied command runs as it stands. */
 		command: (base: string) => `curl -H "Authorization: Bearer sk-..." ${base}/models`,
-		note: 'Replace sk-... with a gateway key from Endpoint & Key. This route answers with the models that key can route, so it is also the shortest way to check one.'
+		note: 'Replace sk-... with a gateway key from Endpoint & Key.'
 	},
 
 	openai: {
 		/** The two names an OpenAI-compatible client reads, one per line. */
 		env: (base: string) => `OPENAI_BASE_URL=${base}\nOPENAI_API_KEY=sk-...`,
-		note: 'The gateway serves its OpenAI, Anthropic, and Responses wires on this base, and a client appends its own path to it.'
+		note: 'This base serves OpenAI, Anthropic, and Responses clients.'
 	}
 } as const;

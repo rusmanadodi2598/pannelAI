@@ -116,7 +116,7 @@ export function rtkAllowlistLabel(filters: string[]): string {
 export function headroomUrlWarning(headroom: TokenSaver['headroom']): string | null {
 	if (!headroom.enabled) return null;
 	if (headroom.url.trim() !== '') return null;
-	return 'No URL is set, so every compression call will be skipped and the request passes through unchanged.';
+	return 'No URL set, so nothing is compressed.';
 }
 
 function sameStringList(left: string[], right: string[]): boolean {

@@ -131,8 +131,10 @@ describe('ConsoleLog', () => {
 
 		render(ConsoleLog);
 
-		expect(await screen.findByText('Console buffer is empty.')).toBeTruthy();
-		expect(screen.getByText(/records console output only while it is running/)).toBeTruthy();
+		expect(await screen.findByText('Console log is empty')).toBeTruthy();
+		expect(
+			screen.getByText('Output is kept only while running. A restart clears it.')
+		).toBeTruthy();
 	});
 
 	it('reports a failure and offers a retry', async () => {
@@ -147,7 +149,7 @@ describe('ConsoleLog', () => {
 
 		render(ConsoleLog);
 
-		expect(await screen.findByText('The console buffer could not be read')).toBeTruthy();
+		expect(await screen.findByText('Could not read the console log')).toBeTruthy();
 		const before = requested.length;
 		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 

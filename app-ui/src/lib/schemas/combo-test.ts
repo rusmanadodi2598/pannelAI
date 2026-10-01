@@ -70,7 +70,7 @@ export function comboProbeRoleLabel(role: string): string {
  */
 export function comboProbeSummary(results: readonly ComboProbeResult[]): string {
 	const total = results.length;
-	if (total === 0) return 'This combo stores no references, so there was nothing to probe.';
+	if (total === 0) return 'This combo has no models to test.';
 
 	const answered = results.filter((result) => result.ok).length;
 	if (answered === total) {

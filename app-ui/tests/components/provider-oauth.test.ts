@@ -112,9 +112,7 @@ describe('when the section appears', () => {
 		stub.oauthReadStatus = 500;
 		renderProvider();
 
-		await waitFor(() =>
-			expect(screen.getByText(/The OAuth state could not be loaded/)).toBeTruthy()
-		);
+		await waitFor(() => expect(screen.getByText(/Could not load the OAuth state/)).toBeTruthy());
 		expect(screen.queryByRole('button', { name: 'Start the authorization' })).toBeNull();
 
 		stub.oauthReadStatus = 200;

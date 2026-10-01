@@ -99,8 +99,7 @@
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Proxy Pools</h1>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			Addresses kept here so you can test one before putting it on the outbound path. The pool
-			itself routes nothing.
+			Addresses you can test before routing through them.
 		</p>
 	</div>
 
@@ -109,7 +108,7 @@
 	{#if loading && proxies === null}
 		<StateMessage kind="loading" title="Loading the proxy pool" />
 	{:else if error && proxies === null}
-		<StateMessage kind="error" title="The proxy pool could not be loaded" description={error}>
+		<StateMessage kind="error" title="Proxy pool not loaded" description={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}>Try again</button>
 			{/snippet}
@@ -117,7 +116,7 @@
 	{:else if proxies}
 		{#if error}
 			<p role="alert" class="text-sm text-[var(--color-danger)]">
-				{error} The table below still shows the last pool that was read.
+				{error} The table still shows the last read.
 			</p>
 		{/if}
 
@@ -160,7 +159,7 @@
 			<StateMessage
 				kind="empty"
 				title="No proxies yet"
-				description="Add one to route upstream calls through it once proxying is on."
+				description="Add one to route upstream calls."
 			>
 				{#snippet action()}
 					<button

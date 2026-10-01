@@ -47,7 +47,7 @@
 
 <div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
 	<table class="w-full min-w-[52rem] border-collapse text-sm">
-		<caption class="sr-only">Combos, as the router resolves them</caption>
+		<caption class="sr-only">Combos, with the models they use</caption>
 		<thead class="bg-[var(--color-surface-2)] text-left">
 			<tr>
 				<th scope="col" class="px-3 py-2 font-medium">Name</th>

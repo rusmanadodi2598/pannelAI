@@ -58,7 +58,7 @@
 		<StateMessage
 			kind="empty"
 			title="No provider is configured"
-			description="The drawing places one node per provider that has an endpoint or needs no credential. Nothing is configured yet, so there is nothing to route."
+			description="Nothing to route yet. Open Providers to add one."
 		>
 			{#snippet action()}
 				<a href={resolve('/providers')} class="underline">Open Providers</a>

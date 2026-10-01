@@ -36,19 +36,21 @@
 <Modal title="Delete this combo" open={combo !== null} onclose={oncancel}>
 	{#if combo}
 		<p>
-			Delete <span class="font-medium">{combo.name}</span>? Clients using that model string stop
-			resolving it.
+			Delete <span class="font-medium">{combo.name}</span>? Clients using that name stop resolving
+			it.
 		</p>
 	{/if}
 
 	{#if error}
-		<p class="mt-3 text-[var(--color-danger)]" role="alert">
-			{#if conflict}
-				This combo is still referenced, so it was not deleted. {error}
-			{:else}
+		{#if conflict}
+			<p class="mt-3 text-[var(--color-danger)]" role="alert">
+				This combo is still referenced. {error}
+			</p>
+		{:else}
+			<p class="mt-3 text-[var(--color-danger)]" role="alert">
 				This combo was not deleted. {error}
-			{/if}
-		</p>
+			</p>
+		{/if}
 	{/if}
 
 	{#snippet footer()}

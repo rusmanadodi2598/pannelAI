@@ -126,7 +126,7 @@
 	<div class="grid min-w-0 gap-4 lg:grid-cols-2">
 		<UsageBarChart
 			title="By provider"
-			caption="Usage per provider in this window, largest first. Tokens counts in plus out; cache tokens are in the tiles above and not here."
+			caption="Largest first. Tokens counts in plus out, not cache."
 			noun="provider"
 			set={providerSet}
 			measure={providerMeasure}
@@ -135,7 +135,7 @@
 		/>
 		<UsageBarChart
 			title="Top models"
-			caption="The models with the most usage in this window, five at most. Tokens counts in plus out; cache tokens are in the tiles above and not here."
+			caption="Top five. Tokens counts in plus out, not cache."
 			noun="model"
 			set={modelSet}
 			measure={modelMeasure}

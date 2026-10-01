@@ -55,7 +55,7 @@ describe('the custom provider section on the registry list', () => {
 
 		// Two reads, two states: the node failure is the section's, so the table above it is untouched and
 		// the screen does not answer a node outage by hiding the registry.
-		expect(await screen.findByText('The custom providers could not be loaded')).toBeTruthy();
+		expect(await screen.findByText('Could not load the custom providers')).toBeTruthy();
 		expect(screen.getByText('the node store is unreachable')).toBeTruthy();
 		expect(screen.getByText('OpenAI')).toBeTruthy();
 

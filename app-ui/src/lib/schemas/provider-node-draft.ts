@@ -71,8 +71,7 @@ export const NODE_COPY: Record<
 	'anthropic-compatible': {
 		namePlaceholder: 'Anthropic Compatible (Prod)',
 		prefixPlaceholder: 'ac-prod',
-		baseUrlHint:
-			'Use the base URL (ending in /v1) for your Anthropic-compatible API. The gateway appends /messages.'
+		baseUrlHint: 'Use the base URL ending in /v1. The gateway appends /messages.'
 	}
 };
 

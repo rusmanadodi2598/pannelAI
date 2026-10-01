@@ -32,14 +32,8 @@
 	}}
 >
 	<div class="flex flex-col gap-4">
-		<p>
-			This deletes every stored request log older than the retention window set in Settings. The
-			gateway reports how many rows it removed, and the removal cannot be undone.
-		</p>
-		<p class="text-[var(--color-text-muted)]">
-			Usage records are not affected: they are a separate table and are kept for the accounting
-			screens.
-		</p>
+		<p>Deletes logs older than the retention window. This cannot be undone.</p>
+		<p class="text-[var(--color-text-muted)]">Usage records are not affected.</p>
 
 		<label class="flex flex-col gap-1 text-sm">
 			<span>Type <span class="font-medium">{PURGE_CONFIRMATION}</span> to confirm.</span>

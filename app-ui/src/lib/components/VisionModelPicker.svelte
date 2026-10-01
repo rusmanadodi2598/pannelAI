@@ -34,7 +34,7 @@
 
 <fieldset class="flex flex-col gap-2">
 	<legend class="text-sm text-[var(--color-text-muted)]">
-		Models, limited to the vision models of providers that are connected right now
+		Vision models from connected providers
 	</legend>
 
 	{#if form.models.length === 0}
@@ -47,9 +47,7 @@
 				>
 					<code class="min-w-48 flex-1 text-sm">{ref}</code>
 					{#if !offered.has(ref)}
-						<span class="text-xs text-[var(--color-warn)]"
-							>not reported as vision-capable by the catalog</span
-						>
+						<span class="text-xs text-[var(--color-warn)]">Not a vision model in the catalog</span>
 					{/if}
 					<button
 						type="button"
@@ -67,8 +65,7 @@
 
 	{#if pickerFailed}
 		<p class="text-sm text-[var(--color-warn)]" role="status">
-			The vision models could not be read, so the picker cannot offer any right now. Reload this tab
-			to try again.
+			Vision models could not load. Reload this tab to try again.
 		</p>
 	{/if}
 

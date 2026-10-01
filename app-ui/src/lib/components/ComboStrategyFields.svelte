@@ -43,7 +43,7 @@
 			class="min-h-11 w-32 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm tabular-nums"
 		/>
 		<span id="combo-sticky-hint" class="text-xs text-[var(--color-text-muted)]">
-			At least 1. Requests kept on one model before rotating to the next.
+			At least 1. Requests stay on one model before rotating.
 		</span>
 	</div>
 {/if}

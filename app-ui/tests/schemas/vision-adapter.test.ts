@@ -210,8 +210,7 @@ describe('visionAdapterWarning', () => {
 		{
 			enabled: true,
 			models: [],
-			expected:
-				'The adapter is enabled but no model is selected, so image requests are not adapted until you choose at least one.',
+			expected: 'On, but no model selected. Pick one to adapt images.',
 			why: 'on with nothing selected adapts nothing, which §6.4 requires the screen to say'
 		}
 	];

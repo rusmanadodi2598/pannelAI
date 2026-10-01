@@ -194,8 +194,8 @@ describe('outbound settings', () => {
 		});
 		render(ProxyPoolsPage);
 
-		expect(await screen.findByText(/the pool above is the whole route/)).toBeTruthy();
-		expect(screen.getByText(/upstream calls go direct until you add one/)).toBeTruthy();
+		expect(await screen.findByText(/the pool routes, or direct/)).toBeTruthy();
+		expect(screen.getByText(/Proxying is on with no URL/)).toBeTruthy();
 	});
 
 	it('shows the server message when a save is refused and keeps the draft', async () => {

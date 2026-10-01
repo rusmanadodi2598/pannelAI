@@ -153,7 +153,7 @@
 		<StateMessage
 			kind="empty"
 			title="No requests match these filters"
-			description="The period may still hold requests that these filters exclude. Clear the filters to see what it holds."
+			description="These filters may hide requests. Clear them to see all."
 		>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={clearFilters}>Clear filters</button>
@@ -163,7 +163,7 @@
 		<StateMessage
 			kind="empty"
 			title="No requests in this window"
-			description="Nothing was routed in the selected period. The gateway writes a row here once a client sends a request with a gateway key, so the likely cause is that no client has called it yet."
+			description="Nothing routed in this period. No client has used the key yet."
 		>
 			{#snippet action()}
 				{#if search.period !== '60d'}

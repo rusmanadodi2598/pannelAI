@@ -120,23 +120,21 @@
 
 <div class="flex flex-col gap-4">
 	{#if returned}
-		<p
-			class="text-sm"
-			role={returned.outcome === 'connected' ? 'status' : 'alert'}
-			class:text-[var(--color-danger)]={returned.outcome === 'error'}
-		>
-			{#if returned.outcome === 'connected'}
+		{#if returned.outcome === 'connected'}
+			<p class="text-sm" role="status">
 				The gateway connected an account{returned.endpointId ? ` (${returned.endpointId})` : ''}.
-			{:else}
+			</p>
+		{:else}
+			<p class="text-sm text-[var(--color-danger)]" role="alert">
 				The authorization did not complete. The gateway reported: {returned.reason}
-			{/if}
-		</p>
+			</p>
+		{/if}
 	{/if}
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the OAuth state" />
 	{:else if error}
-		<StateMessage kind="error" title="The OAuth state could not be loaded" description={error}>
+		<StateMessage kind="error" title="Could not load the OAuth state" description={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load(providerId)}>Try again</button>
 			{/snippet}
@@ -164,8 +162,7 @@
 			</div>
 
 			<p class="text-sm text-[var(--color-text-muted)]">
-				The gateway answers with the provider's own authorize URL. The provider sends the browser
-				back to the gateway, which returns it to this page with the outcome.
+				Opens the provider's authorize page, then returns the outcome here.
 			</p>
 
 			{#if startError}
@@ -179,7 +176,7 @@
 			<StateMessage
 				kind="empty"
 				title="No account is connected"
-				description="No OAuth account is connected for this provider. An account appears here once an authorization completes."
+				description="No OAuth account is connected yet. It appears after you authorize."
 			/>
 		{:else}
 			<ProviderOAuthAccounts

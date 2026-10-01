@@ -19,7 +19,7 @@
 	const COPY: Record<number, { title: string; description: string }> = {
 		403: {
 			title: 'This screen is not available to you',
-			description: 'The gateway refused the request. Sign in again if the session may have expired.'
+			description: 'The gateway refused this request. Sign in again if the session expired.'
 		},
 		404: {
 			title: 'No screen is routed here',
@@ -30,8 +30,7 @@
 	const copy = $derived(
 		COPY[status] ?? {
 			title: 'The panel could not load this screen',
-			description:
-				'The gateway did not answer successfully. Try again, and check the console log if it keeps failing.'
+			description: 'The gateway did not answer. Try again, then check the console log.'
 		}
 	);
 </script>

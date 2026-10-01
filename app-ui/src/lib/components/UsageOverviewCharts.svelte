@@ -36,16 +36,14 @@
 			? {
 					title: 'Cost (USD)',
 					unit: 'USD',
-					caption:
-						'Estimated cost in each bucket. These figures are estimates for display, not billing amounts.',
+					caption: 'Estimated cost per bucket, not a billing figure.',
 					points: costs,
 					format: formatCost
 				}
 			: {
 					title: 'Tokens',
 					unit: 'tokens',
-					caption:
-						'Tokens in plus tokens out in each bucket. Cache tokens are counted in the tiles above and not here.',
+					caption: 'Tokens in plus out per bucket. Cache is in the tiles.',
 					points: tokens
 				}
 	);

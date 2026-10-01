@@ -36,7 +36,7 @@ describe('ProxyPoolsPage', () => {
 		render(ProxyPoolsPage);
 
 		expect(await screen.findByText('No proxies yet')).toBeTruthy();
-		expect(screen.getByText(/route upstream calls through it once proxying is on/)).toBeTruthy();
+		expect(screen.getByText(/Add one to route upstream calls/)).toBeTruthy();
 		expect(screen.getAllByRole('button', { name: 'Add a proxy' }).length).toBeGreaterThan(0);
 	});
 
@@ -44,7 +44,7 @@ describe('ProxyPoolsPage', () => {
 		stubProxies({ readStatus: 500 });
 		render(ProxyPoolsPage);
 
-		expect(await screen.findByText('The proxy pool could not be loaded')).toBeTruthy();
+		expect(await screen.findByText('Proxy pool not loaded')).toBeTruthy();
 		expect(screen.getByText('The pool store is unreachable.')).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
 	});
@@ -196,16 +196,12 @@ describe('the outbound card', () => {
 		render(ProxyPoolsPage);
 
 		expect(await screen.findByRole('heading', { name: 'Outbound proxy' })).toBeTruthy();
-		expect(
-			screen.getByText(/Global, and the setting the gateway actually routes with/)
-		).toBeTruthy();
-		expect(screen.getByText(/URL field is the last resort/)).toBeTruthy();
+		expect(screen.getByText(/Global\. Routes every upstream call/)).toBeTruthy();
+		expect(screen.getByText(/the URL is the fallback/)).toBeTruthy();
 		// The card names where the per-provider control lives (docs/PORT/009-PORT-PROVIDER-PROXY.md D9)
 		// and what is still deferred, so neither is left for a reader to hunt for.
-		expect(
-			screen.getByText(/unless a provider has its own binding on its provider screen/)
-		).toBeTruthy();
-		expect(screen.getByText(/Per-endpoint binding is still deferred/)).toBeTruthy();
+		expect(screen.getByText(/A provider can override this on its own screen/)).toBeTruthy();
+		expect(screen.getByText(/Per-endpoint binding is not available yet/)).toBeTruthy();
 	});
 
 	it('shows the stored outbound values, strategy included', async () => {
@@ -237,7 +233,7 @@ describe('the outbound card', () => {
 		stubProxies({ pool: [proxyRow()], settingsStatus: 500 });
 		render(ProxyPoolsPage);
 
-		expect(await screen.findByText('The outbound proxy settings could not be loaded')).toBeTruthy();
+		expect(await screen.findByText('Outbound settings not loaded')).toBeTruthy();
 		expect(screen.getByRole('table')).toBeTruthy();
 	});
 });

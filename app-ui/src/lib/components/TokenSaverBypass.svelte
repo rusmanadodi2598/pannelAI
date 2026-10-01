@@ -38,8 +38,7 @@
 			>
 		</div>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			The gateway's own compression pass, specified in 002-TOKEN-SAVER. Nothing on this screen
-			configures it yet: RTK, Headroom, and Ponytail are what runs today.
+			Not configurable yet. RTK, Headroom, and Ponytail run today.
 		</p>
 	</div>
 
@@ -48,8 +47,7 @@
 	>
 		<h2 class="text-sm font-semibold">Skip the savers for one request</h2>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			A client that sends this header bypasses every saver for that request alone. Nothing is
-			changed here; the header travels with the request.
+			It applies per request, not to the saved settings.
 		</p>
 		<div class="flex flex-wrap items-center gap-3">
 			<code class="rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-2 py-1 text-xs"
@@ -65,9 +63,7 @@
 			</button>
 			<span class="sr-only" role="status" aria-live="polite">
 				{copied ? 'Header copied to the clipboard.' : ''}
-				{copyFailed
-					? 'The browser refused clipboard access. Select the header and copy it manually.'
-					: ''}
+				{copyFailed ? 'Clipboard blocked. Copy the header manually.' : ''}
 			</span>
 		</div>
 	</div>

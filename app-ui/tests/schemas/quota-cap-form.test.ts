@@ -117,29 +117,27 @@ describe('quotaCapSummary', () => {
 			{
 				name: 'says no cap is stored rather than printing a ceiling of zero',
 				cap: null,
-				expected:
-					'No cap is stored for this endpoint, so the router picks it whenever it is healthy.'
+				expected: 'No cap set. The router picks it whenever healthy.'
 			},
 			{
 				name: 'names a cost cap alone',
 				cap: storedCap({ monthly_tokens: undefined }),
-				expected: 'This endpoint is capped at 25 USD a month.'
+				expected: 'Capped at 25 USD a month.'
 			},
 			{
 				name: 'names a token cap alone',
 				cap: storedCap({ monthly_cost_usd: undefined }),
-				expected: 'This endpoint is capped at 1,000,000 tokens a month.'
+				expected: 'Capped at 1,000,000 tokens a month.'
 			},
 			{
 				name: 'names both caps',
 				cap: storedCap(),
-				expected: 'This endpoint is capped at 25 USD and 1,000,000 tokens a month.'
+				expected: 'Capped at 25 USD and 1,000,000 tokens a month.'
 			},
 			{
 				name: 'reads a cleared cap as no cap at all',
 				cap: storedCap({ monthly_cost_usd: undefined, monthly_tokens: undefined }),
-				expected:
-					'No cap is stored for this endpoint, so the router picks it whenever it is healthy.'
+				expected: 'No cap set. The router picks it whenever healthy.'
 			}
 		],
 		(testCase) => {

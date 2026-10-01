@@ -123,9 +123,7 @@ describe('gateway keys tab', () => {
 		const dialog = await screen.findByRole('dialog');
 		expect(within(dialog).getByText('sk-live-once-9999')).toBeTruthy();
 		expect(
-			within(dialog).getByText(
-				'This key is shown once. Store it now, because the gateway keeps only a hash of it.'
-			)
+			within(dialog).getByText('This key shows once. Store it now, it cannot be recovered.')
 		).toBeTruthy();
 
 		// §6.2: the modal closes with an explicit control after the acknowledgement is ticked, and the close

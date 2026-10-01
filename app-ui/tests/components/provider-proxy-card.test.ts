@@ -91,9 +91,7 @@ describe('the provider proxy card', () => {
 		expect(poolSelect().value).toBe(POOL);
 		expect(strategySelect().value).toBe('round_robin');
 		expect(
-			screen.getByText(
-				`Pinned to ${POOL_LABEL}, which leads every attempt; the other usable pools follow with Round robin.`
-			)
+			screen.getByText(`Pinned to ${POOL_LABEL}, which leads; other pools follow (Round robin).`)
 		).toBeTruthy();
 	});
 
@@ -148,9 +146,7 @@ describe('the provider proxy card', () => {
 			network: { provider_proxies: { [PROVIDER]: { pool_id: PROXY_POOL_NONE } } }
 		});
 		expect(
-			await screen.findByText(
-				'Dials direct; the global proxy setting is not used for this provider.'
-			)
+			await screen.findByText('Dials direct. The global proxy setting is not used.')
 		).toBeTruthy();
 	});
 
@@ -165,11 +161,7 @@ describe('the provider proxy card', () => {
 			network: { provider_proxies: { [PROVIDER]: { strategy: 'round_robin' } } }
 		});
 		expect(screen.getByText('Pool strategy saved.')).toBeTruthy();
-		expect(
-			screen.getByText(
-				'Follows the global pool with its own strategy (Round robin), and proxying is on.'
-			)
-		).toBeTruthy();
+		expect(screen.getByText('Global pool, own strategy (Round robin); proxying on.')).toBeTruthy();
 	});
 
 	it('deletes the entry when the pool returns to Global and no strategy is left', async () => {
@@ -200,9 +192,7 @@ describe('the provider proxy card', () => {
 		expect(poolSelect().value).toBe('prx_gone');
 		expect(screen.getByRole('option', { name: 'prx_gone (missing)' })).toBeTruthy();
 		expect(
-			screen.getByText(
-				'Pinned to prx_gone, which is no longer in the pool; the remaining pools carry this provider with Fallback.'
-			)
+			screen.getByText('Pinned to prx_gone (missing). Other pools carry this with Fallback.')
 		).toBeTruthy();
 
 		await fireEvent.change(strategySelect(), { target: { value: 'round_robin' } });

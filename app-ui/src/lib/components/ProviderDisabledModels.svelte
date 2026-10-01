@@ -48,7 +48,7 @@
 	{:else if disabled.error}
 		<StateMessage
 			kind="error"
-			title="The disabled models could not be loaded"
+			title="Could not load the disabled models"
 			description={disabled.error}
 		>
 			{#snippet action()}
@@ -58,8 +58,8 @@
 	{:else if mine.length === 0}
 		<StateMessage
 			kind="empty"
-			title="No models are disabled for this provider"
-			description="Every model in the catalog can be routed. A model disabled from that list leaves it until it is enabled here."
+			title="No disabled models for this provider"
+			description="All listed models route. Disabled ones return when you enable them."
 		/>
 	{:else}
 		<!-- relative keeps the sr-only column label (position: absolute) inside this scroll box. -->
@@ -104,8 +104,8 @@
 
 		<p class="text-sm text-[var(--color-text-muted)]">
 			{mine.length}
-			{mine.length === 1 ? 'model is' : 'models are'} disabled for this provider. Another provider's disabled
-			models are not listed here.
+			{mine.length === 1 ? 'model is' : 'models are'} disabled for this provider. Other providers not
+			listed here.
 		</p>
 	{/if}
 

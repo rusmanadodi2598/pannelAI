@@ -26,9 +26,7 @@ describe('the quota toolbar', () => {
 
 		const refresh = await screen.findByRole('button', { name: 'Refresh now' });
 		const pause = screen.getByRole('button', { name: 'Pause refresh' });
-		const sentence = await screen.findByText(
-			/refreshes every 30 seconds and stops while the tab is hidden/
-		);
+		const sentence = await screen.findByText(/Auto-refresh every 30 seconds/);
 
 		// One row means one parent: the sentence and the controls are siblings inside the same flex
 		// row, so the sentence cannot be pushed onto a block of its own by the controls above it.

@@ -28,8 +28,8 @@ export type QuotaSource = (typeof QUOTA_SOURCES)[number];
 // Why the badge exists, in the operator's terms. §6.6 states the badge is functional rather than
 // decorative, so the two values are explained on the screen instead of left to hover text (§8.7.5).
 export const QUOTA_SOURCE_EXPLANATIONS: Record<QuotaSource, string> = {
-	computed: 'this gateway counted it from its own usage records.',
-	reported: 'the provider published it and the quota worker read it back.'
+	computed: 'counted by this gateway from its own usage.',
+	reported: 'published by the provider, not counted here.'
 };
 
 // `provider_id` is a free string rather than a required identifier: the gateway records windows for

@@ -111,8 +111,7 @@ describe('proxyPasswordHelp', () => {
 			{
 				name: 'tells an edit with a stored secret that empty keeps it',
 				target: storedProxy({ has_password: true }),
-				expected:
-					'A password is stored. Leave this empty to keep it, or type a new one to replace it.'
+				expected: 'Stored. Leave empty to keep it, type to replace it.'
 			},
 			{
 				name: 'says so when no secret is stored',

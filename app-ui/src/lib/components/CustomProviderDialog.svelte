@@ -157,10 +157,12 @@
 			/>
 		</label>
 		<p class="text-[var(--color-text-muted)]">
-			A model string is <span class="font-medium">{draft.prefix || 'prefix'}/model</span>, so the
-			prefix is how this node's models are addressed. Letters, digits, dots, dashes, and underscores
-			only, and it cannot collide with a provider the registry already ships.
+			A model string is <span class="font-medium">{draft.prefix || 'prefix'}/model</span>.
 		</p>
+		<p class="text-[var(--color-text-muted)]">
+			Letters, digits, dots, dashes, and underscores only.
+		</p>
+		<p class="text-[var(--color-text-muted)]">It can't collide with a provider already shipped.</p>
 
 		{#if type === 'openai-compatible' && !editing}
 			<label class="flex flex-col gap-1">
@@ -195,9 +197,9 @@
 
 		{#if editing && node}
 			<p class="text-[var(--color-text-muted)]">
-				The API type and the endpoint path are part of this node's identity, so they are not
-				editable. Add a node of the other type instead.
+				API type is part of this node's identity, not editable.
 			</p>
+			<p class="text-[var(--color-text-muted)]">To change the type, add a new node.</p>
 		{/if}
 
 		<FormIssues {issues} />

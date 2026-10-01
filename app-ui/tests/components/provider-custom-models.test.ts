@@ -83,7 +83,7 @@ describe('the custom model list', () => {
 		const table = screen.getByRole('table', { name: /custom models declared/i });
 		expect(within(table).getByText('GPT-4o mini')).toBeTruthy();
 		expect(within(table).queryByText('Claude 3 Haiku')).toBeNull();
-		expect(screen.getByText(/Another provider's rows are not listed here/)).toBeTruthy();
+		expect(screen.getByText(/Other providers not listed here/)).toBeTruthy();
 	});
 
 	it('renders an empty state when this provider declares none', async () => {
@@ -245,7 +245,7 @@ describe('removing a custom model', () => {
 
 		const dialog = await screen.findByRole('dialog');
 		expect(squashed(dialog)).toContain('Remove GPT-4o mini (openai/gpt-4o-mini)');
-		expect(squashed(dialog)).toContain("the registry's version is what the catalog lists");
+		expect(squashed(dialog)).toContain('If a registry model shares this name');
 		expect(stub.customDeletes).toEqual([]);
 	});
 

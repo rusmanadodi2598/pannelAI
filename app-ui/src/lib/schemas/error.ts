@@ -46,7 +46,7 @@ export const API_ERROR_FALLBACK: Record<ApiErrorCode, string> = {
 	UPSTREAM_ERROR: 'The upstream provider returned an error.',
 	UPSTREAM_REJECTED: 'The upstream refused this request itself. Fix the request before retrying.',
 	UPSTREAM_TIMEOUT: 'The upstream provider did not answer in time.',
-	INTERNAL_ERROR: 'The gateway hit an unexpected error. Quote the request ID when reporting it.'
+	INTERNAL_ERROR: 'Unexpected gateway error. Quote the request ID when reporting.'
 };
 
 export function fallbackMessage(code: ApiErrorCode): string {

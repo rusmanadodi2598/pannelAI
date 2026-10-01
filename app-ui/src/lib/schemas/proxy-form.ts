@@ -65,6 +65,6 @@ export function proxyPasswordHelp(target: Proxy | 'new' | null): string {
 	if (target === null || target === 'new') return 'Optional. An open proxy needs none.';
 
 	return target.has_password
-		? 'A password is stored. Leave this empty to keep it, or type a new one to replace it.'
+		? 'Stored. Leave empty to keep it, type to replace it.'
 		: 'No password is stored.';
 }

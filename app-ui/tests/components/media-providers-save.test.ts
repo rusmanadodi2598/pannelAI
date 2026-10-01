@@ -210,12 +210,8 @@ describe('what the card shows after a save', () => {
 
 		// The hint changed because the source did, which is the resolved block reaching the card rather than
 		// the card keeping what it typed.
-		expect(
-			screen.getByText('Set here. Clear it to go back to the value the registry declares.')
-		).toBeTruthy();
-		expect(squashed(screen.getByRole('status'))).toBe(
-			'Saved. This is the address the gateway will dial for this kind.'
-		);
+		expect(screen.getByText('Set here. Clear it to use the registry value.')).toBeTruthy();
+		expect(squashed(screen.getByRole('status'))).toBe('Saved. This kind now uses that address.');
 	});
 
 	forEachCase(

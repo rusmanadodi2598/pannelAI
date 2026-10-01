@@ -17,7 +17,7 @@ export const LOGIN_COPY = {
 	wrongPassword: 'Wrong password. Try again.',
 	rateLimited: (minutes: number) =>
 		`Too many attempts. Try again in ${minutes} minute${minutes === 1 ? '' : 's'}.`,
-	noPasswordConfigured: 'No password is configured yet. Set one in app-serv, then sign in here.'
+	noPasswordConfigured: 'No password set. Set one in the gateway config.'
 };
 
 /**

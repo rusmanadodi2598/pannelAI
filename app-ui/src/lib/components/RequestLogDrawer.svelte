@@ -94,13 +94,11 @@
 
 				{#if !detail.capture_enabled}
 					<p class="text-sm text-[var(--color-text-muted)]">
-						Capture is off, so the gateway recorded this request's outcome and not its bodies. They
-						can be turned on in Settings.
+						Capture is off, so no bodies were recorded. Enable it in Settings.
 					</p>
 				{:else if !detail.request_body && !detail.response_body}
 					<p class="text-sm text-[var(--color-text-muted)]">
-						Capture is on, but the gateway stored no body for this request: either it had nothing to
-						store or the row has been rotated out of retention.
+						Capture is on, but no body was stored for this request.
 					</p>
 				{:else}
 					<CapturedBodies

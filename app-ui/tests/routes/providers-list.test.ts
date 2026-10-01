@@ -57,7 +57,9 @@ describe('provider registry list', () => {
 		render(ProvidersPage);
 
 		expect(await screen.findByText('The registry is empty')).toBeTruthy();
-		expect(squashed(screen.getByText(/built without one/))).toContain('built without one');
+		expect(squashed(screen.getByText(/No providers registered yet/))).toContain(
+			'No providers registered yet'
+		);
 		expect(screen.queryByRole('button', { name: 'Clear the filters' })).toBeNull();
 	});
 
@@ -68,9 +70,7 @@ describe('provider registry list', () => {
 
 		await fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'media' } });
 		expect(await screen.findByText('No provider matches this filter')).toBeTruthy();
-		expect(squashed(screen.getByText(/narrow the same registry/))).toContain(
-			'narrow the same registry'
-		);
+		expect(squashed(screen.getByText(/narrow the registry/))).toContain('narrow the registry');
 
 		const before = stub.queries.length;
 		await fireEvent.click(screen.getByRole('button', { name: 'Clear the filters' }));
@@ -194,7 +194,7 @@ describe('provider registry list', () => {
 
 		render(ProvidersPage);
 
-		expect(await screen.findByText('The provider registry could not be loaded')).toBeTruthy();
+		expect(await screen.findByText('Could not load the provider registry')).toBeTruthy();
 		expect(screen.getByText('the registry is unavailable')).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
 	});

@@ -36,10 +36,8 @@ vi.mock('$app/navigation', async () => {
 	};
 });
 
-const TOKENS_CAPTION =
-	'Tokens in plus tokens out in each bucket. Cache tokens are counted in the tiles above and not here.';
-const COST_CAPTION =
-	'Estimated cost in each bucket. These figures are estimates for display, not billing amounts.';
+const TOKENS_CAPTION = 'Tokens in plus out per bucket. Cache is in the tiles.';
+const COST_CAPTION = 'Estimated cost per bucket, not a billing figure.';
 
 /** The value chart's card, told apart from the requests chart by its caption. */
 function valueChart(): HTMLElement {

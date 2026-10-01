@@ -150,16 +150,15 @@ const DATA_PLANE_FALLBACK: Record<string, string> = {
 	UNAUTHORIZED: 'The gateway refused the key the panel sent.',
 	RATE_LIMITED: 'The gateway is rate limiting this key. Try again in a moment.',
 	INTERNAL_ERROR: 'The gateway hit an unexpected error.',
-	NO_PROVIDER_AVAILABLE: 'No upstream endpoint is healthy for that model right now.',
-	UPSTREAM_ERROR: 'The upstream provider returned an error.',
-	UPSTREAM_REJECTED: 'The upstream refused this request itself. Fix the request before retrying.',
-	UPSTREAM_TIMEOUT: 'The upstream provider did not answer in time.',
+	NO_PROVIDER_AVAILABLE: 'No healthy endpoint serves that model right now.',
+	UPSTREAM_ERROR: 'The provider returned an error.',
+	UPSTREAM_REJECTED: 'The provider refused this request. Fix it before retrying.',
+	UPSTREAM_TIMEOUT: 'The provider did not answer in time.',
 	MODEL_NOT_FOUND: 'The gateway routes no model by that string.',
-	PROVIDER_NOT_ROUTABLE: 'The gateway has no translator for that provider format.'
+	PROVIDER_NOT_ROUTABLE: 'The gateway cannot serve that provider format.'
 };
 
-const UNKNOWN_CODE_SENTENCE =
-	'The gateway refused the request with a code this panel does not know.';
+const UNKNOWN_CODE_SENTENCE = 'The gateway refused the request with an unknown code.';
 
 /** The sentence to render beside a data-plane failure: the gateway's own message first, a fallback second. */
 export function dataPlaneErrorSentence(failure: DataPlaneErrorDetail): string {

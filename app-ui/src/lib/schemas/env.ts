@@ -31,10 +31,7 @@ const gatewayKey = z
 		`must be a gateway key of at least ${MIN_GATEWAY_KEY_LENGTH} characters`
 	)
 	.refine((value) => !/\s/.test(value), 'must not contain whitespace')
-	.refine(
-		(value) => !/^bearer\b/i.test(value),
-		'must be the key alone: the panel adds the Bearer prefix'
-	);
+	.refine((value) => !/^bearer\b/i.test(value), 'must be the key alone, no Bearer prefix');
 
 /**
  * Absent-or-blank, and trimmed, for every variable the env template ships with a default.
@@ -109,7 +106,7 @@ export function parseEnv(source: Record<string, string | undefined>): PanelEnv {
 
 	for (const key of Object.keys(source)) {
 		if (key.startsWith('PANEL_') && !(key in envSchema.shape)) {
-			throw new EnvError(key, 'Unknown panel variable. Remove it or add it to envSchema.');
+			throw new EnvError(key, 'Unknown panel variable. Remove it from the environment.');
 		}
 	}
 

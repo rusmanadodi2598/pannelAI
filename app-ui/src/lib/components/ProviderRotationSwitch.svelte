@@ -105,7 +105,7 @@
 	function changeSticky(raw: string): void {
 		const value = Number(raw);
 		if (!Number.isInteger(value) || value < 1) {
-			rotationMessage = 'The sticky limit must be a whole number of requests, at least 1.';
+			rotationMessage = 'Sticky limit needs a whole number, at least 1.';
 			return;
 		}
 		void writeRotation(
@@ -167,13 +167,15 @@
 			The rotation setting could not be read: {rotationError}
 		</p>
 	{:else if !rotationLoading}
-		<p class="text-xs text-[var(--color-text-muted)]">
-			{#if override === null}
+		{#if override === null}
+			<p class="text-xs text-[var(--color-text-muted)]">
 				Credentials follow the global default ({CREDENTIAL_ROTATION_LABELS[globalStrategy]}).
-			{:else}
+			</p>
+		{:else}
+			<p class="text-xs text-[var(--color-text-muted)]">
 				This provider overrides the global default ({CREDENTIAL_ROTATION_LABELS[globalStrategy]}).
-			{/if}
-		</p>
+			</p>
+		{/if}
 	{/if}
 	{#if rotationMessage}
 		<p class="text-sm text-[var(--color-text-muted)]" role="status">{rotationMessage}</p>

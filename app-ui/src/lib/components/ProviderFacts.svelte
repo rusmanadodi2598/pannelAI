@@ -49,8 +49,7 @@
 			{ROUTABILITY_LABELS[provider.routability] ?? provider.routability}
 			{#if provider.routability === 'connector'}
 				<span class="text-[var(--color-warn)]">
-					This provider speaks a protocol the data plane does not translate, so an endpoint for it
-					will not answer.</span
+					This provider's protocol isn't translated, so its endpoints won't answer.</span
 				>
 			{/if}
 		</dd>
@@ -119,8 +118,7 @@
 		{#if provider.deprecation_notice}
 			{provider.deprecation_notice}
 		{:else}
-			The registry marks it deprecated without a notice, so check the provider's own documentation
-			before routing to it.
+			No reason given. Check the provider's site first.
 		{/if}
 	</p>
 {/if}

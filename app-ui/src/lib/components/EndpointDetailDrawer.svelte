@@ -189,10 +189,7 @@
 						>{chosen.label || 'Unlabelled key'} ({chosen.key_hint}), priority {chosen.priority}</span
 					>
 				{:else}
-					<span
-						>No key can be spent: every key is disabled, unhealthy, or absent. Requests to this
-						endpoint will fail over or fail.</span
-					>
+					<span>Every key is disabled, unhealthy, or absent. Fix one to route.</span>
 				{/if}
 			</div>
 
@@ -200,7 +197,7 @@
 				<StateMessage
 					kind="empty"
 					title="No keys on this endpoint"
-					description="Add a credential so the router has something to spend."
+					description="Add a credential so requests can route."
 				/>
 			{:else}
 				<EndpointKeysTable

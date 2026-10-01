@@ -22,7 +22,7 @@
 <StateMessage
 	kind="empty"
 	title="No requests in this window"
-	description="Nothing was routed in the selected period. If clients are sending requests, check that a gateway key is active and that an endpoint is healthy."
+	description="Nothing routed in this period. Check a gateway key is active."
 >
 	{#snippet action()}
 		<div class="flex flex-wrap gap-3">

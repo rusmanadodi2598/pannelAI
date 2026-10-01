@@ -214,8 +214,8 @@
 			</button>
 		</nav>
 	{/if}
-	<p class="text-sm text-[var(--color-text-muted)]">
-		Source: computed means {QUOTA_SOURCE_EXPLANATIONS.computed} reported means
-		{QUOTA_SOURCE_EXPLANATIONS.reported}
-	</p>
+	<div class="flex flex-col gap-1 text-sm text-[var(--color-text-muted)]">
+		<p>Computed: {QUOTA_SOURCE_EXPLANATIONS.computed}</p>
+		<p>Reported: {QUOTA_SOURCE_EXPLANATIONS.reported}</p>
+	</div>
 </div>

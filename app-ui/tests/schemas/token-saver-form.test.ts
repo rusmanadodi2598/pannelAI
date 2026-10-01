@@ -355,14 +355,12 @@ describe('headroomUrlWarning', () => {
 		{
 			name: 'warns when the group is on with no URL',
 			input: { enabled: true, url: '', compress_user_messages: false },
-			expected:
-				'No URL is set, so every compression call will be skipped and the request passes through unchanged.'
+			expected: 'No URL set, so nothing is compressed.'
 		},
 		{
 			name: 'treats a whitespace-only URL as no URL',
 			input: { enabled: true, url: '   ', compress_user_messages: false },
-			expected:
-				'No URL is set, so every compression call will be skipped and the request passes through unchanged.'
+			expected: 'No URL set, so nothing is compressed.'
 		}
 	];
 

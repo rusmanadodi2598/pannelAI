@@ -221,7 +221,7 @@ describe('what a card shows', () => {
 			expect(value(screen.getByLabelText('Base URL'))).toBe('http://127.0.0.1:8095/v1/audio/speech')
 		);
 		expect(hintFor(screen.getByLabelText('Base URL'))).toBe(
-			'Set here. Clear it to go back to the value the registry declares.'
+			'Set here. Clear it to use the registry value.'
 		);
 	});
 
@@ -243,11 +243,7 @@ describe('what a card shows', () => {
 		renderKind('image');
 
 		await waitFor(() =>
-			expect(
-				screen.getByText(
-					'This service declares no models, so there is nothing to choose. The registry default applies.'
-				)
-			).toBeTruthy()
+			expect(screen.getByText('No models here, so the registry default applies.')).toBeTruthy()
 		);
 		expect(screen.queryByLabelText('Default model')).toBeNull();
 	});
@@ -269,9 +265,7 @@ describe('what a card shows', () => {
 
 		await waitFor(() =>
 			expect(
-				screen.getByText(
-					'Currently set to tts-0, which this service no longer declares. Choosing the registry default clears it.'
-				)
+				screen.getByText('Currently tts-0, no longer declared. The registry default clears it.')
 			).toBeTruthy()
 		);
 		expect(value(screen.getByLabelText('Default model'))).toBe('');

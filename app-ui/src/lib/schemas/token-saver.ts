@@ -51,8 +51,8 @@ export const TOKEN_SAVER_LEVEL_LABELS: Record<TokenSaverLevel, string> = {
 
 export const TOKEN_SAVER_LEVEL_EXPLANATIONS: Record<TokenSaverLevel, string> = {
 	lite: 'The lightest bias: the least rewriting, the smallest saving.',
-	full: 'The default bias: the engine rewrites a blob when a filter claims it.',
-	ultra: 'The strongest bias: the engine rewrites whenever it can.'
+	full: 'The default. Rewrites output a filter covers.',
+	ultra: 'The strongest. Rewrites whenever possible.'
 };
 
 // One saver group with a level.

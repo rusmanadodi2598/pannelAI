@@ -126,9 +126,9 @@
 	</a>
 
 	{#if loading}
-		<StateMessage kind="loading" title="Loading the console buffer" />
+		<StateMessage kind="loading" title="Loading the console log" />
 	{:else if error}
-		<StateMessage kind="error" title="The console buffer could not be read" description={error}>
+		<StateMessage kind="error" title="Could not read the console log" description={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={load}>Try again</button>
 			{/snippet}
@@ -136,8 +136,8 @@
 	{:else if lines.length === 0}
 		<StateMessage
 			kind="empty"
-			title="Console buffer is empty."
-			description="The gateway records console output only while it is running, so a restart empties the buffer. Older lines also fall out of the ring when it reaches its ceiling."
+			title="Console log is empty"
+			description="Output is kept only while running. A restart clears it."
 		/>
 	{:else}
 		<div class="flex flex-col gap-1">

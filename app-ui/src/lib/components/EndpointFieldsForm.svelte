@@ -55,7 +55,7 @@
 		}
 
 		// A priority change reorders siblings, so the caller refreshes the list rather than assuming (§6.2).
-		notice = 'Saved. Priority decides the order, so the list behind this drawer refreshes too.';
+		notice = 'Saved. Priority decides the routing order.';
 		onsaved(result.data);
 	}
 

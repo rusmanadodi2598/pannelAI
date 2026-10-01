@@ -136,7 +136,7 @@ export function parseProxyLine(raw: string, line: number): ProxyLineResult {
 	try {
 		url = new URL(text);
 	} catch {
-		return reject(line, raw, 'That line is not a URL the panel can read.');
+		return reject(line, raw, 'That line is not a readable URL.');
 	}
 
 	if (url.pathname !== '' && url.pathname !== '/') {
@@ -154,7 +154,7 @@ export function parseProxyLine(raw: string, line: number): ProxyLineResult {
 	const username = decodeCredential(url.username);
 	const password = decodeCredential(url.password);
 	if (username === null || password === null) {
-		return reject(line, raw, 'The credentials contain an invalid percent escape.');
+		return reject(line, raw, 'The credentials cannot be read.');
 	}
 
 	const candidate = schemaProxyCandidate.safeParse({

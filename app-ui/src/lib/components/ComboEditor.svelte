@@ -173,7 +173,7 @@
 	<div class="flex flex-col gap-1">
 		<div class="flex flex-wrap items-center justify-between gap-2">
 			<span class="text-sm text-[var(--color-text-muted)]">
-				Models, in the order the strategy uses them. Priority runs from 0 and records that order.
+				Models, in the order the strategy uses them.
 			</span>
 			<button
 				type="button"
@@ -229,7 +229,7 @@
 	single={pickerTarget === 'judge'}
 	loading={pickerLoading}
 	failed={pickerFailed}
-	emptyText="No connected provider offers a model yet. Add a connection on the Providers screen, or type the reference in the editor."
+	emptyText="No models yet. Connect a provider, or type a reference."
 	ontoggle={pickRef}
 	onclose={() => (pickerTarget = null)}
 />

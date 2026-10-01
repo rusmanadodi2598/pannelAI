@@ -18,8 +18,7 @@ const MODELS = {
 const KEY_MISSING = {
 	error: {
 		code: 'PLAYGROUND_KEY_MISSING',
-		message:
-			'The panel has no gateway key configured. Set PANEL_PLAYGROUND_KEY in the panel server environment.'
+		message: 'Set PANEL_PLAYGROUND_KEY on the panel server.'
 	}
 };
 
@@ -35,7 +34,7 @@ describe('PlaygroundPage model states', () => {
 		vi.stubGlobal('fetch', () => new Promise(() => {}));
 		render(PlaygroundPage);
 
-		expect(screen.getByText('Reading the models this key can route')).toBeTruthy();
+		expect(screen.getByText('Loading the models this key routes')).toBeTruthy();
 	});
 
 	it('states the unconfigured panel key, naming the variable the route named', async () => {
@@ -46,7 +45,7 @@ describe('PlaygroundPage model states', () => {
 		// The name reaches the screen inside the panel's own sentence, which is the only place allowed to
 		// carry it: the browser bundle must not name the variable (tests/server/playground-secret.test.ts).
 		expect(screen.getByText(/PANEL_PLAYGROUND_KEY/)).toBeTruthy();
-		expect(screen.getByText(/The browser is not asked for one/)).toBeTruthy();
+		expect(screen.getByText(/This screen never holds a key\./)).toBeTruthy();
 
 		// No composer and no picker: a send control that cannot send is a dead control (R-26).
 		expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
@@ -60,7 +59,7 @@ describe('PlaygroundPage model states', () => {
 		});
 		render(PlaygroundPage);
 
-		expect(await screen.findByText('The model list could not be read')).toBeTruthy();
+		expect(await screen.findByText('Could not read the model list')).toBeTruthy();
 		expect(screen.getByText('The gateway answered HTTP 502.')).toBeTruthy();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -92,7 +91,7 @@ describe('PlaygroundPage composer', () => {
 		expect(screen.getByRole('option', { name: 'combo/fast' })).toBeTruthy();
 
 		// The cost, stated before the operator sends one rather than reported after it.
-		expect(screen.getByText(/consumes the key quota and writes a usage record/)).toBeTruthy();
+		expect(screen.getByText('This calls a real provider, uses quota, and is logged.')).toBeTruthy();
 	});
 
 	it('refuses a message of whitespace through the schema, and sends nothing', async () => {

@@ -61,7 +61,7 @@ describe('data plane error envelope', () => {
 		{
 			name: 'the generic sentence for an unknown code',
 			input: { code: 'SOMETHING_NEW', message: '' },
-			expected: /code this panel does not know/
+			expected: /refused the request with an unknown code/
 		}
 	];
 

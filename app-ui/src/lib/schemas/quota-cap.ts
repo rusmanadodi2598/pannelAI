@@ -61,7 +61,7 @@ export const schemaQuotaCapForm = z
 			.string()
 			.transform((value) => value.trim())
 			.refine((value) => value === '' || /^\d+(\.\d+)?$/.test(value), {
-				message: 'Write the monthly cost as a plain amount in USD, for example 25 or 25.50.'
+				message: 'Use a plain USD amount, like 25 or 25.50.'
 			})
 			.refine((value) => value === '' || Number(value) <= MAX_QUOTA_MONTHLY_COST_USD, {
 				message: `A monthly cost cannot exceed ${formatCount(MAX_QUOTA_MONTHLY_COST_USD)} USD.`
@@ -70,7 +70,7 @@ export const schemaQuotaCapForm = z
 			.string()
 			.transform((value) => value.trim())
 			.refine((value) => value === '' || /^\d+$/.test(value), {
-				message: 'Write the monthly tokens as a whole number, for example 1000000.'
+				message: 'Use a whole number of tokens, like 1000000.'
 			})
 			.refine((value) => value === '' || Number(value) <= MAX_QUOTA_MONTHLY_TOKENS, {
 				message: `Monthly tokens cannot exceed ${formatCount(MAX_QUOTA_MONTHLY_TOKENS)}.`
@@ -81,8 +81,7 @@ export const schemaQuotaCapForm = z
 			ctx.addIssue({
 				code: 'custom',
 				path: ['cost'],
-				message:
-					'A cost cap of zero would stop the router picking this endpoint, so set a token cap beside it or leave the cost empty.'
+				message: 'Zero cost blocks this endpoint. Set a token cap too.'
 			});
 		}
 	});
@@ -117,13 +116,13 @@ export function quotaCapSummary(cap: QuotaCap | null): string {
 	const cost = cap?.monthly_cost_usd ?? null;
 	const tokens = cap?.monthly_tokens ?? null;
 	if (cost === null && tokens === null) {
-		return 'No cap is stored for this endpoint, so the router picks it whenever it is healthy.';
+		return 'No cap set. The router picks it whenever healthy.';
 	}
 
 	const parts: string[] = [];
 	if (cost !== null) parts.push(`${trimDecimal(cost)} USD`);
 	if (tokens !== null) parts.push(`${formatCount(tokens)} tokens`);
-	return `This endpoint is capped at ${parts.join(' and ')} a month.`;
+	return `Capped at ${parts.join(' and ')} a month.`;
 }
 
 /**
@@ -133,8 +132,7 @@ export function quotaCapSummary(cap: QuotaCap | null): string {
  * rotation the moment the month-to-date spend reaches it, and a request that needed it fails over or
  * fails.
  */
-export const QUOTA_CAP_WARNING =
-	'Saving a cap changes routing: once the month-to-date spend reaches it, the router stops picking this endpoint.';
+export const QUOTA_CAP_WARNING = 'Once spend reaches a cap, the router skips this endpoint.';
 
 /**
  * The endpoints the cap form offers: every endpoint the label read returned, then any endpoint the window

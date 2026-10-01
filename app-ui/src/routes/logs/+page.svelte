@@ -13,10 +13,7 @@
 <section class="flex flex-col gap-5">
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Logs</h1>
-		<p class="text-sm text-[var(--color-text-muted)]">
-			What the gateway recorded, newest first. Bodies are stored only while capture is on, and are
-			shown exactly as they were written.
-		</p>
+		<p class="text-sm text-[var(--color-text-muted)]">What the gateway recorded, newest first.</p>
 	</div>
 
 	<a href={resolve('/console-log')} class="inline-flex min-h-11 items-center gap-2 text-sm">

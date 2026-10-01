@@ -115,17 +115,19 @@
 
 	function describeSummary(): string {
 		if (poolChoice === PROXY_POOL_NONE) {
-			return 'Dials direct; the global proxy setting is not used for this provider.';
+			return 'Dials direct. The global proxy setting is not used.';
 		}
 		if (poolChoice !== '') {
 			const strategy = PROXY_STRATEGY_LABELS[effectiveStrategy];
 			if (pinnedLabel === null) {
-				return `Pinned to ${poolChoice}, which is no longer in the pool; the remaining pools carry this provider with ${strategy}.`;
+				return `Pinned to ${poolChoice} (missing). Other pools carry this with ${strategy}.`;
 			}
-			return `Pinned to ${pinnedLabel}, which leads every attempt; the other usable pools follow with ${strategy}.`;
+			return `Pinned to ${pinnedLabel}, which leads; other pools follow (${strategy}).`;
 		}
 		if (strategyChoice !== '') {
-			return `Follows the global pool with its own strategy (${PROXY_STRATEGY_LABELS[effectiveStrategy]}), and proxying is ${globalEnabled ? 'on' : 'off'}.`;
+			return `Global pool, own strategy (${PROXY_STRATEGY_LABELS[effectiveStrategy]}); proxying ${
+				globalEnabled ? 'on' : 'off'
+			}.`;
 		}
 		return `Follows the global proxy setting (${globalEnabled ? `on, ${PROXY_STRATEGY_LABELS[effectiveStrategy]}` : 'off'}).`;
 	}

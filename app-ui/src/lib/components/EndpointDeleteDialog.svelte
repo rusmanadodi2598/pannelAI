@@ -31,9 +31,7 @@
 			Its keys go with it.
 		</p>
 		<p class="mt-3 text-[var(--color-text-muted)]">
-			The credential carried by this connection — an API key, a Personal Access Token, or a
-			connected account's token — is removed with it, and requests to this provider stop routing
-			through it.
+			Its credential is deleted too, and routing to this provider stops.
 		</p>
 	{/if}
 

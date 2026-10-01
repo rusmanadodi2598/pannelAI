@@ -129,20 +129,13 @@
 		class="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm"
 	>
 		<span class="font-medium">This adapter covers vision only.</span>
-		The pdf, audio-input, and video-input adapters from the reference gateway are not part of this build,
-		so this screen has no controls for them. When a request carries an image and the resolved model cannot
-		read it, the router prepends one of the models below and the response identity stays the model the
-		client asked for.
+		A vision model reads images when the chosen model can't.
 	</p>
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the vision adapter" />
 	{:else if loadError}
-		<StateMessage
-			kind="error"
-			title="The vision adapter could not be loaded"
-			description={loadError}
-		>
+		<StateMessage kind="error" title="Could not load the vision adapter" description={loadError}>
 			{#snippet action()}
 				<button type="button" class="inline-flex items-center gap-2 underline" onclick={load}>
 					<RetryIcon class="size-4" aria-hidden="true" />
@@ -183,7 +176,7 @@
 						class="size-5"
 						onchange={() => (saved = false)}
 					/>
-					<span>Adapt requests that carry images</span>
+					<span>Adapt image requests</span>
 				</label>
 
 				<label class="flex min-h-11 items-center gap-2 text-sm">
@@ -193,7 +186,7 @@
 						class="size-5"
 						onchange={() => (saved = false)}
 					/>
-					<span>Rotate across the selected models instead of trying them in order</span>
+					<span>Rotate across models</span>
 				</label>
 			</div>
 
@@ -239,7 +232,7 @@
 			selected={form.models}
 			loading={pickerLoading}
 			failed={pickerFailed}
-			emptyText="No connected provider reports a vision-capable model right now. Connect one on the Providers screen, or declare the capability on a model you added there."
+			emptyText="No vision model yet. Connect a provider, or add one."
 			ontoggle={toggleModel}
 			onclose={() => (pickerOpen = false)}
 		/>

@@ -27,8 +27,7 @@
 <div class="flex flex-col gap-4">
 	{#if !hasBodies}
 		<p class="text-sm text-[var(--color-text-muted)]">
-			No bodies were stored for this request. Capture was on when it was recorded, so the gateway
-			either had nothing to store or the row has been rotated out of retention.
+			No bodies were stored for this request, though capture was on.
 		</p>
 	{:else}
 		{#if requestBody}
@@ -49,6 +48,6 @@
 	{/if}
 
 	<p class="text-xs text-[var(--color-text-muted)]">
-		Each body is captured up to {formatCount(maxBytes)} bytes and is shown exactly as it was recorded.
+		Each body is capped at {formatCount(maxBytes)} bytes, shown as recorded.
 	</p>
 </div>

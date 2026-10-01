@@ -128,7 +128,7 @@ const LINE_CASES: LineCase[] = [
 		name: 'rejects a schemeless credential with an invalid percent escape',
 		line: 'operator:p%zz@proxy.example.com:3128',
 		ok: false,
-		reason: 'The credentials contain an invalid percent escape.'
+		reason: 'The credentials cannot be read.'
 	},
 	{
 		name: 'rejects a bare IPv6 literal with no scheme, naming the brackets',
@@ -182,13 +182,13 @@ const LINE_CASES: LineCase[] = [
 		name: 'rejects a credential escape that does not decode',
 		line: 'http://operator:p%zz@proxy.example.com:3128',
 		ok: false,
-		reason: 'The credentials contain an invalid percent escape.'
+		reason: 'The credentials cannot be read.'
 	},
 	{
 		name: 'rejects a line with no host',
 		line: 'http://',
 		ok: false,
-		reason: 'That line is not a URL the panel can read.'
+		reason: 'That line is not a readable URL.'
 	},
 	{
 		name: 'rejects a host that is a bare IPv6 literal, naming the brackets',

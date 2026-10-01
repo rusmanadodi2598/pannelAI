@@ -37,19 +37,14 @@
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Token Saver</h1>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			What the gateway does to a request before it sends it upstream. Every group ships off, so a
-			request is unchanged until one is turned on.
+			How the gateway trims a request. All groups start off.
 		</p>
 	</div>
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the token saver configuration" />
 	{:else if error && config === null}
-		<StateMessage
-			kind="error"
-			title="The token saver configuration could not be loaded"
-			description={error}
-		>
+		<StateMessage kind="error" title="Token saver settings not loaded" description={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}>Try again</button>
 			{/snippet}
@@ -57,7 +52,7 @@
 	{:else if config}
 		{#if error}
 			<p role="alert" class="text-sm text-[var(--color-danger)]">
-				{error} The form below still shows the last configuration that was read.
+				{error} The form still shows the last read.
 			</p>
 		{/if}
 

@@ -90,9 +90,7 @@ describe('UsageLivePanel drawing', () => {
 		render(UsageLivePanel);
 
 		expect(
-			await screen.findByText(
-				/Providers could not be read \(the registry is unreachable\), so the drawing has no nodes\./
-			)
+			await screen.findByText(/Providers could not be read\. The drawing has no nodes\./)
 		).toBeTruthy();
 		expect(screen.getByText('No provider is configured')).toBeTruthy();
 	});
@@ -101,9 +99,7 @@ describe('UsageLivePanel drawing', () => {
 		stubPanel({ total: 120 });
 		render(UsageLivePanel);
 
-		expect(
-			await screen.findByText(/carries 120 providers and this drawing reads the first 1\./)
-		).toBeTruthy();
+		expect(await screen.findByText(/Shows the first 1 of 120 providers\./)).toBeTruthy();
 	});
 
 	it('lists the requests the frame says have finished', async () => {

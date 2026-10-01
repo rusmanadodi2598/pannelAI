@@ -91,7 +91,7 @@
 		<span>
 			Require a password to open the panel
 			<span class="block text-[var(--color-text-muted)]">
-				With this off, anyone who can reach the panel origin can manage keys and providers.
+				Off lets anyone reaching this address manage keys and providers.
 			</span>
 		</span>
 	</label>
@@ -131,8 +131,7 @@
 	onclose={() => (confirmingOpenPanel = false)}
 >
 	<p class="text-sm">
-		Saving this makes the panel reachable without a password from anywhere that can reach this
-		origin. Gateway keys and provider credentials become readable to anyone with network access.
+		Anyone reaching this address could read gateway keys and provider credentials.
 	</p>
 
 	{#snippet footer()}

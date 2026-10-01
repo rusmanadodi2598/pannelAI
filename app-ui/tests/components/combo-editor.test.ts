@@ -110,11 +110,7 @@ describe('ComboEditor', () => {
 		expect(screen.getByText('Try models in order until one succeeds.')).toBeTruthy();
 
 		await selectStrategy('round_robin');
-		expect(
-			screen.getByText(
-				'Distribute across models, keeping sticky_limit requests on one model first.'
-			)
-		).toBeTruthy();
+		expect(screen.getByText('Spread across models, keeping requests sticky on one.')).toBeTruthy();
 	});
 
 	it('refuses a fusion combo with no judge model and sends nothing', async () => {

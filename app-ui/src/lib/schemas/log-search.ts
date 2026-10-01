@@ -44,7 +44,7 @@ function pick<T>(
 	const parsed = schema.safeParse(raw);
 	if (parsed.success) return parsed.data;
 
-	notices.push(`The ${label} "${raw}" is not one the panel offers, so ${fallbackText} is shown.`);
+	notices.push(`Unknown ${label} "${raw}". Showing ${fallbackText}.`);
 	return fallback;
 }
 

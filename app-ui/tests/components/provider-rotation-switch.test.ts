@@ -169,9 +169,7 @@ describe('the provider rotation switch', () => {
 		expect((screen.getByLabelText('Sticky:') as HTMLInputElement).value).toBe('3');
 
 		await fireEvent.change(screen.getByLabelText('Sticky:'), { target: { value: '0' } });
-		expect(
-			await screen.findByText('The sticky limit must be a whole number of requests, at least 1.')
-		).toBeTruthy();
+		expect(await screen.findByText('Sticky limit needs a whole number, at least 1.')).toBeTruthy();
 		expect(stub.settingsPatches.length).toBe(0);
 
 		await fireEvent.change(screen.getByLabelText('Sticky:'), { target: { value: '7' } });

@@ -111,7 +111,7 @@ export function barsSummary(
 
 	if (set.bars.length === set.total) return `${leader}, across the ${groups} with usage.`;
 
-	return `${leader}; the top ${set.bars.length} of ${groups} with usage are drawn.`;
+	return `${leader}; top ${set.bars.length} of ${set.total} shown.`;
 }
 
 /**

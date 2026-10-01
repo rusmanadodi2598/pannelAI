@@ -19,8 +19,7 @@
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Combo & Vision Adapter</h1>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			How a model string resolves to more than one upstream model, and what the router substitutes
-			when a model cannot read an image.
+			Combine models under one name, and adapt images.
 		</p>
 	</div>
 

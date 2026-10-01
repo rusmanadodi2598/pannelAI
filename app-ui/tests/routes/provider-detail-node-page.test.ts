@@ -131,9 +131,7 @@ describe("a custom node's detail screen", () => {
 		const select = (await screen.findByLabelText('Reasoning mode')) as HTMLSelectElement;
 		await waitFor(() => expect(select.value).toBe('high'));
 		expect(
-			screen.getByText(
-				'Every request to this provider asks for the high level; a copied model name gains the (high) suffix when that model accepts it.'
-			)
+			screen.getByText('Copied names gain the (high) suffix when a model accepts it.')
 		).toBeTruthy();
 
 		// The addressed string the node's table shows carries the level, because this row accepts it.

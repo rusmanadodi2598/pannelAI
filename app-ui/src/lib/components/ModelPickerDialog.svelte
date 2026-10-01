@@ -90,10 +90,12 @@
 	<div class="flex flex-col gap-3">
 		<p class="text-xs text-[var(--color-text-muted)]">
 			{single ? 'Click a model to use it here.' : 'Click to add, click again to remove.'}
-			{#if hasPlaceholder}
-				A dashed entry is a placeholder: add it, then edit the model id in the editor.
-			{/if}
 		</p>
+		{#if hasPlaceholder}
+			<p class="text-xs text-[var(--color-text-muted)]">
+				A dashed entry is a placeholder. Add it, then edit its id.
+			</p>
+		{/if}
 
 		<label class="flex flex-col gap-1">
 			<span class="sr-only">Search models</span>
@@ -114,8 +116,7 @@
 				class="rounded-[var(--radius-sm)] border border-[var(--color-danger)] px-3 py-2 text-sm"
 				role="alert"
 			>
-				The catalog or the provider list could not be read, so there is nothing to pick. Type the
-				reference in the editor, or close this and try again.
+				The list could not be read. Type a model id or reopen.
 			</p>
 		{:else if !hasOptions}
 			<p class="text-sm text-[var(--color-text-muted)]">{emptyText}</p>

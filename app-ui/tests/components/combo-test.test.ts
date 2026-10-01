@@ -71,8 +71,8 @@ describe('opening the test', () => {
 
 		// The spend is stated before it happens: the probe writes no usage row, so the sentence is the only
 		// warning the operator gets.
-		expect(within(dialog).getByText(/spends one account at a time/)).toBeTruthy();
-		expect(within(dialog).getByText(/not recorded in usage/)).toBeTruthy();
+		expect(within(dialog).getByText(/one small request per model/)).toBeTruthy();
+		expect(within(dialog).getByText(/Not counted in usage/)).toBeTruthy();
 		expect(stub.comboTests).toEqual([]);
 	});
 
@@ -156,7 +156,7 @@ describe('running the test', () => {
 
 		confirmButton().click();
 
-		expect(await within(dialog).findByText(/nothing to probe/)).toBeTruthy();
+		expect(await within(dialog).findByText(/no models to test/)).toBeTruthy();
 		expect(within(dialog).queryByRole('listitem')).toBeNull();
 	});
 
@@ -167,7 +167,7 @@ describe('running the test', () => {
 
 		confirmButton().click();
 
-		expect(await within(dialog).findByText(/The combo could not be tested/)).toBeTruthy();
+		expect(await within(dialog).findByText(/Could not test/)).toBeTruthy();
 		expect(within(dialog).getByText(/combo not found/)).toBeTruthy();
 		expect(within(dialog).queryByText(/answered/)).toBeNull();
 	});

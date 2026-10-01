@@ -139,11 +139,11 @@ export function undeclaredModel(block: MediaKindBlock): string | null {
  */
 export function mediaBaseUrlHelp(block: MediaKindBlock): string {
 	if (block.base_url_source === 'override') {
-		return 'Set here. Clear it to go back to the value the registry declares.';
+		return 'Set here. Clear it to use the registry value.';
 	}
 
 	if (block.base_url === '') {
-		return 'The registry declares no base URL for this kind, so this provider needs one here.';
+		return 'This kind has no base URL. Set one here.';
 	}
 
 	return `The registry declares ${block.base_url}. Leave this empty to use it.`;
@@ -152,8 +152,8 @@ export function mediaBaseUrlHelp(block: MediaKindBlock): string {
 /** What the default model field says when it is a selector, and why when it is not. */
 export function mediaModelHelp(block: MediaKindBlock): string {
 	if (!hasDeclaredModels(block)) {
-		return 'This service declares no models, so there is nothing to choose. The registry default applies.';
+		return 'No models here, so the registry default applies.';
 	}
 
-	return 'The registry default, or one of the models this service declares.';
+	return 'The registry default, or a model this service declares.';
 }

@@ -175,7 +175,7 @@ describe('schemaQuotaCapForm', () => {
 		const parsed = schemaQuotaCapForm.safeParse({ cost: '0', tokens: '' });
 
 		expect(parsed.error?.issues.map((issue) => issue.message)).toEqual([
-			'A cost cap of zero would stop the router picking this endpoint, so set a token cap beside it or leave the cost empty.'
+			'Zero cost blocks this endpoint. Set a token cap too.'
 		]);
 	});
 

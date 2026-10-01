@@ -115,7 +115,7 @@
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Provider</h1>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			What the gateway can route to, and how the stored accounts for each provider are doing.
+			What the gateway can route, and each account's status.
 		</p>
 	</div>
 
@@ -167,11 +167,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the provider registry" />
 	{:else if error}
-		<StateMessage
-			kind="error"
-			title="The provider registry could not be loaded"
-			description={error}
-		>
+		<StateMessage kind="error" title="Could not load the provider registry" description={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={load}>Try again</button>
 			{/snippet}
@@ -181,8 +177,8 @@
 			kind="empty"
 			title={filtered ? 'No provider matches this filter' : 'The registry is empty'}
 			description={filtered
-				? 'The category filter and the search narrow the same registry. Clearing both shows every provider again.'
-				: 'The embedded registry reported no providers, which means the service was built without one.'}
+				? 'Filters narrow the registry. Clear both to see every provider.'
+				: 'No providers registered yet. Nothing to route to.'}
 		>
 			{#snippet action()}
 				{#if filtered}

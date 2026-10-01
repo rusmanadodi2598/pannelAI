@@ -119,7 +119,7 @@ describe('endpoint detail drawer', () => {
 		});
 
 		const block = await routingBlock();
-		expect(block.textContent).toContain('No key can be spent');
+		expect(block.textContent).toContain('Every key is disabled');
 	});
 
 	it('disables deleting the last active api_key key, and says why beside it', async () => {

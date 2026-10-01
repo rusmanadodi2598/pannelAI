@@ -102,7 +102,7 @@
 		}
 
 		onresolved(provider.provider_id, result.data);
-		saved = 'Saved. This is the address the gateway will dial for this kind.';
+		saved = 'Saved. This kind now uses that address.';
 	}
 </script>
 
@@ -169,8 +169,7 @@
 
 	{#if undeclared}
 		<p class="text-xs text-[var(--color-text-muted)]">
-			Currently set to {undeclared}, which this service no longer declares. Choosing the registry
-			default clears it.
+			Currently {undeclared}, no longer declared. The registry default clears it.
 		</p>
 	{/if}
 

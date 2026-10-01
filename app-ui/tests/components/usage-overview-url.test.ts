@@ -96,7 +96,7 @@ describe('UsageOverviewTab URL', () => {
 		const stub = stubUsage();
 		await renderOverview();
 
-		expect(screen.getByText(/The period "forever" is not one the panel offers/)).toBeTruthy();
+		expect(screen.getByText(/The period "forever" is not valid/)).toBeTruthy();
 		expect(lastSummaryQuery(stub, 'model').get('from')).toBeTruthy();
 	});
 

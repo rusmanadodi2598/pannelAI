@@ -80,7 +80,7 @@ describe('SkillsPage states', () => {
 		stubFetch({ error: { code: 'UNAUTHORIZED', message: 'Session expired.' } }, () => 200, 401);
 		render(SkillsPage);
 
-		expect(await screen.findByText('The skill catalog could not be read')).toBeTruthy();
+		expect(await screen.findByText('Could not read the skill catalog')).toBeTruthy();
 		expect(screen.getByText('Session expired.')).toBeTruthy();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -93,7 +93,9 @@ describe('SkillsPage states', () => {
 		render(SkillsPage);
 
 		expect(await screen.findByText('The gateway serves no skill')).toBeTruthy();
-		expect(screen.getByText(/nothing to hand out here/)).toBeTruthy();
+		expect(
+			screen.getByText('The catalog returned no rows, so there is nothing to hand out.')
+		).toBeTruthy();
 	});
 
 	it('states the catalog it read', async () => {
@@ -134,7 +136,9 @@ describe('SkillsPage entry skill', () => {
 		stubFetch(skillCatalog(), (url) => (url.includes('/pannelai/') ? 404 : 200));
 		render(SkillsPage);
 
-		expect(await screen.findByText(/has no file at that path \(HTTP 404\)/)).toBeTruthy();
+		expect(
+			await screen.findByText('No file at that path (HTTP 404). Publish it in the repository.')
+		).toBeTruthy();
 
 		const block = within(entryBlock());
 		expect(block.queryByRole('button', { name: 'Copy install line' })).toBeNull();
@@ -147,7 +151,9 @@ describe('SkillsPage entry skill', () => {
 		stubFetch(skillCatalog(DEFAULT_ROWS.slice(1)));
 		render(SkillsPage);
 
-		expect(await screen.findByText(/carries no entry skill/)).toBeTruthy();
+		expect(
+			await screen.findByText('No entry skill here. The rows below list its capabilities.')
+		).toBeTruthy();
 		expect(screen.queryByRole('heading', { name: 'Paste this into an AI client' })).toBeNull();
 	});
 });
@@ -159,7 +165,7 @@ describe('SkillsPage capability rows', () => {
 
 		// The rows render as soon as the catalog lands; the addresses wait for the check, so the count is
 		// what the assertions below are anchored to.
-		await screen.findByText('3 of 3 sources are published at the ref the catalog names.');
+		await screen.findByText('3 of 3 sources are published.');
 
 		const chat = within(rowFor('pannelai-chat'));
 		expect(chat.getByText('Chat')).toBeTruthy();
@@ -174,11 +180,13 @@ describe('SkillsPage capability rows', () => {
 		stubFetch(skillCatalog(), (url) => (url.includes('/pannelai-image/') ? 404 : 200));
 		render(SkillsPage);
 
-		await screen.findByText('2 of 3 sources are published at the ref the catalog names.');
+		await screen.findByText('2 of 3 sources are published.');
 
 		const image = within(rowFor('pannelai-image'));
 		expect(image.getByText('Source unavailable')).toBeTruthy();
-		expect(image.getByText(/has no file at that path \(HTTP 404\)/)).toBeTruthy();
+		expect(
+			image.getByText('No file at that path (HTTP 404). Publish it in the repository.')
+		).toBeTruthy();
 		expect(image.queryByRole('button', { name: 'Copy install line' })).toBeNull();
 		expect(image.queryByRole('link', { name: 'Read it on GitHub' })).toBeNull();
 
@@ -204,9 +212,7 @@ describe('SkillsPage source check', () => {
 		stubFetch(skillCatalog(), (url) => (url.includes('/pannelai-image/') ? 500 : 200));
 		render(SkillsPage);
 
-		expect(
-			await screen.findByText('2 of 3 sources are published at the ref the catalog names.')
-		).toBeTruthy();
+		expect(await screen.findByText('2 of 3 sources are published.')).toBeTruthy();
 		expect(screen.getByText(/answered HTTP 500/)).toBeTruthy();
 	});
 
@@ -215,16 +221,12 @@ describe('SkillsPage source check', () => {
 		stubFetch(skillCatalog(), (url) => (url.includes('/pannelai-image/') ? imageStatus : 200));
 		render(SkillsPage);
 
-		expect(
-			await screen.findByText('2 of 3 sources are published at the ref the catalog names.')
-		).toBeTruthy();
+		expect(await screen.findByText('2 of 3 sources are published.')).toBeTruthy();
 
 		imageStatus = 200;
 		await fireEvent.click(screen.getByRole('button', { name: 'Check again' }));
 
-		expect(
-			await screen.findByText('3 of 3 sources are published at the ref the catalog names.')
-		).toBeTruthy();
+		expect(await screen.findByText('3 of 3 sources are published.')).toBeTruthy();
 		expect(sourceReads.length).toBe(6);
 		expect(
 			within(rowFor('pannelai-image')).getByRole('button', { name: 'Copy install line' })
@@ -236,8 +238,6 @@ describe('SkillsPage source check', () => {
 		render(SkillsPage);
 
 		expect((await screen.findAllByText(/did not complete: Failed to fetch/)).length).toBe(3);
-		expect(
-			screen.getByText('0 of 3 sources are published at the ref the catalog names.')
-		).toBeTruthy();
+		expect(screen.getByText('0 of 3 sources are published.')).toBeTruthy();
 	});
 });

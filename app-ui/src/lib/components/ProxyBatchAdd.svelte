@@ -74,7 +74,7 @@
 		summary =
 			failed.length === 0
 				? `Added ${added} of ${rows.length}.`
-				: `Added ${added} of ${rows.length}. The ${failed.length} that were refused are still in the box, with the reason beside each one.`;
+				: `Added ${added} of ${rows.length}. Refused lines stay here, with the reason.`;
 
 		await onsubmitted();
 	}
@@ -100,9 +100,7 @@ socks5://operator:hunter2@proxy.example.com:1080`;
 <div class="flex flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4">
 	<h2 class="text-sm font-semibold">Add several at once</h2>
 	<p class="text-sm text-[var(--color-text-muted)]">
-		Paste one proxy URL per line. The panel reads them here and shows what it understood before it
-		sends anything, so a line it cannot read is yours to fix rather than a request that fails later.
-		Each row is labelled from its address, and you can rename it after it is added.
+		Paste one proxy URL per line, then review the preview.
 	</p>
 
 	<div class="flex flex-col gap-1 text-sm">
@@ -117,8 +115,7 @@ socks5://operator:hunter2@proxy.example.com:1080`;
 			class="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-2 font-mono text-sm"
 		></textarea>
 		<span id="proxy-batch-help" class="text-xs text-[var(--color-text-muted)]">
-			http, https, or socks5. Credentials go in the URL, and the preview reports whether one came
-			with the line rather than showing it.
+			http, https, or socks5. Credentials go in the URL.
 		</span>
 	</div>
 

@@ -42,10 +42,10 @@
 	{#if groups.length === 0}
 		<StateMessage
 			kind="empty"
-			title="No group has any usage in this window"
-			description="The totals above are real, so the breakdown is empty because nothing was recorded against a {USAGE_GROUP_BY_LABELS[
+			title="No usage in any group"
+			description={`Nothing recorded against a ${USAGE_GROUP_BY_LABELS[
 				breakdown
-			].toLowerCase()}. Check that the requests carried one."
+			].toLowerCase()}. Check requests carried one.`}
 		/>
 	{:else}
 		<UsageGroupTable {groups} groupBy={breakdown} {sort} {order} {providerNames} {onsort} />

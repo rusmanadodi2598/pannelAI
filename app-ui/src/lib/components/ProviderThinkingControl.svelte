@@ -81,9 +81,9 @@
 
 	function describe(): string {
 		if (shown === THINKING_AUTO) {
-			return 'Follows the reasoning setting each request carries; a copied model name gains no suffix.';
+			return "Follows the request's own reasoning. Copied names gain no suffix.";
 		}
-		return `Every request to this provider asks for the ${shown} level; a copied model name gains the (${shown}) suffix when that model accepts it.`;
+		return `Copied names gain the (${shown}) suffix when a model accepts it.`;
 	}
 
 	const fieldClass =

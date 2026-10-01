@@ -9,9 +9,7 @@
 <section class="flex flex-col gap-4">
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Console log</h1>
-		<p class="text-sm text-[var(--color-text-muted)]">
-			The gateway's own output while it runs, held in a ring buffer.
-		</p>
+		<p class="text-sm text-[var(--color-text-muted)]">The gateway's own output while it runs.</p>
 	</div>
 
 	<ConsoleLog />

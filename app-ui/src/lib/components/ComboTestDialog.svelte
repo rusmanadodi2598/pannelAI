@@ -74,21 +74,19 @@
 	{#if combo}
 		<p>
 			Test <span class="font-medium">{combo.name}</span> ({comboStrategyLabel(combo.strategy)})?
-			Each reference is probed in turn with a small capped request, so the test spends one account
-			at a time. The probes are not recorded in usage.
+			Runs one small request per model. Not counted in usage.
 		</p>
 	{/if}
 
 	{#if running}
 		<p class="mt-3 text-[var(--color-text-muted)]" role="status">
-			Probing every reference, one at a time. This waits on the upstreams themselves.
+			Testing each model, one at a time. This waits on upstreams.
 		</p>
 	{/if}
 
 	{#if error}
 		<p class="mt-3 text-[var(--color-danger)]" role="alert">
-			The combo could not be tested. {error} If the combo was deleted, reload the list to see the current
-			set.
+			Could not test. {error} Reload the list if it was deleted.
 		</p>
 	{/if}
 

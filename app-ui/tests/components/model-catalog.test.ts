@@ -191,7 +191,7 @@ describe('ModelCatalogList', () => {
 			}
 		});
 
-		expect(await screen.findByText('The model catalog could not be loaded')).toBeTruthy();
+		expect(await screen.findByText('Could not load the model catalog')).toBeTruthy();
 		expect(screen.queryByText('This provider offers no models')).toBeNull();
 
 		const before = requested.length;

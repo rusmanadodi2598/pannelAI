@@ -120,7 +120,7 @@ describe('UsageOverviewTab breakdown', () => {
 		stubUsage({ summary: summaryBody({ groups: [] }) });
 		await renderOverview();
 
-		expect(await screen.findByText('No group has any usage in this window')).toBeTruthy();
+		expect(await screen.findByText('No usage in any group')).toBeTruthy();
 	});
 
 	it('resolves a provider key to its registry name', async () => {

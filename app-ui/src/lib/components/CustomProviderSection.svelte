@@ -55,8 +55,8 @@
 		<div class="flex flex-col gap-1">
 			<h2 class="text-base font-medium">Custom provider</h2>
 			<p class="text-sm text-[var(--color-text-muted)]">
-				A base URL the registry does not carry, reached through the OpenAI or Anthropic shape. A
-				node's models are addressed as <span class="font-medium">prefix/model</span>.
+				A base URL the registry lacks. Models are named
+				<span class="font-medium">prefix/model</span>.
 			</p>
 		</div>
 		<div class="flex flex-wrap gap-2">
@@ -82,7 +82,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the custom providers" />
 	{:else if error}
-		<StateMessage kind="error" title="The custom providers could not be loaded" description={error}>
+		<StateMessage kind="error" title="Could not load the custom providers" description={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={onreload}>Try again</button>
 			{/snippet}
@@ -91,7 +91,7 @@
 		<StateMessage
 			kind="empty"
 			title="No custom provider yet"
-			description="Use the buttons above to add a base URL the registry does not carry. It becomes routable as soon as a model is declared under its prefix and an endpoint holds a key."
+			description="Add a base URL the registry lacks. Needs one model and key."
 		/>
 	{:else}
 		<ul class="flex flex-col gap-2">

@@ -154,9 +154,7 @@ describe('TokenSaverPage saves', () => {
 
 		await fireEvent.click(screen.getByRole('checkbox', { name: /Compress through Headroom/ }));
 
-		expect(
-			screen.getByText(/No URL is set, so every compression call will be skipped/)
-		).toBeTruthy();
+		expect(screen.getByText(/No URL set, so nothing is compressed/)).toBeTruthy();
 	});
 
 	it('shows the API refusal as an alert and keeps the form usable', async () => {

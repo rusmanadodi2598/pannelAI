@@ -138,7 +138,7 @@ describe('schemaComboProbeResult', () => {
 
 describe('comboProbeSummary', () => {
 	const cases = [
-		{ name: 'no references at all', results: [], contains: 'nothing to probe' },
+		{ name: 'no references at all', results: [], contains: 'no models to test' },
 		{
 			name: 'the only reference answering',
 			results: [probe()],

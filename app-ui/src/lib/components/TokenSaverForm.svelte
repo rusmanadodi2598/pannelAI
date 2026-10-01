@@ -110,7 +110,7 @@
 
 	<TokenSaverSectionShell
 		title="RTK"
-		description="The gateway's own compressor, applied to tool results before they are sent upstream."
+		description="Built-in compaction for tool output."
 		dirty={dirty.rtk}
 		saving={saving === 'rtk'}
 		saved={saved === 'rtk'}
@@ -123,7 +123,7 @@
 			<span>
 				Compress tool results with the native filters
 				<span class="block text-xs text-[var(--color-text-muted)]">
-					Errors are preserved, and a blob a filter would grow is left as it was.
+					Errors and growing output are left unchanged.
 				</span>
 			</span>
 		</label>
@@ -136,7 +136,7 @@
 
 	<TokenSaverSectionShell
 		title="Headroom"
-		description="An external compression service. The gateway calls it and sends what comes back."
+		description="A compression service called upstream."
 		dirty={dirty.headroom}
 		saving={saving === 'headroom'}
 		saved={saved === 'headroom'}
@@ -149,7 +149,7 @@
 
 	<TokenSaverSectionShell
 		title="Ponytail"
-		description="A bias the gateway adds to the request, so the model answers in the shorter shape."
+		description="A bias added to the request for shorter answers."
 		dirty={dirty.ponytail}
 		saving={saving === 'ponytail'}
 		saved={saved === 'ponytail'}

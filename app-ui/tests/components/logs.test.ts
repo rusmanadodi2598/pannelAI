@@ -187,7 +187,9 @@ describe('LogsRequestsTab', () => {
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Open' }));
 
-		expect(await screen.findByText(/no body for this request/i)).toBeTruthy();
+		expect(
+			await screen.findByText('Capture is on, but no body was stored for this request.')
+		).toBeTruthy();
 		expect(screen.queryByText(/Capture is off/)).toBeNull();
 	});
 
@@ -231,7 +233,9 @@ describe('LogsRequestsTab', () => {
 		// The dialog is asserted by its own copy rather than by role, because the native <dialog> element is
 		// not in jsdom's accessibility tree without `showModal`, which jsdom does not implement.
 		expect(
-			await screen.findByText(/deletes every stored request log older than the retention window/)
+			await screen.findByText(
+				'Deletes logs older than the retention window. This cannot be undone.'
+			)
 		).toBeTruthy();
 		expect(screen.getByText(/Usage records are not affected/)).toBeTruthy();
 

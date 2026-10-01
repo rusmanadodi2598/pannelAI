@@ -171,7 +171,7 @@ describe('the vision adapter picker', () => {
 		render(VisionAdapterForm);
 
 		expect(await screen.findByText('th-1/gpt-4o')).toBeTruthy();
-		expect(screen.getByText('not reported as vision-capable by the catalog')).toBeTruthy();
+		expect(screen.getByText('Not a vision model in the catalog')).toBeTruthy();
 	});
 
 	it('reports a failed vision-model read inline and in the dialog', async () => {
@@ -179,7 +179,7 @@ describe('the vision adapter picker', () => {
 
 		render(VisionAdapterForm);
 
-		expect(await screen.findByText(/vision models could not be read/)).toBeTruthy();
+		expect(await screen.findByText(/Vision models could not load/)).toBeTruthy();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Add models' }));
 		const dialog = await screen.findByRole('dialog');

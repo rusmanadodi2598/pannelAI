@@ -19,9 +19,7 @@
 	<input type="checkbox" class="mt-1 size-4" bind:checked={value.enabled} />
 	<span>
 		Apply the Ponytail bias
-		<span class="block text-xs text-[var(--color-text-muted)]">
-			Added to the request the client sent, per wire format, and never twice.
-		</span>
+		<span class="block text-xs text-[var(--color-text-muted)]"> Applied once per request. </span>
 	</span>
 </label>
 

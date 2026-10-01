@@ -41,7 +41,7 @@
 >
 	{#if created}
 		<p class="text-sm text-[var(--color-text-muted)]">
-			This key is shown once. Store it now, because the gateway keeps only a hash of it.
+			This key shows once. Store it now, it cannot be recovered.
 		</p>
 
 		<div class="mt-3 flex flex-wrap items-center gap-2">
@@ -54,7 +54,7 @@
 
 		<label class="mt-4 flex items-center gap-2 text-sm">
 			<input type="checkbox" bind:checked={acknowledged} />
-			<span>I have stored this key</span>
+			<span>I've stored this key</span>
 		</label>
 	{/if}
 

@@ -25,8 +25,8 @@ export type ComboStrategy = (typeof COMBO_STRATEGIES)[number];
 // router actually implements rather than a paraphrase of it.
 export const COMBO_STRATEGY_EXPLANATIONS: Record<string, string> = {
 	fallback: 'Try models in order until one succeeds.',
-	round_robin: 'Distribute across models, keeping sticky_limit requests on one model first.',
-	fusion: 'Send to several models and let judge_model write the final answer.'
+	round_robin: 'Spread across models, keeping requests sticky on one.',
+	fusion: 'Ask several models, then one judge writes the answer.'
 };
 
 export const COMBO_STRATEGY_LABELS: Record<string, string> = {
@@ -53,7 +53,7 @@ export const comboName = z
 		message: `Use ${COMBO_NAME_MAX} characters or fewer.`
 	})
 	.refine((value) => COMBO_NAME_PATTERN.test(value), {
-		message: 'A combo name may only contain letters, numbers, dot, dash, and underscore.'
+		message: 'Use letters, numbers, dot, dash, or underscore.'
 	});
 
 // One model reference and its place in the order.

@@ -180,9 +180,7 @@ describe('UsageOverviewBarCharts', () => {
 
 		const figure = card('Top models');
 		expect(
-			within(figure).getByText(
-				'model-0 leads with 700 tokens; the top 5 of 7 models with usage are drawn.'
-			)
+			within(figure).getByText('model-0 leads with 700 tokens; top 5 of 7 shown.')
 		).toBeTruthy();
 		// The tail is not drawn, but the table carries the groups that were, which is what the sentence counts.
 		expect(within(figure).getByRole('table').querySelectorAll('tbody tr')).toHaveLength(5);

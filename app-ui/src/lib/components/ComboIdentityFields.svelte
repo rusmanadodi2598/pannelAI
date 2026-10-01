@@ -29,7 +29,7 @@
 			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
 		/>
 		<span id="combo-name-hint" class="text-xs text-[var(--color-text-muted)]">
-			A model string a client types, so no slash and no spaces.
+			A model name a client types, no slash or spaces.
 		</span>
 	</div>
 

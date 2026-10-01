@@ -11,7 +11,7 @@
 <section class="flex flex-col gap-5">
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Endpoint &amp; Key</h1>
-		<p class="text-sm text-[var(--color-text-muted)]">Keys a CLI tool presents to the gateway.</p>
+		<p class="text-sm text-[var(--color-text-muted)]">Keys a client presents to the gateway.</p>
 	</div>
 
 	<GatewayKeysTab />

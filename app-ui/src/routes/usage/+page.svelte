@@ -19,8 +19,7 @@
 	<div class="flex flex-col gap-1">
 		<h1 class="text-lg font-semibold tracking-tight">Usage</h1>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			What the gateway routed, what it consumed, and what it cost. Cost figures are estimates for
-			display, not billing amounts.
+			What the gateway routed, what it consumed, and what it cost.
 		</p>
 	</div>
 

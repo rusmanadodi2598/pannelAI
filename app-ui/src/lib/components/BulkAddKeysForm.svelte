@@ -31,6 +31,12 @@
 	let rows = $state<Row[]>([{ label: '', value: '' }]);
 	let submitting = $state(false);
 	let outcome = $state<Outcome | null>(null);
+	const atLimit = $derived(rows.length >= MAX_KEYS_PER_ENDPOINT);
+	const limitNote = $derived(
+		atLimit
+			? `The limit is ${MAX_KEYS_PER_ENDPOINT} keys per submit.`
+			: `Up to ${MAX_KEYS_PER_ENDPOINT} keys per submit.`
+	);
 
 	function clear(): void {
 		outcome = null;
@@ -112,10 +118,7 @@
 
 <div class="flex flex-col gap-2">
 	<span class="font-medium">Add several keys</span>
-	<p class="text-sm text-[var(--color-text-muted)]">
-		One submit adds every row or none of them: the gateway validates the whole batch before it
-		stores any of it, and reports each row by number.
-	</p>
+	<p class="text-sm text-[var(--color-text-muted)]">One submit adds all rows or none.</p>
 
 	{#if outcome}
 		<p role="status" class="text-sm">{outcome.summary}</p>
@@ -175,7 +178,7 @@
 		<button
 			type="button"
 			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 disabled:opacity-50"
-			disabled={rows.length >= MAX_KEYS_PER_ENDPOINT}
+			disabled={atLimit}
 			onclick={addRow}>Add another row</button
 		>
 
@@ -188,12 +191,6 @@
 			{submitting ? 'Adding keys' : rows.length === 1 ? 'Add 1 key' : `Add ${rows.length} keys`}
 		</button>
 
-		<span class="text-sm text-[var(--color-text-muted)]">
-			{#if rows.length >= MAX_KEYS_PER_ENDPOINT}
-				That is the gateway's own limit of {MAX_KEYS_PER_ENDPOINT} keys per submit.
-			{:else}
-				Up to {MAX_KEYS_PER_ENDPOINT} keys per submit.
-			{/if}
-		</span>
+		<span class="text-sm text-[var(--color-text-muted)]">{limitNote}</span>
 	</div>
 </div>

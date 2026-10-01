@@ -47,9 +47,7 @@
 			aria-describedby="proxy-host-help"
 			class={fieldClass}
 		/>
-		<span id="proxy-host-help" class={hintClass}>
-			A name, an IPv4 address, or an IPv6 address in brackets.
-		</span>
+		<span id="proxy-host-help" class={hintClass}> A host name, IPv4, or bracketed IPv6. </span>
 	</div>
 
 	<div class="flex w-32 flex-col gap-1 text-sm">
@@ -88,8 +86,6 @@
 	<input type="checkbox" class="mt-1 size-4" bind:checked={value.enabled} />
 	<span>
 		Enabled
-		<span class="block {hintClass}">
-			A disabled candidate stays in the pool with its test result, and is not offered as one to use.
-		</span>
+		<span class="block {hintClass}"> Kept in the pool, with its result, but unused. </span>
 	</span>
 </label>

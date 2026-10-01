@@ -20,8 +20,7 @@
 	<span>
 		Compress through Headroom
 		<span class="block text-xs text-[var(--color-text-muted)]">
-			Called with a 5 second timeout. A failure or a timeout fails open: the request continues
-			uncompressed. The gateway does not start or stop the service.
+			Times out after 5 seconds. A failure sends the request uncompressed.
 		</span>
 	</span>
 </label>
@@ -37,7 +36,7 @@
 		class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
 	/>
 	<span id="headroom-url-help" class="text-xs text-[var(--color-text-muted)]">
-		An absolute http or https URL. Kept even while the group is off.
+		Absolute http or https URL. Kept while off.
 	</span>
 </div>
 
@@ -46,7 +45,7 @@
 	<span>
 		Compress user messages too
 		<span class="block text-xs text-[var(--color-text-muted)]">
-			Off leaves the messages a person wrote out of the pass.
+			Off leaves user messages untouched.
 		</span>
 	</span>
 </label>

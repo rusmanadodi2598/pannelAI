@@ -45,9 +45,7 @@ describe('PlaygroundPage send', () => {
 		expect(calls.chatBodies[0]).toEqual({ model: 'deepseek/chat', message: 'hello' });
 
 		const block = within(answerBlock());
-		expect(
-			block.getByText('The stream ended with the sentinel the data plane documents.')
-		).toBeTruthy();
+		expect(block.getByText('The answer ended cleanly.')).toBeTruthy();
 
 		// The facts: the resolved model and the usage the wire reported, and the two it did not state.
 		expect(block.getByText('deepseek/chat')).toBeTruthy();
@@ -69,7 +67,7 @@ describe('PlaygroundPage send', () => {
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Stop' }));
 
-		expect(await screen.findByText(/You stopped the stream/)).toBeTruthy();
+		expect(await screen.findByText('You stopped it. The text above is what arrived.')).toBeTruthy();
 		expect(within(answerBlock()).getByText('partial')).toBeTruthy();
 	});
 
@@ -130,6 +128,8 @@ describe('PlaygroundPage send', () => {
 		expect(await screen.findByText('The send failed')).toBeTruthy();
 		const block = within(answerBlock());
 		expect(block.getByText('half')).toBeTruthy();
-		expect(block.getByText(/The stream stopped before it reached an end/)).toBeTruthy();
+		expect(
+			block.getByText('The answer never finished. The text above is what arrived.')
+		).toBeTruthy();
 	});
 });

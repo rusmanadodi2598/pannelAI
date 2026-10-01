@@ -206,14 +206,15 @@
 		</p>
 
 		{#if deleteError}
-			<p class="mt-3 text-[var(--color-danger)]" role="alert">
-				{#if conflict}
-					This provider is still referenced, so it was not deleted. {deleteError} Remove or move its endpoints
-					first.
-				{:else}
+			{#if conflict}
+				<p class="mt-3 text-[var(--color-danger)]" role="alert">
+					Still referenced. {deleteError} Remove or move its endpoints first.
+				</p>
+			{:else}
+				<p class="mt-3 text-[var(--color-danger)]" role="alert">
 					This provider was not deleted. {deleteError}
-				{/if}
-			</p>
+				</p>
+			{/if}
 		{/if}
 
 		{#snippet footer()}

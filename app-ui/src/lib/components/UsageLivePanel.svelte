@@ -73,13 +73,9 @@
 			case 'connecting':
 				return 'Connecting to the gateway live stream.';
 			case 'paused':
-				return 'Live updates are paused. The totals below are from the last completed read.';
+				return 'Live updates are paused. Totals are from the last read.';
 			case 'unavailable':
-				return `${report.reason ?? 'The live stream is unavailable.'} ${
-					report.retrying
-						? 'Another attempt is scheduled.'
-						: 'Retrying has stopped. Use Try again to reconnect.'
-				}`;
+				return report.reason ?? 'The live stream is unavailable.';
 			default:
 				return 'Live updates are not running. They start when this tab is visible.';
 		}
@@ -93,14 +89,14 @@
 		const result = await listProviders({ per_page: 100 });
 
 		if (!result.ok) {
-			providersNotice = `Providers could not be read (${result.error.message}), so the drawing has no nodes.`;
+			providersNotice = `Providers could not be read. The drawing has no nodes. ${result.error.message}`;
 			return;
 		}
 
 		const { data, meta } = result.data;
 		providersNotice =
 			meta.total > data.length
-				? `The registry carries ${meta.total} providers and this drawing reads the first ${data.length}.`
+				? `Shows the first ${data.length} of ${meta.total} providers.`
 				: null;
 		providers = configuredProviders(data);
 	}
@@ -128,8 +124,7 @@
 	<div class="flex flex-col gap-1">
 		<h2 class="text-base font-medium">Live routing</h2>
 		<p class="text-sm text-[var(--color-text-muted)]">
-			What the gateway is routing right now, from its live stream. The totals and charts below come
-			from their own reads and are not changed by anything here.
+			What the gateway routes right now, from its live stream.
 		</p>
 	</div>
 

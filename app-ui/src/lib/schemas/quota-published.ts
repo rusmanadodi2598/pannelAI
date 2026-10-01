@@ -58,8 +58,7 @@ export type PublishedWindowView = {
 
 // The sentence §6.6 asks the card to keep visible: the two numbers on one screen come from two different
 // ledgers, and a reader who is not told will take the provider's for a correction of the gateway's.
-export const PUBLISHED_QUOTA_NOTE =
-	"Reported by the provider just now, not counted by this gateway - the rows above are this gateway's own count of what it sent.";
+export const PUBLISHED_QUOTA_NOTE = 'Reported by the provider, not counted by this gateway.';
 
 /**
  * One published window as display values.

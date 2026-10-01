@@ -73,7 +73,7 @@ function pick<T>(
 	const parsed = schema.safeParse(raw);
 	if (parsed.success) return parsed.data;
 
-	notices.push(`The ${label} "${raw}" is not one the panel offers, so ${fallbackText} is shown.`);
+	notices.push(`The ${label} "${raw}" is not valid; showing ${fallbackText}.`);
 	return fallback;
 }
 
@@ -85,7 +85,7 @@ function pickText(raw: string | null, notices: string[]): string {
 	const parsed = searchText.safeParse(raw);
 	if (parsed.success) return parsed.data;
 
-	notices.push('A filter value was longer than 200 characters, so it was left out.');
+	notices.push('A filter value was over 200 characters, so it was dropped.');
 	return '';
 }
 
@@ -115,10 +115,10 @@ function perPageNotice(params: URLSearchParams): string | null {
 	if (parsed.success && parsed.data === USAGE_RECORDS_PAGE_SIZE) return null;
 
 	const reason = parsed.success
-		? `The URL asked for ${parsed.data} records per page`
-		: 'The page size in this URL is not one the panel can read';
+		? `Asked for ${parsed.data} per page`
+		: 'That page size is not readable';
 
-	return `${reason}, so this screen reads ${USAGE_RECORDS_PAGE_SIZE} and the parameter was removed.`;
+	return `${reason}, so this screen reads ${USAGE_RECORDS_PAGE_SIZE}.`;
 }
 
 /**
@@ -140,18 +140,11 @@ export function parseUsageSearch(params: URLSearchParams): UsageSearch {
 			params.get('group_by'),
 			schemaUsageBreakdown,
 			DEFAULT_USAGE_BREAKDOWN,
-			'group_by value',
+			'group_by',
 			'the breakdown by model',
 			notices
 		),
-		sort: pick(
-			params.get('sort'),
-			schemaUsageSort,
-			'',
-			'sort value',
-			"the API's own order",
-			notices
-		),
+		sort: pick(params.get('sort'), schemaUsageSort, '', 'sort', "the API's own order", notices),
 		order: pick(
 			params.get('order'),
 			schemaUsageOrder,

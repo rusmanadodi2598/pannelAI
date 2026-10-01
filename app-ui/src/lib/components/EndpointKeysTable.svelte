@@ -119,8 +119,7 @@
 						</div>
 						{#if blocked}
 							<span class="text-[var(--color-text-muted)]"
-								>Last active key, so deleting it would leave the endpoint with nothing to route
-								with.</span
+								>Last active key: deleting leaves nothing to route with.</span
 							>
 						{/if}
 					</td>

@@ -16,7 +16,7 @@ import ApiBaseDialog from '../../src/lib/components/ApiBaseDialog.svelte';
 import { BASE_URL, stubApiBase } from '../support/api-base-stub';
 import { expectIconOnly } from '../support/icon-only';
 
-const LOADING = 'Reading the gateway address from the panel server.';
+const LOADING = 'Reading the gateway address.';
 const FAILED_COPY = 'Copy failed. Select the text and copy it.';
 const RETRY = 'Try again';
 

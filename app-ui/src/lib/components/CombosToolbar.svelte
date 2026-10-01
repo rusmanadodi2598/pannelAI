@@ -28,7 +28,7 @@
 
 <div class="flex flex-wrap items-stretch justify-between gap-2">
 	<p class="flex min-w-0 flex-1 items-center text-sm text-[var(--color-text-muted)]">
-		A combo is a model string that resolves to several upstream models.
+		One model name, several upstream models.
 	</p>
 	<div class="flex flex-wrap items-stretch gap-2">
 		{#if !hidden}

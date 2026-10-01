@@ -43,8 +43,8 @@ sk-key-only-auto-named`;
 
 {#if mode === 'bulk'}
 	<p class="text-sm text-[var(--color-text-muted)]">
-		One key per line. Format: <span class="font-mono">name|apiKey</span> or just
-		<span class="font-mono">apiKey</span> (auto-named by index).
+		One key per line. Format: <span class="font-mono">name|apiKey</span> or
+		<span class="font-mono">apiKey</span> (auto-named).
 	</p>
 	<label class="flex flex-col gap-1">
 		<span class="text-[var(--color-text-muted)]">Keys</span>
@@ -64,8 +64,7 @@ sk-key-only-auto-named`;
 		</div>
 	{/if}
 	<p class="text-sm text-[var(--color-text-muted)]">
-		Each line becomes a connection of this provider, under the name that line gives it. Up to
-		{maxConnections} keys at a time.
+		Each line becomes one named connection. Up to {maxConnections}.
 	</p>
 {:else}
 	<label class="flex flex-col gap-1">

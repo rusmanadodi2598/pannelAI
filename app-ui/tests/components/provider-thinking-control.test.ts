@@ -100,9 +100,7 @@ describe('the reasoning picker', () => {
 
 		expect(modeSelect().value).toBe('high');
 		expect(
-			screen.getByText(
-				'Every request to this provider asks for the high level; a copied model name gains the (high) suffix when that model accepts it.'
-			)
+			screen.getByText('Copied names gain the (high) suffix when a model accepts it.')
 		).toBeTruthy();
 	});
 
@@ -112,9 +110,7 @@ describe('the reasoning picker', () => {
 
 		expect(modeSelect().value).toBe('auto');
 		expect(
-			screen.getByText(
-				'Follows the reasoning setting each request carries; a copied model name gains no suffix.'
-			)
+			screen.getByText("Follows the request's own reasoning. Copied names gain no suffix.")
 		).toBeTruthy();
 	});
 

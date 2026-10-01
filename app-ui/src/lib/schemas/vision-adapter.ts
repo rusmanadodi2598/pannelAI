@@ -84,7 +84,7 @@ export function visionAdapterWarning(adapter: {
 }): string | null {
 	if (!adapter.enabled) return null;
 	if (adapter.models.length > 0) return null;
-	return 'The adapter is enabled but no model is selected, so image requests are not adapted until you choose at least one.';
+	return 'On, but no model selected. Pick one to adapt images.';
 }
 
 // The one-line state the screen shows above the form.
