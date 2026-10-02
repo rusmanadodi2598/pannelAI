@@ -54,6 +54,7 @@ type observability struct {
 func buildObservability(
 	usageRepo repository.UsageRecordRepository,
 	quotaRepo repository.QuotaRepository,
+	publishedRepo repository.PublishedQuotaRepository,
 	endpointRepo repository.EndpointRepository,
 	logRepo repository.RequestLogRepository,
 	settings *service.SettingsService,
@@ -84,6 +85,11 @@ func buildObservability(
 	quotaSvc, err := service.NewQuotaService(service.QuotaServiceDeps{
 		Quotas: quotaRepo, Usage: usageRepo, Endpoints: endpointRepo,
 		Providers: index, Sealer: sealer,
+		// The published cache is the provider numbers the quota screen leads with.
+		// It is a separate store from the counted windows because it is written by a
+		// poll worker rather than by routed traffic, and the screen must read it in
+		// one statement instead of asking every provider during the read.
+		PublishedCache: publishedRepo,
 	})
 	if err != nil {
 		return observability{}, fmt.Errorf("management wiring: quotas: %w", err)

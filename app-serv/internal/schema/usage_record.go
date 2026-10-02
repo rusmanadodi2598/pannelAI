@@ -72,9 +72,23 @@ type QuotaWindowResponse struct {
 // every window of the page's provider groups, and per_page counts provider
 // groups on this route, so a card never splits across pages. The meta block is
 // the house Page shape (§4) with total counting groups.
+//
+// Published carries the provider's own answer for the endpoints named on this
+// page, read from the cache the poll worker writes (§7.12). It rides on the
+// collection rather than costing one read per card because asking each provider
+// during a screen read is the fan-out AGENTS.md §1.7 blocks here. Endpoints the
+// worker has not answered are simply absent, which is how "no provider answer yet"
+// reaches the card. The field is additive: a client that only reads Data sees
+// exactly what it saw before.
 type QuotaWindowList struct {
-	Data []QuotaWindowResponse `json:"data"`
-	Meta Page                  `json:"meta"`
+	Data      []QuotaWindowResponse         `json:"data"`
+	Meta      Page                          `json:"meta"`
+	Published []PublishedQuotaUsageResponse `json:"published"`
+	// PublishedNote is present only when the provider cache could not be read at
+	// all. The counted windows are still true and still arrive, so the alternative
+	// to naming the gap is a page of cards that look like accounts whose providers
+	// published nothing — which is a lie about data the gateway did not lose.
+	PublishedNote string `json:"published_note,omitempty"`
 }
 
 // QuotaEndpointDetail is the body of GET /api/v1/quotas/{endpoint_id}: that

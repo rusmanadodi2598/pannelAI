@@ -54,9 +54,31 @@ func (h *QuotaHandler) List(w http.ResponseWriter, r *http.Request) {
 		schema.WriteError(w, err)
 		return
 	}
+	// The accounts, not the counted rows, decide who gets a provider answer: an
+	// endpoint that has served nothing yet is still a card the operator needs.
+	accounts, _, err := h.quotas.ListAccountsPaged(r.Context(), page, perPage)
+	if err != nil {
+		schema.WriteError(w, err)
+		return
+	}
+	published, err := h.quotas.PagePublished(r.Context(), accounts)
+	if err != nil {
+		// The gateway's own counts stay true when the provider cache cannot be read,
+		// so the page answers with them and names what is missing rather than
+		// failing a screen the operator is reading. A silent omission would leave the
+		// cards looking like accounts that published nothing.
+		schema.WriteJSON(w, http.StatusOK, schema.QuotaWindowList{
+			Data:          windowResponses(windows),
+			Meta:          schema.Page{Page: page, PerPage: perPage, Total: total},
+			Published:     publishedUsageResponses(nil),
+			PublishedNote: "Provider quota could not be read; the counts below are this gateway's own.",
+		})
+		return
+	}
 	schema.WriteJSON(w, http.StatusOK, schema.QuotaWindowList{
-		Data: windowResponses(windows),
-		Meta: schema.Page{Page: page, PerPage: perPage, Total: total},
+		Data:      windowResponses(windows),
+		Meta:      schema.Page{Page: page, PerPage: perPage, Total: total},
+		Published: publishedUsageResponses(published),
 	})
 }
 
@@ -122,45 +144,29 @@ func (h *QuotaHandler) PutCap(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUsage serves GET /api/v1/quotas/{endpoint_id}/usage: the provider's own
-// answer about one connection's allocation, read live rather than counted here.
-// It is a separate body from Get because the two answers disagree by nature and
-// neither is the other's correction (draft 036 §6): §7.12's windows say what this
-// gateway sent, this says what the provider sold.
+// answer about one connection's allocation. It is a separate body from Get because
+// the two answers disagree by nature and neither is the other's correction
+// (draft 036 §6): §7.12's windows say what this gateway sent, this says what the
+// provider sold.
+//
+// The answer comes from the poll worker's cache by default. `?force=1` is the
+// operator's explicit press on one card and asks the provider now — one call for
+// one account, which is the same seam the reference's per-card refresh uses, and
+// the reason the page itself never has to fan out.
 func (h *QuotaHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
-	usage, err := h.quotas.PublishedUsage(r.Context(), r.PathValue("endpoint_id"))
+	usage, err := h.quotas.PublishedUsage(r.Context(), r.PathValue("endpoint_id"), wantForce(r))
 	if err != nil {
 		schema.WriteError(w, err)
 		return
 	}
-	schema.WriteJSON(w, http.StatusOK, schema.PublishedQuotaUsageResponse{
-		EndpointID: usage.EndpointID,
-		ProviderID: usage.ProviderID,
-		Plan:       usage.Plan,
-		FetchedAt:  schema.Timestamp(usage.FetchedAt),
-		Message:    usage.Message,
-		Data:       publishedWindowResponses(usage.Windows),
-	})
+	schema.WriteJSON(w, http.StatusOK, publishedUsageResponse(usage))
 }
 
-// publishedWindowResponses maps the provider's buckets onto the wire shape, always
-// as a non-nil slice so an account with nothing published answers an empty array
-// beside the message that says why.
-func publishedWindowResponses(windows []service.PublishedWindow) []schema.PublishedQuotaWindowResponse {
-	resp := make([]schema.PublishedQuotaWindowResponse, 0, len(windows))
-	for _, window := range windows {
-		row := schema.PublishedQuotaWindowResponse{
-			Label: window.Label,
-			Used:  schema.PublishedQuotaAmount(window.Used),
-		}
-		if window.HasTotal {
-			row.Total = ptr(schema.PublishedQuotaAmount(window.Total))
-		}
-		if window.ResetsAt != nil {
-			row.ResetsAt = ptr(schema.Timestamp(*window.ResetsAt))
-		}
-		resp = append(resp, row)
-	}
-	return resp
+// wantForce reads the one query flag this route honours. Anything but a literal "1"
+// is a cache read, because a value the operator did not type — a stale bookmark, a
+// proxy that rewrites it — must not turn a page load into provider traffic.
+func wantForce(r *http.Request) bool {
+	return r.URL.Query().Get("force") == "1"
 }
 
 // windowResponses maps stored windows onto their wire shape, always as a

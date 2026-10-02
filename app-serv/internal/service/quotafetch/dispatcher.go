@@ -14,8 +14,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 )
 
@@ -26,45 +24,6 @@ const requestTimeout = 20 * time.Second
 // client is the outbound client every fetch shares. The timeout lives here rather than
 // per request because the package owns the whole call.
 var client = &http.Client{Timeout: requestTimeout}
-
-// familyEndpoints are the usage endpoints the reference registry carries
-// (open-sse/providers/registry/<family>.js, transport.usage.url).
-var familyEndpoints = map[string]string{
-	"vercel-ai-gateway": "https://ai-gateway.vercel.sh/v1/credits",
-	"codebuddy-cn":      "https://copilot.tencent.com/v2/billing/meter/get-user-resource",
-	"codebuddy-intl":    "https://www.codebuddy.ai/v2/billing/meter/get-user-resource",
-	"qoder":             "https://openapi.qoder.sh/api/v2/quota/usage",
-	"qoder-cn":          "https://openapi.qoder.com.cn/api/v2/quota/usage",
-}
-
-// usageEndpoint resolves the one URL a family's quota read goes to: the endpoint
-// the provider's registry entry declares when it declares one, and the family's
-// built-in otherwise. vercel-ai-gateway is the entry with no declared usage URL,
-// so the built-in is not a legacy to delete but the fallback for that case.
-//
-// The order matters for correctness rather than taste: the reference reads
-// `transport.usage.url` off the registry, so a second copy here would silently
-// keep asking the old host after an operator or an upstream moved the endpoint.
-func usageEndpoint(creds Credentials, family string) string {
-	if declared := strings.TrimSpace(creds.UsageURL); declared != "" {
-		return declared
-	}
-	return familyEndpoints[family]
-}
-
-// endpointFor overrides the scheme and host of a family's endpoint while keeping the
-// family's path, which is what a test stub needs to intercept a call without changing
-// what the family requests.
-func endpointFor(familyURL string, override string) string {
-	if override == "" {
-		return familyURL
-	}
-	parsed, err := url.Parse(familyURL)
-	if err != nil {
-		return familyURL
-	}
-	return override + parsed.Path
-}
 
 // Fetch reads one provider's published quota. An unknown family answers the reference's
 // soft message rather than an error, because the caller renders that sentence on the
@@ -81,48 +40,32 @@ func Fetch(ctx context.Context, family string, creds Credentials) Result {
 	return fetch(bounded, creds)
 }
 
-// familyFetchers is the port of USAGE_HANDLERS. Families land here as they are ported;
-// the reference's remaining families (claude, codex, gemini-cli, antigravity, and the
-// rest) are recorded in docs/PORT/004-PORT-QUOTA-TRACKER.md §7.4 as follow-up work.
+// familyFetchers is the port of USAGE_HANDLERS, keyed by the registry provider id the
+// endpoint's own row names. A family the registry marks `usage: true` but that is absent
+// here answers the soft "not implemented" message — which is why parity between this map
+// and the registry is a test rather than a checklist someone has to remember.
 var familyFetchers = map[string]func(context.Context, Credentials) Result{
-	"vercel-ai-gateway": fetchVercel,
-	"codebuddy-cn":      fetchCodeBuddy(codebuddyCN),
-	"codebuddy-intl":    fetchCodeBuddy(codebuddyIntl),
+	"claude":      fetchClaude,
+	"commandcode": fetchCommandCode,
+	"deepseek":    fetchDeepSeek,
+	"gemini-cli":  fetchGeminiCLI,
+	"antigravity": fetchAntigravity,
+	"github":      fetchGitHub,
+	"glm":         fetchGlm,
+	"grok-cli":    fetchGrok,
+	"groq":        fetchGroq,
+	"kimi":        fetchKimi,
+	"minimax":     fetchMiniMax,
+	"zed":         fetchZed,
+	// Two families share one handler each because the pair differs only by host or by
+	// product identification, the same reason the reference keeps one function per pair.
+	"codebuddy-cn":   fetchCodeBuddy(codebuddyCN),
+	"codebuddy-intl": fetchCodeBuddy(codebuddyIntl),
+	"opencode-zen":   fetchOpenCode(openCodeZen),
+	"opencode-go":    fetchOpenCode(openCodeGo),
 	// The Qoder pair shares one handler: the CN site answers the same shape from a
 	// different service, and the exchange host follows the endpoint rather than a
 	// table of regions.
 	"qoder":    fetchQoder("qoder", "https://openapi.qoder.sh"),
 	"qoder-cn": fetchQoder("qoder-cn", "https://openapi.qoder.com.cn"),
-}
-
-type codebuddyFamily struct {
-	id      string            // the registry family key, which is where its usage endpoint is declared
-	name    string            // human-facing region word for messages
-	headers map[string]string // the transport headers the billing endpoint expects, as the registry declares them
-}
-
-var codebuddyCN = codebuddyFamily{
-	id:   "codebuddy-cn",
-	name: "CN",
-	headers: map[string]string{
-		"User-Agent":          "CLI/2.108.1 CodeBuddy/2.108.1",
-		"X-Product":           "SaaS",
-		"X-IDE-Type":          "CLI",
-		"X-IDE-Name":          "CLI",
-		"x-requested-with":    "XMLHttpRequest",
-		"x-codebuddy-request": "1",
-	},
-}
-
-var codebuddyIntl = codebuddyFamily{
-	id:   "codebuddy-intl",
-	name: "Intl",
-	headers: map[string]string{
-		"User-Agent":          "IDE/2.108.1 CodeBuddy/2.108.1",
-		"X-Product":           "SaaS",
-		"X-IDE-Type":          "IDE",
-		"X-IDE-Name":          "IDE",
-		"x-requested-with":    "XMLHttpRequest",
-		"x-codebuddy-request": "1",
-	},
 }

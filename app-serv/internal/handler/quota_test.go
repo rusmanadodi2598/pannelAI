@@ -40,7 +40,10 @@ import (
 // stubQuotaRepo is an in-memory QuotaRepository: windows and caps per endpoint.
 type stubQuotaRepo struct {
 	windows []domain.QuotaWindow
-	caps    map[string]domain.QuotaCap
+	// accounts models the connections that exist whether or not any traffic has been
+	// counted through them, which is what the quota cards page over.
+	accounts []domain.QuotaAccount
+	caps     map[string]domain.QuotaCap
 }
 
 func newStubQuotaRepo() *stubQuotaRepo {

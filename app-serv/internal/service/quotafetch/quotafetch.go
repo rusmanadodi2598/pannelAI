@@ -26,6 +26,14 @@ type Quota struct {
 	Used      float64
 	Total     float64
 	Unlimited bool
+	// Unit names what Used and Total count, in the provider's own dimension ("requests",
+	// "tokens", "USD", "%"). Empty means the provider stated a bare counter, which is the
+	// honest answer rather than a missing one, and the panel prints it without a suffix.
+	Unit string
+	// IsCreditBalance marks a money balance rather than a capped window: a prepaid wallet
+	// has no share to bar, and drawing one would render "12.34 of something" where the
+	// provider only ever claimed 12.34 USD left. The panel renders it as an amount.
+	IsCreditBalance bool
 	// ResetAt is when the window refills. Zero means the provider did not report one.
 	// For a non-recurring quota (a one-shot pack) it is the expiry, not a refill.
 	ResetAt   time.Time
@@ -41,6 +49,44 @@ type Result struct {
 	Plan    string
 	Quotas  []Quota
 	Message string
+	// Failed marks a sentence that the reference would have raised instead of returned.
+	// Two of its usage handlers — github's and the cloudcode one antigravity reads
+	// through — throw on a provider error, while the rest answer with a message; the
+	// split is the reference's deliberate policy and survives the port as this flag
+	// rather than as a Go error, because a fetcher has no caller to throw at. The
+	// worker counts a failed poll and backs off; a plain message is an answer.
+	Failed bool
+}
+
+// UsageEndpoints is every usage surface one provider's registry entry declares. The
+// reference reads `transport.usage` off its registry, and a family asks one key of it:
+// `url` for most, `quota_url` for the gemini CLI, `quota_api_url` for antigravity,
+// `urls[]` for MiniMax (which answers from two hosts), `oauth_url` and `org_url` for
+// Claude, `user_url` for Grok. Carrying the whole block rather than one URL is what
+// keeps a family that asks a second key from silently calling an empty one.
+//
+// It is a mirror declared here rather than the registry's own struct, so this package
+// stays reachable from a test without a registry and the layer rule that keeps
+// `service` from importing config upward still holds: the mapping is one function in
+// internal/service, and nothing here names the registry.
+type UsageEndpoints struct {
+	URL                 string
+	URLs                []string
+	TokenURL            string
+	QuotaURL            string
+	QuotaAPIURL         string
+	LoadCodeAssistURL   string
+	LoadProjectAPIURL   string
+	OrgURL              string
+	SettingsURL         string
+	LimitsPath          string
+	ResetCreditsConsume string
+	ResetCredits        string
+	QuotaSummaryAPIURL  string
+	UserURL             string
+	OAuthURL            string
+	CWHost              string
+	QHost               string
 }
 
 // Credentials carries what a family's endpoint authenticates with. A family uses what it
@@ -50,10 +96,10 @@ type Credentials struct {
 	APIKey               string
 	ProviderSpecificData map[string]string
 
-	// UsageURL is the endpoint the provider's own registry entry declares
-	// (`transport.usage.url`), which is where the reference reads it from too.
-	// Empty means the entry declares none, and the family's built-in applies.
-	UsageURL string
+	// Endpoints is the usage block the provider's own registry entry declares, which is
+	// where the reference reads its URLs from too. An empty member means the entry
+	// declares none for that purpose, and the family's built-in applies.
+	Endpoints UsageEndpoints
 	// UsageHeaders are the entry's transport headers: this billing endpoint is
 	// reached with the same product identification the chat gateway demands, and
 	// reading it from the entry keeps one declaration rather than two.

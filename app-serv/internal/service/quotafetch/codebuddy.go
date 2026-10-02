@@ -29,6 +29,38 @@ func fetchCodeBuddy(family codebuddyFamily) func(context.Context, Credentials) R
 	}
 }
 
+type codebuddyFamily struct {
+	id      string            // the registry family key, which is where its usage endpoint is declared
+	name    string            // human-facing region word for messages
+	headers map[string]string // the transport headers the billing endpoint expects, as the registry declares them
+}
+
+var codebuddyCN = codebuddyFamily{
+	id:   "codebuddy-cn",
+	name: "CN",
+	headers: map[string]string{
+		"User-Agent":          "CLI/2.108.1 CodeBuddy/2.108.1",
+		"X-Product":           "SaaS",
+		"X-IDE-Type":          "CLI",
+		"X-IDE-Name":          "CLI",
+		"x-requested-with":    "XMLHttpRequest",
+		"x-codebuddy-request": "1",
+	},
+}
+
+var codebuddyIntl = codebuddyFamily{
+	id:   "codebuddy-intl",
+	name: "Intl",
+	headers: map[string]string{
+		"User-Agent":          "IDE/2.108.1 CodeBuddy/2.108.1",
+		"X-Product":           "SaaS",
+		"X-IDE-Type":          "IDE",
+		"X-IDE-Name":          "IDE",
+		"x-requested-with":    "XMLHttpRequest",
+		"x-codebuddy-request": "1",
+	},
+}
+
 func readCodeBuddy(ctx context.Context, family codebuddyFamily, creds Credentials) Result {
 	endpoint := endpointFor(usageEndpoint(creds, family.id), creds.Endpoint)
 

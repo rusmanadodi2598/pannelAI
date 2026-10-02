@@ -134,3 +134,7 @@ func testPolicy() QuotaFlushPolicy {
 		Timeout:     2 * time.Second,
 	}
 }
+
+func (r *recordingQuotaRepo) PageAccountsByProvider(context.Context, int, int) ([]domain.QuotaAccount, int64, error) {
+	return nil, 0, nil
+}

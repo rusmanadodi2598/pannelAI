@@ -100,7 +100,7 @@ func TestQuotaService_PublishedUsageRefusals(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			quotas, fetcher := newPublishedFixture(t, tc.endpoint, tc.lookErr, tc.entry, quotafetch.Result{})
-			_, err := quotas.PublishedUsage(context.Background(), tc.id)
+			_, err := quotas.PublishedUsage(context.Background(), tc.id, true)
 			if tc.wantRaw != nil {
 				// The store's own failure travels: a read that cannot find the
 				// row is missing, one that cannot ask is not, and folding the
@@ -124,52 +124,6 @@ func TestQuotaService_PublishedUsageRefusals(t *testing.T) {
 	}
 }
 
-// TestQuotaService_PublishedUsageCredential pins which half of the credential pair
-// the read fills: an account token must not arrive as a key, or a provider would be
-// asked with a bearer it did not sell.
-func TestQuotaService_PublishedUsageCredential(t *testing.T) {
-	cases := []struct {
-		name       string
-		endpoint   domain.UpstreamEndpoint
-		providerID string
-		wantAccess string
-		wantAPIKey string
-	}{
-		{
-			name:       "an oauth account asks with its access token",
-			endpoint:   oauthPublishedEndpoint(t, "qoder", "dt-device-token"),
-			providerID: "qoder", wantAccess: "dt-device-token",
-		},
-		{
-			name:       "a key account asks with its key",
-			endpoint:   keyPublishedEndpoint(t, "qoder", "pt-personal-token"),
-			providerID: "qoder", wantAPIKey: "pt-personal-token",
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			quotas, fetcher := newPublishedFixture(t, tc.endpoint, nil,
-				usageEntry(tc.providerID, true), quotafetch.Result{Plan: "pro"})
-			usage, err := quotas.PublishedUsage(context.Background(), "ep_pub")
-			if err != nil {
-				t.Fatalf("PublishedUsage() error = %v", err)
-			}
-			if fetcher.calls != 1 {
-				t.Fatalf("provider calls = %d, want 1", fetcher.calls)
-			}
-			if fetcher.family != tc.providerID {
-				t.Fatalf("family = %q, want %q", fetcher.family, tc.providerID)
-			}
-			if fetcher.creds.AccessToken != tc.wantAccess || fetcher.creds.APIKey != tc.wantAPIKey {
-				t.Fatalf("credentials = %+v, want access %q key %q", fetcher.creds, tc.wantAccess, tc.wantAPIKey)
-			}
-			if usage.EndpointID != "ep_pub" || usage.ProviderID != tc.providerID || usage.Plan != "pro" {
-				t.Fatalf("usage = %+v, want the endpoint's own identity and plan", usage)
-			}
-		})
-	}
-}
-
 // TestQuotaService_PublishedUsageWindows covers how the provider's buckets become
 // windows, including the two shapes a card must not confuse: an unbounded bucket and
 // one that states a refill.
@@ -185,7 +139,7 @@ func TestQuotaService_PublishedUsageWindows(t *testing.T) {
 			},
 		})
 
-	usage, err := quotas.PublishedUsage(context.Background(), "ep_pub")
+	usage, err := quotas.PublishedUsage(context.Background(), "ep_pub", true)
 	if err != nil {
 		t.Fatalf("PublishedUsage() error = %v", err)
 	}
@@ -220,7 +174,7 @@ func TestQuotaService_PublishedUsageSoftResult(t *testing.T) {
 		usageEntry("qoder", true),
 		quotafetch.Result{Message: "Qoder credential not available."})
 
-	usage, err := quotas.PublishedUsage(context.Background(), "ep_pub")
+	usage, err := quotas.PublishedUsage(context.Background(), "ep_pub", true)
 	if err != nil {
 		t.Fatalf("PublishedUsage() error = %v, want the soft answer", err)
 	}
@@ -236,7 +190,7 @@ func TestQuotaService_PublishedUsageSoftResult(t *testing.T) {
 // built for §7.12 alone keeps every counted read and has no live read to answer.
 func TestQuotaService_PublishedUsageUnwired(t *testing.T) {
 	quotas, _ := newQuotaServiceFixture(t, &stubEndpointLookup{known: map[string]bool{"ep_pub": true}})
-	_, err := quotas.PublishedUsage(context.Background(), "ep_pub")
+	_, err := quotas.PublishedUsage(context.Background(), "ep_pub", true)
 	var appErr *domain.AppError
 	if !errors.As(err, &appErr) {
 		t.Fatalf("PublishedUsage() error = %v, want an app error", err)

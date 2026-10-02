@@ -210,7 +210,7 @@ func TestCodeBuddy_ReadsItsEndpointAndHeadersFromTheEntry(t *testing.T) {
 		{
 			name: "the entry's declared usage URL and headers win",
 			creds: Credentials{
-				AccessToken: "token-1", UsageURL: server.URL + "/moved/billing",
+				AccessToken: "token-1", Endpoints: UsageEndpoints{URL: server.URL + "/moved/billing"},
 				UsageHeaders: map[string]string{"User-Agent": "IDE/9.9.9"},
 			},
 			wantPath: "/moved/billing", wantUA: "IDE/9.9.9",

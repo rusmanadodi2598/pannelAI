@@ -38,6 +38,13 @@ type Config struct {
 	LoginLockout      time.Duration
 	GatewayKeyPrefix  string
 	RateLimitPerMin   int
+	// QuotaPollBudget and QuotaPollConcurrency are the operator's two knobs on the
+	// published-quota sweep: how many accounts one tick may ask, and how many of those
+	// calls may be in flight. They are configuration because the right number depends on
+	// how many accounts a deployment holds and on how tolerant each provider is of being
+	// asked, which is something the operator knows and the binary does not.
+	QuotaPollBudget      int
+	QuotaPollConcurrency int
 	// PublicBaseURL is the absolute URL this gateway answers on, when it is
 	// deployed behind a proxy or on a hostname the request's Host header does
 	// not name. SPEC-API-001 §7.4 needs it to build the OAuth callback URL and
@@ -86,6 +93,8 @@ func Load() (Config, error) {
 		{"DB_POOL_MAX", &cfg.DBPoolMax, 10, 100},
 		{"LOGIN_MAX_FAILS", &cfg.LoginMaxFails, 5, 100},
 		{"RATE_LIMIT_PER_MIN", &cfg.RateLimitPerMin, 120, 10000},
+		{"QUOTA_POLL_BUDGET", &cfg.QuotaPollBudget, 40, 500},
+		{"QUOTA_POLL_CONCURRENCY", &cfg.QuotaPollConcurrency, 4, 16},
 	}
 	for _, f := range intFields {
 		v, err := getenvInt(f.name, f.def)
@@ -158,6 +167,12 @@ func (c Config) validate() error {
 	}
 	if c.RateLimitPerMin < 1 {
 		problems = append(problems, "RATE_LIMIT_PER_MIN must be >= 1")
+	}
+	if c.QuotaPollBudget < 1 || c.QuotaPollBudget > 500 {
+		problems = append(problems, "QUOTA_POLL_BUDGET must be between 1 and 500")
+	}
+	if c.QuotaPollConcurrency < 1 || c.QuotaPollConcurrency > 16 {
+		problems = append(problems, "QUOTA_POLL_CONCURRENCY must be between 1 and 16")
 	}
 	if c.PublicBaseURL != "" && !isAbsoluteHTTPURL(c.PublicBaseURL) {
 		problems = append(problems, "PUBLIC_BASE_URL must be an absolute http(s) URL, e.g. https://gateway.example.com")

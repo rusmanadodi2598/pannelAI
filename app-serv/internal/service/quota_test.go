@@ -175,3 +175,7 @@ func TestQuotaService_SetCap(t *testing.T) {
 		})
 	}
 }
+
+func (r *stubCapRepo) PageAccountsByProvider(context.Context, int, int) ([]domain.QuotaAccount, int64, error) {
+	return nil, 0, nil
+}

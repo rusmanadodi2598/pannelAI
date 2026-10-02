@@ -81,6 +81,10 @@ func oauthPublishedEndpoint(t *testing.T, providerID, accessToken string) domain
 	}
 	endpoint.SetOAuth(&domain.OAuthCredential{
 		AccessTokenEncrypted: sealed, AccountEmail: "acct@example.com",
+		// The facts a family's usage endpoint names rather than derives. They are on the
+		// fixture because the credential builder is expected to hand them over, and a
+		// fixture without them cannot show that it did.
+		ProjectID: "proj-pub", AccountID: "user-pub",
 	}, testNow)
 	return endpoint
 }
@@ -93,6 +97,7 @@ func keyPublishedEndpoint(t *testing.T, providerID, key string) domain.UpstreamE
 	if err != nil {
 		t.Fatalf("NewUpstreamEndpoint() error = %v", err)
 	}
+	endpoint.SetAccount(domain.EndpointAccount{Name: "keyed", Email: "key@example.com"}, testNow)
 	sealed, err := newTestSealer(t).Seal(key)
 	if err != nil {
 		t.Fatalf("Seal() error = %v", err)

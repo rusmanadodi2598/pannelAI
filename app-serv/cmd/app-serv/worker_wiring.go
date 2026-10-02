@@ -1,14 +1,15 @@
 // Command app-serv wires the background workers to the process lifecycle.
 //
 // @file      cmd/app-serv/worker_wiring.go
-// @for       Starts the quota flush, log retention, and OAuth refresh workers,
+// @for       Starts the quota flush, log retention, OAuth refresh, and published-quota
 //
-//	each with a panic boundary and a termination condition.
+//	poll workers, each with a panic boundary and a termination
+//	condition.
 //
-// @uses      internal/repository/postgres, internal/repository/redis,
+// @uses      internal/repository, internal/repository/postgres,
 //
-//	internal/service, context, fmt, log/slog, runtime/debug, time,
-//	github.com/redis/go-redis/v9.
+//	internal/repository/redis, internal/service, context, fmt, log/slog,
+//	runtime/debug, time, github.com/redis/go-redis/v9.
 //
 // @reason    AGENTS.md §1.6 requires every goroutine to recover from a panic and
 //
@@ -33,6 +34,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository/postgres"
 	redisrepo "github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository/redis"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
@@ -43,13 +45,45 @@ import (
 // becomes due is refreshed on the next sweep rather than after its expiry.
 const oauthRefreshInterval = 5 * time.Minute
 
-// buildWorkers constructs the two workers that read state the management graph
-// already built. They are returned rather than started here so the caller runs
-// them only once the server is listening.
+// publishedPollTick is how often the published-quota worker walks its due queue. A
+// minute is under the shortest family floor the poll policy declares (two minutes), so
+// an endpoint that comes due is polled on the next tick rather than after a full
+// interval, and the queue read — not the tick — is what bounds the provider calls.
+const publishedPollTick = time.Minute
+
+// publishedWorkerInputs is what only the published-quota poll worker needs: the quota
+// service that owns the one live read, the cache it writes, the endpoint table it
+// schedules new accounts from, and the index that says which families publish usage.
+type publishedWorkerInputs struct {
+	Quotas    *service.QuotaService
+	Published repository.PublishedQuotaRepository
+	Endpoints repository.EndpointRepository
+	Index     service.ProviderIndex
+	Policy    service.PublishedPollPolicy
+}
+
+// publishedWorker hands the poll worker from buildWorkers, which has its dependencies,
+// to runWorkers, which has the boot context that terminates it.
+//
+// WHY THIS EXISTS. Every other worker reaches runWorkers as a field of managementDeps,
+// which buildManagement fills and main hands over; that struct lives in
+// router_wiring.go and its input struct in management_handlers.go. Adding a field to
+// either is a one-line change and is the follow-up this handoff should become, but both
+// files are outside the set this worker owns, and buildManagement does not receive the
+// context — so starting the worker there would start it with nothing to stop on. The
+// var is written once by buildWorkers and read once by runWorkers, both in the boot
+// goroutine before any worker runs, so it is ordered by program order, not by a race.
+var publishedWorker *service.QuotaPublishedWorker
+
+// buildWorkers constructs the workers that read state the management graph already
+// built. The first two are returned rather than started here so the caller runs them
+// only once the server is listening; the published-quota poll worker cannot be returned
+// for that reason and is handed over instead — see publishedWorker.
 func buildWorkers(
 	client redis.UniversalClient,
 	quotas *postgres.QuotaRepository,
 	logs *service.LogService,
+	published publishedWorkerInputs,
 ) (*service.QuotaFlusher, *service.LogRetentionWorker, error) {
 	flusher, err := service.NewQuotaFlusher(
 		redisrepo.NewQuotaCounterStore(client), quotas, service.DefaultQuotaFlushPolicy(), slog.Default(),
@@ -63,6 +97,16 @@ func buildWorkers(
 	retention, err := service.NewLogRetentionWorker(logs, service.DefaultLogRetentionPolicy(), slog.Default())
 	if err != nil {
 		return nil, nil, fmt.Errorf("management wiring: log retention: %w", err)
+	}
+	// The poll worker is the only thing that fills the published-quota cache, so a
+	// wiring gap here would leave the screen reading an empty cache forever rather
+	// than fail loudly at boot.
+	publishedWorker, err = service.NewQuotaPublishedWorker(service.QuotaPublishedWorkerDeps{
+		Quotas: published.Quotas, Store: published.Published, Endpoints: published.Endpoints,
+		Providers: published.Index, Policy: published.Policy, Logger: slog.Default(),
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("management wiring: published quota poll: %w", err)
 	}
 	return flusher, retention, nil
 }
@@ -89,6 +133,11 @@ func runWorkers(ctx context.Context, deps managementDeps) {
 	}
 	if deps.UsageEventConsumer != nil {
 		go runSupervised("usage event consumer", func() { deps.UsageEventConsumer.Run(ctx) })
+	}
+	// The published-quota poll worker arrives through publishedWorker rather than
+	// through deps, for the reason stated beside that var.
+	if publishedWorker != nil {
+		go runSupervised("published quota poll", func() { publishedWorker.Run(ctx, publishedPollTick) })
 	}
 }
 

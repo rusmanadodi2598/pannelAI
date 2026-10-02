@@ -40,13 +40,14 @@ type EndpointFinder interface {
 
 // QuotaService implements SPEC-API-001 §7.12.
 type QuotaService struct {
-	quotas     repository.QuotaRepository
-	usage      repository.UsageRecordRepository
-	endpoints  EndpointFinder
-	providers  ProviderIndex
-	sealer     CredentialSealer
-	usageFetch PublishedQuotaFetcher
-	clock      func() time.Time
+	quotas         repository.QuotaRepository
+	usage          repository.UsageRecordRepository
+	endpoints      EndpointFinder
+	providers      ProviderIndex
+	sealer         CredentialSealer
+	usageFetch     PublishedQuotaFetcher
+	publishedCache repository.PublishedQuotaRepository
+	clock          func() time.Time
 }
 
 // QuotaServiceDeps holds the collaborators the service needs.
@@ -62,6 +63,10 @@ type QuotaServiceDeps struct {
 	// FetchUsage reads a provider family's published allocation. Nil means the
 	// service uses `quotafetch.Fetch`.
 	FetchUsage PublishedQuotaFetcher
+	// PublishedCache is the worker-written store of provider answers the collection
+	// read serves. Without it the screen still reads every counted window; only the
+	// provider's own numbers are absent, and the per-endpoint live route keeps working.
+	PublishedCache repository.PublishedQuotaRepository
 }
 
 // NewQuotaService validates deps and returns a ready service.
@@ -78,7 +83,8 @@ func NewQuotaService(deps QuotaServiceDeps) (*QuotaService, error) {
 	}
 	return &QuotaService{
 		quotas: deps.Quotas, usage: deps.Usage, endpoints: deps.Endpoints,
-		providers: deps.Providers, sealer: deps.Sealer, usageFetch: fetch, clock: time.Now,
+		providers: deps.Providers, sealer: deps.Sealer, usageFetch: fetch,
+		publishedCache: deps.PublishedCache, clock: time.Now,
 	}, nil
 }
 
@@ -94,6 +100,13 @@ func (s *QuotaService) ListWindows(ctx context.Context, endpointID string) ([]do
 // page's groups, so a provider's card never splits across pages.
 func (s *QuotaService) ListWindowsPaged(ctx context.Context, page, perPage int) ([]domain.QuotaWindow, int64, error) {
 	return s.quotas.PageWindowsByProvider(ctx, page, perPage)
+}
+
+// ListAccountsPaged returns the accounts the same page of provider groups carries, with
+// the same group total. The screen needs it because accounts are what a card is made of,
+// and an account that has routed no traffic appears in no window row.
+func (s *QuotaService) ListAccountsPaged(ctx context.Context, page, perPage int) ([]domain.QuotaAccount, int64, error) {
+	return s.quotas.PageAccountsByProvider(ctx, page, perPage)
 }
 
 // SetCap replaces one endpoint's budget cap and returns the stored value.

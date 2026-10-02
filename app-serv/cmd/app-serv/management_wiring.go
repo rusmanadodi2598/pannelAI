@@ -71,6 +71,7 @@ func buildManagement(
 	visionRepo := postgres.NewVisionAdapterRepository(pool)
 	usageRepo := postgres.NewUsageRepository(pool)
 	quotaRepo := postgres.NewQuotaRepository(pool)
+	publishedRepo := postgres.NewPublishedQuotaRepository(pool)
 	logRepo := postgres.NewLogRepository(pool)
 
 	// A node's model list comes from the node's own upstream (draft 017 §4.2),
@@ -156,12 +157,21 @@ func buildManagement(
 
 	// The usage, quota, and log services share repositories, so they are built
 	// together (observability_wiring.go).
-	obs, err := buildObservability(usageRepo, quotaRepo, endpointRepo, logRepo, settingsSvc, client, runtimeIndex, sealer)
+	obs, err := buildObservability(usageRepo, quotaRepo, publishedRepo, endpointRepo, logRepo, settingsSvc, client, runtimeIndex, sealer)
 	if err != nil {
 		return managementDeps{}, err
 	}
 
-	flusher, retention, err := buildWorkers(client, quotaRepo, obs.Log)
+	// The published-quota poll worker reads the cache the quota screen serves, so it
+	// is built over the same quota service, cache store, endpoint table, and runtime
+	// index the observability graph already assembled. It reaches runWorkers through
+	// publishedWorker rather than through the returned deps, for the reason stated in
+	// worker_wiring.go.
+	flusher, retention, err := buildWorkers(client, quotaRepo, obs.Log, publishedWorkerInputs{
+		Quotas: obs.Quota, Published: publishedRepo, Endpoints: endpointRepo, Index: runtimeIndex,
+		Policy: service.DefaultPublishedPollPolicy().WithSweepLimits(
+			cfg.QuotaPollBudget, cfg.QuotaPollConcurrency),
+	})
 	if err != nil {
 		return managementDeps{}, err
 	}

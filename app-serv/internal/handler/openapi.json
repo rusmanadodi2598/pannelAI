@@ -2508,6 +2508,17 @@
           },
           "meta": {
             "$ref": "#/components/schemas/Page"
+          },
+          "published": {
+            "type": "array",
+            "description": "The provider's own answer for every account belonging to the provider\ngroups on this page, served from the cache the poll worker writes.\nAccount, not counted window, is the unit here: an endpoint that has\nrouted no traffic has no counted row and still gets a card, which is\nwhy an entry may carry `never_polled`.\nIt rides on the collection because asking each provider during a page\nread is one outbound call per account — the N+1 shape AGENTS.md §1.7\nblocks here. Additive: a client reading only `data` sees exactly what\nit saw before.\n",
+            "items": {
+              "$ref": "#/components/schemas/PublishedQuotaUsageResponse"
+            }
+          },
+          "published_note": {
+            "type": "string",
+            "description": "Present only when the provider cache could not be read at all. The\ncounted windows are still true and still arrive, so the alternative\nto naming the gap is a page of cards that look like accounts whose\nproviders published nothing.\n"
           }
         },
         "required": [
@@ -2566,6 +2577,22 @@
             "type": "string",
             "format": "date-time",
             "description": "When the bucket refills, or expires when it never refills."
+          },
+          "unit": {
+            "type": "string",
+            "description": "The dimension the provider counts in, when it names one (`requests`,\n`tokens`, `%`, or a currency code for a balance). Absent means a bare\ncounter, which is a fact rather than a missing value.\n"
+          },
+          "unlimited": {
+            "type": "boolean",
+            "description": "The provider publishes no ceiling for this bucket, so there is no share to draw."
+          },
+          "is_credit_balance": {
+            "type": "boolean",
+            "description": "A money balance rather than a capped window. Not a synonym for\n`unlimited`: a prepaid wallet holds finite money and no periodic\nceiling, and rendering either as a percentage of a total the\nprovider never claimed would misstate it.\n"
+          },
+          "recurring": {
+            "type": "boolean",
+            "description": "False marks a one-shot pack, whose `resets_at` is an expiry rather than a refill."
           }
         },
         "required": [
@@ -2590,7 +2617,8 @@
           },
           "fetched_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the provider said the FIGURES in `data`, not when this process\nserved them. It dates the numbers rather than the attempt: a soft\nanswer — a `message` with an empty `data` — is stored by the poll\nscheduler without touching the numbers, so its instant remains the\none the row was created with (the zero time, which serializes as\n0001-01-01T00:00:00Z) until a read that carried figures replaces\nit. That placeholder is not a stamp and must not be printed as one.\nFigures can also outlive the read that failed to refresh them, so\ndating them by a later attempt would be wrong the other way.\n"
           },
           "message": {
             "type": "string"
@@ -2600,6 +2628,24 @@
             "items": {
               "$ref": "#/components/schemas/PublishedQuotaWindowResponse"
             }
+          },
+          "cached": {
+            "type": "boolean",
+            "description": "True when this is the poll worker's stored answer rather than a read\ntaken at this instant. The flag travels with the figure because\n`fetched_at` is when the provider said it, not when this process\nserved it, and a number whose age is unstated cannot be acted on.\n"
+          },
+          "failures": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How many consecutive polls of this account produced no answer. It is\nreported because a card can hold figures and a failing poll at the same\ninstant: the worker keeps the last good numbers rather than wiping them,\nso without this count the operator sees a figure with no sign that the\nlast attempt refused to replace it. The reference draws the same line by\nletting some families fail loudly and others answer softly.\n"
+          },
+          "last_attempt_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the worker last asked this account, successfully or not. Distinct\nfrom `fetched_at`, which dates the figures: a failed poll moves this\ninstant and leaves the older stamp where the surviving numbers were said.\n"
+          },
+          "never_polled": {
+            "type": "boolean",
+            "description": "The account exists and is on this page, but the worker has not\nanswered for it yet. Absence of an answer is a different claim from\nan answer of absence — a provider that published nothing says so in\n`message` — and the card has to tell them apart. Such an entry\ncarries no numbers and no `fetched_at` worth printing.\n"
           }
         },
         "required": [
@@ -12037,7 +12083,7 @@
     "/api/v1/quotas/{endpoint_id}/usage": {
       "get": {
         "summary": "The provider's own quota for one endpoint",
-        "description": "Reads the connection's published allocation live from the provider, as\nopposed to GET /api/v1/quotas/{endpoint_id}, which reports the windows\nthis gateway counted. The two answers disagree by nature and neither\ncorrects the other, so they are separate bodies. A provider that\npublishes no usage endpoint, or an endpoint with no stored credential,\nis refused; a provider that answers with an error or nothing at all is\na 200 with `message` and an empty `data`.\n",
+        "description": "The connection's published allocation, served from the cache the poll\nworker writes, as opposed to GET /api/v1/quotas/{endpoint_id}, which\nreports the windows this gateway counted. The two answers disagree by\nnature and neither corrects the other, so they are separate bodies.\n\n`?force=1` asks the provider for this one account at this instant\ninstead of reading the cache. It is the operator's explicit press on a\nsingle card — the same seam the reference's per-card refresh uses — and\nthe reason the screen itself never has to fan out. A value other than\n`1` is a cache read, so a stale bookmark or a rewriting proxy cannot\nturn a page load into provider traffic.\n\nA provider that publishes no usage endpoint, or an endpoint with no\nstored credential, is refused; a provider that answers with an error or\nnothing at all is a 200 with `message` and an empty `data`.\n",
         "tags": [
           "Quota Tracker"
         ],
@@ -12054,6 +12100,18 @@
             "required": true,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "required": false,
+            "description": "`\"1\"` asks the provider now rather than reading the worker's cache. Any other value is a cache read.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ]
             }
           }
         ],

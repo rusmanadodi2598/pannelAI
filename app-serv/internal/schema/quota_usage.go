@@ -27,11 +27,22 @@ import (
 // PublishedQuotaWindowResponse is one bucket the provider published. Total is
 // absent when the provider states no ceiling, which is not a ceiling of zero: an
 // unlimited bucket has a spent amount and nothing to spend it against.
+//
+// The three flags are why the panel can tell those states apart rather than
+// inventing one: Unlimited says there is no ceiling to divide by,
+// IsCreditBalance says the figure is money in a named currency rather than a
+// share of a window, and Unit carries the dimension the provider used when it
+// named one. Each is omitted when it is not the case, so a plain requests window
+// still answers exactly the fields it always did.
 type PublishedQuotaWindowResponse struct {
-	Label    string  `json:"label"`
-	Used     string  `json:"used"`
-	Total    *string `json:"total,omitempty"`
-	ResetsAt *string `json:"resets_at,omitempty"`
+	Label           string  `json:"label"`
+	Used            string  `json:"used"`
+	Total           *string `json:"total,omitempty"`
+	ResetsAt        *string `json:"resets_at,omitempty"`
+	Unit            string  `json:"unit,omitempty"`
+	Unlimited       bool    `json:"unlimited,omitempty"`
+	IsCreditBalance bool    `json:"is_credit_balance,omitempty"`
+	Recurring       bool    `json:"recurring,omitempty"`
 }
 
 // PublishedQuotaUsageResponse is the body of
@@ -40,13 +51,36 @@ type PublishedQuotaWindowResponse struct {
 // the credential was refused, the provider errored — and is then the whole answer,
 // with Data empty, because the reference's card renders that sentence rather than
 // failing the page.
+//
+// Cached distinguishes the number the poll worker stored from one the gateway
+// asked for at this instant, because a staleness claim has to travel with the
+// figure it describes: FetchedAt is when the provider said it, not when this
+// process served it.
 type PublishedQuotaUsageResponse struct {
-	EndpointID string                         `json:"endpoint_id"`
-	ProviderID string                         `json:"provider_id"`
-	Plan       string                         `json:"plan,omitempty"`
-	FetchedAt  string                         `json:"fetched_at"`
-	Message    string                         `json:"message,omitempty"`
-	Data       []PublishedQuotaWindowResponse `json:"data"`
+	EndpointID string `json:"endpoint_id"`
+	ProviderID string `json:"provider_id"`
+	Plan       string `json:"plan,omitempty"`
+	// FetchedAt dates the figures in Data, not the attempt that produced them: a soft answer
+	// leaves it at the row's creation instant, which is a placeholder and not a stamp. The
+	// contract (CONTRACT-API-001, PublishedQuotaUsageResponse) states the rule consumers need.
+	FetchedAt string                         `json:"fetched_at"`
+	Message   string                         `json:"message,omitempty"`
+	Data      []PublishedQuotaWindowResponse `json:"data"`
+	Cached    bool                           `json:"cached,omitempty"`
+
+	// Failures counts consecutive polls that produced no answer, and LastAttemptAt says
+	// when the worker last asked. They travel together because a card can hold figures
+	// and a failing poll at the same instant — the last good answer is kept — and with no
+	// room for that fact the operator sees a number with no sign that the last attempt
+	// refused to replace it.
+	Failures      int    `json:"failures,omitempty"`
+	LastAttemptAt string `json:"last_attempt_at,omitempty"`
+
+	// NeverPolled marks an account the poll worker has not answered for. It is the
+	// absence of an answer rather than an answer of absence: without it a card would
+	// have to guess between "nobody asked yet" and "the provider says nothing", and
+	// those two need different things from the operator.
+	NeverPolled bool `json:"never_polled,omitempty"`
 }
 
 // PublishedQuotaAmount renders one provider-reported amount as a decimal string at

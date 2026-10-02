@@ -43,16 +43,32 @@ type PublishedQuotaFetcher func(ctx context.Context, family string, creds quotaf
 // PublishedWindow is one bucket the provider published. `Total` is absent rather than
 // zero when the provider states a usage with no allocation behind it, because the
 // panel's card has to tell "unlimited" from "spent".
+//
+// `Unit`, `Unlimited` and `IsCreditBalance` carry the three ways a provider's number
+// can fail to be a percentage of a ceiling: a dimension it names for itself
+// (requests, tokens, USD), an allowance with no ceiling to spend against, and a
+// prepaid balance that has finite money but no periodic cap. Flattening all three
+// into "used of total" would draw a full-or-empty bar over figures that were never
+// shares of anything.
 type PublishedWindow struct {
-	Label    string
-	Used     float64
-	Total    float64
-	HasTotal bool
-	ResetsAt *time.Time
+	Label           string
+	Used            float64
+	Total           float64
+	HasTotal        bool
+	ResetsAt        *time.Time
+	Unit            string
+	Unlimited       bool
+	IsCreditBalance bool
+	Recurring       bool
 }
 
 // PublishedUsage is the answer for one connection: the provider's own words, a soft
 // message when it has none, and the instant the read happened.
+//
+// `Cached` says which of the two it is: an answer the poll worker stored earlier, or
+// one this process asked the provider for just now. The distinction travels because
+// the card prints it — "3000 left" is only a fact as of its stamp, and a screen that
+// cannot say whether a number is a poll behind is a screen the operator cannot act on.
 type PublishedUsage struct {
 	EndpointID string
 	ProviderID string
@@ -60,14 +76,43 @@ type PublishedUsage struct {
 	Windows    []PublishedWindow
 	Message    string
 	FetchedAt  time.Time
+	Cached     bool
+	// Failed says the provider's answer was a refusal the reference would have raised,
+	// not a sentence it would have returned. It decides whether the poll counts as a
+	// failure, so a family that errors cannot look healthy forever.
+	Failed bool
+
+	// FailuresRun is the stored count of consecutive polls that did not produce an
+	// answer. It reaches the card because a surviving figure and a failing poll are both
+	// true at once, and an operator reading a stale number is entitled to know the last
+	// attempt did not replace it.
+	FailuresRun int
+	// NeverPolled marks an account the poll worker has not answered for yet. It is
+	// the absence of an answer, not an answer of absence: the card must not print the
+	// provider note or an "asked" stamp for a number nobody has fetched, and it must
+	// not imply the provider stays silent about this account.
+	NeverPolled bool
+	// LastAttemptAt is when the worker last asked, whether or not the answer arrived.
+	// It is a different instant from FetchedAt, which dates the figures: a failed poll
+	// moves this one and leaves that stamp where the surviving numbers were said.
+	LastAttemptAt *time.Time
 }
 
 // PublishedUsage reads what the provider of one connection publishes about its own
-// allocation. A provider that declares no usage endpoint, or an account with no
-// credential to ask with, is a refusal the operator can act on; a provider that
-// answers with an error or nothing at all is a soft message, because the reference
-// renders that sentence on the card rather than failing the page.
-func (s *QuotaService) PublishedUsage(ctx context.Context, endpointID string) (PublishedUsage, error) {
+// allocation, cache-first: the number the poll worker stored is the number this route
+// serves, because asking the provider during a screen read is the fan-out this route
+// refuses (AGENTS.md §1.7, and the owner's standing rule for this screen).
+//
+// `force` is the operator's explicit override — one live call for one connection, the
+// same seam the reference's per-card refresh uses. It is opt-in per press rather than
+// what the page does on load, so a screen of a hundred accounts costs one provider
+// call only when someone asks for exactly that account's instant.
+//
+// A provider that declares no usage endpoint, or an account with no credential to ask
+// with, is a refusal the operator can act on; a provider that answers with an error or
+// nothing at all is a soft message, because the reference renders that sentence on the
+// card rather than failing the page.
+func (s *QuotaService) PublishedUsage(ctx context.Context, endpointID string, force bool) (PublishedUsage, error) {
 	if s.usageFetch == nil || s.providers == nil || s.sealer == nil {
 		return PublishedUsage{}, domain.NewInternalError("published quota is not wired")
 	}
@@ -76,6 +121,26 @@ func (s *QuotaService) PublishedUsage(ctx context.Context, endpointID string) (P
 		return PublishedUsage{}, domain.NewValidationError("endpoint_id is required")
 	}
 
+	if !force {
+		cached, found, err := s.CachedPublished(ctx, id)
+		if err == nil && found {
+			return cached, nil
+		}
+		// A cache read that failed, or that holds nothing for this account yet, is not
+		// the operator's problem to see: fall through to the live read and let its own
+		// answer stand. An endpoint the worker has never reached is exactly the case
+		// this branch is for, and refusing it would hide a number the provider will
+		// happily give.
+	}
+
+	return s.livePublishedUsage(ctx, id)
+}
+
+// livePublishedUsage asks the provider for one connection at this instant. It is what
+// `force` reaches for and what the poll worker calls for its own schedule, so the
+// refusal rules — unknown provider, no usage endpoint, no credential — are stated once
+// and are the same answers the worker sees.
+func (s *QuotaService) livePublishedUsage(ctx context.Context, id string) (PublishedUsage, error) {
 	endpoint, err := s.endpoints.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, domain.ErrEndpointNotFound) {
@@ -102,6 +167,7 @@ func (s *QuotaService) PublishedUsage(ctx context.Context, endpointID string) (P
 		EndpointID: id, ProviderID: endpoint.ProviderID(),
 		Plan: strings.TrimSpace(result.Plan), Windows: toPublishedWindows(result.Quotas),
 		Message: strings.TrimSpace(result.Message), FetchedAt: s.clock(),
+		Failed: result.Failed,
 	}, nil
 }
 
@@ -128,9 +194,9 @@ func (s *QuotaService) publishedCredential(endpoint domain.UpstreamEndpoint, ent
 		if strings.TrimSpace(token) == "" {
 			return quotafetch.Credentials{}, domain.NewValidationError("the account's stored access token is empty")
 		}
-		return quotafetch.Credentials{
-			AccessToken: token, UsageURL: entry.Transport.Usage.URL, UsageHeaders: entry.Transport.Headers,
-		}, nil
+		credentials := publishedCredentials(entry, endpoint.Account(), credential)
+		credentials.AccessToken = token
+		return credentials, nil
 	case domain.UpstreamAuthNone:
 		return quotafetch.Credentials{}, domain.NewValidationError("the account presents no credential to ask with")
 	default:
@@ -150,9 +216,9 @@ func (s *QuotaService) publishedCredential(endpoint domain.UpstreamEndpoint, ent
 		if err != nil {
 			return quotafetch.Credentials{}, err
 		}
-		return quotafetch.Credentials{
-			APIKey: value, UsageURL: entry.Transport.Usage.URL, UsageHeaders: entry.Transport.Headers,
-		}, nil
+		credentials := publishedCredentials(entry, endpoint.Account(), nil)
+		credentials.APIKey = value
+		return credentials, nil
 	}
 }
 
@@ -160,8 +226,12 @@ func toPublishedWindows(quotas []quotafetch.Quota) []PublishedWindow {
 	windows := make([]PublishedWindow, 0, len(quotas))
 	for _, quota := range quotas {
 		window := PublishedWindow{
-			Label: strings.TrimSpace(quota.Label),
-			Used:  quota.Used,
+			Label:           strings.TrimSpace(quota.Label),
+			Used:            quota.Used,
+			Unit:            strings.TrimSpace(quota.Unit),
+			Unlimited:       quota.Unlimited,
+			IsCreditBalance: quota.IsCreditBalance,
+			Recurring:       quota.Recurring,
 		}
 		// An unlimited bucket states no ceiling even when it states a zero total:
 		// the card must show the amount spent with no bar, not a bar of nothing.
