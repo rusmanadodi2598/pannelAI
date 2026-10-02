@@ -43,7 +43,7 @@ flowchart LR
     S -.->|"P1: translasi + upstream"| UP
 ```
 
-**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008; repository, service, handler, dan data plane-nya terpasang); `proxies` (P2, 000009) dan `media_provider_settings` (P2, 000010) — keduanya dimiliki role aplikasi lewat `000011`, sama seperti seluruh schema. Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
+**Batas domain saat ini:** `gateway_keys` dan `panel_auth` (P0); `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, dan `settings` (P1, migrasi 000004-000008; repository, service, handler, dan data plane-nya terpasang); `proxies` (P2, 000009) dan `media_provider_settings` (P2, 000010) — keduanya dimiliki role aplikasi lewat `000011`, sama seperti seluruh schema; `quota_published_state` + `quota_published_window` (migrasi 000013, cache jawaban provider yang ditulis worker dan dibaca layar). Provider registry bukan tabel: ia dokumen YAML yang di-embed ke binary (§5).
 
 **Catatan migrasi P1:** kolom `quota_windows."window"` adalah reserved word PostgreSQL dan wajib dikutip; nama kolomnya dipertahankan agar sama dengan field API (SPEC-API §7.12 mengembalikan `window`). Idempotensi runner diuji, bukan diasumsikan: `migrations/apply_test.go` (tag `integration`) menjalankan runner sungguhan dua kali dan memastikan ledger tidak bertambah.
 
@@ -351,42 +351,84 @@ Enam rute data plane media (`/audio/speech`, `/audio/transcriptions`, `/audio/vo
 
 ### 3.7 Pembacaan kuota terbit (§7.12)
 
-Satu route manajemen yang menghubungi provider langsung, bukan membaca counter gateway:
+Angka dari provider mengalir lewat satu cache, bukan lewat layar. Layar membacanya dalam satu
+statement; yang menghubungi provider adalah worker:
 
 ```
-handler.QuotaHandler.GetUsage
-  → service.QuotaService.PublishedUsage        (existence + feature gate)
-      → repository.EndpointRepository.GetByID  (baris koneksi + auth_type)
-      → registry.Provider.Features             (usage, usageApikey)
-      → domain.Sealer.Open                     (access token ATAU NextKey, satu sisi)
-  → service/quotafetch.Fetch(family, creds)    → HTTP ke endpoint kuota provider
+worker.QuotaPublishedWorker.Run/Sweep (tick, budget, interval per keluarga)
+  → service.QuotaService.livePublishedUsage      (existence + feature gate + kredensial)
+      → repository.EndpointRepository.GetByID    (baris koneksi + auth_type)
+      → registry.Provider.Features               (usage, usageApikey)
+      → domain.Sealer.Open                       (access token ATAU NextKey, satu sisi)
+  → service/quotafetch.Fetch(family, creds)      → HTTP ke endpoint kuota provider
+  → repository.PublishedQuotaRepository
+      → StorePublished  (quota_published_state + quota_published_window, prune label)
+      → RecordAttempt   (jadwal berikutnya, run kegagalan)
+
+handler.QuotaHandler.List → service.PagePublished → ListPublishedByEndpointIDs (SATU query batch)
+handler.QuotaHandler.GetUsage → service.PublishedUsage(force)
+      → cache bila ada; `?force=1` → livePublishedUsage
 ```
 
 Aturan yang berlaku untuk semua keluarga, bukan hanya Qoder:
 
-- **Tidak ada jalur tulis.** Hasil provider tidak masuk `quota_windows`; kolom itu menampung hitungan
-  gateway atas traffic yang dilewatinya (enum `window` tertutup, `used`/`limit` integer, tanpa satuan),
-  dan saldo `credits` yang dilaporkan vendor tidak bisa ditulis ke sana tanpa berubah menjadi persentase
-  dari sesuatu yang bukan kredit. Dua jawaban itu boleh berbeda dan tidak saling mengoreksi.
-- **Keputusan kredensial mengikuti `auth_type`, sama seperti routing.** Akun flow menyajikan access
-  token-nya, akun kunci menyajikan `NextKey` — dan `quotafetch.Credentials` diisi satu sisi saja, karena
-  device token yang diserahkan pada field kunci ditanya dengan bentuk yang salah.
-- **Endpoint dan header kuota datang dari entri registry lebih dulu.** `transport.usage.url` dan
-  `transport.headers` entri provider mengisi `Credentials.UsageURL`/`UsageHeaders`, dan
-  `quotafetch.usageEndpoint()` memakainya sebelum tabel bawaan per keluarga; tabel itu tinggal
-  fallback bagi keluarga yang tidak mendeklarasikannya (`vercel-ai-gateway`). Satu sumber untuk
-  alamat yang ditanya, supaya memindah endpoint di registry tidak diabaikan pembacaan kuota.
-- **Gate sebelum keluar.** Provider tanpa `features.usage`, akun kunci di bawah provider yang endpoint
-  kuotanya membaca token akun (`features.usageApikey` false), dan akun tanpa kredensial tersimpan
-  ditolak di dalam service; `features.usageApikey` dengan ini punya pembaca pertamanya sejak registry ada.
-- **Hasil lunak adalah `200`.** Provider yang error, menolak, atau tidak mempublikasikan apa pun menjadi
-  `{message, data: []}` — kartu merender kalimat itu, bukan kegagalan halaman. Hanya refusal di atas yang non-2xx.
-- **Angka sebagai decimal string** pada presisi yang provider laporkan, dan `total` **absent** untuk bucket
-  tanpa batas — keadaan itu bukan angka nol.
+- **Layar tidak pernah fan-out.** Pemilik menetapkan aturan ini tetap mengikat pada skala
+  "ratusan sampai ribuan kunci per provider", dan AGENTS.md §1.7 memblokir bentuk N+1 di route ini.
+  Karena itu jawaban provider ditulis worker ke `quota_published_*` dan collection read
+  `GET /api/v1/quotas` membawanya sebagai field `published` — satu statement untuk seluruh halaman,
+  diuji dengan menghitung query-nya (`quota_published_cache_test.go`), bukan dengan berasumsi.
+  Penambahan field ini aditif: `data` dan `meta` tidak berubah bentuk.
+- **Halaman dipilih oleh akun, bukan oleh counter.** `PageAccountsByProvider` memilih grup provider
+  dari `upstream_endpoints` **DI-UNION** baris window, dan `PageWindowsByProvider` memakai sumber grup
+  yang sama (`quota_paging.go`) — jadi satu nomor halaman tidak pernah berarti dua set provider yang
+  berbeda. Alasannya terukur: akun yang belum pernah dilewati traffic tidak punya baris
+  `quota_windows` sama sekali, dan kartu yang dibangun dari counter menyembunyikan provider yang
+  sudah dikonfigurasi, sudah di-poll, dan sudah menjawab. Kontraknya dua: akun di balik provider tanpa
+  `features.usage` (termasuk lane virtual) **tidak** muncul di `published[]` — kartunya ya baris
+  hitungan; akun yang mampu tapi belum di-poll menjawab `never_polled: true` tanpa angka dan tanpa
+  `fetched_at`, karena "belum ditanya" dan "provider bilang tidak ada" dua fakta yang berbeda.
+- **Jalur tulis ada, dan ia tabel tersendiri.** Hasil provider tidak masuk `quota_windows`: kolom itu
+  menampung hitungan gateway atas traffic yang dilewatinya (enum `window` tertutup — `5h/daily/weekly/
+  monthly` — `used`/`limit` integer, tanpa satuan), dan label milik provider ("Claude & GPT (Weekly)")
+  maupun saldo kredit tidak muat di sana tanpa berubah menjadi persentase dari sesuatu yang bukan
+  kredit. `quota_published_window.label` adalah string penulis provider dan menjadi bagian PK, justru
+  karena dua bucket dengan kadens yang sama harus tetap terbedakan. Dua jawaban itu boleh berbeda dan
+  tidak saling mengoreksi.
+- **`total` NULL dan `total` 0 adalah dua fakta.** NULL = provider tidak mempublikasikan batas sama
+  sekali; 0 = batas yang ada dan sudah habis. Menyamakan keduanya akan menggambar kartu "habis" di
+  bawah akun tanpa batas — kesalahan paling menyesatkan yang layar ini bisa lakukan. Persentase tidak
+  disimpan: ia aturan tampilan, dan layar yang memilikinya.
+- **Endpoint kuota datang dari blok `transport.usage` seluruhnya.** Registry menuliskan alamat kuota di
+  beberapa key — `url`, `urls[]`, `quota_url`, `quota_api_url`, `oauth_url`, `org_url`, `user_url`,
+  `load_code_assist_url`, `cw_host` — dan service memetakan seluruh blok ke `quotafetch.UsageEndpoints`
+  (`quota_usage_endpoints.go`) sekali, bukan per keluarga. Sebelumnya hanya `url` diteruskan, sehingga
+  keluarga yang membaca key lain memanggil alamat kosong tanpa suara. `declaredOr` memakai yang
+  dideklarasikan lebih dulu, tabel bawaan per keluarga belakangan.
+- **Paritas keluarga↔registry dijaga test, bukan daftar.** `quotafetch/parity_test.go` menguji dua
+  arah: setiap fetcher punya id registry yang benar (yang menangkap fetcher mati yang tak bisa
+  dijangkau siapa pun), dan setiap provider `usage: true` punya fetcher (yang menangkap kartu
+  "Usage API not implemented" senyap). Saat ini 18 dari 18 provider ber-`usage: true` terpasang.
+- **Kebijakan kegagalan dipertahankan per keluarga.** Provider yang error, menolak, atau tidak
+  mempublikasikan apa pun menjadi `{message, data: []}` dengan status `200` — kartu merender kalimat
+  itu, bukan kegagalan halaman; jawaban lunak tidak menghapus angka baik yang tersimpan. Hanya
+  refusal di atas (provider tak dikenal, `features.usage` false, kunci di bawah provider yang
+  kuotanya membaca token akun, akun tanpa kredensial) yang non-2xx. `429` pada keluarga yang memang
+  dibatasi (Claude) dijawab dengan kalimat cooldown plus `Retry-After`, dan penjadwalan cooldown
+  adalah milik worker, bukan fetcher yang tidak punya state.
+- **Angka sebagai decimal string** pada presisi yang provider laporkan; `unit`, `unlimited`, dan
+  `is_credit_balance` ikut lewat karena ada tiga keadaan yang bukan "persen dari total": dimensi yang
+  provider namai sendiri, takaran tanpa batas, dan saldo uang dengan mata uang bernama.
 
 `Fetch` diberi seam per-service (`PublishedQuotaFetcher`), sehingga keputusan routing di atas diuji tanpa
 jaringan; wiring produksi memakainya lewat `cmd/app-serv/observability_wiring.go` dengan index dan sealer
-proses yang sama seperti route endpoint dan OAuth.
+proses yang sama seperti route endpoint dan OAuth, dan cache terbitan melalui
+`cmd/app-serv/management_wiring.go` (`postgres.NewPublishedQuotaRepository(pool)`).
+
+**Fakta akun yang ikut dipakai.** `quotafetch.Credentials.ProviderSpecificData` diisi dari
+`domain.OAuthCredential` (`projectId`, `email`, `userId`) saat kredensial dibuka, supaya keluarga
+cloudcode tidak membayar satu panggilan bootstrap `loadCodeAssist` per poll untuk hal yang sudah
+disimpannya sendiri. `email` jatuh ke baris account bila kredensial tidak memilikinya, dan akun tanpa
+keduanya menghasilkan map kosong — bukan string kosong yang bisa dibaca provider sebagai nilai nyata.
 
 
 ---
@@ -429,6 +471,8 @@ Migrasi P1 (`000004`-`000008`) menambah `provider_nodes`, `upstream_endpoints` +
 - kolom `quota_windows."window"` **wajib dikutip**: `window` adalah reserved word di PostgreSQL, dan tanpa kutip migrasinya gagal parse. Nama kolomnya dipertahankan agar sama dengan field API (SPEC-API §7.12 mengembalikan `window`), bukan diganti demi parser lalu dipetakan balik di setiap query.
 - idempotensi diuji, bukan diasumsikan: `migrations/apply_test.go` (tag `integration`) menjalankan runner sungguhan dua kali dan memastikan ledger tidak bertambah.
 
+Migrasi `000013_published_quota` menambah `quota_published_state` + `quota_published_window` — cache jawaban provider yang ditulis worker dan dibaca layar kuota (§3.7). Kolom `total` sengaja NULLable: NULL berarti provider tidak mempublikasikan batas, `0` berarti batas yang sudah habis, dan menyamakan keduanya akan menggambar kartu "habis" di bawah akun tanpa batas. Persentase tidak disimpan karena ia aturan tampilan, bukan fakta provider.
+
 Migrasi P2 (`000009`-`000011`) menambah `proxies`, `media_provider_settings`, dan aturan kepemilikan tabel. Satu catatan yang lahir dari menjalankannya terhadap PostgreSQL nyata:
 
 - migration berjalan sebagai role yang mem-boot gateway, jadi boot ber-DSN superuser membuat tabel milik superuser dan role aplikasi tidak bisa membacanya (terukur: `permission denied for table media_provider_settings` di `PATCH /media-providers/{id}` dan di setiap rute §7.11, sementara tabel lain normal). `000011` memindahkan kedua tabel itu ke role pemilik `gateway_keys` — satu aturan, bukan nama role per deployment — dan karena role yang tidak memiliki tabel tidak bisa memindahkannya, penolakan dilaporkan sebagai warning boot berisi statement yang harus dijalankan, bukan kegagalan boot. Invariannya dikunci `migrations/ownership_test.go` untuk seluruh schema.
@@ -439,20 +483,21 @@ Migrasi P2 (`000009`-`000011`) menambah `proxies`, `media_provider_settings`, da
 
 | Sumber | Isi | Catatan |
 |---|---|---|
-| PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1), `proxies` (P2, 000009), `media_provider_settings` (P2, 000010; PK `(provider_id, kind)`) | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali; `proxies.password_encrypted` disegel sama dan `has_password` satu-satunya bentuk yang dibaca kembali |
+| PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints`, `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1), `proxies` (P2, 000009), `media_provider_settings` (P2, 000010; PK `(provider_id, kind)`), `quota_published_state` + `quota_published_window` (000013; PK masing-masing `endpoint_id` dan `(endpoint_id, label)`, index `next_attempt_at` untuk sweep dan `fetched_at` untuk prune TTL) | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali; `proxies.password_encrypted` disegel sama dan `has_password` satu-satunya bentuk yang dibaca kembali; `quota_published_window.total` NULLable dengan sengaja (NULL = tanpa batas, `0` = batas habis) |
 | Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, sticky round-robin, circuit state, console ring buffer, sorted set `pannelai:usage:active` (penanda request in-flight, skor = `started_at`, prune 60 dtk), channel Pub/Sub `pannelai:events:usage.recorded` | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut |
 
 ---
 
 ## 6. Asinkron
 
-Tiga worker berjalan bersama server, semuanya dipulai lewat `cmd/app-serv/worker_wiring.go` dengan batas panic dan terminasi lewat context (AGENTS.md §1.6). Antrean berikut masuk pada P2 sesuai SPEC-API §3 dan §10:
+Empat worker berjalan bersama server, semuanya dipulai lewat `cmd/app-serv/worker_wiring.go` dengan batas panic dan terminasi lewat context (AGENTS.md §1.6). Antrean berikut masuk pada P2 sesuai SPEC-API §3 dan §10:
 
 | Worker | Pemicu | Kebijakan retry | Dead-letter |
 |---|---|---|---|
 | Quota flush (`internal/service/quota_flush.go`) | tick 30 detik, batch terbatas; counter Redis memegang TOTAL BERJALAN window per endpoint (`internal/service/quota_counter.go`, rollover atomik lewat Lua di `internal/repository/redis/quota_counter_script.go`) dan flush memirror-nya ke `quota_windows`; `Settle` menandai yang sudah durable dan hanya pensiunkan window yang sudah tutup | fixed tick, `MaxAttempts: 5` | total berjalan tetap di Redis, dicoba lagi pada tick berikutnya |
 | Log retention (`internal/service/log_retention.go`) | tick 1 jam, cutoff dari `settings.logging.retention_days` | fixed tick, `MaxAttempts: 3` | DELETE bersifat set-based dan atomik; baris tetap untuk percobaan berikutnya |
 | OAuth token refresh (`internal/service/oauth_refresh_worker.go`) | tick 5 menit, hanya endpoint `oauth` yang `refresh_state=due` | eksponensial dari 30 detik, jitter maksimum seperempat delay, plafon 30 menit, 5 percobaan | percobaan kelima menandai endpoint `error` lewat `MarkRefreshDeadLetter` dan berhenti di-retry |
+| Quota terbit / published quota (`internal/service/quota_published_worker.go`) | tick terjadwal; antrian = `DueForRefresh(now, budget)`, oldest-due dulu lewat index `next_attempt_at`, dengan endpoint yang masih dalam cooldown (`rate_limited_until` dari jalur data) disaring di `WHERE` sebelum `LIMIT` agar tidak memakan budget; concurrency dibatasi semaphore (bukan fan-out tak terbatas seperti `dataplane.engine_fusion.fanOut`); budget dan concurrency dibaca dari config bertipe (`QUOTA_POLL_BUDGET` default 40 maks 500, `QUOTA_POLL_CONCURRENCY` default 4 maks 16) sehingga operator memindahkannya tanpa ubah kode; setiap endpoint membawa interval per keluarga — claude 10 menit (endpoint-nya menjawab 429), google cloudcode dan grok-cli 5 menit, sisanya 2 menit — plus jitter agar seribu akun satu keluarga tidak bangun bersama | kegagalan Go dihitung lewat `consecutive_failures` dan menjadi backoff eksponensial 30 detik → plafon 30 menit; jawaban lunak provider BUKAN kegagalan, ia disimpan sebagai `message` dan window baik yang sudah tersimpan dipertahankan | tidak ada dead-letter drop: endpoint yang gagal terus tetap di antrian pada interval plafon, karena tindakan operator (re-authenticate) harus memulihkannya tanpa edit baris manual |
 | Usage event publisher (`internal/service/usage_event_publish.go`) | antrean bounded 256 yang diisi `UsageService.Record` (choke point akuntansi, dipakai chat dan media/embeddings) | tanpa retry terjadwal: kegagalan publish dihitung lalu dicatat, karena Pub/Sub tidak punya tujuan durable untuk di-retry | antrean penuh = event terbaru di-drop dan dihitung (`Dropped()`); baris usage adalah rekaman durabelnya |
 | Usage event consumer (`internal/service/usage_event_consume.go`) | subscribe channel `pannelai:events:usage.recorded`; tiap event dicerminkan jadi satu baris console ring | receive timeout = idle (bukan kegagalan); kegagalan transport backoff eksponensial 250ms sampai 30s, counter reset oleh receive sukses pertama | tidak ada: subscription dibangun ulang tiap percobaan, jadi tidak ada state yang perlu di-dead-letter |
 | Live Usage stream (`internal/handler/usage_live.go`) | satu goroutine per koneksi, dipicu tick baca 1 dtk dan keepalive 20 dtk; berakhir saat klien disconnect, batas umur 30 menit, gagal tulis, atau gagal baca | tanpa retry: koneksi yang gagal ditutup dan panel punya jadwal retry sendiri yang terbatas (`app-ui/src/lib/usage-live.ts`) | tidak ada: stream adalah view, bukan rekaman; rekamannya baris `usage_records` |

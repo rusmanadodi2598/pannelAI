@@ -626,10 +626,66 @@ prevent.
 | GET    | `/api/v1/quotas`                     | S    | Quota windows, paged over provider groups: `{endpoint_id, provider_id, window, used, limit, resets_at, source}`; `source` ∈ `computed    | reported`; `?page=&per_page=`(house bounds §4) with the`meta` block | P1       |
 | GET    | `/api/v1/quotas/{endpoint_id}`       | S    | Windows for one endpoint                                                                                                                 | P1                                                                  |
 | PUT    | `/api/v1/quotas/{endpoint_id}`       | S    | Set budget caps `{monthly_cost_usd?, monthly_tokens?}`: router stops picking exhausted endpoints                                         | P2                                                                  |
-| GET    | `/api/v1/quotas/{endpoint_id}/usage` | S    | The provider's own answer for one connection, read live: `{endpoint_id, provider_id, plan, fetched_at, message?, data[]}` — amounts as decimal strings, `total` absent for an unbounded bucket | P2 |
+| GET    | `/api/v1/quotas/{endpoint_id}/usage` | S    | The provider's own answer for one connection, served from the worker's cache; `?force=1` asks the provider at this instant: `{endpoint_id, provider_id, plan?, fetched_at, message?, cached?, failures?, last_attempt_at?, data[]}` — amounts as decimal strings, `total` absent for an unbounded bucket | P2 |
 
 Quota worker re-checks windows per provider cadence (5h/daily/weekly/monthly), refresh countdowns,
 and records `resets_at`. Cost figures are estimates for display only (reference parity).
+
+**The published answer is cached, never fetched by the screen (2026-10-02).** A background worker
+polls providers and writes their answers to `quota_published_state` + `quota_published_window`
+(migration 000013); `GET /api/v1/quotas/{endpoint_id}/usage` serves from that cache, and
+`GET /api/v1/quotas` carries the page's answers as an additive `published[]` in **one** batched query.
+The reason is the owner's standing rule for this screen at its stated scale of hundreds to thousands
+of keys per provider: asking each provider during a page read is one outbound call per account, which
+§1.7 of AGENTS.md blocks outright. `?force=1` is the operator's explicit press on one card and costs
+one call for that one account; any other value stays a cache read, so a stale bookmark cannot turn a
+page load into provider traffic.
+
+**A page is grouped by accounts, not by counters.** `published[]` carries one entry per account
+belonging to the provider groups on the page — the endpoints in `upstream_endpoints` — and the same
+group selection feeds both the window rows and the account list, so a page number never means two
+different sets of providers. This matters because an endpoint that has routed no traffic has no
+`quota_windows` row at all: grouping cards by counted windows hid a provider that was configured,
+polled, and answering, purely because nothing had been sent through it yet. Two consequences are part
+of the contract:
+
+- an account whose provider publishes no quota (`features.usage` false, and the credential-free
+  virtual lane) is **absent** from `published[]` rather than answered. Its card is its counted rows.
+- an account that is capable but has not been polled yet answers `never_polled: true`, with no
+  numbers and no `fetched_at` to print. Absence of an answer and an answer of absence are different
+  claims; the first is a queue, the second is what `message` carries.
+- `failures` and `last_attempt_at` are how the reference's two failure policies survive a cache. The
+  reference lets some families throw and others answer with a sentence, and a throw had somewhere to
+  land: a caller that could render an error row. Under a poll worker there is no caller at that instant,
+  and the worker deliberately keeps the last good figures rather than wiping them, so a literal error
+  row would be a lie about data that is still on screen. The pair is the honest equivalent: the figures
+  stay, and the card states that the last attempt produced nothing and when it was made. `last_attempt_at`
+  is a different instant from `fetched_at` for exactly this reason — a failed poll moves the attempt and
+  leaves the figures' stamp where they were said.
+- `fetched_at` dates the **figures**, not the attempt. A soft answer — a `message` with `data: []` —
+  is written by the scheduler, which stores the provider's sentence without touching the numbers, so
+  the stored instant stays whatever the row was created with (the zero time, which serializes as
+  `0001-01-01T00:00:00Z`) until a read that carried figures replaces it. Readers must not print that
+  placeholder as a stamp: an attempt is not an answer, and figures can outlive the read that failed to
+  refresh them, so dating them by the failure would be wrong in the other direction.
+
+When the cache itself cannot be read, the counted windows still answer with `published_note` naming
+the gap, because their truth is independent of it.
+
+The cache is not `quota_windows`, and the two are never merged. A `quota_windows` row is this
+gateway's own count of traffic it routed, over a closed set of window kinds with integer units and no
+unit name; a published row is a provider's word for its own allocation, labelled in the provider's
+vocabulary (`"Claude & GPT (Weekly)"`), and frequently not a count at all — a credit balance, a
+percentage, an allowance with no ceiling. Forcing one shape into the other would render a money
+balance as a percentage of something it is not. So `total` is nullable with two meanings kept apart
+(NULL = no ceiling published, `0` = a ceiling fully spent), and `unit`, `unlimited`, and
+`is_credit_balance` travel as separate flags. No percentage is stored: it is a display rule, and the
+panel owns display rules.
+
+Coverage is 18 of the 18 registry providers flagged `features.usage: true`, enforced by a test in both
+directions rather than a list someone maintains: every fetcher key resolves to a real registry id, and
+every usage-flagged provider has a fetcher. Family names are the registry provider id, read off the
+endpoint's own row, so no separate family column exists.
 
 **The collection read pages over provider groups (PORT 006, 2026-09-26).** `GET /api/v1/quotas`
 carries the house pagination (`?page=&per_page=`, §4 bounds, refusal not clamping) and the `meta`

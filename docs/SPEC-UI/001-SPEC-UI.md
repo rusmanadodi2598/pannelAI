@@ -632,16 +632,19 @@ absent.
 
 - **Data:** `GET /api/v1/quotas`, `GET /api/v1/quotas/{endpoint_id}`,
   `PUT /api/v1/quotas/{endpoint_id}` (caps, U2), `GET /api/v1/quotas/{endpoint_id}/usage`
-  (the provider's own answer, on demand).
-- **Cards (reshaped 2026-09-26, PORT 005):** one card per provider in first-seen order, and one
-  card for the windows that carry no provider. The card header names the provider, counts what is
-  inside ("N endpoints, M windows"), and carries the two card controls: a checkbox that feeds the
-  bulk fold bar, and a fold toggle (`aria-expanded`, `aria-controls`). The body lists the provider's
-  endpoints as row headings with their windows: window (`5h`, `daily`, `weekly`, `monthly`), used,
-  limit, percent used, resets at with a countdown, source badge. The body is the region that
-  scrolls (`max-h-80`, `overflow-y-auto`), because accounts and keys per provider can reach
-  hundreds or thousands and one card per key would make the page unmonitorable; the page itself
-  never scrolls sideways (§2 R-03).
+  (the provider's own answer, forced per connection; the page's copy arrives inside
+  `GET /api/v1/quotas` as `published[]`).
+- **Cards (reshaped 2026-09-26, PORT 005; body re-ordered 2026-10-02):** one card per provider in
+  first-seen order, and one card for the windows that carry no provider. The card header names the
+  provider, counts what is inside ("N endpoints, M windows"), and carries the two card controls: a
+  checkbox that feeds the bulk fold bar, and a fold toggle (`aria-expanded`, `aria-controls`). The body
+  lists the provider's connections as row headings, each leading with the provider's own answer (see
+  the two bullets below) and following it with this gateway's count as one summary line. The body is the
+  region that scrolls (`max-h-80`, `overflow-y-auto`), because accounts and keys per provider can reach
+  hundreds or thousands and one card per key would make the page unmonitorable; the page itself never
+  scrolls sideways (§2 R-03). The per-window row set this body used to render — window kind, used,
+  limit, percent, countdown, badge — is superseded: the same facts are in the summary line, and the
+  provider's numbers took the place they were pushing against.
 - **Fold and bulk fold:** a card folds from its header toggle and stays informative while folded
   through the header counts; the fold is a capability, not a default. Checking cards raises a bar
   that states the real selection ("N selected") with two actions, "Fold selected" and "Unfold
@@ -657,25 +660,60 @@ absent.
 - **Toolbar controls (PORT 006):** "Refresh now" carries the icon map's refresh glyph and the
   refresh pause/resume toggle carries the map's pause and resume glyphs beside their labels (R-04,
   R-31): the glyph is what the control does to the poll, never an emoticon.
-- **Source badge:** `computed` or `reported` (SPEC-API §7.12). The badge is functional, not decorative: it
-  tells the operator whether the number came from local accounting or from the provider.
-- **Published quota, asked for (2026-09-28, draft 036 §7):** under each endpoint's counted rows, one
-  control reads `GET /api/v1/quotas/{endpoint_id}/usage` — what the provider itself reports this
-  connection has left. It is a fetch the operator starts, never a fetch on render: the read is one call
-  per endpoint, a card lists every endpoint of one provider, and the owner's scale is hundreds to
-  thousands of keys per provider, which is the same N+1 the caps editor refuses for the same reason. The
-  lane whose windows carry no provider gets no control, because there is no provider behind it to ask.
-  The answer keeps the three things that make it a different kind of fact: the note saying the number is
-  the provider's and the rows above are this gateway's count, the instant it was read (a live figure
-  without a stamp is indistinguishable from one the screen left there), and the plan the provider names
-  when it names one. Amounts print exactly as reported — `12.5 / 3000`, not a rounded integer and not a
-  padded one — because they arrive as decimal strings and a credit balance has no integer spelling; only
-  the bar and the percentage parse them, and both reuse the counted rows' helpers so the two halves of
-  one screen cannot disagree about what "percent used" means. A bucket with no ceiling prints its amount
-  with "No limit" and no bar; a ceiling of zero prints 100%, because those are opposite states. A
-  provider that publishes nothing answers with its own sentence rather than an empty card, and a refusal
-  (no such endpoint, this family publishes nothing, a key under a token-only endpoint) is the gateway's
-  sentence in an alert, with the control still usable to ask again.
+- **The two sources are named, once:** `computed` and `reported` (SPEC-API §7.12) are explained in a
+  legend under the cards rather than badged on every row. The distinction is functional — it tells the
+  operator which ledger a number came from — but a badge per row would repeat one fact across a hundred
+  rows and add nothing to any of them, so the words sit where they can be read once and the layout keeps
+  the difference in place instead: the provider's answer leads a connection and this gateway's count is
+  the line beneath it, labelled in prose ("Reported by the provider, not counted by this gateway" /
+  "Counted by this gateway: …").
+- **Published quota leads the card (2026-10-02, owner ruling; supersedes the 2026-09-28 "asked for"
+  shape):** the provider's own numbers are the first thing each connection shows — the label the
+  provider used, a bar, `used / total`, percent used, and the reset countdown — with this gateway's
+  counted windows beneath it as one compact summary line per connection. The reason is measured, not
+  stylistic: the counted windows on a live gateway carry no `limit` at all, so the old layout rendered
+  a page of counters with zero bars (PORT 004 §7.2) while the numbers that actually gate an operator
+  sat behind a button on every card.
+- **It arrives with the page, and no card fetches on render.** The collection read carries
+  `published[]` for the endpoints on the page (SPEC-API §7.12), so the screen renders provider
+  numbers from the read it already makes. The standing rule is unchanged — the screen never fans out
+  to one provider call per account — it is satisfied by the poll worker rather than by an operator
+  click. A per-connection control may still ask for the instant: it calls the same route with
+  `?force=1`, one call for one account, and it must drop the previous figure if that read fails
+  rather than leave a stale number standing under a fresh failure.
+- **A card exists for an account, not for a counter.** The screen's groups come from the accounts the
+  page names (SPEC-API §7.12), so a provider whose keys have not routed anything yet still gets its
+  card and its provider rows — measured before this rule, one configured account had no card at all
+  because it had no counted window. Conversely an account behind a provider that publishes no quota
+  is not offered a provider block: there is nobody to ask, and its counted line is the whole story.
+- **Every state a provider's answer can be in is a distinct rendering.** An unlimited bucket prints
+  its amount with no bar; a credit balance prints as money in its own currency (`Credit: 12.50 USD`)
+  and not as a share of anything; a bucket with `total` absent prints the amount with "No limit",
+  while a `total` of `0` prints 100% spent — opposite states that must not look alike; a row that
+  carries a `unit` names it; `recurring: false` says "expires in", not "resets in". A `message` with
+  no rows is the muted provider sentence, never error styling, because "this family publishes
+  nothing" is a fact rather than a fault. A capable account the worker has not reached prints "Not
+  polled yet" — muted, with no provider note and no "Asked" stamp, because there is no answer to
+  attribute — and that is a different claim from a provider that answered with nothing to report.
+  When the cache could not be read, `published_note` states that once above the cards, because the
+  counts below are still true and an omission would read as accounts whose providers said nothing.
+- **A figure that no poll has replaced says so.** The worker keeps the last good numbers across a failing
+  poll, which is right, and shows them alone, which is not: the card states the run of failed attempts and
+  when the last one was made (`failures`, `last_attempt_at`), in the warn colour rather than danger because
+  the read that produced the numbers completed and the one that failed did not take them with it. This is
+  where the reference's split between families that throw and families that answer softly lands under a
+  cache — there is no caller to throw at, so the split survives as a stated fact beside the data rather
+  than as an error row replacing it.
+- **The answer keeps the things that make it a different kind of fact:** the note saying the number is
+  the provider's and the line below is this gateway's count, the instant the provider said it (a
+  figure without a stamp is indistinguishable from one the screen left there), and a marker when it is
+  the worker's stored answer rather than a read taken now. An answer that carries no figures keeps the
+  scheduling row's placeholder instant rather than a real one, because the worker stores a sentence
+  without touching the numbers, and a placeholder is not a stamp: the card prints none. Amounts print exactly as reported —
+  `12.5 / 3000`, not a rounded integer and not a padded one — because they arrive as decimal strings
+  and a credit balance has no integer spelling; only the bar and the percentage parse them, and both
+  reuse the counted rows' helpers so the two halves of one screen cannot disagree about what "percent
+  used" means.
 - **Budget caps (U2, landed):** a picker plus one form, keyed by endpoint rather than by window, because
   the collection route carries no cap and reading one per endpoint to fill a column would be an N+1
   (SPEC-API §7.12). The picker offers the endpoints the label read returned plus any endpoint the window
@@ -2015,6 +2053,29 @@ half carry.
     stored and validated, but no request path reads it (SPEC-API §7.11). Decide whether per-endpoint
     binding follows, which would let two connections of one provider leave through different pools, or
     whether the per-provider binding stays the only one and the column is documented as vestigial.
+26. **A quota window may name no provider, and the screen must not treat that as a broken payload
+    (closed 2026-09-26, PORT 004 F1).** `GET /api/v1/quotas` returns rows for the credential-free virtual
+    lane and for endpoints whose row is gone, and both carry `provider_id: ""`. The window schema used to
+    require a non-empty string there, so one such row rejected the whole list and the screen fell to an
+    error with no data shown. `provider_id` is therefore a free string in the read schema, and the empty
+    value is a state with its own card: heading "No provider" and the sentence saying the counts are this
+    gateway's own. A stricter schema is not wrong in general; here the empty value is a fact the gateway
+    reports, so the panel has to render it rather than refuse it.
+27. **The percentage printed is percent USED, while the bar's colour is chosen from the share REMAINING
+    (convention stated, not decided per screen).** The reference colours on remaining (above 70 green,
+    30-70 amber, below red) and the panel's counted rows print percent used, so both numbers leave one
+    helper (`quota-geometry.ts`) and the two halves of the quota card cannot disagree about what "percent
+    used" means. The asymmetry is deliberate and easy to "fix" into a bug: a row that coloured itself by
+    its own printed percentage would warn red at 10% used, which is the opposite of what it shows.
+28. **`github` is listed with `auth_type: apikey` but its usage endpoint reads an account token, so its
+    quota is unreachable for a keyed account.** `registry.yaml` carries `github` without
+    `features.usageApikey`, and the credential the published read opens follows `auth_type` exactly as
+    routing does, so a keyed GitHub account is refused before any call, with the gateway's own sentence
+    (`provider github reads usage with an account token, not a key`). The reference reaches
+    `copilot_internal/user` with an OAuth token, which is a different connection kind than this port
+    offers. Decide whether the registry entry moves to an OAuth kind, whether `usageApikey` is genuinely
+    supported by that endpoint, or whether GitHub simply has no quota surface in this product. Nothing in
+    this pass guesses.
 
 ## 15. Evidence for numbers and paths used here
 
