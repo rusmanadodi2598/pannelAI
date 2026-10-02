@@ -77,3 +77,24 @@ export function pollDue(
 	if (state.lastLoadedAt === 0) return true;
 	return now - state.lastLoadedAt >= intervalMs;
 }
+
+/**
+ * Whole seconds until the next read, or null when there is no countdown to show.
+ *
+ * `pollDue` answers whether the screen reads now; this answers when it will, which is the half the
+ * operator can actually see and the reason §8.6.1 calls the interval visible rather than merely real. Two
+ * states have no countdown: paused, because promising a read the pause forbids would be a lie, and a
+ * screen that has not completed a read yet, because it has no anchor to count from.
+ *
+ * It clamps at zero rather than going negative, so the second between "due" and the read landing reads as
+ * "now" instead of as a duration that never happened.
+ */
+export function pollSecondsRemaining(
+	state: PollState,
+	now: number,
+	intervalMs: number
+): number | null {
+	if (state.paused) return null;
+	if (state.lastLoadedAt === 0) return null;
+	return Math.max(0, Math.ceil((state.lastLoadedAt + intervalMs - now) / 1000));
+}

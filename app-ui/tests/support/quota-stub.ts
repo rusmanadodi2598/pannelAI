@@ -10,9 +10,12 @@
 // An endpoint the registry does not carry is refused with the server's own sentence and status, so the
 // panel's handling of that answer is exercised rather than assumed.
 //
-// The published read is stubbed as the on-demand call it is: a per-endpoint payload table, and a list of
-// the ids the screen asked about. A stub that answered it on every load would let a screen that fired one
-// read per endpoint pass, and that screen would be the N+1 the route exists to avoid.
+// The provider's answers are stubbed twice over, the way the route serves them now: the collection read
+// carries the entries for the endpoints its own page names (which is where the card gets its numbers, with
+// no read of its own), and the per-endpoint read stays a call a test can count. A stub that answered the
+// per-endpoint route on every load would let a screen that fired one request per card pass, and that screen
+// is the fan-out the collection block exists to remove. `publishedReads` and `publishedForces` are what a
+// test measures those two paths against.
 
 import { vi } from 'vitest';
 
@@ -54,11 +57,19 @@ export type QuotaStub = {
 	shrinkTo: number | null;
 	/**
 	 * The published-quota payload per endpoint id. A missing key answers the server's own refusal, which
-	 * is what an endpoint the gateway does not carry produces.
+	 * is what an endpoint the gateway does not carry produces. The same payloads ride on the collection
+	 * read for the endpoints that read's page names, because that is where the card gets its numbers now.
 	 */
 	published: Record<string, Record<string, unknown>>;
-	/** The endpoint ids the published read was called with, in order — the read is on demand, not on load. */
+	/**
+	 * When set, the collection read answers with the gateway's "the provider cache could not be read"
+	 * sentence beside its own counts, and no `published` block at all.
+	 */
+	publishedNote: string | null;
+	/** The endpoint ids the published read was called with, in order — the read is per card, not on load. */
 	publishedReads: string[];
+	/** The endpoint ids the published read was called with `force=1`, which is the operator's own press. */
+	publishedForces: string[];
 	/**
 	 * When set, the published read's response is withheld until `releasePublished` runs. A screen that
 	 * fired a second read while the first was still in flight is otherwise invisible to a test.
@@ -84,6 +95,9 @@ export function quotaWindowRow(overrides: Record<string, unknown> = {}): Record<
 export function quotaEndpointRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
 	return { id: 'ep_1', label: 'Anthropic primary', ...overrides };
 }
+
+/** The instant a `never_polled` placeholder carries: a real timestamp that means no answer, not a gap. */
+export const NEVER_POLLED_FETCHED_AT = '1970-01-01T00:00:00Z';
 
 /**
  * A published-quota payload, shaped the way the API shapes one: amounts as decimal strings, a bucket
@@ -113,6 +127,24 @@ export function publishedUsage(
 	};
 }
 
+/**
+ * The `published[]` entry for an account the poll worker has not answered for yet — the windowless account
+ * the reshape exists to make visible. It carries the placeholder `fetched_at`, empty `data`, and no message
+ * or plan: the card's "Not polled yet" state is driven by the flag, not by an empty answer.
+ */
+export function neverPolledUsage(
+	endpointId: string,
+	providerId = 'qoder'
+): Record<string, unknown> {
+	return {
+		endpoint_id: endpointId,
+		provider_id: providerId,
+		fetched_at: NEVER_POLLED_FETCHED_AT,
+		data: [],
+		never_polled: true
+	};
+}
+
 export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 	const stub: QuotaStub = {
 		windows: [],
@@ -126,7 +158,9 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 		quotaReads: [],
 		shrinkTo: null,
 		published: {},
+		publishedNote: null,
 		publishedReads: [],
+		publishedForces: [],
 		holdPublished: false,
 		releasePublished: null,
 		...overrides
@@ -165,6 +199,37 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 		return cap;
 	}
 
+	// The collection body the way SPEC-API §7.12 shapes it now: the page's windows, the meta block, and the
+	// provider's answers for every account whose provider is on THIS page. A group is selected by the accounts
+	// that exist, not the windows that happen to exist, so a `published[]` entry whose endpoint carries no
+	// counted window still rides along — that entry is the windowless account the card has to show. An
+	// endpoint the worker has not answered is present with `never_polled` rather than absent, which is the
+	// "never polled" state the card has to render. `published_note` replaces the whole block when the cache
+	// could not be read.
+	function quotasBody(
+		page: number,
+		perPage: number,
+		visible: Set<string>,
+		totalGroups: number
+	): Record<string, unknown> {
+		const pageWindows = stub.windows.filter((window) => visible.has(String(window.provider_id)));
+
+		const body: Record<string, unknown> = {
+			data: pageWindows,
+			meta: { page, per_page: perPage, total: totalGroups }
+		};
+
+		if (stub.publishedNote !== null) {
+			body.published_note = stub.publishedNote;
+			return body;
+		}
+
+		body.published = Object.entries(stub.published)
+			.filter(([, payload]) => visible.has(String(payload.provider_id)))
+			.map(([, payload]) => payload);
+		return body;
+	}
+
 	vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
 		const method = init?.method ?? 'GET';
 		const url = String(input);
@@ -187,10 +252,12 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 		}
 
 		if (method === 'GET' && parsed.pathname.endsWith('/quotas')) {
-			// The paged collection read (docs/PORT/006-PORT-QUOTA-PAGING.md D1): the page unit is the
-			// provider group, groups keep their first-seen order, and the meta block states the total
-			// group count. The grouping here mirrors the SQL the server runs, which the integration
-			// test proves against a real database.
+			// The paged collection read (docs/PORT/006-PORT-QUOTA-PAGING.md D1), grouped by the accounts that
+			// exist (the windowless-account reshape): a provider group is on the page when it has an account,
+			// whether that account's only trace is a `published[]` entry with no counted window. Groups keep
+			// first-seen order (windows first, then published-only accounts), and the meta block states the
+			// total group count. The grouping here mirrors the SQL the server runs, which the integration test
+			// proves against a real database.
 			stub.quotaReads.push(url);
 			const page = Number(parsed.searchParams.get('page') ?? '1');
 			const perPage = Number(parsed.searchParams.get('per_page') ?? '25');
@@ -200,13 +267,14 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 				const pid = String(window.provider_id);
 				if (!providers.includes(pid)) providers.push(pid);
 			}
+			for (const payload of Object.values(stub.published)) {
+				const pid = String(payload.provider_id);
+				if (!providers.includes(pid)) providers.push(pid);
+			}
 			const kept = providers.slice(0, stub.shrinkTo ?? providers.length);
 			const visible = new Set(kept.slice((page - 1) * perPage, page * perPage));
 
-			return json({
-				data: stub.windows.filter((window) => visible.has(String(window.provider_id))),
-				meta: { page, per_page: perPage, total: kept.length }
-			});
+			return json(quotasBody(page, perPage, visible, kept.length));
 		}
 
 		const publishedMatch = /\/quotas\/([^/?]+)\/usage$/.exec(parsed.pathname);
@@ -214,6 +282,9 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 		if (method === 'GET' && publishedMatch) {
 			const endpointId = decodeURIComponent(publishedMatch[1]);
 			stub.publishedReads.push(endpointId);
+			// The route reads a literal "1" (§7.12's wantForce). A panel that sent `force=true` would be
+			// served the cache while claiming to have asked the provider, so the flag is checked here.
+			if (parsed.searchParams.get('force') === '1') stub.publishedForces.push(endpointId);
 
 			const payload = stub.published[endpointId];
 			if (stub.holdPublished) {

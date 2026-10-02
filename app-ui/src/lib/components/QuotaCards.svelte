@@ -1,30 +1,41 @@
 <script lang="ts">
 	// The quota cards (docs/SPEC-UI/001-SPEC-UI.md §6.6; card-per-provider reshape 2026-09-26,
 	// docs/PORT/005-PORT-QUOTA-CARDS.md; server-driven paging docs/PORT/006-PORT-QUOTA-PAGING.md):
-	// one card per provider in first-seen order, its endpoints and windows listed inside a body that
-	// scrolls, a header that folds, a checkbox that feeds the bulk fold bar, and a pager that walks
-	// pages the gateway performs: the windows prop is already the page's groups, five to a page.
+	// one card per provider in first-seen order, its connections listed inside a body that scrolls, a
+	// header that folds, a checkbox that feeds the bulk fold bar, and a pager that walks pages the gateway
+	// performs: the windows prop is already the page's groups, five to a page. The cards are grouped from the
+	// union of the page's accounts (windows and `published`), so a provider that has an account but no
+	// counted window yet still gets a card — the account the operator came to read is not hidden behind a
+	// window that has not filled (the windowless-account gap).
 	//
-	// Two conventions are kept from the screen's own rules rather than reinvented here: the printed
-	// percentage is percent USED (§6.6's "percent used"; quotaPercentLabel in QuotaCardBody), and the
-	// bar's colour is driven by the REMAINING share the reference colours on (above 70% remaining
-	// ok, 30-70 warn, below danger) in the panel's own tokens.
+	// The provider's own answer rides in on the same read and is what the card body puts first; the gateway
+	// counted windows are reduced to one summary line per connection there. The percentage a row prints is
+	// percent USED and the bar's colour is the REMAINING share (quota-geometry.ts, in the panel's own tokens)
+	// — both conventions are the screen's, not reinvented here.
 	//
-	// A window the gateway recorded without a provider (the credential-free lane's virtual endpoint)
-	// cannot sit under a provider heading. It gets its own card, and its body opens with the sentence
-	// saying the counts are local, which is the reference's answer for a provider whose quota it
-	// cannot fetch (the card `message` path) without hiding data the gateway did send.
-	//
-	// The fold and selection sets are plain string arrays reassigned in place: the reactive-set lint
-	// rule this file once tripped (pass 004) is avoided by never holding a Set or Map in component
-	// state at all.
+	// A window the gateway recorded without a provider (the credential-free lane's virtual endpoint) cannot
+	// sit under a provider heading. It gets its own card, whose body opens by saying the counts are local.
+	// The fold and selection sets are plain string arrays: the reactive-set lint rule this file once tripped
+	// (pass 004) is avoided by never holding a Set or Map in component state at all.
 	import { CONTROL_ICONS } from '$lib/icons';
-	import { QUOTA_SOURCE_EXPLANATIONS, type QuotaWindow } from '$lib/schemas/quota';
+	import {
+		QUOTA_SOURCE_EXPLANATIONS,
+		quotaCardGroups,
+		type QuotaCardGroup,
+		type QuotaWindow
+	} from '$lib/schemas/quota';
+	import {
+		publishedEntriesByEndpoint,
+		type PublishedQuotaUsage
+	} from '$lib/schemas/quota-published';
 	import QuotaCardBody from './QuotaCardBody.svelte';
 
 	let {
 		windows,
 		labels,
+		published,
+		publishedNote,
+		provider,
 		now,
 		page,
 		pageCount,
@@ -32,28 +43,31 @@
 	}: {
 		windows: QuotaWindow[];
 		labels: Map<string, string>;
+		/** The provider's answers the collection read carried for this page's accounts. */
+		published: PublishedQuotaUsage[];
+		/** The gateway's sentence for a provider cache it could not read at all, or null when there is none. */
+		publishedNote: string | null;
+		/** The provider the toolbar narrowed the page to, or empty for all of them. */
+		provider: string;
 		now: number;
 		page: number;
 		pageCount: number;
 		onpagechange: (next: number) => void;
 	} = $props();
 
-	type Group = { provider: string; endpoints: { id: string; windows: QuotaWindow[] }[] };
+	// Grouped from the union of the page's accounts, not from its windows: a provider with an account but no
+	// counted window still gets a card (quota.ts, the windowless-account gap). First-seen order comes off the
+	// wire there, so two identical reads put every card in the same place.
+	const groups = $derived(quotaCardGroups(windows, published));
 
-	const groups = $derived.by<Group[]>(() => {
-		const out: Group[] = [];
-		for (const window of windows) {
-			let group = out.find((candidate) => candidate.provider === window.provider_id);
-			if (!group) {
-				group = { provider: window.provider_id, endpoints: [] };
-				out.push(group);
-			}
-			const card = group.endpoints.find((endpoint) => endpoint.id === window.endpoint_id);
-			if (card) card.windows.push(window);
-			else group.endpoints.push({ id: window.endpoint_id, windows: [window] });
-		}
-		return out;
-	});
+	// The provider filter narrows the cards the page already holds. The read stays server-paged and
+	// unfiltered (006 D1): a filter that also moved the wire page would make the pager answer to it.
+	const visibleGroups = $derived(
+		provider === '' ? groups : groups.filter((group) => group.provider === provider)
+	);
+
+	// Keyed by endpoint, so a connection shows its own provider's number and never its neighbour's.
+	const publishedByEndpoint = $derived(publishedEntriesByEndpoint(published));
 
 	let folded: string[] = $state([]);
 	let selected: string[] = $state([]);
@@ -95,16 +109,17 @@
 		folded = folded.filter((entry) => !selected.includes(entry));
 	}
 
-	function cardName(group: Group): string {
+	function cardName(group: QuotaCardGroup): string {
 		return group.provider || 'No provider';
 	}
 
-	function cardKey(group: Group): string {
+	function cardKey(group: QuotaCardGroup): string {
 		return group.provider || 'no-provider';
 	}
 
-	// A folded card's header is its whole story, so the counts name both dimensions the body would show.
-	function countsText(group: Group): string {
+	// A folded card's header is its whole story, so the counts name both dimensions the body would show:
+	// the accounts on the card and the windows this gateway counted across them.
+	function countsText(group: QuotaCardGroup): string {
 		const endpoints = group.endpoints.length;
 		const total = group.endpoints.reduce((sum, endpoint) => sum + endpoint.windows.length, 0);
 		return `${endpoints} endpoint${endpoints === 1 ? '' : 's'}, ${total} window${total === 1 ? '' : 's'}`;
@@ -116,7 +131,12 @@
 </script>
 
 <div class="flex flex-col gap-4">
-	{#each groups as group (cardKey(group))}
+	{#if publishedNote !== null && publishedNote !== ''}
+		<!-- Said once, above the cards: the counted windows underneath are still the gateway's own. -->
+		<p role="status" class="text-sm text-[var(--color-text-muted)]">{publishedNote}</p>
+	{/if}
+
+	{#each visibleGroups as group (cardKey(group))}
 		{@const key = cardKey(group)}
 		{@const name = cardName(group)}
 		{@const bodyId = `quota-card-body-${key}`}
@@ -160,11 +180,17 @@
 					id={bodyId}
 					class="flex max-h-80 flex-col gap-3 overflow-y-auto border-t border-[var(--color-border)] p-3"
 				>
-					<QuotaCardBody {group} {labels} {now} />
+					<QuotaCardBody {group} {labels} published={publishedByEndpoint} {now} />
 				</div>
 			{/if}
 		</section>
 	{/each}
+
+	{#if provider !== '' && visibleGroups.length === 0}
+		<p role="status" class="text-sm text-[var(--color-text-muted)]">
+			No {provider} card on this page. Choose another provider, or turn the page.
+		</p>
+	{/if}
 
 	{#if selected.length > 0}
 		<div

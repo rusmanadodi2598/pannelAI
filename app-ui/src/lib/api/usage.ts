@@ -5,9 +5,8 @@
 // the operator chose has to mean the same thing on two consecutive reads.
 //
 // Two of these are per endpoint and are called when the operator asks, not on every load: the cap read,
-// and the published-quota read that asks the provider itself. Both for the same reason — the collection
-// route carries neither, and reading one endpoint at a time to fill a list is an N+1 the screen has no
-// use for (SPEC-API §7.12).
+// which the collection route carries no answer for, and the published-quota read taken with `force`, which
+// is one card asking its own provider rather than the page fanning out (SPEC-API §7.12).
 
 import { apiRequest, type ApiResult } from './client';
 import {
@@ -105,14 +104,21 @@ export function replaceQuotaCap(
 	});
 }
 
-// The provider's own answer for one connection, read live (SPEC-API §7.12's published-read block). Called
-// when the operator asks a card, never on load: one read per endpoint to fill a list of hundreds would be
-// the N+1 this screen already refuses on the cap read, and a provider's number ages slowly enough that a
-// stale one beside a fresh count teaches the operator nothing.
-export function getPublishedQuota(endpointId: string): Promise<ApiResult<PublishedQuotaUsage>> {
+// The provider's own answer for one connection (SPEC-API §7.12's published-read block). The collection read
+// carries these for the endpoints on its page, so a card needs no read of its own on load; this route is
+// what the operator's press on ONE card uses. `force` asks the provider now instead of answering from the
+// poll worker's cache — one call for one account, which is the seam that keeps the page itself from
+// fanning out across hundreds of keys.
+export function getPublishedQuota(
+	endpointId: string,
+	options: { force?: boolean } = {}
+): Promise<ApiResult<PublishedQuotaUsage>> {
 	return apiRequest<void, PublishedQuotaUsage>({
 		method: 'GET',
 		path: `/quotas/${encodeURIComponent(endpointId)}/usage`,
-		schema: schemaPublishedQuotaUsage
+		schema: schemaPublishedQuotaUsage,
+		// The route reads a literal "1" and treats anything else as a cache read, so a truthy `true`
+		// would silently ask the cache instead of the provider.
+		query: options.force === true ? { force: 1 } : undefined
 	});
 }

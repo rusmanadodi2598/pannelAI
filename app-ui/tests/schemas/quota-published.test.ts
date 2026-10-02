@@ -13,6 +13,7 @@ import { forEachCase } from '../support/tables';
 import {
 	PUBLISHED_QUOTA_NOTE,
 	publishedQuotaNotice,
+	publishedWasNeverPolled,
 	publishedWindowView,
 	schemaPublishedQuotaUsage,
 	schemaPublishedQuotaWindow,
@@ -261,5 +262,58 @@ describe('PUBLISHED_QUOTA_NOTE', () => {
 	it('names the source difference the card exists to keep visible', () => {
 		expect(PUBLISHED_QUOTA_NOTE).toMatch(/provider/);
 		expect(PUBLISHED_QUOTA_NOTE).toMatch(/counted/i);
+	});
+});
+
+// The windowless-account reshape turned "not polled yet" from an absent entry into a real one: the read
+// carries an entry per account on the page, so an account the worker has not answered arrives with
+// `never_polled: true`, an epoch placeholder `fetched_at`, and empty `data`. This helper is the single
+// place that decides "there is no answer to attribute", and it must read BOTH the flag and an absent entry
+// as never-polled (an older gateway, or a page whose provider cache could not be read), while keeping an
+// answered-but-empty entry (real `fetched_at`, empty `data`, no flag) as an answer that reported nothing —
+// those are different facts and render differently.
+describe('schemaPublishedQuotaUsage with never_polled', () => {
+	it('parses a placeholder entry the flag marks', () => {
+		const parsed = schemaPublishedQuotaUsage.safeParse(
+			usage_({ fetched_at: '1970-01-01T00:00:00Z', plan: null, data: [], never_polled: true })
+		);
+
+		expect(parsed.success).toBe(true);
+		if (!parsed.success) return;
+		expect(parsed.data.never_polled).toBe(true);
+		expect(parsed.data.data).toEqual([]);
+	});
+
+	it('keeps the flag absent for an account that has been polled', () => {
+		const parsed = schemaPublishedQuotaUsage.safeParse(usage_());
+
+		expect(parsed.success).toBe(true);
+		if (!parsed.success) return;
+		expect(parsed.data.never_polled ?? null).toBeNull();
+	});
+});
+
+describe('publishedWasNeverPolled', () => {
+	it('reads an absent entry as never polled', () => {
+		expect(publishedWasNeverPolled(null)).toBe(true);
+	});
+
+	it('reads a flagged placeholder as never polled', () => {
+		const entry = schemaPublishedQuotaUsage.parse(
+			usage_({ fetched_at: '1970-01-01T00:00:00Z', data: [], never_polled: true })
+		);
+		expect(publishedWasNeverPolled(entry)).toBe(true);
+	});
+
+	it('reads an answered-but-empty entry as an answer, not a gap', () => {
+		// `data: []`, no message, no flag: the provider was reached and reported nothing. That is the
+		// nothing-published sentence, distinct from never having asked.
+		const entry = schemaPublishedQuotaUsage.parse(usage_({ message: null, data: [] }));
+		expect(publishedWasNeverPolled(entry)).toBe(false);
+	});
+
+	it('reads an entry with buckets as an answer', () => {
+		const entry = schemaPublishedQuotaUsage.parse(usage_()) as PublishedQuotaUsage;
+		expect(publishedWasNeverPolled(entry)).toBe(false);
 	});
 });

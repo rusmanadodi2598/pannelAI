@@ -3,13 +3,17 @@
 // The due check decides whether a screen asks the gateway for data nobody is reading. It is separated from
 // the timer so those three conditions can be exercised without waiting thirty seconds or mounting a
 // component: paused, hidden, and not yet due each have to win over the elapsed interval.
+//
+// `pollSecondsRemaining` is the same decision made visible — §8.6.1 asks for an interval the operator can
+// see, and a countdown that promised a read the pause had forbidden would be a control that lies.
 
-import { describe, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { forEachCase } from '../support/tables';
 import {
 	clampPage,
 	pollDue,
 	pollIntervalLabel,
+	pollSecondsRemaining,
 	QUOTA_PAGE_SIZE,
 	QUOTA_POLL_MS
 } from '$lib/polling';
@@ -103,6 +107,66 @@ describe('pollDue', () => {
 			);
 		}
 	);
+});
+
+describe('pollSecondsRemaining', () => {
+	const loaded = 1_000_000;
+
+	forEachCase(
+		[
+			{
+				name: 'counts the whole interval down from a read that just landed',
+				state: { paused: false, lastLoadedAt: loaded },
+				now: loaded,
+				expected: 30
+			},
+			{
+				name: 'counts the second after a read one down',
+				state: { paused: false, lastLoadedAt: loaded },
+				now: loaded + 1_000,
+				expected: 29
+			},
+			{
+				name: 'counts a partial second as the second it is inside',
+				state: { paused: false, lastLoadedAt: loaded },
+				now: loaded + QUOTA_POLL_MS - 200,
+				expected: 1
+			},
+			{
+				name: 'reads zero once the interval is due rather than going negative',
+				state: { paused: false, lastLoadedAt: loaded },
+				now: loaded + QUOTA_POLL_MS + 7_000,
+				expected: 0
+			},
+			{
+				name: 'promises nothing while the refresh is paused',
+				state: { paused: true, lastLoadedAt: loaded },
+				now: loaded + 1_000,
+				expected: null
+			},
+			{
+				name: 'promises nothing before the first read, which has no anchor to count from',
+				state: { paused: false, lastLoadedAt: 0 },
+				now: loaded,
+				expected: null
+			}
+		],
+		(testCase) => {
+			expect(pollSecondsRemaining(testCase.state, testCase.now, QUOTA_POLL_MS)).toBe(
+				testCase.expected
+			);
+		}
+	);
+
+	it('scales to an interval other than the quota screen’s', () => {
+		// The helper is not quota-specific: the console screen polls on its own interval, and a countdown
+		// that had the thirty seconds baked in would lie there.
+		const state = { paused: false, lastLoadedAt: loaded };
+
+		expect(pollSecondsRemaining(state, loaded + 1_000, 5_000)).toBe(4);
+		expect(pollSecondsRemaining(state, loaded + 4_500, 5_000)).toBe(1);
+		expect(pollSecondsRemaining(state, loaded + 60_000, 5_000)).toBe(0);
+	});
 });
 
 describe('clampPage', () => {

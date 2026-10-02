@@ -10,7 +10,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import QuotaPage from '../../src/routes/quota/+page.svelte';
-import { quotaWindowRow, stubQuota } from '../support/quota-stub';
+import { quotaEndpointRow, quotaWindowRow, stubQuota } from '../support/quota-stub';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 
@@ -56,6 +56,82 @@ describe('the quota toolbar', () => {
 				screen.getByRole('button', { name: 'Resume refresh' }).parentElement!.parentElement!
 			).getByText(/Refresh is paused/)
 		).toBeTruthy();
+	});
+});
+
+describe('the toolbar the provider reshape added', () => {
+	it('counts the seconds to the next read beside the pause control', async () => {
+		stubQuota({ windows: [quotaWindowRow()] });
+		render(QuotaPage);
+
+		const pause = await screen.findByRole('button', { name: 'Pause refresh' });
+		const countdown = await screen.findByText(/Next read in \d+s/);
+
+		// Beside, not below: the countdown belongs with the control that stops it, so one glance at the
+		// right end of the row tells the operator both what the screen does and whether it is doing it.
+		expect(pause.parentElement?.contains(countdown)).toBe(true);
+		expect(countdown.className).toContain('tabular-nums');
+	});
+
+	it('stops promising a read the moment the refresh is paused', async () => {
+		stubQuota({ windows: [quotaWindowRow()] });
+		render(QuotaPage);
+
+		await screen.findByText(/Next read in \d+s/);
+		await fireEvent.click(screen.getByRole('button', { name: 'Pause refresh' }));
+
+		// A countdown to a read that will not arrive is a control that lies, and §8.6.1's pause is real.
+		expect(screen.queryByText(/Next read in/)).toBeNull();
+		expect(screen.getByText(/Refresh is paused/)).toBeTruthy();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'Resume refresh' }));
+		expect(await screen.findByText(/Next read in \d+s/)).toBeTruthy();
+	});
+
+	it('offers the providers on the page, and narrows the cards to the one picked', async () => {
+		stubQuota({
+			windows: [
+				quotaWindowRow(),
+				quotaWindowRow({ provider_id: 'zeta', endpoint_id: 'ep_z', window: 'daily' })
+			],
+			endpoints: [quotaEndpointRow(), quotaEndpointRow({ id: 'ep_z', label: 'Zeta primary' })]
+		});
+		render(QuotaPage);
+
+		const picker = await screen.findByLabelText('Filter cards by provider');
+		await screen.findByRole('heading', { name: 'zeta' });
+
+		const optionNames = Array.from(picker.querySelectorAll('option')).map((option) => option.value);
+		expect(optionNames).toEqual(['', 'anthropic', 'zeta']);
+
+		await fireEvent.change(picker, { target: { value: 'zeta' } });
+
+		expect(screen.queryByRole('heading', { name: 'anthropic' })).toBeNull();
+		expect(screen.getByRole('heading', { name: 'zeta' })).toBeTruthy();
+
+		await fireEvent.change(picker, { target: { value: '' } });
+		expect(screen.getByRole('heading', { name: 'anthropic' })).toBeTruthy();
+	});
+
+	it('still pages what the gateway sent, whatever the filter says', async () => {
+		const stub = stubQuota({
+			windows: [
+				quotaWindowRow(),
+				quotaWindowRow({ provider_id: 'zeta', endpoint_id: 'ep_z', window: 'daily' })
+			],
+			endpoints: [quotaEndpointRow(), quotaEndpointRow({ id: 'ep_z', label: 'Zeta primary' })]
+		});
+		render(QuotaPage);
+
+		await fireEvent.change(await screen.findByLabelText('Filter cards by provider'), {
+			target: { value: 'zeta' }
+		});
+		const readsBefore = stub.quotaReads.length;
+
+		// The filter is a reading aid for the page already in hand. Sending it to the wire would move the
+		// pager under the operator and re-read the gateway for a choice that changes nothing about it.
+		expect(stub.quotaReads.length).toBe(readsBefore);
+		expect(stub.quotaReads.every((url) => !url.includes('provider'))).toBe(true);
 	});
 });
 

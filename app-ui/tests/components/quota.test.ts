@@ -7,6 +7,10 @@
 // and pagination the gateway now performs (docs/PORT/006-PORT-QUOTA-PAGING.md D1/D5): the screen asks for a
 // page of provider groups, five to a page, and the pager walks server pages. The tests here lock the parts
 // an operator can act on: folding, the bulk bar, the paged reads, and what the operator reads inside a card.
+//
+// Since the provider-first reshape (2026-10-02) the counted windows are one summary line per connection
+// rather than a row set, so the assertions that named a window on its own now name the line it belongs to.
+// The provider's own numbers are driven in `quota-published.test.ts`.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -56,6 +60,11 @@ function providers(count: number): {
 	return { windows, endpoints };
 }
 
+/** The one line a connection's counted windows get, named by the window kind it picked out. */
+function countedLine(kind: string): RegExp {
+	return new RegExp(`Counted by this gateway: .*· (most spent )?${kind}`);
+}
+
 describe('QuotaPage', () => {
 	beforeEach(() => {
 		visit('/quota');
@@ -93,16 +102,18 @@ describe('QuotaPage', () => {
 		expect(screen.getByText('1 endpoint, 1 window')).toBeTruthy();
 	});
 
-	it('renders a window with its ceiling, percentage, countdown, and source', async () => {
+	it('summarises the counted window by kind, spend, share, and when it reopens', async () => {
 		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
 
 		expect(await screen.findByRole('heading', { name: 'anthropic' })).toBeTruthy();
-		expect(screen.getByText('monthly')).toBeTruthy();
-		expect(screen.getByText('60%')).toBeTruthy();
-		expect(screen.getByText('computed')).toBeTruthy();
-		expect(screen.getByText(/120,000 \/ 200,000/)).toBeTruthy();
-		expect(screen.getByText(/in (2h|1h 59m)/)).toBeTruthy();
+		// One line for this gateway's own count, carrying what the old row set carried: which window,
+		// how much of its ceiling went, the percentage the rows above use, and the countdown.
+		const line = screen.getByText(countedLine('monthly'));
+		expect(line.textContent).toContain('1 window');
+		expect(line.textContent).toContain('120,000 / 200,000');
+		expect(line.textContent).toContain('(60%)');
+		expect(line.textContent).toMatch(/resets in (2h|1h 59m)/);
 	});
 
 	it('keeps the provider order first seen', async () => {
@@ -122,18 +133,18 @@ describe('QuotaPage', () => {
 	it('folds a card from its header control and brings it back', async () => {
 		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
-		await screen.findByText('monthly');
+		await screen.findByText(countedLine('monthly'));
 
 		const toggle = screen.getByRole('button', { name: 'Fold anthropic' });
 		expect(toggle.getAttribute('aria-expanded')).toBe('true');
 
 		await fireEvent.click(toggle);
 		expect(toggle.getAttribute('aria-expanded')).toBe('false');
-		expect(screen.queryByText('monthly')).toBeNull();
+		expect(screen.queryByText(countedLine('monthly'))).toBeNull();
 
 		await fireEvent.click(toggle);
 		expect(toggle.getAttribute('aria-expanded')).toBe('true');
-		expect(screen.getByText('monthly')).toBeTruthy();
+		expect(screen.getByText(countedLine('monthly'))).toBeTruthy();
 	});
 
 	it('folds the checked cards in one action, and unfolds them the same way', async () => {
@@ -145,7 +156,7 @@ describe('QuotaPage', () => {
 			endpoints: [quotaEndpointRow(), quotaEndpointRow({ id: 'ep_z', label: 'Zeta primary' })]
 		});
 		render(QuotaPage);
-		await screen.findByText('monthly');
+		await screen.findByText(countedLine('monthly'));
 
 		await fireEvent.click(
 			screen.getByRole('checkbox', { name: 'Select anthropic for bulk folding' })
@@ -154,8 +165,8 @@ describe('QuotaPage', () => {
 		expect(screen.getByText('2 selected')).toBeTruthy();
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Fold selected' }));
-		expect(screen.queryByText('monthly')).toBeNull();
-		expect(screen.queryByText('daily')).toBeNull();
+		expect(screen.queryByText(countedLine('monthly'))).toBeNull();
+		expect(screen.queryByText(countedLine('daily'))).toBeNull();
 		expect(
 			screen.getByRole('button', { name: 'Fold anthropic' }).getAttribute('aria-expanded')
 		).toBe('false');
@@ -164,19 +175,19 @@ describe('QuotaPage', () => {
 		);
 
 		await fireEvent.click(screen.getByRole('button', { name: 'Unfold selected' }));
-		expect(screen.getByText('monthly')).toBeTruthy();
-		expect(screen.getByText('daily')).toBeTruthy();
+		expect(screen.getByText(countedLine('monthly'))).toBeTruthy();
+		expect(screen.getByText(countedLine('daily'))).toBeTruthy();
 	});
 
 	it('keeps the fold action available without a selection', async () => {
 		stubQuota({ windows: [quotaWindowRow()] });
 		render(QuotaPage);
-		await screen.findByText('monthly');
+		await screen.findByText(countedLine('monthly'));
 
 		// No checkboxes are checked, so the bulk bar stays out of the way and the single-card fold still works.
 		expect(screen.queryByText('1 selected')).toBeNull();
 		await fireEvent.click(screen.getByRole('button', { name: 'Fold anthropic' }));
-		expect(screen.queryByText('monthly')).toBeNull();
+		expect(screen.queryByText(countedLine('monthly'))).toBeNull();
 	});
 
 	it('asks the gateway for its card page, five provider groups to a page', async () => {
@@ -290,8 +301,10 @@ describe('QuotaPage', () => {
 		// The free lane's virtual endpoint carries no provider. One row like that used to reject the
 		// whole read; now the card renders with the sentence that says the counts are local.
 		expect(await screen.findByRole('heading', { name: 'No provider' })).toBeTruthy();
+		// The lane's own sentence and its counted line: with no provider behind it there is nothing else
+		// on the card, which is why the summary keeps the window kind and the countdown.
 		expect(screen.getByText(/Counted locally by this gateway/)).toBeTruthy();
-		expect(screen.getByText('monthly')).toBeTruthy();
+		expect(screen.getByText(countedLine('monthly'))).toBeTruthy();
 	});
 
 	it('resolves an endpoint label, and names the identifier when it has no label', async () => {
@@ -308,7 +321,8 @@ describe('QuotaPage', () => {
 		stubQuota({ windows: [quotaWindowRow({ limit: undefined })] });
 		render(QuotaPage);
 
-		expect(await screen.findByText('No limit')).toBeTruthy();
+		// A ceiling the gateway never recorded is stated as absent, not as a spent one and not as 0%.
+		expect(await screen.findByText(/no ceiling/)).toBeTruthy();
 		expect(screen.queryByText('0%')).toBeNull();
 	});
 

@@ -1,37 +1,40 @@
 <script lang="ts">
-	// One quota card's body (docs/PORT/005-PORT-QUOTA-CARDS.md D1/D6): the sentence the provider-less
-	// lane opens with, then one row group per endpoint with its windows. Split out of QuotaCards so
-	// the card (fold, checkbox, pagination) and the rows stay under the file-size cap on their own;
-	// the scrolling wrapper stays in QuotaCards because `aria-controls` points at it.
+	// One quota card's body (docs/PORT/005-PORT-QUOTA-CARDS.md D1/D6; provider-first reshape 2026-10-02):
+	// the sentence the provider-less lane opens with, then one group per connection whose FIRST thing is
+	// what the provider itself reports, with this gateway's counted windows reduced to one summary line
+	// beneath it. Split out of QuotaCards so the card (fold, checkbox, pagination) and the rows stay under
+	// the file-size cap on their own; the scrolling wrapper stays in QuotaCards because `aria-controls`
+	// points at it.
 	//
-	// Under each endpoint's counted rows sits the published read for that one endpoint, which the operator
-	// asks for. The two are kept apart on purpose: the rows say what this gateway sent, the read says what
-	// the provider reports, and neither is the other's correction (SPEC-API §7.12). The lane whose windows
-	// carry no provider gets no control, because there is no provider behind it to ask.
-	import { quotaBar, quotaPercentLabel, type QuotaWindow } from '$lib/schemas/quota';
-	import { formatCount } from '$lib/schemas/usage-view';
-	import { countdownText, formatTimestamp } from '$lib/utils/time';
+	// The order is the whole point of the reshape. The operator opens this screen to read what each account
+	// has left, and the gateway's own counters answer a different question — how much this proxy sent — so
+	// they are stated once, compactly, instead of taking a second full row set over the same connection.
+	// The two ledgers stay named and apart: neither is the other's correction (SPEC-API §7.12).
+	//
+	// The lane whose windows carry no provider gets no provider block, because there is no provider behind
+	// it to have published anything; it keeps its own sentence and its counted summary.
+	//
+	// An account with no counted window is still a connection in `group.endpoints` (QuotaCards groups cards
+	// from the union of the page's accounts, not from its windows): its provider block shows what the
+	// provider published, or the "not polled yet" state, and its counted summary line says honestly that this
+	// gateway holds no windows for it — `countedSummaryText([])` states the emptiness rather than a zero.
+	import { countedSummaryText, type QuotaCardGroup } from '$lib/schemas/quota';
+	import type { PublishedQuotaUsage } from '$lib/schemas/quota-published';
 	import QuotaPublished from './QuotaPublished.svelte';
 
-	let {
-		group,
-		labels,
-		now
-	}: {
-		group: { provider: string; endpoints: { id: string; windows: QuotaWindow[] }[] };
+	type Props = {
+		group: QuotaCardGroup;
 		labels: Map<string, string>;
+		/** The provider's answer per connection id. A connection absent from it is behind a provider
+		 *  that publishes no quota, and gets no provider block at all. */
+		published: Map<string, PublishedQuotaUsage>;
 		now: number;
-	} = $props();
+	};
+
+	let { group, labels, published, now }: Props = $props();
 
 	function endpointLabel(id: string): string {
 		return labels.get(id) ?? id;
-	}
-
-	function counterText(window: QuotaWindow): string {
-		if (window.limit === null || window.limit === undefined || window.limit <= 0) {
-			return formatCount(window.used);
-		}
-		return `${formatCount(window.used)} / ${formatCount(window.limit)}`;
 	}
 </script>
 
@@ -41,51 +44,28 @@
 	</p>
 {/if}
 {#each group.endpoints as endpoint (endpoint.id)}
+	{@const answer = published.get(endpoint.id)}
 	<div class="flex flex-col gap-2">
 		<h4 class="truncate text-sm font-semibold">{endpointLabel(endpoint.id)}</h4>
-		{#each endpoint.windows as window (window.window)}
-			{@const bar = quotaBar(window.used, window.limit)}
-			<div class="flex flex-col gap-1">
-				<div class="flex items-center justify-between gap-2 text-sm">
-					<span class="flex items-center gap-2">
-						<span class="font-medium">{window.window}</span>
-						<span class="rounded-[var(--radius-sm)] bg-[var(--color-surface-2)] px-2 py-0.5 text-xs"
-							>{window.source}</span
-						>
-					</span>
-					<span class="tabular-nums">{quotaPercentLabel(window.used, window.limit)}</span>
-				</div>
 
-				{#if bar !== null}
-					<div class="h-2 overflow-hidden rounded-full bg-[var(--color-surface-3)]">
-						<div
-							class="h-full rounded-full"
-							style={`width: ${bar.width}%; background: ${bar.color};`}
-						></div>
-					</div>
-				{/if}
-
-				<div
-					class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)]"
-				>
-					<span class="tabular-nums">{counterText(window)}</span>
-					{#if window.resets_at}
-						<span
-							>Resets {countdownText(window.resets_at, now)} (at
-							{formatTimestamp(window.resets_at)})</span
-						>
-					{/if}
-				</div>
-			</div>
-		{/each}
-
-		{#if group.provider}
+		<!-- A connection with no answer on the page is behind a provider that publishes no quota: the
+		     gateway sends an entry for every account it can ask, including one marked never-polled, so
+		     silence here means there is nobody to ask. Offering the block anyway would print "not polled
+		     yet" beside a provider that will never be polled, and a button that asks for nothing. -->
+		{#if group.provider && answer !== undefined}
 			<QuotaPublished
 				endpointId={endpoint.id}
 				provider={group.provider}
 				label={endpointLabel(endpoint.id)}
+				usage={answer}
 				{now}
 			/>
 		{/if}
+
+		<!-- The gateway's own count, in the one line it gets: how many windows it holds for this
+		     connection and the largest spend among them. -->
+		<p class="text-xs tabular-nums text-[var(--color-text-muted)]">
+			{countedSummaryText(endpoint.windows, now)}
+		</p>
 	</div>
 {/each}

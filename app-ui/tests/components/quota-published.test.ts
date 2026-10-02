@@ -1,21 +1,22 @@
-// The published-quota read on the quota card (docs/SPEC-UI/001-SPEC-UI.md §6.6,
-// docs/SPEC-API/001-SPEC-API.md §7.12's published-read block, draft 036 §7).
+// The provider's own quota on the card, on load (docs/SPEC-UI/001-SPEC-UI.md §6.6, docs/SPEC-API §7.12's
+// published-read block, the provider-first reshape of 2026-10-02).
 //
-// Four rules make this worth driving rather than eyeballing:
+// The measured failure this suite exists for: the screen used to read only the gateway's own counted
+// windows, and on the live gateway those rows carry no `limit` at all — an audit of a real page counted
+// zero progress bars. The provider's numbers were reachable only behind a button on every card. They now
+// arrive on the collection read, so the first assertion here is the one that matters most: a card that
+// renders them WITHOUT firing a request per endpoint. A screen that fetched on render would look identical
+// on this fixture and would fan out to the gateway across hundreds of keys in production.
 //
-//   the read is on demand. One HTTP call per endpoint to fill a card list is the N+1 this screen already
-//   refuses on the cap read, and hundreds of keys per provider is the owner's stated scale, so a screen
-//   that fetched on render would fail review while still looking correct on a two-endpoint fixture;
-//   the provider's number prints as the provider spelled it. "12.5" must not become 13 or 12.500000;
-//   no ceiling is a state, not a zero, so an unbounded row prints its amount with "No limit" and no bar,
-//   while a spent one prints 3000 / 3000 at 100%;
-//   each endpoint keeps its own answer. A shared result would show ep_1's balance under a heading the
-//   operator asked about as ep_2.
+// The rest of the file is the states the reference shows and this screen did not: an unlimited bucket, a
+// credit balance, a unit, a pack that expires rather than refills, a provider that publishes nothing, a
+// broken provider cache said once above the cards, and a connection nobody has polled. A null ceiling and
+// a zero ceiling are opposite facts and are asserted against each other, not merely both rendered.
 //
-// The stub counts the ids the screen asked about, so "nothing until asked" and "one read per click" are
-// measured rather than assumed.
+// The per-endpoint route is spied at the module as well as counted at the fetch stub, because "no request"
+// is a claim about the panel's code, not about the fake server's logs.
 
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import QuotaPage from '../../src/routes/quota/+page.svelte';
 import {
@@ -26,219 +27,318 @@ import {
 	type QuotaStub
 } from '../support/quota-stub';
 
+const apiProbe = vi.hoisted(() => ({ published: [] as string[] }));
+
+vi.mock('$lib/api/usage', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('$lib/api/usage')>();
+	return {
+		...actual,
+		getPublishedQuota: (endpointId: string, options: { force?: boolean } = {}) => {
+			apiProbe.published.push(endpointId);
+			return actual.getPublishedQuota(endpointId, options);
+		}
+	};
+});
+
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 
-function askButton(endpointLabel: string): HTMLButtonElement {
-	return screen.getByRole('button', { name: `Ask the provider about ${endpointLabel}` });
-}
-
-function section(endpointLabel: string): HTMLElement {
+function section(endpointLabel = 'Anthropic primary'): HTMLElement {
 	return screen.getByRole('group', { name: `Published quota for ${endpointLabel}` });
 }
 
-describe('the published quota read', () => {
-	let stub: QuotaStub;
+/** The bar tracks inside one block. A state with no ceiling to draw against must add none. */
+function bars(node: HTMLElement): HTMLElement[] {
+	return Array.from(node.querySelectorAll('.h-2'));
+}
 
-	afterEach(() => {
-		cleanup();
-		vi.unstubAllGlobals();
+function renderWith(
+	published: QuotaStub['published'],
+	overrides: Partial<QuotaStub> = {}
+): QuotaStub {
+	const stub = stubQuota({ windows: [quotaWindowRow()], published, ...overrides });
+	render(QuotaPage);
+	return stub;
+}
+
+afterEach(() => {
+	cleanup();
+	vi.unstubAllGlobals();
+	apiProbe.published = [];
+});
+
+describe('the provider numbers on load', () => {
+	it('renders them without calling the per-endpoint read at all', async () => {
+		const stub = renderWith({ ep_1: publishedUsage('ep_1') });
+
+		await waitFor(() => expect(within(section()).getByText('12.5 / 3000')).toBeTruthy());
+
+		expect(stub.publishedReads).toEqual([]);
+		expect(apiProbe.published).toEqual([]);
 	});
 
-	it('asks nothing until the operator does', async () => {
-		stub = stubQuota({
-			windows: [quotaWindowRow()],
-			published: { ep_1: publishedUsage('ep_1') }
+	it('puts the provider above what this gateway counted', async () => {
+		renderWith({ ep_1: publishedUsage('ep_1') });
+		await screen.findByText('12.5 / 3000');
+
+		const providerRow = screen.getByText('Personal');
+		const countedLine = screen.getByText(/Counted by this gateway/);
+
+		// Order is the task: the number the operator came for is read first, the gateway's own count is
+		// the footnote under it rather than a second row set competing with it.
+		expect(
+			providerRow.compareDocumentPosition(countedLine) & Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
+		expect(countedLine.textContent).toContain('1 window · monthly 120,000 / 200,000 (60%)');
+	});
+
+	it('keeps the note naming the ledger above the rows, and the instant with them', async () => {
+		renderWith({ ep_1: publishedUsage('ep_1') });
+		const body = await waitFor(() => {
+			const node = section();
+			expect(node.textContent).toContain('Asked');
+			return node;
 		});
-		render(QuotaPage);
+
+		expect(body.textContent).toMatch(/provider/);
+		expect(body.textContent).toMatch(/counted/i);
+		expect(body.textContent).toMatch(/Asked .*2026/);
+		expect(body.textContent).toContain('Plan: personal_standard');
+	});
+
+	it('marks a stored answer as cached so a stale figure reads as stale', async () => {
+		renderWith({ ep_1: publishedUsage('ep_1', { cached: true }) });
+		const body = await waitFor(() => {
+			const node = section();
+			expect(node.textContent).toContain('Asked');
+			return node;
+		});
+		expect(body.textContent).toContain('cached');
+	});
+
+	it('leaves the mark off a read that is current', async () => {
+		renderWith({ ep_1: publishedUsage('ep_1') });
+		const body = await waitFor(() => {
+			const node = section();
+			expect(node.textContent).toContain('Asked');
+			return node;
+		});
+		expect(body.textContent).not.toContain('cached');
+	});
+
+	it('offers no provider block to a connection whose provider publishes nothing', async () => {
+		// The gateway sends an entry for every account it can ask — including one marked never-polled —
+		// so an absent entry means there is nobody to ask. A block there would print "not polled yet"
+		// beside a provider that is never polled, and a button that has nothing behind it.
+		const stub = renderWith({});
 
 		await screen.findByRole('heading', { name: 'Anthropic primary' });
 		expect(stub.publishedReads).toEqual([]);
-		// The control is there before it is used: an operator has to be able to see that the answer is
-		// available, not only that it appears after a click.
-		expect(askButton('Anthropic primary')).toBeTruthy();
+		expect(
+			screen.queryByRole('group', { name: 'Published quota for Anthropic primary' })
+		).toBeNull();
+		expect(screen.queryByText(/Not polled yet/)).toBeNull();
 	});
 
-	it("shows what the provider reported, in the provider's own precision", async () => {
-		stub = stubQuota({
-			windows: [quotaWindowRow()],
-			published: { ep_1: publishedUsage('ep_1') }
-		});
-		render(QuotaPage);
-
-		await fireEvent.click(
-			await screen.findByRole('button', { name: 'Ask the provider about Anthropic primary' })
-		);
-		const body = await waitFor(() => {
-			const node = section('Anthropic primary');
-			expect(within(node).getByText('12.5 / 3000')).toBeTruthy();
-			return node;
-		});
-
-		expect(within(body).getByText('<1%')).toBeTruthy();
-		expect(body.textContent).toContain('Personal');
-		expect(body.textContent).toContain('Plan: personal_standard');
-		expect(body.textContent).toMatch(/Asked .*2026/);
-		// The two numbers on one screen come from two ledgers, and the note is what keeps that visible.
-		expect(body.textContent).toMatch(/provider/);
-		expect(body.textContent).toMatch(/counted/i);
-		expect(body.textContent).toMatch(/in (2h|1h 59m)/);
-	});
-
-	it('states a bucket with no ceiling as unlimited rather than as a zero', async () => {
-		stub = stubQuota({
-			windows: [quotaWindowRow()],
-			published: {
-				ep_1: publishedUsage('ep_1', {
-					plan: null,
-					data: [{ label: 'Used (USD)', used: '4' }]
-				})
-			}
-		});
-		render(QuotaPage);
-
-		await fireEvent.click(
-			await screen.findByRole('button', { name: 'Ask the provider about Anthropic primary' })
-		);
-		const body = await waitFor(() => {
-			const node = section('Anthropic primary');
-			expect(within(node).getByText('No limit')).toBeTruthy();
-			return node;
-		});
-
-		expect(within(body).getByText('Used (USD)')).toBeTruthy();
-		// No ceiling means no "x / y" counter, and no plan line for a plan the provider did not name.
-		expect(within(body).queryAllByText(/\d+ \/ \d+/)).toEqual([]);
-		expect(body.textContent).not.toContain('personal_standard');
-	});
-
-	it('reads a spent ceiling as spent, not as unlimited', async () => {
-		stub = stubQuota({
-			windows: [quotaWindowRow()],
-			published: {
-				ep_1: publishedUsage('ep_1', { data: [{ label: 'Personal', used: '3000', total: '3000' }] })
-			}
-		});
-		render(QuotaPage);
-
-		await fireEvent.click(
-			await screen.findByRole('button', { name: 'Ask the provider about Anthropic primary' })
-		);
-		expect(await screen.findByText('100%')).toBeTruthy();
-		expect(screen.queryByText('No limit')).toBeNull();
-	});
-
-	it("renders the provider's sentence when it publishes no buckets", async () => {
-		stub = stubQuota({
-			windows: [quotaWindowRow()],
-			published: {
-				ep_1: publishedUsage('ep_1', {
-					plan: null,
-					message: "Qoder reports this account's quota as exceeded.",
-					data: []
-				})
-			}
-		});
-		render(QuotaPage);
-
-		await fireEvent.click(
-			await screen.findByRole('button', { name: 'Ask the provider about Anthropic primary' })
-		);
-		const body = await waitFor(() => section('Anthropic primary'));
-		await waitFor(() => expect(body.textContent).toContain('quota as exceeded'));
-		expect(within(body).queryAllByText(/\d+ \/ \d+/)).toEqual([]);
-	});
-
-	it('states an empty answer the provider did not explain', async () => {
-		stub = stubQuota({
-			windows: [quotaWindowRow()],
-			published: { ep_1: publishedUsage('ep_1', { plan: null, message: null, data: [] }) }
-		});
-		render(QuotaPage);
-
-		await fireEvent.click(
-			await screen.findByRole('button', { name: 'Ask the provider about Anthropic primary' })
-		);
-		expect(await screen.findByText(/nothing to report/)).toBeTruthy();
-	});
-
-	it("reports the gateway's refusal and lets the operator ask again", async () => {
-		// No published payload for ep_1: the stub answers the server's own 404 sentence.
-		stub = stubQuota({ windows: [quotaWindowRow()] });
-		render(QuotaPage);
-
-		await fireEvent.click(
-			await screen.findByRole('button', { name: 'Ask the provider about Anthropic primary' })
-		);
-		const alert = await screen.findByRole('alert');
-		await waitFor(() => expect(alert.textContent).toContain('upstream endpoint not found'));
-		expect(stub.publishedReads).toEqual(['ep_1']);
-
-		await fireEvent.click(askButton('Anthropic primary'));
-		await waitFor(() => expect(stub.publishedReads).toEqual(['ep_1', 'ep_1']));
-	});
-
-	it('asks once when the control is pressed twice while the read is in flight', async () => {
-		stub = stubQuota({
-			windows: [quotaWindowRow()],
-			published: { ep_1: publishedUsage('ep_1') },
-			holdPublished: true
-		});
-		render(QuotaPage);
-
-		const button = await screen.findByRole('button', {
-			name: 'Ask the provider about Anthropic primary'
-		});
-		await fireEvent.click(button);
-		await fireEvent.click(button);
-
-		expect(stub.publishedReads).toEqual(['ep_1']);
-		expect(await screen.findByText(/Asking/)).toBeTruthy();
-
-		const release = stub.releasePublished;
-		expect(release).toBeTruthy();
-		release?.(publishedUsage('ep_1'));
-		await waitFor(() => expect(section('Anthropic primary').textContent).toContain('Personal'));
-		// The in-flight sentence goes away once the answer lands, rather than sitting above it.
-		await waitFor(() => expect(screen.queryByText(/Asking/)).toBeNull());
-	});
-
-	it('keeps one answer per endpoint rather than sharing the last read', async () => {
-		stub = stubQuota({
-			windows: [quotaWindowRow(), quotaWindowRow({ endpoint_id: 'ep_2', window: 'daily' })],
-			endpoints: [
-				quotaEndpointRow(),
-				quotaEndpointRow({ id: 'ep_2', label: 'Anthropic secondary' })
-			],
-			published: {
+	it('keeps one answer per connection rather than sharing the last one', async () => {
+		renderWith(
+			{
 				ep_1: publishedUsage('ep_1', { data: [{ label: 'Personal', used: '1', total: '2' }] }),
 				ep_2: publishedUsage('ep_2', { data: [{ label: 'Personal', used: '99', total: '100' }] })
+			},
+			{
+				windows: [quotaWindowRow(), quotaWindowRow({ endpoint_id: 'ep_2', window: 'daily' })],
+				endpoints: [
+					quotaEndpointRow(),
+					quotaEndpointRow({ id: 'ep_2', label: 'Anthropic secondary' })
+				]
 			}
-		});
-		render(QuotaPage);
-
-		await fireEvent.click(
-			await screen.findByRole('button', { name: 'Ask the provider about Anthropic secondary' })
 		);
+
 		await waitFor(() =>
 			expect(within(section('Anthropic secondary')).getByText('99 / 100')).toBeTruthy()
 		);
+		expect(within(section('Anthropic primary')).getByText('1 / 2')).toBeTruthy();
+	});
+});
 
-		// The endpoint that was never asked about still shows its own control and no numbers at all.
-		expect(screen.queryByText('1 / 2')).toBeNull();
-		expect(askButton('Anthropic primary')).toBeTruthy();
+describe('the states a provider row can be in', () => {
+	it('draws a share only when the provider claimed a ceiling', async () => {
+		renderWith({ ep_1: publishedUsage('ep_1') });
+		const body = await waitFor(() => {
+			expect(bars(section()).length).toBe(1);
+			return section();
+		});
+
+		expect(within(body).getByText('12.5 / 3000')).toBeTruthy();
+		expect(within(body).getByText('<1%')).toBeTruthy();
 	});
 
-	it('offers no read for the lane whose windows carry no provider', async () => {
-		stub = stubQuota({
-			windows: [quotaWindowRow({ provider_id: '', endpoint_id: 'ep_virtual' })],
-			endpoints: [quotaEndpointRow({ id: 'ep_virtual', label: 'Virtual endpoint' })]
+	it('reads a bucket with no ceiling as unlimited, not as a zero', async () => {
+		renderWith({
+			ep_1: publishedUsage('ep_1', { plan: null, data: [{ label: 'Used (USD)', used: '4' }] })
+		});
+		await screen.findByText('Used (USD)');
+		const body = section();
+
+		expect(within(body).getByText('No limit')).toBeTruthy();
+		expect(within(body).getByText('4')).toBeTruthy();
+		expect(bars(body)).toEqual([]);
+		expect(body.textContent).not.toContain('personal_standard');
+	});
+
+	it('draws an unlimited bucket with its amount and no bar', async () => {
+		renderWith({
+			ep_1: publishedUsage('ep_1', {
+				data: [{ label: 'Weekly', used: '5', unlimited: true, unit: 'requests' }]
+			})
+		});
+		await screen.findByText('5 used · Unlimited');
+		const body = section();
+
+		expect(within(body).getByText('5 used · Unlimited')).toBeTruthy();
+		expect(bars(body)).toEqual([]);
+	});
+
+	it('prints a credit balance as money, not as a percentage', async () => {
+		renderWith({
+			ep_1: publishedUsage('ep_1', {
+				data: [{ label: 'Credits', used: '12.50', is_credit_balance: true, unit: 'USD' }]
+			})
+		});
+		await screen.findByText('Credit: 12.50 USD');
+		const body = section();
+
+		expect(within(body).getByText('Credit: 12.50 USD')).toBeTruthy();
+		expect(within(body).getByText('Balance')).toBeTruthy();
+		expect(bars(body)).toEqual([]);
+		expect(body.textContent).not.toMatch(/\d+%/);
+	});
+
+	it('keeps a spent ceiling of zero distinct from a ceiling that was never stated', async () => {
+		renderWith({
+			ep_1: publishedUsage('ep_1', { data: [{ label: 'Personal', used: '3000', total: '0' }] })
+		});
+		await screen.findByText('3000 / 0');
+		const body = section();
+
+		expect(within(body).getByText('3000 / 0')).toBeTruthy();
+		expect(within(body).getByText('Over limit')).toBeTruthy();
+		expect(within(body).queryByText('No limit')).toBeNull();
+	});
+
+	it('shows the unit a provider counts in', async () => {
+		renderWith({
+			ep_1: publishedUsage('ep_1', {
+				data: [{ label: 'Requests', used: '9', total: '1000', unit: 'requests' }]
+			})
+		});
+		await screen.findByText('9 / 1000 requests');
+		const body = section();
+
+		expect(within(body).getByText('9 / 1000 requests')).toBeTruthy();
+	});
+
+	it('says a pack expires when the provider says it does not refill', async () => {
+		renderWith({
+			ep_1: publishedUsage('ep_1', {
+				data: [
+					{
+						label: 'Bonus Pack 1',
+						used: '40',
+						total: '100',
+						recurring: false,
+						resets_at: new Date(Date.now() + 3 * 3_600_000).toISOString()
+					}
+				]
+			})
+		});
+		// Wait for the row itself: the section is on screen from the first paint, so waiting on it alone
+		// would race the read that puts the pack inside it.
+		await screen.findByText('Bonus Pack 1');
+		const body = section();
+
+		// The verb and the duration are two expressions on one line, so the markup between them is
+		// whitespace rather than a single space.
+		expect(body.textContent).toMatch(/Expires\s+in\s+(2h 59m|3h)/);
+		expect(body.textContent).not.toMatch(/Resets\s+in/);
+	});
+
+	it('keeps surviving figures and says the last poll failed', async () => {
+		// The worker keeps the last good numbers across a failing poll. Showing them is right;
+		// showing them alone is not, so the card owes the count and the attempt beside them.
+		renderWith({
+			ep_1: publishedUsage('ep_1', { failures: 3, last_attempt_at: '2026-10-01T10:00:00Z' })
+		});
+		const body = await waitFor(() => {
+			expect(section().textContent).toContain('Last poll failed');
+			return section();
+		});
+
+		expect(body.textContent).toContain('(3 in a row)');
+		expect(body.textContent).toMatch(/asked[\s\S]*2026/);
+		// The figures are not withdrawn, and the read is not styled as a breakage.
+		expect(within(body).getByText('12.5 / 3000')).toBeTruthy();
+		expect(body.querySelector('[role="alert"]')).toBeNull();
+		expect(body.textContent).not.toMatch(/not polled yet/i);
+	});
+
+	it('renders the provider sentence for a family that publishes nothing, muted and not as a failure', async () => {
+		renderWith({
+			ep_1: publishedUsage('ep_1', {
+				plan: 'personal_standard',
+				message: "Qoder reports this account's quota as exceeded.",
+				data: [],
+				// What the live gateway actually sends for this state: the worker stored the sentence and
+				// left the figures untouched, so the row's instant is still the one it was created with.
+				fetched_at: '0001-01-01T00:00:00Z',
+				cached: true
+			})
+		});
+		const body = await waitFor(() => {
+			expect(section().textContent).toContain('quota as exceeded');
+			return section();
+		});
+
+		expect(within(body).queryAllByText(/\d+ \/ \d+/)).toEqual([]);
+		// A soft outcome is an answer, not an error: no alert role, and not the danger colour.
+		expect(screen.queryByRole('alert')).toBeNull();
+		expect(body.querySelector('[role="alert"]')).toBeNull();
+		expect(body.textContent).not.toMatch(/nothing to report/);
+		// And no stamp: the placeholder instant dates nothing, and printing it puts 1 January year 1 on
+		// the card as though the provider had said the sentence then.
+		expect(body.textContent).not.toContain('Asked');
+	});
+
+	it('states an answer the provider left empty', async () => {
+		renderWith({ ep_1: publishedUsage('ep_1', { plan: null, message: null, data: [] }) });
+		await waitFor(() => expect(section().textContent).toContain('nothing to report'));
+	});
+});
+
+describe('the page-level provider sentence', () => {
+	it('is said once, above the cards, when the provider cache could not be read', async () => {
+		stubQuota({
+			windows: [
+				quotaWindowRow(),
+				quotaWindowRow({ provider_id: 'zeta', endpoint_id: 'ep_z', window: 'daily' })
+			],
+			endpoints: [quotaEndpointRow(), quotaEndpointRow({ id: 'ep_z', label: 'Zeta primary' })],
+			publishedNote: 'Provider quota could not be read; the counts below are this gateway’s own.'
 		});
 		render(QuotaPage);
 
-		await screen.findByRole('heading', { name: 'No provider' });
-		// There is no provider behind that lane to ask, so the card states the counts are local and
-		// offers no control that could only fail.
-		expect(screen.queryAllByRole('button', { name: /^Ask the provider about/ })).toEqual([]);
-		expect(stub.publishedReads).toEqual([]);
+		await screen.findByRole('heading', { name: 'anthropic' });
+		expect(screen.getAllByText(/Provider quota could not be read/)).toHaveLength(1);
+
+		// The counts under it are still the gateway's own and still render — the note names a gap, it does
+		// not replace the data. One line per connection, so two cards here make two lines.
+		expect(screen.getAllByText(/Counted by this gateway: 1 window/)).toHaveLength(2);
+	});
+
+	it('says nothing when the provider answers normally', async () => {
+		renderWith({ ep_1: publishedUsage('ep_1') });
+		await screen.findByText('12.5 / 3000');
+
+		expect(screen.queryByText(/Provider quota could not be read/)).toBeNull();
 	});
 });

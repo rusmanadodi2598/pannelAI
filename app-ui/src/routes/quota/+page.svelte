@@ -14,22 +14,27 @@
 	// The endpoint labels come from the first page of the endpoint list, which is the only list route the API
 	// offers. That read is best effort: if it fails the table still renders, naming endpoints by their ids,
 	// and says why.
+	//
+	// The provider's own numbers arrive on the same read as the windows (`published`), so a card shows what
+	// its connection has left without a request of its own and without the operator pressing anything. The
+	// page keys them by endpoint and hands them down; a card that wants a fresher answer asks for it itself.
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
-	import { CONTROL_ICONS } from '$lib/icons';
 	import QuotaCaps from '$lib/components/QuotaCaps.svelte';
 	import QuotaCards from '$lib/components/QuotaCards.svelte';
+	import QuotaToolbar from '$lib/components/QuotaToolbar.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { listEndpointLabels } from '$lib/api/endpoints';
 	import { listQuotaWindows } from '$lib/api/usage';
 	import {
 		clampPage,
 		pollDue,
-		pollIntervalLabel,
+		pollSecondsRemaining,
 		QUOTA_PAGE_SIZE,
 		QUOTA_POLL_MS
 	} from '$lib/polling';
-	import type { QuotaWindow } from '$lib/schemas/quota';
+	import type { PublishedQuotaUsage } from '$lib/schemas/quota-published';
+	import { quotaCardGroups, quotaCardProviders, type QuotaWindow } from '$lib/schemas/quota';
 	import { formatTimestamp } from '$lib/utils/time';
 
 	// The countdown's resolution. A second is the smallest unit the countdown prints, so a faster tick would
@@ -37,6 +42,8 @@
 	const TICK_MS = 1000;
 
 	let windows = $state<QuotaWindow[]>([]);
+	let published = $state<PublishedQuotaUsage[]>([]);
+	let publishedNote = $state<string | null>(null);
 	let labels = $state(new Map<string, string>());
 	let loading = $state(true);
 	let busy = $state(false);
@@ -51,19 +58,25 @@
 	let readAt = $state('');
 	let page = $state(1);
 	let totalGroups = $state(0);
+	let providerFilter = $state('');
 
 	// Every endpoint the window table names, so the cap picker can offer one the label list's first page
 	// does not cover. A cap belongs to an endpoint, and the window table is the other place the screen
 	// learns one exists.
 	const windowEndpointIds = $derived(windows.map((window) => window.endpoint_id));
 
+	// The providers this page's cards name, in first-seen order, off the same union the cards group by: a
+	// provider with an account but no counted window is still a choice the filter can make. The lane whose
+	// windows carry no provider is not such a choice, and empty is the value "all providers" already holds.
+	const providerIds = $derived(quotaCardProviders(quotaCardGroups(windows, published)));
+
 	// The pager the cards render is the gateway's page count: meta.total counts provider groups, and
 	// the screen's card page size is the read's per_page.
 	const pageCount = $derived(Math.max(1, Math.ceil(totalGroups / QUOTA_PAGE_SIZE)));
 
-	const RefreshIcon = CONTROL_ICONS.refresh.icon;
-	const PauseIcon = CONTROL_ICONS.pause.icon;
-	const ResumeIcon = CONTROL_ICONS.resume.icon;
+	const secondsToNext = $derived(
+		pollSecondsRemaining({ paused, lastLoadedAt }, now, QUOTA_POLL_MS)
+	);
 
 	onMount(() => {
 		const timer = setInterval(tick, TICK_MS);
@@ -92,6 +105,9 @@
 		const bounded = Math.min(pageCount, Math.max(1, next));
 		if (bounded === page) return;
 		page = bounded;
+		// The filter names providers on the page being left. Carrying it across a turn would show an empty
+		// card list under a provider the new page may not have (the same reasoning as the bulk selection).
+		providerFilter = '';
 		void load();
 	}
 
@@ -127,6 +143,8 @@
 
 			error = null;
 			windows = quotaResult.data.data;
+			published = quotaResult.data.published;
+			publishedNote = quotaResult.data.published_note ?? null;
 			totalGroups = quotaResult.data.meta.total;
 
 			// The data can shrink between reads (a poll that answers fewer provider groups than the page
@@ -157,54 +175,16 @@
 		</p>
 	</div>
 
-	<!-- One compact row for what the operator reaches for together (owner directive, 2026-09-25): the
-	     status sentence and the two refresh controls share one baseline, and the row wraps as a block
-	     on a narrow screen. The controls carry the icon map's glyphs beside their labels (owner
-	     directive, 2026-09-26; R-04, R-31): the refresh glyph is what the button does, and the
-	     pause/resume glyphs are the state the toggle puts the poll in. -->
-	<div class="flex flex-wrap items-stretch justify-between gap-2">
-		<p class="flex min-w-0 flex-1 items-center text-sm text-[var(--color-text-muted)]">
-			{#if paused}
-				Refresh is paused. Countdowns still tick.
-			{:else}
-				Auto-refresh {pollIntervalLabel(QUOTA_POLL_MS)}.
-			{/if}
-		</p>
-
-		{#if readAt}
-			<p class="flex items-center text-sm text-[var(--color-text-muted)]">
-				Last read {formatTimestamp(readAt)}.
-			</p>
-		{/if}
-
-		<div class="flex flex-wrap items-stretch gap-2">
-			<!-- Not disabled while a read is in flight: load() itself allows one read at a time, so the control
-			     always asks and the guard decides. A disabled gate here would swallow the click when a poll is
-			     mid-flight, which reads as a broken button. -->
-			<button
-				type="button"
-				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
-				onclick={() => void load()}
-			>
-				<RefreshIcon class="size-4" aria-hidden="true" />
-				Refresh now
-			</button>
-
-			<button
-				type="button"
-				aria-pressed={paused}
-				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm aria-pressed:bg-[var(--color-surface-2)]"
-				onclick={() => (paused = !paused)}
-			>
-				{#if paused}
-					<ResumeIcon class="size-4" aria-hidden="true" />
-				{:else}
-					<PauseIcon class="size-4" aria-hidden="true" />
-				{/if}
-				{paused ? 'Resume refresh' : 'Pause refresh'}
-			</button>
-		</div>
-	</div>
+	<QuotaToolbar
+		{paused}
+		{readAt}
+		{secondsToNext}
+		providers={providerIds}
+		provider={providerFilter}
+		onproviderchange={(next) => (providerFilter = next)}
+		onrefresh={() => void load()}
+		ontogglepause={() => (paused = !paused)}
+	/>
 
 	{#if labelNotice}
 		<p role="status" class="text-sm text-[var(--color-text-muted)]">{labelNotice}</p>
@@ -212,13 +192,13 @@
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading quota windows" />
-	{:else if error && windows.length === 0}
+	{:else if error && windows.length === 0 && published.length === 0}
 		<StateMessage kind="error" title="Quota windows could not be loaded" description={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}>Try again</button>
 			{/snippet}
 		</StateMessage>
-	{:else if windows.length === 0}
+	{:else if windows.length === 0 && published.length === 0}
 		<StateMessage
 			kind="empty"
 			title="No quota windows yet"
@@ -235,7 +215,17 @@
 			</p>
 		{/if}
 
-		<QuotaCards {windows} {labels} {now} {page} {pageCount} onpagechange={goToPage} />
+		<QuotaCards
+			{windows}
+			{labels}
+			{published}
+			{publishedNote}
+			provider={providerFilter}
+			{now}
+			{page}
+			{pageCount}
+			onpagechange={goToPage}
+		/>
 	{/if}
 
 	<!-- Outside the branch above: a cap is legal before the first routed request, so this section is the
