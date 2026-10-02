@@ -939,11 +939,24 @@ sentinel are not the same fact: the third means the answer may be cut off.
 **The relay streams, and what the gateway does with that is the gateway's.** The panel hands the upstream
 body through rather than reading it to the end, which the live pass proved against a gateway that writes
 frame by frame: the answer grew over five reads spread across 700 ms and the stream ended on `done`. The
-gateway this panel talks to today buffers its upstream answer before writing anything and glues the
-`[DONE]` sentinel to the last chunk, so in practice the whole answer arrives at once and the screen
-reports the stream as truncated. That sentence is the honest reading of the bytes the panel received, and
-the defect is recorded as a request to `app-serv` in §16 rather than absorbed by teaching the reader to
-tolerate a malformed tail.
+two `app-serv` defects this section used to record against that sentence, its buffering of the upstream
+answer and its `[DONE]` sentinel glued to the last chunk with no blank line, are closed: the middleware
+chain forwards `Flush()` (draft 010 F5) and the frames the gateway builds itself are framed at the wire
+boundary (draft 021 F1). Measured again on 2026-10-02 against the owner's running gateway through this
+panel's own route, a streamed answer arrived over 11 events in 2.9 s, the sentinel came as its own
+complete `data:` event, and a usage chunk carried real numbers. So the screen reports `done`, and the
+reader still reports `truncated` for a stream that ends without the sentinel, which remains the honest
+reading rather than a success the wire did not claim.
+
+**The model list is what the gateway can place, and the picker shows exactly that.** The screen offers
+what `GET /api/v1/models` names, and it has no free-text path, because §6.15 rule 1 makes the panel the
+only holder of a key and the list the only statement of what that key routes. That made the list the
+screen's ceiling: while `app-serv` enumerated the registry alone (draft 021 F8 and F10), the picker
+carried hundreds of ids the resolver answered `NO_PROVIDER_AVAILABLE` for and omitted every model the
+operator had added, including one that answered 200 when sent by hand. `app-serv` draft 040 F1 and F2
+closed that, so a provider now lists when the selector has somewhere to send it and a custom row lists
+under the prefix its author typed. When a model the operator expects is missing from the picker, the
+cause is now a connection state rather than a listing bug, and the screen says how many rows it read.
 
 **Failure vocabulary.** The panel's routes answer in the panel's own envelope
 (`PLAYGROUND_KEY_MISSING`, `UNAUTHORIZED`, `VALIDATION_ERROR`, `GATEWAY_UNREACHABLE`,
@@ -2336,9 +2349,17 @@ wrapper now forwards `Flush()` and `Unwrap()`, and the SSE sink flushes through
 `http.ResponseController`, so a frame reaches the client while its handler is still open. The evidence
 is permanent (`internal/router/router_stream_flush_test.go`, first frame before the handler releases) and
 live (`cmd/app-serv/playground_live_flush_test.go` against a throwaway PostgreSQL + Redis and a spaced
-upstream: first frame 16.7 ms with the fix, 770.7 ms without it, measured on the same stack). The first
-two defects remain open with `app-serv`, and this paragraph keeps recording them as requests rather than
-absorbing them into the panel._
+upstream: first frame 16.7 ms with the fix, 770.7 ms without it, measured on the same stack)._
+
+_Resolved 2026-10-02: the first two defects above are closed by `app-serv`, so this section no longer
+records them as open requests. `mustFrame` now marshals an unframed chunk and the OpenAI wire frames it
+at its own boundary (`internal/dataplane/translate_stream_openai_frames.go`), which is draft 021 F1's
+patch and is why a spec-correct reader ends the stream on `done` rather than `truncated`. The handler
+commits 200/SSE only when its first frame is written (`internal/handler/chat.go`, draft 009 F3), so a
+streamed request for a model the resolver refuses answers with the same structured error the non-streamed
+path gives. Re-measured on 2026-10-02 through this panel's own `POST /playground/chat` against the
+owner's running gateway: 200, 11 events, `data: [DONE]` as its own complete event, and a usage chunk of
+37/19/56, with the answer growing across the read rather than arriving as one blob._
 
 _The browser click-through is still outstanding, as it is for U0, U1, and U3's Skills half._
 

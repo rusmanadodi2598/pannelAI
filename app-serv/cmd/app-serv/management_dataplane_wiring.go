@@ -59,6 +59,7 @@ func buildMediaAndDataPlane(in managementDataPlaneInputs) (mediaAndDataPlane, er
 	plane, err := buildDataPlane(dataPlaneInputs{
 		Config: in.Config, Index: in.Index, Endpoints: in.Endpoints, Combos: in.Combos,
 		ComboOrder: in.ComboOrder, Catalog: in.Catalog, Keys: in.Keys, Sealer: in.Sealer,
+		Active:     in.Active,
 		Connectors: in.Connectors, Client: in.Client, Routes: in.Routes, Redis: in.Redis,
 		Settings: in.Settings,
 		Usage:    in.Observability.Usage, Vision: in.Vision,
@@ -75,12 +76,18 @@ func buildMediaAndDataPlane(in managementDataPlaneInputs) (mediaAndDataPlane, er
 // needs. It is a struct rather than a parameter list because the set is a dozen
 // wide and a positional call would be a row of same-typed arguments.
 type managementDataPlaneInputs struct {
-	Config     config.Config
-	Pool       *pgxpool.Pool
-	Redis      redis.UniversalClient
-	Index      *runtimeProviderIndex
-	Endpoints  repository.EndpointRepository
-	Counts     service.EndpointCounterByProvider
+	Config    config.Config
+	Pool      *pgxpool.Pool
+	Redis     redis.UniversalClient
+	Index     *runtimeProviderIndex
+	Endpoints repository.EndpointRepository
+	Counts    service.EndpointCounterByProvider
+	// Active is the candidate-endpoint reader the data plane's models list filters
+	// by. It is a separate field rather than reached through Endpoints because the
+	// repository interface does not carry the question: the models list asks which
+	// providers the router would still pick, and only the concrete endpoint
+	// repository answers that in one statement.
+	Active     dataplane.ActiveEndpointReader
 	Combos     repository.ComboRepository
 	ComboOrder dataplane.ComboOrderer
 	Catalog    repository.ModelCatalogRepository

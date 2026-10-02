@@ -27,6 +27,8 @@ type fakeLookup struct {
 	combos   map[string]domain.Combo
 	aliases  map[string]string
 	disabled []domain.ModelRef
+	custom   []domain.ModelRef
+	active   map[string]bool
 	err      error
 }
 
@@ -71,6 +73,31 @@ func (l fakeLookup) ComboNames(context.Context) ([]string, error) {
 		names = append(names, name)
 	}
 	return names, nil
+}
+
+func (l fakeLookup) CustomModels(context.Context) ([]domain.ModelRef, error) {
+	if l.err != nil {
+		return nil, l.err
+	}
+	return l.custom, nil
+}
+
+// ActiveProviders answers the candidate question per provider, defaulting to
+// active: the resolution tests do not read this, and a double that made every
+// provider dark would hide a routing bug behind a fixture.
+func (l fakeLookup) ActiveProviders(_ context.Context, providerIDs []string) (map[string]bool, error) {
+	if l.err != nil {
+		return nil, l.err
+	}
+	out := make(map[string]bool, len(providerIDs))
+	for _, id := range providerIDs {
+		if l.active != nil {
+			out[id] = l.active[id]
+			continue
+		}
+		out[id] = true
+	}
+	return out, nil
 }
 
 // testIndex builds a registry index covering the routable and non-routable cases

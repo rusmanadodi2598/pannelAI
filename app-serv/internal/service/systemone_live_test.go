@@ -85,6 +85,17 @@ func (liveLookup) Disabled(context.Context, string, string) (bool, error) {
 }
 func (liveLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (liveLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
+func (liveLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }
+
+// ActiveProviders answers every provider as live. This double exists so a live test can
+// resolve a model string, and a dark answer would empty a list it never sets out to test.
+func (liveLookup) ActiveProviders(_ context.Context, ids []string) (map[string]bool, error) {
+	out := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		out[id] = true
+	}
+	return out, nil
+}
 
 // liveKeylessRouter hands out one keyless endpoint, which is what the free lane
 // has: no stored account, no key, and health writes that do nothing.

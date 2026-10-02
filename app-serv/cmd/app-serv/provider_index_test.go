@@ -56,6 +56,24 @@ func (lookupStub) Disabled(context.Context, string, string) (bool, error) {
 }
 func (lookupStub) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (lookupStub) ComboNames(context.Context) ([]string, error)             { return nil, nil }
+func (lookupStub) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }
+
+// ActiveProviders answers every provider as live: this double exists to let an index
+// test build a resolver, and a dark answer would empty a list it never meant to test.
+func (lookupStub) ActiveProviders(_ context.Context, ids []string) (map[string]bool, error) {
+	return allActiveProviders(ids), nil
+}
+
+// allActiveProviders is the shared "every provider the router could pick" answer for
+// this package's lookup doubles, so a widened seam is answered one way rather than
+// re-derived per type.
+func allActiveProviders(ids []string) map[string]bool {
+	out := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		out[id] = true
+	}
+	return out
+}
 
 // embeddedIndex is a registry with one built-in provider, which is what the
 // runtime overlay starts from.

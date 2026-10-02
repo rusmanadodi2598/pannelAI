@@ -51,6 +51,16 @@ type ModelLookup interface {
 	// ComboNames returns every combo name, because a combo is addressed by name
 	// as a model string.
 	ComboNames(ctx context.Context) ([]string, error)
+	// CustomModels returns every model an operator added (§7.6). A node whose
+	// upstream will not declare a catalog is only listable through these rows, so
+	// the listing reads them rather than relying on what a provider reports about
+	// itself.
+	CustomModels(ctx context.Context) ([]domain.ModelRef, error)
+	// ActiveProviders reports which of the named providers hold an endpoint the
+	// router would still pick. A model the router cannot place is not a model a
+	// client can use, so the listing names only these, plus the entries that need
+	// no credential.
+	ActiveProviders(ctx context.Context, providerIDs []string) (map[string]bool, error)
 }
 
 // Resolution is a model string resolved to everything routing needs.
@@ -83,24 +93,6 @@ type Resolution struct {
 // IsCombo reports whether a combo answered the model string. A combo always
 // carries a name (the domain refuses one without), so the name is the test.
 func (r Resolution) IsCombo() bool { return r.Combo.Name() != "" }
-
-// ProviderRegistry is the registry surface the resolver needs: one provider
-// lookup by id, alias, or node prefix, one declared-model lookup inside it, and
-// the full list the models endpoint enumerates.
-//
-// It is an interface rather than *registry.Index because the composition root
-// overlays the stored custom nodes on the embedded registry. A node created
-// through POST /provider-nodes must be routable by the next request, and a
-// boot-frozen index would accept the create and then refuse every request aimed
-// at it — which reads as a routing bug rather than as a stale registry.
-type ProviderRegistry interface {
-	// Provider resolves an id, alias, or node prefix to its entry.
-	Provider(name string) (registry.Provider, bool)
-	// Model resolves a declared model inside a provider.
-	Model(providerName, modelID string) (registry.Model, bool)
-	// All returns every entry, embedded and custom.
-	All() []registry.Provider
-}
 
 // Resolver turns a client model string into a routable provider.
 type Resolver struct {

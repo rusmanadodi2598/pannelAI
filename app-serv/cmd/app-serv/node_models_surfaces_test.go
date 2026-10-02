@@ -124,9 +124,12 @@ func TestNodeModels_ReachEverySurfaceThatReadsProviderModels(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ModelList() error = %v", err)
 	}
+	// A node publishes under the prefix its operator types, not under the id the
+	// gateway minted: both resolve, and only one is a string anyone using the panel
+	// knows (draft 021 F10, owner decision 2026-10-02).
 	found := 0
 	for _, model := range models.Data {
-		if strings.HasPrefix(model.ID, node.ID()+"/") {
+		if strings.HasPrefix(model.ID, "corp/") {
 			found++
 		}
 	}
@@ -185,3 +188,10 @@ func (surfacesModelLookup) Disabled(context.Context, string, string) (bool, erro
 }
 func (surfacesModelLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (surfacesModelLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
+func (surfacesModelLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }
+
+// ActiveProviders answers every provider as live, so a surface test that reads the
+// models list sees the provider it staged rather than an empty list.
+func (surfacesModelLookup) ActiveProviders(_ context.Context, ids []string) (map[string]bool, error) {
+	return allActiveProviders(ids), nil
+}

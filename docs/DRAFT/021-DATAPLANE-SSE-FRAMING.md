@@ -876,9 +876,17 @@ disentuh ikut dibersihkan (R-02).
 Register ini ditutup dengan temuan yang TIDAK dikerjakan, supaya penutupannya tidak mengklaim lebih:
 
 - F4 (LOW, pertanyaan desain): katalog data plane tidak membaca `upstream_endpoints` (§2/§10).
-- F8, F9, F10 (permukaan daftar model, §20): daftar klien tanpa filter provider aktif, picker combo
-  hanya halaman tabel, dan model custom provider aktif tidak masuk daftar klien. Bentuk perbaikannya
-  sudah dicatat di §20; belum ada keputusan owner.
+  Sebagian tertutup dari 2026-10-02: `GET /api/v1/models` kini membacanya lewat
+  `ActiveProviders` (draft 040 F1). Pertanyaan aslinya, apakah *resolusi* katalog harus membaca
+  tabel itu juga, tetap terbuka.
+- F8 dan F10 **CLOSED 2026-10-02 lewat `docs/DRAFT/040-PLAYGROUND-MODEL-LIST.md`** atas keputusan
+  owner: daftar klien kini menggate provider dengan endpoint yang akan dipilih selector (plus
+  entri tanpa kredensial) dan meng-merge `models_custom` dengan ejaan prefiks node. Terukur:
+  315 baris menjadi 113, empat model `byteplus` yang di-drop masing-masing menjawab
+  `NO_PROVIDER_AVAILABLE`, dan `th-1/deepseek-v4.1-flash:free` yang dulu tak terdaftar kini
+  menjawab 200 lewat rute panel.
+  F9 (picker combo hanya halaman tabel) **tetap terbuka**: itu permukaan `app-ui`, dan tidak
+  ada keputusan owner untuknya pada batch ini.
 - Suite ber-tag `integration` tetap sengaja tidak dijalankan: satu run (atau pre-push) menghapus Redis
   DB 0 lewat `FlushDB`, dan saat pass ini Redis memegang sesi panel yang aktif
   (`pannelai:auth:session:*`), jadi menjalankannya akan mengeluarkan operator dari panelnya.

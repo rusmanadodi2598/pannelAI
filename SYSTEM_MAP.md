@@ -187,8 +187,13 @@ structured HTTP error. Every middleware wrapper forwards `Flush()` and `Unwrap()
 (`internal/router/middleware.go`, `internal/router/envelope.go`), and `newSSESink` flushes through
 `http.ResponseController`, so a frame reaches the client while its handler is still open
 (`internal/router/router_stream_flush_test.go`); before draft 010 F5 the chain hid
-`http.Flusher` and the whole answer arrived as one blob. `/api/v1/models` lists the same routable
-model identifiers the relay resolver accepts. PostgreSQL, Redis, upstream credentials, and
+`http.Flusher` and the whole answer arrived as one blob. `/api/v1/models` lists what the relay can
+actually place: a provider holding an endpoint the selector would pick, or one that needs no
+credential, plus the models the operator added in `models_custom`, each spelled the way a client
+sends it (a custom node by its prefix, not by the id the gateway minted). The read therefore draws on
+`upstream_endpoints` and `models_custom` beside the registry; before draft 040 F1 and F2 it enumerated
+the registry alone, which named 205 identifiers the resolver answered `NO_PROVIDER_AVAILABLE` for while
+hiding every row the operator had added. PostgreSQL, Redis, upstream credentials, and
 provider response bodies never cross into the browser boundary.
 
 

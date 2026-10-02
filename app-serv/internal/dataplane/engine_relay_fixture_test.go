@@ -98,6 +98,18 @@ func (relayLookup) Disabled(context.Context, string, string) (bool, error) {
 }
 func (relayLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (relayLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
+func (relayLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }
+
+// ActiveProviders answers every provider as live. A relay fixture never asks, and a
+// double that answered "nothing is active" would turn an accidental list read into a
+// silently empty one rather than a visible difference.
+func (l relayLookup) ActiveProviders(_ context.Context, ids []string) (map[string]bool, error) {
+	out := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		out[id] = true
+	}
+	return out, nil
+}
 
 // newRelayUpstream stands in for two upstreams on one host: every model is
 // answered with a server failure except "works", which returns a complete

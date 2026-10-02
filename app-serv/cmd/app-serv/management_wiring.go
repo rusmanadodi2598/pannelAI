@@ -187,7 +187,7 @@ func buildManagement(
 	proxyRoutes := buildProxyRoutePlanner(pool, client, settingsSvc, sealer, egress.Guard)
 	mediaPlane, err := buildMediaAndDataPlane(managementDataPlaneInputs{
 		Config: cfg, Pool: pool, Redis: client, Index: runtimeIndex,
-		Endpoints: endpointRepo, Counts: endpointRepo, Combos: comboRepo, ComboOrder: comboSvc,
+		Endpoints: endpointRepo, Counts: endpointRepo, Active: endpointRepo, Combos: comboRepo, ComboOrder: comboSvc,
 		Catalog: catalogRepo, Keys: keys, Sealer: sealer, Connectors: connectors,
 		Client: egress.Client, Routes: proxyRoutes, Settings: settingsSvc,
 		Observability: obs, Vision: augmenter,

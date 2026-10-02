@@ -888,6 +888,25 @@ Model string resolution order (mirrors reference `getComboModels` + aliases):
 | POST   | `/api/v1/systemone`                                    | Native           | System One (Jev) decision models                        | P2    |
 | POST   | `/api/v1/audio/*`, `/images/*`, `/videos/*`, `/search` | OpenAI-ish       | See §7.10                                               | P2    |
 
+`GET /api/v1/models` lists what this table calls *routable*, and the word has one definition: a model
+the resolver in this section could place on a request. Three rules follow from that, and they are the
+router's own rules rather than a listing policy invented beside it.
+
+- A provider lists when it holds at least one endpoint the selector would pick, or when it needs no
+  credential and the selector synthesizes an endpoint for it. `ActiveProviders` is the same candidate
+  predicate the selection path narrows by, so a backoff window keeps a provider listed and a disabled
+  or errored one drops it: an endpoint in a backoff window is served again when the window closes,
+  while an errored one is a configuration the operator has to change.
+- A model an operator added through §7.6 lists beside the provider's declared models. This matters most
+  for a custom node, whose upstream may refuse to enumerate itself: the operator's own rows are then the
+  only true statement about what the node serves.
+- An id is spelled the way a client sends it. A custom node is addressed by the prefix its operator
+  chose; a registry provider by its id. Both resolve, and only the first is a string a human typed.
+
+A provider with no translator, a non-chat model kind, and a pair in the disabled set stay excluded, and
+a combo lists whatever its members' providers are doing, because a combo is addressed by name and the
+selector walks its members per request.
+
 Request pipeline (port of `sse/handlers/chat.js` + `open-sse`):
 
 ```

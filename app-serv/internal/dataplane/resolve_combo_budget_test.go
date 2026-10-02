@@ -61,6 +61,14 @@ func (l *countingLookup) ComboNames(ctx context.Context) ([]string, error) {
 	return l.inner.ComboNames(ctx)
 }
 
+func (l *countingLookup) CustomModels(ctx context.Context) ([]domain.ModelRef, error) {
+	return l.inner.CustomModels(ctx)
+}
+
+func (l *countingLookup) ActiveProviders(ctx context.Context, ids []string) (map[string]bool, error) {
+	return l.inner.ActiveProviders(ctx, ids)
+}
+
 // binaryTreeLookup builds a tree of combos where every internal node has two
 // members naming the same two children, and every leaf fails to resolve. The
 // shape is the worst case for a walker without a memo: the number of paths to

@@ -146,5 +146,13 @@ func (liveModelLookup) Disabled(context.Context, string, string) (bool, error) {
 }
 func (liveModelLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (liveModelLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
+func (liveModelLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }
+
+// ActiveProviders answers every provider as live. A fixture that answered "nothing is
+// active" would empty the models list for a reason the test never intended, which reads
+// as a routing bug rather than as a stub.
+func (liveModelLookup) ActiveProviders(_ context.Context, ids []string) (map[string]bool, error) {
+	return allActiveProviders(ids), nil
+}
 
 var _ repository.EndpointRepository = (*postgres.EndpointRepository)(nil)

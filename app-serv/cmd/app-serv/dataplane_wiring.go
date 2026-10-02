@@ -62,7 +62,7 @@ type dataPlane struct {
 // Building them together keeps that dependency visible instead of scattered
 // across constructors that each reach for a global.
 func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
-	lookup, err := dataplane.NewCatalogLookup(in.Combos, in.Catalog)
+	lookup, err := dataplane.NewCatalogLookup(in.Combos, in.Catalog, in.Active)
 	if err != nil {
 		return dataPlane{}, err
 	}

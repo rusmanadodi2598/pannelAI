@@ -29,23 +29,40 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
 
+// ActiveEndpointReader answers which providers hold an endpoint the router would still
+// pick. It is declared here rather than reused from internal/service because service
+// already imports this package, so the reverse import is a cycle.
+type ActiveEndpointReader interface {
+	ActiveProviders(ctx context.Context, providerIDs []string) (map[string]bool, error)
+}
+
 // CatalogLookup reads the combo, alias, and disabled sets for resolution.
 type CatalogLookup struct {
 	combos  repository.ComboRepository
 	catalog repository.ModelCatalogRepository
+	active  ActiveEndpointReader
 }
 
-// NewCatalogLookup binds the lookup to the two catalog boundaries. Both are
+// NewCatalogLookup binds the lookup to the three catalog boundaries. All are
 // required: a nil combo repository would silently make every combo name fall
-// through to the alias path, which is a routing difference, not a degradation.
-func NewCatalogLookup(combos repository.ComboRepository, catalog repository.ModelCatalogRepository) (*CatalogLookup, error) {
+// through to the alias path, and a nil candidate reader would answer "nothing is
+// active" for a deployment that simply forgot to wire one. Both are routing
+// differences, not degradations.
+func NewCatalogLookup(
+	combos repository.ComboRepository,
+	catalog repository.ModelCatalogRepository,
+	active ActiveEndpointReader,
+) (*CatalogLookup, error) {
 	if combos == nil {
 		return nil, domain.NewValidationError("combo repository is required")
 	}
 	if catalog == nil {
 		return nil, domain.NewValidationError("model catalog repository is required")
 	}
-	return &CatalogLookup{combos: combos, catalog: catalog}, nil
+	if active == nil {
+		return nil, domain.NewValidationError("active endpoint reader is required")
+	}
+	return &CatalogLookup{combos: combos, catalog: catalog, active: active}, nil
 }
 
 // Combo returns a combo by name, and whether the name addresses one. The
@@ -107,4 +124,27 @@ func (l *CatalogLookup) DisabledPairs(ctx context.Context) ([]domain.ModelRef, e
 // model string (§7.15).
 func (l *CatalogLookup) ComboNames(ctx context.Context) ([]string, error) {
 	return l.combos.Names(ctx)
+}
+
+// CustomModels returns the models an operator added, as provider/model pairs.
+//
+// The pair is what the listing needs rather than the whole row: a custom model is
+// listable by the fact that it is stored, and the row's display name and
+// capabilities belong to the management catalog that shows them.
+func (l *CatalogLookup) CustomModels(ctx context.Context) ([]domain.ModelRef, error) {
+	rows, err := l.catalog.Custom(ctx)
+	if err != nil {
+		return nil, err
+	}
+	refs := make([]domain.ModelRef, 0, len(rows))
+	for _, row := range rows {
+		refs = append(refs, row.Ref())
+	}
+	return refs, nil
+}
+
+// ActiveProviders reports which of the named providers hold an endpoint the router
+// would still pick, in the one read the candidate question is answered by.
+func (l *CatalogLookup) ActiveProviders(ctx context.Context, providerIDs []string) (map[string]bool, error) {
+	return l.active.ActiveProviders(ctx, providerIDs)
 }

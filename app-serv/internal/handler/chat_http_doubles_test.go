@@ -61,6 +61,18 @@ func (chatModelLookup) Disabled(context.Context, string, string) (bool, error) {
 }
 func (chatModelLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (chatModelLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
+func (chatModelLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }
+
+// ActiveProviders answers the one provider this fixture registers as live. The models
+// list filters on the candidate question, so an empty answer here would turn a shape
+// assertion into a test of the stub.
+func (chatModelLookup) ActiveProviders(_ context.Context, ids []string) (map[string]bool, error) {
+	out := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		out[id] = true
+	}
+	return out, nil
+}
 
 func newChatResolver(t *testing.T, upstreamURL string) *dataplane.Resolver {
 	t.Helper()
