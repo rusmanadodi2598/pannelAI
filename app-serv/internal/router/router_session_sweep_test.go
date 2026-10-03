@@ -57,6 +57,7 @@ var excludedFromSessionSweep = map[string]string{
 	"POST /api/v1/chat/completions":      "data plane: gateway key credential, not a dashboard session (§7.15)",
 	"POST /api/v1/messages":              "data plane: gateway key credential, not a dashboard session (§7.15)",
 	"POST /api/v1/responses":             "data plane: gateway key credential, not a dashboard session (§7.15)",
+	"POST /api/v1/systemone":             "data plane: gateway key credential, not a dashboard session (§7.15)",
 	"GET /api/v1/models":                 "data plane: the client's own model list, served to a gateway key (§7.15)",
 	"POST /api/v1/embeddings":            "data plane: gateway key credential, not a dashboard session (§7.15)",
 	"POST /api/v1/messages/count_tokens": "data plane: token estimate under the §4 key rule, no session (§7.15)",
