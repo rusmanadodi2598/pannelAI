@@ -83,11 +83,21 @@ func (s *QuotaCounterStore) Add(ctx context.Context, endpointID string, kind dom
 	return nil
 }
 
+// maxPendingScanKeys bounds the keyspace walk: a walk that has visited this
+// many quota hashes without filling the limit returns what it has. The bound
+// keeps a keyspace grown past every useful endpoint from turning one flush
+// tick into an open-ended loop.
+const maxPendingScanKeys = 4096
+
 // Pending returns the windows whose running total the flush has not mirrored
 // yet, at most limit of them. A window already mirrored and still open is left
 // out: rewriting an unchanged number every tick would churn the table for no
 // information. A closed window is still returned, so the settle that retires it
 // runs after a durable write of its final total.
+//
+// The scan walks the quota keyspace until limit pending windows are found, the
+// keyspace ends, or the visit bound is hit — settled windows ahead of a dirty
+// one in SCAN order cannot starve the flush of them.
 func (s *QuotaCounterStore) Pending(ctx context.Context, limit int) ([]domain.QuotaWindow, error) {
 	if limit < 1 {
 		return nil, nil
@@ -95,55 +105,66 @@ func (s *QuotaCounterStore) Pending(ctx context.Context, limit int) ([]domain.Qu
 	callCtx, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
 
+	now := time.Now().UTC()
+	pending := make([]domain.QuotaWindow, 0, limit)
 	var (
-		cursor uint64
-		keys   []string
+		cursor  uint64
+		visited int
 	)
-	for len(keys) < limit {
+	for {
 		batch, next, err := s.client.Scan(callCtx, cursor, quotaKeyPrefix+"*", quotaScanCount).Result()
 		if err != nil {
 			return nil, err
 		}
-		keys = append(keys, batch...)
+		for _, key := range batch {
+			windows, err := s.pendingWindows(callCtx, key, now)
+			if err != nil {
+				return nil, err
+			}
+			pending = append(pending, windows...)
+		}
+		visited += len(batch)
 		cursor = next
-		if cursor == 0 {
+		if len(pending) >= limit || cursor == 0 || visited >= maxPendingScanKeys {
 			break
 		}
 	}
-	if len(keys) > limit {
-		keys = keys[:limit]
-	}
-
-	now := time.Now().UTC()
-	pending := make([]domain.QuotaWindow, 0, len(keys))
-	for _, key := range keys {
-		fields, err := s.client.HGetAll(callCtx, key).Result()
-		if err != nil {
-			return nil, err
-		}
-		endpointID := strings.TrimPrefix(key, quotaKeyPrefix)
-		for name, raw := range fields {
-			kind := domain.QuotaWindowKind(name)
-			if !kind.IsValid() {
-				continue
-			}
-			used, err := strconv.ParseInt(raw, 10, 64)
-			if err != nil {
-				// A field that is not a number is not a counter this store
-				// wrote; skipping it keeps one corrupt field from failing a
-				// whole flush (reason: forward progress matters more than
-				// reading a value no writer produced).
-				continue
-			}
-			resetsAt := parseReset(fields[quotaResetFieldPrefix+name])
-			if fields[quotaFlushedFieldPrefix+name] == raw && resetsAt != nil && resetsAt.After(now) {
-				continue
-			}
-			pending = append(pending, domain.RehydrateQuotaWindow(endpointID, "",
-				kind, used, nil, resetsAt, domain.QuotaSourceComputed, time.Time{}))
-		}
+	if len(pending) > limit {
+		pending = pending[:limit]
 	}
 	return pending, nil
+}
+
+// pendingWindows reads one endpoint's hash and returns the windows whose
+// running total the flush has not mirrored yet.
+func (s *QuotaCounterStore) pendingWindows(ctx context.Context, key string, now time.Time) ([]domain.QuotaWindow, error) {
+	fields, err := s.client.HGetAll(ctx, key).Result()
+	if err != nil {
+		return nil, err
+	}
+	endpointID := strings.TrimPrefix(key, quotaKeyPrefix)
+	var windows []domain.QuotaWindow
+	for name, raw := range fields {
+		kind := domain.QuotaWindowKind(name)
+		if !kind.IsValid() {
+			continue
+		}
+		used, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			// A field that is not a number is not a counter this store
+			// wrote; skipping it keeps one corrupt field from failing a
+			// whole flush (reason: forward progress matters more than
+			// reading a value no writer produced).
+			continue
+		}
+		resetsAt := parseReset(fields[quotaResetFieldPrefix+name])
+		if fields[quotaFlushedFieldPrefix+name] == raw && resetsAt != nil && resetsAt.After(now) {
+			continue
+		}
+		windows = append(windows, domain.RehydrateQuotaWindow(endpointID, "",
+			kind, used, nil, resetsAt, domain.QuotaSourceComputed, time.Time{}))
+	}
+	return windows, nil
 }
 
 // Settle records what a flush has made durable. A window whose total no request
