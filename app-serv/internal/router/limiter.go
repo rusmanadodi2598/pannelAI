@@ -2,10 +2,15 @@
 //
 // @file      internal/router/limiter.go
 // @for       Enforces the configured Redis-backed gateway request budget.
-// @uses      internal/domain, internal/repository, internal/schema, net/http.
+// @uses      internal/clientip, internal/domain, internal/repository,
+//
+//	internal/schema, net, net/http.
+//
 // @reason    SPEC-API-001 §4 requires public traffic to be rate-limited by
 //
-//	configuration rather than leaving the validated value unused.
+//	configuration rather than leaving the validated value unused, and
+//	draft 042 R20 requires the bucket to name the real client when the
+//	gateway sits behind a proxy the operator has named as trusted.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
@@ -16,16 +21,19 @@ package router
 import (
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/clientip"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
-// requestRateLimit applies one configured fixed window per client address.
-func requestRateLimit(next http.Handler, limiter repository.RateLimiter, limit int) http.Handler {
+// requestRateLimit applies one configured fixed window per client address. The
+// trusted-proxy set decides which address that is: with none configured the
+// direct peer is the whole rule, and a proxy the operator named hands the
+// bucket to the forwarded client (draft 042 R20).
+func requestRateLimit(next http.Handler, limiter repository.RateLimiter, limit int, trusted []*net.IPNet) http.Handler {
 	if limiter == nil || limit < 1 {
 		return next
 	}
@@ -34,7 +42,8 @@ func requestRateLimit(next http.Handler, limiter repository.RateLimiter, limit i
 			next.ServeHTTP(w, r)
 			return
 		}
-		remaining, err := limiter.Allow(r.Context(), clientAddress(r), limit, time.Minute)
+		remaining, err := limiter.Allow(r.Context(),
+			clientip.Address(r.RemoteAddr, r.Header.Get("X-Forwarded-For"), trusted), limit, time.Minute)
 		if err != nil {
 			schema.WriteError(w, err)
 			return
@@ -45,12 +54,4 @@ func requestRateLimit(next http.Handler, limiter repository.RateLimiter, limit i
 		}
 		next.ServeHTTP(w, r)
 	})
-}
-
-func clientAddress(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err == nil && host != "" {
-		return host
-	}
-	return strings.TrimSpace(r.RemoteAddr)
 }

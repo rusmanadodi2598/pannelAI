@@ -2,7 +2,7 @@
 //
 // @file      internal/handler/auth.go
 // @for       Dashboard authentication HTTP endpoints and session guard.
-// @uses      internal/domain, internal/schema, internal/service, net/http.
+// @uses      internal/clientip, internal/schema, internal/service, net, net/http.
 // @reason    SPEC-API-001 §7.2 defines the public auth contract while the
 //
 //	gateway-key management surface must reject unauthenticated calls.
@@ -17,22 +17,25 @@ import (
 	"net"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/clientip"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
 // AuthHandler serves dashboard auth and owns cookie deployment settings.
 type AuthHandler struct {
-	auth   *service.AuthService
-	cookie SessionCookieOptions
+	auth    *service.AuthService
+	cookie  SessionCookieOptions
+	proxies []*net.IPNet
 }
 
-// NewAuthHandler validates dependencies and returns an auth HTTP handler.
-func NewAuthHandler(auth *service.AuthService, cookie SessionCookieOptions) *AuthHandler {
-	return &AuthHandler{auth: auth, cookie: cookie}
+// NewAuthHandler validates dependencies and returns an auth HTTP handler. The
+// trusted-proxy set decides which address the login limiter buckets a request
+// under; nil keeps every request on its direct peer (draft 042 R20).
+func NewAuthHandler(auth *service.AuthService, cookie SessionCookieOptions, trustedProxies []*net.IPNet) *AuthHandler {
+	return &AuthHandler{auth: auth, cookie: cookie, proxies: trustedProxies}
 }
 
 // Login serves POST /api/v1/auth/login and sets the session cookie on success.
@@ -50,7 +53,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		schema.WriteError(w, err)
 		return
 	}
-	token, err := h.auth.Login(r.Context(), clientAddress(r), req.Password)
+	token, err := h.auth.Login(r.Context(), h.clientAddress(r), req.Password)
 	if err != nil {
 		schema.WriteError(w, err)
 		return
@@ -115,12 +118,10 @@ func (h *AuthHandler) RequireSession(next http.Handler) http.Handler {
 	})
 }
 
-func clientAddress(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err == nil && host != "" {
-		return host
-	}
-	return strings.TrimSpace(r.RemoteAddr)
+// clientAddress answers which client the login limiter buckets this request
+// under — the same trusted-proxy rule the gateway limiter uses (draft 042 R20).
+func (h *AuthHandler) clientAddress(r *http.Request) string {
+	return clientip.Address(r.RemoteAddr, r.Header.Get("X-Forwarded-For"), h.proxies)
 }
 
 // RetryAfterSeconds converts a duration into the HTTP Retry-After value.

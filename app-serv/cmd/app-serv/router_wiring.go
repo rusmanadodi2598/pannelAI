@@ -126,5 +126,6 @@ func routerDeps(
 		TokenCount:       mgmt.TokenCount,
 		RateLimiter:      limiter,
 		RateLimitPerMin:  cfg.RateLimitPerMin,
+		TrustedProxies:   cfg.TrustedProxies,
 	}
 }

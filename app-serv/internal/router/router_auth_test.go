@@ -127,7 +127,7 @@ func newAuthenticatedRouter(t *testing.T) (*Mux, *handler.AuthHandler) {
 	if err != nil {
 		t.Fatalf("key service: %v", err)
 	}
-	authHandler := handler.NewAuthHandler(authSvc, handler.SessionCookieOptions{TTL: time.Hour})
+	authHandler := handler.NewAuthHandler(authSvc, handler.SessionCookieOptions{TTL: time.Hour}, nil)
 	return New(Deps{
 		System: handler.NewSystemHandler(handler.SystemHandlerDeps{Info: schema.SystemInfo{Version: "test", Commit: "test"}, Health: service.NewHealthService(service.HealthServiceDeps{})}),
 		Auth:   authHandler, GatewayKey: handler.NewGatewayKeyHandler(keySvc),

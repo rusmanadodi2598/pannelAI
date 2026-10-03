@@ -16,8 +16,11 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"strings"
 	"time"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/clientip"
 )
 
 // Config holds every runtime setting for app-serv. It is loaded once, validated,
@@ -62,6 +65,11 @@ type Config struct {
 	// purpose: a client-supplied test URL would be an SSRF seam, and the value
 	// only has to be something a working proxy can reach.
 	ProxyTestURL string
+	// TrustedProxies is the parsed TRUSTED_PROXY_CIDRS list: the peers whose
+	// X-Forwarded-For chains the rate limiters may read to bucket a request by
+	// its real client (draft 042 R20). Empty — the default — means no proxy is
+	// trusted and every request is bucketed by its direct peer.
+	TrustedProxies []*net.IPNet
 }
 
 // Load reads the environment and returns a validated Config, or an error naming
@@ -83,6 +91,12 @@ func Load() (Config, error) {
 		ProxyTestURL:      getenv("PROXY_TEST_URL", "https://www.google.com/"),
 	}
 	cfg.EgressAllowedTargets = splitList(getenv("EGRESS_ALLOWED_TARGETS", ""))
+
+	trusted, err := clientip.ParseTrusted(splitList(getenv("TRUSTED_PROXY_CIDRS", "")))
+	if err != nil {
+		return Config{}, fmt.Errorf("config: TRUSTED_PROXY_CIDRS: %w", err)
+	}
+	cfg.TrustedProxies = trusted
 
 	intFields := []struct {
 		name string

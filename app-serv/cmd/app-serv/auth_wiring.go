@@ -47,5 +47,5 @@ func buildAuth(ctx context.Context, cfg config.Config, pool *pgxpool.Pool, clien
 	}
 	return handler.NewAuthHandler(authSvc, handler.SessionCookieOptions{
 		Secure: cfg.IsProduction(), TTL: cfg.SessionTTL,
-	}), limiter, nil
+	}, cfg.TrustedProxies), limiter, nil
 }

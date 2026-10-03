@@ -134,7 +134,7 @@ func newAuthHandlerForTest(t *testing.T, password string) (*AuthHandler, *handle
 	if err := svc.Bootstrap(context.Background()); err != nil {
 		t.Fatalf("Bootstrap: %v", err)
 	}
-	return NewAuthHandler(svc, SessionCookieOptions{TTL: time.Hour}), repo
+	return NewAuthHandler(svc, SessionCookieOptions{TTL: time.Hour}, nil), repo
 }
 
 func TestAuthHandlerLoginTable(t *testing.T) {

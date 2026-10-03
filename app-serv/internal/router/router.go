@@ -16,6 +16,7 @@
 package router
 
 import (
+	"net"
 	"net/http"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -76,6 +77,10 @@ type Deps struct {
 	SystemOne       *handler.SystemOneHandler
 	RateLimiter     repository.RateLimiter
 	RateLimitPerMin int
+	// TrustedProxies is the parsed TRUSTED_PROXY_CIDRS set: the peers whose
+	// forwarded chains the limiter may read. Nil keeps every request bucketed
+	// by its direct peer (draft 042 R20).
+	TrustedProxies []*net.IPNet
 }
 
 // New registers every route and returns the assembled mux. Patterns carry the
@@ -227,5 +232,5 @@ func New(deps Deps) *Mux {
 	// Unknown paths and wrong verbs stay the mux's answer so it can distinguish
 	// 404 from 405 (and send Allow on the latter); envelope() then restates
 	// either in the §8 shape, so routing errors look like every other error.
-	return &Mux{Handler: chain(requestRateLimit(mux, deps.RateLimiter, deps.RateLimitPerMin)), routes: mux.patterns}
+	return &Mux{Handler: chain(requestRateLimit(mux, deps.RateLimiter, deps.RateLimitPerMin, deps.TrustedProxies)), routes: mux.patterns}
 }
