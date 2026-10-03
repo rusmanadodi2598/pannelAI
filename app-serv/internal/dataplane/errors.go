@@ -169,7 +169,12 @@ func codeForAppError(appErr *domain.AppError) string {
 	case "UNAUTHORIZED", "FORBIDDEN":
 		return CodeUnauthorized
 	case "NOT_FOUND":
-		return CodeModelNotFound
+		// A management not-found reaching the data plane is an inconsistency —
+		// a row vanished under the request — not the resolver's verdict about a
+		// model name, which is produced as CodeModelNotFound directly. Mapping
+		// it to MODEL_NOT_FOUND answered 404 for a served call and stopped a
+		// combo chain on a bookkeeping error.
+		return CodeInternal
 	case "RATE_LIMITED":
 		return CodeRateLimited
 	case "NO_PROVIDER_AVAILABLE":

@@ -68,7 +68,7 @@ func TestAsError_ManagementMapping(t *testing.T) {
 		err      error
 		wantCode string
 	}{
-		{name: "a not-found maps to MODEL_NOT_FOUND", err: domain.NewNotFoundError("gone"), wantCode: CodeModelNotFound},
+		{name: "a not-found is an inconsistency, not a model verdict", err: domain.NewNotFoundError("gone"), wantCode: CodeInternal},
 		{name: "an unauthorized maps to UNAUTHORIZED", err: domain.NewUnauthorizedError("no"), wantCode: CodeUnauthorized},
 		{name: "a conflict maps to INTERNAL_ERROR", err: domain.NewConflictError("dup"), wantCode: CodeInternal},
 		{name: "a plain error maps to INTERNAL_ERROR", err: errors.New("boom"), wantCode: CodeInternal},

@@ -44,6 +44,9 @@ type memEndpointRepo struct {
 	// circuit the domain owns is what changed.
 	health map[string]domain.UpstreamKey
 	err    error
+	// healthErr fails every health write, so a test can drive the bookkeeping
+	// path that runs after an upstream already answered.
+	healthErr error
 }
 
 func newMemEndpointRepo() *memEndpointRepo {
@@ -75,6 +78,9 @@ func (r *memEndpointRepo) List(_ context.Context, filter repository.EndpointFilt
 func (r *memEndpointRepo) RecordKeyHealth(_ context.Context, key domain.UpstreamKey) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if r.healthErr != nil {
+		return r.healthErr
+	}
 	r.health[key.ID()] = key
 	return nil
 }

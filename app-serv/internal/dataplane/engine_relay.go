@@ -93,10 +93,12 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		}
 		outcome.LatencyMS = e.elapsedMS(started)
 		// A served request clears the key's parked state, which is what makes a
-		// recovered credential usable again on the next call.
-		if err := e.selector.RecordSuccess(ctx, selection); err != nil {
-			return outcome, err
-		}
+		// recovered credential usable again on the next call. A bookkeeping
+		// failure must not replace the answer the upstream already produced:
+		// the failure path swallows the same class of error (recordFailure),
+		// and a 200 the client can use outranks a health row that did not
+		// land. reason: the served answer is the request's outcome.
+		_ = e.selector.RecordSuccess(ctx, selection)
 		return outcome, nil
 	}
 	spent := make(map[string]struct{})
