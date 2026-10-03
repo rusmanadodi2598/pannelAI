@@ -721,7 +721,10 @@ berada di luar scope batch ini.
 
 ### 10.10 Sisa yang tidak ditutup batch ini
 
-- **SPEC-API §7.15 `404 MODEL_NOT_FOUND`** berbeda dari kontrak YAML (`400`).
+- **SPEC-API §7.15 `404 MODEL_NOT_FOUND`** berbeda dari kontrak YAML (`400`). **CLOSED
+  2026-10-03** oleh `docs/DRAFT/041-MODEL-NOT-FOUND-STATUS.md`: owner memilih sinkron ke 404,
+  mengikuti §7.15 dan wire OpenAI. Sekaligus terungkap bahwa §8 tidak pernah mencantumkan kode
+  itu sama sekali, jadi gate drift tidak punya apa pun untuk dibandingkan.
 - **`internal/schema/messages.go`** 260 baris, di atas batas 250 AGENTS.md §1.1, tidak disentuh
   batch ini dan tetap pre-existing.
 - **UI click-through `/playground`** tetap milik `app-ui` dan di luar scope dokumen ini.

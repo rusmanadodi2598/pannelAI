@@ -172,8 +172,10 @@ usage dan log baris bertambah untuk panggilan `th-1` yang menjawab.
 - **Browser click-through `/playground` masih terbuka.** Yang dikerjakan pass ini adalah rute
   panel lewat HTTP dengan cookie sesi nyata, bukan render di browser. SPEC-UI §6.15 dan README
   panel tetap menagihnya; Playwright tidak terpasang di host ini.
-- **Perbedaan status `MODEL_NOT_FOUND`.** SPEC-API §7.15 menulis `404`, kontrak YAML memetakan
-  `400`. Bukan temuan register ini dan tidak disentuh diam-diam.
+- **Perbedaan status `MODEL_NOT_FOUND`.** **CLOSED 2026-10-03** oleh
+  `docs/DRAFT/041-MODEL-NOT-FOUND-STATUS.md`: SPEC-API §7.15 menulis `404`, kontrak YAML dan
+  `statusFor` memetakan `400`, dan §8 tidak daftar kodenya sama sekali. Owner memilih sinkron
+  ke 404.
 - **`internal/schema/messages.go` 260 baris**, di atas AGENTS.md §1.1, pre-existing.
 - **Tiga peringatan batas baris** hasil perubahan ini, semua di bawah 250 dan dilaporkan gate
   apa adanya: `resolve.go` 241 (sebelumnya 249, jadi turun), `management_wiring.go` 227,

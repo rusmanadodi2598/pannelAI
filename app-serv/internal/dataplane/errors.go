@@ -96,10 +96,20 @@ func wrapDataPlaneError(code, message string, cause error) *Error {
 // can fix by naming another provider, which is what 400 says; 503 would tell
 // the client to retry something that can never succeed. UPSTREAM_REJECTED is
 // 400 for the same reason, and §8's table is where both are published.
+//
+// MODEL_NOT_FOUND is 404, the status SPEC-API §7.15 names for the end of the
+// resolution order and the status the OpenAI wire answers for a model it does not
+// know. This plane claims compatibility, and a client's retry policy reads the
+// status rather than the message: 400 tells it the body was wrong and invites it to
+// send the same model name again, which is a request that can never succeed. The
+// error `type` stays invalid_request_error, which is what the reference classifies
+// it as, so a client that branches on type is unaffected.
 func statusFor(code string) int {
 	switch code {
-	case CodeValidation, CodeModelNotFound, CodeProviderNotRoutable, CodeUpstreamRejected:
+	case CodeValidation, CodeProviderNotRoutable, CodeUpstreamRejected:
 		return http.StatusBadRequest
+	case CodeModelNotFound:
+		return http.StatusNotFound
 	case CodeUnauthorized:
 		return http.StatusUnauthorized
 	case CodeRateLimited:

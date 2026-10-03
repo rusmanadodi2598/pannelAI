@@ -33,7 +33,9 @@ func TestDataPlaneErrorStatus(t *testing.T) {
 		wantType   string
 	}{
 		{name: "validation", code: CodeValidation, wantStatus: 400, wantType: "invalid_request_error"},
-		{name: "model not found", code: CodeModelNotFound, wantStatus: 400, wantType: "invalid_request_error"},
+		// 404, not 400: §7.15 names it for the end of the resolution order and the
+		// OpenAI wire answers an unknown model with it. See errors.go statusFor.
+		{name: "model not found", code: CodeModelNotFound, wantStatus: 404, wantType: "invalid_request_error"},
 		{name: "provider not routable", code: CodeProviderNotRoutable, wantStatus: 400, wantType: "invalid_request_error"},
 		{name: "unauthorized", code: CodeUnauthorized, wantStatus: 401, wantType: "authentication_error"},
 		{name: "rate limited", code: CodeRateLimited, wantStatus: 429, wantType: "rate_limit_error"},

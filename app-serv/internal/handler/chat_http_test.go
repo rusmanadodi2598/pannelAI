@@ -36,6 +36,9 @@ func TestChatCompletionsHTTP_Table(t *testing.T) {
 		{name: "unknown role", key: fixture.key, body: `{"model":"test/model","messages":[{"role":"banana","content":"hello"}]}`, wantStatus: http.StatusBadRequest, wantCode: "VALIDATION_ERROR"},
 		{name: "missing key", body: chatBody("test/model"), wantStatus: http.StatusUnauthorized, wantCode: "UNAUTHORIZED"},
 		{name: "invalid key", key: "sk-wrong", body: chatBody("test/model"), wantStatus: http.StatusUnauthorized, wantCode: "UNAUTHORIZED"},
+		// 404: §7.15 ends the resolution order here and the OpenAI wire answers an unknown
+		// model with it, so a client's retry policy reads the truth (draft 041).
+		{name: "unknown model", key: fixture.key, body: chatBody("ghost/not-a-model"), wantStatus: http.StatusNotFound, wantCode: "MODEL_NOT_FOUND"},
 		{name: "upstream pre-frame failure", key: fixture.key, body: chatBody("test/preframe"), wantStatus: http.StatusBadGateway, wantCode: "UPSTREAM_ERROR"},
 	}
 	for _, tc := range cases {
@@ -68,6 +71,10 @@ func TestChatCompletionsHTTP_StreamLifecycle(t *testing.T) {
 	}{
 		{name: "successful stream", model: "test/model", wantStatus: http.StatusOK, wantType: "text/event-stream", wantBody: "[DONE]"},
 		{name: "pre-frame failure remains HTTP error", model: "test/preframe", wantStatus: http.StatusBadGateway, wantType: "application/json", wantBody: "UPSTREAM_ERROR"},
+		// A stream for a model that resolves to nothing fails before any frame, so it is
+		// still an ordinary HTTP answer: the status the non-streamed path gives, not a 200
+		// under an SSE type (draft 009 F3), and not a 400 that invites the same retry.
+		{name: "unknown model before the first frame", model: "ghost/not-a-model", wantStatus: http.StatusNotFound, wantType: "application/json", wantBody: "MODEL_NOT_FOUND"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

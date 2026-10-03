@@ -4108,11 +4108,10 @@ components:
                   code: INTERNAL_ERROR
                   message: An unexpected error occurred.
     DataPlaneBadRequestError:
-      description: 'The request is invalid: it failed schema validation, named an unknown model, or named a provider the gateway
+      description: 'The request is invalid: it failed schema validation, or named a provider the gateway
         cannot translate.'
       x-error-codes:
       - VALIDATION_ERROR
-      - MODEL_NOT_FOUND
       - PROVIDER_NOT_ROUTABLE
       content:
         application/json:
@@ -4125,18 +4124,29 @@ components:
                   message: The request is invalid.
                   type: invalid_request_error
                   code: VALIDATION_ERROR
-            MODEL_NOT_FOUND:
-              value:
-                error:
-                  message: The requested model does not exist.
-                  type: invalid_request_error
-                  code: MODEL_NOT_FOUND
             PROVIDER_NOT_ROUTABLE:
               value:
                 error:
                   message: The provider cannot be reached through this gateway.
                   type: invalid_request_error
                   code: PROVIDER_NOT_ROUTABLE
+    DataPlaneNotFoundError:
+      description: 'The model string resolved to nothing: no combo, no alias, and no provider the registry
+        knows. SPEC-API-001 §7.15 ends the resolution order here, and the status matches the OpenAI wire,
+        which answers a model it does not know with 404 invalid_request_error.'
+      x-error-codes:
+      - MODEL_NOT_FOUND
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataPlaneError'
+          examples:
+            MODEL_NOT_FOUND:
+              value:
+                error:
+                  message: The requested model does not exist.
+                  type: invalid_request_error
+                  code: MODEL_NOT_FOUND
     DataPlaneUnauthorizedError:
       description: The gateway key is missing, unknown, or revoked.
       x-error-codes:
@@ -7153,6 +7163,8 @@ paths:
                 $ref: '#/components/schemas/SpeechResponse'
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -7191,6 +7203,8 @@ paths:
                 type: string
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -7220,6 +7234,8 @@ paths:
                 $ref: '#/components/schemas/VoiceList'
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -7255,6 +7271,8 @@ paths:
                 $ref: '#/components/schemas/MediaGenerationResponse'
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -7290,6 +7308,8 @@ paths:
                 $ref: '#/components/schemas/JsonObject'
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -7325,6 +7345,8 @@ paths:
                 $ref: '#/components/schemas/SearchResponse'
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -8544,6 +8566,8 @@ paths:
                 type: string
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -8582,6 +8606,8 @@ paths:
                 type: string
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -8617,6 +8643,8 @@ paths:
                 $ref: '#/components/schemas/JsonObject'
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -8681,6 +8709,8 @@ paths:
                 $ref: '#/components/schemas/EmbeddingsResponse'
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -8716,6 +8746,8 @@ paths:
                 $ref: '#/components/schemas/CountTokensResponse'
         '400':
           $ref: '#/components/responses/DataPlaneBadRequestError'
+        '404':
+          $ref: '#/components/responses/DataPlaneNotFoundError'
         '401':
           $ref: '#/components/responses/DataPlaneUnauthorizedError'
         '429':
@@ -8782,7 +8814,7 @@ x-contract:
       error_envelope: DataPlaneError
       codes:
         VALIDATION_ERROR: 400
-        MODEL_NOT_FOUND: 400
+        MODEL_NOT_FOUND: 404
         PROVIDER_NOT_ROUTABLE: 400
         UNAUTHORIZED: 401
         RATE_LIMITED: 429
