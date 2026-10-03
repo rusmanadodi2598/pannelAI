@@ -58,19 +58,11 @@ func run() error {
 		return err
 	}
 
-	// The logger is built after Config so LOG_LEVEL takes effect; Load has
-	// already rejected an unsupported value.
+	// The logger is built after Config so LOG_LEVEL takes effect; Load has already rejected an unsupported value.
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: logLevel(cfg.LogLevel),
 	})))
 	slog.Info("configuration loaded", "env", cfg.AppEnv, "addr", cfg.HTTPAddr)
-	// The provider registry and plugin seam are installed before anything can
-	// serve a request, so no caller ever sees an unpopulated lookup.
-	index, connectors, err := buildProviderRuntime()
-	if err != nil {
-		return err
-	}
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -92,6 +84,20 @@ func run() error {
 		return err
 	}
 
+	// The egress policy is built before the provider connectors so the Qoder
+	// exchange rides the guarded client (draft 042 R07); the trio travels with
+	// the management graph.
+	settingsSvc, egressPolicy, sealer, err := buildFoundation(cfg, pool)
+	if err != nil {
+		return err
+	}
+	// The provider registry and plugin seam are installed before anything can
+	// serve a request, so no caller ever sees an unpopulated lookup.
+	index, connectors, err := buildProviderRuntime(egressPolicy.Client)
+	if err != nil {
+		return err
+	}
+
 	// Composition: repositories -> services -> handlers -> router.
 	authHandler, rateLimiter, err := buildAuth(ctx, cfg, pool, rdb)
 	if err != nil {
@@ -110,20 +116,17 @@ func run() error {
 		Redis:    redisPinger{client: rdb},
 	})
 
-	// The P1 management graph. It is built in its own file because a dozen
-	// services would blow this file's line budget and mix the boot sequence with
-	// the graph.
-	mgmt, err := buildManagement(cfg, pool, rdb, index, connectors, keyRepo)
+	// The P1 management graph is built in its own file because a dozen services
+	// would blow this file's line budget and mix the boot sequence with the graph.
+	mgmt, err := buildManagement(cfg, pool, rdb, index, connectors, settingsSvc, egressPolicy, sealer, keyRepo)
 	if err != nil {
 		return err
 	}
 
-	// The registry revision travels with the index, so /version reports the
-	// document this process actually loaded.
+	// The registry revision travels with the index, so /version reports the document this process actually loaded.
 	mux := router.New(routerDeps(cfg, authHandler, handler.NewGatewayKeyHandler(keySvc), healthSvc, rateLimiter, mgmt, index.Revision()))
 
-	// The background workers run alongside the server and stop with the context,
-	// so shutdown leaves nothing running (AGENTS.md §1.6).
+	// The background workers run alongside the server and stop with the context, so shutdown leaves nothing running (AGENTS.md §1.6).
 	runWorkers(ctx, mgmt)
 
 	srv := &http.Server{

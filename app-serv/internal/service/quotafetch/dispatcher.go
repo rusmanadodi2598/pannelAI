@@ -12,6 +12,7 @@ package quotafetch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -22,8 +23,35 @@ import (
 const requestTimeout = 20 * time.Second
 
 // client is the outbound client every fetch shares. The timeout lives here rather than
-// per request because the package owns the whole call.
-var client = &http.Client{Timeout: requestTimeout}
+// per request because the package owns the whole call. The composition root installs
+// the process egress client once at boot (UseEgressClient, draft 042 R08), so every
+// family's read rides the same guarded transport the data plane does. Until that
+// install the default still refuses redirects, so a quota host cannot bounce a read
+// cross-host carrying its credential headers.
+var client = &http.Client{Timeout: requestTimeout, CheckRedirect: noRedirect}
+
+// noRedirect refuses to follow a redirect, the same rule the data plane's client
+// carries: the 302 is surfaced to the family's failure policy, and the redirect
+// target is never asked with the credentials this read presented.
+func noRedirect(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+
+// UseEgressClient installs the process egress client every fetch shares, so quota
+// reads leave through the same guarded transport as the data plane (draft 042 R08).
+// It borrows the client's transport — the guard lives there, on the dialer — and its
+// redirect rule, and keeps this package's own timeout, because the quota poll owns
+// the whole call and a hung read must not hold a worker slot. A client without a
+// transport is refused: a bare client would look installed while every read still
+// left unguarded.
+func UseEgressClient(egress *http.Client) error {
+	if egress == nil {
+		return errors.New("quotafetch: the egress client is required")
+	}
+	if egress.Transport == nil {
+		return errors.New("quotafetch: the egress client must carry the guarded transport")
+	}
+	client = &http.Client{Timeout: requestTimeout, CheckRedirect: egress.CheckRedirect, Transport: egress.Transport}
+	return nil
+}
 
 // Fetch reads one provider's published quota. An unknown family answers the reference's
 // soft message rather than an error, because the caller renders that sentence on the

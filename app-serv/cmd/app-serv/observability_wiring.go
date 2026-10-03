@@ -25,12 +25,14 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/redis/go-redis/v9"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 	redisrepo "github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository/redis"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/quotafetch"
 )
 
 // observability is the usage-side graph the boot sequence hands to the data
@@ -61,11 +63,19 @@ func buildObservability(
 	client redis.UniversalClient,
 	index service.ProviderIndex,
 	sealer service.CredentialSealer,
+	egressClient *http.Client,
 ) (observability, error) {
 	// The bus is built once and shared by both halves, so a publisher and a
 	// subscriber cannot end up on different channels.
 	bus := redisrepo.NewUsageEventBus(client)
 	publisher := service.NewUsageEventPublisher(bus, slog.Default())
+
+	// Quota reads leave through the same guarded transport as the data plane
+	// (draft 042 R08), so the install happens here where the egress policy is
+	// already in hand and before any worker can poll.
+	if err := quotafetch.UseEgressClient(egressClient); err != nil {
+		return observability{}, fmt.Errorf("management wiring: quotas: %w", err)
+	}
 
 	usageSvc, err := service.NewUsageService(service.UsageServiceDeps{
 		Usage: usageRepo, Logs: logRepo, Settings: settings, Events: publisher,

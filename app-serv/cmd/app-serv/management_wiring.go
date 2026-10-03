@@ -38,6 +38,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/config"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
@@ -46,22 +47,20 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
-// buildManagement assembles the P1 graph.
+// buildManagement assembles the P1 graph. The foundation trio is built by the
+// boot sequence before it (the provider connectors need the guarded egress
+// client first), and travels in rather than being rebuilt here.
 func buildManagement(
 	cfg config.Config,
 	pool *pgxpool.Pool,
 	client redis.UniversalClient,
 	index *registry.Index,
 	connectors *provider.Connectors,
+	settingsSvc *service.SettingsService,
+	egress egress,
+	sealer *domain.Sealer,
 	keys repository.GatewayKeyRepository,
 ) (managementDeps, error) {
-	// Settings, the egress policy, and the sealer are the process-wide
-	// collaborators every builder below reads, so they are built together
-	// (see foundation_wiring.go).
-	settingsSvc, egress, sealer, err := buildFoundation(cfg, pool)
-	if err != nil {
-		return managementDeps{}, err
-	}
 
 	// Repositories.
 	nodeRepo := postgres.NewNodeRepository(pool)
@@ -157,7 +156,7 @@ func buildManagement(
 
 	// The usage, quota, and log services share repositories, so they are built
 	// together (observability_wiring.go).
-	obs, err := buildObservability(usageRepo, quotaRepo, publishedRepo, endpointRepo, logRepo, settingsSvc, client, runtimeIndex, sealer)
+	obs, err := buildObservability(usageRepo, quotaRepo, publishedRepo, endpointRepo, logRepo, settingsSvc, client, runtimeIndex, sealer, egress.Client)
 	if err != nil {
 		return managementDeps{}, err
 	}

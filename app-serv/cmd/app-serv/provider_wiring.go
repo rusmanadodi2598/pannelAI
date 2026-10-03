@@ -22,6 +22,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
@@ -37,10 +38,16 @@ import (
 // unsupported list is logged here: it is the remaining work made visible, not a
 // silent gap.
 //
+// egressClient is the guarded client the egress policy built (foundation
+// wiring), so a connector's own outbound calls — the Qoder Personal Access
+// Token exchange above all — ride the same allowlist every other upstream call
+// does (draft 042 R07). It is why the foundation is built before this in the
+// boot sequence.
+//
 // Specialized connectors are registered by appending to the argument list below.
 // Each is independent, so adding or fixing a provider touches one line there and
 // nothing else.
-func buildProviderRuntime() (*registry.Index, *provider.Connectors, error) {
+func buildProviderRuntime(egressClient *http.Client) (*registry.Index, *provider.Connectors, error) {
 	idx, err := registry.Load()
 	if err != nil {
 		return nil, nil, fmt.Errorf("provider registry: %w", err)
@@ -65,15 +72,15 @@ func buildProviderRuntime() (*registry.Index, *provider.Connectors, error) {
 	}
 	// The Qoder pair shares one connector and differs only in the registry entry it
 	// reads, the same way the OpenCode lanes do: the CN site declares one gateway for
-	// every token kind. A client is not passed, so the Personal Access Token exchange
-	// runs on the connector's own timeout-bounded client rather than the guarded one,
-	// which is built later in boot (draft 036 §4).
+	// every token kind. The guarded egress client is passed so the Personal Access
+	// Token exchange, the catalog, and the identity reads all ride the process
+	// egress guard (draft 042 R07).
 	for _, id := range []string{"qoder", "qoder-cn"} {
 		entry, ok := idx.Provider(id)
 		if !ok {
 			return nil, nil, fmt.Errorf("provider connectors: the %s entry is missing from the registry", id)
 		}
-		connector, err := provider.NewQoder(entry, nil)
+		connector, err := provider.NewQoder(entry, egressClient)
 		if err != nil {
 			return nil, nil, fmt.Errorf("provider connectors: %w", err)
 		}
