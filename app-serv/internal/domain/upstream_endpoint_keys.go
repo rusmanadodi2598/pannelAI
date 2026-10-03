@@ -67,6 +67,20 @@ func (e *UpstreamEndpoint) RemoveKey(id string, now time.Time) error {
 	return nil
 }
 
+// refusesDeactivation reports whether moving e.keys[index] to next would leave
+// an api_key endpoint without an active key, which is the invariant RemoveKey
+// enforces. Every path that can deactivate a key runs it: RemoveKey, and the
+// two status-change methods.
+func (e *UpstreamEndpoint) refusesDeactivation(index int, next UpstreamKeyStatus) error {
+	if next == UpstreamKeyActive || e.authType != UpstreamAuthAPIKey {
+		return nil
+	}
+	if e.activeKeyCount()-activeKeys(e.keys[index]) < 1 {
+		return NewConflictError("an api_key endpoint must keep at least one active key")
+	}
+	return nil
+}
+
 // UpdateKey applies a PATCH to one key. The stored value is replaced only when a
 // new one is supplied, because the value is write-only on the wire: a PATCH that
 // omits it must keep the existing credential rather than blank it.
@@ -99,6 +113,9 @@ func (e *UpstreamEndpoint) UpdateKey(id, label, valueEncrypted, keyHint string, 
 		if err != nil {
 			return UpstreamKey{}, err
 		}
+		if err := e.refusesDeactivation(index, parsed); err != nil {
+			return UpstreamKey{}, err
+		}
 		if err := key.Transition(parsed); err != nil {
 			return UpstreamKey{}, err
 		}
@@ -121,11 +138,9 @@ func (e *UpstreamEndpoint) SetKeyStatus(id, status string, now time.Time) (Upstr
 		return UpstreamKey{}, NewNotFoundError("upstream key not found")
 	}
 	// Refuse a change that would leave an api_key endpoint with no active key,
-	// the same invariant RemoveKey enforces.
-	if parsed != UpstreamKeyActive && e.authType == UpstreamAuthAPIKey {
-		if e.activeKeyCount()-activeKeys(e.keys[index]) < 1 {
-			return UpstreamKey{}, NewConflictError("an api_key endpoint must keep at least one active key")
-		}
+	// the same invariant RemoveKey and UpdateKey enforce.
+	if err := e.refusesDeactivation(index, parsed); err != nil {
+		return UpstreamKey{}, err
 	}
 	if err := e.keys[index].Transition(parsed); err != nil {
 		return UpstreamKey{}, err

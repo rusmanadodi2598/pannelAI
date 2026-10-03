@@ -87,15 +87,19 @@ func TestEndpointService_TestSelectsTheKey(t *testing.T) {
 // prober.
 func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 	t.Run("no active key is a validation failure", func(t *testing.T) {
-		svc, _ := newEndpointSvc(t)
+		svc, store := newEndpointSvc(t)
 		svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK}}
 		ctx := context.Background()
-		endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary", "secondary")
-		for _, key := range endpoint.Keys() {
-			if _, err := svc.UpdateKey(ctx, endpoint.ID(), key.ID(), KeyPatch{Status: strPtr("disabled")}); err != nil {
-				t.Fatal(err)
-			}
-		}
+		endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
+		// The no-active-key shape is reached through the circuit, which owns the
+		// error state, not through a PATCH: the aggregate refuses disabling the
+		// last active key since draft 042 R03, exactly as it refuses removing it.
+		stored := store.keysByEndpoint[endpoint.ID()]
+		stored[0] = domain.RehydrateUpstreamKey(stored[0].ID(), stored[0].EndpointID(),
+			stored[0].Label(), stored[0].EncryptedValue(), stored[0].Hint(), stored[0].Priority(),
+			domain.UpstreamKeyError, nil, "", 0, nil, stored[0].CreatedAt(), stored[0].UpdatedAt())
+		store.keysByEndpoint[endpoint.ID()] = stored
+
 		_, _, err := svc.Test(ctx, endpoint.ID(), "")
 		mustAppError(t, err, "VALIDATION_ERROR")
 	})
