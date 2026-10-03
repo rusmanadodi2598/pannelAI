@@ -24,6 +24,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
@@ -96,6 +97,13 @@ func writeDataPlaneRaw(w http.ResponseWriter, status int, contentType string, bo
 	}
 }
 
+// sseWriteBudget bounds one frame's write and is renewed before every frame.
+// The server's WriteTimeout (cmd/app-serv/main.go) is an absolute deadline for
+// the whole response, set when the request headers are read, so a stream that
+// outlives it would be cut on its next frame. Renewing per frame keeps the
+// bound on a stalled client without capping how long an answer may run.
+const sseWriteBudget = 2 * time.Minute
+
 // sseSink writes SSE frames to a response writer, flushing each one.
 //
 // The status line and the SSE headers are committed on the first frame, not
@@ -125,6 +133,10 @@ func (s *sseSink) WriteFrame(frame []byte) error {
 		s.writer.WriteHeader(http.StatusOK)
 		s.wroteH = true
 	}
+	// Renew the write budget before the write it covers. A writer that cannot
+	// carry a deadline (HTTP/2) reports unsupported, exactly like Flush, and
+	// the frame is still written.
+	_ = s.controller.SetWriteDeadline(time.Now().Add(sseWriteBudget))
 	if _, err := s.writer.Write(frame); err != nil {
 		return err
 	}
