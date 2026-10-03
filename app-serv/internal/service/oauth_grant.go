@@ -5,7 +5,10 @@
 //
 //	JSON, one typed answer, and the refusal mapping.
 //
-// @uses      context, encoding/json, net/http, net/url, strconv, internal/domain.
+// @uses      context, encoding/json, net/http, net/url, strconv, strings,
+//
+//	internal/domain.
+//
 // @reason    SPEC-API-001 §8.1 records that providers disagree on the grant
 //
 //	body's encoding, so one grant type renders both ways and the
@@ -26,6 +29,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -95,12 +99,30 @@ func (g TokenGrant) fields() []grantField {
 	}
 }
 
+// grantCall is the neutral shape of one token-endpoint request: method, URL,
+// headers, and body. The seam speaks this rather than *http.Request, so the
+// HTTP layer's own types stay out of the service boundary (AGENTS.md §1.5,
+// draft 042 R19) and the transport details are built in one place.
+type grantCall struct {
+	method  string
+	url     string
+	headers map[string]string
+	body    string
+}
+
 // doGrant performs the request and decodes the typed answer, mapping a refusal
 // to an upstream error that carries the provider's own reason when it gave one.
-func doGrant(client *http.Client, request *http.Request) (TokenResponse, error) {
-	callCtx, cancel := context.WithTimeout(request.Context(), grantCallTimeout)
+func doGrant(ctx context.Context, client *http.Client, call grantCall) (TokenResponse, error) {
+	callCtx, cancel := context.WithTimeout(ctx, grantCallTimeout)
 	defer cancel()
-	request = request.WithContext(callCtx)
+
+	request, err := http.NewRequestWithContext(callCtx, call.method, call.url, strings.NewReader(call.body))
+	if err != nil {
+		return TokenResponse{}, domain.NewValidationError("the token endpoint URL is invalid")
+	}
+	for name, value := range call.headers {
+		request.Header.Set(name, value)
+	}
 
 	response, err := client.Do(request)
 	if err != nil {

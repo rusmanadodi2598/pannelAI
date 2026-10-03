@@ -81,14 +81,16 @@ func (c *OAuthHTTPClient) Grant(ctx context.Context, tokenURL, encoding string, 
 		body, contentType = []byte(grant.Form().Encode()), "application/x-www-form-urlencoded"
 	}
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, tokenURL, strings.NewReader(string(body)))
-	if err != nil {
-		return TokenResponse{}, domain.NewValidationError("the token endpoint URL is invalid")
+	call := grantCall{
+		method: http.MethodPost,
+		url:    tokenURL,
+		headers: map[string]string{
+			"Content-Type": contentType,
+			"Accept":       "application/json",
+		},
+		body: string(body),
 	}
-	request.Header.Set("Content-Type", contentType)
-	request.Header.Set("Accept", "application/json")
-
-	response, err := doGrant(c.client, request)
+	response, err := doGrant(ctx, c.client, call)
 	if err != nil {
 		return TokenResponse{}, err
 	}
