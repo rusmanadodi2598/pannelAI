@@ -42,7 +42,7 @@ func ClaudeToOpenAI(req schema.MessagesRequest, upstreamModel string, stream boo
 	if max := maxTokensOf(req.MaxTokens); max > 0 {
 		out.MaxTokens = &max
 	}
-	if text := req.System.Text(); text != "" {
+	if text := normalizedSystemText(req.System); text != "" {
 		out.Messages = append(out.Messages, schema.ChatMessage{
 			Role: schema.RoleSystem, Content: schema.MessageContent{Text: text},
 		})
@@ -67,6 +67,21 @@ func ClaudeToOpenAI(req schema.MessagesRequest, upstreamModel string, stream boo
 		out.ToolChoice = openAIToolChoice(req.ToolChoice)
 	}
 	return out
+}
+
+// normalizedSystemText joins the system blocks with each block's injected
+// billing header stripped, dropping blocks that carried nothing else. It is the
+// reference's system mapping (claude-to-openai.js: stripAnthropicBillingHeader
+// per block, filter empty, join with newlines), so an upstream never sees the
+// client-side accounting line.
+func normalizedSystemText(blocks schema.TextBlocks) string {
+	texts := make([]string, 0, len(blocks))
+	for _, block := range blocks {
+		if stripped := NormalizeClaudeTx(block.Text); stripped != "" {
+			texts = append(texts, stripped)
+		}
+	}
+	return strings.Join(texts, "\n")
 }
 
 // openAIToolChoice maps Anthropic's tool_choice onto the OpenAI spelling:

@@ -209,47 +209,6 @@ type MessagesUsage struct {
 	CacheCreationInputTokens int `json:"cache_creation_input_tokens,omitempty"`
 }
 
-// ClaudeStreamEvent is one streamed Anthropic event. One struct carries every
-// event type, discriminated by Type, matching how the wire is framed.
-type ClaudeStreamEvent struct {
-	Type         string          `json:"type"`
-	Index        *int            `json:"index,omitempty"`
-	Message      *MessagesIntro  `json:"message,omitempty"`
-	ContentBlock json.RawMessage `json:"content_block,omitempty"`
-	Delta        json.RawMessage `json:"delta,omitempty"`
-	Usage        *MessagesUsage  `json:"usage,omitempty"`
-	Error        *ErrorDetail    `json:"error,omitempty"`
-}
-
-// MessagesIntro is the message object a message_start event carries.
-type MessagesIntro struct {
-	ID      string        `json:"id"`
-	Type    string        `json:"type"`
-	Role    string        `json:"role"`
-	Model   string        `json:"model"`
-	Content []Block       `json:"content"`
-	Usage   MessagesUsage `json:"usage"`
-}
-
-// Anthropic stream event names.
-const (
-	EventMessageStart      = "message_start"
-	EventMessageDelta      = "message_delta"
-	EventMessageStop       = "message_stop"
-	EventContentBlockStart = "content_block_start"
-	EventContentBlockDelta = "content_block_delta"
-	EventContentBlockStop  = "content_block_stop"
-	EventPing              = "ping"
-	EventError             = "error"
-)
-
-// Anthropic delta types.
-const (
-	DeltaText      = "text_delta"
-	DeltaInputJSON = "input_json_delta"
-	DeltaThinking  = "thinking_delta"
-)
-
 // DecodeMessagesRequest decodes an Anthropic-wire body into its typed contract.
 func DecodeMessagesRequest(raw []byte) (MessagesRequest, error) {
 	var req MessagesRequest

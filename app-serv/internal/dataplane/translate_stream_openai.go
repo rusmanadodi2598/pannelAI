@@ -7,7 +7,7 @@
 //
 //	usage chunk stream_options.include_usage asks for.
 //
-// @uses      internal/schema, encoding/json.
+// @uses      internal/schema.
 // @reason    SPEC-API-001 §4 fixes SSE as the transport and requires a usage chunk
 //
 //	when the client asked for one. Re-framing needs per-stream state
@@ -15,8 +15,9 @@
 //	usage), and the state is passed in rather than held in a package
 //	variable, so a test drives every path directly and no clock decides
 //	what a frame contains. The Anthropic-event mapping lives in
-//	translate_stream_openai_claude.go and the usage readers in
-//	translate_usage_read.go, both for the AGENTS.md §1.1 budget.
+//	translate_stream_openai_claude.go, the usage readers in
+//	translate_usage_read.go, and the upstream chunk re-framing in
+//	translate_stream_openai_frames.go, all for the AGENTS.md §1.1 budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -25,8 +26,6 @@
 package dataplane
 
 import (
-	"encoding/json"
-
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
@@ -169,86 +168,3 @@ func (s *StreamState) Finish() [][]byte {
 // reported none, so a streamed call records the same number a non-streamed one
 // would.
 func (s *StreamState) Usage() *schema.Usage { return s.usage }
-
-// openAIFrames re-frames an upstream OpenAI chunk, which needs only the identity
-// normalisation a client expects.
-func (s *StreamState) openAIFrames(payload []byte) [][]byte {
-	chunk, ok := decodeObject(payload)
-	if !ok {
-		return nil
-	}
-	if id := stringField(chunk, "id"); id != "" && s.ID == "" {
-		s.ID = id
-	}
-	// The name the client is given is the one it asked for, which is what this
-	// field's own comment has always claimed. Adopting the upstream's `model`
-	// member broke that: Qoder answers every model it serves as `auto`, so a
-	// client that asked `qoder/qfmodel` was told its answer came from `auto` —
-	// a name it cannot re-send, and one that routes to a pool the vendor
-	// answers 429 for. The echo is only used when nothing was asked for, where
-	// it is the sole name available.
-	if s.Model == "" {
-		s.Model = stringField(chunk, "model")
-	}
-	if usage, ok := objectField(chunk, "usage"); ok {
-		s.usage = openAIUsageFromObject(usage)
-		// A forwarded frame that itself carries usage is the delivery the client
-		// asked for, so it marks usageSent and Finish appends nothing (draft 034
-		// F1). A null or empty member is not numbers on the wire, which leaves
-		// the decision to Finish's own guard.
-		if len(usage) > 0 {
-			s.usageSent = true
-		}
-	}
-	if choices, ok := arrayField(chunk, "choices"); ok && len(choices) > 0 {
-		if first, ok := decodeObject(choices[0]); ok {
-			if reason := stringField(first, "finish_reason"); reason != "" {
-				// A second frame that closes again repeats the finish reason,
-				// which a client counting finish reasons reads as a second
-				// answer (draft 034 F2). The duplicate member is nulled and
-				// every other member, the usage it may carry included, still
-				// forwards; the first reason stays the stream's finish.
-				if s.finishSent {
-					first["finish_reason"] = mustJSON(nil)
-					choices[0] = mustJSON(first)
-					chunk["choices"] = mustJSON(choices)
-				} else {
-					// The frame about to be forwarded is the client's finish
-					// frame, so the stream is finished as of now and Finish
-					// must not add a second one (draft 021 F3).
-					s.finishReason = reason
-					s.finishSent = true
-				}
-			}
-		}
-	}
-
-	// The vendor's own members are shaped last, after the stream's finish and
-	// usage have been read from what actually arrived: the guard decides what the
-	// client sees, not what this call is billed for.
-	if !s.sanitizeChunk(chunk) {
-		return nil
-	}
-
-	// The identity is rewritten in place and every other member is forwarded
-	// verbatim: re-encoding a payload the gateway did not change would drop any
-	// field the schema does not model.
-	chunk["id"] = mustJSON(s.responseID())
-	chunk["object"] = mustJSON("chat.completion.chunk")
-	chunk["model"] = mustJSON(s.Model)
-	if _, ok := chunk["created"]; !ok {
-		chunk["created"] = mustJSON(s.Created)
-	}
-	encoded, err := json.Marshal(chunk)
-	if err != nil {
-		// reason: the payload decoded once already, so a re-encode failure means a
-		// member holds a value json cannot render; forwarding the original bytes is
-		// closer to correct than dropping the frame.
-		encoded = payload
-	}
-
-	// The usage chunk is left to Finish, which runs for every stream: emitting it
-	// here as well is what sent two of them, the first priced before the
-	// upstream's numbers had arrived (draft 021 F2).
-	return [][]byte{Frame(encoded)}
-}

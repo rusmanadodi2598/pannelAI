@@ -110,9 +110,13 @@ func geminiImage(reference string) (GeminiPart, bool) {
 }
 
 // geminiFunctionResponse builds the functionResponse part for one tool call, using
-// the name the matching functionCall declared so the upstream can pair them. A
-// response that is not an object is wrapped under `result`, because Gemini's
-// response field is an object.
+// the name the matching functionCall declared so the upstream can pair them.
+//
+// The result travels under `result`, which is the reference's shape
+// (openai-to-gemini.js wraps every parsed body: `response: { result: parsed }`).
+// A body that already carries a `result` member is kept as it is instead of
+// being nested a second time, and an unparseable or scalar body is carried
+// verbatim under `result` so no result is silently lost.
 func geminiFunctionResponse(callID, body string, calls map[string]string) (GeminiPart, bool) {
 	if callID == "" {
 		return GeminiPart{}, false
