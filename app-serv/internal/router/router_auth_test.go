@@ -81,6 +81,12 @@ func (s *routerSessions) Revoke(_ context.Context, digest string) error {
 	delete(s.active, digest)
 	return nil
 }
+func (s *routerSessions) RevokeAll(_ context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.active = make(map[string]bool)
+	return nil
+}
 
 type routerLimiter struct {
 	mu   sync.Mutex

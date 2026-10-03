@@ -48,7 +48,11 @@ func (s *AuthService) Logout(ctx context.Context, token string) error {
 	return nil
 }
 
-// ChangePassword verifies the session and current password before a CAS update.
+// ChangePassword verifies the session and current password before a CAS update,
+// then revokes every session the account holds — the caller's included. A
+// credential the holder just rotated must not leave any of its sessions alive,
+// and the panel answers the sign-out by returning the operator to the login
+// screen.
 func (s *AuthService) ChangePassword(ctx context.Context, token, currentPassword, newPassword string) error {
 	if err := s.Authenticate(ctx, token); err != nil {
 		return err
@@ -69,6 +73,9 @@ func (s *AuthService) ChangePassword(ctx context.Context, token, currentPassword
 	}
 	if err := s.repo.ChangePassword(ctx, currentHash, newHash); err != nil {
 		return err
+	}
+	if err := s.sessions.RevokeAll(ctx); err != nil {
+		return fmt.Errorf("revoking sessions: %w", err)
 	}
 	return nil
 }

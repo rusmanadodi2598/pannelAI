@@ -30,6 +30,11 @@ type SessionStore interface {
 	Create(ctx context.Context, digest string, ttl time.Duration) error
 	Exists(ctx context.Context, digest string) (bool, error)
 	Revoke(ctx context.Context, digest string) error
+
+	// RevokeAll removes every tracked session digest. A password change calls
+	// it, because a credential the holder knows to be compromised must not
+	// leave any of its sessions alive.
+	RevokeAll(ctx context.Context) error
 }
 
 // LoginLimiter tracks failed attempts and temporary lockouts per client.

@@ -15,6 +15,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -75,6 +76,12 @@ func (s *sessionFake) Revoke(_ context.Context, digest string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.active, digest)
+	return nil
+}
+func (s *sessionFake) RevokeAll(_ context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.active = make(map[string]bool)
 	return nil
 }
 
@@ -182,6 +189,40 @@ func TestAuthLockoutAndReset(t *testing.T) {
 	}
 	if limiter.resets == 0 {
 		t.Fatal("successful login did not reset limiter")
+	}
+}
+
+// TestAuthChangePasswordRevokesEverySession pins that a password change signs
+// out every session the account holds, the one that changed it included: a
+// credential whose holder just rotated it must not leave any of its sessions
+// alive (R12 of docs/DRAFT/042-CODE-REVIEW-FIXES.md).
+func TestAuthChangePasswordRevokesEverySession(t *testing.T) {
+	svc, _, sessions, _ := newAuthForTest(t, "correct-123")
+	first, err := svc.Login(context.Background(), "client-a", "correct-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := svc.Login(context.Background(), "client-b", "correct-123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.ChangePassword(context.Background(), first, "correct-123", "renewed-456"); err != nil {
+		t.Fatalf("ChangePassword: %v", err)
+	}
+	for _, tc := range []struct{ name, token string }{
+		{"the session that changed the password", first},
+		{"another live session", second},
+	} {
+		if err := svc.Authenticate(context.Background(), tc.token); !errors.Is(err, domain.ErrSessionInvalid) {
+			t.Fatalf("authenticating %s: err=%v, want the session to be invalid", tc.name, err)
+		}
+	}
+	if len(sessions.active) != 0 {
+		t.Fatalf("session store retained %d digests, want none", len(sessions.active))
+	}
+	token, err := svc.Login(context.Background(), "client-a", "renewed-456")
+	if err != nil || token == "" {
+		t.Fatalf("login with the new password: token=%q err=%v", token, err)
 	}
 }
 
