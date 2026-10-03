@@ -77,12 +77,23 @@ func toEndpointResponse(endpoint domain.UpstreamEndpoint, now time.Time, withKey
 		Available:      endpoint.Available(now),
 		CreatedAt:      schema.Timestamp(endpoint.CreatedAt()),
 		UpdatedAt:      schema.Timestamp(endpoint.UpdatedAt()),
+
+		// The connection-parity fields (draft 017 §4.1b): the operator-settable
+		// routing values, the served-call run, and the last upstream failure
+		// the data plane recorded (R17).
+		GlobalPriority:      endpoint.GlobalPriority(),
+		DefaultModel:        endpoint.DefaultModel(),
+		ConsecutiveUseCount: endpoint.ConsecutiveUseCount(),
+		ProxyPoolID:         endpoint.ProxyPoolID(),
 	}
 	if oauth := endpoint.OAuth(); oauth != nil {
 		resp.OAuth = toOAuthResponse(oauth)
 	}
 	if test := endpoint.TestStatus(); test.State != "" {
 		resp.TestStatus = toTestStatusResponse(test)
+	}
+	if code, message, at := endpoint.LastError(); code != "" {
+		resp.LastError = toEndpointErrorResponse(code, message, at)
 	}
 	if until := endpoint.RateLimitedUntil(); until != nil {
 		resp.RateLimitedUntil = ptr(schema.Timestamp(*until))
@@ -125,6 +136,16 @@ func toOAuthResponse(credential *domain.OAuthCredential) *schema.EndpointOAuthRe
 	}
 	if credential.LastRefreshAt != nil {
 		resp.LastRefreshAt = ptr(schema.Timestamp(*credential.LastRefreshAt))
+	}
+	return resp
+}
+
+// toEndpointErrorResponse renders the last non-test upstream failure as the one
+// object the schema fixes (§7.5): absent entirely until the endpoint fails.
+func toEndpointErrorResponse(code, message string, at *time.Time) *schema.EndpointErrorResponse {
+	resp := &schema.EndpointErrorResponse{Code: code, Message: message}
+	if at != nil {
+		resp.At = schema.Timestamp(*at)
 	}
 	return resp
 }

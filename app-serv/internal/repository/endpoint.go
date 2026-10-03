@@ -69,6 +69,11 @@ type EndpointRepository interface {
 	// call, without touching its label, priority, or credential.
 	RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error
 
+	// RecordUpstreamOutcome persists the endpoint's connection-parity state
+	// (the use run and the last non-test upstream error) after a data-plane
+	// call, without touching its routing fields or keys.
+	RecordUpstreamOutcome(ctx context.Context, endpoint domain.UpstreamEndpoint) error
+
 	// Reorder assigns new priorities to every endpoint of one provider, so a
 	// priority change cannot leave two endpoints claiming the same slot.
 	Reorder(ctx context.Context, providerID string, orderedIDs []string) error

@@ -134,6 +134,9 @@ func (r *chatEndpointRepository) List(_ context.Context, filter repository.Endpo
 func (r *chatEndpointRepository) RecordKeyHealth(context.Context, domain.UpstreamKey) error {
 	return nil
 }
+func (r *chatEndpointRepository) RecordUpstreamOutcome(context.Context, domain.UpstreamEndpoint) error {
+	return nil
+}
 func (r *chatEndpointRepository) Create(context.Context, domain.UpstreamEndpoint) error { return nil }
 func (r *chatEndpointRepository) GetByID(context.Context, string) (domain.UpstreamEndpoint, error) {
 	return domain.UpstreamEndpoint{}, domain.ErrEndpointNotFound

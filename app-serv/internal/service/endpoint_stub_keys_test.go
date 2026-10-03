@@ -70,6 +70,11 @@ func (s *memEndpointStore) RecordKeyHealth(ctx context.Context, key domain.Upstr
 	return s.UpdateKey(ctx, key)
 }
 
+func (s *memEndpointStore) RecordUpstreamOutcome(_ context.Context, endpoint domain.UpstreamEndpoint) error {
+	s.byID[endpoint.ID()] = endpoint
+	return nil
+}
+
 func (s *memEndpointStore) Reorder(_ context.Context, providerID string, orderedIDs []string) error {
 	for i, id := range orderedIDs {
 		endpoint, ok := s.byID[id]

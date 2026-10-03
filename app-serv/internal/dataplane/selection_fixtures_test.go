@@ -43,7 +43,11 @@ type memEndpointRepo struct {
 	// health records the last health write per key id, so a test can assert the
 	// circuit the domain owns is what changed.
 	health map[string]domain.UpstreamKey
-	err    error
+	// outcome records the last parity write per endpoint id, so a test can
+	// assert the endpoint's own connection state is what the data plane
+	// reported.
+	outcome map[string]domain.UpstreamEndpoint
+	err     error
 	// healthErr fails every health write, so a test can drive the bookkeeping
 	// path that runs after an upstream already answered.
 	healthErr error
@@ -53,6 +57,7 @@ func newMemEndpointRepo() *memEndpointRepo {
 	return &memEndpointRepo{
 		byProvider: map[string][]domain.UpstreamEndpoint{},
 		health:     map[string]domain.UpstreamKey{},
+		outcome:    map[string]domain.UpstreamEndpoint{},
 	}
 }
 
@@ -82,6 +87,16 @@ func (r *memEndpointRepo) RecordKeyHealth(_ context.Context, key domain.Upstream
 		return r.healthErr
 	}
 	r.health[key.ID()] = key
+	return nil
+}
+
+func (r *memEndpointRepo) RecordUpstreamOutcome(_ context.Context, endpoint domain.UpstreamEndpoint) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.healthErr != nil {
+		return r.healthErr
+	}
+	r.outcome[endpoint.ID()] = endpoint
 	return nil
 }
 
