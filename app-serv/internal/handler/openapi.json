@@ -5450,6 +5450,67 @@
         ],
         "additionalProperties": false,
         "description": "One refused batch row."
+      },
+      "SystemOneRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "state": {
+            "$ref": "#/components/schemas/JsonObject"
+          },
+          "questions": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonObject"
+            }
+          }
+        },
+        "required": [
+          "model",
+          "state",
+          "questions"
+        ],
+        "additionalProperties": false,
+        "description": "The body of POST /api/v1/systemone (§7.15). State is the situation to evaluate and Questions is the map of decisions to ask about it, keyed by the caller's own name for each question. Both are required; the inner shape of each travels verbatim because it belongs to the upstream, not the gateway."
+      },
+      "SystemOneUsage": {
+        "type": "object",
+        "properties": {
+          "input_tokens": {
+            "type": "integer"
+          },
+          "output_tokens": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "input_tokens",
+          "output_tokens"
+        ],
+        "additionalProperties": false,
+        "description": "The token accounting a decision answer reports."
+      },
+      "SystemOneAnswer": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "answers": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonObject"
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/SystemOneUsage"
+          }
+        },
+        "description": "The decision endpoint's own answer, forwarded as the upstream wrote it. The gateway reads only usage for accounting; the rest of the shape is the provider's vocabulary and reaches the client untouched."
       }
     },
     "responses": {
@@ -5707,10 +5768,11 @@
         }
       },
       "DataPlaneBadRequestError": {
-        "description": "The request is invalid: it failed schema validation, or named a provider the gateway cannot translate.",
+        "description": "The request is invalid: it failed schema validation, or named a provider the gateway cannot translate, or the upstream refused the request itself (draft 042 R11: the refusal is the wire's 400 invalid_request_error, not a 502 outage).",
         "x-error-codes": [
           "VALIDATION_ERROR",
-          "PROVIDER_NOT_ROUTABLE"
+          "PROVIDER_NOT_ROUTABLE",
+          "UPSTREAM_REJECTED"
         ],
         "content": {
           "application/json": {
@@ -5733,6 +5795,15 @@
                     "message": "The provider cannot be reached through this gateway.",
                     "type": "invalid_request_error",
                     "code": "PROVIDER_NOT_ROUTABLE"
+                  }
+                }
+              },
+              "UPSTREAM_REJECTED": {
+                "value": {
+                  "error": {
+                    "message": "The upstream refused this request itself.",
+                    "type": "invalid_request_error",
+                    "code": "UPSTREAM_REJECTED"
                   }
                 }
               }
@@ -13067,6 +13138,67 @@
           }
         }
       }
+    },
+    "/api/v1/systemone": {
+      "post": {
+        "summary": "Decide over the System One (Jev) wire (§7.15)",
+        "description": "Serves models declaring `kind: systemone`. The payload is the provider's own vocabulary rather than a chat request, so the state and the per-question entries travel verbatim, and the answer is forwarded as the upstream wrote it.",
+        "tags": [
+          "Data Plane"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ],
+        "operationId": "postApiV1Systemone",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SystemOneRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The decision endpoint's own answer, forwarded as it arrived.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemOneAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DataPlaneBadRequestError"
+          },
+          "404": {
+            "$ref": "#/components/responses/DataPlaneNotFoundError"
+          },
+          "401": {
+            "$ref": "#/components/responses/DataPlaneUnauthorizedError"
+          },
+          "429": {
+            "$ref": "#/components/responses/DataPlaneRateLimitedError"
+          },
+          "500": {
+            "$ref": "#/components/responses/DataPlaneInternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/DataPlaneUpstreamError"
+          },
+          "503": {
+            "$ref": "#/components/responses/DataPlaneUnavailableError"
+          },
+          "504": {
+            "$ref": "#/components/responses/DataPlaneTimeoutError"
+          }
+        }
+      }
     }
   },
   "servers": [
@@ -13179,6 +13311,7 @@
           "VALIDATION_ERROR": 400,
           "MODEL_NOT_FOUND": 404,
           "PROVIDER_NOT_ROUTABLE": 400,
+          "UPSTREAM_REJECTED": 400,
           "UNAUTHORIZED": 401,
           "RATE_LIMITED": 429,
           "INTERNAL_ERROR": 500,

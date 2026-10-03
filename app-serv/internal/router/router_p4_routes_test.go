@@ -165,6 +165,9 @@ func newP4Router(t *testing.T) *Mux {
 
 // newRouteTableRouter registers the complete table: the nil-guarded handler
 // groups are zero values, present only so their patterns reach the recorder.
+// SystemOne is among them: the §7.15 decision route is a served data-plane
+// path, so its absence from the served contract must fail the pin (draft 042
+// R10) rather than wait for a reader to notice.
 func newRouteTableRouter(t *testing.T) *Mux {
 	t.Helper()
 	_, authHandler := newAuthenticatedRouter(t)
@@ -182,5 +185,6 @@ func newRouteTableRouter(t *testing.T) *Mux {
 		Chat:       &handler.ChatHandler{},
 		Embeddings: &handler.EmbeddingsHandler{},
 		TokenCount: &handler.TokenCountHandler{},
+		SystemOne:  &handler.SystemOneHandler{},
 	})
 }
