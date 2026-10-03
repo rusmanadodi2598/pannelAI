@@ -137,6 +137,9 @@ Plaintext key hanya muncul pada response create. Request berikutnya memakai `key
 | GET | `/api/v1/providers` | Session | `200 ProviderListResponse` |
 | GET | `/api/v1/providers/{provider_id}` | Session | `200 ProviderDetailResponse` |
 | GET | `/api/v1/providers/{provider_id}/models` | Session | `200 ProviderModelList` |
+| POST | `/api/v1/providers/{provider_id}/models/test` | Session | `200 ProviderModelTestResult` |
+| POST | `/api/v1/providers/{provider_id}/test-models` | Session | `200 ProviderModelTestResponse` |
+| POST | `/api/v1/providers/validate` | Session | `200 ValidateResponse` |
 | POST | `/api/v1/providers/{provider_id}/oauth/start` | Session | `200 OAuthStartResponse` |
 | GET | `/api/v1/providers/{provider_id}/oauth/callback` | Public | `200 OAuthConnectResult` atau redirect browser |
 | GET | `/api/v1/providers/{provider_id}/oauth/status` | Session | `200` |
@@ -164,6 +167,7 @@ sekali, bukan string kosong. Aturan lengkapnya di `docs/SPEC-API/001-SPEC-API.md
 | PATCH | `/api/v1/provider-nodes/{id}` | Session | `200 ProviderNodeResponse` |
 | DELETE | `/api/v1/provider-nodes/{id}` | Session | `204` |
 | POST | `/api/v1/provider-nodes/{id}/test` | Session | `200 ProxyTestResponse` |
+| POST | `/api/v1/provider-nodes/validate` | Session | `200 ValidateResponse` |
 
 `type=openai-compatible` membutuhkan `api_type` `chat` atau `responses`. `base_url` hanya menerima URL absolute `http` atau `https`. Prefix yang bentrok dengan registry atau alias ditolak dengan `CONFLICT`.
 
@@ -259,6 +263,7 @@ Override disimpan per provider dan kind. `base_url` tidak boleh kosong setelah r
 | GET | `/api/v1/usage/timeseries` | Session | `200 UsageTimeseriesResponse` |
 | GET | `/api/v1/usage/records` | Session | `200 UsageRecordList` |
 | GET | `/api/v1/usage/records/{request_id}` | Session | `200 UsageRecordDetailResponse` |
+| GET | `/api/v1/usage/live` | Session | `200` SSE frames |
 | GET | `/api/v1/quotas` | Session | `200 QuotaWindowList` — `{data, meta, published[], published_note?}`; `per_page` menghitung grup provider, `published[]` adalah jawaban cache worker untuk endpoint pada halaman ini (satu query, bukan satu panggilan provider per akun) |
 | GET | `/api/v1/quotas/{endpoint_id}` | Session | `200 QuotaEndpointDetail` |
 | GET | `/api/v1/quotas/{endpoint_id}/usage` | Session | `200 PublishedQuotaUsageResponse`; dibaca dari cache, `?force=1` bertanya ke provider sekarang |
@@ -293,6 +298,7 @@ List usage dan log memakai pagination. Filter waktu menggunakan RFC3339. Query t
 | GET | `/api/v1/models` | Gateway key | `200 ModelListResponse` |
 | POST | `/api/v1/embeddings` | Gateway key | `200 EmbeddingsResponse` |
 | POST | `/api/v1/messages/count_tokens` | Gateway key | `200 CountTokensResponse` |
+| POST | `/api/v1/systemone` | Gateway key | `200 SystemOneAnswer` |
 | POST | `/api/v1/audio/speech` | Gateway key | `200` audio bytes atau JSON |
 | POST | `/api/v1/audio/transcriptions` | Gateway key | `200` JSON atau text |
 | GET | `/api/v1/audio/voices` | Gateway key | `200 VoiceList` |

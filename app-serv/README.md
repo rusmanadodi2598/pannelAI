@@ -101,14 +101,22 @@ Login, logout, dan change-password berhasil dengan `204 No Content`; kredensial 
 app-serv/
 ├── cmd/app-serv/          # composition root: wiring, tanpa logika
 ├── internal/
+│   ├── clientip/          # alamat klien asli di balik proxy terpercaya (limiter)
 │   ├── config/            # konfigurasi env bertipe dan tervalidasi
+│   ├── dataplane/         # mesin data plane: resolusi model, seleksi, relay, terjemahan wire
 │   ├── domain/            # entitas, value object, envelope error, ULID
-│   ├── repository/        # kontrak penyimpanan + implementasi PostgreSQL
-│   ├── service/           # use case; tidak mengimpor net/http
-│   ├── schema/            # DTO, tag validasi, serialisasi respons
 │   ├── handler/           # adaptor HTTP
-│   └── router/            # tabel route dan middleware
+│   ├── netguard/          # guard egress outbound dua tingkat (OWASP A01)
+│   ├── provider/          # konektor protokol khusus (Qoder, CodeBuddy, OpenCode)
+│   ├── reasoning/         # konfigurasi reasoning per call dan penerapannya ke wire
+│   ├── registry/          # registry provider tertanam, capability, harga
+│   ├── repository/        # kontrak penyimpanan + implementasi PostgreSQL/Redis
+│   ├── router/            # tabel route dan middleware
+│   ├── schema/            # DTO, tag validasi, serialisasi respons
+│   ├── service/           # use case; tidak mengimpor net/http
+│   └── tokensaver/        # orkestrator token saver: grup hemat token berurutan
 ├── migrations/            # migrasi up/down berpasangan
+└── tools/                 # generator: openapi-gen, registry/pricing/capability
 ```
 
 Alur layer satu arah: `schema → domain → repository → service → handler → router`.
