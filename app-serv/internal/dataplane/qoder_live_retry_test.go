@@ -81,7 +81,7 @@ func TestQoderLiveRetryServesTheFreeModel(t *testing.T) {
 		t.Fatalf("the qoder entry retries a 429 %d times, want more than one attempt", got)
 	}
 
-	connector, err := provider.NewQoder(entry, nil)
+	connector, err := provider.NewQoder(entry, http.DefaultClient)
 	if err != nil {
 		t.Fatalf("NewQoder() error = %v", err)
 	}

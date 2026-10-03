@@ -49,7 +49,7 @@ func TestQoderLivePATWithoutStoredIdentity(t *testing.T) {
 	if !ok {
 		t.Fatal("the embedded registry carries no qoder entry")
 	}
-	connector, err := NewQoder(entry, nil)
+	connector, err := NewQoder(entry, http.DefaultClient)
 	if err != nil {
 		t.Fatalf("NewQoder() error = %v", err)
 	}

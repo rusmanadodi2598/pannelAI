@@ -73,7 +73,7 @@ func newIdentityConnector(t *testing.T, stubURL string) *Qoder {
 		ID:        "qoder",
 		Transport: registry.Transport{Format: "openai", BaseURL: "https://api3.qoder.sh/algo/x"},
 		OAuth:     &registry.OAuth{OpenAPIBaseURL: "https://openapi.qoder.sh", UserInfoURL: stubURL},
-	}, nil)
+	}, http.DefaultClient)
 	if err != nil {
 		t.Fatalf("NewQoder() error = %v", err)
 	}
@@ -221,7 +221,7 @@ func TestQoderIdentityEndpoint(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			connector, err := NewQoder(registry.Provider{ID: "qoder", OAuth: tc.oauth}, nil)
+			connector, err := NewQoder(registry.Provider{ID: "qoder", OAuth: tc.oauth}, http.DefaultClient)
 			if err != nil {
 				t.Fatalf("NewQoder() error = %v", err)
 			}

@@ -108,18 +108,25 @@ func TestQoderApplyAuthSignsADeviceTokenWithoutExchanging(t *testing.T) {
 // URL to call, an account with no credential, and a request that does not exist.
 func TestQoderRefusals(t *testing.T) {
 	t.Run("no oauth block", func(t *testing.T) {
-		if _, err := NewQoder(registry.Provider{ID: "qoder"}, nil); err == nil {
+		if _, err := NewQoder(registry.Provider{ID: "qoder"}, http.DefaultClient); err == nil {
 			t.Fatal("an entry without an oauth block was accepted")
+		}
+	})
+	t.Run("nil egress client", func(t *testing.T) {
+		// SSRF §2.1: the connector must not build its own unguarded client. A nil
+		// client is a boot-time refusal, not a silent fallback (draft 042 R07).
+		if _, err := NewQoder(qoderEntry("qoder", "https://openapi.qoder.sh", qoderChatURLIntl), nil); err == nil {
+			t.Fatal("a nil egress client was accepted")
 		}
 	})
 	t.Run("no openapi base", func(t *testing.T) {
 		entry := registry.Provider{ID: "qoder", OAuth: &registry.OAuth{}}
-		if _, err := NewQoder(entry, nil); err == nil {
+		if _, err := NewQoder(entry, http.DefaultClient); err == nil {
 			t.Fatal("an entry with no openapi base was accepted")
 		}
 	})
 	t.Run("no chat url", func(t *testing.T) {
-		connector, err := NewQoder(qoderEntry("qoder", "https://openapi.example.com", ""), nil)
+		connector, err := NewQoder(qoderEntry("qoder", "https://openapi.example.com", ""), http.DefaultClient)
 		if err != nil {
 			t.Fatalf("NewQoder() error = %v", err)
 		}
@@ -145,7 +152,7 @@ func TestQoderRefusals(t *testing.T) {
 		}
 	})
 	t.Run("an exchange that fails", func(t *testing.T) {
-		connector, err := NewQoder(qoderEntry("qoder", "https://openapi.invalid", qoderChatURLIntl), nil)
+		connector, err := NewQoder(qoderEntry("qoder", "https://openapi.invalid", qoderChatURLIntl), http.DefaultClient)
 		if err != nil {
 			t.Fatalf("NewQoder() error = %v", err)
 		}

@@ -46,18 +46,20 @@ type Qoder struct {
 
 // NewQoder builds the connector for one registry entry. The exchange client is the
 // caller's, so the composition root decides whether a Personal Access Token exchange
-// rides the process egress guard; a nil client gets one bounded by the exchange's own
-// timeout.
+// rides the process egress guard. A nil client is refused rather than defaulted:
+// building an unguarded client here would let a PAT exchange, a catalog read, and an
+// identity call dial a registry-declared host outside the netguard (draft 042 R07,
+// docs/RULLES/SSRF.md §2.1).
 func NewQoder(entry registry.Provider, client *http.Client) (*Qoder, error) {
 	if entry.OAuth == nil {
 		return nil, fmt.Errorf("provider %s: a qoder connector needs an oauth block", entry.ID)
 	}
+	if client == nil {
+		return nil, fmt.Errorf("provider %s: a qoder connector needs the process egress-guarded client", entry.ID)
+	}
 	tokens, err := NewQoderJobTokenClient(entry.OAuth.OpenAPIBaseURL, client)
 	if err != nil {
 		return nil, fmt.Errorf("provider %s: %w", entry.ID, err)
-	}
-	if client == nil {
-		client = &http.Client{Timeout: qoderCatalogTimeout}
 	}
 	return &Qoder{
 		Base:     Base{ID: entry.ID, Auth: entry.AuthType, Format: entry.Transport.Format},

@@ -57,7 +57,7 @@ func TestQoderLiveTranslationNamesTheRequestedModel(t *testing.T) {
 	if !ok {
 		t.Fatal("the embedded registry carries no qoder entry")
 	}
-	connector, err := provider.NewQoder(entry, nil)
+	connector, err := provider.NewQoder(entry, http.DefaultClient)
 	if err != nil {
 		t.Fatalf("NewQoder() error = %v", err)
 	}

@@ -117,7 +117,7 @@ func qoderLiveConnector(t *testing.T) (*Qoder, Credential) {
 	t.Helper()
 	jobToken := qoderLiveExchange(t, qoderLivePAT(t))
 	account := qoderLiveAccount(t, jobToken)
-	connector, err := NewQoder(qoderLiveEntry(t), nil)
+	connector, err := NewQoder(qoderLiveEntry(t), http.DefaultClient)
 	if err != nil {
 		t.Fatalf("NewQoder() error = %v", err)
 	}
