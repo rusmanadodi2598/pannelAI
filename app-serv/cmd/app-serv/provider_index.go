@@ -25,6 +25,7 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
@@ -39,18 +40,27 @@ type nodeLister interface {
 	List(ctx context.Context) ([]domain.ProviderNode, error)
 }
 
+const (
+	// overlayCacheTTL bounds how long a built overlay is believed before it is
+	// re-read, and how long a failed rebuild is retried after.
+	overlayCacheTTL = 30 * time.Second
+	// overlayRebuildTimeout bounds one node read plus registry rebuild.
+	overlayRebuildTimeout = 5 * time.Second
+)
+
 // runtimeProviderIndex resolves a provider identifier against the embedded
 // registry plus the currently stored custom nodes.
 //
-// The overlay is rebuilt lazily on each lookup rather than kept in a cache,
-// because a stale cache here reintroduces exactly the problem this adapter
-// exists to solve: a node an operator just created that the gateway does not yet
-// recognise. Node rows are few (a handful per deployment) and the read is a
-// single indexed query, so the simplicity is worth more than the cache.
+// The overlay is cached for overlayCacheTTL and rebuilt lazily. Rebuilding on
+// every lookup was one node query plus a registry rebuild per request (draft 042
+// R06). Freshness does not rest on the window alone: the service calls
+// InvalidateNodeOverlay on every node write, so a node the operator just created
+// or deleted is visible on the next lookup. The TTL is only the backstop for a
+// write made outside this process, such as a direct database change.
 //
-// A rebuild failure is logged and the embedded registry is used alone: refusing
-// every provider lookup because the node table is briefly unavailable would take
-// the whole gateway down for a feature that is additive.
+// A failed rebuild keeps serving the last good overlay rather than dropping to
+// the embedded registry alone: a brief node-table outage must not unlist every
+// custom provider and turn a read failure into a routing outage.
 type runtimeProviderIndex struct {
 	embedded *registry.Index
 	nodes    nodeLister
@@ -60,6 +70,13 @@ type runtimeProviderIndex struct {
 	// mu serialises rebuilds so concurrent requests do not each build their own
 	// copy of the same overlay under load.
 	mu sync.Mutex
+
+	// clock separates "how long a built overlay is believed" from wall time, so
+	// a test states the window instead of sleeping through it.
+	clock func() time.Time
+
+	cached   *registry.Index
+	cachedAt time.Time
 }
 
 // newRuntimeProviderIndex binds the embedded registry to the node store.
@@ -71,7 +88,7 @@ func newRuntimeProviderIndex(embedded *registry.Index, nodes nodeLister, models 
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &runtimeProviderIndex{embedded: embedded, nodes: nodes, models: models, logger: logger}
+	return &runtimeProviderIndex{embedded: embedded, nodes: nodes, models: models, logger: logger, clock: time.Now}
 }
 
 // Provider resolves an id, alias, or node prefix to its entry.
@@ -90,31 +107,60 @@ func (r *runtimeProviderIndex) All() []registry.Provider { return r.overlay().Al
 // Categories returns the measured category set of the overlaid index.
 func (r *runtimeProviderIndex) Categories() []string { return r.overlay().Categories() }
 
-// overlay returns the index a lookup should read: the embedded registry with
-// the currently stored custom nodes applied when that succeeds, and the
-// embedded registry alone when it does not.
+// overlay returns the index a lookup should read: the cached overlay while it
+// is fresh, a rebuild when it is not, and the last good overlay (or the embedded
+// registry, on the very first build) when the rebuild fails.
 //
 // A custom node's own prefix and id are resolved first inside the overlay: a
 // node is the operator's explicit intent, and its prefix is refused at creation
 // when it would collide with a registry identifier, so the order cannot shadow
 // a built-in provider.
 func (r *runtimeProviderIndex) overlay() *registry.Index {
-	nodes, err := r.loadNodes(context.Background())
-	if err != nil {
-		r.logger.Warn("membaca provider node gagal; memakai registry saja", "error", err)
-		return r.embedded
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.cached != nil && r.clock().Sub(r.cachedAt) < overlayCacheTTL {
+		return r.cached
 	}
 
-	r.mu.Lock()
+	ctx, cancel := context.WithTimeout(context.Background(), overlayRebuildTimeout)
+	defer cancel()
+	nodes, err := r.loadNodes(ctx)
+	if err != nil {
+		r.logger.Warn("membaca provider node gagal; memakai overlay terakhir", "error", err)
+		return r.staleAfterFailure()
+	}
+
 	overlaid, buildErr := r.embedded.WithCustom(nodes...)
-	r.mu.Unlock()
 	if buildErr != nil {
 		// A stored node whose prefix collides (created before that rule, or by a
 		// direct database write) must not make the whole registry unusable.
 		r.logger.Error("membangun index dengan provider node gagal", "error", buildErr)
-		return r.embedded
+		return r.staleAfterFailure()
 	}
-	return overlaid
+	r.cached, r.cachedAt = overlaid, r.clock()
+	return r.cached
+}
+
+// staleAfterFailure keeps serving the overlay a lookup can still resolve against
+// when a rebuild fails: the last good overlay if one was built, the embedded
+// registry alone on the very first read. It also stamps the retry clock so a
+// sustained outage backs off for a full window instead of re-querying per request.
+func (r *runtimeProviderIndex) staleAfterFailure() *registry.Index {
+	if r.cached == nil {
+		r.cached = r.embedded
+	}
+	r.cachedAt = r.clock()
+	return r.cached
+}
+
+// InvalidateNodeOverlay drops the cached overlay so the next lookup re-reads the
+// node store. The service calls it after every node write, so a created or deleted
+// node is visible without waiting for the TTL window to close.
+func (r *runtimeProviderIndex) InvalidateNodeOverlay() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.cached = nil
 }
 
 // loadNodes reads the stored nodes, each carrying its own model list.

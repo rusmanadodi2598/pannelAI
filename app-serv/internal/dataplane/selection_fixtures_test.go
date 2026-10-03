@@ -35,8 +35,10 @@ var now = time.Date(2026, 9, 18, 12, 0, 0, 0, time.UTC)
 //
 // The mutex guards the double against the fan-out's concurrency: a fusion panel
 // records every member's outcome in parallel, so a bare map write here would be
-// a data race the production repository (a database) never has. Tests read
-// health directly once Relay has returned, which the fan-out's join orders.
+// a data race the production repository (a database) never has. List also clones
+// each endpoint it hands back, because a stored endpoint's key slice would
+// otherwise be shared by every concurrent member that mutates its health. Tests
+// read health directly once Relay has returned, which the fan-out's join orders.
 type memEndpointRepo struct {
 	mu         sync.Mutex
 	byProvider map[string][]domain.UpstreamEndpoint
@@ -67,15 +69,13 @@ func (r *memEndpointRepo) List(_ context.Context, filter repository.EndpointFilt
 	if r.err != nil {
 		return nil, 0, r.err
 	}
-	found := r.byProvider[filter.ProviderID]
-	if filter.Status != "" {
-		kept := make([]domain.UpstreamEndpoint, 0, len(found))
-		for _, endpoint := range found {
-			if string(endpoint.Status()) == filter.Status {
-				kept = append(kept, endpoint)
-			}
+	stored := r.byProvider[filter.ProviderID]
+	found := make([]domain.UpstreamEndpoint, 0, len(stored))
+	for _, endpoint := range stored {
+		if filter.Status != "" && string(endpoint.Status()) != filter.Status {
+			continue
 		}
-		found = kept
+		found = append(found, endpoint.Clone())
 	}
 	return found, int64(len(found)), nil
 }
@@ -97,6 +97,18 @@ func (r *memEndpointRepo) RecordUpstreamOutcome(_ context.Context, endpoint doma
 		return r.healthErr
 	}
 	r.outcome[endpoint.ID()] = endpoint
+	// Write the served endpoint back into its stored row, the way a database
+	// persists the row a call touched: List hands out clones, so without this the
+	// health a relay recorded (a rotated key, a parity error) would never reach the
+	// next read. Storing a clone keeps the row's own key array independent of any
+	// caller's live memory.
+	rows := r.byProvider[endpoint.ProviderID()]
+	for i := range rows {
+		if rows[i].ID() == endpoint.ID() {
+			rows[i] = endpoint.Clone()
+			break
+		}
+	}
 	return nil
 }
 

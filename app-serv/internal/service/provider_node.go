@@ -108,6 +108,7 @@ func (s *NodeService) Create(ctx context.Context, in CreateNodeInput) (domain.Pr
 	if err := s.store.Create(ctx, node); err != nil {
 		return domain.ProviderNode{}, err
 	}
+	s.invalidateOverlay()
 	return node, nil
 }
 
@@ -182,6 +183,7 @@ func (s *NodeService) Update(ctx context.Context, id string, patch NodePatch) (d
 	if err := s.store.Update(ctx, node); err != nil {
 		return domain.ProviderNode{}, err
 	}
+	s.invalidateOverlay()
 	return node, nil
 }
 
@@ -205,5 +207,24 @@ func (s *NodeService) Delete(ctx context.Context, id string) error {
 	if err := s.rejectComboReference(ctx, node.ID(), node.Prefix()); err != nil {
 		return err
 	}
-	return s.store.Delete(ctx, id)
+	if err := s.store.Delete(ctx, id); err != nil {
+		return err
+	}
+	s.invalidateOverlay()
+	return nil
+}
+
+// overlayInvalidator is an optional ProviderIndex capability: a runtime index that
+// caches the custom-node overlay clears it here, so a node write is visible on the
+// next lookup instead of after the cache window.
+type overlayInvalidator interface {
+	InvalidateNodeOverlay()
+}
+
+// invalidateOverlay drops the cached overlay when the bound index keeps one. A
+// static registry index has nothing to drop, so the assertion is the whole guard.
+func (s *NodeService) invalidateOverlay() {
+	if inv, ok := s.index.(overlayInvalidator); ok {
+		inv.InvalidateNodeOverlay()
+	}
 }

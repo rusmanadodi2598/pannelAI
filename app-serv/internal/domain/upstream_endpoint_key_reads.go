@@ -33,6 +33,17 @@ func (e UpstreamEndpoint) Keys() []UpstreamKey {
 	return out
 }
 
+// Clone returns a copy of the endpoint that owns its key slice.
+//
+// UpstreamEndpoint carries its keys as a slice, so copying the value — which the
+// selection path does for every candidate — shares the key array with the original.
+// A health write mutates a key in place, so two copies over one array race. The
+// clone keeps every field and gives the copy its own array.
+func (e UpstreamEndpoint) Clone() UpstreamEndpoint {
+	e.keys = append([]UpstreamKey(nil), e.keys...)
+	return e
+}
+
 // Key returns a copy of one key by id, or an empty key when absent. A copy
 // rather than a reference: health transitions run through this endpoint, so a
 // caller mutating a detached key cannot silently corrupt the stored state.

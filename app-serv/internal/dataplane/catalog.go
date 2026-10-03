@@ -86,8 +86,9 @@ func (r *Resolver) ModelList(ctx context.Context) (schema.ModelList, error) {
 			r.addRow(listed, entry, model.ID, disabled)
 		}
 	}
+	byName := indexNames(entries)
 	for _, ref := range customPairs {
-		entry, found := r.index.Provider(ref.ProviderID())
+		entry, found := byName[ref.ProviderID()]
 		if !found {
 			continue
 		}
@@ -155,15 +156,38 @@ func (r *Resolver) isDisabled(
 	entry registry.Provider,
 	modelID string,
 ) bool {
-	for _, provider := range append([]string{entry.ID, entry.Alias}, entry.Aliases...) {
-		if provider == "" {
-			continue
-		}
+	for _, provider := range providerNames(entry) {
 		if _, hidden := disabled[disabledKey{provider: provider, model: modelID}]; hidden {
 			return true
 		}
 	}
 	return false
+}
+
+// providerNames lists every identifier an entry resolves by — canonical id, its
+// alias, and any further aliases — with blanks dropped.
+func providerNames(entry registry.Provider) []string {
+	names := make([]string, 0, 2+len(entry.Aliases))
+	for _, name := range append([]string{entry.ID, entry.Alias}, entry.Aliases...) {
+		if name != "" {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// indexNames maps every name a snapshot entry answers to, so custom pairs resolve
+// from the list's own All() read instead of a registry lookup per pair (draft 042
+// R06). Names are unique across entries by construction: node prefixes are
+// refused at creation when they would collide with a registry identifier.
+func indexNames(entries []registry.Provider) map[string]registry.Provider {
+	byName := make(map[string]registry.Provider, len(entries)*3)
+	for _, entry := range entries {
+		for _, name := range providerNames(entry) {
+			byName[name] = entry
+		}
+	}
+	return byName
 }
 
 // listedOwner returns the provider segment a listed id carries: the node's own
