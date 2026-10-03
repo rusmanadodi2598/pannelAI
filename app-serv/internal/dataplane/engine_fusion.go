@@ -31,6 +31,13 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
+// fusionFanOutLimit bounds how many panel members are called at once. A combo
+// may name many members, and each relay can walk credentials and retry; an
+// unbounded fan-out spends the shared connection pool and starves every other
+// request on the process. Results are collected in member order regardless of
+// completion order, so the limit costs latency only.
+const fusionFanOutLimit = 4
+
 // relayFusion serves a request addressed to a fusion combo.
 //
 // Latency is reported as the whole panel-and-judge duration the client waited,
@@ -124,10 +131,15 @@ func (e *Engine) fanOut(ctx context.Context, in Request, combo domain.Combo, mem
 	}
 	results := make([]result, len(members))
 	var wg sync.WaitGroup
+	// The semaphore is acquired inside the goroutine, not before it, so a large
+	// panel queues its members instead of blocking the caller's loop.
+	sem := make(chan struct{}, fusionFanOutLimit)
 	for index, member := range members {
 		wg.Add(1)
 		go func(index int, member Resolution) {
 			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 			defer func() {
 				if recovered := recover(); recovered != nil {
 					results[index] = result{err: internalError("a fusion panel member panicked", nil)}
