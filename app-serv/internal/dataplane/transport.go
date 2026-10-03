@@ -117,6 +117,12 @@ type HTTPClientDeps struct {
 	Proxy func(*http.Request) (*url.URL, error)
 }
 
+// noRedirect keeps a 3xx an upstream failure rather than a hop. Go forwards
+// custom credential headers (x-api-key, x-goog-api-key) across hosts and
+// re-sends the body on 307/308, so following a redirect would hand an account's
+// credential and request to whatever host the upstream named.
+func noRedirect(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+
 // NewHTTPClient builds the HTTP client the gateway calls upstreams with.
 //
 // The pool limits are set explicitly rather than left at the library default
@@ -129,6 +135,7 @@ func NewHTTPClient(deps HTTPClientDeps) *http.Client {
 		dialer = &net.Dialer{Timeout: ConnectTimeout, KeepAlive: 30 * time.Second}
 	}
 	return &http.Client{
+		CheckRedirect: noRedirect,
 		Transport: &http.Transport{
 			DialContext:           dialer.DialContext,
 			Proxy:                 deps.Proxy,

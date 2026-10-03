@@ -146,7 +146,14 @@ func (d *ProxyDialer) clientFor(candidate *url.URL) (*http.Client, error) {
 	clone := base.Clone()
 	clone.Proxy = http.ProxyURL(candidate)
 	clone.OnProxyConnectResponse = rejectConnectResponse
-	client := &http.Client{Transport: clone}
+	// The per-candidate client carries the shared client's redirect policy, so
+	// a proxied call cannot follow a 3xx the direct path refuses. A shared
+	// client that states none gets the gateway's own no-follow policy.
+	checkRedirect := d.client.CheckRedirect
+	if checkRedirect == nil {
+		checkRedirect = noRedirect
+	}
+	client := &http.Client{Transport: clone, CheckRedirect: checkRedirect}
 	if actual, loaded := d.transports.LoadOrStore(key, client); loaded {
 		if existing, ok := actual.(*http.Client); ok {
 			return existing, nil

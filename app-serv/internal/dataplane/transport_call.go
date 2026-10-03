@@ -126,7 +126,11 @@ func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Ca
 		return nil, nil, wrapDataPlaneError(CodeUpstreamError, "upstream credential could not be applied", err)
 	}
 
-	response, err := t.dialer.Do(ctx, request, call.Provider.ID)
+	// The attempt's context travels with the request: a proxy walk clones the
+	// request with the context it is handed, so passing the caller's context
+	// here would replace the attempt deadline (and the idle guard's cancel)
+	// with one that has neither.
+	response, err := t.dialer.Do(attemptCtx, request, call.Provider.ID)
 	if err != nil {
 		cancel()
 		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
