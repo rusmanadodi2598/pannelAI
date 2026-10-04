@@ -18,6 +18,52 @@ Proyek memisahkan tanggung jawab **Control Plane** (API manajemen) dan **Data Pl
 
 `app-serv/` sekarang mencakup P0 (config, migrasi, health/version, auth sesi, CRUD gateway keys) dan bagian P1: **registry provider yang di-embed** (94 provider, dihasilkan dari referensi 9Router), **seam plugin per provider** (`internal/provider`, sehingga provider bisa di-patch atau ditambah tanpa menyentuh core), **agregat upstream endpoint dan multi-key** dengan circuit breaker per key, serta migrasi P1 untuk provider nodes, endpoints, combos, katalog model, usage, quota, logs, dan settings. Yang belum terpasang: repository/service endpoint dan route HTTP-nya, bulk onboarding (endpoint batch, key batch, import OAuth), combos, vision adapter, data plane chat, usage/quota read, logs, settings. Panel `app-ui` berada pada fase U0 (login, gateway keys, settings security), dengan spesifikasi di [`docs/SPEC-UI/001-SPEC-UI.md`](docs/SPEC-UI/001-SPEC-UI.md).
 
+## Dashboard
+
+Cuplikan panel `app-ui` bertema gelap, diambil dari panel yang berjalan lokal terhadap `app-serv` nyata pada 2026-10-04. Kelompok di bawah mengikuti lima grup sidebar panel; file sumbernya ada di [`assets/`](assets).
+
+### Configure
+
+| Endpoint & Key | Provider |
+| --- | --- |
+| <img src="assets/Endpoint%20%26%20Key.jpg" alt="Layar Endpoint and Key" width="420" /> | <img src="assets/Provider.jpg" alt="Layar Provider" width="420" /> |
+
+**Combo & Vision Adapter**
+
+<img src="assets/Combo%20%26%20Vision%20Adapter.jpg" alt="Layar Combo dan Vision Adapter" width="860" />
+
+### Observe
+
+| Usage | Quota Tracker |
+| --- | --- |
+| <img src="assets/Usage.jpg" alt="Layar Usage" width="420" /> | <img src="assets/Quota%20Tracker.jpg" alt="Layar Quota Tracker" width="420" /> |
+
+**Console Log**
+
+<img src="assets/Console%20Log.jpg" alt="Layar Console Log" width="860" />
+
+### Optimize
+
+| Token Saver | Skill |
+| --- | --- |
+| <img src="assets/Token%20Saver.jpg" alt="Layar Token Saver" width="420" /> | <img src="assets/Skill.jpg" alt="Layar Skill" width="420" /> |
+
+### Developer
+
+| Playground Chat | API Docs |
+| --- | --- |
+| <img src="assets/Playground%20Chat.jpg" alt="Layar Playground Chat" width="420" /> | <img src="assets/API%20Docs.jpg" alt="Layar API Docs" width="420" /> |
+
+**Changelog**
+
+<img src="assets/Changelog.jpg" alt="Layar Changelog" width="860" />
+
+### System
+
+| Proxy Pools | Setting |
+| --- | --- |
+| <img src="assets/Proxy%20Pools.jpg" alt="Layar Proxy Pools" width="420" /> | <img src="assets/Settings.jpg" alt="Layar Setting" width="420" /> |
+
 ## Struktur proyek
 
 ```text
@@ -97,6 +143,7 @@ pannelAI/
 │   ├── tsconfig.json
 │   ├── vite.config.ts
 │   └── vitest.config.ts
+├── assets                      # cuplikan panel untuk README (tidak disajikan app-ui)
 ├── deployment
 │   └── .gitkeep
 ├── docs
