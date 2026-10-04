@@ -5,7 +5,7 @@
 //
 //	call, each under an explicit deadline.
 //
-// @uses      internal/dataplane (shared HTTP pool), context, encoding/json,
+// @uses      context, encoding/json, errors,
 //
 //	net/http, strings, time.
 //
@@ -27,13 +27,20 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
+
+// tokenBodyLimit caps one answer read from a token or user-info endpoint. A
+// real OAuth answer is a few hundred bytes, so the ceiling is generous by
+// design and only there so a hostile or broken endpoint cannot stream JSON
+// into memory unbounded — the same bound the state and device-poll reads carry.
+const tokenBodyLimit = 1 << 20
 
 // grantCallTimeout bounds one token-endpoint round trip. A token endpoint that
 // has not answered in 15 seconds will not answer usefully later in this request.
@@ -56,12 +63,14 @@ type OAuthHTTPClient struct {
 
 // NewOAuthHTTPClient binds the token client to the shared pool, so an OAuth
 // call carries the same §1.7 limits as every other outbound call. The caller
-// supplies the process's guarded client; the default is the plain pool.
-func NewOAuthHTTPClient(client *http.Client) *OAuthHTTPClient {
+// supplies the process's guarded client; a nil value is refused rather than
+// defaulted, because these calls carry the account bearer to a token URL that
+// came from the registry (docs/RULLES/SSRF.md §2.1).
+func NewOAuthHTTPClient(client *http.Client) (*OAuthHTTPClient, error) {
 	if client == nil {
-		client = dataplane.NewHTTPClient(dataplane.HTTPClientDeps{})
+		return nil, errors.New("service: the egress-guarded upstream client is required")
 	}
-	return &OAuthHTTPClient{client: client}
+	return &OAuthHTTPClient{client: client}, nil
 }
 
 // Grant performs one token request. `encoding` selects the body: "json" for the
@@ -121,7 +130,7 @@ func (c *OAuthHTTPClient) UserInfo(ctx context.Context, infoURL, accessToken str
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return OAuthIdentity{}, domain.NewUpstreamError("the user info endpoint rejected the request")
 	}
-	if err := json.NewDecoder(response.Body).Decode(&identity); err != nil {
+	if err := json.NewDecoder(io.LimitReader(response.Body, tokenBodyLimit)).Decode(&identity); err != nil {
 		return OAuthIdentity{}, domain.NewUpstreamError("the user info answer could not be decoded")
 	}
 	return identity, nil

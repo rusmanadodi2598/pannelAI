@@ -81,14 +81,17 @@ type cachedJobToken struct {
 // base comes from the registry entry, so intl and CN each reach their own exchange
 // endpoint and nothing here infers a region from a token string. The client is the
 // caller's, which is how the composition root keeps this call behind the same egress
-// guard and proxy route as the rest of the provider's traffic.
+// guard and proxy route as the rest of the provider's traffic. A nil client is
+// refused rather than defaulted: a client built here would carry no guard and no
+// redirect rule, so a customer's Personal Access Token could be re-sent across a
+// 30x to a host the registry never named (docs/RULLES/SSRF.md §2.1).
 func NewQoderJobTokenClient(baseURL string, client *http.Client) (*qoderJobTokenClient, error) {
 	base := strings.TrimSuffix(strings.TrimSpace(baseURL), "/")
 	if base == "" {
 		return nil, fmt.Errorf("provider: qoder job-token exchange needs an openapi base url")
 	}
 	if client == nil {
-		client = &http.Client{Timeout: qoderExchangeTimeout}
+		return nil, fmt.Errorf("provider: qoder job-token exchange needs the process egress-guarded client")
 	}
 	return &qoderJobTokenClient{
 		client:   client,

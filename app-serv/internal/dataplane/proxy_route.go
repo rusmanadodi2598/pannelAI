@@ -129,13 +129,9 @@ func (d *ProxyDialer) clientFor(candidate *url.URL) (*http.Client, error) {
 	if candidate == nil || candidate.Host == "" {
 		return nil, errors.New("the proxy candidate has no address")
 	}
-	shared := d.client.Transport
-	if shared == nil {
-		shared = http.DefaultTransport
-	}
-	base, ok := shared.(*http.Transport)
+	base, ok := d.client.Transport.(*http.Transport)
 	if !ok {
-		return nil, errors.New("the shared transport cannot carry a proxy candidate")
+		return nil, errors.New("the shared client carries no transport to clone the guard from")
 	}
 	key := candidate.String()
 	if cached, ok := d.transports.Load(key); ok {

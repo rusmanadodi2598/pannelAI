@@ -76,7 +76,10 @@ func TestProxyDialer_WithoutRoutes(t *testing.T) {
 	// A nil interface, not a nil *fakePlanner: a typed nil would make the
 	// routes field non-nil and the dialer would call Plan on it.
 	var planner ProxyRoutePlanner
-	dialer := &ProxyDialer{client: http.DefaultClient, routes: planner}
+	// A client that carries a transport, the way the guarded egress client does:
+	// the dialer refuses one without it rather than falling back to
+	// http.DefaultTransport, which would dial outside the guard.
+	dialer := &ProxyDialer{client: &http.Client{Transport: &http.Transport{}}, routes: planner}
 	request, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://127.0.0.1:1/x", strings.NewReader("body"))
 	response, err := dialer.Do(context.Background(), request, "")
 	if err == nil {

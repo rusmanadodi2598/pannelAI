@@ -190,6 +190,8 @@ func TestNewUsageFilter(t *testing.T) {
 	now := time.Date(2026, 9, 18, 12, 0, 0, 0, time.UTC)
 	early := now.Add(-72 * time.Hour)
 	late := now.Add(-1 * time.Hour)
+	capEdge := now.Add(-MaxUsageWindow)
+	beyondCap := now.Add(-MaxUsageWindow - time.Hour)
 
 	cases := []struct {
 		name     string
@@ -204,6 +206,8 @@ func TestNewUsageFilter(t *testing.T) {
 		{"only to bounds the start before it", UsageFilterInput{To: &late}, late.Add(-DefaultUsageWindow), late, false},
 		{"inverted range is rejected", UsageFilterInput{From: &late, To: &early}, time.Time{}, time.Time{}, true},
 		{"equal bounds are a zero-length window, not an error", UsageFilterInput{From: &late, To: &late}, late, late, false},
+		{"a range wider than the cap is rejected", UsageFilterInput{From: &beyondCap, To: &now}, time.Time{}, time.Time{}, true},
+		{"a range exactly at the cap is kept", UsageFilterInput{From: &capEdge, To: &now}, capEdge, now, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

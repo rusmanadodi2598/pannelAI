@@ -25,12 +25,18 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
+
+// nodeLookupTimeout bounds one stored-node read made on behalf of a model-list
+// request. The row is a single indexed lookup, so the bound is about a stalled
+// pool, not a slow query (AGENTS.md §1.6).
+const nodeLookupTimeout = 5 * time.Second
 
 // nodeTarget is the part of a stored node the model read needs.
 //
@@ -80,7 +86,14 @@ type endpointKeyReader interface {
 // not a fault.
 func newNodeTargetLookup(nodes nodeReader) func(id string) (nodeTarget, bool) {
 	return func(id string) (nodeTarget, bool) {
-		node, err := nodes.GetByID(context.Background(), id)
+		// The port carries no request context, so the read states its own
+		// deadline rather than running on one that never ends (AGENTS.md §1.6):
+		// a stalled pool would otherwise hold the model-list request open past
+		// any caller's patience.
+		callCtx, cancel := context.WithTimeout(context.Background(), nodeLookupTimeout)
+		defer cancel()
+
+		node, err := nodes.GetByID(callCtx, id)
 		if err != nil {
 			return nodeTarget{}, false
 		}

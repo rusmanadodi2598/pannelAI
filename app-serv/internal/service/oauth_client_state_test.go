@@ -78,7 +78,7 @@ func newStateRoundFixture(t *testing.T) *stateRoundFixture {
 		RefreshURL: base + "/refresh", Platform: "ide", UserAgent: "IDE/2.63.2 CodeBuddy/2.63.2",
 		PollIntervalMS: 5000,
 	}
-	fixture.client = NewOAuthHTTPClient(fixture.server.Client())
+	fixture.client = mustTokens(t, fixture.server.Client())
 	return fixture
 }
 
@@ -186,7 +186,7 @@ func TestStateRoundRefusesAVendorVerdict(t *testing.T) {
 	defer server.Close()
 
 	oauth := &registry.OAuth{BaseURL: server.URL, StateURL: server.URL, TokenURL: server.URL}
-	_, err := NewOAuthHTTPClient(server.Client()).StateRound(context.Background(), oauth)
+	_, err := mustTokens(t, server.Client()).StateRound(context.Background(), oauth)
 	if err == nil || !strings.Contains(err.Error(), "plugin session expired") {
 		t.Fatalf("StateRound() error = %v, want the vendor's own refusal", err)
 	}
@@ -203,7 +203,7 @@ func TestStatePollWaitsOnThePendingCode(t *testing.T) {
 	defer server.Close()
 
 	oauth := &registry.OAuth{BaseURL: server.URL, TokenURL: server.URL}
-	_, pending, err := NewOAuthHTTPClient(server.Client()).StatePoll(context.Background(), oauth, "vendor-state-1")
+	_, pending, err := mustTokens(t, server.Client()).StatePoll(context.Background(), oauth, "vendor-state-1")
 	if err != nil {
 		t.Fatalf("StatePoll() error = %v, want no error for a pending round", err)
 	}
@@ -222,7 +222,7 @@ func TestStateRoundRefusesAnEmptyRound(t *testing.T) {
 	defer server.Close()
 
 	oauth := &registry.OAuth{BaseURL: server.URL, StateURL: server.URL}
-	if _, err := NewOAuthHTTPClient(server.Client()).StateRound(context.Background(), oauth); err == nil {
+	if _, err := mustTokens(t, server.Client()).StateRound(context.Background(), oauth); err == nil {
 		t.Fatal("StateRound() = nil error, want a refusal when the vendor returns no state or URL")
 	}
 }

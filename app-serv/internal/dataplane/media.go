@@ -75,15 +75,17 @@ type MediaTransport struct {
 	dialer *ProxyDialer
 }
 
-// NewMediaTransport binds the caller to an HTTP client, defaulting to the shared
-// pool configuration so a media call has the same §1.7 limits as a chat call.
-// routes plans the proxy pool's attempts per destination; a nil value keeps the
-// client's own routing.
-func NewMediaTransport(client *http.Client, routes ProxyRoutePlanner) *MediaTransport {
+// NewMediaTransport binds the caller to an HTTP client, so a media call has the
+// same §1.7 limits as a chat call. routes plans the proxy pool's attempts per
+// destination; a nil value keeps the client's own routing. The client is the
+// caller's and a nil value is refused: media calls reach registry- and
+// settings-declared hosts, and a client built here would dial them unguarded
+// (docs/RULLES/SSRF.md §2.1).
+func NewMediaTransport(client *http.Client, routes ProxyRoutePlanner) (*MediaTransport, error) {
 	if client == nil {
-		client = NewHTTPClient(HTTPClientDeps{})
+		return nil, internalError("the egress-guarded upstream client is required", nil)
 	}
-	return &MediaTransport{dialer: &ProxyDialer{client: client, routes: routes}}
+	return &MediaTransport{dialer: &ProxyDialer{client: client, routes: routes}}, nil
 }
 
 // Do performs one media call under a context deadline (AGENTS.md §1.6).

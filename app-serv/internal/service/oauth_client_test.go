@@ -32,6 +32,26 @@ import (
 	"testing"
 )
 
+// mustTokens binds a token client to the client a test server hands out,
+// failing the test rather than running against the nil the constructor refuses.
+func mustTokens(t *testing.T, client *http.Client) *OAuthHTTPClient {
+	t.Helper()
+	tokens, err := NewOAuthHTTPClient(client)
+	if err != nil {
+		t.Fatalf("NewOAuthHTTPClient() error = %v", err)
+	}
+	return tokens
+}
+
+// TestNewOAuthHTTPClient_RefusesNilClient pins the boot-time guard: these calls
+// carry the account bearer to a token URL that came from the registry, so a
+// client invented here would leave unguarded (docs/RULLES/SSRF.md §2.1).
+func TestNewOAuthHTTPClient_RefusesNilClient(t *testing.T) {
+	if _, err := NewOAuthHTTPClient(nil); err == nil {
+		t.Fatal("NewOAuthHTTPClient() accepted a nil client, want a refusal")
+	}
+}
+
 func TestOAuthIdentityDecodesEveryProviderSpelling(t *testing.T) {
 	cases := []struct {
 		name        string
@@ -98,7 +118,7 @@ func TestUserInfoReadsTheAccountAndRefusesARefusal(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewOAuthHTTPClient(server.Client())
+			client := mustTokens(t, server.Client())
 			identity, err := client.UserInfo(context.Background(), server.URL, "the-token")
 			if tc.wantCode != "" {
 				mustAppError(t, err, tc.wantCode)
@@ -161,7 +181,7 @@ func TestGrantSendsTheDeclaredEncoding(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewOAuthHTTPClient(server.Client())
+			client := mustTokens(t, server.Client())
 			answer, err := client.Grant(context.Background(), server.URL, tc.encoding, TokenGrant{
 				GrantType: "refresh_token", RefreshToken: "rt-1", ClientID: "client-1",
 			})
@@ -183,7 +203,7 @@ func TestGrantReportsAProviderRefusal(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewOAuthHTTPClient(server.Client())
+	client := mustTokens(t, server.Client())
 	_, err := client.Grant(context.Background(), server.URL, "", TokenGrant{GrantType: "authorization_code"})
 	mustAppError(t, err, "UPSTREAM_ERROR")
 	if !strings.Contains(err.Error(), "invalid_grant") {
@@ -199,7 +219,24 @@ func TestGrantRefusesAnAnswerWithoutAToken(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewOAuthHTTPClient(server.Client())
+	client := mustTokens(t, server.Client())
+	_, err := client.Grant(context.Background(), server.URL, "json", TokenGrant{GrantType: "refresh_token"})
+	mustAppError(t, err, "UPSTREAM_ERROR")
+}
+
+// TestGrantRefusesAnOversizedAnswer pins the read bound: an endpoint that keeps
+// streaming must be cut off at tokenBodyLimit rather than decoded into memory
+// for as long as it likes.
+func TestGrantRefusesAnOversizedAnswer(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		padded := `{"access_token":"` + strings.Repeat("a", tokenBodyLimit+1024) + `","expires_in":60}`
+		if _, err := w.Write([]byte(padded)); err != nil {
+			t.Errorf("writing the oversized answer: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	client := mustTokens(t, server.Client())
 	_, err := client.Grant(context.Background(), server.URL, "json", TokenGrant{GrantType: "refresh_token"})
 	mustAppError(t, err, "UPSTREAM_ERROR")
 }

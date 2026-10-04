@@ -89,3 +89,31 @@ func TestParseTrusted_RefusesGarbage(t *testing.T) {
 		t.Fatal("ParseTrusted(garbage) = nil error, want a refusal")
 	}
 }
+
+// TestParseTrusted_BareIPv6GetsTheHostMask pins that naming one IPv6 proxy
+// trusts that one address. A fixed "/32" suffix is correct for IPv4 and
+// catastrophic for IPv6: net.ParseCIDR accepts "2001:db8::1/32" and returns
+// roughly 2^96 trusted addresses, so any v6 caller could pick its own
+// limiter bucket through X-Forwarded-For.
+func TestParseTrusted_BareIPv6GetsTheHostMask(t *testing.T) {
+	trusted := mustTrusted(t, []string{"2001:db8::1"})
+
+	// A different address in the same /32 must not read as the named proxy.
+	got := Address("[2001:db8:0:1::9]:44301", "9.9.9.9", trusted)
+	if got != "2001:db8:0:1::9" {
+		t.Fatalf("address = %q, want the peer: only the named v6 address is trusted", got)
+	}
+}
+
+// TestParseTrusted_BareIPv4KeepsTheHostMask pins the half that was already
+// right, so the v6 fix cannot quietly widen or narrow v4 trust.
+func TestParseTrusted_BareIPv4KeepsTheHostMask(t *testing.T) {
+	trusted := mustTrusted(t, []string{"10.0.0.9"})
+
+	if got := Address("10.0.0.9:41230", "203.0.113.7", trusted); got != "203.0.113.7" {
+		t.Fatalf("address = %q, want the forwarded client for the named v4 proxy", got)
+	}
+	if got := Address("10.0.0.10:41230", "203.0.113.7", trusted); got != "10.0.0.10" {
+		t.Fatalf("address = %q, want the peer: the neighbouring v4 address is not trusted", got)
+	}
+}

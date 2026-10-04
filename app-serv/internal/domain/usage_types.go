@@ -24,6 +24,13 @@ import "time"
 // default (SPEC-UI §6.5).
 const DefaultUsageWindow = 24 * time.Hour
 
+// MaxUsageWindow is the widest range one usage read may cover. The default only
+// protects a request that sends no range; an explicit from=1970 is the caller
+// asking for the whole table, and the summary and timeseries queries aggregate
+// over the range with no LIMIT to stop them (AGENTS.md §1.7). Ninety days is
+// the panel's longest period selector, so the cap binds nothing the UI offers.
+const MaxUsageWindow = 90 * 24 * time.Hour
+
 // UsageGroupBy is one dimension of the usage summary breakdown. The set is
 // closed and mirrors the columns the migration indexes (SPEC-API-001 §6).
 type UsageGroupBy string
@@ -180,13 +187,17 @@ func NewUsageFilter(in UsageFilterInput, now time.Time) UsageFilter {
 	}
 }
 
-// Validate rejects a filter the repository must not run: an inverted range, or
-// a status outside the closed set. The status rule lives here as well as at
-// the wire boundary so a non-HTTP caller cannot construct a filter whose
-// predicate silently matches nothing (draft 010 F9).
+// Validate rejects a filter the repository must not run: an inverted range, a
+// range wider than MaxUsageWindow, or a status outside the closed set. The
+// status rule lives here as well as at the wire boundary so a non-HTTP caller
+// cannot construct a filter whose predicate silently matches nothing
+// (draft 010 F9).
 func (f UsageFilter) Validate() error {
 	if f.To.Before(f.From) {
 		return NewValidationError("to must not be earlier than from")
+	}
+	if f.To.Sub(f.From) > MaxUsageWindow {
+		return NewValidationError("the usage range must not be wider than 90 days")
 	}
 	if f.Status != "" && !f.Status.IsValid() {
 		return NewValidationError("status must be one of success, error")

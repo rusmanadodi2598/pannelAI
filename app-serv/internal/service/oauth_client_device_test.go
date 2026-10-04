@@ -64,7 +64,7 @@ func newDevicePollServer(t *testing.T, status int, body string) devicePollFixtur
 		_, _ = w.Write([]byte(body))
 	}))
 	t.Cleanup(server.Close)
-	return devicePollFixture{client: NewOAuthHTTPClient(server.Client()), url: server.URL + "/api/v1/deviceToken/poll", seen: seen}
+	return devicePollFixture{client: mustTokens(t, server.Client()), url: server.URL + "/api/v1/deviceToken/poll", seen: seen}
 }
 
 // poll runs one attempt with the round a start would have staged.

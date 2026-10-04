@@ -26,6 +26,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -135,7 +136,7 @@ func doGrant(ctx context.Context, client *http.Client, call grantCall) (TokenRes
 	}()
 
 	answer := TokenResponse{}
-	if err := json.NewDecoder(response.Body).Decode(&answer); err != nil {
+	if err := json.NewDecoder(io.LimitReader(response.Body, tokenBodyLimit)).Decode(&answer); err != nil {
 		return TokenResponse{}, domain.NewUpstreamError(
 			"the token endpoint answer could not be decoded (status " + strconv.Itoa(response.StatusCode) + ")")
 	}

@@ -71,10 +71,12 @@ type Transport struct {
 type TransportDeps struct {
 	// Connectors resolves a provider id to the plugin that handles it.
 	Connectors *provider.Connectors
-	// Client overrides the default HTTP client. The composition root passes the
-	// guarded client from egress_wiring.go, so a chat call reaches no address the
-	// egress guard refused; the default carries the §1.6 deadlines and explicit
-	// pool limits.
+	// Client is the outbound client every call rides. The composition root passes
+	// the guarded client from egress_wiring.go, so a chat call reaches no address
+	// the egress guard refused. It is required: NewTransport carries the same
+	// deadlines and §1.7 pool limits that NewHTTPClient sets, but only the
+	// composition root knows whether the client it hands over dials through the
+	// guard.
 	Client *http.Client
 	// Routes plans the proxy pool's attempts per destination (PORT 008). A nil
 	// value keeps the shared client's own routing, which is what the hermetic
@@ -82,19 +84,22 @@ type TransportDeps struct {
 	Routes ProxyRoutePlanner
 }
 
-// NewTransport validates deps and returns a transport.
+// NewTransport validates deps and returns a transport. The upstream client is the
+// caller's: it carries the egress guard on its dialer, so a nil value is refused
+// rather than defaulted. Building one here would put every proxied model call
+// behind a plain dialer and make the guard look installed when it is not
+// (docs/RULLES/SSRF.md §2.1, §3).
 func NewTransport(deps TransportDeps) (*Transport, error) {
 	if deps.Connectors == nil {
 		return nil, internalError("provider connectors are required", nil)
 	}
-	client := deps.Client
-	if client == nil {
-		client = NewHTTPClient(HTTPClientDeps{})
+	if deps.Client == nil {
+		return nil, internalError("the egress-guarded upstream client is required", nil)
 	}
 	return &Transport{
 		connectors: deps.Connectors,
-		client:     client,
-		dialer:     &ProxyDialer{client: client, routes: deps.Routes},
+		client:     deps.Client,
+		dialer:     &ProxyDialer{client: deps.Client, routes: deps.Routes},
 	}, nil
 }
 

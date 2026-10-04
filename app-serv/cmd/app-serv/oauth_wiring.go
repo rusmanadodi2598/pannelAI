@@ -46,10 +46,14 @@ func buildOAuth(
 	sealer *domain.Sealer,
 	upstream *http.Client,
 ) (*handler.OAuthHandler, *service.OAuthRefreshWorker, error) {
+	tokens, err := service.NewOAuthHTTPClient(upstream)
+	if err != nil {
+		return nil, nil, fmt.Errorf("management wiring: oauth token client: %w", err)
+	}
 	flow, err := service.NewOAuthFlowService(service.OAuthFlowDeps{
 		Index: index, Store: store,
 		States: redisrepo.NewOAuthStateStore(client),
-		Tokens: service.NewOAuthHTTPClient(upstream), Sealer: sealer,
+		Tokens: tokens, Sealer: sealer,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("management wiring: oauth flow: %w", err)

@@ -19,6 +19,7 @@
 package provider
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -171,5 +172,47 @@ func TestOpenStreamRefusesNoBody(t *testing.T) {
 	_, failure := connector.OpenStream(nil)
 	if failure == nil || failure.Status != http.StatusBadGateway {
 		t.Fatalf("failure = %+v, want a bad-gateway refusal", failure)
+	}
+}
+
+// TestQoderStreamFailureClampsAVendorDump pins that a refusal whose body was not
+// written as this client's message is echoed only as its head. The body is
+// already size-bounded upstream; this is about not forwarding a whole vendor HTML
+// error page or debug dump — or an oversized message field — into our own client's
+// error body.
+func TestQoderStreamFailureClampsAVendorDump(t *testing.T) {
+	dump := strings.Repeat("x", qoderRawFailureEchoBytes*4)
+
+	cases := []struct {
+		name       string
+		body       json.RawMessage
+		wantPrefix string
+	}{
+		{"a raw non-JSON body", json.RawMessage("<html>" + dump), "<html>"},
+		{"an oversized vendor message field", json.RawMessage(`{"message":"` + dump + `"}`), "xxx"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			failure := qoderStreamFailure(qoderEnvelope{Body: tc.body})
+			if failure == nil {
+				t.Fatal("qoderStreamFailure() returned no failure")
+			}
+			if len(failure.Message) > qoderRawFailureEchoBytes {
+				t.Fatalf("message = %d bytes, want at most %d", len(failure.Message), qoderRawFailureEchoBytes)
+			}
+			if !strings.HasPrefix(failure.Message, tc.wantPrefix) {
+				t.Fatalf("message = %q, want the head of what the vendor sent", failure.Message)
+			}
+		})
+	}
+}
+
+// TestClampFailureMessageKeepsAShortReason pins the side that must not change: the
+// vendor's own one-line reason reaches the client whole, because the panel and the
+// failover rules both read it.
+func TestClampFailureMessageKeepsAShortReason(t *testing.T) {
+	const reason = "Workspace allocated quota exceeded"
+	if got := clampFailureMessage(reason); got != reason {
+		t.Fatalf("clampFailureMessage() = %q, want the reason untouched", got)
 	}
 }

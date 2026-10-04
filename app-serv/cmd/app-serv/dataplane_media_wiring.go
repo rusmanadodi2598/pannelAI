@@ -34,7 +34,10 @@ func buildMediaPlanes(in dataPlaneInputs, engine *dataplane.Engine, quotas *serv
 	// proxy pool's plan the same way the chat transport does (PORT 008). One
 	// instance serves every media call, so the routes share a connection pool
 	// rather than opening one each.
-	caller := dataplane.NewMediaTransport(in.Client, in.Routes)
+	caller, err := dataplane.NewMediaTransport(in.Client, in.Routes)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
 
 	embeddings, err := service.NewEmbeddingsService(service.EmbeddingsServiceDeps{
 		// The embeddings use case asks the engine only for resolution and

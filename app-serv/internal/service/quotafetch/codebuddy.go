@@ -19,8 +19,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
+
+// codebuddyBodyLimit caps one quota answer read from the vendor. The shared
+// quota reader already holds reads to 1 MiC (request.go); this family builds its
+// own request, so it carries the same ceiling rather than an unbounded decode.
+const codebuddyBodyLimit = 1 << 20
 
 // fetchCodeBuddy binds the shared billing reader to one region's endpoint and headers.
 func fetchCodeBuddy(family codebuddyFamily) func(context.Context, Credentials) Result {
@@ -145,7 +151,7 @@ func postCodeBuddy(ctx context.Context, endpoint string, headers map[string]stri
 		Msg  string          `json:"msg"`
 		Data json.RawMessage `json:"data"`
 	}
-	if err := json.NewDecoder(response.Body).Decode(&envelope); err != nil {
+	if err := json.NewDecoder(io.LimitReader(response.Body, codebuddyBodyLimit)).Decode(&envelope); err != nil {
 		return codebuddyEnvelope{}, err
 	}
 	if envelope.Code != 0 {

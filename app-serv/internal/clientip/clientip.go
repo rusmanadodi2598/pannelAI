@@ -6,7 +6,7 @@
 //
 //	gateway rate limiter and the login limiter.
 //
-// @uses      fmt, net, strings.
+// @uses      errors, fmt, net, strings.
 // @reason    R20 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the limiter bucketed
 //
 //	every client behind a reverse proxy into the proxy's one address.
@@ -23,6 +23,7 @@
 package clientip
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -40,16 +41,39 @@ func ParseTrusted(cidrs []string) ([]*net.IPNet, error) {
 		if entry == "" {
 			continue
 		}
-		if !strings.Contains(entry, "/") {
-			entry += "/32"
-		}
-		_, parsed, err := net.ParseCIDR(entry)
+		parsed, err := parseEntry(entry)
 		if err != nil {
 			return nil, fmt.Errorf("clientip: %q is not a CIDR or address: %w", raw, err)
 		}
 		trusted = append(trusted, parsed)
 	}
 	return trusted, nil
+}
+
+// parseEntry turns one operator entry into a net. A bare address is trusted as
+// exactly one address, which means the host mask of its own family. Suffixing a
+// fixed "/32" is not a cosmetic choice: net.ParseCIDR accepts "2001:db8::1/32"
+// and hands back roughly 2^96 addresses, so naming one IPv6 proxy would have
+// made the forwarded header — and with it the limiter bucket — forgeable from
+// anywhere in that block.
+func parseEntry(entry string) (*net.IPNet, error) {
+	if strings.Contains(entry, "/") {
+		_, parsed, err := net.ParseCIDR(entry)
+		if err != nil {
+			return nil, err
+		}
+		return parsed, nil
+	}
+
+	ip := net.ParseIP(entry)
+	if ip == nil {
+		return nil, errors.New("no address to read")
+	}
+	bits := 128
+	if v4 := ip.To4(); v4 != nil {
+		ip, bits = v4, 32
+	}
+	return &net.IPNet{IP: ip, Mask: net.CIDRMask(bits, bits)}, nil
 }
 
 // Address answers which client address the request is bucketed under. It takes

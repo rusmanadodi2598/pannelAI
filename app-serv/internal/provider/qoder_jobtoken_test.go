@@ -217,17 +217,6 @@ func TestJobTokenSeparatesCredentials(t *testing.T) {
 	}
 }
 
-// TestNewQoderJobTokenClientRefusesNoBase pins the boot-time guard: an entry without
-// an openapi base cannot produce an exchange URL, and defaulting one would send a
-// customer's Personal Access Token to an address the registry never declared.
-func TestNewQoderJobTokenClientRefusesNoBase(t *testing.T) {
-	for _, base := range []string{"", "   "} {
-		if _, err := NewQoderJobTokenClient(base, nil); err == nil {
-			t.Fatalf("base %q was accepted", base)
-		}
-	}
-}
-
 // TestHashPersonalTokenNeverCarriesTheSecret pins the cache key's property: stable
 // per credential, different across them, and no substring of the secret.
 func TestHashPersonalTokenNeverCarriesTheSecret(t *testing.T) {

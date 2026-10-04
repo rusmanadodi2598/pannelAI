@@ -110,9 +110,14 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 // only has to decide. deadline is what attemptDeadline reported: zero for a
 // streamed client, which SPEC-API-001 §4 bounds by the idle read instead.
 func (t *Transport) attempt(ctx context.Context, plugin provider.Plugin, call Call, url string, deadline time.Duration) (*Upstream, *UpstreamError, error) {
-	attemptCtx, cancel := context.WithCancel(ctx)
+	var (
+		attemptCtx context.Context
+		cancel     context.CancelFunc
+	)
 	if deadline > 0 {
 		attemptCtx, cancel = context.WithTimeout(ctx, deadline)
+	} else {
+		attemptCtx, cancel = context.WithCancel(ctx)
 	}
 
 	request, err := http.NewRequestWithContext(attemptCtx, http.MethodPost, url, bytes.NewReader(call.Body))

@@ -125,10 +125,17 @@ func TestSystemOneLive_DecisionModelAnswersFromTheRealUpstream(t *testing.T) {
 	if err != nil {
 		t.Fatalf("building the keyless endpoint: %v", err)
 	}
+	// The live proof calls the real upstream, so it names its client explicitly:
+	// NewMediaTransport refuses a nil one rather than defaulting to an unguarded
+	// dialer, and a test that wants the plain pool has to say so.
+	caller, err := dataplane.NewMediaTransport(dataplane.NewHTTPClient(dataplane.HTTPClientDeps{}), nil)
+	if err != nil {
+		t.Fatalf("NewMediaTransport() error = %v", err)
+	}
 	svc, err := NewSystemOneService(SystemOneServiceDeps{
 		Resolver: liveResolver{index: index},
 		Router:   &liveKeylessRouter{endpoint: endpoint, credential: provider.NoCredential("ep_free")},
-		Caller:   dataplane.NewMediaTransport(nil, nil),
+		Caller:   caller,
 	})
 	if err != nil {
 		t.Fatalf("NewSystemOneService() error = %v", err)
