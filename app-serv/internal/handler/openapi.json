@@ -2754,6 +2754,10 @@
           "model": {
             "type": "string"
           },
+          "combo": {
+            "type": "string",
+            "description": "The model combo the client addressed, empty when the request addressed a single model. It travels beside model because the combo is what the client named and model is the member that answered."
+          },
           "started_at": {
             "type": "string",
             "format": "date-time"
@@ -2763,6 +2767,7 @@
           "provider_id",
           "endpoint_id",
           "model",
+          "combo",
           "started_at"
         ],
         "additionalProperties": false

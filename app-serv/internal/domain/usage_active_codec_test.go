@@ -50,6 +50,39 @@ func TestActiveRequestCodec(t *testing.T) {
 		}
 	})
 
+	t.Run("a combo-addressed marker round trips", func(t *testing.T) {
+		want := comboRequestFixture()
+		payload, err := EncodeActiveRequest(want)
+		if err != nil {
+			t.Fatalf("EncodeActiveRequest() = %v, want nil", err)
+		}
+		if !strings.Contains(string(payload), `"combo":"pro-tier"`) {
+			t.Fatalf("payload = %s, want the combo the client addressed", payload)
+		}
+		got, err := DecodeActiveRequest(payload)
+		if err != nil {
+			t.Fatalf("DecodeActiveRequest() = %v, want nil", err)
+		}
+		if got != want {
+			t.Fatalf("round trip = %+v, want %+v", got, want)
+		}
+	})
+
+	// A marker written before the combo existed carries no `combo` member, and a
+	// stored value is never rewritten. Absent is an empty combo, not a refusal.
+	t.Run("a payload with no combo decodes to an empty combo", func(t *testing.T) {
+		payload := `{"marker_id":"mark_00000000000000000000000001","request_id":"req_active_fixture",` +
+			`"provider_id":"openai","endpoint_id":"ep_active_fixture","model":"gpt-4o",` +
+			`"started_at":"2026-09-22T10:00:00Z"}`
+		got, err := DecodeActiveRequest([]byte(payload))
+		if err != nil {
+			t.Fatalf("DecodeActiveRequest() = %v, want nil", err)
+		}
+		if got != activeRequestFixture() {
+			t.Fatalf("decoded = %+v, want %+v", got, activeRequestFixture())
+		}
+	})
+
 	refusals := []struct {
 		name    string
 		payload string
@@ -125,21 +158,43 @@ func TestActiveRequestCutoff(t *testing.T) {
 // TestActiveRequestWireShapeIsStable pins the JSON member names, because the
 // store's members outlive one process: a rename would make every marker already
 // in Redis undecodable, and the panel would draw an idle gateway.
+//
+// `combo` is omitted rather than sent empty, so a marker for a call that
+// addressed a single model — every media, embeddings and SystemOne call, and
+// most chat requests — encodes byte-for-byte as the shape an older build writes.
+// That is what keeps a mixed-build window from losing markers over a field the
+// reader has never heard of.
 func TestActiveRequestWireShapeIsStable(t *testing.T) {
-	payload, err := EncodeActiveRequest(activeRequestFixture())
-	if err != nil {
-		t.Fatalf("EncodeActiveRequest() = %v, want nil", err)
+	cases := []struct {
+		name       string
+		marker     ActiveRequest
+		wantFields int
+	}{
+		{name: "a marker with no combo carries six fields", marker: activeRequestFixture(), wantFields: 6},
+		{name: "a combo-addressed marker carries seven", marker: comboRequestFixture(), wantFields: 7},
 	}
-	var decoded map[string]json.RawMessage
-	if err := json.Unmarshal(payload, &decoded); err != nil {
-		t.Fatalf("decoding the payload: %v", err)
-	}
-	for _, field := range []string{"marker_id", "request_id", "provider_id", "endpoint_id", "model", "started_at"} {
-		if _, ok := decoded[field]; !ok {
-			t.Errorf("payload %s is missing %q", payload, field)
-		}
-	}
-	if len(decoded) != 6 {
-		t.Fatalf("payload carries %d fields, want exactly 6: %s", len(decoded), payload)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			payload, err := EncodeActiveRequest(tc.marker)
+			if err != nil {
+				t.Fatalf("EncodeActiveRequest() = %v, want nil", err)
+			}
+			var decoded map[string]json.RawMessage
+			if err := json.Unmarshal(payload, &decoded); err != nil {
+				t.Fatalf("decoding the payload: %v", err)
+			}
+			for _, field := range []string{"marker_id", "request_id", "provider_id", "endpoint_id", "model", "started_at"} {
+				if _, ok := decoded[field]; !ok {
+					t.Errorf("payload %s is missing %q", payload, field)
+				}
+			}
+			if len(decoded) != tc.wantFields {
+				t.Fatalf("payload carries %d fields, want exactly %d: %s", len(decoded), tc.wantFields, payload)
+			}
+			_, hasCombo := decoded["combo"]
+			if hasCombo != (tc.marker.Combo != "") {
+				t.Fatalf("combo member present = %v with combo %q, want the member to travel only with a name", hasCombo, tc.marker.Combo)
+			}
+		})
 	}
 }

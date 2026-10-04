@@ -6,6 +6,10 @@
 // what the graphic must not carry: which node pulses, what the pulse does when the frame stops naming
 // that provider, and which sentences the frame no longer states (owner's corrections, 2026-09-23 and
 // 2026-09-27).
+//
+// The path those nodes form — the combos, the terminals, and the hops between the stages — is next door in
+// `usage-topology-path.test.ts`, and the rows about motion being withheld are in
+// `usage-topology-motion.test.ts`.
 
 import { cleanup, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -29,6 +33,7 @@ function entry(providerId: string, model?: string): UsageLiveActive {
 
 type Props = {
 	providers: { id: string; name: string }[];
+	combos: { id: string; name: string }[];
 	active: UsageLiveActive[];
 	last: string;
 	error: string;
@@ -36,10 +41,11 @@ type Props = {
 };
 
 // `live: true` by default, because these rows are about which node carries a state and a frame is what
-// puts one there. The rows about motion being withheld belong to `usage-topology-motion.test.ts`.
+// puts one there.
 function draw(overrides: Partial<Props> = {}): HTMLElement {
 	const props: Props = {
 		providers: PROVIDERS,
+		combos: [],
 		active: [],
 		last: '',
 		error: '',

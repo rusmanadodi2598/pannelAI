@@ -106,9 +106,16 @@ func (s *ActiveRequestStore) Finish(ctx context.Context, marker domain.ActiveReq
 // the read are two commands under one deadline, and a read that fails leaves the
 // set no larger than it was.
 //
-// A member that fails to decode is removed and skipped rather than failing the
-// read: the value came from a shared Redis instance, so one foreign member must
-// not be able to blank the whole drawing (OWASP A08).
+// A member that fails to decode is skipped rather than failing the read: the
+// value came from a shared Redis instance, so one foreign member must not be
+// able to blank the whole drawing (OWASP A08). It is left in the set. Removing
+// what this build cannot parse is only safe while the codec is closed to every
+// later version — a marker written by a build that carries a field this one has
+// never seen is a live request belonging to another process, and deleting it
+// would let a reader with no idea what it erased suppress someone else's node.
+// The score prune the read already runs collects a genuinely dead member within
+// the 60 second window, so skipping costs a bounded amount of space and nothing
+// else.
 func (s *ActiveRequestStore) Active(ctx context.Context, now time.Time, limit int) ([]domain.ActiveRequest, error) {
 	if s == nil || s.client == nil || limit < 1 {
 		return nil, nil
@@ -138,20 +145,11 @@ func (s *ActiveRequestStore) Active(ctx context.Context, now time.Time, limit in
 	for _, member := range raw {
 		marker, decodeErr := domain.DecodeActiveRequest([]byte(member))
 		if decodeErr != nil {
-			// A member this build cannot read is one nothing here wrote, so it
-			// is dropped and counted against the keyspace rather than the read.
-			s.discard(callCtx, member)
+			// A member this build cannot read is one nothing here wrote, so it is
+			// counted against the keyspace and left where it stands.
 			continue
 		}
 		markers = append(markers, marker)
 	}
 	return markers, nil
-}
-
-// discard removes one unreadable member, so a foreign value cannot be returned
-// on every later read.
-func (s *ActiveRequestStore) discard(ctx context.Context, member string) {
-	// reason: discarding a foreign member is cleanup, and the read it belongs to
-	// has already answered; a failed removal retries on the next read.
-	_ = s.client.ZRem(ctx, activeRequestKey, member).Err()
 }

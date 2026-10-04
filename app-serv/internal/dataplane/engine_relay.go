@@ -119,8 +119,16 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		// The marker opens once the credential is known and closes when this
 		// attempt ends, whichever way it ends, so the drawing lights a node for
 		// exactly as long as the provider is being called (SPEC-UI-001 §6.5).
-		// A nil seam returns a release that does nothing.
-		release := e.markActive(ctx, resolution.Provider.ID, outcome.EndpointID, resolution.ModelID)
+		// The combo the client addressed travels with it: the member resolved here
+		// is what answered, and the combo is the stage the request entered through,
+		// so the drawing can light both. A nil seam returns a release that does
+		// nothing.
+		release := e.markActive(ctx, ActiveMarker{
+			ProviderID: resolution.Provider.ID,
+			EndpointID: outcome.EndpointID,
+			Model:      resolution.ModelID,
+			Combo:      resolution.Combo.Name(),
+		})
 		started := e.clock()
 		upstream, callErr := e.transport.Do(ctx, Call{
 			Provider: resolution.Provider,

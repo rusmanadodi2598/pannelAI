@@ -29,6 +29,10 @@ import (
 
 // activeRequestFixture is a valid marker, so each case can name one field as the
 // variable under test rather than restating the whole value.
+//
+// It carries no combo on purpose: a call that addressed a single model is the
+// dominant traffic, and the codec test pins this fixture's payload as the shape
+// an older build already writes.
 func activeRequestFixture() ActiveRequest {
 	return ActiveRequest{
 		MarkerID:   "mark_00000000000000000000000001",
@@ -40,33 +44,57 @@ func activeRequestFixture() ActiveRequest {
 	}
 }
 
+// comboRequestFixture is the same marker for a call that addressed a model combo.
+// The combo name travels beside the member model rather than replacing it,
+// because the drawing lights both: the combo the client named and the provider
+// that answered it.
+func comboRequestFixture() ActiveRequest {
+	marker := activeRequestFixture()
+	marker.Combo = "pro-tier"
+	return marker
+}
+
 // TestNewActiveRequest covers the constructor's invariants, including the zero
 // and boundary values TDD.md §2.5 requires. A marker is only ever built for a
 // call that already resolved a provider, so a missing identity is a caller bug
 // that must be refused rather than stored.
+//
+// The input is a struct rather than a positional list because Model and Combo
+// are both optional adjacent strings: a transposition compiles, passes
+// Validate(), is stored, and draws the wrong label on the panel.
 func TestNewActiveRequest(t *testing.T) {
 	cases := []struct {
-		name       string
-		requestID  string
-		providerID string
-		endpointID string
-		model      string
-		wantErr    bool
+		name      string
+		in        ActiveRequestInput
+		wantErr   bool
+		wantCombo string
 	}{
-		{name: "a fully identified call is accepted", requestID: "req_1", providerID: "openai", endpointID: "ep_1", model: "gpt-4o"},
-		{name: "a call with no endpoint is accepted", requestID: "req_2", providerID: "openai", model: "gpt-4o"},
-		{name: "a call with no model is accepted", requestID: "req_3", providerID: "openai", endpointID: "ep_3"},
-		{name: "an empty request id is refused", requestID: "", providerID: "openai", model: "gpt-4o", wantErr: true},
-		{name: "an empty provider is refused", requestID: "req_4", providerID: "", model: "gpt-4o", wantErr: true},
+		{name: "a fully identified call is accepted", in: ActiveRequestInput{RequestID: "req_1", ProviderID: "openai", EndpointID: "ep_1", Model: "gpt-4o"}},
+		{name: "a call with no endpoint is accepted", in: ActiveRequestInput{RequestID: "req_2", ProviderID: "openai", Model: "gpt-4o"}},
+		{name: "a call with no model is accepted", in: ActiveRequestInput{RequestID: "req_3", ProviderID: "openai", EndpointID: "ep_3"}},
 		{
-			name: "a very long identity is accepted", requestID: "req_" + strings.Repeat("x", 512),
-			providerID: strings.Repeat("p", 128), endpointID: strings.Repeat("e", 128), model: strings.Repeat("m", 512),
+			name: "a combo-addressed call keeps its combo", wantCombo: "pro-tier",
+			in: ActiveRequestInput{RequestID: "req_5", ProviderID: "openai", EndpointID: "ep_5", Model: "gpt-4o", Combo: "pro-tier"},
+		},
+		{
+			name: "a call with no combo keeps an empty combo",
+			in:   ActiveRequestInput{RequestID: "req_6", ProviderID: "openai", Model: "gpt-4o"},
+		},
+		{name: "an empty request id is refused", in: ActiveRequestInput{ProviderID: "openai", Model: "gpt-4o"}, wantErr: true},
+		{name: "an empty provider is refused", in: ActiveRequestInput{RequestID: "req_4", Model: "gpt-4o"}, wantErr: true},
+		{
+			name:      "a very long identity is accepted",
+			wantCombo: strings.Repeat("c", 128),
+			in: ActiveRequestInput{
+				RequestID: "req_" + strings.Repeat("x", 512), ProviderID: strings.Repeat("p", 128),
+				EndpointID: strings.Repeat("e", 128), Model: strings.Repeat("m", 512), Combo: strings.Repeat("c", 128),
+			},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			now := time.Date(2026, 9, 22, 10, 0, 0, 0, time.UTC)
-			marker, err := NewActiveRequest(tc.requestID, tc.providerID, tc.endpointID, tc.model, now)
+			marker, err := NewActiveRequest(tc.in, now)
 			if tc.wantErr {
 				if err == nil {
 					t.Fatalf("NewActiveRequest() = %+v, want a refusal", marker)
@@ -81,6 +109,9 @@ func TestNewActiveRequest(t *testing.T) {
 			}
 			if marker.MarkerID == "" {
 				t.Fatal("the marker carries no id, so two identical calls could not be told apart")
+			}
+			if marker.Combo != tc.wantCombo {
+				t.Fatalf("combo = %q, want %q", marker.Combo, tc.wantCombo)
 			}
 			if marker.StartedAt != now {
 				t.Fatalf("started_at = %v, want %v", marker.StartedAt, now)

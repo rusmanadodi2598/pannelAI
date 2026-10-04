@@ -1,8 +1,9 @@
 // Fixture and fake API for the live panel's tests (src/lib/components/UsageLivePanel.svelte).
 //
-// The panel makes two reads and neither is the other's stand-in: the registry, which the drawing is built
-// from, and the live stream, which the activity comes from. One stub answers both and records them apart,
-// because a test that read "the last request" would not know which read it was looking at.
+// The panel makes three reads and none is another's stand-in: the registry, which the drawing's upstream
+// nodes come from, the combo list, which its combo band comes from, and the live stream, which the activity
+// comes from. One stub answers all three and records them apart, because a test that read "the last request"
+// would not know which read it was looking at.
 //
 // The live answers are a list rather than one response: a `Response` wraps a stream once, so a test about
 // recovery has to hand the second attempt a body of its own. `liveStreams()` builds those.
@@ -20,11 +21,34 @@ export function startedNow(): string {
 	return new Date().toISOString();
 }
 
+/**
+ * One stored combo, as §7.7 returns it.
+ *
+ * The panel's schema requires the strategy, the sticky limit and the model list, so a row that left them
+ * out would fail to parse and the panel would report a failed read rather than draw the band.
+ */
+export function comboRow(name: string): Record<string, unknown> {
+	return {
+		id: `cmb_${name}`,
+		name,
+		strategy: 'fallback',
+		sticky_limit: 1,
+		judge_model: '',
+		models: [{ ref: 'openai/gpt-4o', priority: 0 }],
+		created_at: '2026-09-22T10:00:00Z',
+		updated_at: '2026-09-22T10:00:00Z'
+	};
+}
+
 export type PanelOptions = {
 	providers?: Record<string, unknown>[];
 	total?: number;
 	providersStatus?: number;
 	providersMessage?: string;
+	combos?: Record<string, unknown>[];
+	combosTotal?: number;
+	combosStatus?: number;
+	combosMessage?: string;
 	/** The answers for the live route, in order. The last one repeats. */
 	liveAnswers?: LiveAnswer[];
 };
@@ -46,6 +70,7 @@ export function stubPanel(options: PanelOptions = {}): PanelStub {
 	const { answer, streams } = liveStreams();
 	const answers = options.liveAnswers ?? [answer];
 	const rows = options.providers ?? [provider({ id: 'openai', name: 'OpenAI', endpoint_count: 2 })];
+	const comboRows = options.combos ?? [comboRow('pro-tier')];
 
 	vi.stubGlobal('fetch', async (input: unknown, init?: RequestInit) => {
 		const url = String(input);
@@ -57,22 +82,21 @@ export function stubPanel(options: PanelOptions = {}): PanelStub {
 			return answers[index]();
 		}
 
-		if (options.providersStatus && options.providersStatus !== 200) {
-			return new Response(
-				JSON.stringify({
-					error: { code: 'INTERNAL_ERROR', message: options.providersMessage ?? 'boom' }
-				}),
-				{ status: options.providersStatus, headers: { 'content-type': 'application/json' } }
-			);
+		if (url.includes('/combos')) {
+			if (options.combosStatus && options.combosStatus !== 200) {
+				return errorResponse(
+					options.combosStatus,
+					options.combosMessage ?? 'the combo list is unreachable'
+				);
+			}
+			return listResponse(comboRows, options.combosTotal ?? comboRows.length);
 		}
 
-		return new Response(
-			JSON.stringify({
-				data: rows,
-				meta: { page: 1, per_page: 100, total: options.total ?? rows.length }
-			}),
-			{ status: 200, headers: { 'content-type': 'application/json' } }
-		);
+		if (options.providersStatus && options.providersStatus !== 200) {
+			return errorResponse(options.providersStatus, options.providersMessage ?? 'boom');
+		}
+
+		return listResponse(rows, options.total ?? rows.length);
 	});
 
 	return {
@@ -81,4 +105,18 @@ export function stubPanel(options: PanelOptions = {}): PanelStub {
 		liveInits,
 		liveCalls: () => queries.filter((url) => url.includes('/usage/live')).length
 	};
+}
+
+function listResponse(data: Record<string, unknown>[], total: number): Response {
+	return new Response(JSON.stringify({ data, meta: { page: 1, per_page: 100, total } }), {
+		status: 200,
+		headers: { 'content-type': 'application/json' }
+	});
+}
+
+function errorResponse(status: number, message: string): Response {
+	return new Response(JSON.stringify({ error: { code: 'INTERNAL_ERROR', message } }), {
+		status,
+		headers: { 'content-type': 'application/json' }
+	});
 }

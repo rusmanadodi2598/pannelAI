@@ -1,26 +1,36 @@
-// The live drawing's derivations (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md F3).
+// The live drawing's derivations (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md F3, and the request path the
+// owner asked for on 2026-10-03, drafted in docs/DRAFT/043-USAGE-COMBO-NODE-FLOW.md).
 //
-// Split from `usage-live-view.ts` because the two answer different questions: that file is about the
-// connection and what the panel may say about it, this one is about where a node goes and which providers
-// get one. Both are pure, so both are testable without a DOM, a clock, or a socket. The beam that travels
-// along an active edge's line is a third question, and it lives in `usage-beam.ts`.
+// Three files answer three questions about the same picture: which entities get a node at all
+// (`usage-topology-nodeset.ts`), where a node goes and how wide it may be
+// (`usage-topology-geometry.ts`), and — here — which state each node and terminal carries. All three are
+// pure, so the drawing itself holds no arithmetic and none of this needs a DOM, a clock, or a socket.
 //
-// Two functions, and each exists because the wire's shape and the screen's question differ:
-//
-//   `configuredProviders` turns the registry into the node set. The registry is every provider the gateway
-//   knows, which is not the same list as the providers that could route anything.
-//
-//   `topologyNodes` turns that set plus the live states into positions, so the drawing holds no arithmetic.
-//   It also answers how wide a node may be drawn, because that is arithmetic over the positions and the
-//   drawing must not hold any: on a narrow box the nodes shrink with it instead of colliding (draft 018).
+// The drawing is a request path, not a ring: `Client >> Combo >> Gateway >> Upstream >> Response`. The
+// gateway stays at the centre, the upstreams it calls sit on the band below it, the combos a client
+// addressed sit on the band above, and the two terminals sit on the vertical axis. Combos and upstreams are
+// kept in disjoint bands because two nodes mirrored across the horizontal axis share an x, and x is the only
+// number the share has to fall back on: a shared row with no horizontal gap is a share of zero, and a share
+// of zero is a drawing whose every box has collapsed to nothing.
 
-import type { Provider } from './provider';
+import { bandPositions, boxHeight, nodeShare } from './usage-topology-geometry';
 
 export type TopologyState = 'active' | 'last' | 'error' | 'idle';
 
+/** Which stage of the request path a node is: an upstream the gateway calls, or a combo a client named. */
+export type TopologyKind = 'provider' | 'combo';
+
 export type TopologyNode = {
-	/** The provider id, which is what the node and its edge are keyed by. */
+	/** The identity the wire carries: a provider id, or a combo name. */
 	id: string;
+	/**
+	 * The drawing's own key, namespaced by kind.
+	 *
+	 * A combo is addressed by a name the operator typed, and a combo literally named `openai` is legal.
+	 * Keying both kinds on their bare identity would put two nodes under one key and light the wrong one.
+	 */
+	key: string;
+	kind: TopologyKind;
 	name: string;
 	/** Position as a percentage of the drawing box, so the drawing needs no measurement to place it. */
 	x: number;
@@ -28,154 +38,125 @@ export type TopologyNode = {
 	state: TopologyState;
 };
 
+/**
+ * A terminal: one end of the path, drawn whether or not anything is flowing through it.
+ *
+ * Terminals are not nodes. They carry no identity from the wire, so they stay out of `nodes` — which is what
+ * keeps the share from treating a fixed position as a data node's, and what keeps the drawing's tests from
+ * finding them by label the way they find a provider.
+ */
+export type TopologyTerminal = {
+	state: TopologyState;
+};
+
 export type TopologyLayout = {
+	/** Every node, both bands, in the order the drawing paints them. */
 	nodes: TopologyNode[];
+	providers: TopologyNode[];
+	combos: TopologyNode[];
+	client: TopologyTerminal;
+	response: TopologyTerminal;
+	/**
+	 * The hop from the client straight to the gateway.
+	 *
+	 * It is lit only by requests that addressed no combo, because a combo request travels
+	 * client → combo → gateway and a beam on the direct hop would claim a request that never took it.
+	 */
+	direct: TopologyTerminal;
 	/** The drawing box's height in pixels, from the node count. */
 	height: number;
 	/** The width one node may take, as a share of the drawing box's width (draft 018). */
 	nodeShare: number;
 };
 
+/** What the stream says is happening, in the form the layout needs rather than the form the wire sends. */
 export type TopologyLive = {
 	/** The provider ids with a request in flight. */
 	active: string[];
+	/** The combo names with a request in flight. */
+	activeCombos: string[];
+	/** The requests in flight that addressed no combo, which is what the direct hop carries. */
+	directCount: number;
 	/** The provider of the most recent completed request, or an empty string. */
 	last: string;
 	/** The provider the gateway last reported an error for, or an empty string. */
 	error: string;
 };
 
-// The ellipse, as a percentage of the drawing box. Percentages rather than pixels so the same layout fills
-// a phone and a desktop panel without measuring anything, and the edge drawing uses the same numbers, so a
-// line always ends where its node is.
-const RADIUS_X = 40;
-const RADIUS_Y = 38;
-
-// The box grows with the node count so labels do not collide, bounded at both ends: below the floor the
-// drawing is a strip, and above the ceiling it is taller than the screen it sits on.
-const MIN_HEIGHT = 320;
-const MAX_HEIGHT = 640;
-const HEIGHT_PER_NODE = 22;
-const HEIGHT_BASE = 120;
-
-// The node box at its largest, in the pixels the drawing's own metrics are written in: the widest node the
-// panel draws today (padding 8 + dot 8 + gap 8 + label 96 + border 2), and the node height the reference
-// fork lays its own nodes out at (`ProviderTopology.js:265` on `origin/master`, `nodeH = 30`).
-//
-// `NODE_MAX_WIDTH` is exported because the drawing's unit is derived from it: `--u` is the box's width over
-// the width at which a node reaches this cap, so the drawing shrinks below the cap and never grows past it.
-export const NODE_MAX_WIDTH = 130;
-const NODE_HEIGHT = 30;
-
-// The widest a node may be as a share of the drawing box's width, and the clearance kept between two nodes
-// that share a row. The share is what `UsageTopologyDrawing.svelte` sizes every metric from, so a narrow box
-// draws a smaller drawing rather than a collided one, which is what the reference's fitView does with its
-// whole canvas.
-const NODE_MAX_SHARE = 0.2;
-const NODE_CLEARANCE = 0.15;
-
 function lower(value: string): string {
 	return value.toLowerCase();
 }
 
-/**
- * The share of the drawing box's width one node may take, so that two nodes on one row never touch.
- *
- * Only pairs that share a row can collide whatever their horizontal distance, so the row is what this looks
- * at: a pair whose vertical distance is a whole node height apart is clear at any width. The result is a
- * share of the box's width, which is unitless on purpose: it holds at every width the box can take, and the
- * drawing caps it at `NODE_MAX_WIDTH` pixels once the box is wide enough.
- */
-function nodeShare(positions: { x: number; y: number }[], height: number): number {
-	const row = (NODE_HEIGHT / height) * 100;
-	let tightest = Number.POSITIVE_INFINITY;
-	for (let i = 0; i < positions.length; i += 1) {
-		for (let j = i + 1; j < positions.length; j += 1) {
-			if (Math.abs(positions[i].y - positions[j].y) >= row) continue;
-			tightest = Math.min(tightest, Math.abs(positions[i].x - positions[j].x));
-		}
-	}
-	if (tightest === Number.POSITIVE_INFINITY) return NODE_MAX_SHARE;
-	return Math.min(NODE_MAX_SHARE, (tightest / 100) * (1 - NODE_CLEARANCE));
+function providerState(
+	id: string,
+	active: Set<string>,
+	error: string,
+	last: string
+): TopologyState {
+	const key = lower(id);
+	if (active.has(key)) return 'active';
+	if (key === error) return 'error';
+	if (key === last) return 'last';
+	return 'idle';
 }
 
 /**
- * The drawing: one node per provider, on an ellipse around the gateway.
+ * The drawing: the upstreams the gateway calls below it, the combos a client addressed above it, and the two
+ * terminals the request enters and leaves through.
  *
- * States are exclusive and take the reference fork's precedence: a provider with a request in flight is
- * active whatever else is true of it, then an error outranks the last-request mark, because "the gateway
- * reported an error here" is the more useful fact to have on screen.
+ * Provider states are exclusive and take the reference fork's precedence: a provider with a request in
+ * flight is active whatever else is true of it, then an error outranks the last-request mark, because "the
+ * gateway reported an error here" is the more useful fact to have on screen.
  *
  * Provider ids are compared without case, because the frame's `error_provider` and the registry's ids are
  * both strings from a gateway the panel does not control, and a difference of case is not a difference of
- * provider.
+ * provider. Combo names are compared exactly: a name is an identifier the gateway wrote back verbatim, and
+ * folding its case would light one combo for a request that addressed another whose name differs only in
+ * case.
  */
 export function topologyNodes(
 	providers: { id: string; name: string }[],
+	combos: { id: string; name: string }[],
 	live: TopologyLive
 ): TopologyLayout {
-	const count = providers.length;
-	const height = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, HEIGHT_BASE + HEIGHT_PER_NODE * count));
-
-	if (count === 0) return { nodes: [], height, nodeShare: NODE_MAX_SHARE };
-
+	const height = boxHeight(providers.length + combos.length);
 	const active = new Set(live.active.map(lower));
+	const activeCombos = new Set(live.activeCombos);
 	const last = lower(live.last);
 	const error = lower(live.error);
+	const inFlight = live.active.length;
 
-	const nodes = providers.map((provider, index) => {
-		// Evenly from the top, clockwise, which is the reference's own start so a reader who knows that
-		// drawing finds the same first node here.
-		const angle = -Math.PI / 2 + (2 * Math.PI * index) / count;
-		const id = lower(provider.id);
+	const providerSpots = bandPositions(providers.length, false);
+	const comboSpots = bandPositions(combos.length, true);
 
-		let state: TopologyState = 'idle';
-		if (active.has(id)) state = 'active';
-		else if (id === error) state = 'error';
-		else if (id === last) state = 'last';
+	const providerNodes = providers.map<TopologyNode>((provider, index) => ({
+		id: provider.id,
+		key: `provider:${provider.id}`,
+		kind: 'provider',
+		name: provider.name,
+		...providerSpots[index],
+		state: providerState(provider.id, active, error, last)
+	}));
 
-		return {
-			id: provider.id,
-			name: provider.name,
-			x: 50 + RADIUS_X * Math.cos(angle),
-			y: 50 + RADIUS_Y * Math.sin(angle),
-			state
-		};
-	});
+	const comboNodes = combos.map<TopologyNode>((combo, index) => ({
+		id: combo.id,
+		key: `combo:${combo.id}`,
+		kind: 'combo',
+		name: combo.name,
+		...comboSpots[index],
+		state: activeCombos.has(combo.id) ? 'active' : 'idle'
+	}));
 
-	return { nodes, height, nodeShare: nodeShare(nodes, height) };
-}
+	const nodes = [...providerNodes, ...comboNodes];
 
-function byId(a: { id: string }, b: { id: string }): number {
-	if (a.id < b.id) return -1;
-	return a.id > b.id ? 1 : 0;
-}
-
-/**
- * The providers the drawing puts a node on.
- *
- * The registry lists every provider the gateway knows, which is 94 entries in the reference, and a node per
- * entry would draw a map of things that have never routed. A provider is configured when it has at least
- * one stored endpoint, or when it needs none: a no-auth provider routes without a credential, so its
- * endpoint count stays at zero however much traffic it carries.
- *
- * Sorted by id rather than left in the API's order, so the drawing is the same drawing on every read and a
- * node does not move because the registry's ordering changed.
- */
-export function configuredProviders(providers: Provider[]): { id: string; name: string }[] {
-	return providers
-		.filter((provider) => provider.endpoint_count > 0 || provider.no_auth)
-		.map((provider) => ({ id: provider.id, name: provider.name }))
-		.sort(byId);
-}
-
-/**
- * The registry's ids mapped to their display names, lowercased on the id.
- *
- * The breakdown table resolves a provider group key through this (draft 014 F1): the key is the id the API
- * grouped by, and `openai` is a name the operator has to translate. The full read is used rather than
- * `configuredProviders`, because a provider that has usage and no endpoint still has a name.
- */
-export function providerNameMap(providers: { id: string; name: string }[]): Map<string, string> {
-	return new Map(providers.map((provider) => [provider.id.toLowerCase(), provider.name]));
+	return {
+		nodes,
+		providers: providerNodes,
+		combos: comboNodes,
+		client: { state: inFlight > 0 ? 'active' : 'idle' },
+		direct: { state: live.directCount > 0 ? 'active' : 'idle' },
+		response: { state: inFlight > 0 ? 'active' : last === '' ? 'idle' : 'last' },
+		height,
+		nodeShare: nodeShare(nodes, height)
+	};
 }

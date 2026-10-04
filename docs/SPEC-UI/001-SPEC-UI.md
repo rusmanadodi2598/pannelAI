@@ -578,16 +578,31 @@ absent.
 - **Cost caveat:** SPEC-API §7.12 states cost figures are estimates. The cost tile carries that note.
 - **Live:** `GET /api/v1/usage/live` (server-sent events) carries the three facts a period window cannot:
   the requests in flight now, the requests that just finished, and the provider the gateway last reported an
-  error for. The drawing places one node per configured provider around the gateway and marks each with its
-  state. The facts that are happening are stated in one tab of the live controls row, beside the connection
+  error for. The drawing is a request path, not a ring: `Client >> Combo >> Gateway >> Upstream >> Response`
+  (draft 043 F1). The gateway stays at the centre, the upstreams it calls sit on the band below it, the
+  combos the operator defined sit on the band above, and the two terminals sit on the vertical axis at the
+  top and bottom edges. Each node and terminal carries its state; the terminals carry no state dot and no
+  count, because they stand for the ends of the path rather than for one thing the gateway is calling, and
+  the in-flight count stays on the gateway card, which is the one that knows it. A combo's node is its own
+  name and nothing else: the frame names the combo a request entered through (`combo` on the in-flight
+  entry, beside `model`, which is the member that answered), and a request that addressed a single model
+  leaves the combo band idle. The two bands are disjoint rather than concentric because two nodes mirrored
+  across the horizontal axis share an x, and the drawing's own collision rule reads x as its only fallback:
+  a shared row with no horizontal gap is a share of zero, which is a drawing with no boxes in it. Combos are
+  capped at eight drawn nodes and the row states which ones the drawing left out, because the band holds
+  about half as many readable labels as the full ring the drawing used before combos joined it. The facts
+  that are happening are stated in one tab of the live controls row, beside the connection
   chip and the pause control, and never inside the drawing's frame: the sentence used to sit above the nodes
   and moved the drawing every time a request started or finished, which is what the owner's correction of
   2026-09-27 (draft 035 F2) ended. The tab is a statement, not a control (nothing in it is focusable, the
   rule draft 023 F2 set for tab-idiom labels), and it carries the drawing's own colour rule: a routing
   provider's name in the status colour, as that node's label does, and the finished and error facts naming
-  their provider plainly, as those nodes' labels do (draft 023 F1, kept through the move). No fact renders
-  no tab, because an idle screen states its absences with the colour rule and the connection chip, never
-  with a sentence that never changes (owner's correction, 2026-09-23, draft 022 F2). Every tab the row
+  their provider plainly, as those nodes' labels do (draft 023 F1, kept through the move). A combo is stated
+  in that tab as the same path the drawing draws — `pro-tier → OpenAI (gpt-4o)` — because the drawing is
+  hidden from assistive technology and the tab is what says in words what its nodes claim; a combo name is
+  never resolved through the provider registry, whose fallback would restate a combo as a vendor. No fact
+  renders no tab, because an idle screen states its absences with the colour rule and the connection chip,
+  never with a sentence that never changes (owner's correction, 2026-09-23, draft 022 F2). Every tab the row
   renders carries the same box, 44px as its minimum height with the panel's chip radius, one border and
   matching padding, so chip, facts, pause and retry read as a matched set rather than a chip of one size
   beside buttons of another (draft 035 F1). A long fact value shrinks and wraps inside its own tab
@@ -601,9 +616,15 @@ absent.
   soft glow, and the gateway pulses with its mark shaking and its label flickering while it carries the
   count of requests in flight. The beam's two dash periods are the panel's own numbers: the path is
   normalized to 100 units and both periods divide it, so a cycle closes instead of jumping, which the
-  reference's own -36 cycle does not. Motion belongs to the live state alone:
+  reference's own -36 cycle does not. A beam travels from a line's start to its end, so direction is the
+  endpoint order and not a second keyframe: the request's hops are drawn client-to-combo-to-gateway and the
+  way back is drawn upstream-to-response, which is why the answer reads as coming back rather than as a
+  second request. Motion belongs to the live state alone:
   while the panel is connecting, paused, or unavailable, the drawing keeps the last known state in colour
-  and stops every moving part, and a reader who asked for reduced motion never sees it. Nothing on the
+  and stops every moving part, and a reader who asked for reduced motion never sees it. Two things move for
+  a reason other than state, and both stop for the same reader: a card fades in as it joins the drawing, and
+  the box's height transitions when the node count changes — neither is a claim about now, and both keep the
+  drawing one picture rather than a new one every frame (draft 043 F3). Nothing on the
   stream touches the totals or the chart, which stay the REST reads' own figures: the live state has no field
   for an aggregate. The connection is labelled `Live` only while frames are arriving; every other state
   names itself and, where the panel knows it, the cause (§8.6.1). A gateway that does not serve the route is

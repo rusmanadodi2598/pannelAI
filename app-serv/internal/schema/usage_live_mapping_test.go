@@ -42,6 +42,7 @@ func TestUsageLiveFrame_MapsTheAggregate(t *testing.T) {
 		wantStatus     string
 		wantTokensIn   int64
 		wantModel      string
+		wantCombo      string
 		wantErrorCode  string
 		wantProviderID string
 	}{
@@ -56,6 +57,15 @@ func TestUsageLiveFrame_MapsTheAggregate(t *testing.T) {
 				MarkerID: "m1", RequestID: "req_1", ProviderID: "openai", Model: "gpt-4o", StartedAt: started,
 			}},
 			wantActiveLen: 1, wantRecentLen: 0, wantProviderID: "openai", wantModel: "gpt-4o",
+		},
+		{
+			name: "a combo-addressed request carries its combo beside its model",
+			markers: []domain.ActiveRequest{{
+				MarkerID: "m2", RequestID: "req_2", ProviderID: "openai",
+				Model: "gpt-4o", Combo: "pro-tier", StartedAt: started,
+			}},
+			wantActiveLen: 1, wantRecentLen: 0,
+			wantProviderID: "openai", wantModel: "gpt-4o", wantCombo: "pro-tier",
 		},
 		{
 			name: "a served request finished with zero tokens",
@@ -96,6 +106,9 @@ func TestUsageLiveFrame_MapsTheAggregate(t *testing.T) {
 				}
 				if tc.wantModel != "" && entry.Model != tc.wantModel {
 					t.Errorf("active model = %q, want %q", entry.Model, tc.wantModel)
+				}
+				if entry.Combo != tc.wantCombo {
+					t.Errorf("active combo = %q, want %q", entry.Combo, tc.wantCombo)
 				}
 				if entry.StartedAt != Timestamp(started) {
 					t.Errorf("active started_at = %q, want %q", entry.StartedAt, Timestamp(started))

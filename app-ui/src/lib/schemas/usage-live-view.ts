@@ -151,12 +151,54 @@ export function providerDisplayName(providers: ProviderRow[], id: string): strin
 }
 
 /**
+ * The combo names with a request in flight, in the order the frame reports them, without repeats.
+ *
+ * These are the ids the drawing lights on its combo band. They are compared exactly and never resolved
+ * through `providerDisplayName`, because a combo name is an identifier the operator typed and the gateway
+ * wrote back — a combo named `openai` is a combo, not the OpenAI provider, and translating it would light
+ * the wrong fact.
+ */
+export function activeComboNames(active: UsageLiveActive[]): string[] {
+	const names: string[] = [];
+	for (const entry of active) {
+		const combo = entry.combo?.trim() ?? '';
+		if (combo === '' || names.includes(combo)) continue;
+		names.push(combo);
+	}
+	return names;
+}
+
+/**
+ * The in-flight requests that addressed no combo.
+ *
+ * This is what the drawing's direct hop carries: a request that entered through a combo travels
+ * client → combo → gateway, and a beam on the direct line would claim a request that never took it.
+ */
+export function directCount(active: UsageLiveActive[]): number {
+	return active.filter((entry) => (entry.combo?.trim() ?? '') === '').length;
+}
+
+/** One in-flight entry as the facts row states it: the combo it entered through, then who answered it. */
+function describeEntry(providers: ProviderRow[], entry: UsageLiveActive): string {
+	const name = providerDisplayName(providers, entry.provider_id);
+	// A frame may carry model as an empty string, and ' ()' after a name is a typo the
+	// wire should not be allowed to put on the screen.
+	const model = entry.model?.trim() ?? '';
+	const answered = model === '' ? name : `${name} (${model})`;
+	const combo = entry.combo?.trim() ?? '';
+	return combo === '' ? answered : `${combo} → ${answered}`;
+}
+
+/**
  * The live facts that are happening, in the order the stream reports them.
  *
  * Absence is not a fact: a screen with nothing in flight and nothing finished states none of these, and
  * the connection chip is what says what the state is (owner's correction, 2026-09-23, carried with the
  * sentence when it moved out of the drawing's frame and into the row, draft 035 F2). A value carries no
  * sentence-final period because the tab reads as a label, not as a paragraph.
+ *
+ * The combo is stated because the drawing encodes it: the drawing is hidden from assistive technology, and
+ * the row is what says in words what the nodes and edges claim (SPEC-UI §6.5).
  */
 export function liveFacts(
 	providers: ProviderRow[],
@@ -169,15 +211,7 @@ export function liveFacts(
 	if (active.length > 0) {
 		facts.push({
 			label: `${active.length} in flight`,
-			value: active
-				.map((entry) => {
-					const name = providerDisplayName(providers, entry.provider_id);
-					// A frame may carry model as an empty string, and ' ()' after a name is a typo the
-					// wire should not be allowed to put on the screen.
-					const model = entry.model?.trim() ?? '';
-					return model === '' ? name : `${name} (${model})`;
-				})
-				.join(', '),
+			value: active.map((entry) => describeEntry(providers, entry)).join(', '),
 			tone: 'status'
 		});
 	}

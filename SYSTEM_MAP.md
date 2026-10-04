@@ -6,7 +6,7 @@ Diperbarui pada PR yang sama ketika topologi atau alur data berubah (AGENTS.md �
 | | |
 |---|---|
 | **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (34 provider, decode ketat), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (§7.4-§7.8, §7.12-§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis → PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API. **P2 CLOSED**: seluruh permukaan §7.4–§7.15 terpasang dan terverifikasi live terhadap PostgreSQL 14 + Redis nyata dengan stub upstream dan stub proxy loopback — OAuth round-trip (start, callback, status, refresh per endpoint + due sweep), combo test, proxy pools (dua rute test + guard egress), token-saver, budget caps (cap terbaca kembali), katalog model + custom/alias/disabled, media §7.10 (speech, transcriptions, voices, images, search), embeddings lewat node kustom, dan jalur chat + media + embeddings yang menulis usage/log. Media plane memakai satu `MediaTransport` bersama embeddings di atas satu egress guard proses (`EGRESS_ALLOWED_TARGETS`), dan `settings.network.outbound_proxy_*` kini menentukan rute tiap panggilan keluar (§7.11). Sebelas format media non-OpenAI sudah punya adapter (Deepgram STT; NVIDIA NIM, Cartesia, ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS, Gemini STT). Register gap P2 (`docs/DRAFT/001-P2-GAPS.md`) menutup 20 dari 21 item; yang terbuka bukan kriteria keluar fase: lima format media sisa (G21 — AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device, yang butuh lebih dari satu request per panggilan) dan pemeliharaan dokumen ini (G10, baris ini). `go test -race ./...` bersih (13 paket + `cmd`), tagged integration hijau, `go-lint.sh` dan `go-headers.sh` PASS |
-| **Terakhir diperbarui** | 2026-09-24 |
+| **Terakhir diperbarui** | 2026-10-03 (draft 043: nama Combo ikut menyeberangi stream Usage live, dan panel menggambar jalur request penuh) |
 | **Kontrak** | `docs/SPEC-API/001-SPEC-API.md` (semantik), `docs/CONTRACT/001-CONTRACT-API-V1.yaml` (wire contract), `app-serv/internal/handler/openapi.json` (generated served artifact) |
 
 ---
@@ -489,7 +489,7 @@ Migrasi P2 (`000009`-`000011`) menambah `proxies`, `media_provider_settings`, da
 | Sumber | Isi | Catatan |
 |---|---|---|
 | PostgreSQL | `gateway_keys` + singleton `panel_auth` (P0), `provider_nodes`, `upstream_endpoints` (kolom parity koneksi lewat 000012), `upstream_keys`, `combos`, `model_aliases`, `models_custom`, `models_disabled`, `usage_records`, `quota_windows`, `quota_caps`, `request_logs`, `settings`, `schema_migrations` (P1), `proxies` (P2, 000009), `media_provider_settings` (P2, 000010; PK `(provider_id, kind)`), `quota_published_state` + `quota_published_window` (000013; PK masing-masing `endpoint_id` dan `(endpoint_id, label)`, index `next_attempt_at` untuk sweep dan `fetched_at` untuk prune TTL) | pool limit eksplisit; setiap kolom lookup terindeks; `gateway_keys.name` UNIQUE dan `value_hash` terindeks untuk autentikasi data plane; `upstream_keys.value_encrypted` dan token OAuth disegel AES-256-GCM (`internal/domain/secret.go`), `key_hint` satu-satunya bentuk yang dibaca kembali; `proxies.password_encrypted` disegel sama dan `has_password` satu-satunya bentuk yang dibaca kembali; `quota_published_window.total` NULLable dengan sengaja (NULL = tanpa batas, `0` = batas habis) |
-| Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, sticky round-robin, circuit state, console ring buffer, sorted set `pannelai:usage:active` (penanda request in-flight, skor = `started_at`, prune 60 dtk), channel Pub/Sub `pannelai:events:usage.recorded` | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut |
+| Redis | `pannelai:auth:session:*`, login failure/lockout keys, gateway rate limit, sticky round-robin, circuit state, console ring buffer, sorted set `pannelai:usage:active` (penanda request in-flight, skor = `started_at`, prune 60 dtk; payload-nya membawa `combo` — nama combo yang dialamatkan client, `omitempty` sehingga penanda tanpa combo ditulis byte-identik dengan bentuk build sebelumnya — dan anggota yang tidak bisa di-decode DILEWAT, tidak dihapus, karena menghapus nilai yang reader tidak kenali akan memusnahkan penanda proses lain), channel Pub/Sub `pannelai:events:usage.recorded` | dibutuhkan untuk limiter dan state; session digest langsung dapat dicabut |
 
 ---
 
@@ -521,13 +521,23 @@ dilayani `GET /api/v1/usage/live` (session-gated, `text/event-stream`, `X-Accel-
 full state `{active, recent, error_provider}` dan dikirim hanya saat berubah; koneksi idle menerima
 komentar SSE (`: ping`), bukan frame. Sumber `active` adalah sorted set Redis `pannelai:usage:active`
 yang diisi di seam outbound tiga bidang: leg relay chat (`internal/dataplane/engine_relay.go`), media
-(`internal/service/media_perform.go`), dan embeddings (`internal/service/embeddings_call.go`). Setiap
+(`internal/service/media_perform.go`), dan embeddings (`internal/service/embeddings_call.go`). Seam-nya
+menerima satu struct bertipe (`dataplane.ActiveMarker{provider,endpoint,model,combo}`) dan bukan empat
+string positional, karena `model` dan `combo` sama-sama opsional dan bertetangga: transpose keduanya
+kompilasi, lolos `Validate()`, tersimpan, dan menggambar label yang salah di panel. Setiap
 penanda dilepas saat panggilan selesai (sukses maupun gagal) dan yang lebih tua dari 60 detik dipangkas
-saat dibaca, jadi gateway yang mati di tengah request tidak meninggalkan node menyala. `recent` dibaca
+saat dibaca, jadi gateway yang mati di tengah request tidak meninggalkan node menyala. `combo` hanya
+diisi oleh bidang chat: media, embeddings, dan SystemOne menolak combo sebelum mereka menandai apa pun
+(`embeddings_resolve.go`, `systemone.go`, `media_call.go`), jadi penanda mereka kosong — bukan tidak
+diketahui. `recent` dibaca
 dari `usage_records` dengan jendela 5 menit dan batas 20 baris; `error_provider` diturunkan dari
 pembacaan yang sama dalam jendela 10 detik, sehingga node error dan daftar kegagalan tidak bisa
 berbeda sumber. Frame tidak punya field agregat, jadi stream ini tidak bisa menimpa angka
-`summary`/`timeseries`.
+`summary`/`timeseries`. Panel menggambarkan jalur request lengkap dari frame itu
+(`Client >> Combo >> Gateway >> Upstream >> Response`, draft 043): combo di busur atas gateway, upstream
+di busur bawah, dua terminal di sumbu vertikal — dan busurnya dipisah, bukan konsentris, karena dua node
+yang bercermin di sumbu horizontal punya x yang sama dan `nodeShare` hanya punya x untuk jatuh kembali:
+satu baris dengan nol jarak horizontal berarti share nol, yaitu gambar tanpa kotak.
 
 Penegakan kuota ada di jalur seleksi, bukan di worker: `dataplane.Selector` menerima
 `SelectorDeps.Gate` (§7.12, register G22) dan melewati endpoint yang spend bulan berjalannya

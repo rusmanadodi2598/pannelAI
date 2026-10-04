@@ -14,6 +14,9 @@ export const PROVIDERS = [
 	{ id: 'anthropic', name: 'Anthropic' }
 ];
 
+/** One combo on the band above the gateway. Its identity and its label are the same name. */
+export const COMBOS = [{ id: 'pro-tier', name: 'pro-tier' }];
+
 /** The active node's glow, which is the reference's `0 0 16px` at a low alpha. */
 export const GLOW = 'shadow-[0_0_16px_color-mix(in_srgb,var(--color-ok)_25%,transparent)]';
 
@@ -21,8 +24,14 @@ export function entry(providerId: string): UsageLiveActive {
 	return { provider_id: providerId, started_at: '2026-09-22T10:00:00Z' };
 }
 
+/** An in-flight entry that entered through a combo, which is the frame half of the combo band's rule. */
+export function comboEntry(combo: string, providerId = 'openai'): UsageLiveActive {
+	return { provider_id: providerId, combo, started_at: '2026-09-22T10:00:00Z' };
+}
+
 type Props = {
 	providers: { id: string; name: string }[];
+	combos: { id: string; name: string }[];
 	active: UsageLiveActive[];
 	last: string;
 	error: string;
@@ -32,6 +41,7 @@ type Props = {
 export function draw(overrides: Partial<Props> = {}): HTMLElement {
 	const props: Props = {
 		providers: PROVIDERS,
+		combos: [],
 		active: [],
 		last: '',
 		error: '',
@@ -41,13 +51,24 @@ export function draw(overrides: Partial<Props> = {}): HTMLElement {
 	return render(UsageTopology, { props }).container;
 }
 
-/** The node box for a provider, which is the element its label sits in. */
+/** The node box for a provider or a combo, which is the element its label sits in. */
 export function nodeFor(container: HTMLElement, name: string): HTMLElement {
 	return within(container).getByText(name).parentElement as HTMLElement;
 }
 
 /**
- * Every line whose far end is a provider's node, matched by the position both are drawn at.
+ * One of the two terminals, by the word the drawing gives it.
+ *
+ * This returns the pill itself rather than its positioning wrapper, which is the opposite of `nodeFor`:
+ * a node's label sits in a span of its own, while a terminal's text is the pill's only child, so the
+ * element `getByText` lands on is already the box that carries the card's classes.
+ */
+export function terminalFor(label: 'Client' | 'Response'): HTMLElement {
+	return screen.getByText(label);
+}
+
+/**
+ * Every line whose far end is a node's position, matched by the position both are drawn at.
  *
  * Matching on position rather than on order is the point: the drawing's order is the provider list's
  * order, and a row about "only this provider's line moves" must not pass because two lists happen to
@@ -62,6 +83,11 @@ export function linesAt(container: HTMLElement, name: string): SVGLineElement[] 
 			Number.parseFloat(line.getAttribute('x2') ?? '') === x &&
 			Number.parseFloat(line.getAttribute('y2') ?? '') === y
 	);
+}
+
+/** Every line of one hop of the path: `client-gateway`, `combo-gateway`, `provider-response`, and so on. */
+export function edgesFor(container: HTMLElement, hop: string): SVGLineElement[] {
+	return [...container.querySelectorAll<SVGLineElement>(`line[data-edge="${hop}"]`)];
 }
 
 /** The beam's own lines at a node, keyed by the part they draw. */

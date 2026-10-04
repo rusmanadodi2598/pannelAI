@@ -78,11 +78,19 @@ func (t *ActiveRequestTracker) SetClock(clock func() time.Time) {
 // hold the seam as an interface, so a deployment that wired no tracker would
 // reach a nil receiver rather than the no-op the seam promises. The engine keeps
 // its own copy of this rule on its side of the package boundary.
+//
+// These three strings are all a non-chat plane has: the media, embeddings and
+// SystemOne planes refuse a combo before they reach here, so the marker they
+// open carries no combo name rather than an unknown one.
 func markActiveRequest(ctx context.Context, active dataplane.ActiveRequests, providerID, endpointID, model string) func() {
 	if active == nil {
 		return func() {}
 	}
-	return active.Begin(ctx, providerID, endpointID, model)
+	return active.Begin(ctx, dataplane.ActiveMarker{
+		ProviderID: providerID,
+		EndpointID: endpointID,
+		Model:      model,
+	})
 }
 
 // Begin records one call as in flight and returns the function that releases it.
@@ -95,8 +103,8 @@ func markActiveRequest(ctx context.Context, active dataplane.ActiveRequests, pro
 // A call that resolved no provider records nothing: the marker's whole purpose
 // is to light a provider's node, and a marker with no provider would light
 // nothing while still occupying the set.
-func (t *ActiveRequestTracker) Begin(ctx context.Context, providerID, endpointID, model string) func() {
-	if t == nil || t.store == nil || providerID == "" {
+func (t *ActiveRequestTracker) Begin(ctx context.Context, in dataplane.ActiveMarker) func() {
+	if t == nil || t.store == nil || in.ProviderID == "" {
 		return func() {}
 	}
 	now := t.clock()
@@ -107,21 +115,27 @@ func (t *ActiveRequestTracker) Begin(ctx context.Context, providerID, endpointID
 	if requestID == "" {
 		requestID = domain.NewULID(now)
 	}
-	marker, err := domain.NewActiveRequest(requestID, providerID, endpointID, model, now)
+	marker, err := domain.NewActiveRequest(domain.ActiveRequestInput{
+		RequestID:  requestID,
+		ProviderID: in.ProviderID,
+		EndpointID: in.EndpointID,
+		Model:      in.Model,
+		Combo:      in.Combo,
+	}, now)
 	if err != nil {
 		// A refused marker is a caller bug rather than a runtime condition: the
 		// only refusals are a missing request id or provider, and this function
 		// has already supplied both. It is logged rather than returned because
 		// the call it describes must still run.
 		t.logger.Error("an active request marker was refused by its own constructor",
-			"provider_id", providerID, "error", err)
+			"provider_id", in.ProviderID, "error", err)
 		return func() {}
 	}
 	if err := t.store.Start(ctx, marker); err != nil {
 		// reason: the marker is a view, not the record. A request must not fail
 		// because the drawing could not be told about it.
 		t.logger.Warn("recording an active request failed",
-			"provider_id", providerID, "request_id", marker.RequestID, "error", err)
+			"provider_id", marker.ProviderID, "request_id", marker.RequestID, "error", err)
 	}
 	var once bool
 	return func() {
@@ -134,7 +148,7 @@ func (t *ActiveRequestTracker) Begin(ctx context.Context, providerID, endpointID
 		// deserve an error the caller cannot act on.
 		if err := t.store.Finish(ctx, marker); err != nil {
 			t.logger.Warn("releasing an active request failed",
-				"provider_id", providerID, "request_id", marker.RequestID, "error", err)
+				"provider_id", marker.ProviderID, "request_id", marker.RequestID, "error", err)
 		}
 	}
 }

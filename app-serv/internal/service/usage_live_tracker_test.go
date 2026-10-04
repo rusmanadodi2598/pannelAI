@@ -24,6 +24,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 )
 
 // TestActiveRequestTracker_BeginAndRelease pins the tracker's contract: it
@@ -36,6 +38,7 @@ func TestActiveRequestTracker_BeginAndRelease(t *testing.T) {
 		name          string
 		providerID    string
 		requestID     string
+		combo         string
 		storeErr      error
 		wantStarted   int
 		wantRemoved   int
@@ -44,6 +47,10 @@ func TestActiveRequestTracker_BeginAndRelease(t *testing.T) {
 		{name: "a call is recorded and released", providerID: "openai", requestID: "req_1", wantStarted: 1, wantRemoved: 1},
 		{name: "a call with no provider records nothing", providerID: "", requestID: "req_2", wantStarted: 0, wantRemoved: 0},
 		{name: "a store failure is swallowed", providerID: "openai", requestID: "req_3", storeErr: errors.New("redis is down"), wantStarted: 1, wantRemoved: 1},
+		{
+			name: "a combo-addressed call records its combo", providerID: "openai", requestID: "req_4",
+			combo: "pro-tier", wantStarted: 1, wantRemoved: 1,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -51,7 +58,9 @@ func TestActiveRequestTracker_BeginAndRelease(t *testing.T) {
 			tracker := NewActiveRequestTracker(active, func(context.Context) string { return tc.requestID }, nil)
 			tracker.SetClock(func() time.Time { return now })
 
-			release := tracker.Begin(context.Background(), tc.providerID, "ep_1", "gpt-4o")
+			release := tracker.Begin(context.Background(), dataplane.ActiveMarker{
+				ProviderID: tc.providerID, EndpointID: "ep_1", Model: "gpt-4o", Combo: tc.combo,
+			})
 			if release == nil {
 				t.Fatal("Begin() returned no release function, so the marker would never be removed")
 			}
@@ -74,6 +83,9 @@ func TestActiveRequestTracker_BeginAndRelease(t *testing.T) {
 				if marker.RequestID != tc.requestID {
 					t.Errorf("the released marker carries request %q, want %q", marker.RequestID, tc.requestID)
 				}
+				if marker.Combo != tc.combo {
+					t.Errorf("the released marker carries combo %q, want %q", marker.Combo, tc.combo)
+				}
 				if !marker.StartedAt.Equal(now) {
 					t.Errorf("the released marker started at %v, want %v", marker.StartedAt, now)
 				}
@@ -87,7 +99,7 @@ func TestActiveRequestTracker_BeginAndRelease(t *testing.T) {
 // nil check of their own.
 func TestActiveRequestTracker_NilTrackerIsANoOp(t *testing.T) {
 	var tracker *ActiveRequestTracker
-	release := tracker.Begin(context.Background(), "openai", "ep_1", "gpt-4o")
+	release := tracker.Begin(context.Background(), dataplane.ActiveMarker{ProviderID: "openai", EndpointID: "ep_1", Model: "gpt-4o"})
 	if release == nil {
 		t.Fatal("a nil tracker returned no release function")
 	}
@@ -103,7 +115,9 @@ func TestActiveRequestTracker_MintsARequestIDWhenNoneIsPresent(t *testing.T) {
 	active := &liveActiveDouble{}
 	tracker := NewActiveRequestTracker(active, func(context.Context) string { return "" }, nil)
 	tracker.SetClock(func() time.Time { return now })
-	release := tracker.Begin(context.Background(), "openai", "ep_1", "gpt-4o")
+	release := tracker.Begin(context.Background(), dataplane.ActiveMarker{
+		ProviderID: "openai", EndpointID: "ep_1", Model: "gpt-4o",
+	})
 	defer release()
 
 	if active.startedCount() != 1 {

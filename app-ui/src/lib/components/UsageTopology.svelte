@@ -25,11 +25,14 @@
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import UsageTopologyDrawing from '$lib/components/UsageTopologyDrawing.svelte';
 	import type { UsageLiveActive } from '$lib/schemas/usage-live';
+	import { activeComboNames, directCount } from '$lib/schemas/usage-live-view';
 	import { topologyNodes } from '$lib/schemas/usage-topology-view';
 
 	type Props = {
-		/** The configured providers, which is what the drawing puts a node on. */
+		/** The configured providers, which is what the drawing puts a node on below the gateway. */
 		providers: { id: string; name: string }[];
+		/** The combos the operator defined, which is what the drawing puts a node on above it. */
+		combos: { id: string; name: string }[];
 		/** The in-flight entries the guard still trusts. */
 		active: UsageLiveActive[];
 		/** The provider of the most recent completed request, or an empty string. */
@@ -40,11 +43,13 @@
 		live: boolean;
 	};
 
-	let { providers, active, last, error, live }: Props = $props();
+	let { providers, combos, active, last, error, live }: Props = $props();
 
 	const layout = $derived(
-		topologyNodes(providers, {
+		topologyNodes(providers, combos, {
 			active: active.map((entry) => entry.provider_id),
+			activeCombos: activeComboNames(active),
+			directCount: directCount(active),
 			last,
 			error
 		})

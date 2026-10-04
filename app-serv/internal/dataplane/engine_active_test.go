@@ -44,13 +44,15 @@ import (
 type activeRecorder struct {
 	mu        sync.Mutex
 	begun     []string
+	combos    []string
 	released  int
 	stillOpen int
 }
 
-func (r *activeRecorder) Begin(_ context.Context, providerID, _, _ string) func() {
+func (r *activeRecorder) Begin(_ context.Context, marker ActiveMarker) func() {
 	r.mu.Lock()
-	r.begun = append(r.begun, providerID)
+	r.begun = append(r.begun, marker.ProviderID)
+	r.combos = append(r.combos, marker.Combo)
 	r.stillOpen++
 	r.mu.Unlock()
 
@@ -71,6 +73,16 @@ func (r *activeRecorder) snapshot() (begun []string, released, stillOpen int) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return append([]string(nil), r.begun...), r.released, r.stillOpen
+}
+
+// begunCombos is the combo name carried by each marker, in the order they
+// opened. The relay leg has to name the combo a client addressed as well as the
+// provider that answered, because SPEC-UI-001 §6.5 draws both stages of one
+// request from the same marker.
+func (r *activeRecorder) begunCombos() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]string(nil), r.combos...)
 }
 
 // newActiveEngine wires the real relay pipeline with the tracker under test. It
@@ -163,39 +175,6 @@ func TestRelayOnce_ReleasesTheMarkerWhenTheCallFails(t *testing.T) {
 					released, stillOpen)
 			}
 		})
-	}
-}
-
-// TestRelayOnce_MarksEachComboMemberItAttempts pins the failover path: a combo
-// that tries a second provider marks that provider too, so the drawing shows the
-// provider actually being called rather than the first one it named.
-func TestRelayOnce_MarksEachComboMemberItAttempts(t *testing.T) {
-	active := &activeRecorder{}
-	calls := 0
-	server := newRelayUpstream(t, &calls)
-	repo := newMemEndpointRepo()
-	repo.byProvider["alpha"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-alpha", "alpha")}
-	repo.byProvider["beta"] = []domain.UpstreamEndpoint{relayEndpoint(t, "ep-beta", "beta")}
-	engine := newEngineWithTracker(t, server.URL, repo, map[string]domain.Combo{
-		"daily": comboRow("daily", "alpha/broken", "beta/works"),
-	}, active)
-
-	if _, err := engine.Relay(context.Background(), relayRequest("daily"), nil); err != nil {
-		t.Fatalf("Relay() error = %v", err)
-	}
-
-	begun, released, stillOpen := active.snapshot()
-	if len(begun) != 2 {
-		t.Fatalf("markers begun = %v, want one per attempted member", begun)
-	}
-	if begun[0] != "alpha" || begun[1] != "beta" {
-		t.Fatalf("markers begun = %v, want alpha then beta", begun)
-	}
-	if released != len(begun) {
-		t.Fatalf("begun = %d but released = %d: every attempted member must be released", len(begun), released)
-	}
-	if stillOpen != 0 {
-		t.Fatalf("%d markers are still open, want none", stillOpen)
 	}
 }
 

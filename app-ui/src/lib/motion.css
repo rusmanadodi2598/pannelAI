@@ -22,6 +22,19 @@
 	--animate-router-pulse: router-pulse 0.75s ease-in-out infinite;
 	--animate-router-shake: router-shake 0.45s ease-in-out infinite;
 	--animate-router-flicker: router-flicker 0.7s ease-in-out infinite;
+	--animate-node-enter: node-enter 0.3s ease-out 1;
+
+	/* A card joining the drawing arrives rather than appearing. The drawing is one picture an operator
+	 * learns, and a node that pops into place makes them find the change; the box's own height transitions
+	 * over the same interval for the same reason. One run, not a loop — this is an entry, not a state, and
+	 * nothing is animated once it has landed. A card leaving still goes instantly: there is no state to
+	 * animate out of, because the frame that removed it also removed the element. */
+	@keyframes node-enter {
+		from {
+			opacity: 0;
+			scale: 0.96;
+		}
+	}
 
 	@keyframes beam-dash {
 		to {

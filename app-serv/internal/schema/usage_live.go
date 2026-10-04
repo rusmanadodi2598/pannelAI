@@ -37,10 +37,17 @@ import (
 // `started_at` is present because the panel's staleness guard reads it: without
 // it the panel could not tell a request still running from one whose marker the
 // gateway never cleared, and it would light a node forever.
+//
+// `combo` names the model combo the client addressed, and is empty when the
+// request addressed a single model. It travels beside `model` rather than
+// replacing it because the two are different facts about one call: the combo is
+// what the client named and the model is the member that answered, and SPEC-UI-001
+// §6.5 draws both stages of the path.
 type UsageLiveActive struct {
 	ProviderID string `json:"provider_id"`
 	EndpointID string `json:"endpoint_id"`
 	Model      string `json:"model"`
+	Combo      string `json:"combo"`
 	StartedAt  string `json:"started_at"`
 }
 
@@ -88,6 +95,7 @@ func UsageLiveFrameFrom(markers []domain.ActiveRequest, recent []domain.UsageRec
 			ProviderID: marker.ProviderID,
 			EndpointID: marker.EndpointID,
 			Model:      marker.Model,
+			Combo:      marker.Combo,
 			StartedAt:  Timestamp(marker.StartedAt),
 		})
 	}

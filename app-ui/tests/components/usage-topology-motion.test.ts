@@ -11,7 +11,18 @@
 
 import { cleanup, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { beamAt, draw, edgeFor, entry, GLOW, gateway, nodeFor } from '../support/topology-harness';
+import {
+	beamAt,
+	comboEntry,
+	COMBOS,
+	draw,
+	edgeFor,
+	entry,
+	GLOW,
+	gateway,
+	nodeFor,
+	terminalFor
+} from '../support/topology-harness';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 
@@ -115,5 +126,34 @@ describe('UsageTopology motion', () => {
 		expect(card.classList.contains('gap-[calc(8px*var(--u))]')).toBe(true);
 		expect(card.classList.contains('[font-size:calc(14px*var(--u))]')).toBe(true);
 		expect(card.querySelector('img')?.classList.contains('size-[calc(16px*var(--u))]')).toBe(true);
+	});
+
+	it('fades a card in as it joins the drawing, and turns that off for less motion', () => {
+		// Draft 043 F3: a combo node appears and disappears with the traffic, and a box that pops into place
+		// makes the operator find the change. This is not the drawing's state motion — it runs once, on
+		// entry, and says nothing about what is happening now — but it moves, so it is gated the same way.
+		const container = draw({ combos: COMBOS, active: [comboEntry('pro-tier')] });
+
+		for (const card of [
+			nodeFor(container, 'pro-tier'),
+			nodeFor(container, 'OpenAI'),
+			terminalFor('Client'),
+			terminalFor('Response')
+		]) {
+			expect(card.classList.contains('animate-node-enter')).toBe(true);
+			expect(card.classList.contains('motion-reduce:animate-none')).toBe(true);
+		}
+	});
+
+	it('grows the box instead of jumping it when the node count changes', () => {
+		// The height is what the node count decides, so a combo arriving moved the whole drawing under the
+		// operator's eyes (draft 043 F3). The transition is on the box, and off for a reader who asked for
+		// less motion.
+		const container = draw();
+		const box = container.querySelector('div[aria-hidden="true"]') as HTMLElement;
+
+		expect(box.classList.contains('transition-[height]')).toBe(true);
+		expect(box.classList.contains('duration-300')).toBe(true);
+		expect(box.classList.contains('motion-reduce:transition-none')).toBe(true);
 	});
 });

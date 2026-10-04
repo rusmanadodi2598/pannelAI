@@ -21,10 +21,15 @@ import { nullableList, rfc3339Timestamp, schemaRequestStatus } from './primitive
 // `started_at` is required rather than optional, and it is the only required field besides the provider:
 // it is the sole input to the panel's staleness guard. Without it the panel cannot tell a request that is
 // still running from one whose marker the gateway never cleared, and it would light a node forever.
+//
+// `combo` names the model combo the client addressed, and is empty when the request addressed a single
+// model. It is optional here for the reason the whole file is tolerant: a frame from a gateway that has not
+// been updated yet simply carries no combo, and the drawing loses that band's motion rather than the screen.
 export const schemaUsageLiveActive = z.object({
 	provider_id: z.string().min(1),
 	endpoint_id: z.string().optional(),
 	model: z.string().optional(),
+	combo: z.string().optional(),
 	started_at: rfc3339Timestamp
 });
 

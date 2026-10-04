@@ -65,13 +65,13 @@ func TestActiveRequestStore_BoundsAndOrdersTheRead(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// A fresh store per case, so the bound is measured against a set this
 			// case wrote rather than against whatever the previous one left.
-			store, ctx := activeStoreFixture(t)
+			store, _, ctx := activeStoreFixture(t)
 			var first domain.ActiveRequest
 			for i := 0; i < tc.written; i++ {
-				marker, err := domain.NewActiveRequest(
-					"req_"+string(rune('a'+i)), "openai", "ep_1", "gpt-4o",
-					now.Add(-time.Duration(tc.written-i)*time.Second),
-				)
+				marker, err := domain.NewActiveRequest(domain.ActiveRequestInput{
+					RequestID: "req_" + string(rune('a'+i)), ProviderID: "openai",
+					EndpointID: "ep_1", Model: "gpt-4o",
+				}, now.Add(-time.Duration(tc.written-i)*time.Second))
 				if err != nil {
 					t.Fatalf("building marker %d: %v", i, err)
 				}
@@ -107,7 +107,9 @@ func TestActiveRequestStore_BoundsAndOrdersTheRead(t *testing.T) {
 func TestActiveRequestStore_NilStoreIsANoOp(t *testing.T) {
 	ctx := context.Background()
 	var store *ActiveRequestStore
-	marker, err := domain.NewActiveRequest("req_1", "openai", "ep_1", "gpt-4o", time.Now())
+	marker, err := domain.NewActiveRequest(domain.ActiveRequestInput{
+		RequestID: "req_1", ProviderID: "openai", EndpointID: "ep_1", Model: "gpt-4o",
+	}, time.Now())
 	if err != nil {
 		t.Fatalf("building the marker: %v", err)
 	}
@@ -130,7 +132,7 @@ func TestActiveRequestStore_NilStoreIsANoOp(t *testing.T) {
 // aggregate's own rule on the way in, so a caller cannot write a marker that no
 // reader would draw.
 func TestActiveRequestStore_RefusesAnInvalidMarker(t *testing.T) {
-	store, ctx := activeStoreFixture(t)
+	store, _, ctx := activeStoreFixture(t)
 	cases := []struct {
 		name    string
 		marker  domain.ActiveRequest

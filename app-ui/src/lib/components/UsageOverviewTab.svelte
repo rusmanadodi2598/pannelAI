@@ -32,7 +32,7 @@
 	import { getUsageSummary, getUsageTimeseries } from '$lib/api/usage';
 	import { type UsageSort, type UsageSummary, type UsageTimeseries } from '$lib/schemas/usage';
 	import { granularityFor, periodRange, sortGroups, usageQuery } from '$lib/schemas/usage-view';
-	import { providerNameMap } from '$lib/schemas/usage-topology-view';
+	import { providerNameMap } from '$lib/schemas/usage-topology-nodeset';
 	import { nextUsageSearch, parseUsageSearch, type UsageSearch } from '$lib/schemas/usage-search';
 	import { formatTimestamp } from '$lib/utils/time';
 

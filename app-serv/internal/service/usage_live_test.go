@@ -131,10 +131,10 @@ func TestUsageLiveService_SnapshotReportsTheActiveSet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, active, _ := liveServiceFixture(t, now)
 			for i := 0; i < tc.markers; i++ {
-				marker, err := domain.NewActiveRequest(
-					"req_"+string(rune('a'+i)), "openai", "ep_1", "gpt-4o",
-					now.Add(-time.Duration(tc.markers-i)*time.Second),
-				)
+				marker, err := domain.NewActiveRequest(domain.ActiveRequestInput{
+					RequestID:  "req_" + string(rune('a'+i)),
+					ProviderID: "openai", EndpointID: "ep_1", Model: "gpt-4o",
+				}, now.Add(-time.Duration(tc.markers-i)*time.Second))
 				if err != nil {
 					t.Fatalf("building marker %d: %v", i, err)
 				}

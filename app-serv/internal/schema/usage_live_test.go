@@ -30,48 +30,67 @@ import (
 // TestUsageLiveFrame_JSONShape pins the exact member set the panel reads, in
 // both the frame and its two list entries. An extra or missing member is a
 // contract change on a route the panel consumes, so it fails here.
+//
+// `combo` is present even when empty: the frame states what is in flight, and a
+// request that addressed a single model is stating "no combo", which is a fact
+// rather than an absent key.
 func TestUsageLiveFrame_JSONShape(t *testing.T) {
-	frame := UsageLiveFrameFrom(
-		[]domain.ActiveRequest{{
-			MarkerID: "m1", RequestID: "req_1", ProviderID: "openai",
-			EndpointID: "ep_1", Model: "gpt-4o",
-			StartedAt: time.Date(2026, 9, 22, 10, 0, 0, 0, time.UTC),
-		}},
-		[]domain.UsageRecord{},
-		"",
-	)
-	payload, err := json.Marshal(frame)
-	if err != nil {
-		t.Fatalf("marshalling the frame: %v", err)
+	cases := []struct {
+		name      string
+		combo     string
+		wantCombo string
+	}{
+		{name: "a call that addressed one model", combo: "", wantCombo: ""},
+		{name: "a call that addressed a combo", combo: "pro-tier", wantCombo: "pro-tier"},
 	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			frame := UsageLiveFrameFrom(
+				[]domain.ActiveRequest{{
+					MarkerID: "m1", RequestID: "req_1", ProviderID: "openai",
+					EndpointID: "ep_1", Model: "gpt-4o", Combo: tc.combo,
+					StartedAt: time.Date(2026, 9, 22, 10, 0, 0, 0, time.UTC),
+				}},
+				[]domain.UsageRecord{},
+				"",
+			)
+			payload, err := json.Marshal(frame)
+			if err != nil {
+				t.Fatalf("marshalling the frame: %v", err)
+			}
 
-	var decoded map[string]json.RawMessage
-	if err := json.Unmarshal(payload, &decoded); err != nil {
-		t.Fatalf("decoding the frame: %v", err)
-	}
-	for _, field := range []string{"active", "recent", "error_provider"} {
-		if _, ok := decoded[field]; !ok {
-			t.Errorf("frame %s is missing %q", payload, field)
-		}
-	}
-	if len(decoded) != 3 {
-		t.Fatalf("frame carries %d members, want exactly 3: %s", len(decoded), payload)
-	}
+			var decoded map[string]json.RawMessage
+			if err := json.Unmarshal(payload, &decoded); err != nil {
+				t.Fatalf("decoding the frame: %v", err)
+			}
+			for _, field := range []string{"active", "recent", "error_provider"} {
+				if _, ok := decoded[field]; !ok {
+					t.Errorf("frame %s is missing %q", payload, field)
+				}
+			}
+			if len(decoded) != 3 {
+				t.Fatalf("frame carries %d members, want exactly 3: %s", len(decoded), payload)
+			}
 
-	var active []map[string]json.RawMessage
-	if err := json.Unmarshal(decoded["active"], &active); err != nil {
-		t.Fatalf("decoding active: %v", err)
-	}
-	if len(active) != 1 {
-		t.Fatalf("active carries %d entries, want 1", len(active))
-	}
-	for _, field := range []string{"provider_id", "endpoint_id", "model", "started_at"} {
-		if _, ok := active[0][field]; !ok {
-			t.Errorf("an active entry is missing %q: %s", field, payload)
-		}
-	}
-	if len(active[0]) != 4 {
-		t.Errorf("an active entry carries %d members, want exactly 4: %s", len(active[0]), payload)
+			var active []map[string]json.RawMessage
+			if err := json.Unmarshal(decoded["active"], &active); err != nil {
+				t.Fatalf("decoding active: %v", err)
+			}
+			if len(active) != 1 {
+				t.Fatalf("active carries %d entries, want 1", len(active))
+			}
+			for _, field := range []string{"provider_id", "endpoint_id", "model", "combo", "started_at"} {
+				if _, ok := active[0][field]; !ok {
+					t.Errorf("an active entry is missing %q: %s", field, payload)
+				}
+			}
+			if len(active[0]) != 5 {
+				t.Errorf("an active entry carries %d members, want exactly 5: %s", len(active[0]), payload)
+			}
+			if got := string(active[0]["combo"]); got != `"`+tc.wantCombo+`"` {
+				t.Errorf("combo member = %s, want %q", got, tc.wantCombo)
+			}
+		})
 	}
 }
 

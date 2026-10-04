@@ -13,6 +13,7 @@
 	import { onMount } from 'svelte';
 	import UsageRecentList from '$lib/components/UsageRecentList.svelte';
 	import UsageTopology from '$lib/components/UsageTopology.svelte';
+	import { listCombos } from '$lib/api/combos';
 	import { listProviders } from '$lib/api/providers';
 	import {
 		freshActive,
@@ -22,7 +23,7 @@
 		streamLabel,
 		type LiveView
 	} from '$lib/schemas/usage-live-view';
-	import { configuredProviders } from '$lib/schemas/usage-topology-view';
+	import { configuredCombos, configuredProviders } from '$lib/schemas/usage-topology-nodeset';
 	import { openUsageLive, type LiveReport, type UsageLiveController } from '$lib/usage-live';
 	import { formatTimestamp } from '$lib/utils/time';
 
@@ -41,6 +42,8 @@
 
 	let providers = $state<{ id: string; name: string }[]>([]);
 	let providersNotice = $state<string | null>(null);
+	let combos = $state<{ id: string; name: string }[]>([]);
+	let combosNotice = $state<string | null>(null);
 	let live = $state<LiveView | null>(null);
 	let report = $state<LiveReport>({ status: 'idle', reason: null, retrying: false });
 	let now = $state(Date.now());
@@ -101,8 +104,34 @@
 		providers = configuredProviders(data);
 	}
 
+	// The combos are the drawing's other node set, and they are read rather than derived: the frame names
+	// the combo a request is addressing, but only the combo list says which names exist at all, which is
+	// what puts an idle combo on the band before anything routes through it.
+	async function loadCombos(): Promise<void> {
+		const result = await listCombos({ per_page: 100 });
+
+		if (!result.ok) {
+			combosNotice = `Combos could not be read. The drawing has no combo band. ${result.error.message}`;
+			return;
+		}
+
+		const { data, meta } = result.data;
+		combos = configuredCombos(data);
+		combosNotice =
+			meta.total > combos.length
+				? `Shows the first ${combos.length} of ${meta.total} combos.`
+				: null;
+	}
+
+	// One sentence about what the drawing left out, whichever half left it out: an operator counting nodes
+	// on screen against a list they know should not have to work out which read they are looking at.
+	const nodeNotice = $derived(
+		[providersNotice, combosNotice].filter((part) => part !== null).join(' ') || null
+	);
+
 	onMount(() => {
 		void loadProviders();
+		void loadCombos();
 
 		controller = openUsageLive({
 			onFrame: (frame, receivedAt) => {
@@ -175,14 +204,14 @@
 
 	<p class="text-sm text-[var(--color-text-muted)]">{statusLine}</p>
 
-	{#if providersNotice}
-		<p role="status" class="text-sm text-[var(--color-text-muted)]">{providersNotice}</p>
+	{#if nodeNotice}
+		<p role="status" class="text-sm text-[var(--color-text-muted)]">{nodeNotice}</p>
 	{/if}
 
 	<!-- `live` is what the drawing needs to move: motion says "happening now", so it is reserved for a
 	     connection frames are arriving on. A paused or dropped stream leaves the last known state on
 	     screen in colour and stops every moving part (draft 013 F2). -->
-	<UsageTopology {providers} {active} {last} {error} live={report.status === 'live'} />
+	<UsageTopology {providers} {combos} {active} {last} {error} live={report.status === 'live'} />
 
 	<!-- Rendered only when the frame carries finished requests. While none has, the screen's statement of
 	     that is the drawing's colours and the status chip, not a sentence (owner's correction,

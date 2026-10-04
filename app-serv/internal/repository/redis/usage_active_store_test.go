@@ -45,9 +45,11 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// activeStoreFixture returns a store over a flushed Redis, so each case reads a
-// keyspace that belongs to it alone.
-func activeStoreFixture(t *testing.T) (*ActiveRequestStore, context.Context) {
+// activeStoreFixture returns a store, its client, and a context over a flushed
+// Redis, so each case reads a keyspace that belongs to it alone. The client
+// comes back as well because one case has to plant a member the store itself
+// would never write.
+func activeStoreFixture(t *testing.T) (*ActiveRequestStore, *redis.Client, context.Context) {
 	t.Helper()
 	raw := os.Getenv(testRedisEnv)
 	if raw == "" {
@@ -63,7 +65,7 @@ func activeStoreFixture(t *testing.T) (*ActiveRequestStore, context.Context) {
 	if err := client.FlushDB(ctx).Err(); err != nil {
 		t.Fatalf("flushing Redis: %v", err)
 	}
-	return NewActiveRequestStore(client), ctx
+	return NewActiveRequestStore(client), client, ctx
 }
 
 // TestActiveRequestStore_RoundTrip covers the write, read, and remove lifecycle
@@ -71,13 +73,14 @@ func activeStoreFixture(t *testing.T) (*ActiveRequestStore, context.Context) {
 // at the cutoff instant is stale, one just inside it is live, and removing a
 // marker that is already gone is not a failure.
 func TestActiveRequestStore_RoundTrip(t *testing.T) {
-	store, ctx := activeStoreFixture(t)
+	store, _, ctx := activeStoreFixture(t)
 	now := time.Date(2026, 9, 22, 10, 0, 0, 0, time.UTC)
 
 	cases := []struct {
 		name      string
 		requestID string
 		provider  string
+		combo     string
 		startedAt time.Time
 		wantLive  bool
 	}{
@@ -94,10 +97,17 @@ func TestActiveRequestStore_RoundTrip(t *testing.T) {
 			name: "a call well past the window is stale", requestID: "req_ancient", provider: "mistral",
 			startedAt: now.Add(-24 * time.Hour), wantLive: false,
 		},
+		{
+			name: "a combo-addressed call keeps its combo", requestID: "req_combo", provider: "openai",
+			combo: "pro-tier", startedAt: now, wantLive: true,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			marker, err := domain.NewActiveRequest(tc.requestID, tc.provider, "ep_active", "gpt-4o", tc.startedAt)
+			marker, err := domain.NewActiveRequest(domain.ActiveRequestInput{
+				RequestID: tc.requestID, ProviderID: tc.provider, EndpointID: "ep_active",
+				Model: "gpt-4o", Combo: tc.combo,
+			}, tc.startedAt)
 			if err != nil {
 				t.Fatalf("building the marker: %v", err)
 			}
@@ -115,6 +125,9 @@ func TestActiveRequestStore_RoundTrip(t *testing.T) {
 					found = true
 					if got.ProviderID != tc.provider || got.RequestID != tc.requestID {
 						t.Fatalf("marker read back = %+v, want provider %q and request %q", got, tc.provider, tc.requestID)
+					}
+					if got.Combo != tc.combo {
+						t.Fatalf("marker read back with combo %q, want %q", got.Combo, tc.combo)
 					}
 				}
 			}
@@ -147,14 +160,18 @@ func TestActiveRequestStore_RoundTrip(t *testing.T) {
 // bound: the read removes what it found stale, so a marker left behind by a
 // process that died cannot accumulate forever.
 func TestActiveRequestStore_PrunesStaleMarkersOnRead(t *testing.T) {
-	store, ctx := activeStoreFixture(t)
+	store, _, ctx := activeStoreFixture(t)
 	now := time.Date(2026, 9, 22, 10, 0, 0, 0, time.UTC)
 
-	stale, err := domain.NewActiveRequest("req_stale", "openai", "ep_1", "gpt-4o", now.Add(-2*time.Hour))
+	stale, err := domain.NewActiveRequest(domain.ActiveRequestInput{
+		RequestID: "req_stale", ProviderID: "openai", EndpointID: "ep_1", Model: "gpt-4o",
+	}, now.Add(-2*time.Hour))
 	if err != nil {
 		t.Fatalf("building the stale marker: %v", err)
 	}
-	fresh, err := domain.NewActiveRequest("req_fresh", "openai", "ep_1", "gpt-4o", now)
+	fresh, err := domain.NewActiveRequest(domain.ActiveRequestInput{
+		RequestID: "req_fresh", ProviderID: "openai", EndpointID: "ep_1", Model: "gpt-4o",
+	}, now)
 	if err != nil {
 		t.Fatalf("building the fresh marker: %v", err)
 	}

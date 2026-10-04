@@ -699,12 +699,18 @@ grouping the page first-seen reproduces the server's group order. Defaults are t
 (page 1, per_page 25); the panel sends its card page size explicitly. The per-endpoint routes are
 unchanged.
 
-**The live stream (draft 013 F4, 2026-09-22).** `GET /api/v1/usage/live` is the one Usage read that is
+**The live stream (draft 013 F4, 2026-09-22; the combo name is draft 043 F1, 2026-10-03).**
+`GET /api/v1/usage/live` is the one Usage read that is
 not a period window: an in-flight request exists only between two reads, so no poll can state one, and
 the route carries the three facts a window cannot. Each frame is **full state**, not a delta, for
 `active` (the requests being routed right now, oldest first), `recent` (the requests that just finished,
 newest first), and `error_provider` (the provider the gateway last reported an error for, or an empty
-string). Both lists are always arrays and never `null`: an empty in-flight set is a fact, and `null`
+string). An `active` entry carries `combo` beside `model`: the name of the model combo the client
+addressed, or an empty string when the request addressed a single model. The two are different facts about
+one call — the combo is what the caller named and `model` is the member that answered — which is why the
+field is added alongside rather than replacing anything, and it is always present, so "no combo" is stated
+rather than left as a missing key. The field is additive and v1's shape is unchanged otherwise; `recent`
+carries no combo, because nothing on the panel reads a finished row's combo from the stream. Both lists are always arrays and never `null`: an empty in-flight set is a fact, and `null`
 would be a second spelling of it. The frame is sent when that state changes, and an idle connection
 receives an SSE comment (`: ping`) rather than a frame, so a client counting frames is never told a
 change happened. The status line and the SSE headers are committed with the first frame, which is the
@@ -718,7 +724,13 @@ restate what `summary` and `timeseries` returned. The in-flight set is a Redis s
 embeddings planes at their outbound seam and removed when the call returns; a marker older than 60
 seconds is treated as stale and pruned, so a gateway that dies mid-request cannot leave a node lit
 forever. The 60 second window matches the panel's own guard, so both halves of that rule use one
-figure.
+figure. Only the chat plane names a combo on a marker: the media, embeddings and SystemOne planes refuse a
+combo before they mark anything, so their markers carry an empty one. A member the reading build cannot
+decode is skipped and **left in the set**, not removed: the payload crosses a Redis instance more than one
+process writes to, and deleting a value the reader does not recognize would let a build with no idea what
+it erased suppress another process's live request. The score prune the same read runs collects a genuinely
+dead member inside the 60 second window, and the decoder still refuses to return a foreign member, so the
+A08 posture on a shared value is unchanged.
 
 **Aggregate latency is a sum (draft 010 F3, 2026-09-22).** `latency_ms` on a `UsageTotals` block,
 which is the summary's own totals, every `groups[]` row, and every `buckets[]` point, is the **sum**

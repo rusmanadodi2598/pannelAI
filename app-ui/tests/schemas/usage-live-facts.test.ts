@@ -9,7 +9,13 @@
 
 import { describe, expect, it } from 'vitest';
 import type { UsageLiveActive } from '$lib/schemas/usage-live';
-import { liveFacts, providerDisplayName, type LiveFact } from '$lib/schemas/usage-live-view';
+import {
+	activeComboNames,
+	directCount,
+	liveFacts,
+	providerDisplayName,
+	type LiveFact
+} from '$lib/schemas/usage-live-view';
 import { forEachCase } from '../support/tables';
 
 const PROVIDERS = [
@@ -17,11 +23,12 @@ const PROVIDERS = [
 	{ id: 'anthropic', name: 'Anthropic' }
 ];
 
-function entry(providerId: string, model?: string): UsageLiveActive {
+function entry(providerId: string, model?: string, combo?: string): UsageLiveActive {
 	return {
 		provider_id: providerId,
 		started_at: '2026-09-27T10:00:00Z',
-		...(model === undefined ? {} : { model })
+		...(model === undefined ? {} : { model }),
+		...(combo === undefined ? {} : { combo })
 	};
 }
 
@@ -57,6 +64,44 @@ const FACTS_CASES: FactsCase[] = [
 		last: '',
 		error: '',
 		expected: [{ label: '1 in flight', value: 'OpenAI', tone: 'status' }]
+	},
+	{
+		// The drawing encodes the combo, so the row has to state it: the drawing is hidden from assistive
+		// technology and this row is what says in words what its nodes claim (SPEC-UI §6.5).
+		name: 'names the combo a request entered through before the upstream that answered',
+		active: [entry('openai', 'gpt-4o', 'pro-tier')],
+		last: '',
+		error: '',
+		expected: [{ label: '1 in flight', value: 'pro-tier → OpenAI (gpt-4o)', tone: 'status' }]
+	},
+	{
+		name: 'states no arrow for a frame that carries no combo',
+		active: [entry('openai', 'gpt-4o', '   ')],
+		last: '',
+		error: '',
+		expected: [{ label: '1 in flight', value: 'OpenAI (gpt-4o)', tone: 'status' }]
+	},
+	{
+		// A combo is addressed by a name the operator typed, and `openai` is a legal one. Resolving it
+		// through the provider registry would restate a combo as a vendor and light the wrong fact.
+		name: 'leaves a combo whose name matches a provider as its own name',
+		active: [entry('openai', 'gpt-4o', 'openai')],
+		last: '',
+		error: '',
+		expected: [{ label: '1 in flight', value: 'openai → OpenAI (gpt-4o)', tone: 'status' }]
+	},
+	{
+		name: 'names the combo on every entry that carries one',
+		active: [entry('openai', 'gpt-4o', 'pro-tier'), entry('anthropic', undefined, 'fast')],
+		last: '',
+		error: '',
+		expected: [
+			{
+				label: '2 in flight',
+				value: 'pro-tier → OpenAI (gpt-4o), fast → Anthropic',
+				tone: 'status'
+			}
+		]
 	},
 	{
 		name: 'states the finished and error facts plainly, in the order the stream reports them',
@@ -100,6 +145,75 @@ describe('liveFacts', () => {
 			expect(fact.value.endsWith('.')).toBe(false);
 			expect(fact.label.endsWith('.')).toBe(false);
 		}
+	});
+});
+
+describe('directCount', () => {
+	const directCases = [
+		{
+			name: 'nothing in flight',
+			active: [] as UsageLiveActive[],
+			expected: 0
+		},
+		{
+			name: 'every entry addressed a single model',
+			active: [entry('openai'), entry('anthropic', 'claude')],
+			expected: 2
+		},
+		{
+			name: 'every entry entered through a combo',
+			active: [entry('openai', 'gpt-4o', 'pro-tier'), entry('anthropic', undefined, 'fast')],
+			expected: 0
+		},
+		{
+			// The drawing lights its direct hop from this figure, so a blank on the wire counts as no combo
+			// rather than as a combo with an empty name.
+			name: 'a combo field that is only whitespace is no combo',
+			active: [entry('openai', 'gpt-4o', '   ')],
+			expected: 1
+		}
+	];
+
+	forEachCase(directCases, (testCase) => {
+		expect(directCount(testCase.active)).toBe(testCase.expected);
+	});
+});
+
+describe('activeComboNames', () => {
+	const nameCases = [
+		{
+			name: 'nothing in flight',
+			active: [] as UsageLiveActive[],
+			expected: [] as string[]
+		},
+		{
+			name: 'entries that carry no combo',
+			active: [entry('openai'), entry('anthropic')],
+			expected: []
+		},
+		{
+			name: 'one combo behind two upstreams, as a fusion combo fails over',
+			active: [entry('openai', 'gpt-4o', 'pro-tier'), entry('anthropic', 'claude', 'pro-tier')],
+			expected: ['pro-tier']
+		},
+		{
+			name: 'two combos in flight, in the order the frame reports them',
+			active: [entry('openai', 'gpt-4o', 'fast'), entry('anthropic', 'claude', 'pro-tier')],
+			expected: ['fast', 'pro-tier']
+		},
+		{
+			name: 'a combo whose name is only whitespace',
+			active: [entry('openai', 'gpt-4o', '   ')],
+			expected: []
+		}
+	];
+
+	forEachCase(nameCases, (testCase) => {
+		expect(activeComboNames(testCase.active)).toEqual(testCase.expected);
+	});
+
+	it('keeps the spelling the gateway sent, because the band compares it exactly', () => {
+		expect(activeComboNames([entry('openai', undefined, 'Pro-Tier')])).toEqual(['Pro-Tier']);
 	});
 });
 

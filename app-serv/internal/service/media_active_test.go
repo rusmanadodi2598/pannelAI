@@ -39,9 +39,9 @@ type activeRecorderDouble struct {
 	stillOpen int
 }
 
-func (r *activeRecorderDouble) Begin(_ context.Context, providerID, _, _ string) func() {
+func (r *activeRecorderDouble) Begin(_ context.Context, marker dataplane.ActiveMarker) func() {
 	r.mu.Lock()
-	r.begun = append(r.begun, providerID)
+	r.begun = append(r.begun, marker.ProviderID)
 	r.stillOpen++
 	r.mu.Unlock()
 
