@@ -36,6 +36,7 @@ run_gate() {
 }
 
 run_gate "go lint (vet, gofmt, staticcheck)" bash "$root/scrypts/gates/go-lint.sh"
+run_gate "antislop comment rules" bash "$root/scrypts/gates/antislop.sh"
 run_gate "go test (race)" bash "$root/scrypts/gates/go-test.sh"
 run_gate "panel checks" bash "$root/scrypts/gates/panel-check.sh"
 run_gate "secrets" bash "$root/scrypts/gates/secrets.sh" --all
