@@ -76,8 +76,8 @@ func WriteJSON(w http.ResponseWriter, status int, v any) {
 }
 
 // ErrorCodeRecorder receives the machine code of an error response, so the
-// access log line can name why a request failed instead of only its status
-// (register G9). The router's access-log recorder implements it and the
+// access log line can name why a request failed instead of only its status.
+// The router's access-log recorder implements it and the
 // envelope middleware forwards it through the writer chain; a writer that does
 // not implement it is simply not asked, which is what keeps the seam optional
 // for a test driving a handler with a plain httptest.ResponseRecorder.

@@ -116,7 +116,7 @@ func (s *ModelCatalogService) Catalog(ctx context.Context, filter CatalogFilter)
 	// The active predicate runs after the other filters so the roll-up measures
 	// only the providers the request actually asked about, and it is skipped
 	// entirely when the parameter was not sent or was sent as false, the plain
-	// catalog read stays free of a query it never needed (draft 025).
+	// catalog read stays free of a query it never needed.
 	if filter.Active != nil && *filter.Active {
 		active, err := s.activeProviders(ctx, distinctProviderIDs(matched))
 		if err != nil {

@@ -93,7 +93,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Gate: in.Quotas,
 		// A credential-free provider with no stored endpoint answers on a
 		// synthesized one, so a free lane is usable the moment its provider is
-		// listed (draft 029 F8; the reference injects the same connection).
+		// listed; the reference injects the same connection.
 		// The index is the embedded registry overlaid with stored custom nodes,
 		// so a node the operator created is answerable by the same rule.
 		Registry: in.Index,
@@ -143,7 +143,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 
 	// One counter instance for every accounting site, so the chat, media, and
 	// embeddings planes advance the same Redis keys and cannot disagree about
-	// which windows a call bills against (§7.12, register G22). It is built here
+	// which windows a call bills against (§7.12). It is built here
 	// because this is the only function that owns both the Redis client and the
 	// data plane's services.
 	quotas := service.NewQuotaCounter(redisrepo.NewQuotaCounterStore(in.Redis), slog.Default())
@@ -156,7 +156,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Settings: in.Settings,
 		Usage:    in.Usage,
 		// The log service answers the §7.13 seam directly, so one chat call
-		// leaves the same accounting pair a media call does (register G18).
+		// leaves the same accounting pair a media call does.
 		Logs: in.Logs,
 		// The quota counters advance by the tokens the upstream billed, so the
 		// window the panel reads is what this gateway actually served (§7.12).

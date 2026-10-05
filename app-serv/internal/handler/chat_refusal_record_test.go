@@ -60,7 +60,7 @@ func (r *recordingLogs) rows() []domain.RequestLogInput {
 
 var _ service.RequestLogRecorder = (*recordingLogs)(nil)
 
-// TestChatCompletionsHTTP_RefusalRecorded pins draft 034 F4: a request the
+// TestChatCompletionsHTTP_RefusalRecorded pins that a request the
 // schema refuses after authentication still leaves its request-log row, with
 // the same code the client was served, and still leaves no usage row.
 func TestChatCompletionsHTTP_RefusalRecorded(t *testing.T) {
@@ -76,11 +76,11 @@ func TestChatCompletionsHTTP_RefusalRecorded(t *testing.T) {
 		wantUsageRows int
 	}{
 		{
-			// Draft 034 F4's own probe shape: an effort word the validator
+			// The probe shape: an effort word the validator
 			// refuses, after the decoder named the model, so the row can carry
-			// it. The register's original probe value "none" became a served
-			// word when F5 widened the vocabulary to the engine's own set, so
-			// the pin uses a word the vocabulary still refuses.
+			// it. The value "none" was once refused and became a served word
+			// when the vocabulary widened to the engine's own set, so the pin
+			// uses a word the vocabulary still refuses.
 			name:          "a refusal the reasoning vocabulary rejects is recorded with its model",
 			body:          effortProbe,
 			wantStatus:    http.StatusBadRequest,

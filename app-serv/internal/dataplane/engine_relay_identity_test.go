@@ -27,7 +27,7 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// TestRelay_FailureKeepsTheAttemptedIdentity pins register G17: a call that
+// TestRelay_FailureKeepsTheAttemptedIdentity pins that a call that
 // fails at the upstream still reports which provider, endpoint, and model it was
 // attempted against, because the chat plane writes its usage row from that
 // identity, a zero outcome carries nothing to record.

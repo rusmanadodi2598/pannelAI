@@ -123,7 +123,7 @@ func (g UsageGranularity) Interval() string {
 }
 
 // ParseUsageStatus validates a wire value against the closed set before it
-// reaches a query (draft 010 F2/F9). An unknown status is rejected rather than
+// reaches a query. An unknown status is rejected rather than
 // passed through, because the read predicate treats an empty value as
 // "unfiltered" and every other value as an equality, so a value outside the
 // set would silently match zero rows and answer 200.
@@ -138,7 +138,7 @@ func ParseUsageStatus(value string) (UsageStatus, error) {
 // UsageFilter narrows a usage read. Every text field is empty when unfiltered,
 // and From/To are always populated, because an unbounded range is not
 // requestable (AGENTS.md §1.7). Status is the domain value object, so a value
-// outside the closed set cannot be constructed into a filter (draft 010 F9).
+// outside the closed set cannot be constructed into a filter.
 type UsageFilter struct {
 	From       time.Time
 	To         time.Time
@@ -190,8 +190,7 @@ func NewUsageFilter(in UsageFilterInput, now time.Time) UsageFilter {
 // Validate rejects a filter the repository must not run: an inverted range, a
 // range wider than MaxUsageWindow, or a status outside the closed set. The
 // status rule lives here as well as at the wire boundary so a non-HTTP caller
-// cannot construct a filter whose predicate silently matches nothing
-// (draft 010 F9).
+// cannot construct a filter whose predicate silently matches nothing.
 func (f UsageFilter) Validate() error {
 	if f.To.Before(f.From) {
 		return NewValidationError("to must not be earlier than from")

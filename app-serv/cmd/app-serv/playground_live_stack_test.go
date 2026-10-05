@@ -78,7 +78,7 @@ type liveStack struct {
 //
 // An optional in-flight tracker is the one seam a live pass needs to add: the
 // Usage stream draws what the engine is calling, so a pass that reads that stream
-// has to hand the engine the same tracker the stream reads (draft 013 F4). The
+// has to hand the engine the same tracker the stream reads. The
 // variadic shape matches the fixture the data-plane tests already use, so a
 // caller that needs nothing extra passes nothing.
 func newLiveStack(t *testing.T, upstream *liveUpstream, active ...*service.ActiveRequestTracker) liveStack {

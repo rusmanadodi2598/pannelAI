@@ -1,5 +1,5 @@
 -- P1 parity: the five connection fields a reference "connection" carries and an
--- endpoint did not (draft 017 §4.1b, SPEC-API-001 §7.5).
+-- endpoint did not (SPEC-API-001 §7.5).
 --
 -- The endpoint stays the mutation boundary and the connection model is not
 -- imported: the reference keeps one row per credential, while this port keeps one

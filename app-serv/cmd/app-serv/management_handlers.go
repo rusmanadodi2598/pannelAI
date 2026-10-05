@@ -56,7 +56,7 @@ type managementHandlerInputs struct {
 func buildManagementHandlers(in managementHandlerInputs) (managementDeps, error) {
 	// §7.4 model tests probe through the same engine a client request uses, so a
 	// model the gateway cannot route never reports healthy from a route it would
-	// not take (draft 017 §4.10). It is built here rather than in the wiring file
+	// not take. It is built here rather than in the wiring file
 	// for the reason the estimate route is: the inputs this function already holds
 	// are exactly the two it needs.
 	modelTestSvc, err := service.NewProviderModelTestService(in.Provider, in.Plane.Engine)

@@ -33,7 +33,7 @@ import (
 
 // canonicalNodeIndex is the fixture's index overlaid with one custom node, the
 // shape the composition root hands the service in production. The node carries
-// an upstream model list, as draft 017's fix injects.
+// an upstream model list, as production injects it.
 func canonicalNodeIndex(t *testing.T) *registry.Index {
 	t.Helper()
 	base := testIndex(t, registry.Provider{

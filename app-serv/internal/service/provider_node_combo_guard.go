@@ -28,7 +28,7 @@ import (
 )
 
 // ComboLister lists the stored combos, which is what makes a node delete refuse
-// while a combo still references the node as a member (draft 028 F3): a combo
+// while a combo still references the node as a member: a combo
 // whose member loses its provider is attempted on every request and answers
 // with a refusal about a model the client never named. It is satisfied by the
 // concrete combo repository.

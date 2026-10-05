@@ -91,7 +91,7 @@ func (e *Engine) translateCallError(err error) error {
 			// The upstream refused this request itself (context overflow, an
 			// unsupported parameter): the same body would be refused by every
 			// other credential, so the chain stops and the client sees the
-			// refusal (draft 028 F2).
+			// refusal.
 			code = CodeUpstreamRejected
 		}
 		return wrapDataPlaneError(code, failure.Message, err)

@@ -202,7 +202,7 @@ func TestSystemOne_RefusesWhatItCannotServe(t *testing.T) {
 				t.Fatalf("upstream saw %d calls, want none", len(caller.requests))
 			}
 			// A refusal before the call leaves a log row and no usage row, the
-			// shape register G20 fixed for the media plane.
+			// same shape the media plane now records.
 			if len(logs.rows) != 1 {
 				t.Fatalf("log rows = %d, want one for the refusal", len(logs.rows))
 			}

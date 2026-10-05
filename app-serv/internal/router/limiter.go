@@ -32,7 +32,7 @@ import (
 // requestRateLimit applies one configured fixed window per client address. The
 // trusted-proxy set decides which address that is: with none configured the
 // direct peer is the whole rule, and a proxy the operator named hands the
-// bucket to the forwarded client (draft 042 R20).
+// bucket to the forwarded client.
 func requestRateLimit(next http.Handler, limiter repository.RateLimiter, limit int, trusted []*net.IPNet) http.Handler {
 	if limiter == nil || limit < 1 {
 		return next

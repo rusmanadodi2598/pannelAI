@@ -55,8 +55,7 @@ import (
 // The stream's own cadences, as defaults a test may shorten. The read interval is
 // short enough that a change reaches the screen promptly and long enough that a
 // quiet gateway costs one bounded read every second; the keepalive is under the
-// 25 seconds draft 010 §10.3 names, which is the interval an idle proxy needs to
-// see to keep the connection open.
+// 25 second bound an idle proxy needs to see to keep the connection open.
 const (
 	usageLiveReadInterval      = time.Second
 	usageLiveKeepaliveInterval = 20 * time.Second

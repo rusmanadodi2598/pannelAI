@@ -84,7 +84,7 @@ func run() error {
 	}
 
 	// The egress policy is built before the provider connectors so the Qoder
-	// exchange rides the guarded client (draft 042 R07); the trio travels with
+	// exchange rides the guarded client; the trio travels with
 	// the management graph.
 	settingsSvc, egressPolicy, sealer, err := buildFoundation(cfg, pool)
 	if err != nil {

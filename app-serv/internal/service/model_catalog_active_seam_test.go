@@ -106,7 +106,7 @@ func TestModelCatalogService_CatalogWithoutActiveNeverCounts(t *testing.T) {
 }
 
 // TestModelCatalogService_CatalogActiveAcceptsEveryProviderSpelling keeps the
-// draft 024 F3 rule intact under the new predicate: the provider filter still
+// rule intact under the new predicate: the provider filter still
 // accepts the registry alias, the rows are stored under the canonical id, and
 // the active question is asked about that canonical id.
 func TestModelCatalogService_CatalogActiveAcceptsEveryProviderSpelling(t *testing.T) {
@@ -131,8 +131,8 @@ func TestModelCatalogService_CatalogActiveAcceptsEveryProviderSpelling(t *testin
 	wantCatalog(t, service, CatalogFilter{ProviderID: "ks", Active: ptrFalse()}, []string{"kserve/glm-4.7"})
 }
 
-// ptrFalse is the explicit-false filter, which means "do not narrow" (draft 025
-// §6 ruling 2) and is spelled once so the case above reads as intent.
+// ptrFalse is the explicit-false filter, which means "do not narrow" and is
+// spelled once so the case above reads as intent.
 func ptrFalse() *bool {
 	value := false
 	return &value

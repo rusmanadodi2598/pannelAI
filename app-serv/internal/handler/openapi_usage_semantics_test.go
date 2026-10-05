@@ -64,7 +64,7 @@ func propertyDescription(t *testing.T, schemaName, property string) string {
 }
 
 // TestOpenAPIContract_AggregateLatencyIsStatedAsASum pins the semantic the
-// panel already acted on (draft 010 F3, owner decision D1 = document): the
+// panel already acted on: the
 // aggregate field is a sum that grows with the request count, the per-request
 // picture is the two percentiles, and the only field that means one
 // measurement is the record's own.
@@ -104,9 +104,9 @@ func TestOpenAPIContract_AggregateLatencyIsStatedAsASum(t *testing.T) {
 	})
 }
 
-// TestOpenAPIContract_FreeTextScopeIsStated pins what q searches (draft 010
-// F8, owner decision D4 = expand), so the panel's placeholder is a promise the
-// contract makes rather than one the gateway happens to keep.
+// TestOpenAPIContract_FreeTextScopeIsStated pins what q searches, so the
+// panel's placeholder is a promise the contract makes rather than one the
+// gateway happens to keep.
 func TestOpenAPIContract_FreeTextScopeIsStated(t *testing.T) {
 	cases := []struct {
 		path string

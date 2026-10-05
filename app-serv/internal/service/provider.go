@@ -46,7 +46,7 @@ type ProviderService struct {
 // optional: without it a provider list still renders, with every roll-up
 // reported as zero rather than the request failing. Source is optional too: a
 // deployment that wires none answers a custom node from the registry alone,
-// which is the state before draft 017 §4.2's fix rather than a failure. Custom
+// which is the degraded pre-overlay answer rather than a failure. Custom
 // is optional for the same reason: a deployment that never declares a custom
 // model answers the registry's own level set, which is the union before the
 // operator's rows existed.
@@ -126,8 +126,8 @@ func (s *ProviderService) List(ctx context.Context, filter ProviderFilter, page,
 // Models returns one provider's model list and the origin of that list.
 //
 // It used to return the registry entry alone, which for a custom node was an
-// entry with no models: draft 017 §4.2 measured the node appearing in four
-// surfaces with `len(entry.Models) = 0`. The list is resolved here rather than
+// entry with no models: the node was measured appearing in four surfaces
+// with `len(entry.Models) = 0`. The list is resolved here rather than
 // in the overlay because the answer has two parts, the models and where they
 // came from, and the second belongs to the layer that decides.
 func (s *ProviderService) Models(ctx context.Context, providerID string) (ProviderModelList, error) {

@@ -40,11 +40,10 @@ const logDetailColumns = logListColumns + `, coalesce(request_body, ''), coalesc
 // ever unbounded. An empty parameter disables its filter, and the free-text `q`
 // matches a case-insensitive substring of the request id, the error text, and
 // the model, because the panel's placeholder promises a request id and an error
-// code (draft 010 F8, owner decision D4 = expand). A NULL error needs no
-// coalesce for the same reason a NULL error_code does not on the usage read:
-// `false OR NULL` excludes a row exactly as `false` does, so the OR can only
-// add a match. Keeping the FROM here means a read cannot reference a bare
-// column by mistake.
+// code. A NULL error needs no coalesce for the same reason a NULL error_code
+// does not on the usage read: `false OR NULL` excludes a row exactly as
+// `false` does, so the OR can only add a match. Keeping the FROM here means a
+// read cannot reference a bare column by mistake.
 const logFilterClause = `
 	  FROM request_logs
 	 WHERE ts >= $1 AND ts <= $2

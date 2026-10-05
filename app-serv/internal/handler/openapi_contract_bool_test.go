@@ -30,7 +30,7 @@ import (
 
 // TestOpenAPIContract_BooleanQueryParametersAreClosed pins that every boolean
 // query parameter declares both spellings, so the document a generated client
-// reads agrees with the boundary's closed set (draft 025 F5): a parameter the
+// reads agrees with the boundary's closed set: a parameter the
 // gateway refuses on `yes` must not be documented as a bare boolean a client
 // could fill with `1`.
 func TestOpenAPIContract_BooleanQueryParametersAreClosed(t *testing.T) {

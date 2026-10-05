@@ -81,7 +81,7 @@ type EndpointResponse struct {
 	CreatedAt        string                      `json:"created_at"`
 	UpdatedAt        string                      `json:"updated_at"`
 
-	// The connection-parity fields (draft 017 §4.1b). GlobalPriority is 0 when
+	// The connection-parity fields. GlobalPriority is 0 when
 	// unset; DefaultModel and ProxyPoolID are empty when unset. LastError is
 	// absent until an upstream failure that was not a connectivity test, and its
 	// message is scrubbed of credential material before it is stored.

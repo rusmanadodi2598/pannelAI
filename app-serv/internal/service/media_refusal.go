@@ -31,10 +31,10 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
-// prepareForCall runs Prepare and records the one log row a refusal leaves
-// (register G20), so a media call the client saw fail is visible in the Logs
-// screen even though no upstream was dialed. The usage row stays unwritten:
-// nothing reached an attempt.
+// prepareForCall runs Prepare and records the one log row a refusal leaves,
+// so a media call the client saw fail is visible in the Logs screen even
+// though no upstream was dialed. The usage row stays unwritten: nothing
+// reached an attempt.
 func (s *MediaCallService) prepareForCall(ctx context.Context, model string, kind domain.MediaKind, query map[string]string, keyID string) (MediaCall, error) {
 	call, err := s.Prepare(ctx, model, kind, query)
 	if err != nil {

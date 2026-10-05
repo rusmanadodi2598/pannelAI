@@ -165,8 +165,8 @@ func (l RequestLog) HasBodies() bool {
 // LogFilter narrows a request-log read. From and To are always populated, so a
 // log query can never be an unbounded scan (AGENTS.md §1.7). Status is the
 // domain value object, so a value outside the closed set cannot be constructed
-// into a filter (draft 010 F2/F9: the logs route shares the usage decoder, so
-// it holds the same rule).
+// into a filter: the logs route shares the usage decoder, so it holds the
+// same rule.
 type LogFilter struct {
 	From       time.Time
 	To         time.Time

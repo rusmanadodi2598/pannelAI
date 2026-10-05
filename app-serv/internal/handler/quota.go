@@ -42,7 +42,7 @@ func NewQuotaHandler(quotas *service.QuotaService) *QuotaHandler {
 // group, so one page carries whole cards; per_page counts groups on this route,
 // and the meta block reports the total group count. The params go through the
 // house decoder, so an out-of-range value is a refusal rather than a clamp
-// (SPEC-API-001 §4, draft 010 F6).
+// (SPEC-API-001 §4).
 func (h *QuotaHandler) List(w http.ResponseWriter, r *http.Request) {
 	page, perPage, err := schema.DecodePage(r)
 	if err != nil {
@@ -113,7 +113,7 @@ func (h *QuotaHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // PutCap serves PUT /api/v1/quotas/{endpoint_id}: it replaces the cap set for
 // one endpoint and returns the stored value. An endpoint the gateway does not
-// know is refused by the service with NOT_FOUND (draft 005 F2).
+// know is refused by the service with NOT_FOUND.
 func (h *QuotaHandler) PutCap(w http.ResponseWriter, r *http.Request) {
 	endpointID := r.PathValue("endpoint_id")
 	var req schema.QuotaCapRequest

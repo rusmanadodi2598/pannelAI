@@ -44,7 +44,7 @@ import (
 // TestNodeModels_ReachEverySurfaceThatReadsProviderModels is the closure test.
 //
 // It builds the real overlay over a real stored node whose upstream answers two
-// models, then asks the three surfaces draft 017 §4.2 lists as empty.
+// models, then asks the three surfaces that were answering empty.
 func TestNodeModels_ReachEverySurfaceThatReadsProviderModels(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(`{"data":[{"id":"upstream-one"},{"id":"upstream-two"}]}`))
@@ -126,7 +126,7 @@ func TestNodeModels_ReachEverySurfaceThatReadsProviderModels(t *testing.T) {
 	}
 	// A node publishes under the prefix its operator types, not under the id the
 	// gateway minted: both resolve, and only one is a string anyone using the panel
-	// knows (draft 021 F10, owner decision 2026-10-02).
+	// knows.
 	found := 0
 	for _, model := range models.Data {
 		if strings.HasPrefix(model.ID, "corp/") {

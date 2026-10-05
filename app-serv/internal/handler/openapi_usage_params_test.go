@@ -28,7 +28,7 @@ import (
 )
 
 // usageParamSchema is the part of a query parameter's schema these tests read.
-// Description is carried for the semantics tests (draft 010 F3/F8), which pin
+// Description is carried for the semantics tests, which pin
 // the sentences a consumer reads rather than a bound.
 type usageParamSchema struct {
 	Type        string   `json:"type"`
@@ -73,7 +73,7 @@ func findUsageParam(t *testing.T, path, method, name string) (contractParameter,
 }
 
 // TestOpenAPIContract_UsageWindowParamsAreDateTimes pins the RFC3339 rule the
-// boundary enforces (draft 010 F7): a consumer reading the contract must learn
+// boundary enforces: a consumer reading the contract must learn
 // that from/to are timestamps, not bare strings.
 func TestOpenAPIContract_UsageWindowParamsAreDateTimes(t *testing.T) {
 	reads := []string{
@@ -102,7 +102,7 @@ func TestOpenAPIContract_UsageWindowParamsAreDateTimes(t *testing.T) {
 
 // TestOpenAPIContract_UsageEnumParams pins the closed sets the boundary
 // enforces: group_by, granularity on the reads that accept them, and the
-// status set shared with the logs route (draft 010 F2, already closed).
+// status set shared with the logs route.
 func TestOpenAPIContract_UsageEnumParams(t *testing.T) {
 	cases := []struct {
 		path string
@@ -135,8 +135,8 @@ func TestOpenAPIContract_UsageEnumParams(t *testing.T) {
 
 // TestOpenAPIContract_PaginationParamsAreBounded pins the pagination bounds on
 // every management list route that declares page/per_page, so the contract
-// states the same range the boundary enforces (draft 010 F6, owner decision
-// D3: refusal, with the documented default).
+// states the same range the boundary enforces (refusal, with the documented
+// default).
 func TestOpenAPIContract_PaginationParamsAreBounded(t *testing.T) {
 	doc := loadContract(t)
 	checked := 0

@@ -114,7 +114,7 @@ func TestQoderRefusals(t *testing.T) {
 	})
 	t.Run("nil egress client", func(t *testing.T) {
 		// SSRF §2.1: the connector must not build its own unguarded client. A nil
-		// client is a boot-time refusal, not a silent fallback (draft 042 R07).
+		// client is a boot-time refusal, not a silent fallback.
 		if _, err := NewQoder(qoderEntry("qoder", "https://openapi.qoder.sh", qoderChatURLIntl), nil); err == nil {
 			t.Fatal("a nil egress client was accepted")
 		}

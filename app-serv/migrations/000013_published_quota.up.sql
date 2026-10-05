@@ -1,5 +1,5 @@
 -- P1 quota tracker: the cache of what a provider publishes about ITSELF
--- (SPEC-API-001 §7.12, draft 017 §4.3).
+-- (SPEC-API-001 §7.12).
 --
 -- The screen must show the provider's own numbers, but fetching them on read is
 -- forbidden: a quota screen over a few hundred accounts would fan out to a few

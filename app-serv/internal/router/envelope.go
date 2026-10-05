@@ -90,7 +90,7 @@ func (rec *statusRecorder) Write(b []byte) (int, error) {
 }
 
 // SetErrorCode forwards an error code to the recorder inside, so the access log
-// can name why the request failed (register G9). The forwarding is explicit
+// can name why the request failed. The forwarding is explicit
 // because Go promotes only the methods of the embedded interface
 // (http.ResponseWriter) and not the extra ones the concrete value behind it
 // carries, without this method a handler's SetErrorCode assertion would fail on
@@ -115,7 +115,7 @@ func (rec *statusRecorder) RequestID() string {
 // Flush forwards the flush to the writer inside, because Go promotes only the
 // methods of the embedded interface and not http.Flusher: without this method a
 // stream's `sseSink.Flush()` is a no-op under the chain, and the whole answer
-// arrives as one blob when the handler returns (draft 010 F5). A suppressed
+// arrives as one blob when the handler returns. A suppressed
 // response is never flushed: the flush would commit a status line of its own
 // before envelope() could write the §8 body it is withholding.
 func (rec *statusRecorder) Flush() {

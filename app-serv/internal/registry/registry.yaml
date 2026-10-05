@@ -701,11 +701,11 @@ providers:
       retry:
         # Qoder's free model (qfmodel) answers the signed request with "all backends
         # failed" / "Workspace allocated quota exceeded" while its shared free pool is
-        # momentarily out, and serves the identical request seconds later (draft 036
-        # §9.2). These refusals arrive before any byte reaches the caller, so repeating
-        # is safe; they are spaced on a seconds-scale ladder so a retry does not re-fire
-        # inside the same fail-streak. A real spend (403, the paid "auto" refusal) is
-        # NOT here: it parks the credential instead of retrying.
+        # momentarily out, and serves the identical request seconds later. These
+        # refusals arrive before any byte reaches the caller, so repeating is safe;
+        # they are spaced on a seconds-scale ladder so a retry does not re-fire inside
+        # the same fail-streak. A real spend (403, the paid "auto" refusal) is NOT
+        # here: it parks the credential instead of retrying.
         429:
           attempts: 5
           backoff_ms: 2000

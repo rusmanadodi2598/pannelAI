@@ -78,9 +78,9 @@ func toEndpointResponse(endpoint domain.UpstreamEndpoint, now time.Time, withKey
 		CreatedAt:      schema.Timestamp(endpoint.CreatedAt()),
 		UpdatedAt:      schema.Timestamp(endpoint.UpdatedAt()),
 
-		// The connection-parity fields (draft 017 §4.1b): the operator-settable
+		// The connection-parity fields: the operator-settable
 		// routing values, the served-call run, and the last upstream failure
-		// the data plane recorded (R17).
+		// the data plane recorded.
 		GlobalPriority:      endpoint.GlobalPriority(),
 		DefaultModel:        endpoint.DefaultModel(),
 		ConsecutiveUseCount: endpoint.ConsecutiveUseCount(),

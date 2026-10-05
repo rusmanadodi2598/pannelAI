@@ -35,7 +35,7 @@ import (
 
 // TestUsageHandler_Records covers the paged read: the default page size, the
 // meta block echoing what the caller asked for, the pagination refusals the
-// shared decoder now makes (draft 010 F6), and a storage failure as 500.
+// shared decoder now makes, and a storage failure as 500.
 func TestUsageHandler_Records(t *testing.T) {
 	cases := []usageCase{
 		{

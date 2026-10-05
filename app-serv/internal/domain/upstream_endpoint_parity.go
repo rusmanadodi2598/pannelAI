@@ -57,7 +57,7 @@ type EndpointParity struct {
 }
 
 // Accessors for the parity fields. They are grouped here rather than beside the
-// other accessors so the five fields draft 017 §4.1b adds stay legible as one
+// other accessors so the five connection-parity fields stay legible as one
 // set.
 
 // GlobalPriority is the endpoint's order across providers: a lower value is

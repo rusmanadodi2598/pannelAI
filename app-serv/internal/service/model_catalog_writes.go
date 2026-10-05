@@ -30,7 +30,7 @@ import (
 //
 // The filter accepts every spelling the provider answers to, its id, its
 // registry alias, or a node prefix, through the same canonical set the catalog
-// filter uses (draft 024 §3.2), so an operator narrowing by alias sees the same
+// filter uses, so an operator narrowing by alias sees the same
 // rows the id form shows. An empty value means "no filter", which is distinct
 // from a filter matching nothing.
 func (s *ModelCatalogService) Custom(ctx context.Context, providerID string) ([]domain.CustomModel, error) {
@@ -171,7 +171,7 @@ func (s *ModelCatalogService) ReplaceDisabled(ctx context.Context, refs []domain
 		}
 		// A pair spelled with an alias or a node prefix names the same model as
 		// the id form, so it is accepted the same way every other write accepts
-		// it (draft 024 §3.2). The stored pair keeps the operator's spelling.
+		// it. The stored pair keeps the operator's spelling.
 		if view.resolvesIn(ref) {
 			continue
 		}

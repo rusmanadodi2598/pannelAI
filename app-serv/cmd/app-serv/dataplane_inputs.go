@@ -43,7 +43,7 @@ type dataPlaneInputs struct {
 	Endpoints repository.EndpointRepository
 	// Active answers which providers hold an endpoint the router would still pick.
 	// The models list filters by it, so a client is never handed a model the
-	// selector has no candidate for (draft 021 F8).
+	// selector has no candidate for.
 	Active dataplane.ActiveEndpointReader
 	Combos repository.ComboRepository
 	// ComboOrder is the §7.7 order seam, satisfied by the combo service: the

@@ -65,7 +65,7 @@ type StreamState struct {
 	// counts as emitted the moment it is forwarded: a second, synthetic one is
 	// what a client counting finish reasons reads as a second answer. A second
 	// finish frame the upstream itself sends is the same harm, so its reason is
-	// stripped while its other members forward (draft 034 F2).
+	// stripped while its other members forward.
 	finishSent bool
 	// includeUsage reports whether the client asked for a usage chunk.
 	includeUsage bool
@@ -80,7 +80,7 @@ type StreamState struct {
 	// usageSent reports whether the client's stream already carried usage: the
 	// gateway's own chunk marks it when emitted, and so does a forwarded frame
 	// that itself carries a usage object, so one stream carries at most one
-	// delivery of the numbers (draft 021 F2, 034 F1). The upstream may state
+	// delivery of the numbers. The upstream may state
 	// them on the finish frame or in a frame after it; whichever form the
 	// client saw, Finish adds nothing once the numbers are on the wire.
 	usageSent bool
@@ -153,7 +153,7 @@ func (s *StreamState) Finish() [][]byte {
 		// The frame is built by the gateway, so it is framed here: a client only
 		// flushes what arrives as a complete event, and an unframed frame glued
 		// onto the terminal marker is what made the panel read the stream as
-		// truncated (draft 021 F1).
+		// truncated.
 		frames = append(frames, Frame(s.chunk(schema.Delta{}, &reason)))
 		s.finishSent = true
 	}

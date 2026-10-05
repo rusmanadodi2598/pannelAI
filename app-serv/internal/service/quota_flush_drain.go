@@ -77,7 +77,7 @@ func (f *QuotaFlusher) drain(ctx context.Context) {
 // batchIdentity names a batch by the endpoint and window kind each of its
 // windows bills against, so a retry of the same batch is recognised and a
 // different batch is not charged with its failures. Keying on the window kind
-// alone (draft 005 F4) made two failing batches of the same shape share one
+// alone made two failing batches of the same shape share one
 // attempt count, so one batch could be dead-lettered for failures it never
 // caused. The names are sorted because Pending reads live Redis state, and two
 // reads of one unchanged keyspace can arrive in a different order without the

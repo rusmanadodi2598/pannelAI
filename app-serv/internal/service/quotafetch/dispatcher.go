@@ -24,7 +24,7 @@ const requestTimeout = 20 * time.Second
 
 // client is the outbound client every fetch shares. The timeout lives here rather than
 // per request because the package owns the whole call. The composition root installs
-// the process egress client once at boot (UseEgressClient, draft 042 R08), so every
+// the process egress client once at boot (UseEgressClient), so every
 // family's read rides the same guarded transport the data plane does. Until that
 // install the default still refuses redirects, so a quota host cannot bounce a read
 // cross-host carrying its credential headers.
@@ -36,7 +36,7 @@ var client = &http.Client{Timeout: requestTimeout, CheckRedirect: noRedirect}
 func noRedirect(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 
 // UseEgressClient installs the process egress client every fetch shares, so quota
-// reads leave through the same guarded transport as the data plane (draft 042 R08).
+// reads leave through the same guarded transport as the data plane.
 // It borrows the client's transport, the guard lives there, on the dialer, and its
 // redirect rule, and keeps this package's own timeout, because the quota poll owns
 // the whole call and a hung read must not hold a worker slot. A client without a

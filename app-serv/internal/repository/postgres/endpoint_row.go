@@ -30,7 +30,7 @@ import (
 
 // endpointColumns is the projection every endpoint read uses, in scan order.
 //
-// The connection-parity columns (draft 017 §4.1b) are part of the projection
+// The connection-parity columns are part of the projection
 // rather than a second read: they are read on every endpoint load, and a second
 // query for five scalar columns would be the N+1 shape AGENTS.md §1.7 forbids.
 const endpointColumns = `id, provider_id, label, auth_type, priority, status,
@@ -53,7 +53,7 @@ type endpointRow struct {
 	lastUsedAt            *time.Time
 	createdAt, updatedAt  time.Time
 
-	// The connection-parity columns (draft 017 §4.1b).
+	// The connection-parity columns.
 	globalPriority      *int
 	defaultModel        string
 	consecutiveUseCount int

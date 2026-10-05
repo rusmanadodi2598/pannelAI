@@ -64,7 +64,7 @@ func newOpenCodeFreeEngine(t *testing.T, upstreamURL string, seen *[]openCodeFre
 
 // newOpenCodeFreeEngineWith is the same wiring with the endpoint row optional, so
 // a test can prove the virtual-endpoint rule reaches the whole pipeline rather
-// than only the selector (draft 029 F8). A run with no row is what an operator
+// than only the selector. A run with no row is what an operator
 // gets on a fresh install, before anything is configured.
 func newOpenCodeFreeEngineWith(t *testing.T, upstreamURL string, seen *[]openCodeFreeCall, withEndpoint bool) *Engine {
 	t.Helper()

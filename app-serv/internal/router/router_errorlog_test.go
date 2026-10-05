@@ -52,7 +52,7 @@ func accessLine(t *testing.T, buffer *bytes.Buffer) string {
 	return lines[len(lines)-1]
 }
 
-// TestRoutes_AccessLogNamesTheFailureCode pins register G9: a failed request's
+// TestRoutes_AccessLogNamesTheFailureCode pins that a failed request's
 // access line carries the machine code beside the request id, whichever envelope
 // wrote it, a handler's management error, the mux's own 404/405, or a data-plane
 // error. The media-wired fixture is the one router that carries both a

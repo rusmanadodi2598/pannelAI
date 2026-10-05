@@ -93,7 +93,7 @@ func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 		endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
 		// The no-active-key shape is reached through the circuit, which owns the
 		// error state, not through a PATCH: the aggregate refuses disabling the
-		// last active key since draft 042 R03, exactly as it refuses removing it.
+		// last active key, exactly as it refuses removing it.
 		stored := store.keysByEndpoint[endpoint.ID()]
 		stored[0] = domain.RehydrateUpstreamKey(stored[0].ID(), stored[0].EndpointID(),
 			stored[0].Label(), stored[0].EncryptedValue(), stored[0].Hint(), stored[0].Priority(),

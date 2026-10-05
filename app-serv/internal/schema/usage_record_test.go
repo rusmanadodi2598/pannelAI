@@ -29,7 +29,7 @@ import (
 
 // TestValidateQuotaCap covers the cap body's rule set at the wire boundary:
 // legal caps pass on every path, and each refusal names the rule, so the wire
-// validator and the domain constructor cannot drift apart (draft 005 F5).
+// validator and the domain constructor cannot drift apart.
 func TestValidateQuotaCap(t *testing.T) {
 	atTokenCeiling := domain.MaxQuotaMonthlyTokens
 	pastTokenCeiling := domain.MaxQuotaMonthlyTokens + 1

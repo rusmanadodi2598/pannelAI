@@ -128,7 +128,7 @@ func TestCapabilities_MatchesTheReferenceCorpus(t *testing.T) {
 	}
 	// The counts guard the corpus itself: a corpus that answered the floor for
 	// every row would pass a resolver that also answered the floor, which is
-	// exactly the state draft 017 §4.4 measured and this pass exists to fix.
+	// exactly the state this pass exists to fix.
 	if vision == 0 {
 		t.Fatalf("the corpus reports no vision-capable model across %d rows; the corpus is wrong, not the resolver", len(corpus.Entries))
 	}

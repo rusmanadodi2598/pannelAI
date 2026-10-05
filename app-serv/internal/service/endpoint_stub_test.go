@@ -62,7 +62,7 @@ func accountKey(providerID, label string) string { return providerID + "\x00" + 
 // withKeys returns a copy of the endpoint carrying its stored keys, which is what
 // every read path in the real repository does with one batched key query.
 //
-// The parity fields (draft 017 §4.1b) are carried through explicitly, because
+// The parity fields are carried through explicitly, because
 // omitting them is the drift this double exists to avoid: the tests would keep
 // passing while every routing order, default model, proxy binding, use count, and
 // last error vanished between a write and the read that follows it.

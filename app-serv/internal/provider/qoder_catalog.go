@@ -75,7 +75,7 @@ func newQoderCatalog() *qoderCatalog {
 }
 
 // fetchCatalog asks the vendor's own list endpoint, signed as the account. The call
-// is the one a live proof already exercises (draft 036 §5), so the shape read here
+// is the one a live proof already exercises, so the shape read here
 // is the shape that answered there.
 func (c *Qoder) fetchCatalog(caller context.Context, cred Credential, base string) ([]byte, error) {
 	requestURL := base + qoderSigPathPrefix + qoderModelListPath

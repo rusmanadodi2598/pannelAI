@@ -33,7 +33,7 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
-// TestRelay_CredentialFailoverTriesTheNextAccount is draft 028 probe 1: one
+// TestRelay_CredentialFailoverTriesTheNextAccount pins that one
 // request against a provider whose first account is refused is served by that
 // provider's second account.
 func TestRelay_CredentialFailoverTriesTheNextAccount(t *testing.T) {
@@ -58,7 +58,7 @@ func TestRelay_CredentialFailoverTriesTheNextAccount(t *testing.T) {
 	}
 }
 
-// TestRelay_UnroutableMemberDoesNotOwnTheError is draft 028 probe 2: the member
+// TestRelay_UnroutableMemberDoesNotOwnTheError pins that the member
 // that was never called (its provider has no endpoint) must not supply the
 // client's error or the recorded identity.
 func TestRelay_UnroutableMemberDoesNotOwnTheError(t *testing.T) {
@@ -87,7 +87,7 @@ func TestRelay_UnroutableMemberDoesNotOwnTheError(t *testing.T) {
 	}
 }
 
-// TestRelay_UnresolvableMemberDoesNotOwnTheError is draft 028 probe 3: a stale
+// TestRelay_UnresolvableMemberDoesNotOwnTheError pins that a stale
 // member whose model cannot be resolved does not become the client's error.
 func TestRelay_UnresolvableMemberDoesNotOwnTheError(t *testing.T) {
 	var calls int
@@ -111,7 +111,7 @@ func TestRelay_UnresolvableMemberDoesNotOwnTheError(t *testing.T) {
 	}
 }
 
-// TestRelay_RequestScopedRefusalIsReturnedToTheClient is draft 028 probe 4: a
+// TestRelay_RequestScopedRefusalIsReturnedToTheClient pins that a
 // 400 the upstream aimed at the request stops the chain instead of spending the
 // next model, and the client sees that 400.
 func TestRelay_RequestScopedRefusalIsReturnedToTheClient(t *testing.T) {
@@ -142,7 +142,7 @@ func TestRelay_RequestScopedRefusalIsReturnedToTheClient(t *testing.T) {
 	}
 }
 
-// TestRelay_KeysRotateWithinAnEndpoint is draft 028 probe 5: two healthy keys on
+// TestRelay_KeysRotateWithinAnEndpoint pins that two healthy keys on
 // one endpoint must both be spent, because the least-recently-used order rotates
 // what the next request picks.
 func TestRelay_KeysRotateWithinAnEndpoint(t *testing.T) {

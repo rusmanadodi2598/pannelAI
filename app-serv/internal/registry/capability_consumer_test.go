@@ -20,9 +20,9 @@ package registry
 
 import "testing"
 
-// TestCapabilities_OneTableServesBothConsumers pins the property draft 017 §4.4
-// asks for: the vision adapter's predicate and the catalog's resolver are one
-// decision, so the two cannot disagree about a model.
+// TestCapabilities_OneTableServesBothConsumers pins the property both
+// consumers depend on: the vision adapter's predicate and the catalog's
+// resolver are one decision, so the two cannot disagree about a model.
 //
 // This is a guard, not a defect reproduction. It passed the moment
 // capability_resolve.go landed, because VisionCapable delegates to Capabilities;

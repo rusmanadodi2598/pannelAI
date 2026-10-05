@@ -101,7 +101,7 @@ type UpdateEndpointRequest struct {
 	Priority *int    `json:"priority,omitempty" validate:"omitempty,min=1,max=10000"`
 	Status   *string `json:"status,omitempty" validate:"omitempty,oneof=active disabled"`
 
-	// The connection-parity fields (draft 017 §4.1b). Each is a pointer so
+	// The connection-parity fields. Each is a pointer so
 	// "omitted" stays distinct from "cleared": an operator removing a default
 	// model sends `""`, which is different from not mentioning it.
 	DefaultModel   *string `json:"default_model,omitempty" validate:"omitempty,max=200"`

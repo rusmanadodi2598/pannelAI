@@ -129,7 +129,7 @@ func TestOpenCodeFree_NoCredentialMaterialLeavesTheGateway(t *testing.T) {
 }
 
 // TestOpenCodeFree_DeclaredResponsesModelTakesTheResponsesWire pins the per-model
-// rule the port restored in draft 017: muse-spark-1.3-contributor-free is declared
+// rule the port restored: muse-spark-1.3-contributor-free is declared
 // with target_format openai-responses, so a chat client's request must be
 // translated and POSTed to /zen/v1/responses rather than forwarded to the chat
 // path. The stand-in refuses the wrong path, so this fails loudly on a regression.

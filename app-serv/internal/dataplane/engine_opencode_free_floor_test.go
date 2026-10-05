@@ -34,7 +34,7 @@ import (
 // received. Muse Spark 1.3 declares 512 because it spends a smaller ceiling on
 // thinking; the member beside it in that combo declares none, so the client's own
 // number must still arrive unchanged, the floor is per model, not a provider-wide
-// override (draft 037 §13).
+// override.
 func TestOpenCodeFree_DeclaredModelFloorReachesTheUpstream(t *testing.T) {
 	cases := []struct {
 		model    string

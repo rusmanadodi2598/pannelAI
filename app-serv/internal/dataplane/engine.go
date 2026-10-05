@@ -170,7 +170,7 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	refs, adapted := e.augmentForVision(ctx, in, refs)
 
 	// The walk tracks two failure kinds apart, because they answer the client
-	// differently (draft 028 F3): a member that reached an upstream call owns
+	// differently: a member that reached an upstream call owns
 	// the error and the recorded identity, while a member refused before any
 	// call (unresolvable, no endpoints, an untranslatable body) is only the
 	// fallback answer when no member was called at all. The chain's error is

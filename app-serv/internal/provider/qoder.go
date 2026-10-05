@@ -48,8 +48,8 @@ type Qoder struct {
 // caller's, so the composition root decides whether a Personal Access Token exchange
 // rides the process egress guard. A nil client is refused rather than defaulted:
 // building an unguarded client here would let a PAT exchange, a catalog read, and an
-// identity call dial a registry-declared host outside the netguard (draft 042 R07,
-// docs/RULLES/SSRF.md §2.1).
+// identity call dial a registry-declared host outside the netguard
+// (docs/RULLES/SSRF.md §2.1).
 func NewQoder(entry registry.Provider, client *http.Client) (*Qoder, error) {
 	if entry.OAuth == nil {
 		return nil, fmt.Errorf("provider %s: a qoder connector needs an oauth block", entry.ID)
@@ -77,7 +77,7 @@ func NewQoder(entry registry.Provider, client *http.Client) (*Qoder, error) {
 // The registry entry names the full chat URL, so the only decision here is the host,
 // and the host follows the kind of credential the account holds: on intl a Personal
 // Access Token is exchanged for a job token before it signs anything, and job-token
-// traffic is served from a different gateway than device traffic (draft 036 §5). The
+// traffic is served from a different gateway than device traffic. The
 // choice is made from the stored credential rather than by performing the exchange
 // here, because a URL decision should not be the moment the gateway makes an outbound
 // call. A CN entry declares one gateway for every kind, so the swap never matches it.
@@ -192,7 +192,7 @@ func qoderSwapHost(rawURL, fromBase, toBase string) (string, error) {
 }
 
 // qoderMaxSignBodyBytes bounds what the signer will hold in order to hash one body.
-// The vendor's own payload ceiling is 6MB (draft 036 §5), so this is that limit with
+// The vendor's own payload ceiling is 6MB, so this is that limit with
 // room for the envelope around it.
 const qoderMaxSignBodyBytes = 8 << 20
 

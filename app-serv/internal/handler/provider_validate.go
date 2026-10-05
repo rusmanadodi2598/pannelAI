@@ -89,7 +89,7 @@ func (h *ProviderValidateHandler) Provider(w http.ResponseWriter, r *http.Reques
 //
 // It carries `method` as well as `state`, which is the field that makes the two
 // probes distinguishable: a client showing "valid" should be able to say which
-// request proved it (draft 017 §4.6).
+// request proved it.
 func validateResponse(outcome service.ProbeOutcome) schema.ValidateResponse {
 	return schema.ValidateResponse{
 		State:     outcome.State,

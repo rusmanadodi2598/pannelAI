@@ -70,8 +70,8 @@ func buildObservability(
 	bus := redisrepo.NewUsageEventBus(client)
 	publisher := service.NewUsageEventPublisher(bus, slog.Default())
 
-	// Quota reads leave through the same guarded transport as the data plane
-	// (draft 042 R08), so the install happens here where the egress policy is
+	// Quota reads leave through the same guarded transport as the data plane,
+	// so the install happens here where the egress policy is
 	// already in hand and before any worker can poll.
 	if err := quotafetch.UseEgressClient(egressClient); err != nil {
 		return observability{}, fmt.Errorf("management wiring: quotas: %w", err)
@@ -85,8 +85,8 @@ func buildObservability(
 	}
 
 	// The endpoint repository is the quota service's existence seam: a cap is
-	// only accepted for an endpoint the router could actually pick (draft 005
-	// F2), and this is the same store every endpoint route reads.
+	// only accepted for an endpoint the router could actually pick, and this
+	// is the same store every endpoint route reads.
 	//
 	// The index and the sealer are what make the published read answerable: the
 	// first says whether the endpoint's family publishes a usage endpoint at all,

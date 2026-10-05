@@ -142,7 +142,7 @@ type UpdatePatch struct {
 	Priority *int
 	Status   *string
 
-	// The connection-parity fields (draft 017 §4.1b).
+	// The connection-parity fields.
 	DefaultModel   *string
 	GlobalPriority *int
 	ProxyPoolID    *string

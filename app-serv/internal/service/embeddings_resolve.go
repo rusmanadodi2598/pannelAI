@@ -37,7 +37,7 @@ import (
 // embeddingsCall is one resolved embeddings call: the request to send, the
 // account it uses, and the identity its accounting rows carry. The outcome is
 // built before the first fallible step, so a refusal returns the call with
-// whatever identity resolution had already established (register G20).
+// whatever identity resolution had already established.
 type embeddingsCall struct {
 	outcome   dataplane.Outcome
 	request   dataplane.MediaRequest

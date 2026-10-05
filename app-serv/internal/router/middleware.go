@@ -80,7 +80,7 @@ func usableRequestID(id string) bool {
 }
 
 // logging records one structured line per request with the status and duration,
-// plus the error code when the request failed (register G9), so one line answers
+// plus the error code when the request failed, so one line answers
 // "what happened" and "why" together.
 func logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +102,7 @@ func logging(next http.Handler) http.Handler {
 		// A failed request names its code; a served one carries no code field at
 		// all, so the field's presence means exactly "this request failed".
 		// The message is never logged: it can quote an upstream's text back,
-		// and that text can carry a credential (register G18).
+		// and that text can carry a credential.
 		if rec.errorCode != "" {
 			attrs = append(attrs, slog.String("code", rec.errorCode))
 		}
@@ -141,7 +141,7 @@ type responseRecorder struct {
 	wroteHeader bool
 	// errorCode is the machine code of the error envelope the handler wrote, or
 	// "" for a request that produced no error envelope. The error writers set it
-	// through SetErrorCode and the access log reads it (register G9).
+	// through SetErrorCode and the access log reads it.
 	errorCode string
 	// requestID is the trace id of the request this writer answers, captured from
 	// the context the request-id middleware already filled. A handler's error path
@@ -160,8 +160,8 @@ func (rec *responseRecorder) SetErrorCode(code string) { rec.errorCode = code }
 // Flush forwards the flush to the writer inside. Go promotes only the methods of
 // the embedded interface and not http.Flusher, so without this method the writer
 // a handler receives stops implementing http.Flusher under the chain, `newSSESink`
-// stores a nil flusher, and every streamed answer is written at once (draft 010
-// F5). It is the same forwarding rule as SetErrorCode for the same reason.
+// stores a nil flusher, and every streamed answer is written at once. It is
+// the same forwarding rule as SetErrorCode for the same reason.
 func (rec *responseRecorder) Flush() {
 	if flusher, ok := rec.ResponseWriter.(http.Flusher); ok {
 		flusher.Flush()

@@ -42,9 +42,9 @@ type Retry struct {
 	// BackoffBaseMS overrides the gateway's default backoff base for one status.
 	// It exists for a provider whose transient refusal recovers over seconds, not
 	// milliseconds: Qoder's free-model pool answers the identical request "all
-	// backends failed" / "quota exceeded" and serves it seconds later (draft 036
-	// §9.2), so a sub-second retry re-fires inside the same fail-streak. An entry
-	// that declares no base keeps the gateway default, so this changes no other
+	// backends failed" / "quota exceeded" and serves it seconds later, so a
+	// sub-second retry re-fires inside the same fail-streak. An entry that
+	// declares no base keeps the gateway default, so this changes no other
 	// provider.
 	BackoffBaseMS map[int]int
 }

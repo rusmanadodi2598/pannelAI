@@ -23,7 +23,7 @@ import "net/http"
 //
 // The two validate routes are deliberately stateless: their bodies carry the
 // destination and the credential, so an operator can prove a key before the node
-// or endpoint exists (draft 017 §4.6).
+// or endpoint exists.
 func registerProviderNodeRoutes(mux *routeRecorder, deps Deps, gateway func(http.Handler) http.Handler) {
 	mux.Handle("GET "+APIVersion+"/provider-nodes", gateway(http.HandlerFunc(deps.ProviderNode.List)))
 	mux.Handle("POST "+APIVersion+"/provider-nodes", gateway(http.HandlerFunc(deps.ProviderNode.Create)))
@@ -32,7 +32,7 @@ func registerProviderNodeRoutes(mux *routeRecorder, deps Deps, gateway func(http
 	mux.Handle("DELETE "+APIVersion+"/provider-nodes/{id}", gateway(http.HandlerFunc(deps.ProviderNode.Delete)))
 	mux.Handle("POST "+APIVersion+"/provider-nodes/{id}/test", gateway(http.HandlerFunc(deps.ProviderNode.Test)))
 	// §7.4 credential checks. Both are stateless: the body carries the
-	// destination and the credential, and no row is written (draft 017 §4.6).
+	// destination and the credential, and no row is written.
 	// They sit beside the node routes because that is where an operator asks
 	// "does this credential work", before the node or the endpoint exists.
 	mux.Handle("POST "+APIVersion+"/provider-nodes/validate", gateway(http.HandlerFunc(deps.ProviderValidate.Node)))

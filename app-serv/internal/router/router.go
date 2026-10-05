@@ -81,7 +81,7 @@ type Deps struct {
 	RateLimitPerMin int
 	// TrustedProxies is the parsed TRUSTED_PROXY_CIDRS set: the peers whose
 	// forwarded chains the limiter may read. Nil keeps every request bucketed
-	// by its direct peer (draft 042 R20).
+	// by its direct peer.
 	TrustedProxies []*net.IPNet
 }
 
@@ -209,7 +209,7 @@ func New(deps Deps) *Mux {
 	// The published read lives under the endpoint's own path rather than as a
 	// /quotas/live sibling because it answers one connection, like the two routes
 	// above it, and {endpoint_id}/usage is the shape the reference's per-connection
-	// usage route already uses (draft 036 §6).
+	// usage route already uses.
 	mux.Handle("GET "+APIVersion+"/quotas/{endpoint_id}/usage", gateway(http.HandlerFunc(deps.Quota.GetUsage)))
 	mux.Handle("GET "+APIVersion+"/logs/requests", gateway(http.HandlerFunc(deps.Log.Requests)))
 	mux.Handle("DELETE "+APIVersion+"/logs/requests", gateway(http.HandlerFunc(deps.Log.Purge)))

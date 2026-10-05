@@ -73,7 +73,7 @@ func buildManagement(
 	publishedRepo := postgres.NewPublishedQuotaRepository(pool)
 	logRepo := postgres.NewLogRepository(pool)
 
-	// A node's model list comes from the node's own upstream (draft 017 §4.2),
+	// A node's model list comes from the node's own upstream,
 	// so the read is wired before the index that carries its answer: the index
 	// attaches each node's list while it synthesizes the overlay.
 	nodeModels := newNodeModelSource(
@@ -94,7 +94,7 @@ func buildManagement(
 	// of the graph special-cases a provider id. It reads the runtime overlay for
 	// the same reason the data plane does: an endpoint under a custom node must
 	// probe as that node. §7.4's stateless credential checks share it: they ask
-	// the same question before a row exists (draft 017 §4.6).
+	// the same question before a row exists.
 	prober := newHTTPEndpointProber(runtimeIndex, connectors, egress.Guard)
 	validationSvc, err := service.NewCredentialValidationService(prober)
 	if err != nil {

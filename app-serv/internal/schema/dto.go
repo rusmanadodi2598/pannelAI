@@ -50,7 +50,7 @@ type Page struct {
 // DecodePage reads page/per_page query params and enforces the documented
 // ranges: page >= 1, 1 <= per_page <= MaxPerPage. An out-of-range value is a
 // VALIDATION_ERROR rather than a silent clamp, so a caller can tell the page it
-// asked for from the page it received (draft 010 F6, owner decision D3).
+// asked for from the page it received.
 func DecodePage(r *http.Request) (page, perPage int, err error) {
 	page = 1
 	if v := r.URL.Query().Get("page"); v != "" {

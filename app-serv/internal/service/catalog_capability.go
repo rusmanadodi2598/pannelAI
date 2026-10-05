@@ -53,7 +53,7 @@ const capabilityVision = "vision"
 //
 // The provider filter accepts every spelling the provider answers to, its id,
 // its registry alias, and a node's prefix, because the row it selects is one
-// model and the operator may know it by any of those names (draft 024 §3.2).
+// model and the operator may know it by any of those names.
 // The name set is built from one index snapshot per request, never per row: in
 // production the index adapter rebuilds the node overlay on every Provider()
 // call, so a per-row lookup would turn one panel request into one node-list

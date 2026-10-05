@@ -43,7 +43,7 @@ type UpstreamEndpoint struct {
 	updatedAt        time.Time
 	keys             []UpstreamKey
 
-	// The connection-parity fields (draft 017 §4.1b). Their rules live in
+	// The connection-parity fields. Their rules live in
 	// upstream_endpoint_parity.go.
 	globalPriority      int
 	defaultModel        string

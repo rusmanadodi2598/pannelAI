@@ -38,11 +38,11 @@ const usageRecordColumns = `id, request_id, ts, coalesce(endpoint_id, ''), provi
 // `q` filter matches a case-insensitive substring of the row's identity or
 // error code as well as its model, because the panel's placeholder promises a
 // request id and an error code and an operator searching the id on screen must
-// not read an empty table (draft 010 F8, owner decision D4 = expand). A NULL
-// error_code needs no coalesce: `false OR NULL` excludes a row exactly as
-// `false` does, and the other three columns are NOT NULL, so the OR can only
-// add a match, never lose one. Keeping the FROM here means a read cannot
-// accidentally omit the table and reference bare columns.
+// not read an empty table. A NULL error_code needs no coalesce: `false OR
+// NULL` excludes a row exactly as `false` does, and the other three columns
+// are NOT NULL, so the OR can only add a match, never lose one. Keeping the
+// FROM here means a read cannot accidentally omit the table and reference
+// bare columns.
 const usageFilterClause = `
 	  FROM usage_records
 	 WHERE ts >= $1 AND ts <= $2

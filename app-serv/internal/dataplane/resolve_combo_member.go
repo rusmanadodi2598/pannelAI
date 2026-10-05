@@ -30,7 +30,7 @@ import (
 // alias, or a combo name, and a member that names a combo resolves to that
 // combo's own leading member. The depth the chain has already walked travels
 // with the call so a stored cycle terminates at comboDepthLimit instead of
-// recursing without end (draft 024 §3.1).
+// recursing without end.
 func (r *Resolver) resolveMember(ctx context.Context, ref string, depth, aliasHops int, state *resolveState) (Resolution, error) {
 	// A combo is addressed by a bare name, so a reference carrying "/" cannot
 	// be one; that also keeps a provider whose id collides with a combo name

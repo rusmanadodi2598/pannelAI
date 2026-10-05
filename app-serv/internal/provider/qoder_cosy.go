@@ -162,7 +162,7 @@ func (s cosySigner) key() (*rsa.PublicKey, error) {
 // included: the length AES-128 wants and the shape the vendor's client cuts. The IV
 // is the same bytes, so a key fresh to every request is what makes the reused IV
 // acceptable, the security of this scheme is the vendor's problem to hold, not
-// ours to improve (draft 036 slice D).
+// ours to improve.
 func (s cosySigner) aesKey() string {
 	id := s.newID()
 	if len(id) < 16 {

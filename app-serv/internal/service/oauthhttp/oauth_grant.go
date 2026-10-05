@@ -104,8 +104,8 @@ func (g TokenGrant) fields() []grantField {
 
 // grantCall is the neutral shape of one token-endpoint request: method, URL,
 // headers, and body. The seam speaks this rather than *http.Request, so the
-// HTTP layer's own types stay out of the service boundary (AGENTS.md §1.5,
-// draft 042 R19) and the transport details are built in one place.
+// HTTP layer's own types stay out of the service boundary (AGENTS.md §1.5)
+// and the transport details are built in one place.
 type grantCall struct {
 	method  string
 	url     string

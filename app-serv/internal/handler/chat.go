@@ -57,9 +57,9 @@ func (h *ChatHandler) Responses(w http.ResponseWriter, r *http.Request) {
 
 // refuse records the one log row a schema refusal leaves and then writes the
 // client's error, so a request the gateway rejected before the pipeline is
-// still visible on the Logs screen the way an engine refusal already is
-// (draft 034 F4). Authentication failures stay unrecorded: they happen before
-// a body is read and carry no key to own the row.
+// still visible on the Logs screen the way an engine refusal already is.
+// Authentication failures stay unrecorded: they happen before a body is
+// read and carry no key to own the row.
 func (h *ChatHandler) refuse(w http.ResponseWriter, r *http.Request, raw []byte, key domain.GatewayKey, model string, failure error) {
 	h.chat.RecordRefusal(r.Context(), raw, key.ID(), model, failure)
 	writeDataPlaneError(w, failure)

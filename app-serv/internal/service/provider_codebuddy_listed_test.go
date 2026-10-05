@@ -81,7 +81,7 @@ func listedProvider(t *testing.T, svc *ProviderService, id string) registry.Prov
 	return registry.Provider{}
 }
 
-// TestProviderService_ListServesBothCodeBuddyRegions pins draft 011 F1: the two
+// TestProviderService_ListServesBothCodeBuddyRegions pins that the two
 // entries the reference split out of the old combined `codebuddy` are served
 // unfiltered, each keeping its own domain, alias, headers, usage endpoint and
 // connect flow.

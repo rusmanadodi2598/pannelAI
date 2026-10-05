@@ -84,7 +84,7 @@ func (s *ComboService) validateRefs(ctx context.Context, name string, draft Comb
 	// could route and serve. A provider/model reference is canonicalized through
 	// the same alias-then-id lookup the router performs, so a member spelled with
 	// a registry alias (`cc/claude-...`) or a node prefix (`oczen/...`) validates
-	// exactly when the router would route it (draft 024 §3.2).
+	// exactly when the router would route it.
 	//
 	// An alias member is judged by its target, because that is what the router
 	// serves: an alias to a media model or to an untranslatable provider is

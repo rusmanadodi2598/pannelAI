@@ -120,8 +120,8 @@ func quotaRequest(method, body, endpointID string) *http.Request {
 }
 
 // TestQuotaHandler_PutCap covers the write route as one behaviour with
-// variations: what a legal cap stores and echoes, and every refusal, of which
-// the unknown endpoint is draft 005 F2's definition of done.
+// variations: what a legal cap stores and echoes, and every refusal, the
+// unknown endpoint among them.
 func TestQuotaHandler_PutCap(t *testing.T) {
 	cases := []struct {
 		name       string

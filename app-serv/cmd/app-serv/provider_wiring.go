@@ -61,7 +61,7 @@ func buildProviderRuntime(egressClient *http.Client) (*registry.Index, *provider
 	// reads, the same way the OpenCode lanes do: the CN site declares one gateway for
 	// every token kind. The guarded egress client is passed so the Personal Access
 	// Token exchange, the catalog, and the identity reads all ride the process
-	// egress guard (draft 042 R07).
+	// egress guard.
 	for _, id := range []string{"qoder", "qoder-cn"} {
 		entry, ok := idx.Provider(id)
 		if !ok {

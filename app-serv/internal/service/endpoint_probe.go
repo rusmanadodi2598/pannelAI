@@ -49,7 +49,7 @@ type ProbeOutcome struct {
 	// completed. It is carried because the two are different evidence, a chat
 	// probe proves the upstream can serve a request, a models probe only that it
 	// can list, and an operator deciding whether a credential works needs to
-	// know which one proved it (draft 017 §4.6).
+	// know which one proved it.
 	Method string
 
 	// LatencyMS is the round trip in milliseconds, reported even for a failure

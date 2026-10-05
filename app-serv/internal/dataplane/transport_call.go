@@ -54,8 +54,7 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	//
 	// The client's own shape is read first: it, not the rewritten upstream shape,
 	// decides the attempt's deadline, so a call a client made for one body stays
-	// bounded even when the provider answers it with a stream the gateway folds
-	// (draft 021, the missing total bound on the fold).
+	// bounded even when the provider answers it with a stream the gateway folds.
 	clientStream := call.Stream
 	if forcesStream(plugin) && !request.Stream {
 		streamed, err := forceStreamMember(request.Body)

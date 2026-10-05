@@ -119,7 +119,7 @@ func TestRelay_FusionSkipsAReferenceThatNoLongerResolves(t *testing.T) {
 	}
 }
 
-// TestRelay_FusionPanelFailureKeepsTheFirstAttemptedIdentity pins register G17 on
+// TestRelay_FusionPanelFailureKeepsTheFirstAttemptedIdentity pins the rule on
 // the fusion path: when every panel member fails, the reported identity is the
 // first member's, the one whose failure is the client's error, so a recorded
 // row names the attempt its error belongs to.

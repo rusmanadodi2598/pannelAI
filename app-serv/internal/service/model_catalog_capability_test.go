@@ -38,8 +38,8 @@ func realCatalogService(t *testing.T) *ModelCatalogService {
 	return newCatalogService(t, index, newStubCatalogRepo(), newStubComboRepo())
 }
 
-// TestCatalog_CapabilityFiltersAnswerOverTheRealRegistry is draft 017 §4.4's
-// acceptance criterion: each filter the panel offers returns rows, measured
+// TestCatalog_CapabilityFiltersAnswerOverTheRealRegistry is the acceptance
+// criterion: each filter the panel offers returns rows, measured
 // against the registry the binary embeds rather than against a fixture.
 func TestCatalog_CapabilityFiltersAnswerOverTheRealRegistry(t *testing.T) {
 	service := realCatalogService(t)

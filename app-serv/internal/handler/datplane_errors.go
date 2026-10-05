@@ -128,7 +128,7 @@ type sseSink struct {
 // rather than a direct http.Flusher assertion, because the controller follows
 // Unwrap() through a middleware chain: a wrapper that exposes only Unwrap()
 // would otherwise hide the capability, which is how the production chain
-// silently stopped streaming before draft 010 F5.
+// silently stopped streaming.
 func newSSESink(w http.ResponseWriter) *sseSink {
 	return &sseSink{writer: w, controller: http.NewResponseController(w)}
 }

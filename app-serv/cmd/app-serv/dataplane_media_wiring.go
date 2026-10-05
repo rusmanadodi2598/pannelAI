@@ -42,7 +42,7 @@ func buildMediaPlanes(in dataPlaneInputs, engine *dataplane.Engine, quotas *serv
 	embeddings, err := service.NewEmbeddingsService(service.EmbeddingsServiceDeps{
 		// The embeddings use case asks the engine only for resolution and
 		// selection, so it takes the same narrow ports the media service does
-		// (register G20: a refusal has to be recordable without the engine).
+		// because a refusal has to be recordable without the engine.
 		Resolver:       engine.Resolver(),
 		Router:         mediaRouter{engine: engine},
 		Caller:         caller,

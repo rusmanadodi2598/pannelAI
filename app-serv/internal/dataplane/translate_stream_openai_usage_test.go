@@ -126,7 +126,7 @@ func TestOpenAIStream_UsageIsDeliveredOnce(t *testing.T) {
 }
 
 // TestOpenAIStream_SecondFinishIsStripped pins the one-finish invariant against
-// an upstream that closes twice (draft 034 F2): the first finish reason is the
+// an upstream that closes twice: the first finish reason is the
 // stream's end, and a second closing frame forwards with its finish_reason
 // nulled while the usage it may carry, and every other member, still reaches
 // the client.

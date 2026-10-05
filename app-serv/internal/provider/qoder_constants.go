@@ -42,7 +42,7 @@ const qoderSigPathPrefix = "/algo"
 
 // The two intl inference hosts, split by the kind of token they serve: a device
 // token on the first, an exchanged job token on the second. Measured against the
-// vendor (draft 036 §5) the device host answers a job token today, so the swap is
+// vendor, the device host answers a job token today, so the swap is
 // the reference's rule kept rather than a proven requirement; the CN entry declares
 // one gateway for every kind and is never rewritten.
 const (

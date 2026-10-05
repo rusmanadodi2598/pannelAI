@@ -29,7 +29,7 @@ import (
 
 // statusFilterCases is the one closed-set table both filter types must answer
 // identically, so the logs route cannot re-declare the set differently from
-// the usage route (draft 010 F2/F9 shared rule).
+// the usage route.
 var statusFilterCases = []struct {
 	name    string
 	status  string

@@ -50,7 +50,7 @@ type RefTarget struct {
 // judge model, and a vision adapter entry all validate through this, so they
 // cannot disagree about what "exists" means.
 //
-// The reference is accepted in every form the router resolves (draft 024 §3.2):
+// The reference is accepted in every form the router resolves:
 // the provider's id, its registry alias, or a node prefix. The first segment is
 // canonicalized through the index, which is the same lookup the data plane
 // performs, so a name the router would route is never refused here.
@@ -70,8 +70,7 @@ func (s *ModelCatalogService) ModelExists(ctx context.Context, ref domain.ModelR
 // §7.15 model list holds, listed and answerable are one property, so a
 // reference the router would refuse (a provider with no chat translator, a
 // non-passthrough provider's undeclared id, a media model) is refused here with
-// the reason named, before it is saved as part of a combo or the vision adapter
-// (draft 024 §3.4).
+// the reason named, before it is saved as part of a combo or the vision adapter.
 func (s *ModelCatalogService) ChatServable(ctx context.Context, ref domain.ModelRef) error {
 	view, err := newReferenceView(s, ctx)
 	if err != nil {
