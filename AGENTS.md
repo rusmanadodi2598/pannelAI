@@ -261,6 +261,7 @@ Prefer the Go standard library over third-party frameworks by default (`net/http
 - [ ] Every outbound call has an explicit `context` timeout; every goroutine recovers from panic (1.6)
 - [ ] No unbounded queries; N+1 documented if accepted; indexes added; pool limits set (1.7)
 - [ ] `SYSTEM_MAP.md` updated or explicitly marked N/A (1.9)
+- [ ] Comment and text hygiene clean per `scrypts/gates/antislop.sh` (docs/RULLES/ANTISLOP.md)
 
 ---
 
@@ -270,6 +271,7 @@ Prefer the Go standard library over third-party frameworks by default (`net/http
 - Strict Validation: go-playground/validator/v10 (Golang) / Zod v4xx latest (Svelte / TypeScrypts)
 - Strict Test: docs/RULLES/TDD.md
 - SSRF: docs/RULLES/SSRF.md
+- Antislop (comment and text hygiene): docs/RULLES/ANTISLOP.md, enforced by `scrypts/gates/antislop.sh`
 
 2. Stack:
 - Go v1.26 (Latest)
