@@ -8,8 +8,8 @@
 // The union is the reference's own, because a credential-free provider needs no configuration to be
 // routable: the router synthesizes a virtual endpoint for it when the operator stored none (draft 029
 // §4.8 F8, `dataplane/selection_virtual.go`), so `opencode/space-bunny-free` answers 200 with an empty
-// endpoint table. Reading only `endpoint_count > 0` was this module's earlier premise — that a no_auth
-// provider with no row answers `NO_PROVIDER_AVAILABLE` like any other — and F8 made that premise false.
+// endpoint table. Reading only `endpoint_count > 0` was this module's earlier premise (that a no_auth
+// provider with no row answers `NO_PROVIDER_AVAILABLE` like any other) and F8 made that premise false.
 // Leaving it here hid the whole free lane from the picker, which is how a custom node came to be built
 // for a provider that needs no configuration at all.
 //

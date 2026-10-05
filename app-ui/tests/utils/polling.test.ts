@@ -4,7 +4,7 @@
 // the timer so those three conditions can be exercised without waiting thirty seconds or mounting a
 // component: paused, hidden, and not yet due each have to win over the elapsed interval.
 //
-// `pollSecondsRemaining` is the same decision made visible — §8.6.1 asks for an interval the operator can
+// `pollSecondsRemaining` is the same decision made visible: §8.6.1 asks for an interval the operator can
 // see, and a countdown that promised a read the pause had forbidden would be a control that lies.
 
 import { describe, expect, it } from 'vitest';

@@ -13,7 +13,7 @@
 #
 # The vendor proofs carry a second tag, `live`, on top of `integration`. They
 # spend a real provider's quota, need the network, and the Qoder ones fail
-# without PANNELAI_QODER_PAT — by design, because a tagged run that passed
+# without PANNELAI_QODER_PAT, by design: a tagged run that passed
 # quietly with no credential would prove nothing. PANNELAI_LIVE_PROOFS=1 adds the
 # tag to the run, so an operator who means to pay for the proof gets it. A CI
 # runner has no credential and no business dialing a provider on every push, so

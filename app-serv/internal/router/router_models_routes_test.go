@@ -1,7 +1,7 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_models_routes_test.go
-// @for       Route-table tests for the same §7.6–§7.8 management routes. (first half; split at the AGENTS.md §1.1 line limit).
+// @for       Route-table tests for the same §7.6-§7.8 management routes. (first half; split at the AGENTS.md §1.1 line limit).
 // @uses      internal/domain, internal/handler, internal/registry,
 // @reason    The route table and its auth/validation/verb cases are one group and the fixtures another; AGENTS.md §1.1 caps a file at 250 lines, so the fixtures moved here.
 //

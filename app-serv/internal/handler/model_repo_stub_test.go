@@ -57,7 +57,7 @@ func (stubRotation) Next(_ context.Context, _ string, models []string, _ int) ([
 	return models, nil
 }
 
-// managementFixture is the wired handler set the §7.6–§7.8 tests drive.
+// managementFixture is the wired handler set the §7.6-§7.8 tests drive.
 type managementFixture struct {
 	model     *ModelHandler
 	combo     *ComboHandler

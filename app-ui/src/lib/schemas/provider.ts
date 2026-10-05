@@ -41,7 +41,7 @@ export const schemaProvider = z.object({
 	auth_type: z.string(),
 	auth_modes: stringList,
 	// The registry's credential-format sentence (draft 036 slice B), served verbatim and absent
-	// for providers that declare none — which Go's omitempty delivers as a missing key.
+	// for providers that declare none, which Go's omitempty delivers as a missing key.
 	auth_hint: nullableText,
 	has_oauth: z.boolean(),
 	no_auth: z.boolean(),

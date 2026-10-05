@@ -3,8 +3,8 @@
 //
 // The rule this file exists for is the one the wire turns on: amounts here are REPORTED by a provider,
 // not counted by this gateway, so they arrive as decimal strings that may carry fractions ("12.5") and a
-// bucket may state no ceiling at all. An absent `total` and a `"0"` total are opposite states — unlimited
-// versus spent — and reading the first as the second would draw a full bar under an account that has no
+// bucket may state no ceiling at all. An absent `total` and a `"0"` total are opposite states (unlimited
+// versus spent) and reading the first as the second would draw a full bar under an account that has no
 // limit. The same goes for the empty-bucket case: the API answers a soft outcome as a sentence beside
 // `data: []`, and that sentence is the whole answer, not a rendering failure.
 
@@ -270,7 +270,7 @@ describe('PUBLISHED_QUOTA_NOTE', () => {
 // `never_polled: true`, an epoch placeholder `fetched_at`, and empty `data`. This helper is the single
 // place that decides "there is no answer to attribute", and it must read BOTH the flag and an absent entry
 // as never-polled (an older gateway, or a page whose provider cache could not be read), while keeping an
-// answered-but-empty entry (real `fetched_at`, empty `data`, no flag) as an answer that reported nothing —
+// answered-but-empty entry (real `fetched_at`, empty `data`, no flag) as an answer that reported nothing:
 // those are different facts and render differently.
 describe('schemaPublishedQuotaUsage with never_polled', () => {
 	it('parses a placeholder entry the flag marks', () => {

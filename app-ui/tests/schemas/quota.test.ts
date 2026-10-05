@@ -151,7 +151,7 @@ describe('quota window', () => {
 // The collection read now carries the provider's own answers beside the counted windows (SPEC-API §7.12),
 // which is the whole reason a card can show what an account has left without asking for it. Two failures
 // were measured on the live gateway and both are locked here: a page whose windows carry no ceiling used to
-// render no numbers at all, and a read that omits the new block must not refuse the page — an older
+// render no numbers at all, and a read that omits the new block must not refuse the page. An older
 // gateway, or a gateway whose provider cache broke, still has counts worth showing.
 describe("the collection read's published block", () => {
 	function listBody(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -237,7 +237,7 @@ describe("the collection read's published block", () => {
 });
 
 // The card grouping, and the fix it exists for: the windowless-account gap. A provider group is selected
-// by the accounts that exist, not the windows that happen to exist — measured live 2026-10-02, `opencode-zen`
+// by the accounts that exist, not the windows that happen to exist. Measured live 2026-10-02, `opencode-zen`
 // has an account and zero windows and `qoder` has three accounts with only two windows, so the old walk over
 // `windows` alone rendered those accounts as no card at all. `quotaCardGroups` is the pure half of the union
 // the cards render from: it takes both sources and keys on the accounts, keeping the wire's first-seen order
@@ -271,7 +271,7 @@ describe('quotaCardGroups', () => {
 
 		expect(groups.map((group) => group.provider)).toEqual(['anthropic', 'opencode-zen']);
 		expect(groups[1]?.endpoints.map((endpoint) => endpoint.id)).toEqual(['ep_oc']);
-		// The windowless account carries no windows — the card says so honestly rather than inventing a row.
+		// The windowless account carries no windows: the card says so honestly rather than inventing a row.
 		expect(groups[1]?.endpoints[0]?.windows).toEqual([]);
 	});
 

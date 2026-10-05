@@ -66,7 +66,7 @@ export type QuotaStub = {
 	 * sentence beside its own counts, and no `published` block at all.
 	 */
 	publishedNote: string | null;
-	/** The endpoint ids the published read was called with, in order — the read is per card, not on load. */
+	/** The endpoint ids the published read was called with, in order: the read is per card, not on load. */
 	publishedReads: string[];
 	/** The endpoint ids the published read was called with `force=1`, which is the operator's own press. */
 	publishedForces: string[];
@@ -128,7 +128,7 @@ export function publishedUsage(
 }
 
 /**
- * The `published[]` entry for an account the poll worker has not answered for yet — the windowless account
+ * The `published[]` entry for an account the poll worker has not answered for yet, the windowless account
  * the reshape exists to make visible. It carries the placeholder `fetched_at`, empty `data`, and no message
  * or plan: the card's "Not polled yet" state is driven by the flag, not by an empty answer.
  */
@@ -202,7 +202,7 @@ export function stubQuota(overrides: Partial<QuotaStub> = {}): QuotaStub {
 	// The collection body the way SPEC-API §7.12 shapes it now: the page's windows, the meta block, and the
 	// provider's answers for every account whose provider is on THIS page. A group is selected by the accounts
 	// that exist, not the windows that happen to exist, so a `published[]` entry whose endpoint carries no
-	// counted window still rides along — that entry is the windowless account the card has to show. An
+	// counted window still rides along: that entry is the windowless account the card has to show. An
 	// endpoint the worker has not answered is present with `never_polled` rather than absent, which is the
 	// "never polled" state the card has to render. `published_note` replaces the whole block when the cache
 	// could not be read.

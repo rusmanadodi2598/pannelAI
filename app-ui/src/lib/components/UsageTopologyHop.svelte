@@ -4,7 +4,7 @@
 	//
 	// A hop is drawn one of two ways and never both: one line, in the state's own weight and colour, while
 	// nothing is travelling it; the reference fork's beam (`ProviderTopology.js:137-245`) while a request is
-	// moving — a wide halo, a dashed plasma and a dashed core, with six orbs and five sparks along the same
+	// moving (a wide halo, a dashed plasma and a dashed core), with six orbs and five sparks along the same
 	// line. The dots are dashes with round caps rather than circles, because a circle in this stretched box
 	// would be an ellipse of a size that depends on the box: a zero-length dash paints a dot whose diameter
 	// is the stroke width, which `non-scaling-stroke` holds constant. Every moving part is gated twice, on

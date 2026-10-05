@@ -2,7 +2,7 @@
 //
 // The provider rows are the difference between a provider the gateway knows and one it could route anything
 // through. The combo rows are the difference between a combo the operator defined and one the band can still
-// draw a readable label for — a cap the panel has to state rather than quietly apply.
+// draw a readable label for: a cap the panel has to state rather than quietly apply.
 
 import { describe, expect, it } from 'vitest';
 import type { Combo } from '$lib/schemas/combo';

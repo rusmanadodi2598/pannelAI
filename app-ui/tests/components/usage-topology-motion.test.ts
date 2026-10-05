@@ -130,8 +130,8 @@ describe('UsageTopology motion', () => {
 
 	it('fades a card in as it joins the drawing, and turns that off for less motion', () => {
 		// Draft 043 F3: a combo node appears and disappears with the traffic, and a box that pops into place
-		// makes the operator find the change. This is not the drawing's state motion — it runs once, on
-		// entry, and says nothing about what is happening now — but it moves, so it is gated the same way.
+		// makes the operator find the change. This is not the drawing's state motion (it runs once, on
+		// entry, and says nothing about what is happening now) but it moves, so it is gated the same way.
 		const container = draw({ combos: COMBOS, active: [comboEntry('pro-tier')] });
 
 		for (const card of [

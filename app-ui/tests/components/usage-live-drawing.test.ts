@@ -2,8 +2,8 @@
 //
 // The panel reads three sources, and these rows are about what the registry and the stream put on the
 // screen: the upstream nodes from the registry, the state each node is in from the frame, and the list of
-// requests the frame says have finished. The third read — the combo list, and the band it draws above the
-// gateway — is next door in `usage-live-combo-band.test.ts`. The rows about a failed or shortened registry
+// requests the frame says have finished. The third read (the combo list, and the band it draws above the
+// gateway) is next door in `usage-live-combo-band.test.ts`. The rows about a failed or shortened registry
 // read are here because the notice for one is the panel's, not the drawing's.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';

@@ -155,7 +155,7 @@ export function providerDisplayName(providers: ProviderRow[], id: string): strin
  *
  * These are the ids the drawing lights on its combo band. They are compared exactly and never resolved
  * through `providerDisplayName`, because a combo name is an identifier the operator typed and the gateway
- * wrote back — a combo named `openai` is a combo, not the OpenAI provider, and translating it would light
+ * wrote back: a combo named `openai` is a combo, not the OpenAI provider, and translating it would light
  * the wrong fact.
  */
 export function activeComboNames(active: UsageLiveActive[]): string[] {

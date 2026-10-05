@@ -2,10 +2,10 @@
 // docs/DRAFT/043-USAGE-COMBO-NODE-FLOW.md F1 and F4).
 //
 // Split from `usage-live-drawing.test.ts` on the same seam that file was split on: the rows there are about
-// the reads that existed when the drawing only knew providers, and these are about the third read — the combo
-// list — and the band it puts above the gateway. The two subjects fail for different reasons, so they belong
-// in different files: one is "the registry landed", the other is "the drawing can name the combo a request
-// entered through".
+// the reads that existed when the drawing only knew providers, and these are about the third read
+// (the combo list) and the band it puts above the gateway. The two subjects fail for different reasons, so
+// they belong in different files: one is "the registry landed", the other is "the drawing can name the
+// combo a request entered through".
 
 import { cleanup, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';

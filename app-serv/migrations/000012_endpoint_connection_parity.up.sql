@@ -4,7 +4,7 @@
 -- The endpoint stays the mutation boundary and the connection model is not
 -- imported: the reference keeps one row per credential, while this port keeps one
 -- endpoint with 1..N keys (§7.5). What is added here is the capability, not the
--- shape — the five fields an operator needs to express, on an endpoint, what a
+-- shape: the five fields an operator needs to express, on an endpoint, what a
 -- reference connection can express.
 --
 --   global_priority        order across providers, for the case where several

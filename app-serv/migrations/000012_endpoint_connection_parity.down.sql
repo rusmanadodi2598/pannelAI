@@ -7,7 +7,7 @@
 --
 -- Dropping the columns discards whatever routing order, default models, proxy
 -- bindings, use counts, and last errors the deployment had recorded. That is the
--- intent of a rollback — the fields do not exist in the prior schema — and it is
+-- intent of a rollback (the fields do not exist in the prior schema), and it is
 -- stated here so the data loss is a decision rather than a surprise.
 
 ALTER TABLE upstream_endpoints

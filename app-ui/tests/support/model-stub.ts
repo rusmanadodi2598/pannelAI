@@ -126,7 +126,7 @@ export type ModelStub = {
 	endpointReadStatus: number;
 	/** The bodies `POST /endpoints` received, which is where a key name the route would refuse shows up. */
 	endpointCreates: StubModel[];
-	/** The endpoint ids `DELETE /endpoints/{id}` received, in order — what the connection list's removal calls. */
+	/** The endpoint ids `DELETE /endpoints/{id}` received, in order: what the connection list's removal calls. */
 	endpointDeletes: string[];
 	/** The delete's own status, for a test that needs the gateway to refuse a removal. */
 	endpointDeleteStatus: number;

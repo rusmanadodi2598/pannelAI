@@ -159,7 +159,7 @@ func New(deps Deps) *Mux {
 	mux.Handle("PATCH "+APIVersion+"/endpoints/{id}/keys/{key_id}", gateway(http.HandlerFunc(deps.EndpointKey.UpdateKey)))
 	mux.Handle("DELETE "+APIVersion+"/endpoints/{id}/keys/{key_id}", gateway(http.HandlerFunc(deps.EndpointKey.DeleteKey)))
 
-	// §7.6–§7.8 Models, combos, and the vision adapter are management routes, so
+	// §7.6-§7.8 Models, combos, and the vision adapter are management routes, so
 	// they share the same session guard the gateway keys use.
 	mux.Handle("GET "+APIVersion+"/models/catalog", gateway(http.HandlerFunc(deps.Model.Catalog)))
 	mux.Handle("GET "+APIVersion+"/models/custom", gateway(http.HandlerFunc(deps.Model.CustomList)))
@@ -194,7 +194,7 @@ func New(deps Deps) *Mux {
 	// media routes, registered together in router_media.go.
 	registerMediaRoutes(mux, deps, gateway)
 
-	// §7.12–§7.14 Usage, quotas, logs, and settings are management routes, so
+	// §7.12-§7.14 Usage, quotas, logs, and settings are management routes, so
 	// they share the same session guard.
 	mux.Handle("GET "+APIVersion+"/usage/summary", gateway(http.HandlerFunc(deps.Usage.Summary)))
 	mux.Handle("GET "+APIVersion+"/usage/timeseries", gateway(http.HandlerFunc(deps.Usage.Timeseries)))
@@ -219,7 +219,7 @@ func New(deps Deps) *Mux {
 	mux.Handle("GET "+APIVersion+"/settings", gateway(http.HandlerFunc(deps.Settings.Get)))
 	mux.Handle("PATCH "+APIVersion+"/settings", gateway(http.HandlerFunc(deps.Settings.Patch)))
 
-	// §7.16–§7.18: the skill catalog, the served contract, and the release
+	// §7.16-§7.18: the skill catalog, the served contract, and the release
 	// notes are management routes over embedded static data, session-gated like
 	// the rest. The contract route answers with the document itself rather than
 	// the §8 envelope, so a reader can diff it against the spec.

@@ -26,7 +26,7 @@
 
 	/* A card joining the drawing arrives rather than appearing. The drawing is one picture an operator
 	 * learns, and a node that pops into place makes them find the change; the box's own height transitions
-	 * over the same interval for the same reason. One run, not a loop — this is an entry, not a state, and
+	 * over the same interval for the same reason. One run, not a loop: this is an entry, not a state, and
 	 * nothing is animated once it has landed. A card leaving still goes instantly: there is no state to
 	 * animate out of, because the frame that removed it also removed the element. */
 	@keyframes node-enter {

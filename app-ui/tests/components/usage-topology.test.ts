@@ -7,7 +7,7 @@
 // that provider, and which sentences the frame no longer states (owner's corrections, 2026-09-23 and
 // 2026-09-27).
 //
-// The path those nodes form — the combos, the terminals, and the hops between the stages — is next door in
+// The path those nodes form (the combos, the terminals, and the hops between the stages) is next door in
 // `usage-topology-path.test.ts`, and the rows about motion being withheld are in
 // `usage-topology-motion.test.ts`.
 

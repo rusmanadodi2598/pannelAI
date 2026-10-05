@@ -2,7 +2,7 @@
 	// The connection removal confirmation (docs/SPEC-UI/001-SPEC-UI.md §6.3, §8.5).
 	//
 	// §8.5 asks for a modal that names the object, and the consequence worth stating is the cascade: the API
-	// deletes the endpoint's keys with it, and a connection is where a credential lives — an API key, a
+	// deletes the endpoint's keys with it, and a connection is where a credential lives: an API key, a
 	// Personal Access Token, or an OAuth account's stored token are all endpoints to this gateway, so this one
 	// confirmation covers all three. An operator who believed deleting a connection left the keys behind, or
 	// that an OAuth account was something else, would press this without meaning to remove the credential.

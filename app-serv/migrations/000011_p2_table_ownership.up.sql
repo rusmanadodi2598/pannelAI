@@ -7,9 +7,9 @@
 -- `media_provider_settings` and `proxies` were created by a superuser boot
 -- (migrations 000009/000010) while 000001-000008 ran as the app role.
 --
--- The anchor is `gateway_keys`, the table created by the first migration:
--- that states one rule — the P2 tables belong to the same role as the P1
--- tables — instead of naming a role that differs per deployment.
+-- The anchor is `gateway_keys`, the table created by the first migration: it
+-- states one rule (the P2 tables belong to the same role as the P1 tables)
+-- instead of naming a role that differs per deployment.
 --
 -- A role that does not own a table cannot re-own it, and that is exactly the
 -- app-role boot this migration is meant to survive: failing here would turn

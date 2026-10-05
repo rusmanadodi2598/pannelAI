@@ -5,7 +5,7 @@
 // and a window at 10% spent paints a red bar and reads as a warning about the opposite of what it shows.
 //
 // The boundary cases are the reason for the table: `remaining > 70` is ok and 70 exactly is not, `>= 30`
-// is warn and 29 is danger, and a null ceiling and a zero ceiling are different questions — one has no
+// is warn and 29 is danger, and a null ceiling and a zero ceiling are different questions. One has no
 // share to draw, the other has a share that ran out.
 
 import { describe, expect, it } from 'vitest';

@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 // applyLockKey is the advisory-lock key that serialises Apply against one
 // database. Every replica of a rolling deploy boots at once, reads the same
-// empty ledger, and runs the same CREATE TABLE IF NOT EXISTS , a statement that
+// empty ledger, and runs the same CREATE TABLE IF NOT EXISTS. That statement
 // is not atomic against a concurrent creator, so the losers fail with a
 // duplicate key on pg_type_typname_nsp_index. One lock over the whole run makes
 // a simultaneous start safe.
@@ -128,7 +128,7 @@ func Apply(ctx context.Context, dsn string) error {
 
 // openDB opens the migration connection with notices routed to the log. A
 // migration that cannot do its job reports it with RAISE WARNING, and pgx
-// drops notices when OnNotice is nil , a warning nobody reads is the same as
+// drops notices when OnNotice is nil. A warning nobody reads is the same as
 // no warning, so the handler is what makes the refusal visible at boot.
 func openDB(dsn string) (*sql.DB, error) {
 	cfg, err := pgx.ParseConfig(dsn)

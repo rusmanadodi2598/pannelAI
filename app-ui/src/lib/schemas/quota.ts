@@ -79,11 +79,11 @@ export type QuotaWindowList = z.infer<typeof schemaQuotaWindowList>;
  *
  * The provider's number is what the operator came for, so the counted rows are summarised rather than
  * re-listed: how many windows this gateway holds, the one that has spent the most, and when that one
- * reopens — the screen's own promise is "window spend per provider, and when it reopens", and a summary
+ * reopens. The screen's own promise is "window spend per provider, and when it reopens", and a summary
  * that dropped the moment would break it for the lane that has no provider rows to carry it. The
  * percentage and the ceiling come from the shared geometry, so a summary cannot state "used" differently
- * from the rows above it. A window with no ceiling says so in words, because `120,000 / —` reads as a
- * missing value rather than an unlimited one.
+ * from the rows above it. A window with no ceiling says so in words, because a bare placeholder
+ * after `120,000 /` reads as a missing value rather than an unlimited one.
  */
 export function countedSummaryText(windows: QuotaWindow[], now: number): string {
 	if (windows.length === 0) return 'Counted by this gateway: no windows.';
@@ -110,7 +110,7 @@ export function countedSummaryText(windows: QuotaWindow[], now: number): string 
 // One quota card. A card is a provider account grouping, not a window grouping: it exists as soon as the
 // page holds an account for that provider, whether or not that account has a single counted window. The
 // endpoints inside it are the accounts on this card, each carrying the windows this gateway counted for it
-// (empty when it has routed no traffic yet — that emptiness is the fact the card shows, not a zero-filled
+// (empty when it has routed no traffic yet: that emptiness is the fact the card shows, not a zero-filled
 // row).
 export type QuotaCardEndpoint = { id: string; windows: QuotaWindow[] };
 export type QuotaCardGroup = { provider: string; endpoints: QuotaCardEndpoint[] };
@@ -120,7 +120,7 @@ export type QuotaCardGroup = { provider: string; endpoints: QuotaCardEndpoint[] 
  *
  * The rule this exists for (the windowless-account gap): a provider with accounts but no counted window
  * used to get no card at all, because grouping walked `windows` only. The gateway now selects a provider
- * group by the accounts that exist, so `published[]` carries one entry per account on the page — including
+ * group by the accounts that exist, so `published[]` carries one entry per account on the page, including
  * accounts that never polled. Both sources must feed one grouping or the account that has not routed
  * traffic yet stays invisible, which is precisely what the operator came to see.
  *
@@ -128,8 +128,8 @@ export type QuotaCardGroup = { provider: string; endpoints: QuotaCardEndpoint[] 
  * polls, so `windows` is walked first in wire order and `published` second in wire order: a provider or
  * account already opened by a window keeps its position, and an account seen only in `published` is added
  * where it first appears. An endpoint the window already placed is never re-opened under the answer's own
- * provider — an account belongs to exactly one provider, and the window it was counted against is the more
- * authoritative placement — so a `published[]` entry cannot split one account across two cards.
+ * provider (an account belongs to exactly one provider, and the window it was counted against is the more
+ * authoritative placement) so a `published[]` entry cannot split one account across two cards.
  *
  * The empty-provider lane (the credential-free virtual endpoint) groups under `''` from its windows exactly
  * as before; a `published` entry never names `''`, so it cannot pull provider rows onto that card.
@@ -159,7 +159,7 @@ export function quotaCardGroups(
 		out.some((group) => group.endpoints.some((endpoint) => endpoint.id === endpointId));
 
 	for (const entry of published) {
-		// The account is already on a card — its counted window opened it — so this answer belongs to the
+		// The account is already on a card (its counted window opened it) so this answer belongs to the
 		// connection that exists, not a new one.
 		if (grouped(entry.endpoint_id)) continue;
 		// A windowless account: the card still lists it, and its summary line says honestly that this gateway

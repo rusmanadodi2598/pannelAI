@@ -95,7 +95,7 @@ check_file() {
 
 	# One awk pass extracts every tag and how often it appears. It replaces
 	# `grep -m1 … | awk …` pipelines, which under `set -o pipefail` report 141
-	# whenever grep closes the pipe before printf has finished writing — a
+	# whenever grep closes the pipe before printf has finished writing, a
 	# flaky failure that printed no detail and blocked commits at random.
 	local tags tag count
 	tags="$(printf '%s\n' "$header" | awk '

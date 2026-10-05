@@ -54,7 +54,7 @@ export function takesOAuthCredential(hasOAuth: boolean, authModes: string[]): bo
 /**
  * What the key dialog calls the credential the operator pastes.
  *
- * A provider that takes a key AND answers through OAuth — Qoder lists `oauth` and `apikey` — is not
+ * A provider that takes a key AND answers through OAuth (Qoder lists `oauth` and `apikey`) is not
  * handed a plain API key: the value it wants is a Personal Access Token minted on the provider's own
  * account page, and labelling the field "API Key" hides that and sends the operator hunting for the
  * wrong kind of secret. A provider that takes a key alone keeps the generic name, so nothing else

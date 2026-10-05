@@ -4,7 +4,7 @@
 	//
 	// This is the number the operator came for, so it is the first thing on the connection and it arrives
 	// with the page: the collection read carries the provider's answer for every endpoint the page names,
-	// and the card renders it without asking. What remains per-card is the operator's own press — `force`,
+	// and the card renders it without asking. What remains per-card is the operator's own press: `force`,
 	// which asks that one provider now instead of rereading the worker's cache.
 	//
 	// Three things keep this number from being mistaken for the gateway's count: the note above the rows
@@ -50,7 +50,7 @@
 
 	// What this connection shows, until the page reads again. The card's own press owns an `override`, and
 	// the override is keyed on the page entry it replaced: while that entry is still the one the page
-	// holds, the press wins, and the next page read — a different object — replaces it automatically. That
+	// holds, the press wins, and the next page read (a different object) replaces it automatically. That
 	// is what keeps one connection's refresh from moving another's numbers, and keeps a forced answer from
 	// outliving the read beside it.
 	let override = $state<{
@@ -124,7 +124,7 @@
 	{:else if neverPolled && !loading}
 		<!-- A connection the worker has never answered shows the gap rather than an empty space, so a
 		     missing number reads as never asked instead of as asked-and-answered-with-nothing. Muted, never an
-		     error, and it does not claim the provider publishes nothing — those are different facts. A press
+		     error, and it does not claim the provider publishes nothing: those are different facts. A press
 		     in flight is not that state either: the status line above already says the provider is being
 		     asked, and this would describe the moment the card is leaving rather than the one it is in. -->
 		<p class="text-sm text-[var(--color-text-muted)]">
