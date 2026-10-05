@@ -131,12 +131,12 @@ func TestPlaygroundLive_Refusals(t *testing.T) {
 		{name: "a wrong key", body: `{"model":"live/live-model","messages":[{"role":"user","content":"hi"}]}`, key: "sk-wrong", wantStatus: http.StatusUnauthorized, wantCode: dataplane.CodeUnauthorized},
 		{name: "a malformed body", body: "not-json", key: "SK_PLACEHOLDER", wantStatus: http.StatusBadRequest, wantCode: dataplane.CodeValidation},
 		{name: "an invalid role", body: `{"model":"live/live-model","messages":[{"role":"banana","content":"hi"}]}`, key: "SK_PLACEHOLDER", wantStatus: http.StatusBadRequest, wantCode: dataplane.CodeValidation},
-		// 400 rather than 404: the served contract (contract YAML, the
-		// normative source for wire shapes) maps MODEL_NOT_FOUND to 400, and
-		// SPEC-API §7.15's "404 MODEL_NOT_FOUND" line is a stale reference to
-		// the ported reference's behaviour. The drift is reported, not silently
-		// resolved here, because §7.15 is outside this batch's scope.
-		{name: "an unknown model", body: `{"model":"nope/nope","messages":[{"role":"user","content":"hi"}]}`, key: "SK_PLACEHOLDER", wantStatus: http.StatusBadRequest, wantCode: dataplane.CodeModelNotFound},
+		// 404, per `docs/DRAFT/041-MODEL-NOT-FOUND-STATUS.md`: the owner decided to
+		// sync the wire to SPEC-API §7.15 and the OpenAI wire, and CONTRACT YAML
+		// `data_plane.codes` now maps MODEL_NOT_FOUND to 404 alongside errors.go's
+		// statusFor. This case asked for 400 while the stack answered 404, which only
+		// the tagged run could see, because the file carries the `integration` tag.
+		{name: "an unknown model", body: `{"model":"nope/nope","messages":[{"role":"user","content":"hi"}]}`, key: "SK_PLACEHOLDER", wantStatus: http.StatusNotFound, wantCode: dataplane.CodeModelNotFound},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
