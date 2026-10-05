@@ -16,7 +16,7 @@ Proyek memisahkan tanggung jawab **Control Plane** (API manajemen) dan **Data Pl
 
 > **Status: dalam pengembangan.** Komponen data plane sudah tersedia di kode, tetapi keberadaan modul belum berarti seluruh alur HTTP, streaming, dan accounting telah terintegrasi atau teruji end-to-end. Dashboard `app-ui` sudah punya scaffold fase U0 (login, gateway keys, settings security) dengan spesifikasi di [`docs/SPEC-UI/001-SPEC-UI.md`](docs/SPEC-UI/001-SPEC-UI.md) dan catatan teknis di [`app-ui/README.md`](app-ui/README.md); layar sisanya masih direncanakan dan ditandai Planned di sidebar.
 
-`app-serv/` sekarang mencakup P0 (config, migrasi, health/version, auth sesi, CRUD gateway keys) dan bagian P1: **registry provider yang di-embed** (94 provider, dihasilkan dari referensi 9Router), **seam plugin per provider** (`internal/provider`, sehingga provider bisa di-patch atau ditambah tanpa menyentuh core), **agregat upstream endpoint dan multi-key** dengan circuit breaker per key, serta migrasi P1 untuk provider nodes, endpoints, combos, katalog model, usage, quota, logs, dan settings. Yang belum terpasang: repository/service endpoint dan route HTTP-nya, bulk onboarding (endpoint batch, key batch, import OAuth), combos, vision adapter, data plane chat, usage/quota read, logs, settings. Panel `app-ui` berada pada fase U0 (login, gateway keys, settings security), dengan spesifikasi di [`docs/SPEC-UI/001-SPEC-UI.md`](docs/SPEC-UI/001-SPEC-UI.md).
+`app-serv/` sekarang mencakup P0 (config, migrasi, health/version, auth sesi, CRUD gateway keys) dan bagian P1: **registry provider yang di-embed** (34 provider, hasil KEEP set dari referensi 9Router; angkanya dikunci `internal/registry/embedded_test.go:30` sehingga regenerasi yang mengurangi atau menambah satu entri menggagalkan build), **seam plugin per provider** (`internal/provider`, sehingga provider bisa di-patch atau ditambah tanpa menyentuh core), **agregat upstream endpoint dan multi-key** dengan circuit breaker per key, serta migrasi P1 untuk provider nodes, endpoints, combos, katalog model, usage, quota, logs, dan settings. Route HTTP-nya sudah terpasang dan tercatat di `internal/router`: data plane (`/chat/completions`, `/messages`, `/responses`, `/models`, `/embeddings`, `/messages/count_tokens`, `/systemone` di `router_dataplane.go`), combos dan vision adapter (`router.go:170-177`), usage termasuk stream `/usage/live` dan quota read (`router.go:197-211`), logs dan settings (`router.go:212-218`). Status di atas masih berlaku: route yang terdaftar belum berarti setiap alur teruji end-to-end. Panel `app-ui` berada pada fase U0 (login, gateway keys, settings security), dengan spesifikasi di [`docs/SPEC-UI/001-SPEC-UI.md`](docs/SPEC-UI/001-SPEC-UI.md).
 
 ## Dashboard
 
@@ -75,17 +75,20 @@ pannelAI/
 │   │   ├── dataplane           # satu request chat end to end: resolve, seleksi, translasi
 │   │   ├── domain              # entitas, value object, transisi state, envelope error
 │   │   ├── handler             # decode, panggil service, encode
+│   │   ├── logx                # catatan fail-open yang sengaja diambil (§1.6)
 │   │   ├── netguard            # guard egress: validasi tujuan sebelum konek (SSRF)
 │   │   ├── provider            # seam plugin konektivitas per provider
 │   │   ├── registry            # registry provider yang di-embed
 │   │   ├── repository          # kontrak penyimpanan dan implementasinya
 │   │   │   ├── postgres        # implementasi PostgreSQL
 │   │   │   └── redis           # implementasi Redis: sesi, counter, state sticky
+│   │   ├── requestctx          # request id yang ikut naik lewat parameter dan context
 │   │   ├── router              # tabel route dan middleware lintas-potong
 │   │   ├── schema              # DTO, tag validasi, serialisasi respons
-│   │   ├── service             # orkestrasi use case, panggilan keluar dengan timeout
+│   │   ├── service             # orkestrasi use case; klien HTTP keluar tinggal di subpackagenya
+│   │   ├── streamio            # pembacaan satu baris stream dengan batas dari pemanggil
 │   │   └── tokensaver          # penerapan grup saver sesuai urutan referensi
-│   ├── migrations              # 000001 … 000012, pasangan up/down
+│   ├── migrations              # 000001 … 000014, pasangan up/down
 │   ├── tools                   # generator kode
 │   │   ├── openapi-gen
 │   │   ├── capability-gen.mjs
