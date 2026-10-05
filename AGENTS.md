@@ -4,7 +4,7 @@
 
 **Stack:** Go (Golang) · Redis · PostgreSQL
 
-**Version:** 1.0 · **Last Updated:** 2026-08-09 · **Status:** Active
+**Version:** 1.0 · **Last Updated:** 2026-10-05 · **Status:** Active
 
 ---
 
@@ -98,7 +98,7 @@ Internally, wrap with `fmt.Errorf("charging wallet %s: %w", walletID, err)` for 
 
 - [ ] `any` / `interface{}` are **forbidden** in application code, except narrow I/O boundaries (raw `json.Unmarshal` target before validation, an untyped third-party response). Even there, decode into a concrete struct and validate immediately — don't let it propagate past the boundary function.
 - [ ] Every external input — HTTP body, query params, path params, headers, queue payloads, webhook bodies — decodes into a typed struct (`schema` layer) and is validated before use. No `if v, ok := x.(string); ok` type-assertion chains standing in for real schema validation.
-- [ ] `go vet` and `staticcheck` must pass clean in CI, alongside an aggregated linter suite that flags unchecked errors, missing `context` timeouts on outbound calls, unclosed HTTP response bodies, and unclosed DB rows/statements. No unexplained suppression comment; every one needs `// reason: <why> (TICKET-123)`.
+- [ ] `go vet` and `staticcheck` must pass clean in CI, alongside an aggregated linter suite that flags unchecked errors, missing `context` timeouts on outbound calls, unclosed HTTP response bodies, and unclosed DB rows/statements. No unexplained suppression comment; every one needs `// reason: <why>` naming the constraint the suppression protects.
 - [ ] Env vars are parsed into a typed, validated `Config` struct at process boot — fail fast on missing/malformed config. No raw `os.Getenv()` scattered through business logic.
 
 ```go

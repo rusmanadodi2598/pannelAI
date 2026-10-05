@@ -61,7 +61,7 @@ func encryptCosyInfo(aesKey string, info cosyInfoPayload) (string, error) {
 // cannot open, so the deprecated call is the only correct one here.
 func wrapAESKey(public *rsa.PublicKey, aesKey string) (string, error) {
 	//lint:ignore SA1019 the vendor's server unwraps PKCS#1 v1.5 only
-	sealed, err := rsa.EncryptPKCS1v15(rand.Reader, public, []byte(aesKey)) //nolint:staticcheck // the vendor's padding, not our preference
+	sealed, err := rsa.EncryptPKCS1v15(rand.Reader, public, []byte(aesKey)) //nolint:staticcheck // reason: the vendor's padding, not our preference.
 	if err != nil {
 		return "", fmt.Errorf("wrapping the cosy aes key: %w", err)
 	}

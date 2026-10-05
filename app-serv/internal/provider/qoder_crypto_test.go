@@ -68,7 +68,7 @@ func TestCosySecretsRoundTrip(t *testing.T) {
 	// this scheme requires; the vendor's server runs the same read.
 	//
 	//lint:ignore SA1019 proving the vendor's padding means reading it the vendor's way
-	unwrapped, err := rsa.DecryptPKCS1v15(nil, private, sealed) //nolint:staticcheck // the vendor's padding, read back
+	unwrapped, err := rsa.DecryptPKCS1v15(nil, private, sealed) //nolint:staticcheck // reason: the vendor's padding, read back by the test.
 	if err != nil {
 		t.Fatalf("unwrapping the cosy key: %v", err)
 	}

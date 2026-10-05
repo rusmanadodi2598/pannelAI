@@ -150,7 +150,7 @@ func Backoff(retries int) time.Duration {
 	if window <= 0 {
 		return 0
 	}
-	return time.Duration(rand.Int64N(int64(window) + 1)) //nolint:gosec // jitter, not a secret
+	return time.Duration(rand.Int64N(int64(window) + 1)) //nolint:gosec // reason: this is jitter, not a secret.
 }
 
 // retryWait is the pause before the next attempt of one status for one entry. An
