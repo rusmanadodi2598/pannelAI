@@ -34,10 +34,11 @@ run_in() {
 }
 
 # check_changed_line_limits enforces AGENTS.md §1.1 on touched hand-written
-# service sources. Tests and generated files are excluded deliberately: the
-# policy limits application source, while generated output and test fixtures
-# have separate maintenance rhythms. A warning at 220 gives a change owner a
-# split point before CI rejects a file at 251.
+# sources. Generated output is the only exclusion, because §1.1 grants exactly
+# that one and no other: test files are in scope, and every file in the repo is
+# under the cap today, so a change that pushes one over is the only way this
+# gate has to fire. A warning at 220 gives a change owner a split point before
+# the gate rejects a file at 251.
 check_changed_line_limits() {
 	local rel file lines failed_limit=0 warned=0
 	while IFS= read -r rel; do

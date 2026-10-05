@@ -127,12 +127,21 @@ panel_dir() {
 
 # changed_files prints the files git considers changed, staged or not, plus
 # untracked ones. Used by gates that only need to inspect touched files.
+#
+# A CI checkout has a clean worktree, so an empty answer there would not be a
+# pass but a gate that inspected nothing. GATES_BASE_REF names the revision the
+# change is against (the pull request base, or the commit the push started from)
+# and adds that diff, which is what the hooks get from staged files for free.
 changed_files() {
-	local root
+	local root base
 	root="$(repo_root)"
+	base="${GATES_BASE_REF:-}"
 	{
 		git -C "$root" diff --name-only
 		git -C "$root" diff --cached --name-only
 		git -C "$root" ls-files --others --exclude-standard
+		if [ -n "$base" ] && git -C "$root" rev-parse --verify --quiet "$base" >/dev/null; then
+			git -C "$root" diff --name-only "${base}...HEAD"
+		fi
 	} | sort -u
 }
