@@ -7,9 +7,9 @@ SYSTEM_MAP bila topologinya berubah), bukan hanya sebagai centang di tabel.
 
 | | |
 |---|---|
-| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); dua puluh satu gap terdaftar, sebelas di antaranya temuan click-through/pass live, dua puluh sudah CLOSED (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20), G21 terdaftar sebagai seam baru, dan G22 ditutup 2026-09-20 — vertical kuota kini ada ingest dan penegakannya; worker re-check tetap deferred ke P2. G21 adalah satu-satunya item terbuka — desain seam-nya sudah ada, keputusannya (D6) menunggu owner |
+| **Status** | P2: seluruh permukaan rute terpasang dan terverifikasi live (§7.4, §7.6, §7.7, §7.9, §7.10, §7.11, §7.12, §7.15); dua puluh satu gap terdaftar, sebelas di antaranya temuan click-through/pass live, dua puluh sudah CLOSED (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20), G21 terdaftar sebagai seam baru, dan G22 ditutup 2026-09-20. Vertical kuota kini ada ingest dan penegakannya; worker re-check tetap deferred ke P2. G21 adalah satu-satunya item terbuka. Desain seam-nya sudah ada, keputusannya (D6) menunggu owner |
 | **Dibuat** | 2026-09-19, dari hasil click-through live §7.10 (PostgreSQL 14 + Redis lokal, stub upstream loopback) |
-| **Bukti terakhir** | pass G5 slice 11 2026-09-19 (Gemini STT ke stub loopback 8093: URL `:generateContent` + `key` query, audio inline base64, prompt bawaan/eksplisit, `{text}`; kontrol assemblyai tetap ditolak dengan nama); sebelum itu pass G4 (proxy loopback 8092), G5 slice 4–10 (tujuh adapter TTS ke stub), G19 (migration `000011`), dan G8 (boot polos tanpa override) |
+| **Bukti terakhir** | pass G5 slice 11 2026-09-19 (Gemini STT ke stub loopback 8093: URL `:generateContent` + `key` query, audio inline base64, prompt bawaan/eksplisit, `{text}`; kontrol assemblyai tetap ditolak dengan nama); sebelum itu pass G4 (proxy loopback 8092), G5 slice 4-10 (tujuh adapter TTS ke stub), G19 (migration `000011`), dan G8 (boot polos tanpa override) |
 
 ## 1. Cara pakai
 
@@ -159,18 +159,18 @@ agar menyatakan settings belum dihormati di v1. **Diputuskan (a) 2026-09-19.**
 func(*http.Request) (*url.URL, error)` yang diteruskan ke `http.Transport`, dan
 `cmd/app-serv/egress_wiring.go` membangunnya: `egressProxy` membaca
 `settings.network` **per request** (aturan yang sama dengan override §7.10) lalu
-mengembalikan rute — `nil` berarti dial langsung. `outbound_no_proxy` dihormati
+mengembalikan rute. `nil` berarti dial langsung. `outbound_no_proxy` dihormati
 sebagai daftar koma berisi host atau sufiks domain (`*` untuk semua). Karena client
 yang sama dipakai chat, media, embeddings, OAuth, dan probe, satu hook berlaku
 untuk semua jalur dial.
 
 **Bagian keamanannya (kenapa cek tujuan ada di hook, bukan di dialer).** Request
 yang lewat proxy tidak pernah mendial tujuannya, jadi guard di dialer hanya melihat
-alamat proxy — tanpa cek eksplisit, mengaktifkan proxy akan mematikan policy A01
+alamat proxy. Tanpa cek eksplisit, mengaktifkan proxy akan mematikan policy A01
 untuk setiap panggilan. Karena itu hook memvalidasi tujuan lewat
 `guard.CheckHost` **sebelum** mengembalikan rute. Dua aturan lain: settings yang
 gagal dibaca atau URL proxy yang tidak bisa dipakai menolak request, bukan dial
-langsung — melewati proxy yang operator aktifkan diam-diam adalah kegagalan yang
+langsung. Melewati proxy yang operator aktifkan diam-diam adalah kegagalan yang
 justru dicegah setelan ini.
 
 **Bukti penutupan (2026-09-19, live).** PostgreSQL 14 + Redis nyata, stub chat
@@ -221,7 +221,7 @@ Alias provider ikut resolve (`dg/nova-2`).
 **NVIDIA NIM TTS (adapter selesai 2026-09-19).** Reference mendefinisikan satu
 POST JSON tanpa polling: `{input:{text}, voice, model}`, `Authorization: Bearer`,
 dan bytes WAV. Voice default provider adalah `default` (bukan default OpenAI
-`alloy`), dan response route selalu dilabeli `wav` — termasuk bentuk JSON base64 —
+`alloy`), dan response route selalu dilabeli `wav` (termasuk bentuk JSON base64)
 agar bytes WAV tidak salah dilabeli mp3. Model harus dinamai (`nvidia/fastpitch` atau
 `nvidia/tacotron2`); registry sudah mendeklarasikan keduanya.
 
@@ -233,33 +233,33 @@ bytes dilabeli `mp3` termasuk bentuk JSON base64. Registry mendeklarasikan
 `sonic-2`/`sonic-3`; model tetap harus dinamai (`cartesia/sonic-2`).
 AWS Polly belum diambil karena reference tidak punya builder SigV4.
 
-**Tujuh adapter TTS (slice 4–10, selesai 2026-09-19).** Satu pass mengerjakan
+**Tujuh adapter TTS (slice 4-10, selesai 2026-09-19).** Satu pass mengerjakan
 seluruh sisa provider TTS yang bisa diselesaikan dalam satu request, sesuai
 keputusan owner "TTS saja (7)":
 
-- **ElevenLabs** — `{text, model_id, voice_settings}`, kredensial `xi-api-key`,
+- **ElevenLabs**: `{text, model_id, voice_settings}`, kredensial `xi-api-key`,
   voice sebagai segmen path terakhir; voice wajib (tanpa voice ditolak
   `VALIDATION_ERROR`).
-- **MiniMax dan MiniMax CN** — `{model, text, stream:false, language_boost,
+- **MiniMax dan MiniMax CN**: `{model, text, stream:false, language_boost,
   output_format:"hex", voice_setting, audio_setting}`, `Authorization: Bearer`,
   jawaban hex di-decode; `base_resp.status_code` bukan nol menjadi penolakan
   upstream meski HTTP 200.
-- **Inworld** — `{text, voiceId, modelId, audioConfig}`, `Authorization: Basic`
+- **Inworld**: `{text, voiceId, modelId, audioConfig}`, `Authorization: Basic`
   (payload base64 mentah seperti registry), jawaban `audioContent` base64.
-- **PlayHT** — `{text, voice, voice_engine, output_format, speed}`; satu materi
+- **PlayHT**: `{text, voice, voice_engine, output_format, speed}`; satu materi
   kredensial `userId:apiKey` dipecah menjadi `X-USER-ID` + `Authorization: Bearer`;
   `Accept: audio/mpeg` ikut payload.
-- **Coqui dan Tortoise** — self-hosted tanpa kredensial, `{text, voice?}`
+- **Coqui dan Tortoise**: self-hosted tanpa kredensial, `{text, voice?}`
   (`speaker_id` hanya bila diisi), jawaban bytes WAV; tortoise default voice
   `random`.
-- **Gemini TTS** — model sebagai segmen path sebelum `:generateContent`,
+- **Gemini TTS**: model sebagai segmen path sebelum `:generateContent`,
   kredensial sebagai query `key`, prompt dibangun dari input (+ bahasa), jawaban
   base64 PCM dibungkus header RIFF/WAVE 44 byte; 200 tanpa audio (mis. finish
   reason `SAFETY`) menjadi penolakan upstream.
 
 Seam yang ditambahkan agar tujuh itu masuk: `MediaPath` (sufiks path untuk provider
 yang menaruh model/voice di URL), cabang kredensial `basic`/`playht` di
-`media_credential.go`, dan `mediaAnswerReader` — pembaca jawaban per provider yang
+`media_credential.go`, dan `mediaAnswerReader`, pembaca jawaban per provider yang
 dipanggil `MediaCallService.Perform`, sehingga satu adapter bisa mengubah bytes
 jawaban sebelum amplop §7.10 dibangun.
 
@@ -271,8 +271,8 @@ query `key` (ditempatkan `MediaTarget`, §8.1), audio dikirim inline sebagai
 (sehingga content type non-audio tidak pernah ikut), dan prompt diambil dari field
 `prompt` pemanggil atau instruksi bawaan reference, ditambah ` Language: <lang>.`
 bila bahasa diisi. Jawaban menggabungkan part teks kandidat pertama menjadi
-`{text}`; jawaban tanpa kandidat adalah transkrip kosong, bukan penolakan — diam
-memang bertranskrip kosong — sedangkan jawaban 200 yang tidak terbaca tetap
+`{text}`; jawaban tanpa kandidat adalah transkrip kosong, bukan penolakan (diam
+memang bertranskrip kosong), sedangkan jawaban 200 yang tidak terbaca tetap
 `INTERNAL_ERROR`. Field JSON mengikuti ejaan reference untuk permukaan STT
 (`inline_data`/`mime_type`; keduanya diterima pemetaan JSON Gemini, dan port
 mempertahankan yang diukur). Lima format sisa pindah ke G21, sehingga tidak ada
@@ -290,7 +290,7 @@ body, auth, `audio/wav`, base64 `format:wav`. Untuk Cartesia terpenuhi 2026-09-1
 `media_cartesia_test.go` mengunci voice omitted/explicit, nested body, API key,
 version header, fixed MP3 output, and OpenAI boundary; live bytes +
 `?response_format=json` membuktikan `X-API-Key`, `Cartesia-Version`, body, `audio/mp3`,
-and base64 `format:mp3`. Untuk tujuh adapter slice 4–10 terpenuhi 2026-09-19: satu
+and base64 `format:mp3`. Untuk tujuh adapter slice 4-10 terpenuhi 2026-09-19: satu
 file test per provider (`media_elevenlabs_test.go`, `media_minimax_test.go`,
 `media_inworld_test.go`, `media_playht_test.go`, `media_local_tts_test.go`,
 `media_gemini_tts_test.go`) plus tabel entri registry di
@@ -322,8 +322,8 @@ tetap tanpa usage row, keputusan itu sudah final dan tidak dibuka lagi di sini.
 **Perbaikan (2026-09-19).** Counter: `RecordUse` ditambahkan ke kontrak
 `repository.GatewayKeyRepository` (satu UPDATE `request_count = request_count + 1,
 last_used_at = $1`, baris hilang → `ErrGatewayKeyNotFound`), dan seam
-`KeyUseRecorder` dipanggil dari **satu** titik — `ChatService.Authenticate`, choke
-point yang sama untuk chat, models, media, dan embeddings — jadi satu panggilan
+`KeyUseRecorder` dipanggil dari **satu** titik (`ChatService.Authenticate`, choke
+point yang sama untuk chat, models, media, dan embeddings), jadi satu panggilan
 terautentikasi menambah tepat satu, aritmetikanya di database (bukan
 read-modify-write), dan kegagalan tulis tidak menolak request yang sudah lolos
 autentikasi. Akuntansi media: `dataPlaneRecorder` menulis satu usage row + satu
@@ -334,8 +334,8 @@ non-2xx via `UpstreamRejected`, atau sukses) membangun outcome **sebelum**
 panggilan, sehingga baris error tetap membawa provider/endpoint/model. Search
 mencatat `cost_per_query` registry dan model = provider id lewat
 `accountingModel()` (rute search tidak menyebut model, kolomnya wajib). Teks error
-log `CODE: message` tanpa cause terbungkus — URL media bisa membawa kredensial
-sebagai query param (§8.1) — dan body log media sengaja kosong (reference mencatat
+log `CODE: message` tanpa cause terbungkus, URL media bisa membawa kredensial
+sebagai query param (§8.1), dan body log media sengaja kosong (reference mencatat
 detail hanya untuk chat). `MediaCall.Model` (string klien, hanya di-echo) dihapus.
 Test: `key_use_test.go`, `media_record_test.go` + stub-nya, dan
 `TestIntegration_RecordUse`.
@@ -387,7 +387,7 @@ gagal di validasi config.
 Resep override sementara ada di `reference_appserv_local_env.md`.
 
 **Perbaikan (2026-09-19, disetujui owner).** `.env` dibangun ulang **dari**
-`.env.example` sehingga hanya empat baris nilai yang berbeda — `POSTGRES_DSN`,
+`.env.example` sehingga hanya empat baris nilai yang berbeda: `POSTGRES_DSN`,
 `ENCRYPTION_KEY` (32 byte acak baru; aman karena DB tidak memegang baris sealed
 sama sekali saat itu: `upstream_keys=0`, `proxies=0`), `REDIS_PASSWORD` (dibaca
 dari `/etc/redis/redis.conf` pada saat penulisan), dan `PANEL_BOOTSTRAP_PASSWORD`
@@ -398,7 +398,7 @@ tetap kosong (bukan penghalang boot; owner yang mengisi). Sisanya, termasuk blok
 environment apa pun) menjawab `GET /api/v1/health` dengan
 `{"status":"ok","checks":{"postgres":"ok","redis":"ok"}}`; `redis-cli PING` dengan
 `REDISCLI_AUTH` dari `.env` menjawab `PONG`; diff `.env` vs `.env.example` hanya
-delapan baris (empat pasang nilai). Pass G19 dan G5 slice 4–10 sesudahnya memakai
+delapan baris (empat pasang nilai). Pass G19 dan G5 slice 4-10 sesudahnya memakai
 DSN `.env` yang sama tanpa satu pun override.
 
 **Definisi selesai.** Terpenuhi 2026-09-19: `./app-serv` boot bersih tanpa override
@@ -417,17 +417,17 @@ menyebut Redis (lihat G14).
 `writeDataPlaneError`/handler, memakai request id yang sudah ada.
 
 **Perbaikan.** Baris akses yang sudah ada (`request handled`, dengan request id
-dan status) yang diperkaya — bukan baris kedua, supaya satu baris menjawab "apa"
+dan status) yang diperkaya, bukan baris kedua, supaya satu baris menjawab "apa"
 dan "kenapa". Seam-nya `schema.ErrorCodeRecorder` (satu metode), di-set oleh
 `schema.WriteError` (envelope manajemen) dan `handler.writeDataPlaneError`
 (envelope data plane), diimplementasikan `router.responseRecorder`, dan
 diteruskan `router.statusRecorder`. Penerusan itu eksplisit karena Go hanya
 mempromosikan metode milik interface yang di-embed (`http.ResponseWriter`), bukan
-metode tambahan milik nilai konkretnya — tanpa itu assertion handler gagal
+metode tambahan milik nilai konkretnya. Tanpa itu assertion handler gagal
 diam-diam dan kode berhenti tercatat. `writeEnvelope` (404/405 milik mux) ikut
 mencatat kodenya. Field `code` hanya muncul saat request gagal, jadi
-kehadirannya berarti "request ini gagal". **Pesan tidak pernah dicatat** — hanya
-kode — karena pesan kegagalan data plane bisa mengutip teks upstream yang membawa
+kehadirannya berarti "request ini gagal". **Pesan tidak pernah dicatat** (hanya
+kode) karena pesan kegagalan data plane bisa mengutip teks upstream yang membawa
 kredensial (aturan yang sama dengan G18); jalur panic tetap mencatat id + nilai
 panic lewat `recoverer`.
 
@@ -518,7 +518,7 @@ terpisah.
 
 **Perbaikan (2026-09-19).** `GET /api/v1/quotas/{endpoint_id}` sekarang menjawab
 `{endpoint_id, cap, data}`: `cap` berisi cap tersimpan (`QuotaCapResponse` yang
-sama dengan jawaban PUT) atau `null` eksplisit saat belum ada cap — `null` dipilih
+sama dengan jawaban PUT) atau `null` eksplisit saat belum ada cap. `null` dipilih
 daripada field hilang supaya "belum ada cap" bisa dibedakan dari jawaban yang
 lupa memuatnya. `QuotaService.GetCap` yang tadinya tanpa pemanggil produksi kini
 dipakai handler; rute koleksi `GET /api/v1/quotas` tetap windows-only (cap milik
@@ -528,11 +528,11 @@ tetap tampil, rute koleksi tanpa field cap, dan jalur validasi (cost negatif 400
 tanpa menulis apa pun).
 
 **Bukti penutupan (2026-09-19, live).** Boot dengan DSN `.env` (role aplikasi,
-tanpa workaround G19 — tabel quota milik `pannelai`), login, satu endpoint
+tanpa workaround G19, tabel quota milik `pannelai`), login, satu endpoint
 `openai`: `PUT /quotas/{id}` `{"monthly_cost_usd":"5","monthly_tokens":1000}` → 200
 `{"monthly_cost_usd":"5.00000000","monthly_tokens":1000,…}`;
 `GET /quotas/{id}` → 200 `{"endpoint_id":…,"cap":{"monthly_cost_usd":"5.00000000",
-"monthly_tokens":1000,…},"data":[]}` — gejala G12 (`{"data":[]}` tanpa cap)
+"monthly_tokens":1000,…},"data":[]}`, gejala G12 (`{"data":[]}` tanpa cap)
 hilang; `GET /quotas` → 200 `{"data":[]}` tetap tanpa field cap. Artefak
 dibersihkan (endpoint, baris `quota_caps`, hash panel NULL; baseline `usage=2
 logs=1` pulih).
@@ -674,12 +674,12 @@ stub), `gateway_keys.request_count` naik 1, tetapi `usage_records` tidak
 bertambah satu baris pun. Penyebabnya di kode: `Engine.Relay` mengembalikan
 `Outcome{}` di setiap jalur error (identity yang sudah dibangun `relayOnce`
 dibuang), sedangkan `domain.NewUsageRecord` menolak input tanpa
-`provider_id`/`model` — jadi `ChatService.record` gagal validasi dan errornya
+`provider_id`/`model`, jadi `ChatService.record` gagal validasi dan errornya
 diabaikan (`_, _ =`). Panggilan yang dilayani menulis baris normal.
 
 **Kenapa.** Kegagalan chat tidak terlihat di layar Usage (§7.12) padahal kolom
 `status`/`error_code` ada untuk itu, dan jalur media sudah mencatat kegagalan
-(baris `tts-1` `status:error` `UPSTREAM_ERROR` di pass yang sama) — dua jalur data
+(baris `tts-1` `status:error` `UPSTREAM_ERROR` di pass yang sama). Dua jalur data
 plane dengan aturan berbeda. Reference mencatat kegagalan chat sebagai request
 detail `status: "error"`.
 
@@ -687,8 +687,8 @@ detail `status: "error"`.
 (provider/endpoint/model/combo) sebelum dial dan kembalikan bersama error, agar
 `ChatService.record` menerima identitas yang cukup untuk menulis baris error.
 
-**Perbaikan.** `relayOnce` — dipindah ke `internal/dataplane/engine_relay.go`
-karena `engine.go` menembus batas 250 baris (§1.1) — membangun `Outcome` sebelum
+**Perbaikan.** `relayOnce`, dipindah ke `internal/dataplane/engine_relay.go`
+karena `engine.go` menembus batas 250 baris (§1.1), membangun `Outcome` sebelum
 langkah pertama yang bisa gagal dan mengembalikannya di setiap jalan keluar, dengan
 `latency_ms` diisi lewat `elapsedMS` (termasuk jalur gagal). `Engine.Relay`
 menyimpan `lastOutcome` dari anggota terakhir yang benar-benar dicoba, sehingga combo
@@ -697,7 +697,7 @@ mendapat aturan yang sama: `fanOut` mengembalikan identity anggota pertama yang
 gagal (error yang dilaporkan), `relayFusion` meneruskan outcome `relayOnce`/`judge`
 alih-alih `Outcome{}`. `ChatService.record` menulis baris usage hanya ketika
 identity ada (provider + model): panggilan yang ditolak sebelum ada percobaan
-(provider tak dikenal) tidak menulis baris usage, dan pelewatan itu eksplisit —
+(provider tak dikenal) tidak menulis baris usage, dan pelewatan itu eksplisit,
 bukan validasi agregat yang gagal lalu ditelan, pola yang menyembunyikan gap ini.
 
 **Bukti live (2026-09-19).** Stub chat loopback (200 + usage 5/2 untuk model apa
@@ -707,7 +707,7 @@ gateway key, `EGRESS_ALLOWED_TARGETS=127.0.0.1/32`. Satu `POST /chat/completions
 model `g18node/broken` menjawab 502 `UPSTREAM_ERROR` dan meninggalkan **satu baris
 `usage_records`** `status:error`, `error_code:UPSTREAM_ERROR`,
 provider/endpoint/model terisi (`openai-compatible-…`, `ep_…`, `broken`), token 0,
-latency 7 ms — request id `0385RT4FG14Y44H76TZW2NB1YJ` yang sama dengan baris
+latency 7 ms, request id `0385RT4FG14Y44H76TZW2NB1YJ` yang sama dengan baris
 log-nya. Panggilan sukses menulis baris `success` token 5/2, dan `POST` model
 `nosuchprovider/model` menjawab 400 `MODEL_NOT_FOUND` dengan baris log **tanpa**
 baris usage (batas sebelum percobaan). Baseline dipulihkan (`usage=2 logs=1`).
@@ -724,14 +724,14 @@ bentuknya; changelog SPEC-API §7.12. **Terpenuhi 2026-09-19**: tiga test baru
 ### G18: Jalur chat tidak menulis `request_logs` (CLOSED 2026-09-19)
 
 **Bukti.** Pass G6 (2026-09-19): satu-satunya penulis `domain.RequestLogInput` di
-tree non-test adalah `dataPlaneRecorder` (media + embeddings). Panggilan chat —
-sukses maupun gagal — tidak pernah menghasilkan baris `request_logs`;
+tree non-test adalah `dataPlaneRecorder` (media + embeddings). Panggilan chat
+(sukses maupun gagal) tidak pernah menghasilkan baris `request_logs`;
 `LogService.Record` sudah lengkap (selalu menulis baris, hanya body yang
 dipotong/dibuang sesuai `settings.logging.request_capture_enabled`), tetapi tidak
 ada pemanggil dari jalur chat.
 
-**Kenapa.** Layar Logs (§7.13) tidak pernah menampilkan lalu lintas chat — justru
-lalu lintas utama gateway — dan `GET /usage/records/{request_id}` tidak bisa
+**Kenapa.** Layar Logs (§7.13) tidak pernah menampilkan lalu lintas chat (justru
+lalu lintas utama gateway), dan `GET /usage/records/{request_id}` tidak bisa
 menjoin log untuk request chat. Reference mencatat request detail chat (dengan
 body saat capture aktif).
 
@@ -741,8 +741,8 @@ router yang sama seperti usage row-nya; keputusan body tetap satu tempat di
 
 **Perbaikan.** `ChatService` menerima seam `Logs RequestLogRecorder`, dipasang di
 `cmd/app-serv/dataplane_wiring.go` dengan `LogService` yang sama seperti jalur
-media/embeddings. `record` — dipindah ke `internal/service/chat_record.go` agar
-`chat.go` tetap di bawah batas baris — menulis satu baris `request_logs` per
+media/embeddings. `record` (dipindah ke `internal/service/chat_record.go` agar
+`chat.go` tetap di bawah batas baris) menulis satu baris `request_logs` per
 panggilan chat: request id router yang sama dengan baris usage, identity, status,
 latency, `request_body` dari `in.Raw`, `response_body` dari `outcome.Body`, dan
 `error` = **kode saja**. Itu berbeda dari baris media (`CODE: message`) dengan
@@ -784,24 +784,24 @@ saat `PATCH /media-providers/{provider_id}`. `has_table_privilege` untuk role it
 SELECT=false INSERT=false`, sementara tabel lain dimiliki `pannelai`. Kedua tabel
 dibuat migration P2 tetapi dimiliki `rusmanadodi` (superuser), jadi override §7.10
 dan rute §7.11 tidak bisa dipakai dengan kredensial aplikasi. Pass diselesaikan
-dengan DSN superuser — workaround, bukan keadaan yang boleh dibiarkan.
+dengan DSN superuser, workaround, bukan keadaan yang boleh dibiarkan.
 
 **Akar masalah.** Migration berjalan sebagai role yang mem-boot gateway. Ledger
-menunjukkannya: `000001`–`000008` diterapkan 2026-09-18 (role aplikasi, tabel
+menunjukkannya: `000001`-`000008` diterapkan 2026-09-18 (role aplikasi, tabel
 `pannelai`-owned), sedangkan `000009`/`000010` diterapkan 2026-09-19 12:18 oleh
-boot ber-DSN superuser (pass G1) — dan tabelnya ikut menjadi milik superuser.
+boot ber-DSN superuser (pass G1), dan tabelnya ikut menjadi milik superuser.
 Jadi ini bukan cacat satu host, melainkan aturan yang belum ada: **setiap tabel
 milik role aplikasi**, apa pun role yang menjalankan migration.
 
 **Perbaikan (2026-09-19, disetujui owner).** `migrations/000011_p2_table_ownership.up.sql`
 mengembalikan kepemilikan kedua tabel ke role aplikasi, dengan `gateway_keys`
-(tabel migration pertama) sebagai jangkar — itu menyatakan satu aturan, bukan
+(tabel migration pertama) sebagai jangkar. Itu menyatakan satu aturan, bukan
 menyebut nama role yang berbeda per deployment. Karena role yang tidak memiliki
 tabel tidak bisa memindahkan kepemilikannya, penolakan ditangkap dan dilaporkan
 sebagai **warning** berisi statement yang harus dijalankan, bukan kegagalan boot:
 kegagalan di titik ini akan mengubah dua rute yang rusak menjadi gateway yang tidak
 pernah hidup. Agar warning itu terlihat, `migrations.openDB` menyetel `OnNotice`
-pgx ke `slog` (severity NOTICE/INFO/DEBUG turun ke Debug, sisanya Warn) — pgx
+pgx ke `slog` (severity NOTICE/INFO/DEBUG turun ke Debug, sisanya Warn); pgx
 membuang notice saat `OnNotice` nil, dan warning yang tidak dibaca sama saja dengan
 tidak ada. Down migration-nya sengaja kosong: keadaan yang digantikannya adalah
 defect itu sendiri.
@@ -820,7 +820,7 @@ tabel + pkey menjadi `pannelai`, lalu boot berikutnya memakai DSN `.env` polos:
 `PATCH /media-providers/openai {"kind":"tts","base_url":…}` → **200**
 `base_url_source:"override"` dan terbaca kembali lewat `GET`, `POST /proxies` →
 **201**, `GET /proxies` → 200 memuat barisnya, `DELETE /proxies/{id}` → **204**
-(sebelumnya 500 `permission denied`). Cleanup memakai role aplikasi — termasuk
+(sebelumnya 500 `permission denied`). Cleanup memakai role aplikasi, termasuk
 `delete from media_provider_settings` langsung, yang tadinya mustahil.
 
 **Definisi selesai.** Terpenuhi 2026-09-19: `PATCH /media-providers/{provider_id}`
@@ -830,8 +830,8 @@ aturan kepemilikannya kini dijaga test + migration, bukan ALTER manual di satu h
 ### G20: Penolakan media/embeddings sebelum panggilan tidak meninggalkan baris log (CLOSED 2026-09-19)
 
 **Bukti.** Temuan pass G17/G18 (2026-09-19): jalur chat kini mencatat **setiap**
-panggilan — termasuk `MODEL_NOT_FOUND` yang ditolak sebelum pipeline berjalan
-(terbukti live: baris log tanpa baris usage) — sedangkan `MediaCallService.Prepare`
+panggilan, termasuk `MODEL_NOT_FOUND` yang ditolak sebelum pipeline berjalan
+(terbukti live: baris log tanpa baris usage), sedangkan `MediaCallService.Prepare`
 dan `EmbeddingsService` menulis baris hanya setelah `Perform` dijalankan. Jadi
 penolakan provider tak dikenal, `base_url` kosong, format gate, kredensial kosong,
 atau `NO_PROVIDER_AVAILABLE` di §7.10/§7.9 tidak pernah muncul di layar Logs,
@@ -842,30 +842,30 @@ ditolak; jalur media/embeddings yang ditolak sebelum dial tidak terlihat di sana
 dan aturannya berbeda dari jalur chat untuk kelas kegagalan yang sama.
 
 **Pendekatan.** Panggil recorder di pembungkus handler (atau di jalur `Prepare`)
-sehingga satu panggilan yang ditolak pun menulis baris log — dengan identity
+sehingga satu panggilan yang ditolak pun menulis baris log, dengan identity
 sebisanya (provider/model) dan kode error saja. Baris usage tetap hanya untuk
 panggilan yang mencapai percobaan, sama seperti chat.
 
 **Perbaikan.** Penulis terpisah dipilih: `dataPlaneRecorder.refuse` menulis satu
-baris `request_logs` (tanpa baris usage — aggregate menuntut provider dan model,
+baris `request_logs` (tanpa baris usage: aggregate menuntut provider dan model,
 aturan yang sama dengan penolakan pra-pipeline chat) dengan `error` = kode saja,
 latensi 0, dan body kosong. Di jalur media, `MediaCallService.prepareForCall`
 membungkus `Prepare` dan mencatat penolakannya; identity disusun
 `refusalOutcome` dari string `provider/model` yang dikirim klien (string tanpa
-provider tidak diberi nama — sama seperti chat yang tidak mengarang identity),
+provider tidak diberi nama, sama seperti chat yang tidak mengarang identity),
 dan dua penolakan awal `Search` (`searchProvider`, `Block`) mencatat lewat
 `mediaRefusalOutcome`/outcome kosong. Di jalur embeddings, fase resolusi dipindah
 ke `resolveCall` (`embeddings_resolve.go`) yang **membangun identity sebelum
-langkah pertama yang bisa gagal** — aturan yang sama dengan `relayOnce` G17 —
+langkah pertama yang bisa gagal** (aturan yang sama dengan `relayOnce` G17)
 sehingga `Embed` punya satu titik penolakan; `EmbeddingsServiceDeps.Engine`
 diganti dua port sempit (`ModelResolver`, `MediaRouter`) agar use case tidak
 membawa engine ke setiap test. Penolakan di handler (body invalid, 401) tidak
-mencatat — batas yang sama dengan jalur chat. `Voices` juga tidak mencatat: rute
+mencatat, batas yang sama dengan jalur chat. `Voices` juga tidak mencatat: rute
 itu membaca katalog registry dan tidak pernah dial (keputusan §7.10 yang sudah
 ada).
 
 **Bukti live (2026-09-19).** Binary dari tree yang sama, `.env` + override run,
-tanpa stub: login + satu gateway key, lalu empat penolakan — `POST
+tanpa stub: login + satu gateway key, lalu empat penolakan: `POST
 /images/generations` model `nope/whatever` → 400 `MODEL_NOT_FOUND`, `POST
 /embeddings` model `nope/embed` → 400 `MODEL_NOT_FOUND`, `POST /audio/speech`
 model `elevenlabs/voice` → 400 `PROVIDER_NOT_ROUTABLE` (format gate), `POST
@@ -892,25 +892,25 @@ atas.
 
 ### G21: Lima format media butuh lebih dari satu request
 
-**Bukti.** Sisa G5 yang tidak bisa masuk pipeline media sekarang — satu URL, satu
-request, satu jawaban — dan sejak slice 11 (Gemini STT, 2026-09-19) satu-satunya
+**Bukti.** Sisa G5 yang tidak bisa masuk pipeline media sekarang (satu URL, satu
+request, satu jawaban), dan sejak slice 11 (Gemini STT, 2026-09-19) satu-satunya
 format media yang masih ditolak gate. Kelimanya berasal dari daftar format yang sama
 (`registry.yaml`), dan alasan masing-masing terlihat di reference
 (`open-sse/handlers/`):
 
-- **AssemblyAI** (`stt`) — upload → submit → poll sampai 120 detik
+- **AssemblyAI** (`stt`): upload → submit → poll sampai 120 detik
   (`sttCore.js:57`): tiga request dengan loop dan batas waktu.
-- **AWS Polly** (`tts`) — `base_url` memuat placeholder `{region}` dan
+- **AWS Polly** (`tts`): `base_url` memuat placeholder `{region}` dan
   `auth_header: aws-sigv4`; reference **tidak punya implementasinya sama sekali**
   (`FORMAT_HANDLERS` di `genericFormats.js` tidak memuatnya), jadi port berarti
   menulis penandatanganan SigV4 dari dokumentasi AWS.
-- **Edge TTS** (`tts`) — mengambil `bing.com/translator`, mem-parse token dari HTML
+- **Edge TTS** (`tts`): mengambil `bing.com/translator`, mem-parse token dari HTML
   + cookie (cache ~5 menit), lalu POST SSML ke endpoint Bing
   (`edgeTts.js:getToken`).
-- **Google TTS** (`tts`) — mengambil `translate.google.com`, mem-parse `f.sid`/`bl`
+- **Google TTS** (`tts`): mengambil `translate.google.com`, mem-parse `f.sid`/`bl`
   dari HTML (cache ~11 menit), lalu memanggil RPC `batchexecute` (`googleTts.js`).
-- **Local Device** (`tts`) — menjalankan binary host: `say` di macOS, SAPI lewat
-  PowerShell di Windows, `ffmpeg` untuk konversi (`localDevice.js`) — bukan HTTP
+- **Local Device** (`tts`): menjalankan binary host: `say` di macOS, SAPI lewat
+  PowerShell di Windows, `ffmpeg` untuk konversi (`localDevice.js`), bukan HTTP
   sama sekali.
 
 Yang lebih tajam dari kelimanya: `base_url` tiga provider (edge-tts, google-tts,
@@ -921,22 +921,22 @@ jadi model "satu target URL" tidak berlaku untuk mereka tanpa aturan baru.
 dari G5 ("TTS saja (7)" untuk slice berikutnya, sisanya "gap baru + seam
 multi-step"): mencampurnya akan membuat satu adapter memaksa seam baru
 (polling/scraping/proses host) di tengah slice yang lain, dan format gate tetap
-menolak kelimanya **dengan nama** selama itu — perilaku yang diinginkan §6.
+menolak kelimanya **dengan nama** selama itu, perilaku yang diinginkan §6.
 
 **Pendekatan (belum dikerjakan).** Seam yang dibutuhkan berbeda per kelas, jadi
 jangan dipaksakan satu bentuk: (a) adapter berurutan dengan anggaran waktu untuk
 AssemblyAI (upload → submit → poll), (b) penandatanganan SigV4 sebagai util untuk
-AWS Polly, (c) pengambil token pihak ketiga dengan cache TTL untuk Edge/Google TTS
-— yang juga menuntut `base_url` berhenti menjadi URL, dan (d) eksekusi proses host
+AWS Polly, (c) pengambil token pihak ketiga dengan cache TTL untuk Edge/Google TTS,
+yang juga menuntut `base_url` berhenti menjadi URL, dan (d) eksekusi proses host
 untuk Local Device, yang perlu keputusan tersendiri karena menjalankan binary dari
 proses gateway memperbesar permukaan ancaman (OWASP) dan tidak berlaku di container.
 
 **Desain (2026-09-19).** Keempat kelas sudah punya desain seam yang bisa direview:
-`docs/DRAFT/002-G21-SEAM-DESIGN.md` — per kelas berisi bukti reference (file:line),
+`docs/DRAFT/002-G21-SEAM-DESIGN.md`, per kelas berisi bukti reference (file:line),
 bentuk seam, kontrak/registry yang berubah, risiko + temuan keamanan (mis. argument
 injection di Local Device, ToS/kerapuhan scraping di Edge/Google), test yang akan
 mengunci, dan pertanyaan keputusan. Ringkasan keputusannya ada di dokumen itu §5
-(A1–A3, B1–B2, C1–C3, D1) dan tercatat sebagai D6 di §4 berkas ini. Tidak ada kode
+(A1-A3, B1-B2, C1-C3, D1) dan tercatat sebagai D6 di §4 berkas ini. Tidak ada kode
 yang ditulis sebelum keputusan itu dijawab.
 
 **Definisi selesai.** Tiap provider punya seam + adapter-nya, tabel test termasuk
@@ -953,7 +953,7 @@ alasannya.
 | D3 | Apa yang dicatat panggilan media? (G6) | (a) usage+log, (b) +request_count, (c) combo test tetap tanpa row | **(b) usage + log + request_count** (2026-09-19) | layar Usage/Logs panel kosong untuk media |
 | D4 | Lantai Redis untuk state OAuth? (G14) | (a) `GETDEL` + catat Redis ≥ 6.2, (b) `EVAL` Lua agar 6.0 ikut jalan | **(b) perbaiki agar jalan di 6.0 ke atas** (2026-09-19) | host Redis < 6.2 kehilangan rute callback |
 | D5 | Bagaimana cap dibaca kembali? (G12) | (a) sintesis window, (b) field cap di rute baca, (c) amend spec | **(b) field cap terpisah** (2026-09-19) | panel tidak bisa menampilkan budget tersimpan |
-| D6 | Bentuk seam empat kelas G21 | lihat `docs/DRAFT/002-G21-SEAM-DESIGN.md` §5: A1–A3 (AssemblyAI), B1–B2 (Polly), C1–C3 (Edge/Google TTS), D1 (Local Device) | **(belum dijawab)** | tidak ada adapter multi-request yang boleh ditulis; kelimanya tetap ditolak dengan nama |
+| D6 | Bentuk seam empat kelas G21 | lihat `docs/DRAFT/002-G21-SEAM-DESIGN.md` §5: A1-A3 (AssemblyAI), B1-B2 (Polly), C1-C3 (Edge/Google TTS), D1 (Local Device) | **(belum dijawab)** | tidak ada adapter multi-request yang boleh ditulis; kelimanya tetap ditolak dengan nama |
 
 ## 5. Urutan kerja usulan
 
@@ -970,8 +970,8 @@ alasannya.
 6. **P2.6, G12 + G13 + G5**: G12 butuh D5, G13 dan G5 adapter/paritas. G13 selesai
    2026-09-19; G12 selesai 2026-09-19 dengan D5 = (b); G5 incremental:
    Deepgram STT slice 1, NVIDIA NIM TTS slice 2, Cartesia TTS slice 3, tujuh
-   adapter TTS slice 4–10 (ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT,
-   Coqui, Tortoise, Gemini TTS), dan Gemini STT slice 11 selesai 2026-09-19 —
+   adapter TTS slice 4-10 (ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT,
+   Coqui, Tortoise, Gemini TTS), dan Gemini STT slice 11 selesai 2026-09-19.
    G5 CLOSED, lima format multi-request tersisa di G21.
 7. **P2.7, G15 + G16**: temuan click-through G13 (routing `no_auth` dan header
    media kosong), tanpa keputusan owner. Selesai 2026-09-19.
@@ -986,12 +986,12 @@ alasannya.
 10. **P2.10, G20**: temuan pass G17/G18 (penolakan media/embeddings pra-panggilan
     tanpa baris log), tanpa keputusan owner. Selesai 2026-09-19.
 11. **P2.11, G21**: lima format yang butuh lebih dari satu request, dipisahkan dari
-    G5 oleh keputusan owner 2026-09-19. Terdaftar, belum dikerjakan — desain seam
+    G5 oleh keputusan owner 2026-09-19. Terdaftar, belum dikerjakan. Desain seam
     keempat kelas tersedia 2026-09-19 di `docs/DRAFT/002-G21-SEAM-DESIGN.md`, dan
     keputusannya menunggu owner (D6 di §4).
 
 D1, D2, D3, D4, dan D5 sudah dijawab owner 2026-09-19 (§4); P2.2, P2.3, P2.4,
-P2.5, P2.6 (G12/G13/G5 slice 1–11), P2.7, P2.8 (G7/G8/G9/G10/G19), P2.9, dan P2.10
+P2.5, P2.6 (G12/G13/G5 slice 1-11), P2.7, P2.8 (G7/G8/G9/G10/G19), P2.9, dan P2.10
 sudah selesai. Yang terdaftar dan belum dikerjakan: G21, dan satu-satunya keputusan
 yang masih menunggu owner adalah bentuk seam-nya (D6, desain di
 `docs/DRAFT/002-G21-SEAM-DESIGN.md`).
@@ -1064,7 +1064,7 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G7 CLOSED**: keputusan default kind `video` (biarkan terdokumentasi, tanpa provider) | Terpenuhi oleh changelog §7.10 yang sudah ada (commit `f7f1450`): rute terdaftar menolak `PROVIDER_NOT_ROUTABLE` dengan alasan paritas reference; tidak ada perubahan kode. Kalau kelak ada provider ber-kind `video`, adapternya masuk G5 |
 | 2026-09-19 | **G17 CLOSED**: identity dibangun sebelum dial di `relayOnce` (dipindah ke `engine_relay.go` karena `engine.go` menembus batas 250 baris), `lastOutcome` di `Relay`, identity fusion dari `fanOut`/`judge`, guard identity eksplisit di `ChatService.record`; empat test baru | PASS live: `POST /chat/completions` model `g18node/broken` menjawab 502 `UPSTREAM_ERROR` dan menulis satu baris `usage_records` `status:error` `error_code:UPSTREAM_ERROR` dengan provider/endpoint/model terisi (`openai-compatible-…`/`ep_…`/`broken`), token 0, latency 7 ms, request id `0385RT4FG14Y44H76TZW2NB1YJ` sama dengan baris log-nya; sukses 200 token 5/2; `nosuchprovider/model` 400 `MODEL_NOT_FOUND` hanya baris log; baseline `usage=2 logs=1 keys=0 endpoints=0 nodes=0` dipulihkan; suite `-race` 13 paket, tagged integration, `go-lint.sh` (0 issues), `go-headers.sh` (464 file) hijau |
 | 2026-09-19 | **G18 CLOSED**: seam `Logs RequestLogRecorder` di `ChatService` + `chat_record.go` (satu baris `request_logs` per panggilan chat, request id sama dengan usage row, `error` = kode saja, body dari `in.Raw`/`outcome.Body` diserahkan ke aturan capture `LogService.Record`); tiga test baru | PASS live: lima panggilan chat masing-masing meninggalkan satu baris `request_logs` dengan request id yang sama seperti log server (`0385RT4F97CD2B8S4JMXSKGEWW` 200, `0385RT4FG14Y44H76TZW2NB1YJ` 502, `0385RT4FKMS66HGQ841KG2A78M` 200, `0385RT5213H7JB69WFC19FJHS4` 400, `0385RT7NDEKVYRZKWR56AC8BM0` 200 capture); baris gagal menyimpan `error` = `UPSTREAM_ERROR` saja sementara respons klien memuat pesan upstream berisi `sk-g18-should-not-be-stored`; pencarian sentinel `sk-g18` di `request_logs` (error + dua body) dan `usage_records` menjawab 0 baris; capture default mati → body kosong, `PATCH /settings {"logging":{"request_capture_enabled":true}}` → body permintaan + jawaban tersimpan utuh; baris setting capture dihapus saat cleanup; `gateway_keys.request_count` 3/1/1 untuk tiga key |
-| 2026-09-19 | G20 temuan pass G17/G18: penolakan media/embeddings sebelum panggilan tidak menulis baris log | FAIL by design saat ini: `MediaCallService.Prepare` dan `EmbeddingsService.Embed` menulis baris hanya setelah `perform`, jadi provider tak dikenal, `base_url` kosong, format gate, kredensial kosong, atau `NO_PROVIDER_AVAILABLE` tidak meninggalkan `request_logs` — sedangkan jalur chat kini mencatat setiap panggilan (terbukti live untuk 400 `MODEL_NOT_FOUND`). Dicatat sebagai G20 |
+| 2026-09-19 | G20 temuan pass G17/G18: penolakan media/embeddings sebelum panggilan tidak menulis baris log | FAIL by design saat ini: `MediaCallService.Prepare` dan `EmbeddingsService.Embed` menulis baris hanya setelah `perform`, jadi provider tak dikenal, `base_url` kosong, format gate, kredensial kosong, atau `NO_PROVIDER_AVAILABLE` tidak meninggalkan `request_logs`, sedangkan jalur chat kini mencatat setiap panggilan (terbukti live untuk 400 `MODEL_NOT_FOUND`). Dicatat sebagai G20 |
 | 2026-09-19 | **G9 CLOSED**: seam `schema.ErrorCodeRecorder` di-set `WriteError`/`writeDataPlaneError`/`writeEnvelope`, diimplementasikan `responseRecorder`, diteruskan eksplisit `statusRecorder` (Go hanya mempromosikan metode interface yang di-embed); `logging` menambah attr `code` hanya saat gagal; `router_errorlog_test.go` (empat jalur + kasus negatif) | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 466 file PASS; live pada binary dari tree yang sama (tanpa stub): `GET /api/v1/nope` → 404 baris `code=NOT_FOUND`, `POST /api/v1/chat/completions` tanpa key → 401 `code=UNAUTHORIZED`, `POST /api/v1/images/generations` tanpa key → 401 `code=UNAUTHORIZED`, `GET /api/v1/health` dan `/version` 200 tanpa field `code`; baseline tidak berubah (`usage=2 logs=1 keys=0 endpoints=0 nodes=0 settings=1 auth_null=true`), `panel_auth.password_hash` di-null kembali; changelog SPEC-API dicatat |
 | 2026-09-19 | **G20 CLOSED**: `dataPlaneRecorder.refuse` (satu baris `request_logs`, kode saja, tanpa usage), `MediaCallService.prepareForCall` + `refusalOutcome`, dua penolakan awal `Search`, `EmbeddingsService` dipecah ke `resolveCall` (identity dibangun sebelum langkah gagal pertama) + port `ModelResolver`/`MediaRouter`; dua test baru | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 470 file PASS; live pada binary dari tree yang sama: empat penolakan (images `nope/whatever` 400 `MODEL_NOT_FOUND`, embeddings `nope/embed` 400 `MODEL_NOT_FOUND`, speech `elevenlabs/voice` 400 `PROVIDER_NOT_ROUTABLE`, search `nope` 400 `MODEL_NOT_FOUND`) masing-masing meninggalkan **satu** baris `request_logs` dengan request id yang sama dengan baris akses server, `status:error`, `error` = kode saja, latensi 0, body kosong, identity sejauh resolusi (`nope/whatever`, `elevenlabs/voice`, `nope/nope`, embeddings tanpa identity); nol baris usage (total tetap 2); kontrol negatif 401 tanpa key dan 400 validasi handler tidak menulis baris (`control_rows=0`); baseline dipulihkan (`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true`), `/tmp/g20_*` dihapus |
 | 2026-09-19 | **G5 adapter Deepgram STT (slice 1)**: format gate `deepgram` untuk `stt`; raw audio request + safe MIME, `model`/`smart_format`/`punctuate`/`language|detect_language`, `Authorization: Token`, nested transcript → `{text}`; alias resolution; `media_deepgram_test.go` + MIME/auth tests | PASS: focused + affected package `-race` tests, `go-lint.sh` (golangci-lint 0 issues), `go-headers.sh` (472 files); full hermetic/tagged suite after the code freeze; live stub proof: Deepgram registry base URL overridden to loopback, multipart upload through `/audio/transcriptions` returned normalized `{"text":"deepgram live"}`, stub saw raw bytes, `Content-Type: audio/mpeg`, query model + flags, `Authorization: Token`; 15 format/provider adapters remain open |
@@ -1072,9 +1072,9 @@ alias, disabled, state OAuth; `panel_auth.password_hash` kembali NULL).
 | 2026-09-19 | **G5 adapter Cartesia TTS (slice 3)**: format gate `cartesia` untuk `tts`; typed `{model_id, transcript, voice?, output_format}` body, voice omitted/default behavior, `X-API-Key`, `Cartesia-Version: 2024-06-10`, fixed MP3 output; `media_cartesia_test.go` + OpenAI control | PASS: focused + affected package `-race` tests, `go-lint.sh` (golangci-lint 0 issues), `go-headers.sh` PASS; full hermetic/tagged suite after code freeze; live stub proof: `cartesia/sonic-2` returned raw bytes `Content-Type: audio/mp3`, `?response_format=json` + `sonic-3` explicit voice returned base64 `format:mp3`, stub saw `X-API-Key`, version header, omitted/explicit voice bodies; baseline dipulihkan (`usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true`); 13 format/provider adapters remain open |
 | 2026-09-19 | **G8 CLOSED**: `.env` dibangun ulang dari `.env.example` (hanya empat baris nilai berbeda), `REDIS_PASSWORD` dibaca dari `/etc/redis/redis.conf` saat penulisan, `ENCRYPTION_KEY` 32 byte baru (DB memegang 0 baris sealed), blok `PUBLIC_BASE_URL` ikut template | PASS: boot polos (hanya `.env`, tanpa override) menjawab `{"status":"ok","checks":{"postgres":"ok","redis":"ok"}}`; `redis-cli PING` dengan `REDISCLI_AUTH` dari `.env` menjawab `PONG`; diff `.env` vs `.env.example` = 8 baris; pass G19/G5/G4 sesudahnya memakai DSN yang sama tanpa override |
 | 2026-09-19 | **G19 CLOSED**: `migrations/000011_p2_table_ownership.up.sql` (re-own ke role pemilik `gateway_keys`, penolakan jadi warning berisi resep, bukan boot gagal), `migrations.openDB` menyetel `OnNotice` pgx ke slog, `migrations/ownership_test.go` mengunci invarian seluruh schema | PASS: test merah saat `proxies` dipindah ke `rusmanadodi` (`table proxies is owned by rusmanadodi`), warning muncul dengan resep `ALTER TABLE proxies OWNER TO pannelai` saat role aplikasi menjalankan `000011`, role ber-privilege memindahkan tabel **dan indeks** lalu hijau; live: boot ber-DSN superuser menerapkan `000011`, kedua tabel jadi `pannelai`, lalu boot DSN `.env` polos: `PATCH /media-providers/openai` 200 `base_url_source:"override"`, `POST /proxies` 201, `GET /proxies` 200, `DELETE /proxies/{id}` 204 (sebelumnya 500 `permission denied`); cleanup `delete from media_provider_settings` dijalankan role aplikasi sendiri; baseline `usage=2 logs=1 settings=1 auth_null=true` pulih |
-| 2026-09-19 | **G5 slice 4–10 CLOSED**: tujuh adapter TTS (ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS), seam `MediaPath` + cabang kredensial `basic`/`playht` + `mediaAnswerReader`; satu file test per provider | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS, `go-headers.sh` PASS; live (registry sementara diarahkan ke stub loopback 8091 lalu dipulihkan, `git diff` bersih, DSN `.env` polos): ElevenLabs `xi-api-key` + voice di path + `{text,model_id,voice_settings}` → bytes MP3 + `format:mp3`; MiniMax & MiniMax CN bearer + `output_format:"hex"` + nested `voice_setting`/`audio_setting` → hex di-decode; Inworld `Authorization: Basic` + `{text,voiceId,modelId,audioConfig}` → base64; PlayHT `X-USER-ID` + bearer dari satu materi `userId:apiKey` (dibuktikan setelah key diperbarui) + `Accept: audio/mpeg`; Coqui `{text}` tanpa kredensial → WAV; Tortoise `{text,voice:"random"}` → WAV; Gemini `key` query + model di path sebelum `:generateContent` + prompt "Say: …" → PCM dibungkus RIFF/WAVE 44 byte; kontrol negatif lima provider multi-step tetap 400 `PROVIDER_NOT_ROUTABLE` dengan nama format; 22 panggilan terautentikasi = 22 `request_count`, tiap panggilan satu usage + satu log; artefak dibersihkan (8 endpoint, 6 key, 3 gateway key, 17 usage, 22 log; baseline `usage=2 logs=1 keys=0 endpoints=0 upkeys=0 settings=1 auth_null=true` pulih) |
-| 2026-09-19 | **G21 terdaftar**: lima format yang butuh lebih dari satu request (AssemblyAI upload→submit→poll, AWS Polly SigV4 tanpa implementasi reference, Edge TTS & Google TTS token hasil scraping HTML, Local Device proses host) — keputusan owner memisahkannya dari G5 | Terdaftar di §2/§3 dengan alasan per provider dan bentuk seam yang dibutuhkan; SPEC-API §7.10 menyebut kelimanya sebagai batas yang dipilih, bukan kelalaian; format gate tetap menolak dengan nama (terbukti live di pass G5 slice 4–10) |
+| 2026-09-19 | **G5 slice 4-10 CLOSED**: tujuh adapter TTS (ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS), seam `MediaPath` + cabang kredensial `basic`/`playht` + `mediaAnswerReader`; satu file test per provider | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS, `go-headers.sh` PASS; live (registry sementara diarahkan ke stub loopback 8091 lalu dipulihkan, `git diff` bersih, DSN `.env` polos): ElevenLabs `xi-api-key` + voice di path + `{text,model_id,voice_settings}` → bytes MP3 + `format:mp3`; MiniMax & MiniMax CN bearer + `output_format:"hex"` + nested `voice_setting`/`audio_setting` → hex di-decode; Inworld `Authorization: Basic` + `{text,voiceId,modelId,audioConfig}` → base64; PlayHT `X-USER-ID` + bearer dari satu materi `userId:apiKey` (dibuktikan setelah key diperbarui) + `Accept: audio/mpeg`; Coqui `{text}` tanpa kredensial → WAV; Tortoise `{text,voice:"random"}` → WAV; Gemini `key` query + model di path sebelum `:generateContent` + prompt "Say: …" → PCM dibungkus RIFF/WAVE 44 byte; kontrol negatif lima provider multi-step tetap 400 `PROVIDER_NOT_ROUTABLE` dengan nama format; 22 panggilan terautentikasi = 22 `request_count`, tiap panggilan satu usage + satu log; artefak dibersihkan (8 endpoint, 6 key, 3 gateway key, 17 usage, 22 log; baseline `usage=2 logs=1 keys=0 endpoints=0 upkeys=0 settings=1 auth_null=true` pulih) |
+| 2026-09-19 | **G21 terdaftar**: lima format yang butuh lebih dari satu request (AssemblyAI upload→submit→poll, AWS Polly SigV4 tanpa implementasi reference, Edge TTS & Google TTS token hasil scraping HTML, Local Device proses host). Keputusan owner memisahkannya dari G5 | Terdaftar di §2/§3 dengan alasan per provider dan bentuk seam yang dibutuhkan; SPEC-API §7.10 menyebut kelimanya sebagai batas yang dipilih, bukan kelalaian; format gate tetap menolak dengan nama (terbukti live di pass G5 slice 4-10) |
 | 2026-09-19 | **G4 CLOSED**: seam `Proxy` di `dataplane.HTTPClientDeps`, `egressProxy`/`proxyRoute`/`exemptFromProxy` di `egress_wiring.go` (settings dibaca per request, tujuan divalidasi sebelum rute dikembalikan, gagal baca/URL ⇒ tolak bukan bypass); `egress_proxy_test.go` (tabel rute + A01) | PASS: dua mutasi diukur merah (hook dilepas ⇒ baris "arrives at it" gagal; cek tujuan dilepas ⇒ baris A01 gagal), tree hijau setelah dipulihkan; live (stub chat 8091, proxy forwarding 8092, `EGRESS_ALLOWED_TARGETS=127.0.0.1/32`, DSN `.env`): proxy mati → log proxy 0 baris; proxy nyala → log proxy 1 baris berisi absolute-form ke 8091 dan stub tetap menerima; `outbound_no_proxy=127.0.0.1` → langsung lagi, log proxy 0; tujuan `127.0.0.2` (di luar allowlist) → 502 `UPSTREAM_ERROR` dengan 0 baris di proxy dan 0 baris baru di stub; artefak dibersihkan (2 node, 2 endpoint, gateway key, 4 usage, 4 log, baris settings `network`; baseline pulih) |
 | 2026-09-19 | **G10 CLOSED**: status row `SYSTEM_MAP.md` menyebut **P2 CLOSED** dengan daftar bukti live-nya dan sisa yang eksplisit tidak ikut tertutup (lima format media G21); §3.6 menambah paragraf seam adapter, §4a menambah narasi migrasi P2 `000009`-`000011` + aturan kepemilikan, batas domain §1 menyebut `000011` | PASS: narasi diverifikasi terhadap kode dan bukti pass yang tercatat di berkas ini (bukan diklaim ulang); tidak ada perubahan kode |
 | 2026-09-19 | **G5 slice 11 CLOSED** (G5 penuh): adapter Gemini STT (`media_gemini_stt.go`), seam `transcriptionRequest` (dispatch request per format di `media_transcription.go`, sehingga `media_audio.go` tinggal memanggil), gate `gemini-stt` untuk `stt`, `transcriptionText` sebagai pembentuk jawaban bersama Deepgram; `media_gemini_stt_test.go` + tabel gate per kind | PASS: suite `-race` 13 paket hijau, tagged integration hijau, `go-lint.sh` PASS (golangci-lint 0 issues), `go-headers.sh` 496 file PASS; live (registry sementara diarahkan ke stub loopback 8093 lalu dipulihkan, `git diff` bersih, DSN `.env` polos tanpa grant superuser): `POST /audio/transcriptions` `gemini/gemini-2.5-flash` filename `clip.mp3` dengan `prompt=names` + `language=Indonesian` → 200 `application/json` `{"text":"gemini stt live transcript"}`; stub melihat `POST /gmstt/v1beta/models/gemini-2.5-flash:generateContent?key=gm-secret` dengan body `{"contents":[{"parts":[{"text":"names Language: Indonesian."},{"inline_data":{"mime_type":"audio/mpeg","data":"<base64 audio>"}}]}]}` (prompt, MIME, bytes, dan key-query keempatnya cocok); panggilan kedua `gemini/gemini-2.5-pro` filename `clip.wav` → prompt bawaan + `mime_type":"audio/wav"`; kontrol benign `assemblyai/best` (G21) tetap 400 `PROVIDER_NOT_ROUTABLE` "does not translate yet" tanpa baris stub baru; akuntansi: 2 panggilan → +2 usage (`success`, provider `gemini`, model benar) + 2 log + `request_count=2`, penolakan kontrol menulis satu log `error=PROVIDER_NOT_ROUTABLE` tanpa usage; artefak dibersihkan (2 gateway key, 1 endpoint + 1 upstream key, 2 usage, 3 log, `panel_auth.password_hash` di-null) → baseline `usage=2 logs=1 keys=0 endpoints=0 upkeys=0 nodes=0 caps=0 settings=1 auth_null=true media_settings=0 proxies=0` pulih; `/tmp/g5d-app-serv` dan cookie dihapus |
-| 2026-09-19 | **Desain seam G21** (empat kelas multi-request) ditulis di `docs/DRAFT/002-G21-SEAM-DESIGN.md`; §3 G21 menunjuk dokumen itu, §4 menambah D6, §5 P2.11 mencatat desainnya | Belum ada kode — menunggu keputusan owner. Isi per kelas: bukti reference (file:line), bentuk seam, kontrak/registry yang berubah, risiko + temuan keamanan (argument injection `say -v <voiceId>` di Local Device; ToS/kerapuhan scraping Edge/Google; region Polly tidak boleh ditebak), test yang akan mengunci, dan tabel keputusan A1–A3/B1–B2/C1–C3/D1. Format gate tidak berubah: kelimanya tetap ditolak dengan nama sampai keputusan dijawab |
+| 2026-09-19 | **Desain seam G21** (empat kelas multi-request) ditulis di `docs/DRAFT/002-G21-SEAM-DESIGN.md`; §3 G21 menunjuk dokumen itu, §4 menambah D6, §5 P2.11 mencatat desainnya | Belum ada kode, menunggu keputusan owner. Isi per kelas: bukti reference (file:line), bentuk seam, kontrak/registry yang berubah, risiko + temuan keamanan (argument injection `say -v <voiceId>` di Local Device; ToS/kerapuhan scraping Edge/Google; region Polly tidak boleh ditebak), test yang akan mengunci, dan tabel keputusan A1-A3/B1-B2/C1-C3/D1. Format gate tidak berubah: kelimanya tetap ditolak dengan nama sampai keputusan dijawab |

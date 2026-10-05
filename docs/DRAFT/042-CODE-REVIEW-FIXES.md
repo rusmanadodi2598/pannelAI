@@ -1,25 +1,25 @@
 # 042-CODE-REVIEW-FIXES.md: 22 temuan review source BE, papan progres perbaikan
 
 Register kerja untuk hasil review `/code-review` 2026-10-03 atas `app-serv` (5 sub-agent paralel:
-security, dead code, correctness/concurrency, kepatuhan AGENTS.md, contract/config drift — setiap
+security, dead code, correctness/concurrency, kepatuhan AGENTS.md, contract/config drift, setiap
 klaim utama diverifikasi ulang di main thread, termasuk probe Go empiris untuk temuan R01). Dokumen
 ini bukan kontrak; kontrak tetap `docs/SPEC-API/001-SPEC-API.md` dan
 `docs/CONTRACT/001-CONTRACT-API-V1.yaml`.
 
 |                      |                                                                                                                                                           |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**           | **DONE 2026-10-03** — 22/22. 20 ter-commit, R06 + R07 dirampungkan di working-tree pass ini. Bukti commit→temuan di §4 |
+| **Status**           | **DONE 2026-10-03**: 22/22. 20 ter-commit, R06 + R07 dirampungkan di working-tree pass ini. Bukti commit→temuan di §4 |
 | **Mechanism**        | DURING (test lebih dulu untuk perubahan perilaku, lalu implementasi), AFTER sebagai register ini                                                          |
 | **Scope**            | `app-serv` (dataplane, domain, repository, service, provider, handler, router, cmd, config), `docs/CONTRACT`, `docs/RULLES`, `README.md`, `SYSTEM_MAP.md` |
 | **Permintaan owner** | "Fix semua hasil temuannya" (goal sesi 2026-10-03), "kita DRAFT kan dulu untuk progres pengerjaannya. Baru kita patch semua"                              |
-| **Kaitan**           | 041 (MODEL_NOT_FOUND 404 — R04 menyentuh jalur yang sama), 027 F1 (builder Gemini), 033 (proxy connect), 036 (Qoder egress), `scrypts/gates/*`            |
+| **Kaitan**           | 041 (MODEL_NOT_FOUND 404: R04 menyentuh jalur yang sama), 027 F1 (builder Gemini), 033 (proxy connect), 036 (Qoder egress), `scrypts/gates/*`            |
 | **Tanggal**          | 2026-10-03                                                                                                                                                |
 
 ## 1. Cara review, dan baseline yang terukur
 
 - `go build ./...` PASS, `go vet ./...` PASS pada `9f0d4cb` (HEAD saat review).
 - `scrypts/gates/go-headers.sh` PASS 1159 file; `contract-openapi.sh` PASS (YAML→JSON sinkron);
-  `contract-drift.sh` hanya membandingkan SPEC §8 vs enum panel — **bukan** vs Go/YAML, itu akar R10/R11.
+  `contract-drift.sh` hanya membandingkan SPEC §8 vs enum panel, **bukan** vs Go/YAML, itu akar R10/R11.
 - Yang terbukti bersih dan tidak dikerjakan di sini: `internal/netguard` (fail-closed, `Dialer.Control`
   anti DNS-rebinding), SQL seluruhnya parameterized tanpa `Sprintf`, kripto sesi (HMAC + `hmac.Equal`,
   bcrypt, `crypto/rand`), tidak ada `t.Skip`, semua 5 goroutine punya recover, pool limit eksplisit.
@@ -58,43 +58,43 @@ Severity mengikuti laporan review. Status: OPEN → IN PROGRESS → DONE (dengan
 
 ## 3. Urutan pengerjaan (batch commit)
 
-1. **Batch A — dataplane correctness**: R01, R02, R05, R04, R21, R16, R14, R15.
-2. **Batch B — domain & store**: R03, R18, R17, R12.
-3. **Batch C — egress & auth**: R07, R08, R20, R19.
-4. **Batch D — kontrak & dokumen**: R09, R10, R11, R13, R22.
-5. **Batch E — registry cache**: R06.
+1. **Batch A (dataplane correctness)**: R01, R02, R05, R04, R21, R16, R14, R15.
+2. **Batch B (domain & store)**: R03, R18, R17, R12.
+3. **Batch C (egress & auth)**: R07, R08, R20, R19.
+4. **Batch D (kontrak & dokumen)**: R09, R10, R11, R13, R22.
+5. **Batch E (registry cache)**: R06.
 
 ## 4. Bukti per temuan
 
 Dipetakan commit→temuan (baseline review `9f0d4cb`), lalu pass working-tree ini merampungkan R06
 dan menutup tiga temuan yang ter-commit tapi masih merah saat suite `-race` penuh dijalankan.
 
-**Batch A — dataplane correctness**
-- R01 `1d7bce2` — deadline tulis SSE diperbarui per frame; `handler/chat_stream_write_budget_test.go`.
-- R02 + R05 `49a823a` — `attemptCtx` diteruskan lewat proxy walk, `CheckRedirect: ErrUseLastResponse`; redirect test + stub dialer.
-- R04 `43e5d7c` — kegagalan persist `RecordSuccess` ditelan-log, `NOT_FOUND` tak lagi dibaca 404-model.
-- R21 `e3b7936` — fan-out dibatasi semaphore 4; `engine_fusion_bound_test.go`. **Pass ini:** race `-race` ditutup (lihat catatan working-tree).
-- R14/R15/R16 `82c76af` — header billing Claude di_strip, builder Gemini diuji langsung, dua file dipecah < 250.
+**Batch A (dataplane correctness)**
+- R01 `1d7bce2`: deadline tulis SSE diperbarui per frame; `handler/chat_stream_write_budget_test.go`.
+- R02 + R05 `49a823a`: `attemptCtx` diteruskan lewat proxy walk, `CheckRedirect: ErrUseLastResponse`; redirect test + stub dialer.
+- R04 `43e5d7c`: kegagalan persist `RecordSuccess` ditelan-log, `NOT_FOUND` tak lagi dibaca 404-model.
+- R21 `e3b7936`: fan-out dibatasi semaphore 4; `engine_fusion_bound_test.go`. **Pass ini:** race `-race` ditutup (lihat catatan working-tree).
+- R14/R15/R16 `82c76af`: header billing Claude di_strip, builder Gemini diuji langsung, dua file dipecah < 250.
 
-**Batch B — domain & store**
-- R03 `bcd02ea` — `UpdateKey` menolak disable key terakhir (`refusesDeactivation`).
-- R18 `33ac55a` — SCAN quota `Pending` jalan sampai limit window terisi.
-- R17 `ec97f7a` — recorder upstream outcome dipanggil jalur data-plane, field parity dipetakan ke wire.
-- R12 `e6ae084` — `ChangePassword` me-revoke semua sesi (`RevokeAll`) + test.
+**Batch B (domain & store)**
+- R03 `bcd02ea`: `UpdateKey` menolak disable key terakhir (`refusesDeactivation`).
+- R18 `33ac55a`: SCAN quota `Pending` jalan sampai limit window terisi.
+- R17 `ec97f7a`: recorder upstream outcome dipanggil jalur data-plane, field parity dipetakan ke wire.
+- R12 `e6ae084`: `ChangePassword` me-revoke semua sesi (`RevokeAll`) + test.
 
-**Batch C — egress & auth**
-- R07 + R08 `0b2496c` — connector Qoder + quota fetch naik client egress ter-guard; `provider_wiring_guard_test`, `quotafetch/egress_client_test`. **Pass ini:** R07 ditutup di konstruktor — `NewQoder` menolak client nil (fail-closed) sesuai SSRF §2.1; subtest "nil egress client" di `qoder_test.go`.
-- R19 `437dd3d` — grant call netral (method/url/header/body), service lepas dari `*http.Request`.
-- R20 `e36b08d` — bucket rate-limit dari client nyata di belakang `TRUSTED_PROXY_CIDRS`; `limiter_test`.
+**Batch C (egress & auth)**
+- R07 + R08 `0b2496c`: connector Qoder + quota fetch naik client egress ter-guard; `provider_wiring_guard_test`, `quotafetch/egress_client_test`. **Pass ini:** R07 ditutup di konstruktor: `NewQoder` menolak client nil (fail-closed) sesuai SSRF §2.1; subtest "nil egress client" di `qoder_test.go`.
+- R19 `437dd3d`: grant call netral (method/url/header/body), service lepas dari `*http.Request`.
+- R20 `e36b08d`: bucket rate-limit dari client nyata di belakang `TRUSTED_PROXY_CIDRS`; `limiter_test`.
 
-**Batch D — kontrak & dokumen**
-- R09 `bb6bb36` — enam var terparsing kini ada di `.env.example` (+ cookie `Secure` dari `IsProduction`).
-- R10 + R11 `3c298af` — path `/systemone` dan kode `UPSTREAM_REJECTED` masuk YAML + `openapi.json` + fixture. **Pass ini:** R10 menutup celuh audit sesi (lihat catatan).
-- R13 `a77e369` — `docs/RULLES/SSRF.md` ditulis dari kontrak netguard.
-- R22 `68a63cc` — blok struktur, jumlah worker, rentang migrasi, daftar rute disinkron. **Pass ini:** README rentang migrasi dibetulkan (lihat catatan).
+**Batch D (kontrak & dokumen)**
+- R09 `bb6bb36`: enam var terparsing kini ada di `.env.example` (+ cookie `Secure` dari `IsProduction`).
+- R10 + R11 `3c298af`: path `/systemone` dan kode `UPSTREAM_REJECTED` masuk YAML + `openapi.json` + fixture. **Pass ini:** R10 menutup celuh audit sesi (lihat catatan).
+- R13 `a77e369`: `docs/RULLES/SSRF.md` ditulis dari kontrak netguard.
+- R22 `68a63cc`: blok struktur, jumlah worker, rentang migrasi, daftar rute disinkron. **Pass ini:** README rentang migrasi dibetulkan (lihat catatan).
 
-**Batch E — registry cache**
-- R06 (working tree, belum di-commit) — overlay di-cache + TTL + `InvalidateNodeOverlay`; `catalog.go` peta custom-pair dari snapshot `All()` (nol lookup per pair); `NodeService` Create/Update/Delete meng-invalidasi. Test: `provider_index_cache_test.go`, `catalog_pair_map_test.go`, `provider_node_invalidate_test.go`.
+**Batch E (registry cache)**
+- R06 (working tree, belum di-commit): overlay di-cache + TTL + `InvalidateNodeOverlay`; `catalog.go` peta custom-pair dari snapshot `All()` (nol lookup per pair); `NodeService` Create/Update/Delete meng-invalidasi. Test: `provider_index_cache_test.go`, `catalog_pair_map_test.go`, `provider_node_invalidate_test.go`.
 
 **Yang pass ini perbaiki dari temuan ter-commit tapi suite-nya merah**
 - R21: `domain.UpstreamEndpoint.Clone()` + `List` mengembalikan clone + `RecordUpstreamOutcome` menulis balik baris → race fan-out hilang, rotasi key tetap maju.
@@ -106,5 +106,5 @@ Gate pada pass ini: `go build ./...` PASS, `go vet ./...` PASS, `go test -race .
 ## 5. Yang tidak dikerjakan di sini
 
 - Temuan 041 §6 yang masih terbuka (body upstream bocor ke `message` client, `PROVIDER_NOT_ROUTABLE`
-  tak ada di §8) — menunggu keputusan owner, bukan bagian 22 temuan review ini.
+  tak ada di §8). Menunggu keputusan owner, bukan bagian 22 temuan review ini.
 - `-race` flaky `provider_model_probe_budget_test.go:33` (sudah ada sebelum pass ini).

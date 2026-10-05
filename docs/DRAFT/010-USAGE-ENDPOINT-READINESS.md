@@ -1082,7 +1082,7 @@ FE (app-ui), hanya setelah BE live:
    (R-19: purpose motion = "menunjukkan request sedang berjalan"), satu baris, bukan default.
 4. Baris/node hanya untuk provider yang **benar-benar punya endpoint terkonfigurasi** (dari
    `/providers`), bukan dari registry 94 provider (terhitung `grep -c "^  - id:" atas
-   `internal/registry/registry.yaml`, sama dengan angka SYSTEM_MAP.md — angka 94 ini diukur pada
+   `internal/registry/registry.yaml`, sama dengan angka SYSTEM_MAP.md, angka 94 ini diukur pada
    tanggal dokumen ini; registry kini 34 entri sejak regenerasi dan daftar KEEP owner 2026-09-26,
    tercatat di `docs/DRAFT/011-CODEBUDDY-PROVIDER-READINESS.md` §10): referensi juga hanya
    menampilkan node dari koneksi aktif + provider no-auth, bukan seluruh katalog, jadi aturan ini

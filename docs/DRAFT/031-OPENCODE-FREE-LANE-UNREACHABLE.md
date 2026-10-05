@@ -81,7 +81,7 @@ adalah jalur normal untuk panggilan pendek.
 
 ## 3. Akar masalah
 
-### 3.1 F1 — custom node tidak bisa credential-free
+### 3.1 F1: custom node tidak bisa credential-free
 
 ```go
 // app-serv/internal/registry/custom_node.go:157 (sebelum)
@@ -97,16 +97,16 @@ Aturan endpoint virtual F8 (`dataplane/selection_virtual.go`) hanya menyala bila
 selalu `AuthAPIKey`, jadi aturan itu menolak, `SelectNext` menjawab `NO_PROVIDER_AVAILABLE`, dan 503 itulah
 yang owner lihat. Reference tidak punya masalah ini karena koneksi virtual-nya disuntik berdasarkan
 `FREE_PROVIDERS[providerId]?.noAuth` (`src/sse/services/auth.js:46`), dan provider `noAuth` bawaan
-(`opencode`) tidak pernah butuh baris endpoint sama sekali — tidak seperti node.
+(`opencode`) tidak pernah butuh baris endpoint sama sekali, tidak seperti node.
 
 **Kesimpulan yang penting untuk owner:** node `oczen` tidak diperlukan. Provider `opencode` (alias `oc`)
 sudah 1:1 dengan reference, sudah `no_auth`, dan sejak F8 menjawab tanpa satu baris `upstream_endpoints`
 pun. Node `oczen` justru menabrak F1 dan (karena `api_type responses`) memaksa semua model lewat
-`/responses`, padahal `space-bunny-free` hanya dilayani di `/chat/completions` dan `/messages` — inilah
+`/responses`, padahal `space-bunny-free` hanya dilayani di `/chat/completions` dan `/messages`, inilah
 sebab 502 "Model space-bunny-free is not supported for format openai" saat endpoint no_auth sementara
 ditambahkan untuk node itu.
 
-### 3.2 F2 — fold buta terhadap `response.incomplete`
+### 3.2 F2: fold buta terhadap `response.incomplete`
 
 `foldResponsesEvents` membaca event terminal dari belakang:
 
@@ -122,19 +122,19 @@ sendiri sudah mengklaim ia ditangani:
 // `response.incomplete` when the model hit its ceiling), ...
 ```
 
-Docstring dan kode berbeda — proxy fan-out untuk panggilan pendek sudah tersedia di
+Docstring dan kode berbeda: proxy fan-out untuk panggilan pendek sudah tersedia di
 `translate_responses_answer.go:98` (`responsesFinishReason` memetakan `incomplete` +
 `max_output_tokens` ke `length`), tetapi jalur forced-stream tidak pernah sampai ke sana karena fold
 menolak lebih dulu. Test penerimaan draft 029 tidak menangkapnya karena stub upstream-nya hanya menulis
 `response.completed` (`engine_opencode_free_streams_test.go:36`).
 
-### 3.3 F3 — dua jawaban untuk satu pertanyaan ("provider ini bisa dilayani?")
+### 3.3 F3: dua jawaban untuk satu pertanyaan ("provider ini bisa dilayani?")
 
 F8 mendarat 2026-09-24 17:54. Filter `?active=true` dan picker panel mendarat lebih dulu (draft 025,
 07:04) dengan premis yang ditulis eksplisit di komentarnya: "provider `no_auth` tanpa baris menjawab
 `NO_PROVIDER_AVAILABLE` seperti provider lain". F8 membuat premis itu **salah**, tetapi tidak ada yang
 memperbarui kedua tempat itu. Akibatnya panel menyembunyikan satu-satunya lane free tier yang hidup, dan
-operator menyimpulkan ia harus mengonfigurasi provider OpenCode sendiri — dan membuat node `oczen`.
+operator menyimpulkan ia harus mengonfigurasi provider OpenCode sendiri, dan membuat node `oczen`.
 
 ## 4. Perbaikan
 
@@ -142,7 +142,7 @@ Satu pertanyaan, satu jawaban; satu cacat, satu tempat.
 
 | Berkas | Perubahan |
 | --- | --- |
-| `internal/registry/credential_free.go` (baru) | `Provider.NeedsNoCredential()` — satu-satunya jawaban "apakah provider ini menjawab tanpa kredensial", membaca ketiga ejaan dokumen (`no_auth` provider, `no_auth` transport, `auth_type: no_auth`) |
+| `internal/registry/credential_free.go` (baru) | `Provider.NeedsNoCredential()`, satu-satunya jawaban "apakah provider ini menjawab tanpa kredensial", membaca ketiga ejaan dokumen (`no_auth` provider, `no_auth` transport, `auth_type: no_auth`) |
 | `internal/dataplane/selection_virtual.go` | Aturan endpoint virtual memakai `entry.NeedsNoCredential()`; salinan predikat lokal dihapus |
 | `internal/dataplane/engine_forced_stream.go` | `EventResponseIncomplete` masuk daftar event terminal |
 | `internal/dataplane/translate_stream_responses.go` | Konstanta `EventResponseIncomplete = "response.incomplete"` ditambahkan (klaim docstring kini benar) |

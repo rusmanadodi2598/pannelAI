@@ -381,8 +381,8 @@ absent.
     handles a `CONFLICT` response if the state changed under it.
   - **Test:** `POST /endpoints/{id}/test` with an optional key target. Result renders pass or fail with the
     upstream status and latency, and refreshes `test_status`.
-  - **Delete endpoint:** `DELETE /endpoints/{id}` removes the endpoint and, per the API, its keys with it —
-    which covers an API-key connection, a pasted Personal Access Token, and a connected OAuth account alike,
+  - **Delete endpoint:** `DELETE /endpoints/{id}` removes the endpoint and, per the API, its keys with it.
+    That covers an API-key connection, a pasted Personal Access Token, and a connected OAuth account alike,
     because each is one endpoint row. The confirmation names the endpoint and states the cascade. It is
     offered from the connection row (icon action), from the detail drawer footer, and from the OAuth account
     row; all three open the same confirmation, and a success reloads the list.
@@ -392,10 +392,10 @@ absent.
   credential rotation switch, the action that adds a connection, and the endpoint list filtered to this
   provider. It renders on both shapes of the screen. The add action is split by the provider's declared
   `auth_modes` (SPEC-API §7.4), not its single derived auth type: a provider that lists a key mode opens the
-  key dialog (which stores the pasted credential as an `api_key` connection — a Personal Access Token is a
+  key dialog (which stores the pasted credential as an `api_key` connection; a Personal Access Token is a
   static key, not the OAuth token a device flow would mint), and a provider that lists `oauth` or reports
   `has_oauth` opens the inline endpoint form (label, auth type, priority, optional first key). A provider
-  that declares both — Qoder lists `oauth` and `apikey` — offers the two affordances side by side, so the
+  that declares both (Qoder lists `oauth` and `apikey`) offers the two affordances side by side, so the
   operator can paste a PAT or connect through OAuth from the same place. The key affordance is named for the
   credential it collects: a provider that takes a key **and** answers through OAuth labels the button and the
   dialog field "Personal Access Token" (a plain "API Key" would send the operator hunting for the wrong kind
@@ -598,7 +598,7 @@ absent.
   rule draft 023 F2 set for tab-idiom labels), and it carries the drawing's own colour rule: a routing
   provider's name in the status colour, as that node's label does, and the finished and error facts naming
   their provider plainly, as those nodes' labels do (draft 023 F1, kept through the move). A combo is stated
-  in that tab as the same path the drawing draws — `pro-tier → OpenAI (gpt-4o)` — because the drawing is
+  in that tab as the same path the drawing draws (`pro-tier → OpenAI (gpt-4o)`) because the drawing is
   hidden from assistive technology and the tab is what says in words what its nodes claim; a combo name is
   never resolved through the provider registry, whose fallback would restate a combo as a vendor. No fact
   renders no tab, because an idle screen states its absences with the colour rule and the connection chip,
@@ -623,7 +623,7 @@ absent.
   while the panel is connecting, paused, or unavailable, the drawing keeps the last known state in colour
   and stops every moving part, and a reader who asked for reduced motion never sees it. Two things move for
   a reason other than state, and both stop for the same reader: a card fades in as it joins the drawing, and
-  the box's height transitions when the node count changes — neither is a claim about now, and both keep the
+  the box's height transitions when the node count changes: neither is a claim about now, and both keep the
   drawing one picture rather than a new one every frame (draft 043 F3). Nothing on the
   stream touches the totals or the chart, which stay the REST reads' own figures: the live state has no field
   for an aggregate. The connection is labelled `Live` only while frames are arriving; every other state
@@ -663,8 +663,8 @@ absent.
   the two bullets below) and following it with this gateway's count as one summary line. The body is the
   region that scrolls (`max-h-80`, `overflow-y-auto`), because accounts and keys per provider can reach
   hundreds or thousands and one card per key would make the page unmonitorable; the page itself never
-  scrolls sideways (§2 R-03). The per-window row set this body used to render — window kind, used,
-  limit, percent, countdown, badge — is superseded: the same facts are in the summary line, and the
+  scrolls sideways (§2 R-03). The per-window row set this body used to render (window kind, used,
+  limit, percent, countdown, badge) is superseded: the same facts are in the summary line, and the
   provider's numbers took the place they were pushing against.
 - **Fold and bulk fold:** a card folds from its header toggle and stays informative while folded
   through the header counts; the fold is a capability, not a default. Checking cards raises a bar
@@ -682,40 +682,40 @@ absent.
   refresh pause/resume toggle carries the map's pause and resume glyphs beside their labels (R-04,
   R-31): the glyph is what the control does to the poll, never an emoticon.
 - **The two sources are named, once:** `computed` and `reported` (SPEC-API §7.12) are explained in a
-  legend under the cards rather than badged on every row. The distinction is functional — it tells the
-  operator which ledger a number came from — but a badge per row would repeat one fact across a hundred
+  legend under the cards rather than badged on every row. The distinction is functional (it tells the
+  operator which ledger a number came from), but a badge per row would repeat one fact across a hundred
   rows and add nothing to any of them, so the words sit where they can be read once and the layout keeps
   the difference in place instead: the provider's answer leads a connection and this gateway's count is
   the line beneath it, labelled in prose ("Reported by the provider, not counted by this gateway" /
   "Counted by this gateway: …").
 - **Published quota leads the card (2026-10-02, owner ruling; supersedes the 2026-09-28 "asked for"
-  shape):** the provider's own numbers are the first thing each connection shows — the label the
-  provider used, a bar, `used / total`, percent used, and the reset countdown — with this gateway's
+  shape):** the provider's own numbers are the first thing each connection shows (the label the
+  provider used, a bar, `used / total`, percent used, and the reset countdown), with this gateway's
   counted windows beneath it as one compact summary line per connection. The reason is measured, not
   stylistic: the counted windows on a live gateway carry no `limit` at all, so the old layout rendered
   a page of counters with zero bars (PORT 004 §7.2) while the numbers that actually gate an operator
   sat behind a button on every card.
 - **It arrives with the page, and no card fetches on render.** The collection read carries
   `published[]` for the endpoints on the page (SPEC-API §7.12), so the screen renders provider
-  numbers from the read it already makes. The standing rule is unchanged — the screen never fans out
-  to one provider call per account — it is satisfied by the poll worker rather than by an operator
+  numbers from the read it already makes. The standing rule is unchanged (the screen never fans out
+  to one provider call per account), and it is satisfied by the poll worker rather than by an operator
   click. A per-connection control may still ask for the instant: it calls the same route with
   `?force=1`, one call for one account, and it must drop the previous figure if that read fails
   rather than leave a stale number standing under a fresh failure.
 - **A card exists for an account, not for a counter.** The screen's groups come from the accounts the
   page names (SPEC-API §7.12), so a provider whose keys have not routed anything yet still gets its
-  card and its provider rows — measured before this rule, one configured account had no card at all
+  card and its provider rows; measured before this rule, one configured account had no card at all
   because it had no counted window. Conversely an account behind a provider that publishes no quota
   is not offered a provider block: there is nobody to ask, and its counted line is the whole story.
 - **Every state a provider's answer can be in is a distinct rendering.** An unlimited bucket prints
   its amount with no bar; a credit balance prints as money in its own currency (`Credit: 12.50 USD`)
   and not as a share of anything; a bucket with `total` absent prints the amount with "No limit",
-  while a `total` of `0` prints 100% spent — opposite states that must not look alike; a row that
+  while a `total` of `0` prints 100% spent, opposite states that must not look alike; a row that
   carries a `unit` names it; `recurring: false` says "expires in", not "resets in". A `message` with
   no rows is the muted provider sentence, never error styling, because "this family publishes
   nothing" is a fact rather than a fault. A capable account the worker has not reached prints "Not
-  polled yet" — muted, with no provider note and no "Asked" stamp, because there is no answer to
-  attribute — and that is a different claim from a provider that answered with nothing to report.
+  polled yet" (muted, with no provider note and no "Asked" stamp, because there is no answer to
+  attribute), and that is a different claim from a provider that answered with nothing to report.
   When the cache could not be read, `published_note` states that once above the cards, because the
   counts below are still true and an omission would read as accounts whose providers said nothing.
 - **A figure that no poll has replaced says so.** The worker keeps the last good numbers across a failing
@@ -723,15 +723,15 @@ absent.
   when the last one was made (`failures`, `last_attempt_at`), in the warn colour rather than danger because
   the read that produced the numbers completed and the one that failed did not take them with it. This is
   where the reference's split between families that throw and families that answer softly lands under a
-  cache — there is no caller to throw at, so the split survives as a stated fact beside the data rather
+  cache: there is no caller to throw at, so the split survives as a stated fact beside the data rather
   than as an error row replacing it.
 - **The answer keeps the things that make it a different kind of fact:** the note saying the number is
   the provider's and the line below is this gateway's count, the instant the provider said it (a
   figure without a stamp is indistinguishable from one the screen left there), and a marker when it is
   the worker's stored answer rather than a read taken now. An answer that carries no figures keeps the
   scheduling row's placeholder instant rather than a real one, because the worker stores a sentence
-  without touching the numbers, and a placeholder is not a stamp: the card prints none. Amounts print exactly as reported —
-  `12.5 / 3000`, not a rounded integer and not a padded one — because they arrive as decimal strings
+  without touching the numbers, and a placeholder is not a stamp: the card prints none. Amounts print exactly as reported (
+  `12.5 / 3000`, not a rounded integer and not a padded one) because they arrive as decimal strings
   and a credit balance has no integer spelling; only the bar and the percentage parse them, and both
   reuse the counted rows' helpers so the two halves of one screen cannot disagree about what "percent
   used" means.
@@ -2054,19 +2054,19 @@ half carry.
     re-read-on-action is the intent and the sentence is amended to say so.
     Draft 036 does not reopen it: the status read stays timer-free. The device round (§6.3) is a separate
     loop the operator started by pressing a control, bounded by the window that start stated, and stopped by
-    an answer, by the operator, or by leaving the screen — which is the shape this rule was protecting
+    an answer, by the operator, or by leaving the screen. That is the shape this rule was protecting
     against, an open-ended repeating read nobody asked for.
 23. **Two providers report the `device` flow and only one pair of them can answer it.** Qoder and Qoder CN
     declare `device_token_url` + `login_url` with no `authorize_url`, so `flowKind` classifies them as
-    `device` and the section offers the device round (§6.3) — the path draft 036 built them for. `xai` also
+    `device` and the section offers the device round (§6.3), the path draft 036 built them for. `xai` also
     reports `device`: its `oauth` block declares `client_id`, `token_url`, and `refresh_url` and no
     `authorize_url` (`app-serv/internal/registry/registry.yaml`), and `flowKind` distinguishes flows by the
-    exchange and the authorize URL and nothing else — `RequiresCustomExchange` is false for xai (no
+    exchange and the authorize URL and nothing else: `RequiresCustomExchange` is false for xai (no
     `state_url`, `initiate_url`, or `poll_url_base`), so the empty authorize URL falls through to `device`
     (`app-serv/internal/service/oauth_flow_refresh.go`). The panel still offers the round for xai, because
     reading the registry to predict which refusal the gateway would give is the second classification §6.3
-    rules out; the operator starts it and gets the gateway's own sentence — *"provider xai does not declare a
-    complete device flow"* — as an alert. Open question: whether `flowKind` gains a `device`/`incomplete`
+    rules out; the operator starts it and gets the gateway's own sentence (*"provider xai does not declare a
+    complete device flow"*) as an alert. Open question: whether `flowKind` gains a `device`/`incomplete`
     split so an entry with no device endpoint behind it stops offering a control that can only be refused.
 24. **The cap form accepts a narrower spelling than the API's parser does, and the two are not the same
     rule.** `PUT /quotas/{endpoint_id}` takes the cost as a string and parses it with
