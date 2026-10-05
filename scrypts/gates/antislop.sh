@@ -69,10 +69,13 @@ readonly ENDMARK_RE='\}[[:space:]]*//[[:space:]]*end|^[[:space:]]*//[[:space:]]*
 # is the live contract, and pointing at it is an API-contract reference.
 readonly CITATION_RE='[dD]raft [0-9]+ +[FR§]|[dD]raft [0-9]+$|audit anti-slop [0-9]+|register G[0-9]+'
 
-# code_globs are the file types the tree-wide structural checks read.
+# code_globs are the file types the tree-wide structural checks read. The
+# `*.example` entry is not decoration: env templates carry comments and were the
+# one place a banner pattern hid from this gate, because they match no normal
+# source extension.
 readonly CODE_GLOBS=(
 	'*.go' '*.ts' '*.tsx' '*.js' '*.mjs' '*.svelte' '*.sh' '*.bash'
-	'*.sql' '*.yaml' '*.yml'
+	'*.sql' '*.yaml' '*.yml' '*.example'
 )
 
 # grep_files runs one pattern over the given path globs.
