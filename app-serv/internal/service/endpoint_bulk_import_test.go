@@ -199,7 +199,6 @@ func TestEndpointService_BulkImportOAuth(t *testing.T) {
 	})
 }
 
-// makeAccounts builds a batch of n valid account inputs.
 func makeAccounts(n int) []BulkAccountInput {
 	out := make([]BulkAccountInput, 0, n)
 	for i := range n {

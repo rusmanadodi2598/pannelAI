@@ -107,8 +107,8 @@ func (r dataPlaneRecorder) record(ctx context.Context, outcome dataplane.Outcome
 		r.quotas.Record(ctx, outcome.EndpointID, 1)
 	}
 	if r.logs != nil {
-		// reason: same as above; the log is the second half of the accounting
-		// pair, not a condition of the answer.
+		// reason: the log is the second half of the accounting pair, not a
+		// condition of the answer the client gets.
 		_, _ = r.logs.Record(ctx, domain.RequestLogInput{
 			RequestID:    requestID,
 			GatewayKeyID: keyID,

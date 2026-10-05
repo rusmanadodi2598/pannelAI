@@ -160,7 +160,6 @@ func TestEndpointService_UpdateRenumbersSiblings(t *testing.T) {
 	}
 }
 
-// TestEndpointService_Delete pins delete and its not-found path.
 func TestEndpointService_Delete(t *testing.T) {
 	svc, _ := newEndpointSvc(t)
 	ctx := context.Background()

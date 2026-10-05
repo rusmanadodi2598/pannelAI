@@ -239,5 +239,4 @@ func signedDiff(d time.Duration) time.Duration {
 	return d
 }
 
-// intPtr lifts a fixture number into the optional shape the vendor answers use.
 func intPtr(value int) *int { return &value }

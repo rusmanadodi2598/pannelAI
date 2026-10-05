@@ -146,7 +146,6 @@ func toKeyInputs(labels []string) []KeyInput {
 	return out
 }
 
-// makeBatchKeys builds a batch of n distinct keys.
 func makeBatchKeys(n int) []KeyInput {
 	out := make([]KeyInput, 0, n)
 	for i := range n {
@@ -155,8 +154,6 @@ func makeBatchKeys(n int) []KeyInput {
 	return out
 }
 
-// strPtr returns a pointer to a copy of value.
 func strPtr(value string) *string { return &value }
 
-// intPtr returns a pointer to a copy of value.
 func intPtr(value int) *int { return &value }

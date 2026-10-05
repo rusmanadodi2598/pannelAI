@@ -56,18 +56,18 @@ func serve(ctx context.Context, srv *http.Server, drain func(context.Context)) e
 		return err
 	}
 
-	// The parent ctx is already cancelled here (that is why we are shutting
-	// down), so deriving this timeout from it would abort the drain instantly.
-	// context.Background() is the correct root for a bounded shutdown window.
+	// The parent ctx is already cancelled here, so deriving this timeout from it
+	// would abort the drain instantly: context.Background() is the correct root
+	// for a bounded shutdown window.
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
-	//nolint:contextcheck // reason: the parent ctx is already cancelled (that is why we are shutting down), so deriving from it would abort the drain immediately; context.Background is the correct root for a bounded shutdown window.
+	//nolint:contextcheck // reason: ctx is already cancelled, so it cannot root the drain timeout.
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return err
 	}
 	wg.Wait()
 	if drain != nil {
-		//nolint:contextcheck // reason: the same bounded shutdown window srv.Shutdown writes into; deriving from the cancelled parent ctx would abort the drain before the counters land.
+		//nolint:contextcheck // reason: the drain must run after cancellation, inside the window opened above.
 		drain(shutdownCtx)
 	}
 	slog.Info("app-serv stopped cleanly")

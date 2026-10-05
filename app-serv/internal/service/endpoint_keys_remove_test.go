@@ -22,7 +22,6 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// TestEndpointService_UpdateKeyOnUnknownIDs pins the not-found paths.
 func TestEndpointService_UpdateKeyOnUnknownIDs(t *testing.T) {
 	svc, _ := newEndpointSvc(t)
 	ctx := context.Background()

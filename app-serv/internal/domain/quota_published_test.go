@@ -174,6 +174,6 @@ func TestPublishedAnswerLabelsAreThePruneSet(t *testing.T) {
 	}
 }
 
-// strPtr is the one-line pointer helper the table rows need for an optional
-// ceiling; a field cannot take a literal address inline.
+// strPtr exists because a table row cannot take the address of a string literal
+// inline.
 func strPtr(value string) *string { return &value }

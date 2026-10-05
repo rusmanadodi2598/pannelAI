@@ -76,8 +76,8 @@ func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request 
 		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream could not be reached", domain.KeyFailureTransient)
 	case answer.Status < 200 || answer.Status >= 300:
 		failure = dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
-		// reason: same as above, the upstream rejection is what the client
-		// must see, and the health write is bookkeeping.
+		// reason: the upstream rejection is the client's error; the health write
+		// is bookkeeping and retries on the next call.
 		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream rejected the request", dataplane.FailureClass(answer.Status))
 	default:
 		failure = s.served(ctx, call, read, &answer)

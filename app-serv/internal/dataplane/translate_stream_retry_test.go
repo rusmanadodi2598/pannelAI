@@ -152,7 +152,6 @@ func TestBackoffBounds(t *testing.T) {
 // what the transport reads from a connector.
 type retryPlugin struct {
 	provider.Base
-	// retryable is the status set this plugin considers worth repeating.
 	retryable map[int]bool
 }
 

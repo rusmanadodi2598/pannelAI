@@ -108,8 +108,8 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 		s.quotas.Record(ctx, outcome.EndpointID, chatQuotaUnits(outcome.Usage))
 	}
 	if s.logs != nil {
-		// reason: same as above, the log is the second half of the accounting
-		// pair, not a condition of the answer.
+		// reason: the log is the second half of the accounting pair, not a
+		// condition of the answer the client gets.
 		_, _ = s.logs.Record(ctx, domain.RequestLogInput{
 			RequestID:    requestID,
 			GatewayKeyID: keyID,
