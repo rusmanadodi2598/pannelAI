@@ -55,7 +55,17 @@ while IFS= read -r dir; do
 			tags="integration,live"
 		fi
 		gate_start "integration     $rel (tagged: $tags)"
-		if (cd "$dir" && go test -race -tags="$tags" -count=1 ./...); then
+		# `-p 1` runs one package's integration tests at a time. Four fixtures
+		# (quota counter, console buffer, and the settle and pending families) clear
+		# the whole keyspace with FlushDB before they seed, and every package shares
+		# the one PANNELAI_TEST_REDIS_ADDR database, so a parallel run lets one
+		# package erase another's seed mid-flight. That is how
+		# TestQuotaCounterStore_RetiresSettledClosedWindows failed in CI while the
+		# suite had never run anywhere at all before: not a wrong assertion, a wrong
+		# schedule. Isolating each package into its own Redis DB would keep the
+		# parallelism and is the better shape, but it is a change to a shared helper
+		# that only CI can prove.
+		if (cd "$dir" && go test -race -p 1 -tags="$tags" -count=1 ./...); then
 			gate_pass "integration suite $rel"
 		else
 			gate_fail "integration suite $rel"
