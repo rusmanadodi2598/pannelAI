@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration && live
 
 // Package provider implements the per-provider connectors the gateway calls.
 //
@@ -21,7 +21,7 @@
 //	its case runs the same chain to the end and requires content.
 //
 //	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/provider/ -run QoderLiveChat
+//	    go test -tags=integration,live ./internal/provider/ -run QoderLiveChat
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

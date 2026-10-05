@@ -3,7 +3,7 @@
 #
 # Runs the checks AGENTS.md §1.4 names as CI requirements: `go vet` clean,
 # `staticcheck` clean, plus `gofmt` formatting and a compile of both the default
-# and the `integration` tagged build.
+# and the `integration,live` tagged build.
 #
 # golangci-lint runs only when installed; it is the aggregated linter §1.4
 # describes, but it is a heavier dependency than the rest and its absence is
@@ -79,12 +79,15 @@ while IFS= read -r dir; do
 
 	# The integration-tagged build is compiled separately because its files are
 	# excluded from ./... by the build tag; a tagged file that does not compile
-	# would otherwise go unnoticed until someone ran the integration suite.
+	# would otherwise go unnoticed until someone ran the integration suite. The
+	# `live` tag rides along for the same reason: the vendor proofs are excluded
+	# from the test run unless an operator asks for them, but a proof that stopped
+	# compiling must still fail a gate rather than rot.
 	gate_start "go vet (tagged) $rel"
-	if run_in "$dir" go vet -tags=integration ./...; then
-		gate_pass "go vet -tags=integration $rel"
+	if run_in "$dir" go vet -tags=integration,live ./...; then
+		gate_pass "go vet -tags=integration,live $rel"
 	else
-		gate_fail "go vet -tags=integration $rel"
+		gate_fail "go vet -tags=integration,live $rel"
 		failed=1
 	fi
 
@@ -112,10 +115,10 @@ while IFS= read -r dir; do
 		fi
 
 		gate_start "staticcheck (tagged) $rel"
-		if run_in "$dir" "$sc" -tags=integration ./...; then
-			gate_pass "staticcheck -tags=integration $rel"
+		if run_in "$dir" "$sc" -tags=integration,live ./...; then
+			gate_pass "staticcheck -tags=integration,live $rel"
 		else
-			gate_fail "staticcheck -tags=integration $rel"
+			gate_fail "staticcheck -tags=integration,live $rel"
 			failed=1
 		fi
 	else

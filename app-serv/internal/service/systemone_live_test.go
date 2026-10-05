@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration && live
 
 // Package service implements the management-plane use cases of app-serv.
 //
@@ -12,10 +12,10 @@
 //
 //	is the other half of the evidence R-35 asks for: the same route against
 //	the real upstream, so "the decision model answers" is a measurement
-//	rather than an inference. It carries the `integration` build tag because
+//	rather than an inference. It carries the `integration,live` build tags because
 //	it spends the upstream's anonymous quota and needs the network.
 //
-//	  go test -tags=integration -run TestSystemOneLive ./internal/service/
+//	  go test -tags=integration,live -run TestSystemOneLive ./internal/service/
 //
 //	It drives the real resolver over the embedded registry, the real HTTP
 //	caller, and the real entry block, and substitutes only the account

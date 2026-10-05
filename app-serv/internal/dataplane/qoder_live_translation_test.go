@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration && live
 
 // Package dataplane implements the request-path data plane of app-serv.
 //
@@ -19,7 +19,7 @@
 //	the only question a client can: what does the answer call itself?
 //
 //	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/dataplane/ -run QoderLiveTranslation
+//	    go test -tags=integration,live ./internal/dataplane/ -run QoderLiveTranslation
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

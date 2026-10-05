@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration && live
 
 // Package provider implements the per-provider connectors the gateway calls.
 //
@@ -18,7 +18,7 @@
 //	identity is the one the account answers.
 //
 //	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/provider/ -run QoderLivePAT
+//	    go test -tags=integration,live ./internal/provider/ -run QoderLivePAT
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

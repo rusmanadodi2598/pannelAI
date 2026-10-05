@@ -11,6 +11,13 @@ name: gates
 # install; wiring the panel surface is deliberately left out and named here so
 # the gap is visible rather than silently green.
 #
+# The vendor proofs (the `live` build tag, on top of `integration`) are
+# deliberately not run here either: they spend a real provider's quota and the
+# Qoder ones need PANNELAI_QODER_PAT, which a CI runner has no business holding.
+# go-lint still compiles them under `-tags=integration,live`, so a proof that
+# stops building fails this pipeline rather than rotting. An operator runs them
+# with PANNELAI_LIVE_PROOFS=1.
+#
 # Graphify (`/graphify update`) is a review step, not a shell gate, so it is not
 # reproduced here.
 

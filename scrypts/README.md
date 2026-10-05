@@ -87,3 +87,4 @@ unverified.
 | `gitleaks` 8.30+ | secrets, pre-commit, pre-push | https://github.com/gitleaks/gitleaks#installing |
 | `bun` or `node`+`npm` | panel-check | https://bun.sh (or Node 22+) |
 | `PANNELAI_TEST_POSTGRES_DSN` | go-test integration suite | point it at a throwaway database |
+| `PANNELAI_LIVE_PROOFS=1` | go-test, adds the `live` build tag | runs the vendor proofs; they need the network and the Qoder ones need `PANNELAI_QODER_PAT`. Off by default, so CI never dials a provider |

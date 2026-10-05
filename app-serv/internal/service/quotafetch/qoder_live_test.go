@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration && live
 
 // Package quotafetch reads the quota a provider publishes for one of its connections.
 //
@@ -19,7 +19,7 @@
 //	that a card would render as the end of time.
 //
 //	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/service/quotafetch/ -run Live
+//	    go test -tags=integration,live ./internal/service/quotafetch/ -run Live
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

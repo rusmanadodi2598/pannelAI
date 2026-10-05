@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration && live
 
 // Package dataplane implements the request-path data plane of app-serv.
 //
@@ -24,7 +24,7 @@
 //	give-up, which is the regression this whole change is about.
 //
 //	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/dataplane/ -run QoderLiveRetry
+//	    go test -tags=integration,live ./internal/dataplane/ -run QoderLiveRetry
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

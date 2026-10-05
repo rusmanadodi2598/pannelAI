@@ -1,4 +1,4 @@
-//go:build integration
+//go:build integration && live
 
 // Package provider implements the per-provider connectors the gateway calls.
 //
@@ -15,12 +15,12 @@
 //
 //	service answers. This file asks the real service the two questions the
 //	exchange and the identity read depend on, and keeps the fixtures the
-//	signed cases beside it reuse. It carries the `integration` tag because
+//	signed cases beside it reuse. It carries the `integration,live` tags because
 //	it spends a credential and reaches outside the process; with the tag
 //	active and no token set it fails rather than passing quietly.
 //
 //	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/provider/ -run QoderLive
+//	    go test -tags=integration,live ./internal/provider/ -run QoderLive
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

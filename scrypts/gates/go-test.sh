@@ -11,6 +11,15 @@
 # Redis-backed tests, which need PANNELAI_TEST_REDIS_ADDR and fail loudly
 # without it.
 #
+# The vendor proofs carry a second tag, `live`, on top of `integration`. They
+# spend a real provider's quota, need the network, and the Qoder ones fail
+# without PANNELAI_QODER_PAT — by design, because a tagged run that passed
+# quietly with no credential would prove nothing. PANNELAI_LIVE_PROOFS=1 adds the
+# tag to the run, so an operator who means to pay for the proof gets it. A CI
+# runner has no credential and no business dialing a provider on every push, so
+# it stays off there; the proofs still compile in go-lint, which vets and
+# staticchecks `-tags=integration,live`.
+#
 # Exit codes: 0 all suites passed, 1 a suite failed.
 
 set -euo pipefail
@@ -41,8 +50,12 @@ while IFS= read -r dir; do
 	fi
 
 	if [ -n "${PANNELAI_TEST_POSTGRES_DSN:-}" ]; then
-		gate_start "integration     $rel (tagged)"
-		if (cd "$dir" && go test -race -tags=integration -count=1 ./...); then
+		tags="integration"
+		if [ "${PANNELAI_LIVE_PROOFS:-0}" = "1" ]; then
+			tags="integration,live"
+		fi
+		gate_start "integration     $rel (tagged: $tags)"
+		if (cd "$dir" && go test -race -tags="$tags" -count=1 ./...); then
 			gate_pass "integration suite $rel"
 		else
 			gate_fail "integration suite $rel"
