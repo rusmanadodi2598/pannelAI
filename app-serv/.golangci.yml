@@ -19,26 +19,26 @@ linters:
   default: standard
 
   enable:
-    # ---- unchecked errors (§1.4) ----
+    # unchecked errors (§1.4)
     - errcheck
 
-    # ---- unclosed HTTP bodies, rows, statements (§1.4) ----
+    # unclosed HTTP bodies, rows, statements (§1.4)
     - bodyclose
     - rowserrcheck
     - sqlclosecheck
 
-    # ---- context on outbound calls (§1.6) ----
+    # context on outbound calls (§1.6)
     - noctx
     - contextcheck
 
-    # ---- error hygiene (§1.6) ----
+    # error hygiene (§1.6)
     - errchkjson
     - nilerr
 
-    # ---- banned constructs (§1.4) ----
+    # banned constructs (§1.4)
     - forbidigo
 
-    # ---- everyday correctness ----
+    # everyday correctness
     - copyloopvar
     - gocritic
     - misspell

@@ -62,6 +62,19 @@ if [ "${#go_files[@]}" -gt 0 ]; then
 	fi
 fi
 
+# antislop
+
+# The comment rules R-02 and the structural checks have nothing else enforcing
+# them, which is how 725 dash lines survived one cleanup and how a blind sweep
+# left `colliding , so` behind. Cheap enough to run on every commit.
+gate_start "antislop comment rules"
+if bash "$root/scrypts/gates/antislop.sh"; then
+	gate_pass "antislop"
+else
+	gate_fail "antislop comment rules violated"
+	failed=1
+fi
+
 # secrets
 
 gate_start "gitleaks (staged)"

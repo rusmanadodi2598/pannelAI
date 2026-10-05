@@ -106,6 +106,9 @@ jobs:
       - name: go headers (AGENTS.md §1.2)
         run: bash scrypts/gates/go-headers.sh
 
+      - name: antislop comment rules (R-02, separators, doc block length)
+        run: bash scrypts/gates/antislop.sh
+
       - name: go test -race, plus the tagged suites (§2.1)
         run: bash scrypts/gates/go-test.sh
 

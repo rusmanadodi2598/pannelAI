@@ -20,6 +20,7 @@ stale after an update.
 |---|---|
 | `gates/go-lint.sh` | `go vet`, `gofmt -l`, `staticcheck`, `golangci-lint`, on the default and `integration`-tagged builds |
 | `gates/go-headers.sh` | AGENTS.md §1.2 header contract on every hand-authored Go file |
+| `gates/antislop.sh` | antislop comment rules: R-02 on changed files, separators, banners, emoji, ` , ` artifacts, doc-block length |
 | `gates/go-test.sh` | `go test -race`, plus the tagged integration suite when a DSN is set |
 | `gates/panel-check.sh` | app-ui: prettier, ESLint, svelte-check, vitest, production build |
 | `gates/secrets.sh` | gitleaks over commits and the files a push would carry, or the staged patch |
