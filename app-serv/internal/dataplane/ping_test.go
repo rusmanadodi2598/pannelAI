@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -70,7 +70,7 @@ func pingUpstream(t *testing.T, recorder *pingRecorder) *httptest.Server {
 }
 
 // TestPing_SendsABoundedProbe pins the invented request: one user turn reading
-// "ping", a bounded ceiling, and no streaming — the cheapest call an upstream
+// "ping", a bounded ceiling, and no streaming, the cheapest call an upstream
 // bills for, sent through the same pipeline every other request runs.
 func TestPing_SendsABoundedProbe(t *testing.T) {
 	recorder := &pingRecorder{}

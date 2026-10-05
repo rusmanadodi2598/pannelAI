@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package redisrepo
 
@@ -96,7 +96,7 @@ const maxPendingScanKeys = 4096
 // runs after a durable write of its final total.
 //
 // The scan walks the quota keyspace until limit pending windows are found, the
-// keyspace ends, or the visit bound is hit — settled windows ahead of a dirty
+// keyspace ends, or the visit bound is hit, settled windows ahead of a dirty
 // one in SCAN order cannot starve the flush of them.
 func (s *QuotaCounterStore) Pending(ctx context.Context, limit int) ([]domain.QuotaWindow, error) {
 	if limit < 1 {

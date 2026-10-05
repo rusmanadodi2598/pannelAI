@@ -11,14 +11,14 @@
 //	(cmd/app-serv/provider_index.go) and a catalog request walks the whole
 //	index, so an uncached read would dial every custom node once per row.
 //	Keeping the window apart from the request keeps each file about one
-//	question — what to ask, and how long to believe the answer.
+//	question, what to ask, and how long to believe the answer.
 //
 //	The window is short on purpose: an operator who adds a model upstream
 //	and returns to the panel should see it without a restart.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 

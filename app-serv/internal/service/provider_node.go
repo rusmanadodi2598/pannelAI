@@ -11,13 +11,13 @@
 //	Anthropic-compatible base URL, and a node's prefix becomes a
 //	model-string namespace. That makes two rules the service owns: the
 //	prefix must not collide with a registry identifier or alias, and a
-//	delete must refuse while an endpoint still references the node —
+//	delete must refuse while an endpoint still references the node,
 //	both of which need the registry and the endpoints table, not just the
 //	node row (AGENTS.md §1.5 keeps that orchestration here).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 

@@ -10,7 +10,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -206,7 +206,7 @@ func commandCodePlanName(planID string) string {
 }
 
 // commandCodeOrgQuery scopes the billing reads to the organization whoami named, and asks without
-// the parameter when the account stated none — the reference drops a null orgId rather than
+// the parameter when the account stated none, the reference drops a null orgId rather than
 // sending the word.
 func commandCodeOrgQuery(orgID json.RawMessage) string {
 	trimmed := strings.Trim(strings.TrimSpace(string(orgID)), `"`)

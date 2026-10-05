@@ -12,12 +12,12 @@
 // @reason    The handler takes a concrete *service.MediaProviderService, so the
 //
 //	route tests build the real service over doubles rather than faking the
-//	service itself — the seam the production wiring uses is the same one
+//	service itself, the seam the production wiring uses is the same one
 //	the tests use.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

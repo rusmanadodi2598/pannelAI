@@ -1,7 +1,7 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_vision_test.go
-// @for       Who answers "can this model read an image" — the catalog the
+// @for       Who answers "can this model read an image", the catalog the
 //
 //	operator wrote, or the predicate the composition root injected.
 //
@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package service
 

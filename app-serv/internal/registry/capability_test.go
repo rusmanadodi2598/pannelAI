@@ -13,8 +13,8 @@
 //	agrees with capabilities.js rather than agreeing with itself.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-18
 package registry
 

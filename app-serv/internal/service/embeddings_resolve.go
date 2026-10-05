@@ -14,13 +14,13 @@
 //
 //	the identity resolved so far, and the cleanest way to know how far
 //	resolution got is to build the identity before the first fallible
-//	step and return it with the error — the same rule G17's relayOnce
+//	step and return it with the error, the same rule G17's relayOnce
 //	settled for the chat plane. Splitting the phase here also keeps
 //	embeddings.go inside the §1.1 budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

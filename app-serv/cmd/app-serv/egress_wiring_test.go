@@ -11,14 +11,14 @@
 //
 // @reason    The guard's own table pins the range rules; this one pins the
 //
-//	(wiring) — that the client the data plane actually dials with carries
+//	(wiring), that the client the data plane actually dials with carries
 //	the guard's dialer, so the policy cannot be lost between the two.
 //	The benign control matters as much as the refusals: a guard that
 //	blocked everything would pass a refusal-only test.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package main
 

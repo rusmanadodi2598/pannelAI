@@ -16,8 +16,8 @@
 //	§7.10 lists embeddings as P1, which is why this lands now.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 

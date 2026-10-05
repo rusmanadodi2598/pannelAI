@@ -10,12 +10,12 @@
 //
 //	settings.security.require_api_key is true, and §7.15 makes recording
 //	one row per served request part of the pipeline. Both are
-//	orchestration — not transport, not SQL — so they live here where no
+//	orchestration, not transport, not SQL, so they live here where no
 //	net/http import is needed (AGENTS.md §1.5).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 

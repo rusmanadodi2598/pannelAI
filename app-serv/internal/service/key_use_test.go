@@ -9,14 +9,14 @@
 // @reason    The register's G6 decision (2026-09-19) is that `request_count`
 //
 //	follows every authenticated data-plane call, and the counter is
-//	written where the §4 rule is decided — ChatService.Authenticate —
+//	written where the §4 rule is decided, ChatService.Authenticate,
 //	so one test covers chat, models, media, and embeddings at once. The
 //	cases pin the three ways authentication ends (admitted, refused,
 //	disabled) and the one way the write can fail.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

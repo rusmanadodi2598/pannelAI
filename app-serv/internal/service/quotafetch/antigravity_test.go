@@ -1,4 +1,4 @@
-// Antigravity family tests: the whole read — lookup, models, summary — in call order, the row
+// Antigravity family tests: the whole read, lookup, models, summary, in call order, the row
 // order the card is handed, the free-tier rule, and the reconciliation that marks a session
 // spent when its whole model family is.
 //
@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

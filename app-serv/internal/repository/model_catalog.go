@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package repository
 
@@ -30,7 +30,7 @@ import (
 // them, and the models switched off.
 type ModelCatalogRepository interface {
 	// Custom returns every custom model, newest first. The set is small by
-	// construction — each row is a model an operator typed.
+	// construction, each row is a model an operator typed.
 	Custom(ctx context.Context) ([]domain.CustomModel, error)
 
 	// AddCustom persists a new custom model. A duplicate (provider_id,

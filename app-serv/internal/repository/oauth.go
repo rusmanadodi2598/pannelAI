@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package repository
 
@@ -38,6 +38,6 @@ type OAuthStateStore interface {
 	// existed or expired reports ok=false.
 	Peek(ctx context.Context, state string) (payload []byte, ok bool, err error)
 	// Take removes and returns the state's payload. A state that never existed,
-	// expired, or was already taken reports ok=false — the replay answer.
+	// expired, or was already taken reports ok=false, the replay answer.
 	Take(ctx context.Context, state string) (payload []byte, ok bool, err error)
 }

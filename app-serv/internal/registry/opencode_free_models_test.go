@@ -12,8 +12,8 @@
 //	the reference from drifting apart again.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-20
 package registry
 

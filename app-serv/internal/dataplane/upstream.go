@@ -10,14 +10,14 @@
 // @uses      internal/provider, encoding/json, io, net/http.
 // @reason    The transport, the handler, and the tests all need the same three
 //
-//	things — what a call is, how an upstream failure is reported, and
+//	things, what a call is, how an upstream failure is reported, and
 //	how a body is read without trusting its length. Declaring them in
 //	one file keeps the transport file about policy and this file about
 //	shape.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 

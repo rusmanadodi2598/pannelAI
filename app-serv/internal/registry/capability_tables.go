@@ -15,8 +15,8 @@
 //	diffing this file against the reference sees one table per layer.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-24
 package registry
 

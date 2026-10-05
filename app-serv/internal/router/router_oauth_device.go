@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package router
 
@@ -22,7 +22,7 @@ import (
 
 // registerOAuthDeviceRoutes registers the two device-flow routes. Both are
 // session-gated: a poll consumes a flow the same panel started, and the device
-// code is not a bearer credential — the session is.
+// code is not a bearer credential, the session is.
 func registerOAuthDeviceRoutes(mux *routeRecorder, deps Deps, gateway func(http.Handler) http.Handler) {
 	mux.Handle("POST "+APIVersion+"/providers/{provider_id}/oauth/device/start", gateway(http.HandlerFunc(deps.OAuth.DeviceStart)))
 	mux.Handle("POST "+APIVersion+"/providers/{provider_id}/oauth/device/poll", gateway(http.HandlerFunc(deps.OAuth.DevicePoll)))

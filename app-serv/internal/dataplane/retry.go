@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -158,7 +158,7 @@ func Backoff(retries int) time.Duration {
 // retryWait is the pause before the next attempt of one status for one entry.
 //
 // An entry that declares no backoff base retries on the shared sub-second
-// full-jitter ladder — every provider keeps its current behavior. An entry that
+// full-jitter ladder, every provider keeps its current behavior. An entry that
 // declares one (Qoder, whose free-model pool answers "all backends failed" and
 // serves the same request seconds later) spaces retries by a floored exponential
 // built from that base: the floor is what makes the retry useful, because a wait

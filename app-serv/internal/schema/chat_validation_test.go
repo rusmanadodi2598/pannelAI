@@ -8,7 +8,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package schema
 
@@ -38,7 +38,7 @@ func TestChatRequestSemanticValidation(t *testing.T) {
 		{name: "invalid reasoning effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"banana"}`, valid: false},
 		// Draft 034 F5: the body door must admit every word the reasoning
 		// engine itself acts on, which is the LevelToBudget set plus the off
-		// and auto words — the same vocabulary the model-name suffix accepts.
+		// and auto words, the same vocabulary the model-name suffix accepts.
 		{name: "xhigh effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"xhigh"}`, valid: true},
 		{name: "max effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"max"}`, valid: true},
 		{name: "none effort", body: `{"model":"gpt-4o","messages":[{"role":"user","content":"hello"}],"reasoning_effort":"none"}`, valid: true},

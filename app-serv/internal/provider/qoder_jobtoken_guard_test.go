@@ -13,8 +13,8 @@
 //	docs/RULLES/SSRF.md §2.1).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-10-04
 package provider
 

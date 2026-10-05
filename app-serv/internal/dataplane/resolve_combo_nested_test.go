@@ -19,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package dataplane
 
@@ -52,7 +52,7 @@ func nestedLookup() fakeLookup {
 
 // TestResolver_NestedComboMember covers every shape a nested reference can take:
 // the leading member, a later member, the member reached through an alias, a
-// chain one level long, and the two shapes that must not resolve — an empty
+// chain one level long, and the two shapes that must not resolve, an empty
 // inner combo and a cycle.
 func TestResolver_NestedComboMember(t *testing.T) {
 	resolver, err := NewResolver(testIndex(t), nestedLookup())

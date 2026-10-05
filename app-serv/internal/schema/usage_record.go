@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package schema
 
@@ -87,7 +87,7 @@ type QuotaWindowList struct {
 	// PublishedNote is present only when the provider cache could not be read at
 	// all. The counted windows are still true and still arrive, so the alternative
 	// to naming the gap is a page of cards that look like accounts whose providers
-	// published nothing — which is a lie about data the gateway did not lose.
+	// published nothing, which is a lie about data the gateway did not lose.
 	PublishedNote string `json:"published_note,omitempty"`
 }
 

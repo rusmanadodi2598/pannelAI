@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package handler
 
@@ -99,7 +99,7 @@ func (h *ProviderHandler) Get(w http.ResponseWriter, r *http.Request) {
 // The body names where the list came from. A registry provider answers from the
 // embedded document; a custom node's list is read from its own upstream, and a
 // node whose upstream cannot answer falls back to what the registry holds with a
-// warning — never a 5xx, because a node whose upstream is down still routes.
+// warning, never a 5xx, because a node whose upstream is down still routes.
 //
 // The `?suggested` parameter is gone. §7.4 used to name it and the embedded
 // registry never carried a suggestion flag, so it filtered nothing while the

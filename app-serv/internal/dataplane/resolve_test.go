@@ -10,7 +10,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -22,7 +22,7 @@ import (
 )
 
 // TestResolver_Order pins the documented resolution order (SPEC-API-001 §7.15):
-// combo name, then alias, then provider/model, then MODEL_NOT_FOUND — including
+// combo name, then alias, then provider/model, then MODEL_NOT_FOUND, including
 // each failure and the provider-not-routable case §8 adds.
 func TestResolver_Order(t *testing.T) {
 	lookup := fakeLookup{

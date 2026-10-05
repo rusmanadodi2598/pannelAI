@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package dataplane
 
@@ -84,7 +84,7 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 	// The name the client is given is the one it asked for, which is what this
 	// field's own comment has always claimed. Adopting the upstream's `model`
 	// member broke that: Qoder answers every model it serves as `auto`, so a
-	// client that asked `qoder/qfmodel` was told its answer came from `auto` —
+	// client that asked `qoder/qfmodel` was told its answer came from `auto`,
 	// a name it cannot re-send, and one that routes to a pool the vendor
 	// answers 429 for. The echo is only used when nothing was asked for, where
 	// it is the sole name available.

@@ -10,7 +10,6 @@
 //	net/http, net/http/httptest, sync/atomic, testing, time.
 //
 // @reason    The provider index overlay that calls this adapter rebuilds on every
-// //
 //
 //	Provider/All lookup (cmd/app-serv/provider_index.go), and one catalog
 //	request walks the whole index. Without a cache, rendering one panel
@@ -20,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 

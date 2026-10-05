@@ -9,7 +9,7 @@
 // @reason    A route that was never registered answers 405 where the contract promises a handler, which is exactly the defect a status-only test catches cheaply.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package router
 

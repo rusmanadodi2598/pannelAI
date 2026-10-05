@@ -7,11 +7,11 @@
 //
 //	service forwarded only `url`, and the family dialled an empty address with no sound. Every
 //	built-in-only test stayed green through that, so the declared spelling is what has to be asked
-//	for here — on the primary read and on the legacy pair it falls back to.
+//	for here, on the primary read and on the legacy pair it falls back to.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

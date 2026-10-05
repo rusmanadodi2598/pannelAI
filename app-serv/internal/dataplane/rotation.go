@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -32,7 +32,7 @@ import (
 // neither reads the rotation state nor knows where it is stored. It is an
 // interface because the data plane must not import the management service that
 // owns the rule (AGENTS.md §1.5), and *service.ComboService satisfies it
-// directly — no adapter is needed.
+// directly, no adapter is needed.
 type ComboOrderer interface {
 	// Order returns the order this request uses, which for a round_robin combo
 	// advances the counter every replica shares.

@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -43,7 +43,7 @@ func TestVisionAdapterHandler_GetServesTheDefault(t *testing.T) {
 //
 // Capability is answered by the catalog, and every model this fixture's registry
 // declares is vision-capable, so no reachable body here produces the capability
-// refusal — that refusal is pinned in the service's own tests, where the catalog
+// refusal, that refusal is pinned in the service's own tests, where the catalog
 // can hold a row that declares something else. What the route is held to here is
 // its HTTP contract: the catalog refusals it can actually meet, and the shape the
 // handler must not invent.

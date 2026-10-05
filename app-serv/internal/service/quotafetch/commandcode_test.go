@@ -7,7 +7,7 @@
 // @reason    The provider splits this over three surfaces and states no ceiling on the credits one, so a cap read from the wrong place draws a balance as a share of nothing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

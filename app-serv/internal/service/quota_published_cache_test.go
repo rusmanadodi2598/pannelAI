@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
 
@@ -185,7 +185,7 @@ func TestPublishedFromCacheKeepsNoCeilingDistinctFromZero(t *testing.T) {
 
 // TestPagePublishedAnswersWindowlessAccount is the reason the page enumerates accounts
 // rather than counted windows: an endpoint that has served no traffic has no window row,
-// and if it is dropped from the answer the operator sees no card for it at all — the
+// and if it is dropped from the answer the operator sees no card for it at all, the
 // provider is configured, the worker has polled it, and the screen still shows nothing.
 func TestPagePublishedAnswersWindowlessAccount(t *testing.T) {
 	cached := time.Unix(1_759_000_000, 0).UTC()

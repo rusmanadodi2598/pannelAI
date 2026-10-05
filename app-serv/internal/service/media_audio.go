@@ -11,12 +11,12 @@
 //	pipeline in media_call.go: the reference's OpenAI-compatible
 //	transcription path forwards the caller's optional fields and
 //	returns the upstream body, and its speech path sends a fixed
-//	OpenAI payload — both are request shaping, which is this layer's
+//	OpenAI payload, both are request shaping, which is this layer's
 //	job and not the handler's.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

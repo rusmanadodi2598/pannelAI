@@ -5,14 +5,14 @@
 // @uses      encoding/json, internal/schema, testing, time.
 // @reason    The provider's number now leads the card, and the panel parses these keys with
 //
-//	a strict schema — a renamed or accidentally-always-present field is a screen
+//	a strict schema, a renamed or accidentally-always-present field is a screen
 //	that errors, not a screen that looks slightly different. Amounts are decimal
 //	strings, and an absent ceiling must stay distinguishable from a spent one in
 //	the bytes on the wire, because that distinction is the card's whole job.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package schema
 

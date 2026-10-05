@@ -21,7 +21,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package dataplane
 
@@ -144,7 +144,7 @@ func TestOpenAIStream_UsageChunkIsEmittedOnce(t *testing.T) {
 // TestOpenAIStream_NullUsageNeverBecomesAZeroChunk pins F2's other half and 034
 // F1 on the shape the free tier actually sent: the finish frame marks `usage`
 // null and the numbers arrive in a later usage-only frame, so the null must
-// never become a 0/0 chunk, and that later frame is the one delivery — Finish
+// never become a 0/0 chunk, and that later frame is the one delivery, Finish
 // adds no second copy of the numbers it already forwarded.
 func TestOpenAIStream_NullUsageNeverBecomesAZeroChunk(t *testing.T) {
 	state := NewStreamState("", "model-x", 1700000000, true)

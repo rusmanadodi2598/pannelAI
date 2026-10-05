@@ -6,7 +6,7 @@
 // @uses      net/netip, strings.
 // @reason    The host shape is a domain invariant because the SSRF guard
 //
-//	resolves what it is given — a host that is really a URL would move
+//	resolves what it is given, a host that is really a URL would move
 //	the guard's target, and the rule "no scheme, no userinfo, no path"
 //	is what keeps the two in step. It is separate from the aggregate
 //	because AGENTS.md §1.1 caps a file at 250 lines and the aggregate
@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package domain
 

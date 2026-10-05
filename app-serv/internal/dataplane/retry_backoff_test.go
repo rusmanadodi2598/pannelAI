@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package dataplane
 
@@ -38,7 +38,7 @@ func qoderLike() registry.Provider {
 }
 
 // TestRetryWaitFloorSpaced proves the floored ladder: each attempt waits at least
-// half its window, the window doubles, and a long chain is capped — so a retry
+// half its window, the window doubles, and a long chain is capped, so a retry
 // cannot collapse to ~0 and re-fire inside the same fail-streak.
 func TestRetryWaitFloorSpaced(t *testing.T) {
 	cases := []struct {

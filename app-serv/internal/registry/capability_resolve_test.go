@@ -21,8 +21,8 @@
 //	their own data and could not fail.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-23
 package registry
 

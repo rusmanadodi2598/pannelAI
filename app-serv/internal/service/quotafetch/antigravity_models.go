@@ -7,12 +7,12 @@
 // @reason    The endpoint meters far more models than the card is meant to name, marks some of
 //
 //	them internal, and keys them by an id the display name cannot be matched
-//	against once the map is walked — so the allowlist, the id it is keyed by
+//	against once the map is walked, so the allowlist, the id it is keyed by
 //	and the row it produces belong in one place.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

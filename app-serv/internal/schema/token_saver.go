@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 
@@ -44,7 +44,7 @@ type TokenSaverLevelResponse struct {
 // ReplaceTokenSaverRequest is the body of PUT /api/v1/token-saver. Every group
 // is a required pointer: a PUT replaces the document, so an absent group is a
 // mistake the client hears about rather than a silent reset to defaults. The
-// pointers are what make the rule real — a value struct has no way to tell an
+// pointers are what make the rule real, a value struct has no way to tell an
 // absent group from a group whose members are all zero.
 type ReplaceTokenSaverRequest struct {
 	RTK      *TokenSaverRTKRequest      `json:"rtk" validate:"required"`

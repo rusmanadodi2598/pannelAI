@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -117,7 +117,7 @@ type HTTPClientDeps struct {
 	// stays out of this package; a zero value dials direct.
 	//
 	// A proxied request never dials the destination, so a caller that routes
-	// through a proxy owns validating the destination itself — the dialer's
+	// through a proxy owns validating the destination itself, the dialer's
 	// guard only sees the proxy's address.
 	Proxy func(*http.Request) (*url.URL, error)
 }

@@ -19,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package domain
 
@@ -73,7 +73,7 @@ func validateNodeBaseURL(raw string) error {
 // transport appends.
 //
 // Both halves are applied to the URL's PATH, never to the raw string. That is
-// what keeps a host that happens to spell the suffix — "https://messages" —
+// what keeps a host that happens to spell the suffix, "https://messages",
 // from losing its host, and it is why a query string survives untouched.
 //
 // The suffix is stripped repeatedly rather than once, so an operator who pasted

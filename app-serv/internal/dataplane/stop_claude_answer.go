@@ -17,12 +17,12 @@
 //	`stop` answered `A STOPHERE B` in full and closed with `end_turn`, so
 //	the caller received text it had asked not to see and a reason that said the
 //	model had simply finished. This runs on the body the gateway serves, after
-//	translation, so it holds whichever way the upstream wrote — translated from
+//	translation, so it holds whichever way the upstream wrote, translated from
 //	OpenAI or Responses, or forwarded from a Claude one untouched.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 

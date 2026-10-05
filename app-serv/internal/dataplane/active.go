@@ -22,7 +22,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package dataplane
 
@@ -35,7 +35,7 @@ import "context"
 // A struct rather than four positional strings because Model and Combo are both
 // optional and adjacent: a transposition compiles and then draws the wrong label
 // on the panel. Combo is empty for every call that addressed a single model,
-// which is the normal case rather than a missing one — the media, embeddings and
+// which is the normal case rather than a missing one, the media, embeddings and
 // SystemOne planes refuse a combo before they mark anything.
 type ActiveMarker struct {
 	ProviderID string

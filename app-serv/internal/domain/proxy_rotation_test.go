@@ -17,8 +17,8 @@
 //	implementation of the rules.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     service
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-26
 package domain
 

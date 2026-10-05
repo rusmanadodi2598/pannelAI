@@ -9,7 +9,7 @@
 // @reason    Draft 025 F5: a boolean parameter that ignores a misspelling
 //
 //	silently answers the unfiltered catalog under a parameter that
-//	promised the opposite — the same failure the usage status filter
+//	promised the opposite, the same failure the usage status filter
 //	had before it became a closed set, where `SUCCESS` read as "no
 //	failed requests". The house precedent is the provider list's
 //	`routability` and the page decoder's `per_page`: a value outside
@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package handler
 

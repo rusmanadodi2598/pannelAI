@@ -11,13 +11,13 @@
 //
 // @reason    The media call service talks to the outside world through three
 //
-//	seams — the media caller, the router port, and the registry index — so
+//	seams, the media caller, the router port, and the registry index, so
 //	all three are doubles here and each test is about one rule. The
 //	registry entries they read live in media_call_entries_test.go.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

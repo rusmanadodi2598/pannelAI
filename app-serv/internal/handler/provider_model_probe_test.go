@@ -5,13 +5,13 @@
 // @uses      internal/dataplane, net/http, net/http/httptest, testing.
 // @reason    These routes answer 200 for a model that failed and 4xx only for a
 //
-//	request that was not a question — the opposite of most of the
+//	request that was not a question, the opposite of most of the
 //	management surface. That inversion has to be pinned at the HTTP edge,
 //	where the status code is what a client branches on.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package handler
 

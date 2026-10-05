@@ -7,7 +7,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -107,7 +107,7 @@ func TestModelCatalogService_ReplaceAliases(t *testing.T) {
 }
 
 // TestModelCatalogService_ReplaceDisabled pins the disabled set replacement and
-// the rule that a pair must name a catalog model — including one that is already
+// the rule that a pair must name a catalog model, including one that is already
 // disabled, so re-submitting the same set is idempotent.
 func TestModelCatalogService_ReplaceDisabled(t *testing.T) {
 	ctx := context.Background()

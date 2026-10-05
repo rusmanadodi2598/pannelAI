@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -71,7 +71,7 @@ type ClaudeTool struct {
 }
 
 // ClaudeToolChoice is Anthropic's tool_choice. It accepts only auto, any, tool,
-// and none, so an OpenAI type is never passed through unmapped — that is a 400
+// and none, so an OpenAI type is never passed through unmapped, that is a 400
 // from the upstream, not a behaviour difference.
 type ClaudeToolChoice struct {
 	Type string `json:"type"`

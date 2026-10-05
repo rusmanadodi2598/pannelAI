@@ -7,12 +7,12 @@
 //
 //	same grouping the SQL applies to answer them. It lives apart from the
 //	window paging stub because it models a different read, and the two must
-//	agree on which providers a page number means — an agreement this file
+//	agree on which providers a page number means, an agreement this file
 //	reproduces rather than reuses.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package handler
 

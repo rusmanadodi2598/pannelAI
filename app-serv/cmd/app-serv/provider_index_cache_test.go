@@ -7,7 +7,7 @@
 //	rebuild the moment a node write lands.
 //
 // @uses      internal/domain, internal/registry, context, sync, testing, time.
-// @reason    The overlay was rebuilt on every lookup — one full node query plus
+// @reason    The overlay was rebuilt on every lookup, one full node query plus
 //
 //	a registry rebuild per request (draft 042 R06). The cache must still
 //	serve a node the operator just created (the adapter's founding
@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package main
 

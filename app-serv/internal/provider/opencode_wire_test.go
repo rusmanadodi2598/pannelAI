@@ -14,8 +14,8 @@
 //	also keeps both files inside the AGENTS.md §1.1 budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-21
 package provider
 

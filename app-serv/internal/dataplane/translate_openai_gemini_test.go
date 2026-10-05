@@ -10,14 +10,14 @@
 // @uses      encoding/json, strings, testing, internal/schema.
 // @reason    target.go states the builder "is exercised directly by its own
 //
-//	tests"; before this file that was false — the whole cluster had zero
+//	tests"; before this file that was false, the whole cluster had zero
 //	callers and zero tests (draft 042 R14). The builder stays unrouted by
 //	design (draft 027 F1), so direct tests are the only coverage it can
 //	have.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package dataplane
 

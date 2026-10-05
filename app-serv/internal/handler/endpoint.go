@@ -10,12 +10,12 @@
 //
 //	business rules out of this layer: the handler decodes a validated DTO,
 //	calls the service, and maps the aggregate onto the response shape. A
-//	credential never appears in a response — only the hint the aggregate
+//	credential never appears in a response, only the hint the aggregate
 //	already holds.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 

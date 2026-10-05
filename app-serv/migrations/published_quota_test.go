@@ -123,7 +123,7 @@ func TestApply_PublishedQuotaSchemaShape(t *testing.T) {
 
 		// The CHECK situation is deliberate in both directions: a run length that
 		// cannot go negative, and no constraint at all on the window table,
-		// because a provider's bucket labels are an unbounded vocabulary — the
+		// because a provider's bucket labels are an unbounded vocabulary , the
 		// exact reason this cache is not quota_windows, whose "window" column is
 		// CHECKed to four fixed values (000007).
 		{

@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -121,7 +121,7 @@ func searchQuery(media registry.MediaConfig, queryParam, maxParam, query string,
 
 // searchBody is the JSON body a POST search provider expects. Its field names
 // come from the registry, which a struct tag cannot express, so the type
-// marshals itself — the one place a map is used, and it is closed by the
+// marshals itself, the one place a map is used, and it is closed by the
 // constructor above rather than assembled at a call site (AGENTS.md §1.4).
 type searchBody struct {
 	queryParam string

@@ -12,7 +12,7 @@
 //	`opencode/space-bunny-free` answers 200 on an empty endpoint table.
 //	The catalog's active filter was written against the older premise
 //	("no row means not a candidate"), so it hid the whole free lane from
-//	the panel while the router answered it — the disagreement that made
+//	the panel while the router answered it, the disagreement that made
 //	the picker offer nothing usable and drove the operator to build a
 //	custom node for a provider needing no configuration. These cases pin
 //	the two halves together: the filter must add a credential-free
@@ -20,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 

@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -72,7 +72,7 @@ func decodeOptionalTestEndpoint(w http.ResponseWriter, r *http.Request) (schema.
 //
 // It is a second concrete function rather than one generic helper because a generic
 // version would need an `any` destination, which AGENTS.md §1.4 forbids outside a
-// declared boundary function — and a boundary function is exactly what this pair is.
+// declared boundary function, and a boundary function is exactly what this pair is.
 func decodeOptionalNodeTest(w http.ResponseWriter, r *http.Request) (schema.TestNodeRequest, bool) {
 	var req schema.TestNodeRequest
 	if r.Body == nil {

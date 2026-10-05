@@ -19,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package provider
 
@@ -41,6 +41,6 @@ func NewCodeBuddy(entry registry.Provider) *CodeBuddy {
 // ForcesStream implements provider.StreamForcer: this service answers a chat
 // request as a server-sent stream and the reference treats it as a hard
 // requirement rather than a preference, so a client that asked for one JSON body
-// is served from a stream the gateway folds back — the same answer, arriving the
+// is served from a stream the gateway folds back, the same answer, arriving the
 // way the vendor will actually send it.
 func (c *CodeBuddy) ForcesStream() bool { return true }

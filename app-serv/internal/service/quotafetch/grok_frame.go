@@ -1,5 +1,5 @@
 // Grok CLI's binary wire path: the gRPC-web frame decoder for GetGrokCreditsConfig.
-// A malformed frame fails soft — never a panic.
+// A malformed frame fails soft, never a panic.
 //
 // @file      internal/service/quotafetch/grok_frame.go
 // @for       Decodes one GetGrokCreditsConfig gRPC-web answer into a usage ratio and a reset instant.
@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

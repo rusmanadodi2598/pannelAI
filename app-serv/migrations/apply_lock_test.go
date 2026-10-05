@@ -13,7 +13,7 @@
 //	simultaneous start is the normal case rather than an exotic one. The
 //	race it used to hit is a duplicate key on PostgreSQL's internal
 //	pg_type_typname_nsp_index, which reads as a schema defect rather than
-//	as two replicas colliding — so it needs a test that starts two runs
+//	as two replicas colliding , so it needs a test that starts two runs
 //	together on purpose.
 //
 //	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
@@ -79,7 +79,7 @@ func TestApply_ConcurrentCallsBothSucceed(t *testing.T) {
 
 // scratchSchema creates a schema of its own and returns a DSN pointed at it, so
 // a test that must observe an unapplied database leaves the shared public
-// schema — which the repository integration tests run against — untouched.
+// schema , which the repository integration tests run against , untouched.
 func scratchSchema(t *testing.T, baseDSN string) string {
 	t.Helper()
 	ctx := context.Background()

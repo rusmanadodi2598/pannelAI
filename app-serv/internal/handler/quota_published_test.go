@@ -6,12 +6,12 @@
 // @reason    The provider number now leads the card, so the array's shape is what the panel
 //
 //	parses strictly. An empty page has to read as "nothing answered yet", and a
-//	cache outage has to read as that too — a bare null would let a database fault
+//	cache outage has to read as that too, a bare null would let a database fault
 //	look like accounts whose providers published nothing.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package handler
 

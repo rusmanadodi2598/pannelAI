@@ -29,7 +29,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package main
 
@@ -200,7 +200,7 @@ func newLiveStack(t *testing.T, upstream *liveUpstream, active ...*service.Activ
 // liveTestDSN reads the live-evidence PostgreSQL DSN and refuses one whose
 // database does not declare itself a test database. This stack truncates
 // upstream_endpoints CASCADE, so a run aimed at a real database deletes the
-// operator's accounts — which happened once, when the variable was pointed at
+// operator's accounts, which happened once, when the variable was pointed at
 // the dev database by copying POSTGRES_DSN. The guard runs before the pool is
 // opened, so it cannot be outrun by a later statement.
 func liveTestDSN(t *testing.T) string {

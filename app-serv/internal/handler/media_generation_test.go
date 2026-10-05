@@ -9,12 +9,12 @@
 // @reason    Each of these routes answers with a normalized envelope rather
 //
 //	than the upstream's own body, so the shape a client parses is the
-//	thing to pin — including the refusal the video route owes while no
+//	thing to pin, including the refusal the video route owes while no
 //	provider declares the kind.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

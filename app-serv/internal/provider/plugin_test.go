@@ -14,8 +14,8 @@
 //	property and the URL/auth rules that made the branch unnecessary.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-17
 package provider
 

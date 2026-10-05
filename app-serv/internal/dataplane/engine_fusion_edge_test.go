@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -121,7 +121,7 @@ func TestRelay_FusionSkipsAReferenceThatNoLongerResolves(t *testing.T) {
 
 // TestRelay_FusionPanelFailureKeepsTheFirstAttemptedIdentity pins register G17 on
 // the fusion path: when every panel member fails, the reported identity is the
-// first member's — the one whose failure is the client's error — so a recorded
+// first member's, the one whose failure is the client's error, so a recorded
 // row names the attempt its error belongs to.
 func TestRelay_FusionPanelFailureKeepsTheFirstAttemptedIdentity(t *testing.T) {
 	upstream := &fusionUpstream{}

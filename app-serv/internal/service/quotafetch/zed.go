@@ -7,7 +7,7 @@
 // @reason    Zed sends usage limits as polymorphic values ("unlimited", a number, or an object) and reports a zero model-request limit as token billing rather than a spent quota.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

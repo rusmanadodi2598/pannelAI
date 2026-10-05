@@ -6,7 +6,7 @@
 //	chat data plane can serve, and the refusal names why.
 //
 // @uses      internal/domain, internal/registry, context, strings, testing.
-// @reason    The write path accepted a member the router refuses — measured:
+// @reason    The write path accepted a member the router refuses, measured:
 //
 //	a member on a provider with no chat translator saved and then answered
 //	PROVIDER_NOT_ROUTABLE, and a media model saved and then missed the
@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 

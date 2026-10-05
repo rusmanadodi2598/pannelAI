@@ -11,12 +11,12 @@
 //
 // @reason    The handler takes a concrete *service.MediaCallService, so these
 //
-//	build the real service over doubles rather than faking the service —
+//	build the real service over doubles rather than faking the service,
 //	the seam production uses is the seam the tests use.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

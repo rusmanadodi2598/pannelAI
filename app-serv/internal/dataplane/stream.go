@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -73,7 +73,7 @@ func DataPlaneHeaders(headers http.Header) {
 // stream and then dies would otherwise hold the client's connection until the
 // client gave up, leaving the gateway with a goroutine and a socket for a request
 // nobody is waiting for. Every read of at least one byte resets the window, so a
-// legitimately long answer is never cut off — only a genuine silence is.
+// legitimately long answer is never cut off, only a genuine silence is.
 type idleGuard struct {
 	body    io.ReadCloser
 	timeout time.Duration

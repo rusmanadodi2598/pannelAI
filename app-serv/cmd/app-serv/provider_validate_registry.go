@@ -10,7 +10,6 @@
 //	internal/service, context, net/http, strings.
 //
 // @reason    Draft 017 §4.2's second consequence is per-format, and this is where
-// //
 //
 //	the plan meets the wire: a declared URL, a derived models path, or the
 //	Anthropic wire's own messages endpoint. Keeping it apart from the node
@@ -18,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 

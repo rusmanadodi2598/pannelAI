@@ -13,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -29,7 +29,7 @@ import (
 )
 
 // googleNormalisedWindow is the ceiling a published remaining fraction is drawn against. The
-// provider states a share and no counter, so a row is a share of a stated base — the
+// provider states a share and no counter, so a row is a share of a stated base, the
 // reference's own convention, shared by both products.
 const googleNormalisedWindow = 1000
 

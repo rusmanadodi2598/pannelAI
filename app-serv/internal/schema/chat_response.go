@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 
@@ -117,7 +117,7 @@ type ModelList struct {
 // UsageChunk builds the final OpenAI frame that carries token accounting: an
 // empty choices array with a usage object, which is the shape
 // stream_options.include_usage asks for (SPEC-API-001 §4). The empty choices list
-// is required, not decorative — a client that reads the first choice from every
+// is required, not decorative, a client that reads the first choice from every
 // frame would otherwise read a frame with no content.
 func UsageChunk(id string, created int64, model string, usage Usage) ChatCompletionChunk {
 	return ChatCompletionChunk{

@@ -12,8 +12,8 @@
 //	turning that into a boot failure is the only way drift is noticed.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 

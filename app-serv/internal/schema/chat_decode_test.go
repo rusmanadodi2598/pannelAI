@@ -7,13 +7,13 @@
 //
 //	standard message names the destination struct and field type
 //	(`[]schema.ChatMessage`), which is a fact about this process rather
-//	than about the caller's body — not re-sendable, and nothing the caller
+//	than about the caller's body, not re-sendable, and nothing the caller
 //	can act on. The member at fault is the actionable half, so the test
 //	pins that half and forbids the other.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package schema
 

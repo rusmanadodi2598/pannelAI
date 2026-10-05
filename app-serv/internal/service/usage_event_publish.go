@@ -25,7 +25,7 @@
 //	into, and a retry loop over a channel whose consumer is gone would
 //	spin forever.
 //
-//	TERMINATION
+//	Termination
 //
 //	Run returns when its context is cancelled, after draining what is
 //	already queued. It is the only goroutine the publisher owns, and it
@@ -33,7 +33,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

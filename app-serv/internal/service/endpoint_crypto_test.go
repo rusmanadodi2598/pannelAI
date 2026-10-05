@@ -10,14 +10,14 @@
 //
 //	service's whole guarantee is that it hands the aggregate ciphertext
 //	rather than plaintext. The sealer itself is domain-owned and tested
-//	there; what this file pins is the composition the service relies on —
+//	there; what this file pins is the composition the service relies on,
 //	every stored value is v1 ciphertext, the same plaintext seals to
 //	different ciphertext each time, and opening returns exactly what was
 //	sealed. That is the property a bug would silently break.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 

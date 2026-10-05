@@ -26,7 +26,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package main
 
@@ -176,7 +176,7 @@ func buildManagement(
 	}
 
 	// The §7.7 combo test probes through the engine, and the engine asks the combo
-	// service for the round-robin order, so the probe is its own service — a
+	// service for the round-robin order, so the probe is its own service, a
 	// method on that one would make the cycle real.
 	// §7.10 media providers and the §7.15 data plane, from the repositories the
 	// management side writes through, so a value written by one path is readable

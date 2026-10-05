@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -30,7 +30,7 @@ import (
 // TestRelay_FailureKeepsTheAttemptedIdentity pins register G17: a call that
 // fails at the upstream still reports which provider, endpoint, and model it was
 // attempted against, because the chat plane writes its usage row from that
-// identity — a zero outcome carries nothing to record.
+// identity, a zero outcome carries nothing to record.
 func TestRelay_FailureKeepsTheAttemptedIdentity(t *testing.T) {
 	var calls int
 	server := newRelayUpstream(t, &calls)

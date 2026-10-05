@@ -25,7 +25,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package redisrepo
 
@@ -110,7 +110,7 @@ func (s *ActiveRequestStore) Finish(ctx context.Context, marker domain.ActiveReq
 // value came from a shared Redis instance, so one foreign member must not be
 // able to blank the whole drawing (OWASP A08). It is left in the set. Removing
 // what this build cannot parse is only safe while the codec is closed to every
-// later version — a marker written by a build that carries a field this one has
+// later version, a marker written by a build that carries a field this one has
 // never seen is a live request belonging to another process, and deleting it
 // would let a reader with no idea what it erased suppress someone else's node.
 // The score prune the read already runs collects a genuinely dead member within

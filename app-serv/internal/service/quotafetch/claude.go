@@ -13,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -65,7 +65,7 @@ func fetchClaude(ctx context.Context, creds Credentials) Result {
 
 	// A 429 is the endpoint throttling its own meter, not the credential: chat with the same
 	// token still works. Nothing is retried here and no fallback is attempted, because the
-	// only useful answer is the cooldown — see claudeRateLimited for who owns the countdown.
+	// only useful answer is the cooldown, see claudeRateLimited for who owns the countdown.
 	if response.status == http.StatusTooManyRequests {
 		return Result{Plan: claudePlanLabel, Message: claudeRateLimited(claudeRetryAfter(response.header))}
 	}

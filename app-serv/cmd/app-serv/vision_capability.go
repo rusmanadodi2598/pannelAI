@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package main
 
@@ -34,7 +34,7 @@ import (
 // panel asks is "can this model, as this gateway names it, read an image".
 //
 // The provider travels with it. registry.VisionCapable takes only a model id,
-// which silently skips the per-provider override layer inside the resolver —
+// which silently skips the per-provider override layer inside the resolver,
 // measured here, that layer is where an entry's own answer differs from the
 // family pattern, so dropping it made the gateway route on a weaker answer than
 // the catalog it was built from.

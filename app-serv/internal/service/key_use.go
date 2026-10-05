@@ -10,14 +10,14 @@
 //
 //	gateway key, and the register's D3 decision (2026-09-19) is that the
 //	counter follows every authenticated data-plane call. The write runs
-//	where the §4 rule is decided — ChatService.Authenticate — because that
+//	where the §4 rule is decided, ChatService.Authenticate, because that
 //	is the one place chat, models, media, and embeddings all ask whether a
 //	key may proceed, so one call site counts for every route instead of
 //	whichever routes remember to count.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

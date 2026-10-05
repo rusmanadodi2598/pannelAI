@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package main
 
@@ -167,7 +167,7 @@ func (r *runtimeProviderIndex) InvalidateNodeOverlay() {
 //
 // The mapping goes through service.NodeCustomNode rather than repeating the
 // field list here: that helper is the one place that knows how a stored node
-// becomes a registry node, and a second copy is how the two shapes drift — the
+// becomes a registry node, and a second copy is how the two shapes drift, the
 // drift that left every custom node unsynthesizable until the id contract was
 // fixed.
 //

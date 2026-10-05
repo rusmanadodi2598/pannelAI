@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -49,7 +49,7 @@ func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error
 // RecordFailure applies a failed attempt to the endpoint's parity state and the
 // key's circuit. A request-shaped failure writes nothing: the request is the
 // cause, the credential is healthy, and the same body would fail identically on
-// any key — so it is not a connection state the operator needs to see. A
+// any key, so it is not a connection state the operator needs to see. A
 // keyless selection still records the parity error.
 func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reason string, class domain.KeyFailureClass) error {
 	if class == domain.KeyFailureRequest {

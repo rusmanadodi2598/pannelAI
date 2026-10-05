@@ -30,8 +30,8 @@
 //	it stays bounded to a ceiling the client already sent.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-24
 package provider
 

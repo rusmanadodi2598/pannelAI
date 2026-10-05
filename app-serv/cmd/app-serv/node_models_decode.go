@@ -9,14 +9,14 @@
 // @reason    SPEC-API-001 §7.4 serves a node's models, and a compatible upstream
 //
 //	answers one of four shapes: a bare array, or an object under `data`,
-//	`models`, or `results` — the set the reference accepts in
+//	`models`, or `results`, the set the reference accepts in
 //	parseOpenAIStyleModels. Keeping the parsing apart from the request
 //	keeps the adapter's own file about the dial and its policy, and keeps
 //	both inside the AGENTS.md §1.1 line budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 

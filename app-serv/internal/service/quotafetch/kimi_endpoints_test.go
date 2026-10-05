@@ -7,7 +7,7 @@
 // @reason    The same endpoint authenticates two ways and answers 403 for two different problems, so a bearer where a raw key belongs and a merged refusal both reach the operator as a dead session.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

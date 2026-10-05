@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package router
 
@@ -78,7 +78,7 @@ var excludedFromSessionSweep = map[string]string{
 // The fixture registers the nil-guarded groups as zero-value handlers, which is
 // what this test needs: the session gate answers before the handler is called,
 // so a 401 is the production guard's own answer. Excluded patterns are not
-// called at all — their handlers are stubs here, and a data-plane route may
+// called at all, their handlers are stubs here, and a data-plane route may
 // legitimately answer 401 for a missing gateway key, which would make "not 401"
 // a false invariant.
 func TestEveryManagementRouteRejectsAnonymousCallers(t *testing.T) {

@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 
@@ -91,7 +91,7 @@ func NewUsageRepository(pool *pgxpool.Pool) *UsageRepository {
 // It is idempotent on the row's own id: recording the same record twice leaves
 // one row, so a reporter that retries after a timeout does not double-count.
 // Two calls carrying one request_id but different ids are two rows, which is
-// intended — a client retrying a gateway request is a second request and is
+// intended, a client retrying a gateway request is a second request and is
 // billed as one.
 func (r *UsageRepository) Record(ctx context.Context, record domain.UsageRecord) error {
 	const q = `

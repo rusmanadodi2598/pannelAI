@@ -20,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -99,7 +99,7 @@ func embeddingsCombo(t *testing.T) domain.Combo {
 }
 
 // TestEmbeddingsService_RecordsRefusalsBeforeTheCall pins that a call refused
-// before any dial leaves exactly one request log row — no usage row — carrying
+// before any dial leaves exactly one request log row, no usage row, carrying
 // the refusal's code and the identity resolution had reached, under the
 // router's request id.
 func TestEmbeddingsService_RecordsRefusalsBeforeTheCall(t *testing.T) {

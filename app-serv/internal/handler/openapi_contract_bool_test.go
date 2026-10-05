@@ -9,7 +9,7 @@
 // @reason    Draft 025 F5: the boundary refuses `?active=yes` with a
 //
 //	VALIDATION_ERROR, and the document a generated client reads must
-//	carry the same closed set — a bare boolean would let a client fill
+//	carry the same closed set, a bare boolean would let a client fill
 //	`1` and learn the rule only from a 400. Enumerating both spellings
 //	on the parameter is what makes the two agree mechanically. The
 //	enum is decoded after the type is read, because every string
@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package handler
 

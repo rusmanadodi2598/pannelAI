@@ -3,7 +3,6 @@
 //
 // @file      internal/domain/provider_node_suffix_test.go
 // @for       The base-URL suffix rule: a stored node base URL must not already
-// //
 //
 //	carry the path the transport appends (SPEC-API-001 §7.4).
 //
@@ -18,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package domain
 

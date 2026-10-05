@@ -14,8 +14,8 @@
 //	the index, which is why the accessors return copies.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-17
 package registry
 

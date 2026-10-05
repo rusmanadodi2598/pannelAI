@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -46,7 +46,7 @@ func openAIUsageFromObject(usage object) *schema.Usage {
 		TotalTokens:      intField(usage, "total_tokens"),
 	}
 	// The details block is read as possibly absent rather than as a gate, because a
-	// vendor may state its cache split only at the usage top level — a call that
+	// vendor may state its cache split only at the usage top level, a call that
 	// reports `cache_creation_input_tokens` with no details block at all still owns
 	// a cache write the panel has to show.
 	details, _ := objectField(usage, "prompt_tokens_details")

@@ -2,7 +2,6 @@
 //
 // @file      internal/service/provider_search_test.go
 // @for       The `?q` filter of the provider list: what a query matches, and
-// //
 //
 //	what a blank or unmatched one answers.
 //
@@ -16,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package service
 

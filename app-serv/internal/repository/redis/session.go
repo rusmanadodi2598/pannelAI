@@ -61,8 +61,8 @@ func (s *SessionStore) Revoke(ctx context.Context, digest string) error {
 // RevokeAll removes every tracked session digest, so a password change signs
 // out every client holding one. The dashboard serves one account, so the
 // prefix holds a handful of keys; the scan walks all of them rather than a
-// first page, because a settled page here would leave the newest sessions —
-// the ones a fresh attacker is most likely to hold — alive.
+// first page, because a settled page here would leave the newest sessions,
+// the ones a fresh attacker is most likely to hold, alive.
 func (s *SessionStore) RevokeAll(ctx context.Context) error {
 	callCtx, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()

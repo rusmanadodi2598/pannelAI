@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package main
 
@@ -132,7 +132,7 @@ func TestEgressProxy_RoutesThroughTheConfiguredProxy(t *testing.T) {
 // TestEgressProxy_StillValidatesTheDestination pins the A01 half: a proxied
 // request must not become a way around the allowlist. The allowlist names the
 // proxy's address, and the destination is a different loopback address outside
-// it, so only the destination check can refuse the call — and the proxy is
+// it, so only the destination check can refuse the call, and the proxy is
 // never asked anything.
 func TestEgressProxy_StillValidatesTheDestination(t *testing.T) {
 	reached := 0

@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -151,7 +151,7 @@ func decodeProxyRequest(r *http.Request) (service.ProxyDraft, error) {
 
 // decodeProxyPatch decodes and validates a partial patch body. Omitted
 // fields stay nil so the service can keep their stored values, and an empty
-// patch is refused here — before the service — because the body said nothing.
+// patch is refused here, before the service, because the body said nothing.
 func decodeProxyPatch(r *http.Request) (service.ProxyPatch, error) {
 	var req schema.ProxyPatchRequest
 	if err := schema.DecodeJSON(r, &req); err != nil {

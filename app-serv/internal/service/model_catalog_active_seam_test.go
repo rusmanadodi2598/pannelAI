@@ -10,13 +10,13 @@
 // @reason    Draft 025 F4/F2: the predicate is one query per read, not one per
 //
 //	provider, and a missing counter must not read as "nothing is
-//	active" — an empty answer and an unanswerable question are
+//	active", an empty answer and an unanswerable question are
 //	different facts, and the caller has to be able to tell them apart.
 //	Separated from the filter table at the AGENTS.md §1.1 line limit.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 

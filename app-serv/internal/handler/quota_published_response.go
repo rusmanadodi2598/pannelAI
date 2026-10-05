@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package handler
 
@@ -42,7 +42,7 @@ func publishedUsageResponse(usage service.PublishedUsage) schema.PublishedQuotaU
 
 // publishedUsageResponses maps a page's cached provider answers onto the collection
 // body. Always a non-nil slice: an account the worker has not answered is absent from the
-// array, and a page whose providers have all fallen silent still answers `[]` — the same
+// array, and a page whose providers have all fallen silent still answers `[]`, the same
 // rule `data` follows, because `null` would be a second spelling of "nothing here" that a
 // reader has to special-case.
 func publishedUsageResponses(answers []service.PublishedUsage) []schema.PublishedQuotaUsageResponse {

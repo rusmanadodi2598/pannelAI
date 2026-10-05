@@ -9,13 +9,13 @@
 // @uses      testing, internal/schema.
 // @reason    These transformations decide what a panel member is asked and what
 //
-//	the judge keeps, and each is decidable without a network — so a table
+//	the judge keeps, and each is decidable without a network, so a table
 //	pins every wire-format spelling here rather than in a fusion test that
 //	would report a regression as a mysterious panel failure.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

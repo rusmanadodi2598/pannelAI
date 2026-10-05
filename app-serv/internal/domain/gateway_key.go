@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package domain
 
@@ -33,7 +33,7 @@ const (
 // SPEC-API-001 §7.4 fixes: "Its id carries the type prefix
 // (openai-compatible-… / anthropic-compatible-…)". The registry derives a node's
 // wire format from this prefix, so an id without it makes the node
-// unsynthesizable — and a node that cannot be synthesized cannot be routed to.
+// unsynthesizable, and a node that cannot be synthesized cannot be routed to.
 const (
 	NodeIDPrefixOpenAI    = "openai-compatible-"
 	NodeIDPrefixAnthropic = "anthropic-compatible-"

@@ -9,7 +9,7 @@
 //
 // anybody else will honour later: a down file can drift from its up file silently, and a rollback
 // that leaves one of the two tables behind is discovered on the way back up, not on the way down.
-// This test also pins the ledger step, because the runner skips anything already recorded —
+// This test also pins the ledger step, because the runner skips anything already recorded ,
 // dropping tables without clearing the row leaves a schema that re-applies to nothing.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>

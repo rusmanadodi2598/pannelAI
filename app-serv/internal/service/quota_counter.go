@@ -22,7 +22,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 
@@ -73,7 +73,7 @@ func NewQuotaCounter(counters repository.QuotaCounterStore, logger *slog.Logger)
 //
 // A failed increment is logged and not returned. The client already has its
 // answer, and failing a served call over accounting would turn it into an error
-// the client cannot act on — the same rule the usage and log writes follow.
+// the client cannot act on, the same rule the usage and log writes follow.
 // The counter that failed to increment is the window under-reported, which the
 // panel's totals surface to an operator.
 func (c *QuotaCounter) Record(ctx context.Context, endpointID string, units int64) {

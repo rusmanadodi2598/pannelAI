@@ -7,7 +7,7 @@
 // @reason    The dispatcher is the single entry point callers rely on, so its two outcomes need their own tests.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package quotafetch
 

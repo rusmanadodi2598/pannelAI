@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package router
 
@@ -34,7 +34,7 @@ func registerProviderNodeRoutes(mux *routeRecorder, deps Deps, gateway func(http
 	// §7.4 credential checks. Both are stateless: the body carries the
 	// destination and the credential, and no row is written (draft 017 §4.6).
 	// They sit beside the node routes because that is where an operator asks
-	// "does this credential work" — before the node or the endpoint exists.
+	// "does this credential work", before the node or the endpoint exists.
 	mux.Handle("POST "+APIVersion+"/provider-nodes/validate", gateway(http.HandlerFunc(deps.ProviderValidate.Node)))
 	mux.Handle("POST "+APIVersion+"/providers/validate", gateway(http.HandlerFunc(deps.ProviderValidate.Provider)))
 }

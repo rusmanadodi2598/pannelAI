@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 
@@ -139,7 +139,7 @@ type BulkEndpointResponse struct {
 
 // BulkRefusal is the answer to a refused batch (§8.1): the §8 code and message, plus
 // every row's index when the offending one could be named. It exists because a
-// refusal has to carry both — a bare envelope could not name the row and a bare row
+// refusal has to carry both, a bare envelope could not name the row and a bare row
 // list could not name the code.
 type BulkRefusal struct {
 	Error   BulkError       `json:"error"`

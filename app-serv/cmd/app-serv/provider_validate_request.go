@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -90,7 +90,7 @@ func nodeFormat(check service.CredentialCheck) string {
 // provider whose base names a chat path (draft 017 §4.2's second consequence).
 //
 // A base that names neither returns empty, and the caller reports the reason
-// rather than guessing a path — a guess produces a 404 that reads like a
+// rather than guessing a path, a guess produces a 404 that reads like a
 // credential problem.
 func validateTarget(entry registry.Provider) string {
 	if declared := strings.TrimSpace(entry.Transport.ValidateURL); declared != "" {

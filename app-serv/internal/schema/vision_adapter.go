@@ -9,12 +9,12 @@
 // @reason    AGENTS.md §2.4 requires the contract before the handler, and §7.8
 //
 //	defines one shape for both the read and the write so the panel can
-//	PUT back exactly what it GET — a round-trip a differing write shape
+//	PUT back exactly what it GET, a round-trip a differing write shape
 //	would break.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 

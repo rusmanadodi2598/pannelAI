@@ -7,7 +7,7 @@
 // @reason    SPEC-API-001 §4 fixes the meta block (page, per_page, total) and the 100 cap; these cases cover defaults, mid-page, past-the-end, and clamped values so the bound is enforced rather than assumed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 
 package handler

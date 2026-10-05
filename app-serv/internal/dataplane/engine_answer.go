@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -80,7 +80,7 @@ func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in R
 //
 // An Anthropic client is cut after translation instead. The fold produces the
 // upstream's own OpenAI-shaped body, and a marker removed there is gone before the
-// Anthropic answer is built — so the text would be cut correctly while the answer
+// Anthropic answer is built, so the text would be cut correctly while the answer
 // still claimed `stop_reason: "end_turn"` with no `stop_sequence`, which is the one
 // thing that wire has a field to say. Measured live on 2026-09-30: cutting in the
 // fold produced exactly that half-truth, so the cut moved to the shape that can

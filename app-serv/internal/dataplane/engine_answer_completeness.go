@@ -10,7 +10,7 @@
 // @uses      internal/schema, encoding/json, strings.
 // @reason    An upstream that spends the whole output ceiling on reasoning answers
 //
-//	200 with an empty body — a success as far as the transport is
+//	200 with an empty body, a success as far as the transport is
 //	concerned, and what a combo would otherwise hand the client. The
 //	signal is read through the translators every upstream format already
 //	has, the way readUsage does, so the rule exists once instead of as one
@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package dataplane
 

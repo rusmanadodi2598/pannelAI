@@ -11,11 +11,11 @@
 //	through, and the panel sends outbound_proxy_url: "" when the operator
 //	empties the field: the tag layer used to refuse that with 400, which is
 //	the one way an operator removes a stored URL. The tests pin the three
-//	faces of one rule — clear accepted, junk refused, coherence kept.
+//	faces of one rule, clear accepted, junk refused, coherence kept.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package schema
 

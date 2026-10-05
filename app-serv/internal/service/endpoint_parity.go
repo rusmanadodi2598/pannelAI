@@ -7,7 +7,6 @@
 //
 // @uses      internal/domain, context, strings.
 // @reason    Draft 017 §4.1b adds `proxy_pool_id` to an endpoint, and a dangling
-// //
 //
 //	id is the failure mode that matters: the column would hold a name that
 //	resolves to nothing, so an operator who deleted a pool would leave
@@ -17,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 

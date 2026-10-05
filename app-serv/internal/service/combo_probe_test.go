@@ -8,14 +8,14 @@
 // @uses      testing, context, internal/dataplane, internal/domain, internal/schema.
 // @reason    §7.7 makes the answer per reference, so the test pins the order, the
 //
-//	roles, and that a dead member is a result rather than a refusal — the
+//	roles, and that a dead member is a result rather than a refusal, the
 //	three properties an operator reads the route for. The seam double and
 //	the mapping cases live in the sibling file, split at the AGENTS.md
 //	§1.1 line limit.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

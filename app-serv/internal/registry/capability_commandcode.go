@@ -18,8 +18,8 @@
 //	capability_resolve.go stays inside the AGENTS.md §1.1 budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-26
 package registry
 

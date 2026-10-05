@@ -13,8 +13,8 @@
 //	one pure function.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     util
+// @stability stable
 // @since     2026-09-27
 package provider
 

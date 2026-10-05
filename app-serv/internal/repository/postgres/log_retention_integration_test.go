@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package postgres
 
@@ -79,7 +79,7 @@ func TestLogRepository_RetentionPurgeBoundary(t *testing.T) {
 // boundary: a purge with nothing to delete removes nothing and reports nothing.
 // It is its own test rather than a subtest of the boundary table because that
 // table deliberately leaves survivors behind, and a purge over a table that
-// still holds them is a different case — the one the table above already covers.
+// still holds them is a different case, the one the table above already covers.
 func TestLogRepository_RetentionPurgeOverAnEmptyTable(t *testing.T) {
 	repo := newLogRepo(t)
 	now := time.Now().UTC().Truncate(time.Second)

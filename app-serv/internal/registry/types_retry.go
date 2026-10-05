@@ -16,8 +16,8 @@
 //	later needs the retries spaced, not merely more of them.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-28
 package registry
 

@@ -11,14 +11,14 @@
 //	like a registry provider", and that claim spans three layers: the
 //	domain mints the id, the registry synthesizes the entry from it, and
 //	the resolver routes by it. Each layer's own test can pass while the
-//	seam between them is broken — which is what happened: the domain
+//	seam between them is broken, which is what happened: the domain
 //	minted `pnd_…` ids that the registry refuses to synthesize, so the
 //	overlay failed and fell back to the embedded registry for every
 //	request. Only a test that runs the whole path catches that.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package main
 

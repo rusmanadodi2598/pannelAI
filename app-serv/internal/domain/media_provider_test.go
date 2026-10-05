@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package domain
 
@@ -71,7 +71,7 @@ func TestNewMediaOverride_BaseURLShape(t *testing.T) {
 }
 
 // TestParseMediaKind pins the closed kind set: the wire values, the trim and
-// case rule, and the refusals — including the panel's own `web` label, which
+// case rule, and the refusals, including the panel's own `web` label, which
 // the panel maps to `search` before sending and which the API must not accept.
 func TestParseMediaKind(t *testing.T) {
 	cases := []struct {

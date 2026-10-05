@@ -13,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -39,7 +39,7 @@ const googleAccountBody = `{"cloudaicompanionProject":{"id":"proj-9"},
 	"currentTier":{"name":"legacy-tier"},"paidTier":{"id":"standard-tier"}}`
 
 // googleStub answers each Cloud Code Assist path and records the call it received, bodies
-// included — the project a call names is half of what these families get wrong.
+// included, the project a call names is half of what these families get wrong.
 type googleStub struct {
 	server  *httptest.Server
 	replies map[string]googleReply

@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -28,7 +28,7 @@ import (
 
 // probeGuard builds the guard the probe tests run under. Loopback is refused
 // unless it is named, so a test that wants to reach its httptest server must
-// allowlist it — which is the rule a self-hosted deployment follows.
+// allowlist it, which is the rule a self-hosted deployment follows.
 func probeGuard(t *testing.T, allowed ...string) *netguard.Guard {
 	t.Helper()
 	guard, err := netguard.NewGuard(allowed)

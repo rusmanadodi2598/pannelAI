@@ -20,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package redisrepo
 
@@ -37,7 +37,7 @@ import (
 // read's rule about an unreadable member: it is skipped, and it is left alone.
 //
 // The member below is what a build carrying a field this one has never seen
-// writes — the shape a rolling deploy actually produces. Deleting it would let a
+// writes, the shape a rolling deploy actually produces. Deleting it would let a
 // reader with no idea what it erased suppress another process's live request, so
 // the store drops it from the answer and keeps the value; the score prune the
 // same read runs collects it once its own window closes.

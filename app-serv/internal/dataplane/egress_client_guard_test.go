@@ -13,12 +13,12 @@
 //
 //	rather than fall back. A client built inside these packages carries a
 //	plain net.Dialer and no proxy route, so a silent default would let the
-//	composition root look guarded while every call left unguarded — the same
+//	composition root look guarded while every call left unguarded, the same
 //	refusal draft 042 R07 already pins for the qoder connector.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-04
 package dataplane
 

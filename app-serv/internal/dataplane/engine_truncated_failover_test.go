@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package dataplane
 
@@ -86,7 +86,7 @@ func newTruncatingUpstream(t *testing.T, calls *int, emptyByModel map[string]boo
 // TestRelay_ComboSkipsAMemberThatAnsweredEmptyAtItsCeiling pins the reported case:
 // a round_robin combo whose leading member spends the ceiling on thinking must
 // serve the next member's answer, and must not treat the empty one as its key's
-// fault — the upstream answered, so the credential stays usable.
+// fault, the upstream answered, so the credential stays usable.
 func TestRelay_ComboSkipsAMemberThatAnsweredEmptyAtItsCeiling(t *testing.T) {
 	var calls int
 	server := newTruncatingUpstream(t, &calls, map[string]bool{"empty": true})

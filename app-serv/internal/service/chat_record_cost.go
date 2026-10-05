@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -38,7 +38,7 @@ const zeroCostUSD = "0.00000000"
 // chatCostEstimate renders the estimate a chat usage row carries. It answers
 // zero for a call that failed (nothing was delivered), for a call that reported
 // no usage (nothing was measured), and for a model the rate tables do not price
-// (no rate to apply) — the reference's own resolver answers null for the last
+// (no rate to apply), the reference's own resolver answers null for the last
 // case, and a zero estimate is what the panel renders as "no cost data".
 func chatCostEstimate(outcome dataplane.Outcome, errorCode string) string {
 	if errorCode != "" || outcome.Usage == nil {

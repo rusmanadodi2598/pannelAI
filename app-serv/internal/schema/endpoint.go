@@ -19,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 
@@ -51,7 +51,7 @@ var registryAuthAliases = map[string]string{
 //
 // It is the boundary §8.1 requires: the registry spells two values apikey and
 // none, the API publishes api_key and no_auth, and a caller must not have to
-// know both. Anything else — including cookie — is a VALIDATION_ERROR naming
+// know both. Anything else, including cookie, is a VALIDATION_ERROR naming
 // the accepted set, so the mistake is actionable rather than mysterious.
 func ParseAuthType(raw string) (domain.UpstreamAuthType, error) {
 	value := strings.TrimSpace(raw)

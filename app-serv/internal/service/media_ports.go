@@ -8,7 +8,7 @@
 // @uses      internal/domain, context.
 // @reason    §7.10 lets an operator point a provider's media kind at their own
 //
-//	host, and the data plane must honour that at call time — a value
+//	host, and the data plane must honour that at call time, a value
 //	read once at boot would keep dialing the old host after a save.
 //	The interface is declared here rather than reusing the media
 //	provider service so the embeddings use case depends on the one
@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

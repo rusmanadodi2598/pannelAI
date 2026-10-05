@@ -9,13 +9,13 @@
 // @reason    §7.10's save is a partial update of two values, and each reports
 //
 //	its own source (`registry` or `override`) because a provider may
-//	override its default model while keeping the registry's base URL —
+//	override its default model while keeping the registry's base URL,
 //	one shared "overridden" flag would mislabel that case and the panel
 //	would offer a reset that does nothing.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 

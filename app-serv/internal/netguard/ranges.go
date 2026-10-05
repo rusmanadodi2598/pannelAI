@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package netguard
 
@@ -20,7 +20,7 @@ import "net/netip"
 
 // hardDeniedPrefixes are ranges that are never a proxy host, whatever the
 // operator allowlists. CGNAT is here rather than in the opt-in tier because it
-// is carrier address space, not private LAN space — and it is where the Alibaba
+// is carrier address space, not private LAN space, and it is where the Alibaba
 // metadata address (100.100.100.200) lives.
 var hardDeniedPrefixes = []struct {
 	prefix netip.Prefix

@@ -19,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 
@@ -42,7 +42,7 @@ func vendorChunk(delta string, finish string) string {
 }
 
 // noisyDelta is the vendor's noise without a thinking fragment, so a test can add a
-// valued one without writing the member twice — a JSON object with a repeated key
+// valued one without writing the member twice, a JSON object with a repeated key
 // decodes to its last value, which is how this fixture once hid a real fragment.
 const noisyDelta = `"content":"hello","function_call":null,` +
 	`"refusal":"","tool_calls":[],"extra_fields":null`

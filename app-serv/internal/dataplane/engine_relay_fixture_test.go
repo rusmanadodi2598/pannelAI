@@ -19,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package dataplane
 
@@ -63,7 +63,7 @@ func (l relayLookup) Combo(_ context.Context, name string) (domain.Combo, bool, 
 }
 
 // comboRow builds a stored combo row for the fixtures: fallback, one sticky
-// request per model, no judge — the shape every pre-fusion test used.
+// request per model, no judge, the shape every pre-fusion test used.
 func comboRow(name string, refs ...string) domain.Combo {
 	return comboWithStrategy(name, domain.ComboFallback, 1, "", refs...)
 }

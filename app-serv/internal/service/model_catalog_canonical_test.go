@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -100,7 +100,7 @@ func TestModelCatalogService_ModelExistsAcceptsEveryRouterForm(t *testing.T) {
 
 // TestComboService_CreateAcceptsEveryRouterForm pins F2 at the route the owner
 // named: a combo member spelled with a registry alias or a node prefix saves.
-// The stored ref is what the operator typed — the router resolves it — so the
+// The stored ref is what the operator typed, the router resolves it, so the
 // row must round-trip unchanged.
 func TestComboService_CreateAcceptsEveryRouterForm(t *testing.T) {
 	ctx := context.Background()

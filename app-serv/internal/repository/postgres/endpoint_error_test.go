@@ -10,12 +10,12 @@
 //
 //	mapping is what turns a constraint violation into the §8 code a client
 //	sees. Getting it wrong is invisible until a duplicate label silently
-//	returns 500 instead of CONFLICT, so it is pinned here — and it needs no
+//	returns 500 instead of CONFLICT, so it is pinned here, and it needs no
 //	database, because the input is a driver error value.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 

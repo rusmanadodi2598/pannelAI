@@ -9,14 +9,14 @@
 // @reason    Create, CreateBatch, AddKeys, and Reorder all have to write the root and
 //
 //	its children together, so the transaction boundary and the key-writing
-//	statement are declared once here rather than repeated per caller — and
+//	statement are declared once here rather than repeated per caller, and
 //	one spelling is what makes "the aggregate is saved, or nothing" true on
 //	every path (AGENTS.md §2.2). It is separate from endpoint.go because
 //	AGENTS.md §1.1 caps a file at 250 lines.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 

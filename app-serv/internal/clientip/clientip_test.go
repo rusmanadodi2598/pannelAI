@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package clientip
 
@@ -72,7 +72,7 @@ func TestAddress_NoTrustedProxiesKeepsThePeer(t *testing.T) {
 
 // TestAddress_AllTrustedHopsFallBackToThePeer pins that a chain of nothing but
 // trusted proxies still answers with an address the operator can hold
-// accountable — the proxy itself — rather than an empty bucket.
+// accountable, the proxy itself, rather than an empty bucket.
 func TestAddress_AllTrustedHopsFallBackToThePeer(t *testing.T) {
 	trusted := mustTrusted(t, []string{"10.0.0.0/8"})
 

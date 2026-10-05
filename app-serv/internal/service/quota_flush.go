@@ -17,14 +17,14 @@
 //	retry and dead-letter behaviour in quota_flush_policy.go
 //	(draft 005 F3).
 //
-// TERMINATION
+// Termination
 //
 //	Run returns when its context is cancelled; it spawns no goroutine that
 //	outlives that return.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package service
 
