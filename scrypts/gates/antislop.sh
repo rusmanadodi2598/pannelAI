@@ -8,28 +8,24 @@
 # left `colliding , so` in six places, which a reviewer caught by hand. A rule
 # with a gate stays clean. A rule without one drifts until someone reads it.
 #
-# Scope, and why it is not "everything":
+# Scope, and why it is not uniform:
 #
-#   - R-02 and the citation rule run on CHANGED files, the same incremental
-#     contract AGENTS.md §1.1 and §1.2 use. Tree-wide they would fail today on
-#     821 markdown lines that audit 005 left open deliberately (dated planning
-#     records and the contract of record), which would stop every unrelated pull
-#     request and train people to ignore the gate. The backlog is counted and
-#     printed instead, so it stays visible and can only shrink.
-#   - Citations are a WARNING, not a failure. The tree carries 142 pre-existing
-#     ones, so failing would hold every commit hostage to lines its author did
-#     not write. Audit 005 lists the sweep as its own task.
-#   - `docs/**` and `AGENTS.md` are excluded from R-02 by name, and the exclusion
-#     is printed on every run that touches them. They are audit 005's open
-#     decision: dated planning records, the contract of record, and a governance
-#     file. Without this the file's own 50 legacy dashes would make AGENTS.md
-#     impossible to amend, which is how a gate gets disabled rather than obeyed.
-#   - The structural checks run tree-wide, because the tree is clean for them
-#     now and a diff-only check would let a pattern return in an untouched file.
+#   - R-02 runs TREE-WIDE and fails on any use. It used to be a changed-files
+#     check with `docs/**` and `AGENTS.md` excluded, because the tree carried 821
+#     legacy lines and enforcing it then would have blocked every unrelated pull
+#     request. That debt is swept, so the exclusion went with it instead of
+#     staying out of habit. A rule enforced only on the diff is a rule that
+#     regrows in the files nobody touched.
+#   - Citations are a WARNING, not a failure. 170 of them are legitimate
+#     references inside the §1.2 @reason headers, and audit 005 lists the
+#     residue, so failing would hold a commit hostage to lines its author did
+#     not write.
 #   - Citations ignore the region above a Go file's `package` line. AGENTS.md
 #     §1.2 mandates a @reason field there and names it where a file's rationale
 #     lives, so a draft reference inside it is the convention working as
-#     designed. That boundary is audit 004 finding 5.
+#     designed, not the slop. That boundary is audit 004 finding 5.
+#   - The structural checks run tree-wide, because the tree is clean for them
+#     now and a diff-only check would let a pattern return in an untouched file.
 #
 # What these patterns deliberately do not match, because each one produced a
 # false positive while this gate was being written:
@@ -137,54 +133,38 @@ report() {
 failed=0
 scope="$(changed_text_paths)"
 
-# ---- incremental: rules that cannot be enforced tree-wide yet ----
+# ---- R-02, tree-wide ----
 
-gate_start "antislop R-02 and citations (changed files)"
+# This used to be a changed-files check with docs/** and AGENTS.md excluded,
+# because the tree carried 821 legacy lines and enforcing it would have blocked
+# every unrelated pull request. The debt is now swept (audit 005 round two), so
+# the rule applies to the whole repository and fails on any new use. The
+# exclusion is gone rather than left in place out of habit.
+gate_start "R-02 no em or en dash (tree-wide)"
+dash_hits="$(grep_files "$DASH_RE" '*.go' '*.ts' '*.tsx' '*.js' '*.mjs' '*.svelte' '*.css' \
+	'*.sh' '*.bash' '*.yml' '*.yaml' '*.sql' '*.md' \
+	':(exclude)**/node_modules/**' ':(exclude)**/dist/**' ':(exclude)**/build/**' \
+	':(exclude)**/*_gen.go' ':(exclude)*.pb.go' ':(exclude)app-serv/internal/handler/openapi.json' \
+	":(exclude)$SELF")"
+report "R-02 dash" "$dash_hits" || failed=1
+
+# ---- citations, warning only ----
+
+gate_start "scratch-work citations (changed Go files)"
 if [ -z "$scope" ]; then
 	gate_skip "no changed text files; set GATES_BASE_REF to check a diff range"
 else
-	dash_hits=0
 	cite_hits=0
-	open_scope=0
 	while IFS= read -r f; do
 		[ -n "$f" ] || continue
-		# Markdown under docs/ and the governance file are audit 005's open
-		# decision: dated planning records, the contract of record, and a file
-		# whose own text reserves its edits for review. Enforcing R-02 there
-		# would make every one of them uneditable to fix one clause, which is
-		# the opposite of what a gate is for. They are reported, not blocked.
-		case "$f" in
-		docs/* | AGENTS.md)
-			open_scope=1
-			continue
-			;;
-		esac
-		h="$(grep_files "$DASH_RE" "$f")"
-		if [ -n "$h" ]; then
-			printf '%s\n' "$h" | head -3 | while IFS= read -r l; do gate_fail "R-02 dash: $l"; done
-			dash_hits=$((dash_hits + 1))
-		fi
-		if [ "${f##*.}" = "go" ]; then
-			c="$(go_body "$f" | grep -E "$CITATION_RE" || true)"
-		else
-			c="$(grep_files "$CITATION_RE" "$f")"
-		fi
-		if [ -n "$c" ]; then
-			# A warning, not a failure: the tree carries 142 pre-existing
-			# citations, and failing here would hold every commit hostage to
-			# lines its author did not write. Audit 005 lists the sweep.
-			gate_start "scratch citation to review in $f: $(printf '%s\n' "$c" | head -1 | cut -c1-110)"
-			cite_hits=$((cite_hits + 1))
-		fi
+		[ "${f##*.}" = "go" ] || continue
+		[ -f "$root/$f" ] || continue
+		c="$(go_body "$f" | grep -E "$CITATION_RE" || true)"
+		[ -n "$c" ] || continue
+		gate_start "scratch citation to review in $f: $(printf '%s\n' "$c" | head -1 | cut -c1-110)"
+		cite_hits=$((cite_hits + 1))
 	done <<<"$scope"
-	[ "$open_scope" = "1" ] &&
-		gate_skip "docs/** and AGENTS.md carry R-02 debt left open by audit 005; excluded from this check on purpose"
-	if [ "$dash_hits" -eq 0 ]; then
-		gate_pass "antislop R-02 (changed files)"
-	else
-		failed=1
-	fi
-	[ "$cite_hits" = "0" ] && gate_pass "scratch citations (changed files)" ||
+	[ "$cite_hits" = "0" ] && gate_pass "scratch-work citations (changed Go files)" ||
 		gate_skip "$cite_hits changed file(s) still cite a closed draft; see anti-slop/audit-005-*.md"
 fi
 
@@ -245,19 +225,10 @@ fi
 
 # ---- backlog visibility for audit 005 ----
 
-# The backlog count honours the same `antislop:ignore` marker the enforcement
-# path does, so a line exempted from failing is never counted as debt. Without
-# this, the rule document that names the forbidden characters would enlarge the
-# backlog it exists to shrink.
-md_hits="$(git -C "$root" grep -nIE "$DASH_RE" -- '*.md' 2>/dev/null | grep -v 'antislop:ignore' || true)"
-md_lines="$(printf '%s' "$md_hits" | grep -c . || true)"
-md_files="$(printf '%s' "$md_hits" | cut -d: -f1 | sort -u | grep -vc '^anti-slop' || true)"
-gate_start "markdown R-02 backlog (audit 005 open scope)"
-if [ "${md_lines:-0}" -eq 0 ]; then
-	gate_pass "no em or en dash left in markdown"
-else
-	gate_skip "$md_lines lines in $md_files markdown files are not enforced yet; see anti-slop/audit-005-*.md"
-fi
+# The markdown backlog this gate used to report is gone: R-02 is now enforced
+# tree-wide above, so a dash in docs/** or AGENTS.md fails the run instead of
+# being counted and forgiven. What remains as debt is the 170 scratch citations
+# inside the §1.2 @reason headers, which are the convention working as designed.
 
 if [ "$failed" -ne 0 ]; then
 	gate_fail "antislop gate found violations above"
