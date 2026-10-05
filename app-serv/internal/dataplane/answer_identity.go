@@ -25,18 +25,12 @@ package dataplane
 import "encoding/json"
 
 // ClientModel reports the name the client addressed: the combo a model string
-// resolved through, otherwise the model string itself.
-//
-// It is a method rather than a stored field because it is derived from the combo
-// the resolution already carries: a second field holding the same answer is a
-// second thing to keep in step, and resolveCombo already overwrites Combo with the
-// combo the client addressed precisely so this question has one source.
-//
-// The direct-model half answers a question the resolution cannot: a combo is a
-// name an operator wrote and a client sends, but so is `provider/model`, while
-// ModelID has already lost the prefix and UpstreamID carries the vendor's own
-// alias. Only the string the caller sent round-trips, so that is the one an answer
-// is named by.
+// resolved through, otherwise the model string itself. It is a method rather than
+// a stored field because resolveCombo already overwrites Combo with the combo the
+// client addressed, so this answer has one source instead of two to keep in step.
+// The direct-model half needs the raw string: ModelID has already lost the
+// provider prefix and UpstreamID carries the vendor's own alias, so only the
+// string the caller sent round-trips back to it.
 func (r Resolution) ClientModel() string {
 	if r.IsCombo() {
 		return r.Combo.Name()
@@ -44,14 +38,12 @@ func (r Resolution) ClientModel() string {
 	return r.Requested
 }
 
-// answerModel is the model name one answer carries: the name the client addressed,
-// which is a combo name or the model string it sent, and only failing that the name
-// the calling surface already used.
-//
-// The fallback stays with the caller rather than being fixed here because a
-// Resolution built outside the relay, a test, or a seam that resolves one member
-// on its own, carries no addressed string at all, and such a surface knows which
-// of its own identifiers stands in.
+// answerModel is the model name one answer carries: the name the client
+// addressed, a combo name or the model string it sent, and only failing that the
+// name the calling surface already used. The fallback stays with the caller rather
+// than being fixed here because a Resolution built outside the relay, a test, or a
+// seam that resolves one member on its own carries no addressed string at all, and
+// such a surface knows which of its own identifiers stands in.
 func answerModel(r Resolution, fallback string) string {
 	if name := r.ClientModel(); name != "" {
 		return name
@@ -60,17 +52,12 @@ func answerModel(r Resolution, fallback string) string {
 }
 
 // stampAnswerModel writes model onto a raw answer the gateway forwards untouched,
-// leaving every other member exactly as the upstream wrote it.
-//
-// Re-encoding the decoded object rather than a typed response is what keeps
-// unmodelled fields alive: the passthrough exists to hand the client what the
-// upstream said, so narrowing it to the schema's response shape would drop any
-// field the schema does not model. The stream re-framer rewrites its identity the
-// same way, for the same reason.
-//
-// An empty name, an unchanged name, or a body that does not decode leaves the
-// bytes alone: a call that already reached the upstream and came back with 200 is
-// not failed over a label the gateway could not read.
+// leaving every other member exactly as the upstream wrote it. Re-encoding the
+// decoded object rather than a typed response is what keeps unmodelled fields
+// alive, and the stream re-framer rewrites its identity the same way. An empty
+// name, an unchanged name, or a body that does not decode leaves the bytes alone: a
+// call that reached the upstream and came back with 200 is not failed over a label
+// the gateway could not read.
 func stampAnswerModel(raw []byte, model string) []byte {
 	if model == "" {
 		return raw

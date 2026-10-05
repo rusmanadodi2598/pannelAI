@@ -131,16 +131,13 @@ func (s *StreamState) claudeChunks(payload []byte) [][]byte {
 // mergeUsage folds one Anthropic usage block into the stream's accounting.
 func (s *StreamState) mergeUsage(usage object) { s.usage = mergedClaudeUsage(s.usage, usage) }
 
-// mergedClaudeUsage folds one Anthropic usage block into the accounting already
-// held and returns what a stream should report.
-//
-// Anthropic reports the prompt side once, on message_start, and the output side
-// cumulatively, on message_delta, so a later block replaces only the members it
-// actually reports. Replacing the whole block would report a prompt of zero for
-// every Claude upstream, which is what the reference avoids by accumulating
-// (open-sse/translator/response/claude-to-openai.js). The rule is a property of
-// the wire rather than of one direction, so the passthrough stream folds through
-// here too instead of carrying its own copy.
+// mergedClaudeUsage folds one Anthropic usage block into the accounting already held
+// and returns what a stream should report. Anthropic reports the prompt side once, on
+// message_start, and the output side cumulatively, on message_delta, so a later block
+// replaces only the members it actually reports: replacing the whole block would
+// report a prompt of zero for every Claude upstream. The rule is a property of the
+// wire rather than of one direction, so the passthrough stream folds through here too
+// instead of carrying its own copy.
 func mergedClaudeUsage(current *schema.Usage, usage object) *schema.Usage {
 	parsed := ClaudeUsageToOpenAI(claudeUsageFromObject(usage))
 	if current == nil {

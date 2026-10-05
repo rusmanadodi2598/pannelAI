@@ -33,16 +33,13 @@ import (
 )
 
 // UsageLiveActive is one request the gateway is routing right now.
+// `started_at` exists for the panel's staleness guard: without it a request
+// still running and one whose marker the gateway never cleared are the same
+// row, and the node would stay lit forever.
 //
-// `started_at` is present because the panel's staleness guard reads it: without
-// it the panel could not tell a request still running from one whose marker the
-// gateway never cleared, and it would light a node forever.
-//
-// `combo` names the model combo the client addressed, and is empty when the
-// request addressed a single model. It travels beside `model` rather than
-// replacing it because the two are different facts about one call: the combo is
-// what the client named and the model is the member that answered, and SPEC-UI-001
-// §6.5 draws both stages of the path.
+// `combo` names the model combo the client addressed and is empty for a single
+// model. It sits beside `model`, not instead of it: the combo is what the
+// client named, the model is the member that answered.
 type UsageLiveActive struct {
 	ProviderID string `json:"provider_id"`
 	EndpointID string `json:"endpoint_id"`

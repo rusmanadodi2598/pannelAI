@@ -59,13 +59,10 @@ type liveUsageFixture struct {
 // newLiveUsageFixture builds the live route over the stack's real Redis and
 // PostgreSQL, wired the way the composition root wires it: one store instance
 // serves both the tracker that writes markers and the service that reads them.
-//
-// The tracker has to exist before the stack, because the stack's engine is what
-// opens the markers: building it afterwards would leave the engine writing
-// nothing and the stream reading an always-empty set, which is a pass that
-// proves nothing while looking green. The fixture therefore opens its own client
-// to the same Redis the stack uses, which is what the composition root does with
-// one client: the store is keyed by name, so two clients reach the same set.
+// The tracker is built before the stack because the stack's engine opens the
+// markers; built after, the engine writes nothing and the stream reads an always
+// empty set. The fixture opens its own client to the same Redis the stack uses:
+// the store is keyed by name, so two clients reach one set.
 func newLiveUsageFixture(t *testing.T, upstream *liveUpstream) liveUsageFixture {
 	t.Helper()
 	raw := os.Getenv(liveRedisEnv)

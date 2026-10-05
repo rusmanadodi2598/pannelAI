@@ -30,19 +30,12 @@ import (
 )
 
 // registryCapabilityNames is the capability set a registry model is filtered by:
-// what the document declares, plus what the resolver decides.
-//
-// Two sources, two jobs. The document's `capabilities:` list carries the media
-// operations (`edit`, `mask`, `text2img`), facts about a row an operator reads,
-// which no model-id pattern can know. The resolver carries `vision` and `tools`,
-// judgements about a model id that the document does not enumerate. Draft
-// 017 §4.4 measured what happens with only the first: both of the panel's two
-// filters answered zero rows across 507 registered models.
-//
-// Only `vision` is added as a name. `tools` is the resolver's floor, so emitting
-// it would add one string to nearly every row of the catalog to say nothing,
-// the filter still answers it, because matchesCatalogFilter asks the resolver
-// for the two modality names rather than reading this list for them.
+// the document's `capabilities:` list carries the media operations (`edit`,
+// `mask`, `text2img`), which no model-id pattern can know, while the resolver
+// owns the two modality names `vision` and `tools`. Only `vision` is added here:
+// `tools` is the resolver's floor, so emitting it would repeat one string across
+// nearly every catalog row to say nothing. The filter still answers `tools`,
+// because matchesCatalogFilter asks the resolver rather than reading this list.
 func registryCapabilityNames(providerID string, model registry.Model) domain.ModelCapabilities {
 	names := append([]string(nil), model.Capabilities...)
 	if registry.Capabilities(providerID, model.ID).Vision {

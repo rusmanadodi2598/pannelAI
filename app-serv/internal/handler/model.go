@@ -37,8 +37,8 @@ func NewModelHandler(catalog *service.ModelCatalogService) *ModelHandler {
 	return &ModelHandler{catalog: catalog}
 }
 
-// Catalog serves GET /api/v1/models/catalog with the §7.6 filters, including
-// the `active` boolean (draft 025): `true` narrows the answer to providers
+// Catalog serves GET /api/v1/models/catalog with the §7.6 filters, including the
+// `active` boolean: `true` narrows the answer to providers
 // holding an active endpoint, `false` narrows nothing, and any other spelling
 // is a VALIDATION_ERROR rather than a silently ignored filter.
 func (h *ModelHandler) Catalog(w http.ResponseWriter, r *http.Request) {
@@ -74,8 +74,7 @@ func (h *ModelHandler) Catalog(w http.ResponseWriter, r *http.Request) {
 // is the two lowercase spellings; an empty value reads as absent, which is the
 // house rule every other query parameter follows, and a misspelling like `yes`
 // or `1` is refused rather than silently narrowing nothing while reading as
-// narrowed (draft 025 F5, the same failure the usage status filter had before
-// it became a closed set).
+// narrowed.
 func decodeBoolFilter(raw string) (*bool, error) {
 	trimmed := strings.TrimSpace(raw)
 	switch trimmed {

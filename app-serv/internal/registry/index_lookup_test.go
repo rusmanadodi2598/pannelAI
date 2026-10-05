@@ -84,16 +84,14 @@ providers:
 	}
 }
 
-// TestIndex_AliasWinsOverAnotherProvidersID pins the precedence the reference
-// actually implements.
+// TestIndex_AliasWinsOverAnotherProvidersID pins the reference's precedence:
+// one flat alias table is built from every provider's `uiAlias || alias`, so a
+// name that is both a provider id and another provider's alias resolves to the
+// alias holder and leaves the other provider unreachable by that id.
 //
-// The reference resolves through one flat alias table built from every
-// provider's `uiAlias || alias`, so a name that is both a provider id and
-// someone else's alias resolves to the alias holder and leaves the other
-// provider unreachable by that id. The data forces the question: `mimo-free`
-// declares `alias: mmf` while a hidden entry has `id: mmf`. Id-first would
-// summon the hidden entry and change which provider answers "mmf/...", which is
-// a silent routing difference from the reference.
+// The data forces the question: `mimo-free` declares `alias: mmf` while a
+// hidden entry has `id: mmf`. Id-first would summon the hidden entry, a silent
+// routing difference from the reference.
 func TestIndex_AliasWinsOverAnotherProvidersID(t *testing.T) {
 	idx, err := loadFixture(t, `
 providers:

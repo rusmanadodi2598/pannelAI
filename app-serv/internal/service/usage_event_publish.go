@@ -145,17 +145,13 @@ func (p *UsageEventPublisher) Run(ctx context.Context) {
 	}
 }
 
-// drain publishes the events already queued at shutdown, under one bounded
-// deadline. Events that do not fit in the window are counted as dropped rather
-// than silently lost, and the loop never waits for a new arrival: the queue is
-// closed for business the moment Run is leaving.
-//
-// The deadline is derived from context.WithoutCancel(ctx) rather than from ctx:
-// Run only reaches here because ctx is already done, so a plain derivation would
-// abort the drain immediately and lose the very events this function exists to
-// flush. WithoutCancel keeps the context's values while dropping its
-// cancellation, which is exactly the intent and is why the fresh root is not
-// needed.
+// drain publishes the events already queued at shutdown under one bounded
+// deadline, and never waits for a new arrival: the queue is closed for business
+// once Run is leaving. Events that do not fit the window are counted rather than
+// silently lost. The deadline derives from context.WithoutCancel(ctx), not from
+// ctx, because Run only reaches here once ctx is done, so a plain derivation would
+// abort the drain at once and lose the very events this exists to flush.
+// WithoutCancel keeps the context's values while dropping its cancellation.
 func (p *UsageEventPublisher) drain(ctx context.Context) {
 	if ctx.Err() == nil {
 		// Defensive: drain is the shutdown path, and a caller that reached it

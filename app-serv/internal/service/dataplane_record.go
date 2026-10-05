@@ -57,28 +57,23 @@ func newDataPlaneRecorder(usage UsageRecorder, logs RequestLogRecorder, quotas *
 }
 
 // record writes one usage row and one request log for a call that reached an
-// upstream, whether it succeeded or failed.
-//
-// The bodies are left empty on purpose: the media plane's payloads are audio
-// bytes or multipart uploads rather than text, and the reference stores request
-// detail for chat only, so the capture setting has nothing to store here. The
-// error text is the fixed English message without its wrapped cause, because a
-// media URL can carry the credential as a query parameter (§8.1) and a stored
-// log must not hold a secret.
-//
+// upstream, whether it succeeded or failed. Bodies are left empty on purpose:
+// the media plane's payloads are audio bytes or multipart uploads rather than
+// text, so the capture setting has nothing to store here. The error text is the
+// fixed English message without its wrapped cause, because a media URL can carry
+// the credential as a query parameter and a stored log must not hold a secret.
 // A recording failure is never returned: the client already has its answer, and
-// failing a served call over bookkeeping would turn it into an error the client
-// cannot act on.
+// an accounting write cannot turn a served call into an unusable error.
 func (r dataPlaneRecorder) record(ctx context.Context, outcome dataplane.Outcome, keyID, costUSD string, latencyMS int64, failure error) {
 	if r.usage == nil && r.logs == nil && r.quotas == nil {
 		return
 	}
 	// The write outlives the client that asked for the call: a call that died
 	// mid-flight still did the work and still counted on its key, so losing its
-	// row left the two records disagreeing (draft 021 F6). The rule lives in
-	// this recorder rather than at each call site because every media-family
-	// service writes through it, and the detached context keeps the request's
-	// values so the rows still carry the router's request id.
+	// row left the two records disagreeing. The rule lives in this recorder
+	// rather than at each call site because every media-family service writes
+	// through it, and the detached context keeps the request's values so the
+	// rows still carry the router's request id.
 	ctx, cancel := accountingContext(ctx)
 	defer cancel()
 	requestID := requestIDOrNew(ctx, r.requestID, r.clock)
@@ -137,18 +132,12 @@ func requestLogStatus(status domain.UsageStatus) domain.RequestLogStatus {
 }
 
 // refuse writes the one request log row a call leaves when it was refused
-// before any upstream attempt (register G20), so a media or embeddings refusal
-// appears in the §7.13 Logs screen the way a chat refusal already does.
-//
-// No usage row is written: nothing was spent, and the usage aggregate requires a
-// provider and a model; that is the same deliberate skip the chat plane makes
-// for a call refused before the pipeline ran. The stored error text is the code
-// alone: the message is ours and the row must not hold text an upstream can
-// influence (the G6/G18 rule).
-//
-// The row outlives the client the same way a served call's pair does: the key
-// counter already counted the refusal, so dropping the row would leave the two
-// records disagreeing (draft 021 F6).
+// before any upstream attempt, so a media or embeddings refusal reaches the Logs
+// screen the way a chat refusal already does. No usage row is written: nothing
+// was spent and the aggregate requires a provider and a model, the same skip the
+// chat plane makes. The stored error text is the code alone; a stored row must
+// not hold text an upstream can influence. The row outlives the client like a
+// served call's pair, because the key counter already counted the refusal.
 func (r dataPlaneRecorder) refuse(ctx context.Context, outcome dataplane.Outcome, keyID string, failure error) {
 	if r.logs == nil || failure == nil {
 		return

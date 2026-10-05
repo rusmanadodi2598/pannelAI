@@ -118,16 +118,11 @@ func (r *GatewayKeyRepository) GetByID(ctx context.Context, id string) (domain.G
 
 // GetByValueHash loads one active key by its SHA-256 digest, which is how the
 // data plane authenticates a presented bearer token: the plaintext is hashed and
-// the digest is looked up, so the secret itself is never compared or stored.
-//
-// The active-and-not-revoked predicate lives in the query rather than in a check
-// after the load, so a disabled or revoked key cannot authenticate even if a
-// caller forgets to inspect the status. Revocation is the whole point of storing
-// a digest instead of a token.
-//
-// The lookup uses idx_gateway_keys_value_hash, which is what makes an
-// authentication check a single index probe rather than a table scan on every
-// proxied request.
+// the digest looked up, so the secret itself is never compared or stored.
+// The active-and-not-revoked predicate lives in the query, not in a check after
+// the load, so a disabled or revoked key cannot authenticate even if a caller
+// forgets to inspect the status. idx_gateway_keys_value_hash makes an auth check
+// one index probe rather than a table scan on every proxied request.
 func (r *GatewayKeyRepository) GetByValueHash(ctx context.Context, valueHash string) (domain.GatewayKey, error) {
 	const q = `SELECT ` + gatewayKeyColumns + `
 	  FROM gateway_keys

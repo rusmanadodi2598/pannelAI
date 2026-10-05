@@ -76,18 +76,13 @@ func splitMediaModel(model string) (string, string, error) {
 }
 
 // mediaFormatSupported reports whether the gateway speaks a provider's declared
-// media format for a kind.
-//
-// An empty declaration and `openai` are the OpenAI shape these routes build.
-// The provider-specific formats are the adapters ported in G5: Deepgram and
-// Gemini for speech-to-text, and NVIDIA NIM, Cartesia, ElevenLabs, MiniMax,
-// Inworld, PlayHT, Coqui, Tortoise, and Gemini for speech. Other formats are
-// refused by name instead of being sent a payload their API does not accept:
-// the reference has a per-provider adapter for each of those formats, and
-// reporting the gap is honest where a wrong-shaped call would look like an
-// upstream outage (G21 lists the ones that need a multi-step or signed request).
-// The search kind is exempt because its shape is built from the block's own
-// declarations (method, parameter names) rather than from a fixed payload.
+// media format for a kind. An empty declaration and `openai` are the OpenAI shape
+// these routes build. The named formats are ported per-provider adapters, and
+// the reference has one for each: deepgram and gemini-stt for STT, and nvidia-tts,
+// cartesia, elevenlabs, minimax-tts, inworld, playht, coqui, tortoise and
+// gemini-tts for TTS. Anything else is refused by name rather than sent a payload
+// its API does not accept, because a wrong-shaped call reads as an upstream
+// outage. Search is exempt: its shape comes from the block's own declarations.
 func mediaFormatSupported(kind domain.MediaKind, format string) bool {
 	if kind == domain.MediaKindSearch {
 		return true

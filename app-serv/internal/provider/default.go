@@ -62,19 +62,14 @@ func NewDefault(entry registry.Provider) *Default {
 // provider gets when nothing specialized is registered for it.
 func DefaultFactory(entry registry.Provider) Plugin { return NewDefault(entry) }
 
-// Endpoint builds the absolute URL to call.
-//
-// The registry stores a full chat URL rather than a base, because providers
-// disagree about where the path ends ("/v1/chat/completions",
-// "/v1/messages", a suffix with a query). So the join is "use the entry's URL,
-// appending what it declares" and there is no path guessing.
-//
-// One declaration changes that reading: an entry carrying a chat_path is saying
-// its base_url is a BASE, not an endpoint. A custom node stores
-// "https://host/v1" and relies on the path to complete it, and the reference's
-// BaseExecutor.buildUrl joins the two the same way. A Responses-format entry may
-// instead declare a complete responses_url, which takes precedence. A path-less
-// entry keeps the full-URL reading, which is what the embedded registry relies on.
+// Endpoint builds the absolute URL to call. The registry stores a full chat URL
+// rather than a base, because providers disagree about where the path ends, so the
+// join is "use the entry's URL and append what it declares" with no path
+// guessing. An entry that declares a chat_path is saying its base_url is a base
+// rather than an endpoint: that is how a custom node stores "https://host/v1" and
+// lets the path complete it. A Responses-format entry may declare a complete
+// responses_url instead, which wins; a path-less entry keeps the full-URL reading
+// the embedded registry relies on.
 func (d *Default) Endpoint(req Request, _ Credential) (string, error) {
 	transport := req.Provider.Transport
 
@@ -118,14 +113,12 @@ func joinPath(base, path string) string {
 	return strings.TrimSuffix(base, "/") + "/" + strings.TrimPrefix(path, "/")
 }
 
-// ApplyAuth places the credential on the request using the entry's declared
-// header and scheme.
-//
-// This is the one place the core would otherwise hardcode a bearer token, and
-// providers disagree widely: most read Authorization, Anthropic reads
-// x-api-key, and several read a different header per credential family
-// (an OAuth token versus a static key). The registry records that, so the rule
-// is data here rather than a branch per provider.
+// ApplyAuth places the credential on the request using the entry's declared header
+// and scheme. This is the one place the core would otherwise hardcode a bearer
+// token, and providers disagree widely: most read Authorization, Anthropic reads
+// x-api-key, and several read a different header per credential family (an OAuth
+// token versus a static key). The registry records that, so the rule is data here
+// rather than a branch per provider.
 func (d *Default) ApplyAuth(req *http.Request, cred Credential) error {
 	family, value, err := cred.Secret()
 	if err != nil {
@@ -134,11 +127,9 @@ func (d *Default) ApplyAuth(req *http.Request, cred Credential) error {
 	if value == "" {
 		// No credential material means the provider needs none, so nothing is
 		// sent. This is deliberately the generous reading: a `no_auth` provider is
-		// served by a zero-value Credential, so a strict reading would break
-		// every credential-free provider while turning a caller's forgotten
-		// credential into an indistinguishable case. The configuration mistake
-		// that actually matters is caught by authFor below, which refuses when
-		// the entry routes this family through a different header.
+		// served by a zero-value Credential, so refusing would break every
+		// credential-free provider. The mistake that matters is caught by authFor,
+		// which refuses a family this entry routes through a different header.
 		return nil
 	}
 
@@ -146,12 +137,11 @@ func (d *Default) ApplyAuth(req *http.Request, cred Credential) error {
 	if !found {
 		return fmt.Errorf("provider %s: this credential has no valid header for %s", d.ID, family)
 	}
-	// A declared header wins over a declared query parameter. The two are
-	// exclusive in practice, and an entry that carries both would otherwise put
-	// the secret in the URL, which is the surface that survives into an access
-	// log, a browser history and a Referer header. The header path is kept
-	// reachable for the providers that genuinely read a query parameter by simply
-	// declaring no header scheme.
+	// A declared header wins over a declared query parameter: the two are
+	// exclusive in practice, and an entry carrying both would put the secret in
+	// the URL, the surface that survives into an access log, a browser history
+	// and a Referer header. Providers that genuinely read a query parameter
+	// declare no header scheme.
 	header := strings.TrimSpace(auth.Header)
 	if header == "" {
 		if name := strings.TrimSpace(auth.AuthQuery); name != "" {
@@ -164,10 +154,9 @@ func (d *Default) ApplyAuth(req *http.Request, cred Credential) error {
 	}
 	scheme := strings.TrimSpace(auth.Scheme)
 	if scheme == "" && header == DefaultAuthHeader {
-		// The registry's documented default for a provider that declares no auth
-		// at all is Authorization + bearer, matching the reference's
-		// PROVIDER_DEFAULTS. Treating an undeclared scheme as raw would send a
-		// bare secret where every OpenAI-compatible API expects "Bearer ".
+		// The documented default for an entry that declares no auth at all is
+		// Authorization + bearer: treating an undeclared scheme as raw would send
+		// a bare secret where every OpenAI-compatible API expects "Bearer ".
 		scheme = DefaultAuthScheme
 	}
 
@@ -182,13 +171,12 @@ func (d *Default) ApplyAuth(req *http.Request, cred Credential) error {
 	return nil
 }
 
-// authFor picks the configuration for the credential family actually in use.
-//
-// A provider that declares a per-family header gets that one; otherwise the
-// shared configuration applies. The `found` result is false when the entry
-// declares a family-specific header for the OTHER family only, which means this
-// credential cannot be presented correctly rather than that it should be sent
-// with the wrong header.
+// authFor picks the configuration for the credential family actually in use: a
+// provider that declares a per-family header gets that one, otherwise the shared
+// configuration applies. `found` is false when the entry declares a
+// family-specific header for the OTHER family only, which means this credential
+// cannot be presented correctly rather than that it should be sent with the wrong
+// header.
 func (d *Default) authFor(family Family) (registry.AuthConfig, bool) {
 	auth := d.entry.Transport.Auth
 	switch family {

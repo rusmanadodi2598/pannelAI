@@ -33,20 +33,16 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
-// relayOnce handles one resolved provider: walk its credentials, translate,
-// call, and translate the answer back.
-//
-// The request is translated once, before any credential is spent: a translation
-// failure would repeat identically for every credential, so it fails the leg
-// with a zero outcome: no upstream call happened, so there is no identity to
-// record (draft 028 F3).
-//
-// Each credential that fails in a failover-worthy way is excluded and the next
-// healthy one is tried; a request-shaped refusal is handed back immediately,
-// because the same body would be refused identically everywhere (draft 028 F2).
-// When no credential remains, the leg reports the last in-leg failure with the
-// last attempted identity; when the very first selection is refused, it reports
-// the refusal with no identity at all.
+// relayOnce handles one resolved provider: walk its credentials, translate, call,
+// and translate the answer back. The request is translated once, before any
+// credential is spent, because a translation failure would repeat identically for
+// every credential: it fails the leg with a zero outcome, since no upstream call
+// happened and there is no identity to record. Each credential that fails in a
+// failover-worthy way is excluded and the next healthy one tried; a request-shaped
+// refusal is handed back immediately, because the same body would be refused
+// identically everywhere. When no credential remains the leg reports the last
+// in-leg failure with the last attempted identity, and when the very first selection
+// is refused it reports the refusal with no identity at all.
 func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolution, sink FrameSink) (Outcome, error) {
 	body, err := upstreamBody(in, resolution)
 	if err != nil {
@@ -122,7 +118,7 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 
 		// The marker opens once the credential is known and closes when this
 		// attempt ends, whichever way it ends, so the drawing lights a node for
-		// exactly as long as the provider is being called (SPEC-UI-001 §6.5).
+		// exactly as long as the provider is being called.
 		// The combo the client addressed travels with it: the member resolved here
 		// is what answered, and the combo is the stage the request entered through,
 		// so the drawing can light both. A nil seam returns a release that does
@@ -198,7 +194,7 @@ func (e *Engine) answer(
 	outcome.Body = body
 	// A streamed answer reports its usage through the outcome inside relayStream,
 	// and hands back no separate body: overwriting here would discard the numbers
-	// the upstream sent and record the call as 0/0 (draft 021 F5).
+	// the upstream sent and record the call as 0/0.
 	if usage != nil {
 		outcome.Usage = usage
 	}

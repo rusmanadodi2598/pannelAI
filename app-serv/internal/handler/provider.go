@@ -96,15 +96,11 @@ func (h *ProviderHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Models serves GET /api/v1/providers/{provider_id}/models.
 //
-// The body names where the list came from. A registry provider answers from the
-// embedded document; a custom node's list is read from its own upstream, and a
-// node whose upstream cannot answer falls back to what the registry holds with a
-// warning, never a 5xx, because a node whose upstream is down still routes.
-//
-// The `?suggested` parameter is gone. §7.4 used to name it and the embedded
-// registry never carried a suggestion flag, so it filtered nothing while the
-// body answered `suggested: true` for every row; the reference has no such
-// parameter either (draft 017 §4.5). `source` is what replaced it.
+// The body names where the list came from: a registry provider answers from the
+// embedded document, a custom node from its own upstream. A node whose upstream
+// cannot answer falls back to what the registry holds, with a warning and never a
+// 5xx, because a node whose upstream is down still routes. `?suggested` is not
+// supported; `source` is the field that replaced it.
 func (h *ProviderHandler) Models(w http.ResponseWriter, r *http.Request) {
 	providerID, ok := pathValue(w, r, "provider_id")
 	if !ok {

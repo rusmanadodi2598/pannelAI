@@ -19,7 +19,8 @@ import "context"
 
 type requestIDKey struct{}
 
-// With returns a context carrying the request id the middleware generated.
+// With stores the request id the middleware generated, under this package's own
+// key so no other package can collide with it.
 func With(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, requestIDKey{}, id)
 }

@@ -150,16 +150,12 @@ func (s *QuotaService) GetCap(ctx context.Context, endpointID string) (domain.Qu
 	return cap, true, nil
 }
 
-// Exhausted reports whether one endpoint has spent its budget cap, which is the
-// question the router asks before picking an endpoint (SPEC-API-001 §7.12).
-//
-// An endpoint with no stored cap is never exhausted: "uncapped" and "used up" are
-// different states, and treating a missing row as a zero cap would skip every
-// endpoint an operator never capped.
-//
-// The usage read is the month-to-date aggregate, which is what a cap is defined
-// against. It is read only when a cap exists, so an uncapped gateway does not pay
-// an aggregate query per selection.
+// Exhausted reports whether one endpoint has spent its budget cap, the question
+// the router asks before picking one. An endpoint with no stored cap is never
+// exhausted: "uncapped" and "used up" are different states, and reading a missing
+// row as a zero cap would skip every endpoint an operator never capped. The usage
+// read is the month-to-date aggregate a cap is defined against, taken only when a
+// cap exists so an uncapped gateway pays no aggregate query per selection.
 func (s *QuotaService) Exhausted(ctx context.Context, endpointID string) (bool, error) {
 	if endpointID == "" {
 		return false, nil

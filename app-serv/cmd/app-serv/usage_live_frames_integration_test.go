@@ -43,18 +43,13 @@ import (
 )
 
 // TestUsageLive_FrameCarriesARealRequestInFlight is the pass's central evidence:
-// a real data-plane call, through the real relay leg, over a real upstream, with
-// its marker read back off the real live route while the call is still running.
-//
-// The upstream holds its answer open on a channel, which is what makes the
-// interval observable: the frame is read between the request starting and the
-// upstream answering, so what it reports is a request genuinely in flight rather
-// than a marker written for a call that already finished.
-//
-// The call runs on its own goroutine and its result travels over a channel
-// rather than calling t.Fatalf: a failing assertion on a non-test goroutine does
-// not stop the test, and the release below has to run or the upstream would hold
-// the connection until the process exits.
+// a real data-plane call through the real relay leg and a real upstream, its
+// marker read off the real live route while the call is still running. The
+// upstream holds its answer open on a channel, so the frame lands between the
+// request starting and the upstream answering: a genuinely in-flight request, not
+// a marker for a call that finished. The call runs on its own goroutine and
+// reports over a channel, since t.Fatalf cannot fail a non-test goroutine;
+// close(release) must run or the upstream holds the socket until the process ends.
 func TestUsageLive_FrameCarriesARealRequestInFlight(t *testing.T) {
 	release := make(chan struct{})
 	upstream := newHoldingUpstream(t, release)

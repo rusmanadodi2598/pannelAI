@@ -104,17 +104,13 @@ func (f *QuotaFlusher) Run(ctx context.Context) {
 // and the running one drains the same counters.
 func (f *QuotaFlusher) FlushOnce(ctx context.Context) bool { return f.flushOnce(ctx) }
 
-// flushOnce drains one batch and persists it, in a panic-recovering goroutine
-// (AGENTS.md §1.6: a panic in an unrecovered goroutine kills the process).
-//
-// The flush itself is synchronous inside the goroutine; the goroutine exists so
-// a panic in the driver or in the policy code is contained and logged rather
-// than taking the binary down, and so the shape matches every other worker in
-// this service.
-//
-// The running guard is claimed BEFORE the goroutine starts and released by it,
-// so a second caller is refused immediately rather than after the first
-// completes.
+// flushOnce drains one batch and persists it inside a panic-recovering
+// goroutine: a panic in an unrecovered goroutine kills the whole process, so the
+// goroutine exists to contain and log one from the driver or the policy code, not
+// to run the flush concurrently, which stays synchronous inside it. This matches
+// every other worker shape in this service. The running guard is claimed BEFORE
+// the goroutine starts and released by it, so a second caller is refused
+// immediately rather than after the first completes.
 func (f *QuotaFlusher) flushOnce(ctx context.Context) bool {
 	if !f.running.CompareAndSwap(false, true) {
 		return false

@@ -31,7 +31,7 @@ type AuthHandler struct {
 
 // NewAuthHandler validates dependencies and returns an auth HTTP handler. The
 // trusted-proxy set decides which address the login limiter buckets a request
-// under; nil keeps every request on its direct peer (draft 042 R20).
+// under; nil keeps every request on its direct peer.
 func NewAuthHandler(auth *service.AuthService, cookie SessionCookieOptions, trustedProxies []*net.IPNet) *AuthHandler {
 	return &AuthHandler{auth: auth, cookie: cookie, proxies: trustedProxies}
 }
@@ -117,7 +117,7 @@ func (h *AuthHandler) RequireSession(next http.Handler) http.Handler {
 }
 
 // clientAddress answers which client the login limiter buckets this request
-// under, the same trusted-proxy rule the gateway limiter uses (draft 042 R20).
+// under, the same trusted-proxy rule the gateway limiter uses.
 func (h *AuthHandler) clientAddress(r *http.Request) string {
 	return clientip.Address(r.RemoteAddr, r.Header.Get("X-Forwarded-For"), h.proxies)
 }

@@ -80,20 +80,11 @@ func buildEgress(cfg config.Config, settings networkSettingsReader) (egress, err
 }
 
 // egressProxy builds the route selector the shared client calls once per
-// request (G4, SPEC-API-001 §7.11).
-//
-// Two rules make it more than a lookup:
-//
-//   - A proxied request still has its destination validated. The dialer's guard
-//     sees the proxy's address, never the destination's, so without this check
-//     enabling a proxy would switch the A01 policy off for every call.
-//   - A settings read or a proxy URL that fails refuses the request instead of
-//     dialing direct. Quietly bypassing a proxy an operator enabled is the
-//     failure this setting exists to prevent.
-//
-// The settings are read per request, the same per-call rule the §7.10 media
-// override follows, so a change takes effect on the next call, not the next
-// boot.
+// request. A proxied request still has its destination validated: the dialer's
+// guard sees the proxy's address, never the destination's. A settings read or a
+// proxy URL that fails refuses the request rather than dialing direct. The
+// settings are read per request, so a change takes effect on the next call, not
+// the next boot.
 func egressProxy(guard *netguard.Guard, settings networkSettingsReader) func(*http.Request) (*url.URL, error) {
 	return func(req *http.Request) (*url.URL, error) {
 		ctx := req.Context()

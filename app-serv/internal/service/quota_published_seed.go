@@ -21,18 +21,14 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
 
-// Seed arms one page of active accounts that have no scheduling row, then moves the cursor, so
-// successive ticks walk the whole fleet. This is the cheapest honest way to make a new endpoint
-// pollable: two bounded queries per tick, a page list and a batched existence read, whatever
-// the fleet size, so no tick scans every endpoint and the sweep's provider budget stays intact.
-// The existence test is free because the cache read's contract is that an endpoint with no state
-// row is absent from it.
-//
-// The row comes from RecordAttempt, the port's only row creator, stamped due at this instant so
-// the next sweep picks the account up inside its budget. Only families the registry marks
-// usage:true are armed; the rest would fill the queue with polls livePublishedUsage refuses
-// before dialling. Arming is one attempt per new endpoint because the port has no batch writer,
-// bounded by SeedPageSize per tick, a batched SeedScheduling is the follow-up.
+// Seed arms one page of active accounts with no scheduling row, then moves the
+// cursor so successive ticks walk the whole fleet: two bounded queries per tick, a
+// page list and a batched existence read, whatever the fleet size, so no tick
+// scans every endpoint and the sweep's provider budget stays intact. The existence
+// test is free because the cache read omits any endpoint with no state row. Rows
+// come from RecordAttempt, the port's only creator, one per endpoint as it has no
+// batch writer, stamped due now so the next sweep takes them in budget. Only
+// registry usage:true families are armed; others queue refused polls.
 func (w *QuotaPublishedWorker) Seed(ctx context.Context) int {
 	page := w.seedPage + 1
 	listCtx, cancel := context.WithTimeout(ctx, w.policy.StoreTimeout)

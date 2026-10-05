@@ -142,15 +142,12 @@ func (h *ChatHandler) serve(w http.ResponseWriter, r *http.Request, route datapl
 }
 
 // stream commits SSE headers only when the first frame is ready, so a failure
-// before that point is still an ordinary HTTP error a client can act on.
-//
-// After the first frame the status line cannot change, and the stream ends
-// without the terminal `[DONE]` frame. That is deliberate rather than an
-// omission: `[DONE]` is the client's only signal that the answer is complete,
-// so emitting it for a truncated answer would make a broken response
-// indistinguishable from a whole one. The client sees the read end instead,
-// which is the same thing a dropped provider connection looks like to the
-// gateway itself.
+// before that point is still an ordinary HTTP error a client can act on. After
+// the first frame the status line cannot change, and the stream ends without the
+// terminal `[DONE]` frame: `[DONE]` is the client's only signal that the answer
+// is complete, so emitting it for a truncated answer would make a broken
+// response indistinguishable from a whole one. The client sees the read end
+// instead, which is what a dropped provider connection looks like here.
 func (h *ChatHandler) stream(w http.ResponseWriter, r *http.Request, request dataplane.Request, keyID string) {
 	sink := newSSESink(w)
 	if _, err := h.chat.Relay(r.Context(), request, sink, keyID); err != nil && !sink.wrote() {

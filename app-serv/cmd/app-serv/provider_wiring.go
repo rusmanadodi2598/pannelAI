@@ -29,39 +29,26 @@ import (
 )
 
 // buildProviderRuntime loads the embedded registry and installs the plugin
-// registry, returning both for the layers that resolve provider ids.
-//
-// The two are distinct on purpose: the registry is data (which providers exist,
-// and how to reach them) while the connectors are behaviour (the code that
-// speaks a protocol the gateway does not translate itself). A provider needs a
-// connector only when the format is not natively translated, which is why the
-// unsupported list is logged here: it is the remaining work made visible, not a
-// silent gap.
-//
-// egressClient is the guarded client the egress policy built (foundation
-// wiring), so a connector's own outbound calls, the Qoder Personal Access
-// Token exchange above all, ride the same allowlist every other upstream call
-// does (draft 042 R07). It is why the foundation is built before this in the
-// boot sequence.
-//
-// Specialized connectors are registered by appending to the argument list below.
-// Each is independent, so adding or fixing a provider touches one line there and
-// nothing else.
+// registry, returning both for the layers that resolve provider ids. The registry
+// is data, the connectors behaviour: a provider needs a connector only when its
+// format is not natively translated, and one still missing is logged, not fatal.
+// egressClient is the guarded client the egress policy built, so a connector's
+// own outbound calls, the Qoder Personal Access Token exchange above all, ride
+// the same allowlist as every other upstream call. That is why the egress
+// foundation is wired before this in the boot sequence.
 func buildProviderRuntime(egressClient *http.Client) (*registry.Index, *provider.Connectors, error) {
 	idx, err := registry.Load()
 	if err != nil {
 		return nil, nil, fmt.Errorf("provider registry: %w", err)
 	}
 
-	// Specialized connectors are registered here. A provider that needs its
-	// outbound request rewritten, or that only answers a stream, cannot be served
-	// by provider.Default, so it needs an entry in this list. Each is independent,
-	// which is what makes a provider patchable in isolation.
-	// The OpenCode family shares one connector because it shares one upstream
-	// protocol: the free lane, the PAYG lane, and the subscription lane differ in
-	// credential and endpoint table, not in how a request is shaped. Each entry is
-	// registered by name, and the connector reads the entry it was built for, so a
-	// lane added to the registry is one line here.
+	// Specialized connectors are registered here: a provider whose outbound
+	// request must be rewritten, or that only answers a stream, cannot be served
+	// by provider.Default. Each entry is independent, so a provider stays
+	// patchable in isolation. The OpenCode lanes (free, PAYG, subscription) share
+	// one connector because they share one upstream protocol, differing only in
+	// credential and endpoint table. Each is registered by name and the connector
+	// reads the entry it was built for, so a new lane is one line here.
 	plugins := make([]provider.Plugin, 0, 7)
 	for _, id := range []string{"opencode", "opencode-zen", "opencode-go"} {
 		entry, ok := idx.Provider(id)

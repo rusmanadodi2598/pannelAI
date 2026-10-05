@@ -88,15 +88,13 @@ func (k QuotaWindowKind) NextReset(now time.Time) time.Time {
 }
 
 // AccountingKinds are the windows one served request bills against, in the
-// order they are written. A request advances every window it falls inside, so
-// the five-hour, daily, weekly, and monthly counters stay comparable: reporting
-// only the narrowest would make the panel's monthly total disagree with the
-// month-to-date figure the budget cap is compared against (§7.12).
-//
-// The set is fixed rather than configurable per provider because the spec fixes
-// the four kinds (SPEC-API-001 §6 CHECK constraint). A number the provider
-// publishes about itself is not one of these counters: it is a PublishedWindowRow
-// in the published cache, and the two are never summed together.
+// order they are written. A request advances every window it falls inside, so the
+// four counters stay comparable and the panel's monthly total matches the
+// month-to-date figure the budget cap is compared against. The set is fixed, not
+// configurable per provider, because the schema CHECK constraint fixes these four
+// kinds. A number the provider publishes about itself is not one of these
+// counters: it is a PublishedWindowRow in the published cache, and the two are
+// never summed together.
 func AccountingKinds() []QuotaWindowKind {
 	return []QuotaWindowKind{QuotaWindowFiveHour, QuotaWindowDaily, QuotaWindowWeekly, QuotaWindowMonthly}
 }

@@ -26,13 +26,11 @@ import (
 	"strings"
 )
 
-// Family is which kind of credential an account holds. It is decided once, from
-// the account's own auth type, because a provider may read a different header
-// per family: choosing the header and choosing the value separately is how an
-// OAuth token ends up in a static-key header.
-//
-// It is exported because the caller assembling a credential lives in the data
-// plane, not in this package.
+// Family is which kind of credential an account holds, decided once from the
+// account's own auth type: a provider may read a different header per family, so
+// choosing the header and the value separately is how an OAuth token ends up in a
+// static-key header. It is exported because the caller assembling a credential
+// lives in the data plane, not in this package.
 type Family int
 
 const (
@@ -60,19 +58,14 @@ func (f Family) String() string {
 	}
 }
 
-// Credential is what one upstream account presents to its provider. It is the
-// single shape every auth family reduces to, so the core never branches on
-// which family is in use.
-//
-// Exactly ONE of the two secrets may be held, and the fields are unexported so
-// that is a property of the value rather than a paragraph a caller can read and
-// ignore: every way in is a constructor, and Secret is the only way out. A
-// provider that routes OAuth through one header and static keys through another
-// would otherwise be given two contradictory signals, and whichever check ran
-// first would decide the placement while the other decided the value.
-//
-// The plaintext exists for the duration of one request only. It is assembled
-// from encrypted storage by the caller and never persisted here.
+// Credential is what one upstream account presents to its provider: the single
+// shape every auth family reduces to, so the core never branches on which family
+// is in use. Exactly ONE of the two secrets may be held, and the fields are
+// unexported so that is a property of the value rather than a paragraph a caller
+// can read and ignore: every way in is a constructor, Secret is the only way out.
+// Holding both gives a provider that reads a different header per family two
+// contradictory signals. The plaintext exists for one request only, assembled from
+// encrypted storage by the caller and never persisted here.
 type Credential struct {
 	// endpointID and keyID identify the account and, for a multi-key endpoint,
 	// the exact key that was picked. They are what accounting records and what
@@ -167,14 +160,12 @@ func (c Credential) FamilyKind() Family { return c.family }
 // writer and its reader agree on.
 func (c Credential) MetadataValue(key string) string { return c.metadata[key] }
 
-// Secret reports which credential this account presents and its value, and
-// refuses an account holding both. An explicitly declared family wins; otherwise
-// the single populated field decides.
-//
-// Both secrets populated is refused rather than resolved: they mean different
-// things to a provider that reads a different header per family, so an account
-// holding both has no correct answer, and choosing one silently would route a
-// request under a credential its owner never meant to present.
+// Secret reports which credential this account presents and its value, and refuses
+// an account holding both. An explicitly declared family wins; otherwise the single
+// populated field decides. Both secrets populated is refused rather than resolved:
+// a provider that reads a different header per family has no correct answer for
+// such an account, and choosing one silently would route a request under a
+// credential its owner never meant to present.
 func (c Credential) Secret() (Family, string, error) {
 	if c.apiKey != "" && c.accessToken != "" {
 		return FamilyUnset, "", ambiguousCredentialError(c.endpointID, c.keyID)
@@ -203,12 +194,10 @@ func (c Credential) HasCredential() bool {
 	return err == nil && value != ""
 }
 
-// String names the account without naming the credential.
-//
-// The plaintext exists for the length of one request, and the way it escapes is a
-// debug print, a test failure dumping the struct, or a `%+v` in a log line someone
-// adds later. Printing the identity fields keeps the line useful and removes the
-// reason it would be dangerous.
+// String names the account without naming the credential. The plaintext escapes
+// through a debug print, a test failure dumping the struct, or a `%+v` in a log
+// line someone adds later, so this prints the identity fields and redacts the
+// secrets.
 func (c Credential) String() string {
 	return "provider.Credential{EndpointID: " + c.endpointID +
 		", KeyID: " + c.keyID +

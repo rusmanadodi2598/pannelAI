@@ -129,19 +129,14 @@ func (s *VisionAdapterService) Get(ctx context.Context) (domain.VisionAdapter, e
 	return s.repo.Get(ctx)
 }
 
-// Replace swaps the whole configuration (§7.8 PUT).
-//
-// Every model must be a catalog model, the panel's picker draws from the
-// catalog, so a value outside it is a client bug worth reporting, and the
-// capability predicate must accept it. The catalog check runs first so an
-// unknown model reports "unknown" rather than "not vision-capable", which is
-// the more actionable of the two.
-//
-// A model the chat plane cannot serve is refused before the capability check:
-// the adapter prepends its models to an image-bearing request, so an adapter
-// entry on a provider with no chat translator or on a media row would turn
-// every image request it is meant to save into a routing failure (draft 024
-// §3.4).
+// Replace swaps the whole configuration. Every model must be a catalog model, since
+// the panel's picker draws from the catalog and a value outside it is a client bug
+// worth reporting, and the capability predicate must accept it. The catalog check
+// runs first so an unknown model reports "unknown" rather than "not
+// vision-capable", the more actionable of the two. A model the chat plane cannot
+// serve is refused before the capability check: the adapter prepends its models to
+// an image-bearing request, so an entry on a provider with no chat translator, or
+// on a media row, turns every image request it meant to save into a routing failure.
 func (s *VisionAdapterService) Replace(ctx context.Context, enabled, roundRobin bool, models []domain.ModelRef) (domain.VisionAdapter, error) {
 	for _, ref := range models {
 		exists, err := s.catalog.ModelExists(ctx, ref)

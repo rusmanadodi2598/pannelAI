@@ -30,7 +30,7 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
-// Retry defaults, applied when a registry entry declares none (SPEC-API-001 §4).
+// Retry defaults, applied when a registry entry declares none.
 const (
 	// DefaultAttempts is the documented `max_attempts: 3` default.
 	DefaultAttempts = 3
@@ -77,14 +77,12 @@ type RetryDecision struct {
 	After time.Duration
 }
 
-// DecideRetry applies the retry policy for one target (SPEC-API-001 §4).
-//
-// The plugin answers "is this outcome worth retrying at all" and the registry
-// entry answers "how many attempts this provider allows", so a provider that
-// reports its own transient status and a provider capped at a single attempt both
-// work without a branch here. A transport failure presents the transient status
-// the plugin classifies, because it carries no status of its own and is exactly
-// the case §4 lists alongside 429 and 5xx.
+// DecideRetry applies the retry policy for one target. The plugin answers whether
+// the outcome is worth retrying at all and the registry entry answers how many
+// attempts that provider allows, so a provider reporting its own transient status and
+// a provider capped at a single attempt both work without a branch here. A transport
+// failure carries no status of its own, so it is presented as the transient status
+// the plugin classifies, alongside 429 and 5xx.
 func DecideRetry(entry registry.Provider, plugin provider.Plugin, attempt Attempt) RetryDecision {
 	if plugin == nil {
 		return RetryDecision{}
@@ -155,16 +153,13 @@ func Backoff(retries int) time.Duration {
 	return time.Duration(rand.Int64N(int64(window) + 1)) //nolint:gosec // jitter, not a secret
 }
 
-// retryWait is the pause before the next attempt of one status for one entry.
-//
-// An entry that declares no backoff base retries on the shared sub-second
-// full-jitter ladder, every provider keeps its current behavior. An entry that
-// declares one (Qoder, whose free-model pool answers "all backends failed" and
-// serves the same request seconds later) spaces retries by a floored exponential
-// built from that base: the floor is what makes the retry useful, because a wait
-// drawn uniformly from zero could fire straight back into the same fail-streak
-// and change nothing. The window still doubles per attempt and is bounded, so a
-// genuinely dead upstream cannot park a request.
+// retryWait is the pause before the next attempt of one status for one entry. An
+// entry that declares no backoff base uses the shared sub-second full-jitter ladder.
+// An entry that declares one (Qoder's free-model pool answers "all backends failed"
+// and serves the same request seconds later) spaces retries by a floored exponential
+// built from that base: a wait drawn uniformly from zero could fire straight back
+// into the same fail-streak and change nothing. The window still doubles per attempt
+// and is bounded, so a genuinely dead upstream cannot park a request.
 func retryWait(entry registry.Provider, status, retries int) time.Duration {
 	base, ok := entry.Transport.Retry.BackoffBase(status)
 	if !ok {
@@ -181,9 +176,8 @@ func retryWait(entry registry.Provider, status, retries int) time.Duration {
 	return time.Duration(half + rand.Float64()*half)
 }
 
-// RetryableStatuses lists the statuses §4 names as retryable, so a test can
-// assert the policy against the documented set instead of against the plugin's
-// own answer.
+// RetryableStatuses lists the statuses the policy names as retryable, so a test can
+// assert it against the documented set rather than the plugin's own answer.
 func RetryableStatuses() []int {
 	return []int{
 		http.StatusTooManyRequests,

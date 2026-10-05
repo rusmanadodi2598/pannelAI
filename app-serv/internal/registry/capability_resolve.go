@@ -34,10 +34,9 @@ import "strings"
 // control reads. It is a value, so it compares with == and a test can state an
 // expectation as a literal.
 //
-// The reference resolves eleven fields (modalities, reasoning, search, limits,
-// thinking wire format). Only these are ported, because they are the ones a
-// caller reads: vision and tools are the two §7.6 offers as filters, and the
-// reasoning trio is what the reasoning control (§7.14) and the relay path need.
+// The reference resolves eleven fields; only the ones a caller reads are
+// ported: vision and tools, which the catalog filter offers, and the reasoning
+// trio the reasoning control and the relay path need.
 type CapabilitySet struct {
 	// Vision reports whether the model reads images.
 	Vision bool
@@ -66,20 +65,14 @@ type CapabilitySet struct {
 	EffortSupported bool
 }
 
-// Capabilities answers every question the resolver owns for one model.
+// Capabilities answers every question the resolver owns for one model, in the
+// reference's order: exact id, then the ordered pattern table, then the floor.
+// The provider argument exists because that order takes one; at the pinned
+// revision the provider layer changes no answer for a declared model, and the
+// corpus test fails by name if that stops holding.
 //
-// The order is the reference's (capabilities.js getCapabilitiesForModel): the
-// exact-id layer first, then the ordered pattern table, then the floor. The
-// provider argument is accepted because the reference's resolution order takes
-// one, and the corpus test asserts that at the pinned revision the provider
-// layer changes neither answer for any model the registry declares. When that
-// stops being true, that test fails by name and the layer is ported then.
-//
-// An id nothing matches answers the floor: reads no images, calls tools, and
-// does not reason. That direction is deliberate for the same reason
-// VisionCapable's is: the caller uses vision to refuse a configuration, so
-// guessing "capable" would let an operator wire a text-only model into the
-// vision adapter and discover it when an image request fails upstream.
+// An id nothing matches answers the floor: no images, tools, no reasoning. The
+// caller refuses configurations on vision, so "capable" is the unsafe guess.
 func Capabilities(provider, modelID string) CapabilitySet {
 	floor := CapabilitySet{Vision: false, Tools: true, CanDisable: true}
 	id := strings.ToLower(strings.TrimSpace(modelID))
@@ -172,13 +165,11 @@ func visionFor(base, full string) bool {
 	return false
 }
 
-// Has reports whether the set carries a capability, by the names §7.6 offers.
-//
-// A name outside the set answers false rather than erroring: the catalog's
-// capability parameter is an open string (app-ui/src/lib/schemas/model.ts:52-55
-// states the API's vocabulary is any string a model declares), and the media
-// strings `edit`, `mask`, and `text2img` come from the document rather than from
-// this resolver, so the caller checks those against the declared set.
+// Has reports whether the set carries a capability, by the two names the
+// catalog filter offers. A name outside them answers false rather than
+// erroring: the filter's parameter is an open string, and the media names
+// `edit`, `mask`, and `text2img` come from the document rather than this
+// resolver, so the caller checks those against the declared set.
 func (c CapabilitySet) Has(name string) bool {
 	switch strings.ToLower(strings.TrimSpace(name)) {
 	case "vision":

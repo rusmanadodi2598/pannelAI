@@ -94,19 +94,14 @@ type PublishedUsage struct {
 }
 
 // PublishedUsage reads what the provider of one connection publishes about its own
-// allocation, cache-first: the number the poll worker stored is the number this route
-// serves, because asking the provider during a screen read is the fan-out this route
-// refuses (AGENTS.md §1.7, and the owner's standing rule for this screen).
-//
-// `force` is the operator's explicit override, one live call for one connection, the
-// same seam the reference's per-card refresh uses. It is opt-in per press rather than
-// what the page does on load, so a screen of a hundred accounts costs one provider
-// call only when someone asks for exactly that account's instant.
-//
-// A provider that declares no usage endpoint, or an account with no credential to ask
-// with, is a refusal the operator can act on; a provider that answers with an error or
-// nothing at all is a soft message, because the reference renders that sentence on the
-// card rather than failing the page.
+// allocation, cache-first: the number the poll worker stored is the number this
+// route serves, because asking providers inside a screen read is the fan-out this
+// route refuses. `force` is the operator's explicit override, one live call for one
+// connection, opt-in per press rather than on load, so a screen of a hundred
+// accounts costs a provider call only when one is asked for. A provider with no
+// usage endpoint, or an account with no credential, is a refusal the operator can
+// act on; a provider that errors or answers nothing is a soft message on the card,
+// not a failed page.
 func (s *QuotaService) PublishedUsage(ctx context.Context, endpointID string, force bool) (PublishedUsage, error) {
 	if s.usageFetch == nil || s.providers == nil || s.sealer == nil {
 		return PublishedUsage{}, domain.NewInternalError("published quota is not wired")

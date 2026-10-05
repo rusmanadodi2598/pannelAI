@@ -32,7 +32,7 @@ import (
 
 // qoderCatalogFixture is the vendor's model list, reduced to the two entries a test
 // needs. The shape, a `chat` array of objects carrying key, is_reasoning and
-// max_output_tokens, is what the live service answered (draft 036 §5).
+// max_output_tokens, is what the live service answered.
 const qoderCatalogFixture = `{"chat":[
  {"key":"ultimate","format":"openai","source":"system","is_vl":true,"is_reasoning":true,"max_output_tokens":16384,"vendor":"qoder"},
  {"key":"auto","format":"openai","source":"system","is_reasoning":false}

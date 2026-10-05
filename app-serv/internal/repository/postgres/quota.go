@@ -84,17 +84,14 @@ func (r *QuotaRepository) ListWindows(ctx context.Context, endpointID string) ([
 	return windows, nil
 }
 
-// UpsertWindows persists a flushed batch in one statement.
-//
-// The row is the durable record, and the flush overwrites `used_units` rather
-// than adding to it: the Redis counter is authoritative until it is cleared, so
-// an incremental update here would double-count a batch that is retried after a
-// partial failure. `resets_at` and `source` are carried through unchanged except
-// where the caller supplied them.
-//
-// "window" is quoted because it is a reserved word in PostgreSQL. `updated_at`
-// is not in the column list: the migration defaults it to now(), and the
-// conflict path sets it explicitly.
+// UpsertWindows persists a flushed batch in one statement. The row is the
+// durable record and the flush overwrites `used_units` rather than adding to it:
+// the Redis counter is authoritative until cleared, so an incremental update
+// would double-count a batch retried after a partial failure. `resets_at` and
+// `source` carry through unchanged except where the caller supplied them.
+// "window" is quoted because it is a PostgreSQL reserved word. `updated_at` is
+// not in the column list: the migration defaults it to now() and the conflict
+// path sets it explicitly.
 func (r *QuotaRepository) UpsertWindows(ctx context.Context, windows []domain.QuotaWindow) error {
 	if len(windows) == 0 {
 		return nil

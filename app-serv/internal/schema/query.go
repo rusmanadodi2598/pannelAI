@@ -28,7 +28,10 @@ type CatalogListQuery struct {
 	Query      string `json:"q,omitempty" validate:"omitempty,max=200"`
 }
 
-// ProviderNodeListQuery is the narrowed view of GET /api/v1/provider-nodes.
+// ProviderNodeListQuery is the narrowed view of GET /api/v1/provider-nodes. Its
+// one filter is a node type: unlike CatalogListQuery's capability, that set is
+// closed, one spelling per wire format the gateway can translate, so this schema
+// bounds the length and leaves the vocabulary to domain.NodeType.
 type ProviderNodeListQuery struct {
 	Type string `json:"type,omitempty" validate:"omitempty,max=32"`
 }

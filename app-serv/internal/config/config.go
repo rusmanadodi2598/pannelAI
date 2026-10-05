@@ -67,8 +67,8 @@ type Config struct {
 	ProxyTestURL string
 	// TrustedProxies is the parsed TRUSTED_PROXY_CIDRS list: the peers whose
 	// X-Forwarded-For chains the rate limiters may read to bucket a request by
-	// its real client (draft 042 R20). Empty, the default, means no proxy is
-	// trusted and every request is bucketed by its direct peer.
+	// its real client. Empty, the default, means no proxy is trusted and every
+	// request is bucketed by its direct peer.
 	TrustedProxies []*net.IPNet
 }
 

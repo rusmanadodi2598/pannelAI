@@ -76,15 +76,11 @@ func (e *Engine) translateFolded(upstream *Upstream, resolution Resolution, in R
 }
 
 // foldStopSequences answers whether the fold itself should cut the answer to the
-// caller's stop sequences.
-//
-// An Anthropic client is cut after translation instead. The fold produces the
-// upstream's own OpenAI-shaped body, and a marker removed there is gone before the
-// Anthropic answer is built, so the text would be cut correctly while the answer
-// still claimed `stop_reason: "end_turn"` with no `stop_sequence`, which is the one
-// thing that wire has a field to say. Measured live on 2026-09-30: cutting in the
-// fold produced exactly that half-truth, so the cut moved to the shape that can
-// report it whole.
+// caller's stop sequences. An Anthropic client is cut after translation instead:
+// the fold produces the upstream's own OpenAI-shaped body, so a marker removed
+// there is gone before the Anthropic answer is built, and that answer would report
+// `stop_reason: "end_turn"` with no `stop_sequence`, the one field the wire has for
+// saying the text was cut.
 func foldStopSequences(in Request) []string {
 	if in.ClientFormat == schema.FormatAnthropic {
 		return nil

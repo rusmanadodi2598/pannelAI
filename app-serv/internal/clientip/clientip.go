@@ -77,15 +77,13 @@ func parseEntry(entry string) (*net.IPNet, error) {
 }
 
 // Address answers which client address the request is bucketed under. It takes
-// the request's own address and its forwarded chain as plain values, so the
-// package carries no HTTP types and a caller that only has a peer and a header
-// string can ask the same question. A peer that is not a trusted proxy is
-// answered with itself and the chain is never read. A trusted proxy's chain is
-// walked right to left, and the rightmost hop that is not itself trusted is the
-// client, the one address in the chain nobody downstream of a trusted proxy
-// could have forged. A chain of nothing but trusted hops falls back to the
-// peer, so the bucket always names an address the operator can hold
-// accountable.
+// the peer address and the forwarded chain as plain values, so the package
+// carries no HTTP types. A peer that is not a trusted proxy is answered with
+// itself and the chain is never read. A trusted proxy's chain is walked right to
+// left and the rightmost hop that is not itself trusted is the client, the one
+// address in the chain nobody downstream of a trusted proxy could have forged. A
+// chain of nothing but trusted hops falls back to the peer, so the bucket always
+// names an address the operator can hold accountable.
 func Address(remoteAddr, forwardedFor string, trusted []*net.IPNet) string {
 	peer := remoteHost(remoteAddr)
 	ip := net.ParseIP(peer)

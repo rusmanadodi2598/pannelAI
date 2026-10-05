@@ -64,17 +64,12 @@ const zeroCost = "0.00000000"
 
 // CalculateCost applies the reference's formula to already-resolved rates. It
 // is exported so the formula can be tested against the reference's own numbers
-// without going through the resolver, and so a caller holding a rate for
-// another reason (a stored override, a future provider-reported price) prices a
-// call the same way the resolver path does.
+// and so a caller holding rates another way, a stored override or a reported
+// price, prices a call as the resolver path does. Every term is a rational and
+// the sum renders at the column's scale, so a six-decimal rate cannot drift.
 //
-// The arithmetic is exact: every term is a rational, and the sum is rendered at
-// the column's scale. Nothing here is a float, so a rate with a six-decimal
-// tail (several real entries have one) cannot drift on the way to the row.
-//
-// A sum of zero renders as the media plane's own "no cost" spelling rather
-// than at the column's scale, so "this call cost nothing" reads the same
-// whichever accounting site wrote it.
+// A zero sum renders as the media plane's "no cost" spelling, the same from
+// every accounting site.
 func CalculateCost(tokens TokenCounts, rates Rate) string {
 	total := new(big.Rat)
 
@@ -140,5 +135,5 @@ func ratToDecimal(value *big.Rat) string {
 	return value.FloatString(decimalScale)
 }
 
-// decimalScale matches the cost column's scale (SPEC-API-001 §6).
+// decimalScale matches the cost column's scale.
 const decimalScale = 8

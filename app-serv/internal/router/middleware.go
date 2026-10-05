@@ -150,7 +150,6 @@ type responseRecorder struct {
 	requestID string
 }
 
-// RequestID answers the handler-side seam; see schema.RequestIDCarrier.
 func (rec *responseRecorder) RequestID() string { return rec.requestID }
 
 // SetErrorCode records the code of an error response, so the access log line can

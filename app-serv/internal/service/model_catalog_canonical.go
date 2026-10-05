@@ -149,26 +149,16 @@ func (v referenceView) resolvesIn(ref domain.ModelRef) bool {
 	return entry.PassthroughModels || entry.Custom
 }
 
-// chatServable answers whether a catalog reference can be served by the chat
-// data plane, and the sentence naming why not when it cannot. It is the
-// write-time half of the property the §7.15 list already holds: a model listed
-// there is answerable, and a reference the router would refuse must not save.
-//
-// Three refusals exist, and each is the router's own answer rather than a rule
-// invented here:
-//
-//   - the first segment names no provider, so every request to it answers
-//     MODEL_NOT_FOUND;
-//   - the provider's wire format has no translator, so every request answers
-//     PROVIDER_NOT_ROUTABLE;
-//   - the provider declares models and does not pass ids through, and the id is
-//     not among them, so the request answers MODEL_NOT_FOUND;
-//   - the row is a media model (`kind` image/tts/stt/embedding/...), which the
-//     chat selector never reaches.
-//
-// A declared chat model, an undeclared id on a passthrough provider, and a
-// custom node's id are all servable: the rule must not widen into refusing what
-// routing accepts.
+// chatServable answers whether a catalog reference can be served by the chat data
+// plane, and the sentence naming why not. It is the write-time half of a rule the
+// active list already holds: a model listed there is answerable, so a reference
+// the router would refuse must not save. Every refusal is the router's own answer
+// rather than a rule invented here: a first segment naming no provider, and an
+// undeclared id on a provider that does not pass ids through, both answer
+// MODEL_NOT_FOUND; an untranslated wire format answers PROVIDER_NOT_ROUTABLE; a
+// media kind (image, tts, stt, embedding) never reaches the chat selector. A
+// declared chat model, an undeclared id on a passthrough provider, and a custom
+// node's id are all servable: the rule must not refuse what routing accepts.
 func (v referenceView) chatServable(ref domain.ModelRef) error {
 	entry, ok := v.providerFor(ref.ProviderID())
 	if !ok {

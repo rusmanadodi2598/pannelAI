@@ -88,21 +88,14 @@ func (s *OAuthFlowService) connectAccount(ctx context.Context, providerID string
 	return OAuthConnect{Endpoint: endpoint, Created: true, TokenHint: hint, RedirectBase: origin}, nil
 }
 
-// accountLabel names a freshly created OAuth account.
-//
-// A vendor that stated an identity gives the new row that identity's own name. A vendor
-// that stated nothing, a state round whose token answer carries only tokens, which is
-// how CodeBuddy answers, gets the smallest `Account N` its provider does not already
-// use, because the store enforces UNIQUE (provider_id, label)
-// (migrations/000005_upstream_endpoints.up.sql:29) and a name already taken would turn a
-// login the vendor granted into an insert error. Counting rows instead of reading their
-// names is the bug: delete `Account 1` and the next login recomputes `Account 2`, which
-// the surviving second account already holds. The reference labels the same way
-// (`connectionsRepo.js:181`, "Account N") but has no unique index to trip over.
-//
-// The scan window is the selector's own ceiling for one provider
-// (`dataplane.MaxEndpointsPerProvider`), so the names of every row that can be routed are
-// read here, and a free name always exists inside it plus one.
+// accountLabel names a freshly created OAuth account. A vendor that stated an
+// identity gets that identity's own name; one that stated nothing, a state round
+// returning only tokens (how CodeBuddy answers), gets the smallest `Account N`
+// the provider does not already use: the store enforces UNIQUE (provider_id,
+// label), so a taken name turns a granted login into an insert error. Names are
+// read, never counted from the row total, because deleting `Account 1` would make
+// the next login recompute a name a surviving account already holds. The scan
+// window is dataplane.MaxEndpointsPerProvider, so a free name always exists in it.
 func (s *OAuthFlowService) accountLabel(ctx context.Context, providerID string, account domain.EndpointAccount) (string, error) {
 	if account.HasIdentity() {
 		return defaultOAuthLabel(account), nil

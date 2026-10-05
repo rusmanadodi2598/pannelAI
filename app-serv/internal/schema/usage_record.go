@@ -46,17 +46,17 @@ type UsageRecordList struct {
 }
 
 // UsageRecordDetailResponse is one record joined with its captured log when
-// capture is on (SPEC-API-001 §7.12). CaptureEnabled is always present so the
-// panel can say "capture is off" instead of rendering an empty body area.
+// capture is on. CaptureEnabled is always present so the panel can say "capture
+// is off" instead of rendering an empty body area.
 type UsageRecordDetailResponse struct {
 	Usage          UsageRecordResponse `json:"usage"`
 	CaptureEnabled bool                `json:"capture_enabled"`
 	Log            *LogDetailResponse  `json:"log,omitempty"`
 }
 
-// QuotaWindowResponse is one quota window (SPEC-API-001 §7.12). Limit is a
-// pointer because a window with no configured ceiling has none, which is not
-// the same as a ceiling of zero.
+// QuotaWindowResponse is one quota window. Limit is a pointer because a window
+// with no configured ceiling has none, which is not the same as a ceiling of
+// zero.
 type QuotaWindowResponse struct {
 	EndpointID string  `json:"endpoint_id"`
 	ProviderID string  `json:"provider_id"`
@@ -67,19 +67,14 @@ type QuotaWindowResponse struct {
 	Source     string  `json:"source"`
 }
 
-// QuotaWindowList is the body of GET /api/v1/quotas. The collection is paged
-// over provider groups (docs/PORT/006-PORT-QUOTA-PAGING.md D1): one page carries
-// every window of the page's provider groups, and per_page counts provider
-// groups on this route, so a card never splits across pages. The meta block is
-// the house Page shape (§4) with total counting groups.
-//
-// Published carries the provider's own answer for the endpoints named on this
-// page, read from the cache the poll worker writes (§7.12). It rides on the
-// collection rather than costing one read per card because asking each provider
-// during a screen read is the fan-out AGENTS.md §1.7 blocks here. Endpoints the
-// worker has not answered are simply absent, which is how "no provider answer yet"
-// reaches the card. The field is additive: a client that only reads Data sees
-// exactly what it saw before.
+// QuotaWindowList is the body of GET /api/v1/quotas, paged over provider
+// groups: a page carries every window of its groups, per_page and total count
+// groups, so a card never splits across pages. Meta is the house Page shape.
+// Published carries the provider's own answer for the endpoints on this page,
+// from the cache the poll worker writes; per-provider reads during a screen
+// read are the fan-out AGENTS.md §1.7 blocks here. An endpoint the worker has
+// not answered is simply absent, which is how "no provider answer yet" reaches
+// the card. The field is additive, so a client reading only Data is unchanged.
 type QuotaWindowList struct {
 	Data      []QuotaWindowResponse         `json:"data"`
 	Meta      Page                          `json:"meta"`
@@ -93,9 +88,9 @@ type QuotaWindowList struct {
 
 // QuotaEndpointDetail is the body of GET /api/v1/quotas/{endpoint_id}: that
 // endpoint's windows plus its stored budget cap, so a client that just wrote a
-// cap reads the same values back (SPEC-API-001 §7.12, owner decision D5 = b).
-// Cap is null when no cap is stored, a state the panel renders as an empty
-// form, which a missing field could not be told apart from.
+// cap reads the same values back. Cap is null when no cap is stored, a state the
+// panel renders as an empty form, which a missing field could not be told apart
+// from.
 type QuotaEndpointDetail struct {
 	EndpointID string                `json:"endpoint_id"`
 	Cap        *QuotaCapResponse     `json:"cap"`
@@ -112,12 +107,12 @@ type QuotaCapResponse struct {
 }
 
 // QuotaCapRequest is the body of PUT /api/v1/quotas/{endpoint_id}. Cost is a
-// decimal string so the wire never carries a float (SPEC-API-001 §4). An
-// omitted field clears that cap: the route replaces the cap set, matching the
-// reference's whole-object write, so a client removing a budget sends the body
-// without that field rather than leaving a value it cannot see. The value rules
-// (sign, ceiling, degenerate zero cost) live in ValidateQuotaCap and the domain
-// rule set it shares, not in struct tags, so they are stated exactly once.
+// decimal string so the wire never carries a float. An omitted field clears that
+// cap: the route replaces the cap set, matching the reference's whole-object
+// write, so a client removing a budget sends the body without that field rather
+// than leaving a value it cannot see. The value rules (sign, ceiling,
+// degenerate zero cost) live in ValidateQuotaCap and the domain rule set it
+// shares, not in struct tags, so they are stated exactly once.
 type QuotaCapRequest struct {
 	MonthlyCostUSD *string `json:"monthly_cost_usd,omitempty"`
 	MonthlyTokens  *int64  `json:"monthly_tokens,omitempty"`

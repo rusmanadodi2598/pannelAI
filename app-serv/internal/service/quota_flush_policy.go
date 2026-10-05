@@ -39,19 +39,13 @@ package service
 import "time"
 
 // QuotaFlushPolicy states the flush worker's retry and dead-letter behaviour,
-// which AGENTS.md §1.6 requires every worker to declare explicitly.
-//
-// Retry: a flush that fails is retried on the worker's next tick with the SAME
-// batch, because a counter is only settled after a successful durable write.
-// There is no in-worker retry loop and no exponential backoff: the tick itself
-// is the backoff, so a transient database outage costs one failed tick rather
-// than a hot retry storm against a database that is already struggling.
-//
-// Attempts are bounded per batch. After MaxAttempts consecutive failures on the
-// same batch, the batch is dead-lettered: it is logged at error level with the
-// batch identity and the last error, and the Redis counters are left untouched,
-// so a restart or a later successful tick still flushes them. Nothing is
-// silently dropped: a counter lost is a quota an operator would under-read.
+// which AGENTS.md §1.6 requires every worker to declare. Retry: a failed flush is
+// retried on the next tick with the SAME batch, because a counter settles only
+// after a successful durable write. There is no in-worker retry loop and no
+// exponential backoff: the tick is the backoff, so a database outage costs one
+// failed tick rather than a storm against a database already struggling. After
+// MaxAttempts consecutive failures a batch is dead-lettered: logged at error with
+// its identity, Redis counters left so a later tick or restart still flushes them.
 type QuotaFlushPolicy struct {
 	// Interval is the tick between flushes.
 	Interval time.Duration

@@ -23,16 +23,14 @@ package registry
 
 import "strings"
 
-// NeedsNoCredential reports whether this entry answers without any credential,
-// which is the property the reference's `noAuth` flag carries and the one the
-// data plane reads to synthesize a virtual endpoint for a provider the operator
-// configured none for (SPEC-API-001 §7.4; draft 029 §4.8 F8).
+// NeedsNoCredential reports whether this entry answers without any credential:
+// the property the reference's `noAuth` flag carries and the one routing reads
+// to synthesize a virtual endpoint for a provider the operator left unconfigured.
 //
-// Both document spellings are read because the reference writes `noAuth` on the
-// provider for some entries and on the transport for others, and `BuildAuthType`
-// folds the two into `AuthType` at load; reading the derived value as well keeps
-// an entry that declared `auth_type: no_auth` directly from being reported as
-// keyed.
+// Both spellings are read because the reference writes `noAuth` on the provider
+// for some entries and on the transport for others, and `BuildAuthType` folds
+// them into `AuthType`; reading the derived value too keeps an entry that
+// declares `auth_type: no_auth` directly from being reported as keyed.
 func (p Provider) NeedsNoCredential() bool {
 	return p.NoAuth || p.Transport.NoAuth || strings.TrimSpace(p.AuthType) == AuthNone
 }

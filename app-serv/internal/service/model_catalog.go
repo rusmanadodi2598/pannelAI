@@ -38,7 +38,7 @@ import (
 // Active is a pointer because it has three states: nil (the parameter was not
 // sent, so nothing is narrowed), true (only providers holding an active
 // endpoint), and false (the parameter was sent as false, which still narrows
-// nothing, draft 025 §6 ruling 2).
+// nothing.
 type CatalogFilter struct {
 	ProviderID string
 	Capability string
@@ -71,7 +71,7 @@ type ModelCatalogService struct {
 // ModelCatalogServiceDeps holds the collaborators the service needs. Active is
 // optional: it is the seam the `?active=true` catalog filter needs, so a
 // deployment that wires none still serves the whole catalog and the filter's
-// refusal names the missing seam (draft 025).
+// refusal names the missing seam.
 type ModelCatalogServiceDeps struct {
 	Index  CatalogIndex
 	Repo   repository.ModelCatalogRepository

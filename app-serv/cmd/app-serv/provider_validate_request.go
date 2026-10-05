@@ -83,15 +83,11 @@ func nodeFormat(check service.CredentialCheck) string {
 
 // validateTarget is the URL a provider's credential is checked against.
 //
-// A declared `transport.validate_url` wins. Otherwise it is derived from the
-// base URL by the reference's own rule (providers/validate/route.js:626-627):
-// replace a trailing `/chat/completions` or `/chatbot` with `/models`. That is
-// what takes probe coverage from the 18 entries that declare a URL to every
-// provider whose base names a chat path (draft 017 §4.2's second consequence).
-//
-// A base that names neither returns empty, and the caller reports the reason
-// rather than guessing a path, a guess produces a 404 that reads like a
-// credential problem.
+// A declared `transport.validate_url` wins. Otherwise a trailing
+// `/chat/completions` or `/chatbot` on the base URL is replaced with `/models`,
+// which brings every provider whose base names a chat path into probe coverage.
+// A base that names neither returns empty and the caller reports the reason,
+// because a guessed path yields a 404 that reads like a credential problem.
 func validateTarget(entry registry.Provider) string {
 	if declared := strings.TrimSpace(entry.Transport.ValidateURL); declared != "" {
 		return declared

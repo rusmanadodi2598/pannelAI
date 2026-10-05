@@ -75,14 +75,12 @@ func (r *EndpointRepository) ImportOAuthBatch(ctx context.Context, endpoints []d
 
 // updateEndpoint persists an endpoint's own fields through any execer, including
 // its OAuth state (stored as ciphertext) and its account identity. Keys are
-// untouched: they have their own methods because a key change is a different
-// concern.
-//
-// loadedAt, when non-nil, turns the write into a compare-and-swap on that
-// timestamp: the row is written only while it still carries the value this
-// aggregate was loaded with. An OAuth rotation needs exactly that, because a
-// refresh racing another one would otherwise write the older credential back and
-// lose the token the vendor had already swapped.
+// untouched: they have their own methods, a key change being a different concern.
+// loadedAt, when non-nil, makes the write a compare-and-swap on `updated_at`:
+// the row is written only while it still carries the value this aggregate was
+// loaded with. An OAuth rotation needs that, because a refresh racing another
+// would write the older credential back and lose the token the vendor had
+// already swapped.
 func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint, loadedAt *time.Time) error {
 	oauthJSON, err := marshalOAuth(endpoint.OAuth())
 	if err != nil {

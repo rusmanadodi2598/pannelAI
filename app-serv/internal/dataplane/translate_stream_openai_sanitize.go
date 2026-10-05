@@ -66,7 +66,7 @@ func (s *StreamState) sanitizeChunk(chunk object) bool {
 		// Only a frame the cut emptied is withheld. A close the upstream sent on
 		// its own keeps its place on the wire even when its reason was nulled as a
 		// duplicate, because the members still on it, a trailing role delta, the
-		// usage, are the client's to read (draft 034 F2).
+		// usage, are the client's to read.
 		if cut && !frameCarriesAnswer(choice) && !carriesUsage(chunk) {
 			return false
 		}
@@ -136,9 +136,8 @@ func (s *StreamState) cutChoice(choice object) bool {
 		delta["content"] = mustJSON(kept)
 	}
 	choice["delta"] = mustJSON(delta)
-	// The cut is announced once, on the frame that carried the marker. A later
-	// frame re-reporting it would hand the client a second close, which is the
-	// duplicate draft 034 F2 exists to prevent.
+	// The cut is announced once, on the frame that carried the marker: a later
+	// frame re-reporting it would hand the client a second close.
 	if s.stop.stopped() && !s.cutAnnounced {
 		s.cutAnnounced = true
 		// The caller's marker is where this answer ended, whatever the upstream
@@ -173,9 +172,8 @@ func frameCarriesAnswer(choice object) bool {
 //
 // A frame emptied by the pruning still has to reach the client when it carries
 // them: a vendor that states usage on its closing frame, and then again on a frame
-// after it, leaves the gateway nulling the duplicate reason (draft 034 F2), and
-// dropping that frame for having no reason left would drop the usage with it
-// (draft 021 F2, 034 F1).
+// after it, leaves the gateway nulling the duplicate reason, and dropping that
+// frame for having no reason left would drop the usage with it.
 func carriesUsage(chunk object) bool {
 	raw, present := chunk["usage"]
 	if !present {

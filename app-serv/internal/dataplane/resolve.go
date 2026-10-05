@@ -31,10 +31,9 @@ import (
 // ModelLookup is the read path resolution and the catalog listing need from the
 // combo and catalog boundaries. It is declared here rather than depending on four
 // repository contracts so the resolver asks narrow questions, and so a question it
-// does not ask cannot leak into this package. Every set it returns is the whole
-// set: the alias, disabled, and combo tables are small and fully rewritten
-// (SPEC-API-001 §7.6 replaces them wholesale), so reading one set per request is
-// the read path rather than an unbounded query.
+// does not ask cannot leak into this package. Every set it returns is the whole set:
+// the alias, disabled, and combo tables are small and rewritten wholesale, so
+// reading one set per request is the read path rather than an unbounded query.
 type ModelLookup interface {
 	// Combo returns a combo by name, and whether the name addresses one. The
 	// aggregate travels whole rather than as a bare reference list because the
@@ -43,7 +42,7 @@ type ModelLookup interface {
 	Combo(ctx context.Context, name string) (combo domain.Combo, found bool, err error)
 	// Alias returns an alias's target, and whether the alias exists.
 	Alias(ctx context.Context, name string) (target string, found bool, err error)
-	// Disabled reports whether one model is hidden from routing (§7.6).
+	// Disabled reports whether one model is hidden from routing.
 	Disabled(ctx context.Context, providerID, modelID string) (bool, error)
 	// DisabledPairs returns the whole disabled set, which is what the catalog
 	// listing filters with in one read.
@@ -51,9 +50,9 @@ type ModelLookup interface {
 	// ComboNames returns every combo name, because a combo is addressed by name
 	// as a model string.
 	ComboNames(ctx context.Context) ([]string, error)
-	// CustomModels returns every model an operator added (§7.6). A node whose
-	// upstream will not declare a catalog is only listable through these rows, so
-	// the listing reads them rather than relying on what a provider reports about
+	// CustomModels returns every model an operator added. A node whose upstream
+	// will not declare a catalog is only listable through these rows, so the
+	// listing reads them rather than relying on what a provider reports about
 	// itself.
 	CustomModels(ctx context.Context) ([]domain.ModelRef, error)
 	// ActiveProviders reports which of the named providers hold an endpoint the
@@ -114,22 +113,18 @@ func NewResolver(index ProviderRegistry, lookup ModelLookup) (*Resolver, error) 
 }
 
 // Resolve applies the documented order: combo name, then alias, then
-// provider/model, then MODEL_NOT_FOUND (SPEC-API-001 §7.15). It answers for the
-// chat plane.
+// provider/model, then MODEL_NOT_FOUND. It answers for the chat plane.
 func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error) {
 	return r.resolveForKind(ctx, model, KindChat)
 }
 
-// resolveWithin is Resolve carrying the resolution's working state and the
-// alias hops already followed, so a combo member or an alias target re-enters
-// resolution with the memo and the guards the outer call already built. A nil
-// state is the entry point's own start.
-//
-// The alias hop count guards the one cycle the write path refuses but a direct
-// database row can still hold: an alias whose target is another alias. The
-// guard is a count rather than a visited set because an alias chain is a line,
-// not a graph, one target per name, so a count answers the same question with
-// no map to build.
+// resolveWithin is Resolve carrying the resolution's working state and the alias
+// hops already followed, so a combo member or an alias target re-enters resolution
+// with the memo and the guards the outer call already built. A nil state is the
+// entry point's own start. The alias hop count guards the one cycle the write path
+// refuses but a direct database row can still hold: an alias whose target is another
+// alias. It is a count rather than a visited set because each name has one target,
+// so the chain is a line, not a graph.
 func (r *Resolver) resolveWithin(ctx context.Context, model string, state *resolveState, aliasHops int) (Resolution, error) {
 	return r.resolveWithinKind(ctx, model, state, aliasHops, KindChat)
 }
@@ -188,7 +183,7 @@ func (r *Resolver) ResolvePartsForKind(ctx context.Context, providerName, modelI
 			"provider "+providerName+" is not in the registry")
 	}
 	// A provider the gateway cannot translate is refused by name rather than
-	// attempted and reported as an upstream failure (SPEC-API-001 §8).
+	// attempted and reported as an upstream failure.
 	if !entry.IsChatRoutable() {
 		return Resolution{}, dataPlaneError(CodeProviderNotRoutable,
 			"provider "+entry.ID+" speaks a wire format the gateway does not translate")

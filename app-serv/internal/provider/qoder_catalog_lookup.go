@@ -60,14 +60,12 @@ func (c *qoderCatalog) completeFetch(base string, fetch *catalogFetch, raw []byt
 
 // modelConfig returns the vendor's configuration for one model key, reading the
 // catalogue when the cached answer is absent or older than the TTL. An error means
-// no configuration could be obtained; a caller must not send a chat without one,
-// because the vendor would answer with a model nobody asked for.
-//
-// ctx is the caller's. The read itself stays on its own bounded context because
-// one fetch answers every concurrent lookup, so aborting it when its leader's
-// client leaves would break the callers still waiting on it. What ctx controls is
-// this caller's own wait: a request whose client went away stops paying for a
-// document it will no longer deliver.
+// no configuration could be obtained and a caller must not send a chat without
+// one, because the vendor would answer with a model nobody asked for. ctx is the
+// caller's own wait, not the fetch's: one fetch answers every concurrent lookup,
+// so aborting it when its leader's client leaves would break the callers still
+// waiting. A request whose client went away stops paying for a document it will no
+// longer deliver.
 func (c *Qoder) modelConfig(ctx context.Context, cred Credential, modelKey string) (json.RawMessage, error) {
 	base, err := c.inferenceBase(cred)
 	if err != nil {

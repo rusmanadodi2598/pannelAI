@@ -70,15 +70,11 @@ func validateNodeBaseURL(raw string) error {
 
 // normalizeNodeBaseURL validates a base URL and returns the form the node
 // should store: no trailing slash, and no trailing copy of the path the
-// transport appends.
-//
-// Both halves are applied to the URL's PATH, never to the raw string. That is
-// what keeps a host that happens to spell the suffix, "https://messages",
-// from losing its host, and it is why a query string survives untouched.
-//
-// The suffix is stripped repeatedly rather than once, so an operator who pasted
-// an already-doubled URL ("…/v1/messages/messages") is repaired to "…/v1"
-// instead of to another URL that is still wrong.
+// transport appends. Both halves are applied to the URL's PATH, never to the raw
+// string, which is what keeps a host that spells the suffix, "https://messages",
+// from losing its host, and what lets a query string survive untouched. The
+// suffix is stripped repeatedly rather than once, so a base that was already
+// doubled is repaired to its root instead of to another URL that is still wrong.
 func normalizeNodeBaseURL(raw string, nodeType NodeType, apiType string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
 	if err := validateNodeBaseURL(trimmed); err != nil {

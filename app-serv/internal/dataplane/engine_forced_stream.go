@@ -40,17 +40,11 @@ const maxFoldEvents = 1 << 16
 
 // foldStream reads a forced stream to its end and returns the single upstream
 // answer it carried, in the upstream's own wire format, so the caller's existing
-// non-streamed translation applies unchanged.
-//
-// The resolved model is passed to the chat fold because a chat stream reports no
-// answer object to name: the model a client reads is assembled here, and an
-// upstream's own label (Qoder answers every model as `auto`) is not one the
-// caller can send back.
-//
-// The two wires are folded differently because they carry the answer
-// differently: a Responses stream states the whole response in its terminal
-// event, while a chat stream reports the answer as deltas that have to be
-// accumulated.
+// non-streamed translation applies unchanged. The resolved model is passed to the
+// chat fold because a chat stream reports no answer object to name, and an
+// upstream's own label (Qoder answers every model as `auto`) is not one the caller
+// can send back. A Responses stream folds from its terminal event, a chat stream by
+// accumulating deltas, because the two wires carry the answer differently.
 func foldStream(upstream *Upstream, resolution Resolution, stop []string) ([]byte, *schema.Usage, error) {
 	events, err := readFoldEvents(upstream.Body)
 	if err != nil {
@@ -109,13 +103,12 @@ func readFoldEvents(body io.Reader) ([][]byte, error) {
 	}
 }
 
-// foldResponsesEvents returns the complete response the terminal event carries.
-//
-// The Responses API states the whole answer in `response.completed` (and in
-// `response.incomplete` when the model hit its ceiling), so the terminal event's
-// `response` member is the non-streamed body verbatim. Reading it rather than
-// re-assembling the deltas is what keeps a reasoning item, a tool call, and the
-// accounting from being reconstructed by hand.
+// foldResponsesEvents returns the complete response the terminal event carries. The
+// Responses API states the whole answer in `response.completed`, and in
+// `response.incomplete` when the model hit its ceiling, so that event's `response`
+// member is the non-streamed body verbatim. Reading it rather than re-assembling the
+// deltas is what keeps a reasoning item, a tool call, and the accounting from being
+// reconstructed by hand.
 func foldResponsesEvents(events [][]byte) ([]byte, *schema.Usage, error) {
 	for index := len(events) - 1; index >= 0; index-- {
 		event, ok := decodeObject(events[index])

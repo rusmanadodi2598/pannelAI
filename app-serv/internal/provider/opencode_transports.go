@@ -33,25 +33,14 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
-// openCodeEndpointFor picks the endpoint a resolved model is served on.
-//
-// A single-endpoint provider (no `transports`) answers on its declared base URL
-// and needs no choice, so it reports not-found and the caller keeps the URL rule
-// it already had.
-//
-// A multi-endpoint provider chooses by the wire the request is being translated
-// into: the entry's own endpoint table names one URL per wire, and the model's
-// declared formats guard the choice. A model that lists `supportedFormats` and
-// does not include that wire is answered by the provider's own default URL, which
-// is the reference's own rule: an unmatched format leaves `useTransport` null, so
-// the request keeps the provider's `baseUrl` (chatCore.js:95-101, and
-// executors/default.js:106-109 uses `config.baseUrl` when no runtime transport was
-// attached).
-//
-// Refusing instead was tried and is wrong: it removed 43 of opencode-zen's models
-// from routing entirely (every claude-only id, because the provider's default wire
-// is openai), and the reference serves those models whenever the client speaks
-// their wire.
+// openCodeEndpointFor picks the endpoint a resolved model is served on. A
+// single-endpoint provider (no `transports`) answers on its declared base URL and
+// needs no choice, so it reports not-found and the caller keeps the URL rule it
+// already had. A multi-endpoint provider chooses by the wire the request is being
+// translated into: the endpoint table names one URL per wire and the model's
+// declared formats guard the choice. A model that lists `supportedFormats` and not
+// this wire falls back to the provider's default URL rather than being refused, so
+// a claude-only model on an openai-default provider stays routable.
 func openCodeEndpointFor(entry registry.Provider, model registry.Model, wire string) (registry.TransportEndpoint, bool) {
 	if len(entry.Transports) == 0 {
 		return registry.TransportEndpoint{}, false

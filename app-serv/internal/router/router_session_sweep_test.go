@@ -29,14 +29,10 @@ import (
 
 // excludedFromSessionSweep lists the registered patterns that are deliberately
 // not session-gated, each with the reason. The sweep fails on a pattern that is
-// neither here nor a 401, and it fails on an entry here that names no registered
-// pattern, so the table cannot rot: a new public route has to arrive with its
-// reason written down rather than silently passing.
-//
-// These routes are covered by their own area tests (the §7.15 data plane, the
-// §7.10 media calls, the §7.1 probes, the §7.2 auth pair, the §7.4 callback);
-// this table is the audit of *why* they are absent from the sweep, not a
-// replacement for those tests.
+// neither here nor a 401, and on an entry here that names no registered pattern,
+// so the table cannot rot: a new public route has to arrive with its reason
+// written down. These routes have their own area tests; this table audits why
+// they are absent from the sweep rather than replacing those tests.
 var excludedFromSessionSweep = map[string]string{
 	// §7.1: read by monitors, which hold no dashboard session.
 	"GET /api/v1/health":  "liveness probe; a monitor cannot present a session cookie (§7.1)",
@@ -71,16 +67,12 @@ var excludedFromSessionSweep = map[string]string{
 
 // TestEveryManagementRouteRejectsAnonymousCallers walks the recorded route table
 // and asserts that every pattern not listed as an exclusion answers 401 to an
-// anonymous caller. A management route registered without gateway() reaches its
-// handler anonymously and fails here, which is the one place in the suite that
-// notices such a route no matter which area added it.
-//
-// The fixture registers the nil-guarded groups as zero-value handlers, which is
-// what this test needs: the session gate answers before the handler is called,
-// so a 401 is the production guard's own answer. Excluded patterns are not
-// called at all, their handlers are stubs here, and a data-plane route may
-// legitimately answer 401 for a missing gateway key, which would make "not 401"
-// a false invariant.
+// anonymous caller: a management route registered without gateway() reaches its
+// handler and fails here, whichever area added it. The fixture registers the
+// nil-guarded groups as zero-value handlers, and the session gate answers before
+// the handler runs, so a 401 is the production guard's own answer. Excluded
+// patterns are not called at all: a data-plane route may answer 401 for a missing
+// gateway key, which would make "not 401" a false invariant.
 func TestEveryManagementRouteRejectsAnonymousCallers(t *testing.T) {
 	mux := newRouteTableRouter(t)
 	routes := mux.Routes()

@@ -24,18 +24,14 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
-// ensureOpenCodeDecoys adds whichever decoy the body is missing, in the shape the
-// wire's own tool vocabulary uses: the Responses wire names the function on the
-// tool itself, and the chat wire nests it under `function`.
-//
-// Two measured upstream rules are applied before the decoys are appended. A body
-// that declares one tool name twice is refused 400, whichever name it is, so a
-// repeat is dropped and the first declaration is kept. The gate reads `bash` and
-// `read` in lowercase, so a body whose only spelling of them is capitalised is
-// refused 403; the decoy is appended in that case, which is what the
-// case-sensitive presence check below already produces. A client's own tools are
-// never removed or renamed: the model still has to be able to call what the
-// client asked for, under the name the client dispatches on.
+// ensureOpenCodeDecoys adds whichever decoy the body is missing, in the wire's own
+// tool vocabulary: Responses names the function on the tool itself, chat nests it
+// under `function`. Two measured upstream rules apply before anything is
+// appended: a body that declares one tool name twice is refused 400, whichever
+// name it is, so a repeat is dropped and the first declaration kept; and the gate
+// reads `bash` and `read` in lowercase, so a body whose only spelling of them is
+// capitalised is refused 403 and gets the decoy appended, as the case-sensitive
+// check below already does. A client's own tools are never removed or renamed.
 func ensureOpenCodeDecoys(body map[string]json.RawMessage, wire string) {
 	responses := wire == registry.FormatOpenAIResponses
 	tools, _ := decodeOpenCodeItems(body["tools"])
@@ -97,13 +93,10 @@ func openCodeDecoyTool(name string, responses bool) json.RawMessage {
 
 // forbidOpenCodeDecoysWithoutClientTools writes `tool_choice: "none"` when the
 // client declared no tools of its own, so the decoys the gate requires can never
-// be selected (opencodeFingerprint.js:146-147). A client that did declare tools
-// keeps whatever it asked for: the decoys sit beside its own declarations, and
-// forbidding every call would break the request it actually made.
-//
-// The client's own declaration has to be read before the decoys are appended,
-// which is why this takes the flag rather than inspecting the body: once the
-// decoys are in, a client tool and an injected one are indistinguishable.
+// be selected. A client that did declare tools keeps what it asked for: the decoys
+// sit beside its own declarations, and forbidding every call would break the
+// request. It takes the flag rather than inspecting the body because once the
+// decoys are appended, a client tool and an injected one are indistinguishable.
 func forbidOpenCodeDecoysWithoutClientTools(body map[string]json.RawMessage, clientDeclaredTools bool) {
 	if clientDeclaredTools {
 		return

@@ -57,15 +57,10 @@ func NewVisionAugmenter(deps VisionAugmenterDeps) (*VisionAugmenter, error) {
 
 // Augment answers the data plane's one question: in what order should this
 // image-bearing request try its candidates, and which of them is the adapter's
-// doing.
-//
-// The adapter is inserted after every candidate that can see and before every
-// candidate that cannot. Putting it first, as this did, meant a combo whose own
-// member reads images never got to: measured live 2026-09-29 an image request
-// aimed at a combo was answered "gray" for a solid-red image by the adapter, while
-// the member the rotation had put behind it answered correctly. Leaving it out
-// entirely would strand the request that has no capable member at all, which is
-// the case §7.8 exists for.
+// doing. The adapter is inserted after every candidate that can see and before every
+// candidate that cannot. Putting it first, as this once did, means a combo whose own
+// member reads images never gets to run; leaving it out entirely would strand the
+// request that has no capable member at all, which is the case the adapter exists for.
 func (a *VisionAugmenter) Augment(ctx context.Context, candidates []string) ([]string, []string, error) {
 	seeing, blind, err := a.splitBySight(ctx, candidates)
 	if err != nil {

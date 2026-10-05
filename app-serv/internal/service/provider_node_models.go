@@ -39,20 +39,14 @@ type ProviderModelList struct {
 	Warning string
 }
 
-// modelsFor answers one provider's model list.
-//
-// A registry provider is the document, so the origin is registry and no source
-// is consulted. A custom node is asked, and three outcomes are possible:
-//
-//   - the upstream answered → its list, origin upstream;
-//   - the upstream could not answer → the entry's own list (what the overlay
-//     holds), origin registry, with the warning the source reported;
-//   - no source is wired, or the source errored → the entry's own list, origin
-//     registry, with the fixed warning.
-//
-// No path returns an error for a node. A node whose upstream is down still
-// routes (a passthrough provider accepts any model string), so failing the read
-// would take a working node out of the panel over a list it does not need.
+// modelsFor answers one provider's model list. A registry provider is the
+// document, so the origin is registry and no source is consulted. A custom node is
+// asked, with three outcomes: the upstream answered, so its list with origin
+// upstream; the upstream could not answer, so the entry's own list with origin
+// registry and the warning the source reported; no source wired or the source
+// errored, so the entry's own list with the fixed warning. No path returns an
+// error for a node: a node whose upstream is down still routes as a passthrough
+// provider, so failing the read would drop a working node over a list it needs.
 func (s *ProviderService) modelsFor(ctx context.Context, entry registry.Provider) ProviderModelList {
 	answer := ProviderModelList{Entry: entry, Source: ModelSourceRegistry}
 	if !entry.Custom || s.source == nil {
@@ -65,9 +59,9 @@ func (s *ProviderService) modelsFor(ctx context.Context, entry registry.Provider
 		return answer
 	}
 	if list.Source != ModelSourceUpstream || len(list.Models) == 0 {
-		// An upstream that answered with nothing is not an answer: a node with
-		// no list at all is the state draft 017 §4.2 measured, and falling back
-		// is strictly more useful than reporting an empty list as current.
+		// An upstream that answered with nothing is not an answer: falling back to
+		// what the overlay holds is strictly more useful than reporting an empty
+		// list to the panel as the node's current state.
 		answer.Warning = list.Warning
 		if answer.Warning == "" {
 			answer.Warning = UpstreamUnavailableWarning
@@ -81,20 +75,13 @@ func (s *ProviderService) modelsFor(ctx context.Context, entry registry.Provider
 }
 
 // ProbeTargets answers the model set a per-model probe can walk: the resolved
-// list plus the rows the operator declared for the same provider.
-//
-// The two halves are not interchangeable. A compatible node's resolved list is
-// its upstream's answer, which is empty when that upstream is unreachable,
-// while the rows the operator declared are on the node's own screen and are
-// routable (draft 017 §4.2). A registry provider's declared rows are its
-// supplement, and the catalog already treats them as models a client can call
-// (§7.6). A probe that walked only the resolved half would tell the operator
-// there was nothing to test beside a table full of models.
-//
-// Where both halves name one model, the resolved row is kept: it carries the
-// kind that decides whether the chat probe can reach the model at all, which a
-// declared row cannot say. The declared row's display name fills the resolved
-// row's silence, never its opinion.
+// list plus the rows the operator declared for the same provider. The halves are
+// not interchangeable: a node's resolved list is its upstream's answer, empty
+// when that upstream is unreachable, while declared rows are on the node's own
+// screen and routable, and a registry provider's declared rows are its
+// supplement. Walking only the resolved half would report nothing to test beside
+// a table full of models. Where both name one model the resolved row wins, since
+// it carries the kind that decides reachability; its name gap fills from declared.
 func (s *ProviderService) ProbeTargets(
 	ctx context.Context, providerID string,
 ) (ProviderModelList, []registry.Model, error) {

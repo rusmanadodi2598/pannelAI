@@ -32,13 +32,10 @@ import (
 // TestModelHandler_CatalogActiveParameter pins the wire contract of the
 // parameter: `true` and `false` are the accepted vocabulary, absence narrows
 // nothing, and anything else is a 400 rather than a silently ignored filter.
-//
-// The fixture wires no endpoint-status counter, so an accepted `true` reaches
-// the service and is answered with the named INTERNAL_ERROR refusal; the
-// narrowed answer itself is pinned by the service test, which can wire a
-// counter. What this table pins is the boundary's own behaviour: which
-// spellings are accepted, which are refused, and that the accepted ones are
-// passed through rather than dropped.
+// The fixture wires no endpoint-status counter, so an accepted `true` reaches the
+// service and is answered with the named INTERNAL_ERROR refusal; the service test
+// pins the narrowed answer. What this table pins is the boundary's own behaviour:
+// which spellings are accepted, which refused, which passed through.
 func TestModelHandler_CatalogActiveParameter(t *testing.T) {
 	f := newManagementFixture(t)
 	cases := []struct {

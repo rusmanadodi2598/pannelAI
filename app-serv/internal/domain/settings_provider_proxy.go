@@ -23,31 +23,27 @@ package domain
 
 import "strings"
 
-// ProxyPoolNone is the stored spelling of "this provider dials direct" (D2).
-// It follows the reference's sentinel. It exists because an empty pool id
-// already means "inherit the global setting": without a distinct spelling,
-// turning the global proxy on would leave an operator no way to exempt one
-// provider, and a provider that must not be proxied (a local model server, an
-// upstream that rejects proxied traffic) would have no lever.
+// ProxyPoolNone is the stored spelling of "this provider dials direct", following
+// the reference's sentinel. An empty pool id already means "inherit the global
+// setting", so this is the only lever for exempting one provider, such as a local
+// model server or an upstream that rejects proxied traffic.
 const ProxyPoolNone = "__none__"
 
 // The pool id's cap is maxProxyPoolIDLength (upstream_endpoint_parity.go), so
 // one pool id is the same value whichever surface carries it.
 
-// ProviderProxy is one provider's binding: the pool its calls egress through
-// and the strategy that orders the walk. Both fields are optional and an
-// absent one inherits the global setting, so the panel renders what is stored
-// rather than a filled-in copy.
-//
-// An entry that sets neither field is refused by validateProviderProxies: it
-// would be configuration nothing reads, and the way to express "inherit
-// everything" is to delete the entry.
+// ProviderProxy is one provider's binding: the pool its calls egress through and
+// the strategy that orders the walk. Both fields are optional and an absent one
+// inherits the global setting, so the panel renders what is stored rather than a
+// filled-in copy. An entry that sets neither field is refused by
+// validateProviderProxies: it would be configuration nothing reads, and deleting
+// the entry is how "inherit everything" is spelled.
 type ProviderProxy struct {
 	// PoolID is "" (follow the global outbound setting), ProxyPoolNone (dial
-	// direct), or the id of a stored pool row to pin first (D2/D4).
+	// direct), or the id of a stored pool row to pin first.
 	PoolID string `json:"pool_id,omitempty"`
 	// Strategy is "" (inherit network.outbound_proxy_strategy), fallback, or
-	// round_robin (D3).
+	// round_robin.
 	Strategy string `json:"strategy,omitempty"`
 }
 
@@ -65,11 +61,11 @@ type ProviderProxyBinding struct {
 	Strategy string
 }
 
-// Normalized fills the keys a stored row written before this change cannot
-// carry. The group decode replaces the group wholesale, so an absent
-// provider_proxies arrives as nil, and a read that answered null would fail the
-// panel's own form validation: an operator with no bindings must still read an
-// empty map. It mirrors RoutingSettings.Normalized.
+// Normalized fills the keys a stored row cannot carry: the group decode replaces
+// the group wholesale, so an absent provider_proxies arrives as nil, and an
+// operator with no bindings must still read an empty map rather than the null
+// that would fail the panel's own form validation. Mirrors the
+// RoutingSettings.Normalized rule.
 func (n NetworkSettings) Normalized() NetworkSettings {
 	if n.ProviderProxies == nil {
 		n.ProviderProxies = map[string]ProviderProxy{}
@@ -77,10 +73,10 @@ func (n NetworkSettings) Normalized() NetworkSettings {
 	return n
 }
 
-// ProviderProxyFor resolves the binding for one provider (D1-D3). The override
-// wins over the global strategy; an entry whose strategy is out of the closed
-// set is an error naming the entry, because a hand-edited row must refuse the
-// plan rather than silently route by a rule the operator did not choose.
+// ProviderProxyFor resolves the binding for one provider: the entry's override
+// wins over the global strategy, and an entry whose strategy is out of the closed
+// set is an error naming the entry, so a hand-edited row refuses the plan rather
+// than routing by a rule the operator did not choose.
 func (n NetworkSettings) ProviderProxyFor(providerID string) (ProviderProxyBinding, error) {
 	entry, bound := n.ProviderProxies[providerID]
 	binding := ProviderProxyBinding{Bound: bound}
@@ -104,10 +100,9 @@ func (n NetworkSettings) ProviderProxyFor(providerID string) (ProviderProxyBindi
 }
 
 // validateProviderProxies checks the binding map's rules: every entry must say
-// something, the strategy must be a member of the closed set, and the pool id
-// must be an id rather than a padded string. Whether the id names a stored row
-// is the service's check, because only it may read the pool repository
-// (AGENTS.md §1.5).
+// something, the strategy must be a member of the closed set, and the pool id must
+// be an id rather than a padded string. Whether the id names a stored row is the
+// service's check, because only it may read the pool repository (AGENTS.md §1.5).
 func validateProviderProxies(entries map[string]ProviderProxy) error {
 	for id, entry := range entries {
 		if strings.TrimSpace(entry.PoolID) == "" && strings.TrimSpace(entry.Strategy) == "" {

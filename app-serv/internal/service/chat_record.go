@@ -32,32 +32,19 @@ import (
 )
 
 // record writes one usage row and one request log for a chat call, under the
-// router's request id so the pair is reachable from either surface (§4).
-//
-// The bodies are handed over as they arrived: the capture setting and the
-// truncation rule are applied by LogService.Record, so a deployment with capture
-// off stores no body at all, and this caller does not re-decide what §7.13
-// governs in one place.
-//
-// The log's error text is the code alone, never the failure's message: a chat
-// upstream's message is quoted back verbatim, and an authentication failure's
-// message can carry the presented credential, a stored row must not hold either.
-//
-// A recording failure is deliberately not returned: the client already has its
-// answer, and failing the request over an accounting write would turn a served
-// call into an error the client cannot act on.
+// router's request id so the pair is reachable from either surface. Bodies are
+// handed over as they arrived: capture and truncation are LogService.Record's
+// decision, made once, and this caller does not re-decide what it governs. The
+// log's error text is the code alone, never the failure's message: an upstream
+// message is quoted back verbatim and an auth failure's message can carry the
+// presented credential, so a stored row must hold neither. A recording failure
+// is not returned, because the client already has its answer.
 func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome dataplane.Outcome, keyID, errorCode string) {
-	// An image request answered by the §7.8 adapter is the one served call whose
-	// identity the accounting pair cannot show: the row is written under the model
-	// the caller addressed, so the model that actually received the picture
-	// appears nowhere, and whether that model reads images at all is exactly the
-	// question an operator needs to answer when an image comes back described
-	// wrong. Measured live 2026-09-29: a combo's image requests were answered
-	// "gray" for a solid-red image by an adapter model that cannot see, and nothing
-	// in the panel's rows said a substitution had happened.
-	//
-	// This is a log line, not a client-facing field: the gateway can prove which
-	// model it handed the image to, and cannot prove what that model did with it.
+	// An image request answered by the adapter is the one served call whose
+	// identity the accounting pair cannot show: the row carries the model the
+	// caller addressed, so the model that actually received the picture appears
+	// nowhere. Logged here rather than as a client field: the gateway can prove
+	// which model it handed the image to and cannot prove what it did with it.
 	if outcome.VisionAdapted {
 		slog.Warn("image request answered by the vision adapter",
 			"request_id", s.requestIDFrom(ctx),
@@ -79,8 +66,7 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 	// aggregate requires a provider and a model, and a request refused before
 	// the pipeline (an unknown model, an invalid body) has neither. Skipping it
 	// here rather than letting the aggregate reject it is deliberate, a
-	// swallowed validation error is what hid this plane's missing error row
-	// (register G17).
+	// swallowed validation error is what hid this plane's missing error row.
 	if s.usage != nil && outcome.ProviderID != "" && outcome.Model != "" {
 		input := domain.UsageRecordInput{
 			RequestID:    requestID,

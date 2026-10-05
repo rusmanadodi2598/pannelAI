@@ -37,16 +37,12 @@ type UsageService struct {
 	events   *UsageEventPublisher
 }
 
-// UsageServiceDeps holds the collaborators the service needs.
-//
-// Settings is required: the detail read reports the capture policy in force so
-// the viewer can tell "capture is off" from "this request was never logged".
-// Reading it here rather than taking it as a call argument keeps that policy a
-// single source of truth, the one the log service already writes by.
-//
-// Events is optional: without one the recorder still writes every row and
-// simply emits no domain event, which is the documented behaviour for a
-// deployment that wired no broker.
+// UsageServiceDeps holds the collaborators the service needs. Settings is
+// required: the detail read reports the capture policy in force so a viewer can
+// tell "capture is off" from "this request was never logged", and reading it here
+// rather than taking it as a call argument keeps it one source of truth, the one
+// the log service already writes by. Events is optional: without a publisher every
+// row is still written and no domain event is emitted.
 type UsageServiceDeps struct {
 	Usage    repository.UsageRecordRepository
 	Logs     repository.RequestLogRepository
@@ -68,18 +64,13 @@ func NewUsageService(deps UsageServiceDeps) (*UsageService, error) {
 	}, nil
 }
 
-// Record validates and stores one request's accounting row, then emits the
-// domain event for it (AGENTS.md §2.3).
-//
-// The record is validated by the domain constructor, so a reporter that passes
-// a negative token count or an unparseable cost is rejected here rather than
-// writing a row that would skew every aggregate built on it.
-//
-// The event is emitted only after the row is stored, and emitting it cannot
-// fail the call: the caller already has its answer, and the usage row is the
-// durable record a lost event cannot replace. That ordering is what makes the
-// event mean "this request is recorded" rather than "this request was
-// attempted".
+// Record validates and stores one request's accounting row, then emits the domain
+// event for it. The domain constructor does the validation, so a reporter passing a
+// negative token count or an unparseable cost is rejected here rather than writing a
+// row that would skew every aggregate built on it. The event is emitted only after
+// the row is stored and cannot fail the call: the caller already has its answer and
+// the row is the durable record a lost event cannot replace. That ordering is what
+// makes the event mean "this request is recorded", not "this request was attempted".
 func (s *UsageService) Record(ctx context.Context, in domain.UsageRecordInput) (domain.UsageRecord, error) {
 	record, err := domain.NewUsageRecord(in, "", s.clock())
 	if err != nil {

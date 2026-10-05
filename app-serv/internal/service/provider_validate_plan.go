@@ -46,23 +46,14 @@ type ValidatePlan struct {
 	NeedsModel bool
 }
 
-// PlanFor derives the validation plan for a registry entry.
-//
-// The order is the reference's, generalised to the format rather than the id:
-//
-//  1. A declared `transport.validate_url` wins. That is the 18 entries whose
-//     registry file names its own probe.
-//  2. A base URL naming a chat path yields the models path beside it
-//     (`/chat/completions` or `/chatbot` → `/models`). That is 19 more.
-//  3. A `claude`-format base that IS the messages endpoint is probed by POSTing
-//     to it. Anthropic's wire serves no model list, which is why the reference
-//     posts a one-token message and reads the status (7 providers here).
-//  4. A `gemini`-format base is already its own models path, so it is read
-//     directly (1 provider here).
-//
-// Anything else returns an empty plan, and the caller reports the reason rather
-// than guessing a path: a guess produces a 404 that reads like a credential
-// problem.
+// PlanFor derives the validation plan for a registry entry, in the reference's
+// own order generalised to the format rather than the id: a declared
+// `transport.validate_url` wins; a base URL naming a chat path yields the models
+// path beside it (`/chat/completions` or `/chatbot` to `/models`); a `claude`
+// base that IS the messages endpoint is probed by POSTing a one-token message,
+// because that wire serves no model list to read; a `gemini` base is already its
+// own models path and is read directly. Anything else returns an empty plan and
+// the caller reports why, since a guessed path answers 404 like a bad credential.
 func PlanFor(entry registry.Provider) ValidatePlan {
 	if declared := strings.TrimSpace(entry.Transport.ValidateURL); declared != "" {
 		return ValidatePlan{URL: declared, Method: "GET"}

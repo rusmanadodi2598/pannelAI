@@ -72,10 +72,10 @@ type nodeModelSource struct {
 	cache map[string]cachedNodeModels
 }
 
-// newNodeModelSource builds the adapter. The guard is a parameter, not an
-// ambient dependency, because a dialer built without one is the OWASP A01 hole
-// draft 017 §4.8 names, and cmd/app-serv/egress_guard_assert_test.go fails when
-// an adapter is constructed without it.
+// newNodeModelSource builds the adapter with the egress guard as a parameter
+// rather than an ambient dependency: a dialer built without one is the OWASP
+// A01 hole, and egress_guard_assert_test.go fails when an adapter is built
+// without it.
 func newNodeModelSource(
 	lookup func(id string) (nodeTarget, bool),
 	connectors *provider.Connectors,

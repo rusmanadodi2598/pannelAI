@@ -36,20 +36,12 @@ import (
 
 // StorePublished writes one endpoint's provider answer in ONE transaction: the
 // state envelope, every bucket upserted in one set-based statement, and the
-// deletion of any stored label the answer does not carry.
-//
-// The prune is the part that cannot be dropped. A provider that renames a bucket
-// ("Weekly limit" to "Claude & GPT (Weekly)") would otherwise leave the old row
-// in the cache forever, and the screen would show a stale total beside its
-// replacement with nothing in the response to explain it. Deleting by "label not
-// in this answer" is bounded by the answer's own size, so it costs one statement
-// whatever the cache holds (§1.7).
-//
-// Storing an answer is also the success signal, so the failure run resets here,
-// that is what ClearFailure would have been, folded in because no other caller
-// can meaningfully clear a failure without an answer to prove it. The next
-// interval is deliberately not written: scheduling is the worker's decision and
-// arrives through RecordAttempt.
+// deletion of any stored label the answer does not carry. The prune cannot be
+// dropped: a renamed bucket would otherwise leave a stale row beside its
+// replacement forever. It deletes by "label not in this answer", so it costs one
+// statement whatever the cache holds (§1.7). Storing an answer is the success
+// signal, so the failure count resets here; no other caller can clear a failure
+// without an answer. The next interval is the worker's, via RecordAttempt.
 func (r *PublishedQuotaRepository) StorePublished(ctx context.Context, answer domain.PublishedAnswer) error {
 	if err := answer.Validate(); err != nil {
 		return err

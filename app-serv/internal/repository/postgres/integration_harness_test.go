@@ -51,16 +51,10 @@ const testDSNEnv = "PANNELAI_TEST_POSTGRES_DSN"
 
 // newTestPool connects to the configured database and applies migrations, so
 // every integration test in this package shares one setup path.
-//
-// The database's name must declare itself a test database. Every harness in
-// this package TRUNCATEs the tables it reads, so pointing the variable at a
-// real database destroys its data, which happened once, when a run was aimed
-// at the dev database by copying POSTGRES_DSN instead of writing a test DSN:
-// the operator's endpoints and keys were truncated away and had to be
-// recovered from WAL. A name the guard accepts is one that names itself
-// disposable (`pannelai_test`, `pannelai_test_...`); anything else is refused
-// before a single statement runs, because a guard that runs after the first
-// TRUNCATE is not a guard.
+// The database name must declare itself a test database, by containing `test`:
+// every harness here TRUNCATEs the tables it reads, so pointing the variable at a
+// real database destroys its data. Anything else is refused before a single
+// statement runs.
 func newTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 

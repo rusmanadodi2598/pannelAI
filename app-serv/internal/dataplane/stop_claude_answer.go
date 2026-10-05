@@ -33,16 +33,13 @@ import (
 )
 
 // cutClaudeAnswer trims one served Anthropic answer to before the caller's first
-// stop sequence, and returns it unchanged when the answer contains none.
-//
-// Only text blocks are cut and only text blocks after the marker are dropped. A
-// `tool_use` block is not prose the caller asked to stop reading: it is work a
-// client dispatches on, and deleting one because it happened to follow a marker
-// would silently drop a call the caller must still make.
-//
-// The rewrite happens on the decoded object rather than the typed response for the
-// reason stampAnswerModel gives: a body the gateway forwards untouched keeps every
-// member the schema does not model.
+// stop sequence, and returns it unchanged when the answer contains none. Only text
+// blocks are cut and only text blocks after the marker are dropped: a `tool_use`
+// block is work a client dispatches on, not prose the caller asked to stop reading,
+// so deleting one because it followed a marker would drop a call the caller must
+// still make. The rewrite happens on the decoded object rather than the typed
+// response, so a body the gateway forwards untouched keeps every member the schema
+// does not model.
 func cutClaudeAnswer(body []byte, sequences []string) []byte {
 	guard := newStopGuard(sequences)
 	if guard == nil {

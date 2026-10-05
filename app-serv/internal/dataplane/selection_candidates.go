@@ -29,22 +29,16 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// SelectNext returns the first usable credential of a provider that is outside
-// the spent set, so a request that already tried one account asks for the next
-// one rather than failing (SPEC-API-001 §7.7, credential-first failover).
-//
-// The walk follows the provider's rotation policy (§7.14): fill-first serves
-// the provider's endpoints in priority order and starts every request from the
-// first usable one, while round-robin advances the shared cursor and keeps one
-// endpoint for the policy's sticky limit. Inside the endpoint the policy picks
-// the key: the first healthy one by priority under fill-first, the
-// least-recently-used one under round-robin. A keyless endpoint is itself the
-// candidate either way, which covers both the credential-free accounts and the
-// oauth ones a login flow built: those carry their token in the endpoint
-// rather than in a key row, so demanding a key of them skipped the one
-// account a provider had. Each round-robin call advances the rotation cursor, so
-// a request that walks two credentials leaves the cursor two steps on;
-// rotation stays an optimisation, not a correctness input.
+// SelectNext returns the first usable credential of a provider outside the spent
+// set, so a request that already tried one account asks for the next rather than
+// failing. The walk follows the provider's rotation policy: fill-first serves
+// endpoints in priority order from the first usable one and picks its first healthy
+// key by priority, while round-robin advances a shared cursor, keeps one endpoint for
+// its sticky limit, and picks the least-recently-used key. A keyless endpoint is
+// itself the candidate either way, which covers the credential-free accounts and the
+// oauth ones a login flow built: those carry their token on the endpoint rather than
+// in a key row. Every round-robin call advances the cursor, so one walk can leave it
+// several steps on: rotation is an optimisation, not a correctness input.
 func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[string]struct{}) (Selection, error) {
 	now := s.clock()
 	endpoints, err := s.candidates(ctx, providerID)

@@ -62,11 +62,9 @@ const (
 // without exporting a constant because only its own document uses it.
 const openCodeClaudeWire = "claude"
 
-// OpenCodeAnthropicVersion is the API version the Anthropic Messages wire
-// requires on every request. It is the reference's own constant
-// (providers/shared.js:24, written at executors/opencode.js:484) and the value
-// the registry declares for the anthropic entry, so no new value is invented
-// here.
+// OpenCodeAnthropicVersion is the API version the Anthropic Messages wire requires
+// on every request. It is also the value the registry declares for the anthropic
+// entry, so no new value is invented here.
 const OpenCodeAnthropicVersion = "2023-06-01"
 
 // openCodeAnthropicVersionHeader is the header the Messages wire reads. It is
@@ -105,27 +103,23 @@ func (c *OpenCode) entryFor(req Request) registry.Provider {
 	return c.entry
 }
 
-// Endpoint builds the URL the resolved model answers on.
-//
-// A multi-endpoint provider answers on the endpoint its model's own wire names
-// (opencode-go and opencode-zen declare three each), and that endpoint's URL is
-// used as written because it is already complete. A single-endpoint provider
-// composes the URL from its base: the model's own wire decides the path, which
-// is the rule the provider's declared format cannot express, because a
-// `muse-spark-*` model answers on the Responses API while the provider itself
-// speaks chat completions. The base is read as an operator would store it (a
-// bare host, the documented Zen base, a full path, or a trailing slash), so
-// every shape composes into one correct URL.
+// Endpoint builds the URL the resolved model answers on. A multi-endpoint provider
+// answers on the endpoint its model's own wire names, and that URL is used as
+// written because it is already complete. A single-endpoint provider composes the
+// URL from its base, with the model's wire deciding the path: the provider's
+// declared format cannot express it, because a `muse-spark-*` model answers on the
+// Responses API while the provider itself speaks chat completions. The base is
+// read in every shape an operator stores it in (bare host, Zen base, full path,
+// trailing slash) and composes into one correct URL.
 func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
 	entry := c.entryFor(req)
 	wire := opencodeWire(req, entry)
 
 	if endpoint, found := openCodeEndpointFor(entry, req.Model, wire); found {
-		// An endpoint may declare no URL of its own: the reference's
-		// xiaomi-tokenplan table carries only a format and a credential placement
-		// per wire, and the executor composes the URL from the entry's base. So an
-		// endpoint without a base_url keeps the entry's own URL, and only the
-		// credential placement and headers come from the table.
+		// An endpoint may declare no URL of its own, carrying only a format and a
+		// credential placement per wire (the reference's xiaomi-tokenplan table).
+		// Such an endpoint keeps the entry's own URL; only the credential
+		// placement and headers come from the table.
 		base := strings.TrimSpace(endpoint.BaseURL)
 		if base == "" {
 			return openCodeDefaultURL(entry, wire)
@@ -139,15 +133,12 @@ func (c *OpenCode) Endpoint(req Request, _ Credential) (string, error) {
 	return openCodeDefaultURL(entry, wire)
 }
 
-// openCodeDefaultURL builds the URL from the entry's own base, which is what
-// answers a single-endpoint provider and a multi-endpoint request the table did
-// not match.
-//
-// A multi-endpoint entry stores a complete URL in base_url, so that URL is used
-// as written rather than composed with a leaf: appending one would build a path
-// nothing serves, which is the shape a first reading of this rule produced. A
-// single-endpoint entry may store either a complete URL or a base, so the leaf is
-// composed only when the base does not already name it.
+// openCodeDefaultURL builds the URL from the entry's own base, which answers a
+// single-endpoint provider and a multi-endpoint request the table did not match. A
+// multi-endpoint entry stores a complete URL in base_url, so it is used as written:
+// appending a leaf would build a path nothing serves. A single-endpoint entry may
+// store either a complete URL or a base, so the leaf is composed only when the base
+// does not already name it.
 func openCodeDefaultURL(entry registry.Provider, wire string) (string, error) {
 	base := strings.TrimSpace(entry.Transport.BaseURL)
 	if base == "" && len(entry.Transport.BaseURLs) > 0 {
@@ -177,15 +168,13 @@ func openCodeDefaultURL(entry registry.Provider, wire string) (string, error) {
 	return base + openCodeZenPrefix + leaf, nil
 }
 
-// opencodeWire reports the wire the request is being sent in.
-//
-// The translation's own answer wins when it is present, because that is the wire
-// the body actually is: a model may declare one target format while the request
-// was translated into another, and an endpoint table keyed on the wrong value
-// would send the body to a URL that cannot parse it. The model's declared target
-// is the fallback for a caller that resolved a model without translating (the
-// media and decision planes build their own bodies), and the provider's own
-// format is the last resort.
+// opencodeWire reports the wire the request is being sent in. The translation's own
+// answer wins when present, because that is the wire the body actually is: a model
+// may declare one target format while the request was translated into another, and
+// a table keyed on the wrong value sends the body to a URL that cannot parse it.
+// The model's declared target is the fallback for a caller that resolved a model
+// without translating (the media and decision planes build their own bodies), and
+// the provider's own format is the last resort.
 func opencodeWire(req Request, entry registry.Provider) string {
 	if wire := strings.TrimSpace(req.Wire); wire != "" {
 		return wire

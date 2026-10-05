@@ -98,16 +98,14 @@ func validImageDetail(detail string) bool {
 	}
 }
 
-// validReasoningEffort reports whether effort is one of the values the
-// reasoning engine itself acts on, derived from the engine's own level map
-// (draft 034 F5): a body word and a model-name suffix are two doors to the
-// same machinery, so the set is read from reasoning.LevelToBudget instead of
-// restated here, plus the off and auto words configFromEffort answers. The
-// suffix door additionally accepts "ultra" and a numeric budget, which stay
-// suffix-only: ultra is normalized per model on the OpenAI wire alone, and a
-// budget belongs to the parenthesised form rather than the enum field. The
-// field is forwarded verbatim on the same-format path, so an unknown value
-// would reach the provider as-is and stays refused.
+// validReasoningEffort reports whether effort is a value the reasoning engine
+// acts on: the set is read from reasoning.LevelToBudget rather than restated
+// here, plus the "off" and "auto" words configFromEffort answers. The
+// model-name suffix door additionally accepts "ultra" and a numeric budget, and
+// those stay suffix-only: ultra is normalized per model on the OpenAI wire
+// alone, and a budget belongs to the parenthesised form rather than the enum
+// field. The field is forwarded verbatim on the same-format path, so an unknown
+// value would reach the provider as-is and stays refused.
 func validReasoningEffort(effort string) bool {
 	if _, known := reasoning.LevelToBudget[effort]; known {
 		return true

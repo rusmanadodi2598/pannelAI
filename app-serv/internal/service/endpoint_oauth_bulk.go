@@ -51,16 +51,13 @@ type OAuthImportResult struct {
 	TokenHint string
 }
 
-// BulkImportOAuth imports already-obtained OAuth credentials as endpoints.
-//
-// An account identity already staged is updated in place rather than duplicated,
-// because §8.1 makes a re-import an update: importing the same account twice must
-// not leave two endpoints competing for one token set.
-//
-// Every row is sealed and matched before the store is called, so a batch with one
-// bad row writes nothing at all; the store then applies the whole set in a single
-// transaction. That is the §8.1 rule this route shares with /endpoints/bulk, and
-// it is why the loop below only builds values.
+// BulkImportOAuth imports already-obtained OAuth credentials as endpoints. An
+// account identity already staged is updated in place rather than duplicated:
+// importing the same account twice must not leave two endpoints competing for
+// one token set. Every row is sealed and matched before the store is called, so
+// a batch with one bad row writes nothing at all, and the store then applies the
+// whole set in a single transaction, the rule this route shares with
+// /endpoints/bulk. The loop below therefore only builds values.
 func (s *EndpointService) BulkImportOAuth(ctx context.Context, providerID string, accounts []OAuthAccountInput) ([]OAuthImportResult, error) {
 	if len(accounts) == 0 {
 		return nil, domain.NewValidationError("accounts is required")

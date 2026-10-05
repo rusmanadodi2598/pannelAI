@@ -27,7 +27,7 @@ import (
 )
 
 // embedded carries the registry inside the binary, so a deployed app-serv needs
-// no registry file on disk (SPEC-API-001 §6).
+// no registry file on disk.
 //
 //go:embed registry.yaml
 var embedded embed.FS
@@ -43,7 +43,7 @@ const (
 )
 
 // DefaultFormat is the wire format a provider uses when it declares none; the
-// reference's registry schema applies the same default (SPEC-API-001 §5).
+// reference's registry schema applies the same default.
 const DefaultFormat = "openai"
 
 // CustomPriority places a user-defined node after every built-in provider, so
@@ -95,20 +95,12 @@ func decode(raw []byte) (Document, error) {
 
 // NewIndex validates the document and builds the lookup tables.
 //
-// Name resolution has one precedence rule, and it follows the reference rather
-// than intuition: an alias wins over another provider's bare id.
-//
-// The reference builds one flat alias table from every provider's
-// `uiAlias || alias` and resolves with `ALIAS_TO_ID[token] || token`, so a
-// provider whose id is also someone else's alias is UNREACHABLE by that id.
-// That case exists in the data: `mimo-free` declares `alias: mmf` while a
-// separate hidden entry has `id: mmf`, and both point at the same base URL and
-// model. Resolving id-first would summon the hidden entry and silently change
-// which provider answers "mmf/..."; alias-first reaches the same upstream the
-// reference does.
-//
-// Two *aliases* colliding stays fatal: neither is canonical, the reference
-// would resolve by insertion order, and there is no basis to prefer one.
+// Name resolution has one precedence rule and it follows the reference rather
+// than intuition: an alias wins over another provider's bare id, because the
+// reference resolves through one flat alias table. A provider whose id is also
+// someone else's alias is unreachable by that id, and the embedded data has
+// such a pair. Two *aliases* colliding stays fatal: neither is canonical, so
+// neither wins.
 func NewIndex(doc Document) (*Index, error) {
 	idx := &Index{
 		revision:  doc.Revision,
@@ -161,17 +153,13 @@ func (p Provider) validate() error {
 }
 
 // BuildAuthType derives the provider's default authentication mode when the
-// document does not state one.
+// document does not state one: no_auth for a provider that needs no
+// credential, oauth when it has a flow, otherwise api_key. It runs once at
+// load so the rule has one home instead of being re-inferred from category.
 //
-// The reference leaves authType unset for most entries and lets the UI infer it
-// from the provider's category, which puts the same rule in more than one
-// place. Deriving it once at load keeps one answer: no_auth for a provider that
-// needs no credential, oauth when it has a flow, otherwise api_key.
-//
-// no_auth is read from either level, because the reference writes it on the
-// provider for some entries and on the transport for others; reading only one
-// level would report a credential-free provider as needing a key, and routing
-// would then refuse a request it could have served.
+// no_auth is read from either level, provider or transport: reading only one
+// reports a credential-free provider as keyed and routing refuses a request it
+// could have served.
 func (p *Provider) BuildAuthType() {
 	p.NoAuth = p.NoAuth || p.Transport.NoAuth
 	if p.Transport.AuthType != "" && p.AuthType == "" {

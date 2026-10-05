@@ -144,15 +144,11 @@ func (h *QuotaHandler) PutCap(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUsage serves GET /api/v1/quotas/{endpoint_id}/usage: the provider's own
-// answer about one connection's allocation. It is a separate body from Get because
-// the two answers disagree by nature and neither is the other's correction
-// (draft 036 §6): §7.12's windows say what this gateway sent, this says what the
-// provider sold.
-//
-// The answer comes from the poll worker's cache by default. `?force=1` is the
-// operator's explicit press on one card and asks the provider now, one call for
-// one account, which is the same seam the reference's per-card refresh uses, and
-// the reason the page itself never has to fan out.
+// answer about one connection's allocation. It is a separate body from Get
+// because the two disagree by nature and neither is the other's correction: the
+// quota windows say what this gateway sent, this says what the provider sold.
+// The answer comes from the poll worker's cache by default; `?force=1` asks the
+// provider now, one call for one account, so the page itself never fans out.
 func (h *QuotaHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	usage, err := h.quotas.PublishedUsage(r.Context(), r.PathValue("endpoint_id"), wantForce(r))
 	if err != nil {

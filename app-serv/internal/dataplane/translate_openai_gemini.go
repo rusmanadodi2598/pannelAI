@@ -133,16 +133,13 @@ type GeminiFunctionDecl struct {
 	Parameters  json.RawMessage `json:"parameters"`
 }
 
-// OpenAIToGemini translates an OpenAI chat request into a Gemini
-// generateContent payload.
-//
-// Three shape differences are load-bearing. A system prompt has no place in
-// Gemini's contents, so it moves to systemInstruction (a lone system message is
-// treated as the user's first turn, exactly as the reference does). A tool
-// result is a functionResponse part inside a user turn, paired by call id, rather
-// than its own message. And tool arguments are an object rather than a JSON
-// string, so an unparseable argument string becomes an empty object instead of
-// invalid JSON.
+// OpenAIToGemini translates an OpenAI chat request into a Gemini generateContent
+// payload. Three shape differences are load-bearing. A system prompt has no place in
+// Gemini's contents, so it moves to systemInstruction, and a lone system message is
+// treated as the user's first turn. A tool result is a functionResponse part inside a
+// user turn, paired by call id, rather than its own message. Tool arguments are an
+// object rather than a JSON string, so an unparseable argument string becomes an
+// empty object instead of invalid JSON.
 func OpenAIToGemini(req schema.ChatRequest, upstreamModel string) GeminiRequest {
 	out := GeminiRequest{
 		Model:          upstreamModel,

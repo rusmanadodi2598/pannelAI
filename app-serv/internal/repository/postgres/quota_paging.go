@@ -24,11 +24,6 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// quotaAccountSource is every (provider, endpoint) pair the quota screen knows
-// about: the configured accounts, plus the window rows' own endpoints so the
-// credential-free virtual lane and an endpoint that was deleted after being
-// counted still form a group. `provider_id` is a property of the endpoint and is
-// joined, never copied into the counter row.
 // quotaMaxRowsPerPage caps the rows one page of the collection read may return.
 // Paging is by provider group, and a group can hold any number of windows, so
 // without this a single provider with a long history makes the page unbounded on
@@ -36,6 +31,11 @@ import (
 // cards are complete for every account count the deployment realistically holds.
 const quotaMaxRowsPerPage = 1000
 
+// quotaAccountSource is every (provider, endpoint) pair the quota screen knows
+// about: the configured accounts, plus the window rows' own endpoints, so the
+// credential-free virtual lane and an endpoint deleted after being counted still
+// form a group. `provider_id` is a property of the endpoint: joined, never copied
+// into the counter row.
 const quotaAccountSource = `
     SELECT coalesce(e.provider_id, '') AS provider_id, e.id AS endpoint_id
       FROM upstream_endpoints e
@@ -66,17 +66,13 @@ const quotaPageCTE = `WITH page AS (
 )`
 
 // PageWindowsByProvider returns one page of the collection read: every window of
-// the page's provider groups, with the total group count.
-//
-// The count and the page are two statements: a window written between them shifts
-// a boundary at worst, and never loses a group the count promised.
-//
-// The row ceiling is separate from the group ceiling on purpose. Paging by group
-// bounds how many providers one round trip covers, not how many rows those groups
-// hold: a provider with ten thousand windows would return ten thousand rows to a
-// live screen. The LIMIT is what §1.7 asks of a request-serving read, and a group
-// beyond it is served in key order and truncated, which is a visible gap in one
-// card rather than an unbounded read of the table.
+// the page's provider groups, with the total group count. The count and the page
+// are two statements: a window written between them shifts a boundary at worst
+// and never loses a group the count promised.
+// The row ceiling is separate from the group ceiling: paging by group bounds the
+// providers per round trip, not the rows they hold, and the LIMIT is what §1.7
+// asks of a request-serving read. A group beyond the ceiling is served in key
+// order and truncated: a visible gap in one card, not an unbounded read.
 func (r *QuotaRepository) PageWindowsByProvider(ctx context.Context, page, perPage int) ([]domain.QuotaWindow, int64, error) {
 	var total int64
 	if err := r.pool.QueryRow(ctx, quotaGroupCount).Scan(&total); err != nil {
@@ -112,14 +108,12 @@ func (r *QuotaRepository) PageWindowsByProvider(ctx context.Context, page, perPa
 }
 
 // PageAccountsByProvider returns every account in the page's provider groups, in
-// the order the groups were selected and then by endpoint id, with the same total
-// group count the window page reports.
-//
-// This is what makes a card exist for an account that has served nothing: the
-// screen cannot show a provider's published quota for an endpoint it never learns
-// about, and the endpoint list was previously implied by the counted rows. The
-// group ceiling bounds the round trips, and the row ceiling bounds the rows the
-// groups can hold, which is the part §1.7 actually asks of a request-serving read.
+// group order then endpoint id, with the same total group count the window page
+// reports. Listing accounts rather than implying them from counted rows is what
+// makes a card exist for an endpoint that has served nothing: the screen cannot
+// show a provider's published quota for an account it never learns about. The
+// group ceiling bounds the round trips and quotaMaxRowsPerPage bounds the rows,
+// which is what §1.7 asks of a request-serving read.
 func (r *QuotaRepository) PageAccountsByProvider(ctx context.Context, page, perPage int) ([]domain.QuotaAccount, int64, error) {
 	var total int64
 	if err := r.pool.QueryRow(ctx, quotaGroupCount).Scan(&total); err != nil {

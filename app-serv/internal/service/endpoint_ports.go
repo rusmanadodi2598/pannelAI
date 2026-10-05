@@ -30,16 +30,14 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
 
-// ProviderIndex resolves a provider identifier, so the service can refuse a
-// provider_id the registry does not know (SPEC-API-001 §6: an unknown provider id
-// is a VALIDATION_ERROR). All and Categories are part of the contract because
-// §7.4 lists and filters the registry, and a list that could only look up ids
-// one at a time would force every caller to invent its own enumeration.
-//
-// It is an interface rather than a concrete *registry.Index because the runtime
-// view must include custom nodes created during the process's life: a fixed index
-// value would freeze the registry at boot and make a node just created through
-// POST /provider-nodes unusable as a provider_id.
+// ProviderIndex resolves a provider identifier so the service can refuse a
+// provider_id the registry does not know, which is a VALIDATION_ERROR. All and
+// Categories are in the contract because the provider screens enumerate and
+// filter the registry, and an id-at-a-time lookup would force every caller to
+// invent its own enumeration. It is an interface rather than a concrete
+// *registry.Index because the runtime view must include custom nodes created
+// during the process's life: a fixed value would freeze the registry at boot and
+// make a node just created through POST /provider-nodes unusable as a provider.
 type ProviderIndex interface {
 	// Provider resolves an id, alias, or node prefix to its entry.
 	Provider(name string) (registry.Provider, bool)
@@ -109,13 +107,10 @@ type EndpointStore interface {
 	// transaction. existing[i] selects the statement for row i: true updates the
 	// endpoint that already stands for the account, false inserts a new one. The
 	// slice must have exactly one entry per endpoint, because a missing entry
-	// would silently turn an update into a duplicate insert.
-	//
-	// It exists beside CreateBatch because the OAuth import is the one batch
-	// route that updates as well as creates (§8.1: a re-import of the same
-	// account is an update), and CreateBatch cannot express that. An
-	// implementation SHOULD return an error satisfying BulkRowIndexer when it
-	// can attribute the refusal to one row.
+	// would silently turn an update into a duplicate insert. It sits beside
+	// CreateBatch because the OAuth import is the one batch route that updates as
+	// well as creates, which CreateBatch cannot express. An implementation SHOULD
+	// return an error satisfying BulkRowIndexer when it can name the refused row.
 	ImportOAuthBatch(ctx context.Context, endpoints []domain.UpstreamEndpoint, existing []bool) error
 
 	// IDsByProvider returns every endpoint id of the provider in the priority

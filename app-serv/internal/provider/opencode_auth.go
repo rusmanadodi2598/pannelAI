@@ -28,29 +28,21 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
-// ApplyAuth places the free tier's credential and identity on the request.
-//
-// The credential is always the literal public bearer: the free tier pools
-// anonymous traffic, so a configured key would both be ignored and leak to an
-// endpoint that has no use for it. The session is derived from the endpoint so
-// one account presents one stable identity.
-//
-// A request headed for the Anthropic Messages leaf also names the API version
-// that wire requires, which is the reference's own rule for that URL
-// (executors/opencode.js:484). It is decided from the URL rather than from the
-// model, because the wire is a property of the endpoint the connector built: a
-// claude-target model on the go lane reaches /zen/go/v1/messages and needs the
-// same header there. A version the entry already declared is kept, because the
-// registry is where a provider's wire version is stated.
+// ApplyAuth places the free tier's credential and identity on the request. The
+// credential is always the literal public bearer, because the free tier pools
+// anonymous traffic: a configured key would be ignored and would leak to an
+// endpoint that has no use for it. The session is derived from the endpoint, so
+// one account presents one stable identity. A request on the Anthropic Messages
+// leaf also names the API version that wire requires, decided from the URL rather
+// than the model, so a claude-target model on the go lane gets it at
+// /zen/go/v1/messages too. A version the entry declared is kept.
 func (c *OpenCode) ApplyAuth(req *http.Request, cred Credential) error {
 	// The auth path has no model to read a provider override from, so it uses
 	// the entry the connector was built for.
 	entry := c.entry
 	// A keyed lane places the credential the way the endpoint it reached
 	// declares, because a multi-endpoint provider reads a different header per
-	// wire. A keyless entry never does: the free lane pools anonymous traffic,
-	// so it presents the literal public bearer and a configured key would both
-	// be ignored and leak to an endpoint that has no use for it.
+	// wire. A keyless entry never does; the free-lane path below always applies.
 	if !entry.NoAuth && entry.AuthType != registry.AuthNone {
 		family, value, err := cred.Secret()
 		if err != nil {

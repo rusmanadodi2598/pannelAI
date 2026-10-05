@@ -34,17 +34,14 @@ var OpenCodeSessionRE = regexp.MustCompile(`^ses_[0-9a-f]{12}[0-9A-Za-z]{14}$`)
 // base62Alphabet is the reference's alphabet, in its order.
 const base62Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
-// OpenCodeSession derives the canonical session id one endpoint presents.
-//
-// It is a pure function of the endpoint id, which is what makes it both stable
-// (the same account presents one identity across every request, so its quota is
-// not spent on fresh sessions) and stateless (the connector holds no map and
-// needs no lock). Two endpoints hash to different ids, so one caller's quota is
-// never spent by another's traffic.
-//
-// The layout mirrors the reference's `translateSessionId`: the first six digest
-// bytes render as lowercase hex and the next fourteen map into base62, giving
-// the twelve-hex-plus-fourteen-base62 shape the regex above accepts.
+// OpenCodeSession derives the canonical session id one endpoint presents. It is a
+// pure function of the endpoint id, which makes it both stable (one account
+// presents one identity across every request, so its quota is not spent on fresh
+// sessions) and stateless (the connector holds no map and needs no lock). Two
+// endpoints hash to different ids, so one caller's quota is never spent by
+// another's traffic. The layout mirrors the reference's `translateSessionId`: the
+// first six digest bytes render as lowercase hex and the next fourteen map into
+// base62, giving the twelve-hex-plus-fourteen-base62 shape the regex accepts.
 func OpenCodeSession(endpointID string) string {
 	digest := sha256.Sum256([]byte("opencode\x00" + endpointID))
 	return "ses_" + hex.EncodeToString(digest[:6]) + base62(digest[6:20])

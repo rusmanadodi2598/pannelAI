@@ -57,18 +57,13 @@ func NewPublishedQuotaRepository(pool *pgxpool.Pool) *PublishedQuotaRepository {
 }
 
 // ListPublishedByEndpointIDs returns every cached answer for the batch, keyed by
-// endpoint id, in ONE statement.
-//
-// The batch is the point: the screen's read path passes the ids of the page it is
-// rendering and must not pay a round trip per account (§1.7), so the filter is an
-// array membership test rather than a built-up IN list. The join is from state to
-// window, not the reverse, because an endpoint whose provider answered with no
-// buckets still has a plan and a fetched_at to show; the invariant that a window
-// row never stands alone is held by StorePublished, which writes both in one
-// transaction.
-//
-// An empty id list costs no query at all, a scan over an empty array is still a
-// round trip, and a page with no rows should cost nothing.
+// endpoint id, in ONE statement. The batch is the point: the screen passes the
+// ids of the page it is rendering and must not pay a round trip per account
+// (§1.7), so the filter is an array membership test, not a built-up IN list. An
+// empty id list runs no query, since scanning an empty array is still a round
+// trip. The join runs state to window, not the reverse: an endpoint whose
+// provider answered with no buckets still has a plan and a fetched_at to show.
+// StorePublished writes both in one transaction, so no window row stands alone.
 func (r *PublishedQuotaRepository) ListPublishedByEndpointIDs(ctx context.Context, endpointIDs []string) (map[string]domain.PublishedQuota, error) {
 	out := make(map[string]domain.PublishedQuota, len(endpointIDs))
 	if len(endpointIDs) == 0 {
@@ -110,14 +105,11 @@ func (r *PublishedQuotaRepository) ListPublishedByEndpointIDs(ctx context.Contex
 }
 
 // DueForRefresh returns the endpoints whose next attempt has come due, oldest
-// first, at most limit of them.
-//
-// The order is the sweep's fairness guarantee: the endpoint waiting longest is
-// polled first, so a limit smaller than the due set rotates coverage across the
-// fleet instead of refreshing the same heads forever. The tie-break on id keeps a
-// tick reproducible. `next_attempt_at <= $1` is served by the index 000013
-// declares, which makes the sweep a range scan with a bounded read rather than a
-// sort of the whole table.
+// first, at most limit of them. The order is the sweep's fairness guarantee: a
+// limit smaller than the due set rotates coverage across the fleet instead of
+// refreshing the same heads forever, and the tie-break on id keeps a tick
+// reproducible. `next_attempt_at <= $1` is index-backed, so the sweep is a
+// bounded range scan rather than a sort of the whole table.
 func (r *PublishedQuotaRepository) DueForRefresh(ctx context.Context, now time.Time, limit int) ([]domain.PublishedState, error) {
 	if limit < 1 {
 		return nil, nil

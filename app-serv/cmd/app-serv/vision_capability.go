@@ -29,15 +29,12 @@ import (
 
 // visionCapabilityCheck answers whether a catalog model reads images.
 //
-// It judges the model id the operator selected, which is the id the catalog
-// lists, rather than the upstream id an override may point at: the question the
-// panel asks is "can this model, as this gateway names it, read an image".
-//
-// The provider travels with it. registry.VisionCapable takes only a model id,
-// which silently skips the per-provider override layer inside the resolver,
-// measured here, that layer is where an entry's own answer differs from the
-// family pattern, so dropping it made the gateway route on a weaker answer than
-// the catalog it was built from.
+// It judges the model id the operator selected, the id the catalog lists, not
+// the upstream id an override may point at: the panel asks whether this model,
+// as this gateway names it, reads an image. The provider travels with it because
+// registry.VisionCapable takes only a model id, which skips the per-provider
+// override layer in the resolver where an entry's own answer differs from the
+// family pattern.
 func visionCapabilityCheck(ref domain.ModelRef) bool {
 	return registry.Capabilities(ref.ProviderID(), ref.ModelID()).Vision
 }

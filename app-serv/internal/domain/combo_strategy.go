@@ -86,14 +86,11 @@ func (s RotationState) Normalized(length int) RotationState {
 }
 
 // NextOrder returns the model order this request uses and the state the next
-// request continues from (SPEC-API-001 §7.7, ported from combo.js
-// getRotatedModels).
-//
-// Only round_robin rotates, and a list of fewer than two models has nothing to
-// distribute, so both cases return the input order with the state untouched.
-// stickyLimit retries on one model before the leading model advances; a value
-// below 1 is floored to 1 because a zero would leave the state advancing on
-// every request and the caller with a rotation it never asked for.
+// request continues from. Only round_robin rotates, and a list of fewer than two
+// models has nothing to distribute: both return the input order with the state
+// untouched. stickyLimit is how many requests one model leads before the leader
+// advances; a value below 1 is floored to 1, because a zero would advance the
+// state on every request into a rotation the caller never asked for.
 func (s ComboStrategy) NextOrder(models []string, stickyLimit int, state RotationState) ([]string, RotationState) {
 	order := make([]string, len(models))
 	copy(order, models)
@@ -113,15 +110,13 @@ func (s ComboStrategy) NextOrder(models []string, stickyLimit int, state Rotatio
 }
 
 // RotationRequestIndex returns the index of the model leading the request at
-// position requests (zero-based) of a round-robin combo with length models and
-// a sticky limit of stickyLimit consecutive requests per model.
-//
-// It is the closed form of NextOrder: iterating NextOrder once per request
-// visits exactly these indices, which TestRotationRequestIndex_MatchesNextOrder
-// pins. The Redis-backed store persists one request counter and derives the
-// index from it rather than storing the index and the use count, so the
-// distribution rule exists once, here, instead of again inside a Lua script that
-// could drift from it.
+// position requests (zero-based) of a round-robin combo with length models and a
+// sticky limit of stickyLimit consecutive requests per model. It is the closed
+// form of NextOrder: iterating NextOrder once per request visits exactly these
+// indices, which TestRotationRequestIndex_MatchesNextOrder pins. The Redis-backed
+// store persists one request counter and derives the index from it rather than
+// storing the index and the use count, so the distribution rule exists once here
+// instead of again inside a Lua script that could drift from it.
 func RotationRequestIndex(requests, stickyLimit, length int) int {
 	if length <= 1 {
 		return 0
@@ -137,12 +132,9 @@ func RotationRequestIndex(requests, stickyLimit, length int) int {
 
 // RotateRefs shifts the leading n refs to the end, so the model that leads this
 // request is the one the caller tries first and the rest stay in priority order
-// behind it.
-//
-// It is exported because the Redis-backed rotation store applies it to the index
-// RotationRequestIndex derived from the stored counter: the store owns the
-// atomic count and this function owns what an index means, and splitting them
-// would let the stored state and the served order disagree.
+// behind it. It is exported because the Redis-backed rotation store applies it to
+// the index RotationRequestIndex derives from the stored counter: the store owns
+// the atomic count and this function owns what an index means.
 func RotateRefs(refs []string, n int) []string {
 	out := make([]string, len(refs))
 	if len(refs) == 0 {

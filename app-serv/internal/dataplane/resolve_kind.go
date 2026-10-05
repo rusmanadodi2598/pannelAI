@@ -37,9 +37,8 @@ const (
 	// KindChat is the chat data plane: the OpenAI, Anthropic, and Responses
 	// wires the gateway translates.
 	KindChat = "chat"
-	// KindSystemOne is the native decision route (SPEC-API-001 §7.15). It is the
-	// reference's own spelling of the kind, so the registry and this constant
-	// cannot disagree.
+	// KindSystemOne is the native decision route. It is the reference's own
+	// spelling of the kind, so the registry and this constant cannot disagree.
 	KindSystemOne = "systemone"
 )
 
@@ -65,15 +64,12 @@ func modelServesKind(model registry.Model, kind string) bool {
 }
 
 // kindRefusal explains why a model cannot serve a plane, naming the kind so the
-// reason is readable rather than a bare "not found".
-//
-// The two planes answer with different codes on purpose, and each matches what
-// the code means to a caller. A model of another kind asked for on the chat plane
-// is a model the chat plane does not have, which is MODEL_NOT_FOUND: the catalog
-// list already omits it, so a client asking for it named something absent. The
-// decision route instead refuses by name what it does have but cannot serve,
-// which is PROVIDER_NOT_ROUTABLE: the route exists, the model exists, and the
-// combination is what is unsupported.
+// reason is readable rather than a bare "not found". The two planes answer with
+// different codes on purpose, each matching what the code means to a caller. A model
+// of another kind asked for on the chat plane is MODEL_NOT_FOUND, because the
+// catalog list already omits it and the client named something absent. The decision
+// route has the model but cannot serve it, so the combination is what is
+// unsupported: PROVIDER_NOT_ROUTABLE.
 func kindRefusal(providerID, modelID, declared, wanted string) error {
 	if wanted == KindSystemOne {
 		return dataPlaneError(CodeProviderNotRoutable,

@@ -87,16 +87,11 @@ func NewSystemOneService(deps SystemOneServiceDeps) (*SystemOneService, error) {
 }
 
 // Decide resolves the model, selects an account, forwards the decision payload,
-// and returns the upstream's answer verbatim.
-//
-// The model must resolve to a provider that declares a `systemone` endpoint: a
-// chat model named on this route is refused by name, because the upstream would
-// read a decision payload it never receives. The reference applies the same rule
-// in its core, which refuses a provider without the block
-// (systemoneCore.js:20-26).
-//
-// A refusal before the call leaves one request log row and no usage row, the same
-// shape the embeddings plane gives a request refused before the pipeline ran.
+// and returns the upstream's answer verbatim. The model must resolve to a provider
+// declaring a `systemone` endpoint: a chat model named on this route is refused by
+// name, because the upstream would receive a decision payload it never parses. A
+// refusal before the call leaves one request log row and no usage row, the shape
+// the embeddings plane gives a refused request.
 func (s *SystemOneService) Decide(ctx context.Context, req schema.SystemOneRequest, keyID string) (json.RawMessage, error) {
 	call, err := s.resolveCall(ctx, req)
 	if err != nil {

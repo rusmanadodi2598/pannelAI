@@ -27,21 +27,15 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// PagePublished attaches the cached provider answer to the accounts one page names.
-//
-// The account list, not the counted windows, decides who gets an entry: an endpoint that
-// has routed nothing yet has no window row, and a card list built from windows alone
-// hides a provider whose quota the worker has actually answered for. Every account on the
-// page is therefore answered, and one the worker has never reached carries `NeverPolled`
-// so the card can say that plainly rather than look empty.
-//
-// It is still one query for the whole page: the ids come from the page's accounts and go
-// to the repository in a single batched read, so a page of forty accounts costs one
-// statement rather than forty.
-//
-// A read failure is returned to the caller rather than swallowed, but the handler keeps
-// the counted windows on the page when it happens: the gateway's own numbers are still
-// true, and losing them because a cache read failed would be the worse answer.
+// PagePublished attaches the cached provider answer to the accounts one page
+// names. The account list, not the counted windows, decides who gets an entry: an
+// endpoint that has routed nothing yet has no window row, so a card list built
+// from windows alone hides a provider the worker did answer for. Every account on
+// the page is answered, and one the worker never reached carries `NeverPolled` so
+// the card says that plainly rather than look empty. It stays one batched read for
+// the page, so forty accounts cost one statement. A read failure is returned, not
+// swallowed; the handler keeps the counted windows, as the gateway's own numbers
+// are still true and losing them over a cache read is the worse answer.
 func (s *QuotaService) PagePublished(ctx context.Context, accounts []domain.QuotaAccount) ([]PublishedUsage, error) {
 	if s.publishedCache == nil || len(accounts) == 0 {
 		return nil, nil

@@ -120,17 +120,13 @@ func (r *EndpointRepository) IDsByProvider(ctx context.Context, providerID strin
 }
 
 // FindOAuthEndpoint returns the OAuth endpoint of one provider whose stored
-// account identity matches the given email or workspace id.
-//
-// The comparison runs in SQL against the account jsonb rather than in the
-// service, because matching in Go would mean reading every endpoint of the
-// provider and hoping the account is on the page, and a re-import that silently
-// created a duplicate would be invisible until routing saw two accounts claiming
-// one identity.
-//
-// The column side is lower()ed because rows written before the aggregate
-// normalized the email can hold any letter case; the argument arrives already
-// canonical from domain.NormalizeEmail.
+// account identity matches the given email or workspace id. The match runs in SQL
+// against the account jsonb rather than in the service, which would mean reading
+// every endpoint of the provider and hoping the account is on the page; a
+// duplicate identity would stay invisible until routing saw two accounts claiming
+// one id. The column is lower()ed because rows written before the aggregate
+// normalized the email hold any letter case; the argument arrives canonical from
+// domain.NormalizeEmail.
 func (r *EndpointRepository) FindOAuthEndpoint(ctx context.Context, providerID, email, workspaceID string) (string, error) {
 	const q = `
 SELECT id

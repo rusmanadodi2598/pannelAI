@@ -64,16 +64,13 @@ type NodeModelList struct {
 }
 
 // NodeModelSource reads one custom provider node's model list from its upstream.
-//
 // The node is named by id rather than handed over as a domain value because the
-// two callers hold different things: the overlay has the stored node, while the
-// provider read has only the synthesized entry the index hands out. Naming the
-// id lets one port serve both, and keeps the adapter, which is the only layer
-// that may read storage and dial, free to load what it needs.
-//
-// An implementation returns ModelSourceRegistry with a Warning rather than an
-// error when the upstream cannot answer: a node whose upstream is down must
-// still resolve, or a model-list problem becomes a routing outage.
+// two callers hold different things: the overlay has the stored node, the provider
+// read only the synthesized entry the index hands out, so one port serves both and
+// the adapter stays free to load what it needs. An implementation returns
+// ModelSourceRegistry with a Warning rather than an error when the upstream cannot
+// answer: a node whose upstream is down must still resolve, or a model-list
+// problem becomes a routing outage.
 type NodeModelSource interface {
 	ListNodeModels(ctx context.Context, nodeID string) (NodeModelList, error)
 }

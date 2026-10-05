@@ -43,19 +43,10 @@ type openAIErrorDetail struct {
 	Code    string `json:"code"`
 }
 
-// writeDataPlaneError renders any error in the OpenAI envelope (§4).
-//
-// The wrapped cause is never written: only the data plane's own message reaches a
-// client, so an upstream's raw body or a driver message cannot leak through this
-// path (AGENTS.md §1.3).
-//
-// The access log records the machine code and never the message (register G9): a
-// data-plane failure's message can quote an upstream's text back, and that text
-// can carry the credential the gateway sent, so only the code is safe to log.
 // requestIDOf answers the trace id of the request this writer belongs to, or ""
-// for a writer that does not carry one (a test driving a handler with a bare
-// httptest.ResponseRecorder). It exists so a data-plane failure can be joined to
-// the access-log line holding the same id (AGENTS.md §1.6).
+// for a writer that does not carry one, such as a test driving a handler with a
+// bare httptest.ResponseRecorder. It exists so a data-plane failure can be joined
+// to the access-log line carrying the same id (AGENTS.md §1.6).
 func requestIDOf(w http.ResponseWriter) string {
 	if carrier, ok := w.(schema.RequestIDCarrier); ok {
 		return carrier.RequestID()
@@ -63,6 +54,12 @@ func requestIDOf(w http.ResponseWriter) string {
 	return ""
 }
 
+// writeDataPlaneError renders any error in the OpenAI data plane envelope. The
+// wrapped cause is never written, only the data plane's own message, so an
+// upstream's raw body or a driver message cannot leak (AGENTS.md §1.3). The access
+// log records the machine code and never the message: a failure's message can
+// quote an upstream's text back, and that text can carry the credential the
+// gateway sent.
 func writeDataPlaneError(w http.ResponseWriter, err error) {
 	failure := dataplane.AsError(err)
 	if failure == nil {
