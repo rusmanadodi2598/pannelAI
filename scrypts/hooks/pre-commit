@@ -35,7 +35,7 @@ staged_go_files() {
 
 mapfile -t go_files < <(staged_go_files)
 
-# --------------------------------------------------------------- formatting
+# formatting
 
 if [ "${#go_files[@]}" -gt 0 ]; then
 	gate_start "gofmt (staged Go files)"
@@ -50,7 +50,7 @@ if [ "${#go_files[@]}" -gt 0 ]; then
 	fi
 fi
 
-# ------------------------------------------------------------------ headers
+# headers
 
 if [ "${#go_files[@]}" -gt 0 ]; then
 	gate_start "AGENTS.md §1.2 headers (staged Go files)"
@@ -62,7 +62,7 @@ if [ "${#go_files[@]}" -gt 0 ]; then
 	fi
 fi
 
-# ------------------------------------------------------------------ secrets
+# secrets
 
 gate_start "gitleaks (staged)"
 if bash "$root/scrypts/gates/secrets.sh" --staged; then
@@ -72,7 +72,7 @@ else
 	failed=1
 fi
 
-# ------------------------------------------------------- contract drift
+# contract drift
 
 # A here-string rather than `git … | grep -q`: under `set -o pipefail` a producer
 # killed by SIGPIPE when grep exits on its first match would report 141, and the

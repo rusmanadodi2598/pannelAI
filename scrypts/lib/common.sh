@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-# ---------------------------------------------------------------- repository
+# repository
 
 # repo_root prints the absolute path of the repository root. A hook can run with
 # any working directory, so every gate resolves paths from here rather than
@@ -21,7 +21,7 @@ repo_root() {
 	}
 }
 
-# ---------------------------------------------------------------- reporting
+# reporting
 
 readonly C_RESET=$'\033[0m'
 readonly C_RED=$'\033[31m'
@@ -57,7 +57,7 @@ gate_skip() {
 	printf '%sSKIP%s %s\n' "$(_colour "$C_YELLOW")" "$(_colour "$C_RESET")" "$1"
 }
 
-# ------------------------------------------------------------------- tools
+# tools
 
 # have reports whether a command exists on PATH.
 have() {
@@ -96,7 +96,7 @@ tool_path() {
 	return 1
 }
 
-# ------------------------------------------------------------------- files
+# files
 
 # go_service_dirs prints the directories holding Go service modules, one per
 # line. Only `app-*/` is considered, which is the scope AGENTS.md §1.1 names
