@@ -13,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -39,7 +39,7 @@ func TestMediaTarget_CredentialPlacement(t *testing.T) {
 		{
 			name:        "a bearer header carries the key",
 			media:       registry.MediaConfig{AuthType: registry.AuthAPIKey, AuthHeader: "bearer"},
-			credential:  provider.Credential{APIKey: "sk-x"},
+			credential:  provider.StaticKey("", "", "sk-x"),
 			wantHeaders: map[string]string{"Authorization": "Bearer sk-x"},
 		},
 		{
@@ -49,7 +49,7 @@ func TestMediaTarget_CredentialPlacement(t *testing.T) {
 		{
 			name:        "a token header uses the Token scheme",
 			media:       registry.MediaConfig{AuthType: registry.AuthAPIKey, AuthHeader: "token"},
-			credential:  provider.Credential{APIKey: "dg-x"},
+			credential:  provider.StaticKey("", "", "dg-x"),
 			wantHeaders: map[string]string{"Authorization": "Token dg-x"},
 		},
 		{
@@ -59,7 +59,7 @@ func TestMediaTarget_CredentialPlacement(t *testing.T) {
 		{
 			name:        "the registry default is a bearer header",
 			media:       registry.MediaConfig{AuthType: registry.AuthAPIKey},
-			credential:  provider.Credential{APIKey: "sk-x"},
+			credential:  provider.StaticKey("", "", "sk-x"),
 			wantHeaders: map[string]string{"Authorization": "Bearer sk-x"},
 		},
 		{
@@ -69,7 +69,7 @@ func TestMediaTarget_CredentialPlacement(t *testing.T) {
 		{
 			name:       "a query parameter carries the key",
 			media:      registry.MediaConfig{AuthType: registry.AuthAPIKey, AuthHeader: "key"},
-			credential: provider.Credential{APIKey: "sk-x"},
+			credential: provider.StaticKey("", "", "sk-x"),
 			wantQuery:  "key=sk-x",
 		},
 		{
@@ -80,12 +80,12 @@ func TestMediaTarget_CredentialPlacement(t *testing.T) {
 		{
 			name:       "a no_auth kind sends nothing even with a credential",
 			media:      registry.MediaConfig{AuthType: registry.AuthNone},
-			credential: provider.Credential{APIKey: "sk-x"},
+			credential: provider.StaticKey("", "", "sk-x"),
 		},
 		{
 			name:        "a basic header carries the encoded pair",
 			media:       registry.MediaConfig{AuthType: registry.AuthAPIKey, AuthHeader: "basic"},
-			credential:  provider.Credential{APIKey: "dXNlcjpwYXNz"},
+			credential:  provider.StaticKey("", "", "dXNlcjpwYXNz"),
 			wantHeaders: map[string]string{"Authorization": "Basic dXNlcjpwYXNz"},
 		},
 		{
@@ -95,7 +95,7 @@ func TestMediaTarget_CredentialPlacement(t *testing.T) {
 		{
 			name:       "a playht pair splits into the user id and the bearer",
 			media:      registry.MediaConfig{AuthType: registry.AuthAPIKey, AuthHeader: "playht"},
-			credential: provider.Credential{APIKey: "user_1:ph_key"},
+			credential: provider.StaticKey("", "", "user_1:ph_key"),
 			wantHeaders: map[string]string{
 				"X-USER-ID": "user_1", "Authorization": "Bearer ph_key",
 			},
@@ -103,7 +103,7 @@ func TestMediaTarget_CredentialPlacement(t *testing.T) {
 		{
 			name:        "a playht value without a pair is sent as a bearer alone",
 			media:       registry.MediaConfig{AuthType: registry.AuthAPIKey, AuthHeader: "playht"},
-			credential:  provider.Credential{APIKey: "ph_key"},
+			credential:  provider.StaticKey("", "", "ph_key"),
 			wantHeaders: map[string]string{"Authorization": "Bearer ph_key"},
 		},
 		{
@@ -113,7 +113,7 @@ func TestMediaTarget_CredentialPlacement(t *testing.T) {
 		{
 			name:        "a declared header name carries the raw key",
 			media:       registry.MediaConfig{AuthType: registry.AuthAPIKey, AuthHeader: "xi-api-key"},
-			credential:  provider.Credential{APIKey: "el-x"},
+			credential:  provider.StaticKey("", "", "el-x"),
 			wantHeaders: map[string]string{"Xi-Api-Key": "el-x"},
 		},
 		{

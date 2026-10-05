@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
@@ -124,13 +124,6 @@ func (k *UpstreamKey) RecordSuccess(now time.Time) {
 	if k.status == UpstreamKeyError {
 		k.status = UpstreamKeyActive
 	}
-	used := now
-	k.lastUsedAt = &used
-	k.updatedAt = now
-}
-
-// MarkUsed records that the router picked this key, without touching health.
-func (k *UpstreamKey) MarkUsed(now time.Time) {
 	used := now
 	k.lastUsedAt = &used
 	k.updatedAt = now

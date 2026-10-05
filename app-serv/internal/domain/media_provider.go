@@ -13,14 +13,14 @@
 //	becomes an outbound destination: a shape check at the boundary is
 //	what this layer can prove (OWASP A01). The dial-time guard
 //	(`internal/netguard`) is wired for proxy candidates; upstream dials
-//	— this one and the chat plane's alike — do not pass through it yet.
+//	, this one and the chat plane's alike, do not pass through it yet.
 //	The registry's own kind names (`webSearch`) stay out of this package
-//	— the mapping is the service's job, so the wire vocabulary and the
+//	, the mapping is the service's job, so the wire vocabulary and the
 //	registry vocabulary cannot be confused for one another.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package domain
 

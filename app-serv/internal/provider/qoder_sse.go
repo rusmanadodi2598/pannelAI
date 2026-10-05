@@ -8,12 +8,12 @@
 //
 //	answer is lost before the client reads it. So the reader here returns
 //	the raw event beside its payload rather than consuming it silently, and
-//	it bounds one event the way the core's own stream reader does — a
+//	it bounds one event the way the core's own stream reader does, a
 //	provider that never sends a newline cannot grow a buffer without limit.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -23,6 +23,8 @@ import (
 	"errors"
 	"io"
 	"strings"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/streamio"
 )
 
 // qoderMaxEventBytes bounds one event, matching the ceiling the core puts on an
@@ -31,18 +33,18 @@ const qoderMaxEventBytes = 1 << 20
 
 // nextSSEEvent reads one event and returns its joined `data:` payload beside the raw
 // bytes it consumed. A nil payload with no error means the event carried no data at
-// all — a comment or a keepalive — and the caller moves on to the next one.
+// all, a comment or a keepalive, and the caller moves on to the next one.
 func nextSSEEvent(reader *bufio.Reader) (payload []byte, consumed []byte, err error) {
 	var data bytes.Buffer
 	var taken bytes.Buffer
 	sawData := false
 
 	for {
-		line, readErr := reader.ReadBytes('\n')
+		// The bound is applied while the line is being read, not after it is
+		// accumulated: a ReadBytes of an unbounded line allocates the whole thing
+		// first, which is the exact memory an upstream controls.
+		line, readErr := streamio.ReadLine(reader, qoderMaxEventBytes-taken.Len())
 		if len(line) > 0 {
-			if taken.Len()+len(line) > qoderMaxEventBytes {
-				return nil, taken.Bytes(), errors.New("provider: the upstream stream contained an oversized event")
-			}
 			taken.Write(line)
 			trimmed := strings.TrimRight(string(line), "\r\n")
 			if trimmed == "" && sawData {
@@ -55,6 +57,9 @@ func nextSSEEvent(reader *bufio.Reader) (payload []byte, consumed []byte, err er
 				data.WriteString(strings.TrimPrefix(trimmed, "data:"))
 				sawData = true
 			}
+		}
+		if errors.Is(readErr, streamio.ErrTooLong) {
+			return nil, taken.Bytes(), errors.New("provider: the upstream stream contained an oversized event")
 		}
 		if readErr != nil {
 			if errors.Is(readErr, io.EOF) {

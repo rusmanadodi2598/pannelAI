@@ -11,13 +11,13 @@
 // @reason    R12 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: ChangePassword left
 //
 //	every other session alive, so a rotated credential kept its old
-//	holders signed in. The scan-and-delete walk is storage behaviour —
-//	which keys a SCAN page names, which deletes land — and only a live
+//	holders signed in. The scan-and-delete walk is storage behaviour,
+//	which keys a SCAN page names, which deletes land, and only a live
 //	server can prove it, per this package's tagging rule.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package redisrepo
 

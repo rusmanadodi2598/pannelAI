@@ -13,21 +13,21 @@
 //	the LogService purge port means the scheduled path and the manual
 //	purge route share the same settings lookup and cutoff semantics.
 //
-// RETRY POLICY
+// Retry policy
 //
 //	A failed purge is retried on the next tick. MaxAttempts bounds consecutive
 //	failures; reaching it emits an error and resets the counter, while the next
 //	tick starts a fresh cycle. The PostgreSQL DELETE is set-based and atomic, so
 //	a failed call leaves the rows for the next attempt.
 //
-// TERMINATION
+// Termination
 //
 //	Run returns when ctx is cancelled. Its ticker is stopped explicitly and the
 //	purge call has its own timeout, so a worker cannot wait forever on storage.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package service
 

@@ -9,16 +9,16 @@
 //
 //	fmt, redis.
 //
-// @reason    The three services read the same repositories — the quota service
+// @reason    The three services read the same repositories, the quota service
 //
 //	computes from the usage records, and the log service writes the rows
-//	the usage detail route reads — so building them together keeps that
+//	the usage detail route reads, so building them together keeps that
 //	sharing visible. AGENTS.md §1.1 caps management_wiring.go, which is
 //	the file that would otherwise carry this block.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package main
 

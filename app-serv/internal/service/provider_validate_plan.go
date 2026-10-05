@@ -11,13 +11,13 @@
 //	surface is a property of its FORMAT rather than of its id: the
 //	reference declares 18 URLs in its registry and writes the rest into a
 //	per-family switch inside its validate route. A per-format plan is what
-//	lets one rule serve a family — 43 OpenAI-wire providers, 7 on the
-//	Anthropic wire — instead of 94 id cases, which is the shape draft
+//	lets one rule serve a family, 43 OpenAI-wire providers, 7 on the
+//	Anthropic wire, instead of 94 id cases, which is the shape draft
 //	§4.2 asks for ("per format, bukan per provider id").
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 

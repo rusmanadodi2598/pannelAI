@@ -12,12 +12,12 @@
 // @reason    buildManagement was at the AGENTS.md §1.1 warning threshold, and this
 //
 //	block is the part that grows with every data-plane route. It is a
-//	distinct job — it builds the plane that serves client traffic, not the
-//	management graph — so it is separate rather than trimmed.
+//	distinct job, it builds the plane that serves client traffic, not the
+//	management graph, so it is separate rather than trimmed.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -31,12 +31,9 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/config"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/handler"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository/postgres"
-	redisrepo "github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository/redis"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
@@ -103,10 +100,3 @@ type managementDataPlaneInputs struct {
 	Observability observability
 	Vision        *service.VisionAugmenter
 }
-
-var (
-	_ = domain.NewValidationError
-	_ = fmt.Errorf
-	_ = postgres.NewComboRepository
-	_ = redisrepo.NewComboRotationStore
-)

@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -61,7 +61,7 @@ func TestSelector_SelectsAKeylessNoAuthEndpoint(t *testing.T) {
 	if selection.Key.ID() != "" {
 		t.Fatalf("key = %q, want none for a no_auth endpoint", selection.Key.ID())
 	}
-	if selection.Credential.APIKey != "" || selection.Credential.AccessToken != "" {
+	if credentialSecret(t, selection.Credential) != "" {
 		t.Fatalf("credential = %+v, want no material", selection.Credential)
 	}
 

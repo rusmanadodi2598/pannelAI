@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -54,6 +54,14 @@ func (h *ModelHandler) Catalog(w http.ResponseWriter, r *http.Request) {
 		Query:      strings.TrimSpace(query.Get("q")),
 		Active:     active,
 	}
+	if err := schema.ValidateStruct(schema.CatalogListQuery{
+		ProviderID: filter.ProviderID,
+		Capability: filter.Capability,
+		Query:      filter.Query,
+	}); err != nil {
+		schema.WriteError(w, err)
+		return
+	}
 	models, err := h.catalog.Catalog(r.Context(), filter)
 	if err != nil {
 		schema.WriteError(w, err)
@@ -66,7 +74,7 @@ func (h *ModelHandler) Catalog(w http.ResponseWriter, r *http.Request) {
 // is the two lowercase spellings; an empty value reads as absent, which is the
 // house rule every other query parameter follows, and a misspelling like `yes`
 // or `1` is refused rather than silently narrowing nothing while reading as
-// narrowed (draft 025 F5 — the same failure the usage status filter had before
+// narrowed (draft 025 F5, the same failure the usage status filter had before
 // it became a closed set).
 func decodeBoolFilter(raw string) (*bool, error) {
 	trimmed := strings.TrimSpace(raw)

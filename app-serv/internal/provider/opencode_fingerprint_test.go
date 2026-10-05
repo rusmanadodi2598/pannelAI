@@ -3,7 +3,6 @@
 //
 // @file      internal/provider/opencode_fingerprint_test.go
 // @for       The tool-name rule the OpenCode free tier enforces: every declared
-// //
 //
 //	name is unique, and the decoy tools the gate reads are lowercase.
 //
@@ -19,8 +18,8 @@
 //	field-name rules, and AGENTS.md §1.1 asks for the split.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-24
 package provider
 

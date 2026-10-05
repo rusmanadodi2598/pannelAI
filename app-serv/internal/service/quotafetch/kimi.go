@@ -3,14 +3,14 @@
 // @file      internal/service/quotafetch/kimi.go
 // @for       Reads Kimi's published usage window and rate limit, and the plan tier they belong to.
 // @uses      internal/service/quotafetch, context, encoding/json, fmt, math, net/http, regexp, strconv, strings, time
-// @reason    Kimi authenticates this surface two ways — a stored API key as a raw x-api-key, an
+// @reason    Kimi authenticates this surface two ways, a stored API key as a raw x-api-key, an
 //
-//	OAuth connection as a bearer token with device identification — and its 403 means "no usage
+//	OAuth connection as a bearer token with device identification, and its 403 means "no usage
 //	entitlement", not a dead session, so the two refusals stay distinct.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -116,7 +116,7 @@ func kimiAuth(creds Credentials) (map[string]string, bool) {
 }
 
 // kimiRows renders the rolling window then the rate limit. Every published limit lands on the one
-// "Ratelimit" row — the last that states a ceiling, as the reference's map key does.
+// "Ratelimit" row, the last that states a ceiling, as the reference's map key does.
 func kimiRows(answer kimiAnswer) []Quota {
 	rows := make([]Quota, 0, 2)
 	if weekly, ok := kimiRow("Weekly", answer.Usage); ok {

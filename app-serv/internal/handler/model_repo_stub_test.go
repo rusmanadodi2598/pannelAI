@@ -10,7 +10,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -130,7 +130,7 @@ func newManagementFixture(t *testing.T) managementFixture {
 	if err != nil {
 		t.Fatalf("NewProviderModelTestService() error = %v", err)
 	}
-	proxyProber := &stubProxyProber{result: service.ProxyProbeResult{State: domain.EndpointTestOK, LatencyMS: 7}}
+	proxyProber := &stubProxyProber{result: service.ProxyProbeResult{State: string(domain.EndpointTestOK), LatencyMS: 7}}
 	proxyService, proxyRepo := newStubProxyService(t, proxyProber)
 	seedHandlerFixture(t, catalog, comboRepo)
 	return managementFixture{

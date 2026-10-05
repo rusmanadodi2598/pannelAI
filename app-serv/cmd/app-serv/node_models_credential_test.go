@@ -9,16 +9,16 @@
 //
 //	net/http/httptest, strings, testing, time.
 //
-// @reason    Both cases are about what the adapter does *not* send — no request
+// @reason    Both cases are about what the adapter does *not* send, no request
 //
 //	to a refused address, no Authorization header for an empty credential
-//	— which is a different question from how it parses an answer. Keeping
+//	, which is a different question from how it parses an answer. Keeping
 //	them apart keeps each file's reason readable and both inside the
 //	AGENTS.md §1.1 line budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 

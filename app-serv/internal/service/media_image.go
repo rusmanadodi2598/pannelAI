@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -51,8 +51,8 @@ func (s *MediaCallService) GenerateImage(ctx context.Context, req schema.ImageRe
 }
 
 // GenerateVideo performs one video generation call. §7.10 registers the route,
-// and no registry provider declares a video block yet — the same state the
-// reference is in, where `videoConfig` is a recognized key nothing defines — so
+// and no registry provider declares a video block yet, the same state the
+// reference is in, where `videoConfig` is a recognized key nothing defines, so
 // the route answers PROVIDER_NOT_ROUTABLE until one does.
 func (s *MediaCallService) GenerateVideo(ctx context.Context, req schema.VideoRequest, keyID string) (schema.MediaGenerationResponse, dataplane.Outcome, error) {
 	call, err := s.prepareForCall(ctx, req.Model, domain.MediaKindVideo, nil, keyID)

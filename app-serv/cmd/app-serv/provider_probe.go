@@ -12,7 +12,7 @@
 //
 // @reason    SPEC-API-001 §7.5 and §7.4 offer a connectivity test, and the probe
 //
-//	must reach the upstream — but AGENTS.md §1.5 forbids net/http in the
+//	must reach the upstream, but AGENTS.md §1.5 forbids net/http in the
 //	service layer. The port lives in `internal/service`, this adapter
 //	lives in the composition root, and that split is what keeps the
 //	service testable with a fake and the adapter free of business
@@ -24,7 +24,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package main
 
@@ -126,8 +126,8 @@ func (p *httpEndpointProber) credentialFor(endpoint domain.UpstreamEndpoint, key
 // ProbeNode asks whether a custom node's base URL answers with the supplied
 // credential.
 //
-// The node's own base URL is the only address available — a custom node has no
-// registry entry to take a validate URL from — so the probe appends the models
+// The node's own base URL is the only address available, a custom node has no
+// registry entry to take a validate URL from, so the probe appends the models
 // path, which is the convention every OpenAI- and Anthropic-compatible server
 // follows.
 func (p *httpEndpointProber) ProbeNode(ctx context.Context, node domain.ProviderNode, credential string) (service.ProbeOutcome, error) {

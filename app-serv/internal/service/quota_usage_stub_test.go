@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package service
 
@@ -79,13 +79,13 @@ func oauthPublishedEndpoint(t *testing.T, providerID, accessToken string) domain
 	if err != nil {
 		t.Fatalf("Seal() error = %v", err)
 	}
-	endpoint.SetOAuth(&domain.OAuthCredential{
+	endpoint.SetOAuth(domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted: sealed, AccountEmail: "acct@example.com",
 		// The facts a family's usage endpoint names rather than derives. They are on the
 		// fixture because the credential builder is expected to hand them over, and a
 		// fixture without them cannot show that it did.
 		ProjectID: "proj-pub", AccountID: "user-pub",
-	}, testNow)
+	}), testNow)
 	return endpoint
 }
 
@@ -97,7 +97,7 @@ func keyPublishedEndpoint(t *testing.T, providerID, key string) domain.UpstreamE
 	if err != nil {
 		t.Fatalf("NewUpstreamEndpoint() error = %v", err)
 	}
-	endpoint.SetAccount(domain.EndpointAccount{Name: "keyed", Email: "key@example.com"}, testNow)
+	endpoint.SetAccount(domain.RehydrateEndpointAccount(domain.EndpointAccountInput{Name: "keyed", Email: "key@example.com"}), testNow)
 	sealed, err := newTestSealer(t).Seal(key)
 	if err != nil {
 		t.Fatalf("Seal() error = %v", err)

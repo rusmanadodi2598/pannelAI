@@ -6,16 +6,16 @@
 //	match, and the update-or-create write both connect paths share.
 //
 // @uses      context, errors, fmt, strings, time, internal/domain, internal/repository.
-// @reason    A code callback and a device poll produce the same thing — one
+// @reason    A code callback and a device poll produce the same thing, one
 //
-//	account's credentials — and the rule that keeps them agreeing is
+//	account's credentials, and the rule that keeps them agreeing is
 //	non-obvious: match on email and workspace, seal both tokens, name a
 //	fresh endpoint after its identity. Written twice those rules drift
 //	apart, so this file owns them once.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package service
 
@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"strings"
 	"time"
 
@@ -51,7 +52,7 @@ func (s *OAuthFlowService) connectAccount(ctx context.Context, providerID string
 	}
 	hint := domain.MaskSecret(tokens.AccessToken)
 
-	existingID, err := s.store.FindOAuthEndpoint(ctx, providerID, account.Email, account.WorkspaceID)
+	existingID, err := s.store.FindOAuthEndpoint(ctx, providerID, account.Email().String(), account.WorkspaceID())
 	if err != nil && !errors.Is(err, domain.ErrEndpointNotFound) {
 		return OAuthConnect{}, err
 	}
@@ -90,8 +91,8 @@ func (s *OAuthFlowService) connectAccount(ctx context.Context, providerID string
 // accountLabel names a freshly created OAuth account.
 //
 // A vendor that stated an identity gives the new row that identity's own name. A vendor
-// that stated nothing — a state round whose token answer carries only tokens, which is
-// how CodeBuddy answers — gets the smallest `Account N` its provider does not already
+// that stated nothing, a state round whose token answer carries only tokens, which is
+// how CodeBuddy answers, gets the smallest `Account N` its provider does not already
 // use, because the store enforces UNIQUE (provider_id, label)
 // (migrations/000005_upstream_endpoints.up.sql:29) and a name already taken would turn a
 // login the vendor granted into an insert error. Counting rows instead of reading their
@@ -103,7 +104,7 @@ func (s *OAuthFlowService) connectAccount(ctx context.Context, providerID string
 // (`dataplane.MaxEndpointsPerProvider`), so the names of every row that can be routed are
 // read here, and a free name always exists inside it plus one.
 func (s *OAuthFlowService) accountLabel(ctx context.Context, providerID string, account domain.EndpointAccount) (string, error) {
-	if account.Email != "" || account.WorkspaceID != "" || account.Name != "" {
+	if account.HasIdentity() {
 		return defaultOAuthLabel(account), nil
 	}
 	endpoints, _, err := s.store.List(ctx, repository.EndpointFilter{ProviderID: providerID},
@@ -142,20 +143,20 @@ func sealConnectTokens(sealer SecretSealer, tokens connectTokens, account domain
 			return nil, domain.NewInternalError("the refresh token could not be stored")
 		}
 	}
-	return &domain.OAuthCredential{
+	return domain.NewOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted:  accessSealed,
 		RefreshTokenEncrypted: refreshSealed,
 		ExpiresAt:             tokens.ExpiresAt,
 		Scopes:                tokens.Scopes,
-		AccountEmail:          account.Email,
-		AccountID:             account.WorkspaceID,
+		AccountEmail:          account.Email().String(),
+		AccountID:             account.WorkspaceID(),
 		LastRefreshAt:         &now,
-	}, nil
+	})
 }
 
 // tokenExpiry turns a grant's relative lifetime into an absolute instant. An
 // expires_in of zero or less means the upstream said nothing about expiry.
-func tokenExpiry(token TokenResponse, now time.Time) *time.Time {
+func tokenExpiry(token oauthhttp.TokenResponse, now time.Time) *time.Time {
 	if token.ExpiresIn <= 0 {
 		return nil
 	}

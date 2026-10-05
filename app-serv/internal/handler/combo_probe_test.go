@@ -5,14 +5,14 @@
 // @uses      net/http, testing, context, internal/dataplane.
 // @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path
 //
-//	per route. This route's failure path is unusual — a dead member must
-//	still answer 200, because the failure is the finding — so the test
+//	per route. This route's failure path is unusual, a dead member must
+//	still answer 200, because the failure is the finding, so the test
 //	pins that distinction explicitly rather than leaving it to the
 //	service tests.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

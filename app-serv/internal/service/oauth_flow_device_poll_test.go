@@ -14,13 +14,14 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package service
 
 import (
 	"context"
 	"errors"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"strings"
 	"testing"
 	"time"
@@ -32,8 +33,8 @@ import (
 func TestDevicePoll_PendingKeepsTheFlowAlive(t *testing.T) {
 	fixture := newOAuthFlowFixture(t, providerWithQoderDeviceFlow("qoder"))
 	start := startDevice(t, fixture, "qoder")
-	fixture.tokens.devicePollFn = func(string, string) (DeviceTokenResponse, bool, error) {
-		return DeviceTokenResponse{}, true, nil
+	fixture.tokens.devicePollFn = func(string, string) (oauthhttp.DeviceTokenResponse, bool, error) {
+		return oauthhttp.DeviceTokenResponse{}, true, nil
 	}
 
 	if answer := poll(t, fixture, "qoder", start.DeviceCode); answer.Status != "pending" {
@@ -59,14 +60,14 @@ func TestDevicePoll_SuccessConnectsOnce(t *testing.T) {
 	start := startDevice(t, fixture, "qoder")
 	staged := stagedDeviceState(t, fixture, start.DeviceCode)
 	expires := testNow.Add(25 * time.Hour)
-	fixture.tokens.devicePollFn = func(string, string) (DeviceTokenResponse, bool, error) {
-		return DeviceTokenResponse{
+	fixture.tokens.devicePollFn = func(string, string) (oauthhttp.DeviceTokenResponse, bool, error) {
+		return oauthhttp.DeviceTokenResponse{
 			AccessToken: "dt-issued", RefreshToken: "rt-issued",
 			UserID: "user-7", ExpiresAt: expires,
 		}, false, nil
 	}
-	fixture.tokens.infoFn = func() (OAuthIdentity, error) {
-		return OAuthIdentity{Name: "Dodi", Email: "dodi@example.com"}, nil
+	fixture.tokens.infoFn = func() (oauthhttp.OAuthIdentity, error) {
+		return oauthhttp.OAuthIdentity{Name: "Dodi", Email: "dodi@example.com"}, nil
 	}
 
 	answer := poll(t, fixture, "qoder", start.DeviceCode)
@@ -88,14 +89,14 @@ func TestDevicePoll_SuccessConnectsOnce(t *testing.T) {
 		t.Fatalf("endpoint provider = %q", endpoint.ProviderID())
 	}
 	account := endpoint.Account()
-	if account.Email != "dodi@example.com" || account.Name != "Dodi" || account.WorkspaceID != "user-7" {
+	if account.Email().String() != "dodi@example.com" || account.Name() != "Dodi" || account.WorkspaceID() != "user-7" {
 		t.Fatalf("account = %+v, want the userinfo identity with the poll's user id", account)
 	}
-	if account.MachineID != staged.MachineID {
+	if account.MachineID() != staged.MachineID {
 		t.Fatalf("the staged machine id did not reach the account")
 	}
 	credential := endpoint.OAuth()
-	if credential == nil || credential.ExpiresAt == nil || !credential.ExpiresAt.Equal(expires) {
+	if credential == nil || credential.ExpiresAt() == nil || !credential.ExpiresAt().Equal(expires) {
 		t.Fatalf("expiry = %v, want the parsed upstream instant %v", credential, expires)
 	}
 
@@ -111,11 +112,11 @@ func TestDevicePoll_SuccessConnectsOnce(t *testing.T) {
 // login updates it instead of splitting the account in two.
 func TestDevicePoll_ReconnectUpdatesTheSameAccount(t *testing.T) {
 	fixture := newOAuthFlowFixture(t, providerWithQoderDeviceFlow("qoder"))
-	fixture.tokens.infoFn = func() (OAuthIdentity, error) {
-		return OAuthIdentity{Name: "Dodi", Email: "dodi@example.com"}, nil
+	fixture.tokens.infoFn = func() (oauthhttp.OAuthIdentity, error) {
+		return oauthhttp.OAuthIdentity{Name: "Dodi", Email: "dodi@example.com"}, nil
 	}
-	fixture.tokens.devicePollFn = func(string, string) (DeviceTokenResponse, bool, error) {
-		return DeviceTokenResponse{AccessToken: "dt-second", UserID: "user-7",
+	fixture.tokens.devicePollFn = func(string, string) (oauthhttp.DeviceTokenResponse, bool, error) {
+		return oauthhttp.DeviceTokenResponse{AccessToken: "dt-second", UserID: "user-7",
 			ExpiresAt: testNow.Add(72 * time.Hour)}, false, nil
 	}
 
@@ -135,12 +136,12 @@ func TestDevicePoll_ReconnectUpdatesTheSameAccount(t *testing.T) {
 // falls back to the synthetic email the dedup rule can still match on.
 func TestDevicePoll_FailOpenIdentity(t *testing.T) {
 	fixture := newOAuthFlowFixture(t, providerWithQoderDeviceFlow("qoder"))
-	fixture.tokens.devicePollFn = func(string, string) (DeviceTokenResponse, bool, error) {
-		return DeviceTokenResponse{AccessToken: "dt-x", UserID: "user-9",
+	fixture.tokens.devicePollFn = func(string, string) (oauthhttp.DeviceTokenResponse, bool, error) {
+		return oauthhttp.DeviceTokenResponse{AccessToken: "dt-x", UserID: "user-9",
 			ExpiresAt: testNow.Add(48 * time.Hour)}, false, nil
 	}
-	fixture.tokens.infoFn = func() (OAuthIdentity, error) {
-		return OAuthIdentity{}, errors.New("userinfo down")
+	fixture.tokens.infoFn = func() (oauthhttp.OAuthIdentity, error) {
+		return oauthhttp.OAuthIdentity{}, errors.New("userinfo down")
 	}
 
 	answer := poll(t, fixture, "qoder", startDevice(t, fixture, "qoder").DeviceCode)
@@ -149,11 +150,11 @@ func TestDevicePoll_FailOpenIdentity(t *testing.T) {
 		t.Fatalf("stored endpoint: %v", err)
 	}
 	account := endpoint.Account()
-	if account.Email != "qoder-user-user-9" {
-		t.Fatalf("email = %q, want the synthetic fallback", account.Email)
+	if account.Email().String() != "qoder-user-user-9" {
+		t.Fatalf("email = %q, want the synthetic fallback", account.Email().String())
 	}
-	if account.WorkspaceID != "user-9" {
-		t.Fatalf("workspace = %q, want the poll's user id", account.WorkspaceID)
+	if account.WorkspaceID() != "user-9" {
+		t.Fatalf("workspace = %q, want the poll's user id", account.WorkspaceID())
 	}
 }
 
@@ -190,8 +191,8 @@ func TestDevicePoll_RefusesTheWrongCaller(t *testing.T) {
 func TestDevicePoll_UpstreamFailureKeepsTheFlowRetryable(t *testing.T) {
 	fixture := newOAuthFlowFixture(t, providerWithQoderDeviceFlow("qoder"))
 	start := startDevice(t, fixture, "qoder")
-	fixture.tokens.devicePollFn = func(string, string) (DeviceTokenResponse, bool, error) {
-		return DeviceTokenResponse{}, false, errors.New("boom")
+	fixture.tokens.devicePollFn = func(string, string) (oauthhttp.DeviceTokenResponse, bool, error) {
+		return oauthhttp.DeviceTokenResponse{}, false, errors.New("boom")
 	}
 
 	if _, err := fixture.service.DevicePoll(context.Background(), OAuthDevicePollInput{
@@ -202,8 +203,8 @@ func TestDevicePoll_UpstreamFailureKeepsTheFlowRetryable(t *testing.T) {
 	// Reading the state back is the assertion: a failure must leave it staged.
 	stagedDeviceState(t, fixture, start.DeviceCode)
 
-	fixture.tokens.devicePollFn = func(string, string) (DeviceTokenResponse, bool, error) {
-		return DeviceTokenResponse{AccessToken: "dt-late", UserID: "user-1",
+	fixture.tokens.devicePollFn = func(string, string) (oauthhttp.DeviceTokenResponse, bool, error) {
+		return oauthhttp.DeviceTokenResponse{AccessToken: "dt-late", UserID: "user-1",
 			ExpiresAt: testNow.Add(48 * time.Hour)}, false, nil
 	}
 	if answer := poll(t, fixture, "qoder", start.DeviceCode); answer.Status != "connected" {

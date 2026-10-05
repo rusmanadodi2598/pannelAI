@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -38,7 +38,18 @@ func NewEmbeddingsHandler(embeddings *service.EmbeddingsService, auth service.Ga
 }
 
 // Embed serves POST /api/v1/embeddings.
+//
+// Authentication runs before the body is read, which is the §4 rule every
+// data-plane route follows (chat.go, systemone.go, the media routes): an
+// unauthenticated caller is refused whatever its body looks like, so a malformed
+// payload cannot be used to probe the schema or to cost an 8 MiB read.
 func (h *EmbeddingsHandler) Embed(w http.ResponseWriter, r *http.Request) {
+	key, err := h.auth.Authenticate(r.Context(), bearerToken(r))
+	if err != nil {
+		writeDataPlaneError(w, err)
+		return
+	}
+
 	raw, err := schema.ReadBody(r)
 	if err != nil {
 		writeDataPlaneError(w, err)
@@ -58,12 +69,6 @@ func (h *EmbeddingsHandler) Embed(w http.ResponseWriter, r *http.Request) {
 	// cannot see inside it.
 	if req.Input.IsEmpty() {
 		writeDataPlaneError(w, dataplane.ValidationError("field Input is required"))
-		return
-	}
-
-	key, err := h.auth.Authenticate(r.Context(), bearerToken(r))
-	if err != nil {
-		writeDataPlaneError(w, err)
 		return
 	}
 

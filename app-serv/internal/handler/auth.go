@@ -16,8 +16,6 @@ package handler
 import (
 	"net"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/clientip"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
@@ -119,19 +117,7 @@ func (h *AuthHandler) RequireSession(next http.Handler) http.Handler {
 }
 
 // clientAddress answers which client the login limiter buckets this request
-// under — the same trusted-proxy rule the gateway limiter uses (draft 042 R20).
+// under, the same trusted-proxy rule the gateway limiter uses (draft 042 R20).
 func (h *AuthHandler) clientAddress(r *http.Request) string {
 	return clientip.Address(r.RemoteAddr, r.Header.Get("X-Forwarded-For"), h.proxies)
-}
-
-// RetryAfterSeconds converts a duration into the HTTP Retry-After value.
-func RetryAfterSeconds(d time.Duration) string {
-	return strconv.FormatInt(maxInt64(1, int64((d+time.Second-1)/time.Second)), 10)
-}
-
-func maxInt64(a, b int64) int64 {
-	if a > b {
-		return a
-	}
-	return b
 }

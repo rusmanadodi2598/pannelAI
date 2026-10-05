@@ -12,12 +12,13 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
@@ -36,7 +37,12 @@ func NewProviderNodeHandler(nodes *service.NodeService) *ProviderNodeHandler {
 
 // List serves GET /api/v1/provider-nodes with the optional type filter.
 func (h *ProviderNodeHandler) List(w http.ResponseWriter, r *http.Request) {
-	nodes, err := h.nodes.List(r.Context(), r.URL.Query().Get("type"))
+	nodeType := strings.TrimSpace(r.URL.Query().Get("type"))
+	if err := schema.ValidateStruct(schema.ProviderNodeListQuery{Type: nodeType}); err != nil {
+		schema.WriteError(w, err)
+		return
+	}
+	nodes, err := h.nodes.List(r.Context(), nodeType)
 	if err != nil {
 		schema.WriteError(w, err)
 		return

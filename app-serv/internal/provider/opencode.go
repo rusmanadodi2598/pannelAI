@@ -17,8 +17,8 @@
 //	in opencode_session.go, for the AGENTS.md §1.1 budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-21
 package provider
 
@@ -32,7 +32,7 @@ import (
 
 // OpenCodeUserAgent is the client identity the free tier checks. It has to name
 // the CLI with a version at or above 1.17, because a bare or absent agent is
-// refused with 403 (the reference's OPENCODE_UA, commit 6091ff59).
+// refused with 403 (the reference's own OPENCODE_UA).
 const OpenCodeUserAgent = "opencode/1.18.31"
 
 // The identity headers the free tier reads, and the value the CLI sends for the

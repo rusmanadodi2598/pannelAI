@@ -6,7 +6,7 @@
 // @uses      context, internal/domain, internal/repository/postgres, pgxpool, time.
 // @reason    A card is a provider and its accounts. Selecting groups from counted
 //
-//	windows alone hid every account that had not routed a request yet — a
+//	windows alone hid every account that had not routed a request yet, a
 //	provider could be configured, polled by the worker, and publishing real
 //	quota, and still render no card at all. Both reads here select groups
 //	from the same source, so the window page and the account page can never
@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package postgres
 
@@ -29,6 +29,13 @@ import (
 // credential-free virtual lane and an endpoint that was deleted after being
 // counted still form a group. `provider_id` is a property of the endpoint and is
 // joined, never copied into the counter row.
+// quotaMaxRowsPerPage caps the rows one page of the collection read may return.
+// Paging is by provider group, and a group can hold any number of windows, so
+// without this a single provider with a long history makes the page unbounded on
+// a live screen path (AGENTS.md §1.7). It is generous enough that the panel's
+// cards are complete for every account count the deployment realistically holds.
+const quotaMaxRowsPerPage = 1000
+
 const quotaAccountSource = `
     SELECT coalesce(e.provider_id, '') AS provider_id, e.id AS endpoint_id
       FROM upstream_endpoints e
@@ -63,6 +70,13 @@ const quotaPageCTE = `WITH page AS (
 //
 // The count and the page are two statements: a window written between them shifts
 // a boundary at worst, and never loses a group the count promised.
+//
+// The row ceiling is separate from the group ceiling on purpose. Paging by group
+// bounds how many providers one round trip covers, not how many rows those groups
+// hold: a provider with ten thousand windows would return ten thousand rows to a
+// live screen. The LIMIT is what §1.7 asks of a request-serving read, and a group
+// beyond it is served in key order and truncated, which is a visible gap in one
+// card rather than an unbounded read of the table.
 func (r *QuotaRepository) PageWindowsByProvider(ctx context.Context, page, perPage int) ([]domain.QuotaWindow, int64, error) {
 	var total int64
 	if err := r.pool.QueryRow(ctx, quotaGroupCount).Scan(&total); err != nil {
@@ -74,9 +88,10 @@ func (r *QuotaRepository) PageWindowsByProvider(ctx context.Context, page, perPa
     FROM quota_windows w
     LEFT JOIN upstream_endpoints e ON e.id = w.endpoint_id
    WHERE coalesce(e.provider_id, '') IN (SELECT provider_id FROM page)
-   ORDER BY w.endpoint_id ASC, w."window" ASC`
+   ORDER BY w.endpoint_id ASC, w."window" ASC
+   LIMIT $3::int`
 
-	rows, err := r.pool.Query(ctx, pageQ, perPage, (page-1)*perPage)
+	rows, err := r.pool.Query(ctx, pageQ, perPage, (page-1)*perPage, quotaMaxRowsPerPage)
 	if err != nil {
 		return nil, 0, translateQuotaError(err)
 	}
@@ -102,9 +117,9 @@ func (r *QuotaRepository) PageWindowsByProvider(ctx context.Context, page, perPa
 //
 // This is what makes a card exist for an account that has served nothing: the
 // screen cannot show a provider's published quota for an endpoint it never learns
-// about, and the endpoint list was previously implied by the counted rows. One
-// statement for the page, bounded by the page's group count, so a provider holding
-// a thousand keys costs the same one round trip as one holding three (§1.7).
+// about, and the endpoint list was previously implied by the counted rows. The
+// group ceiling bounds the round trips, and the row ceiling bounds the rows the
+// groups can hold, which is the part §1.7 actually asks of a request-serving read.
 func (r *QuotaRepository) PageAccountsByProvider(ctx context.Context, page, perPage int) ([]domain.QuotaAccount, int64, error) {
 	var total int64
 	if err := r.pool.QueryRow(ctx, quotaGroupCount).Scan(&total); err != nil {
@@ -115,9 +130,10 @@ func (r *QuotaRepository) PageAccountsByProvider(ctx context.Context, page, perP
   SELECT u.endpoint_id, u.provider_id
     FROM (` + quotaAccountSource + `) u
     JOIN page p ON p.provider_id = u.provider_id
-   ORDER BY p.first_endpoint ASC, u.endpoint_id ASC`
+   ORDER BY p.first_endpoint ASC, u.endpoint_id ASC
+   LIMIT $3::int`
 
-	rows, err := r.pool.Query(ctx, pageQ, perPage, (page-1)*perPage)
+	rows, err := r.pool.Query(ctx, pageQ, perPage, (page-1)*perPage, quotaMaxRowsPerPage)
 	if err != nil {
 		return nil, 0, translateQuotaError(err)
 	}

@@ -1,6 +1,6 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_client_state_wire.go
+// @file      internal/service/oauthhttp/oauth_client_state_wire.go
 // @for       The headers and URLs the state round's vendor reads its calls by.
 //
 // @uses      net/url, strings, time, internal/registry.
@@ -15,9 +15,9 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
-package service
+package oauthhttp
 
 import (
 	"net/url"
@@ -87,7 +87,7 @@ func stateDomain(baseURL string) string {
 
 // stateQuery appends one query parameter to a URL the entry declared, preserving
 // any parameters it already carries. The round's two identifying values both
-// travel this way — the platform at the state call, the state at the poll.
+// travel this way, the platform at the state call, the state at the poll.
 func stateQuery(endpoint, key, value string) string {
 	target := strings.TrimSpace(endpoint)
 	if target == "" || value == "" {

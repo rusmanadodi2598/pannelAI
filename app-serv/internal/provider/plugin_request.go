@@ -16,11 +16,12 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package provider
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
@@ -61,8 +62,16 @@ type Request struct {
 	// Qoder's chat body carries a model configuration the vendor publishes only
 	// to the authenticated account, so shaping that body needs the credential
 	// that will sign the read. A connector must not put any part of it into
-	// `Body` — the body leaves the process as the client's prompt would.
+	// `Body`, the body leaves the process as the client's prompt would.
 	Credential Credential
+
+	// Context is the caller's, carried on the request because the Transformer
+	// seam takes the request and no parameter list: a connector that reads
+	// anything during shaping (Qoder's model catalogue) would otherwise have to
+	// detach that read from the client, and an unanswered read would outlive the
+	// request it was made for. The data plane sets it; a connector treats a nil
+	// value as a caller that is not watching.
+	Context context.Context
 }
 
 // Response is what a connector returns. The body is streamed rather than

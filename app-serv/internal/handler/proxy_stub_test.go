@@ -6,12 +6,12 @@
 // @reason    The handler takes a concrete *service.ProxyService, so the route
 //
 //	tests build the real service over doubles rather than faking the
-//	service itself — the seam the production wiring uses is the same
+//	service itself, the seam the production wiring uses is the same
 //	one the tests use.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -91,7 +91,7 @@ func newStubProxyService(t *testing.T, prober *stubProxyProber) (*service.ProxyS
 	t.Helper()
 	repo := newStubProxyRepo()
 	if prober == nil {
-		prober = &stubProxyProber{result: service.ProxyProbeResult{State: domain.EndpointTestOK, LatencyMS: 7}}
+		prober = &stubProxyProber{result: service.ProxyProbeResult{State: string(domain.EndpointTestOK), LatencyMS: 7}}
 	}
 	sealer, err := domain.NewSealer([]byte(strings.Repeat("k", 32)))
 	if err != nil {

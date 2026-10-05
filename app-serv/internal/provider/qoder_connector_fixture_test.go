@@ -9,16 +9,16 @@
 //
 //	internal/registry.
 //
-// @reason    Two connector test files read the same fixtures — an intl entry with
+// @reason    Two connector test files read the same fixtures, an intl entry with
 //
 //	its device host, a CN entry with one gateway, and a stub that answers
-//	the token exchange — and a connector's behaviour depends on which of
+//	the token exchange, and a connector's behaviour depends on which of
 //	those it was built for, so the shapes live in one place rather than
 //	drifted apart in two.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -83,7 +83,7 @@ func newQoderTestConnector(t *testing.T, entry registry.Provider, exchanges *int
 }
 
 func qoderPATCredential() Credential {
-	return Credential{EndpointID: "ep_1", APIKey: "pt-secret", Family: FamilyStaticKey,
-		ProjectID: "user-7", Account: "dev@example.com",
-		Metadata: map[string]string{MetadataMachineID: "machine-fixed"}}
+	return Credential{endpointID: "ep_1", apiKey: "pt-secret", family: FamilyStaticKey,
+		projectID: "user-7", account: "dev@example.com",
+		metadata: map[string]string{MetadataMachineID: "machine-fixed"}}
 }

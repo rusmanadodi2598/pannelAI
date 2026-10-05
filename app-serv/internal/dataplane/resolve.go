@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -128,7 +128,7 @@ func (r *Resolver) Resolve(ctx context.Context, model string) (Resolution, error
 // The alias hop count guards the one cycle the write path refuses but a direct
 // database row can still hold: an alias whose target is another alias. The
 // guard is a count rather than a visited set because an alias chain is a line,
-// not a graph — one target per name — so a count answers the same question with
+// not a graph, one target per name, so a count answers the same question with
 // no map to build.
 func (r *Resolver) resolveWithin(ctx context.Context, model string, state *resolveState, aliasHops int) (Resolution, error) {
 	return r.resolveWithinKind(ctx, model, state, aliasHops, KindChat)
@@ -181,7 +181,7 @@ func (r *Resolver) ResolveParts(ctx context.Context, providerName, modelID strin
 // ResolvePartsForKind resolves a model for one plane, refusing a model that
 // declares a different kind. The chat plane and the decision route share this
 // walk so neither can accept what the other would refuse.
-func (r *Resolver) ResolvePartsForKind(_ context.Context, providerName, modelID, kind string) (Resolution, error) {
+func (r *Resolver) ResolvePartsForKind(ctx context.Context, providerName, modelID, kind string) (Resolution, error) {
 	entry, ok := r.index.Provider(providerName)
 	if !ok {
 		return Resolution{}, dataPlaneError(CodeModelNotFound,
@@ -192,6 +192,9 @@ func (r *Resolver) ResolvePartsForKind(_ context.Context, providerName, modelID,
 	if !entry.IsChatRoutable() {
 		return Resolution{}, dataPlaneError(CodeProviderNotRoutable,
 			"provider "+entry.ID+" speaks a wire format the gateway does not translate")
+	}
+	if err := r.refuseIfDisabled(ctx, entry.ID, modelID); err != nil {
+		return Resolution{}, err
 	}
 
 	resolution := Resolution{Provider: entry, ModelID: modelID, Target: targetFormat(entry.Transport.Format)}
@@ -227,15 +230,4 @@ func (r *Resolver) ResolvePartsForKind(_ context.Context, providerName, modelID,
 	resolution.Model = registry.Model{ID: modelID}
 	resolution.UpstreamID = modelID
 	return resolution, nil
-}
-
-// Allowed reports whether a model is routable, applying the disabled set the
-// catalog owns. It is separate from Resolve so the models list endpoint can ask
-// exactly the question the router asks.
-func (r *Resolver) Allowed(ctx context.Context, providerID, modelID string) bool {
-	disabled, err := r.lookup.Disabled(ctx, providerID, modelID)
-	if err != nil {
-		return false
-	}
-	return !disabled
 }

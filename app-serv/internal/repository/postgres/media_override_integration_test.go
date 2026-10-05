@@ -8,9 +8,9 @@
 //	upsert semantics, ordering, and the migration's CHECK constraint.
 //
 // @uses      testing, context, time, internal/domain.
-// @reason    The upsert is the whole contract — a save must replace the row,
+// @reason    The upsert is the whole contract, a save must replace the row,
 //
-//	not add a second one — and only a real server proves the conflict
+//	not add a second one, and only a real server proves the conflict
 //	target is the primary key the migration declares. The kind CHECK
 //	exists twice (domain and schema) and the second one needs the server.
 //
@@ -20,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package postgres
 

@@ -14,12 +14,12 @@
 //	things the adapter must not reach for itself: the stored node (to know
 //	its base URL) and the credential (to authenticate the read). Both are
 //	repository reads, and AGENTS.md §1.5 keeps storage out of the adapter's
-//	business rules — so they are narrow functions built here, in the one
+//	business rules, so they are narrow functions built here, in the one
 //	layer allowed to know every boundary.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -137,7 +137,7 @@ func newNodeCredentialSource(endpoints endpointKeyReader, opener service.SecretO
 		}
 		plaintext, err := opener.Open(key.EncryptedValue())
 		if err != nil {
-			//nolint:nilerr // reason: a sealed value that will not open answers the same as no credential — a fallback list with a warning — rather than failing a read over a key it does not strictly need. The plaintext is never logged or returned.
+			//nolint:nilerr // reason: a sealed value that will not open answers the same as no credential, a fallback list with a warning, rather than failing a read over a key it does not strictly need. The plaintext is never logged or returned.
 			return "", nil
 		}
 		return plaintext, nil

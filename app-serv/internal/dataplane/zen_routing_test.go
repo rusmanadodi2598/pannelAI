@@ -2,14 +2,12 @@
 //
 // @file      internal/dataplane/zen_routing_test.go
 // @for       The multi-endpoint rule against the real registry: every model the
-// //
 //
 //	entry declares reaches a URL, and the claude-only ids reach the
 //	messages endpoint.
 //
 // @uses      testing, internal/provider, internal/registry.
 // @reason    Draft 029 F2 measured the broken shape on opencode-go
-// //
 //
 //	(".../chat/completions/zen/v1/messages") and the first fix for it
 //	refused 43 of opencode-zen's models instead, because the provider's
@@ -21,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 

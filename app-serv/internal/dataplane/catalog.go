@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -164,8 +164,8 @@ func (r *Resolver) isDisabled(
 	return false
 }
 
-// providerNames lists every identifier an entry resolves by — canonical id, its
-// alias, and any further aliases — with blanks dropped.
+// providerNames lists every identifier an entry resolves by, canonical id, its
+// alias, and any further aliases, with blanks dropped.
 func providerNames(entry registry.Provider) []string {
 	names := make([]string, 0, 2+len(entry.Aliases))
 	for _, name := range append([]string{entry.ID, entry.Alias}, entry.Aliases...) {

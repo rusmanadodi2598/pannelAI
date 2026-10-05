@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package schema
 
@@ -47,8 +47,8 @@ type PublishedQuotaWindowResponse struct {
 
 // PublishedQuotaUsageResponse is the body of
 // GET /api/v1/quotas/{endpoint_id}/usage: the provider's own words about one
-// connection. Message carries the soft outcome — the family publishes nothing,
-// the credential was refused, the provider errored — and is then the whole answer,
+// connection. Message carries the soft outcome, the family publishes nothing,
+// the credential was refused, the provider errored, and is then the whole answer,
 // with Data empty, because the reference's card renders that sentence rather than
 // failing the page.
 //
@@ -70,7 +70,7 @@ type PublishedQuotaUsageResponse struct {
 
 	// Failures counts consecutive polls that produced no answer, and LastAttemptAt says
 	// when the worker last asked. They travel together because a card can hold figures
-	// and a failing poll at the same instant — the last good answer is kept — and with no
+	// and a failing poll at the same instant, the last good answer is kept, and with no
 	// room for that fact the operator sees a number with no sign that the last attempt
 	// refused to replace it.
 	Failures      int    `json:"failures,omitempty"`

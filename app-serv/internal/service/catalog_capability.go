@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -33,14 +33,14 @@ import (
 // what the document declares, plus what the resolver decides.
 //
 // Two sources, two jobs. The document's `capabilities:` list carries the media
-// operations (`edit`, `mask`, `text2img`) — facts about a row an operator reads,
-// which no model-id pattern can know. The resolver carries `vision` and `tools`
-// — judgements about a model id, which the document does not enumerate. Draft
+// operations (`edit`, `mask`, `text2img`), facts about a row an operator reads,
+// which no model-id pattern can know. The resolver carries `vision` and `tools`,
+// judgements about a model id that the document does not enumerate. Draft
 // 017 §4.4 measured what happens with only the first: both of the panel's two
 // filters answered zero rows across 507 registered models.
 //
 // Only `vision` is added as a name. `tools` is the resolver's floor, so emitting
-// it would add one string to nearly every row of the catalog to say nothing —
+// it would add one string to nearly every row of the catalog to say nothing,
 // the filter still answers it, because matchesCatalogFilter asks the resolver
 // for the two modality names rather than reading this list for them.
 func registryCapabilityNames(providerID string, model registry.Model) domain.ModelCapabilities {
@@ -58,8 +58,8 @@ const capabilityVision = "vision"
 
 // matchesCatalogFilter applies the three documented query parameters.
 //
-// The provider filter accepts every spelling the provider answers to — its id,
-// its registry alias, and a node's prefix — because the row it selects is one
+// The provider filter accepts every spelling the provider answers to, its id,
+// its registry alias, and a node's prefix, because the row it selects is one
 // model and the operator may know it by any of those names (draft 024 §3.2).
 // The name set is built from one index snapshot per request, never per row: in
 // production the index adapter rebuilds the node overlay on every Provider()

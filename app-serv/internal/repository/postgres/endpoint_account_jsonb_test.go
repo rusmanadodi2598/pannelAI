@@ -11,12 +11,12 @@
 //	name is silently dropped rather than rejected: the write succeeds, the
 //	read returns empty, and the loss surfaces much later as a provider
 //	that authenticates as an anonymous device. A signed provider replays
-//	one of those fields — the machine id a login minted — on every
+//	one of those fields, the machine id a login minted, on every
 //	request, which is what makes an in-memory round trip worth a test.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package postgres
 
@@ -31,9 +31,9 @@ import (
 // Go struct: the JSONB column is read by a lookup that matches on the account's
 // email and workspace, so a renamed key breaks matching without failing a build.
 func TestMarshalAccountStoresEveryIdentityField(t *testing.T) {
-	raw, err := marshalAccount(domain.EndpointAccount{
+	raw, err := marshalAccount(domain.RehydrateEndpointAccount(domain.EndpointAccountInput{
 		Name: "Dodi", Email: "dev@example.com", MachineID: "machine-fixed", WorkspaceID: "user-7",
-	})
+	}))
 	if err != nil {
 		t.Fatalf("marshalAccount() error = %v", err)
 	}
@@ -46,9 +46,9 @@ func TestMarshalAccountStoresEveryIdentityField(t *testing.T) {
 
 // TestAccountRoundTripKeepsTheMachineID is the field a signed provider reads back.
 func TestAccountRoundTripKeepsTheMachineID(t *testing.T) {
-	stored := domain.EndpointAccount{
+	stored := domain.RehydrateEndpointAccount(domain.EndpointAccountInput{
 		Name: "Dodi", Email: "dev@example.com", MachineID: "machine-fixed", WorkspaceID: "user-7",
-	}
+	})
 	raw, err := marshalAccount(stored)
 	if err != nil {
 		t.Fatalf("marshalAccount() error = %v", err)

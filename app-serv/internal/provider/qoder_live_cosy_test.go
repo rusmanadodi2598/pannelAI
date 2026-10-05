@@ -11,8 +11,8 @@
 // @reason    A signature can be self-consistent and still be wrong: the vendor
 //
 //	decides that, not a test that recomputes the same MD5. A model list is
-//	the cheapest request that proves it — an empty body, no quota spent, and
-//	a refusal on any header the vendor reads differently — and the second
+//	the cheapest request that proves it, an empty body, no quota spent, and
+//	a refusal on any header the vendor reads differently, and the second
 //	case measures the host rule rather than trusting the reference's note
 //	about it.
 //
@@ -20,8 +20,8 @@
 //	    go test -tags=integration ./internal/provider/ -run QoderLive
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -89,7 +89,7 @@ func TestQoderLiveJobTokenOnTheDeviceHost(t *testing.T) {
 	account := qoderLiveAccount(t, jobToken)
 
 	response, body := qoderLiveSignedGet(t, qoderChatBaseIntlDevice, account, jobToken)
-	t.Logf("device host answer to a job token: HTTP %d — %s", response.StatusCode,
+	t.Logf("device host answer to a job token: HTTP %d, %s", response.StatusCode,
 		truncateForLive(string(body), 200))
 	if response.StatusCode == http.StatusOK {
 		t.Log("the device host serves a job token today; the reference's host rule may be obsolete for reads")

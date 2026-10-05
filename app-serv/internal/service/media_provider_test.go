@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -173,5 +173,5 @@ func TestMediaProviderService_Detail(t *testing.T) {
 	}
 }
 
-// The save rules — Patch, the unusable-provider refusal, and the constructor's
-// guard — live in media_provider_patch_test.go, beside the writes they pin.
+// The save rules, Patch, the unusable-provider refusal, and the constructor's
+// guard, live in media_provider_patch_test.go, beside the writes they pin.

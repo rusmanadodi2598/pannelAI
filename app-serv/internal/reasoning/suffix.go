@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package reasoning
 
@@ -34,25 +34,8 @@ type Suffix struct {
 	Budget int
 }
 
-// suffixPattern is the reference's own expression: a trailing parenthesised
-// group with no nesting, so a model id that legitimately contains parentheses
-// elsewhere is untouched. The leading group is greedy, so the LAST group is the
-// one read.
-var suffixPattern = regexp.MustCompile(`^(.*)\([^()]+\)\s*$`)
-
 // suffixValuePattern captures the same shape with the value separated.
 var suffixValuePattern = regexp.MustCompile(`^(.*)\(([^()]+)\)\s*$`)
-
-// StripSuffix removes a trailing "(value)" group from a model string, which is
-// what the resolver and the upstream model id must see. A string without one is
-// returned unchanged.
-func StripSuffix(model string) string {
-	match := suffixPattern.FindStringSubmatch(model)
-	if match == nil {
-		return model
-	}
-	return strings.TrimSpace(match[1])
-}
 
 // ParseSuffix splits a model string into the clean id and the override it
 // carries. A value the vocabulary does not know leaves the override nil while

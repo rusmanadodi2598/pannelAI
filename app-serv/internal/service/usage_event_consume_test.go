@@ -13,15 +13,15 @@
 // @reason    The consumer is the half that makes the event real (F4's completion
 //
 //	criterion): without it the publisher writes to a channel nobody
-//	reads. Its rules are the ones that fail quietly — a malformed payload
+//	reads. Its rules are the ones that fail quietly, a malformed payload
 //	that takes the consumer down stops every later event, and a receive
 //	timeout mistaken for a fault turns an idle channel into a reconnect
-//	loop — so the double counts receives and the table asserts on lines
+//	loop, so the double counts receives and the table asserts on lines
 //	the sink actually received.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

@@ -9,16 +9,16 @@
 //
 //	encoding/json, strings, testing.
 //
-// @reason    Two of the three secrets a COSY request carries are randomized —
+// @reason    Two of the three secrets a COSY request carries are randomized,
 //
-//	the AES key is fresh per request and PKCS#1 v1.5 padding is random —
+//	the AES key is fresh per request and PKCS#1 v1.5 padding is random,
 //	so no fixed expected string can prove them. What proves them is the
 //	decode path the vendor runs: unwrap the key, decrypt the info, and
 //	require both to yield what was put in.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 

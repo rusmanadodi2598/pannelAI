@@ -1,6 +1,6 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_grant_call_test.go
+// @file      internal/service/oauthhttp/oauth_grant_call_test.go
 // @for       That the token-endpoint call is built from the neutral grant
 //
 //	shape and its typed answer decoded as the wire carries it.
@@ -15,9 +15,9 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
-package service
+package oauthhttp
 
 import (
 	"context"

@@ -12,8 +12,8 @@
 //	plugin seam exists to give.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-17
 package provider
 
@@ -127,7 +127,10 @@ func joinPath(base, path string) string {
 // (an OAuth token versus a static key). The registry records that, so the rule
 // is data here rather than a branch per provider.
 func (d *Default) ApplyAuth(req *http.Request, cred Credential) error {
-	family, value := cred.family()
+	family, value, err := cred.Secret()
+	if err != nil {
+		return err
+	}
 	if value == "" {
 		// No credential material means the provider needs none, so nothing is
 		// sent. This is deliberately the generous reading: a `no_auth` provider is
@@ -143,18 +146,20 @@ func (d *Default) ApplyAuth(req *http.Request, cred Credential) error {
 	if !found {
 		return fmt.Errorf("provider %s: this credential has no valid header for %s", d.ID, family)
 	}
-	// A query-param placement takes precedence over a header, which is the
-	// reference's order (models/route.js:634-643): the two are exclusive, and a
-	// request that sent both would carry the credential in a URL and a header at
-	// once.
-	if name := strings.TrimSpace(auth.AuthQuery); name != "" {
-		query := req.URL.Query()
-		query.Set(name, value)
-		req.URL.RawQuery = query.Encode()
-		return nil
-	}
+	// A declared header wins over a declared query parameter. The two are
+	// exclusive in practice, and an entry that carries both would otherwise put
+	// the secret in the URL, which is the surface that survives into an access
+	// log, a browser history and a Referer header. The header path is kept
+	// reachable for the providers that genuinely read a query parameter by simply
+	// declaring no header scheme.
 	header := strings.TrimSpace(auth.Header)
 	if header == "" {
+		if name := strings.TrimSpace(auth.AuthQuery); name != "" {
+			query := req.URL.Query()
+			query.Set(name, value)
+			req.URL.RawQuery = query.Encode()
+			return nil
+		}
 		header = DefaultAuthHeader
 	}
 	scheme := strings.TrimSpace(auth.Scheme)

@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -27,8 +27,8 @@ import (
 )
 
 // isDisabled reports whether a pair is in the disabled set. The comparison is
-// canonical on both sides — the reference's spellings and the stored pair's
-// spellings — because the disabled set is a judgement about the model, not
+// canonical on both sides, the reference's spellings and the stored pair's
+// spellings, because the disabled set is a judgement about the model, not
 // about one of its names: a pair stored under a node prefix hides the node-id
 // spelling too, and a pair stored under the id hides the alias spelling.
 func (s *ModelCatalogService) isDisabled(ctx context.Context, ref domain.ModelRef) (bool, error) {

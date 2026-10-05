@@ -8,7 +8,7 @@
 //	hold at least one endpoint the router would still pick.
 //
 // @uses      github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain, context, testing, time.
-// @reason    The predicate is one SQL condition — status = 'active' — but it is
+// @reason    The predicate is one SQL condition, status = 'active', but it is
 //
 //	the same condition the data plane's candidates query narrows by,
 //	and only a real server can prove the two agree over stored shapes
@@ -24,7 +24,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package postgres
 
@@ -56,7 +56,12 @@ func seedCandidateEndpoint(t *testing.T, repo *EndpointRepository, providerID, i
 		endpoint.MarkUnhealthy("staged for the test", now)
 	}
 	if rateLimited {
-		endpoint.MarkRateLimited(now.Add(time.Minute))
+		// The stored window is the only way a rate limit reaches an endpoint, so
+		// the row is re-staged the way the repository load path builds it.
+		until := now.Add(time.Minute)
+		endpoint = domain.RehydrateUpstreamEndpoint(id, providerID, id, domain.UpstreamAuthNone, 1,
+			status, nil, domain.EndpointAccount{}, domain.EndpointTestStatus{}, &until, nil,
+			now, now, nil, domain.EndpointParity{})
 	}
 	if err := repo.Create(context.Background(), endpoint); err != nil {
 		t.Fatalf("storing %s: %v", id, err)
@@ -64,8 +69,8 @@ func seedCandidateEndpoint(t *testing.T, repo *EndpointRepository, providerID, i
 }
 
 // TestIntegration_ActiveProvidersMatchesTheCandidatesPredicate stages one
-// provider per endpoint state — active, active-and-rate-limited, disabled,
-// errored-with-a-stale-window — plus a provider asked about but absent from the
+// provider per endpoint state, active, active-and-rate-limited, disabled,
+// errored-with-a-stale-window, plus a provider asked about but absent from the
 // table, and pins the one fact each of them must answer.
 func TestIntegration_ActiveProvidersMatchesTheCandidatesPredicate(t *testing.T) {
 	repo := newEndpointRepo(t)

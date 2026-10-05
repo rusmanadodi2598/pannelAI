@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -62,10 +62,10 @@ func (s *EndpointService) Test(ctx context.Context, id, keyID string) (domain.Up
 	defer cancel()
 	outcome, err := s.prober.ProbeEndpoint(probeCtx, endpoint, key, credential)
 	if err != nil {
-		// The probe could not run at all — an unknown provider, an unbuildable
+		// The probe could not run at all, an unknown provider, an unbuildable
 		// URL. That is a failure of the test, recorded as one so the panel shows
 		// it rather than only the log.
-		outcome = ProbeOutcome{State: domain.EndpointTestFail, Message: "the connectivity test could not run"}
+		outcome = ProbeOutcome{State: string(domain.EndpointTestFail), Message: "the connectivity test could not run"}
 	}
 	outcome.State = normalizedTestState(outcome.State)
 	return s.recordProbe(ctx, endpoint, key, outcome, now)
@@ -80,7 +80,7 @@ func (s *EndpointService) Test(ctx context.Context, id, keyID string) (domain.Up
 func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.UpstreamEndpoint, key domain.UpstreamKey, outcome ProbeOutcome, now time.Time) (domain.UpstreamEndpoint, ProbeOutcome, error) {
 	endpoint.RecordTest(outcome.State, outcome.LatencyMS, outcome.Message, now)
 	if key.ID() != "" {
-		if outcome.State == domain.EndpointTestOK {
+		if outcome.State == string(domain.EndpointTestOK) {
 			if _, err := endpoint.RecordKeySuccess(key.ID(), now); err != nil {
 				return domain.UpstreamEndpoint{}, ProbeOutcome{}, err
 			}
@@ -148,10 +148,10 @@ func (s *EndpointService) credentialFor(endpoint domain.UpstreamEndpoint, key do
 	case domain.UpstreamAuthNone:
 		return "", nil
 	case domain.UpstreamAuthOAuth:
-		if endpoint.OAuth() == nil || endpoint.OAuth().AccessTokenEncrypted == "" {
+		if endpoint.OAuth() == nil || endpoint.OAuth().AccessTokenEncrypted() == "" {
 			return "", domain.NewValidationError("this endpoint has no credential to test")
 		}
-		return s.openCredential(endpoint.OAuth().AccessTokenEncrypted)
+		return s.openCredential(endpoint.OAuth().AccessTokenEncrypted())
 	default:
 		if key.EncryptedValue() == "" {
 			return "", domain.NewValidationError("this endpoint has no credential to test")
@@ -175,8 +175,8 @@ func (s *EndpointService) openCredential(sealed string) (string, error) {
 // stores, so a reporter that said anything else cannot write an unknown state the
 // panel would render blank.
 func normalizedTestState(state string) string {
-	if state == domain.EndpointTestOK {
-		return domain.EndpointTestOK
+	if state == string(domain.EndpointTestOK) {
+		return state
 	}
-	return domain.EndpointTestFail
+	return string(domain.EndpointTestFail)
 }

@@ -13,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package router
 
@@ -93,12 +93,23 @@ func (rec *statusRecorder) Write(b []byte) (int, error) {
 // can name why the request failed (register G9). The forwarding is explicit
 // because Go promotes only the methods of the embedded interface
 // (http.ResponseWriter) and not the extra ones the concrete value behind it
-// carries — without this method a handler's SetErrorCode assertion would fail on
+// carries, without this method a handler's SetErrorCode assertion would fail on
 // the writer it actually receives, and the code would silently stop being logged.
 func (rec *statusRecorder) SetErrorCode(code string) {
 	if recorder, ok := rec.ResponseWriter.(schema.ErrorCodeRecorder); ok {
 		recorder.SetErrorCode(code)
 	}
+}
+
+// RequestID forwards the trace id the same way SetErrorCode forwards the code:
+// Go promotes only the embedded interface's methods, so without this the writer a
+// handler receives would not answer the question, and the handler's own error
+// line would be logged without the id the access log carries.
+func (rec *statusRecorder) RequestID() string {
+	if carrier, ok := rec.ResponseWriter.(schema.RequestIDCarrier); ok {
+		return carrier.RequestID()
+	}
+	return ""
 }
 
 // Flush forwards the flush to the writer inside, because Go promotes only the

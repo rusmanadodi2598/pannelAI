@@ -1,6 +1,6 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_identity.go
+// @file      internal/service/oauthhttp/oauth_identity.go
 // @for       The account identity a userinfo endpoint reports, decoded from
 //
 //	every field spelling providers disagree on.
@@ -16,9 +16,9 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
-package service
+package oauthhttp
 
 import (
 	"encoding/json"
@@ -60,18 +60,24 @@ func (id *identityID) UnmarshalJSON(raw []byte) error {
 // account is known by, falling back to login and then sub, the display name,
 // and the provider's own id as the workspace id.
 func (i OAuthIdentity) Account() domain.EndpointAccount {
-	account := domain.EndpointAccount{Name: i.Name, Email: i.Email}
+	email := i.Email
 	switch {
-	case i.Email == "" && i.Login != "":
-		account.Email = i.Login
-	case i.Email == "" && i.Sub != "":
-		account.Email = i.Sub
+	case email == "" && i.Login != "":
+		email = i.Login
+	case email == "" && i.Sub != "":
+		email = i.Sub
 	}
-	if account.Name == "" {
-		account.Name = i.Login
+	name := i.Name
+	if name == "" {
+		name = i.Login
 	}
-	if account.WorkspaceID == "" {
-		account.WorkspaceID = string(i.ID)
+	workspaceID := string(i.ID)
+	account, err := domain.NewEndpointAccount(domain.EndpointAccountInput{Name: name, Email: email, WorkspaceID: workspaceID})
+	if err == nil {
+		return account
 	}
+	// An address the vendor spelled with a space inside still has a name and a
+	// provider id worth storing, so only the unusable field is dropped.
+	account, _ = domain.NewEndpointAccount(domain.EndpointAccountInput{Name: name, WorkspaceID: workspaceID})
 	return account
 }

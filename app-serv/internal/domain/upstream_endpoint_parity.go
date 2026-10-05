@@ -12,13 +12,13 @@
 //	endpoint did not: a cross-provider order, a default model, a
 //	consecutive-use counter, the last error that was not a test result, and
 //	a proxy binding. They are declared here rather than on the aggregate
-//	because each one carries a rule — a validated range, a run length, a
-//	credential scrub — and AGENTS.md §2.2 keeps rules on the type rather
+//	because each one carries a rule, a validated range, a run length, a
+//	credential scrub, and AGENTS.md §2.2 keeps rules on the type rather
 //	than at the call site.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package domain
 

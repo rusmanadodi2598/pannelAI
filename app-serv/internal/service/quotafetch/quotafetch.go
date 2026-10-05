@@ -7,7 +7,7 @@
 // @reason    Provider-reported windows (QuotaWindow.Report) need one shape every family's fetcher answers.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package quotafetch
 
@@ -40,9 +40,9 @@ type Quota struct {
 	Recurring bool
 }
 
-// Result is what one fetch answers. A non-empty Message is a soft outcome — the family
+// Result is what one fetch answers. A non-empty Message is a soft outcome, the family
 // is not implemented, the credential is missing or refused, the provider answered with an
-// error — and Quotas is then empty. A fetcher never turns a provider error into a Go error:
+// error, and Quotas is then empty. A fetcher never turns a provider error into a Go error:
 // the caller cannot tell a dead credential from a rate-limited one otherwise, and the
 // reference's own cards render that sentence instead of failing.
 type Result struct {
@@ -50,8 +50,8 @@ type Result struct {
 	Quotas  []Quota
 	Message string
 	// Failed marks a sentence that the reference would have raised instead of returned.
-	// Two of its usage handlers — github's and the cloudcode one antigravity reads
-	// through — throw on a provider error, while the rest answer with a message; the
+	// Two of its usage handlers, github's and the cloudcode one antigravity reads
+	// through, throw on a provider error, while the rest answer with a message; the
 	// split is the reference's deliberate policy and survives the port as this flag
 	// rather than as a Go error, because a fetcher has no caller to throw at. The
 	// worker counts a failed poll and backs off; a plain message is an answer.

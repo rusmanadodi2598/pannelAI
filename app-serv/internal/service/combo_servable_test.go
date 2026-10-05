@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -51,7 +51,7 @@ func servableIndex(t *testing.T) *registry.Index {
 		},
 		{
 			// Alias `shadowed` wins the name lookup, so `shadowed/x` routes to
-			// `alias-owner`, not to this entry — the router's own rule.
+			// `alias-owner`, not to this entry, the router's own rule.
 			ID: "alias-owner", Category: "apikey", Alias: "shadowed", PassthroughModels: true,
 			Transport: registry.Transport{Format: registry.DefaultFormat},
 		},
@@ -105,7 +105,7 @@ func TestComboService_CreateJudgesServabilityLikeTheRouter(t *testing.T) {
 			// The router resolves `shadowed` to `alias-owner` (an alias beats
 			// another provider's id), which is a passthrough provider: the id
 			// `hidden` is served by alias-owner, not by the shadowed entry. So
-			// this saves — and that is the router's own answer.
+			// this saves, and that is the router's own answer.
 		},
 		{
 			name:    "a non-passthrough provider's undeclared id is refused with the reason",

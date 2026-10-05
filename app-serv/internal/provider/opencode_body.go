@@ -18,8 +18,8 @@
 //	on thinking and returns an empty body the upstream counts as success.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-21
 package provider
 
@@ -47,8 +47,8 @@ var openCodeDecoyNames = []string{openCodeDecoyBash, openCodeDecoyRead}
 
 // The Responses item type that carries a prior turn's reasoning. It is dropped
 // because the free tier pools anonymous credentials and a reasoning item is
-// bound to the caller it was issued to (the reference's sanitizeResponsesItems,
-// commit eafac37d).
+// bound to the caller it was issued to (the reference's own
+// sanitizeResponsesItems).
 const openCodeReasoningItem = "reasoning"
 
 // TransformRequest rewrites the outbound body into the shape the free tier
@@ -148,7 +148,7 @@ func openCodeOutputFloor(model registry.Model) int {
 }
 
 // clampOpenCodeCeiling raises an integer ceiling below the floor this request's
-// model needs. A ceiling the client never sent stays absent — raising a value
+// model needs. A ceiling the client never sent stays absent, raising a value
 // that exists is the narrow licence, inventing one the client did not ask for is
 // not. A member that is not a JSON integer is left exactly as the client wrote
 // it: the upstream's own validation answers for it, and rewriting a malformed

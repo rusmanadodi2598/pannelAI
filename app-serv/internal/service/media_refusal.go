@@ -12,14 +12,14 @@
 // @reason    Register G20: the chat plane records every call, including one
 //
 //	refused before the pipeline ran, while the media routes wrote rows
-//	only after Perform — so a refusal the client saw never appeared in
+//	only after Perform, so a refusal the client saw never appeared in
 //	the Logs screen. The identity rule lives here because a refusal has
 //	no resolved call to read it from, only the model string the client
 //	sent.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -45,7 +45,7 @@ func (s *MediaCallService) prepareForCall(ctx context.Context, model string, kin
 
 // refusalOutcome names a refused call by the model string the client sent, as
 // far as it parses: `provider/model` fills both columns, and a string with no
-// provider is named by nothing rather than guessed at — the same honesty the
+// provider is named by nothing rather than guessed at, the same honesty the
 // chat plane keeps for a request refused before resolution.
 func refusalOutcome(model string) dataplane.Outcome {
 	providerID, upstreamModel, err := splitMediaModel(model)

@@ -11,13 +11,13 @@
 //
 //	the request pipeline only knows the seam, so the two halves need
 //	one adapter between them. It lives in the service layer because it
-//	orchestrates the adapter use case and a repository — not transport,
-//	not SQL — and the composition root hands it to the engine as the
+//	orchestrates the adapter use case and a repository, not transport,
+//	not SQL, and the composition root hands it to the engine as the
 //	seam's implementation.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -25,6 +25,7 @@ import (
 	"context"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
 
@@ -76,7 +77,13 @@ func (a *VisionAugmenter) Augment(ctx context.Context, candidates []string) ([]s
 
 	state := domain.RotationState{}
 	if a.rotation != nil {
-		if stored, storeErr := a.rotation.Get(ctx); storeErr == nil {
+		stored, storeErr := a.rotation.Get(ctx)
+		if storeErr != nil {
+			// The rotation restarts, which is a degraded answer rather than a
+			// failure, and it has to be visible as one: an adapter that silently
+			// stops advancing looks like a provider that stopped being used.
+			logx.Degraded(nil, "vision rotation state unreadable, rotation restarts", storeErr)
+		} else {
 			state = stored
 		}
 	}
@@ -106,23 +113,41 @@ func (a *VisionAugmenter) Augment(ctx context.Context, candidates []string) ([]s
 // splitBySight divides the candidates into the ones that read images and the ones
 // that do not, each keeping the order it was given.
 //
-// A reference the catalog cannot be asked about — a nested combo name or an alias,
-// which the walk resolves in its own step — is no evidence of blindness, so it
+// A reference the catalog cannot be asked about, a nested combo name or an alias,
+// which the walk resolves in its own step, is no evidence of blindness, so it
 // stays where the request put it rather than pulling the adapter in front of it.
 func (a *VisionAugmenter) splitBySight(ctx context.Context, candidates []string) (seeing, blind []string, err error) {
 	seeing = make([]string, 0, len(candidates))
 	blind = make([]string, 0, len(candidates))
-	for _, candidate := range candidates {
+
+	// One catalog read for the whole candidate list. Asking per candidate rebuilt
+	// the reference view each time, which is two table reads per image-bearing
+	// candidate on the request path (§1.7).
+	asked := make([]domain.ModelRef, len(candidates))
+	refs := make([]domain.ModelRef, 0, len(candidates))
+	for index, candidate := range candidates {
 		ref, parseErr := domain.ParseModelRef(candidate)
 		if parseErr != nil {
+			// A reference the catalog cannot be asked about (a nested combo name,
+			// an alias the walk resolves in its own step) is no evidence of
+			// blindness, so it stays where the request put it.
 			seeing = append(seeing, candidate)
 			continue
 		}
-		capable, capErr := a.adapter.VisionCapable(ctx, ref)
-		if capErr != nil {
-			return nil, nil, capErr
+		asked[index] = ref
+		refs = append(refs, ref)
+	}
+
+	capable, err := a.adapter.VisionCapableSet(ctx, refs)
+	if err != nil {
+		return nil, nil, err
+	}
+	for index, candidate := range candidates {
+		ref := asked[index]
+		if ref.String() == "" {
+			continue // already counted as seeing
 		}
-		if capable {
+		if capable[ref.String()] {
 			seeing = append(seeing, candidate)
 			continue
 		}

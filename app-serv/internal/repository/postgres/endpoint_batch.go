@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 
@@ -94,7 +94,7 @@ func (r *EndpointRepository) AddKeys(ctx context.Context, endpointID string, key
 
 // IDsByProvider returns every endpoint id of one provider in the priority order
 // they currently hold. The ties are broken by id so a renumber started from this
-// list is deterministic even when two endpoints share a priority — which the
+// list is deterministic even when two endpoints share a priority, which the
 // reorder exists to resolve, so it must not itself depend on an arbitrary order.
 func (r *EndpointRepository) IDsByProvider(ctx context.Context, providerID string) ([]string, error) {
 	const q = `SELECT id FROM upstream_endpoints WHERE provider_id = $1 ORDER BY priority, id`
@@ -124,22 +124,26 @@ func (r *EndpointRepository) IDsByProvider(ctx context.Context, providerID strin
 //
 // The comparison runs in SQL against the account jsonb rather than in the
 // service, because matching in Go would mean reading every endpoint of the
-// provider and hoping the account is on the page — and a re-import that silently
+// provider and hoping the account is on the page, and a re-import that silently
 // created a duplicate would be invisible until routing saw two accounts claiming
 // one identity.
+//
+// The column side is lower()ed because rows written before the aggregate
+// normalized the email can hold any letter case; the argument arrives already
+// canonical from domain.NormalizeEmail.
 func (r *EndpointRepository) FindOAuthEndpoint(ctx context.Context, providerID, email, workspaceID string) (string, error) {
 	const q = `
 SELECT id
   FROM upstream_endpoints
  WHERE provider_id = $1
    AND auth_type = 'oauth'
-   AND (($2 <> '' AND account->>'email' = $2)
+   AND (($2 <> '' AND lower(account->>'email') = $2)
      OR ($3 <> '' AND account->>'workspace_id' = $3))
  ORDER BY created_at, id
  LIMIT 1`
 
 	var id string
-	if err := r.pool.QueryRow(ctx, q, providerID, email, workspaceID).Scan(&id); err != nil {
+	if err := r.pool.QueryRow(ctx, q, providerID, domain.NormalizeEmail(email), workspaceID).Scan(&id); err != nil {
 		return "", translateEndpointError(err)
 	}
 	return id, nil
@@ -147,7 +151,7 @@ SELECT id
 
 // insertEndpoint writes one endpoint row and its keys inside the caller's
 // transaction. It is shared by Create (single) and CreateBatch, so both paths
-// write identical columns — the §8.1 requirement that one create shape serves
+// write identical columns, the §8.1 requirement that one create shape serves
 // both routes.
 func insertEndpoint(ctx context.Context, tx pgx.Tx, endpoint domain.UpstreamEndpoint) error {
 	oauthJSON, err := marshalOAuth(endpoint.OAuth())

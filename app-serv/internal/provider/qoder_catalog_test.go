@@ -11,8 +11,8 @@
 //	against a stub serving the captured answer shape.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -45,7 +45,7 @@ func TestQoderCatalogReadIsSigned(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewQoder() error = %v", err)
 	}
-	if _, err := connector.modelConfig(qoderTestCredential(), "auto"); err != nil {
+	if _, err := connector.modelConfig(t.Context(), qoderTestCredential(), "auto"); err != nil {
 		t.Fatalf("modelConfig() error = %v", err)
 	}
 	if seen == nil {

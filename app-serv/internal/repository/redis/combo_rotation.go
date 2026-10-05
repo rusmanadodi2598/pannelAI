@@ -10,15 +10,15 @@
 //
 //	makes the rotation a distribution rule: two concurrent requests for
 //	one combo must land on different models rather than both reading
-//	the same state. The script below therefore owns exactly one thing —
-//	an atomic request counter — and the ordering rule stays in
+//	the same state. The script below therefore owns exactly one thing,
+//	an atomic request counter, and the ordering rule stays in
 //	domain.RotationRequestIndex, which a unit test runs without Redis.
 //	Splitting it that way is what stops the stored state and the served
 //	order from becoming two implementations of one rule.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package redisrepo
 

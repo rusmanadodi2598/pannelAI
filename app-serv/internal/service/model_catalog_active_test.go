@@ -11,9 +11,9 @@
 //
 //	that fail NO_PROVIDER_AVAILABLE on the first request: the panel
 //	asked for "only what is actually usable", and the route had no
-//	parameter to answer it. "Active" is the router's own population —
+//	parameter to answer it. "Active" is the router's own population,
 //	its candidates query selects endpoints with status active under
-//	the provider's canonical id — so the predicate is stated in those
+//	the provider's canonical id, so the predicate is stated in those
 //	terms rather than invented here: one status-active endpoint makes
 //	the provider active, a rate-limited active endpoint keeps it
 //	active (the runtime skip is a moment, not a configuration), and
@@ -24,7 +24,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -41,7 +41,7 @@ import (
 // The values are domain.EndpointStatusCounts so a table can be written the way
 // an operator thinks about a provider ("two active, one rate-limited") and the
 // stub translates it into the one fact the seam carries: whether a candidate
-// exists at all. That translation is the point — the seam deliberately does not
+// exists at all. That translation is the point, the seam deliberately does not
 // expose the roll-up, because the roll-up cannot express the candidate set.
 type stubActiveCounts struct {
 	byProvider map[string]domain.EndpointStatusCounts

@@ -12,15 +12,15 @@
 //
 //	reference implements this direction as a pure function
 //	(open-sse/translator/request/openai-to-gemini.js). No P1 provider
-//	can reach it — every entry declaring format: gemini is reported as
+//	can reach it, every entry declaring format: gemini is reported as
 //	`routability: connector` because its protocol wraps the payload in a
-//	vendor envelope — so this is translation without a route, kept
+//	vendor envelope, so this is translation without a route, kept
 //	because the registry data it is written against is already on disk
 //	and a connector later needs exactly this payload.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -31,8 +31,8 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
-// Gemini part discriminators. They are not wire fields — Gemini infers the part
-// kind from which member is present — so they name the members a reader greps
+// Gemini part discriminators. They are not wire fields, Gemini infers the part
+// kind from which member is present, so they name the members a reader greps
 // for rather than values on the wire.
 const (
 	GeminiPartFunctionCall     = "functionCall"

@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -44,15 +44,15 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 	}{
 		{
 			name:          "a success records ok and resets the key",
-			outcome:       ProbeOutcome{State: domain.EndpointTestOK, LatencyMS: 42, Status: 200},
-			wantState:     domain.EndpointTestOK,
+			outcome:       ProbeOutcome{State: string(domain.EndpointTestOK), LatencyMS: 42, Status: 200},
+			wantState:     string(domain.EndpointTestOK),
 			wantKeyStatus: domain.UpstreamKeyActive,
 			wantUsedAtSet: true,
 		},
 		{
 			name:           "a refusal records fail and parks the key",
-			outcome:        ProbeOutcome{State: domain.EndpointTestFail, LatencyMS: 11, Status: 401, Message: "credential rejected"},
-			wantState:      domain.EndpointTestFail,
+			outcome:        ProbeOutcome{State: string(domain.EndpointTestFail), LatencyMS: 11, Status: 401, Message: "credential rejected"},
+			wantState:      string(domain.EndpointTestFail),
 			wantKeyStatus:  domain.UpstreamKeyError,
 			wantErrors:     1,
 			wantRateWindow: true,
@@ -60,7 +60,7 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 		{
 			name:           "a prober fault is recorded as a failure, not returned",
 			proberErr:      errors.New("no connector for this provider"),
-			wantState:      domain.EndpointTestFail,
+			wantState:      string(domain.EndpointTestFail),
 			wantKeyStatus:  domain.UpstreamKeyError,
 			wantErrors:     1,
 			wantRateWindow: true,
@@ -68,7 +68,7 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 		{
 			name:           "an unknown state reported by a connector becomes fail",
 			outcome:        ProbeOutcome{State: "maybe", LatencyMS: 5},
-			wantState:      domain.EndpointTestFail,
+			wantState:      string(domain.EndpointTestFail),
 			wantKeyStatus:  domain.UpstreamKeyError,
 			wantErrors:     1,
 			wantRateWindow: true,
@@ -97,10 +97,10 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := reloaded.TestStatus().State; got != tc.wantState {
+			if got := reloaded.TestStatus().State(); string(got) != tc.wantState {
 				t.Fatalf("test_status = %q, want %q", got, tc.wantState)
 			}
-			if reloaded.TestStatus().CheckedAt == nil {
+			if reloaded.TestStatus().CheckedAt() == nil {
 				t.Fatal("test_status must carry the instant it was recorded at")
 			}
 
@@ -132,7 +132,7 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 // would during routing, because the breaker owns that state rather than the probe.
 func TestEndpointService_TestParksOnFirstFailure(t *testing.T) {
 	svc, _ := newEndpointSvc(t)
-	svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestFail, Status: 401, Message: "rejected"}}
+	svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestFail), Status: 401, Message: "rejected"}}
 	endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary", "secondary")
 	ctx := context.Background()
 
@@ -158,7 +158,7 @@ func TestEndpointService_TestParksOnFirstFailure(t *testing.T) {
 		t.Fatal("a parked key must not be available inside its backoff window")
 	}
 	// A success clears it again, which is what makes a fixed credential recoverable.
-	svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK, Status: 200}}
+	svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK), Status: 200}}
 	if _, _, err := svc.Test(ctx, endpoint.ID(), endpoint.Keys()[0].ID()); err != nil {
 		t.Fatal(err)
 	}

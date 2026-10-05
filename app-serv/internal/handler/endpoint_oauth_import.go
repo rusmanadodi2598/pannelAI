@@ -8,14 +8,14 @@
 // @uses      internal/domain, internal/schema, internal/service, net/http, time.
 // @reason    The import path exists for accounts obtained on a machine with no
 //
-//	browser callback, so there is no authorization flow to run — only
+//	browser callback, so there is no authorization flow to run, only
 //	tokens to seal and an account identity to match. Its response is the
 //	same per-row report the other batches use, so it shares this handler,
 //	and its own file keeps the AGENTS.md §1.1 line budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -29,7 +29,7 @@ import (
 )
 
 // ImportOAuth serves POST /api/v1/providers/{provider_id}/oauth/bulk (§7.5). It
-// imports credentials obtained elsewhere, so there is no authorization flow here —
+// imports credentials obtained elsewhere, so there is no authorization flow here,
 // only sealing and account matching (§8.1).
 func (h *EndpointHandler) ImportOAuth(w http.ResponseWriter, r *http.Request) {
 	providerID, ok := pathValue(w, r, "provider_id")
@@ -88,12 +88,14 @@ func toOAuthAccounts(rows []schema.BulkOAuthAccountInput) ([]service.OAuthAccoun
 			Scopes:       row.Scopes,
 		}
 		if row.Account != nil {
-			account.Account = domain.EndpointAccount{
-				Name:        row.Account.Name,
-				Email:       row.Account.Email,
-				MachineID:   row.Account.MachineID,
-				WorkspaceID: row.Account.WorkspaceID,
+			parsed, err := domain.NewEndpointAccount(domain.EndpointAccountInput{
+				Name: row.Account.Name, Email: row.Account.Email,
+				MachineID: row.Account.MachineID, WorkspaceID: row.Account.WorkspaceID,
+			})
+			if err != nil {
+				return nil, err
 			}
+			account.Account = parsed
 		}
 		if row.ExpiresAt != nil && *row.ExpiresAt != "" {
 			parsed, err := time.Parse(time.RFC3339, *row.ExpiresAt)

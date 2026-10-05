@@ -13,14 +13,14 @@
 //
 //	leaves behind: the failed call wrote no usage row because the engine
 //	handed back a zero outcome, and no call wrote a request log at all.
-//	These tests pin the pair's shape — one row of each, one shared
+//	These tests pin the pair's shape, one row of each, one shared
 //	request id, identity and code on the failed one, bodies handed over
-//	untouched — so a later change to the pipeline cannot quietly drop
+//	untouched, so a later change to the pipeline cannot quietly drop
 //	either half again.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -61,7 +61,7 @@ func chatRecordRequest() dataplane.Request {
 // TestChatService_RecordWritesTheAccountingPairOnFailure pins G17 and G18
 // together: a call that failed at the upstream still leaves one usage row
 // (`status: error`, the code, the attempted identity) and one request log, both
-// under the same request id — and the stored error text is the code alone,
+// under the same request id, and the stored error text is the code alone,
 // because a chat upstream's message can quote the credential back.
 func TestChatService_RecordWritesTheAccountingPairOnFailure(t *testing.T) {
 	svc, usage, logs := chatRecordFixture()
@@ -114,7 +114,7 @@ func TestChatService_RecordWritesTheAccountingPairOnFailure(t *testing.T) {
 
 // TestChatService_RecordRefusedBeforeAnAttemptLogsWithoutUsage pins the boundary:
 // a request refused before the pipeline ran (an unknown model, an invalid body)
-// has no identity, so it leaves no usage row — the aggregate would reject one —
+// has no identity, so it leaves no usage row, the aggregate would reject one,
 // but its failure still appears in the logs, which is where §7.13 shows it.
 func TestChatService_RecordRefusedBeforeAnAttemptLogsWithoutUsage(t *testing.T) {
 	svc, usage, logs := chatRecordFixture()

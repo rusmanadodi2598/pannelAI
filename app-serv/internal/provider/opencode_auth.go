@@ -3,7 +3,6 @@
 //
 // @file      internal/provider/opencode_auth.go
 // @for       The credential and identity the OpenCode connector presents, per
-// //
 //
 //	endpoint.
 //
@@ -17,8 +16,8 @@
 //	together and apart from the URL rule in opencode.go (AGENTS.md §1.1).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-24
 package provider
 
@@ -53,7 +52,11 @@ func (c *OpenCode) ApplyAuth(req *http.Request, cred Credential) error {
 	// so it presents the literal public bearer and a configured key would both
 	// be ignored and leak to an endpoint that has no use for it.
 	if !entry.NoAuth && entry.AuthType != registry.AuthNone {
-		if family, value := cred.family(); value != "" {
+		family, value, err := cred.Secret()
+		if err != nil {
+			return err
+		}
+		if value != "" {
 			if auth, ok := c.endpointAuth(entry, req.URL.Path); ok {
 				return applyOpenCodeAuth(req, auth, family, value)
 			}
@@ -63,7 +66,7 @@ func (c *OpenCode) ApplyAuth(req *http.Request, cred Credential) error {
 	req.Header.Set("Authorization", "Bearer public")
 	req.Header.Set("User-Agent", OpenCodeUserAgent)
 	req.Header.Set(openCodeClientHeader, c.clientValue(req))
-	req.Header.Set(openCodeSessionHeader, OpenCodeSession(cred.EndpointID))
+	req.Header.Set(openCodeSessionHeader, OpenCodeSession(cred.EndpointID()))
 	req.Header.Set(openCodeProjectHeader, openCodeProjectValue)
 	if isOpenCodeMessagesURL(req.URL.Path) && req.Header.Get(openCodeAnthropicVersionHeader) == "" {
 		req.Header.Set(openCodeAnthropicVersionHeader, OpenCodeAnthropicVersion)

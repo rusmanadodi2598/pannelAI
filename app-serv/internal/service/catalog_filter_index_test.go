@@ -8,15 +8,15 @@
 // @uses      internal/registry, context, testing.
 // @reason    In production the catalog index is the composition root's adapter,
 //
-//	which rebuilds the node overlay — a node-list query plus a full
-//	re-index — on every Provider() call. A per-row lookup would turn one
+//	which rebuilds the node overlay, a node-list query plus a full
+//	re-index, on every Provider() call. A per-row lookup would turn one
 //	panel request into one query per catalog row, so the read count is
 //	part of the behaviour and is pinned here. Separated from the
 //	servability table at the AGENTS.md §1.1 line limit.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 

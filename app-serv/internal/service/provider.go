@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package service
 
@@ -128,8 +128,8 @@ func (s *ProviderService) List(ctx context.Context, filter ProviderFilter, page,
 // It used to return the registry entry alone, which for a custom node was an
 // entry with no models: draft 017 §4.2 measured the node appearing in four
 // surfaces with `len(entry.Models) = 0`. The list is resolved here rather than
-// in the overlay because the answer has two parts — the models and where they
-// came from — and the second belongs to the layer that decides.
+// in the overlay because the answer has two parts, the models and where they
+// came from, and the second belongs to the layer that decides.
 func (s *ProviderService) Models(ctx context.Context, providerID string) (ProviderModelList, error) {
 	entry, ok := s.index.Provider(strings.TrimSpace(providerID))
 	if !ok {

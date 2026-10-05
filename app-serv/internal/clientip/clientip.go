@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package clientip
 
@@ -54,7 +54,7 @@ func ParseTrusted(cidrs []string) ([]*net.IPNet, error) {
 // exactly one address, which means the host mask of its own family. Suffixing a
 // fixed "/32" is not a cosmetic choice: net.ParseCIDR accepts "2001:db8::1/32"
 // and hands back roughly 2^96 addresses, so naming one IPv6 proxy would have
-// made the forwarded header — and with it the limiter bucket — forgeable from
+// made the forwarded header, and with it the limiter bucket, forgeable from
 // anywhere in that block.
 func parseEntry(entry string) (*net.IPNet, error) {
 	if strings.Contains(entry, "/") {
@@ -82,7 +82,7 @@ func parseEntry(entry string) (*net.IPNet, error) {
 // string can ask the same question. A peer that is not a trusted proxy is
 // answered with itself and the chain is never read. A trusted proxy's chain is
 // walked right to left, and the rightmost hop that is not itself trusted is the
-// client — the one address in the chain nobody downstream of a trusted proxy
+// client, the one address in the chain nobody downstream of a trusted proxy
 // could have forged. A chain of nothing but trusted hops falls back to the
 // peer, so the bucket always names an address the operator can hold
 // accountable.
@@ -108,7 +108,7 @@ func Address(remoteAddr, forwardedFor string, trusted []*net.IPNet) string {
 }
 
 // remoteHost strips the port from a peer address, falling back to the raw
-// value when it carries no port — the shape the limiter always bucketed by.
+// value when it carries no port, the shape the limiter always bucketed by.
 func remoteHost(remoteAddr string) string {
 	if host, _, err := net.SplitHostPort(remoteAddr); err == nil && host != "" {
 		return host

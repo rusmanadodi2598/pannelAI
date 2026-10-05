@@ -20,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -28,6 +28,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/reasoning"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
@@ -98,7 +99,10 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		// the failure path swallows the same class of error (recordFailure),
 		// and a 200 the client can use outranks a health row that did not
 		// land. reason: the served answer is the request's outcome.
-		_ = e.selector.RecordSuccess(ctx, selection)
+		if err := e.selector.RecordSuccess(ctx, selection); err != nil {
+			logx.Degraded(e.logger, "key health could not be recorded after a served call", err,
+				"endpoint_id", outcome.EndpointID, "key_id", selection.Key.ID())
+		}
 		return outcome, nil
 	}
 	spent := make(map[string]struct{})

@@ -1,6 +1,6 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_client_state_test.go
+// @file      internal/service/oauthhttp/oauth_client_state_test.go
 // @for       The wire of the state round: the headers the vendor demands, the
 //
 //	queries it reads its round from, and the codes it answers with.
@@ -20,9 +20,9 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
-package service
+package oauthhttp
 
 import (
 	"context"

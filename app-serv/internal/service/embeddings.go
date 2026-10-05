@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -93,8 +93,8 @@ func NewEmbeddingsService(deps EmbeddingsServiceDeps) (*EmbeddingsService, error
 // exactly what §8.1's per-kind placement exists for. The key id is the
 // authenticated caller's, recorded on both rows the call writes.
 //
-// A refusal before the call — an unresolvable model, a combo, a provider without
-// an embeddings block or base URL, no usable account — leaves one request log row
+// A refusal before the call, an unresolvable model, a combo, a provider without
+// an embeddings block or base URL, no usable account, leaves one request log row
 // and no usage row (register G20), the same shape the chat plane gives a request
 // refused before the pipeline ran.
 func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequest, keyID string) (schema.EmbeddingsResponse, dataplane.Outcome, error) {

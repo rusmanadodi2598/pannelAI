@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -49,7 +49,7 @@ func TestEndpointService_TestSelectsTheKey(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, _ := newEndpointSvc(t)
-			svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK, Status: 200}}
+			svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK), Status: 200}}
 			ctx := context.Background()
 			endpoint := keyedEndpointWithPriorities(t, svc, tc.priorities)
 
@@ -88,7 +88,7 @@ func TestEndpointService_TestSelectsTheKey(t *testing.T) {
 func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 	t.Run("no active key is a validation failure", func(t *testing.T) {
 		svc, store := newEndpointSvc(t)
-		svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK}}
+		svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK)}}
 		ctx := context.Background()
 		endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
 		// The no-active-key shape is reached through the circuit, which owns the
@@ -106,7 +106,7 @@ func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 
 	t.Run("an unreadable stored credential is a validation failure", func(t *testing.T) {
 		svc, store := newEndpointSvc(t)
-		svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK}}
+		svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK)}}
 		ctx := context.Background()
 		endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
 		// Simulate a row written under a different key: the ciphertext is not
@@ -131,7 +131,7 @@ func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 
 	t.Run("an unknown endpoint is not found", func(t *testing.T) {
 		svc, _ := newEndpointSvc(t)
-		svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK}}
+		svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK)}}
 		_, _, err := svc.Test(context.Background(), "ep_absent", "")
 		mustAppError(t, err, "NOT_FOUND")
 	})

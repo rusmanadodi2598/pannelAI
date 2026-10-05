@@ -10,18 +10,19 @@
 //
 //	routing node is named, whose session and record ids the vendor dedupes
 //	on, and whose model is chosen by the configuration the vendor
-//	published for that account — a wrong or absent `model_config` is
+//	published for that account, a wrong or absent `model_config` is
 //	answered with a different model, silently (measured, draft 036 §5.1:
 //	a plain OpenAI body is refused with "None flow nodes found").
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -45,7 +46,11 @@ func (c *Qoder) TransformRequest(req *Request) error {
 	modelKey := qoderModelKey(req, incoming.Model)
 
 	messages, systemText := normalizeQoderMessages(incoming.Messages)
-	config, err := c.modelConfig(req.Credential, modelKey)
+	ctx := req.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	config, err := c.modelConfig(ctx, req.Credential, modelKey)
 	if err != nil {
 		return err
 	}
@@ -57,7 +62,7 @@ func (c *Qoder) TransformRequest(req *Request) error {
 	built := qoderAgentRequest{
 		RequestID:    newQoderID(),
 		RequestSetID: recordID, ChatRecordID: recordID,
-		SessionID: qoderStableID("qoder-session", req.Credential.ProjectID, modelKey),
+		SessionID: qoderStableID("qoder-session", req.Credential.ProjectID(), modelKey),
 		Stream:    true,
 		ChatTask:  "FREE_INPUT", IsReply: true, Source: 1,
 		Version: "3", SessionType: "qodercli",

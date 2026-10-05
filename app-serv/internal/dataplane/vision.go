@@ -14,12 +14,12 @@
 //	declaring it as a one-method seam keeps the engine ignorant of the
 //	adapter's storage and rotation, the way the transport is ignorant
 //	of any provider's quirk. The detection half is the pipeline's own
-//	business — only the decoded client body can answer it — so it is a
+//	business, only the decoded client body can answer it, so it is a
 //	function here rather than part of the seam.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -33,8 +33,8 @@ import (
 //
 // Augment reports the order the request should walk and which entries in that
 // order came from the adapter rather than from the request itself. Everything
-// §7.8 layers on top — the stored configuration, the capability judgement, the
-// round-robin state — lives behind the seam, so the engine neither reads the
+// §7.8 layers on top, the stored configuration, the capability judgement, the
+// round-robin state, lives behind the seam, so the engine neither reads the
 // adapter's configuration nor knows whether one is enabled.
 //
 // It is handed every candidate because the question is not "can the model this

@@ -15,8 +15,8 @@
 //	live.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -31,8 +31,8 @@ import (
 )
 
 // qoderCatalogFixture is the vendor's model list, reduced to the two entries a test
-// needs. The shape — a `chat` array of objects carrying key, is_reasoning and
-// max_output_tokens — is what the live service answered (draft 036 §5).
+// needs. The shape, a `chat` array of objects carrying key, is_reasoning and
+// max_output_tokens, is what the live service answered (draft 036 §5).
 const qoderCatalogFixture = `{"chat":[
  {"key":"ultimate","format":"openai","source":"system","is_vl":true,"is_reasoning":true,"max_output_tokens":16384,"vendor":"qoder"},
  {"key":"auto","format":"openai","source":"system","is_reasoning":false}
@@ -70,9 +70,9 @@ func newQoderStubVendor(t *testing.T, catalog string) (*Qoder, *int, *int) {
 }
 
 func qoderTestCredential() Credential {
-	return Credential{EndpointID: "ep_1", APIKey: "pt-secret", Family: FamilyStaticKey,
-		ProjectID: "user-7", Account: "dev@example.com",
-		Metadata: map[string]string{MetadataMachineID: "machine-fixed"}}
+	return Credential{endpointID: "ep_1", apiKey: "pt-secret", family: FamilyStaticKey,
+		projectID: "user-7", account: "dev@example.com",
+		metadata: map[string]string{MetadataMachineID: "machine-fixed"}}
 }
 
 func qoderTestRequest(t *testing.T, connector *Qoder, body string) *Request {

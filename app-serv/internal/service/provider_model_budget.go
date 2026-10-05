@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package service
 
@@ -64,9 +64,9 @@ const (
 // probeBudget clamps one probe to the budget the sweep has left, so the last
 // model of a sweep is not given a fresh full ceiling on top of the response
 // deadline the server is already counting down.
-func probeBudget(leftover time.Duration) time.Duration {
-	if leftover >= ProviderModelProbeTimeout {
-		return ProviderModelProbeTimeout
+func probeBudget(leftover, ceiling time.Duration) time.Duration {
+	if leftover >= ceiling {
+		return ceiling
 	}
 	// No floor: a non-positive leftover means the sweep is already past its end, and
 	// an expired budget answers as the timeout it is rather than a fresh twenty seconds.

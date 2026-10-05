@@ -8,7 +8,6 @@
 //
 // @uses      internal/domain, encoding/json, time.
 // @reason    AGENTS.md §1.6 makes these the columns that must never carry
-// //
 //
 //	plaintext: the OAuth token set is ciphertext at rest and a test status
 //	is a probe result. Keeping the codecs together, and apart from the
@@ -17,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package postgres
 
@@ -68,14 +67,14 @@ func marshalOAuth(credential *domain.OAuthCredential) (*string, error) {
 		return nil, nil
 	}
 	raw, err := json.Marshal(oauthPayload{
-		AccessTokenEncrypted:  credential.AccessTokenEncrypted,
-		RefreshTokenEncrypted: credential.RefreshTokenEncrypted,
-		ExpiresAt:             credential.ExpiresAt,
-		Scopes:                credential.Scopes,
-		ProjectID:             credential.ProjectID,
-		AccountID:             credential.AccountID,
-		AccountEmail:          credential.AccountEmail,
-		LastRefreshAt:         credential.LastRefreshAt,
+		AccessTokenEncrypted:  credential.AccessTokenEncrypted(),
+		RefreshTokenEncrypted: credential.RefreshTokenEncrypted(),
+		ExpiresAt:             credential.ExpiresAt(),
+		Scopes:                credential.Scopes(),
+		ProjectID:             credential.ProjectID(),
+		AccountID:             credential.AccountID(),
+		AccountEmail:          credential.AccountEmail().String(),
+		LastRefreshAt:         credential.LastRefreshAt(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("upstream_endpoints: encoding oauth: %w", err)
@@ -93,7 +92,7 @@ func unmarshalOAuth(raw *string) (*domain.OAuthCredential, error) {
 	if err := json.Unmarshal([]byte(*raw), &payload); err != nil {
 		return nil, fmt.Errorf("upstream_endpoints: decoding oauth: %w", err)
 	}
-	return &domain.OAuthCredential{
+	return domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted:  payload.AccessTokenEncrypted,
 		RefreshTokenEncrypted: payload.RefreshTokenEncrypted,
 		ExpiresAt:             payload.ExpiresAt,
@@ -102,15 +101,15 @@ func unmarshalOAuth(raw *string) (*domain.OAuthCredential, error) {
 		AccountID:             payload.AccountID,
 		AccountEmail:          payload.AccountEmail,
 		LastRefreshAt:         payload.LastRefreshAt,
-	}, nil
+	}), nil
 }
 
 // marshalAccount renders the account identity. The column is NOT NULL, so an
 // empty identity is stored as an empty object rather than as NULL.
 func marshalAccount(account domain.EndpointAccount) (string, error) {
 	raw, err := json.Marshal(accountPayload{
-		Name: account.Name, Email: account.Email,
-		MachineID: account.MachineID, WorkspaceID: account.WorkspaceID,
+		Name: account.Name(), Email: account.Email().String(),
+		MachineID: account.MachineID(), WorkspaceID: account.WorkspaceID(),
 	})
 	if err != nil {
 		return "", fmt.Errorf("upstream_endpoints: encoding account: %w", err)
@@ -127,21 +126,21 @@ func unmarshalAccount(raw string) (domain.EndpointAccount, error) {
 	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
 		return domain.EndpointAccount{}, fmt.Errorf("upstream_endpoints: decoding account: %w", err)
 	}
-	return domain.EndpointAccount{
+	return domain.RehydrateEndpointAccount(domain.EndpointAccountInput{
 		Name: payload.Name, Email: payload.Email,
 		MachineID: payload.MachineID, WorkspaceID: payload.WorkspaceID,
-	}, nil
+	}), nil
 }
 
 // marshalTestStatus renders the last connectivity result, or nil when none has
 // run, so "never tested" is distinct from "tested and failed".
 func marshalTestStatus(status domain.EndpointTestStatus) (*string, error) {
-	if status.State == "" && status.CheckedAt == nil {
+	if !status.Recorded() {
 		return nil, nil
 	}
 	raw, err := json.Marshal(testStatusPayload{
-		State: status.State, LatencyMS: status.LatencyMS,
-		Message: status.Message, CheckedAt: status.CheckedAt,
+		State: string(status.State()), LatencyMS: status.LatencyMS(),
+		Message: status.Message(), CheckedAt: status.CheckedAt(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("upstream_endpoints: encoding test_status: %w", err)
@@ -159,15 +158,12 @@ func unmarshalTestStatus(raw *string) (domain.EndpointTestStatus, error) {
 	if err := json.Unmarshal([]byte(*raw), &payload); err != nil {
 		return domain.EndpointTestStatus{}, fmt.Errorf("upstream_endpoints: decoding test_status: %w", err)
 	}
-	return domain.EndpointTestStatus{
-		State: payload.State, LatencyMS: payload.LatencyMS,
-		Message: payload.Message, CheckedAt: payload.CheckedAt,
-	}, nil
+	return domain.RehydrateEndpointTestStatus(payload.State, payload.LatencyMS, payload.Message, payload.CheckedAt), nil
 }
 
 // parityColumns projects an endpoint's parity fields onto the write column order
 // both statements use, so the INSERT and the UPDATE cannot disagree about which
-// column holds which value — the divergence that would silently swap a proxy for
+// column holds which value, the divergence that would silently swap a proxy for
 // a model name.
 //
 // `global_priority` is written as a pointer so an unset order stores NULL rather

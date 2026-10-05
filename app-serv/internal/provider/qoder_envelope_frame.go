@@ -13,8 +13,8 @@
 //	stream lives beside this file.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -37,7 +37,7 @@ type qoderEnvelope struct {
 
 // qoderErrorChunk is the terminal frame a stream gets when the provider refuses after
 // the answer started. The status the client already received cannot change, so the
-// refusal is delivered as the answer's own content and finish — the shape the
+// refusal is delivered as the answer's own content and finish, the shape the
 // reference uses, in a typed form because the gateway does not build wire shapes out
 // of untyped maps (AGENTS.md §1.4).
 type qoderErrorChunk struct {
@@ -105,7 +105,7 @@ func (e qoderEnvelope) innerPayload() ([]byte, bool) {
 }
 
 // qoderErrorFrame closes a stream with the provider's reason as visible content and
-// the answer's own finish — the same shape the reference emits when a refusal arrives
+// the answer's own finish, the same shape the reference emits when a refusal arrives
 // too late to change the status the client already has.
 func qoderErrorFrame(envelope qoderEnvelope) []byte {
 	message := strings.TrimSpace(string(envelope.Body))

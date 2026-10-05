@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -41,7 +41,7 @@ type VisionAdapterService struct {
 //
 // Capable is the capability seam: the predicate answering "is this catalog
 // model vision-capable". A nil predicate is replaced by one that rejects every
-// model, so the API never accepts a model on no evidence — enabling the adapter
+// model, so the API never accepts a model on no evidence, enabling the adapter
 // therefore requires the predicate to be supplied, which is exactly the
 // dependency the missing capability data represents.
 type VisionAdapterServiceDeps struct {
@@ -80,7 +80,7 @@ func NewVisionAdapterService(deps VisionAdapterServiceDeps) (*VisionAdapterServi
 // It exists so the seam is explicit and the default is safe. The registry's
 // Model.Capabilities currently holds media operations ("text2img", "edit") and
 // not input modalities, so inferring "vision" from a model id would be a guess
-// the API would then act on — a wrong "yes" routes image content to a model
+// the API would then act on, a wrong "yes" routes image content to a model
 // that drops it.
 func RejectAllVisionCapability(domain.ModelRef) bool { return false }
 
@@ -100,6 +100,29 @@ func (s *VisionAdapterService) VisionCapable(ctx context.Context, ref domain.Mod
 	return s.capable(ref), nil
 }
 
+// VisionCapableSet answers the same question for a set of models in one catalog
+// read, for the request path that must classify every candidate of an
+// image-bearing request. A model the catalog does not answer for falls back to the
+// injected predicate exactly as the single-model path does. Keys are ref.String().
+func (s *VisionAdapterService) VisionCapableSet(
+	ctx context.Context, refs []domain.ModelRef,
+) (map[string]bool, error) {
+	answers, err := s.catalog.VisionCapableSet(ctx, refs)
+	if err != nil {
+		return nil, err
+	}
+	capable := make(map[string]bool, len(refs))
+	for _, ref := range refs {
+		answer, found := answers[ref.String()]
+		if found && answer.Answered {
+			capable[ref.String()] = answer.Capable
+			continue
+		}
+		capable[ref.String()] = s.capable(ref)
+	}
+	return capable, nil
+}
+
 // Get returns the stored configuration, or the disabled default when nothing has
 // been written yet.
 func (s *VisionAdapterService) Get(ctx context.Context) (domain.VisionAdapter, error) {
@@ -108,8 +131,8 @@ func (s *VisionAdapterService) Get(ctx context.Context) (domain.VisionAdapter, e
 
 // Replace swaps the whole configuration (§7.8 PUT).
 //
-// Every model must be a catalog model — the panel's picker draws from the
-// catalog, so a value outside it is a client bug worth reporting — and the
+// Every model must be a catalog model, the panel's picker draws from the
+// catalog, so a value outside it is a client bug worth reporting, and the
 // capability predicate must accept it. The catalog check runs first so an
 // unknown model reports "unknown" rather than "not vision-capable", which is
 // the more actionable of the two.

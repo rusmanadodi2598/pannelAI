@@ -8,7 +8,7 @@
 // @uses      internal/domain, context, time.
 // @reason    SPEC-API-001 §7.5 and §7.4 both offer a connectivity test, and a
 //
-//	test has to reach the upstream — but AGENTS.md §1.5 forbids net/http
+//	test has to reach the upstream, but AGENTS.md §1.5 forbids net/http
 //	in this layer and the layer above already owns the request. Declaring
 //	the port here is what lets the service orchestrate a probe (record
 //	the outcome on the aggregate, trip the key's circuit) while the
@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -46,9 +46,9 @@ type ProbeOutcome struct {
 
 	// Method names which request produced the answer: "models" for a model-list
 	// read, "chat" for the one-token chat fallback, or empty when no request
-	// completed. It is carried because the two are different evidence — a chat
+	// completed. It is carried because the two are different evidence, a chat
 	// probe proves the upstream can serve a request, a models probe only that it
-	// can list — and an operator deciding whether a credential works needs to
+	// can list, and an operator deciding whether a credential works needs to
 	// know which one proved it (draft 017 §4.6).
 	Method string
 

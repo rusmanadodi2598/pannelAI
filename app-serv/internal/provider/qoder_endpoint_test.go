@@ -14,8 +14,8 @@
 //	connector tests share.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -25,9 +25,9 @@ import (
 
 // TestQoderEndpointFollowsTheCredentialKind pins the host rule: a device token keeps
 
-// the declared api3 URL, and a credential that ends up as a job token — a Personal
+// the declared api3 URL, and a credential that ends up as a job token, a Personal
 
-// Access Token or an already exchanged one — moves to api2 with its path and query
+// Access Token or an already exchanged one, moves to api2 with its path and query
 
 // intact. A CN entry has one gateway and is never rewritten.
 
@@ -59,7 +59,7 @@ func TestQoderEndpointFollowsTheCredentialKind(t *testing.T) {
 
 			connector: connector,
 
-			cred: Credential{AccessToken: "dt-device", Family: FamilyOAuth, ProjectID: "u"},
+			cred: Credential{accessToken: "dt-device", family: FamilyOAuth, projectID: "u"},
 
 			want: qoderChatURLIntl,
 		},
@@ -70,7 +70,7 @@ func TestQoderEndpointFollowsTheCredentialKind(t *testing.T) {
 
 			connector: connector,
 
-			cred: Credential{APIKey: "pt-secret", Family: FamilyStaticKey, ProjectID: "u"},
+			cred: Credential{apiKey: "pt-secret", family: FamilyStaticKey, projectID: "u"},
 
 			want: "https://api2.qoder.sh/algo/api/v2/service/pro/sse/agent_chat_generation?FetchKeys=llm_model_result&AgentId=agent_common",
 		},
@@ -81,7 +81,7 @@ func TestQoderEndpointFollowsTheCredentialKind(t *testing.T) {
 
 			connector: connector,
 
-			cred: Credential{AccessToken: "jt-known", Family: FamilyOAuth, ProjectID: "u"},
+			cred: Credential{accessToken: "jt-known", family: FamilyOAuth, projectID: "u"},
 
 			want: "https://api2.qoder.sh/algo/api/v2/service/pro/sse/agent_chat_generation?FetchKeys=llm_model_result&AgentId=agent_common",
 		},
@@ -92,7 +92,7 @@ func TestQoderEndpointFollowsTheCredentialKind(t *testing.T) {
 
 			connector: cnConnector,
 
-			cred: Credential{APIKey: "pt-secret", Family: FamilyStaticKey, ProjectID: "u"},
+			cred: Credential{apiKey: "pt-secret", family: FamilyStaticKey, projectID: "u"},
 
 			want: qoderChatURLCN,
 		},

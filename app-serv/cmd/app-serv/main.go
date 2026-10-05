@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package main
 
@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
@@ -124,7 +123,11 @@ func run() error {
 	}
 
 	// The registry revision travels with the index, so /version reports the document this process actually loaded.
-	mux := router.New(routerDeps(cfg, authHandler, handler.NewGatewayKeyHandler(keySvc), healthSvc, rateLimiter, mgmt, index.Revision()))
+	deps := routerDeps(cfg, authHandler, handler.NewGatewayKeyHandler(keySvc), healthSvc, rateLimiter, mgmt, index.Revision())
+	if err := deps.AssertWired(); err != nil {
+		return err
+	}
+	mux := router.New(deps)
 
 	// The background workers run alongside the server and stop with the context, so shutdown leaves nothing running (AGENTS.md §1.6).
 	runWorkers(ctx, mgmt)
@@ -136,9 +139,13 @@ func run() error {
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      120 * time.Second,
 		IdleTimeout:       300 * time.Second,
+		// Bound explicitly rather than left at Go's 1 MiB default: the request id
+		// middleware echoes one header back to the client and into the access log,
+		// and a megabyte of header per request is enough to make either expensive.
+		MaxHeaderBytes: 64 << 10,
 	}
 
-	return serve(ctx, srv)
+	return serve(ctx, srv, quotaDrain(mgmt.QuotaFlusher))
 }
 
 // logLevel maps the validated configuration value to a slog level. Config has
@@ -196,47 +203,8 @@ func buildInfo(registryRevision string) schema.SystemInfo {
 	}
 }
 
-// serve runs the HTTP server until it receives a termination signal, then
-// shuts down within shutdownTimeout. Every goroutine here has an explicit
-// termination condition (AGENTS.md §1.6).
-func serve(ctx context.Context, srv *http.Server) error {
-	serverErr := make(chan error, 1)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer func() {
-			if r := recover(); r != nil {
-				slog.Error("server goroutine panic recovered", "panic", r)
-			}
-		}()
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			serverErr <- err
-		}
-	}()
-
-	slog.Info("app-serv is listening", "addr", srv.Addr)
-
-	select {
-	case <-ctx.Done():
-		slog.Info("shutdown signal received")
-	case err := <-serverErr:
-		return err
-	}
-
-	// The parent ctx is already cancelled here (that is why we are shutting
-	// down), so deriving this timeout from it would abort the drain instantly.
-	// context.Background() is the correct root for a bounded shutdown window.
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
-	defer cancel()
-	//nolint:contextcheck // reason: the parent ctx is already cancelled (that is why we are shutting down), so deriving from it would abort the drain immediately; context.Background is the correct root for a bounded shutdown window.
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		return err
-	}
-	wg.Wait()
-	slog.Info("app-serv stopped cleanly")
-	return nil
-}
+// serve lives in shutdown_drain.go with the counter drain that has to run after
+// the last request, because the two are one lifecycle.
 
 // redisPinger adapts go-redis to service.Pinger. The client's Ping returns a
 // *StatusCmd rather than an error, so the adapter unwraps it; this keeps the

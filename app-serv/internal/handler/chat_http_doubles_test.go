@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package handler
 
@@ -142,7 +142,10 @@ func (r *chatEndpointRepository) GetByID(context.Context, string) (domain.Upstre
 	return domain.UpstreamEndpoint{}, domain.ErrEndpointNotFound
 }
 func (r *chatEndpointRepository) Update(context.Context, domain.UpstreamEndpoint) error { return nil }
-func (r *chatEndpointRepository) Delete(context.Context, string) error                  { return nil }
+func (r *chatEndpointRepository) UpdateIfUnchanged(context.Context, domain.UpstreamEndpoint, time.Time) error {
+	return nil
+}
+func (r *chatEndpointRepository) Delete(context.Context, string) error { return nil }
 func (r *chatEndpointRepository) AddKey(context.Context, string, domain.UpstreamKey) error {
 	return nil
 }

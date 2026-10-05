@@ -19,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -29,6 +29,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"net/url"
 	"strings"
 	"time"
@@ -52,6 +53,7 @@ type OAuthAccountStore interface {
 	List(ctx context.Context, filter repository.EndpointFilter, q repository.PageQuery) ([]domain.UpstreamEndpoint, int64, error)
 	GetByID(ctx context.Context, id string) (domain.UpstreamEndpoint, error)
 	Update(ctx context.Context, endpoint domain.UpstreamEndpoint) error
+	UpdateIfUnchanged(ctx context.Context, endpoint domain.UpstreamEndpoint, loadedAt time.Time) error
 	FindOAuthEndpoint(ctx context.Context, providerID, email, workspaceID string) (string, error)
 }
 
@@ -60,7 +62,7 @@ type OAuthFlowService struct {
 	store  OAuthAccountStore
 	index  ProviderIndex
 	states repository.OAuthStateStore
-	tokens OAuthTokenClient
+	tokens oauthhttp.OAuthTokenClient
 	sealer CredentialSealer
 	clock  func() time.Time
 }
@@ -72,7 +74,7 @@ type OAuthFlowDeps struct {
 	Index  ProviderIndex
 	Store  OAuthAccountStore
 	States repository.OAuthStateStore
-	Tokens OAuthTokenClient
+	Tokens oauthhttp.OAuthTokenClient
 	Sealer CredentialSealer
 }
 

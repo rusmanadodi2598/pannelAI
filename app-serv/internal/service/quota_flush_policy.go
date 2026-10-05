@@ -13,7 +13,7 @@
 //	describes, carved out of the worker file so neither concern has to
 //	scroll past the other (draft 005 F3).
 //
-// RETRY POLICY
+// Retry policy
 //
 //	A failed flush is retried on the worker's next tick with the same batch.
 //	There is no in-worker retry loop: the tick is the backoff, so a database
@@ -21,7 +21,7 @@
 //	database already struggling. MaxAttempts bounds how many consecutive ticks
 //	one batch is retried for.
 //
-// DEAD-LETTER POLICY
+// Dead-letter policy
 //
 //	After MaxAttempts consecutive failures on the same batch, the batch is
 //	dead-lettered: it is logged at error level with the batch identity and
@@ -32,7 +32,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 

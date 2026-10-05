@@ -28,7 +28,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package postgres
 
@@ -54,7 +54,7 @@ const testDSNEnv = "PANNELAI_TEST_POSTGRES_DSN"
 //
 // The database's name must declare itself a test database. Every harness in
 // this package TRUNCATEs the tables it reads, so pointing the variable at a
-// real database destroys its data — which happened once, when a run was aimed
+// real database destroys its data, which happened once, when a run was aimed
 // at the dev database by copying POSTGRES_DSN instead of writing a test DSN:
 // the operator's endpoints and keys were truncated away and had to be
 // recovered from WAL. A name the guard accepts is one that names itself
@@ -118,7 +118,7 @@ func requireTestDSN(t *testing.T) string {
 // guardTestDatabase refuses a DSN whose database name does not declare itself
 // a test database. The connection parameters are parsed with the same library
 // the pool uses, so a DSN the guard accepts is a DSN the pool can open, and the
-// check happens before migrations run — which is what makes it a guard rather
+// check happens before migrations run, which is what makes it a guard rather
 // than an apology.
 func guardTestDatabase(dsn string) error {
 	parsed, err := pgxpool.ParseConfig(dsn)

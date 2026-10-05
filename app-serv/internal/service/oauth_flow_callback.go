@@ -19,13 +19,14 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
 import (
 	"context"
 	"encoding/json"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"net/url"
 	"strings"
 
@@ -143,7 +144,7 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 		return OAuthConnect{}, domain.NewValidationError("the state belongs to another provider")
 	}
 
-	token, err := s.tokens.Grant(ctx, oauth.TokenURL, tokenEncoding(oauth), TokenGrant{
+	token, err := s.tokens.Grant(ctx, oauth.TokenURL, tokenEncoding(oauth), oauthhttp.TokenGrant{
 		GrantType: "authorization_code", Code: code,
 		ClientID: oauth.ClientID, ClientSecret: oauth.ClientSecret,
 		RedirectURI: payload.RedirectURI, CodeVerifier: payload.Verifier,

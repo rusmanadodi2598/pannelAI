@@ -6,10 +6,10 @@
 //	constructor call over the repositories and seams the read needs.
 //
 // @uses      internal/repository, internal/registry, internal/service.
-// @reason    The catalog is the first service in the management graph — the
+// @reason    The catalog is the first service in the management graph, the
 //
 //	combo and vision services resolve their model references through
-//	it — and it reads the runtime overlay like the rest of the graph,
+//	it, and it reads the runtime overlay like the rest of the graph,
 //	because a model an operator registers under a custom node must
 //	reach the catalog or the node's models are routable but invisible.
 //	The endpoint roll-up it takes is the seam `?active=true` answers
@@ -20,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package main
 

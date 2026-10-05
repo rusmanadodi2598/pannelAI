@@ -9,14 +9,14 @@
 // @reason    §7.5 makes a key a child of the endpoint aggregate, so every mutation
 //
 //	runs through the root's own methods rather than writing a key row
-//	directly (AGENTS.md §2.2) — that is what enforces "an api_key endpoint
+//	directly (AGENTS.md §2.2), that is what enforces "an api_key endpoint
 //	keeps at least one active key". The credential is sealed here so the
 //	aggregate never meets plaintext, and the sealed value is never read
 //	back out: a response carries the hint the aggregate already holds.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -159,8 +159,8 @@ func (s *EndpointService) RemoveKey(ctx context.Context, endpointID, keyID strin
 //
 // The whole batch is validated before anything is stored: a duplicate label inside
 // the batch is a VALIDATION_ERROR (§7.5), and the keys are attached to an
-// in-memory aggregate first so the aggregate's own rules — including the
-// per-endpoint label uniqueness — run before a single statement.
+// in-memory aggregate first so the aggregate's own rules, including the
+// per-endpoint label uniqueness, run before a single statement.
 func (s *EndpointService) AddKeyBatch(ctx context.Context, endpointID string, inputs []KeyInput) ([]domain.UpstreamKey, error) {
 	endpoint, err := s.store.GetByID(ctx, endpointID)
 	if err != nil {

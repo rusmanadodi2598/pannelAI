@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -28,8 +28,8 @@ import (
 
 // Custom returns every custom model, or one provider's when providerID is set.
 //
-// The filter accepts every spelling the provider answers to — its id, its
-// registry alias, or a node prefix — through the same canonical set the catalog
+// The filter accepts every spelling the provider answers to, its id, its
+// registry alias, or a node prefix, through the same canonical set the catalog
 // filter uses (draft 024 §3.2), so an operator narrowing by alias sees the same
 // rows the id form shows. An empty value means "no filter", which is distinct
 // from a filter matching nothing.
@@ -111,7 +111,7 @@ func (s *ModelCatalogService) Aliases(ctx context.Context) ([]domain.ModelAlias,
 //
 // The set is validated in full before anything is written, so a request with one
 // bad row leaves the previous set untouched: §8.1's all-or-nothing rule for bulk
-// writes applies here for the same reason — a half-replaced mapping is harder to
+// writes applies here for the same reason, a half-replaced mapping is harder to
 // reason about than a refused one.
 func (s *ModelCatalogService) ReplaceAliases(ctx context.Context, aliases []domain.ModelAlias) error {
 	view, err := newReferenceView(s, ctx)

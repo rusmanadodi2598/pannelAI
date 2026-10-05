@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package domain
 
@@ -160,8 +160,8 @@ func TestActiveRequestCutoff(t *testing.T) {
 // in Redis undecodable, and the panel would draw an idle gateway.
 //
 // `combo` is omitted rather than sent empty, so a marker for a call that
-// addressed a single model — every media, embeddings and SystemOne call, and
-// most chat requests — encodes byte-for-byte as the shape an older build writes.
+// addressed a single model, every media, embeddings and SystemOne call, and
+// most chat requests, encodes byte-for-byte as the shape an older build writes.
 // That is what keeps a mixed-build window from losing markers over a field the
 // reader has never heard of.
 func TestActiveRequestWireShapeIsStable(t *testing.T) {

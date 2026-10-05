@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package domain
 
@@ -34,13 +34,13 @@ func TestOAuthRefreshState(t *testing.T) {
 	}{
 		{"nil credential", nil, lead, RefreshMissing},
 		{"no expiry recorded", &OAuthCredential{}, lead, RefreshMissing},
-		{"far from expiry", &OAuthCredential{ExpiresAt: ptrTime(now.Add(6 * time.Hour))}, lead, RefreshFresh},
-		{"exact lead boundary is due", &OAuthCredential{ExpiresAt: ptrTime(now.Add(time.Hour))}, lead, RefreshDue},
-		{"inside lead window", &OAuthCredential{ExpiresAt: ptrTime(now.Add(10 * time.Minute))}, lead, RefreshDue},
-		{"already expired", &OAuthCredential{ExpiresAt: ptrTime(now.Add(-time.Minute))}, lead, RefreshDue},
-		{"zero lead falls back to default", &OAuthCredential{ExpiresAt: ptrTime(now.Add(10 * time.Minute))}, 0, RefreshDue},
-		{"zero lead far expiry is fresh", &OAuthCredential{ExpiresAt: ptrTime(now.Add(DefaultRefreshLead + time.Minute))}, 0, RefreshFresh},
-		{"negative lead falls back to default", &OAuthCredential{ExpiresAt: ptrTime(now.Add(time.Minute))}, -time.Hour, RefreshDue},
+		{"far from expiry", &OAuthCredential{expiresAt: ptrTime(now.Add(6 * time.Hour))}, lead, RefreshFresh},
+		{"exact lead boundary is due", &OAuthCredential{expiresAt: ptrTime(now.Add(time.Hour))}, lead, RefreshDue},
+		{"inside lead window", &OAuthCredential{expiresAt: ptrTime(now.Add(10 * time.Minute))}, lead, RefreshDue},
+		{"already expired", &OAuthCredential{expiresAt: ptrTime(now.Add(-time.Minute))}, lead, RefreshDue},
+		{"zero lead falls back to default", &OAuthCredential{expiresAt: ptrTime(now.Add(10 * time.Minute))}, 0, RefreshDue},
+		{"zero lead far expiry is fresh", &OAuthCredential{expiresAt: ptrTime(now.Add(DefaultRefreshLead + time.Minute))}, 0, RefreshFresh},
+		{"negative lead falls back to default", &OAuthCredential{expiresAt: ptrTime(now.Add(time.Minute))}, -time.Hour, RefreshDue},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -77,11 +77,11 @@ func TestMarkUnhealthySetsErrorStatusAndReason(t *testing.T) {
 			if endpoint.Status() != UpstreamEndpointError {
 				t.Fatalf("status = %q, want error", endpoint.Status())
 			}
-			if got := endpoint.TestStatus().State; got != EndpointTestFail {
+			if got := endpoint.TestStatus().State(); got != EndpointTestFail {
 				t.Fatalf("test state = %q, want fail", got)
 			}
-			if endpoint.TestStatus().Message != tc.message {
-				t.Fatalf("message = %q, want %q", endpoint.TestStatus().Message, tc.message)
+			if endpoint.TestStatus().Message() != tc.message {
+				t.Fatalf("message = %q, want %q", endpoint.TestStatus().Message(), tc.message)
 			}
 		})
 	}

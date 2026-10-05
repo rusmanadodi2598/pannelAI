@@ -17,8 +17,8 @@
 //	can be read against the reference on its own terms.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     util
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -100,8 +100,8 @@ func parseQoderRSAPublicKey() (*rsa.PublicKey, error) {
 }
 
 // newQoderID formats sixteen CSPRNG bytes as the canonical UUID v4 string. Every id
-// the scheme draws is this shape — the request ids, the machine id, and the sixteen
-// leading characters of that string, which are the AES key — so the version and
+// the scheme draws is this shape, the request ids, the machine id, and the sixteen
+// leading characters of that string, which are the AES key, so the version and
 // variant bits are part of what the vendor reads, not decoration.
 func newQoderID() string {
 	var raw [16]byte

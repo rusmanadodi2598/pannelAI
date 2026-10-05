@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package repository
 
@@ -38,6 +38,9 @@ type ProxyRouteStore interface {
 	// parked candidate is skipped while an unparked one remains.
 	Park(ctx context.Context, proxyID string, ttl time.Duration) error
 
-	// Parked reports whether the candidate is inside its failure cooldown.
-	Parked(ctx context.Context, proxyID string) (bool, error)
+	// ParkedAll reports which candidates are inside their failure cooldown, for a
+	// whole set at once. A proxy plan is built on every proxied request, so asking
+	// per candidate is the query-in-a-loop shape AGENTS.md §1.7 blocks; the
+	// single-candidate read went with the last caller that needed it.
+	ParkedAll(ctx context.Context, proxyIDs []string) (map[string]bool, error)
 }

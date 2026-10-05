@@ -7,12 +7,12 @@
 //
 //	methods because an override is a small keyed document: the routes
 //	need the whole set to render a list, the data plane asks for one
-//	row per request, and a save replaces the row — there is no
+//	row per request, and a save replaces the row, there is no
 //	read-then-mutate path that would need a wider read.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package repository
 
@@ -25,8 +25,8 @@ import (
 // MediaOverrideRepository is the storage boundary for media provider overrides
 // (SPEC-API-001 §7.10).
 type MediaOverrideRepository interface {
-	// List returns every stored override. The table holds a handful of rows —
-	// one per provider and kind an operator has touched — so it is read whole.
+	// List returns every stored override. The table holds a handful of rows,
+	// one per provider and kind an operator has touched, so it is read whole.
 	List(ctx context.Context) ([]domain.MediaOverride, error)
 
 	// Get returns one provider's override for one kind, and whether a row is

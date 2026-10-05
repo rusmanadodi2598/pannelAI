@@ -12,15 +12,15 @@
 // @reason    A Personal Access Token pasted into the panel is only a token: nothing on
 //
 //	the connection row names the account behind it, and the vendor refuses a
-//	signature whose `uid` is empty. So the resolution rule — stored id first,
-//	vendor read second, refusal when neither answers — is what decides whether
+//	signature whose `uid` is empty. So the resolution rule, stored id first,
+//	vendor read second, refusal when neither answers, is what decides whether
 //	a PAT connection works at all, and it was missing: every request from such
 //	a connection died as a shaping failure. These cases drive a stub rather
 //	than the vendor so the cache and the refusals are observable.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-28
 package provider
 
@@ -93,7 +93,7 @@ func TestQoderSigningIdentity(t *testing.T) {
 	}{
 		{
 			name:     "a stored user id is used and the vendor is never asked",
-			cred:     Credential{ProjectID: "user-stored", Account: "stored@example.com"},
+			cred:     Credential{projectID: "user-stored", account: "stored@example.com"},
 			wantUser: "user-stored", wantEmail: "stored@example.com", wantReqs: 0,
 		},
 		{
@@ -117,7 +117,7 @@ func TestQoderSigningIdentity(t *testing.T) {
 		{
 			name:     "a stored email survives a vendor read for the id",
 			payload:  map[string]any{"id": "user-from-vendor", "email": "vendor@example.com"},
-			cred:     Credential{Account: "stored@example.com"},
+			cred:     Credential{account: "stored@example.com"},
 			wantUser: "user-from-vendor", wantEmail: "stored@example.com", wantReqs: 1,
 		},
 		{

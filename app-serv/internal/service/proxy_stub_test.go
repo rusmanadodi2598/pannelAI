@@ -13,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -112,7 +112,7 @@ func newProxyFixture(t *testing.T, prober *stubProxyProber) (*ProxyService, *stu
 	t.Helper()
 	repo := newStubProxyRepo()
 	if prober == nil {
-		prober = &stubProxyProber{result: ProxyProbeResult{State: domain.EndpointTestOK, LatencyMS: 12}}
+		prober = &stubProxyProber{result: ProxyProbeResult{State: string(domain.EndpointTestOK), LatencyMS: 12}}
 	}
 	service, err := NewProxyService(ProxyServiceDeps{Repo: repo, Sealer: newTestSealer(t), Prober: prober})
 	if err != nil {

@@ -8,15 +8,15 @@
 //	reference (SPEC-API-001 §7.7).
 //
 // @uses      internal/schema, context, encoding/json.
-// @reason    A probe is an ordinary data plane call — resolve, select, translate,
+// @reason    A probe is an ordinary data plane call, resolve, select, translate,
 //
-//	call — so it goes through Relay rather than a second HTTP path that
+//	call, so it goes through Relay rather than a second HTTP path that
 //	would drift from the pipeline. What this file owns is only the request
 //	it invents and the ceiling that keeps it cheap.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -34,7 +34,7 @@ const PingPrompt = "ping"
 // PingMaxTokens bounds the probe's answer, so testing a combo spends little
 // upstream budget. It is 1024, the reference's own model-test ceiling
 // (src/app/api/models/test/ping.js:174): a one-token probe starves a reasoning
-// model — the answer is spent before any text arrives — and the OpenCode
+// model, the answer is spent before any text arrives, and the OpenCode
 // Console API refuses an output ceiling below 16 outright, so the probe would
 // report a provider failure that is really a probe-shaped request.
 const PingMaxTokens = 1024
@@ -44,7 +44,7 @@ const PingMaxTokens = 1024
 //
 // It calls Relay directly rather than going through the chat service, so no
 // usage row is written: the probe has no gateway key and no request id to record
-// one against, and its spend is an operator diagnostic — the same way a fusion
+// one against, and its spend is an operator diagnostic, the same way a fusion
 // panel's calls stay outside the request's usage row.
 func (e *Engine) Ping(ctx context.Context, ref string) (Outcome, error) {
 	request, err := pingRequest(ref)

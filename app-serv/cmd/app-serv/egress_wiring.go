@@ -14,7 +14,7 @@
 //	per caller: the connectivity probe, the chat and media transports,
 //	the OAuth client, and the proxy test all dial an address an operator
 //	typed, so they must share one guard and one allowlist. Building it
-//	here is what keeps a second allowlist from appearing — the proxy
+//	here is what keeps a second allowlist from appearing, the proxy
 //	wiring was the first caller and used to build its own.
 //
 //	SPEC-API-001 §7.11 makes the routing half of that decision here too:
@@ -24,7 +24,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package main
 
@@ -91,8 +91,8 @@ func buildEgress(cfg config.Config, settings networkSettingsReader) (egress, err
 //     dialing direct. Quietly bypassing a proxy an operator enabled is the
 //     failure this setting exists to prevent.
 //
-// The settings are read per request — the same per-call rule the §7.10 media
-// override follows — so a change takes effect on the next call, not the next
+// The settings are read per request, the same per-call rule the §7.10 media
+// override follows, so a change takes effect on the next call, not the next
 // boot.
 func egressProxy(guard *netguard.Guard, settings networkSettingsReader) func(*http.Request) (*url.URL, error) {
 	return func(req *http.Request) (*url.URL, error) {

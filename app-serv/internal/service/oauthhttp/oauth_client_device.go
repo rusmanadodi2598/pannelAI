@@ -1,6 +1,6 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_client_device.go
+// @file      internal/service/oauthhttp/oauth_client_device.go
 // @for       The device-token poll client: one GET per poll attempt, the
 //
 //	pending verdicts, and the upstream's expiry hint parsing.
@@ -11,13 +11,15 @@
 //	202/404 answers mean "keep waiting" and whose 200 body carries
 //	token material plus an expiry hint in any of three shapes. Keeping
 //	that translation here puts the wire tolerance in one place and
-//	leaves the flow service owning only the connect decision.
+//	leaves the flow service owning only the connect decision. The net/http
+//	import is egress only, so a worker can call this the same way a
+//	route does (AGENTS.md §1.5).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
-package service
+package oauthhttp
 
 import (
 	"context"
@@ -34,7 +36,7 @@ import (
 
 // DeviceTokenResponse is one successful device poll: the token set plus the
 // identity and absolute expiry the upstream reported. ExpiresAt always carries
-// a value — the parse falls back to the reference's thirty-day default — so
+// a value, the parse falls back to the reference's thirty-day default, so
 // the flow service never stores a token with an unknown lifetime.
 type DeviceTokenResponse struct {
 	AccessToken  string
@@ -77,6 +79,9 @@ func (c *OAuthHTTPClient) DevicePoll(ctx context.Context, deviceTokenURL, nonce,
 	if strings.TrimSpace(nonce) == "" || strings.TrimSpace(verifier) == "" {
 		return DeviceTokenResponse{}, false, domain.NewValidationError("the device poll needs its nonce and verifier")
 	}
+	ctx, cancel := context.WithTimeout(ctx, grantCallTimeout)
+	defer cancel()
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, deviceTokenURL, nil)
 	if err != nil {
 		return DeviceTokenResponse{}, false, domain.NewValidationError("the device token URL is invalid")
@@ -135,8 +140,8 @@ func (c *OAuthHTTPClient) DevicePoll(ctx context.Context, deviceTokenURL, nonce,
 
 // parseDeviceExpiry converts the upstream's expiry hint into an absolute
 // instant, in the reference's order: a numeric ms epoch (number or numeric
-// string) first — so a short numeric string like "2026" is an epoch, not a
-// year — then an RFC3339 string, then expires_in seconds counted from now,
+// string) first, so a short numeric string like "2026" is an epoch, not a
+// year, then an RFC3339 string, then expires_in seconds counted from now,
 // then the thirty-day default. expires_in of exactly zero means "already
 // expired" and is honored here; the flow's floor decides what gets stored.
 func parseDeviceExpiry(raw json.RawMessage, expiresIn *int, now time.Time) time.Time {
@@ -161,10 +166,10 @@ func parseDeviceExpiry(raw json.RawMessage, expiresIn *int, now time.Time) time.
 	return now.Add(deviceExpiryDefault)
 }
 
-// floorDeviceExpiry applies the reference's one-day floor: an upstream that
+// FloorDeviceExpiry applies the reference's one-day floor: an upstream that
 // reports an expiry closer than a day out (or in the past) still stores a
 // token with one day of life, so a skewed clock cannot void a fresh login.
-func floorDeviceExpiry(expires time.Time, now time.Time) time.Time {
+func FloorDeviceExpiry(expires time.Time, now time.Time) time.Time {
 	if floor := now.Add(deviceExpiryFloor); expires.Before(floor) {
 		return floor
 	}

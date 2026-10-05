@@ -24,14 +24,14 @@
 //	id can match any pattern.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-26
 package registry
 
 // thinkingRules is the reference's PATTERN_CAPABILITIES reduced to its reasoning
 // decision, in its order: the first match wins. The `ref #N` comment on each row
-// is the pattern's index in the reference's array at revision 39e36d3d, which is
+// is the pattern's index in the reference's own array, which is
 // what a maintainer re-checks when the reference moves.
 var thinkingRules = []thinkingRule{
 	{pattern: "*claude*opus-5*", format: "claude-adaptive", reasons: true},     // ref #0

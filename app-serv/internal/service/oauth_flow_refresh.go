@@ -20,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -149,10 +149,10 @@ func (s *OAuthFlowService) Refresh(ctx context.Context, providerID, endpointID s
 // stored one (rotation); an absent one keeps it, per the grant's own rule.
 func (s *OAuthFlowService) refreshEndpoint(ctx context.Context, oauth *registry.OAuth, endpoint domain.UpstreamEndpoint) (*time.Time, error) {
 	credential := endpoint.OAuth()
-	if credential == nil || strings.TrimSpace(credential.RefreshTokenEncrypted) == "" {
+	if credential == nil || strings.TrimSpace(credential.RefreshTokenEncrypted()) == "" {
 		return nil, domain.NewValidationError("the account has no refresh token")
 	}
-	opened, err := s.sealer.Open(credential.RefreshTokenEncrypted)
+	opened, err := s.sealer.Open(credential.RefreshTokenEncrypted())
 	if err != nil {
 		return nil, err
 	}
@@ -162,32 +162,37 @@ func (s *OAuthFlowService) refreshEndpoint(ctx context.Context, oauth *registry.
 	}
 
 	now := s.clock()
+	// The row's timestamp before anything is written to it: the persist below is
+	// conditioned on it, so a refresh that raced another one loses cleanly instead
+	// of writing the older credential over the token the vendor already rotated.
+	loadedAt := endpoint.UpdatedAt()
 	accessSealed, err := s.sealer.Seal(token.AccessToken)
 	if err != nil {
 		return nil, domain.NewInternalError("the access token could not be stored")
 	}
-	next := *credential
-	next.AccessTokenEncrypted = accessSealed
+	// A blank here is the vendor's answer, not ours: Rotated keeps the refresh
+	// ciphertext the account already holds when the grant issued no new one.
+	refreshSealed := ""
 	if refresh := strings.TrimSpace(token.RefreshToken); refresh != "" {
-		refreshSealed, err := s.sealer.Seal(refresh)
-		if err != nil {
+		if refreshSealed, err = s.sealer.Seal(refresh); err != nil {
 			return nil, domain.NewInternalError("the refresh token could not be stored")
 		}
-		next.RefreshTokenEncrypted = refreshSealed
 	}
-	next.ExpiresAt = nil
+	var expiresAt *time.Time
 	if token.ExpiresIn > 0 {
 		expires := now.Add(time.Duration(token.ExpiresIn) * time.Second)
-		next.ExpiresAt = &expires
+		expiresAt = &expires
 	}
-	refreshed := now
-	next.LastRefreshAt = &refreshed
-
-	endpoint.SetOAuth(&next, now)
-	if err := s.store.Update(ctx, endpoint); err != nil {
+	next, err := credential.Rotated(accessSealed, refreshSealed, expiresAt, now)
+	if err != nil {
 		return nil, err
 	}
-	return next.ExpiresAt, nil
+
+	endpoint.SetOAuth(&next, now)
+	if err := s.store.UpdateIfUnchanged(ctx, endpoint, loadedAt); err != nil {
+		return nil, err
+	}
+	return next.ExpiresAt(), nil
 }
 
 // MarkRefreshDeadLetter moves an endpoint to the error state with the reason

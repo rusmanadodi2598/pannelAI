@@ -17,8 +17,8 @@
 //	a regeneration, not an edit.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-23
 package registry
 
@@ -113,7 +113,7 @@ func loadPricing() {
 			patterns:        make([]patternRule, len(doc.Pattern)),
 		}
 		for _, row := range doc.Model {
-			// reason: exact-case key, same as the reference's direct index — the
+			// reason: exact-case key, same as the reference's direct index, the
 			// table carries case-twins with different rates, so a folded key would
 			// silently swap a model onto its twin's price.
 			index.byModel[row.ID] = row.Rate
@@ -139,8 +139,8 @@ func pricingKey(provider, model string) string {
 
 // ResolvePricing answers the reference's three-step chain for one
 // (provider, model) pair: the provider-specific override, then the canonical
-// model entry — with any vendor prefix stripped, and also under its original
-// spelling — then the ordered glob patterns. It reports false when nothing
+// model entry, with any vendor prefix stripped, and also under its original
+// spelling, then the ordered glob patterns. It reports false when nothing
 // matches, which the caller records as a zero cost rather than guessing a rate.
 func ResolvePricing(provider, model string) (Rate, bool) {
 	loadPricing()

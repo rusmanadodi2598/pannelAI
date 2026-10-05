@@ -4,15 +4,15 @@
 // @file      internal/domain/upstream_key_test.go
 // @for       Tests for key construction, plaintext boundaries, and rotation.
 // @uses      testing, time.
-// @reason    SPEC-API-001 §7.5 defines a key's shape — identity, ciphertext,
+// @reason    SPEC-API-001 §7.5 defines a key's shape, identity, ciphertext,
 //
-//	priority, rotation — and the service depends on the constructor
+//	priority, rotation, and the service depends on the constructor
 //	rejecting malformed input, on the plaintext never being reachable from
 //	the aggregate, and on rotation keeping the priority order intact.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 

@@ -15,14 +15,14 @@
 //	meet their implementations. No adapter type is declared here, because
 //	none is needed: the gateway key repository answers the authentication
 //	and key-use seams, the settings service answers the require-key seam,
-//	and the usage and log services answer the accounting seams — each by a
+//	and the usage and log services answer the accounting seams, each by a
 //	method written for its own use, which is what makes the seams narrow
 //	enough to satisfy without translation. The collaborators it draws on
 //	are declared in dataplane_inputs.go.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package main
 
@@ -38,7 +38,7 @@ import (
 )
 
 // dataPlane is the assembled data plane: the chat, embeddings, and media
-// services that share one engine, plus the engine itself — the §7.7 combo test
+// services that share one engine, plus the engine itself, the §7.7 combo test
 // probes through it, and rebuilding a second pipeline for that route would be a
 // second pipeline to keep in step.
 type dataPlane struct {

@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -52,6 +52,17 @@ type openAIErrorDetail struct {
 // The access log records the machine code and never the message (register G9): a
 // data-plane failure's message can quote an upstream's text back, and that text
 // can carry the credential the gateway sent, so only the code is safe to log.
+// requestIDOf answers the trace id of the request this writer belongs to, or ""
+// for a writer that does not carry one (a test driving a handler with a bare
+// httptest.ResponseRecorder). It exists so a data-plane failure can be joined to
+// the access-log line holding the same id (AGENTS.md §1.6).
+func requestIDOf(w http.ResponseWriter) string {
+	if carrier, ok := w.(schema.RequestIDCarrier); ok {
+		return carrier.RequestID()
+	}
+	return ""
+}
+
 func writeDataPlaneError(w http.ResponseWriter, err error) {
 	failure := dataplane.AsError(err)
 	if failure == nil {
@@ -68,7 +79,7 @@ func writeDataPlaneError(w http.ResponseWriter, err error) {
 	if encodeErr := json.NewEncoder(w).Encode(openAIErrorBody{Error: openAIErrorDetail{
 		Message: failure.Message, Type: failure.Type, Code: failure.Code,
 	}}); encodeErr != nil {
-		slog.Error("encoding data plane error failed", "code", failure.Code, "error", encodeErr)
+		slog.Error("encoding data plane error failed", "request_id", requestIDOf(w), "code", failure.Code, "error", encodeErr)
 	}
 }
 
@@ -81,11 +92,11 @@ func writeDataPlaneBody(w http.ResponseWriter, status int, body []byte) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if _, err := w.Write(body); err != nil {
-		slog.Error("writing data plane response failed", "status", status, "error", err)
+		slog.Error("writing data plane response failed", "request_id", requestIDOf(w), "status", status, "error", err)
 	}
 }
 
-// writeDataPlaneRaw writes a body that is not JSON — the audio bytes a speech
+// writeDataPlaneRaw writes a body that is not JSON, the audio bytes a speech
 // call answers with, or a transcription upstream's plain-text form. The content
 // type is the caller's because only the route knows what it produced.
 func writeDataPlaneRaw(w http.ResponseWriter, status int, contentType string, body []byte) {
@@ -93,7 +104,7 @@ func writeDataPlaneRaw(w http.ResponseWriter, status int, contentType string, bo
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	w.WriteHeader(status)
 	if _, err := w.Write(body); err != nil {
-		slog.Error("writing data plane response failed", "status", status, "error", err)
+		slog.Error("writing data plane response failed", "request_id", requestIDOf(w), "status", status, "error", err)
 	}
 }
 
@@ -124,6 +135,10 @@ type sseSink struct {
 func newSSESink(w http.ResponseWriter) *sseSink {
 	return &sseSink{writer: w, controller: http.NewResponseController(w)}
 }
+
+// requestID answers the trace id for the log lines a stream writes long after the
+// handler's request value is out of scope.
+func (s *sseSink) requestID() string { return requestIDOf(s.writer) }
 
 // WriteFrame writes one complete frame, committing the SSE response the first
 // time it is called.

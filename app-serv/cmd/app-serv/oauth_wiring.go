@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package main
 
@@ -33,6 +33,7 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/handler"
 	redisrepo "github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository/redis"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 )
 
 // buildOAuth assembles the §7.4 flow. The state store is Redis-backed because
@@ -46,7 +47,7 @@ func buildOAuth(
 	sealer *domain.Sealer,
 	upstream *http.Client,
 ) (*handler.OAuthHandler, *service.OAuthRefreshWorker, error) {
-	tokens, err := service.NewOAuthHTTPClient(upstream)
+	tokens, err := oauthhttp.NewOAuthHTTPClient(upstream)
 	if err != nil {
 		return nil, nil, fmt.Errorf("management wiring: oauth token client: %w", err)
 	}

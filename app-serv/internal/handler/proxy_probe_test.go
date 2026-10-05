@@ -3,16 +3,16 @@
 // @file      internal/handler/proxy_probe_test.go
 // @for       HTTP tests for the two §7.11 connectivity-test routes.
 // @uses      net/http, testing, internal/domain, internal/service.
-// @reason    The two routes answer the same status but differ on one rule —
+// @reason    The two routes answer the same status but differ on one rule,
 //
 //	the stored route persists its finding and the candidate route must
-//	not — so the tests pin the shared answer shape and the difference.
+//	not, so the tests pin the shared answer shape and the difference.
 //	A failed probe is a 200 carrying a fail state: that is the answer
 //	the operator asked for, not an error.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -55,7 +55,7 @@ func TestProxyHandler_Test_StoredCandidate(t *testing.T) {
 func TestProxyHandler_Test_AFailureIsAResult(t *testing.T) {
 	f := newManagementFixture(t)
 	f.proxyProber.result = service.ProxyProbeResult{
-		State: domain.EndpointTestFail, Message: "the proxy refused the connection",
+		State: string(domain.EndpointTestFail), Message: "the proxy refused the connection",
 	}
 	id := createProxy(t, f, "pool-a")
 

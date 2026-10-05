@@ -5,12 +5,12 @@
 // @uses      context, internal/domain, time.
 // @reason    A poll has two decisions that read differently: when to ask again, which the worker owns,
 //
-//	and what a single answer writes — figures, or only a sentence when there are no figures. This file
+//	and what a single answer writes, figures, or only a sentence when there are no figures. This file
 //	holds the second one, so the pruning rule that protects last-good numbers is stated once.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
 
@@ -52,8 +52,8 @@ func (w *QuotaPublishedWorker) storeAnswer(ctx context.Context, state domain.Pub
 // storeSoftAnswer covers a sentence with no buckets: the provider refused the credential, the
 // account published nothing, the family errored. StorePublished is the port's only window writer
 // and it prunes every label an answer lacks, so a zero-window answer would wipe the last good
-// buckets off the card. The sentence therefore travels on the attempt — the card's only honest
-// content for such an account — while stored numbers keep the older stamp they really have,
+// buckets off the card. The sentence therefore travels on the attempt, the card's only honest
+// content for such an account, while stored numbers keep the older stamp they really have,
 // because RecordAttempt never touches fetched_at. A provider that answered in words did answer,
 // so its failure run stays where it was.
 // storeSoftAnswer writes an answer that carries no buckets. `failureDelta` is 0 when the

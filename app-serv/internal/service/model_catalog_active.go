@@ -26,7 +26,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -43,7 +43,7 @@ import (
 // health tracking moves an endpoint to error without clearing its backoff
 // window, so a stale timestamp would count a dead account as pickable. The
 // question "which providers have a candidate" is one predicate over one table
-// and is answered as such — in one statement, for every id in the call.
+// and is answered as such, in one statement, for every id in the call.
 type ActiveProviderSet interface {
 	ActiveProviders(ctx context.Context, providerIDs []string) (map[string]bool, error)
 }
@@ -51,8 +51,8 @@ type ActiveProviderSet interface {
 // activeProviders answers which of the named providers hold a candidate
 // endpoint, in one read.
 //
-// The input is the candidate list the caller already narrowed — every distinct
-// provider id among the rows that matched the other filters — so a request that
+// The input is the candidate list the caller already narrowed, every distinct
+// provider id among the rows that matched the other filters, so a request that
 // asked for one provider measures that provider alone, and a request that asked
 // for nothing measures the catalog's own population. Ids are the canonical ids
 // the rows carry, which is the same spelling the endpoint table stores and the
@@ -70,7 +70,7 @@ type ActiveProviderSet interface {
 // virtual endpoint for a credential-free entry with no active row (draft 029 §4.8
 // F8), so `opencode/space-bunny-free` answers 200 with an empty endpoint table.
 // Reading only the table answered the opposite and hid the whole free lane from
-// the panel — the picker then offered the operator nothing that works, which is
+// the panel, the picker then offered the operator nothing that works, which is
 // how a custom node came to be built for a provider that needs none.
 //
 // The credential-free half is asked of the registry rather than guessed from the

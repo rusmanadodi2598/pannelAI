@@ -13,13 +13,13 @@
 // finished, and only the marker itself carries that: `stop_reason:
 // "stop_sequence"` plus `stop_sequence`. Measured live on 2026-09-30 the
 // gateway answered `A STOPHERE B` with `end_turn` through
-// /api/v1/messages. These pin both halves — the text the client must not
-// receive, and the reason the client must be told — and that a `tool_use`
+// /api/v1/messages. These pin both halves, the text the client must not
+// receive, and the reason the client must be told, and that a `tool_use`
 // block is never collateral damage of a text cut.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 

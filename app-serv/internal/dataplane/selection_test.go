@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -153,11 +153,11 @@ func TestSelector_Ordering(t *testing.T) {
 			if got.Key.ID() != tc.wantKey {
 				t.Fatalf("key = %q, want %q", got.Key.ID(), tc.wantKey)
 			}
-			if got.Credential.APIKey == "" {
+			if credentialSecret(t, got.Credential) == "" {
 				t.Fatal("Credential.APIKey is empty, want the opened plaintext")
 			}
-			if got.Credential.KeyID != tc.wantKey {
-				t.Fatalf("credential key id = %q, want %q", got.Credential.KeyID, tc.wantKey)
+			if got.Credential.KeyID() != tc.wantKey {
+				t.Fatalf("credential key id = %q, want %q", got.Credential.KeyID(), tc.wantKey)
 			}
 		})
 	}

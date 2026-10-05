@@ -15,13 +15,13 @@
 //
 //	to stop with the process, and SPEC-API-001 §6 gives all three
 //	workers their schedule. They live in one file because their shape is
-//	identical — construct, run until ctx is cancelled, supervise the
-//	panic — so a new worker has a pattern to follow rather than a new
+//	identical, construct, run until ctx is cancelled, supervise the
+//	panic, so a new worker has a pattern to follow rather than a new
 //	place to invent one.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package main
 
@@ -48,7 +48,7 @@ const oauthRefreshInterval = 5 * time.Minute
 // publishedPollTick is how often the published-quota worker walks its due queue. A
 // minute is under the shortest family floor the poll policy declares (two minutes), so
 // an endpoint that comes due is polled on the next tick rather than after a full
-// interval, and the queue read — not the tick — is what bounds the provider calls.
+// interval, and the queue read, not the tick, is what bounds the provider calls.
 const publishedPollTick = time.Minute
 
 // publishedWorkerInputs is what only the published-quota poll worker needs: the quota
@@ -62,23 +62,18 @@ type publishedWorkerInputs struct {
 	Policy    service.PublishedPollPolicy
 }
 
-// publishedWorker hands the poll worker from buildWorkers, which has its dependencies,
-// to runWorkers, which has the boot context that terminates it.
+// publishedWorker hands the poll worker from buildWorkers, which has its
+// dependencies, to runWorkers, which has the boot context that terminates it.
 //
-// WHY THIS EXISTS. Every other worker reaches runWorkers as a field of managementDeps,
-// which buildManagement fills and main hands over; that struct lives in
-// router_wiring.go and its input struct in management_handlers.go. Adding a field to
-// either is a one-line change and is the follow-up this handoff should become, but both
-// files are outside the set this worker owns, and buildManagement does not receive the
-// context — so starting the worker there would start it with nothing to stop on. The
-// var is written once by buildWorkers and read once by runWorkers, both in the boot
-// goroutine before any worker runs, so it is ordered by program order, not by a race.
+// A package var rather than a managementDeps field because buildManagement does
+// not receive that context, so the worker cannot be started there. Written once
+// by buildWorkers and read once by runWorkers, both before any worker runs.
 var publishedWorker *service.QuotaPublishedWorker
 
 // buildWorkers constructs the workers that read state the management graph already
 // built. The first two are returned rather than started here so the caller runs them
 // only once the server is listening; the published-quota poll worker cannot be returned
-// for that reason and is handed over instead — see publishedWorker.
+// for that reason and is handed over instead, see publishedWorker.
 func buildWorkers(
 	client redis.UniversalClient,
 	quotas *postgres.QuotaRepository,

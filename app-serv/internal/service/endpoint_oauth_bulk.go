@@ -8,7 +8,7 @@
 // @uses      internal/domain, context, errors, strconv, strings, time.
 // @reason    The import path exists for accounts obtained on a machine with no
 //
-//	browser callback, so there is no authorization flow to run — only
+//	browser callback, so there is no authorization flow to run, only
 //	tokens to seal and an account identity to match. It is separate from
 //	endpoint_bulk.go because the two batches share the all-or-nothing
 //	rule but nothing else, and because AGENTS.md §1.1 caps a file at 250
@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -127,7 +127,7 @@ func (s *EndpointService) buildOAuthImport(ctx context.Context, providerID strin
 	}
 	hint := domain.MaskSecret(accessToken)
 
-	existingID, err := s.store.FindOAuthEndpoint(ctx, providerID, account.Account.Email, account.Account.WorkspaceID)
+	existingID, err := s.store.FindOAuthEndpoint(ctx, providerID, account.Account.Email().String(), account.Account.WorkspaceID())
 	if err != nil && !errors.Is(err, domain.ErrEndpointNotFound) {
 		return domain.UpstreamEndpoint{}, false, "", err
 	}
@@ -164,15 +164,15 @@ func (s *EndpointService) sealOAuthCredential(account OAuthAccountInput, now tim
 		}
 	}
 	refreshed := now
-	return &domain.OAuthCredential{
+	return domain.NewOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted:  accessSealed,
 		RefreshTokenEncrypted: refreshSealed,
 		ExpiresAt:             account.ExpiresAt,
 		Scopes:                account.Scopes,
-		AccountEmail:          account.Account.Email,
-		AccountID:             account.Account.WorkspaceID,
+		AccountEmail:          account.Account.Email().String(),
+		AccountID:             account.Account.WorkspaceID(),
 		LastRefreshAt:         &refreshed,
-	}, nil
+	})
 }
 
 // buildOAuthEndpoint stages a new oauth endpoint for an account never imported.
@@ -197,12 +197,12 @@ func buildOAuthEndpoint(providerID string, credential *domain.OAuthCredential, a
 // identity at all. Two accounts of one provider are told apart by exactly this.
 func defaultOAuthLabel(account domain.EndpointAccount) string {
 	switch {
-	case account.Email != "":
-		return account.Email
-	case account.WorkspaceID != "":
-		return "workspace-" + account.WorkspaceID
-	case account.Name != "":
-		return account.Name
+	case !account.Email().IsZero():
+		return account.Email().String()
+	case account.WorkspaceID() != "":
+		return "workspace-" + account.WorkspaceID()
+	case account.Name() != "":
+		return account.Name()
 	default:
 		return "oauth-account"
 	}

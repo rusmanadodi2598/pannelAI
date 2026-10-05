@@ -7,14 +7,14 @@
 //
 //	migration 000012 added were read by the panel but written by no
 //	live path, so the screen could not show why an endpoint last
-//	failed. This is the narrow write the data plane's outcome takes —
+//	failed. This is the narrow write the data plane's outcome takes,
 //	RecordKeyHealth's rule applied to the endpoint's own columns: a
 //	routing result must not rewrite a label, a priority, or a
 //	credential.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package postgres
 
@@ -27,11 +27,11 @@ import (
 // RecordUpstreamOutcome persists the endpoint's connection-parity state after a
 // data-plane call: the use run and the last non-test upstream error. It touches
 // the parity columns only. A served call carries no error, so its write stores
-// NULLs — the screen's "no failure since the last success" state.
+// NULLs, the screen's "no failure since the last success" state.
 func (r *EndpointRepository) RecordUpstreamOutcome(ctx context.Context, endpoint domain.UpstreamEndpoint) error {
 	const q = `
 UPDATE upstream_endpoints
-   SET consecutive_use_count = $1,
+   SET consecutive_use_count = CASE WHEN $1::boolean THEN 0 ELSE consecutive_use_count + 1 END,
        last_error = $2,
        last_error_at = $3,
        error_code = $4,
@@ -48,7 +48,7 @@ UPDATE upstream_endpoints
 		stored := code
 		errorCode = &stored
 	}
-	tag, err := r.pool.Exec(ctx, q, endpoint.ConsecutiveUseCount(),
+	tag, err := r.pool.Exec(ctx, q, endpoint.ConsecutiveUseCount() == 0,
 		lastError, at, errorCode, endpoint.UpdatedAt(), endpoint.ID())
 	if err != nil {
 		return translateEndpointError(err)

@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
@@ -67,13 +67,10 @@ func TestUpstreamEndpoint_NextKeySkipsUnavailableKeys(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := newTestEndpoint(t, "api_key", newTestKey(t, 1), newTestKey(t, 2), newTestKey(t, 3))
 			for _, priority := range tc.disable {
-				key := endpoint.KeyByPriority(priority)
-				if _, err := endpoint.SetKeyStatus(key.ID(), "disabled", keyNow); err != nil {
-					t.Fatalf("SetKeyStatus(disabled) error = %v", err)
-				}
+				setKeyStatus(t, &endpoint, keyAtPriority(t, endpoint, priority), "disabled")
 			}
 			for _, priority := range tc.park {
-				key := endpoint.KeyByPriority(priority)
+				key := keyAtPriority(t, endpoint, priority)
 				if _, err := endpoint.RecordKeyFailure(key.ID(), "nope", KeyFailureAuth, keyNow); err != nil {
 					t.Fatalf("RecordKeyFailure() error = %v", err)
 				}
@@ -113,12 +110,21 @@ func TestUpstreamEndpoint_AvailableToRoute(t *testing.T) {
 				}
 			}
 			if tc.name == "in backoff" {
-				until := keyNow.Add(5 * time.Minute)
-				endpoint.MarkRateLimited(until)
+				endpoint = endpointInBackoff(t)
 			}
 			if got := endpoint.Available(keyNow.Add(tc.advance)); got != tc.available {
 				t.Fatalf("Available() = %v, want %v", got, tc.available)
 			}
 		})
 	}
+}
+
+// endpointInBackoff is the shape the repository loads for an endpoint a provider
+// rate-limited: active, one usable key, and a window still open.
+func endpointInBackoff(t *testing.T) UpstreamEndpoint {
+	t.Helper()
+	until := keyNow.Add(5 * time.Minute)
+	return RehydrateUpstreamEndpoint("ep_1", "deepseek", "primary", UpstreamAuthAPIKey, 1,
+		UpstreamEndpointActive, nil, EndpointAccount{}, EndpointTestStatus{}, &until, nil,
+		keyNow, keyNow, []UpstreamKey{newTestKey(t, 1)}, EndpointParity{})
 }

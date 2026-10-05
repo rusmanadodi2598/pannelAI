@@ -13,13 +13,13 @@
 //
 //	combo whose members are combos re-walked every subtree once per path
 //	to it, so a modest fan-out cost lookups exponentially. These tests
-//	pin both bounds — the memo that collapses repeated subtrees, and the
-//	expansion limit that stops a graph the memo cannot collapse — and the
+//	pin both bounds, the memo that collapses repeated subtrees, and the
+//	expansion limit that stops a graph the memo cannot collapse, and the
 //	alias-cycle guard the combo depth bound does not cover.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 
@@ -156,7 +156,7 @@ func TestResolver_ComboExpansionIsBounded(t *testing.T) {
 // TestResolver_AliasCycleTerminates pins the one cycle shape the combo depth
 // bound does not cover: an alias whose target is another alias. The write path
 // refuses such a set, so this is the read path's behaviour for a row written
-// directly — it must terminate rather than recurse.
+// directly, it must terminate rather than recurse.
 func TestResolver_AliasCycleTerminates(t *testing.T) {
 	lookup := fakeLookup{
 		combos:  map[string]domain.Combo{},

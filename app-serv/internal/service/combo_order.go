@@ -9,7 +9,7 @@
 // @uses      internal/domain, internal/repository, context, log/slog.
 // @reason    §7.7 makes write time the only moment a combo's references can be
 //
-//	checked — a router cannot dereference a stale name — and makes the
+//	checked, a router cannot dereference a stale name, and makes the
 //	round-robin order the one part of a combo a client observes request
 //	by request. Both concern the path from a stored combo to a served
 //	request, which is why they sit together, apart from the CRUD
@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -131,7 +131,7 @@ func (s *ComboService) validateRefs(ctx context.Context, name string, draft Comb
 
 // resetRotation clears a combo's rotation state after a change that invalidates
 // it: a counter that addressed the old model list would otherwise keep serving
-// the wrong model. The failure is discarded deliberately — the combo itself was
+// the wrong model. The failure is discarded deliberately, the combo itself was
 // stored successfully, and a stale counter costs one window of skew rather than
 // a refused write.
 func (s *ComboService) resetRotation(ctx context.Context, comboName string) {

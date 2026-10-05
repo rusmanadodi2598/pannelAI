@@ -8,7 +8,7 @@
 // @uses      encoding/json, net/http, strings, testing.
 // @reason    A refusal the gateway reads as spent stops being tried and parks the
 //
-//	credential, while a refusal it reads as capacity is retried — so the two
+//	credential, while a refusal it reads as capacity is retried, so the two
 //	shapes the vendor uses for very different problems must not arrive at
 //	the same answer. It sends a real billing block as a numeric code, and a
 //	short free-model pool as a generic 429 with the complaint nested inside
@@ -16,8 +16,8 @@
 //	attempt of the identical request.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-28
 package provider
 

@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -41,6 +41,11 @@ type memEndpointStore struct {
 	// labelKey mirrors idx_upstream_endpoints_provider_label, so a duplicate
 	// account is refused here exactly as PostgreSQL would refuse it.
 	labelKey map[string]string
+	// casLoadedAt records the timestamp the last UpdateIfUnchanged was conditioned
+	// on, and casReject makes that call answer the way PostgreSQL does when the row
+	// moved under the caller.
+	casLoadedAt time.Time
+	casReject   bool
 }
 
 func newMemEndpointStore() *memEndpointStore {
@@ -76,7 +81,7 @@ func (s *memEndpointStore) withKeys(endpoint domain.UpstreamEndpoint) domain.Ups
 		})
 }
 
-// store writes an endpoint's own row, leaving its key rows untouched — the same
+// store writes an endpoint's own row, leaving its key rows untouched, the same
 // separation the repository's Update keeps.
 func (s *memEndpointStore) store(endpoint domain.UpstreamEndpoint) {
 	s.byID[endpoint.ID()] = endpoint
@@ -161,6 +166,19 @@ func (s *memEndpointStore) GetByID(_ context.Context, id string) (domain.Upstrea
 func (s *memEndpointStore) Update(_ context.Context, endpoint domain.UpstreamEndpoint) error {
 	if _, ok := s.byID[endpoint.ID()]; !ok {
 		return domain.ErrEndpointNotFound
+	}
+	s.store(endpoint)
+	return nil
+}
+
+func (s *memEndpointStore) UpdateIfUnchanged(_ context.Context, endpoint domain.UpstreamEndpoint, loadedAt time.Time) error {
+	stored, ok := s.byID[endpoint.ID()]
+	if !ok {
+		return domain.ErrEndpointNotFound
+	}
+	s.casLoadedAt = loadedAt
+	if s.casReject || !stored.UpdatedAt().Equal(loadedAt) {
+		return domain.NewConflictError("the endpoint changed during this refresh")
 	}
 	s.store(endpoint)
 	return nil

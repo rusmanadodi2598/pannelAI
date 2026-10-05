@@ -13,8 +13,8 @@
 //	bytes the live service sent, captured 2026-09-27.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -178,7 +178,7 @@ func TestOpenStreamRefusesNoBody(t *testing.T) {
 // TestQoderStreamFailureClampsAVendorDump pins that a refusal whose body was not
 // written as this client's message is echoed only as its head. The body is
 // already size-bounded upstream; this is about not forwarding a whole vendor HTML
-// error page or debug dump — or an oversized message field — into our own client's
+// error page or debug dump, or an oversized message field, into our own client's
 // error body.
 func TestQoderStreamFailureClampsAVendorDump(t *testing.T) {
 	dump := strings.Repeat("x", qoderRawFailureEchoBytes*4)

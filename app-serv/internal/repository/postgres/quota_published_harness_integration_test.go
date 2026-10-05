@@ -15,7 +15,7 @@
 //
 //	table exists, and a stub cannot prove it: a stub counts nothing, and only a
 //	real server shows the difference between a batched `= ANY($1)` read and a
-//	per-id loop. So the harness is newTestPool plus a pgx QueryTracer — the same
+//	per-id loop. So the harness is newTestPool plus a pgx QueryTracer, the same
 //	DSN guard and migration path every other harness in this package uses
 //	(usage_harness_integration_test.go being the precedent for a harness of its
 //	own), extended only by the counter.
@@ -25,7 +25,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package postgres
 
@@ -45,7 +45,7 @@ import (
 
 // statementCounter records the statements pgx sends. pgx routes Query, QueryRow,
 // Exec and a transaction's BEGIN/COMMIT through the tracer, so what this counts is
-// the real round-trip count — which is exactly what these tests assert, and the
+// the real round-trip count, which is exactly what these tests assert, and the
 // reason a per-bucket statement could not hide in it. The leading keyword of each
 // call is kept so a failed count reports which statements came back, not just how
 // many.
@@ -96,7 +96,7 @@ func firstKeyword(query string) string {
 // plus the counter that sees every statement it sends.
 //
 // upstream_endpoints is truncated with CASCADE, which takes both cache tables with
-// it through the 000013 foreign keys — so a run cannot inherit another run's rows,
+// it through the 000013 foreign keys, so a run cannot inherit another run's rows,
 // and the cascade itself gets exercised on the way.
 func newPublishedRepo(t *testing.T) (*PublishedQuotaRepository, *statementCounter) {
 	t.Helper()

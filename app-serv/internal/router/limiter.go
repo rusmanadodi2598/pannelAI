@@ -38,10 +38,13 @@ func requestRateLimit(next http.Handler, limiter repository.RateLimiter, limit i
 		return next
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == APIVersion+"/health" || r.URL.Path == APIVersion+"/version" {
-			next.ServeHTTP(w, r)
-			return
-		}
+		// /health and /version used to be exempt here. They are the only two
+		// unauthenticated routes, and /health answers each call with a live Postgres
+		// and Redis probe, so the exemption let any caller aim an unlimited number of
+		// dependency checks at the panel's own databases. They now share the single
+		// documented budget: default RATE_LIMIT_PER_MIN (120/min per client), which a
+		// load balancer or metrics scraper stays far under, and which AGENTS.md §1.6
+		// asks for precisely so the limit is not a guess.
 		remaining, err := limiter.Allow(r.Context(),
 			clientip.Address(r.RemoteAddr, r.Header.Get("X-Forwarded-For"), trusted), limit, time.Minute)
 		if err != nil {

@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -103,8 +103,8 @@ func buildSpeechPayload(call MediaCall, req schema.SpeechRequest) (speechPayload
 	return payload, nil
 }
 
-// speechBuildError keeps an adapter's own refusal — a voice the provider needs,
-// a target that cannot be shaped — and names a marshal failure as the request's
+// speechBuildError keeps an adapter's own refusal, a voice the provider needs,
+// a target that cannot be shaped, and names a marshal failure as the request's
 // own, so a 400 stays a 400 instead of becoming an internal error.
 func speechBuildError(err error) error {
 	if dataplane.AsError(err) != nil {

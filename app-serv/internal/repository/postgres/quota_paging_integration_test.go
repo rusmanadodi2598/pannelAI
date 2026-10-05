@@ -1,107 +1,127 @@
-//go:build integration
-
-// Integration test for the quota collection's account page.
+// Package postgres is the PostgreSQL repository layer of app-serv.
 //
 // @file      internal/repository/postgres/quota_paging_integration_test.go
-// @for       Proves a quota page is grouped by the accounts that exist, not by the counters that happen to exist.
-// @uses      context, internal/repository/postgres, testing.
-// @reason    Paging cards over counted windows hid every account that had not routed a
+// @for       The provider-grouped paging of quota windows against a real database.
+// @uses      context, testing, time, internal/domain.
+// @reason    PageWindowsByProvider counts groups and then reads their windows, and
 //
-//	request yet: the provider was configured, the worker had polled it, and the
-//	screen still rendered no card for it. Which two reads agree about the groups
-//	on a page is a question a fake database answers wrongly, so this asks a real
-//	one — and pins that the statement cost of the page stays fixed.
+//	only a live PostgreSQL can show that a page boundary cannot drop a
+//	group the count promised.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
-// @since     2026-10-02
+// @stability stable
+// @since     2026-10-04
+
+//go:build integration
+
 package postgres
 
 import (
 	"context"
 	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/migrations"
 )
 
-// seedQuotaPagingRows creates three accounts: two under `alpha` that this gateway has
-// counted, and one under `beta` that has never served a request, so no window row names
-// it. Windows are emptied first because no foreign key ties them to an endpoint, and a
-// leftover row from another run would add a group this test then miscounts.
-func seedQuotaPagingRows(t *testing.T, published *PublishedQuotaRepository) {
-	t.Helper()
-
+// TestQuotaRepository_PageWindowsByProvider_GroupsAndCounts drives the paged
+// collection read against a real server (docs/PORT/006-PORT-QUOTA-PAGING.md
+// D1-D3): the page unit is the provider group, groups are ordered by their
+// smallest endpoint id, the no-provider lane counts as one group, and the
+// total is honest past the last page.
+func TestQuotaRepository_PageWindowsByProvider_GroupsAndCounts(t *testing.T) {
+	dsn := requireTestDSN(t)
 	ctx := context.Background()
-	if _, err := published.pool.Exec(ctx, `TRUNCATE quota_windows`); err != nil {
+	if err := migrations.Apply(ctx, dsn); err != nil {
+		t.Fatalf("applying migrations: %v", err)
+	}
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		t.Fatalf("connecting: %v", err)
+	}
+	t.Cleanup(pool.Close)
+
+	// CASCADE reaches the windows whose endpoint row is removed, so both
+	// tables start empty rather than inheriting a previous run's rows.
+	if _, err := pool.Exec(ctx, `TRUNCATE upstream_endpoints CASCADE`); err != nil {
+		t.Fatalf("truncating upstream_endpoints: %v", err)
+	}
+	if _, err := pool.Exec(ctx, `TRUNCATE quota_windows`); err != nil {
 		t.Fatalf("truncating quota_windows: %v", err)
 	}
 
-	seedPublishedEndpoint(t, published, "ep_alpha_1", "alpha")
-	seedPublishedEndpoint(t, published, "ep_alpha_2", "alpha")
-	seedPublishedEndpoint(t, published, "ep_beta_1", "beta")
+	endpoints := NewEndpointRepository(pool)
+	quota := NewQuotaRepository(pool)
+	now := time.Now()
 
-	// `beta` is deliberately left out: that absence is the whole case.
-	const q = `INSERT INTO quota_windows (endpoint_id, "window", used_units, source)
-VALUES ('ep_alpha_1', '5h', 3, 'computed'), ('ep_alpha_2', '5h', 4, 'computed')`
-	if _, err := published.pool.Exec(ctx, q); err != nil {
-		t.Fatalf("seeding windows: %v", err)
-	}
-}
-
-func TestQuotaRepository_PageAccountsIncludesAnAccountWithNoWindows(t *testing.T) {
-	published, _ := newPublishedRepo(t)
-	repo := NewQuotaRepository(published.pool)
-	seedQuotaPagingRows(t, published)
-	ctx := context.Background()
-
-	windows, windowTotal, err := repo.PageWindowsByProvider(ctx, 1, 10)
-	if err != nil {
-		t.Fatalf("PageWindowsByProvider() error = %v", err)
-	}
-	if len(windows) != 2 {
-		t.Fatalf("window page = %d rows, want the two counted alpha rows", len(windows))
-	}
-	for _, window := range windows {
-		if window.EndpointID() == "ep_beta_1" {
-			t.Fatal("a never-counted account appeared in the counted rows")
+	// Three endpoint rows give two real provider groups; ep_y and ep_z get no
+	// endpoint row at all, which is the shape the LEFT JOIN renders as the
+	// no-provider lane (the credential-free virtual endpoint).
+	for _, seed := range []struct{ id, provider, label string }{
+		{"ep_a", "alpha", "Alpha one"},
+		{"ep_b", "alpha", "Alpha two"},
+		{"ep_c", "bravo", "Bravo one"},
+	} {
+		endpoint, err := domain.NewUpstreamEndpoint(seed.id, seed.provider, seed.label, domain.UpstreamAuthAPIKey, 1, now)
+		if err != nil {
+			t.Fatalf("NewUpstreamEndpoint(%s) error = %v", seed.id, err)
+		}
+		if err := endpoints.Create(ctx, endpoint); err != nil {
+			t.Fatalf("Create(%s) error = %v", seed.id, err)
 		}
 	}
 
-	accounts, accountTotal, err := repo.PageAccountsByProvider(ctx, 1, 10)
+	batch := []domain.QuotaWindow{
+		mustWindow(t, "ep_a", domain.QuotaWindowMonthly, 1, nil),
+		mustWindow(t, "ep_a", domain.QuotaWindowDaily, 2, nil),
+		mustWindow(t, "ep_b", domain.QuotaWindowMonthly, 3, nil),
+		mustWindow(t, "ep_c", domain.QuotaWindowMonthly, 4, nil),
+		mustWindow(t, "ep_c", domain.QuotaWindowDaily, 5, nil),
+		mustWindow(t, "ep_y", domain.QuotaWindowMonthly, 6, nil),
+		mustWindow(t, "ep_z", domain.QuotaWindowDaily, 7, nil),
+	}
+	if err := quota.UpsertWindows(ctx, batch); err != nil {
+		t.Fatalf("UpsertWindows() error = %v", err)
+	}
+
+	// Page 1 (two groups): alpha's three windows and bravo's two, ordered by
+	// endpoint then window, with the total naming all three groups.
+	windows, total, err := quota.PageWindowsByProvider(ctx, 1, 2)
 	if err != nil {
-		t.Fatalf("PageAccountsByProvider() error = %v", err)
+		t.Fatalf("PageWindowsByProvider(1,2) error = %v", err)
 	}
-	if accountTotal != windowTotal {
-		t.Fatalf("the account page counts %d groups and the window page %d; one page number must mean one set of groups", accountTotal, windowTotal)
+	if total != 3 {
+		t.Fatalf("total = %d, want 3 groups (alpha, bravo, no-provider)", total)
+	}
+	if len(windows) != 5 {
+		t.Fatalf("page 1 returned %d windows, want 5 (alpha and bravo whole)", len(windows))
+	}
+	if windows[0].EndpointID() != "ep_a" || windows[0].Window() != domain.QuotaWindowDaily {
+		t.Fatalf("page 1 row 0 = %s/%s, want ep_a/daily", windows[0].EndpointID(), windows[0].Window())
+	}
+	if windows[4].EndpointID() != "ep_c" {
+		t.Fatalf("page 1 row 4 = %s, want the last bravo row", windows[4].EndpointID())
 	}
 
-	byID := map[string]string{}
-	for _, account := range accounts {
-		byID[account.EndpointID] = account.ProviderID
+	// Page 2: the no-provider group, joined through the missing endpoint rows.
+	windows, total, err = quota.PageWindowsByProvider(ctx, 2, 2)
+	if err != nil {
+		t.Fatalf("PageWindowsByProvider(2,2) error = %v", err)
 	}
-	if len(byID) != len(accounts) {
-		t.Fatalf("the account page repeated an endpoint: %v", accounts)
+	if total != 3 || len(windows) != 2 {
+		t.Fatalf("page 2 = %d windows (total %d), want the two no-provider rows (total 3)", len(windows), total)
 	}
-	// The point of the change: beta is named here although no counted row names it.
-	if provider, ok := byID["ep_beta_1"]; !ok || provider != "beta" {
-		t.Fatalf("account page = %v, want ep_beta_1 under beta — an account with no traffic must still get a card", accounts)
-	}
-	for _, id := range []string{"ep_alpha_1", "ep_alpha_2"} {
-		if byID[id] != "alpha" {
-			t.Fatalf("account page = %v, want %s under alpha", accounts, id)
-		}
-	}
-}
 
-func TestQuotaRepository_PageAccountsIsCountPlusPageOnly(t *testing.T) {
-	published, counter := newPublishedRepo(t)
-	repo := NewQuotaRepository(published.pool)
-	seedQuotaPagingRows(t, published)
-
-	counter.reset()
-	if _, _, err := repo.PageAccountsByProvider(context.Background(), 1, 10); err != nil {
-		t.Fatalf("PageAccountsByProvider() error = %v", err)
+	// Past the end: an empty page that still tells the truth about the size.
+	windows, total, err = quota.PageWindowsByProvider(ctx, 9, 2)
+	if err != nil {
+		t.Fatalf("PageWindowsByProvider(9,2) error = %v", err)
 	}
-	if got := counter.load(); got != 2 {
-		t.Fatalf("the account page sent %d statements (%s), want 2: one group count and one page, whatever the page holds", got, counter.trace())
+	if total != 3 || len(windows) != 0 {
+		t.Fatalf("page 9 = %d windows (total %d), want an empty page with total 3", len(windows), total)
 	}
 }

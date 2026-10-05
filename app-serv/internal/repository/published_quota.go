@@ -9,7 +9,7 @@
 // @reason    The quota screen must show the quota a provider publishes about
 //
 //	itself, and fetching it on read would fan out one provider call per
-//	account — the N+1 shape AGENTS.md §1.7 blocks on this screen. So a
+//	account, the N+1 shape AGENTS.md §1.7 blocks on this screen. So a
 //	worker writes the answers into a cache and the read is one statement.
 //	This boundary is what lets the service depend on that contract without
 //	importing a driver (§1.5), and it is stated as a port so the sweep and
@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package repository
 
@@ -47,7 +47,7 @@ type PublishedQuotaRepository interface {
 	ListPublishedByEndpointIDs(ctx context.Context, endpointIDs []string) (map[string]domain.PublishedQuota, error)
 
 	// DueForRefresh returns at most limit endpoints whose next attempt is due by
-	// now, oldest-due first — the sweep's queue, carrying the provider id and the
+	// now, oldest-due first, the sweep's queue, carrying the provider id and the
 	// failure run each one needs to pick an interval and a backoff. A limit below
 	// one asks for nothing, so no query runs.
 	DueForRefresh(ctx context.Context, now time.Time, limit int) ([]domain.PublishedState, error)
@@ -61,7 +61,7 @@ type PublishedQuotaRepository interface {
 	// negative delta is refused by domain.PublishedAttempt rather than clamped.
 	//
 	// An attempt may also carry the sentence a provider answered with when it
-	// published no buckets — a refused credential, an unimplemented family, an
+	// published no buckets, a refused credential, an unimplemented family, an
 	// empty account. That is the card's only honest content for such an account, so
 	// it is stored on the state row rather than dropped: the window rows are not
 	// touched, and a stale number keeps the older stamp it really has.

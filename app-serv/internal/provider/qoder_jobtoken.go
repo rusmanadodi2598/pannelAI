@@ -19,8 +19,8 @@
 //	on a token that expires mid-flight.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -138,7 +138,7 @@ func (c *qoderJobTokenClient) JobToken(ctx context.Context, personalToken string
 }
 
 // request performs one exchange. The vendor's own client identifies itself as the
-// CLI and states the IDE version and client type on the plain JSON call — this is
+// CLI and states the IDE version and client type on the plain JSON call, this is
 // the one Qoder request that is not COSY-signed, because a Personal Access Token
 // cannot produce a signature.
 func (c *qoderJobTokenClient) request(ctx context.Context, pat string) (exchangeBody, error) {

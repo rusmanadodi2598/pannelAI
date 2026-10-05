@@ -17,12 +17,13 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package service
 
 import (
 	"context"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
@@ -30,36 +31,36 @@ import (
 
 // StateRound mints a vendor-owned round and records that it was asked, so a flow
 // test can assert the panel holds the vendor's state rather than a local nonce.
-func (f *fakeTokenClient) StateRound(_ context.Context, oauth *registry.OAuth) (StateRound, error) {
+func (f *fakeTokenClient) StateRound(_ context.Context, oauth *registry.OAuth) (oauthhttp.StateRound, error) {
 	f.stateRoundCalls++
 	f.stateRoundPlatform = oauth.Platform
 	if f.stateRoundFn != nil {
 		return f.stateRoundFn(oauth)
 	}
-	return StateRound{
+	return oauthhttp.StateRound{
 		State: "state-issued", AuthURL: "https://vendor.example.com/login",
-		Interval: 5 * time.Second, Expires: stateRoundRetryWindow,
+		Interval: 5 * time.Second, Expires: oauthhttp.StateRoundRetryWindow,
 	}, nil
 }
 
 // StatePoll records the state the flow spent, so a test can prove the round the
 // vendor handed out is the one that comes back.
-func (f *fakeTokenClient) StatePoll(_ context.Context, _ *registry.OAuth, state string) (DeviceTokenResponse, bool, error) {
+func (f *fakeTokenClient) StatePoll(_ context.Context, _ *registry.OAuth, state string) (oauthhttp.DeviceTokenResponse, bool, error) {
 	f.statePollCall = append(f.statePollCall, state)
 	if f.statePollFn != nil {
 		return f.statePollFn(state)
 	}
-	return DeviceTokenResponse{}, true, nil
+	return oauthhttp.DeviceTokenResponse{}, true, nil
 }
 
 // StateRefresh records the token the worker sent, so a test can prove the renewal
 // went through the header endpoint rather than the form grant.
-func (f *fakeTokenClient) StateRefresh(_ context.Context, _ *registry.OAuth, refreshToken string) (TokenResponse, error) {
+func (f *fakeTokenClient) StateRefresh(_ context.Context, _ *registry.OAuth, refreshToken string) (oauthhttp.TokenResponse, error) {
 	f.stateRefreshCall = append(f.stateRefreshCall, refreshToken)
 	if f.stateRefreshFn != nil {
 		return f.stateRefreshFn(refreshToken)
 	}
-	return TokenResponse{AccessToken: "at-rotated", RefreshToken: "rt-rotated", ExpiresIn: 3600}, nil
+	return oauthhttp.TokenResponse{AccessToken: "at-rotated", RefreshToken: "rt-rotated", ExpiresIn: 3600}, nil
 }
 
 // providerWithStateFlow mirrors a registry entry shaped like the CodeBuddy
@@ -81,7 +82,7 @@ func providerWithStateFlow(id string) registry.Provider {
 // and what the registry's kilocode entry actually declares.
 //
 // It used to be built on a state URL, but a state round is a flow this gateway
-// does serve — minted by the vendor, polled by state — so declaring one no longer
+// does serve, minted by the vendor, polled by state, so declaring one no longer
 // makes a provider connector territory. Keeping the case meaningful means naming
 // the shape that still is.
 func providerNeedingConnector(id string) registry.Provider {

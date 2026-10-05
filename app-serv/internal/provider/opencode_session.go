@@ -14,8 +14,8 @@
 //	connector is built once and shared by concurrent requests.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     util
+// @stability stable
 // @since     2026-09-21
 package provider
 
@@ -27,7 +27,7 @@ import (
 
 // OpenCodeSessionRE is the session shape the upstream accepts:
 // `ses_` followed by twelve lowercase hex digits and fourteen base62
-// characters (the reference's OPENCODE_SESSION_RE, commit 6091ff59). Any other
+// characters (the reference's own OPENCODE_SESSION_RE). Any other
 // value is refused with 403, so the connector mints only this shape.
 var OpenCodeSessionRE = regexp.MustCompile(`^ses_[0-9a-f]{12}[0-9A-Za-z]{14}$`)
 

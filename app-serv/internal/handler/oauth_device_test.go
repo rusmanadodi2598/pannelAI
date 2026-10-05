@@ -12,12 +12,12 @@
 // @reason    The panel renders exactly what these two routes write, so the
 //
 //	field names, the pending-versus-connected body, and which refusal
-//	reaches the operator as a 400 are the contract being tested here —
+//	reaches the operator as a 400 are the contract being tested here,
 //	not the flow's rules, which the service tests already hold.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package handler
 
@@ -29,7 +29,8 @@ import (
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 )
 
 // deviceProvider mirrors the registry shape a device-flow entry has: a poll URL
@@ -122,11 +123,11 @@ func TestDevicePollReportsPendingWithoutAnEndpoint(t *testing.T) {
 func TestDevicePollConnectedNamesTheLandedEndpoint(t *testing.T) {
 	fixture := newOAuthFixture(t, "", deviceProvider("qoder"))
 	code := startDeviceFlow(t, fixture, "qoder")
-	fixture.tokens.devicePollFn = func(_, verifier string) (service.DeviceTokenResponse, bool, error) {
+	fixture.tokens.devicePollFn = func(_, verifier string) (oauthhttp.DeviceTokenResponse, bool, error) {
 		if verifier == "" {
 			t.Error("the poll reached the upstream without the staged verifier")
 		}
-		return service.DeviceTokenResponse{
+		return oauthhttp.DeviceTokenResponse{
 			AccessToken: "dt-issued", UserID: "user-7",
 			ExpiresAt: time.Now().Add(48 * time.Hour),
 		}, false, nil

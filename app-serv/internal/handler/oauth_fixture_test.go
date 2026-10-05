@@ -19,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -145,11 +145,11 @@ func seedOAuthAccount(t *testing.T, fixture oauthFixture, id, providerID, email 
 	if err != nil {
 		t.Fatalf("building the endpoint: %v", err)
 	}
-	endpoint.SetOAuth(&domain.OAuthCredential{
+	endpoint.SetOAuth(domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted: access, RefreshTokenEncrypted: refresh,
 		ExpiresAt: &expiry, AccountEmail: email,
-	}, oauthNow)
-	endpoint.SetAccount(domain.EndpointAccount{Email: email}, oauthNow)
+	}), oauthNow)
+	endpoint.SetAccount(domain.RehydrateEndpointAccount(domain.EndpointAccountInput{Email: email}), oauthNow)
 	if err := fixture.store.Create(context.Background(), endpoint); err != nil {
 		t.Fatalf("storing the account: %v", err)
 	}

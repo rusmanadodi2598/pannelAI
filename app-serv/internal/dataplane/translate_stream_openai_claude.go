@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -129,26 +129,32 @@ func (s *StreamState) claudeChunks(payload []byte) [][]byte {
 }
 
 // mergeUsage folds one Anthropic usage block into the stream's accounting.
+func (s *StreamState) mergeUsage(usage object) { s.usage = mergedClaudeUsage(s.usage, usage) }
+
+// mergedClaudeUsage folds one Anthropic usage block into the accounting already
+// held and returns what a stream should report.
 //
 // Anthropic reports the prompt side once, on message_start, and the output side
 // cumulatively, on message_delta, so a later block replaces only the members it
 // actually reports. Replacing the whole block would report a prompt of zero for
 // every Claude upstream, which is what the reference avoids by accumulating
-// (open-sse/translator/response/claude-to-openai.js).
-func (s *StreamState) mergeUsage(usage object) {
+// (open-sse/translator/response/claude-to-openai.js). The rule is a property of
+// the wire rather than of one direction, so the passthrough stream folds through
+// here too instead of carrying its own copy.
+func mergedClaudeUsage(current *schema.Usage, usage object) *schema.Usage {
 	parsed := ClaudeUsageToOpenAI(claudeUsageFromObject(usage))
-	if s.usage == nil {
-		s.usage = &parsed
-		return
+	if current == nil {
+		return &parsed
 	}
 	if parsed.PromptTokens > 0 {
-		s.usage.PromptTokens = parsed.PromptTokens
-		s.usage.PromptTokensDetails = parsed.PromptTokensDetails
+		current.PromptTokens = parsed.PromptTokens
+		current.PromptTokensDetails = parsed.PromptTokensDetails
 	}
 	if parsed.CompletionTokens > 0 {
-		s.usage.CompletionTokens = parsed.CompletionTokens
+		current.CompletionTokens = parsed.CompletionTokens
 	}
-	s.usage.TotalTokens = s.usage.PromptTokens + s.usage.CompletionTokens
+	current.TotalTokens = current.PromptTokens + current.CompletionTokens
+	return current
 }
 
 // blockDeltaFrame builds the frame one Anthropic content delta stands for, or nil

@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package handler
 
@@ -150,7 +150,7 @@ func (h *QuotaHandler) PutCap(w http.ResponseWriter, r *http.Request) {
 // provider sold.
 //
 // The answer comes from the poll worker's cache by default. `?force=1` is the
-// operator's explicit press on one card and asks the provider now — one call for
+// operator's explicit press on one card and asks the provider now, one call for
 // one account, which is the same seam the reference's per-card refresh uses, and
 // the reason the page itself never has to fan out.
 func (h *QuotaHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
@@ -163,8 +163,8 @@ func (h *QuotaHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 }
 
 // wantForce reads the one query flag this route honours. Anything but a literal "1"
-// is a cache read, because a value the operator did not type — a stale bookmark, a
-// proxy that rewrites it — must not turn a page load into provider traffic.
+// is a cache read, because a value the operator did not type, a stale bookmark, a
+// proxy that rewrites it, must not turn a page load into provider traffic.
 func wantForce(r *http.Request) bool {
 	return r.URL.Query().Get("force") == "1"
 }

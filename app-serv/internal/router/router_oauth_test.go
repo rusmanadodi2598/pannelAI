@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package router
 
@@ -31,6 +31,7 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 )
 
 // The empty seams below are never reached by these tests: every case names an
@@ -46,6 +47,9 @@ func (emptyOAuthStore) GetByID(context.Context, string) (domain.UpstreamEndpoint
 	return domain.UpstreamEndpoint{}, domain.ErrEndpointNotFound
 }
 func (emptyOAuthStore) Update(context.Context, domain.UpstreamEndpoint) error { return nil }
+func (emptyOAuthStore) UpdateIfUnchanged(context.Context, domain.UpstreamEndpoint, time.Time) error {
+	return nil
+}
 func (emptyOAuthStore) FindOAuthEndpoint(context.Context, string, string, string) (string, error) {
 	return "", domain.ErrEndpointNotFound
 }
@@ -58,18 +62,18 @@ func (emptyOAuthStates) Take(context.Context, string) ([]byte, bool, error)     
 
 type emptyOAuthTokens struct{}
 
-func (emptyOAuthTokens) Grant(context.Context, string, string, service.TokenGrant) (service.TokenResponse, error) {
-	return service.TokenResponse{}, nil
+func (emptyOAuthTokens) Grant(context.Context, string, string, oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
+	return oauthhttp.TokenResponse{}, nil
 }
 
 // DevicePoll answers a pending poll: like the other empty seams, no case here
 // reaches it.
-func (emptyOAuthTokens) DevicePoll(context.Context, string, string, string) (service.DeviceTokenResponse, bool, error) {
-	return service.DeviceTokenResponse{}, true, nil
+func (emptyOAuthTokens) DevicePoll(context.Context, string, string, string) (oauthhttp.DeviceTokenResponse, bool, error) {
+	return oauthhttp.DeviceTokenResponse{}, true, nil
 }
 
-func (emptyOAuthTokens) UserInfo(context.Context, string, string) (service.OAuthIdentity, error) {
-	return service.OAuthIdentity{}, nil
+func (emptyOAuthTokens) UserInfo(context.Context, string, string) (oauthhttp.OAuthIdentity, error) {
+	return oauthhttp.OAuthIdentity{}, nil
 }
 
 // newOAuthRouter wires the OAuth handler over the real service and the real

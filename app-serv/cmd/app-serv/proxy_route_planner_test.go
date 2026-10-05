@@ -21,7 +21,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package main
 
@@ -62,7 +62,13 @@ func (s *plannerRouteStore) Park(_ context.Context, proxyID string, _ time.Durat
 	return nil
 }
 
-func (s *plannerRouteStore) Parked(context.Context, string) (bool, error) { return false, nil }
+func (s *plannerRouteStore) ParkedAll(_ context.Context, proxyIDs []string) (map[string]bool, error) {
+	parked := make(map[string]bool, len(proxyIDs))
+	for _, id := range proxyIDs {
+		parked[id] = false
+	}
+	return parked, nil
+}
 
 // plannerSettings answers one stored document.
 type plannerSettings struct{ document domain.Settings }

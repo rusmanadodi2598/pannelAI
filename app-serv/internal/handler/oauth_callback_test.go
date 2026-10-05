@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -27,7 +27,8 @@ import (
 	"testing"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 )
 
 func TestOAuthHandlerCallbackAnswersHeadlessCallers(t *testing.T) {
@@ -65,12 +66,12 @@ func TestOAuthHandlerCallbackAnswersHeadlessCallers(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fixture := newOAuthFixture(t, "https://gateway.example.com", oauthProvider("acme"))
-			fixture.tokens.infoFn = func() (service.OAuthIdentity, error) {
-				return service.OAuthIdentity{Sub: "sub-1", Email: "dev@example.com"}, nil
+			fixture.tokens.infoFn = func() (oauthhttp.OAuthIdentity, error) {
+				return oauthhttp.OAuthIdentity{Sub: "sub-1", Email: "dev@example.com"}, nil
 			}
 			if tc.refuse {
-				fixture.tokens.grantFn = func(service.TokenGrant) (service.TokenResponse, error) {
-					return service.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant")
+				fixture.tokens.grantFn = func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
+					return oauthhttp.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant")
 				}
 			}
 			state := tc.state
@@ -137,12 +138,12 @@ func TestOAuthHandlerCallbackRedirectsBrowsers(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fixture := newOAuthFixture(t, tc.baseURL, oauthProvider("acme"))
-			fixture.tokens.infoFn = func() (service.OAuthIdentity, error) {
-				return service.OAuthIdentity{Sub: "sub-1", Email: "dev@example.com"}, nil
+			fixture.tokens.infoFn = func() (oauthhttp.OAuthIdentity, error) {
+				return oauthhttp.OAuthIdentity{Sub: "sub-1", Email: "dev@example.com"}, nil
 			}
 			if tc.refuse {
-				fixture.tokens.grantFn = func(service.TokenGrant) (service.TokenResponse, error) {
-					return service.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant")
+				fixture.tokens.grantFn = func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
+					return oauthhttp.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant")
 				}
 			}
 			state := startOAuthFlow(t, fixture, "acme", tc.redirect)

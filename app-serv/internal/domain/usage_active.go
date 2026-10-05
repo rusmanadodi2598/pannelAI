@@ -24,7 +24,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package domain
 
@@ -56,9 +56,9 @@ type ActiveRequest struct {
 	// Combo is the model combo the client addressed, or "" when the request
 	// addressed a single model. It travels beside Model rather than replacing
 	// it: the member is what answered and the combo is what the client named,
-	// and the drawing lights both. Only the chat plane resolves a combo — the
+	// and the drawing lights both. Only the chat plane resolves a combo, the
 	// media, embeddings and SystemOne planes refuse one before they mark
-	// anything — so an empty Combo is the normal value, not a missing one.
+	// anything, so an empty Combo is the normal value, not a missing one.
 	Combo string
 	// StartedAt is the instant the call began, which the staleness window is
 	// measured from.

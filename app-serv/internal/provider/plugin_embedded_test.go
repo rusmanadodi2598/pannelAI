@@ -15,8 +15,8 @@
 //	measured over the document the binary embeds.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-26
 package provider
 
@@ -84,7 +84,7 @@ func TestDefault_EmbeddedProvidersAllResolve(t *testing.T) {
 		if connector.ProviderID() != entry.ID {
 			t.Fatalf("connector for %s reports id %s", entry.ID, connector.ProviderID())
 		}
-		url, err := connector.Endpoint(Request{Provider: entry}, Credential{APIKey: "sk-x"})
+		url, err := connector.Endpoint(Request{Provider: entry}, Credential{apiKey: "sk-x"})
 		if entry.Transport.BaseURL == "" && len(entry.Transport.BaseURLs) == 0 {
 			// A media-only provider legitimately carries no chat URL.
 			if err == nil {

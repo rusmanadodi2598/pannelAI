@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -41,6 +41,11 @@ type Outcome struct {
 	Usage *schema.Usage
 	// Streamed reports whether the answer went to a FrameSink.
 	Streamed bool
+	// FramesWritten reports that a streamed answer already reached the client.
+	// The combo walk reads it as a commitment: failing over after the client has
+	// bytes would stream a second answer behind the first, and bill a second
+	// upstream for one request.
+	FramesWritten bool
 	// Truncated reports a non-streamed answer that stopped at its own output
 	// ceiling with nothing in it for the client to show. It is not a failure:
 	// the upstream answered 200 and the credential served the call. The combo
@@ -55,7 +60,7 @@ type Outcome struct {
 	// It exists because the answer's own model name is deliberately the one the
 	// caller sent (SPEC-API-001 §7.6), so a substitution that changes who looked
 	// at the image would otherwise leave no trace a client or an operator could
-	// query — which is how a blind adapter model came to be serving red images as
+	// query, which is how a blind adapter model came to be serving red images as
 	// "gray" for a whole combo without anyone being able to see it happen.
 	VisionAdapted bool
 	// LatencyMS is the upstream call's duration, measured with the engine's

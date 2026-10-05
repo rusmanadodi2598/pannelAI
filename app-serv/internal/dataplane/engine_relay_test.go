@@ -9,15 +9,15 @@
 // @reason    SPEC-API-001 §10 makes "a CLI tool completes a request through
 //
 //	combo fallback" P1's exit criterion. That sentence is only proven
-//	when the pipeline runs as one piece — resolve the combo, select the
+//	when the pipeline runs as one piece, resolve the combo, select the
 //	account, call the first upstream, fail over on its failure, and
-//	translate the second member's answer back — so the engine is driven
+//	translate the second member's answer back, so the engine is driven
 //	end to end instead of asserting each branch separately, and the
 //	circuit writes each member's attempt left behind are checked too.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package dataplane
 

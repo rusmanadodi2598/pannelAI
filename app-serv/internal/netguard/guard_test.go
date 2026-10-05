@@ -11,13 +11,13 @@
 //
 //	example payload, and require a benign case that must still be allowed:
 //	a guard that blocks everything passes a one-case test. The tables
-//	below vary the spelling of an address — decimal-free literals,
-//	IPv6-mapped forms, and transition addresses that embed IPv4 — because
+//	below vary the spelling of an address, decimal-free literals,
+//	IPv6-mapped forms, and transition addresses that embed IPv4, because
 //	those are the shapes a bypass attempt takes.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package netguard
 

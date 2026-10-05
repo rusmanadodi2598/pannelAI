@@ -25,14 +25,13 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"strings"
 	"time"
 
@@ -161,8 +160,11 @@ func (s *SystemOneService) resolveCall(ctx context.Context, req schema.SystemOne
 	if err != nil {
 		return call, err
 	}
+	// The literal rather than http.MethodPost: §1.5 keeps net/http out of the
+	// service layer so this stays callable from a worker, and a method name is not
+	// a reason to import a transport package.
 	call.request = dataplane.MediaRequest{
-		Method: http.MethodPost, URL: target, Headers: headers, Body: body,
+		Method: "POST", URL: target, Headers: headers, Body: body,
 	}
 	return call, nil
 }

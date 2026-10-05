@@ -10,14 +10,14 @@
 //
 //	forwarded as written when the client speaks the same wire, so the model
 //	name the client reads comes from the fold rather than from the
-//	translation step — and Qoder writes `auto` into every chunk it sends.
+//	translation step, and Qoder writes `auto` into every chunk it sends.
 //	That name is the provider's routing label: it is neither the model the
 //	caller asked for nor one the caller can send back, because retrying it
 //	reaches a pool the vendor answers 429 for.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package dataplane
 
@@ -56,7 +56,7 @@ func TestFoldChatStreamNamesTheResolvedModel(t *testing.T) {
 		},
 		{
 			// Nothing was resolved, so the upstream's own name is the only one
-			// there is — an empty `model` is not something a client can use.
+			// there is, an empty `model` is not something a client can use.
 			name:    "with nothing resolved the upstream's name is kept",
 			modelID: "",
 			chunks: []string{

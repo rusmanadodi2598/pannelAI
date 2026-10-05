@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package schema
 
@@ -83,6 +83,15 @@ func WriteJSON(w http.ResponseWriter, status int, v any) {
 // for a test driving a handler with a plain httptest.ResponseRecorder.
 type ErrorCodeRecorder interface {
 	SetErrorCode(code string)
+}
+
+// RequestIDCarrier answers which request this writer belongs to. A handler's
+// error path holds a ResponseWriter and no request, so without this the log line
+// it writes carries a code and no trace id, and cannot be joined to the access
+// log line that does. Writers that do not implement it are simply not asked, the
+// same optional seam ErrorCodeRecorder uses.
+type RequestIDCarrier interface {
+	RequestID() string
 }
 
 // WriteError converts any error to the management envelope and writes it.

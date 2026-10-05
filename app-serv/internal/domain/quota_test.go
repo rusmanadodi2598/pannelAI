@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 
@@ -121,38 +121,6 @@ func TestQuotaWindow_Add(t *testing.T) {
 				t.Fatalf("ResetsAt = nil, want %s", tc.wantReset)
 			case tc.wantReset != nil && !got.Equal(*tc.wantReset):
 				t.Fatalf("ResetsAt = %s, want %s", got, tc.wantReset)
-			}
-		})
-	}
-}
-
-// TestQuotaWindow_Exhausted covers the rule the router skips an endpoint on,
-// including the uncapped case and the exact-ceiling boundary.
-func TestQuotaWindow_Exhausted(t *testing.T) {
-	limit := int64(10)
-	zero := int64(0)
-
-	cases := []struct {
-		name            string
-		window          QuotaWindow
-		wantExhausted   bool
-		wantRemaining   int64
-		wantRemainingOK bool
-	}{
-		{"uncapped is never exhausted", mustWindow(t, "ep_1", QuotaWindowDaily, nil, nil), false, 0, false},
-		{"below the ceiling", withUsage(t, "ep_1", QuotaWindowDaily, &limit, nil, 4), false, 6, true},
-		{"exactly at the ceiling", withUsage(t, "ep_1", QuotaWindowDaily, &limit, nil, 10), true, 0, true},
-		{"over the ceiling", withUsage(t, "ep_1", QuotaWindowDaily, &limit, nil, 11), true, 0, true},
-		{"a zero ceiling is exhausted at zero", withUsage(t, "ep_1", QuotaWindowDaily, &zero, nil, 0), true, 0, true},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.window.Exhausted(); got != tc.wantExhausted {
-				t.Fatalf("Exhausted = %v, want %v", got, tc.wantExhausted)
-			}
-			remaining, ok := tc.window.Remaining()
-			if ok != tc.wantRemainingOK || remaining != tc.wantRemaining {
-				t.Fatalf("Remaining = (%d, %v), want (%d, %v)", remaining, ok, tc.wantRemaining, tc.wantRemainingOK)
 			}
 		})
 	}

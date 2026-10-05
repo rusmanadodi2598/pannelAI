@@ -21,7 +21,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -142,7 +142,7 @@ func methodOrPost(declared string) string {
 // `auth_header: key` means a QUERY PARAMETER (SPEC-API-001 §8.1): measured in the
 // reference, Gemini's embedding config uses a query-param key while its chat
 // transport uses a header, so treating the declaration as a header name would
-// authenticate incorrectly — and an upstream answers 401 for a reason the operator
+// authenticate incorrectly, and an upstream answers 401 for a reason the operator
 // cannot see, which is worse than a loud failure.
 func MediaTarget(media registry.MediaConfig, baseURL string, cred provider.Credential, query map[string]string) (string, map[string]string, error) {
 	headers := map[string]string{"Content-Type": "application/json"}
@@ -156,7 +156,11 @@ func MediaTarget(media registry.MediaConfig, baseURL string, cred provider.Crede
 	for name, value := range query {
 		target = withQuery(target, name, value)
 	}
-	credentialed, err := applyMediaCredential(target, headers, media, credentialValue(cred))
+	secret, err := credentialValue(cred)
+	if err != nil {
+		return "", nil, internalError("the media account's credential could not be resolved", err)
+	}
+	credentialed, err := applyMediaCredential(target, headers, media, secret)
 	if err != nil {
 		return "", nil, err
 	}
@@ -181,14 +185,12 @@ func MediaPath(target, suffix string) (string, error) {
 	return parsed.String(), nil
 }
 
-// credentialValue prefers the OAuth token when the account holds one, matching the
-// chat transport's rule so one account presents the same credential family on both
-// paths.
-func credentialValue(cred provider.Credential) string {
-	if cred.AccessToken != "" {
-		return cred.AccessToken
-	}
-	return cred.APIKey
+// credentialValue asks the credential which material this account presents, so the
+// media path and the chat path resolve the same family from the same rule instead
+// of each guessing from the fields.
+func credentialValue(cred provider.Credential) (string, error) {
+	_, value, err := cred.Secret()
+	return value, err
 }
 
 // withQuery adds a query parameter, keeping any the base URL already carries.

@@ -15,13 +15,13 @@
 //
 // invisible until someone gets 500 where they should get 404. The two
 //
-//	guard clauses are here for the same reason — they are the no-N+1 and
+//	guard clauses are here for the same reason, they are the no-N+1 and
 //	no-unbounded-sweep promises, and they must hold on the default
 //	`go test ./...` run, not only where a Postgres exists.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package postgres
 
@@ -137,7 +137,7 @@ func TestPublishedNullDecoders(t *testing.T) {
 
 // TestPublishedQuotaRepository_GuardsRunWithoutAQuery proves the two guard clauses
 // return before any statement: the repository is built over a nil pool, so a
-// missing guard does not fail a query — it panics reaching one. That is the
+// missing guard does not fail a query, it panics reaching one. That is the
 // strongest thing a test without a server can say about "no query for an empty
 // page" and "no sweep for a zero limit" (AGENTS.md §1.7).
 func TestPublishedQuotaRepository_GuardsRunWithoutAQuery(t *testing.T) {

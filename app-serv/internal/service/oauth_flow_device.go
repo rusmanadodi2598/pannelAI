@@ -20,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package service
 
@@ -30,6 +30,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"net/url"
 	"strings"
 	"time"
@@ -168,7 +169,7 @@ func (s *OAuthFlowService) DeviceStart(ctx context.Context, in OAuthDeviceStartI
 
 // stateDeviceStart mints the round the way its vendor does: ask, get a state and
 // the URL that carries it, and stage the state under itself. No PKCE pair and no
-// nonce are generated, because this vendor never sees either — the handle the
+// nonce are generated, because this vendor never sees either, the handle the
 // panel holds IS the vendor's own state, and the poll is that one value.
 //
 // A machine id is still generated: the account this round connects is deduped by
@@ -176,7 +177,7 @@ func (s *OAuthFlowService) DeviceStart(ctx context.Context, in OAuthDeviceStartI
 // round, which is the behavior the reference gets from storing one credential
 // per provider.
 func (s *OAuthFlowService) stateDeviceStart(ctx context.Context, providerID string, oauth *registry.OAuth) (OAuthDeviceStart, error) {
-	client, ok := s.tokens.(StateRoundClient)
+	client, ok := s.tokens.(oauthhttp.StateRoundClient)
 	if !ok {
 		return OAuthDeviceStart{}, domain.NewInternalError("the state round needs a token client that speaks it")
 	}

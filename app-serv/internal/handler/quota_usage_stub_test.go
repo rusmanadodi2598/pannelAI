@@ -12,13 +12,13 @@
 //
 // @reason    The route's behaviour file should read as the list of answers a
 //
-//	client can get, so the wiring that produces them — a lookup over one
-//	endpoint, a sealed credential, a registry entry with named features —
+//	client can get, so the wiring that produces them, a lookup over one
+//	endpoint, a sealed credential, a registry entry with named features,
 //	lives apart from the assertions.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package handler
 
@@ -69,9 +69,9 @@ func publishedOAuthEndpoint(t *testing.T, providerID, accessToken string) domain
 	if err != nil {
 		t.Fatalf("NewUpstreamEndpoint() error = %v", err)
 	}
-	endpoint.SetOAuth(&domain.OAuthCredential{
+	endpoint.SetOAuth(domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted: publishedSealed(t, accessToken), AccountEmail: "acct@example.com",
-	}, time.Now().UTC())
+	}), time.Now().UTC())
 	return endpoint
 }
 

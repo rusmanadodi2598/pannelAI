@@ -3,7 +3,6 @@
 //
 // @file      internal/domain/upstream_endpoint_parity_test.go
 // @for       The connection-parity fields on an endpoint: routing order, the
-// //
 //
 //	default model, the consecutive-use counter, the last upstream error,
 //	and the proxy binding.
@@ -18,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package domain
 
@@ -99,7 +98,7 @@ func TestUpstreamEndpoint_SetRouting(t *testing.T) {
 }
 
 // TestUpstreamEndpoint_ConsecutiveUseCount pins the counter's semantics: it
-// starts at zero, advances one per served call, and resets on a success — which
+// starts at zero, advances one per served call, and resets on a success, which
 // is what makes it a run length rather than a total.
 func TestUpstreamEndpoint_ConsecutiveUseCount(t *testing.T) {
 	cases := []struct {

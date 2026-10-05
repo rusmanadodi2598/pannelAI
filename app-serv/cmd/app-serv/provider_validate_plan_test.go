@@ -20,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -95,11 +95,11 @@ func TestValidateProvider_AnthropicWirePostsToTheMessagesEndpoint(t *testing.T) 
 		status    int
 		wantState string
 	}{
-		{name: "a 200 is ok", status: http.StatusOK, wantState: domain.EndpointTestOK},
-		{name: "a 400 proves the key was accepted", status: http.StatusBadRequest, wantState: domain.EndpointTestOK},
-		{name: "a 529 proves the key was accepted", status: 529, wantState: domain.EndpointTestOK},
-		{name: "a 401 is a rejected key", status: http.StatusUnauthorized, wantState: domain.EndpointTestFail},
-		{name: "a 403 is a rejected key", status: http.StatusForbidden, wantState: domain.EndpointTestFail},
+		{name: "a 200 is ok", status: http.StatusOK, wantState: string(domain.EndpointTestOK)},
+		{name: "a 400 proves the key was accepted", status: http.StatusBadRequest, wantState: string(domain.EndpointTestOK)},
+		{name: "a 529 proves the key was accepted", status: 529, wantState: string(domain.EndpointTestOK)},
+		{name: "a 401 is a rejected key", status: http.StatusUnauthorized, wantState: string(domain.EndpointTestFail)},
+		{name: "a 403 is a rejected key", status: http.StatusForbidden, wantState: string(domain.EndpointTestFail)},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -154,7 +154,7 @@ func TestValidateProvider_DerivedModelsPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ValidateProvider() error = %v", err)
 	}
-	if outcome.State != domain.EndpointTestOK {
+	if outcome.State != string(domain.EndpointTestOK) {
 		t.Fatalf("State = %q, want ok", outcome.State)
 	}
 	if outcome.Method != service.ProbeMethodModels {
@@ -181,7 +181,7 @@ func TestValidateProvider_NoPlanIsAnAnswerNotAFault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ValidateProvider() error = %v, want an answer", err)
 	}
-	if outcome.State != domain.EndpointTestFail {
+	if outcome.State != string(domain.EndpointTestFail) {
 		t.Fatalf("State = %q, want fail", outcome.State)
 	}
 	if outcome.Message == "" {

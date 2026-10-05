@@ -11,13 +11,13 @@
 //	node's models are not in the embedded document (draft 017 §4.2). The
 //	registry provider answers from the document; a node's answer is read
 //	through NodeModelSource and falls back to whatever the registry already
-//	holds. Keeping that branch here — rather than in the handler or in the
-//	overlay — is what lets the detail route, the catalog, and the data plane
+//	holds. Keeping that branch here, rather than in the handler or in the
+//	overlay, is what lets the detail route, the catalog, and the data plane
 //	share one answer, because they all read the same entry.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 

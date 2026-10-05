@@ -10,8 +10,8 @@
 // silently drops the others, so every variant is pinned here rather than
 // trusted.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 
@@ -137,7 +137,7 @@ providers:
 					t.Fatalf("BackoffBase(429) = %v,%v, want 2s,true", base, ok)
 				}
 				// A status with no declared base must fall to the gateway default, not a
-				// zero wait — the second return is what keeps the change Qoder-only.
+				// zero wait, the second return is what keeps the change Qoder-only.
 				if _, ok := p.Transport.Retry.BackoffBase(503); ok {
 					t.Fatal("BackoffBase(503) reported a base for an undeclared status")
 				}

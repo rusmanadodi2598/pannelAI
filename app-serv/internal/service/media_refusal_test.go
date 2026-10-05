@@ -12,13 +12,13 @@
 // @reason    Register G20: a refusal the client saw never appeared in the Logs
 //
 //	screen because the media routes wrote rows only after Perform. Each
-//	refusal class is a table case — unknown provider, untranslated
+//	refusal class is a table case, unknown provider, untranslated
 //	format, missing base URL, no usable account, and search's own two
-//	refusals — so a new refusal path has to state what it records.
+//	refusals, so a new refusal path has to state what it records.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -42,8 +42,8 @@ func recordingRefusalFixture(t *testing.T) (*MediaCallService, *stubMediaRouter,
 }
 
 // TestMediaCallService_RecordsRefusalsBeforeTheCall pins that a call refused
-// before any dial leaves exactly one request log row — no usage row, since
-// nothing was spent — carrying the refusal's code and the identity the model
+// before any dial leaves exactly one request log row, no usage row, since
+// nothing was spent, carrying the refusal's code and the identity the model
 // string names, under the router's request id.
 func TestMediaCallService_RecordsRefusalsBeforeTheCall(t *testing.T) {
 	cases := []struct {

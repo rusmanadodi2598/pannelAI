@@ -17,12 +17,13 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
 import (
 	"context"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"sync"
 	"testing"
 	"time"
@@ -96,7 +97,7 @@ func TestOAuthRefreshWorkerRefreshesDueTokens(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reloading: %v", err)
 	}
-	opened, err := mustWorkerSealer(t).Open(endpoint.OAuth().AccessTokenEncrypted)
+	opened, err := mustWorkerSealer(t).Open(endpoint.OAuth().AccessTokenEncrypted())
 	if err != nil || opened != "at-issued" {
 		t.Fatalf("token not refreshed: %q (%v)", opened, err)
 	}
@@ -104,7 +105,7 @@ func TestOAuthRefreshWorkerRefreshesDueTokens(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reloading: %v", err)
 	}
-	if opened, _ := mustWorkerSealer(t).Open(later.OAuth().AccessTokenEncrypted); opened != "old-access" {
+	if opened, _ := mustWorkerSealer(t).Open(later.OAuth().AccessTokenEncrypted()); opened != "old-access" {
 		t.Fatalf("not-due token was touched: %q", opened)
 	}
 }
@@ -113,8 +114,8 @@ func TestOAuthRefreshWorkerRetriesThenDeadLetters(t *testing.T) {
 	fixture := newWorkerFixture(t, providerWithIdentity("identity-provider"))
 	seedOAuthEndpoint(t, oauthFlowFixture{store: fixture.store, sealer: mustWorkerSealer(t)},
 		"ep_dead", "identity-provider", "dead@example.com", "dead@example.com", testNow.Add(-time.Minute))
-	fixture.tokens.grantFn = func(TokenGrant) (TokenResponse, error) {
-		return TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant: invalid_grant")
+	fixture.tokens.grantFn = func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
+		return oauthhttp.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant: invalid_grant")
 	}
 
 	// Attempts below the limit keep the endpoint active and count a retry.
@@ -142,8 +143,8 @@ func TestOAuthRefreshWorkerRetriesThenDeadLetters(t *testing.T) {
 	if endpoint.Status() != domain.UpstreamEndpointError {
 		t.Fatalf("status = %q, want error after %d attempts", endpoint.Status(), oauthRefreshMaxAttempts)
 	}
-	if endpoint.TestStatus().State != domain.EndpointTestFail {
-		t.Fatalf("test state = %q, want fail with a reason", endpoint.TestStatus().State)
+	if endpoint.TestStatus().State() != domain.EndpointTestFail {
+		t.Fatalf("test state = %q, want fail with a reason", endpoint.TestStatus().State())
 	}
 	// A dead-lettered endpoint is not retried on later sweeps.
 	fixture.advance(time.Hour)
@@ -159,8 +160,8 @@ func TestOAuthRefreshWorkerBackoffGrowsPerAttempt(t *testing.T) {
 	fixture := newWorkerFixture(t, providerWithIdentity("identity-provider"))
 	seedOAuthEndpoint(t, oauthFlowFixture{store: fixture.store, sealer: mustWorkerSealer(t)},
 		"ep_retry", "identity-provider", "retry@example.com", "retry@example.com", testNow.Add(-time.Minute))
-	fixture.tokens.grantFn = func(TokenGrant) (TokenResponse, error) {
-		return TokenResponse{}, domain.NewUpstreamError("temporarily unavailable")
+	fixture.tokens.grantFn = func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
+		return oauthhttp.TokenResponse{}, domain.NewUpstreamError("temporarily unavailable")
 	}
 	var slept []time.Duration
 	fixture.worker.sleep = func(d time.Duration) { slept = append(slept, d) }

@@ -3,7 +3,6 @@
 //
 // @file      internal/registry/capability_vision_name.go
 // @for       The reference's last-resort vision guess: a model id that names its
-// //
 //
 //	own modality.
 //
@@ -23,8 +22,8 @@
 //	this layer, and the corpus test fails by name when it is missing.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-24
 package registry
 

@@ -21,12 +21,13 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -60,7 +61,7 @@ func (r *EndpointRepository) ImportOAuthBatch(ctx context.Context, endpoints []d
 		for i, endpoint := range endpoints {
 			var err error
 			if existing[i] {
-				err = updateEndpoint(ctx, tx, endpoint)
+				err = updateEndpoint(ctx, tx, endpoint, nil)
 			} else {
 				err = insertEndpoint(ctx, tx, endpoint)
 			}
@@ -76,7 +77,13 @@ func (r *EndpointRepository) ImportOAuthBatch(ctx context.Context, endpoints []d
 // its OAuth state (stored as ciphertext) and its account identity. Keys are
 // untouched: they have their own methods because a key change is a different
 // concern.
-func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint) error {
+//
+// loadedAt, when non-nil, turns the write into a compare-and-swap on that
+// timestamp: the row is written only while it still carries the value this
+// aggregate was loaded with. An OAuth rotation needs exactly that, because a
+// refresh racing another one would otherwise write the older credential back and
+// lose the token the vendor had already swapped.
+func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint, loadedAt *time.Time) error {
 	oauthJSON, err := marshalOAuth(endpoint.OAuth())
 	if err != nil {
 		return err
@@ -89,7 +96,7 @@ func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.Up
 	if err != nil {
 		return err
 	}
-	const q = `
+	q := `
 UPDATE upstream_endpoints
    SET label = $1,
        priority = $2,
@@ -116,11 +123,19 @@ UPDATE upstream_endpoints
 	}
 	args = append(args, parityColumns(endpoint)...)
 	args = append(args, endpoint.ID())
+	if loadedAt != nil {
+		q += `
+   AND updated_at = $18`
+		args = append(args, *loadedAt)
+	}
 	tag, err := exec.Exec(ctx, q, args...)
 	if err != nil {
 		return translateEndpointError(err)
 	}
 	if tag.RowsAffected() == 0 {
+		if loadedAt != nil {
+			return domain.NewConflictError("the endpoint changed during this refresh")
+		}
 		return domain.ErrEndpointNotFound
 	}
 	return nil

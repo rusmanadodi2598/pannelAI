@@ -8,14 +8,14 @@
 //
 //	pricing.js. The pair-by-pair comparison against the reference's own
 //	answers lives in pricing_corpus_test.go; what is pinned here are the
-//	order and the arithmetic edges a corpus cannot isolate — the
+//	order and the arithmetic edges a corpus cannot isolate, the
 //	provider override before the canonical model, the inclusive-prompt
 //	cache split, the clamp when the cache subsets exceed the prompt, the
 //	reasoning premium, and the zero answer for an unpriced model.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-23
 package registry
 

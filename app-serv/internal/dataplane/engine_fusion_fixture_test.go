@@ -9,14 +9,14 @@
 //
 //	sync, internal/domain, internal/registry, internal/schema.
 //
-// @reason    A fusion test has to prove who was asked what — which models were
+// @reason    A fusion test has to prove who was asked what, which models were
 //
-//	consulted, whether they streamed, and what the judge was told — so
+//	consulted, whether they streamed, and what the judge was told, so
 //	the recording stand-in is shared wiring rather than per-test trivia.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

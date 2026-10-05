@@ -2,7 +2,6 @@
 //
 // @file      cmd/app-serv/provider_validate.go
 // @for       The net/http implementation of service.CredentialValidator: the
-// //
 //
 //	models probe, the chat fallback, and the Anthropic status rule.
 //
@@ -26,7 +25,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -128,7 +127,7 @@ func (p *httpEndpointProber) validate(ctx context.Context, req validateRequest) 
 	if req.anthropic {
 		return service.ValidateOutcomeForAnthropic(outcome.Status), nil
 	}
-	if outcome.State == domain.EndpointTestOK || outcome.Status == http.StatusUnauthorized || outcome.Status == http.StatusForbidden {
+	if outcome.State == string(domain.EndpointTestOK) || outcome.Status == http.StatusUnauthorized || outcome.Status == http.StatusForbidden {
 		return outcome, nil
 	}
 	// The models path is missing or unhappy for a reason that is not the
@@ -175,19 +174,19 @@ func (p *httpEndpointProber) probeWith(ctx context.Context, target string, req v
 	resp, err := p.client.Do(httpReq)
 	latency := int(time.Since(started).Milliseconds())
 	if err != nil {
-		return service.ProbeOutcome{State: domain.EndpointTestFail, LatencyMS: latency, Message: "the upstream could not be reached"}, nil
+		return service.ProbeOutcome{State: string(domain.EndpointTestFail), LatencyMS: latency, Message: "the upstream could not be reached"}, nil
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	outcome := service.ProbeOutcome{LatencyMS: latency, Status: resp.StatusCode}
 	switch {
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
-		outcome.State = domain.EndpointTestOK
+		outcome.State = string(domain.EndpointTestOK)
 	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:
-		outcome.State = domain.EndpointTestFail
+		outcome.State = string(domain.EndpointTestFail)
 		outcome.Message = "the upstream rejected this credential"
 	default:
-		outcome.State = domain.EndpointTestFail
+		outcome.State = string(domain.EndpointTestFail)
 		outcome.Message = fmt.Sprintf("the upstream answered %d", resp.StatusCode)
 	}
 	return outcome, nil

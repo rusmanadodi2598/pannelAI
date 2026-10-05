@@ -10,15 +10,14 @@
 //	encoding/json, testing.
 //
 // @reason    Draft 017 §4.6 adds two routes whose whole value is that they write
-// //
 //
 //	nothing. The handler holds no store, so the no-write property is
-//	visible from this layer too — and the tests assert the wire carries
+//	visible from this layer too, and the tests assert the wire carries
 //	`method`, because that is the field distinguishing the two probes.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package handler
 
@@ -76,7 +75,7 @@ func postValidate(t *testing.T, handler http.HandlerFunc, body string) *httptest
 func TestProviderValidateHandler_NodeHappyPath(t *testing.T) {
 	const secret = "sk-live-abcdef"
 	validator := &stubCredentialValidator{outcome: service.ProbeOutcome{
-		State: domain.EndpointTestOK, Method: service.ProbeMethodChat, LatencyMS: 42, Status: 200,
+		State: string(domain.EndpointTestOK), Method: service.ProbeMethodChat, LatencyMS: 42, Status: 200,
 	}}
 	h := newValidateHandler(t, validator)
 
@@ -88,8 +87,8 @@ func TestProviderValidateHandler_NodeHappyPath(t *testing.T) {
 	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decoding the response: %v", err)
 	}
-	if body["state"] != domain.EndpointTestOK {
-		t.Fatalf("state = %v, want %q", body["state"], domain.EndpointTestOK)
+	if body["state"] != string(domain.EndpointTestOK) {
+		t.Fatalf("state = %v, want %q", body["state"], string(domain.EndpointTestOK))
 	}
 	if body["method"] != service.ProbeMethodChat {
 		t.Fatalf("method = %v, want %q", body["method"], service.ProbeMethodChat)
@@ -119,7 +118,7 @@ func TestProviderValidateHandler_NodeValidationFailures(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			validator := &stubCredentialValidator{outcome: service.ProbeOutcome{State: domain.EndpointTestOK}}
+			validator := &stubCredentialValidator{outcome: service.ProbeOutcome{State: string(domain.EndpointTestOK)}}
 			h := newValidateHandler(t, validator)
 			rr := postValidate(t, h.Node, tc.body)
 			if rr.Code != http.StatusBadRequest {
@@ -138,7 +137,7 @@ func TestProviderValidateHandler_NodeValidationFailures(t *testing.T) {
 // TestProviderValidateHandler_ProviderHappyPath covers the provider route.
 func TestProviderValidateHandler_ProviderHappyPath(t *testing.T) {
 	validator := &stubCredentialValidator{outcome: service.ProbeOutcome{
-		State: domain.EndpointTestFail, Method: service.ProbeMethodModels, LatencyMS: 11, Status: 401,
+		State: string(domain.EndpointTestFail), Method: service.ProbeMethodModels, LatencyMS: 11, Status: 401,
 		Message: "the upstream rejected this credential",
 	}}
 	h := newValidateHandler(t, validator)
@@ -164,7 +163,7 @@ func TestProviderValidateHandler_ProviderValidationFailures(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			validator := &stubCredentialValidator{outcome: service.ProbeOutcome{State: domain.EndpointTestOK}}
+			validator := &stubCredentialValidator{outcome: service.ProbeOutcome{State: string(domain.EndpointTestOK)}}
 			h := newValidateHandler(t, validator)
 			rr := postValidate(t, h.Provider, tc.body)
 			if rr.Code != http.StatusBadRequest {
@@ -181,7 +180,7 @@ func TestProviderValidateHandler_ProviderValidationFailures(t *testing.T) {
 // layer: the handler is constructed from one service and nothing else, so there
 // is no path through it that could write a row.
 func TestProviderValidateHandler_NoStoreIsReachable(t *testing.T) {
-	validator := &stubCredentialValidator{outcome: service.ProbeOutcome{State: domain.EndpointTestOK}}
+	validator := &stubCredentialValidator{outcome: service.ProbeOutcome{State: string(domain.EndpointTestOK)}}
 	h := newValidateHandler(t, validator)
 	if h.validation == nil {
 		t.Fatal("the handler was built without its service")

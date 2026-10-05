@@ -5,9 +5,8 @@
 //
 //	block, the account's credential, and the session the Zen lanes require.
 //
-// @uses      internal/dataplane, internal/registry, net/url, strings.
+// @uses      internal/dataplane, internal/domain, internal/registry, net/url, strings.
 // @reason    The reference builds these from `systemoneConfig` plus the account
-// //
 //
 //	(systemoneCore.js:39-46): the block's headers, the credential as a
 //	bearer, and a fresh `x-opencode-session` per call. Keeping them apart
@@ -16,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -26,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
@@ -62,9 +62,14 @@ func systemOneTarget(config *registry.SystemOneConfig, selection dataplane.Selec
 	for _, key := range keys {
 		headers[key] = config.Headers[key]
 	}
-	if token := selection.Credential.APIKey; token != "" {
-		headers["Authorization"] = "Bearer " + token
-	} else if token := selection.Credential.AccessToken; token != "" {
+	// One credential, resolved by the type that owns the rule: a branch on each
+	// field here would be a second answer to "which secret does this account
+	// present", and the two could disagree with the chat path.
+	_, token, err := selection.Credential.Secret()
+	if err != nil {
+		return "", nil, domain.NewInternalError("the decision account's credential could not be resolved")
+	}
+	if token != "" {
 		headers["Authorization"] = "Bearer " + token
 	}
 	// The Zen lanes expect the official client session on every request. The

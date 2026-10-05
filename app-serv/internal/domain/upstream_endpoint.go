@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
@@ -185,7 +185,9 @@ func (e *UpstreamEndpoint) Update(label string, priority int, status string, now
 	return nil
 }
 
-// SetAccount replaces the identifying fields of the account.
+// SetAccount replaces the identifying fields of the account. The email is already
+// in its canonical spelling, because an EndpointAccount can only be built through
+// NewEndpointAccount or the repository's rehydrate path, both of which normalize it.
 func (e *UpstreamEndpoint) SetAccount(account EndpointAccount, now time.Time) {
 	e.account = account
 	e.updatedAt = now
@@ -197,23 +199,10 @@ func (e *UpstreamEndpoint) SetOAuth(credential *OAuthCredential, now time.Time) 
 	e.updatedAt = now
 }
 
-// RecordTest stores the outcome of a connectivity test.
+// RecordTest stores the outcome of a connectivity test, collapsing a state the
+// aggregate does not name to the failure spelling so the stored value stays inside
+// the two states the panel and the response schema can render.
 func (e *UpstreamEndpoint) RecordTest(state string, latencyMS int, message string, now time.Time) {
-	checked := now
-	e.testStatus = EndpointTestStatus{State: state, LatencyMS: latencyMS, CheckedAt: &checked, Message: message}
-	e.updatedAt = now
-}
-
-// MarkRateLimited puts the whole endpoint in a backoff window, which is what a
-// provider-wide quota rejection means: every key of this account is affected.
-func (e *UpstreamEndpoint) MarkRateLimited(until time.Time) {
-	window := until
-	e.rateLimitedUntil = &window
-}
-
-// ClearRateLimit lifts the endpoint-wide window after a served request.
-func (e *UpstreamEndpoint) ClearRateLimit(now time.Time) {
-	e.rateLimitedUntil = nil
-	e.lastUsedAt = &now
+	e.testStatus = NewEndpointTestStatus(state, latencyMS, message, now)
 	e.updatedAt = now
 }

@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package postgres
 
@@ -111,7 +111,7 @@ func TestPublishedQuotaRepository_StoreCostsOneStatementPerTableNotPerBucket(t *
 
 	// pgx traces the transaction's BEGIN and COMMIT alongside its three
 	// statements: state upsert, one set-based window upsert, and the prune. The
-	// count cannot grow with the bucket count, which is the point of this test —
+	// count cannot grow with the bucket count, which is the point of this test,
 	// eight buckets cost exactly what one costs.
 	const wantStatements = 5
 	if single != wantStatements || batch != wantStatements {
@@ -156,7 +156,7 @@ func TestPublishedQuotaRepository_StoreRefusesAnUnknownEndpoint(t *testing.T) {
 
 // TestPublishedQuotaRepository_GoodAnswerClearsAStoredSentence pins the two halves of the
 // soft-answer path together. A provider that refuses an account has its sentence stored by
-// RecordAttempt — the card's only honest content — and when a later poll brings real
+// RecordAttempt, the card's only honest content, and when a later poll brings real
 // buckets, that sentence must go with it. A stale "credential invalid" printed above fresh
 // numbers would tell the operator the account is broken when the provider has just said it
 // is not.
@@ -203,7 +203,7 @@ func TestPublishedQuotaRepository_GoodAnswerClearsAStoredSentence(t *testing.T) 
 	}
 	state := after["ep_a"].State
 	if state.Message != "" {
-		t.Fatalf("message after a good answer = %q, want it cleared — the refusal is history now", state.Message)
+		t.Fatalf("message after a good answer = %q, want it cleared, the refusal is history now", state.Message)
 	}
 	if state.Plan != "K2" {
 		t.Fatalf("plan = %q, want the recovered answer's plan", state.Plan)

@@ -19,20 +19,23 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package dataplane
 
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"io"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/streamio"
 )
 
-// maxFoldEvents bounds how many SSE events one folded answer may contain, so a
-// provider that never terminates cannot grow the fold without limit.
+// maxFoldEvents bounds how many SSE events one folded answer may contain. A
+// single event is bounded by maxEventBytes, and every event of an endless stream
+// is accumulated into one slice, so the count needs its own ceiling.
 const maxFoldEvents = 1 << 16
 
 // foldStream reads a forced stream to its end and returns the single upstream
@@ -68,7 +71,12 @@ func readFoldEvents(body io.Reader) ([][]byte, error) {
 	events := make([][]byte, 0, 16)
 
 	for {
-		line, err := reader.ReadBytes('\n')
+		// Bounded inside the read: an upstream that never sends a newline must not
+		// be the one deciding how much memory the fold holds.
+		line, err := streamio.ReadLine(reader, maxEventBytes)
+		if errors.Is(err, streamio.ErrTooLong) {
+			return nil, dataPlaneError(CodeUpstreamError, "the upstream stream contained an oversized event")
+		}
 		if len(line) > 0 {
 			if event.Len()+len(line) > maxEventBytes {
 				return nil, dataPlaneError(CodeUpstreamError, "the upstream stream contained an oversized event")

@@ -22,7 +22,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -104,8 +104,8 @@ func TestEgressAdaptersTakeTheGuard(t *testing.T) {
 // made on a guard.
 //
 // It is separate from the constructor check because the two shapes are both
-// legitimate — newHTTPEndpointProber builds its dialer in the constructor,
-// newProxyProber builds its transport per call inside ProbeProxy — and a check
+// legitimate, newHTTPEndpointProber builds its dialer in the constructor,
+// newProxyProber builds its transport per call inside ProbeProxy, and a check
 // written for one would have missed the other. What must hold either way is that
 // the dialer comes from a guard rather than from a bare net.Dialer.
 func TestEveryDialerInTheCompositionRootIsTheGuards(t *testing.T) {

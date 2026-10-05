@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package domain
 
@@ -44,7 +44,11 @@ const DefaultRefreshLead = 30 * time.Minute
 // DefaultRefreshLead rather than making "due" unreachable for a provider that
 // never declared one.
 func OAuthRefreshState(cred *OAuthCredential, lead time.Duration, now time.Time) string {
-	if cred == nil || cred.ExpiresAt == nil {
+	if cred == nil {
+		return RefreshMissing
+	}
+	expires := cred.ExpiresAt()
+	if expires == nil {
 		return RefreshMissing
 	}
 	if lead <= 0 {
@@ -52,7 +56,7 @@ func OAuthRefreshState(cred *OAuthCredential, lead time.Duration, now time.Time)
 	}
 	// The boundary itself counts as due: at exactly the lead instant,
 	// refreshing is the safe side, because a later tick might miss the window.
-	if !now.Add(lead).Before(*cred.ExpiresAt) {
+	if !now.Add(lead).Before(*expires) {
 		return RefreshDue
 	}
 	return RefreshFresh
@@ -64,5 +68,5 @@ func OAuthRefreshState(cred *OAuthCredential, lead time.Duration, now time.Time)
 // wire because a client must not be able to hide a usable account.
 func (e *UpstreamEndpoint) MarkUnhealthy(message string, now time.Time) {
 	e.status = UpstreamEndpointError
-	e.RecordTest(EndpointTestFail, 0, message, now)
+	e.RecordTest(string(EndpointTestFail), 0, message, now)
 }

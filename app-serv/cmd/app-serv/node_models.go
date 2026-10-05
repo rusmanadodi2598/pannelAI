@@ -26,7 +26,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -65,8 +65,8 @@ type nodeModelSource struct {
 	// mu guards cache, and is held across a fetch as well as a read: that makes
 	// the cache single-flight per node for free, so two concurrent lookups make
 	// one request. Holding a lock across network I/O is usually wrong; here the
-	// critical section is one bounded request to one host, and the alternative —
-	// a second lock, a map of in-flight calls, and a wait — is more machinery
+	// critical section is one bounded request to one host, and the alternative,
+	// a second lock, a map of in-flight calls, and a wait, is more machinery
 	// than a per-node read justifies.
 	mu    sync.Mutex
 	cache map[string]cachedNodeModels
@@ -74,7 +74,7 @@ type nodeModelSource struct {
 
 // newNodeModelSource builds the adapter. The guard is a parameter, not an
 // ambient dependency, because a dialer built without one is the OWASP A01 hole
-// draft 017 §4.8 names — and cmd/app-serv/egress_guard_assert_test.go fails when
+// draft 017 §4.8 names, and cmd/app-serv/egress_guard_assert_test.go fails when
 // an adapter is constructed without it.
 func newNodeModelSource(
 	lookup func(id string) (nodeTarget, bool),

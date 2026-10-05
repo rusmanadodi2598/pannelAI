@@ -15,7 +15,7 @@
 //	write and a request come to disagree, so the question is asked here
 //	once and every caller asks it here.
 //
-//	The reference never validates a combo reference at all — its picker
+//	The reference never validates a combo reference at all, its picker
 //	offers only active connections and it trusts the operator (draft 024
 //	§1). This port validates at write time instead, which is a decision
 //	§7.7 already records; what this file fixes is that the validation
@@ -28,7 +28,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -132,7 +132,7 @@ func (v referenceView) catalogKeyFor(ref domain.ModelRef) (string, bool) {
 
 // resolvesIn reports whether a reference names something the data plane could
 // route: a catalog row, or an undeclared id on a provider that passes model ids
-// through. It is the existence half of the rule, and the router's own test —
+// through. It is the existence half of the rule, and the router's own test,
 // `ResolveParts` answers a declared model, then a passthrough provider's
 // arbitrary id, then refuses everything else.
 func (v referenceView) resolvesIn(ref domain.ModelRef) bool {

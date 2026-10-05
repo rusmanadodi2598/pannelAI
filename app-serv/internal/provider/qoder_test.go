@@ -13,12 +13,12 @@
 //
 //	OpenAI-compatible vendor. A host chosen wrong is a 403 from a working
 //	credential, and a signature computed over bytes that are not the ones
-//	sent is a rejection that looks like an auth failure — so both are
+//	sent is a rejection that looks like an auth failure, so both are
 //	pinned against a stub that records exactly what arrived.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -89,8 +89,8 @@ func TestQoderApplyAuthSignsADeviceTokenWithoutExchanging(t *testing.T) {
 	if err != nil {
 		t.Fatalf("building the request: %v", err)
 	}
-	cred := Credential{AccessToken: "dt-device", Family: FamilyOAuth, ProjectID: "user-7",
-		Metadata: map[string]string{MetadataMachineID: "machine-fixed"}}
+	cred := Credential{accessToken: "dt-device", family: FamilyOAuth, projectID: "user-7",
+		metadata: map[string]string{MetadataMachineID: "machine-fixed"}}
 
 	if err := connector.ApplyAuth(request, cred); err != nil {
 		t.Fatalf("ApplyAuth() error = %v", err)

@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 
@@ -54,13 +54,17 @@ func (r *QuotaRepository) ListWindows(ctx context.Context, endpointID string) ([
 	// The provider id is joined rather than stored on the window: it is a
 	// property of the endpoint, and copying it into a counter row would let the
 	// two disagree after an endpoint is moved between providers.
+	//
+	// With no endpoint named this is the whole table on a request-serving path, so
+	// it carries the same row ceiling the paged read uses (§1.7).
 	const q = `SELECT ` + quotaWindowColumns + `
 	  FROM quota_windows w
 	  LEFT JOIN upstream_endpoints e ON e.id = w.endpoint_id
 	 WHERE ($1 = '' OR w.endpoint_id = $1)
-	 ORDER BY w.endpoint_id ASC, w."window" ASC`
+	 ORDER BY w.endpoint_id ASC, w."window" ASC
+	 LIMIT $2::int`
 
-	rows, err := r.pool.Query(ctx, q, endpointID)
+	rows, err := r.pool.Query(ctx, q, endpointID, quotaMaxRowsPerPage)
 	if err != nil {
 		return nil, translateQuotaError(err)
 	}

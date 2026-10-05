@@ -15,12 +15,12 @@
 //	of provider calls, the exact N+1 AGENTS.md §1.7 blocks on this screen. A
 //	worker writes the answers (quota_published_write.go) and this file reads
 //	them back in ONE statement for the whole batch. The two halves are split
-//	because they change for different reasons — a new display column here, a
-//	new scheduling rule there — and §1.1 caps the file either way.
+//	because they change for different reasons, a new display column here, a
+//	new scheduling rule there, and §1.1 caps the file either way.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package postgres
 
@@ -67,7 +67,7 @@ func NewPublishedQuotaRepository(pool *pgxpool.Pool) *PublishedQuotaRepository {
 // row never stands alone is held by StorePublished, which writes both in one
 // transaction.
 //
-// An empty id list costs no query at all — a scan over an empty array is still a
+// An empty id list costs no query at all, a scan over an empty array is still a
 // round trip, and a page with no rows should cost nothing.
 func (r *PublishedQuotaRepository) ListPublishedByEndpointIDs(ctx context.Context, endpointIDs []string) (map[string]domain.PublishedQuota, error) {
 	out := make(map[string]domain.PublishedQuota, len(endpointIDs))

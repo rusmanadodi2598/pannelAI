@@ -13,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package router
 
@@ -50,7 +50,7 @@ func newProxyRouteHandler(t *testing.T) *handler.ProxyHandler {
 type routeProxyProber struct{}
 
 func (routeProxyProber) ProbeProxy(context.Context, service.ProxyTarget) (service.ProxyProbeResult, error) {
-	return service.ProxyProbeResult{State: domain.EndpointTestOK, LatencyMS: 7}, nil
+	return service.ProxyProbeResult{State: string(domain.EndpointTestOK), LatencyMS: 7}, nil
 }
 
 // memProxyRepo implements repository.ProxyRepository in memory.

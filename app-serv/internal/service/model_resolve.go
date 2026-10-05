@@ -6,16 +6,16 @@
 //	inside a write goes through (SPEC-API-001 §7.15, §7.6).
 //
 // @uses      internal/domain, context, strings.
-// @reason    §7.15 fixes one resolution order — combo name, then alias, then
+// @reason    §7.15 fixes one resolution order, combo name, then alias, then
 //
-//	provider/model — and §7.6 requires an alias target to exist. Both
+//	provider/model, and §7.6 requires an alias target to exist. Both
 //	answers come from the same merged view, so they live together: an
 //	alias validated against one view and resolved against another is
 //	exactly the drift this file prevents.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -67,7 +67,7 @@ func (s *ModelCatalogService) ModelExists(ctx context.Context, ref domain.ModelR
 
 // ChatServable reports whether the chat data plane could serve a reference,
 // and why not when it cannot. It is the write-time half of the property the
-// §7.15 model list holds — listed and answerable are one property — so a
+// §7.15 model list holds, listed and answerable are one property, so a
 // reference the router would refuse (a provider with no chat translator, a
 // non-passthrough provider's undeclared id, a media model) is refused here with
 // the reason named, before it is saved as part of a combo or the vision adapter

@@ -9,8 +9,8 @@
 // @reason    SPEC-API-001 §6 defines upstream_endpoints and §7.5 makes the
 //
 //	endpoint the mutation boundary for its keys, so AGENTS.md §2.2
-//	requires this repository to save the root — endpoint and keys
-//	together — and load it the same way. Keys for a whole page are
+//	requires this repository to save the root, endpoint and keys
+//	together, and load it the same way. Keys for a whole page are
 //	fetched in one statement rather than per row (§1.7). A key's own
 //	statements live in endpoint_keys.go, its row codec in endpoint_row.go,
 //	and the driver-error mapping in endpoint_errors.go; this file owns the
@@ -18,12 +18,13 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -149,7 +150,18 @@ func (r *EndpointRepository) GetByID(ctx context.Context, id string) (domain.Ups
 // batch needs the same UPDATE inside its transaction and a second copy is how the
 // two write paths start disagreeing about which columns a write touches.
 func (r *EndpointRepository) Update(ctx context.Context, endpoint domain.UpstreamEndpoint) error {
-	return updateEndpoint(ctx, r.pool, endpoint)
+	return updateEndpoint(ctx, r.pool, endpoint, nil)
+}
+
+// UpdateIfUnchanged writes an endpoint only while the stored row still carries
+// the updated_at the caller loaded, and reports a conflict when it no longer
+// does. The OAuth rotation needs it: a forced refresh racing the worker's would
+// otherwise write the older credential over the token the vendor had already
+// swapped, and the account would be dead until the operator re-authenticated.
+func (r *EndpointRepository) UpdateIfUnchanged(
+	ctx context.Context, endpoint domain.UpstreamEndpoint, loadedAt time.Time,
+) error {
+	return updateEndpoint(ctx, r.pool, endpoint, &loadedAt)
 }
 
 // Delete removes the endpoint; its keys go with it through the ON DELETE

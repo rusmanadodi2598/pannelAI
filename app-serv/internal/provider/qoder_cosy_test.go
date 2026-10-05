@@ -15,8 +15,8 @@
 //	the signer kept in memory, which is how the server reads it.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -71,7 +71,7 @@ func TestCosyHeadersCarryTheVendorFingerprint(t *testing.T) {
 }
 
 // TestCosySignatureIsRecomputableFromItsHeaders recomputes the digest the way the
-// vendor does — payload, wrapped key, timestamp, body, signing path, in that order —
+// vendor does, payload, wrapped key, timestamp, body, signing path, in that order,
 // from values the request publishes, and requires the signature sent to match. The
 // order is spelled out again here rather than called, so a reordered composition is a
 // failing test instead of a passing mirror.
@@ -183,7 +183,7 @@ func TestCosyRefusesAnAccountThatCannotSign(t *testing.T) {
 // TestQoderCosySignerIsWired runs the process's own signer rather than the fixed one:
 // the real clock, the real id source, and the vendor's key. It is the only place that
 // wiring is exercised before the connector arrives, and it proves the pair of things
-// a mis-wired signer would get wrong quietly — an unwired signer refuses every
+// a mis-wired signer would get wrong quietly, an unwired signer refuses every
 // request, and a corrupted key constant fails to parse.
 func TestQoderCosySignerIsWired(t *testing.T) {
 	header, err := qoderCosy.headers([]byte("a body"), cosyTestChatURL, cosyTestIdentity())

@@ -20,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -82,7 +82,7 @@ func connectResult(connect service.OAuthConnect) schema.OAuthConnectResult {
 		EndpointID:   connect.Endpoint.ID(),
 		ProviderID:   connect.Endpoint.ProviderID(),
 		Label:        connect.Endpoint.Label(),
-		AccountEmail: connect.Endpoint.Account().Email,
+		AccountEmail: connect.Endpoint.Account().Email().String(),
 		TokenHint:    connect.TokenHint,
 		Created:      connect.Created,
 	}

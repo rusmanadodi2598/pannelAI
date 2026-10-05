@@ -14,12 +14,12 @@
 //	named-function object draws `Bad Request`. The named-function form is
 //	what an agent sends when it has already decided which tool must run,
 //	so refusing it would drop the request on a vendor that can be given
-//	what it lacks — narrowing the tool list to that one function makes
+//	what it lacks, narrowing the tool list to that one function makes
 //	`required` mean "call this one", because nothing else is callable.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package provider
 
@@ -38,7 +38,7 @@ type namedToolChoice struct {
 }
 
 // mirrorCodeBuddyToolChoice rewrites a forced function into a shape this vendor
-// answers. A choice it already accepts — auto, none, required, or absent — is left
+// answers. A choice it already accepts, auto, none, required, or absent, is left
 // exactly as the client sent it.
 func mirrorCodeBuddyToolChoice(body map[string]json.RawMessage) error {
 	raw, present := body["tool_choice"]

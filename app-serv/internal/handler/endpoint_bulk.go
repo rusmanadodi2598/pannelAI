@@ -13,13 +13,13 @@
 // @reason    §8.1 makes a batch all-or-nothing but still requires every row's outcome
 //
 //	to be reported by index, so a refusal has to answer with both a machine
-//	code and the offending row — a bare §8 envelope could not carry the row
+//	code and the offending row, a bare §8 envelope could not carry the row
 //	and a bare body could not carry the code. The three batch routes share
 //	that rule, which is why they share one handler and one refusal writer.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -142,7 +142,7 @@ func (h *EndpointBulkHandler) writeCreatedEndpoints(w http.ResponseWriter, creat
 // Every row is reported, not only the offending one: §8.1 says nothing is written
 // unless all rows pass, so a client shown only the bad row would imply the others had
 // been stored. When the refusal cannot be pinned to a row, the row list is empty and
-// the code and message carry it — repeating the message on every row would read as N
+// the code and message carry it, repeating the message on every row would read as N
 // failures where only the batch failed.
 func writeBulkRefusal(w http.ResponseWriter, err error, rowCount int) {
 	appErr := domain.AsAppError(err)

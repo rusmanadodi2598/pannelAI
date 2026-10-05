@@ -11,14 +11,14 @@
 //
 //	batch routes it backs are all-or-nothing across a set of rows, which a
 //	per-aggregate contract cannot express, so the set operations are named
-//	here as EndpointStore — the frozen interface embedded, not replaced —
+//	here as EndpointStore, the frozen interface embedded, not replaced,
 //	and the concrete PostgreSQL repository implements them. The remaining
 //	ports keep the service testable without a database, a registry, a
 //	sealer, or an HTTP upstream (AGENTS.md §1.5).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -88,7 +88,7 @@ type BulkRowIndexer interface {
 // aggregate-scoped contract, embedded, plus the set operations a batch route
 // needs.
 //
-// Embedding rather than restating the methods is deliberate — the frozen
+// Embedding rather than restating the methods is deliberate, the frozen
 // interface stays the single definition of aggregate-scoped persistence, so a
 // change there becomes a compile error here instead of a silent drift.
 type EndpointStore interface {

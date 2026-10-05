@@ -10,13 +10,13 @@
 //
 //	shape a provider wants (Qoder's "Personal Access Token (pt-...)")
 //	before any endpoint exists. The hint text is served byte-verbatim
-//	— it names upstream URLs the operator must visit, so a transcription
-//	error here would send them to the wrong place — and stays absent
+//	, it names upstream URLs the operator must visit, so a transcription
+//	error here would send them to the wrong place, and stays absent
 //	from the wire for providers that declare none.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package schema
 

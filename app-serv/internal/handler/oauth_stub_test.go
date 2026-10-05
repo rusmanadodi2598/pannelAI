@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -28,7 +28,8 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 )
 
 // oauthTestKey seals the credentials these tests write.
@@ -118,6 +119,20 @@ func (s *oauthStubStore) Update(_ context.Context, endpoint domain.UpstreamEndpo
 	return nil
 }
 
+func (s *oauthStubStore) UpdateIfUnchanged(_ context.Context, endpoint domain.UpstreamEndpoint, loadedAt time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	stored, ok := s.byID[endpoint.ID()]
+	if !ok {
+		return domain.ErrEndpointNotFound
+	}
+	if !stored.UpdatedAt().Equal(loadedAt) {
+		return domain.NewConflictError("the endpoint changed during this refresh")
+	}
+	s.byID[endpoint.ID()] = endpoint
+	return nil
+}
+
 func (s *oauthStubStore) FindOAuthEndpoint(_ context.Context, providerID, email, workspaceID string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -129,10 +144,10 @@ func (s *oauthStubStore) FindOAuthEndpoint(_ context.Context, providerID, email,
 		if credential == nil {
 			continue
 		}
-		if email != "" && credential.AccountEmail == email {
+		if email != "" && credential.AccountEmail().String() == email {
 			return endpoint.ID(), nil
 		}
-		if workspaceID != "" && credential.AccountID == workspaceID {
+		if workspaceID != "" && credential.AccountID() == workspaceID {
 			return endpoint.ID(), nil
 		}
 	}
@@ -183,32 +198,32 @@ func (s *oauthStubStates) Peek(_ context.Context, state string) ([]byte, bool, e
 
 // oauthStubTokens serves scripted grants and identities.
 type oauthStubTokens struct {
-	grantFn       func(service.TokenGrant) (service.TokenResponse, error)
-	infoFn        func() (service.OAuthIdentity, error)
-	devicePollFn  func(nonce, verifier string) (service.DeviceTokenResponse, bool, error)
+	grantFn       func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error)
+	infoFn        func() (oauthhttp.OAuthIdentity, error)
+	devicePollFn  func(nonce, verifier string) (oauthhttp.DeviceTokenResponse, bool, error)
 	devicePollArg []string
 }
 
 // DevicePoll answers one device poll from the script, recording the round it was
 // asked about so a test can prove the handler passed the code through.
-func (s *oauthStubTokens) DevicePoll(_ context.Context, _, nonce, verifier string) (service.DeviceTokenResponse, bool, error) {
+func (s *oauthStubTokens) DevicePoll(_ context.Context, _, nonce, verifier string) (oauthhttp.DeviceTokenResponse, bool, error) {
 	s.devicePollArg = []string{nonce, verifier}
 	if s.devicePollFn != nil {
 		return s.devicePollFn(nonce, verifier)
 	}
-	return service.DeviceTokenResponse{}, true, nil
+	return oauthhttp.DeviceTokenResponse{}, true, nil
 }
 
-func (s *oauthStubTokens) Grant(_ context.Context, _ string, _ string, grant service.TokenGrant) (service.TokenResponse, error) {
+func (s *oauthStubTokens) Grant(_ context.Context, _ string, _ string, grant oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
 	if s.grantFn != nil {
 		return s.grantFn(grant)
 	}
-	return service.TokenResponse{AccessToken: "at-issued", RefreshToken: "rt-issued", ExpiresIn: 3600}, nil
+	return oauthhttp.TokenResponse{AccessToken: "at-issued", RefreshToken: "rt-issued", ExpiresIn: 3600}, nil
 }
 
-func (s *oauthStubTokens) UserInfo(context.Context, string, string) (service.OAuthIdentity, error) {
+func (s *oauthStubTokens) UserInfo(context.Context, string, string) (oauthhttp.OAuthIdentity, error) {
 	if s.infoFn != nil {
 		return s.infoFn()
 	}
-	return service.OAuthIdentity{}, nil
+	return oauthhttp.OAuthIdentity{}, nil
 }

@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -40,8 +40,8 @@ const (
 	googleNoBucketsNote = "Gemini CLI published no quota buckets for this project."
 )
 
-// googleBucket is one published per-model window. `remainingFraction` is the share LEFT — the
-// inverse of Claude's utilization — and it stays raw because the provider sends a number here
+// googleBucket is one published per-model window. `remainingFraction` is the share LEFT, the
+// inverse of Claude's utilization, and it stays raw because the provider sends a number here
 // and a quoted numeric string there.
 type googleBucket struct {
 	ModelID           string          `json:"modelId"`

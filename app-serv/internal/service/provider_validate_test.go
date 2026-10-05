@@ -2,7 +2,6 @@
 //
 // @file      internal/service/provider_validate_test.go
 // @for       The stateless credential check: the two reference status rules, the
-// //
 //
 //	fallback path, and the no-write property.
 //
@@ -12,13 +11,13 @@
 //	two rules a naive implementation gets wrong are both here: a 404 on
 //	`/models` must fall back to a chat probe rather than report a failure,
 //	and an Anthropic 400 or 529 proves the key was accepted. The stateless
-//	property is asserted too, because it is the one that would rot first —
+//	property is asserted too, because it is the one that would rot first,
 //	a validation that quietly wrote a row would still pass every other
 //	test in this file.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -66,7 +65,7 @@ func TestValidateNode_RequiresAClosedType(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			validator := &recordingValidator{outcome: ProbeOutcome{State: domain.EndpointTestOK}}
+			validator := &recordingValidator{outcome: ProbeOutcome{State: string(domain.EndpointTestOK)}}
 			svc, err := NewCredentialValidationService(validator)
 			if err != nil {
 				t.Fatalf("NewCredentialValidationService() error = %v", err)
@@ -98,7 +97,7 @@ func TestValidateNode_RequiresAClosedType(t *testing.T) {
 
 // TestValidateProvider_RequiresAProviderID is the provider half of the same rule.
 func TestValidateProvider_RequiresAProviderID(t *testing.T) {
-	validator := &recordingValidator{outcome: ProbeOutcome{State: domain.EndpointTestOK}}
+	validator := &recordingValidator{outcome: ProbeOutcome{State: string(domain.EndpointTestOK)}}
 	svc, err := NewCredentialValidationService(validator)
 	if err != nil {
 		t.Fatalf("NewCredentialValidationService() error = %v", err)
@@ -147,11 +146,11 @@ func TestValidateOutcomeForAnthropic(t *testing.T) {
 		wantState   string
 		wantMessage bool
 	}{
-		{name: "a 200 is ok with no message", status: 200, wantState: domain.EndpointTestOK},
-		{name: "a 400 is ok and says the request was refused", status: 400, wantState: domain.EndpointTestOK, wantMessage: true},
-		{name: "a 529 is ok and says the request was refused", status: 529, wantState: domain.EndpointTestOK, wantMessage: true},
-		{name: "a 401 is a rejected credential", status: 401, wantState: domain.EndpointTestFail, wantMessage: true},
-		{name: "a 403 is a rejected credential", status: 403, wantState: domain.EndpointTestFail, wantMessage: true},
+		{name: "a 200 is ok with no message", status: 200, wantState: string(domain.EndpointTestOK)},
+		{name: "a 400 is ok and says the request was refused", status: 400, wantState: string(domain.EndpointTestOK), wantMessage: true},
+		{name: "a 529 is ok and says the request was refused", status: 529, wantState: string(domain.EndpointTestOK), wantMessage: true},
+		{name: "a 401 is a rejected credential", status: 401, wantState: string(domain.EndpointTestFail), wantMessage: true},
+		{name: "a 403 is a rejected credential", status: 403, wantState: string(domain.EndpointTestFail), wantMessage: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -175,7 +174,7 @@ func TestValidateOutcomeForAnthropic(t *testing.T) {
 // structural: there is nothing to write through. The assertion records it anyway,
 // so a future edit that adds a repository to this service fails here by name.
 func TestCredentialValidation_WritesNothing(t *testing.T) {
-	validator := &recordingValidator{outcome: ProbeOutcome{State: domain.EndpointTestOK, Method: ProbeMethodModels}}
+	validator := &recordingValidator{outcome: ProbeOutcome{State: string(domain.EndpointTestOK), Method: ProbeMethodModels}}
 	svc, err := NewCredentialValidationService(validator)
 	if err != nil {
 		t.Fatalf("NewCredentialValidationService() error = %v", err)
@@ -189,8 +188,8 @@ func TestCredentialValidation_WritesNothing(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ValidateProvider() call %d error = %v", i, err)
 		}
-		if outcome.State != domain.EndpointTestOK {
-			t.Fatalf("call %d: State = %q, want %q", i, outcome.State, domain.EndpointTestOK)
+		if outcome.State != string(domain.EndpointTestOK) {
+			t.Fatalf("call %d: State = %q, want %q", i, outcome.State, string(domain.EndpointTestOK))
 		}
 	}
 	if len(validator.checks) != 2 {

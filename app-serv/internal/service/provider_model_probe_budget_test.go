@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package service
 
@@ -30,10 +30,15 @@ import (
 // TestProviderModelTestService_AProbeThatRunsOutItsBudgetIsATimeout keeps a
 // cancelled context from being reported as an internal failure: the operator
 // asked how long the model takes, and the honest answer is "longer than allowed".
+//
+// The ceiling is shortened rather than the delay lengthened: at the real twenty
+// seconds the assertion depended on a 20ms margin between two timers, which the
+// race detector running this package beside nineteen others sometimes loses.
 func TestProviderModelTestService_AProbeThatRunsOutItsBudgetIsATimeout(t *testing.T) {
 	prober := newProbeStub()
-	prober.delay = ProviderModelProbeTimeout + 20*time.Millisecond
+	prober.delay = 2 * time.Second
 	svc := newModelTestService(t, prober)
+	svc.probeTimeout = 20 * time.Millisecond
 
 	result, err := svc.TestModel(context.Background(), "openai", "gpt-4o")
 	if err != nil {

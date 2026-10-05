@@ -10,14 +10,14 @@
 //
 //	tests of the registry read the YAML back. Neither proves the two meet:
 //	a floor typed into the wrong entry, or a rename that misses the floor,
-//	leaves both green while the reported repro — a 60-token ceiling answered
-//	with an empty body — still reaches the client. This drives the whole
+//	leaves both green while the reported repro, a 60-token ceiling answered
+//	with an empty body, still reaches the client. This drives the whole
 //	pipeline once per model, on the same two wire-mates, so the difference
 //	is the declaration and nothing else (draft 037 §13).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package dataplane
 
@@ -33,7 +33,7 @@ import (
 // combo test sent (60) through the free lane and reads what the upstream actually
 // received. Muse Spark 1.3 declares 512 because it spends a smaller ceiling on
 // thinking; the member beside it in that combo declares none, so the client's own
-// number must still arrive unchanged — the floor is per model, not a provider-wide
+// number must still arrive unchanged, the floor is per model, not a provider-wide
 // override (draft 037 §13).
 func TestOpenCodeFree_DeclaredModelFloorReachesTheUpstream(t *testing.T) {
 	cases := []struct {

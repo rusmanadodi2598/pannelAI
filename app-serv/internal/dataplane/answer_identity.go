@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package dataplane
 
@@ -49,8 +49,8 @@ func (r Resolution) ClientModel() string {
 // the calling surface already used.
 //
 // The fallback stays with the caller rather than being fixed here because a
-// Resolution built outside the relay — a test, or a seam that resolves one member
-// on its own — carries no addressed string at all, and such a surface knows which
+// Resolution built outside the relay, a test, or a seam that resolves one member
+// on its own, carries no addressed string at all, and such a surface knows which
 // of its own identifiers stands in.
 func answerModel(r Resolution, fallback string) string {
 	if name := r.ClientModel(); name != "" {

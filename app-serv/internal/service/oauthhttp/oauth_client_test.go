@@ -1,6 +1,6 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_client_test.go
+// @file      internal/service/oauthhttp/oauth_client_test.go
 // @for       Table-driven tests for the OAuth token client's userinfo decode
 //
 //	(SPEC-API-001 §7.4: the account identity a callback matches on).
@@ -17,9 +17,9 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
-package service
+package oauthhttp
 
 import (
 	"context"
@@ -77,14 +77,14 @@ func TestOAuthIdentityDecodesEveryProviderSpelling(t *testing.T) {
 				t.Fatalf("decoding %s: %v", tc.payload, err)
 			}
 			account := identity.Account()
-			if account.Email != tc.wantEmail {
-				t.Fatalf("email = %q, want %q", account.Email, tc.wantEmail)
+			if account.Email().String() != tc.wantEmail {
+				t.Fatalf("email = %q, want %q", account.Email().String(), tc.wantEmail)
 			}
-			if account.Name != tc.wantName {
-				t.Fatalf("name = %q, want %q", account.Name, tc.wantName)
+			if account.Name() != tc.wantName {
+				t.Fatalf("name = %q, want %q", account.Name(), tc.wantName)
 			}
-			if account.WorkspaceID != tc.wantAccount {
-				t.Fatalf("workspace id = %q, want %q", account.WorkspaceID, tc.wantAccount)
+			if account.WorkspaceID() != tc.wantAccount {
+				t.Fatalf("workspace id = %q, want %q", account.WorkspaceID(), tc.wantAccount)
 			}
 		})
 	}

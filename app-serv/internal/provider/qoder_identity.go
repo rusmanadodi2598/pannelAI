@@ -12,12 +12,12 @@
 //	login learns that id during its own flow and stores it, but a Personal Access
 //	Token pasted into the panel is only a token: nothing on the connection row
 //	names the account behind it. Reading it from the vendor at sign time is
-//	what makes a PAT connection usable at all — the reference does the same,
+//	what makes a PAT connection usable at all, the reference does the same,
 //	and refuses with "reconnect the account" when the id cannot be had.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-28
 package provider
 
@@ -84,14 +84,14 @@ func (c *qoderIdentityCache) write(key string, account qoderAccount, now time.Ti
 
 // signingIdentity is the account a signed request speaks as. A stored user id wins,
 // because a device login already learned it during its own flow; a credential that
-// carries none — a Personal Access Token added by hand — is resolved against the
+// carries none, a Personal Access Token added by hand, is resolved against the
 // vendor here. An identity that cannot be had is refused rather than sent as an
 // empty `uid`, which the vendor answers as a rejected signature and the operator
 // reads as a broken credential.
 func (c *Qoder) signingIdentity(ctx context.Context, cred Credential, token string) (cosyIdentity, error) {
 	account := qoderAccount{
-		UserID: strings.TrimSpace(cred.ProjectID),
-		Email:  strings.TrimSpace(cred.Account),
+		UserID: strings.TrimSpace(cred.ProjectID()),
+		Email:  strings.TrimSpace(cred.Account()),
 	}
 	if account.UserID == "" {
 		resolved, err := c.accountFor(ctx, token)
@@ -111,7 +111,7 @@ func (c *Qoder) signingIdentity(ctx context.Context, cred Credential, token stri
 		UserID:    account.UserID,
 		AuthToken: token,
 		Email:     account.Email,
-		MachineID: strings.TrimSpace(cred.Metadata[MetadataMachineID]),
+		MachineID: strings.TrimSpace(cred.MetadataValue(MetadataMachineID)),
 	}, nil
 }
 
@@ -132,8 +132,8 @@ func (c *Qoder) accountFor(ctx context.Context, token string) (qoderAccount, err
 }
 
 // userInfoURL is the identity endpoint: the entry's declared one when it has it, the
-// openapi host's otherwise. An entry with neither cannot be built at all —
-// NewQoder needs the openapi base for the exchange — so this always names a host.
+// openapi host's otherwise. An entry with neither cannot be built at all,
+// NewQoder needs the openapi base for the exchange, so this always names a host.
 // The two agree for both Qoder sites today, and the declared one is what the
 // registry keeps truthful.
 func (c *Qoder) userInfoURL() string {
@@ -148,7 +148,7 @@ func (c *Qoder) userInfoURL() string {
 }
 
 // fetchAccount asks the vendor who this bearer is. The answer is read under the three
-// names the vendor has used for the same value across its surfaces — the reference
+// names the vendor has used for the same value across its surfaces, the reference
 // reads that same set, because a client that picks one of them breaks when the site
 // it talks to changes spelling.
 func (c *Qoder) fetchAccount(ctx context.Context, endpoint, token string) (qoderAccount, error) {

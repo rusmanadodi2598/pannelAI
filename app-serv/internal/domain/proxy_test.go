@@ -4,15 +4,15 @@
 // @file      internal/domain/proxy_test.go
 // @for       The Proxy aggregate's shape rules and transitions (SPEC-API-001 §7.11).
 // @uses      testing, strings, time, net/netip.
-// @reason    The host rule is a security boundary — it is what stops a URL, a
+// @reason    The host rule is a security boundary, it is what stops a URL, a
 //
-//	userinfo trick, or a decimal IP from reaching the resolver — so it is
+//	userinfo trick, or a decimal IP from reaching the resolver, so it is
 //	pinned with a table that varies the obfuscation rather than one
 //	example (OWASP A01 §2.5).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package domain
 
@@ -157,7 +157,7 @@ func TestProxy_RepointAndCredentialsClearTheStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewProxy() error = %v", err)
 	}
-	proxy.RecordTest(EndpointTestOK, 12, "", proxyNow())
+	proxy.RecordTest(string(EndpointTestOK), 12, "", proxyNow())
 
 	if err := proxy.Repoint(ProxyProtocolSOCKS5, "other.example.com", 1080, proxyNow()); err != nil {
 		t.Fatalf("Repoint() error = %v", err)
@@ -169,7 +169,7 @@ func TestProxy_RepointAndCredentialsClearTheStatus(t *testing.T) {
 		t.Fatalf("Repoint() = %s/%s/%d, want socks5/other.example.com/1080", proxy.Protocol(), proxy.Host(), proxy.Port())
 	}
 
-	proxy.RecordTest(EndpointTestFail, 30, "the proxy refused the connection", proxyNow())
+	proxy.RecordTest(string(EndpointTestFail), 30, "the proxy refused the connection", proxyNow())
 	if err := proxy.SetCredentials("operator", "sealed-2", proxyNow()); err != nil {
 		t.Fatalf("SetCredentials() error = %v", err)
 	}
@@ -189,10 +189,10 @@ func TestProxy_RecordTest(t *testing.T) {
 		t.Fatalf("NewProxy() error = %v", err)
 	}
 	checked := proxyNow().Add(time.Minute)
-	proxy.RecordTest(EndpointTestFail, 45, "the proxy answered 502", checked)
+	proxy.RecordTest(string(EndpointTestFail), 45, "the proxy answered 502", checked)
 
 	status := proxy.Status()
-	if status.State != EndpointTestFail || status.LatencyMS != 45 || status.Message != "the proxy answered 502" {
+	if status.State != string(EndpointTestFail) || status.LatencyMS != 45 || status.Message != "the proxy answered 502" {
 		t.Fatalf("RecordTest() = %+v", status)
 	}
 	if status.CheckedAt == nil || !status.CheckedAt.Equal(checked) {

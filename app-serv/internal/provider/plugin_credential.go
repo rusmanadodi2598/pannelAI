@@ -6,7 +6,7 @@
 //
 //	belongs to.
 //
-// @uses      (none).
+// @uses      fmt, strings.
 // @reason    A provider may read a different header per credential family, so
 //
 //	choosing the header and choosing the value separately is how an OAuth
@@ -17,9 +17,14 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package provider
+
+import (
+	"fmt"
+	"strings"
+)
 
 // Family is which kind of credential an account holds. It is decided once, from
 // the account's own auth type, because a provider may read a different header
@@ -59,47 +64,76 @@ func (f Family) String() string {
 // single shape every auth family reduces to, so the core never branches on
 // which family is in use.
 //
-// Exactly ONE of APIKey and AccessToken may be set. Setting both is the bug this
-// type exists to prevent: a provider that routes OAuth through one header and
-// static keys through another would then be given two contradictory signals, and
-// whichever check ran first would decide the placement while the other decided
-// the value. `Family` states which one the caller means, so there is nothing to
-// infer.
+// Exactly ONE of the two secrets may be held, and the fields are unexported so
+// that is a property of the value rather than a paragraph a caller can read and
+// ignore: every way in is a constructor, and Secret is the only way out. A
+// provider that routes OAuth through one header and static keys through another
+// would otherwise be given two contradictory signals, and whichever check ran
+// first would decide the placement while the other decided the value.
 //
-// The fields hold plaintext for the duration of one request only. They are
-// assembled from encrypted storage by the caller and never persisted here.
+// The plaintext exists for the duration of one request only. It is assembled
+// from encrypted storage by the caller and never persisted here.
 type Credential struct {
-	// EndpointID and KeyID identify the account and, for a multi-key endpoint,
+	// endpointID and keyID identify the account and, for a multi-key endpoint,
 	// the exact key that was picked. They are what accounting records and what
 	// a failure is attributed to.
-	EndpointID string
-	KeyID      string
+	endpointID string
+	keyID      string
 
-	// APIKey is a static secret. It is set only for FamilyStaticKey.
-	APIKey string
+	apiKey      string
+	accessToken string
 
-	// AccessToken is a token obtained by an authorization flow. It is set only
-	// for FamilyOAuth.
-	AccessToken string
-	// Family states which credential kind this account presents. FamilyUnset
+	// family states which credential kind this account presents. FamilyUnset
 	// means no credential material is present, which is the correct state for a
 	// provider that needs none.
-	Family Family
+	family Family
 
-	// Account and ProjectID are the non-secret identity fields some providers
-	// need on the wire (a workspace id, a cloud project).
-	Account   string
-	ProjectID string
+	account   string
+	projectID string
 
-	// Metadata carries the provider-specific, non-secret values a connector
+	// metadata carries the provider-specific, non-secret values a connector
 	// needs: a region, a client version, an editor identity. It is a map rather
 	// than a typed struct because only the owning connector interprets it, and
-	// a shared struct would accumulate every provider's fields.
-	//
-	// The keys a caller may rely on are declared beside the constants below
-	// rather than invented per connector, so a writer and its reader cannot
-	// spell them differently.
-	Metadata map[string]string
+	// a shared struct would accumulate every provider's fields. The keys a caller
+	// may rely on are declared beside MetadataMachineID rather than invented per
+	// connector, so a writer and its reader cannot spell them differently.
+	metadata map[string]string
+}
+
+// CredentialInput is the full shape the data plane assembles for one call. The
+// single-family constructors below are the right choice for every other caller.
+type CredentialInput struct {
+	EndpointID  string
+	KeyID       string
+	APIKey      string
+	AccessToken string
+	Family      Family
+	Account     string
+	ProjectID   string
+	Metadata    map[string]string
+}
+
+// NewCredential builds the one shape from the data plane's assembly and refuses a
+// credential holding both secrets, so the ambiguity is caught where the value is
+// made rather than at the first header that happens to be checked.
+func NewCredential(input CredentialInput) (Credential, error) {
+	if strings.TrimSpace(input.APIKey) != "" && strings.TrimSpace(input.AccessToken) != "" {
+		return Credential{}, ambiguousCredentialError(input.EndpointID, input.KeyID)
+	}
+	metadata := make(map[string]string, len(input.Metadata))
+	for key, value := range input.Metadata {
+		metadata[key] = value
+	}
+	return Credential{
+		endpointID:  input.EndpointID,
+		keyID:       input.KeyID,
+		apiKey:      strings.TrimSpace(input.APIKey),
+		accessToken: strings.TrimSpace(input.AccessToken),
+		family:      input.Family,
+		account:     input.Account,
+		projectID:   input.ProjectID,
+		metadata:    metadata,
+	}, nil
 }
 
 // MetadataMachineID names the account's persisted device-fingerprint id. A
@@ -110,38 +144,54 @@ const MetadataMachineID = "machine_id"
 
 // StaticKey builds a credential presenting a long-lived key.
 func StaticKey(endpointID, keyID, value string) Credential {
-	return Credential{EndpointID: endpointID, KeyID: keyID, APIKey: value, Family: FamilyStaticKey}
+	return Credential{endpointID: endpointID, keyID: keyID, apiKey: value, family: FamilyStaticKey}
 }
 
 // OAuthToken builds a credential presenting a token from an authorization flow.
 func OAuthToken(endpointID, keyID, value string) Credential {
-	return Credential{EndpointID: endpointID, KeyID: keyID, AccessToken: value, Family: FamilyOAuth}
+	return Credential{endpointID: endpointID, keyID: keyID, accessToken: value, family: FamilyOAuth}
 }
 
 // NoCredential builds a credential for a provider that needs none.
 func NoCredential(endpointID string) Credential {
-	return Credential{EndpointID: endpointID}
+	return Credential{endpointID: endpointID}
 }
 
-// family reports which credential kind is in use and its value. An explicitly
-// declared Family wins; otherwise the single populated field decides, and a
-// caller that set both fields without declaring a family is resolved to the
-// OAuth token, which is the shorter-lived credential and the one an account
-// configured for a flow holds.
-func (c Credential) family() (Family, string) {
-	switch c.Family {
+func (c Credential) EndpointID() string { return c.endpointID }
+func (c Credential) KeyID() string      { return c.keyID }
+func (c Credential) Account() string    { return c.account }
+func (c Credential) ProjectID() string  { return c.projectID }
+func (c Credential) FamilyKind() Family { return c.family }
+
+// MetadataValue reads one provider-specific non-secret value by the key its
+// writer and its reader agree on.
+func (c Credential) MetadataValue(key string) string { return c.metadata[key] }
+
+// Secret reports which credential this account presents and its value, and
+// refuses an account holding both. An explicitly declared family wins; otherwise
+// the single populated field decides.
+//
+// Both secrets populated is refused rather than resolved: they mean different
+// things to a provider that reads a different header per family, so an account
+// holding both has no correct answer, and choosing one silently would route a
+// request under a credential its owner never meant to present.
+func (c Credential) Secret() (Family, string, error) {
+	if c.apiKey != "" && c.accessToken != "" {
+		return FamilyUnset, "", ambiguousCredentialError(c.endpointID, c.keyID)
+	}
+	switch c.family {
 	case FamilyStaticKey:
-		return FamilyStaticKey, c.APIKey
+		return FamilyStaticKey, c.apiKey, nil
 	case FamilyOAuth:
-		return FamilyOAuth, c.AccessToken
+		return FamilyOAuth, c.accessToken, nil
 	}
 	switch {
-	case c.AccessToken != "":
-		return FamilyOAuth, c.AccessToken
-	case c.APIKey != "":
-		return FamilyStaticKey, c.APIKey
+	case c.accessToken != "":
+		return FamilyOAuth, c.accessToken, nil
+	case c.apiKey != "":
+		return FamilyStaticKey, c.apiKey, nil
 	default:
-		return FamilyUnset, ""
+		return FamilyUnset, "", nil
 	}
 }
 
@@ -149,6 +199,33 @@ func (c Credential) family() (Family, string) {
 // credential-free provider returns false and the core must not treat that as an
 // error.
 func (c Credential) HasCredential() bool {
-	_, value := c.family()
-	return value != ""
+	_, value, err := c.Secret()
+	return err == nil && value != ""
+}
+
+// String names the account without naming the credential.
+//
+// The plaintext exists for the length of one request, and the way it escapes is a
+// debug print, a test failure dumping the struct, or a `%+v` in a log line someone
+// adds later. Printing the identity fields keeps the line useful and removes the
+// reason it would be dangerous.
+func (c Credential) String() string {
+	return "provider.Credential{EndpointID: " + c.endpointID +
+		", KeyID: " + c.keyID +
+		", Account: " + c.account +
+		", ProjectID: " + c.projectID +
+		", APIKey: " + redactedWhenSet(c.apiKey) +
+		", AccessToken: " + redactedWhenSet(c.accessToken) + "}"
+}
+
+func redactedWhenSet(value string) string {
+	if value == "" {
+		return "unset"
+	}
+	return "[redacted]"
+}
+
+func ambiguousCredentialError(endpointID, keyID string) error {
+	return fmt.Errorf("account %s key %s: both a static key and an access token are set; exactly one may be",
+		endpointID, keyID)
 }

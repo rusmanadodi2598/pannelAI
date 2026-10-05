@@ -15,14 +15,14 @@
 //	already a stream of lines an operator reads: the gateway's own record
 //	of what it served now reaches it through the event instead of a
 //	second write at the accounting site. That is what makes the seam
-//	observable rather than decorative — if the publisher stops, the
+//	observable rather than decorative, if the publisher stops, the
 //	console stops growing, and the panel shows it.
 //
 //	The consumer deliberately writes nothing durable. The usage row is
 //	the durable record; a subscriber that wrote a second copy would be a
 //	second source of truth for the same request.
 //
-//	RETRY POLICY (AGENTS.md §1.6)
+//	Retry policy (AGENTS.md §1.6)
 //
 //	A receive that times out is idleness, not failure, and costs nothing.
 //	A transport failure backs off exponentially from 250ms to 30s, with
@@ -30,14 +30,14 @@
 //	dead letter, because the subscription is the only state and losing it
 //	means the next attempt rebuilds it.
 //
-//	TERMINATION
+//	Termination
 //
 //	Run returns when its context is cancelled, closing its subscription
 //	on the way out. It owns exactly one goroutine and no others.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

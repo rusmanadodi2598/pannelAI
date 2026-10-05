@@ -9,12 +9,12 @@
 //	reordered third or one substituted character off and the WAF reads a
 //	plaintext body. The expected values are the reference encoder's own
 //	output, captured in `testdata/qoder_encoding_vectors.json` and read
-//	back here, so a drift is caught rather than self-confirmed — and
+//	back here, so a drift is caught rather than self-confirmed, and
 //	not re-typed by hand, which is how a vector first went wrong.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -76,8 +76,8 @@ func TestQoderEncodeBodyMatchesTheReference(t *testing.T) {
 }
 
 // TestQoderEncodeBodyKeepsLength pins the property the reference relies on: the
-// obfuscation is a substitution, so a body of n bytes arrives as n characters — the
-// base64 length of those bytes — which is what Cosy-Bodylength and the outbound
+// obfuscation is a substitution, so a body of n bytes arrives as n characters, the
+// base64 length of those bytes, which is what Cosy-Bodylength and the outbound
 // Content-Length then describe.
 func TestQoderEncodeBodyKeepsLength(t *testing.T) {
 	for _, size := range []int{0, 1, 2, 3, 5, 12, 97, 513} {

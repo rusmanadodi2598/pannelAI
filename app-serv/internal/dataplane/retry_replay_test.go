@@ -11,13 +11,13 @@
 //	refused twice with a nested capacity complaint and served on the third
 //	try. The POST cap stopped the gateway at two attempts, so a provider
 //	that refuses before any byte of the answer reaches the caller looked
-//	like a spent model. The rule that fixes it is narrow — a refusal read
-//	out of the first frame leaves no answer to duplicate — and a cap lifted
+//	like a spent model. The rule that fixes it is narrow, a refusal read
+//	out of the first frame leaves no answer to duplicate, and a cap lifted
 //	too far would let the gateway re-bill a call the client already saw.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package dataplane
 

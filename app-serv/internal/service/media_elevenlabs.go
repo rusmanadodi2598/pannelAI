@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -41,8 +41,8 @@ type elevenLabsVoiceSettings struct {
 // wants (`/text-to-speech/{voice_id}`).
 //
 // The voice is required. The reference reads it out of the model string when the
-// caller names none, which this gateway deliberately does not do — §7.10 keeps
-// the `voice` field as the wire's own way to say it — and a model id sent as a
+// caller names none, which this gateway deliberately does not do, §7.10 keeps
+// the `voice` field as the wire's own way to say it, and a model id sent as a
 // voice id would be a call the upstream rejects for a reason the caller cannot
 // see.
 func elevenLabsSpeechPayload(req schema.SpeechRequest, call MediaCall) (speechPayload, error) {

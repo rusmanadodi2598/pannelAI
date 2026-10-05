@@ -9,14 +9,14 @@
 // @reason    A PostgreSQL constraint violation has to become the §8 code a client
 //
 //	sees, and getting it wrong is invisible until a duplicate label returns
-//	500 instead of CONFLICT. Keeping the mapping in one small file — rather
-//	than beside each statement — is what stops the endpoint and key paths
+//	500 instead of CONFLICT. Keeping the mapping in one small file, rather
+//	than beside each statement, is what stops the endpoint and key paths
 //	from drifting apart, and it keeps the mapping testable without a
 //	database.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 
@@ -74,7 +74,7 @@ func translateEndpointError(err error) error {
 // The label-uniqueness rule is a domain invariant, not a database one: the
 // migration declares a plain index on (endpoint_id, priority) rather than a
 // unique one, so a duplicate label is refused by UpstreamEndpoint.AddKey before a
-// statement runs. A unique violation here is therefore the primary key on id —
+// statement runs. A unique violation here is therefore the primary key on id,
 // refused as CONFLICT rather than reported as an internal fault, because a
 // caller can act on "that key already exists".
 func translateKeyError(err error) error {

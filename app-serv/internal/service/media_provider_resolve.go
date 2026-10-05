@@ -6,15 +6,15 @@
 //	media values (SPEC-API-001 §7.10).
 //
 // @uses      internal/domain, internal/registry, context, strings.
-// @reason    Every §7.10 read answers the same question — what does this
+// @reason    Every §7.10 read answers the same question, what does this
 //
-//	provider actually dial for this kind — so the resolution and the
+//	provider actually dial for this kind, so the resolution and the
 //	kind-vocabulary mapping sit in one file rather than beside each
 //	route that asks.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -57,7 +57,7 @@ func (s *MediaProviderService) overrideIndex(ctx context.Context) (map[string]do
 }
 
 // viewsFor builds one entry's views in the canonical kind order, so a list
-// renders the same way twice — a Go map iterates in a random order, which is
+// renders the same way twice, a Go map iterates in a random order, which is
 // why the order comes from domain.MediaKinds() rather than from the map.
 func viewsFor(entry registry.Provider, filter domain.MediaKind, overrides map[string]domain.MediaOverride) []MediaServiceView {
 	views := make([]MediaServiceView, 0, len(entry.Media))

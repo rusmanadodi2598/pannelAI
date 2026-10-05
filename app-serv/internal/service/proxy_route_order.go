@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package service
 
@@ -54,15 +54,15 @@ func (s *ProxyRouteService) candidateOrder(
 
 	// Parked candidates sit out while an unparked one remains (D6); when every
 	// usable candidate is parked the list stays whole, because a cooldown is a
-	// hint about the past, not proof about the next dial.
+	// hint about the past, not proof about the next dial. The read is one batch:
+	// this runs per proxied request, so a per-candidate EXISTS would be a query
+	// per item on the hot path (§1.7).
 	unparked := make([]string, 0, len(ids))
-	for _, id := range ids {
-		parked, err := s.routes.Parked(ctx, id)
-		if err != nil {
-			parked = false
-		}
-		if !parked {
-			unparked = append(unparked, id)
+	if parked, err := s.routes.ParkedAll(ctx, ids); err == nil {
+		for _, id := range ids {
+			if !parked[id] {
+				unparked = append(unparked, id)
+			}
 		}
 	}
 	if len(unparked) > 0 {

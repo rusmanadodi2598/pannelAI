@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -169,8 +169,8 @@ func codeForAppError(appErr *domain.AppError) string {
 	case "UNAUTHORIZED", "FORBIDDEN":
 		return CodeUnauthorized
 	case "NOT_FOUND":
-		// A management not-found reaching the data plane is an inconsistency —
-		// a row vanished under the request — not the resolver's verdict about a
+		// A management not-found reaching the data plane is an inconsistency,
+		// a row vanished under the request, not the resolver's verdict about a
 		// model name, which is produced as CodeModelNotFound directly. Mapping
 		// it to MODEL_NOT_FOUND answered 404 for a served call and stopped a
 		// combo chain on a bookkeeping error.

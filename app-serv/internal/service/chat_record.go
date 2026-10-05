@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -41,7 +41,7 @@ import (
 //
 // The log's error text is the code alone, never the failure's message: a chat
 // upstream's message is quoted back verbatim, and an authentication failure's
-// message can carry the presented credential — a stored row must not hold either.
+// message can carry the presented credential, a stored row must not hold either.
 //
 // A recording failure is deliberately not returned: the client already has its
 // answer, and failing the request over an accounting write would turn a served
@@ -50,7 +50,7 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 	// An image request answered by the §7.8 adapter is the one served call whose
 	// identity the accounting pair cannot show: the row is written under the model
 	// the caller addressed, so the model that actually received the picture
-	// appears nowhere — and whether that model reads images at all is exactly the
+	// appears nowhere, and whether that model reads images at all is exactly the
 	// question an operator needs to answer when an image comes back described
 	// wrong. Measured live 2026-09-29: a combo's image requests were answered
 	// "gray" for a solid-red image by an adapter model that cannot see, and nothing
@@ -78,7 +78,7 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 	// The usage row is written only for a call that reached an attempt: the
 	// aggregate requires a provider and a model, and a request refused before
 	// the pipeline (an unknown model, an invalid body) has neither. Skipping it
-	// here rather than letting the aggregate reject it is deliberate — a
+	// here rather than letting the aggregate reject it is deliberate, a
 	// swallowed validation error is what hid this plane's missing error row
 	// (register G17).
 	if s.usage != nil && outcome.ProviderID != "" && outcome.Model != "" {
@@ -103,7 +103,7 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 			}
 		}
 		// The estimate is the rate tables' answer for the tokens this call
-		// reported, and zero for every path without one — a failed call
+		// reported, and zero for every path without one, a failed call
 		// delivered nothing, an unpriced model has no rate to apply, and a
 		// report of all zeros prices to zero. §7.12: the figure is an estimate
 		// for display, never a billed amount.
@@ -122,7 +122,7 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 		s.quotas.Record(ctx, outcome.EndpointID, chatQuotaUnits(outcome.Usage))
 	}
 	if s.logs != nil {
-		// reason: same as above — the log is the second half of the accounting
+		// reason: same as above, the log is the second half of the accounting
 		// pair, not a condition of the answer.
 		_, _ = s.logs.Record(ctx, domain.RequestLogInput{
 			RequestID:    requestID,

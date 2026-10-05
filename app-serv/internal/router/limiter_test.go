@@ -57,13 +57,28 @@ func (l rateLimiterTestDouble) Allow(context.Context, string, int, time.Duration
 	return l.remaining, l.err
 }
 
-func TestRequestRateLimitLeavesHealthUnmetered(t *testing.T) {
-	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
-	h := requestRateLimit(next, rateLimiterTestDouble{remaining: time.Minute}, 1, nil)
-	w := httptest.NewRecorder()
-	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/health", nil))
-	if w.Code != http.StatusNoContent {
-		t.Fatalf("health status=%d want=%d", w.Code, http.StatusNoContent)
+// TestRequestRateLimitMetersThePublicSystemRoutes pins that /health and /version
+// sit inside the budget. /health answers every call with live Postgres and Redis
+// probes, so the exemption they used to carry let any unauthenticated caller aim
+// an unlimited number of dependency checks at the panel's own databases.
+func TestRequestRateLimitMetersThePublicSystemRoutes(t *testing.T) {
+	serve := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+
+	for _, path := range []string{"/api/v1/health", "/api/v1/version"} {
+		budgetLeft := requestRateLimit(serve, rateLimiterTestDouble{remaining: 0}, 5, nil)
+		allowed := httptest.NewRecorder()
+		budgetLeft.ServeHTTP(allowed, httptest.NewRequest(http.MethodGet, path, nil))
+		if allowed.Code != http.StatusNoContent {
+			t.Fatalf("%s with budget left = %d, want the handler reached", path, allowed.Code)
+		}
+
+		exhausted := requestRateLimit(serve, rateLimiterTestDouble{remaining: time.Second}, 5, nil)
+		rejected := httptest.NewRecorder()
+		exhausted.ServeHTTP(rejected, httptest.NewRequest(http.MethodGet, path, nil))
+		if rejected.Code != http.StatusTooManyRequests {
+			t.Fatalf("%s over budget = %d, want 429: the route is still outside the limiter",
+				path, rejected.Code)
+		}
 	}
 }
 

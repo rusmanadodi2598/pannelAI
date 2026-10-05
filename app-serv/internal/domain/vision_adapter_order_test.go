@@ -7,7 +7,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
@@ -16,31 +16,21 @@ import (
 	"time"
 )
 
-// TestVisionAdapter_Includes recognises a model the adapter would have routed
-// to, which is how a response identity is stripped back (§7.8).
-func TestVisionAdapter_Includes(t *testing.T) {
+// TestVisionAdapter_ModelStringsAreTheRoutableSet pins the list a caller matches
+// an incoming model string against: exactly the models the operator configured.
+func TestVisionAdapter_ModelStringsAreTheRoutableSet(t *testing.T) {
 	now := time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
 	adapter, err := NewVisionAdapter(true, false, []ModelRef{visionRef(t, "openai/gpt-4o")},
 		func(ModelRef) bool { return true }, now)
 	if err != nil {
 		t.Fatalf("NewVisionAdapter() error = %v", err)
 	}
-	cases := []struct {
-		name string
-		ref  string
-		want bool
-	}{
-		{"a configured model", "openai/gpt-4o", true},
-		{"a configured model with surrounding space", " openai/gpt-4o ", true},
-		{"another model", "anthropic/claude", false},
-		{"empty", "", false},
+	got := adapter.ModelStrings()
+	if len(got) != 1 || got[0] != "openai/gpt-4o" {
+		t.Fatalf("ModelStrings() = %v, want exactly the one configured model", got)
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := adapter.Includes(tc.ref); got != tc.want {
-				t.Fatalf("Includes(%q) = %t, want %t", tc.ref, got, tc.want)
-			}
-		})
+	if !adapter.Active() {
+		t.Fatal("an enabled adapter carrying one model must report itself active")
 	}
 }
 

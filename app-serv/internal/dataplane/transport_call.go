@@ -19,7 +19,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -39,6 +39,10 @@ import (
 func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	plugin := t.connectors.For(call.Provider)
 	request := RequestFor(call)
+	// The caller's context travels on the request because the Transformer seam
+	// has no parameter to carry it, and a connector that reads during shaping
+	// must stop when the client does rather than finish on its own clock.
+	request.Context = ctx
 	if err := applyShape(plugin, &request); err != nil {
 		return nil, err
 	}
@@ -71,9 +75,25 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	call.Body = request.Body
 	call.Stream = request.Stream
 	deadline := attemptDeadline(clientStream, call.Provider)
+	// TotalTimeout is documented as bounding one non-streamed call end to end, so
+	// the budget is measured once here and each attempt gets what is left of it.
+	// Passing the full deadline per attempt let one call run twice the bound plus
+	// the backoff between them, and hold a handler goroutine that much longer than
+	// the contract says.
+	budgetEnds := time.Time{}
+	if deadline > 0 {
+		budgetEnds = time.Now().Add(deadline)
+	}
 
 	for retries := 0; ; retries++ {
-		upstream, failure, err := t.attempt(ctx, plugin, call, url, deadline)
+		attemptDeadlineLeft := deadline
+		if !budgetEnds.IsZero() {
+			attemptDeadlineLeft = time.Until(budgetEnds)
+			if attemptDeadlineLeft <= 0 {
+				return nil, timeoutError(context.DeadlineExceeded)
+			}
+		}
+		upstream, failure, err := t.attempt(ctx, plugin, call, url, attemptDeadlineLeft)
 		switch {
 		case err != nil:
 			decision := DecideRetry(call.Provider, plugin, Attempt{Retries: retries, Idempotent: call.Idempotent})

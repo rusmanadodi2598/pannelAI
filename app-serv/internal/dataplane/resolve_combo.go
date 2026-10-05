@@ -12,8 +12,8 @@
 // @reason    SPEC-API-001 §7.7 allows a combo entry to be a provider/model
 //
 //	reference, a combo name, or an alias, and permits exactly one
-//	dereference level. That rule — plus the strategy and judge the
-//	fusion path executes — is what this file owns, so resolve.go stays
+//	dereference level. That rule, plus the strategy and judge the
+//	fusion path executes, is what this file owns, so resolve.go stays
 //	about the resolution entry point and its routability gate.
 //
 //	Two bounds guard the walk, and they are different things. The depth
@@ -28,7 +28,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -43,7 +43,7 @@ import (
 // stored chain actually walks rather than trusting the writer: an alias can
 // name a combo whose member names another alias, and each hop re-enters the
 // resolver with its own one-level allowance. A stored cycle therefore needs a
-// hard stop independent of the level rule — the level rule is a write-time
+// hard stop independent of the level rule, the level rule is a write-time
 // contract for honest data, the depth limit is the runtime guarantee for data
 // that predates or bypassed it.
 const comboDepthLimit = 16
@@ -53,7 +53,7 @@ const comboDepthLimit = 16
 // The depth bound alone does not bound the work: with the schema's 64 members
 // per combo, a graph of combos that all fail resolves as 64^depth expansions.
 // The memo removes the repeated subtrees; this limit is the backstop for the
-// graph the memo cannot collapse — a wide DAG with distinct paths — and it is
+// graph the memo cannot collapse, a wide DAG with distinct paths, and it is
 // expressed in expansions rather than depth because expansions are what cost a
 // repository read. Measured against the fixture in resolve_combo_budget_test.go:
 // a failing binary tree of depth 8 costs 1,277 lookups without a memo and 17

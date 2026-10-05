@@ -9,14 +9,14 @@
 // @reason    Qoder answers every model it serves as `auto`, and the gateway was
 //
 //	adopting that echo into the frames it forwards, so a client that asked
-//	`qoder/qfmodel` was told its answer came from `auto` — a name the
+//	`qoder/qfmodel` was told its answer came from `auto`, a name the
 //	client cannot re-send, and one that routes to a pool the vendor answers
 //	429 for. StreamState already documents the rule in its own field
 //	comment; these cases are what keep the implementation to it.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package dataplane
 
@@ -54,7 +54,7 @@ func TestOpenAIStreamReportsTheAskedModel(t *testing.T) {
 		},
 		{
 			// Nothing was asked for, so the upstream's name is the only answer
-			// there is — and an empty `model` member is not one a client can use.
+			// there is, and an empty `model` member is not one a client can use.
 			name:     "with no requested id the upstream's own name is kept",
 			seed:     "",
 			echoes:   []string{"gpt-4o-2024-08-06"},

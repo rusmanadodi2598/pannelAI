@@ -15,8 +15,8 @@
 //	service rather than copied into a table.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -52,51 +52,38 @@ type qoderCatalogEntry struct {
 // qoderCatalog is the per-connector cache. It is safe for concurrent use, and it
 // holds no per-request state: the key names both the account's gateway and the
 // model, which is the widest scope that is still correct.
+//
+// inflight carries a read already running for a host, so eight concurrent chats
+// against a cold cache cost one document rather than eight. misses carries the
+// model names the vendor refused, so an unknown name costs one lookup instead of
+// a full re-read per request.
 type qoderCatalog struct {
-	mu      sync.Mutex
-	entries map[string]qoderCatalogEntry
-	now     func() time.Time
+	mu       sync.Mutex
+	entries  map[string]qoderCatalogEntry
+	inflight map[string]*catalogFetch
+	misses   map[string]time.Time
+	now      func() time.Time
 }
 
 func newQoderCatalog() *qoderCatalog {
-	return &qoderCatalog{entries: map[string]qoderCatalogEntry{}, now: time.Now}
-}
-
-// modelConfig returns the vendor's configuration for one model key, reading the
-// catalogue when the cached answer is absent or older than the TTL. An error means
-// no configuration could be obtained; a caller must not send a chat without one,
-// because the vendor would answer with a model nobody asked for.
-func (c *Qoder) modelConfig(cred Credential, modelKey string) (json.RawMessage, error) {
-	base, err := c.inferenceBase(cred)
-	if err != nil {
-		return nil, err
+	return &qoderCatalog{
+		entries:  map[string]qoderCatalogEntry{},
+		inflight: map[string]*catalogFetch{},
+		misses:   map[string]time.Time{},
+		now:      time.Now,
 	}
-	key := base + "|" + modelKey
-	if cached, ok := c.catalog.read(key, c.catalog.now()); ok {
-		return cached, nil
-	}
-
-	raw, err := c.fetchCatalog(cred, base)
-	if err != nil {
-		return nil, err
-	}
-	config, found := findQoderModelConfig(raw, modelKey)
-	if !found {
-		return nil, fmt.Errorf("provider %s: the vendor does not list model %q", c.entry.ID, modelKey)
-	}
-	c.catalog.write(key, config, c.catalog.now())
-	return config, nil
 }
 
 // fetchCatalog asks the vendor's own list endpoint, signed as the account. The call
 // is the one a live proof already exercises (draft 036 §5), so the shape read here
 // is the shape that answered there.
-func (c *Qoder) fetchCatalog(cred Credential, base string) ([]byte, error) {
+func (c *Qoder) fetchCatalog(caller context.Context, cred Credential, base string) ([]byte, error) {
 	requestURL := base + qoderSigPathPrefix + qoderModelListPath
-	// The catalogue is read while the caller's request is still being shaped, before any
-	// context reaches a connector, so the read carries its own bound: an unanswered
-	// list must not become the reason a call hangs.
-	ctx, cancel := context.WithTimeout(context.Background(), qoderCatalogTimeout)
+	// One fetch answers every concurrent lookup of the same host, so it is detached
+	// from the leader's cancellation, which would otherwise strand the callers still
+	// waiting on it, and bounded by its own clock, because an unanswered list must
+	// not become the reason a call hangs.
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(caller), qoderCatalogTimeout)
 	defer cancel()
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)

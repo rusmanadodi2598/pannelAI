@@ -13,12 +13,12 @@
 //
 //	design: the registry is immutable config, custom rows are the
 //	operator's additions, and disabled rows are subtractions. Merging
-//	them here — in one place, in one order — is what lets the panel
+//	them here, in one place, in one order, is what lets the panel
 //	and the data plane ask the same question and get the same answer.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -38,7 +38,7 @@ import (
 // Active is a pointer because it has three states: nil (the parameter was not
 // sent, so nothing is narrowed), true (only providers holding an active
 // endpoint), and false (the parameter was sent as false, which still narrows
-// nothing — draft 025 §6 ruling 2).
+// nothing, draft 025 §6 ruling 2).
 type CatalogFilter struct {
 	ProviderID string
 	Capability string
@@ -115,7 +115,7 @@ func (s *ModelCatalogService) Catalog(ctx context.Context, filter CatalogFilter)
 	}
 	// The active predicate runs after the other filters so the roll-up measures
 	// only the providers the request actually asked about, and it is skipped
-	// entirely when the parameter was not sent or was sent as false — the plain
+	// entirely when the parameter was not sent or was sent as false, the plain
 	// catalog read stays free of a query it never needed (draft 025).
 	if filter.Active != nil && *filter.Active {
 		active, err := s.activeProviders(ctx, distinctProviderIDs(matched))

@@ -14,8 +14,8 @@
 //	has to tolerate both readings.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-17
 package provider
 
@@ -110,7 +110,7 @@ func TestDefault_EndpointBuildsTheURL(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			entry := registry.Provider{ID: "p", Transport: tc.transport}
 			connector := NewDefault(entry)
-			got, err := connector.Endpoint(Request{Provider: entry}, Credential{APIKey: "sk-x"})
+			got, err := connector.Endpoint(Request{Provider: entry}, Credential{apiKey: "sk-x"})
 			if tc.wantErr {
 				if err == nil {
 					t.Fatalf("Endpoint() = %q, want an error", got)

@@ -3,14 +3,14 @@
 // @file      internal/service/quotafetch/grok_credits.go
 // @for       Asks Grok's gRPC-web credits endpoint and turns its frame into one percentage window.
 // @uses      internal/service/quotafetch, net/http
-// @reason    The weekly SuperGrok pool is published only over this binary surface — the REST
+// @reason    The weekly SuperGrok pool is published only over this binary surface, the REST
 //
-//	billing answer carries no weekly figure — so the second call and its
+//	billing answer carries no weekly figure, so the second call and its
 //	transport constants live apart from the decoder that reads the bytes.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

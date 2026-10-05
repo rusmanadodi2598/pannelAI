@@ -6,10 +6,10 @@
 //	read, the endpoint's health, and the accounting row.
 //
 // @uses      internal/dataplane, internal/domain, context, strings, time.
-// @reason    A provider can report a failure inside a 200 — MiniMax answers a
+// @reason    A provider can report a failure inside a 200, MiniMax answers a
 //
 //	`base_resp.status_code` envelope and Gemini can answer no audio at
-//	all — so reading the answer is part of classifying it. Keeping the
+//	all, so reading the answer is part of classifying it. Keeping the
 //	read here means such a call is recorded the way the client
 //	experienced it, rather than as a served call (the G17 rule applied
 //	to the media plane), and it is separate from media_call.go so both
@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -76,7 +76,7 @@ func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request 
 		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream could not be reached", domain.KeyFailureTransient)
 	case answer.Status < 200 || answer.Status >= 300:
 		failure = dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
-		// reason: same as above — the upstream rejection is what the client
+		// reason: same as above, the upstream rejection is what the client
 		// must see, and the health write is bookkeeping.
 		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream rejected the request", dataplane.FailureClass(answer.Status))
 	default:

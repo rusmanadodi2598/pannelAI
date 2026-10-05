@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -26,10 +26,12 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"log/slog"
 	"sort"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
@@ -107,7 +109,10 @@ type Selector struct {
 	// this provider needs no credential. It is optional, and without it a
 	// provider with no stored endpoint is simply unavailable.
 	registry RegistryReader
-	clock    func() time.Time
+	// logger records the fail-opens below. Optional: nil writes to the process
+	// logger, so a wiring that forgets it still leaves a trace.
+	logger *slog.Logger
+	clock  func() time.Time
 }
 
 // SelectorDeps holds the collaborators selection needs.
@@ -124,6 +129,9 @@ type SelectorDeps struct {
 	// nil one disables the rule, which is the behaviour every deployment had
 	// before it existed.
 	Registry RegistryReader
+	// Logger records a degraded selection (a budget gate that failed open, a
+	// rotation cursor that could not be read). Optional: nil uses slog.Default.
+	Logger *slog.Logger
 }
 
 // NewSelector validates deps and returns a selector. The opener is optional so a
@@ -137,7 +145,7 @@ func NewSelector(deps SelectorDeps) (*Selector, error) {
 	}
 	return &Selector{
 		endpoints: deps.Endpoints, opener: deps.Opener, cursor: deps.Cursor, gates: deps.Gate,
-		strategies: deps.Strategies, registry: deps.Registry, clock: time.Now,
+		strategies: deps.Strategies, registry: deps.Registry, logger: deps.Logger, clock: time.Now,
 	}, nil
 }
 
@@ -163,6 +171,8 @@ func (s *Selector) overBudget(ctx context.Context, endpointID string) bool {
 	}
 	exhausted, err := s.gates.Exhausted(ctx, endpointID)
 	if err != nil {
+		logx.Degraded(s.logger, "quota budget gate failed open, endpoint selected regardless", err,
+			"endpoint_id", endpointID)
 		return false
 	}
 	return exhausted
@@ -170,8 +180,8 @@ func (s *Selector) overBudget(ctx context.Context, endpointID string) bool {
 
 // HasBudgetGate reports whether a gate is wired. It exists so the composition
 // root and a test can state the wiring without reaching into the selector's
-// fields, and so a typed-nil gate — an interface holding a nil pointer, which
-// is not itself nil — is caught by the caller rather than at the first request.
+// fields, and so a typed-nil gate, an interface holding a nil pointer, which
+// is not itself nil, is caught by the caller rather than at the first request.
 func (s *Selector) HasBudgetGate() bool { return s.gates != nil }
 
 // candidates loads the provider's active endpoints in priority order. A tie on
@@ -207,6 +217,8 @@ func (s *Selector) offset(ctx context.Context, providerID string, size, stickyLi
 	}
 	next, err := s.cursor.NextOffset(ctx, providerID, size, stickyLimit)
 	if err != nil || next < 0 {
+		logx.Degraded(s.logger, "rotation cursor unavailable, selection fell back to priority order", err,
+			"provider_id", providerID)
 		return 0
 	}
 	return next % size
@@ -221,6 +233,8 @@ func (s *Selector) rotationPolicy(ctx context.Context, providerID string) domain
 	}
 	policy, err := s.strategies.RotationPolicy(ctx, providerID)
 	if err != nil {
+		logx.Degraded(s.logger, "rotation policy read failed, selection fell back to fill-first", err,
+			"provider_id", providerID)
 		return domain.RotationPolicy{Strategy: domain.RotationFillFirst}
 	}
 	return policy

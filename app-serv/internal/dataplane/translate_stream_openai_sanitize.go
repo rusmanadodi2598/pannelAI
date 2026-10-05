@@ -25,7 +25,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 
@@ -65,8 +65,8 @@ func (s *StreamState) sanitizeChunk(chunk object) bool {
 		}
 		// Only a frame the cut emptied is withheld. A close the upstream sent on
 		// its own keeps its place on the wire even when its reason was nulled as a
-		// duplicate, because the members still on it — a trailing role delta, the
-		// usage — are the client's to read (draft 034 F2).
+		// duplicate, because the members still on it, a trailing role delta, the
+		// usage, are the client's to read (draft 034 F2).
 		if cut && !frameCarriesAnswer(choice) && !carriesUsage(chunk) {
 			return false
 		}
@@ -173,7 +173,7 @@ func frameCarriesAnswer(choice object) bool {
 //
 // A frame emptied by the pruning still has to reach the client when it carries
 // them: a vendor that states usage on its closing frame, and then again on a frame
-// after it, leaves the gateway nulling the duplicate reason (draft 034 F2) — and
+// after it, leaves the gateway nulling the duplicate reason (draft 034 F2), and
 // dropping that frame for having no reason left would drop the usage with it
 // (draft 021 F2, 034 F1).
 func carriesUsage(chunk object) bool {
@@ -189,7 +189,7 @@ func carriesUsage(chunk object) bool {
 // empty string, an empty array, or an object whose every member says nothing.
 //
 // The object rule is what catches this vendor's deprecated `function_call`, which
-// arrives as `{"name":"","arguments":""}` — a block that is neither empty nor
+// arrives as `{"name":"","arguments":""}`, a block that is neither empty nor
 // informative, and one a client reading the deprecated field takes for a call.
 func carriesNoValue(raw json.RawMessage) bool {
 	return memberCarriesNoValue(raw, 2)

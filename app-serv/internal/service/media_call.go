@@ -14,12 +14,12 @@
 //
 //	shape; the resolution rules are one rule. Keeping them here means
 //	the override precedence, the format gate, and the endpoint-health
-//	bookkeeping cannot drift between the routes — and §7.10's "no silent
+//	bookkeeping cannot drift between the routes, and §7.10's "no silent
 //	cloud fallback" is enforced once rather than six times.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -116,7 +116,7 @@ func (c MediaCall) Outcome() dataplane.Outcome {
 }
 
 // accountingModel is the model id a recorded row carries: the upstream model
-// when the kind resolved one, and the provider's own id when it did not — a
+// when the kind resolved one, and the provider's own id when it did not, a
 // search call names no model, and the usage row's model column is required.
 func (c MediaCall) accountingModel() string {
 	if model := strings.TrimSpace(c.UpstreamModel); model != "" {

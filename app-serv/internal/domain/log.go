@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 
@@ -145,18 +145,17 @@ func RehydrateRequestLog(requestID string, ts time.Time, gatewayKeyID, endpointI
 }
 
 // Accessors expose the row without allowing mutation.
-func (l RequestLog) RequestID() string           { return l.requestID }
-func (l RequestLog) TS() time.Time               { return l.ts }
-func (l RequestLog) GatewayKeyID() string        { return l.gatewayKeyID }
-func (l RequestLog) EndpointID() string          { return l.endpointID }
-func (l RequestLog) ProviderID() string          { return l.providerID }
-func (l RequestLog) Model() string               { return l.model }
-func (l RequestLog) Status() string              { return string(l.status) }
-func (l RequestLog) LogStatus() RequestLogStatus { return l.status }
-func (l RequestLog) LatencyMS() int64            { return l.latencyMS }
-func (l RequestLog) RequestBody() string         { return l.requestBody }
-func (l RequestLog) ResponseBody() string        { return l.responseBody }
-func (l RequestLog) Error() string               { return l.errText }
+func (l RequestLog) RequestID() string    { return l.requestID }
+func (l RequestLog) TS() time.Time        { return l.ts }
+func (l RequestLog) GatewayKeyID() string { return l.gatewayKeyID }
+func (l RequestLog) EndpointID() string   { return l.endpointID }
+func (l RequestLog) ProviderID() string   { return l.providerID }
+func (l RequestLog) Model() string        { return l.model }
+func (l RequestLog) Status() string       { return string(l.status) }
+func (l RequestLog) LatencyMS() int64     { return l.latencyMS }
+func (l RequestLog) RequestBody() string  { return l.requestBody }
+func (l RequestLog) ResponseBody() string { return l.responseBody }
+func (l RequestLog) Error() string        { return l.errText }
 
 // HasBodies reports whether either body was captured.
 func (l RequestLog) HasBodies() bool {

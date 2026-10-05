@@ -18,8 +18,8 @@
 //	of it is inferable.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -83,8 +83,8 @@ type cosyPayload struct {
 // process's own.
 var qoderCosy = cosySigner{now: time.Now, newID: newQoderID}
 
-// headers signs one request. The body is the exact byte sequence that will be sent —
-// the obfuscated one when the body was encoded — because the vendor hashes what
+// headers signs one request. The body is the exact byte sequence that will be sent,
+// the obfuscated one when the body was encoded, because the vendor hashes what
 // arrives, and a nil slice is what a GET passes.
 func (s cosySigner) headers(body []byte, requestURL string, id cosyIdentity) (http.Header, error) {
 	if strings.TrimSpace(id.UserID) == "" {
@@ -161,7 +161,7 @@ func (s cosySigner) key() (*rsa.PublicKey, error) {
 // aesKey is the first sixteen characters of a fresh UUID's canonical string, hyphens
 // included: the length AES-128 wants and the shape the vendor's client cuts. The IV
 // is the same bytes, so a key fresh to every request is what makes the reused IV
-// acceptable — the security of this scheme is the vendor's problem to hold, not
+// acceptable, the security of this scheme is the vendor's problem to hold, not
 // ours to improve (draft 036 slice D).
 func (s cosySigner) aesKey() string {
 	id := s.newID()

@@ -12,12 +12,12 @@
 //	result is the answer, so the probe reports per reference instead of
 //	the combo's aggregate outcome. It is a service of its own because it
 //	needs the data plane, and the data plane is built after the combo
-//	CRUD service — the engine asks that service for the round-robin
+//	CRUD service, the engine asks that service for the round-robin
 //	order.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -62,7 +62,7 @@ func NewComboTestService(combos *ComboService, prober ModelProber) (*ComboTestSe
 // The probes run one at a time: the route is a diagnostic an operator waits on,
 // so a fan-out would multiply the accounts one click spends while making the
 // reported order depend on which model happened to answer first. A failed probe
-// is a result, not an error — refusing the whole answer because one member is
+// is a result, not an error, refusing the whole answer because one member is
 // down would hide the members that are up.
 func (s *ComboTestService) Test(ctx context.Context, id string) (schema.ComboTestResponse, error) {
 	combo, err := s.combos.Get(ctx, id)
@@ -74,7 +74,7 @@ func (s *ComboTestService) Test(ctx context.Context, id string) (schema.ComboTes
 		results = append(results, s.probe(ctx, ref, schema.ComboTestRoleModel))
 	}
 	// A fusion combo's judge is part of the chain the request depends on, so it
-	// is probed too — a dead judge is the failure a panel test would otherwise
+	// is probed too, a dead judge is the failure a panel test would otherwise
 	// report as five healthy models.
 	if combo.Strategy() == domain.ComboFusion && combo.JudgeModel() != "" {
 		results = append(results, s.probe(ctx, combo.JudgeModel(), schema.ComboTestRoleJudge))

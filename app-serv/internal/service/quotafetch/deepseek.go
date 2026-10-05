@@ -10,7 +10,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -29,7 +29,7 @@ import (
 const deepSeekDisplayName = "DeepSeek"
 
 // deepSeekBalanceURL is the billing host the reference hardcodes, because the deepseek
-// registry entry declares no usage URL of its own — it is the built-in to promote into
+// registry entry declares no usage URL of its own, it is the built-in to promote into
 // familyEndpoints. A declared transport.usage.url still wins over it.
 const deepSeekBalanceURL = "https://api.deepseek.com/user/balance"
 
@@ -112,7 +112,7 @@ func deepSeekWallets(infos []deepSeekBalanceInfo) []Quota {
 
 // deepSeekBalance reads the spendable amount, which arrives as a number on some answers and
 // a numeric string on others, under either spelling. An amount that cannot be read is an
-// empty wallet — a stated zero and a missing value are not worth telling apart here, since
+// empty wallet, a stated zero and a missing value are not worth telling apart here, since
 // neither can be spent.
 func deepSeekBalance(info deepSeekBalanceInfo) float64 {
 	amount := deepSeekAmount(info.TotalBalance)

@@ -12,8 +12,8 @@
 //	exactly the same path as a registry provider.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-17
 package registry
 
@@ -44,7 +44,7 @@ type CustomNode struct {
 	// Models is the node's model list, and it is the upstream's answer rather
 	// than the operator's declaration: a compatible node's models are whatever
 	// its own `/models` returns (SPEC-API-001 §7.4, draft 017 §4.2). It is
-	// carried on the node so one injection reaches every index consumer — the
+	// carried on the node so one injection reaches every index consumer, the
 	// detail route, the catalog, and the data plane all read Provider.Models
 	// and none of them has to know a node's list came from somewhere else.
 	//

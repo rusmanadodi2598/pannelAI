@@ -9,11 +9,11 @@
 //
 // @uses      internal/domain (ModelRef, ComboStrategy, AppError constructors),
 //
-//	sort, strings, time.
+//	sort, time.
 //
-// @reason    The adapater is a routing rule — when it fires, how it rotates,
+// @reason    The adapter is a routing rule, when it fires, how it rotates,
 //
-//	and which models it may name — so it is an aggregate with its own
+//	and which models it may name, so it is an aggregate with its own
 //	invariants rather than a settings blob. Its ordering rule is the
 //	same ComboStrategy.NextOrder the combo round-robin uses, because
 //	the reference rotates both the same way, and duplicating that
@@ -21,12 +21,11 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
 import (
-	"strings"
 	"time"
 )
 
@@ -36,8 +35,8 @@ import (
 // validates adapter models against a "vision" capability, but the capability
 // table is NOT in the embedded registry yet: the reference resolves it from a
 // separate pattern table that the registry port does not carry. Rather than
-// hardcode model-name heuristics here — which would silently mis-classify every
-// model the heuristics do not know — the aggregate takes the predicate as a
+// hardcode model-name heuristics here, which would silently mis-classify every
+// model the heuristics do not know, the aggregate takes the predicate as a
 // dependency, and the catalog supplies it once the capability data lands.
 // Until then the service injects a predicate that rejects everything, so the
 // API never claims a model is vision-capable on no evidence.
@@ -158,16 +157,4 @@ func (a VisionAdapter) NextOrder(state RotationState) ([]string, RotationState) 
 		sortable = append(sortable, ref.String())
 	}
 	return strategy.NextOrder(sortable, 1, state)
-}
-
-// Includes reports whether a model string is one of the adapter's models, which
-// is how the data plane recognises a response identity it must strip (§7.8).
-func (a VisionAdapter) Includes(ref string) bool {
-	target := strings.TrimSpace(ref)
-	for _, model := range a.models {
-		if model.String() == target {
-			return true
-		}
-	}
-	return false
 }

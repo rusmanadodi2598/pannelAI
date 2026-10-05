@@ -12,8 +12,8 @@
 //	thinking-format dispatch from three fields of the same capability
 //	resolution the port already carries for vision and tools
 //	(capabilities.js:562-605). The port reads them from
-//	capability_thinking_tables.go, in the reference's own layer order —
-//	provider override, exact id, ordered pattern, floor — because a
+//	capability_thinking_tables.go, in the reference's own layer order,
+//	provider override, exact id, ordered pattern, floor, because a
 //	reordered walk answers differently for every id two rows match.
 //
 //	The answer is a value the data plane and the panel both read: the
@@ -21,8 +21,8 @@
 //	relay path applies the picked mode in the format named here.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-26
 package registry
 

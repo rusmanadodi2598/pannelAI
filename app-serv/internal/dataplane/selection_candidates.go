@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 
@@ -61,6 +61,7 @@ func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[
 	if policy.UsesRotation() {
 		offset = s.offset(ctx, providerID, len(endpoints), policy.StickyLimit)
 	}
+	var credErr error
 	for i := range endpoints {
 		endpoint := endpoints[(offset+i)%len(endpoints)]
 		if !endpoint.Available(now) {
@@ -81,9 +82,18 @@ func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[
 		}
 		credential, err := s.credential(endpoint, key)
 		if err != nil {
-			return Selection{}, err
+			// An unreadable credential is one row's problem, not the provider's: a
+			// rotated process key leaves stale ciphertext on a single endpoint while
+			// the healthy accounts beside it still answer. Aborting here made one bad
+			// row take the whole provider down. The error is kept so the walk can
+			// report it if nothing else was usable either.
+			credErr = err
+			continue
 		}
 		return Selection{Endpoint: endpoint, Key: key, Credential: credential}, nil
+	}
+	if credErr != nil {
+		return Selection{}, credErr
 	}
 	return Selection{}, domain.NewNoProviderAvailableError("every upstream endpoint for provider " +
 		providerID + " is unavailable, has no usable key, or has spent its budget")

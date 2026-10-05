@@ -12,12 +12,12 @@
 //	the catalog's `?active=true` filter decides whether a provider with no
 //	stored row is still one the router can serve. When those two answered
 //	separately, the filter hid the whole OpenCode free lane from the panel
-//	while the router served it with 200 — so a credential-free provider
+//	while the router served it with 200, so a credential-free provider
 //	looked like it needed configuration it did not need.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-24
 package registry
 

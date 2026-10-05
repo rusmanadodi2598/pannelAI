@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package service
 
@@ -62,8 +62,12 @@ func (f *fakeRouteStore) Park(_ context.Context, proxyID string, _ time.Duration
 	return nil
 }
 
-func (f *fakeRouteStore) Parked(_ context.Context, proxyID string) (bool, error) {
-	return f.parked[proxyID], nil
+func (f *fakeRouteStore) ParkedAll(_ context.Context, proxyIDs []string) (map[string]bool, error) {
+	parked := make(map[string]bool, len(proxyIDs))
+	for _, id := range proxyIDs {
+		parked[id] = f.parked[id]
+	}
+	return parked, nil
 }
 
 type fakePlanSettings struct {

@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 
@@ -53,28 +53,6 @@ func (t UsageTotals) ErrorRate() string {
 	}
 	rate := new(big.Rat).SetFrac(big.NewInt(t.ErrorCount), big.NewInt(t.Requests))
 	return rate.FloatString(errorRatePlaces)
-}
-
-// Add returns the element-wise sum, with the costs summed exactly. It is how a
-// group breakdown is totalled into the summary's own totals, so the parts and
-// the whole are computed the same way instead of by two different rules.
-//
-// The percentiles are carried from the receiver rather than combined: a median
-// of medians is a different and wrong number, so a caller that needs real
-// percentiles reads them from the aggregate that computed them over every row.
-func (t UsageTotals) Add(other UsageTotals) UsageTotals {
-	return UsageTotals{
-		Requests:         t.Requests + other.Requests,
-		TokensIn:         t.TokensIn + other.TokensIn,
-		TokensOut:        t.TokensOut + other.TokensOut,
-		TokensCacheRead:  t.TokensCacheRead + other.TokensCacheRead,
-		TokensCacheWrite: t.TokensCacheWrite + other.TokensCacheWrite,
-		CostUSD:          SumCosts(t.CostUSD, other.CostUSD),
-		LatencyMS:        t.LatencyMS + other.LatencyMS,
-		LatencyP50MS:     t.LatencyP50MS,
-		LatencyP95MS:     t.LatencyP95MS,
-		ErrorCount:       t.ErrorCount + other.ErrorCount,
-	}
 }
 
 // SumCosts adds two cost strings exactly, rendering the result at the column's

@@ -3,7 +3,6 @@
 //
 // @file      internal/registry/capability.go
 // @for       The model capability the registry cannot carry as data yet: whether
-// //
 //
 //	a model reads images.
 //
@@ -28,8 +27,8 @@
 //	corpus generated from capabilities.js itself.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-18
 package registry
 

@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -27,8 +27,8 @@ import (
 )
 
 // Block returns one provider's declaration for a kind, with the format gate
-// applied. A route whose payload depends on the declaration — search reads the
-// parameter names it must send — needs it before it can call Prepare.
+// applied. A route whose payload depends on the declaration, search reads the
+// parameter names it must send, needs it before it can call Prepare.
 func (s *MediaCallService) Block(providerID string, kind domain.MediaKind) (registry.MediaConfig, error) {
 	_, media, err := s.providerBlock(providerID, kind)
 	return media, err

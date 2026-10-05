@@ -3,7 +3,6 @@
 //
 // @file      internal/registry/capability_patterns.go
 // @for       The ordered vision pattern table, ported from the reference's own
-// //
 //
 //	PATTERN_CAPABILITIES.
 //
@@ -21,8 +20,8 @@
 //	rely on it).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-24
 package registry
 

@@ -6,7 +6,7 @@
 // @reason    The quota screen must show what each provider publishes about itself, and
 //
 //	asking providers during that read would spend one outbound call per account
-//	— the N+1 shape AGENTS.md §1.7 blocks on this route, at the owner's
+//	, the N+1 shape AGENTS.md §1.7 blocks on this route, at the owner's
 //	standing instruction. So a worker writes provider answers into a cache and
 //	every read here takes them from it, in one statement for the whole page.
 //	A card can still ask for a live number when the operator wants the instant
@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
 
@@ -190,8 +190,11 @@ func publishedBefore(left, right PublishedWindow) bool {
 }
 
 // publishedAmount reads a stored decimal back as the number the bar is drawn from.
-// An unparseable amount is a corrupt row, not a zero: reporting zero would draw an
-// empty bar under a bucket that may be full.
+//
+// An unparseable amount answers zero, which is the honest limit of what a
+// display-only bar can do: the row is corrupt, the ceiling it belongs to is
+// unknown, and drawing no bar is the same visual answer as drawing an empty one.
+// The value never reaches accounting, which reads the stored strings directly.
 func publishedAmount(raw string) float64 {
 	parsed, err := strconv.ParseFloat(raw, 64)
 	if err != nil {

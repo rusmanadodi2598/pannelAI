@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package reasoning
 
@@ -27,6 +27,7 @@ import (
 	"errors"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 )
 
@@ -64,7 +65,7 @@ func NewApplier(settings SettingsReader) (*Applier, error) {
 
 // Apply resolves the call's reasoning config and writes it into body. It
 // answers the body unchanged when the model does not reason, when no config is
-// configured or requested, or when the body cannot be read — an optional
+// configured or requested, or when the body cannot be read, an optional
 // control must never fail an otherwise valid upstream call.
 func (a *Applier) Apply(ctx context.Context, body []byte, call Call) []byte {
 	if a == nil || len(body) == 0 {
@@ -116,6 +117,12 @@ func (a *Applier) resolve(ctx context.Context, call Call) *Config {
 	}
 	settings, err := a.settings.Settings(ctx)
 	if err != nil {
+		// The reasoning control is optional and the call still serves, but a
+		// per-provider mode that silently stopped applying is only findable if the
+		// read failure is written down (AGENTS.md §1.6). The applier carries no
+		// logger, so this goes to the process logger the composition root set.
+		logx.Degraded(nil, "reasoning settings unreadable, thinking control skipped", err,
+			"provider_id", call.ProviderID, "model", call.ModelID)
 		return nil
 	}
 	mode, found := settings.Reasoning.ThinkingFor(call.ProviderID)
@@ -185,8 +192,8 @@ var nativeOnlyFormats = map[string]bool{
 // resolveFormat names the shape the config is written in: the model's own
 // declared format, unless the wire cannot carry it, and the wire's native
 // format otherwise. It is the reference's resolveFormat, plus the Responses
-// wire's own rule: that wire reads one member only — reasoning:{effort,summary}
-// — so the wire decides the shape and the declared format never names the chat
+// wire's own rule: that wire reads one member only (reasoning:{effort,summary}),
+// so the wire decides the shape and the declared format never names the chat
 // field there, which is how the reasoning control died on muse (the upstream
 // ignores reasoning_effort; the reference's executors rewrite it into the
 // object instead).

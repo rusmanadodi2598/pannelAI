@@ -12,8 +12,8 @@
 //	saying so.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 
@@ -173,8 +173,8 @@ func (o *OAuth) SupportsFlow() bool {
 // hands that URL to the operator, and then polls the token endpoint with the
 // state until the vendor grants a token.
 //
-// It is a device flow in shape and in the panel's eyes — the operator opens a
-// link and the screen polls — but it shares no wire with the PKCE round the
+// It is a device flow in shape and in the panel's eyes, the operator opens a
+// link and the screen polls, but it shares no wire with the PKCE round the
 // generic device flow runs: no challenge, no nonce, and the round is minted by
 // the vendor rather than locally. That difference is why it gets its own name
 // instead of a flag on the older predicate.

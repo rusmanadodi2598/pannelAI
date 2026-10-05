@@ -12,14 +12,14 @@
 //
 // @reason    The read reaches the network through one seam, so the whole routing
 //
-//	decision — the feature gate, the credential kind, the ceiling that is
-//	not a zero — is testable without a provider. Draft 036 §6 is the
+//	decision, the feature gate, the credential kind, the ceiling that is
+//	not a zero, is testable without a provider. Draft 036 §6 is the
 //	definition of done: a spent account and an unlimited account must
 //	not render as the same card.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package service
 

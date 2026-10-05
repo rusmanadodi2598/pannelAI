@@ -13,18 +13,19 @@
 //
 //	that answers "not yet" with a 404, an identity read that fails after
 //	the login already succeeded, a token handed out twice. Each of those
-//	lives here, beside the one state rule they all turn on — the staged
+//	lives here, beside the one state rule they all turn on, the staged
 //	round is consumed only once the upstream has actually issued.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package service
 
 import (
 	"context"
 	"encoding/json"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -32,7 +33,7 @@ import (
 )
 
 // OAuthDevicePollInput is one poll attempt: the provider and the device code the
-// start returned. The PKCE verifier is not a client secret here — the gateway
+// start returned. The PKCE verifier is not a client secret here, the gateway
 // staged it and spends it on the upstream call itself.
 type OAuthDevicePollInput struct {
 	ProviderID string
@@ -86,12 +87,18 @@ func (s *OAuthFlowService) DevicePoll(ctx context.Context, in OAuthDevicePollInp
 	}
 
 	// Consume before connecting: a token the upstream hands out twice is stored once.
-	if _, _, err := s.states.Take(ctx, code); err != nil {
+	// The boolean is the whole guard, so a poll that arrives after another already
+	// took the state stops here instead of connecting the same credential a second
+	// time, which for a vendor that names no account identity would mean a second
+	// endpoint row for one login.
+	if _, taken, err := s.states.Take(ctx, code); err != nil {
 		return OAuthDevicePoll{}, err
+	} else if !taken {
+		return OAuthDevicePoll{}, domain.NewValidationError("the device code is unknown, expired, or already used")
 	}
 
 	now := s.clock()
-	expires := floorDeviceExpiry(token.ExpiresAt, now)
+	expires := oauthhttp.FloorDeviceExpiry(token.ExpiresAt, now)
 	connect, err := s.connectAccount(ctx, provider.ID, connectTokens{
 		AccessToken: token.AccessToken, RefreshToken: token.RefreshToken, ExpiresAt: &expires,
 	}, s.deviceAccount(ctx, oauth, token, payload.MachineID), "", now)
@@ -109,13 +116,13 @@ func (s *OAuthFlowService) DevicePoll(ctx context.Context, in OAuthDevicePollInp
 // The two shapes differ in what the poll sends and in who minted the handle: the
 // PKCE round polls with a nonce and the verifier this service generated, the
 // state round polls with the value the vendor handed back at start.
-func (s *OAuthFlowService) pollRound(ctx context.Context, oauth *registry.OAuth, payload oauthDeviceStatePayload) (DeviceTokenResponse, bool, error) {
+func (s *OAuthFlowService) pollRound(ctx context.Context, oauth *registry.OAuth, payload oauthDeviceStatePayload) (oauthhttp.DeviceTokenResponse, bool, error) {
 	if !oauth.StateExchangeFlow() {
 		return s.tokens.DevicePoll(ctx, oauth.DeviceTokenURL, payload.Nonce, payload.CodeVerifier)
 	}
-	client, ok := s.tokens.(StateRoundClient)
+	client, ok := s.tokens.(oauthhttp.StateRoundClient)
 	if !ok {
-		return DeviceTokenResponse{}, false, domain.NewInternalError("the state round needs a token client that speaks it")
+		return oauthhttp.DeviceTokenResponse{}, false, domain.NewInternalError("the state round needs a token client that speaks it")
 	}
 	return client.StatePoll(ctx, oauth, payload.State)
 }
@@ -127,7 +134,7 @@ func (s *OAuthFlowService) pollRound(ctx context.Context, oauth *registry.OAuth,
 // (connectionsRepo.js:133) and otherwise inserts a fresh row per login. A constant
 // stand-in here would be a key every account of the region shares, so the second
 // login would spend the first one's credential. The PKCE round does read a user id
-// from the vendor, so its long-standing prefix stays exactly as it was — stored
+// from the vendor, so its long-standing prefix stays exactly as it was, stored
 // accounts are matched on this string.
 func deviceAccountEmail(oauth *registry.OAuth, userID string) string {
 	if oauth.StateExchangeFlow() {
@@ -142,25 +149,30 @@ func deviceAccountEmail(oauth *registry.OAuth, userID string) string {
 // already granted. A vendor that states nothing in either place leaves the account
 // with no identity, which is the honest answer and the one that keeps the next login
 // a separate account.
-func (s *OAuthFlowService) deviceAccount(ctx context.Context, oauth *registry.OAuth, token DeviceTokenResponse, machineID string) domain.EndpointAccount {
-	account := domain.EndpointAccount{
-		Name:        token.UserID,
-		Email:       deviceAccountEmail(oauth, token.UserID),
-		MachineID:   machineID,
-		WorkspaceID: token.UserID,
+func (s *OAuthFlowService) deviceAccount(ctx context.Context, oauth *registry.OAuth, token oauthhttp.DeviceTokenResponse, machineID string) domain.EndpointAccount {
+	synthetic := deviceAccountEmail(oauth, token.UserID)
+	name, email := token.UserID, synthetic
+	if oauth.UserInfoURL != "" && token.AccessToken != "" {
+		if identity, err := s.tokens.UserInfo(ctx, oauth.UserInfoURL, token.AccessToken); err == nil {
+			if identity.Name != "" {
+				name = identity.Name
+			}
+			if identity.Email != "" {
+				email = identity.Email
+			}
+		}
 	}
-	if oauth.UserInfoURL == "" || token.AccessToken == "" {
+	account, err := domain.NewEndpointAccount(domain.EndpointAccountInput{
+		Name: name, Email: email, MachineID: machineID, WorkspaceID: token.UserID,
+	})
+	if err == nil {
 		return account
 	}
-	identity, err := s.tokens.UserInfo(ctx, oauth.UserInfoURL, token.AccessToken)
-	if err != nil {
-		return account
-	}
-	if identity.Name != "" {
-		account.Name = identity.Name
-	}
-	if identity.Email != "" {
-		account.Email = identity.Email
-	}
+	// A vendor that answers an unusable address still has a granted login worth
+	// keeping, so the identity falls back to the synthetic one this path would
+	// have used with no userinfo at all rather than losing the whole account.
+	account, _ = domain.NewEndpointAccount(domain.EndpointAccountInput{
+		Name: name, Email: synthetic, MachineID: machineID, WorkspaceID: token.UserID,
+	})
 	return account
 }

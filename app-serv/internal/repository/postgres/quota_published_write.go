@@ -15,13 +15,13 @@
 //	bucket from one poll beside a plan from another, and a statement per bucket
 //	would make one poll of a hundred buckets a hundred round trips
 //	(AGENTS.md §1.7, §2.2). These statements change for a different reason than
-//	the reads in quota_published.go — a new scheduling rule, not a new display
-//	column — so they are a file of their own, which also keeps each half inside
+//	the reads in quota_published.go, a new scheduling rule, not a new display
+//	column, so they are a file of their own, which also keeps each half inside
 //	the §1.1 line budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package postgres
 
@@ -45,7 +45,7 @@ import (
 // in this answer" is bounded by the answer's own size, so it costs one statement
 // whatever the cache holds (§1.7).
 //
-// Storing an answer is also the success signal, so the failure run resets here —
+// Storing an answer is also the success signal, so the failure run resets here,
 // that is what ClearFailure would have been, folded in because no other caller
 // can meaningfully clear a failure without an answer to prove it. The next
 // interval is deliberately not written: scheduling is the worker's decision and
@@ -128,7 +128,7 @@ ON CONFLICT (endpoint_id) DO UPDATE
 // to numeric in SQL, so no value passes through a float on the way to the column
 // (SPEC-API-001 §4).
 //
-// An answer with no buckets runs no statement here — the prune below is what
+// An answer with no buckets runs no statement here, the prune below is what
 // clears the endpoint's rows in that case.
 func upsertPublishedWindows(ctx context.Context, tx pgx.Tx, answer domain.PublishedAnswer) error {
 	if len(answer.Windows) == 0 {

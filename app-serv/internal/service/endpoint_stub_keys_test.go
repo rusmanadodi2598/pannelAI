@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package service
 
@@ -119,7 +119,7 @@ func (s *memEndpointStore) FindOAuthEndpoint(_ context.Context, providerID, emai
 			continue
 		}
 		account := endpoint.Account()
-		if (email != "" && account.Email == email) || (workspaceID != "" && account.WorkspaceID == workspaceID) {
+		if (email != "" && account.Email().String() == email) || (workspaceID != "" && account.WorkspaceID() == workspaceID) {
 			return endpoint.ID(), nil
 		}
 	}

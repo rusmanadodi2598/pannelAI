@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package schema
 
@@ -48,8 +48,8 @@ func ProviderModelsFrom(entry registry.Provider) []ProviderModelResponse {
 // (page.js:186-203).
 //
 // Both halves of a provider's model set are read. A synthesized custom node
-// carries no registry models at all — the overlay fills only its transport and
-// display fields — so without the operator's declared rows its detail would
+// carries no registry models at all, the overlay fills only its transport and
+// display fields, so without the operator's declared rows its detail would
 // answer no level set and the panel would hide the picker on exactly the screen
 // whose rows the suffix is copied from. A registry provider's declared rows
 // join its registry models in the same union, for the same reason: the panel

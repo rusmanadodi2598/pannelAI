@@ -6,13 +6,13 @@
 // @reason    This surface refuses in the Connect-RPC shape, nesting the reason and the localized
 //
 //	sentence inside the first detail's own debug block, so reading a refusal
-//	here is a different job from reading a quota window — and the reference
+//	here is a different job from reading a quota window, and the reference
 //	quotes the provider's own sentence, because that sentence is the only
 //	part of a rejection an operator can act on.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -27,7 +27,7 @@ import (
 )
 
 // kimiFailure words the three refusals this surface gives: an expired session, an account
-// with no usage entitlement, and anything else the API said — quoting the provider's own sentence
+// with no usage entitlement, and anything else the API said, quoting the provider's own sentence
 // rather than a bare status, because that sentence is what the operator can act on.
 func kimiFailure(response usageResponse) Result {
 	if response.status == http.StatusUnauthorized {

@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -92,7 +92,7 @@ func TestEmbeddingsService_NodeEmbeddingsMedia(t *testing.T) {
 			if err != nil {
 				t.Fatalf("mediaConfig() error = %v", err)
 			}
-			target, headers, err := dataplane.MediaTarget(media, baseURL, provider.Credential{APIKey: "sk-node"}, nil)
+			target, headers, err := dataplane.MediaTarget(media, baseURL, provider.StaticKey("", "", "sk-node"), nil)
 			if err != nil {
 				t.Fatalf("MediaTarget() error = %v", err)
 			}

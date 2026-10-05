@@ -10,14 +10,14 @@
 // @uses      internal/domain, context.
 // @reason    The depth and expansion guards live with the combo walk; the member
 //
-//	walk that consumes them is a separate concern — a member may be a
-//	reference, an alias, or a nested combo — so it sits here, apart from
+//	walk that consumes them is a separate concern, a member may be a
+//	reference, an alias, or a nested combo, so it sits here, apart from
 //	the budget the caller owns. Separated at the AGENTS.md §1.1 line
 //	limit.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 

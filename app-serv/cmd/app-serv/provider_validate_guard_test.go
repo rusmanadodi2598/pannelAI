@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -59,8 +59,8 @@ func TestValidateNode_RefusesADeniedDestination(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ValidateNode() error = %v", err)
 	}
-	if outcome.State != domain.EndpointTestFail {
-		t.Fatalf("State = %q, want %q for a refused destination", outcome.State, domain.EndpointTestFail)
+	if outcome.State != string(domain.EndpointTestFail) {
+		t.Fatalf("State = %q, want %q for a refused destination", outcome.State, string(domain.EndpointTestFail))
 	}
 	if outcome.Message == "" {
 		t.Fatal("a refusal must carry the reason")

@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 
@@ -161,21 +161,18 @@ func TestDecimal_JSONRoundTrip(t *testing.T) {
 	}
 }
 
-// TestDecimal_MulIntAndSub covers the two operations the aggregation and the
-// cap comparison use.
-func TestDecimal_MulIntAndSub(t *testing.T) {
+// TestDecimal_Sub covers the exact subtraction a cap comparison is built from:
+// no rounding, and a result allowed to go below zero.
+func TestDecimal_Sub(t *testing.T) {
 	cases := []struct {
-		name       string
-		base       string
-		multiplier int64
-		subtract   string
-		want       string
+		name     string
+		base     string
+		subtract string
+		want     string
 	}{
-		{"zero multiplier", "1.5", 0, "", "0.00000000"},
-		{"identity", "0.0042", 1, "", "0.00420000"},
-		{"scaled", "0.0042", 1000, "", "4.20000000"},
-		{"exact subtraction", "1", 1, "0.1", "0.90000000"},
-		{"goes negative", "0.5", 1, "1", "-0.50000000"},
+		{"identity", "0.0042", "", "0.00420000"},
+		{"exact subtraction", "1", "0.1", "0.90000000"},
+		{"goes negative", "0.5", "1", "-0.50000000"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -183,13 +180,13 @@ func TestDecimal_MulIntAndSub(t *testing.T) {
 			if err != nil {
 				t.Fatalf("base: %v", err)
 			}
-			got := base.MulInt(tc.multiplier)
+			got := base
 			if tc.subtract != "" {
 				other, err := ParseDecimal(tc.subtract)
 				if err != nil {
 					t.Fatalf("subtract: %v", err)
 				}
-				got = got.Sub(other)
+				got = base.Sub(other)
 			}
 			if got.String() != tc.want {
 				t.Fatalf("result = %q, want %q", got.String(), tc.want)

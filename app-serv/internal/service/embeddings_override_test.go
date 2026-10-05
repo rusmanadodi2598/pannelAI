@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -43,8 +43,8 @@ func (r stubOverrideReader) MediaBaseURL(_ context.Context, providerID string, k
 }
 
 // embeddingEntry is the registry entry the resolution cases read. The
-// embedding block is always present — an entry that lacks it is the separate
-// not-routable case — and its base URL is whatever the case declares.
+// embedding block is always present, an entry that lacks it is the separate
+// not-routable case, and its base URL is whatever the case declares.
 func embeddingEntry(baseURL string) registry.Provider {
 	return registry.Provider{
 		ID: "openai", Display: registry.Display{Name: "OpenAI"},

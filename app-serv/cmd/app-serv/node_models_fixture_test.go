@@ -6,15 +6,15 @@
 //	fixed credential, and the connector set.
 //
 // @uses      internal/provider, context, testing.
-// @reason    Two test files cover the adapter — the parse/fallback cases and the
+// @reason    Two test files cover the adapter, the parse/fallback cases and the
 //
-//	cache window — and both need the same three doubles. Sharing them here
+//	cache window, and both need the same three doubles. Sharing them here
 //	keeps each test file about its own assertions, and keeps both inside
 //	the AGENTS.md §1.1 line budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 

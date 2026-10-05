@@ -11,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package router
 
@@ -36,10 +36,12 @@ type Mux struct {
 
 // Deps holds the handlers the router wires up.
 //
-// Every handler is a pointer so an unset one is detectable, and New refuses to
-// register a route whose handler is missing: a nil handler would compile and
-// then panic on the first request, which is the failure mode the composition
-// root cannot see at boot.
+// Every handler is a pointer so an unset one is visible to the composition root,
+// which calls Deps.AssertWired before New: a deployment missing any handler a
+// route reaches fails at boot and names what is missing, rather than answering
+// 500 on that route the first time someone clicks it. The inline guards in New
+// cover the groups whose routes are conditional (auth, OAuth) and the data-plane
+// dependencies, so a mux can still be assembled for a narrower surface.
 type Deps struct {
 	System           *handler.SystemHandler
 	Auth             *handler.AuthHandler

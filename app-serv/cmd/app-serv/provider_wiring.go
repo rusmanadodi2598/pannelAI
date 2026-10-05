@@ -15,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package main
 
@@ -39,8 +39,8 @@ import (
 // silent gap.
 //
 // egressClient is the guarded client the egress policy built (foundation
-// wiring), so a connector's own outbound calls — the Qoder Personal Access
-// Token exchange above all — ride the same allowlist every other upstream call
+// wiring), so a connector's own outbound calls, the Qoder Personal Access
+// Token exchange above all, ride the same allowlist every other upstream call
 // does (draft 042 R07). It is why the foundation is built before this in the
 // boot sequence.
 //
@@ -90,7 +90,7 @@ func buildProviderRuntime(egressClient *http.Client) (*registry.Index, *provider
 	// this service to a stream, and the vendor answers a plain OpenAI message list with
 	// `11101 invalid request`, so the body has to be rebuilt before it leaves. Forced
 	// streaming is declared by a connector here rather than read from the registry entry.
-	// Everything else about the provider — URL, headers, bearer credential — is the plain
+	// Everything else about the provider, URL, headers, bearer credential, is the plain
 	// OpenAI wire the fallback already serves.
 	for _, id := range []string{"codebuddy-cn", "codebuddy-intl"} {
 		entry, ok := idx.Provider(id)

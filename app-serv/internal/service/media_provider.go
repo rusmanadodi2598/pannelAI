@@ -18,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -109,7 +109,7 @@ func (s *MediaProviderService) List(ctx context.Context, kind domain.MediaKind) 
 }
 
 // Detail returns every media kind one provider offers, or a not-found error
-// when the id is unknown or the provider offers none — the route is the media
+// when the id is unknown or the provider offers none, the route is the media
 // surface, so a provider with no media service is not on it.
 func (s *MediaProviderService) Detail(ctx context.Context, providerID string) ([]MediaServiceView, error) {
 	entry, ok := s.index.Provider(strings.TrimSpace(providerID))
@@ -132,8 +132,8 @@ func (s *MediaProviderService) Detail(ctx context.Context, providerID string) ([
 
 // Patch saves one provider's per-kind override and returns the resolved view.
 //
-// The save is refused when it would leave the provider unusable — no base URL
-// from either source — because §7.10 forbids a silent cloud fallback and a
+// The save is refused when it would leave the provider unusable, no base URL
+// from either source, because §7.10 forbids a silent cloud fallback and a
 // provider that cannot be dialed is exactly that (§7.10's "missing base_url ⇒
 // VALIDATION_ERROR").
 func (s *MediaProviderService) Patch(ctx context.Context, providerID string, draft MediaOverrideDraft) (MediaServiceView, error) {
@@ -167,8 +167,8 @@ func (s *MediaProviderService) Patch(ctx context.Context, providerID string, dra
 	return view, nil
 }
 
-// The resolution of registry defaults and stored overrides — viewsFor,
-// viewFor, MediaBaseURL, overrideIndex, and the kind vocabulary mapping — lives
+// The resolution of registry defaults and stored overrides, viewsFor,
+// viewFor, MediaBaseURL, overrideIndex, and the kind vocabulary mapping, lives
 // in media_provider_resolve.go: every read asks that question, and this file is
 // the use cases that ask it.
 

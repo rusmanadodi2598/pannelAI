@@ -13,8 +13,8 @@
 //
 // @reason    SPEC-API-001 §7.8 decides a served request's model order here, so
 //
-//	every branch — a candidate that reads images, one that cannot, a
-//	list holding both, a disabled adapter, the rotation — is pinned
+//	every branch, a candidate that reads images, one that cannot, a
+//	list holding both, a disabled adapter, the rotation, is pinned
 //	against the same in-memory doubles the adapter's own tests use, and
 //	the rotation write's advisory contract is stated by a test that
 //	makes the store fail.
@@ -25,7 +25,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -83,7 +83,7 @@ const (
 
 // newAugmenter wires the seam over the adapter fixture and seeds the two custom
 // rows the tests aim their requests at. The predicate is permissive because a
-// candidate the catalog lists is never judged by it — that is the rule under test.
+// candidate the catalog lists is never judged by it, that is the rule under test.
 func newAugmenter(t *testing.T, ctx context.Context, rotation repository.VisionRotationStore) (*VisionAugmenter, *VisionAdapterService) {
 	t.Helper()
 	service, _, catalog := newAdapterFixture(t, ctx, acceptAll)
@@ -150,7 +150,7 @@ func TestVisionAugmenter_DeclinesWhenTheAdapterIsDisabled(t *testing.T) {
 
 // TestVisionAugmenter_BlindCandidateIsPutBehindTheAdapter pins the case the
 // adapter exists for: nothing the request can be served by reads images, so the
-// adapter goes first — the only position that can save it, because a blind
+// adapter goes first, the only position that can save it, because a blind
 // candidate that answers 200 ends the walk before anything else is tried.
 func TestVisionAugmenter_BlindCandidateIsPutBehindTheAdapter(t *testing.T) {
 	ctx := context.Background()
@@ -196,7 +196,7 @@ func TestVisionAugmenter_CapableCandidateOutranksTheAdapter(t *testing.T) {
 
 // TestVisionAugmenter_AdvisoryRotationFailureDoesNotBlockServing pins the
 // rotation store's contract: a store that cannot answer costs the rotation,
-// never the request — the augmentation still applies.
+// never the request, the augmentation still applies.
 func TestVisionAugmenter_AdvisoryRotationFailureDoesNotBlockServing(t *testing.T) {
 	ctx := context.Background()
 	augmenter, service := newAugmenter(t, ctx, failingVisionRotation{})

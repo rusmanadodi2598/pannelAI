@@ -16,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 
@@ -54,12 +54,12 @@ type ResponsesRequest struct {
 	Instructions    string              `json:"instructions,omitempty"`
 	Stream          bool                `json:"stream,omitempty"`
 	Tools           []ResponsesToolDecl `json:"tools,omitempty" validate:"dive"`
-	Temperature     *float64            `json:"temperature,omitempty"`
-	TopP            *float64            `json:"top_p,omitempty"`
+	Temperature     *float64            `json:"temperature,omitempty" validate:"omitempty,gte=0,lte=2"`
+	TopP            *float64            `json:"top_p,omitempty" validate:"omitempty,gte=0,lte=1"`
 	MaxOutputTokens *int                `json:"max_output_tokens,omitempty" validate:"omitempty,gte=1"`
 	Store           *bool               `json:"store,omitempty"`
-	Include         []string            `json:"include,omitempty"`
-	PromptCacheKey  string              `json:"prompt_cache_key,omitempty"`
+	Include         []string            `json:"include,omitempty" validate:"dive,max=64"`
+	PromptCacheKey  string              `json:"prompt_cache_key,omitempty" validate:"max=512"`
 	Reasoning       json.RawMessage     `json:"reasoning,omitempty"`
 }
 
@@ -69,7 +69,7 @@ type ResponsesInput struct {
 	// Text is the bare-string form, which is one user message's content.
 	Text string
 	// Items is the array form.
-	Items []ResponsesItem
+	Items []ResponsesItem `json:"items,omitempty" validate:"dive"`
 }
 
 // UnmarshalJSON accepts both permitted shapes of `input`.
@@ -99,16 +99,16 @@ func (i ResponsesInput) MarshalJSON() ([]byte, error) {
 // ResponsesItem is one entry of the input array. One struct carries every item
 // kind, discriminated by Type, matching how the wire frames it.
 type ResponsesItem struct {
-	Type      string             `json:"type,omitempty"`
-	Role      string             `json:"role,omitempty"`
+	Type      string             `json:"type,omitempty" validate:"max=64"`
+	Role      string             `json:"role,omitempty" validate:"max=32"`
 	Content   ResponsesItemBody  `json:"content,omitempty"`
-	CallID    string             `json:"call_id,omitempty"`
-	Name      string             `json:"name,omitempty"`
+	CallID    string             `json:"call_id,omitempty" validate:"max=128"`
+	Name      string             `json:"name,omitempty" validate:"max=128"`
 	Arguments string             `json:"arguments,omitempty"`
 	Output    json.RawMessage    `json:"output,omitempty"`
-	Summary   []ResponsesSummary `json:"summary,omitempty"`
-	Status    string             `json:"status,omitempty"`
-	ID        string             `json:"id,omitempty"`
+	Summary   []ResponsesSummary `json:"summary,omitempty" validate:"dive"`
+	Status    string             `json:"status,omitempty" validate:"max=32"`
+	ID        string             `json:"id,omitempty" validate:"max=128"`
 }
 
 // ResponsesItemBody is an item's `content` union: a bare string or an array of
@@ -116,7 +116,7 @@ type ResponsesItem struct {
 // Responses part names and the string-valued `image_url` differ from OpenAI's.
 type ResponsesItemBody struct {
 	Text  string
-	Parts []ResponsesItemPart
+	Parts []ResponsesItemPart `validate:"dive"`
 }
 
 // UnmarshalJSON accepts both permitted shapes of an item's content.
@@ -148,16 +148,16 @@ func (b ResponsesItemBody) IsEmpty() bool { return b.Text == "" && len(b.Parts) 
 // ResponsesItemPart is one part of an item's content. `image_url` is a bare
 // string here rather than OpenAI's object, which is the wire's own shape.
 type ResponsesItemPart struct {
-	Type     string `json:"type"`
+	Type     string `json:"type" validate:"required,max=64"`
 	Text     string `json:"text,omitempty"`
-	ImageURL string `json:"image_url,omitempty"`
-	FileID   string `json:"file_id,omitempty"`
-	Detail   string `json:"detail,omitempty"`
+	ImageURL string `json:"image_url,omitempty" validate:"max=2048"`
+	FileID   string `json:"file_id,omitempty" validate:"max=128"`
+	Detail   string `json:"detail,omitempty" validate:"max=32"`
 }
 
 // ResponsesSummary is one entry of a reasoning item's summary.
 type ResponsesSummary struct {
-	Type string `json:"type,omitempty"`
+	Type string `json:"type,omitempty" validate:"max=64"`
 	Text string `json:"text,omitempty"`
 }
 
@@ -165,8 +165,8 @@ type ResponsesSummary struct {
 // `function` wrapper, so a declaration that still carries one is accepted too: a
 // client may send either, and both mean the same tool.
 type ResponsesToolDecl struct {
-	Type        string          `json:"type,omitempty"`
-	Name        string          `json:"name,omitempty"`
+	Type        string          `json:"type,omitempty" validate:"max=64"`
+	Name        string          `json:"name,omitempty" validate:"max=128"`
 	Description string          `json:"description,omitempty"`
 	Parameters  json.RawMessage `json:"parameters,omitempty"`
 	Strict      *bool           `json:"strict,omitempty"`

@@ -1,4 +1,4 @@
-// Antigravity weekly tests: the quota summary alone — its two envelopes, the four ways a
+// Antigravity weekly tests: the quota summary alone, its two envelopes, the four ways a
 // bucket names its window, and the rows it is allowed to publish.
 //
 // @file      internal/service/quotafetch/antigravity_weekly_test.go
@@ -6,13 +6,13 @@
 // @uses      internal/service/quotafetch, context, net/http, strings, testing, time
 // @reason    The summary answers under two envelopes and classifies a window by more than one
 //
-//	field, so the four row names it produces — and the disabled buckets that
-//	must not produce a fifth — are what a card cannot recover from getting
+//	field, so the four row names it produces, and the disabled buckets that
+//	must not produce a fifth, are what a card cannot recover from getting
 //	wrong.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

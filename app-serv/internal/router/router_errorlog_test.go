@@ -11,13 +11,13 @@
 //	it lacked was the "why", so a media 502 or an OAuth callback 500
 //	named nothing an operator could act on. The code travels from the
 //	envelope writers to the logging recorder through the writer chain, so
-//	these tests drive the real mux rather than the recorder alone — the
-//	envelope middleware's forwarding is exactly what they pin — and they
+//	these tests drive the real mux rather than the recorder alone, the
+//	envelope middleware's forwarding is exactly what they pin, and they
 //	pin the negative case too: a served request must carry no code field.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package router
 
@@ -54,7 +54,7 @@ func accessLine(t *testing.T, buffer *bytes.Buffer) string {
 
 // TestRoutes_AccessLogNamesTheFailureCode pins register G9: a failed request's
 // access line carries the machine code beside the request id, whichever envelope
-// wrote it — a handler's management error, the mux's own 404/405, or a data-plane
+// wrote it, a handler's management error, the mux's own 404/405, or a data-plane
 // error. The media-wired fixture is the one router that carries both a
 // management and a data-plane route, so one table can cover all three writers.
 func TestRoutes_AccessLogNamesTheFailureCode(t *testing.T) {

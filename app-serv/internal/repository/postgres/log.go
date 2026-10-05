@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 
@@ -112,6 +112,11 @@ func (r *LogRepository) List(ctx context.Context, filter domain.LogFilter, q rep
 		}
 		total = rowTotal
 		entries = append(entries, entry)
+	}
+	if err := rows.Err(); err != nil {
+		// A driver error mid-stream ends Next() quietly. Without this the page
+		// that was truncated by the failure is answered as a complete one.
+		return nil, 0, translateLogError(err)
 	}
 	if len(entries) == 0 {
 		count, err := r.count(ctx, filter)

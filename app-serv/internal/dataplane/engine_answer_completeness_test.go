@@ -12,13 +12,13 @@
 //
 //	answers 200 with an empty body (measured live on
 //	muse-spark-1.3-contributor-free, 2026-09-28), and the combo walk only
-//	leaves a member on an error. Pinning which empty answers count — and
-//	which are still an answer — is what keeps the walk from failing over a
+//	leaves a member on an error. Pinning which empty answers count, and
+//	which are still an answer, is what keeps the walk from failing over a
 //	reply the client asked for.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package dataplane
 

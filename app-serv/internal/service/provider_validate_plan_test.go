@@ -9,13 +9,13 @@
 //	"this provider does not declare a validation endpoint" while the
 //	reference could check most of them. The plan is a small pure function,
 //	so it is asserted twice: as a table of shapes, and against every entry
-//	the embedded document declares — the second is the one that would have
+//	the embedded document declares, the second is the one that would have
 //	caught the original gap, because it names the providers left uncovered
 //	instead of trusting a hand-written sample.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -110,7 +110,7 @@ func TestPlanFor_Shapes(t *testing.T) {
 // It does not demand 100%: a provider whose base URL is neither a chat path nor a
 // models path genuinely has no checkable surface without a connector, and
 // reporting that is honest. What it pins is that the count is a known figure and
-// that the Anthropic-wire family — the one draft §4.6 names as the common case —
+// that the Anthropic-wire family, the one draft §4.6 names as the common case,
 // is covered.
 func TestPlanFor_CoversMostOfTheRealRegistry(t *testing.T) {
 	index, err := registry.Load()

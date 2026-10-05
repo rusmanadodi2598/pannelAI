@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
 
@@ -65,7 +65,7 @@ func TestPublishedQuotaWorkerStillTreatsASentenceAsAnAnswer(t *testing.T) {
 		t.Fatalf("sweep polled = %d, want 1: a provider that spoke answered", polled)
 	}
 	if delta := world.store.attempts["ep_speak"].FailureDelta; delta != 0 {
-		t.Fatalf("failure delta = %d, want 0 — this is the difference between an error and an answer", delta)
+		t.Fatalf("failure delta = %d, want 0, this is the difference between an error and an answer", delta)
 	}
 }
 

@@ -17,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 
@@ -150,16 +150,22 @@ func (r *EndpointRepository) DeleteKey(ctx context.Context, endpointID, keyID st
 	return nil
 }
 
-// RecordKeyHealth persists a key's circuit-breaker state after an upstream call.
-// It touches health columns only: a routing outcome must not rewrite a label, a
-// priority, or the credential it just failed to spend.
+// RecordKeyHealth persists a key's circuit-breaker transition after an upstream
+// call. It touches health columns only: a routing outcome must not rewrite a
+// label, a priority, or the credential it just failed to spend.
+//
+// The error counter is applied by the database, not written from the aggregate.
+// A concurrent pair of failures on one key each loaded the same starting value,
+// and two absolute writes would land as one error counted: the breaker would
+// under-count and its backoff would shrink. A reset is still written as a reset,
+// because clearing to zero twice is the same state as clearing once.
 func (r *EndpointRepository) RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error {
 	const q = `
 UPDATE upstream_keys
    SET status = $1,
        last_used_at = $2,
        last_error = $3,
-       consecutive_errors = $4,
+       consecutive_errors = CASE WHEN $4::boolean THEN 0 ELSE consecutive_errors + 1 END,
        rate_limited_until = $5,
        updated_at = $6
  WHERE id = $7 AND endpoint_id = $8`
@@ -170,7 +176,7 @@ UPDATE upstream_keys
 		lastError = &message
 	}
 	tag, err := r.pool.Exec(ctx, q, string(key.Status()), key.LastUsedAt(), lastError,
-		key.ConsecutiveErrors(), key.RateLimitedUntil(), key.UpdatedAt(),
+		key.ConsecutiveErrors() == 0, key.RateLimitedUntil(), key.UpdatedAt(),
 		key.ID(), key.EndpointID())
 	if err != nil {
 		return translateKeyError(err)
@@ -186,7 +192,7 @@ UPDATE upstream_keys
 //
 // It takes the provider's rows under a lock and refuses a set that does not name
 // exactly the endpoints currently stored, because assigning a subset would leave
-// the remainder holding their old numbers and two endpoints claiming one slot —
+// the remainder holding their old numbers and two endpoints claiming one slot,
 // the collision this method exists to prevent. The caller therefore sends the
 // complete new order rather than one endpoint's new number.
 func (r *EndpointRepository) Reorder(ctx context.Context, providerID string, orderedIDs []string) error {

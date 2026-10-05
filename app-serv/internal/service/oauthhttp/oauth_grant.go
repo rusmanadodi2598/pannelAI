@@ -1,6 +1,6 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_grant.go
+// @file      internal/service/oauthhttp/oauth_grant.go
 // @for       The token-endpoint wire types: one grant rendered as form or as
 //
 //	JSON, one typed answer, and the refusal mapping.
@@ -15,13 +15,15 @@
 //	disagreement stays at this boundary instead of reaching the flow.
 //	Empty fields are omitted from either rendering, which is what lets
 //	the same type carry a code exchange, a refresh grant, and a device
-//	poll without a per-grant struct trio.
+//	poll without a per-grant struct trio. The net/http import is egress only,
+//
+//	so a worker can call this the same way a route does (AGENTS.md §1.5).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
-package service
+package oauthhttp
 
 import (
 	"context"

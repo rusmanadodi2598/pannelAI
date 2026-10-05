@@ -12,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
 
@@ -26,8 +26,8 @@ import (
 
 // TestQuotaService_PublishedUsageCredential pins which half of the credential pair
 // the read fills: an account token must not arrive as a key, or a provider would be
-// asked with a bearer it did not sell. It also pins that the account's own facts —
-// the project a cloudcode family meters, the email a keyless provider bills by —
+// asked with a bearer it did not sell. It also pins that the account's own facts,
+// the project a cloudcode family meters, the email a keyless provider bills by,
 // reach the fetcher, because the mapper for them is unit-tested on its own and a
 // credential builder that never called it would leave every such family paying a
 // second provider call per poll to discover what this gateway already stores.

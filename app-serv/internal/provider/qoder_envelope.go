@@ -16,8 +16,8 @@
 //	qoder_envelope_frame.go.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -33,8 +33,8 @@ import (
 //
 // The frames after the first carry the same wrapper, so the unwrap is a line
 // transform and the answer's own JSON survives byte-for-byte. That is what lets the
-// core's stream state keep doing the job it already does — one finish_reason and one
-// usage delivery, which is exactly Qoder's finish-then-usage pattern (draft 034 F2) —
+// core's stream state keep doing the job it already does, one finish_reason and one
+// usage delivery, which is exactly Qoder's finish-then-usage pattern (draft 034 F2),
 // instead of this connector growing a provider-specific coalescer.
 func (c *Qoder) OpenStream(body io.ReadCloser) (io.ReadCloser, *StreamFailure) {
 	if body == nil {

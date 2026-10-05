@@ -8,23 +8,22 @@
 //
 // @uses      internal/domain (ComboModel, ComboStrategy, AppError
 //
-//	constructors), strings, time.
+//	constructors), time.
 //
-// @reason    A combo is a model string the data plane resolves, so its shape —
+// @reason    A combo is a model string the data plane resolves, so its shape,
 //
 //	which strategies may carry a judge, which ones need a sticky
-//	limit, and that it names at least one model — is a routing rule
+//	limit, and that it names at least one model, is a routing rule
 //	rather than a request-shape rule. Keeping it here means the panel
 //	and the data plane cannot disagree about what a valid combo is.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
 import (
-	"strings"
 	"time"
 )
 
@@ -118,18 +117,6 @@ func (c Combo) Refs() []string {
 		out = append(out, m.ref)
 	}
 	return out
-}
-
-// HasRef reports whether the combo already names this reference, which is how
-// the service tells "this alias points at this combo" from a coincidental match.
-func (c Combo) HasRef(ref string) bool {
-	target := strings.TrimSpace(ref)
-	for _, m := range c.models {
-		if m.ref == target {
-			return true
-		}
-	}
-	return false
 }
 
 // Update applies the PATCH of §7.7 to the whole aggregate. Every field is

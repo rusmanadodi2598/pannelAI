@@ -14,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package provider
 
@@ -77,8 +77,8 @@ func (c *CodeBuddy) TransformRequest(req *Request) error {
 // codeBuddyMessages rebuilds the message list: one leading system turn carrying the
 // vendor's prompt followed by every system/developer instruction the caller sent, then
 // the remaining turns in their original order with a string user content lifted into
-// typed blocks. Content the caller already sent as blocks — the image parts the vision
-// path builds — is left exactly as it arrived.
+// typed blocks. Content the caller already sent as blocks, the image parts the vision
+// path builds, is left exactly as it arrived.
 func codeBuddyMessages(body map[string]json.RawMessage) (json.RawMessage, error) {
 	raw, present := body["messages"]
 	if !present {

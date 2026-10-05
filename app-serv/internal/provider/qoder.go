@@ -14,8 +14,8 @@
 //	so the core never learns either one.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -131,7 +131,7 @@ func (c *Qoder) ApplyAuth(req *http.Request, cred Credential) error {
 }
 
 // signingToken is the credential a signed request presents: the stored device or job
-// token, or — for a Personal Access Token — an exchanged job token. A PAT never
+// token, or, for a Personal Access Token, an exchanged job token. A PAT never
 // reaches the wire itself, so there is no fallback path here by design.
 func (c *Qoder) signingToken(ctx context.Context, cred Credential) (string, error) {
 	value, err := c.credential(cred)
@@ -145,11 +145,14 @@ func (c *Qoder) signingToken(ctx context.Context, cred Credential) (string, erro
 }
 
 // credential reads the one value this account presents and refuses an account that
-// has none. The family decides nothing here — a Qoder device token and an exchanged
-// job token are both bearer material, and a static key is a Personal Access Token —
+// has none. The family decides nothing here, a Qoder device token and an exchanged
+// job token are both bearer material, and a static key is a Personal Access Token,
 // so only its emptiness matters.
 func (c *Qoder) credential(cred Credential) (string, error) {
-	_, value := cred.family()
+	_, value, err := cred.Secret()
+	if err != nil {
+		return "", err
+	}
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return "", fmt.Errorf("provider %s: the account carries no credential", c.entry.ID)
