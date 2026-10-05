@@ -245,8 +245,13 @@ fi
 
 # ---- backlog visibility for audit 005 ----
 
-md_lines="$(git -C "$root" grep -cE "$DASH_RE" -- '*.md' 2>/dev/null | awk -F: '{s+=$2} END{print s+0}')"
-md_files="$(git -C "$root" grep -lE "$DASH_RE" -- '*.md' 2>/dev/null | grep -vc 'anti-slop' || true)"
+# The backlog count honours the same `antislop:ignore` marker the enforcement
+# path does, so a line exempted from failing is never counted as debt. Without
+# this, the rule document that names the forbidden characters would enlarge the
+# backlog it exists to shrink.
+md_hits="$(git -C "$root" grep -nIE "$DASH_RE" -- '*.md' 2>/dev/null | grep -v 'antislop:ignore' || true)"
+md_lines="$(printf '%s' "$md_hits" | grep -c . || true)"
+md_files="$(printf '%s' "$md_hits" | cut -d: -f1 | sort -u | grep -vc '^anti-slop' || true)"
 gate_start "markdown R-02 backlog (audit 005 open scope)"
 if [ "${md_lines:-0}" -eq 0 ]; then
 	gate_pass "no em or en dash left in markdown"
