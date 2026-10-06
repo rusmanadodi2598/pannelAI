@@ -1,22 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_policy_test.go
-// @for       The credential rotation policy at the selector: fill-first versus
-//
-//	round-robin, the per-provider resolution, and the degradation of
-//	an unreadable policy. The key rule inside one endpoint lives in
-//	selection_key_policy_test.go.
-//
+// @for       The credential rotation policy at the selector: fill-first versus round-robin, the per-provider resolution, and the degradation of an unreadable policy. The key rule inside one endpoint lives in selection_key_policy_test.go.
 // @uses      context, testing, internal/domain.
-// @reason    SPEC-API-001 §7.5 fixes the walk the policy chooses. These cases
-//
-//	pin each branch without a database, including that fill-first
-//	leaves the rotation cursor untouched: a mode that reads no state
-//	must not write any either.
-//
+// @reason    SPEC-API-001 §7.5 fixes the walk the policy chooses. These cases pin each branch without a database, including that fill-first leaves the rotation cursor untouched: a mode that reads no state must not write any either.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 

@@ -3,15 +3,10 @@
 // @file      internal/router/router_provider_model_probe.go
 // @for       The §7.4 model test routes (draft 017 §4.10, F10).
 // @uses      internal/handler, net/http.
-// @reason    These two routes are registered apart because §7.4's provider block
-//
-//	in router.go is at the AGENTS.md §1.1 budget, and they are a group of
-//	their own by nature: both ask the data plane a question about one model,
-//	which is the question the connectivity tests never answered.
-//
+// @reason    These two routes are registered apart because §7.4's provider block in router.go is at the AGENTS.md §1.1 budget, and they are a group of their own by nature: both ask the data plane a question about one model, which is the question the connectivity tests never answered.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package router
 

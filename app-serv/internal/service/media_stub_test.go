@@ -1,23 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_stub_test.go
-// @for       The caller, router, and service fixture the §7.10 media call tests
-//
-//	drive.
-//
-// @uses      internal/dataplane, internal/domain, internal/provider, context,
-//
-//	testing, time.
-//
-// @reason    The media call service talks to the outside world through three
-//
-//	seams — the media caller, the router port, and the registry index — so
-//	all three are doubles here and each test is about one rule. The
-//	registry entries they read live in media_call_entries_test.go.
-//
+// @for       The caller, router, and service fixture the §7.10 media call tests drive.
+// @uses      internal/dataplane, internal/domain, internal/provider, context, testing, time.
+// @reason    The media call service talks to the outside world through three seams, the media caller, the router port, and the registry index, so all three are doubles here and each test is about one rule. The registry entries they read live in media_call_entries_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

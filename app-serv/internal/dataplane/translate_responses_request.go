@@ -5,17 +5,10 @@
 // @file      internal/dataplane/translate_responses_request.go
 // @for       OpenAI chat request to Responses API request translation.
 // @uses      internal/schema.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable and §7.15
-//
-//	lets a client on either wire reach a provider that speaks it. The
-//	reference implements this direction as a pure function
-//	(open-sse/translator/request/openai-responses.js), so this is one too:
-//	no clock, no I/O, no package state. The payload types and item
-//	builders live in translate_responses_items.go.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable and §7.15 lets a client on either wire reach a provider that speaks it. The reference implements this direction as a pure function (open-sse/translator/request/openai-responses.js), so this is one too: no clock, no I/O, no package state. The payload types and item builders live in translate_responses_items.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

@@ -4,15 +4,10 @@
 // @file      internal/domain/ulid.go
 // @for       Dependency-free Crockford-base32 ULID generation for type-prefixed IDs.
 // @uses      crypto/rand, sync, time (standard library only).
-// @reason    SPEC-API-001 §4 requires ULID IDs with type prefixes; generating
-//
-//	them without a third-party dependency keeps app-serv stdlib-first
-//	per AGENTS.md "Stack". Uniqueness and ordering are carried by the
-//	timestamp, so the random part can never produce a collision.
-//
+// @reason    SPEC-API-001 §4 requires ULID IDs with type prefixes; generating them without a third-party dependency keeps app-serv stdlib-first per AGENTS.md "Stack". Uniqueness and ordering are carried by the timestamp, so the random part can never produce a collision.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package domain
 

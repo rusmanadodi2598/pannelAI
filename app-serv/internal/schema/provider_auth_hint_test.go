@@ -1,22 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/provider_auth_hint_test.go
-// @for       The auth_hint read field the panel renders as the credential
-//
-//	format hint on the provider page (draft 036 slice B).
-//
+// @for       The auth_hint read field the panel renders as the credential format hint on the provider page (draft 036 slice B).
 // @uses      testing, encoding/json, internal/registry.
-// @reason    The registry's auth_hint tells the operator what credential
-//
-//	shape a provider wants (Qoder's "Personal Access Token (pt-...)")
-//	before any endpoint exists. The hint text is served byte-verbatim
-//	— it names upstream URLs the operator must visit, so a transcription
-//	error here would send them to the wrong place — and stays absent
-//	from the wire for providers that declare none.
-//
+// @reason    The registry's auth_hint tells the operator what credential shape a provider wants (Qoder's "Personal Access Token (pt-...)") before any endpoint exists. The hint text is served byte-verbatim, it names upstream URLs the operator must visit, so a transcription error here would send them to the wrong place, and stays absent from the wire for providers that declare none.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package schema
 

@@ -3,22 +3,9 @@
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/usage_event_bus_test.go
-// @for       Integration tests for the Pub/Sub transport the usage event
-//
-//	crosses, against a real server.
-//
-// @uses      github.com/redis/go-redis/v9, internal/domain, internal/repository,
-//
-//	context, errors, os, testing, time.
-//
-// @reason    The bus's whole contract is broker behaviour: a publish that
-//
-//	reaches a subscriber, an idle channel that reports idleness rather
-//	than a fault, and a subscription that survives many idle waits. None
-//	of that can be shown against an in-memory double, and the idle case
-//	in particular is the one a double cannot fail: the real question is
-//	whether the connection survives a read deadline, which only a real
-//	socket answers.
+// @for       Integration tests for the Pub/Sub transport the usage event crosses, against a real server.
+// @uses      github.com/redis/go-redis/v9, internal/domain, internal/repository, context, errors, os, testing, time.
+// @reason    The bus's whole contract is broker behaviour: a publish that reaches a subscriber, an idle channel that reports idleness rather than a fault, and a subscription that survives many idle waits. None of that can be shown against an in-memory double, and the idle case in particular is the one a double cannot fail: the real question is whether the connection survives a read deadline, which only a real socket answers.
 //
 //	The file carries an `integration` build tag, so the default
 //	`go test ./...` stays hermetic (AGENTS.md §2.1 forbids t.Skip as a way
@@ -31,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package redisrepo
 

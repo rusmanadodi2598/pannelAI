@@ -1,26 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_jobtoken.go
-// @for       Turning a Qoder Personal Access Token into the short-lived job token
-//
-//	the vendor's signed endpoints accept, and keeping it until it is near
-//	its own expiry.
-//
-// @uses      bytes, context, crypto/sha256, encoding/hex, encoding/json, fmt, io,
-//
-//	net/http, strings, sync, time.
-//
-// @reason    A Personal Access Token cannot sign COSY: the vendor answers the
-//
-//	signed endpoints with a refusal, so every Qoder call that carries a
-//	`pt-` credential must exchange it first. The exchange is cheap to
-//	do once and expensive to do per request, so the lifetime the vendor
-//	states is what decides the reuse, with a buffer so a call never starts
-//	on a token that expires mid-flight.
-//
+// @for       Turning a Qoder Personal Access Token into the short-lived job token the vendor's signed endpoints accept, and keeping it until it is near its own expiry.
+// @uses      bytes, context, crypto/sha256, encoding/hex, encoding/json, fmt, io, net/http, strings, sync, time.
+// @reason    A Personal Access Token cannot sign COSY: the vendor answers the signed endpoints with a refusal, so every Qoder call that carries a `pt-` credential must exchange it first. The exchange is cheap to do once and expensive to do per request, so the lifetime the vendor states is what decides the reuse, with a buffer so a call never starts on a token that expires mid-flight.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -138,7 +124,7 @@ func (c *qoderJobTokenClient) JobToken(ctx context.Context, personalToken string
 }
 
 // request performs one exchange. The vendor's own client identifies itself as the
-// CLI and states the IDE version and client type on the plain JSON call — this is
+// CLI and states the IDE version and client type on the plain JSON call, this is
 // the one Qoder request that is not COSY-signed, because a Personal Access Token
 // cannot produce a signature.
 func (c *qoderJobTokenClient) request(ctx context.Context, pat string) (exchangeBody, error) {

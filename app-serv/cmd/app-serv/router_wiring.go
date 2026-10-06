@@ -2,19 +2,11 @@
 //
 // @file      cmd/app-serv/router_wiring.go
 // @for       The single place the handler set becomes router.Deps.
-// @uses      internal/config, internal/handler, internal/repository,
-//
-//	internal/router, internal/service.
-//
-// @reason    AGENTS.md §1.5 makes the composition root wiring only, and §1.1
-//
-//	keeps main.go inside its line budget. Every field of router.Deps is set in
-//	one place so a handler the graph builds but the table forgets is visible
-//	here rather than as a nil-handler refusal at boot.
-//
+// @uses      internal/config, internal/handler, internal/repository, internal/router, internal/service.
+// @reason    AGENTS.md §1.5 makes the composition root wiring only, and §1.1 keeps main.go inside its line budget. Every field of router.Deps is set in one place so a handler the graph builds but the table forgets is visible here rather than as a nil-handler refusal at boot.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package main
 

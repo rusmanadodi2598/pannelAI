@@ -5,16 +5,10 @@
 // @file      internal/repository/postgres/log_query_scope_integration_test.go
 // @for       The log free-text q scope against a real server (draft 010 F8).
 // @uses      internal/domain, internal/repository, context, testing, time.
-// @reason    Draft 010 F8: the logs route shares the usage decoder, so the same
-//
-//	panel placeholder promised a request id the predicate did not
-//	search. The log row carries error text where a usage row carries an
-//	error code, so its scope is `request_id OR error OR model`, and only
-//	a real server can prove the OR survives the nullable error column.
-//
+// @reason    Draft 010 F8: the logs route shares the usage decoder, so the same panel placeholder promised a request id the predicate did not search. The log row carries error text where a usage row carries an error code, so its scope is `request_id OR error OR model`, and only a real server can prove the OR survives the nullable error column.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package postgres
 

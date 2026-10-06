@@ -3,16 +3,10 @@
 // @file      internal/router/route_recorder.go
 // @for       Pattern recording for the mux, feeding the §7.17 contract test.
 // @uses      net/http.
-// @reason    The served openapi.json must name every registered route, so the
-//
-//	mux's table and the contract come from one list. Recording at
-//	registration keeps that true by construction; splitting the
-//	recorder out of router.go keeps the registration table inside its
-//	AGENTS.md §1.1 budget.
-//
+// @reason    The served openapi.json must name every registered route, so the mux's table and the contract come from one list. Recording at registration keeps that true by construction; splitting the recorder out of router.go keeps the registration table inside its AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package router
 

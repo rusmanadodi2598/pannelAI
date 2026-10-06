@@ -5,15 +5,10 @@
 // @file      internal/dataplane/translate_stream_claude_delta.go
 // @for       Converting one OpenAI delta into the Anthropic events it stands for.
 // @uses      internal/schema.
-// @reason    The delta mapping opens and closes content blocks as the content type
-//
-//	changes, which is the part of the Anthropic stream that has no OpenAI
-//	equivalent. It is split from the stream state so both files stay
-//	inside the AGENTS.md §1.1 budget.
-//
+// @reason    The delta mapping opens and closes content blocks as the content type changes, which is the part of the Anthropic stream that has no OpenAI equivalent. It is split from the stream state so both files stay inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

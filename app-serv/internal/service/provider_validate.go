@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_validate.go
-// @for       The stateless credential check: prove a credential before a row
-//
-//	exists, and say which path proved it.
-//
+// @for       The stateless credential check: prove a credential before a row exists, and say which path proved it.
 // @uses      internal/domain, context, strings.
-// @reason    SPEC-API-001 §7.4 offers no validate route, so the only way to test a
-//
-//	credential today is to store it first (draft 017 §4.6). The reference
-//	validates before the write, and two of its rules are not details: an
-//	upstream that does not serve `/models` is still validatable through a
-//	one-token chat probe, and for an Anthropic wire a 400 or 529 proves the
-//	key was *accepted* — the request was wrong, not the credential.
+// @reason    SPEC-API-001 §7.4 offers no validate route, so the only way to test a credential today is to store it first (draft 017 §4.6). The reference validates before the write, and two of its rules are not details: an upstream that does not serve `/models` is still validatable through a one-token chat probe, and for an Anthropic wire a 400 or 529 proves the key was *accepted*, the request was wrong, not the credential.
 //
 //	The check is stateless by construction: this file holds no store, and
 //	the port it declares takes the destination as a value. That is what
@@ -20,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -113,8 +104,8 @@ func (s *CredentialValidationService) ValidateProvider(ctx context.Context, chec
 // status means the credential was accepted.
 //
 // The rule is the reference's (providers/validate/route.js:178): only 401 and 403
-// mean the key was rejected. A 400 says the *request* was wrong — a bad model, a
-// `max_tokens` the model refuses — and a 529 says the provider is overloaded;
+// mean the key was rejected. A 400 says the *request* was wrong, a bad model, a
+// `max_tokens` the model refuses, and a 529 says the provider is overloaded;
 // both prove the key was read and accepted, which is the question a validation
 // asks. Reporting either as a credential failure sends an operator to replace a
 // working key.
@@ -129,15 +120,15 @@ func AcceptedByAnthropicRule(status int) bool {
 func ValidateOutcomeForAnthropic(status int) ProbeOutcome {
 	outcome := ProbeOutcome{Status: status}
 	if status >= 200 && status < 300 {
-		outcome.State = domain.EndpointTestOK
+		outcome.State = string(domain.EndpointTestOK)
 		return outcome
 	}
 	if AcceptedByAnthropicRule(status) {
-		outcome.State = domain.EndpointTestOK
+		outcome.State = string(domain.EndpointTestOK)
 		outcome.Message = "the upstream accepted the credential and refused the request"
 		return outcome
 	}
-	outcome.State = domain.EndpointTestFail
+	outcome.State = string(domain.EndpointTestFail)
 	outcome.Message = "the upstream rejected this credential"
 	return outcome
 }

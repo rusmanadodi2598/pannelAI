@@ -1,23 +1,14 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_client_state_wire.go
+// @file      internal/service/oauthhttp/oauth_client_state_wire.go
 // @for       The headers and URLs the state round's vendor reads its calls by.
-//
 // @uses      net/url, strings, time, internal/registry.
-// @reason    CodeBuddy authenticates by shape rather than by secret: which host it
-//
-//	thinks it is talking to (`X-Domain`), that the caller is a plugin rather
-//	than a browser (`X-Requested-With`, the `X-No-*` negations), and that
-//	the refresh token rides a header. Each is a detail a generic OAuth client
-//	would guess wrong, so they are stated once here and named. Kept apart
-//	from the calls themselves so both files stay inside the AGENTS.md §1.1
-//	budget and the wire contract can be read on its own.
-//
+// @reason    CodeBuddy authenticates by shape rather than by secret: which host it thinks it is talking to (`X-Domain`), that the caller is a plugin rather than a browser (`X-Requested-With`, the `X-No-*` negations), and that the refresh token rides a header. Each is a detail a generic OAuth client would guess wrong, so they are stated once here and named. Kept apart from the calls themselves so both files stay inside the AGENTS.md §1.1 budget and the wire contract can be read on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
-package service
+package oauthhttp
 
 import (
 	"net/url"
@@ -87,7 +78,7 @@ func stateDomain(baseURL string) string {
 
 // stateQuery appends one query parameter to a URL the entry declared, preserving
 // any parameters it already carries. The round's two identifying values both
-// travel this way — the platform at the state call, the state at the poll.
+// travel this way, the platform at the state call, the state at the poll.
 func stateQuery(endpoint, key, value string) string {
 	target := strings.TrimSpace(endpoint)
 	if target == "" || value == "" {

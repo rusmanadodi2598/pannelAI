@@ -3,14 +3,10 @@
 // @file      internal/dataplane/resolve_fixtures_test.go
 // @for       The lookup double and registry index the resolution tests build on.
 // @uses      context, testing, internal/domain, internal/registry
-// @reason    SPEC-API-001 §7.15 fixes the resolution order (combo, alias, provider/model) and the
-//
-//	models list, and both read a lookup the resolver does not own. The double and the
-//	registry index live here so the resolution tests read as the rule they pin.
-//
+// @reason    SPEC-API-001 §7.15 fixes the resolution order (combo, alias, provider/model) and the models list, and both read a lookup the resolver does not own. The double and the registry index live here so the resolution tests read as the rule they pin.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -46,18 +42,6 @@ func (l fakeLookup) Alias(_ context.Context, name string) (string, bool, error) 
 	}
 	target, ok := l.aliases[name]
 	return target, ok, nil
-}
-
-func (l fakeLookup) Disabled(_ context.Context, providerID, modelID string) (bool, error) {
-	if l.err != nil {
-		return false, l.err
-	}
-	for _, ref := range l.disabled {
-		if ref.ProviderID() == providerID && ref.ModelID() == modelID {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (l fakeLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) {

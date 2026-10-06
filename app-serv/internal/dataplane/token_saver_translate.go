@@ -5,16 +5,10 @@
 // @file      internal/dataplane/token_saver_translate.go
 // @for       The Headroom pivot for Claude and Responses upstream bodies.
 // @uses      internal/schema, internal/tokensaver, bytes, encoding/json, errors.
-// @reason    Headroom accepts OpenAI chat messages only, while the data plane may
-//
-// dispatch an already translated Claude or Responses body. This adapter
-// reuses the existing request translators for the pivot, then replaces
-// only the compressed wire members in the original envelope so fields the
-// gateway does not model still reach the provider unchanged.
-//
+// @reason    Headroom accepts OpenAI chat messages only, while the data plane may dispatch an already translated Claude or Responses body. This adapter reuses the existing request translators for the pivot, then replaces only the compressed wire members in the original envelope so fields the gateway does not model still reach the provider unchanged.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

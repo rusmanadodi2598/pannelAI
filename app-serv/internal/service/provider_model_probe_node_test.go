@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_model_probe_node_test.go
-// @for       Tests that the model test walks a custom node's own model set,
-//
-//	including the rows the operator declared (SPEC-API-001 §7.4, draft 017 §4.2).
-//
+// @for       Tests that the model test walks a custom node's own model set, including the rows the operator declared (SPEC-API-001 §7.4, draft 017 §4.2).
 // @uses      internal/dataplane, internal/domain, internal/registry, testing.
-// @reason    A compatible node is the case the registry provider does not
-//
-//	exercise: its model list is the upstream's answer, which is empty when the
-//	upstream is unreachable, while the operator's declared rows are on screen
-//	and routable. A sweep that walked only the first would tell the operator
-//	there was nothing to test beside a table full of models.
-//
+// @reason    A compatible node is the case the registry provider does not exercise: its model list is the upstream's answer, which is empty when the upstream is unreachable, while the operator's declared rows are on screen and routable. A sweep that walked only the first would tell the operator there was nothing to test beside a table full of models.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package service
 

@@ -7,7 +7,7 @@
 // @reason    Groq publishes quota only in x-ratelimit-* headers with a duration reset, so a regression that reads the body or the wrong host would silently blank the card.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -178,7 +178,7 @@ func TestGroq_SoftOutcomesStaySoft(t *testing.T) {
 }
 
 // The declared registry URL wins over the built-in, and the built-in path stays the fallback
-// when nothing is declared — the same single source the other families follow.
+// when nothing is declared, the same single source the other families follow.
 func TestGroq_ReadsItsPathFromTheDeclaredURLOrTheBuiltIn(t *testing.T) {
 	cases := []struct {
 		name     string

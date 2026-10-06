@@ -3,16 +3,10 @@
 // @file      internal/dataplane/translate_responses_tools_test.go
 // @for       Table-driven tests for Responses tool declarations and call items.
 // @uses      testing, encoding/json, internal/schema.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and its
-//
-//	tool vocabulary is where the two wires differ most: declarations
-//	lose OpenAI's `function` wrapper, calls travel as items rather than
-//	inside a message, and call_id is capped. A translation that gets
-//	any of these wrong is rejected by the upstream outright.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and its tool vocabulary is where the two wires differ most: declarations lose OpenAI's `function` wrapper, calls travel as items rather than inside a message, and call_id is capped. A translation that gets any of these wrong is rejected by the upstream outright.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

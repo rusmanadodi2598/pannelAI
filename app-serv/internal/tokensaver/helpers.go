@@ -5,14 +5,10 @@
 // @file      internal/tokensaver/helpers.go
 // @for       The small slice helpers the filters and the detector share.
 // @uses      strings.
-// @reason    SPEC-API-002 §5 caps every list a filter renders. One capping
-//
-//	helper is what keeps a cap from being written as an off-by-one in
-//	each filter that has one.
-//
+// @reason    SPEC-API-002 §5 caps every list a filter renders. One capping helper is what keeps a cap from being written as an off-by-one in each filter that has one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_responses_client_items.go
-// @for       The output items a Responses client stream reports: how one is
-//
-//	allocated, named, and rendered, and how all of them close.
-//
+// @for       The output items a Responses client stream reports: how one is allocated, named, and rendered, and how all of them close.
 // @uses      internal/schema, strconv.
-// @reason    The API requires every item to be opened before its content and
-//
-//	closed after it, and pairs the two by id, so the item shape and the
-//	closing order are one concern. The reasoning, message, and call
-//	lifecycles live in the sibling files, for the AGENTS.md §1.1 budget.
-//
+// @reason    The API requires every item to be opened before its content and closed after it, and pairs the two by id, so the item shape and the closing order are one concern. The reasoning, message, and call lifecycles live in the sibling files, for the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

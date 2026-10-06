@@ -1,31 +1,18 @@
-//go:build integration
+//go:build integration && live
 
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_live_chat_test.go
-// @for       The live chain: an agent body built by this port, signed, sent, and
-//
-//	answered by the vendor.
-//
+// @for       The live chain: an agent body built by this port, signed, sent, and answered by the vendor.
 // @uses      bytes, encoding/json, io, net/http, strings, testing.
-// @reason    Every unit test of the body builder asserts the shape this gateway
+// @reason    Every unit test of the body builder asserts the shape this gateway produces. Only the vendor decides whether it reads it: the agent endpoint refuses a request whose routing fields it does not recognise, and its answer arrives wrapped. This file asks the real service and asserts the two things that would be wrong, that the call was refused for its body, and that an envelope reached a client, while staying independent of whether the account has credits left. The free model is what makes that independence a proof rather than a hope: qfmodel costs nothing to the account, so its case runs the same chain to the end and requires content.
 //
-//	produces. Only the vendor decides whether it reads it: the agent
-//	endpoint refuses a request whose routing fields it does not
-//	recognise, and its answer arrives wrapped. This file asks the real
-//	service and asserts the two things that would be wrong — that the
-//	call was refused for its body, and that an envelope reached a
-//	client — while staying independent of whether the account has
-//	credits left. The free model is what makes that independence a
-//	proof rather than a hope: qfmodel costs nothing to the account, so
-//	its case runs the same chain to the end and requires content.
-//
-//	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/provider/ -run QoderLiveChat
+//	PANNELAI_QODER_PAT='pt-…' \
+//	  go test -tags=integration,live ./internal/provider/ -run QoderLiveChat
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -103,8 +90,8 @@ func TestQoderLiveFreeModelAnswers(t *testing.T) {
 	}
 	// Measured 2026-09-28: qoder closes the agent stream with a usage frame and a
 	// timing frame, and never sends the terminal marker. That is not a broken
-	// answer — StreamState.Finish writes the marker for every stream that ends
-	// without one — but a port that assumed the vendor says it would hang.
+	// answer, StreamState.Finish writes the marker for every stream that ends
+	// without one, but a port that assumed the vendor says it would hang.
 	if strings.Contains(string(answer), "[DONE]") {
 		t.Logf("the vendor sent a terminal marker after all: %s", truncateForLive(string(answer), 200))
 	}
@@ -122,9 +109,9 @@ func qoderLiveConnector(t *testing.T) (*Qoder, Credential) {
 		t.Fatalf("NewQoder() error = %v", err)
 	}
 	return connector, Credential{
-		EndpointID: "ep_live", APIKey: qoderLivePAT(t), Family: FamilyStaticKey,
-		ProjectID: account.ID, Account: account.Email,
-		Metadata: map[string]string{MetadataMachineID: newQoderID()},
+		endpointID: "ep_live", apiKey: qoderLivePAT(t), family: FamilyStaticKey,
+		projectID: account.ID, account: account.Email,
+		metadata: map[string]string{MetadataMachineID: newQoderID()},
 	}
 }
 
@@ -205,7 +192,7 @@ func qoderLiveChatURL() string {
 // read the body builder depends on, and hands back the model to name.
 func requireLiveCatalog(t *testing.T, connector *Qoder, credential Credential, key string) registry.Model {
 	t.Helper()
-	config, err := connector.modelConfig(credential, key)
+	config, err := connector.modelConfig(t.Context(), credential, key)
 	if err != nil {
 		t.Fatalf("the vendor's catalogue did not answer for %q: %v", key, err)
 	}

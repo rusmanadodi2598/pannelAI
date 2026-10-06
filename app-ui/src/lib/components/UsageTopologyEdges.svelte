@@ -3,8 +3,8 @@
 	// request path is docs/DRAFT/043 F2).
 	//
 	// One SVG stretched over the drawing box, holding every hop of the path the request takes:
-	// `Client >> Combo >> Gateway >> Upstream >> Response`. The hop itself — one line, or the beam that
-	// travels it — is `UsageTopologyHop.svelte`, and this file decides only which hops exist and in which
+	// `Client >> Combo >> Gateway >> Upstream >> Response`. The hop itself (one line, or the beam that
+	// travels it) is `UsageTopologyHop.svelte`, and this file decides only which hops exist and in which
 	// direction each is drawn.
 	//
 	// The lines are drawn in the box's own units: `viewBox="0 0 100 100"` with `preserveAspectRatio="none"`

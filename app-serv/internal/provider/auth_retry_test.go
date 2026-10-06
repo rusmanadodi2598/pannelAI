@@ -2,21 +2,12 @@
 // upstream provider.
 //
 // @file      internal/provider/auth_retry_test.go
-// @for       Table-driven tests for credential placement, retry decisions, and
-//
-//	quota classification.
-//
+// @for       Table-driven tests for credential placement, retry decisions, and quota classification.
 // @uses      testing, net/http, internal/registry.
-// @reason    These are the three connector decisions that used to be per-provider
-//
-//	branches in the core: which header carries the credential, whether an
-//	upstream outcome is worth retrying, and whether a rejection means the
-//	account is out of quota rather than briefly unhappy. Pinning them
-//	here is what makes the branch unnecessary.
-//
+// @reason    These are the three connector decisions that used to be per-provider branches in the core: which header carries the credential, whether an upstream outcome is worth retrying, and whether a rejection means the account is out of quota rather than briefly unhappy. Pinning them here is what makes the branch unnecessary.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-17
 package provider
 
@@ -43,58 +34,60 @@ func TestDefault_ApplyAuth(t *testing.T) {
 		{
 			name:       "default Authorization bearer",
 			auth:       registry.AuthConfig{},
-			cred:       Credential{APIKey: "sk-x"},
+			cred:       Credential{apiKey: "sk-x"},
 			wantHeader: "Authorization",
 			wantValue:  "Bearer sk-x",
 		},
 		{
 			name:       "an explicit bearer scheme",
 			auth:       registry.AuthConfig{Header: "Authorization", Scheme: "bearer"},
-			cred:       Credential{APIKey: "sk-x"},
+			cred:       Credential{apiKey: "sk-x"},
 			wantHeader: "Authorization",
 			wantValue:  "Bearer sk-x",
 		},
 		{
 			name:       "a raw scheme sends the value untouched",
 			auth:       registry.AuthConfig{Header: "x-api-key", Scheme: "raw"},
-			cred:       Credential{APIKey: "sk-x"},
+			cred:       Credential{apiKey: "sk-x"},
 			wantHeader: "x-api-key",
 			wantValue:  "sk-x",
 		},
 		{
 			name:       "an empty scheme on a non-default header is treated as raw",
 			auth:       registry.AuthConfig{Header: "x-api-key"},
-			cred:       Credential{APIKey: "sk-x"},
+			cred:       Credential{apiKey: "sk-x"},
 			wantHeader: "x-api-key",
 			wantValue:  "sk-x",
 		},
 		{
 			name:       "a custom scheme is prefixed",
 			auth:       registry.AuthConfig{Header: "Authorization", Scheme: "Token"},
-			cred:       Credential{APIKey: "sk-x"},
+			cred:       Credential{apiKey: "sk-x"},
 			wantHeader: "Authorization",
 			wantValue:  "Token sk-x",
 		},
 		{
 			name:       "the per-family key header wins for a static key",
 			auth:       registry.AuthConfig{Header: "Authorization", Scheme: "bearer", APIKey: &registry.AuthScheme{Header: "x-api-key", Scheme: "raw"}},
-			cred:       Credential{APIKey: "sk-x"},
+			cred:       Credential{apiKey: "sk-x"},
 			wantHeader: "x-api-key",
 			wantValue:  "sk-x",
 		},
 		{
 			name:       "the per-family oauth header wins for a token",
 			auth:       registry.AuthConfig{Header: "x-api-key", Scheme: "raw", OAuth: &registry.AuthScheme{Header: "Authorization", Scheme: "bearer"}},
-			cred:       Credential{AccessToken: "tok"},
+			cred:       Credential{accessToken: "tok"},
 			wantHeader: "Authorization",
 			wantValue:  "Bearer tok",
 		},
 		{
-			name:       "an access token is preferred when both are present",
-			auth:       registry.AuthConfig{Header: "Authorization", Scheme: "bearer"},
-			cred:       Credential{APIKey: "sk-x", AccessToken: "tok"},
-			wantHeader: "Authorization",
-			wantValue:  "Bearer tok",
+			// Exactly one of the two may be held. Resolving this to whichever
+			// check ran first would place the request under a credential its
+			// owner never meant to present, so the account is refused.
+			name:    "a credential carrying both secrets is refused",
+			auth:    registry.AuthConfig{Header: "Authorization", Scheme: "bearer"},
+			cred:    Credential{endpointID: "ep_1", apiKey: "sk-x", accessToken: "tok"},
+			wantErr: true,
 		},
 		{
 			// A zero-value Credential is how a `no_auth` provider is served, so

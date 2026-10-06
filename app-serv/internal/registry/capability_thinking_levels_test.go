@@ -2,23 +2,12 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_thinking_levels_test.go
-// @for       The level vocabulary: the rows that override a format's set, and
-//
-//	the two corpus-level checks every level must pass.
-//
+// @for       The level vocabulary: the rows that override a format's set, and the two corpus-level checks every level must pass.
 // @uses      testing, internal/domain.
-// @reason    SPEC-API-001 §7.15 offers one picker per provider built from the
-//
-//	union of its models' levels, so a level the resolver offers must be
-//	one the reasoning group stores: a mismatch is a picker entry whose
-//	PATCH the gateway rejects. The group is contract and the tables are
-//	catalog, so the two packages cannot import each other and the pin
-//	lives here, on the tokensaver tests' precedent. The layer boundaries
-//	themselves are proven in capability_thinking_test.go.
-//
+// @reason    SPEC-API-001 §7.15 offers one picker per provider built from the union of its models' levels, so a level the resolver offers must be one the reasoning group stores: a mismatch is a picker entry whose PATCH the gateway rejects. The group is contract and the tables are catalog, so the two packages cannot import each other and the pin lives here, on the tokensaver tests' precedent. The layer boundaries themselves are proven in capability_thinking_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-26
 package registry
 

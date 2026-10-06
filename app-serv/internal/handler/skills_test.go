@@ -3,15 +3,10 @@
 // @file      internal/handler/skills_test.go
 // @for       The §7.16 catalog's invariants and the URL derivation.
 // @uses      net/http/httptest, encoding/json, strings, testing.
-// @reason    The catalog is static data, so the tests pin what a consumer
-//
-//	relies on: the entry skill first, ids that map one-to-one onto
-//	repository paths, endpoints that are §7.15 paths the gateway really
-//	serves, and the two URL forms built from the declared repository.
-//
+// @reason    The catalog is static data, so the tests pin what a consumer relies on: the entry skill first, ids that map one-to-one onto repository paths, endpoints that are §7.15 paths the gateway really serves, and the two URL forms built from the declared repository.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package handler
 

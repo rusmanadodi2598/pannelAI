@@ -3,16 +3,10 @@
 // @file      internal/dataplane/translate_stream_responses_failure_test.go
 // @for       Table-driven tests for how a Responses stream failure reaches a client.
 // @uses      testing.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and a
-//
-//	client already mid-stream has exactly one channel left for an
-//	upstream failure: the content of a frame. Dropping the event would
-//	leave the client waiting for an answer that already ended, so the
-//	frame it becomes is pinned here.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and a client already mid-stream has exactly one channel left for an upstream failure: the content of a frame. Dropping the event would leave the client waiting for an answer that already ended, so the frame it becomes is pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush_fixture_test.go
-// @for       The in-memory stores the flush worker tests drive: a counting
-//
-//	store for concurrency, a recording repository for writes.
-//
+// @for       The in-memory stores the flush worker tests drive: a counting store for concurrency, a recording repository for writes.
 // @uses      context, sync/atomic, testing, time, internal/domain.
-// @reason    The flusher's guarantees are cross-goroutine (one flush at a time,
-//
-//	state kept across attempts), so its tests drive real entry points
-//	from real goroutines (AGENTS.md §2.1). The doubles live in their
-//	own file so the behaviour tests read as behaviour (draft 005 F9
-//	split the 300-line flusher test file while adding the batch
-//	identity cases).
-//
+// @reason    The flusher's guarantees are cross-goroutine (one flush at a time, state kept across attempts), so its tests drive real entry points from real goroutines (AGENTS.md §2.1). The doubles live in their own file so the behaviour tests read as behaviour (draft 005 F9 split the 300-line flusher test file while adding the batch identity cases).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 

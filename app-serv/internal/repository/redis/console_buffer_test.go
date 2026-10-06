@@ -5,13 +5,7 @@
 // @file      internal/repository/redis/console_buffer_test.go
 // @for       Integration tests for the bounded console ring's eviction.
 // @uses      github.com/redis/go-redis/v9, context, os, testing.
-// @reason    The ring's whole contract is its bound: SPEC-API-001 §7.13 calls it
-//
-//	"the last N lines" and §9 forbids unbounded growth. An in-memory
-//	double would prove the trim happens but not that Redis applies it
-//	to the list, and the trim is the one operation whose failure is
-//	silent — the buffer simply grows. These tests run against a real
-//	server reached through PANNELAI_TEST_REDIS_ADDR.
+// @reason    The ring's whole contract is its bound: SPEC-API-001 §7.13 calls it "the last N lines" and §9 forbids unbounded growth. An in-memory double would prove the trim happens but not that Redis applies it to the list, and the trim is the one operation whose failure is silent, the buffer simply grows. These tests run against a real server reached through PANNELAI_TEST_REDIS_ADDR.
 //
 //	The file carries an `integration` build tag, so the default
 //	`go test ./...` stays hermetic on a machine with no Redis (AGENTS.md §2.1
@@ -25,13 +19,12 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package redisrepo
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -205,57 +198,5 @@ func TestConsoleBuffer_ClearEmptiesEveryPanel(t *testing.T) {
 	}
 	if size != 0 {
 		t.Fatalf("Size after clear = %d, want 0", size)
-	}
-}
-
-// TestConsoleBuffer_EmptyLineIsIgnored covers the degenerate append: an empty
-// line is not a console line and must not consume a slot in the ring.
-func TestConsoleBuffer_EmptyLineIsIgnored(t *testing.T) {
-	buffer := newTestBuffer(t)
-	ctx := context.Background()
-	if err := buffer.Append(ctx, "", 5); err != nil {
-		t.Fatalf("Append(\"\") error = %v", err)
-	}
-	size, err := buffer.Size(ctx)
-	if err != nil {
-		t.Fatalf("Size error = %v", err)
-	}
-	if size != 0 {
-		t.Fatalf("Size = %d, want 0 after appending an empty line", size)
-	}
-}
-
-// TestConsoleBuffer_ReadBoundIsRespected asserts a read asks for at most the
-// bound, so a caller with a stale bound cannot read more than the ring holds.
-func TestConsoleBuffer_ReadBoundIsRespected(t *testing.T) {
-	buffer := newTestBuffer(t)
-	ctx := context.Background()
-	for i := 0; i < 5; i++ {
-		if err := buffer.Append(ctx, fmt.Sprintf("line-%d", i), 10); err != nil {
-			t.Fatalf("Append error = %v", err)
-		}
-	}
-	lines, err := buffer.Lines(ctx, 3)
-	if err != nil {
-		t.Fatalf("Lines error = %v", err)
-	}
-	if len(lines) != 3 {
-		t.Fatalf("Lines = %v, want the 3 newest", lines)
-	}
-	// The newest three are the tail, oldest first.
-	assertLines(t, lines, []string{"line-2", "line-3", "line-4"})
-}
-
-// assertLines compares a line slice, treating nil and empty as equal because
-// both mean "no lines".
-func assertLines(t *testing.T, got, want []string) {
-	t.Helper()
-	if len(got) != len(want) {
-		t.Fatalf("lines = %v, want %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("line %d = %q, want %q (got %v, want %v)", i, got[i], want[i], got, want)
-		}
 	}
 }

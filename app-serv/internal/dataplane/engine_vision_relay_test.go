@@ -2,19 +2,11 @@
 //
 // @file      internal/dataplane/engine_vision_relay_test.go
 // @for       How the relay walk consults the §7.8 vision seam.
-//
 // @uses      context, errors, testing, internal/domain, internal/schema.
-// @reason    The seam decides a served request's model order, so the engine's
-//
-//	side of it — the whole candidate list handed over, the image-only
-//	guard, the fail-open direction, and whose name an adapter answer is
-//	recorded under — is one concern and gets one file. Splitting it out
-//	also keeps engine_relay_test.go inside the AGENTS.md §1.1 budget
-//	once the seam started reporting candidates rather than one model.
-//
+// @reason    The seam decides a served request's model order, so the engine's side of it, the whole candidate list handed over, the image-only guard, the fail-open direction, and whose name an adapter answer is recorded under, is one concern and gets one file. Splitting it out also keeps engine_relay_test.go inside the AGENTS.md §1.1 budget once the seam started reporting candidates rather than one model.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package dataplane
 
@@ -76,7 +68,7 @@ func TestRelay_VisionAugmentationOrdersTheAdapterAndStripsIdentity(t *testing.T)
 	if outcome.Model != "broken" {
 		t.Fatalf("Outcome.Model = %q, want the requested model, not the adapter member", outcome.Model)
 	}
-	// The substitution the accounting row hides — the row is written under the
+	// The substitution the accounting row hides, the row is written under the
 	// addressed model, so without this flag nothing says which model actually got
 	// the image, and the client's answer now names the combo rather than either.
 	if !outcome.VisionAdapted {
@@ -98,7 +90,7 @@ func TestRelay_VisionAugmentationOrdersTheAdapterAndStripsIdentity(t *testing.T)
 // collision the operator's configuration actually produces: one model named both
 // a combo member and the §7.8 adapter. Reaching it then says nothing the caller
 // did not ask for, so the answer must not be reported as borrowed and its usage
-// row must not be rewritten — measured live with
+// row must not be rewritten, measured live with
 // opencode/muse-spark-1.3-contributor-free, which is both.
 func TestRelay_AnAdapterThatIsAlsoTheRequestsOwnModelIsNotSubstitution(t *testing.T) {
 	var calls int

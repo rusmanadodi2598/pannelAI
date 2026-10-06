@@ -3,16 +3,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/proxy_integration_test.go
-// @for       The proxy repository against a real server: round trip, ordering,
-//
-//	the migration's CHECK constraints, and the not-found mapping.
-//
+// @for       The proxy repository against a real server: round trip, ordering, the migration's CHECK constraints, and the not-found mapping.
 // @uses      testing, context, time, internal/domain.
-// @reason    The protocol and port rules exist twice — in the domain and as
-//
-//	CHECK constraints — and only a real server can prove the second one
-//	holds. A stub cannot fail a bad protocol the way PostgreSQL does, and
-//	the earlier P0 schema proved that divergence is real, not theoretical.
+// @reason    The protocol and port rules exist twice, in the domain and as CHECK constraints, and only a real server can prove the second one holds. A stub cannot fail a bad protocol the way PostgreSQL does, and the earlier P0 schema proved that divergence is real, not theoretical.
 //
 //	Run with:
 //	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
@@ -20,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package postgres
 
@@ -111,7 +104,7 @@ func TestProxyRepository_UpdatePersistsStatus(t *testing.T) {
 	}
 	// Repoint clears the status, so the result is recorded after it: one update
 	// must persist both the new address and the new status.
-	proxy.RecordTest(domain.EndpointTestOK, 23, "", checked)
+	proxy.RecordTest(string(domain.EndpointTestOK), 23, "", checked)
 	if err := repo.Update(ctx, proxy); err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
@@ -125,7 +118,7 @@ func TestProxyRepository_UpdatePersistsStatus(t *testing.T) {
 			loaded.Protocol(), loaded.Host(), loaded.Port())
 	}
 	status := loaded.Status()
-	if status.State != domain.EndpointTestOK || status.LatencyMS != 23 {
+	if status.State != string(domain.EndpointTestOK) || status.LatencyMS != 23 {
 		t.Fatalf("GetByID() status = %+v, want ok/23", status)
 	}
 	if status.CheckedAt == nil || !status.CheckedAt.Equal(checked) {

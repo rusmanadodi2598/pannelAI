@@ -3,21 +3,10 @@
 // @file      internal/repository/redis/quota_counter.go
 // @for       The hot quota counter the flush worker mirrors into PostgreSQL.
 // @uses      github.com/redis/go-redis/v9, internal/domain, context, time.
-// @reason    SPEC-API-001 §6 keeps quota counters in Redis and flushes them to
-//
-//	PostgreSQL, because a synchronous write would put a database round
-//	trip on the request path. The counter holds the window's RUNNING
-//	TOTAL, not a per-batch delta: the flush mirrors that total and a
-//	retried batch writes the same number twice without double-counting,
-//	while the total survives the flush so the next tick's requests
-//	continue from it instead of restarting the window. The per-batch
-//	shape shipped first and was measured wrong live on 2026-09-23: two
-//	requests of 65 and 68 tokens in different ticks left used_units at
-//	68.
-//
+// @reason    SPEC-API-001 §6 keeps quota counters in Redis and flushes them to PostgreSQL, because a synchronous write would put a database round trip on the request path. The counter holds the window's RUNNING TOTAL, not a per-batch delta: the flush mirrors that total and a retried batch writes the same number twice without double-counting, while the total survives the flush so the next tick's requests continue from it instead of restarting the window. The per-batch shape shipped first and was measured wrong live on 2026-09-23: two requests of 65 and 68 tokens in different ticks left used_units at 68.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package redisrepo
 
@@ -96,7 +85,7 @@ const maxPendingScanKeys = 4096
 // runs after a durable write of its final total.
 //
 // The scan walks the quota keyspace until limit pending windows are found, the
-// keyspace ends, or the visit bound is hit — settled windows ahead of a dirty
+// keyspace ends, or the visit bound is hit, settled windows ahead of a dirty
 // one in SCAN order cannot starve the flush of them.
 func (s *QuotaCounterStore) Pending(ctx context.Context, limit int) ([]domain.QuotaWindow, error) {
 	if limit < 1 {

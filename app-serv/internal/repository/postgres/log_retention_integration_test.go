@@ -5,19 +5,14 @@
 // @file      internal/repository/postgres/log_retention_integration_test.go
 // @for       The retention purge half of the request-log integration suite.
 // @uses      internal/domain, testing, time.
-// @reason    The purge boundary is the case worth a real server: a row exactly
+// @reason    The purge boundary is the case worth a real server: a row exactly at the cutoff must survive, and a stub would accept whatever rule the code happened to implement. Separated from the list/detail tests at the AGENTS.md §1.1 line limit after the shared DSN guard was introduced (the file grew past the budget then).
 //
-//	at the cutoff must survive, and a stub would accept whatever rule
-//	the code happened to implement. Separated from the list/detail
-//	tests at the AGENTS.md §1.1 line limit after the shared DSN guard
-//	was introduced (the file grew past the budget then).
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	    go test -race -tags=integration ./internal/repository/postgres/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	  go test -race -tags=integration ./internal/repository/postgres/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package postgres
 
@@ -79,7 +74,7 @@ func TestLogRepository_RetentionPurgeBoundary(t *testing.T) {
 // boundary: a purge with nothing to delete removes nothing and reports nothing.
 // It is its own test rather than a subtest of the boundary table because that
 // table deliberately leaves survivors behind, and a purge over a table that
-// still holds them is a different case — the one the table above already covers.
+// still holds them is a different case, the one the table above already covers.
 func TestLogRepository_RetentionPurgeOverAnEmptyTable(t *testing.T) {
 	repo := newLogRepo(t)
 	now := time.Now().UTC().Truncate(time.Second)

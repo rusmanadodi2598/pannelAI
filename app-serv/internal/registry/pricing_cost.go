@@ -2,25 +2,12 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/pricing_cost.go
-// @for       The token-to-cost estimate: the reference's additive formula over
-//
-//	the embedded rates, in exact rational arithmetic.
-//
+// @for       The token-to-cost estimate: the reference's additive formula over the embedded rates, in exact rational arithmetic.
 // @uses      math/big, strings, internal/registry (the resolved rates).
-// @reason    SPEC-API-001 §4 requires cost to cross the wire as a decimal
-//
-//	string and §7.12 states the figure is an estimate for display. The
-//	reference computes it in float64, which is where its own 8th
-//	decimal drifts; this port keeps the sum exact and renders it at the
-//	column's scale, so the number a client reads back is the number
-//	the gateway computed. The formula is the reference's, including its
-//	conventions: prompt_tokens is cache-inclusive, so the cached and
-//	cache-creation subsets are subtracted before the full input rate
-//	applies, and reasoning tokens are a premium added on their own rate.
-//
+// @reason    SPEC-API-001 §4 requires cost to cross the wire as a decimal string and §7.12 states the figure is an estimate for display. The reference computes it in float64, which is where its own 8th decimal drifts; this port keeps the sum exact and renders it at the column's scale, so the number a client reads back is the number the gateway computed. The formula is the reference's, including its conventions: prompt_tokens is cache-inclusive, so the cached and cache-creation subsets are subtracted before the full input rate applies, and reasoning tokens are a premium added on their own rate.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-23
 package registry
 
@@ -64,17 +51,12 @@ const zeroCost = "0.00000000"
 
 // CalculateCost applies the reference's formula to already-resolved rates. It
 // is exported so the formula can be tested against the reference's own numbers
-// without going through the resolver, and so a caller holding a rate for
-// another reason (a stored override, a future provider-reported price) prices a
-// call the same way the resolver path does.
+// and so a caller holding rates another way, a stored override or a reported
+// price, prices a call as the resolver path does. Every term is a rational and
+// the sum renders at the column's scale, so a six-decimal rate cannot drift.
 //
-// The arithmetic is exact: every term is a rational, and the sum is rendered at
-// the column's scale. Nothing here is a float, so a rate with a six-decimal
-// tail (several real entries have one) cannot drift on the way to the row.
-//
-// A sum of zero renders as the media plane's own "no cost" spelling rather
-// than at the column's scale, so "this call cost nothing" reads the same
-// whichever accounting site wrote it.
+// A zero sum renders as the media plane's "no cost" spelling, the same from
+// every accounting site.
 func CalculateCost(tokens TokenCounts, rates Rate) string {
 	total := new(big.Rat)
 
@@ -140,5 +122,5 @@ func ratToDecimal(value *big.Rat) string {
 	return value.FloatString(decimalScale)
 }
 
-// decimalScale matches the cost column's scale (SPEC-API-001 §6).
+// decimalScale matches the cost column's scale.
 const decimalScale = 8

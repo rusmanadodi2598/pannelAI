@@ -4,15 +4,10 @@
 // @file      internal/domain/upstream_key_test.go
 // @for       Tests for key construction, plaintext boundaries, and rotation.
 // @uses      testing, time.
-// @reason    SPEC-API-001 §7.5 defines a key's shape — identity, ciphertext,
-//
-//	priority, rotation — and the service depends on the constructor
-//	rejecting malformed input, on the plaintext never being reachable from
-//	the aggregate, and on rotation keeping the priority order intact.
-//
+// @reason    SPEC-API-001 §7.5 defines a key's shape, identity, ciphertext, priority, rotation, and the service depends on the constructor rejecting malformed input, on the plaintext never being reachable from the aggregate, and on rotation keeping the priority order intact.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
@@ -25,9 +20,8 @@ var keyNow = time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
 
 // sealedFixture is what the aggregate is actually handed: ciphertext produced
 // by the service, never a credential. It is deliberately not `sk-`-prefixed,
-// because a realistic-looking key literal in a test file is exactly what the
-// secrets gate must flag, and an allowlist entry for it would weaken the gate
-// for every future fixture.
+// because a realistic-looking key literal here would need a secrets-gate
+// allowlist entry, which weakens the gate for every future fixture.
 const sealedFixture = "v1:AAECAwQFBgcICQoLDA0ODw==:c2VhbGVkLWNyZWRlbnRpYWw="
 
 // newTestKey builds a key whose priority doubles as its distinguishing suffix,
@@ -119,16 +113,12 @@ func TestUpstreamKey_DisabledIsUnavailableRegardlessOfWindow(t *testing.T) {
 }
 
 // TestUpstreamKey_StoredValueIsScopeNotCredential pins the boundary between the
-// service, which seals a credential, and the aggregate, which only stores what
-// it is handed.
-//
-// The aggregate cannot prove "the plaintext never arrives": it stores whatever
-// string it receives, so that guarantee belongs to the service that encrypts,
-// and asserting it here would fail the moment a caller passed plaintext for a
-// reason the test cannot see. What this CAN pin is that the read surface stays
-// narrow: the sealed value round-trips unchanged, and the two accessors that a
-// response layer uses expose the ciphertext and a mask, never anything that
-// reveals the credential's body.
+// service, which seals a credential, and the aggregate, which only stores what it
+// is handed. The aggregate cannot prove that the plaintext never arrives: it
+// stores whatever string it receives, so that guarantee belongs to the service
+// that encrypts. What this can pin is that the read surface stays narrow: the
+// sealed value round-trips unchanged, and the two accessors a response layer uses
+// expose the ciphertext and a mask, never anything revealing the credential body.
 func TestUpstreamKey_StoredValueIsScopeNotCredential(t *testing.T) {
 	key, err := NewUpstreamKey("primary", "ep_1", "uky_1", sealedFixture, "sk-\u2026cret", 1, keyNow)
 	if err != nil {

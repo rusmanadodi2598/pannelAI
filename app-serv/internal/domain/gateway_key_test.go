@@ -4,15 +4,10 @@
 // @file      internal/domain/gateway_key_test.go
 // @for       Tests for the GatewayKey aggregate transitions and key masking.
 // @uses      testing, time (standard library only).
-// @reason    AGENTS.md §2.2 requires the aggregate to enforce its own state
-//
-//	transitions, and SPEC-API-001 §4 requires plaintext to be masked
-//	after creation; these are the invariants a caller cannot be
-//	allowed to break (docs/RULLES/TDD.md §2.4).
-//
+// @reason    AGENTS.md §2.2 requires the aggregate to enforce its own state transitions, and SPEC-API-001 §4 requires plaintext to be masked after creation; these are the invariants a caller cannot be allowed to break (docs/RULLES/TDD.md §2.4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package domain
 

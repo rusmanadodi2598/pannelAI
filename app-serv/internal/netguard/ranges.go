@@ -4,15 +4,10 @@
 // @file      internal/netguard/ranges.go
 // @for       The address-range tables and predicates the guard's two tiers use.
 // @uses      net/netip.
-// @reason    The tiers are data, not control flow, and AGENTS.md §1.1 caps a
-//
-//	file at 250 lines: keeping the ranges here means a new never-a-host
-//	range is a one-line addition to a table a reviewer can read whole,
-//	rather than another branch inside CheckIP.
-//
+// @reason    The tiers are data, not control flow, and AGENTS.md §1.1 caps a file at 250 lines: keeping the ranges here means a new never-a-host range is a one-line addition to a table a reviewer can read whole, rather than another branch inside CheckIP.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package netguard
 
@@ -20,7 +15,7 @@ import "net/netip"
 
 // hardDeniedPrefixes are ranges that are never a proxy host, whatever the
 // operator allowlists. CGNAT is here rather than in the opt-in tier because it
-// is carrier address space, not private LAN space — and it is where the Alibaba
+// is carrier address space, not private LAN space, and it is where the Alibaba
 // metadata address (100.100.100.200) lives.
 var hardDeniedPrefixes = []struct {
 	prefix netip.Prefix

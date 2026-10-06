@@ -1,21 +1,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/usage_read.go
-// @for       The timeseries, paged records, request detail, and monthly rollup
-//
-//	reads over usage_records.
-//
+// @for       The timeseries, paged records, request detail, and monthly rollup reads over usage_records.
 // @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository.
-// @reason    SPEC-API-001 §7.12 offers a bucketed chart, a paged raw list, a
-//
-//	single-request detail, and a budget comparison. Each is one
-//	statement with an explicit range: the paged read carries its own
-//	count in a window function, and the bucket width comes from the
-//	closed granularity set so no caller text reaches date_bin.
-//
+// @reason    SPEC-API-001 §7.12 offers a bucketed chart, a paged raw list, a single-request detail, and a budget comparison. Each is one statement with an explicit range: the paged read carries its own count in a window function, and the bucket width comes from the closed granularity set so no caller text reaches date_bin.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 

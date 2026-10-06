@@ -2,20 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/quota_cap.go
-// @for       The QuotaCap value object: an endpoint's optional monthly budget
-//
-//	ceiling and the rule that makes the router skip it.
-//
+// @for       The QuotaCap value object: an endpoint's optional monthly budget ceiling and the rule that makes the router skip it.
 // @uses      internal/domain (Decimal, AppError constructors), time.
-// @reason    SPEC-API-001 §7.12 makes the cap the thing a router reads to skip
-//
-//	an exhausted endpoint, so the exhausted rule is a domain decision
-//	rather than a comparison inside a query. Both fields are optional
-//	because "no cap" and "a cap of zero" are different rules.
-//
+// @reason    SPEC-API-001 §7.12 makes the cap the thing a router reads to skip an exhausted endpoint, so the exhausted rule is a domain decision rather than a comparison inside a query. Both fields are optional because "no cap" and "a cap of zero" are different rules.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 

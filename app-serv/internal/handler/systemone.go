@@ -3,9 +3,8 @@
 // @file      internal/handler/systemone.go
 // @for       POST /api/v1/systemone, the System One (Jev) decision route.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    SPEC-API-001 §7.15 serves the route, and the handler follows the
+// @reason    SPEC-API-001 §7.15 serves the route, and the handler follows the embeddings route's shape: decode, validate, authenticate, call, write.
 //
-//	embeddings route's shape: decode, validate, authenticate, call, write.
 //	The answer is forwarded as the upstream wrote it, because a decision
 //	answer's vocabulary belongs to the provider (per-question confidences
 //	rather than a chat message), so re-encoding it through a typed struct
@@ -13,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package handler
 
@@ -30,10 +29,9 @@ type SystemOneHandler struct {
 	auth      service.GatewayAuthenticator
 }
 
-// NewSystemOneHandler validates deps and returns the handler. The chat service is
-// reused for authentication, because the §4 rule is one rule: a second
-// implementation of it is how two routes start disagreeing about which key is
-// valid.
+// NewSystemOneHandler takes its authenticator from the chat service, because the
+// §4 rule is one rule: a second implementation of it is how two routes start
+// disagreeing about which key is valid.
 func NewSystemOneHandler(systemone *service.SystemOneService, auth service.GatewayAuthenticator) *SystemOneHandler {
 	return &SystemOneHandler{systemone: systemone, auth: auth}
 }

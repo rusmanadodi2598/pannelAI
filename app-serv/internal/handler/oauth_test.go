@@ -3,17 +3,10 @@
 // @file      internal/handler/oauth_test.go
 // @for       HTTP tests for the §7.4 OAuth start route.
 // @uses      net/http, strings, testing.
-// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path
-//
-//	per route. Start is the route that decides which callback a provider
-//	will call, so the table pins the redirect choice, the PKCE challenge,
-//	and every refusal that keeps a browser from being sent somewhere the
-//	gateway did not choose. The status and refresh routes are in
-//	oauth_status_test.go, and the callback in oauth_callback_test.go.
-//
+// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path per route. Start is the route that decides which callback a provider will call, so the table pins the redirect choice, the PKCE challenge, and every refusal that keeps a browser from being sent somewhere the gateway did not choose. The status and refresh routes are in oauth_status_test.go, and the callback in oauth_callback_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

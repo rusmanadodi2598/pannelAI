@@ -1,9 +1,9 @@
 # 002-G21-SEAM-DESIGN.md: Desain Seam Empat Kelas Multi-Step
 
-Dokumen kerja untuk **G21** di `docs/DRAFT/001-P2-GAPS.md` §3. Bukan kontrak —
+Dokumen kerja untuk **G21** di `docs/DRAFT/001-P2-GAPS.md` §3. Bukan kontrak;
 kontrak tetap `docs/SPEC-API/001-SPEC-API.md`. Tujuannya satu: owner menyetujui
 bentuk seam per kelas **sebelum** kode ditulis, karena keempat kelas tidak bisa
-masuk invariant yang dipakai seluruh adapter G5 — *satu URL, satu request, satu
+masuk invariant yang dipakai seluruh adapter G5: *satu URL, satu request, satu
 jawaban*.
 
 | | |
@@ -26,7 +26,7 @@ satu baris `request_logs` per panggilan klien; satu guard egress untuk semua dia
 amplop jawaban §7.10 (`{text}` untuk STT, bytes/base64 + `format` untuk TTS);
 kredensial tidak pernah masuk log.
 
-## 1. Kelas A — AssemblyAI (polling)
+## 1. Kelas A: AssemblyAI (polling)
 
 **Bukti reference** (`sttCore.js:57-84`). Upload `POST https://api.assemblyai.com/v2/upload`
 (raw bytes, `Content-Type: application/octet-stream`) → `{upload_url}`; submit
@@ -47,7 +47,7 @@ supaya id tidak menjadi path tambahan ke host yang sama.
 
 **Akuntansi & kesehatan.** Satu panggilan klien = satu baris usage + satu baris log
 (latency = total rangkaian), dan endpoint dicatat sehat/gagal **sekali** setelah
-rangkaian selesai — bukan per request upstream, karena yang dialami klien adalah
+rangkaian selesai, bukan per request upstream, karena yang dialami klien adalah
 satu panggilan.
 
 **Risiko.** `upload_url` dari provider **tidak pernah didial** gateway (hanya
@@ -64,7 +64,7 @@ langkah + satu kasus timeout.
 
 **Pertanyaan.** A1 URL upload; A2 anggaran/interval; A3 kode saat lewat anggaran.
 
-## 2. Kelas B — AWS Polly (SigV4)
+## 2. Kelas B: AWS Polly (SigV4)
 
 **Bukti.** Reference **tidak mengimplementasikannya**: `FORMAT_HANDLERS`
 (`genericFormats.js:157-169`) tidak memuat `aws-polly`. Registry:
@@ -79,11 +79,11 @@ kalau credential tidak memuatnya, tolak dengan nama (`VALIDATION_ERROR`), jangan
 diam-diam memakai `us-east-1`.
 
 **Risiko.** Secret tidak pernah masuk log (canonical request memuat hash, bukan
-secret) — tapi util ini menyentuh kredensial, jadi ia harus diuji terhadap **vektor
+secret), tapi util ini menyentuh kredensial, jadi ia harus diuji terhadap **vektor
 resmi AWS**, bukan hanya "stub menerima 200": tanda tangan yang salah tetap terlihat
 seperti 403 upstream. Jam host miring >15 menit juga menghasilkan 403 yang sama,
 jadi pesan kegagalan harus menyebut kemungkinan itu. Karena tidak ada reference,
-tidak ada perilaku terukur yang bisa di-diff — port ini menulis dari dokumentasi AWS.
+tidak ada perilaku terukur yang bisa di-diff: port ini menulis dari dokumentasi AWS.
 
 **Test & bukti live.** Vektor SigV4 resmi AWS (unit), stub yang **menghitung ulang**
 tanda tangan dari secret yang sama (server-side verify), region kosong →
@@ -91,7 +91,7 @@ tanda tangan dari secret yang sama (server-side verify), region kosong →
 
 **Pertanyaan.** B1 letak region; B2 dikerjakan atau ditandai tidak didukung v1.
 
-## 3. Kelas C — Edge TTS & Google TTS (token hasil scraping)
+## 3. Kelas C: Edge TTS & Google TTS (token hasil scraping)
 
 **Bukti reference.** Edge (`edgeTts.js`): token + cookie dari
 `https://www.bing.com/translator` (regex `params_AbusePreventionHelper`), cache
@@ -104,7 +104,7 @@ disanitasi (tanda baca → spasi, `", "` → `". "`) lalu RPC `batchexecute` `jQ
 output MP3. Keduanya `no_auth` di registry dan `base_url`-nya **penanda**
 (`base_url: edge-tts`, `google-tts`).
 
-**Bentuk seam.** (a) `tokenSource` per provider dengan cache TTL di memori proses —
+**Bentuk seam.** (a) `tokenSource` per provider dengan cache TTL di memori proses,
 bukan Redis, karena token terikat pada cookie dan egress host, dan tiap replika
 boleh punya token sendiri; (b) **aturan baru**: provider boleh mendeklarasikan
 `base_url` sebagai penanda. Konsekuensinya harus eksplisit di tiga tempat:
@@ -116,7 +116,7 @@ ditolak `VALIDATION_ERROR`.
 **Risiko.** Scraping HTML vendor rapuh (berubah kapan saja) dan menyentuh ToS/abuse:
 permintaan tanpa auth keluar dari egress operator ke `bing.com`/`translate.google.com`,
 yang juga harus masuk allowlist egress (opt-in operator, bukan default). Token
-adalah materi kredensial di memori — tidak boleh masuk log, DB, atau pesan error.
+adalah materi kredensial di memori: tidak boleh masuk log, DB, atau pesan error.
 Kegagalan parse harus menyebut penyebabnya (halaman berubah vs jaringan), bukan 500
 buta.
 
@@ -128,11 +128,11 @@ penolakan, kontrol benign. Live: stub HTML + stub audio di loopback.
 **Pertanyaan.** C1 dikerjakan atau tidak (ToS/kerapuhan); C2 aturan penanda; C3
 tempat cache.
 
-## 4. Kelas D — Local Device (proses host)
+## 4. Kelas D: Local Device (proses host)
 
 **Bukti reference** (`localDevice.js`). Voice dari `say -v ?` (`:12-25`) atau
 PowerShell SAPI (`:27-53`, hanya enumerasi); sintesis `say -o out.aiff` lalu `ffmpeg`
-ke MP3 (`:66-79`) — perhatikan sintesisnya **selalu** memanggil `say`, jadi jalur
+ke MP3 (`:66-79`), perhatikan sintesisnya **selalu** memanggil `say`, jadi jalur
 Windows di reference pun tidak lengkap. Pemilihan platform hanya di enumerasi voice
 (`:58`), dan **tidak ada jalur Linux** sama sekali.
 
@@ -145,12 +145,12 @@ adalah argumen terakhir tanpa pelindung, jadi teks yang diawali `-` berisiko dib
 sebagai opsi, bukan diucapkan. Mitigasinya dua: pasang `--` sebelum teks dan
 validasi `voiceId` terhadap daftar voice yang dienumerasi host (bukan meneruskan
 string klien apa adanya). Teks panjang sebagai argumen juga menabrak batas argv.
-Ditambah: binary yang dieksekusi adalah binary host — di container tidak ada, dan
+Ditambah: binary yang dieksekusi adalah binary host, di container tidak ada, dan
 ketersediaannya berbeda per mesin.
 
 **Bentuk seam.** Tidak ada seam di arsitektur HTTP sekarang. Dua opsi: (i) tandai
 **tidak didukung di v1** dengan alasan tertulis di SPEC-API §7.10; (ii) desain
-**local agent** — proses kecil terpisah yang dijalankan operator di mesin yang punya
+**local agent**: proses kecil terpisah yang dijalankan operator di mesin yang punya
 `say`/SAPI, gateway memanggilnya lewat HTTP (loopback, terautentikasi), sehingga
 eksekusi binary tidak pernah terjadi di proses gateway dan invariant satu-URL tetap
 berlaku.
@@ -162,7 +162,7 @@ loopback, dan aturan allowlist-nya.
 
 | # | Pertanyaan | Pilihan | Usulan |
 |---|---|---|---|
-| G21-A1 | URL upload AssemblyAI | (a) turunkan `origin + /v2/upload`, (b) field registry `upload_url` | (b) eksplisit — turunan implisit mudah salah saat host berubah |
+| G21-A1 | URL upload AssemblyAI | (a) turunkan `origin + /v2/upload`, (b) field registry `upload_url` | (b) eksplisit: turunan implisit mudah salah saat host berubah |
 | G21-A2 | Anggaran & interval poll | (a) 120 detik / 2 detik seperti reference, (b) lebih kecil | (a) paritas reference, diturunkan oleh `timeout_ms` provider bila diisi |
 | G21-A3 | Kode saat lewat anggaran | (a) 504, (b) 502 `UPSTREAM_ERROR` | (b) satu kode untuk kegagalan upstream; pesan menyebut "timed out" |
 | G21-B1 | Letak region Polly | (a) komposit `keyId:secret:region` (pola PlayHT), (b) field di endpoint record | (a) tanpa migrasi |
@@ -174,14 +174,14 @@ loopback, dan aturan allowlist-nya.
 
 ## 6. Urutan yang diusulkan (kalau disetujui)
 
-1. **Kelas A (AssemblyAI)** — satu-satunya kelas yang punya perilaku reference
+1. **Kelas A (AssemblyAI)**, satu-satunya kelas yang punya perilaku reference
    terukur dan tidak menuntut aturan registry baru; sekaligus membuktikan seam
    "N request, satu baris akuntansi" yang akan dipakai kelas lain.
-2. **Kelas C** — kalau owner menerima risiko ToS; butuh aturan penanda `base_url`.
-3. **Kelas B** — kalau owner menerima bahwa port ini ditulis dari dokumentasi, bukan
+2. **Kelas C**, kalau owner menerima risiko ToS; butuh aturan penanda `base_url`.
+3. **Kelas B**, kalau owner menerima bahwa port ini ditulis dari dokumentasi, bukan
    dari reference.
-4. **Kelas D** — keputusan (i)/(ii) lebih dulu; implementasi hanya kalau (ii).
+4. **Kelas D**, keputusan (i)/(ii) lebih dulu; implementasi hanya kalau (ii).
 
 Definisi selesai tiap provider mengikuti register G21: seam + adapter, tabel test
-termasuk kontrol benign, satu bukti live ke stub yang meniru alurnya — **atau**
+termasuk kontrol benign, satu bukti live ke stub yang meniru alurnya, **atau**
 keputusan tertulis "tidak didukung di v1" dengan SPEC-API §7.10 menyebut alasannya.

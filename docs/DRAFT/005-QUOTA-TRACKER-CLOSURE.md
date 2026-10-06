@@ -8,7 +8,7 @@ Bukan kontrak; kontrak tetap `docs/SPEC-API/001-SPEC-API.md`.
 |---|---|
 | **Status** | F1 **CLOSED 2026-09-20** (Jalur A: implementasi). F2 **CLOSED 2026-09-20** (endpoint existence gate on write). F3 **CLOSED 2026-09-20** (split flush). F4 **CLOSED 2026-09-20** (per-endpoint batch identity). F5 **CLOSED 2026-09-20** (single-source validation). F6 **CLOSED 2026-09-20** (table-driven handler tests + sweep 401). F7 **CLOSED 2026-09-20** (single endpoint_id guard). F8 **CLOSED 2026-09-20** (em dash sweep). F9 **CLOSED 2026-09-20** (split touched over-limit tests). |
 | **Dibuat** | 2026-09-20, dari pembacaan `app-serv/internal/**` (domain, repository, service, handler, schema, router), migrasi `000007`, dan eksekusi gerbang build/test |
-| **Kaitan** | SPEC-API-001 §6 (schema), §7.12 (endpoint), §8 (kode error), §9 (non-fungsional), §10 (fase); AGENTS.md §1.1–§1.9, §2.1–§2.4; `docs/RULLES/TDD.md`, `docs/RULLES/OWASP.md`; lanjutan `004-ENDPOINT-READINESS-FOLLOW-UP.md` |
+| **Kaitan** | SPEC-API-001 §6 (schema), §7.12 (endpoint), §8 (kode error), §9 (non-fungsional), §10 (fase); AGENTS.md §1.1-§1.9, §2.1-§2.4; `docs/RULLES/TDD.md`, `docs/RULLES/OWASP.md`; lanjutan `004-ENDPOINT-READINESS-FOLLOW-UP.md` |
 | **Lingkup** | hanya `app-serv/`. `app-ui/` di luar lingkup: file token-saver yang belum ter-track sedang dikerjakan agent lain, jangan disentuh |
 
 ## 1. Metode
@@ -23,7 +23,7 @@ Lima langkah, semua bisa diulang:
 3. Pemeriksaan header §1.2 dan jumlah baris §1.1 ke setiap file `.go` app-serv.
 4. Eksekusi gerbang: `go build`, `go vet`, `go test -race ./internal/...`.
 5. Pemetaan cakupan test: grep nama test kuota, dipetakan ke aturan TDD.md §2.5 (table-driven,
-   3–5 variasi) dan AGENTS.md §2.1 (happy + validasi + auth per route).
+   3-5 variasi) dan AGENTS.md §2.1 (happy + validasi + auth per route).
 
 ## 2. Bukti yang sudah lolos
 
@@ -165,8 +165,8 @@ batas), dan kedua validator tidak bisa lagi berbeda pendapat.
 ## 8. F6 (MEDIUM): Test handler `quota` bukan table-driven, tanpa kasus auth
 
 **Fakta.** Empat test handler (`handler/quota_test.go`): `PutThenGetReadsTheCapBack`,
-`GetWithoutACapAnswersNull`, `ListStaysWindowsOnly`, `PutCapRejectsANegativeCost` — masing-masing
-satu skenario. TDD.md §2.5 mewajibkan setiap test memakai tabel 3–5 variasi (nilai tipikal,
+`GetWithoutACapAnswersNull`, `ListStaysWindowsOnly`, `PutCapRejectsANegativeCost`, masing-masing
+satu skenario. TDD.md §2.5 mewajibkan setiap test memakai tabel 3-5 variasi (nilai tipikal,
 batas, nol/kosong, negatif, ekstrem). AGENTS.md §2.1 mewajibkan setiap route terproteksi punya
 test happy + validasi + auth; test auth belum ada untuk ketiga route §7.12 (dicatat juga sebagai
 bagian F4 di `004`).
@@ -192,7 +192,7 @@ hijau.
 
 ## 10. F8 (LOW): Em dash di SPEC-API-001 (antislop R-02)
 
-**Fakta.** Karakter em dash (`—`) tersebar di `docs/SPEC-API/001-SPEC-API.md`, termasuk baris
+**Fakta.** Karakter em dash tersebar di `docs/SPEC-API/001-SPEC-API.md`, termasuk baris
 §7.12 yang diaudit (baris 452, 455) dan seluruh blok changelog. Carve-out R-02 hanya mencakup
 struktur dokumentasi skill antislop itu sendiri, bukan file spec proyek.
 

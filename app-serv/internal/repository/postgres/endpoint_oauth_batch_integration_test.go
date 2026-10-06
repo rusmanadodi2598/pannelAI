@@ -4,24 +4,15 @@
 //
 // @file      internal/repository/postgres/endpoint_oauth_batch_integration_test.go
 // @for       Integration proof that the OAuth import batch is all-or-nothing.
-// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations,
+// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations, context, errors, os, testing, time.
+// @reason    SPEC-API-001 §8.1 promises that a refused row leaves no account behind. Only a real server can prove it: the guarantee is a property of the transaction, so an in-memory double that shares the same loop proves the loop, not the rollback. A row that collides on the primary key is the failure this file stages, and the assertion is that the row before it is absent afterwards.
 //
-//	context, errors, os, testing, time.
-//
-// @reason    SPEC-API-001 §8.1 promises that a refused row leaves no account
-//
-//	behind. Only a real server can prove it: the guarantee is a property
-//	of the transaction, so an in-memory double that shares the same
-//	loop proves the loop, not the rollback. A row that collides on the
-//	primary key is the failure this file stages, and the assertion is
-//	that the row before it is absent afterwards.
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	    go test -race -tags=integration ./internal/repository/postgres/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	  go test -race -tags=integration ./internal/repository/postgres/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 
@@ -68,11 +59,11 @@ func oauthEndpoint(t *testing.T, id, label, email string, now time.Time) domain.
 	if err != nil {
 		t.Fatalf("building endpoint %s: %v", id, err)
 	}
-	endpoint.SetOAuth(&domain.OAuthCredential{
+	endpoint.SetOAuth(domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted: "sealed-access-token",
 		AccountEmail:         email,
-	}, now)
-	endpoint.SetAccount(domain.EndpointAccount{Email: email}, now)
+	}), now)
+	endpoint.SetAccount(domain.RehydrateEndpointAccount(domain.EndpointAccountInput{Email: email}), now)
 	return endpoint
 }
 
@@ -135,7 +126,7 @@ func TestIntegration_ImportOAuthBatch_MixesCreateAndUpdate(t *testing.T) {
 	if stored.Label() != "after@example.com" {
 		t.Fatalf("label = %q, want the updated one", stored.Label())
 	}
-	if got := stored.Account().Email; got != "after@example.com" {
+	if got := stored.Account().Email().String(); got != "after@example.com" {
 		t.Fatalf("account email = %q, want the updated identity", got)
 	}
 	if _, err := repo.GetByID(ctx, "ep_added"); err != nil {

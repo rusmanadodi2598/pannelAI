@@ -4,15 +4,10 @@
 // @file      internal/registry/types.go
 // @for       The registry document shape: providers, display, models, features.
 // @uses      standard library only.
-// @reason    SPEC-API-001 §6 puts the provider registry in embedded static
-//
-//	config rather than database rows, and §7.4 needs every field the
-//	Providers screen renders; this file is the contract that the YAML
-//	document and the loader both have to satisfy.
-//
+// @reason    SPEC-API-001 §6 puts the provider registry in embedded static config rather than database rows, and §7.4 needs every field the Providers screen renders; this file is the contract that the YAML document and the loader both have to satisfy.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 
@@ -22,7 +17,7 @@ type Document struct {
 	Providers []Provider `yaml:"providers"`
 }
 
-// Provider is one upstream vendor definition (SPEC-API-001 §5 "Provider").
+// Provider is one upstream vendor definition.
 type Provider struct {
 	ID                      string    `yaml:"id"`
 	Priority                int       `yaml:"priority"`
@@ -42,27 +37,22 @@ type Provider struct {
 	Display                 Display   `yaml:"display"`
 	Transport               Transport `yaml:"transport"`
 	// Transports is a multi-endpoint provider's per-format endpoint table: one
-	// entry per client wire the provider answers natively, each carrying its own
-	// URL and credential placement. The reference picks the entry matching the
-	// client's format so the request needs no translation (chatCore.js:89-101),
-	// and guards the choice per model through Model.SupportedFormats. An empty
-	// list means a single-endpoint provider, which is what Transport.BaseURL
-	// already describes.
-	//
-	// It sits at the entry level rather than inside Transport because that is
-	// where the reference declares it (registry/opencode-go.js:31); moving it
-	// would make the generator rewrite a document shape the reference owns.
+	// entry per client wire the provider answers natively, each with its own
+	// URL and credential placement. The entry matching the client's format is
+	// picked so the request needs no translation, guarded per model through
+	// Model.SupportedFormats. Empty means a single-endpoint provider, which is
+	// what Transport.BaseURL describes. It sits at the entry level because the
+	// reference declares it there.
 	Transports     []TransportEndpoint `yaml:"transports"`
 	OAuth          *OAuth              `yaml:"oauth"`
 	Models         []Model             `yaml:"models"`
 	Features       Features            `yaml:"features"`
 	ThinkingConfig *ThinkingConfig     `yaml:"thinking_config"`
 	ServiceKinds   []string            `yaml:"service_kinds"`
-	// SystemOne is the native decision-model endpoint the provider exposes.
-	// A model declaring `kind: systemone` is served by the §7.15 systemone
-	// route against this URL, never by the chat data plane: the payload is the
-	// provider's own vocabulary, so translating it as chat would send the
-	// wrong body (the reference's systemoneCore.js forwards it untouched).
+	// SystemOne is the native decision-model endpoint the provider exposes. A
+	// model declaring `kind: systemone` is served by the systemone route against
+	// this URL, never by the chat data plane: the payload is the provider's own
+	// vocabulary, so translating it as chat sends the wrong body.
 	SystemOne *SystemOneConfig `yaml:"systemone"`
 	// HiddenKinds are the service kinds the panel hides for this provider.
 	HiddenKinds []string `yaml:"hidden_kinds"`
@@ -77,8 +67,8 @@ type Provider struct {
 	Media              MediaConfigs `yaml:"media"`
 
 	// Custom marks a provider synthesized from a provider_nodes row rather than
-	// loaded from the embedded document (SPEC-API-001 §7.4). A synthesized
-	// entry carries no model list because the user supplies the model string.
+	// loaded from the embedded document. A synthesized entry carries no model
+	// list because the user supplies the model string.
 	Custom bool `yaml:"-"`
 }
 
@@ -123,21 +113,14 @@ type ThinkingConfig struct {
 	DefaultMode string   `yaml:"default_mode"`
 }
 
-// Model is one routable model inside a provider entry.
-//
-// UpstreamModelID is set when the exposed id differs from the id the upstream
-// expects. Kind marks a non-chat model, and Capabilities lists the extra
-// operations a media model accepts (an image model that also edits, for
-// instance); both are P2 surfaces (SPEC-API-001 §7.10), carried here so the
-// document stays a faithful copy and no field is dropped at decode time.
-// Thinking is tri-state: absent means the model follows its provider's
-// thinking configuration, which is not the same as an explicit false.
-//
+// Model is one routable model inside a provider entry. UpstreamModelID is set
+// when the exposed id differs from the id the upstream expects, Kind marks a
+// non-chat model, and Capabilities lists extra operations a media model accepts
+// (an image model that also edits). Thinking is tri-state: absent means the
+// model follows its provider's thinking configuration, not an explicit false.
 // SupportedFormats is the per-model endpoint guard a multi-endpoint provider
-// needs: opencode-go's models differ in which of its three endpoints answer
-// them, so a client on the claude wire must not be sent to /chat/completions
-// for a model that only declares `openai`. An empty list means the model
-// declares nothing, which the reference reads as "every transport is allowed".
+// needs, so a client on the claude wire never reaches /chat/completions for a
+// model that only declares `openai`; empty means every transport is allowed.
 type Model struct {
 	ID               string   `yaml:"id"`
 	Name             string   `yaml:"name"`

@@ -1,21 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/provider_model_probe.go
-// @for       The two §7.4 model test routes: one model by id, or a bounded sweep
-//
-//	over a provider's chat models (draft 017 §4.10, F10).
-//
+// @for       The two §7.4 model test routes: one model by id, or a bounded sweep over a provider's chat models (draft 017 §4.10, F10).
 // @uses      internal/schema, internal/service, net/http.
-// @reason    The reference names this capability per connection
-//
-//	(/providers/[id]/test-models) because "the credential works" and "this
-//	model answers" are different questions, and only the second one tells an
-//	operator why a client call failed. Both routes answer 200 with rows: a
-//	model that refused to answer is the finding, not a request failure.
-//
+// @reason    The reference names this capability per connection (/providers/[id]/test-models) because "the credential works" and "this model answers" are different questions, and only the second one tells an operator why a client call failed. Both routes answer 200 with rows: a model that refused to answer is the finding, not a request failure.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package handler
 
@@ -39,7 +30,6 @@ type ProviderModelTestHandler struct {
 // route's contract is that a model has to be named.
 const modelIDRequiredMessage = "a model id is required"
 
-// NewProviderModelTestHandler validates deps and returns the handler.
 func NewProviderModelTestHandler(tests *service.ProviderModelTestService) *ProviderModelTestHandler {
 	return &ProviderModelTestHandler{tests: tests}
 }

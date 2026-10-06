@@ -3,10 +3,7 @@
 // @file      internal/service/password.go
 // @for       Provides the production bcrypt password hashing adapter.
 // @uses      golang.org/x/crypto/bcrypt.
-// @reason    Dashboard credentials require an adaptive one-way hash rather
-//
-//	than reversible storage or a process-local comparison.
-//
+// @reason    Dashboard credentials require an adaptive one-way hash rather than reversible storage or a process-local comparison.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -24,7 +21,8 @@ type PasswordHasher interface {
 // BcryptHasher implements PasswordHasher using bcrypt's adaptive work factor.
 type BcryptHasher struct{}
 
-// Hash returns a bcrypt password hash.
+// Hash runs at bcrypt's default cost, which this signature does not let a caller
+// change.
 func (BcryptHasher) Hash(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(hash), err

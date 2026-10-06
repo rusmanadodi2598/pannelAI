@@ -1,25 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/oauth_fixture_test.go
-// @for       The assembled §7.4 OAuth handler fixture and the request helpers
-//
-//	every OAuth handler test shares.
-//
-// @uses      context, net/http, net/http/httptest, strings, testing, time,
-//
-//	internal/domain, internal/registry, internal/service.
-//
-// @reason    The handler's job is the HTTP contract, so its tests drive a real
-//
-//	OAuthFlowService over fakes that answer in memory: no registry
-//	binary, no PostgreSQL, no Redis, and no token ever leaves the
-//	process. This file is separate from oauth_stub_test.go because the
-//	fakes and the fixture are two concerns, and together they would
-//	pass the §1.1 line budget.
-//
+// @for       The assembled §7.4 OAuth handler fixture and the request helpers every OAuth handler test shares.
+// @uses      context, net/http, net/http/httptest, strings, testing, time, internal/domain, internal/registry, internal/service.
+// @reason    The handler's job is the HTTP contract, so its tests drive a real OAuthFlowService over fakes that answer in memory: no registry binary, no PostgreSQL, no Redis, and no token ever leaves the process. This file is separate from oauth_stub_test.go because the fakes and the fixture are two concerns, and together they would pass the §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -145,11 +132,11 @@ func seedOAuthAccount(t *testing.T, fixture oauthFixture, id, providerID, email 
 	if err != nil {
 		t.Fatalf("building the endpoint: %v", err)
 	}
-	endpoint.SetOAuth(&domain.OAuthCredential{
+	endpoint.SetOAuth(domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted: access, RefreshTokenEncrypted: refresh,
 		ExpiresAt: &expiry, AccountEmail: email,
-	}, oauthNow)
-	endpoint.SetAccount(domain.EndpointAccount{Email: email}, oauthNow)
+	}), oauthNow)
+	endpoint.SetAccount(domain.RehydrateEndpointAccount(domain.EndpointAccountInput{Email: email}), oauthNow)
 	if err := fixture.store.Create(context.Background(), endpoint); err != nil {
 		t.Fatalf("storing the account: %v", err)
 	}

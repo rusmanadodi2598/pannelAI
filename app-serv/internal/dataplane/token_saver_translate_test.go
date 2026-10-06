@@ -3,13 +3,10 @@
 // @file      internal/dataplane/token_saver_translate_test.go
 // @for       Table-driven tests and shared helpers for Headroom translator tests.
 // @uses      encoding/json, testing.
-// @reason    SPEC-API-002 §8.2 must be pinned across every provider wire the
-// dataplane dispatches, so translator Prepare and Restore assertions share
-// helpers here to stay inside the source-file line limit.
-//
+// @reason    SPEC-API-002 §8.2 must be pinned across every provider wire the dataplane dispatches, so translator Prepare and Restore assertions share helpers here to stay inside the source-file line limit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package dataplane
 

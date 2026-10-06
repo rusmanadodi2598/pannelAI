@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_forced_chat.go
-// @for       Accumulating an OpenAI chat stream into the single completion it
-//
-//	stands for.
-//
+// @for       Accumulating an OpenAI chat stream into the single completion it stands for.
 // @uses      internal/schema, sort, strconv.
-// @reason    A provider that forces streaming still has to answer a client that
-//
-//	asked for one JSON body, and a chat stream reports that answer as
-//	deltas rather than as one object. The accumulation rules (fragments
-//	join, tool calls attach by index, the last finish reason wins) live
-//	here so the fold itself stays about reading events.
-//
+// @reason    A provider that forces streaming still has to answer a client that asked for one JSON body, and a chat stream reports that answer as deltas rather than as one object. The accumulation rules (fragments join, tool calls attach by index, the last finish reason wins) live here so the fold itself stays about reading events.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package dataplane
 

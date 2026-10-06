@@ -3,21 +3,10 @@
 // @file      internal/service/provider_codebuddy_listed_test.go
 // @for       The shipped registry data serving both CodeBuddy regions to the panel.
 // @uses      internal/registry, internal/service, context, testing.
-// @reason    Draft 011 F1 asked for two registry entries the operator can see, and the
-//
-//	criterion it closed on was a test that reads them through the list and
-//	detail use cases rather than an assertion about the YAML file. The panel
-//	decides from has_oauth and auth_modes whether it offers a connect flow and
-//	which credential a form may ask for, so those two fields are pinned here
-//	together with the shape the port depends on: the endpoint each region
-//	answers, the headers it identifies itself with, the usage endpoint the
-//	quota read resolves, and the state round that makes its connect flow
-//	servable. A fixture index would prove the filtering; only the embedded
-//	index proves the data.
-//
+// @reason    Draft 011 F1 asked for two registry entries the operator can see, and the criterion it closed on was a test that reads them through the list and detail use cases rather than an assertion about the YAML file. The panel decides from has_oauth and auth_modes whether it offers a connect flow and which credential a form may ask for, so those two fields are pinned here together with the shape the port depends on: the endpoint each region answers, the headers it identifies itself with, the usage endpoint the quota read resolves, and the state round that makes its connect flow servable. A fixture index would prove the filtering; only the embedded index proves the data.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package service
 
@@ -81,7 +70,7 @@ func listedProvider(t *testing.T, svc *ProviderService, id string) registry.Prov
 	return registry.Provider{}
 }
 
-// TestProviderService_ListServesBothCodeBuddyRegions pins draft 011 F1: the two
+// TestProviderService_ListServesBothCodeBuddyRegions pins that the two
 // entries the reference split out of the old combined `codebuddy` are served
 // unfiltered, each keeping its own domain, alias, headers, usage endpoint and
 // connect flow.

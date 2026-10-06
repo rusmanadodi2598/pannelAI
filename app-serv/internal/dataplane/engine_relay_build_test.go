@@ -4,17 +4,11 @@
 //
 // @file      internal/dataplane/engine_relay_build_test.go
 // @for       The engine builders every relay test shares.
-//
 // @uses      net/http, testing, internal/domain, internal/provider, internal/registry.
-// @reason    Three builders differ only in which optional seams they pass, and
-//
-//	every relay test needs one of them. Keeping them together means a new
-//	test picks a builder rather than re-deriving the pipeline, which is
-//	what keeps an engine test about the engine.
-//
+// @reason    Three builders differ only in which optional seams they pass, and every relay test needs one of them. Keeping them together means a new test picks a builder rather than re-deriving the pipeline, which is what keeps an engine test about the engine.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package dataplane
 

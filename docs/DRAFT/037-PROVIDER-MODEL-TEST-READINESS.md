@@ -1,4 +1,4 @@
-# 037 — Provider model test (test by model id)
+# 037: Provider model test (test by model id)
 
 | | |
 |---|---|
@@ -16,7 +16,7 @@
 `POST /endpoints/{id}/test` menjawab "kredensial ini bisa menghubungi provider".
 `POST /provider-nodes/{id}/test` menjawab hal yang sama untuk node. Keduanya **GET ke daftar
 model** (`provider_probe_call.go`), jadi keduanya buta terhadap pertanyaan berikutnya:
-"gpt-4o jawab tidak?" — pertanyaan yang justru muncul setelah klien gagal satu panggilan.
+"gpt-4o jawab tidak?", pertanyaan yang justru muncul setelah klien gagal satu panggilan.
 
 Reference punya jalur itu: `POST /api/models/test` menendang satu model, dan UI-nya
 (`providers/[id]/ModelRow.js:34-49`) menaruh tombol uji **per baris model**. Route
@@ -39,7 +39,7 @@ Satu port, satu prober, nol mekanisme kedua:
 - `service.ModelProber` adalah `dataplane.Engine.Ping` yang sudah dipakai combo test (`§7.7`).
   Interface `ComboProber` dinamai ulang menjadi `ModelProber` karena kini dipakai dua layanan;
   tidak ada interface ketiga dan tidak ada jalur HTTP kedua.
-- Probe **melalui pipeline nyata** — resolve → select key → translate → dial. Konsekuensinya
+- Probe **melalui pipeline nyata**: resolve → select key → translate → dial. Konsekuensinya
   adalah yang membuat jawaban bisa dipercaya: model yang tidak bisa di-route gateway tidak akan
   pernah melaporkan sehat dari route yang tidak akan gateway ambil.
 - Daftar model dari `ProviderService.Models` (`§7.4`), yaitu registry untuk provider bawaan dan
@@ -123,11 +123,11 @@ terakhir, bukan milik baris. `upstream_endpoints.test_status` tetap hanya untuk 
 **Tidak diwarisi, dan alasannya tertulis:**
 - Fan-out tanpa batas + timeout yang menjatuhkan seluruh route (lihat §2.2).
 - Prompt. Reference mengirim `"hi"`, `app-serv` sudah punya `PingPrompt = "ping"`. Isinya tidak
-  dibaca — yang dinilai adalah apakah pipeline selesai — jadi tidak ada yang diselaraskan, dan
+  dibaca (yang dinilai adalah apakah pipeline selesai), jadi tidak ada yang diselaraskan, dan
   tidak ada dua prompt di dalam satu binary.
 - Echo badan upstream mentah 500 karakter ke klien (`ping.js:193`). Baris kegagalan di sini memakai
   `dataplane.Error.Message`, yang sudah lewat pembatas dan pembersihan milik dataplane.
-- kredensial di URL (`?key=` pada probe Gemini, `testUtils.js:575`) — tidak ada padanannya di sini;
+- kredensial di URL (`?key=` pada probe Gemini, `testUtils.js:575`) tidak ada padanannya di sini;
   penempatan kredensial milik `provider/plugin_credential.go`.
 
 ## 5. Gerbang
@@ -170,7 +170,7 @@ harapan; yang belum selesai ditandai apa adanya.
 
 ## 7. Yang sengaja TIDAK dikerjakan
 
-- **`/models/availability`** (model mana yang sedang cooldown dan sampai kapan) — satu-satunya di
+- **`/models/availability`** (model mana yang sedang cooldown dan sampai kapan), satu-satunya di
   daftar F10 yang menjawab pertanyaan yang belum bisa dijawab panel sama sekali. Datanya ada di
   `upstream_key_health.go`, bentuk jawabannya belum. Masuk pass berikutnya, bukan ditambal sekarang.
 - **Empat route siklus hidup lain** (`DELETE /models/alias`, `POST/DELETE /models/disabled`,
@@ -211,7 +211,7 @@ Gate `app-ui`, dijalankan di `app-ui/` pada working tree ini:
 | `bun run build` | `BUILD_EXIT=0`, tanpa error; peringatan satu-satunya adalah biaya hook `sveltekit-guard` dari rolldown, tidak berkaitan pass ini |
 
 Waktu 2829 s lebih lama dari 1945 s yang dicatat draft 019: `go test -race ./...` untuk pass ini
-berjalan di atas host yang sama, dan load 5–6 itu yang menahan fork Vitest (CPU time runner hanya
+berjalan di atas host yang sama, dan load 5-6 itu yang menahan fork Vitest (CPU time runner hanya
 3 m 20 d dari 45 m jalan). Tidak ada suntingan di antara keduanya, jadi angkanya dilaporkan apa
 adanya, bukan dibandingkan seperti regresi.
 
@@ -220,21 +220,21 @@ adanya, bukan dibandingkan seperti regresi.
 Report untuk permukaan yang pass ini bangun. Butir penuh dan cara memeriksanya ada di
 `anti-slop/audit-002-2026-09-27.md`.
 
-**Block 1, Hard Gate.** R-02 PASS di berkas baru (0 karakter `—` pada copy yang dirender;
+**Block 1, Hard Gate.** R-02 PASS di berkas baru (0 karakter em dash pada copy yang dirender;
 satu temuan di `EndpointDeleteDialog.svelte:34` adalah milik pass sebelum ini, dilaporkan, tidak
-diubah tanpa persetujuan). R-03 PASS — tabel katalog menggulir horizontal dalam box-nya, pola yang
+diubah tanpa persetujuan). R-03 PASS: tabel katalog menggulir horizontal dalam box-nya, pola yang
 sama dipakai `EndpointKeysTable` (46rem) dan `ProviderTable`; `min-w` 56rem, tidak ada teks yang
-keluar kontainer, target sentuh `min-h-11 min-w-11`. R-17/R-18/R-36/R-38 PASS — tidak ada angka
-yang tidak dikirim API; `status` dihilangkan pada probe sehat daripada diisi 200. R-23 PASS — tidak
-ada aset visual baru; ikon memakai registry yang sudah ada. R-24/R-28 PASS — tidak ada nav item atau FAQ.
-R-25 PASS — hanya token yang sudah diukur `tests/tokens/contrast.test.ts`. R-26 PASS — baris
-non-chat tidak mendapat tombol. R-27 PASS — empat keadaan ditulis dan diuji satu-satu. R-32 PASS —
-`<button>` asli, indikator fokus bawaan tidak dibuang. R-33/R-34 PASS — ditulis di source, tidak
-ada toggle tema. **R-35 PASS — klik-through tercatat.** Lihat §10.
+keluar kontainer, target sentuh `min-h-11 min-w-11`. R-17/R-18/R-36/R-38 PASS: tidak ada angka
+yang tidak dikirim API; `status` dihilangkan pada probe sehat daripada diisi 200. R-23 PASS: tidak
+ada aset visual baru; ikon memakai registry yang sudah ada. R-24/R-28 PASS: tidak ada nav item atau FAQ.
+R-25 PASS: hanya token yang sudah diukur `tests/tokens/contrast.test.ts`. R-26 PASS: baris
+non-chat tidak mendapat tombol. R-27 PASS: empat keadaan ditulis dan diuji satu-satu. R-32 PASS:
+`<button>` asli, indikator fokus bawaan tidak dibuang. R-33/R-34 PASS: ditulis di source, tidak
+ada toggle tema. **R-35 PASS: klik-through tercatat.** Lihat §10.
 
-**Block 2, Purpose-Gate.** R-04 PASS — `Activity` untuk probe alasannya sudah tertulis di
+**Block 2, Purpose-Gate.** R-04 PASS: `Activity` untuk probe alasannya sudah tertulis di
 `icons.ts:149`; `LoaderCircle animate-spin` mengikuti `StateMessage.svelte:26`. R-01/R-09/R-10/
-R-12/R-13/R-19/R-22 PASS — tidak ada gradien, glow, glass, badge dekoratif, bayangan baru, animasi
+R-12/R-13/R-19/R-22 PASS: tidak ada gradien, glow, glass, badge dekoratif, bayangan baru, animasi
 template, atau ilustrasi.
 
 **Block 3, Liveliness.** DIAL dipertahankan dari `DESIGN.md`: ENERGY 1 / RHYTHM 2 / MOTION 1.
@@ -244,7 +244,7 @@ rapat, angka dari API) justru yang ditonjolkan kolom Test.
 
 **Block 4, Craftsmanship & Quality Locks.** C-2 PASS (tiap kontrol punya efek nyata, terbukti di
 tes). C-4 PASS untuk state dan breakpoint; temuan #4 di audit mencatat tabel menggulir lebih awal.
-C-5 PASS (tak ada klaim). R-05/R-11/R-15/R-16/R-20/R-21/R-29/R-30/R-31 PASS — tidak ada seksi baru,
+C-5 PASS (tak ada klaim). R-05/R-11/R-15/R-16/R-20/R-21/R-29/R-30/R-31 PASS: tidak ada seksi baru,
 radius dan ritme warisan tabel, label tombol spesifik ("Test the first 6 models"), bukan buzzword.
 
 
@@ -291,7 +291,7 @@ Owner melaporkan OpenAI-Compatible dan Anthropic-Compatible belum punya mekanism
 Ternyata gap-nya dua lapis, dan yang pertama tidak terlihat dari layar:
 
 1. **Backend.** `ProviderService.Models()` menjawab daftar model node dari **upstream**-nya
-   (`modelsFor` → `ListNodeModels`), dan itu kosong ketika upstream tidak menjawab — sementara baris
+   (`modelsFor` → `ListNodeModels`), dan itu kosong ketika upstream tidak menjawab, sementara baris
    yang operator deklarasikan di `models_custom` justru yang tampil di layar node dan justru yang
    bisa di-route. Sapuan atas node seperti itu menjawab `VALIDATION_ERROR: provider … offers no chat
    model to test` di samping tabel yang penuh model.
@@ -341,7 +341,7 @@ muse-spark-1.3-contributor-free) mengonfirmasi distribusinya: urutan rotasi tepa
 `sticky_limit: 1` berperilaku benar (satu request = satu member, cursor maju). Yang terbawa dari
 uji itu tiga temuan, dan hanya satu yang menjadi milik gateway.
 
-**1. muse-spark menghabiskan ceiling untuk reasoning — ditambal.** Dengan `max_tokens: 60` model
+**1. muse-spark menghabiskan ceiling untuk reasoning: ditambal.** Dengan `max_tokens: 60` model
 ini menjawab **200** dengan `content: ""` + `finish_reason: "length"`: 60 token habis untuk
 thinking, nol untuk jawaban. Walk combo (`engine.go`) hanya pindah member ketika sebuah member
 **gagal**, jadi kosong itu dihidangkan apa adanya; clamp 16 token yang ada di connector pun adalah
@@ -356,19 +356,19 @@ sengaja dua lapis karena keduanya menjawab sisi yang berbeda dari satu gejala:
   `Outcome.Truncated`, dan combo walk mencoba member berikutnya sebelum body itu dihidangkan.
   Sengaja **bukan** error: `answer()` mencatat setiap error sebagai kegagalan kredensial
   (`engine_relay.go:179` → `failureClass`), padahal yang terjadi adalah model yang menjawab sesuai
-  permintaannya — mem-park key karena itu salah sasaran. Kalau semua member sama kosongnya, body
+  permintaannya; mem-park key karena itu salah sasaran. Kalau semua member sama kosongnya, body
   kosong terakhir yang dihidangkan (dengan `finish_reason: length` utuh), bukan 502: itu persis
   yang client dapat sebelumnya, dan itu yang memberi tahunya bahwa ceiling-nya terlalu kecil.
-  Client streaming tidak di-walk ulang — frame-nya sudah sampai.
+  Client streaming tidak di-walk ulang: frame-nya sudah sampai.
 
-**2. Reasoning tidak muncul sebagai konten — dicatat.** Pada space-bunny dan mimo, thinking hanya
+**2. Reasoning tidak muncul sebagai konten: dicatat.** Pada space-bunny dan mimo, thinking hanya
 terlihat sebagai `usage.completion_tokens_details.reasoning_tokens`; tidak ada `reasoning_content`
 seperti pada qoder/qfmodel, baik di mode non-stream maupun stream. Ini kemampuan upstream, bukan
 perilaku gateway: gateway meneruskan yang ada. Konsekuensinya tercatat di §7.7: jawaban
 reasoning-only tetap dihitung "menjawab", karena fold memang mempertahankan reasoning saat
 content kosong.
 
-**3. Format response id tidak seragam — dicatat.** `070a…` (space-bunny), `gen-…` (mimo),
+**3. Format response id tidak seragam: dicatat.** `070a…` (space-bunny), `gen-…` (mimo),
 `resp_…` (muse) karena tiga upstream berbeda. Tidak ada satu pun kode gateway yang mem-parse id
 jawab, jadi tidak ada yang perlu ditambal; yang tidak boleh dilakukan pemakai adalah mengandalkan
 formatnya. Yang justru sudah dinormalkan adalah **nama model** (§7.6, 2026-09-28), bukan id.
@@ -391,7 +391,7 @@ yang binary-nya lebih tua dari patch ini, sehingga panggilan apa pun ke sana har
 lama, dan norma draft 034 §9 melarang proses itu dihentikan atau dimulai ulang oleh pass pengujian.
 Kunci gateway juga tidak tersimpan di repo. Yang terbukti di dalam repo bukan pengganti pengukuran
 itu, hanya rantainya: `engine_opencode_free_floor_test.go` menjalankan pipeline nyata (registry
-ter-embed + connector OpenCode asli + engine) dan membaca body yang sampai ke upstream — 60 menjadi
+ter-embed + connector OpenCode asli + engine) dan membaca body yang sampai ke upstream: 60 menjadi
 512 untuk muse-spark 1.3, dan tetap 60 untuk member combo di sebelahnya;
 `engine_truncated_failover_test.go` menjalankan walk combo nyata atas jawaban kosong. Yang tersisa untuk mata kepala: apakah upstream sungguhan menjawab 512 itu dengan konten, dan apakah
 `reasoning_content` tetap tidak muncul di lane space-bunny/mimo (temuan #2).

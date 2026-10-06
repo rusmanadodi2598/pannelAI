@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/chat_record.go
-// @for       The accounting pair one chat call writes: a usage row and a
-//
-//	request log under the request's own identifier.
-//
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	log/slog, time.
-//
-// @reason    SPEC-API-001 §7.12/§7.13 make one recorded row per request part of
-//
-//	the §7.15 pipeline, and register G18 found the chat plane writing only
-//	the usage half. Keeping the pair beside chat.go means the failure path
-//	and the success path cannot disagree about which rows a call leaves,
-//	and keeps chat.go inside the AGENTS.md §1.1 line budget.
-//
+// @for       The accounting pair one chat call writes: a usage row and a request log under the request's own identifier.
+// @uses      internal/dataplane, internal/domain, internal/schema, context, log/slog, time.
+// @reason    SPEC-API-001 §7.12/§7.13 make one recorded row per request part of the §7.15 pipeline, and register G18 found the chat plane writing only the usage half. Keeping the pair beside chat.go means the failure path and the success path cannot disagree about which rows a call leaves, and keeps chat.go inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -32,32 +20,19 @@ import (
 )
 
 // record writes one usage row and one request log for a chat call, under the
-// router's request id so the pair is reachable from either surface (§4).
-//
-// The bodies are handed over as they arrived: the capture setting and the
-// truncation rule are applied by LogService.Record, so a deployment with capture
-// off stores no body at all, and this caller does not re-decide what §7.13
-// governs in one place.
-//
-// The log's error text is the code alone, never the failure's message: a chat
-// upstream's message is quoted back verbatim, and an authentication failure's
-// message can carry the presented credential — a stored row must not hold either.
-//
-// A recording failure is deliberately not returned: the client already has its
-// answer, and failing the request over an accounting write would turn a served
-// call into an error the client cannot act on.
+// router's request id so the pair is reachable from either surface. Bodies are
+// handed over as they arrived: capture and truncation are LogService.Record's
+// decision, made once, and this caller does not re-decide what it governs. The
+// log's error text is the code alone, never the failure's message: an upstream
+// message is quoted back verbatim and an auth failure's message can carry the
+// presented credential, so a stored row must hold neither. A recording failure
+// is not returned, because the client already has its answer.
 func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome dataplane.Outcome, keyID, errorCode string) {
-	// An image request answered by the §7.8 adapter is the one served call whose
-	// identity the accounting pair cannot show: the row is written under the model
-	// the caller addressed, so the model that actually received the picture
-	// appears nowhere — and whether that model reads images at all is exactly the
-	// question an operator needs to answer when an image comes back described
-	// wrong. Measured live 2026-09-29: a combo's image requests were answered
-	// "gray" for a solid-red image by an adapter model that cannot see, and nothing
-	// in the panel's rows said a substitution had happened.
-	//
-	// This is a log line, not a client-facing field: the gateway can prove which
-	// model it handed the image to, and cannot prove what that model did with it.
+	// An image request answered by the adapter is the one served call whose
+	// identity the accounting pair cannot show: the row carries the model the
+	// caller addressed, so the model that actually received the picture appears
+	// nowhere. Logged here rather than as a client field: the gateway can prove
+	// which model it handed the image to and cannot prove what it did with it.
 	if outcome.VisionAdapted {
 		slog.Warn("image request answered by the vision adapter",
 			"request_id", s.requestIDFrom(ctx),
@@ -78,9 +53,8 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 	// The usage row is written only for a call that reached an attempt: the
 	// aggregate requires a provider and a model, and a request refused before
 	// the pipeline (an unknown model, an invalid body) has neither. Skipping it
-	// here rather than letting the aggregate reject it is deliberate — a
-	// swallowed validation error is what hid this plane's missing error row
-	// (register G17).
+	// here rather than letting the aggregate reject it is deliberate, a
+	// swallowed validation error is what hid this plane's missing error row.
 	if s.usage != nil && outcome.ProviderID != "" && outcome.Model != "" {
 		input := domain.UsageRecordInput{
 			RequestID:    requestID,
@@ -103,7 +77,7 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 			}
 		}
 		// The estimate is the rate tables' answer for the tokens this call
-		// reported, and zero for every path without one — a failed call
+		// reported, and zero for every path without one, a failed call
 		// delivered nothing, an unpriced model has no rate to apply, and a
 		// report of all zeros prices to zero. §7.12: the figure is an estimate
 		// for display, never a billed amount.
@@ -122,8 +96,8 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 		s.quotas.Record(ctx, outcome.EndpointID, chatQuotaUnits(outcome.Usage))
 	}
 	if s.logs != nil {
-		// reason: same as above — the log is the second half of the accounting
-		// pair, not a condition of the answer.
+		// reason: the log is the second half of the accounting pair, not a
+		// condition of the answer the client gets.
 		_, _ = s.logs.Record(ctx, domain.RequestLogInput{
 			RequestID:    requestID,
 			GatewayKeyID: keyID,
@@ -140,12 +114,12 @@ func (s *ChatService) record(ctx context.Context, in dataplane.Request, outcome 
 }
 
 // RecordRefusal writes the one request-log row a chat call leaves when the
-// handler refused it before the pipeline: a body the schema would not accept
-// (draft 034 F4). It is the same treatment an engine refusal already gets from
+// handler refused it before the pipeline: a body the schema would not accept.
+// It is the same treatment an engine refusal already gets from
 // record(), so the panel's error surfaces see a client that repeats a
 // malformed call the way they see one a route could not serve. No usage row is
 // written: the call reached no attempt, so there is no provider or model to
-// bill (register G17). The stored error text is the code alone, matching the
+// bill. The stored error text is the code alone, matching the
 // rule that a stored row must not hold text an upstream can influence. A
 // recording failure is deliberately not returned, for the reason record() keeps.
 func (s *ChatService) RecordRefusal(ctx context.Context, raw []byte, keyID, model string, failure error) {

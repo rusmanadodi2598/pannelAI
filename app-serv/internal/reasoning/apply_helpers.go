@@ -3,21 +3,12 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/apply_helpers.go
-// @for       The value conversions and nested-field writers the thinking formats
-//
-//	share.
-//
+// @for       The value conversions and nested-field writers the thinking formats share.
 // @uses      encoding/json.
-// @reason    SPEC-API-001 §7.15 gives each thinking format its own field, but
-//
-//	several formats share the same conversions: a level to a budget, a
-//	budget to a level, and the nested generationConfig Gemini keeps its
-//	thinking block in. Keeping those here is what keeps apply.go to the
-//	dispatch a reader compares against the reference's own table.
-//
+// @reason    SPEC-API-001 §7.15 gives each thinking format its own field, but several formats share the same conversions: a level to a budget, a budget to a level, and the nested generationConfig Gemini keeps its thinking block in. Keeping those here is what keeps apply.go to the dispatch a reader compares against the reference's own table.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package reasoning
 

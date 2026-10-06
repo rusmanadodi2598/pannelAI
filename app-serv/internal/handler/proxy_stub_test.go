@@ -3,15 +3,10 @@
 // @file      internal/handler/proxy_stub_test.go
 // @for       The in-memory proxy store and prober the §7.11 route tests drive.
 // @uses      internal/domain, internal/service, context, sort, strings, testing.
-// @reason    The handler takes a concrete *service.ProxyService, so the route
-//
-//	tests build the real service over doubles rather than faking the
-//	service itself — the seam the production wiring uses is the same
-//	one the tests use.
-//
+// @reason    The handler takes a concrete *service.ProxyService, so the route tests build the real service over doubles rather than faking the service itself, the seam the production wiring uses is the same one the tests use.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -91,7 +86,7 @@ func newStubProxyService(t *testing.T, prober *stubProxyProber) (*service.ProxyS
 	t.Helper()
 	repo := newStubProxyRepo()
 	if prober == nil {
-		prober = &stubProxyProber{result: service.ProxyProbeResult{State: domain.EndpointTestOK, LatencyMS: 7}}
+		prober = &stubProxyProber{result: service.ProxyProbeResult{State: string(domain.EndpointTestOK), LatencyMS: 7}}
 	}
 	sealer, err := domain.NewSealer([]byte(strings.Repeat("k", 32)))
 	if err != nil {

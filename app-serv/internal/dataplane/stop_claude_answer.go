@@ -3,26 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/stop_claude_answer.go
-// @for       Honouring the caller's `stop_sequences` on a one-body Anthropic answer
-//
-//	the upstream answered past.
-//
+// @for       Honouring the caller's `stop_sequences` on a one-body Anthropic answer the upstream answered past.
 // @uses      encoding/json, internal/schema.
-// @reason    The Anthropic wire makes the same promise the OpenAI wire does and
-//
-//	keeps it differently: a cut there is reported as
-//	`stop_reason: "stop_sequence"` with the marker itself in
-//	`stop_sequence`, not as a bare `stop`. Measured live on 2026-09-30 against
-//	codebuddy-intl through /api/v1/messages, an upstream that ignores
-//	`stop` answered `A STOPHERE B` in full and closed with `end_turn`, so
-//	the caller received text it had asked not to see and a reason that said the
-//	model had simply finished. This runs on the body the gateway serves, after
-//	translation, so it holds whichever way the upstream wrote — translated from
-//	OpenAI or Responses, or forwarded from a Claude one untouched.
-//
+// @reason    The Anthropic wire makes the same promise the OpenAI wire does and keeps it differently: a cut there is reported as `stop_reason: "stop_sequence"` with the marker itself in `stop_sequence`, not as a bare `stop`. Measured live on 2026-09-30 against codebuddy-intl through /api/v1/messages, an upstream that ignores `stop` answered `A STOPHERE B` in full and closed with `end_turn`, so the caller received text it had asked not to see and a reason that said the model had simply finished. This runs on the body the gateway serves, after translation, so it holds whichever way the upstream wrote, translated from OpenAI or Responses, or forwarded from a Claude one untouched.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 
@@ -33,16 +19,13 @@ import (
 )
 
 // cutClaudeAnswer trims one served Anthropic answer to before the caller's first
-// stop sequence, and returns it unchanged when the answer contains none.
-//
-// Only text blocks are cut and only text blocks after the marker are dropped. A
-// `tool_use` block is not prose the caller asked to stop reading: it is work a
-// client dispatches on, and deleting one because it happened to follow a marker
-// would silently drop a call the caller must still make.
-//
-// The rewrite happens on the decoded object rather than the typed response for the
-// reason stampAnswerModel gives: a body the gateway forwards untouched keeps every
-// member the schema does not model.
+// stop sequence, and returns it unchanged when the answer contains none. Only text
+// blocks are cut and only text blocks after the marker are dropped: a `tool_use`
+// block is work a client dispatches on, not prose the caller asked to stop reading,
+// so deleting one because it followed a marker would drop a call the caller must
+// still make. The rewrite happens on the decoded object rather than the typed
+// response, so a body the gateway forwards untouched keeps every member the schema
+// does not model.
 func cutClaudeAnswer(body []byte, sequences []string) []byte {
 	guard := newStopGuard(sequences)
 	if guard == nil {

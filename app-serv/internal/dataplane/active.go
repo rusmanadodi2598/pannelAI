@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/active.go
-// @for       The in-flight marker seam the relay leg opens before its outbound
-//
-//	call and closes after it.
-//
+// @for       The in-flight marker seam the relay leg opens before its outbound call and closes after it.
 // @uses      context.
-// @reason    SPEC-UI-001 §6.5 makes the drawing's active node mean "this
-//
-//	provider is being called right now", and the relay leg is the only
-//	place in the data plane that knows both the provider and the
-//	interval. The seam is declared here rather than reached for directly
-//	so the engine keeps no Redis dependency (AGENTS.md §1.5): the
-//	composition root adapts the store to it.
+// @reason    SPEC-UI-001 §6.5 makes the drawing's active node mean "this provider is being called right now", and the relay leg is the only place in the data plane that knows both the provider and the interval. The seam is declared here rather than reached for directly so the engine keeps no Redis dependency (AGENTS.md §1.5): the composition root adapts the store to it.
 //
 //	Begin returns the release rather than taking a matching End, because
 //	the two halves cannot be separated that way: a caller that has the
@@ -22,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package dataplane
 
@@ -35,7 +26,7 @@ import "context"
 // A struct rather than four positional strings because Model and Combo are both
 // optional and adjacent: a transposition compiles and then draws the wrong label
 // on the panel. Combo is empty for every call that addressed a single model,
-// which is the normal case rather than a missing one — the media, embeddings and
+// which is the normal case rather than a missing one, the media, embeddings and
 // SystemOne planes refuse a combo before they mark anything.
 type ActiveMarker struct {
 	ProviderID string

@@ -3,24 +3,12 @@
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/quota_counter_settle_test.go
-// @for       The settle half of the quota counter: which windows a flush
-//
-//	rewrites, which it marks mirrored, and which it retires.
-//
-// @uses      github.com/redis/go-redis/v9, internal/domain, context, os,
-//
-//	testing, time.
-//
-// @reason    Settle is the operation whose wrong shape lost window totals
-//
-//	live (the 2026-09-23 defect): a flush must mark what it mirrored
-//	without dropping a total still in use, and retire only what nothing
-//	would read again. Split from quota_counter_test.go to hold the
-//	AGENTS.md §1.1 line budget.
-//
+// @for       The settle half of the quota counter: which windows a flush rewrites, which it marks mirrored, and which it retires.
+// @uses      github.com/redis/go-redis/v9, internal/domain, context, os, testing, time.
+// @reason    Settle is the operation whose wrong shape lost window totals live (the 2026-09-23 defect): a flush must mark what it mirrored without dropping a total still in use, and retire only what nothing would read again. Split from quota_counter_test.go to hold the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package redisrepo
 

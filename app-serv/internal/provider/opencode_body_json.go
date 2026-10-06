@@ -4,16 +4,10 @@
 // @file      internal/provider/opencode_body_json.go
 // @for       The JSON member helpers the OpenCode request transform writes with.
 // @uses      encoding/json.
-// @reason    The transform builds members by hand because it has to preserve the
-//
-//	client's own body: decoding into a typed struct would drop every
-//	member the gateway does not model, which for a coding agent is most
-//	of them. These helpers keep that work readable and keep the transform
-//	itself inside the AGENTS.md §1.1 budget.
-//
+// @reason    The transform builds members by hand because it has to preserve the client's own body: decoding into a typed struct would drop every member the gateway does not model, which for a coding agent is most of them. These helpers keep that work readable and keep the transform itself inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-21
 package provider
 

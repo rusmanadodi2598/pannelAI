@@ -1,21 +1,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/vision_adapter.go
-// @for       PostgreSQL persistence for the vision adapter configuration
-//
-//	(SPEC-API-001 §7.8).
-//
+// @for       PostgreSQL persistence for the vision adapter configuration (SPEC-API-001 §7.8).
 // @uses      github.com/jackc/pgx/v5, internal/domain, encoding/json.
-// @reason    §7.14 keys settings by name and merges defaults at read, so the
-//
-//	adapter is one settings row holding one typed document. Storing it
-//	there rather than in a table of its own means an operator's
-//	settings export carries the adapter with everything else, which is
-//	what §7.9's round-trip rule already assumes for the token savers.
-//
+// @reason    §7.14 keys settings by name and merges defaults at read, so the adapter is one settings row holding one typed document. Storing it there rather than in a table of its own means an operator's settings export carries the adapter with everything else, which is what §7.9's round-trip rule already assumes for the token savers.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 

@@ -3,16 +3,10 @@
 // @file      internal/handler/settings.go
 // @for       The settings read and partial-patch routes (SPEC-API-001 §7.14).
 // @uses      internal/schema, internal/service, net/http.
-// @reason    §7.14 serves one typed document and a patch validated per key, and
-//
-//	secrets are never returned. AGENTS.md §1.5 keeps the merge and the
-//	persistence in the service, so this handler only decodes, calls,
-//	and encodes; the deprecated caveman key has no route here by
-//	design (§7.9).
-//
+// @reason    §7.14 serves one typed document and a patch validated per key, and secrets are never returned. AGENTS.md §1.5 keeps the merge and the persistence in the service, so this handler only decodes, calls, and encodes; the deprecated caveman key has no route here by design (§7.9).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package handler
 
@@ -28,7 +22,6 @@ type SettingsHandler struct {
 	settings *service.SettingsService
 }
 
-// NewSettingsHandler validates deps and returns the handler.
 func NewSettingsHandler(settings *service.SettingsService) *SettingsHandler {
 	return &SettingsHandler{settings: settings}
 }

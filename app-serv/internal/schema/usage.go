@@ -3,15 +3,10 @@
 // @file      internal/schema/usage.go
 // @for       The usage filter query and the summary/timeseries contracts.
 // @uses      internal/domain (UsageFilter, UsageTotals).
-// @reason    SPEC-API-001 §7.12 fixes the filter set (from, to, group_by,
-//
-//	granularity) and §2.4 requires those as typed structs validated
-//	before the service sees them, so an unknown group_by and
-//	granularity are 400s here rather than silently ignored queries.
-//
+// @reason    SPEC-API-001 §7.12 fixes the filter set (from, to, group_by, granularity) and §2.4 requires those as typed structs validated before the service sees them, so an unknown group_by and granularity are 400s here rather than silently ignored queries.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package schema
 
@@ -34,7 +29,7 @@ var usageFilterFields = []string{"status", "endpoint_id", "provider_id", "model"
 // UsageFilterQuery is the decoded filter set shared by summary, timeseries, and
 // records (SPEC-API-001 §7.12). GroupBy and Granularity are empty when the
 // caller did not ask for them. Status is the domain value object, so the closed
-// set is held by the type from the boundary inward (draft 010 F2/F9).
+// set is held by the type from the boundary inward.
 type UsageFilterQuery struct {
 	From        *time.Time
 	To          *time.Time
@@ -78,7 +73,7 @@ func DecodeUsageFilter(r *http.Request) (UsageFilterQuery, error) {
 	// The status closed set is checked here, at the boundary, rather than left
 	// to the repository: the read predicate treats an empty value as
 	// "unfiltered" and every other value as an equality, so an unknown value
-	// must be a 400, not a silently empty 200 (draft 010 F2). An omitted or
+	// must be a 400, not a silently empty 200. An omitted or
 	// empty parameter stays "unfiltered", which is why the parse runs only
 	// when a value was sent (the same guard group_by and granularity use).
 	var status domain.UsageStatus

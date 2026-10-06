@@ -1,20 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/model.go
-// @for       The model catalog endpoints: the merged catalog, custom models, the
-//
-//	alias set, and the disabled set (SPEC-API-001 §7.6).
-//
+// @for       The model catalog endpoints: the merged catalog, custom models, the alias set, and the disabled set (SPEC-API-001 §7.6).
 // @uses      internal/schema, internal/service, internal/domain, net/http.
-// @reason    §7.6 is four routes over one screen, and every one of them is
-//
-//	decode → validate → call → encode. Keeping them in one file makes
-//	the set auditable against the spec table; AGENTS.md §1.5 keeps the
-//	SQL and the merge out of here, so no branch below inspects a row.
-//
+// @reason    §7.6 is four routes over one screen, and every one of them is decode → validate → call → encode. Keeping them in one file makes the set auditable against the spec table; AGENTS.md §1.5 keeps the SQL and the merge out of here, so no branch below inspects a row.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -32,13 +24,12 @@ type ModelHandler struct {
 	catalog *service.ModelCatalogService
 }
 
-// NewModelHandler validates deps and returns the handler.
 func NewModelHandler(catalog *service.ModelCatalogService) *ModelHandler {
 	return &ModelHandler{catalog: catalog}
 }
 
-// Catalog serves GET /api/v1/models/catalog with the §7.6 filters, including
-// the `active` boolean (draft 025): `true` narrows the answer to providers
+// Catalog serves GET /api/v1/models/catalog with the §7.6 filters, including the
+// `active` boolean: `true` narrows the answer to providers
 // holding an active endpoint, `false` narrows nothing, and any other spelling
 // is a VALIDATION_ERROR rather than a silently ignored filter.
 func (h *ModelHandler) Catalog(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +45,14 @@ func (h *ModelHandler) Catalog(w http.ResponseWriter, r *http.Request) {
 		Query:      strings.TrimSpace(query.Get("q")),
 		Active:     active,
 	}
+	if err := schema.ValidateStruct(schema.CatalogListQuery{
+		ProviderID: filter.ProviderID,
+		Capability: filter.Capability,
+		Query:      filter.Query,
+	}); err != nil {
+		schema.WriteError(w, err)
+		return
+	}
 	models, err := h.catalog.Catalog(r.Context(), filter)
 	if err != nil {
 		schema.WriteError(w, err)
@@ -66,8 +65,7 @@ func (h *ModelHandler) Catalog(w http.ResponseWriter, r *http.Request) {
 // is the two lowercase spellings; an empty value reads as absent, which is the
 // house rule every other query parameter follows, and a misspelling like `yes`
 // or `1` is refused rather than silently narrowing nothing while reading as
-// narrowed (draft 025 F5 — the same failure the usage status filter had before
-// it became a closed set).
+// narrowed.
 func decodeBoolFilter(raw string) (*bool, error) {
 	trimmed := strings.TrimSpace(raw)
 	switch trimmed {

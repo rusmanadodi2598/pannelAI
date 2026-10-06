@@ -7,7 +7,7 @@
 // @reason    The plan ceiling comes from the subscription and the wallet from the billing call, so a walk that stops early, skips a surface or reaches another host shows the operator a balance with nothing beside it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

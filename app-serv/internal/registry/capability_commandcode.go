@@ -2,24 +2,12 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_commandcode.go
-// @for       The Command Code wire's own vision answer: one endpoint for every
-//
-//	model, so a text-only denylist decides instead of the family
-//	patterns.
-//
+// @for       The Command Code wire's own vision answer: one endpoint for every model, so a text-only denylist decides instead of the family patterns.
 // @uses      strings.
-// @reason    SPEC-API-001 §7.6 filters the catalog by capability, and the
-//
-//	reference answers the two Command Code provider ids from a dedicated
-//	branch (capabilities.js:570-583) rather than from its pattern table:
-//	a family pattern would claim e.g. deepseek-v4 reads images, while the
-//	Command Code CLI cannot send one. The branch is its own file because
-//	it is a second resolution rule with its own data, and because
-//	capability_resolve.go stays inside the AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §7.6 filters the catalog by capability, and the reference answers the two Command Code provider ids from a dedicated branch (capabilities.js:570-583) rather than from its pattern table: a family pattern would claim e.g. deepseek-v4 reads images, while the Command Code CLI cannot send one. The branch is its own file because it is a second resolution rule with its own data, and because capability_resolve.go stays inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-26
 package registry
 

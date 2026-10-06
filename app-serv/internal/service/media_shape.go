@@ -1,20 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_shape.go
-// @for       How a media request addresses a provider: the model string, the
-//
-//	kind's declaration, and the format gate.
-//
+// @for       How a media request addresses a provider: the model string, the kind's declaration, and the format gate.
 // @uses      internal/dataplane, internal/domain, internal/registry, strings.
-// @reason    These rules are what "routable" means for a media call, and they
-//
-//	are separate from the call pipeline because they answer questions a
-//	route may ask before it builds a payload. Keeping them apart also
-//	keeps media_call.go inside the AGENTS.md §1.1 line budget.
-//
+// @reason    These rules are what "routable" means for a media call, and they are separate from the call pipeline because they answer questions a route may ask before it builds a payload. Keeping them apart also keeps media_call.go inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -27,8 +19,8 @@ import (
 )
 
 // Block returns one provider's declaration for a kind, with the format gate
-// applied. A route whose payload depends on the declaration — search reads the
-// parameter names it must send — needs it before it can call Prepare.
+// applied. A route whose payload depends on the declaration, search reads the
+// parameter names it must send, needs it before it can call Prepare.
 func (s *MediaCallService) Block(providerID string, kind domain.MediaKind) (registry.MediaConfig, error) {
 	_, media, err := s.providerBlock(providerID, kind)
 	return media, err
@@ -76,18 +68,13 @@ func splitMediaModel(model string) (string, string, error) {
 }
 
 // mediaFormatSupported reports whether the gateway speaks a provider's declared
-// media format for a kind.
-//
-// An empty declaration and `openai` are the OpenAI shape these routes build.
-// The provider-specific formats are the adapters ported in G5: Deepgram and
-// Gemini for speech-to-text, and NVIDIA NIM, Cartesia, ElevenLabs, MiniMax,
-// Inworld, PlayHT, Coqui, Tortoise, and Gemini for speech. Other formats are
-// refused by name instead of being sent a payload their API does not accept:
-// the reference has a per-provider adapter for each of those formats, and
-// reporting the gap is honest where a wrong-shaped call would look like an
-// upstream outage (G21 lists the ones that need a multi-step or signed request).
-// The search kind is exempt because its shape is built from the block's own
-// declarations (method, parameter names) rather than from a fixed payload.
+// media format for a kind. An empty declaration and `openai` are the OpenAI shape
+// these routes build. The named formats are ported per-provider adapters, and
+// the reference has one for each: deepgram and gemini-stt for STT, and nvidia-tts,
+// cartesia, elevenlabs, minimax-tts, inworld, playht, coqui, tortoise and
+// gemini-tts for TTS. Anything else is refused by name rather than sent a payload
+// its API does not accept, because a wrong-shaped call reads as an upstream
+// outage. Search is exempt: its shape comes from the block's own declarations.
 func mediaFormatSupported(kind domain.MediaKind, format string) bool {
 	if kind == domain.MediaKindSearch {
 		return true

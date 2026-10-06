@@ -7,7 +7,7 @@
 // @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path for every route; SPEC-API-001 §7.3 requires the plaintext to be returned once and the hint thereafter, which is the contract a leak would break.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 
 package handler

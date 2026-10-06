@@ -3,21 +3,12 @@
 // Package migrations applies the SQL schema app-serv depends on at boot.
 //
 // @file      migrations/apply_lock_test.go
-// @for       Tagged integration test for the apply lock that serialises
-//
-//	concurrent migration runs.
-//
+// @for       Tagged integration test for the apply lock that serialises concurrent migration runs.
 // @uses      context, database/sql, strings, sync, testing.
-// @reason    Every replica of a rolling deploy runs Apply while it boots, so a
+// @reason    Every replica of a rolling deploy runs Apply while it boots, so a simultaneous start is the normal case rather than an exotic one. The race it used to hit is a duplicate key on PostgreSQL's internal pg_type_typname_nsp_index, which reads as a schema defect rather than as two replicas colliding, so it needs a test that starts two runs together on purpose.
 //
-//	simultaneous start is the normal case rather than an exotic one. The
-//	race it used to hit is a duplicate key on PostgreSQL's internal
-//	pg_type_typname_nsp_index, which reads as a schema defect rather than
-//	as two replicas colliding — so it needs a test that starts two runs
-//	together on purpose.
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	    go test -race -tags=integration ./migrations/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	  go test -race -tags=integration ./migrations/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
@@ -79,7 +70,7 @@ func TestApply_ConcurrentCallsBothSucceed(t *testing.T) {
 
 // scratchSchema creates a schema of its own and returns a DSN pointed at it, so
 // a test that must observe an unapplied database leaves the shared public
-// schema — which the repository integration tests run against — untouched.
+// schema, which the repository integration tests run against, untouched.
 func scratchSchema(t *testing.T, baseDSN string) string {
 	t.Helper()
 	ctx := context.Background()

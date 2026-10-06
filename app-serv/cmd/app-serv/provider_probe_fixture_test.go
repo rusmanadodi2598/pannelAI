@@ -1,20 +1,12 @@
 // Command app-serv adapts the connectivity probe port to HTTP.
 //
 // @file      cmd/app-serv/provider_probe_fixture_test.go
-// @for       The shared fixtures the two probe test files build on: the egress
-//
-//	guard, an endpoint, and a key.
-//
+// @for       The shared fixtures the two probe test files build on: the egress guard, an endpoint, and a key.
 // @uses      testing, time, internal/domain, internal/netguard.
-// @reason    The endpoint-probe and node-probe suites both need a guard and an
-//
-//	endpoint, and AGENTS.md §1.1 caps a file at 250 lines: the fixtures
-//	live here so neither suite carries a copy that can drift from the
-//	other, and so the loopback rule is stated once.
-//
+// @reason    The endpoint-probe and node-probe suites both need a guard and an endpoint, and AGENTS.md §1.1 caps a file at 250 lines: the fixtures live here so neither suite carries a copy that can drift from the other, and so the loopback rule is stated once.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -28,7 +20,7 @@ import (
 
 // probeGuard builds the guard the probe tests run under. Loopback is refused
 // unless it is named, so a test that wants to reach its httptest server must
-// allowlist it — which is the rule a self-hosted deployment follows.
+// allowlist it, which is the rule a self-hosted deployment follows.
 func probeGuard(t *testing.T, allowed ...string) *netguard.Guard {
 	t.Helper()
 	guard, err := netguard.NewGuard(allowed)

@@ -3,22 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/exports.go
-// @for       The exported error constructors and engine accessors a caller in
-//
-//	another package needs.
-//
+// @for       The exported error constructors and engine accessors a caller in another package needs.
 // @uses      internal/domain.
-// @reason    The service layer reports data plane failures with the data plane's
-//
-//	own codes rather than the management vocabulary (SPEC-API-001 §4,
-//	§8), so the constructors are exported instead of the callers
-//	re-declaring a code string. The accessors expose the collaborators the
-//	engine owns so a second use case (embeddings) reuses the same selector
-//	and the same health bookkeeping instead of a parallel one.
-//
+// @reason    The service layer reports data plane failures with the data plane's own codes rather than the management vocabulary (SPEC-API-001 §4, §8), so the constructors are exported instead of the callers re-declaring a code string. The accessors expose the collaborators the engine owns so a second use case (embeddings) reuses the same selector and the same health bookkeeping instead of a parallel one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 

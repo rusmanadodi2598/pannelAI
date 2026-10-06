@@ -1,24 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/model_active_test.go
-// @for       The `?active=` query parameter of GET /models/catalog: the two
-//
-//	spellings the boundary accepts, and the refusal for every other one.
-//
+// @for       The `?active=` query parameter of GET /models/catalog: the two spellings the boundary accepts, and the refusal for every other one.
 // @uses      net/http, net/http/httptest, testing.
-// @reason    Draft 025 F5: a boolean parameter that ignores a misspelling
-//
-//	silently answers the unfiltered catalog under a parameter that
-//	promised the opposite — the same failure the usage status filter
-//	had before it became a closed set, where `SUCCESS` read as "no
-//	failed requests". The house precedent is the provider list's
-//	`routability` and the page decoder's `per_page`: a value outside
-//	the documented vocabulary is a VALIDATION_ERROR, so the panel's
-//	Zod layer and the gateway agree about what the words mean.
-//
+// @reason    Draft 025 F5: a boolean parameter that ignores a misspelling silently answers the unfiltered catalog under a parameter that promised the opposite, the same failure the usage status filter had before it became a closed set, where `SUCCESS` read as "no failed requests". The house precedent is the provider list's `routability` and the page decoder's `per_page`: a value outside the documented vocabulary is a VALIDATION_ERROR, so the panel's Zod layer and the gateway agree about what the words mean.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package handler
 
@@ -32,13 +20,10 @@ import (
 // TestModelHandler_CatalogActiveParameter pins the wire contract of the
 // parameter: `true` and `false` are the accepted vocabulary, absence narrows
 // nothing, and anything else is a 400 rather than a silently ignored filter.
-//
-// The fixture wires no endpoint-status counter, so an accepted `true` reaches
-// the service and is answered with the named INTERNAL_ERROR refusal; the
-// narrowed answer itself is pinned by the service test, which can wire a
-// counter. What this table pins is the boundary's own behaviour: which
-// spellings are accepted, which are refused, and that the accepted ones are
-// passed through rather than dropped.
+// The fixture wires no endpoint-status counter, so an accepted `true` reaches the
+// service and is answered with the named INTERNAL_ERROR refusal; the service test
+// pins the narrowed answer. What this table pins is the boundary's own behaviour:
+// which spellings are accepted, which refused, which passed through.
 func TestModelHandler_CatalogActiveParameter(t *testing.T) {
 	f := newManagementFixture(t)
 	cases := []struct {

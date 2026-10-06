@@ -1,30 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush.go
-// @for       The quota flush worker's lifecycle: one bounded goroutine, a
-//
-//	single-flight guard, and the composition-root entry point.
-//
-// @uses      internal/domain, internal/repository, log/slog, runtime/debug,
-//
-//	sync, sync/atomic, time.
-//
-// @reason    AGENTS.md §1.6 requires every worker to recover from panic and to
-//
-//	have an explicit termination condition, which is lifecycle, not
-//	batch mechanics: this file states who runs, when, and how it stops,
-//	while the batch itself lives in quota_flush_drain.go and the stated
-//	retry and dead-letter behaviour in quota_flush_policy.go
-//	(draft 005 F3).
-//
-// TERMINATION
-//
-//	Run returns when its context is cancelled; it spawns no goroutine that
-//	outlives that return.
-//
+// @for       The quota flush worker's lifecycle: one bounded goroutine, a single-flight guard, and the composition-root entry point.
+// @uses      internal/domain, internal/repository, log/slog, runtime/debug, sync, sync/atomic, time.
+// @reason    AGENTS.md §1.6 requires every worker to recover from panic and to have an explicit termination condition, which is lifecycle, not batch mechanics: this file states who runs, when, and how it stops, while the batch itself lives in quota_flush_drain.go and the stated retry and dead-letter behaviour in quota_flush_policy.go (draft 005 F3).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package service
 
@@ -104,17 +86,13 @@ func (f *QuotaFlusher) Run(ctx context.Context) {
 // and the running one drains the same counters.
 func (f *QuotaFlusher) FlushOnce(ctx context.Context) bool { return f.flushOnce(ctx) }
 
-// flushOnce drains one batch and persists it, in a panic-recovering goroutine
-// (AGENTS.md §1.6: a panic in an unrecovered goroutine kills the process).
-//
-// The flush itself is synchronous inside the goroutine; the goroutine exists so
-// a panic in the driver or in the policy code is contained and logged rather
-// than taking the binary down, and so the shape matches every other worker in
-// this service.
-//
-// The running guard is claimed BEFORE the goroutine starts and released by it,
-// so a second caller is refused immediately rather than after the first
-// completes.
+// flushOnce drains one batch and persists it inside a panic-recovering
+// goroutine: a panic in an unrecovered goroutine kills the whole process, so the
+// goroutine exists to contain and log one from the driver or the policy code, not
+// to run the flush concurrently, which stays synchronous inside it. This matches
+// every other worker shape in this service. The running guard is claimed BEFORE
+// the goroutine starts and released by it, so a second caller is refused
+// immediately rather than after the first completes.
 func (f *QuotaFlusher) flushOnce(ctx context.Context) bool {
 	if !f.running.CompareAndSwap(false, true) {
 		return false

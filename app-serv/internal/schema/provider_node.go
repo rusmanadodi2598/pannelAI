@@ -2,22 +2,11 @@
 //
 // @file      internal/schema/provider_node.go
 // @for       Custom provider node wire contracts (SPEC-API-001 §7.4).
-// @uses      go-playground/validator/v10 (the documented struct-tag exception in
-//
-//	AGENTS.md "Stack").
-//
-// @reason    AGENTS.md §2.4 CDD requires the typed contract with validation tags
-//
-//	before handler logic, and §7.4 fixes the node body: the prefix is a
-//	model-string namespace, base_url must be an absolute http(s) URL, and
-//	api_type applies to an OpenAI-compatible node only. The tags here
-//	bound each field's shape; the rules that span a value's meaning live in
-//	the domain constructor, so there is one spelling of each rule rather
-//	than two that can drift.
-//
+// @uses      go-playground/validator/v10 (the documented struct-tag exception in AGENTS.md "Stack").
+// @reason    AGENTS.md §2.4 CDD requires the typed contract with validation tags before handler logic, and §7.4 fixes the node body: the prefix is a model-string namespace, base_url must be an absolute http(s) URL, and api_type applies to an OpenAI-compatible node only. The tags here bound each field's shape; the rules that span a value's meaning live in the domain constructor, so there is one spelling of each rule rather than two that can drift.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 

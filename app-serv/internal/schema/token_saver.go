@@ -1,20 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/token_saver.go
-// @for       The §7.9 token-saver contract: the standalone configuration
-//
-//	document and its replacement body.
-//
+// @for       The §7.9 token-saver contract: the standalone configuration document and its replacement body.
 // @uses      internal/domain (TokenSaverSettings and its groups).
-// @reason    SPEC-API-001 §7.9 serves the saver configuration as its own
-//
-//	endpoint so the panel edits it without reading the whole §7.14
-//	document, and the write is a whole replacement. One shape for the
-//	read and the write keeps the GET-what-you-PUT round-trip exact.
-//
+// @reason    SPEC-API-001 §7.9 serves the saver configuration as its own endpoint so the panel edits it without reading the whole §7.14 document, and the write is a whole replacement. One shape for the read and the write keeps the GET-what-you-PUT round-trip exact.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 
@@ -44,7 +36,7 @@ type TokenSaverLevelResponse struct {
 // ReplaceTokenSaverRequest is the body of PUT /api/v1/token-saver. Every group
 // is a required pointer: a PUT replaces the document, so an absent group is a
 // mistake the client hears about rather than a silent reset to defaults. The
-// pointers are what make the rule real — a value struct has no way to tell an
+// pointers are what make the rule real, a value struct has no way to tell an
 // absent group from a group whose members are all zero.
 type ReplaceTokenSaverRequest struct {
 	RTK      *TokenSaverRTKRequest      `json:"rtk" validate:"required"`

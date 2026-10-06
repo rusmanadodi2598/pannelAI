@@ -2,16 +2,12 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/decode_retry_test.go
-// @for       Decode tests for the retry field, whose shape varies across the
-// reference registry.
+// @for       Decode tests for the retry field, whose shape varies across the reference registry.
 // @uses      testing, internal/registry.
-// @reason    The reference writes retry as a bare count, a per-status count, and
-// a per-status attempts object, and a decoder that accepts only one form
-// silently drops the others, so every variant is pinned here rather than
-// trusted.
+// @reason    The reference writes retry as a bare count, a per-status count, and a per-status attempts object, and a decoder that accepts only one form silently drops the others, so every variant is pinned here rather than trusted.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 
@@ -137,7 +133,7 @@ providers:
 					t.Fatalf("BackoffBase(429) = %v,%v, want 2s,true", base, ok)
 				}
 				// A status with no declared base must fall to the gateway default, not a
-				// zero wait — the second return is what keeps the change Qoder-only.
+				// zero wait, the second return is what keeps the change Qoder-only.
 				if _, ok := p.Transport.Retry.BackoffBase(503); ok {
 					t.Fatal("BackoffBase(503) reported a base for an undeclared status")
 				}

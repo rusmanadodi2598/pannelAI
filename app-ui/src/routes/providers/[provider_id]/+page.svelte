@@ -81,8 +81,8 @@
 	let keyNotice = $state<string | null>(null);
 	let nodePrefix = $state('');
 
-	// A key is meaningful wherever the provider can carry one — its derived auth type, or a key mode it lists
-	// alongside OAuth. Qoder declares `oauth` and `apikey`, so it can be connected through a Personal Access
+	// A key is meaningful wherever the provider can carry one (its derived auth type, or a key mode it lists
+	// alongside OAuth). Qoder declares `oauth` and `apikey`, so it can be connected through a Personal Access
 	// Token pasted into the dialog as well as through the device flow. The same rules the Connections section
 	// renders its button by: one home for "does this provider take a key", and one for what the dialog calls
 	// the credential it collects.

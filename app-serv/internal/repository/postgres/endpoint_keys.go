@@ -1,23 +1,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/endpoint_keys.go
-// @for       PostgreSQL persistence for the upstream_keys child rows, including
-//
-//	the transactional reorder of a provider's endpoints.
-//
+// @for       PostgreSQL persistence for the upstream_keys child rows, including the transactional reorder of a provider's endpoints.
 // @uses      github.com/jackc/pgx/v5, internal/domain, time.
-// @reason    A key is a child of the endpoint aggregate, so nothing here loads or
-//
-//	stores a key on its own: every statement is scoped by endpoint_id and
-//	the aggregate's invariant (an api_key endpoint keeps a usable
-//	credential) is enforced in the domain before a call arrives. The
-//	batch and reorder statements live here because AGENTS.md §1.7
-//	forbids a query per row and the interface's per-key methods cannot
-//	express one statement boundary across a set.
-//
+// @reason    A key is a child of the endpoint aggregate, so nothing here loads or stores a key on its own: every statement is scoped by endpoint_id and the aggregate's invariant (an api_key endpoint keeps a usable credential) is enforced in the domain before a call arrives. The batch and reorder statements live here because AGENTS.md §1.7 forbids a query per row and the interface's per-key methods cannot express one statement boundary across a set.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 
@@ -150,43 +139,12 @@ func (r *EndpointRepository) DeleteKey(ctx context.Context, endpointID, keyID st
 	return nil
 }
 
-// RecordKeyHealth persists a key's circuit-breaker state after an upstream call.
-// It touches health columns only: a routing outcome must not rewrite a label, a
-// priority, or the credential it just failed to spend.
-func (r *EndpointRepository) RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error {
-	const q = `
-UPDATE upstream_keys
-   SET status = $1,
-       last_used_at = $2,
-       last_error = $3,
-       consecutive_errors = $4,
-       rate_limited_until = $5,
-       updated_at = $6
- WHERE id = $7 AND endpoint_id = $8`
-
-	var lastError *string
-	if key.LastError() != "" {
-		message := key.LastError()
-		lastError = &message
-	}
-	tag, err := r.pool.Exec(ctx, q, string(key.Status()), key.LastUsedAt(), lastError,
-		key.ConsecutiveErrors(), key.RateLimitedUntil(), key.UpdatedAt(),
-		key.ID(), key.EndpointID())
-	if err != nil {
-		return translateKeyError(err)
-	}
-	if tag.RowsAffected() == 0 {
-		return domain.NewNotFoundError("upstream key not found")
-	}
-	return nil
-}
-
 // Reorder assigns new priorities to every endpoint of one provider in one
 // transaction.
 //
 // It takes the provider's rows under a lock and refuses a set that does not name
 // exactly the endpoints currently stored, because assigning a subset would leave
-// the remainder holding their old numbers and two endpoints claiming one slot —
+// the remainder holding their old numbers and two endpoints claiming one slot,
 // the collision this method exists to prevent. The caller therefore sends the
 // complete new order rather than one endpoint's new number.
 func (r *EndpointRepository) Reorder(ctx context.Context, providerID string, orderedIDs []string) error {

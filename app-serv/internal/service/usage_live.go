@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_live.go
-// @for       The live Usage frame: the in-flight set, the requests that just
-//
-//	finished, and the provider last reported in error.
-//
+// @for       The live Usage frame: the in-flight set, the requests that just finished, and the provider last reported in error.
 // @uses      internal/domain, internal/repository, internal/schema, context, time.
-// @reason    SPEC-UI-001 §6.5 fixes what the live stream carries and forbids the
-//
-//	panel from computing what it cannot cite, so the three facts are
-//	assembled here from two sources the gateway already owns: the
-//	in-flight marker set it writes while calls run, and the durable
-//	usage rows it writes when they finish. Nothing on this path
-//	aggregates, and the frame has no field for a total, which is what
-//	keeps the stream structurally unable to restate the REST reads.
+// @reason    SPEC-UI-001 §6.5 fixes what the live stream carries and forbids the panel from computing what it cannot cite, so the three facts are assembled here from two sources the gateway already owns: the in-flight marker set it writes while calls run, and the durable usage rows it writes when they finish. Nothing on this path aggregates, and the frame has no field for a total, which is what keeps the stream structurally unable to restate the REST reads.
 //
 //	Both halves are bounded. The recent read takes a window and a row
 //	limit, so the frame is a fixed size no matter how busy the gateway
@@ -22,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

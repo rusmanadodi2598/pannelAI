@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/combo_probe_test.go
-// @for       The combo test route's use case: per-reference probing, the judge's
-//
-//	place, and the order the probes run in (SPEC-API-001 §7.7).
-//
+// @for       The combo test route's use case: per-reference probing, the judge's place, and the order the probes run in (SPEC-API-001 §7.7).
 // @uses      testing, context, internal/dataplane, internal/domain, internal/schema.
-// @reason    §7.7 makes the answer per reference, so the test pins the order, the
-//
-//	roles, and that a dead member is a result rather than a refusal — the
-//	three properties an operator reads the route for. The seam double and
-//	the mapping cases live in the sibling file, split at the AGENTS.md
-//	§1.1 line limit.
-//
+// @reason    §7.7 makes the answer per reference, so the test pins the order, the roles, and that a dead member is a result rather than a refusal, the three properties an operator reads the route for. The seam double and the mapping cases live in the sibling file, split at the AGENTS.md §1.1 line limit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

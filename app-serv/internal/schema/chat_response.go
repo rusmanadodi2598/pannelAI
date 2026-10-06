@@ -1,20 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/chat_response.go
-// @for       The OpenAI-wire response contracts: completion, streamed chunk,
-//
-//	usage block, and the models list.
-//
+// @for       The OpenAI-wire response contracts: completion, streamed chunk, usage block, and the models list.
 // @uses      internal/schema (ChatMessage, MessageContent).
-// @reason    SPEC-API-001 §7.15 serves these shapes to CLI tools and §4 fixes the
-//
-//	usage chunk that stream_options.include_usage asks for. Keeping them
-//	in the schema layer is what lets the translator and the handler agree
-//	on one wire shape instead of each declaring its own (AGENTS.md §2.4).
-//
+// @reason    SPEC-API-001 §7.15 serves these shapes to CLI tools and §4 fixes the usage chunk that stream_options.include_usage asks for. Keeping them in the schema layer is what lets the translator and the handler agree on one wire shape instead of each declaring its own (AGENTS.md §2.4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 
@@ -117,7 +109,7 @@ type ModelList struct {
 // UsageChunk builds the final OpenAI frame that carries token accounting: an
 // empty choices array with a usage object, which is the shape
 // stream_options.include_usage asks for (SPEC-API-001 §4). The empty choices list
-// is required, not decorative — a client that reads the first choice from every
+// is required, not decorative, a client that reads the first choice from every
 // frame would otherwise read a frame with no content.
 func UsageChunk(id string, created int64, model string, usage Usage) ChatCompletionChunk {
 	return ChatCompletionChunk{

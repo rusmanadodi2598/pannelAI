@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_stub_keys_test.go
-// @for       The key-scoped half of the in-memory EndpointStore double: key
-//
-//	append and update, sibling reordering, and the OAuth account match.
-//
+// @for       The key-scoped half of the in-memory EndpointStore double: key append and update, sibling reordering, and the OAuth account match.
 // @uses      context, internal/domain.
-// @reason    AGENTS.md §1.1 caps a file at 250 lines and the double had grown past
-//
-//	it, so the key methods moved here. They are a natural seam: the real
-//	repository keeps a key's statements in endpoint_keys.go for the same
-//	reason, and a double that mirrors that split stays readable beside the
-//	statements it stands in for.
-//
+// @reason    AGENTS.md §1.1 caps a file at 250 lines and the double had grown past it, so the key methods moved here. They are a natural seam: the real repository keeps a key's statements in endpoint_keys.go for the same reason, and a double that mirrors that split stays readable beside the statements it stands in for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package service
 
@@ -67,6 +58,7 @@ func (s *memEndpointStore) DeleteKey(_ context.Context, endpointID, keyID string
 }
 
 func (s *memEndpointStore) RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error {
+	s.healthWrites++
 	return s.UpdateKey(ctx, key)
 }
 
@@ -119,7 +111,7 @@ func (s *memEndpointStore) FindOAuthEndpoint(_ context.Context, providerID, emai
 			continue
 		}
 		account := endpoint.Account()
-		if (email != "" && account.Email == email) || (workspaceID != "" && account.WorkspaceID == workspaceID) {
+		if (email != "" && account.Email().String() == email) || (workspaceID != "" && account.WorkspaceID() == workspaceID) {
 			return endpoint.ID(), nil
 		}
 	}

@@ -3,20 +3,12 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/rtk.go
-// @for       The RTK pass: finding the tool results in an upstream body and
-//
-//	handing each one to the filter that claims it.
-//
+// @for       The RTK pass: finding the tool results in an upstream body and handing each one to the filter that claims it.
 // @uses      encoding/json, fmt.
-// @reason    SPEC-API-002 §3 makes tool results the only thing RTK touches: a
-//
-//	user's own words are never rewritten, and a tool result that reports
-//	an error is preserved so the model can see the failure. Both rules
-//	are structural here rather than a filter's responsibility.
-//
+// @reason    SPEC-API-002 §3 makes tool results the only thing RTK touches: a user's own words are never rewritten, and a tool result that reports an error is preserved so the model can see the failure. Both rules are structural here rather than a filter's responsibility.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

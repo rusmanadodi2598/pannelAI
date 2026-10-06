@@ -3,21 +3,16 @@
 // @file      internal/handler/provider_node.go
 // @for       The custom provider node routes (SPEC-API-001 §7.4).
 // @uses      internal/domain, internal/schema, internal/service, net/http.
-// @reason    §7.4 fixes the node contract and AGENTS.md §1.5 keeps the prefix
-//
-//	collision and reference checks in the service: this layer decodes a
-//	validated DTO, calls, and maps. A node's prefix is a model-string
-//	namespace, so its refusal has to be the §8 CONFLICT a client can act
-//	on rather than a driver or registry message.
-//
+// @reason    §7.4 fixes the node contract and AGENTS.md §1.5 keeps the prefix collision and reference checks in the service: this layer decodes a validated DTO, calls, and maps. A node's prefix is a model-string namespace, so its refusal has to be the §8 CONFLICT a client can act on rather than a driver or registry message.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
@@ -29,14 +24,18 @@ type ProviderNodeHandler struct {
 	nodes *service.NodeService
 }
 
-// NewProviderNodeHandler validates deps and returns the handler.
 func NewProviderNodeHandler(nodes *service.NodeService) *ProviderNodeHandler {
 	return &ProviderNodeHandler{nodes: nodes}
 }
 
 // List serves GET /api/v1/provider-nodes with the optional type filter.
 func (h *ProviderNodeHandler) List(w http.ResponseWriter, r *http.Request) {
-	nodes, err := h.nodes.List(r.Context(), r.URL.Query().Get("type"))
+	nodeType := strings.TrimSpace(r.URL.Query().Get("type"))
+	if err := schema.ValidateStruct(schema.ProviderNodeListQuery{Type: nodeType}); err != nil {
+		schema.WriteError(w, err)
+		return
+	}
+	nodes, err := h.nodes.List(r.Context(), nodeType)
 	if err != nil {
 		schema.WriteError(w, err)
 		return

@@ -3,17 +3,10 @@
 // @file      internal/dataplane/catalog_list_test.go
 // @for       Table-driven tests for which models GET /api/v1/models is allowed to name.
 // @uses      context, strings, testing, internal/domain, internal/registry
-// @reason    SPEC-API-001 §7.15 publishes the list as what the router can answer, so two
-//
-//	rules decide a row and neither was pinned before: a provider with no endpoint the
-//	router would pick is not a provider a client can use (draft 021 F8), and a model an
-//	operator added is listable even when the provider itself declares no catalog
-//	(draft 021 F10). Listing either wrong makes the picker and the router disagree,
-//	which is the failure an operator experiences as a model that will not send.
-//
+// @reason    SPEC-API-001 §7.15 publishes the list as what the router can answer, so two rules decide a row and neither was pinned before: a provider with no endpoint the router would pick is not a provider a client can use (draft 021 F8), and a model an operator added is listable even when the provider itself declares no catalog (draft 021 F10). Listing either wrong makes the picker and the router disagree, which is the failure an operator experiences as a model that will not send.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package dataplane
 

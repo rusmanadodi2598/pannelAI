@@ -2,20 +2,11 @@
 //
 // @file      internal/service/media_minimax.go
 // @for       The MiniMax speech adapter in the §7.10 media plane.
-// @uses      internal/dataplane, internal/schema, encoding/hex, encoding/json,
-//
-//	strings.
-//
-// @reason    MiniMax answers hex-encoded audio inside a JSON envelope that
-//
-//	carries its own status code, so a 200 can be a failure. The
-//	adapter keeps the request shape and the answer reading together,
-//	and the answer reader is what tells the shared pipeline that the
-//	call failed (media_perform.go).
-//
+// @uses      internal/dataplane, internal/schema, encoding/hex, encoding/json, strings.
+// @reason    MiniMax answers hex-encoded audio inside a JSON envelope that carries its own status code, so a 200 can be a failure. The adapter keeps the request shape and the answer reading together, and the answer reader is what tells the shared pipeline that the call failed (media_perform.go).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

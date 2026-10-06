@@ -1,20 +1,15 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_canonical_filters_test.go
-// @for       The canonical-name rule applied to the three set surfaces: the
-//
-//	vision adapter's model list, the catalog's provider filter, the
-//	alias target check, and the custom-list filter.
-//
+// @for       The canonical-name rule applied to the three set surfaces: the vision adapter's model list, the catalog's provider filter, the alias target check, and the custom-list filter.
 // @uses      internal/domain, context, testing.
-// @reason    Draft 024 F2/F3 measured each of these refusing the alias and
+// @reason    Draft 024 F2/F3 measured each of these refusing the alias and node-prefix forms the router resolves, so each gets its own pin.
 //
-//	node-prefix forms the router resolves, so each gets its own pin.
 //	Separated from the combo tests at the AGENTS.md §1.1 line limit.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -28,7 +23,7 @@ import (
 // TestVisionAdapterService_ReplaceAcceptsEveryRouterForm pins F3: the adapter's
 // model list is written through the same predicate, so the alias and prefix
 // forms save there too. The capability question is answered by the catalog now,
-// so the two rows these spellings resolve to declare vision — which makes this
+// so the two rows these spellings resolve to declare vision, which makes this
 // test pin two things at once: a name the router resolves is a name the write
 // path accepts, and the capability read canonicalizes through the same view
 // rather than probing the catalog with the spelling the caller typed.

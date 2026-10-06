@@ -3,25 +3,12 @@
 // Package main is the app-serv composition root.
 //
 // @file      cmd/app-serv/usage_event_live_doubles_test.go
-// @for       The live-stack adapters and the broken broker the usage event live
-//
-//	pass needs.
-//
-// @uses      internal/domain, internal/repository, internal/repository/postgres,
-//
-//	github.com/redis/go-redis/v9, context, testing, time.
-//
-// @reason    The live pass drives the real recorder and the real consumer over
-//
-//	the stack's real pool and Redis client. These adapters exist only
-//	because the stack harness builds its own small graph rather than
-//	reusing buildObservability, so the two services the pass needs are
-//	rebuilt here over the same live dependencies. They are not doubles:
-//	each one is the production repository constructor over the live pool.
-//
+// @for       The live-stack adapters and the broken broker the usage event live pass needs.
+// @uses      internal/domain, internal/repository, internal/repository/postgres, github.com/redis/go-redis/v9, context, testing, time.
+// @reason    The live pass drives the real recorder and the real consumer over the stack's real pool and Redis client. These adapters exist only because the stack harness builds its own small graph rather than reusing buildObservability, so the two services the pass needs are rebuilt here over the same live dependencies. They are not doubles: each one is the production repository constructor over the live pool.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package main
 

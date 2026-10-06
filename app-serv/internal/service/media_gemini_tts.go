@@ -2,20 +2,11 @@
 //
 // @file      internal/service/media_gemini_tts.go
 // @for       The Gemini speech adapter in the §7.10 media plane.
-// @uses      internal/dataplane, internal/schema, encoding/base64, encoding/binary,
-//
-//	encoding/json, strings.
-//
-// @reason    Gemini's speech endpoint is its generateContent surface: the model
-//
-//	is a path segment, the credential rides in the query, the request is
-//	a prompt, and the answer is base64 PCM rather than a container. The
-//	adapter wraps that PCM in a WAV header so the route's `wav` label is
-//	true, which is the reference's own conversion.
-//
+// @uses      internal/dataplane, internal/schema, encoding/base64, encoding/binary, encoding/json, strings.
+// @reason    Gemini's speech endpoint is its generateContent surface: the model is a path segment, the credential rides in the query, the request is a prompt, and the answer is base64 PCM rather than a container. The adapter wraps that PCM in a WAV header so the route's `wav` label is true, which is the reference's own conversion.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

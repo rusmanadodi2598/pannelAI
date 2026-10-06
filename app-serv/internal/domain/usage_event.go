@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_event.go
-// @for       The usage domain event a recorded request publishes so quota and
-//
-//	log consumers can react without a synchronous call.
-//
+// @for       The usage domain event a recorded request publishes so quota and log consumers can react without a synchronous call.
 // @uses      internal/domain (UsageRecord, UsageStatus), time.
-// @reason    AGENTS.md §2.3 requires a mutation on an aggregate root to emit an
-//
-//	event; the payload is the routing identity and the counters a
-//	quota flush needs, which is deliberately less than the whole
-//	record, so a consumer cannot come to depend on fields the event
-//	does not carry.
-//
+// @reason    AGENTS.md §2.3 requires a mutation on an aggregate root to emit an event; the payload is the routing identity and the counters a quota flush needs, which is deliberately less than the whole record, so a consumer cannot come to depend on fields the event does not carry.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 

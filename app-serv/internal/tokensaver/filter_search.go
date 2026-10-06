@@ -5,15 +5,10 @@
 // @file      internal/tokensaver/filter_search.go
 // @for       The three search-shaped filters: grep, find, and search-list.
 // @uses      fmt, regexp, sort, strings.
-// @reason    SPEC-API-002 §5 ports the reference's grep_wrapper, find_wrapper,
-//
-//	and search-list filters. All three answer "where is this?", and all
-//	three are regrouped by file or directory so the model reads the
-//	shape of the result rather than every match.
-//
+// @reason    SPEC-API-002 §5 ports the reference's grep_wrapper, find_wrapper, and search-list filters. All three answer "where is this?", and all three are regrouped by file or directory so the model reads the shape of the result rather than every match.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

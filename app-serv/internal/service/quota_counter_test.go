@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_counter_test.go
-// @for       Table-driven tests for the ingest half of the quota vertical: the
-//
-//	counter one served request advances (register G22).
-//
+// @for       Table-driven tests for the ingest half of the quota vertical: the counter one served request advances (register G22).
 // @uses      context, errors, internal/domain, log/slog, testing, time.
-// @reason    F1 of docs/DRAFT/005-QUOTA-TRACKER-CLOSURE.md found the counter store
-//
-//	with no production caller, so every window read zero while a
-//	flush worker drained a keyspace nothing filled. These tests pin the
-//	three properties that keep it fixed: every accounting window is
-//	advanced, the reset instant is in the future, and a write that fails
-//	does not fail the request it was accounting for.
-//
+// @reason    F1 of docs/DRAFT/005-QUOTA-TRACKER-CLOSURE.md found the counter store with no production caller, so every window read zero while a flush worker drained a keyspace nothing filled. These tests pin the three properties that keep it fixed: every accounting window is advanced, the reset instant is in the future, and a write that fails does not fail the request it was accounting for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 

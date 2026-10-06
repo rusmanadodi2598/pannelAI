@@ -5,17 +5,15 @@
 // @file      internal/dataplane/catalog.go
 // @for       The models list the data plane publishes, in the OpenAI list shape.
 // @uses      internal/schema, internal/registry, context, sort.
-// @reason    SPEC-API-001 §7.15 serves GET /api/v1/models as `{object:"list",
+// @reason    SPEC-API-001 §7.15 serves GET /api/v1/models as `{object:"list", data:[...]}` over the routable models and combos, and §7.6 makes the disabled set hide a model from the catalog and from routing alike.
 //
-//	data:[...]}` over the routable models and combos, and §7.6 makes the
-//	disabled set hide a model from the catalog and from routing alike.
 //	Building the list from the same registry, the same translator check,
 //	and the same disabled set the router reads is what keeps "listed" and
 //	"answerable" one property instead of two.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -23,41 +21,26 @@ import (
 	"context"
 	"sort"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
 // ModelList assembles the OpenAI models list: every model a client could actually
-// route, then every combo by name, sorted so two calls agree.
-//
-// The rules that make a row are the router's own:
-//
-// A provider the gateway cannot translate contributes nothing, because a model
-// string the router would refuse is not a model a client can use.
-//
-// A provider with no endpoint the router would pick contributes nothing, unless the
-// router serves it on a synthesized endpoint. This is the router's candidate
-// question, not a health check: an endpoint in a backoff window still counts,
-// because the router will pick it again when the window closes. Naming a model the
-// selector has no candidate for is the failure draft 021 F8 measured, and a picker
-// built on the list offers it.
-//
-// A model an operator added lists even where the provider declares no catalog,
-// which is draft 021 F10: a custom node's model list is what the operator typed,
-// because its upstream may refuse to enumerate itself. A row naming a provider the
-// registry does not know is skipped rather than invented.
-//
-// A combo lists either way, because it is addressed by name and the selector walks
-// its members per request (SPEC-API-001 §7.15).
+// route, then every combo by name, sorted so two calls agree. The rules that make a
+// row are the router's own. A provider the gateway cannot translate contributes
+// nothing, and neither does one with no endpoint the router would pick unless the
+// router serves it on a synthesized endpoint. That is the candidate question, not a
+// health check: an endpoint in a backoff window still counts. A model an operator
+// added lists even where the provider declares no catalog, because its upstream may
+// refuse to enumerate itself. A row naming a provider the registry does not know is
+// skipped rather than invented, and a combo lists either way by name.
 func (r *Resolver) ModelList(ctx context.Context) (schema.ModelList, error) {
 	disabledPairs, err := r.lookup.DisabledPairs(ctx)
 	if err != nil {
 		return schema.ModelList{}, err
 	}
-	disabled := make(map[disabledKey]struct{}, len(disabledPairs))
-	for _, ref := range disabledPairs {
-		disabled[disabledKey{provider: ref.ProviderID(), model: ref.ModelID()}] = struct{}{}
-	}
+	disabled := disabledIndex(disabledPairs)
 
 	customPairs, err := r.lookup.CustomModels(ctx)
 	if err != nil {
@@ -137,9 +120,9 @@ func (r *Resolver) addRow(
 	modelID string,
 	disabled map[disabledKey]struct{},
 ) {
-	// §7.6 keeps the spelling the operator typed in the disabled pair, so a disable
-	// written as the node prefix and one written as the node id are the same rule.
-	// Testing only the canonical id would list a model the router refuses.
+	// The disabled pair keeps the spelling the operator typed, so a disable written
+	// as the node prefix and one written as the node id are the same rule. Testing
+	// only the canonical id would list a model the router refuses.
 	if r.isDisabled(disabled, entry, modelID) {
 		return
 	}
@@ -164,8 +147,8 @@ func (r *Resolver) isDisabled(
 	return false
 }
 
-// providerNames lists every identifier an entry resolves by — canonical id, its
-// alias, and any further aliases — with blanks dropped.
+// providerNames lists every identifier an entry resolves by, canonical id, its
+// alias, and any further aliases, with blanks dropped.
 func providerNames(entry registry.Provider) []string {
 	names := make([]string, 0, 2+len(entry.Aliases))
 	for _, name := range append([]string{entry.ID, entry.Alias}, entry.Aliases...) {
@@ -177,9 +160,9 @@ func providerNames(entry registry.Provider) []string {
 }
 
 // indexNames maps every name a snapshot entry answers to, so custom pairs resolve
-// from the list's own All() read instead of a registry lookup per pair (draft 042
-// R06). Names are unique across entries by construction: node prefixes are
-// refused at creation when they would collide with a registry identifier.
+// from the list's own All() read instead of a registry lookup per pair. Names are
+// unique across entries by construction: node prefixes are refused at creation when
+// they would collide with a registry identifier.
 func indexNames(entries []registry.Provider) map[string]registry.Provider {
 	byName := make(map[string]registry.Provider, len(entries)*3)
 	for _, entry := range entries {
@@ -204,4 +187,15 @@ func listedOwner(entry registry.Provider) string {
 type disabledKey struct {
 	provider string
 	model    string
+}
+
+// disabledIndex keys one read of the disabled set for the membership test both the
+// listing and the routing path apply. They share it because they must agree: a
+// second way to ask the question is how the menu and the router drift apart.
+func disabledIndex(refs []domain.ModelRef) map[disabledKey]struct{} {
+	index := make(map[disabledKey]struct{}, len(refs))
+	for _, ref := range refs {
+		index[disabledKey{provider: ref.ProviderID(), model: ref.ModelID()}] = struct{}{}
+	}
+	return index
 }

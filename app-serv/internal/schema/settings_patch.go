@@ -1,19 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/settings_patch.go
-// @for       The partial settings PATCH body, its per-key tags, and the
-//
-//	lowering into the domain mutation object.
-//
+// @for       The partial settings PATCH body, its per-key tags, and the lowering into the domain mutation object.
 // @uses      internal/domain (SettingsPatch, ParseComboStrategy).
-// @reason    SPEC-API-001 §7.14 validates a PATCH per key, and the caveman key
-//
-//	has no field here by design: §7.9 makes it never rendered, so a DTO
-//	field for it would be the control the spec removes.
-//
+// @reason    SPEC-API-001 §7.14 validates a PATCH per key, and the caveman key has no field here by design: §7.9 makes it never rendered, so a DTO field for it would be the control the spec removes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package schema
 

@@ -1,23 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/ping_test.go
-// @for       The bounded probe: the request it invents and the outcome the
-//
-//	pipeline reports for it (SPEC-API-001 §7.7).
-//
-// @uses      testing, context, encoding/json, net/http, net/http/httptest, sync,
-//
-//	internal/domain.
-//
-// @reason    The combo test route is only as trustworthy as the probe behind it,
-//
-//	so the tests pin both halves: that the invented request is the cheap,
-//	non-streaming turn §7.7 promises, and that a failure surfaces with the
-//	pipeline's own code rather than a second error vocabulary.
-//
+// @for       The bounded probe: the request it invents and the outcome the pipeline reports for it (SPEC-API-001 §7.7).
+// @uses      testing, context, encoding/json, net/http, net/http/httptest, sync, internal/domain.
+// @reason    The combo test route is only as trustworthy as the probe behind it, so the tests pin both halves: that the invented request is the cheap, non-streaming turn §7.7 promises, and that a failure surfaces with the pipeline's own code rather than a second error vocabulary.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -70,7 +59,7 @@ func pingUpstream(t *testing.T, recorder *pingRecorder) *httptest.Server {
 }
 
 // TestPing_SendsABoundedProbe pins the invented request: one user turn reading
-// "ping", a bounded ceiling, and no streaming — the cheapest call an upstream
+// "ping", a bounded ceiling, and no streaming, the cheapest call an upstream
 // bills for, sent through the same pipeline every other request runs.
 func TestPing_SendsABoundedProbe(t *testing.T) {
 	recorder := &pingRecorder{}

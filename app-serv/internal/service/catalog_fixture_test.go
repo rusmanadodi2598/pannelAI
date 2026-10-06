@@ -1,20 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/catalog_fixture_test.go
-// @for       The shared catalog fixture: a small registry plus the wired catalog
-//
-//	service the §7.6 and §7.7 tests run against.
-//
+// @for       The shared catalog fixture: a small registry plus the wired catalog service the §7.6 and §7.7 tests run against.
 // @uses      internal/domain, internal/registry, context, testing, time.
-// @reason    The catalog merges three sources, so a test of the merge must be
-//
-//	able to place rows in each one independently. Naming the fixture's
-//	providers locally keeps every assertion independent of the embedded
-//	registry's contents, which change with the reference.
-//
+// @reason    The catalog merges three sources, so a test of the merge must be able to place rows in each one independently. Naming the fixture's providers locally keeps every assertion independent of the embedded registry's contents, which change with the reference.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -71,16 +63,13 @@ type catalogFixture struct {
 }
 
 // newCatalogFixture builds the fixture described on catalogFixture. The seeding
-// calls carry the caller's context, so a test's setup answers to the same
-// cancellation its assertions do.
-//
-// The models' capability strings are the MEDIA operations the document declares
-// (`edit`, `mask`, `text2img`), never the two modality names the resolver owns.
-// Writing "vision" into this data is what made the old capability rows pass
-// while the real registry answered zero (draft 017 §4.4): the fixture proved the
-// filter matched a string it had just handed over. `vision` and `tools` are now
-// resolved from the model id by registry.Capabilities, so a fixture that wants
-// a vision model has to name one the reference agrees is vision-capable.
+// calls carry the caller's context, so setup answers to the same cancellation
+// its assertions do. Capability strings here are the media operations the
+// document declares (`edit`, `mask`, `text2img`), never the two modality names
+// the resolver owns: writing "vision" into this data let the capability rows
+// pass while the real registry answered zero, the filter matching a string the
+// fixture had just handed it. A vision model here must be one the resolver's
+// model-id table already calls capable.
 func newCatalogFixture(t *testing.T, ctx context.Context) catalogFixture {
 	t.Helper()
 	index := testIndex(t,

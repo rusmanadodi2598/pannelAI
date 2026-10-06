@@ -1,26 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/quota_read_test.go
-// @for       Table-driven HTTP tests for the §7.12 quota reads: the per-endpoint
-//
-//	detail (cap plus windows) and the windows-only collection.
-//
-// @uses      encoding/json, internal/domain, net/http, net/http/httptest,
-//
-//	strings, testing, time.
-//
-// @reason    Owner decision D5 = (b) made the detail route carry the stored cap
-//
-//	so a client reads back what it wrote, and the collection route stay
-//	windows-only because a cap belongs to one endpoint. Both shapes are
-//	pinned as tables (draft 005 F6, TDD.md §2.5): the fresh-endpoint
-//	answer, the read-back, and the rendered windows are variations of
-//	one read, and the null cap must stay an explicit null the panel can
-//	render as an empty form.
-//
+// @for       Table-driven HTTP tests for the §7.12 quota reads: the per-endpoint detail (cap plus windows) and the windows-only collection.
+// @uses      encoding/json, internal/domain, net/http, net/http/httptest, strings, testing, time.
+// @reason    Owner decision D5 = (b) made the detail route carry the stored cap so a client reads back what it wrote, and the collection route stay windows-only because a cap belongs to one endpoint. Both shapes are pinned as tables (draft 005 F6, TDD.md §2.5): the fresh-endpoint answer, the read-back, and the rendered windows are variations of one read, and the null cap must stay an explicit null the panel can render as an empty form.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package handler
 

@@ -3,26 +3,12 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/headroom.go
-// @for       The external compression client: one OpenAI-shaped message array
-//
-//	sent to a Headroom proxy's /v1/compress, the compressed array read
-//	back, and every failure returned to a caller that keeps what it had.
-//
-// @uses      context, encoding/json, errors, fmt, io, net/http, net/url,
-//
-//	strings, time.
-//
-// @reason    SPEC-API-001 §7.9 makes headroom the one saver that leaves the
-//
-//	process, and requires it to fail open. Keeping the call here, apart
-//	from the pipeline that decides when to make it, is what keeps those
-//	two concerns from drifting: the client has no opinion about which
-//	wire the body arrived in, and the caller has no opinion about how
-//	the proxy is reached.
-//
+// @for       The external compression client: one OpenAI-shaped message array sent to a Headroom proxy's /v1/compress, the compressed array read back, and every failure returned to a caller that keeps what it had.
+// @uses      context, encoding/json, errors, fmt, io, net/http, net/url, strings, time.
+// @reason    SPEC-API-001 §7.9 makes headroom the one saver that leaves the process, and requires it to fail open. Keeping the call here, apart from the pipeline that decides when to make it, is what keeps those two concerns from drifting: the client has no opinion about which wire the body arrived in, and the caller has no opinion about how the proxy is reached.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

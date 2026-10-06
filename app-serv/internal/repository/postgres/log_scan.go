@@ -3,16 +3,10 @@
 // @file      internal/repository/postgres/log_scan.go
 // @for       Row decoding for the request-log reads and the log driver-error mapping.
 // @uses      github.com/jackc/pgx/v5, internal/domain, errors, fmt, time.
-// @reason    Every log read decodes into the same column order the projections
-//
-//	fix, and the detail read adds the two body columns. Keeping the
-//	scanners beside each other makes a mismatch between a SELECT list
-//	and its Scan destinations reviewable in one place, and it mirrors
-//	the usage reads' scan file so both verticals read the same way.
-//
+// @reason    Every log read decodes into the same column order the projections fix, and the detail read adds the two body columns. Keeping the scanners beside each other makes a mismatch between a SELECT list and its Scan destinations reviewable in one place, and it mirrors the usage reads' scan file so both verticals read the same way.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package postgres
 

@@ -3,18 +3,9 @@
 // Package main is the app-serv composition root.
 //
 // @file      cmd/app-serv/playground_live_flush_test.go
-// @for       The F5 live evidence: a streamed answer through the real chain
-//
-//	must arrive frame by frame over a real socket, not as one blob.
-//
-// @uses      bufio, encoding/json, net, net/http, net/http/httptest, strconv,
-// strings, testing, time.
-//
-// @reason    Draft 010 F5 is a wire-level defect, and httptest.ResponseRecorder
-// implements Flush itself, so the only honest evidence is a real TCP
-// connection through the production middleware chain. The upstream spaces
-// its frames, so a gateway that buffers the whole answer cannot pass: the
-// second frame simply does not exist yet when the first one is read.
+// @for       The F5 live evidence: a streamed answer through the real chain must arrive frame by frame over a real socket, not as one blob.
+// @uses      bufio, encoding/json, net, net/http, net/http/httptest, strconv, strings, testing, time.
+// @reason    Draft 010 F5 is a wire-level defect, and httptest.ResponseRecorder implements Flush itself, so the only honest evidence is a real TCP connection through the production middleware chain. The upstream spaces its frames, so a gateway that buffers the whole answer cannot pass: the second frame simply does not exist yet when the first one is read.
 //
 //	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
 //	PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
@@ -22,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package main
 

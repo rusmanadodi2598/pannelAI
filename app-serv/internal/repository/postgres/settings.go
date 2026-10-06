@@ -3,16 +3,10 @@
 // @file      internal/repository/postgres/settings.go
 // @for       PostgreSQL persistence for the per-key settings document.
 // @uses      github.com/jackc/pgx/v5, internal/domain.
-// @reason    SPEC-API-001 §6 stores one row per settings key so a partial PATCH
-//
-//	is a single-row upsert and two writers cannot clobber each other's
-//	subtree; the stored value is jsonb so a type change inside a group
-//	does not need a migration, and the load is one ranged query rather
-//	than a query per key (AGENTS.md §1.7).
-//
+// @reason    SPEC-API-001 §6 stores one row per settings key so a partial PATCH is a single-row upsert and two writers cannot clobber each other's subtree; the stored value is jsonb so a type change inside a group does not need a migration, and the load is one ranged query rather than a query per key (AGENTS.md §1.7).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 

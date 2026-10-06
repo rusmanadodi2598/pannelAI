@@ -2,17 +2,11 @@
 //
 // @file      internal/provider/qoder_catalog_test.go
 // @for       The vendor catalogue read: its signature, and the lookup the body builder needs.
-//
 // @uses      encoding/json, io, net/http, net/http/httptest, strings, testing.
-// @reason    The configuration the chat body carries comes from an authenticated read, so
-//
-//	what matters is that the read is signed as the account and that the
-//	lookup finds a model wherever the vendor grouped it. Both are pinned here
-//	against a stub serving the captured answer shape.
-//
+// @reason    The configuration the chat body carries comes from an authenticated read, so what matters is that the read is signed as the account and that the lookup finds a model wherever the vendor grouped it. Both are pinned here against a stub serving the captured answer shape.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -45,7 +39,7 @@ func TestQoderCatalogReadIsSigned(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewQoder() error = %v", err)
 	}
-	if _, err := connector.modelConfig(qoderTestCredential(), "auto"); err != nil {
+	if _, err := connector.modelConfig(t.Context(), qoderTestCredential(), "auto"); err != nil {
 		t.Fatalf("modelConfig() error = %v", err)
 	}
 	if seen == nil {

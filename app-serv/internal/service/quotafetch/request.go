@@ -3,15 +3,10 @@
 // @file      internal/service/quotafetch/request.go
 // @for       Performs one provider quota request and turns a refused or failed answer into the reference's soft message.
 // @uses      internal/service/quotafetch, net/http, encoding/json
-// @reason    Each family repeats the same three moves — send one bounded request, treat a
-//
-//	401/403 as a dead credential, treat a non-2xx as a sentence the card renders
-//	rather than a failure of the page. Reading them once keeps a family from
-//	inventing a fourth behaviour where the reference agreed on one.
-//
+// @reason    Each family repeats the same three moves, send one bounded request, treat a 401/403 as a dead credential, treat a non-2xx as a sentence the card renders rather than a failure of the page. Reading them once keeps a family from inventing a fourth behaviour where the reference agreed on one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -39,14 +34,14 @@ type usageResponse struct {
 	body   []byte
 }
 
-// requestUsage sends one quota read. The caller owns the deadline — Fetch bounds every
-// family and this helper adds no second timeout of its own — and the response body is
+// requestUsage sends one quota read. The caller owns the deadline, Fetch bounds every
+// family and this helper adds no second timeout of its own, and the response body is
 // always closed here, including on a decode the family never reaches.
 //
 // Whatever this call put on the wire as a credential is scrubbed out of what comes back.
 // Several providers quote the request they refused in their 4xx body, and a Go transport
 // error carries the URL, so an unsent-through scrub would let a live bearer token land in
-// a card sentence and — because the poll worker caches every answer — in the database
+// a card sentence and, because the poll worker caches every answer, in the database
 // behind it. Scrubbing here means no family has to remember to.
 func requestUsage(ctx context.Context, method, endpoint string, headers map[string]string, body string) (usageResponse, error) {
 	secrets := presentedSecrets(endpoint, headers)
@@ -91,7 +86,7 @@ var credentialHeaderNames = map[string]struct{}{
 
 // minScrubLength is the shortest value worth scrubbing. Real credentials are long, and a
 // short header value ("Bearer x", a version string) that happens to occur in a provider's
-// English sentence would otherwise be replaced inside that sentence — mangling the one
+// English sentence would otherwise be replaced inside that sentence, mangling the one
 // thing the operator needs to read.
 const minScrubLength = 9
 
@@ -189,7 +184,7 @@ func (r usageResponse) softFailure(display string) (Result, bool) {
 // providerDetail quotes a provider's own rejection, with one exception: markup. A moved
 // endpoint answers a 404 with an HTML page, and the poll worker stores whatever sentence
 // comes back, so that page would land on the state row and be printed on the operator's
-// card — a wall of markup where one sentence belongs. A short plain-text answer ("upstream
+// card, a wall of markup where one sentence belongs. A short plain-text answer ("upstream
 // down") is kept, because it is the provider's reason and the operator can act on it.
 func providerDetail(body []byte) string {
 	trimmed := strings.TrimSpace(string(body))

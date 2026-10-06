@@ -4,15 +4,10 @@
 // @file      internal/domain/ulid_test.go
 // @for       Property tests for ULID generation: length, alphabet, monotonicity.
 // @uses      testing, time (standard library only).
-// @reason    SPEC-API-001 §4 makes IDs ULID strings, and the monotonic guard is
-//
-//	the invariant that keeps same-millisecond writes sortable; a
-//	table-driven + randomized test keeps the generator honest beyond
-//	any single fixture (docs/RULLES/TDD.md §2.4, §2.5).
-//
+// @reason    SPEC-API-001 §4 makes IDs ULID strings, and the monotonic guard is the invariant that keeps same-millisecond writes sortable; a table-driven + randomized test keeps the generator honest beyond any single fixture (docs/RULLES/TDD.md §2.4, §2.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package domain
 

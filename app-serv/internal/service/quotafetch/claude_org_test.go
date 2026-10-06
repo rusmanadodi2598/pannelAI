@@ -5,14 +5,10 @@
 // @file      internal/service/quotafetch/claude_org_test.go
 // @for       Locks Claude's settings and organization-usage fallback and its admin-access outcomes.
 // @uses      internal/service/quotafetch, context, net/http, strings, testing
-// @reason    The fallback changes host twice over and fills a placeholder the registry declares
-//
-//	inline, so a read that reaches the wrong organization, or that reports an
-//	admin-only account as broken, is the failure this path has to keep out.
-//
+// @reason    The fallback changes host twice over and fills a placeholder the registry declares inline, so a read that reaches the wrong organization, or that reports an admin-only account as broken, is the failure this path has to keep out.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

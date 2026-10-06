@@ -1,20 +1,12 @@
 // Command app-serv adapts a provider node's model list to HTTP.
 //
 // @file      cmd/app-serv/node_models_fixture_test.go
-// @for       The doubles the node model-list tests share: a one-node lookup, a
-//
-//	fixed credential, and the connector set.
-//
+// @for       The doubles the node model-list tests share: a one-node lookup, a fixed credential, and the connector set.
 // @uses      internal/provider, context, testing.
-// @reason    Two test files cover the adapter — the parse/fallback cases and the
-//
-//	cache window — and both need the same three doubles. Sharing them here
-//	keeps each test file about its own assertions, and keeps both inside
-//	the AGENTS.md §1.1 line budget.
-//
+// @reason    Two test files cover the adapter, the parse/fallback cases and the cache window, and both need the same three doubles. Sharing them here keeps each test file about its own assertions, and keeps both inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 

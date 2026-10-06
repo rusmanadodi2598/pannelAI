@@ -1,24 +1,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/endpoint_row.go
-// @for       The upstream_endpoints projection, its JSONB codec, and the
-//
-//	row-to-aggregate mapping.
-//
+// @for       The upstream_endpoints projection, its JSONB codec, and the row-to-aggregate mapping.
 // @uses      encoding/json, time, internal/domain.
-// @reason    The table carries three jsonb columns (oauth, account,
-//
-//	test_status) whose payloads the aggregate exposes as typed value
-//	objects. Encoding and decoding them belongs beside the column list
-//	rather than inside each statement, so every read and write agrees on
-//	one shape and a field added to the aggregate cannot be persisted by
-//	one path and dropped by another. It lives in its own file because
-//	AGENTS.md §1.1 caps a source file at 250 lines, and the JSONB codec
-//	plus the statement surface do not fit in one.
-//
+// @reason    The table carries three jsonb columns (oauth, account, test_status) whose payloads the aggregate exposes as typed value objects. Encoding and decoding them belongs beside the column list rather than inside each statement, so every read and write agrees on one shape and a field added to the aggregate cannot be persisted by one path and dropped by another. It lives in its own file because AGENTS.md §1.1 caps a source file at 250 lines, and the JSONB codec plus the statement surface do not fit in one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 
@@ -30,7 +18,7 @@ import (
 
 // endpointColumns is the projection every endpoint read uses, in scan order.
 //
-// The connection-parity columns (draft 017 §4.1b) are part of the projection
+// The connection-parity columns are part of the projection
 // rather than a second read: they are read on every endpoint load, and a second
 // query for five scalar columns would be the N+1 shape AGENTS.md §1.7 forbids.
 const endpointColumns = `id, provider_id, label, auth_type, priority, status,
@@ -53,7 +41,7 @@ type endpointRow struct {
 	lastUsedAt            *time.Time
 	createdAt, updatedAt  time.Time
 
-	// The connection-parity columns (draft 017 §4.1b).
+	// The connection-parity columns.
 	globalPriority      *int
 	defaultModel        string
 	consecutiveUseCount int

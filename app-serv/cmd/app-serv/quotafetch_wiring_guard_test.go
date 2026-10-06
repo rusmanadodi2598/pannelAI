@@ -1,22 +1,12 @@
 // Command app-serv wires the observability graph's egress obligation.
 //
 // @file      cmd/app-serv/quotafetch_wiring_guard_test.go
-// @for       The structural assertion that the boot sequence installs the
-//
-//	process egress client into the quota fetch package.
-//
+// @for       The structural assertion that the boot sequence installs the process egress client into the quota fetch package.
 // @uses      go/ast, go/parser, go/token, os, strings, testing.
-// @reason    R08 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the quota fetch
-//
-//	package's shared client was built bare, so every family's read
-//	left without the egress guard. The install is a boot-sequence
-//	shape — the thing being asserted is that the composition root
-//	calls it, not what a request does afterwards — so, like
-//	egress_guard_assert_test.go, this reads the wiring's own source.
-//
+// @reason    R08 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the quota fetch package's shared client was built bare, so every family's read left without the egress guard. The install is a boot-sequence shape, the thing being asserted is that the composition root calls it, not what a request does afterwards, so, like egress_guard_assert_test.go, this reads the wiring's own source.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package main
 

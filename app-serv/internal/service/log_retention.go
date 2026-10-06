@@ -1,33 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/log_retention.go
-// @for       The bounded worker that removes request logs outside the configured
-//
-//	retention window.
-//
+// @for       The bounded worker that removes request logs outside the configured retention window.
 // @uses      context, errors, log/slog, runtime/debug, sync/atomic, time.
-// @reason    SPEC-API-001 §7.13 makes request-log retention a worker concern, and
-//
-//	AGENTS.md §1.6 requires every worker to state its retry policy,
-//	recover panics, and terminate explicitly. Keeping the worker over
-//	the LogService purge port means the scheduled path and the manual
-//	purge route share the same settings lookup and cutoff semantics.
-//
-// RETRY POLICY
-//
-//	A failed purge is retried on the next tick. MaxAttempts bounds consecutive
-//	failures; reaching it emits an error and resets the counter, while the next
-//	tick starts a fresh cycle. The PostgreSQL DELETE is set-based and atomic, so
-//	a failed call leaves the rows for the next attempt.
-//
-// TERMINATION
-//
-//	Run returns when ctx is cancelled. Its ticker is stopped explicitly and the
-//	purge call has its own timeout, so a worker cannot wait forever on storage.
-//
+// @reason    SPEC-API-001 §7.13 makes request-log retention a worker concern, and AGENTS.md §1.6 requires every worker to state its retry policy, recover panics, and terminate explicitly. Keeping the worker over the LogService purge port means the scheduled path and the manual purge route share the same settings lookup and cutoff semantics.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package service
 
@@ -133,9 +112,11 @@ func (w *LogRetentionWorker) RunOnce(ctx context.Context) (deleted int64, ran bo
 	return deleted, true
 }
 
-// recordFailure applies the fixed-tick retry policy. There is no durable
-// dead-letter table for logs; a failed DELETE leaves the rows untouched, so the
-// next process start can retry the same retention window.
+// recordFailure applies the fixed-tick retry policy. MaxAttempts bounds consecutive
+// failures: reaching it logs at error level and resets the counter, so the next tick
+// starts a fresh cycle. There is no durable dead-letter table for logs; a failed
+// DELETE leaves the rows untouched, so the next process start can retry the same
+// retention window.
 func (w *LogRetentionWorker) recordFailure(err error) {
 	w.attempts++
 	if w.attempts >= w.policy.MaxAttempts {

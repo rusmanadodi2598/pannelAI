@@ -4,15 +4,10 @@
 // @file      internal/service/quotafetch/antigravity_models.go
 // @for       Reads Antigravity's published per-model windows and the headers that call needs.
 // @uses      internal/service/quotafetch, encoding/json, strings, google_account.go
-// @reason    The endpoint meters far more models than the card is meant to name, marks some of
-//
-//	them internal, and keys them by an id the display name cannot be matched
-//	against once the map is walked — so the allowlist, the id it is keyed by
-//	and the row it produces belong in one place.
-//
+// @reason    The endpoint meters far more models than the card is meant to name, marks some of them internal, and keys them by an id the display name cannot be matched against once the map is walked, so the allowlist, the id it is keyed by and the row it produces belong in one place.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

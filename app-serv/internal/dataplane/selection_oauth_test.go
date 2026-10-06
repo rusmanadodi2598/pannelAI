@@ -1,23 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_oauth_test.go
-// @for       The selection of an oauth endpoint, which carries its credential in
-//
-//	the stored token and owns no key row to pick.
-//
+// @for       The selection of an oauth endpoint, which carries its credential in the stored token and owns no key row to pick.
 // @uses      internal/domain, context, testing, time.
-// @reason    SelectNext demanded a healthy key from every endpoint except a
-//
-//	no_auth one, so an oauth account built by a device flow was never
-//	eligible and the provider answered NO_PROVIDER_AVAILABLE even
-//	though its token was valid. These tests pin the fix: the endpoint
-//	is selectable with no material, the credential it presents is the
-//	stored token, and its health writes stay no-ops like the keyless
-//	case they belong to.
-//
+// @reason    SelectNext demanded a healthy key from every endpoint except a no_auth one, so an oauth account built by a device flow was never eligible and the provider answered NO_PROVIDER_AVAILABLE even though its token was valid. These tests pin the fix: the endpoint is selectable with no material, the credential it presents is the stored token, and its health writes stay no-ops like the keyless case they belong to.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package dataplane
 
@@ -27,6 +16,7 @@ import (
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 )
 
 // oauthEndpoint builds an oauth endpoint with a stored token and no keys, which
@@ -37,8 +27,8 @@ func oauthEndpoint(t *testing.T, id string) domain.UpstreamEndpoint {
 	if err != nil {
 		t.Fatalf("building oauth endpoint %s: %v", id, err)
 	}
-	endpoint.SetOAuth(&domain.OAuthCredential{AccessTokenEncrypted: "at-cipher"}, now)
-	endpoint.SetAccount(domain.EndpointAccount{Email: "dev@example.com"}, now)
+	endpoint.SetOAuth(domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{AccessTokenEncrypted: "at-cipher"}), now)
+	endpoint.SetAccount(domain.RehydrateEndpointAccount(domain.EndpointAccountInput{Email: "dev@example.com"}), now)
 	return endpoint
 }
 
@@ -65,11 +55,11 @@ func TestSelector_SelectsAKeylessOAuthEndpoint(t *testing.T) {
 	if selection.Key.ID() != "" {
 		t.Fatalf("key = %q, want none for an oauth endpoint", selection.Key.ID())
 	}
-	if selection.Credential.AccessToken != "plain-at-cipher" {
-		t.Fatalf("access token = %q, want the opened token", selection.Credential.AccessToken)
+	if family := credentialFamily(t, selection.Credential); family != provider.FamilyOAuth {
+		t.Fatalf("family = %v, want an oauth endpoint to present its token as oauth", family)
 	}
-	if selection.Credential.APIKey != "" {
-		t.Fatalf("api key = %q, want none for an oauth endpoint", selection.Credential.APIKey)
+	if got := credentialSecret(t, selection.Credential); got != "plain-at-cipher" {
+		t.Fatalf("access token = %q, want the opened token", got)
 	}
 }
 

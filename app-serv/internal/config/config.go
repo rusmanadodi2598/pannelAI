@@ -3,14 +3,10 @@
 // @file      internal/config/config.go
 // @for       Typed environment configuration for app-serv, validated once at boot.
 // @uses      fmt, strings, time (the env-reading helpers are in env.go).
-// @reason    SPEC-API-001 §4 and AGENTS.md §1.4 require env vars to become a
-//
-//	typed Config with fail-fast validation, so no raw os.Getenv()
-//	reaches business logic.
-//
+// @reason    SPEC-API-001 §4 and AGENTS.md §1.4 require env vars to become a typed Config with fail-fast validation, so no raw os.Getenv() reaches business logic.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package config
 
@@ -67,8 +63,8 @@ type Config struct {
 	ProxyTestURL string
 	// TrustedProxies is the parsed TRUSTED_PROXY_CIDRS list: the peers whose
 	// X-Forwarded-For chains the rate limiters may read to bucket a request by
-	// its real client (draft 042 R20). Empty — the default — means no proxy is
-	// trusted and every request is bucketed by its direct peer.
+	// its real client. Empty, the default, means no proxy is trusted and every
+	// request is bucketed by its direct peer.
 	TrustedProxies []*net.IPNet
 }
 
@@ -114,6 +110,13 @@ func Load() (Config, error) {
 		v, err := getenvInt(f.name, f.def)
 		if err != nil {
 			return Config{}, fmt.Errorf("config: %s: %w", f.name, err)
+		}
+		// The ceiling is part of the declaration, so it is enforced here rather
+		// than left to validate(): a bound nothing reads is worse than no bound,
+		// because the table reads as if RATE_LIMIT_PER_MIN could not be set to a
+		// value that disables the limiter.
+		if v > f.max {
+			return Config{}, fmt.Errorf("config: %s: %d exceeds the ceiling of %d", f.name, v, f.max)
 		}
 		*f.dst = v
 	}

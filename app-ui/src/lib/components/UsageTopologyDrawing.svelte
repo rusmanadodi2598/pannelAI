@@ -7,8 +7,8 @@
 	// The drawing is still hidden from assistive technology; the facts it encodes are now stated by the live
 	// row above the frame.
 	//
-	// Three parts, and the middle one is its own file: this box and the cards it publishes — the gateway,
-	// one card per node on each band, and the two terminals on the vertical axis — the hops
+	// Three parts, and the middle one is its own file: this box and the cards it publishes (the gateway,
+	// one card per node on each band, and the two terminals on the vertical axis), the hops
 	// (`UsageTopologyEdges.svelte`, split out by draft 018 and redrawn as a path by draft 043), and the beam
 	// each lit hop carries (`UsageTopologyHop.svelte`).
 	//
@@ -30,8 +30,8 @@
 	// text inside 47px nodes at 390px, because the text resolved against the page while the padding resolved
 	// against the drawing. Both are on the node and gateway boxes now, and both resolve against the drawing.
 	//
-	// Motion belongs to the live state alone (draft 013 F2). The two things that move on entry — a card
-	// fading in when it appears, and the box growing when the node count changes — are not that motion: they
+	// Motion belongs to the live state alone (draft 013 F2). The two things that move on entry (a card
+	// fading in when it appears, and the box growing when the node count changes) are not that motion: they
 	// say "this drawing is the same drawing, with one more thing on it", and both stop for a reader who
 	// asked for reduced motion.
 	import UsageTopologyEdges from './UsageTopologyEdges.svelte';

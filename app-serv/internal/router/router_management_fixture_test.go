@@ -2,19 +2,11 @@
 //
 // @file      internal/router/router_management_fixture_test.go
 // @for       The wired management handler set and its registry fixture.
-// @uses      internal/domain, internal/handler, internal/registry,
-//
-//	internal/service, context, testing, time.
-//
-// @reason    The route tables and the fixture that feeds them are separate
-//
-//	declarations, and AGENTS.md §1.1 caps a file at 250 lines. Keeping
-//	the fixture here means a new management vertical adds one field and
-//	one constructor line, while each route table stays the audit it is.
-//
+// @uses      internal/domain, internal/handler, internal/registry, internal/service, context, testing, time.
+// @reason    The route tables and the fixture that feeds them are separate declarations, and AGENTS.md §1.1 caps a file at 250 lines. Keeping the fixture here means a new management vertical adds one field and one constructor line, while each route table stays the audit it is.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package router
 

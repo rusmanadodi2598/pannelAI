@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_failure.go
-// @for       How one upstream failure is classified, recorded against the key's
-//
-//	parked-or-usable state, and reported to the client.
-//
+// @for       How one upstream failure is classified, recorded against the key's parked-or-usable state, and reported to the client.
 // @uses      internal/domain, net/http, context.
-// @reason    SPEC-API-001 §7.5 makes the health state a consequence of every
-//
-//	call, and §7.7 fixes which failures are worth another credential
-//	and which stop the chain. Both are about one failure rather than
-//	about the pipeline, so they live together here and the relay loop
-//	stays readable.
-//
+// @reason    SPEC-API-001 §7.5 makes the health state a consequence of every call, and §7.7 fixes which failures are worth another credential and which stop the chain. Both are about one failure rather than about the pipeline, so they live together here and the relay loop stays readable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -26,6 +17,7 @@ import (
 	"net/http"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 )
 
 // FailureClass maps an upstream HTTP status onto the key-health class that
@@ -69,7 +61,11 @@ func failureReason(err error) string {
 // failure, and reporting a bookkeeping failure instead would hide the cause it
 // came from.
 func (e *Engine) recordFailure(ctx context.Context, selection Selection, cause error) {
-	_ = e.selector.RecordFailure(ctx, selection, failureReason(cause), failureClass(cause))
+	if err := e.selector.RecordFailure(ctx, selection, failureReason(cause), failureClass(cause)); err != nil {
+		logx.Degraded(e.logger, "key health could not be recorded after an upstream failure", err,
+			"endpoint_id", selection.Endpoint.ID(), "key_id", selection.Key.ID(),
+			"upstream_error", failureReason(cause))
+	}
 }
 
 // translateCallError maps a transport failure onto the client-visible code,
@@ -86,13 +82,10 @@ func (e *Engine) translateCallError(err error) error {
 			// The upstream refused this request itself (context overflow, an
 			// unsupported parameter): the same body would be refused by every
 			// other credential, so the chain stops and the client sees the
-			// refusal (draft 028 F2).
+			// refusal.
 			code = CodeUpstreamRejected
 		}
 		return wrapDataPlaneError(code, failure.Message, err)
-	}
-	if AsError(err).Code == CodeUpstreamTimeout {
-		return err
 	}
 	return err
 }

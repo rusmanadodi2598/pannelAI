@@ -1,27 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy_route.go
-// @for       The proxy route engine's one decision: which proxy candidates a
-//
-//	request dials through, in which order (docs/PORT/
-//	008-PORT-PROXY-ENGINE.md D1-D6).
-//
-// @uses      internal/domain, internal/repository, context, net/url,
-//
-//	strings, time.
-//
-// @reason    §7.11 makes the pool a set of tested candidates and the owner's
-//
-//	directive makes it carry traffic: one service owns the plan so the
-//	two dataplane call sites walk one order rather than re-implementing
-//	the strategy. Every rule the plan applies (usability, exemption,
-//	stable order, rotation, parking, the static last resort) is pinned
-//	by proxy_route_test.go, and each degradation is deliberate: a pool
-//	the process cannot read must not take the data plane down.
-//
+// @for       The proxy route engine's one decision: which proxy candidates a request dials through, in which order (docs/PORT/ 008-PORT-PROXY-ENGINE.md D1-D6).
+// @uses      internal/domain, internal/repository, context, net/url, strings, time.
+// @reason    §7.11 makes the pool a set of tested candidates and the owner's directive makes it carry traffic: one service owns the plan so the two dataplane call sites walk one order rather than re-implementing the strategy. Every rule the plan applies (usability, exemption, stable order, rotation, parking, the static last resort) is pinned by proxy_route_test.go, and each degradation is deliberate: a pool the process cannot read must not take the data plane down.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package service
 
@@ -71,7 +56,8 @@ type ProxyRouteService struct {
 	clock    func() time.Time
 }
 
-// NewProxyRouteService validates deps and returns the service.
+// NewProxyRouteService returns the service, defaulting the clock to time.Now when
+// deps carry none.
 func NewProxyRouteService(deps ProxyRouteDeps) *ProxyRouteService {
 	clock := deps.Clock
 	if clock == nil {
@@ -86,21 +72,14 @@ func NewProxyRouteService(deps ProxyRouteDeps) *ProxyRouteService {
 	}
 }
 
-// Plan returns the proxy attempts one request from providerID to destHost
-// walks, in order (docs/PORT/008-PORT-PROXY-ENGINE.md D1-D7, docs/PORT/
-// 009-PORT-PROVIDER-PROXY.md D2-D5).
-//
-// The provider's binding decides the candidate set before the walk is ordered:
-// `__none__` dials direct, an empty pool follows the global setting (the
-// switch is its gate), and a named pool leads the walk while the remaining
-// usable rows follow. A pin works while the global switch is off, because the
-// pin is the operator's explicit instruction for that provider; the static URL
-// stays a candidate only while the global switch is on, because it belongs to
-// the global configuration.
-//
-// An empty plan is a decision, not an error: it means the shared client serves
-// the request exactly as it does today (the static URL, or direct under the
-// empty-URL bypass).
+// Plan returns the proxy attempts one request from providerID to destHost walks,
+// in order. The provider's binding decides the candidate set before the order:
+// `__none__` dials direct, an empty pool follows the global setting, and a named
+// pool leads while the remaining usable rows follow. A pin works with the global
+// switch off, because it is the operator's explicit instruction for that provider;
+// the static URL stays a candidate only with the switch on, because it belongs to
+// the global configuration. An empty plan is a decision, not an error: the shared
+// client serves the request exactly as it did before this engine existed.
 func (s *ProxyRouteService) Plan(ctx context.Context, providerID, destHost string) ([]domain.ProxyRouteAttempt, error) {
 	document, err := s.settings.Settings(ctx)
 	if err != nil {
@@ -123,9 +102,9 @@ func (s *ProxyRouteService) Plan(ctx context.Context, providerID, destHost strin
 
 	rows, err := s.proxies.List(ctx)
 	if err != nil {
-		// A pool the process cannot read degrades to the shared route (D6's
-		// spirit at the read boundary): the static URL still proxies, and the
-		// empty-URL bypass still dials direct.
+		// A pool the process cannot read degrades to the shared route at the read
+		// boundary: the static URL still proxies, and the empty-URL bypass still
+		// dials direct.
 		//nolint:nilerr // reason: an unreadable pool is answered as "no plan" rather than as a fault, so the shared client serves the request exactly as it did before the engine existed; failing it would take the data plane down over an optimisation.
 		return nil, nil
 	}

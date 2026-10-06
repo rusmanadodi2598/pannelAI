@@ -3,15 +3,10 @@
 // @file      internal/handler/proxy.go
 // @for       The proxy pool endpoints (SPEC-API-001 §7.11).
 // @uses      internal/schema, internal/service, internal/domain, net/http.
-// @reason    §7.11 fixes six routes whose only work is decode → validate → call
-//
-//	→ encode. The password is write-only, so no response this file writes
-//	carries it; a failed connectivity test is a 200 with a fail state, not
-//	an error, because that is the answer the operator asked for.
-//
+// @reason    §7.11 fixes six routes whose only work is decode → validate → call → encode. The password is write-only, so no response this file writes carries it; a failed connectivity test is a 200 with a fail state, not an error, because that is the answer the operator asked for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -28,7 +23,6 @@ type ProxyHandler struct {
 	proxies *service.ProxyService
 }
 
-// NewProxyHandler validates deps and returns the handler.
 func NewProxyHandler(proxies *service.ProxyService) *ProxyHandler {
 	return &ProxyHandler{proxies: proxies}
 }
@@ -151,7 +145,7 @@ func decodeProxyRequest(r *http.Request) (service.ProxyDraft, error) {
 
 // decodeProxyPatch decodes and validates a partial patch body. Omitted
 // fields stay nil so the service can keep their stored values, and an empty
-// patch is refused here — before the service — because the body said nothing.
+// patch is refused here, before the service, because the body said nothing.
 func decodeProxyPatch(r *http.Request) (service.ProxyPatch, error) {
 	var req schema.ProxyPatchRequest
 	if err := schema.DecodeJSON(r, &req); err != nil {

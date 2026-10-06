@@ -1,20 +1,9 @@
 // Command app-serv adapts a provider node's model list to HTTP.
 //
 // @file      cmd/app-serv/node_models.go
-// @for       The net/http implementation of service.NodeModelSource: read a
-//
-//	compatible node's own model list, and fall back when it cannot answer.
-//
-// @uses      internal/netguard, internal/provider, internal/registry,
-//
-//	internal/service, context, fmt, io, net/http, strings, sync, time.
-//
-// @reason    SPEC-API-001 §7.4 serves a node's models and draft 017 §4.2 measured
-//
-//	that a synthesized node carried none, so the node appeared in four
-//	surfaces with `len(entry.Models) = 0`. AGENTS.md §1.5 forbids net/http in
-//	the service layer, so the read is an adapter here and a port there, the
-//	same split the connectivity probe uses.
+// @for       The net/http implementation of service.NodeModelSource: read a compatible node's own model list, and fall back when it cannot answer.
+// @uses      internal/netguard, internal/provider, internal/registry, internal/service, context, fmt, io, net/http, strings, sync, time.
+// @reason    SPEC-API-001 §7.4 serves a node's models and draft 017 §4.2 measured that a synthesized node carried none, so the node appeared in four surfaces with `len(entry.Models) = 0`. AGENTS.md §1.5 forbids net/http in the service layer, so the read is an adapter here and a port there, the same split the connectivity probe uses.
 //
 //	Two rules are structural rather than incidental. The destination is
 //	operator-supplied, so it goes through the same egress guard the probe
@@ -26,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -65,17 +54,17 @@ type nodeModelSource struct {
 	// mu guards cache, and is held across a fetch as well as a read: that makes
 	// the cache single-flight per node for free, so two concurrent lookups make
 	// one request. Holding a lock across network I/O is usually wrong; here the
-	// critical section is one bounded request to one host, and the alternative —
-	// a second lock, a map of in-flight calls, and a wait — is more machinery
+	// critical section is one bounded request to one host, and the alternative,
+	// a second lock, a map of in-flight calls, and a wait, is more machinery
 	// than a per-node read justifies.
 	mu    sync.Mutex
 	cache map[string]cachedNodeModels
 }
 
-// newNodeModelSource builds the adapter. The guard is a parameter, not an
-// ambient dependency, because a dialer built without one is the OWASP A01 hole
-// draft 017 §4.8 names — and cmd/app-serv/egress_guard_assert_test.go fails when
-// an adapter is constructed without it.
+// newNodeModelSource builds the adapter with the egress guard as a parameter
+// rather than an ambient dependency: a dialer built without one is the OWASP
+// A01 hole, and egress_guard_assert_test.go fails when an adapter is built
+// without it.
 func newNodeModelSource(
 	lookup func(id string) (nodeTarget, bool),
 	connectors *provider.Connectors,

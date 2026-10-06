@@ -6,7 +6,7 @@
 // @reason    Every rule this worker states is a decision about which calls were made and which rows written, so it is asserted against doubles that count them rather than a store and a network that would hide both.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
 

@@ -6,7 +6,7 @@
 // @reason    One entry point for callers so per-family wiring stays in one map, like the reference.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package quotafetch
 
@@ -24,7 +24,7 @@ const requestTimeout = 20 * time.Second
 
 // client is the outbound client every fetch shares. The timeout lives here rather than
 // per request because the package owns the whole call. The composition root installs
-// the process egress client once at boot (UseEgressClient, draft 042 R08), so every
+// the process egress client once at boot (UseEgressClient), so every
 // family's read rides the same guarded transport the data plane does. Until that
 // install the default still refuses redirects, so a quota host cannot bounce a read
 // cross-host carrying its credential headers.
@@ -36,8 +36,8 @@ var client = &http.Client{Timeout: requestTimeout, CheckRedirect: noRedirect}
 func noRedirect(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 
 // UseEgressClient installs the process egress client every fetch shares, so quota
-// reads leave through the same guarded transport as the data plane (draft 042 R08).
-// It borrows the client's transport — the guard lives there, on the dialer — and its
+// reads leave through the same guarded transport as the data plane.
+// It borrows the client's transport, the guard lives there, on the dialer, and its
 // redirect rule, and keeps this package's own timeout, because the quota poll owns
 // the whole call and a hung read must not hold a worker slot. A client without a
 // transport is refused: a bare client would look installed while every read still
@@ -70,7 +70,7 @@ func Fetch(ctx context.Context, family string, creds Credentials) Result {
 
 // familyFetchers is the port of USAGE_HANDLERS, keyed by the registry provider id the
 // endpoint's own row names. A family the registry marks `usage: true` but that is absent
-// here answers the soft "not implemented" message — which is why parity between this map
+// here answers the soft "not implemented" message, which is why parity between this map
 // and the registry is a test rather than a checklist someone has to remember.
 var familyFetchers = map[string]func(context.Context, Credentials) Result{
 	"claude":      fetchClaude,

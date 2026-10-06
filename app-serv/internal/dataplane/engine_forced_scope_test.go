@@ -1,22 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_forced_scope_test.go
-// @for       The scope of the forced-stream fold: which providers it applies to,
-//
-//	and which it must leave alone.
-//
+// @for       The scope of the forced-stream fold: which providers it applies to, and which it must leave alone.
 // @uses      testing, context, internal/domain, internal/registry.
-// @reason    The fold changes how an answer is read, so applying it to a provider
-//
-//	that does not need it would turn a working non-streamed call into a
-//	folded one for no reason. The seam is connector-declared precisely so
-//	the blast radius is one provider, and these tests pin that boundary:
-//	a provider whose connector declares nothing, and a provider with no
-//	connector at all, both keep the pass-through behaviour.
-//
+// @reason    The fold changes how an answer is read, so applying it to a provider that does not need it would turn a working non-streamed call into a folded one for no reason. The seam is connector-declared precisely so the blast radius is one provider, and these tests pin that boundary: a provider whose connector declares nothing, and a provider with no connector at all, both keep the pass-through behaviour.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package dataplane
 

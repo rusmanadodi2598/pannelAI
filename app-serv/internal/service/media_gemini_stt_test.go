@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_gemini_stt_test.go
-// @for       The Gemini transcription adapter: the generateContent URL, the
-//
-//	inline audio, the prompt forms, and the joined answer.
-//
-// @uses      internal/dataplane, internal/domain, internal/provider,
-//
-//	internal/schema, bytes, context, encoding/base64, encoding/json,
-//	testing.
-//
-// @reason    G5 ports one provider adapter at a time. Gemini is the case where
-//
-//	the model is a path segment, the credential a query parameter, and
-//	the audio inline in a JSON body, so these rows pin all three plus
-//	the empty transcript that is a legitimate answer.
-//
+// @for       The Gemini transcription adapter: the generateContent URL, the inline audio, the prompt forms, and the joined answer.
+// @uses      internal/dataplane, internal/domain, internal/provider, internal/schema, bytes, context, encoding/base64, encoding/json, testing.
+// @reason    G5 ports one provider adapter at a time. Gemini is the case where the model is a path segment, the credential a query parameter, and the audio inline in a JSON body, so these rows pin all three plus the empty transcript that is a legitimate answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

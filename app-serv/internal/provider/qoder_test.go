@@ -1,24 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_test.go
-// @for       The Qoder connector's two decisions: which host serves a credential,
-//
-//	and what a signed request puts on the wire.
-//
-// @uses      context, encoding/json, io, net/http, net/http/httptest, strings,
-//
-//	testing, time, internal/registry.
-//
-// @reason    These are the two places the gateway stops treating Qoder like an
-//
-//	OpenAI-compatible vendor. A host chosen wrong is a 403 from a working
-//	credential, and a signature computed over bytes that are not the ones
-//	sent is a rejection that looks like an auth failure — so both are
-//	pinned against a stub that records exactly what arrived.
-//
+// @for       The Qoder connector's two decisions: which host serves a credential, and what a signed request puts on the wire.
+// @uses      context, encoding/json, io, net/http, net/http/httptest, strings, testing, time, internal/registry.
+// @reason    These are the two places the gateway stops treating Qoder like an OpenAI-compatible vendor. A host chosen wrong is a 403 from a working credential, and a signature computed over bytes that are not the ones sent is a rejection that looks like an auth failure, so both are pinned against a stub that records exactly what arrived.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -89,8 +77,8 @@ func TestQoderApplyAuthSignsADeviceTokenWithoutExchanging(t *testing.T) {
 	if err != nil {
 		t.Fatalf("building the request: %v", err)
 	}
-	cred := Credential{AccessToken: "dt-device", Family: FamilyOAuth, ProjectID: "user-7",
-		Metadata: map[string]string{MetadataMachineID: "machine-fixed"}}
+	cred := Credential{accessToken: "dt-device", family: FamilyOAuth, projectID: "user-7",
+		metadata: map[string]string{MetadataMachineID: "machine-fixed"}}
 
 	if err := connector.ApplyAuth(request, cred); err != nil {
 		t.Fatalf("ApplyAuth() error = %v", err)
@@ -114,7 +102,7 @@ func TestQoderRefusals(t *testing.T) {
 	})
 	t.Run("nil egress client", func(t *testing.T) {
 		// SSRF §2.1: the connector must not build its own unguarded client. A nil
-		// client is a boot-time refusal, not a silent fallback (draft 042 R07).
+		// client is a boot-time refusal, not a silent fallback.
 		if _, err := NewQoder(qoderEntry("qoder", "https://openapi.qoder.sh", qoderChatURLIntl), nil); err == nil {
 			t.Fatal("a nil egress client was accepted")
 		}

@@ -3,13 +3,10 @@
 // @file      internal/dataplane/token_saver_translate_restore_test.go
 // @for       Table-driven tests for member-preserving Headroom restoration.
 // @uses      bytes, encoding/json, testing.
-// @reason    SPEC-API-002 §3.4 keeps every unmodelled field byte-identical, and
-// §8.2 puts compressed messages back into the original wire. Both claims are
-// structural, so each case decodes the result and asserts the members it keeps.
-//
+// @reason    SPEC-API-002 §3.4 keeps every unmodelled field byte-identical, and §8.2 puts compressed messages back into the original wire. Both claims are structural, so each case decodes the result and asserts the members it keeps.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package dataplane
 

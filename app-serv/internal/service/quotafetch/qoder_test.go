@@ -1,24 +1,12 @@
 // Package quotafetch reads the quota a provider publishes for one of its connections.
 //
 // @file      internal/service/quotafetch/qoder_test.go
-// @for       The Qoder quota read: its buckets, its credential exchange, and the
-//
-//	answers a card should render rather than a failure to route.
-//
-// @uses      context, encoding/json, fmt, io, net/http, net/http/httptest, strings,
-//
-//	testing, time.
-//
-// @reason    This family publishes credits in two buckets and refuses a raw Personal
-//
-//	Access Token, so the two failures worth pinning are a read that
-//	presents the stored credential (looks like a dead account) and a read
-//	that turns the vendor's absolute `remaining` into a share (looks like
-//	a number). Both are silent.
-//
+// @for       The Qoder quota read: its buckets, its credential exchange, and the answers a card should render rather than a failure to route.
+// @uses      context, encoding/json, fmt, io, net/http, net/http/httptest, strings, testing, time.
+// @reason    This family publishes credits in two buckets and refuses a raw Personal Access Token, so the two failures worth pinning are a read that presents the stored credential (looks like a dead account) and a read that turns the vendor's absolute `remaining` into a share (looks like a number). Both are silent.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package quotafetch
 

@@ -1,20 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/translate_responses_client_answer_test.go
-// @for       Table-driven tests for building a Responses answer from the pivot
-//
-//	completion.
-//
+// @for       Table-driven tests for building a Responses answer from the pivot completion.
 // @uses      testing, encoding/json, internal/schema.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, so the answer a
-//
-//	client receives has to be assembled whenever the provider speaks
-//	another format. The output array is what the client acts on, so
-//	every item kind and its order are pinned here (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, so the answer a client receives has to be assembled whenever the provider speaks another format. The output array is what the client acts on, so every item kind and its order are pinned here (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

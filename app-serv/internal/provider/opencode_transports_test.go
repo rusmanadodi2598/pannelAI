@@ -2,25 +2,12 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_transports_test.go
-// @for       The multi-endpoint rule: a model is served on the endpoint its own
-//
-//	declared formats allow, with that endpoint's credential placement.
-//
+// @for       The multi-endpoint rule: a model is served on the endpoint its own declared formats allow, with that endpoint's credential placement.
 // @uses      testing, net/http, internal/registry.
-// @reason    The reference's opencode-go and opencode-zen entries declare three
-//
-//	endpoints each (`transports[]`), and a model's `supportedFormats`
-//	decides which of them may answer it. Measured on the previous port:
-//	minimax-m2.7 (target claude) was sent to
-//	".../chat/completions/zen/v1/messages", a URL that concatenates the
-//	chat endpoint with the messages path, and its credential was placed as
-//	an Authorization bearer where the wire reads x-api-key. Both are
-//	failures the upstream answers with a 4xx that names no cause, so the
-//	rule is pinned here.
-//
+// @reason    The reference's opencode-go and opencode-zen entries declare three endpoints each (`transports[]`), and a model's `supportedFormats` decides which of them may answer it. Measured on the previous port: minimax-m2.7 (target claude) was sent to ".../chat/completions/zen/v1/messages", a URL that concatenates the chat endpoint with the messages path, and its credential was placed as an Authorization bearer where the wire reads x-api-key. Both are failures the upstream answers with a 4xx that names no cause, so the rule is pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-24
 package provider
 
@@ -171,15 +158,10 @@ func TestOpenCode_MultiEndpointAuthFollowsTheEndpoint(t *testing.T) {
 }
 
 // TestOpenCode_MultiEndpointFallsBackWhenTheModelExcludesTheWire pins the guard's
-// real direction, which is the reference's (chatCore.js:95-101): a model that
-// declares `supportedFormats` and does not include the wire being used is served
-// on the provider's default transport, not refused.
-//
-// Refusing was the first reading of this rule and it was wrong: opencode-zen's
-// default wire is openai while 43 of its models declare claude only, so a
-// refusal removed them from routing entirely. The reference serves them on the
-// claude wire whenever the client speaks it, and on the default transport
-// otherwise.
+// real direction: a model that declares `supportedFormats` and does not include the
+// wire being used is served on the provider's default transport, not refused. A
+// claude-only model on a provider whose default wire is openai therefore stays
+// routable on both wires.
 func TestOpenCode_MultiEndpointFallsBackWhenTheModelExcludesTheWire(t *testing.T) {
 	connector := NewOpenCode(opencodeGoEntry())
 	entry := opencodeGoEntry()
@@ -192,9 +174,8 @@ func TestOpenCode_MultiEndpointFallsBackWhenTheModelExcludesTheWire(t *testing.T
 		t.Fatalf("Endpoint() error = %v, want the default transport to answer", err)
 	}
 	// The provider's own base URL answers as written, because a multi-endpoint
-	// entry stores a complete URL there. Composing a leaf onto it would build
-	// ".../chat/completions/zen/v1/messages", which is the broken shape this rule
-	// replaces.
+	// entry stores a complete URL there; composing a leaf onto it would build a
+	// path nothing serves.
 	if got != "https://opencode.ai/zen/go/v1/chat/completions" {
 		t.Fatalf("Endpoint() = %q, want the provider's own base URL", got)
 	}

@@ -1,19 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/usage.go
-// @for       The usage summary, timeseries, records, and request-detail routes
-//
-//	(SPEC-API-001 §7.12).
-//
+// @for       The usage summary, timeseries, records, and request-detail routes (SPEC-API-001 §7.12).
 // @uses      internal/schema, internal/service, net/http, time.
-// @reason    §7.12 offers four reads over one table; AGENTS.md §1.5 keeps
-//
-//	validation in the schema layer and aggregation in the service, so
-//	this handler only decodes a bounded filter, calls, and encodes.
-//
+// @reason    §7.12 offers four reads over one table; AGENTS.md §1.5 keeps validation in the schema layer and aggregation in the service, so this handler only decodes a bounded filter, calls, and encodes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package handler
 
@@ -32,7 +25,6 @@ type UsageHandler struct {
 	clock func() time.Time
 }
 
-// NewUsageHandler validates deps and returns the handler.
 func NewUsageHandler(usage *service.UsageService) *UsageHandler {
 	return &UsageHandler{usage: usage, clock: time.Now}
 }

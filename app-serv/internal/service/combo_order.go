@@ -1,23 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/combo_order.go
-// @for       The ordered model list one request routes through, the rotation
-//
-//	wiring that produces it, and the reference validation a combo write
-//	runs (SPEC-API-001 §7.7).
-//
+// @for       The ordered model list one request routes through, the rotation wiring that produces it, and the reference validation a combo write runs (SPEC-API-001 §7.7).
 // @uses      internal/domain, internal/repository, context, log/slog.
-// @reason    §7.7 makes write time the only moment a combo's references can be
-//
-//	checked — a router cannot dereference a stale name — and makes the
-//	round-robin order the one part of a combo a client observes request
-//	by request. Both concern the path from a stored combo to a served
-//	request, which is why they sit together, apart from the CRUD
-//	surface.
-//
+// @reason    §7.7 makes write time the only moment a combo's references can be checked, a router cannot dereference a stale name, and makes the round-robin order the one part of a combo a client observes request by request. Both concern the path from a stored combo to a served request, which is why they sit together, apart from the CRUD surface.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -80,18 +69,13 @@ func (s *ComboService) validateRefs(ctx context.Context, name string, draft Comb
 		aliasTargets[alias.Alias()] = alias.Target()
 	}
 
-	// resolve answers whether one reference names something the data plane
-	// could route and serve. A provider/model reference is canonicalized through
-	// the same alias-then-id lookup the router performs, so a member spelled with
-	// a registry alias (`cc/claude-...`) or a node prefix (`oczen/...`) validates
-	// exactly when the router would route it (draft 024 §3.2).
-	//
-	// An alias member is judged by its target, because that is what the router
-	// serves: an alias to a media model or to an untranslatable provider is
-	// refused exactly like the direct reference to it.
-	//
-	// A member naming the combo itself is refused outright: a self-reference is
-	// the one-cycle a write can produce without touching the database, and the
+	// resolve answers whether one reference names something the data plane could route and serve.
+	// A provider/model reference is canonicalized through the same alias-then-id lookup the router
+	// performs, so a member spelled with a registry alias (`cc/claude-...`) or a node prefix
+	// (`oczen/...`) validates exactly when the router would route it. An alias member is judged by
+	// its target: an alias to a media model or to an untranslatable provider is refused like the
+	// direct reference to it. A member naming the combo itself is refused outright, since a
+	// self-reference is the one cycle a write can produce without touching the database, and the
 	// runtime guard is a backstop for stored rows, not the first line.
 	resolve := func(ref string) error {
 		if strings.EqualFold(strings.TrimSpace(ref), name) {
@@ -131,7 +115,7 @@ func (s *ComboService) validateRefs(ctx context.Context, name string, draft Comb
 
 // resetRotation clears a combo's rotation state after a change that invalidates
 // it: a counter that addressed the old model list would otherwise keep serving
-// the wrong model. The failure is discarded deliberately — the combo itself was
+// the wrong model. The failure is discarded deliberately, the combo itself was
 // stored successfully, and a stale counter costs one window of skew rather than
 // a refused write.
 func (s *ComboService) resetRotation(ctx context.Context, comboName string) {

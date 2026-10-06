@@ -3,15 +3,10 @@
 // @file      internal/schema/log.go
 // @for       The request-log list, detail, purge, and console-buffer contracts.
 // @uses      internal/domain (LogFilter, RequestLog) and the shared usage filter.
-// @reason    SPEC-API-001 §7.13 fixes the log filters, the captured-body detail,
-//
-//	and the console buffer shape; §2.4 requires them typed before the
-//	handler, and the detail response has to distinguish "capture is
-//	off" from "no bodies were stored" for the panel to be honest.
-//
+// @reason    SPEC-API-001 §7.13 fixes the log filters, the captured-body detail, and the console buffer shape; §2.4 requires them typed before the handler, and the detail response has to distinguish "capture is off" from "no bodies were stored" for the panel to be honest.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package schema
 
@@ -41,7 +36,7 @@ func DecodeLogFilter(r *http.Request) (LogFilterQuery, error) {
 // Filter lowers the validated query into the domain filter with the same
 // bounded default window the usage reads use. The status closed set is shared
 // with the usage route because both decode through DecodeUsageFilter, so the
-// two surfaces cannot drift (draft 010 F2/F9).
+// two surfaces cannot drift.
 func (q LogFilterQuery) Filter(now time.Time) domain.LogFilter {
 	return domain.NewLogFilter(domain.LogFilterInput{
 		From:       q.From,

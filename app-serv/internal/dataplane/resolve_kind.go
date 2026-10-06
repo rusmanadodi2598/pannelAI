@@ -3,23 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/resolve_kind.go
-// @for       The kind a caller needs a model to have, and the rule that decides
-//
-//	whether one model satisfies it.
-//
+// @for       The kind a caller needs a model to have, and the rule that decides whether one model satisfies it.
 // @uses      internal/registry, strings.
-// @reason    A registry entry may declare models whose payload is not a chat
-//
-//	request (the reference's `kind: "systemone"` decision models), and each
-//	plane must refuse the other's models rather than serve them with the
-//	wrong body. That is one rule read twice, so it lives here instead of
-//	inside the resolution walk: the chat plane asks for a chat model, the
-//	decision route asks for a decision model, and neither can drift from
-//	the other's idea of which kinds are which.
-//
+// @reason    A registry entry may declare models whose payload is not a chat request (the reference's `kind: "systemone"` decision models), and each plane must refuse the other's models rather than serve them with the wrong body. That is one rule read twice, so it lives here instead of inside the resolution walk: the chat plane asks for a chat model, the decision route asks for a decision model, and neither can drift from the other's idea of which kinds are which.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 
@@ -37,9 +26,8 @@ const (
 	// KindChat is the chat data plane: the OpenAI, Anthropic, and Responses
 	// wires the gateway translates.
 	KindChat = "chat"
-	// KindSystemOne is the native decision route (SPEC-API-001 §7.15). It is the
-	// reference's own spelling of the kind, so the registry and this constant
-	// cannot disagree.
+	// KindSystemOne is the native decision route. It is the reference's own
+	// spelling of the kind, so the registry and this constant cannot disagree.
 	KindSystemOne = "systemone"
 )
 
@@ -65,15 +53,12 @@ func modelServesKind(model registry.Model, kind string) bool {
 }
 
 // kindRefusal explains why a model cannot serve a plane, naming the kind so the
-// reason is readable rather than a bare "not found".
-//
-// The two planes answer with different codes on purpose, and each matches what
-// the code means to a caller. A model of another kind asked for on the chat plane
-// is a model the chat plane does not have, which is MODEL_NOT_FOUND: the catalog
-// list already omits it, so a client asking for it named something absent. The
-// decision route instead refuses by name what it does have but cannot serve,
-// which is PROVIDER_NOT_ROUTABLE: the route exists, the model exists, and the
-// combination is what is unsupported.
+// reason is readable rather than a bare "not found". The two planes answer with
+// different codes on purpose, each matching what the code means to a caller. A model
+// of another kind asked for on the chat plane is MODEL_NOT_FOUND, because the
+// catalog list already omits it and the client named something absent. The decision
+// route has the model but cannot serve it, so the combination is what is
+// unsupported: PROVIDER_NOT_ROUTABLE.
 func kindRefusal(providerID, modelID, declared, wanted string) error {
 	if wanted == KindSystemOne {
 		return dataPlaneError(CodeProviderNotRoutable,

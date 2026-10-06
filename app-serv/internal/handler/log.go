@@ -1,20 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/log.go
-// @for       The request-log list, detail, purge, and console routes
-//
-//	(SPEC-API-001 §7.13).
-//
+// @for       The request-log list, detail, purge, and console routes (SPEC-API-001 §7.13).
 // @uses      internal/domain, internal/schema, internal/service, net/http.
-// @reason    §7.13 lists logs newest first, serves the captured bodies only when
-//
-//	capture is on, purges by retention, and exposes a bounded console
-//	buffer. AGENTS.md §1.5 keeps SQL and Redis out of this layer, so
-//	every route here decodes, calls the service, and encodes.
-//
+// @reason    §7.13 lists logs newest first, serves the captured bodies only when capture is on, purges by retention, and exposes a bounded console buffer. AGENTS.md §1.5 keeps SQL and Redis out of this layer, so every route here decodes, calls the service, and encodes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package handler
 
@@ -33,7 +25,6 @@ type LogHandler struct {
 	clock func() time.Time
 }
 
-// NewLogHandler validates deps and returns the handler.
 func NewLogHandler(logs *service.LogService) *LogHandler {
 	return &LogHandler{logs: logs, clock: time.Now}
 }

@@ -1,27 +1,21 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_grant.go
-// @for       The token-endpoint wire types: one grant rendered as form or as
+// @file      internal/service/oauthhttp/oauth_grant.go
+// @for       The token-endpoint wire types: one grant rendered as form or as JSON, one typed answer, and the refusal mapping.
+// @uses      context, encoding/json, net/http, net/url, strconv, strings, internal/domain.
+// @reason    SPEC-API-001 §8.1 records that providers disagree on the grant body's encoding, so one grant type renders both ways and the disagreement stays at this boundary instead of reaching the flow.
 //
-//	JSON, one typed answer, and the refusal mapping.
-//
-// @uses      context, encoding/json, net/http, net/url, strconv, strings,
-//
-//	internal/domain.
-//
-// @reason    SPEC-API-001 §8.1 records that providers disagree on the grant
-//
-//	body's encoding, so one grant type renders both ways and the
-//	disagreement stays at this boundary instead of reaching the flow.
 //	Empty fields are omitted from either rendering, which is what lets
 //	the same type carry a code exchange, a refresh grant, and a device
-//	poll without a per-grant struct trio.
+//	poll without a per-grant struct trio. The net/http import is egress only,
+//
+//	so a worker can call this the same way a route does (AGENTS.md §1.5).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
-package service
+package oauthhttp
 
 import (
 	"context"
@@ -102,8 +96,8 @@ func (g TokenGrant) fields() []grantField {
 
 // grantCall is the neutral shape of one token-endpoint request: method, URL,
 // headers, and body. The seam speaks this rather than *http.Request, so the
-// HTTP layer's own types stay out of the service boundary (AGENTS.md §1.5,
-// draft 042 R19) and the transport details are built in one place.
+// HTTP layer's own types stay out of the service boundary (AGENTS.md §1.5)
+// and the transport details are built in one place.
 type grantCall struct {
 	method  string
 	url     string

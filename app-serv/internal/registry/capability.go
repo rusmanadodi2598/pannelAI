@@ -2,19 +2,10 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability.go
-// @for       The model capability the registry cannot carry as data yet: whether
-// //
-//
-//	a model reads images.
-//
+// @for       The model capability the registry cannot carry as data yet: whether a model reads images.
 // @uses      strings (the glob matcher).
-// @reason    SPEC-API-001 §7.8 refuses a vision adapter whose models cannot read
+// @reason    SPEC-API-001 §7.8 refuses a vision adapter whose models cannot read images, and nothing in the registry or the reference's provider files declares that: the knowledge lives in the reference's open-sse/providers/capabilities.js, which resolves it from a table of model-id patterns. This file is that table, ported; capability_resolve.go is the one entry point that reads it.
 //
-//	images, and nothing in the registry or the reference's provider files
-//	declares that: the knowledge lives in the reference's
-//	open-sse/providers/capabilities.js, which resolves it from a table of
-//	model-id patterns. This file is that table, ported; capability_resolve.go
-//	is the one entry point that reads it.
 //	It is a port rather than a regeneration of registry.yaml
 //	because the YAML is the provider catalog (what exists, and where it
 //	points), while this is a judgement about models the catalog does not
@@ -28,8 +19,8 @@
 //	corpus generated from capabilities.js itself.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-18
 package registry
 
@@ -69,17 +60,13 @@ type visionRule struct {
 	vision  bool
 }
 
-// VisionCapable reports whether a model reads images.
+// VisionCapable reports whether a model reads images. An id no rule matches
+// answers false: the caller uses this to refuse a configuration, so guessing
+// "capable" would wire a text-only model into the vision adapter.
 //
-// It is deliberately conservative: an id no rule matches answers false, because
-// the caller uses this to refuse a configuration. Guessing "capable" would let
-// an operator wire a text-only model into the vision adapter and discover it
-// when an image request fails upstream.
-//
-// It delegates to Capabilities rather than walking the table itself: the
-// catalog's `?capability=vision` filter and this predicate are the same
-// question, and a second walk here is how the two answers would drift. The
-// signature stays because it is the one the vision adapter is wired to.
+// It delegates to Capabilities: the catalog's `?capability=vision` filter and
+// this predicate are one question, and a second walk lets the two drift. The
+// signature is the one the vision adapter is wired to.
 func VisionCapable(modelID string) bool {
 	return Capabilities("", modelID).Vision
 }

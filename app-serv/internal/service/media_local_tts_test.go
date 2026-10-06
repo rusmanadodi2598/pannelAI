@@ -1,20 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_local_tts_test.go
-// @for       The two self-hosted speech adapters: Coqui's optional speaker and
-//
-//	Tortoise's default voice, both answered as WAV.
-//
+// @for       The two self-hosted speech adapters: Coqui's optional speaker and Tortoise's default voice, both answered as WAV.
 // @uses      internal/dataplane, internal/schema, context, encoding/json, testing.
-// @reason    G5 ports one provider adapter at a time. These two run on the
-//
-//	operator's own machine and take no credential, so the rows pin that
-//	no Authorization header is sent at all (the G16 rule) and that the
-//	route reports WAV, which is what both answer.
-//
+// @reason    G5 ports one provider adapter at a time. These two run on the operator's own machine and take no credential, so the rows pin that no Authorization header is sent at all (the G16 rule) and that the route reports WAV, which is what both answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

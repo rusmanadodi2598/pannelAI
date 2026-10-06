@@ -35,7 +35,7 @@ if [ -z "$panel" ]; then
 	exit 0
 fi
 
-# ------------------------------------------------------------- runner choice
+# runner choice
 
 runner_label=""
 
@@ -78,7 +78,7 @@ gate_start "app-ui checks via $runner_label"
 
 failed=0
 
-# ---------------------------------------------------------------- format
+# format
 
 gate_start "prettier --check"
 if run_script lint >/dev/null; then
@@ -88,7 +88,7 @@ else
 	failed=1
 fi
 
-# ------------------------------------------------------------- type lint
+# type lint
 
 # ESLint covers what svelte-check does not: unused bindings, a floating
 # promise, an explicit any, and a leftover eslint-disable. Prettier owns
@@ -105,7 +105,20 @@ else
 	gate_skip "eslint config absent; skipped"
 fi
 
-# ------------------------------------------------------------ type check
+# type check
+
+# svelte-check reads tsconfig.json, which extends .svelte-kit/tsconfig.json, and
+# that file only exists after SvelteKit has generated the project. A fresh clone has
+# no .svelte-kit at all (it is gitignored), where the check fails on a missing file
+# rather than on the code it was meant to look at. Syncing here keeps the gate
+# self-sufficient instead of trusting an install hook that may never have run.
+gate_start "svelte-kit sync"
+if run_script sync; then
+	gate_pass "svelte-kit sync"
+else
+	gate_fail "svelte-kit sync: the generated tsconfig is what svelte-check reads"
+	failed=1
+fi
 
 gate_start "svelte-check"
 if run_script check; then
@@ -115,7 +128,7 @@ else
 	failed=1
 fi
 
-# ------------------------------------------------------------------ tests
+# tests
 
 gate_start "vitest run"
 if run_script test; then
@@ -125,7 +138,7 @@ else
 	failed=1
 fi
 
-# ------------------------------------------------------------------ build
+# build
 
 if [ "${SKIP_PANEL_BUILD:-0}" = "1" ]; then
 	gate_skip "production build skipped (SKIP_PANEL_BUILD=1)"

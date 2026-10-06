@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_speech.go
-// @for       How one §7.10 speech call is shaped: the per-format request
-//
-//	builders, the answer readers, and the output label.
-//
-// @uses      internal/dataplane, internal/registry, internal/schema,
-//
-//	encoding/json, strings.
-//
-// @reason    Every speech provider answers in its own shape, so the route needs
-//
-//	one place that says which payload each format expects and how its
-//	answer is read. Keeping the dispatch here means a new adapter is one
-//	case plus its own file, and media_audio.go keeps the routes inside
-//	the AGENTS.md §1.1 line budget.
-//
+// @for       How one §7.10 speech call is shaped: the per-format request builders, the answer readers, and the output label.
+// @uses      internal/dataplane, internal/registry, internal/schema, encoding/json, strings.
+// @reason    Every speech provider answers in its own shape, so the route needs one place that says which payload each format expects and how its answer is read. Keeping the dispatch here means a new adapter is one case plus its own file, and media_audio.go keeps the routes inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -103,8 +91,8 @@ func buildSpeechPayload(call MediaCall, req schema.SpeechRequest) (speechPayload
 	return payload, nil
 }
 
-// speechBuildError keeps an adapter's own refusal — a voice the provider needs,
-// a target that cannot be shaped — and names a marshal failure as the request's
+// speechBuildError keeps an adapter's own refusal, a voice the provider needs,
+// a target that cannot be shaped, and names a marshal failure as the request's
 // own, so a 400 stays a 400 instead of becoming an internal error.
 func speechBuildError(err error) error {
 	if dataplane.AsError(err) != nil {

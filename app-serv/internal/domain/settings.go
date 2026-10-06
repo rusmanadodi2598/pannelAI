@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/settings.go
-// @for       The typed settings object, its documented defaults, and the
-//
-//	partial-update rules a PATCH is applied through.
-//
+// @for       The typed settings object, its documented defaults, and the partial-update rules a PATCH is applied through.
 // @uses      internal/domain (ComboStrategy, AppError constructors).
-// @reason    SPEC-API-001 §7.14 fixes the v1 settings surface and its defaults,
-//
-//	and §7.9 deprecates the caveman saver key while requiring it to
-//	stay accepted and frozen so an exported reference configuration
-//	round-trips. Keeping that rule here, beside the defaults, is what
-//	stops any layer from rendering or mutating a key the spec removed.
-//
+// @reason    SPEC-API-001 §7.14 fixes the v1 settings surface and its defaults, and §7.9 deprecates the caveman saver key while requiring it to stay accepted and frozen so an exported reference configuration round-trips. Keeping that rule here, beside the defaults, is what stops any layer from rendering or mutating a key the spec removed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 

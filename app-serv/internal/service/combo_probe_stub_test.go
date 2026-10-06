@@ -1,19 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/combo_probe_stub_test.go
-// @for       The combo test route's seam double, its outcome mapping, and the
-//
-//	combo it cannot read (SPEC-API-001 §7.7).
-//
+// @for       The combo test route's seam double, its outcome mapping, and the combo it cannot read (SPEC-API-001 §7.7).
 // @uses      testing, context, errors, internal/dataplane, internal/domain.
-// @reason    The stub and the mapping cases are a different group from the
-//
-//	per-reference table; AGENTS.md §1.1 caps a file at 250 lines, so they
-//	moved here rather than trimming the table that pins the route's shape.
-//
+// @reason    The stub and the mapping cases are a different group from the per-reference table; AGENTS.md §1.1 caps a file at 250 lines, so they moved here rather than trimming the table that pins the route's shape.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

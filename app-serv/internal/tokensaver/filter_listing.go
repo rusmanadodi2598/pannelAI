@@ -5,15 +5,10 @@
 // @file      internal/tokensaver/filter_listing.go
 // @for       The two listing filters: ls and tree.
 // @uses      fmt, regexp, sort, strconv, strings.
-// @reason    SPEC-API-002 §5 ports the reference's compact_ls and
-//
-//	filter_tree_output. A directory listing is read for its shape, so
-//	the ls filter drops the noise directories and summarizes the
-//	extensions, and the tree filter drops the counts line.
-//
+// @reason    SPEC-API-002 §5 ports the reference's compact_ls and filter_tree_output. A directory listing is read for its shape, so the ls filter drops the noise directories and summarizes the extensions, and the tree filter drops the counts line.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

@@ -1,31 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/vision_augmenter_test.go
-// @for       Tests for the data plane's vision augmentation seam: the
-//
-//	capability decline, where the adapter sits among the request's own
-//	candidates, the disabled adapter, the rotation advance, and the
-//	advisory rotation failure.
-//
-// @uses      context, errors, reflect, testing, internal/domain,
-//
-//	internal/repository.
-//
-// @reason    SPEC-API-001 §7.8 decides a served request's model order here, so
-//
-//	every branch — a candidate that reads images, one that cannot, a
-//	list holding both, a disabled adapter, the rotation — is pinned
-//	against the same in-memory doubles the adapter's own tests use, and
-//	the rotation write's advisory contract is stated by a test that
-//	makes the store fail.
-//
-// The candidates are catalog rows the fixture declares by hand rather than
-// model ids chosen to trip a name pattern: measured live 2026-09-29 the
-// pattern's answer was the thing under test, not a usable lever.
-//
+// @for       Tests for the data plane's vision augmentation seam: the capability decline, where the adapter sits among the request's own candidates, the disabled adapter, the rotation advance, and the advisory rotation failure.
+// @uses      context, errors, reflect, testing, internal/domain, internal/repository.
+// @reason    SPEC-API-001 §7.8 decides a served request's model order here, so every branch, a candidate that reads images, one that cannot, a list holding both, a disabled adapter, the rotation, is pinned against the same in-memory doubles the adapter's own tests use, and the rotation write's advisory contract is stated by a test that makes the store fail. The candidates are catalog rows the fixture declares by hand rather than model ids chosen to trip a name pattern: measured live 2026-09-29 the pattern's answer was the thing under test, not a usable lever.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -83,7 +64,7 @@ const (
 
 // newAugmenter wires the seam over the adapter fixture and seeds the two custom
 // rows the tests aim their requests at. The predicate is permissive because a
-// candidate the catalog lists is never judged by it — that is the rule under test.
+// candidate the catalog lists is never judged by it, that is the rule under test.
 func newAugmenter(t *testing.T, ctx context.Context, rotation repository.VisionRotationStore) (*VisionAugmenter, *VisionAdapterService) {
 	t.Helper()
 	service, _, catalog := newAdapterFixture(t, ctx, acceptAll)
@@ -150,7 +131,7 @@ func TestVisionAugmenter_DeclinesWhenTheAdapterIsDisabled(t *testing.T) {
 
 // TestVisionAugmenter_BlindCandidateIsPutBehindTheAdapter pins the case the
 // adapter exists for: nothing the request can be served by reads images, so the
-// adapter goes first — the only position that can save it, because a blind
+// adapter goes first, the only position that can save it, because a blind
 // candidate that answers 200 ends the walk before anything else is tried.
 func TestVisionAugmenter_BlindCandidateIsPutBehindTheAdapter(t *testing.T) {
 	ctx := context.Background()
@@ -194,9 +175,32 @@ func TestVisionAugmenter_CapableCandidateOutranksTheAdapter(t *testing.T) {
 	}
 }
 
+// TestVisionAugmenter_KeepsTheRequestOrderAmongSeeingCandidates pins the split's
+// contract: a candidate the catalog cannot be asked about stays where the request
+// put it. Sorting by parseability instead would lift an alias above the capable
+// model the client listed first, and the combo walk would run after the model it
+// was meant to follow.
+func TestVisionAugmenter_KeepsTheRequestOrderAmongSeeingCandidates(t *testing.T) {
+	ctx := context.Background()
+	augmenter, service := newAugmenter(t, ctx, nil)
+	enabledAdapter(t, ctx, service)
+
+	const comboName = "fusion-combo"
+	refs, adapted, err := augmenter.Augment(ctx, []string{seeingModel, comboName, blindModel})
+	if err != nil {
+		t.Fatalf("Augment() error = %v", err)
+	}
+	if want := []string{seeingModel, comboName, adapterSeed, blindModel}; !reflect.DeepEqual(refs, want) {
+		t.Fatalf("Augment() refs = %v, want %v", refs, want)
+	}
+	if !reflect.DeepEqual(adapted, []string{adapterSeed}) {
+		t.Fatalf("Augment() adapted = %v, want only the adapter's own model reported", adapted)
+	}
+}
+
 // TestVisionAugmenter_AdvisoryRotationFailureDoesNotBlockServing pins the
 // rotation store's contract: a store that cannot answer costs the rotation,
-// never the request — the augmentation still applies.
+// never the request, the augmentation still applies.
 func TestVisionAugmenter_AdvisoryRotationFailureDoesNotBlockServing(t *testing.T) {
 	ctx := context.Background()
 	augmenter, service := newAugmenter(t, ctx, failingVisionRotation{})

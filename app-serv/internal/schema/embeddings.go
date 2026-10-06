@@ -3,16 +3,10 @@
 // @file      internal/schema/embeddings.go
 // @for       The OpenAI embeddings request and response contracts.
 // @uses      bytes, encoding/json, internal/domain.
-// @reason    SPEC-API-001 §7.10 lists POST /api/v1/embeddings as P1 and §7.15
-//
-//	serves it on the OpenAI wire; AGENTS.md §2.4 requires the typed
-//	contract before the handler. Two of its fields are genuine unions on
-//	the wire (an input that is text or tokens, a vector that is floats or
-//	base64), so both are resolved once here.
-//
+// @reason    SPEC-API-001 §7.10 lists POST /api/v1/embeddings as P1 and §7.15 serves it on the OpenAI wire; AGENTS.md §2.4 requires the typed contract before the handler. Two of its fields are genuine unions on the wire (an input that is text or tokens, a vector that is floats or base64), so both are resolved once here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 

@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/settings_reasoning_test.go
-// @for       The reasoning group's persistence and the one settings read the
-//
-//	data plane's injection makes: the thinking mode resolved per provider.
-//
+// @for       The reasoning group's persistence and the one settings read the data plane's injection makes: the thinking mode resolved per provider.
 // @uses      context, testing, internal/domain.
-// @reason    SPEC-API-001 §7.14 stores one mode per provider and AGENTS.md §2.1
-//
-//	requires the round-trip proven beside the service: a PATCH must write
-//	only its own row, and a read of a document that predates the group
-//	must answer an empty map rather than nil, because the panel renders
-//	"auto" from it.
-//
+// @reason    SPEC-API-001 §7.14 stores one mode per provider and AGENTS.md §2.1 requires the round-trip proven beside the service: a PATCH must write only its own row, and a read of a document that predates the group must answer an empty map rather than nil, because the panel renders "auto" from it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package service
 

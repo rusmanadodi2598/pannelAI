@@ -1,24 +1,17 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_canonical_test.go
-// @for       The canonical-name rule every model-ref write path shares: a ref
-//
-//	is valid in any form the router resolves (id, registry alias, node
-//	prefix), not only the id form the catalog rows carry.
-//
+// @for       The canonical-name rule every model-ref write path shares: a ref is valid in any form the router resolves (id, registry alias, node prefix), not only the id form the catalog rows carry.
 // @uses      internal/domain, internal/registry, context, strings, testing.
-// @reason    Draft 024 F2 measured the drift: the router resolves three forms
+// @reason    Draft 024 F2 measured the drift: the router resolves three forms of the first segment while ModelExists reads one, so a combo member spelled with the reference's own alias (`cc/claude-...`) or a node prefix was refused at write time by a list the same gateway routes.
 //
-//	of the first segment while ModelExists reads one, so a combo member
-//	spelled with the reference's own alias (`cc/claude-...`) or a node
-//	prefix was refused at write time by a list the same gateway routes.
 //	These tests pin the agreement: whatever the router accepts as a
 //	namespace, the write path accepts as a reference, and the catalog
 //	filter answers by the same canonical id.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -33,7 +26,7 @@ import (
 
 // canonicalNodeIndex is the fixture's index overlaid with one custom node, the
 // shape the composition root hands the service in production. The node carries
-// an upstream model list, as draft 017's fix injects.
+// an upstream model list, as production injects it.
 func canonicalNodeIndex(t *testing.T) *registry.Index {
 	t.Helper()
 	base := testIndex(t, registry.Provider{
@@ -100,7 +93,7 @@ func TestModelCatalogService_ModelExistsAcceptsEveryRouterForm(t *testing.T) {
 
 // TestComboService_CreateAcceptsEveryRouterForm pins F2 at the route the owner
 // named: a combo member spelled with a registry alias or a node prefix saves.
-// The stored ref is what the operator typed — the router resolves it — so the
+// The stored ref is what the operator typed, the router resolves it, so the
 // row must round-trip unchanged.
 func TestComboService_CreateAcceptsEveryRouterForm(t *testing.T) {
 	ctx := context.Background()

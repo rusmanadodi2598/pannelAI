@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/systemone_boundary_test.go
-// @for       The decision route's boundary rules: the bodies it refuses before
-//
-//	calling, the combos it refuses, and the URLs it will not dial.
-//
-// @uses      context, strings, testing, time, internal/dataplane,
-//
-//	internal/domain, internal/provider, internal/registry, internal/schema.
-//
-// @reason    These cases are about what never reaches an upstream, which is a
-//
-//	different question from what the route forwards. Keeping them apart
-//	also holds systemone_test.go inside the AGENTS.md §1.1 budget, and it
-//	puts the reference's own boundary rules (systemoneCore.js:30-36) in
-//	one readable list.
-//
+// @for       The decision route's boundary rules: the bodies it refuses before calling, the combos it refuses, and the URLs it will not dial.
+// @uses      context, strings, testing, time, internal/dataplane, internal/domain, internal/provider, internal/registry, internal/schema.
+// @reason    These cases are about what never reaches an upstream, which is a different question from what the route forwards. Keeping them apart also holds systemone_test.go inside the AGENTS.md §1.1 budget, and it puts the reference's own boundary rules (systemoneCore.js:30-36) in one readable list.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 

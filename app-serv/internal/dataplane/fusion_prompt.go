@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/fusion_prompt.go
-// @for       How a fusion panel member and its judge are asked, and how an
-//
-//	answer is read back (SPEC-API-001 §7.7).
-//
+// @for       How a fusion panel member and its judge are asked, and how an answer is read back (SPEC-API-001 §7.7).
 // @uses      internal/schema, encoding/json, strconv, strings.
-// @reason    A panel member receives the client's request stripped to what it
-//
-//	must answer in prose, while the judge receives it whole plus one
-//	appended turn. Both shapes are edits to the same body, so keeping
-//	them together makes the difference between the two auditable, and
-//	keeping them out of the engine leaves the fan-out readable.
-//
+// @reason    A panel member receives the client's request stripped to what it must answer in prose, while the judge receives it whole plus one appended turn. Both shapes are edits to the same body, so keeping them together makes the difference between the two auditable, and keeping them out of the engine leaves the fan-out readable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -87,7 +78,7 @@ func judgeRequest(in Request, prompt string) (Request, error) {
 // panelBody edits a forwarded body into the panel's shape: the tool
 // declarations are withdrawn so a member answers in prose instead of asking for
 // a tool it cannot be given, and the stream flag is written false because a
-// same-format call forwards the raw body — clearing only the decoded field
+// same-format call forwards the raw body, clearing only the decoded field
 // would leave the member streaming.
 func panelBody(raw []byte) ([]byte, error) {
 	if len(raw) == 0 {
@@ -179,10 +170,10 @@ func buildJudgePrompt(answers []fusionAnswer) string {
 		"Do NOT mention that multiple models were used, and do NOT refer to the sources. Produce ONE " +
 		"authoritative final answer addressed directly to the user.\n\n" +
 		"First, internally analyze the panel along these dimensions: consensus (points most sources " +
-		"agree on — treat as higher-confidence), contradictions (where they disagree — resolve with " +
+		"agree on, treat as higher-confidence), contradictions (where they disagree, resolve with " +
 		"your own judgment), partial coverage, unique insights only one source surfaced, and blind " +
 		"spots every source missed. Then write the best possible final answer grounded in that " +
-		"analysis — more complete and correct than any single response, with no filler.\n\n" +
+		"analysis, complete and free of filler.\n\n" +
 		"=== PANEL RESPONSES ===\n" + panel.String() + "\n=== END PANEL RESPONSES ===\n\n" +
 		"Now write the final answer to the user's original request."
 }

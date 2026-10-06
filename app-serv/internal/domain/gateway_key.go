@@ -2,19 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/gateway_key.go
-// @for       The GatewayKey aggregate root: the client-facing credential CLI
-//
-//	tools present as Authorization: Bearer against the data plane.
-//
+// @for       The GatewayKey aggregate root: the client-facing credential CLI tools present as Authorization: Bearer against the data plane.
 // @uses      internal/domain (ULID, error sentinels).
-// @reason    SPEC-API-001 §7.3 needs a revocable key whose plaintext is shown
-//
-//	once and whose later reads expose only key_hint; the transitions
-//	are enforced here so no caller can put the entity in a bad state.
-//
+// @reason    SPEC-API-001 §7.3 needs a revocable key whose plaintext is shown once and whose later reads expose only key_hint; the transitions are enforced here so no caller can put the entity in a bad state.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package domain
 
@@ -33,7 +26,7 @@ const (
 // SPEC-API-001 §7.4 fixes: "Its id carries the type prefix
 // (openai-compatible-… / anthropic-compatible-…)". The registry derives a node's
 // wire format from this prefix, so an id without it makes the node
-// unsynthesizable — and a node that cannot be synthesized cannot be routed to.
+// unsynthesizable, and a node that cannot be synthesized cannot be routed to.
 const (
 	NodeIDPrefixOpenAI    = "openai-compatible-"
 	NodeIDPrefixAnthropic = "anthropic-compatible-"

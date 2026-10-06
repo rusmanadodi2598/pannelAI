@@ -1,21 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/messages.go
-// @for       The Anthropic messages wire contract: the /api/v1/messages request,
-//
-//	its non-streamed response, and the blocks both carry.
-//
+// @for       The Anthropic messages wire contract: the /api/v1/messages request, its non-streamed response, and the blocks both carry.
 // @uses      bytes, encoding/json, internal/domain.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages on the Anthropic
-//
-//	wire, and AGENTS.md §2.4 requires a typed, validated contract
-//	before any handler logic. Two of its fields are genuine unions
-//	(system and message content), so they are resolved once here rather
-//	than by every reader downstream.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages on the Anthropic wire, and AGENTS.md §2.4 requires a typed, validated contract before any handler logic. Two of its fields are genuine unions (system and message content), so they are resolved once here rather than by every reader downstream.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 
@@ -47,16 +38,19 @@ const (
 )
 
 // MessagesRequest is the body of POST /api/v1/messages (Anthropic wire).
+//
+// The stop_sequences bounds are abuse guards, not a number the vendor
+// documents: the counts that keep one request cheap to evaluate.
 type MessagesRequest struct {
 	Model         string          `json:"model" validate:"required,min=1,max=200"`
 	MaxTokens     *int            `json:"max_tokens,omitempty" validate:"omitempty,gte=1"`
 	Messages      []Message       `json:"messages" validate:"required,min=1,dive"`
-	System        TextBlocks      `json:"system,omitempty"`
+	System        TextBlocks      `json:"system,omitempty" validate:"dive"`
 	Stream        bool            `json:"stream"`
 	Temperature   *float64        `json:"temperature,omitempty" validate:"omitempty,gte=0,lte=1"`
 	TopP          *float64        `json:"top_p,omitempty" validate:"omitempty,gte=0,lte=1"`
 	TopK          *int            `json:"top_k,omitempty" validate:"omitempty,gte=1"`
-	StopSequences []string        `json:"stop_sequences,omitempty"`
+	StopSequences []string        `json:"stop_sequences,omitempty" validate:"omitempty,max=32,dive,max=1024"`
 	Tools         []ToolBlock     `json:"tools,omitempty" validate:"dive"`
 	ToolChoice    *ToolChoiceRule `json:"tool_choice,omitempty"`
 	Thinking      *ThinkingBlock  `json:"thinking,omitempty"`
@@ -66,7 +60,7 @@ type MessagesRequest struct {
 // Message is one Anthropic message.
 type Message struct {
 	Role    string        `json:"role" validate:"required,oneof=user assistant"`
-	Content MessageBlocks `json:"content"`
+	Content MessageBlocks `json:"content" validate:"required,dive"`
 }
 
 // ToolBlock is one Anthropic tool declaration.

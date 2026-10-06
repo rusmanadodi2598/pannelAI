@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/chat.go
-// @for       The chat data plane use case: data-plane authentication, the
-//
-//	resolve-translate-call pipeline, and usage recording.
-//
+// @for       The chat data plane use case: data-plane authentication, the resolve-translate-call pipeline, and usage recording.
 // @uses      internal/dataplane, internal/domain, internal/schema, context.
-// @reason    SPEC-API-001 §4 enforces the gateway key when
-//
-//	settings.security.require_api_key is true, and §7.15 makes recording
-//	one row per served request part of the pipeline. Both are
-//	orchestration — not transport, not SQL — so they live here where no
-//	net/http import is needed (AGENTS.md §1.5).
-//
+// @reason    SPEC-API-001 §4 enforces the gateway key when settings.security.require_api_key is true, and §7.15 makes recording one row per served request part of the pipeline. Both are orchestration, not transport, not SQL, so they live here where no net/http import is needed (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -147,7 +138,7 @@ func (s *ChatService) Authenticate(ctx context.Context, presented string) (domai
 //
 // The accounting pair is written under a context the client's disconnect cannot
 // cancel: a call that died mid-flight still did the work and still counted on its
-// key, so losing its row left the two records disagreeing (draft 021 F6).
+// key, so losing its row left the two records disagreeing.
 func (s *ChatService) Relay(ctx context.Context, in dataplane.Request, sink dataplane.FrameSink, keyID string) (dataplane.Outcome, error) {
 	outcome, err := s.engine.Relay(ctx, in, sink)
 	recordCtx, cancel := accountingContext(ctx)

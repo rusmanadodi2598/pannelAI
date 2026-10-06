@@ -3,14 +3,10 @@
 // @file      internal/handler/combo.go
 // @for       The combo CRUD endpoints (SPEC-API-001 §7.7).
 // @uses      internal/schema, internal/service, internal/domain, net/http.
-// @reason    §7.7 fixes five routes whose only work is decode → validate → call
-//
-//	→ encode; AGENTS.md §1.5 keeps the strategy rules in the domain
-//	layer, so no branch here decides whether a judge model is required.
-//
+// @reason    §7.7 fixes five routes whose only work is decode → validate → call → encode; AGENTS.md §1.5 keeps the strategy rules in the domain layer, so no branch here decides whether a judge model is required.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -28,7 +24,6 @@ type ComboHandler struct {
 	combos *service.ComboService
 }
 
-// NewComboHandler validates deps and returns the handler.
 func NewComboHandler(combos *service.ComboService) *ComboHandler {
 	return &ComboHandler{combos: combos}
 }

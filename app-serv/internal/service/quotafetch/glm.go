@@ -3,14 +3,10 @@
 // @file      internal/service/quotafetch/glm.go
 // @for       Reads GLM's published session and weekly limits and the plan tier they belong to.
 // @uses      internal/service/quotafetch, context, encoding/json, net/http
-// @reason    GLM meters a coding plan in percentages against intervals it names itself — an
-//
-//	N-hour session as well as a week — so the rows have to be read from the
-//	provider's interval codes rather than guessed at from a fixed window here.
-//
+// @reason    GLM meters a coding plan in percentages against intervals it names itself, an N-hour session as well as a week, so the rows have to be read from the provider's interval codes rather than guessed at from a fixed window here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -32,7 +28,7 @@ const glmDisplayName = "GLM"
 // glmQuotaURL is the international coding plan's quota host. The glm registry entry declares
 // the same value under transport.usage.url, which wins; this is the fallback for a caller
 // that handed over no entry. The China region is reached by declaring its own
-// monitor/usage/quota/limit host in the registry — the app has no glm-cn entry to build a
+// monitor/usage/quota/limit host in the registry, the app has no glm-cn entry to build a
 // second built-in for.
 const glmQuotaURL = "https://api.z.ai/api/monitor/usage/quota/limit"
 

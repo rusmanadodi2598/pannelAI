@@ -2,19 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_event_codec.go
-// @for       The wire form of the usage domain event: encode, and a decode that
-//
-//	re-validates before it returns.
-//
+// @for       The wire form of the usage domain event: encode, and a decode that re-validates before it returns.
 // @uses      internal/domain (UsageEvent), encoding/json, fmt, strings, time.
-// @reason    AGENTS.md §2.3 makes the event the seam between the recorder and
-//
-//	its consumers, and a broker is an untrusted input path: whatever can
-//	publish to the channel can hand this process a payload. The codec is
-//	here rather than in the repository so both directions of the
-//	contract live beside the aggregate that defines its invariants, and
-//	the decoder re-applies those invariants instead of trusting the
-//	envelope (OWASP A08).
+// @reason    AGENTS.md §2.3 makes the event the seam between the recorder and its consumers, and a broker is an untrusted input path: whatever can publish to the channel can hand this process a payload. The codec is here rather than in the repository so both directions of the contract live beside the aggregate that defines its invariants, and the decoder re-applies those invariants instead of trusting the envelope (OWASP A08).
 //
 //	The wire form is an explicit struct rather than a tagged version of
 //	UsageEvent: the event's fields are unexported-by-convention and the
@@ -23,7 +13,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package domain
 
@@ -51,10 +41,9 @@ type usageEventWire struct {
 }
 
 // EncodeUsageEvent renders the event for the channel, refusing an event the
-// aggregate would not have produced. The publisher half validates for the same
-// reason the subscriber half does: a payload that cannot be decoded is a
-// message a consumer would have to drop, and dropping it at the source keeps
-// the channel's contents meaningful by construction.
+// aggregate would not have produced. The publisher validates for the same reason
+// the subscriber does: a payload a consumer could not decode is dropped at the
+// source, so the channel's contents stay meaningful by construction.
 func EncodeUsageEvent(event UsageEvent) ([]byte, error) {
 	if err := event.Validate(); err != nil {
 		return nil, err
@@ -76,17 +65,14 @@ func EncodeUsageEvent(event UsageEvent) ([]byte, error) {
 	return payload, nil
 }
 
-// DecodeUsageEvent reads one channel payload back into an event.
-//
-// Every failure returns the zero event alongside the error, so a caller cannot
-// accidentally act on a half-decoded value. The envelope is checked before the
-// fields: a message that is not this event at all is refused as such, rather
-// than reported as a missing request id, because the two need different
-// responses from an operator (a misdelivery versus a malformed publisher).
-//
-// The decoder rejects unknown fields, so a payload carrying a field this build
-// does not know is a contract change the consumer must be told about rather
-// than one it silently ignores.
+// DecodeUsageEvent reads one channel payload back into an event. Every failure
+// returns the zero event with the error, so a caller cannot act on a half-decoded
+// value. The envelope is checked before the fields: a message that is not this
+// event at all is refused as such rather than reported as a missing request id,
+// because a misdelivery and a malformed publisher need different responses.
+// Unknown fields are rejected, so a payload carrying a field this build does not
+// know is a contract change the consumer is told about instead of one it silently
+// ignores.
 func DecodeUsageEvent(payload []byte) (UsageEvent, error) {
 	decoder := json.NewDecoder(bytes.NewReader(payload))
 	decoder.DisallowUnknownFields()

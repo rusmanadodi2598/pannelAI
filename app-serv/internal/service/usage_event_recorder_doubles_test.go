@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_recorder_doubles_test.go
-// @for       The recording usage repository and service builder the event seam
-//
-//	tests drive.
-//
+// @for       The recording usage repository and service builder the event seam tests drive.
 // @uses      internal/domain, internal/repository, context, sync, testing, time.
-// @reason    The recorder's seam test needs a store that remembers what was
-//
-//	written, because the claim under test is "one stored row, one
-//	event". It is separate from the broker doubles because the two answer
-//	different questions: the broker double proves what travelled, this
-//	one proves what was written before it did.
-//
+// @reason    The recorder's seam test needs a store that remembers what was written, because the claim under test is "one stored row, one event". It is separate from the broker doubles because the two answer different questions: the broker double proves what travelled, this one proves what was written before it did.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

@@ -3,13 +3,13 @@
 //
 // Measured on the live gateway: `opencode-zen` has 1 account and 0 counted windows, `qoder` has 3 accounts
 // but only 2 have windows. The old cards derived their groups by walking the counted rows alone, so those
-// accounts rendered no card at all — the operator could not see a provider's quota for an account that had
+// accounts rendered no card at all: the operator could not see a provider's quota for an account that had
 // not routed traffic yet, which is the whole reason the screen exists. The backend now selects a provider
 // group by the accounts that exist and returns one `published[]` entry per account on the page; the frontend
 // has to group from the union and render the account that only ever appears in `published[]`.
 //
 // The account that has never been polled is the new state this file pins: one muted "Not polled yet" line,
-// and — because there is no answer to attribute — no provider ledger note, no "Asked" stamp, and never an
+// and (because there is no answer to attribute) no provider ledger note, no "Asked" stamp, and never an
 // error. Everything else here is a guard against the fix regressing the behaviour that already worked: the
 // account seen only in the counted windows must still render, the fold and pager must still move with
 // windowless accounts mixed in, and two reads of one payload must not reshuffle a card.
@@ -195,7 +195,7 @@ describe('the states that already worked still work', () => {
 
 	it('pages windowless groups the gateway counts, and clears selection on the turn', async () => {
 		// Five counted providers plus one windowless account is six groups, so the pager walks two pages
-		// and the windowless provider lands on the second — proving it counts as a group, not an absence.
+		// and the windowless provider lands on the second, proving it counts as a group, not an absence.
 		const countedProviders = ['anthropic', 'zeta', 'alpha', 'bravo', 'charlie'];
 		const windows = countedProviders.map((provider, index) =>
 			quotaWindowRow({ provider_id: provider, endpoint_id: `ep_${index}`, window: 'daily' })

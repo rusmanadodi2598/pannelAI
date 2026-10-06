@@ -2,18 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_thinking_tables.go
-// @for       The reasoning tables the thinking resolver reads: the ordered
-//
-//	pattern walk, the per-provider overrides, and the exact-id
-//	exceptions.
-//
+// @for       The reasoning tables the thinking resolver reads: the ordered pattern walk, the per-provider overrides, and the exact-id exceptions.
 // @uses      (none; the tables are data read by capability_thinking.go).
-// @reason    Each table is a transcription of one layer in the reference's
-//
-//	capabilities.js, in the reference's own order, so a reader diffing
-//	this file against the reference sees one row per pattern. Keeping
-//	them apart from the resolver holds capability_thinking.go inside the
-//	AGENTS.md §1.1 budget.
+// @reason    Each table is a transcription of one layer in the reference's capabilities.js, in the reference's own order, so a reader diffing this file against the reference sees one row per pattern. Keeping them apart from the resolver holds capability_thinking.go inside the AGENTS.md §1.1 budget.
 //
 //	The pattern table carries two kinds of row. A reasoning row answers
 //	true and names the wire format; a stop row answers false and exists
@@ -24,14 +15,14 @@
 //	id can match any pattern.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-26
 package registry
 
 // thinkingRules is the reference's PATTERN_CAPABILITIES reduced to its reasoning
 // decision, in its order: the first match wins. The `ref #N` comment on each row
-// is the pattern's index in the reference's array at revision 39e36d3d, which is
+// is the pattern's index in the reference's own array, which is
 // what a maintainer re-checks when the reference moves.
 var thinkingRules = []thinkingRule{
 	{pattern: "*claude*opus-5*", format: "claude-adaptive", reasons: true},     // ref #0

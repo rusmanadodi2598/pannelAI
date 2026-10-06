@@ -3,24 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_responses_client.go
-// @for       Re-framing an upstream stream into the Responses API named-event
-//
-//	lifecycle, so a client on /api/v1/responses can be served by any
-//	provider.
-//
+// @for       Re-framing an upstream stream into the Responses API named-event lifecycle, so a client on /api/v1/responses can be served by any provider.
 // @uses      internal/schema.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose stream is a
-//
-//	named-event stream rather than a chunk stream. Every upstream format
-//	reaches this state in the OpenAI chunk vocabulary the other two client
-//	stream states already read, so the lifecycle is written once. The
-//	lifecycle events live in translate_stream_responses_client_lifecycle.go
-//	and the item mapping in translate_stream_responses_client_items.go,
-//	both for the AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose stream is a named-event stream rather than a chunk stream. Every upstream format reaches this state in the OpenAI chunk vocabulary the other two client stream states already read, so the lifecycle is written once. The lifecycle events live in translate_stream_responses_client_lifecycle.go and the item mapping in translate_stream_responses_client_items.go, both for the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

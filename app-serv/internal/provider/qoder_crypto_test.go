@@ -1,24 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_crypto_test.go
-// @for       The primitives under a COSY signature, proven by running the
-//
-//	vendor's read of them backwards.
-//
-// @uses      crypto/aes, crypto/cipher, crypto/rsa, encoding/base64,
-//
-//	encoding/json, strings, testing.
-//
-// @reason    Two of the three secrets a COSY request carries are randomized —
-//
-//	the AES key is fresh per request and PKCS#1 v1.5 padding is random —
-//	so no fixed expected string can prove them. What proves them is the
-//	decode path the vendor runs: unwrap the key, decrypt the info, and
-//	require both to yield what was put in.
-//
+// @for       The primitives under a COSY signature, proven by running the vendor's read of them backwards.
+// @uses      crypto/aes, crypto/cipher, crypto/rsa, encoding/base64, encoding/json, strings, testing.
+// @reason    Two of the three secrets a COSY request carries are randomized, the AES key is fresh per request and PKCS#1 v1.5 padding is random, so no fixed expected string can prove them. What proves them is the decode path the vendor runs: unwrap the key, decrypt the info, and require both to yield what was put in.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -68,7 +56,7 @@ func TestCosySecretsRoundTrip(t *testing.T) {
 	// this scheme requires; the vendor's server runs the same read.
 	//
 	//lint:ignore SA1019 proving the vendor's padding means reading it the vendor's way
-	unwrapped, err := rsa.DecryptPKCS1v15(nil, private, sealed) //nolint:staticcheck // the vendor's padding, read back
+	unwrapped, err := rsa.DecryptPKCS1v15(nil, private, sealed) //nolint:staticcheck // reason: the vendor's padding, read back by the test.
 	if err != nil {
 		t.Fatalf("unwrapping the cosy key: %v", err)
 	}

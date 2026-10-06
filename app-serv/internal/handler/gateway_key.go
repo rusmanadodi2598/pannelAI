@@ -3,15 +3,10 @@
 // @file      internal/handler/gateway_key.go
 // @for       The gateway key CRUD endpoints (SPEC-API-001 §7.3).
 // @uses      internal/schema, internal/service.
-// @reason    §7.3 requires the plaintext to be returned exactly once on create
-//
-//	and only key_hint thereafter; AGENTS.md §1.5 keeps validation in
-//	the schema layer and business rules in the service layer, so this
-//	handler only decodes, calls, and encodes.
-//
+// @reason    §7.3 requires the plaintext to be returned exactly once on create and only key_hint thereafter; AGENTS.md §1.5 keeps validation in the schema layer and business rules in the service layer, so this handler only decodes, calls, and encodes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package handler
 
@@ -28,7 +23,6 @@ type GatewayKeyHandler struct {
 	keys *service.GatewayKeyService
 }
 
-// NewGatewayKeyHandler validates deps and returns the handler.
 func NewGatewayKeyHandler(keys *service.GatewayKeyService) *GatewayKeyHandler {
 	return &GatewayKeyHandler{keys: keys}
 }

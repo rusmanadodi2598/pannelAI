@@ -1,24 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/openapi_contract_bool_test.go
-// @for       The closed-set rule of boolean query parameters in the served
-//
-//	OpenAPI document.
-//
+// @for       The closed-set rule of boolean query parameters in the served OpenAPI document.
 // @uses      encoding/json, strings, testing.
-// @reason    Draft 025 F5: the boundary refuses `?active=yes` with a
-//
-//	VALIDATION_ERROR, and the document a generated client reads must
-//	carry the same closed set — a bare boolean would let a client fill
-//	`1` and learn the rule only from a 400. Enumerating both spellings
-//	on the parameter is what makes the two agree mechanically. The
-//	enum is decoded after the type is read, because every string
-//	parameter's enum holds strings and the one-struct decode would
-//	fail on those instead of skipping them.
-//
+// @reason    Draft 025 F5: the boundary refuses `?active=yes` with a VALIDATION_ERROR, and the document a generated client reads must carry the same closed set, a bare boolean would let a client fill `1` and learn the rule only from a 400. Enumerating both spellings on the parameter is what makes the two agree mechanically. The enum is decoded after the type is read, because every string parameter's enum holds strings and the one-struct decode would fail on those instead of skipping them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package handler
 
@@ -30,7 +18,7 @@ import (
 
 // TestOpenAPIContract_BooleanQueryParametersAreClosed pins that every boolean
 // query parameter declares both spellings, so the document a generated client
-// reads agrees with the boundary's closed set (draft 025 F5): a parameter the
+// reads agrees with the boundary's closed set: a parameter the
 // gateway refuses on `yes` must not be documented as a bare boolean a client
 // could fill with `1`.
 func TestOpenAPIContract_BooleanQueryParametersAreClosed(t *testing.T) {

@@ -3,16 +3,10 @@
 // @file      internal/repository/postgres/quota.go
 // @for       PostgreSQL persistence for quota windows and endpoint budget caps.
 // @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository.
-// @reason    SPEC-API-001 §7.12 reads windows per endpoint and per collection,
-//
-//	and §6 stores a cap as one row per endpoint. The flush worker writes
-//	a whole batch, so the upsert is set-based: a statement per window
-//	would make a flush of a thousand endpoints a thousand round trips
-//	(AGENTS.md §1.7).
-//
+// @reason    SPEC-API-001 §7.12 reads windows per endpoint and per collection, and §6 stores a cap as one row per endpoint. The flush worker writes a whole batch, so the upsert is set-based: a statement per window would make a flush of a thousand endpoints a thousand round trips (AGENTS.md §1.7).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 
@@ -54,13 +48,17 @@ func (r *QuotaRepository) ListWindows(ctx context.Context, endpointID string) ([
 	// The provider id is joined rather than stored on the window: it is a
 	// property of the endpoint, and copying it into a counter row would let the
 	// two disagree after an endpoint is moved between providers.
+	//
+	// With no endpoint named this is the whole table on a request-serving path, so
+	// it carries the same row ceiling the paged read uses (§1.7).
 	const q = `SELECT ` + quotaWindowColumns + `
 	  FROM quota_windows w
 	  LEFT JOIN upstream_endpoints e ON e.id = w.endpoint_id
 	 WHERE ($1 = '' OR w.endpoint_id = $1)
-	 ORDER BY w.endpoint_id ASC, w."window" ASC`
+	 ORDER BY w.endpoint_id ASC, w."window" ASC
+	 LIMIT $2::int`
 
-	rows, err := r.pool.Query(ctx, q, endpointID)
+	rows, err := r.pool.Query(ctx, q, endpointID, quotaMaxRowsPerPage)
 	if err != nil {
 		return nil, translateQuotaError(err)
 	}
@@ -80,17 +78,14 @@ func (r *QuotaRepository) ListWindows(ctx context.Context, endpointID string) ([
 	return windows, nil
 }
 
-// UpsertWindows persists a flushed batch in one statement.
-//
-// The row is the durable record, and the flush overwrites `used_units` rather
-// than adding to it: the Redis counter is authoritative until it is cleared, so
-// an incremental update here would double-count a batch that is retried after a
-// partial failure. `resets_at` and `source` are carried through unchanged except
-// where the caller supplied them.
-//
-// "window" is quoted because it is a reserved word in PostgreSQL. `updated_at`
-// is not in the column list: the migration defaults it to now(), and the
-// conflict path sets it explicitly.
+// UpsertWindows persists a flushed batch in one statement. The row is the
+// durable record and the flush overwrites `used_units` rather than adding to it:
+// the Redis counter is authoritative until cleared, so an incremental update
+// would double-count a batch retried after a partial failure. `resets_at` and
+// `source` carry through unchanged except where the caller supplied them.
+// "window" is quoted because it is a PostgreSQL reserved word. `updated_at` is
+// not in the column list: the migration defaults it to now() and the conflict
+// path sets it explicitly.
 func (r *QuotaRepository) UpsertWindows(ctx context.Context, windows []domain.QuotaWindow) error {
 	if len(windows) == 0 {
 		return nil

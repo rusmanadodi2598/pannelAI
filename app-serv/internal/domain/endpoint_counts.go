@@ -4,16 +4,10 @@
 // @file      internal/domain/endpoint_counts.go
 // @for       The per-provider roll-up of stored upstream endpoints by state.
 // @uses      internal/domain (UpstreamEndpointStatus).
-// @reason    SPEC-API-001 §7.4 publishes a status_summary per provider so the
-//
-//	list screen does not fetch every account. The roll-up is a value object
-//	rather than a schema struct because the count is measured against the
-//	status vocabulary this package owns: a state added here must appear in the
-//	summary, and deriving it in the schema layer would let the two drift.
-//
+// @reason    SPEC-API-001 §7.4 publishes a status_summary per provider so the list screen does not fetch every account. The roll-up is a value object rather than a schema struct because the count is measured against the status vocabulary this package owns: a state added here must appear in the summary, and deriving it in the schema layer would let the two drift.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 

@@ -5,17 +5,10 @@
 // @file      internal/dataplane/errors.go
 // @for       The data plane error vocabulary and its OpenAI-envelope status.
 // @uses      internal/domain.
-// @reason    SPEC-API-001 §8 makes PROVIDER_NOT_ROUTABLE a data-plane code and §4
-//
-//	fixes the envelope: a CLI tool reads the OpenAI shape, not the
-//	management one. The management AppError maps a closed code set to
-//	statuses, and these codes are deliberately outside it, so the data
-//	plane carries its own small type rather than widening a contract the
-//	panel depends on.
-//
+// @reason    SPEC-API-001 §8 makes PROVIDER_NOT_ROUTABLE a data-plane code and §4 fixes the envelope: a CLI tool reads the OpenAI shape, not the management one. The management AppError maps a closed code set to statuses, and these codes are deliberately outside it, so the data plane carries its own small type rather than widening a contract the panel depends on.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -26,9 +19,9 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// Data plane error codes. The first five are the OpenAI-compatible names a CLI
-// tool already branches on; the last two are the named cases SPEC-API-001 §8
-// adds so an unanswerable provider is not reported as an upstream outage.
+// Data plane error codes. The first five are the OpenAI-compatible names a CLI tool
+// already branches on; the last two are named cases added so an unanswerable
+// provider is not reported as an upstream outage.
 const (
 	CodeValidation          = "VALIDATION_ERROR"
 	CodeUnauthorized        = "UNAUTHORIZED"
@@ -88,22 +81,15 @@ func wrapDataPlaneError(code, message string, cause error) *Error {
 	return failure
 }
 
-// statusFor maps a data plane code to its HTTP status.
-//
-// PROVIDER_NOT_ROUTABLE is 400: the spec names it as "actionable rather than a
-// 502 that reads like an upstream outage". A request naming a provider whose
-// protocol the gateway does not translate is a request-level defect the client
-// can fix by naming another provider, which is what 400 says; 503 would tell
-// the client to retry something that can never succeed. UPSTREAM_REJECTED is
-// 400 for the same reason, and §8's table is where both are published.
-//
-// MODEL_NOT_FOUND is 404, the status SPEC-API §7.15 names for the end of the
-// resolution order and the status the OpenAI wire answers for a model it does not
-// know. This plane claims compatibility, and a client's retry policy reads the
-// status rather than the message: 400 tells it the body was wrong and invites it to
-// send the same model name again, which is a request that can never succeed. The
-// error `type` stays invalid_request_error, which is what the reference classifies
-// it as, so a client that branches on type is unaffected.
+// statusFor maps a data plane code to its HTTP status. PROVIDER_NOT_ROUTABLE and
+// UPSTREAM_REJECTED are 400: a request naming a provider whose protocol the gateway
+// does not translate is a request-level defect the client can fix by naming another
+// provider, and 503 would tell it to retry something that can never succeed.
+// MODEL_NOT_FOUND is 404, the status the OpenAI wire answers for a model it does not
+// know. This plane claims compatibility and a client's retry policy reads the status
+// rather than the message, so 400 would invite it to send the same model name again.
+// The error `type` stays invalid_request_error, so a client branching on type is
+// unaffected.
 func statusFor(code string) int {
 	switch code {
 	case CodeValidation, CodeProviderNotRoutable, CodeUpstreamRejected:
@@ -169,8 +155,8 @@ func codeForAppError(appErr *domain.AppError) string {
 	case "UNAUTHORIZED", "FORBIDDEN":
 		return CodeUnauthorized
 	case "NOT_FOUND":
-		// A management not-found reaching the data plane is an inconsistency —
-		// a row vanished under the request — not the resolver's verdict about a
+		// A management not-found reaching the data plane is an inconsistency,
+		// a row vanished under the request, not the resolver's verdict about a
 		// model name, which is produced as CodeModelNotFound directly. Mapping
 		// it to MODEL_NOT_FOUND answered 404 for a served call and stopped a
 		// combo chain on a bookkeeping error.

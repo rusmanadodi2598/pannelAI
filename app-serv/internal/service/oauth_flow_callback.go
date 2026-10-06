@@ -1,31 +1,19 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_callback.go
-// @for       Completing a provider authorization: replay-guarded state
-//
-//	consumption, code exchange, identity matching, and sealing
-//	(SPEC-API-001 §7.4 GET .../oauth/callback).
-//
-// @uses      encoding/json, net/url, strings, internal/domain,
-//
-//	internal/registry.
-//
-// @reason    The callback is the only place provider tokens enter the
-//
-//	system, so it is where the §4 single-use rule is enforced,
-//	where a declared userinfo endpoint is consulted fail-closed
-//	(so one account can never split in two), and where the
-//	aggregate receives ciphertext only.
-//
+// @for       Completing a provider authorization: replay-guarded state consumption, code exchange, identity matching, and sealing (SPEC-API-001 §7.4 GET .../oauth/callback).
+// @uses      encoding/json, net/url, strings, internal/domain, internal/registry.
+// @reason    The callback is the only place provider tokens enter the system, so it is where the §4 single-use rule is enforced, where a declared userinfo endpoint is consulted fail-closed (so one account can never split in two), and where the aggregate receives ciphertext only.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
 import (
 	"context"
 	"encoding/json"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"net/url"
 	"strings"
 
@@ -143,7 +131,7 @@ func (s *OAuthFlowService) Callback(ctx context.Context, in OAuthCallbackInput) 
 		return OAuthConnect{}, domain.NewValidationError("the state belongs to another provider")
 	}
 
-	token, err := s.tokens.Grant(ctx, oauth.TokenURL, tokenEncoding(oauth), TokenGrant{
+	token, err := s.tokens.Grant(ctx, oauth.TokenURL, tokenEncoding(oauth), oauthhttp.TokenGrant{
 		GrantType: "authorization_code", Code: code,
 		ClientID: oauth.ClientID, ClientSecret: oauth.ClientSecret,
 		RedirectURI: payload.RedirectURI, CodeVerifier: payload.Verifier,

@@ -3,29 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_openai_sanitize.go
-// @for       Shaping one forwarded OpenAI chunk before the client sees it: the
-//
-//	empty members a vendor puts on every frame, and the cut at the
-//	caller's stop sequences.
-//
+// @for       Shaping one forwarded OpenAI chunk before the client sees it: the empty members a vendor puts on every frame, and the cut at the caller's stop sequences.
 // @uses      encoding/json, internal/dataplane object.
-// @reason    A same-format stream forwards the upstream's frames so that no
-//
-//	unmodelled field is lost, but that promise also carries through what
-//	a vendor should never have sent. Measured live on
-//	codebuddy-intl/deepseek-v4.1-flash (2026-09-30): every delta arrived
-//	with `tool_calls: []`, `function_call: null`, `refusal: ""` and
-//	`extra_fields: null`, and the finish reason arrived as `""` rather
-//	than null. A client that tests `if delta.tool_calls` reads a truthy
-//	empty list on all eleven frames of a five-token answer, and a client
-//	switching on `finish_reason` sees a value that is neither null nor a
-//	reason. The same measurement showed `stop` ignored outright, so the
-//	cut is applied here too. Both work per frame and remove nothing that
-//	carries a value.
-//
+// @reason    A same-format stream forwards the upstream's frames so that no unmodelled field is lost, but that promise also carries through what a vendor should never have sent. Measured live on codebuddy-intl/deepseek-v4.1-flash (2026-09-30): every delta arrived with `tool_calls: []`, `function_call: null`, `refusal: ""` and `extra_fields: null`, and the finish reason arrived as `""` rather than null. A client that tests `if delta.tool_calls` reads a truthy empty list on all eleven frames of a five-token answer, and a client switching on `finish_reason` sees a value that is neither null nor a reason. The same measurement showed `stop` ignored outright, so the cut is applied here too. Both work per frame and remove nothing that carries a value.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 
@@ -65,8 +48,8 @@ func (s *StreamState) sanitizeChunk(chunk object) bool {
 		}
 		// Only a frame the cut emptied is withheld. A close the upstream sent on
 		// its own keeps its place on the wire even when its reason was nulled as a
-		// duplicate, because the members still on it — a trailing role delta, the
-		// usage — are the client's to read (draft 034 F2).
+		// duplicate, because the members still on it, a trailing role delta, the
+		// usage, are the client's to read.
 		if cut && !frameCarriesAnswer(choice) && !carriesUsage(chunk) {
 			return false
 		}
@@ -136,9 +119,8 @@ func (s *StreamState) cutChoice(choice object) bool {
 		delta["content"] = mustJSON(kept)
 	}
 	choice["delta"] = mustJSON(delta)
-	// The cut is announced once, on the frame that carried the marker. A later
-	// frame re-reporting it would hand the client a second close, which is the
-	// duplicate draft 034 F2 exists to prevent.
+	// The cut is announced once, on the frame that carried the marker: a later
+	// frame re-reporting it would hand the client a second close.
 	if s.stop.stopped() && !s.cutAnnounced {
 		s.cutAnnounced = true
 		// The caller's marker is where this answer ended, whatever the upstream
@@ -173,9 +155,8 @@ func frameCarriesAnswer(choice object) bool {
 //
 // A frame emptied by the pruning still has to reach the client when it carries
 // them: a vendor that states usage on its closing frame, and then again on a frame
-// after it, leaves the gateway nulling the duplicate reason (draft 034 F2) — and
-// dropping that frame for having no reason left would drop the usage with it
-// (draft 021 F2, 034 F1).
+// after it, leaves the gateway nulling the duplicate reason, and dropping that
+// frame for having no reason left would drop the usage with it.
 func carriesUsage(chunk object) bool {
 	raw, present := chunk["usage"]
 	if !present {
@@ -189,7 +170,7 @@ func carriesUsage(chunk object) bool {
 // empty string, an empty array, or an object whose every member says nothing.
 //
 // The object rule is what catches this vendor's deprecated `function_call`, which
-// arrives as `{"name":"","arguments":""}` — a block that is neither empty nor
+// arrives as `{"name":"","arguments":""}`, a block that is neither empty nor
 // informative, and one a client reading the deprecated field takes for a call.
 func carriesNoValue(raw json.RawMessage) bool {
 	return memberCarriesNoValue(raw, 2)

@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_probe_selection_test.go
-// @for       Tests for which key a connectivity test targets and which paths
-//
-//	cannot probe at all (SPEC-API-001 §7.5).
-//
+// @for       Tests for which key a connectivity test targets and which paths cannot probe at all (SPEC-API-001 §7.5).
 // @uses      context, strconv, testing, internal/domain.
-// @reason    §7.5 lets an operator test a named key or the default one, and a key
-//
-//	inside its backoff is exactly what a manual test is for, so the targeting
-//	rules differ from the router's selection on purpose. A refusal that read
-//	as a 500, or a probe that ran on a blank credential, would both look
-//	like a broken upstream; what the probe records lives in
-//	endpoint_probe_test.go.
-//
+// @reason    §7.5 lets an operator test a named key or the default one, and a key inside its backoff is exactly what a manual test is for, so the targeting rules differ from the router's selection on purpose. A refusal that read as a 500, or a probe that ran on a blank credential, would both look like a broken upstream; what the probe records lives in endpoint_probe_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -49,7 +39,7 @@ func TestEndpointService_TestSelectsTheKey(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, _ := newEndpointSvc(t)
-			svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK, Status: 200}}
+			svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK), Status: 200}}
 			ctx := context.Background()
 			endpoint := keyedEndpointWithPriorities(t, svc, tc.priorities)
 
@@ -88,12 +78,12 @@ func TestEndpointService_TestSelectsTheKey(t *testing.T) {
 func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 	t.Run("no active key is a validation failure", func(t *testing.T) {
 		svc, store := newEndpointSvc(t)
-		svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK}}
+		svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK)}}
 		ctx := context.Background()
 		endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
 		// The no-active-key shape is reached through the circuit, which owns the
 		// error state, not through a PATCH: the aggregate refuses disabling the
-		// last active key since draft 042 R03, exactly as it refuses removing it.
+		// last active key, exactly as it refuses removing it.
 		stored := store.keysByEndpoint[endpoint.ID()]
 		stored[0] = domain.RehydrateUpstreamKey(stored[0].ID(), stored[0].EndpointID(),
 			stored[0].Label(), stored[0].EncryptedValue(), stored[0].Hint(), stored[0].Priority(),
@@ -106,7 +96,7 @@ func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 
 	t.Run("an unreadable stored credential is a validation failure", func(t *testing.T) {
 		svc, store := newEndpointSvc(t)
-		svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK}}
+		svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK)}}
 		ctx := context.Background()
 		endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
 		// Simulate a row written under a different key: the ciphertext is not
@@ -131,7 +121,7 @@ func TestEndpointService_TestRefusesWithoutAUsableCredential(t *testing.T) {
 
 	t.Run("an unknown endpoint is not found", func(t *testing.T) {
 		svc, _ := newEndpointSvc(t)
-		svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK}}
+		svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK)}}
 		_, _, err := svc.Test(context.Background(), "ep_absent", "")
 		mustAppError(t, err, "NOT_FOUND")
 	})

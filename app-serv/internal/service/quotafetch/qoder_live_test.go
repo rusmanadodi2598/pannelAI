@@ -1,29 +1,18 @@
-//go:build integration
+//go:build integration && live
 
 // Package quotafetch reads the quota a provider publishes for one of its connections.
 //
 // @file      internal/service/quotafetch/qoder_live_test.go
-// @for       The live Qoder quota read: a personal access token in, the published
-//
-//	allocation out.
-//
+// @for       The live Qoder quota read: a personal access token in, the published allocation out.
 // @uses      context, os, strings, testing, time.
-// @reason    Every other case in this package answers from a stub holding a
+// @reason    Every other case in this package answers from a stub holding a measured payload, which proves the mapping and nothing about the contract. This one asks the real service, because the three things that broke were all contract assumptions the reference's source could not settle: a Personal Access Token is refused by the quota endpoint and has to be exchanged first, the plan name rides in `userType`, and the reset instant arrives as a year-9999 sentinel that a card would render as the end of time.
 //
-//	measured payload, which proves the mapping and nothing about the
-//	contract. This one asks the real service, because the three things
-//	that broke were all contract assumptions the reference's source
-//	could not settle: a Personal Access Token is refused by the quota
-//	endpoint and has to be exchanged first, the plan name rides in
-//	`userType`, and the reset instant arrives as a year-9999 sentinel
-//	that a card would render as the end of time.
-//
-//	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/service/quotafetch/ -run Live
+//	PANNELAI_QODER_PAT='pt-…' \
+//	  go test -tags=integration,live ./internal/service/quotafetch/ -run Live
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package quotafetch
 

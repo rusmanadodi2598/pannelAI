@@ -2,21 +2,11 @@
 //
 // @file      internal/router/router_conflict_test.go
 // @for       The duplicate-name contract: two POSTs with the same name must conflict.
-// @uses      internal/router, internal/schema, net/http, net/http/httptest,
-//
-//	strings, encoding/json, testing.
-//
-// @reason    This proves the handler and service map ErrGatewayKeyExists to a
-//
-//	409 with the §8 envelope. It cannot prove the UNIQUE index exists,
-//	because it runs against a stub; that is
-//	TestIntegration_Create_RejectsDuplicateName's job, against real
-//	PostgreSQL. The stubs here mirror the index's rule so they do not
-//	accept what the database would reject.
-//
+// @uses      internal/router, internal/schema, net/http, net/http/httptest, strings, encoding/json, testing.
+// @reason    This proves the handler and service map ErrGatewayKeyExists to a 409 with the §8 envelope. It cannot prove the UNIQUE index exists, because it runs against a stub; that is TestIntegration_Create_RejectsDuplicateName's job, against real PostgreSQL. The stubs here mirror the index's rule so they do not accept what the database would reject.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package router
 

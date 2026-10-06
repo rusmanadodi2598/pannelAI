@@ -1,22 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/chat_http_doubles_test.go
-// @for       The narrow doubles the chat HTTP fixture wires behind the real
-//
-//	registry, selector, transport, and key lookup.
-//
-// @uses      internal/dataplane, internal/domain, internal/provider,
-// internal/registry, internal/repository, internal/service, context,
-// net/http, sync, testing, time.
-// @reason    The fixture builder and the collaborators it stands on are separate
-//
-//	concerns: the builder describes the pipeline, the doubles describe
-//	the narrow storage an HTTP test can afford. Keeping them apart holds
-//	both files inside the AGENTS.md §1.1 budget.
-//
+// @for       The narrow doubles the chat HTTP fixture wires behind the real registry, selector, transport, and key lookup.
+// @uses      internal/dataplane, internal/domain, internal/provider, internal/registry, internal/repository, internal/service, context, net/http, sync, testing, time.
+// @reason    The fixture builder and the collaborators it stands on are separate concerns: the builder describes the pipeline, the doubles describe the narrow storage an HTTP test can afford. Keeping them apart holds both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package handler
 
@@ -55,10 +45,7 @@ type chatModelLookup struct{}
 func (chatModelLookup) Combo(context.Context, string) (domain.Combo, bool, error) {
 	return domain.Combo{}, false, nil
 }
-func (chatModelLookup) Alias(context.Context, string) (string, bool, error) { return "", false, nil }
-func (chatModelLookup) Disabled(context.Context, string, string) (bool, error) {
-	return false, nil
-}
+func (chatModelLookup) Alias(context.Context, string) (string, bool, error)      { return "", false, nil }
 func (chatModelLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (chatModelLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
 func (chatModelLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }
@@ -142,7 +129,10 @@ func (r *chatEndpointRepository) GetByID(context.Context, string) (domain.Upstre
 	return domain.UpstreamEndpoint{}, domain.ErrEndpointNotFound
 }
 func (r *chatEndpointRepository) Update(context.Context, domain.UpstreamEndpoint) error { return nil }
-func (r *chatEndpointRepository) Delete(context.Context, string) error                  { return nil }
+func (r *chatEndpointRepository) UpdateIfUnchanged(context.Context, domain.UpstreamEndpoint, domain.OAuthCredential) error {
+	return nil
+}
+func (r *chatEndpointRepository) Delete(context.Context, string) error { return nil }
 func (r *chatEndpointRepository) AddKey(context.Context, string, domain.UpstreamKey) error {
 	return nil
 }

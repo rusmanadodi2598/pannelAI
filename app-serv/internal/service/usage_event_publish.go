@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_publish.go
-// @for       The publisher half of the usage domain event: a bounded queue and
-//
-//	one drain goroutine, fed by the recorder's choke point.
-//
-// @uses      internal/domain, internal/repository, context, log/slog,
-//
-//	runtime/debug, sync/atomic, time.
-//
-// @reason    AGENTS.md §2.3 makes a mutation on an aggregate root emit a domain
-//
-//	event, and the event must not put a broker round trip on the request
-//	path. The queue is what separates the two: Record enqueues and
-//	returns, one goroutine publishes.
+// @for       The publisher half of the usage domain event: a bounded queue and one drain goroutine, fed by the recorder's choke point.
+// @uses      internal/domain, internal/repository, context, log/slog, runtime/debug, sync/atomic, time.
+// @reason    AGENTS.md §2.3 makes a mutation on an aggregate root emit a domain event, and the event must not put a broker round trip on the request path. The queue is what separates the two: Record enqueues and returns, one goroutine publishes.
 //
 //	PUBLISH POLICY (AGENTS.md §1.6)
 //
@@ -25,7 +15,7 @@
 //	into, and a retry loop over a channel whose consumer is gone would
 //	spin forever.
 //
-//	TERMINATION
+//	Termination
 //
 //	Run returns when its context is cancelled, after draining what is
 //	already queued. It is the only goroutine the publisher owns, and it
@@ -33,7 +23,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 
@@ -145,17 +135,13 @@ func (p *UsageEventPublisher) Run(ctx context.Context) {
 	}
 }
 
-// drain publishes the events already queued at shutdown, under one bounded
-// deadline. Events that do not fit in the window are counted as dropped rather
-// than silently lost, and the loop never waits for a new arrival: the queue is
-// closed for business the moment Run is leaving.
-//
-// The deadline is derived from context.WithoutCancel(ctx) rather than from ctx:
-// Run only reaches here because ctx is already done, so a plain derivation would
-// abort the drain immediately and lose the very events this function exists to
-// flush. WithoutCancel keeps the context's values while dropping its
-// cancellation, which is exactly the intent and is why the fresh root is not
-// needed.
+// drain publishes the events already queued at shutdown under one bounded
+// deadline, and never waits for a new arrival: the queue is closed for business
+// once Run is leaving. Events that do not fit the window are counted rather than
+// silently lost. The deadline derives from context.WithoutCancel(ctx), not from
+// ctx, because Run only reaches here once ctx is done, so a plain derivation would
+// abort the drain at once and lose the very events this exists to flush.
+// WithoutCancel keeps the context's values while dropping its cancellation.
 func (p *UsageEventPublisher) drain(ctx context.Context) {
 	if ctx.Err() == nil {
 		// Defensive: drain is the shutdown path, and a caller that reached it

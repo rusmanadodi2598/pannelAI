@@ -3,16 +3,10 @@
 // @file      internal/service/gateway_key_masking_test.go
 // @for       Table-driven tests for the key_hint transform.
 // @uses      testing (standard library only).
-// @reason    SPEC-API-001 §4 fixes the hint shape as sk-…abcd: the hint must
-//
-//	reveal the credential family and the trailing characters, and
-//	nothing of the secret body. Table cases cover typical, boundary,
-//	and short inputs so no single fixture can mask a leak
-//	(docs/RULLES/TDD.md §2.4).
-//
+// @reason    SPEC-API-001 §4 fixes the hint shape as sk-…abcd: the hint must reveal the credential family and the trailing characters, and nothing of the secret body. Table cases cover typical, boundary, and short inputs so no single fixture can mask a leak (docs/RULLES/TDD.md §2.4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package service
 

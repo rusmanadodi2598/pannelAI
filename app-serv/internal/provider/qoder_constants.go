@@ -1,23 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_constants.go
-// @for       The client identity Qoder's COSY layer fingerprints, and the two
-//
-//	alphabets and the key its body and payload are built from.
-//
+// @for       The client identity Qoder's COSY layer fingerprints, and the two alphabets and the key its body and payload are built from.
 // @uses      nothing beyond the constants themselves.
-// @reason    Every value here is a fact of the vendor's wire rather than a
-//
-//	choice made in this file: the client statics are what qodercli sends,
-//	the alphabets are its body obfuscation, and the RSA key is the one its
-//	server unwraps. They sit together so a reviewer can check the whole set
-//	against the reference in one pass instead of finding one header value in
-//	each of four files. Endpoints and token prefixes arrive with the
-//	connector that reads them.
-//
+// @reason    Every value here is a fact of the vendor's wire rather than a choice made in this file: the client statics are what qodercli sends, the alphabets are its body obfuscation, and the RSA key is the one its server unwraps. They sit together so a reviewer can check the whole set against the reference in one pass instead of finding one header value in each of four files. Endpoints and token prefixes arrive with the connector that reads them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -42,7 +31,7 @@ const qoderSigPathPrefix = "/algo"
 
 // The two intl inference hosts, split by the kind of token they serve: a device
 // token on the first, an exchanged job token on the second. Measured against the
-// vendor (draft 036 §5) the device host answers a job token today, so the swap is
+// vendor, the device host answers a job token today, so the swap is
 // the reference's rule kept rather than a proven requirement; the CN entry declares
 // one gateway for every kind and is never rewritten.
 const (

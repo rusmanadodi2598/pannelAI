@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy_route_order.go
-// @for       The candidate order one proxy route walk tries: the operator's
-//
-//	stable order, the cooldown filter, rotation, and the provider's pin.
-//
+// @for       The candidate order one proxy route walk tries: the operator's stable order, the cooldown filter, rotation, and the provider's pin.
 // @uses      internal/domain, context, sort.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D4-D6 and docs/PORT/009-PORT-
-//
-//	PROVIDER-PROXY.md D4 make the order a decision of its own, with its
-//	own tests; it lives beside the plan rather than inside it so
-//	proxy_route.go keeps one concern and stays under the file limit
-//	(AGENTS.md §1.1).
-//
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D4-D6 and docs/PORT/009-PORT- PROVIDER-PROXY.md D4 make the order a decision of its own, with its own tests; it lives beside the plan rather than inside it so proxy_route.go keeps one concern and stays under the file limit (AGENTS.md §1.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package service
 
@@ -54,15 +45,15 @@ func (s *ProxyRouteService) candidateOrder(
 
 	// Parked candidates sit out while an unparked one remains (D6); when every
 	// usable candidate is parked the list stays whole, because a cooldown is a
-	// hint about the past, not proof about the next dial.
+	// hint about the past, not proof about the next dial. The read is one batch:
+	// this runs per proxied request, so a per-candidate EXISTS would be a query
+	// per item on the hot path (§1.7).
 	unparked := make([]string, 0, len(ids))
-	for _, id := range ids {
-		parked, err := s.routes.Parked(ctx, id)
-		if err != nil {
-			parked = false
-		}
-		if !parked {
-			unparked = append(unparked, id)
+	if parked, err := s.routes.ParkedAll(ctx, ids); err == nil {
+		for _, id := range ids {
+			if !parked[id] {
+				unparked = append(unparked, id)
+			}
 		}
 	}
 	if len(unparked) > 0 {

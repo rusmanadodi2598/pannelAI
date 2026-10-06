@@ -1,22 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_parity_test.go
-// @for       That an outcome is also accounted onto the endpoint's own
-//
-//	connection-parity state, not only onto the key's circuit.
-//
+// @for       That an outcome is also accounted onto the endpoint's own connection-parity state, not only onto the key's circuit.
 // @uses      context, testing, time, internal/domain.
-// @reason    R17 of docs/DRAFT/042-CODE-REVIEW-FIXES.md found the domain's
-//
-//	RecordUpstreamSuccess and RecordUpstreamError with no caller on the
-//	data plane, so the panel's last-error block stayed empty however the
-//	upstream behaved. The selector is the one place an outcome is known,
-//	so the parity write is pinned here beside the key circuit it
-//	accompanies.
-//
+// @reason    R17 of docs/DRAFT/042-CODE-REVIEW-FIXES.md found the domain's RecordUpstreamSuccess and RecordUpstreamError with no caller on the data plane, so the panel's last-error block stayed empty however the upstream behaved. The selector is the one place an outcome is known, so the parity write is pinned here beside the key circuit it accompanies.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package dataplane
 

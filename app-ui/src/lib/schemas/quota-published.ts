@@ -15,7 +15,7 @@
 // would print precision the provider never claimed. So each row keeps the reported text for display and
 // carries a parsed number for geometry, and the two are never swapped.
 //
-// An absent `total` is a state rather than a value — the provider publishes no ceiling for that bucket —
+// An absent `total` is a state rather than a value (the provider publishes no ceiling for that bucket)
 // while a `total` of "0" is a ceiling that has been spent. Rendering the first as the second would draw
 // a full bar under an account that has no limit, so the distinction survives into the view as `null`
 // versus a number, and the three flags the provider adds (`unlimited`, `is_credit_balance`, `recurring`)
@@ -53,7 +53,7 @@ export type PublishedQuotaWindow = z.infer<typeof schemaPublishedQuotaWindow>;
 // exist (not the windows that happen to exist), the read carries one entry per account on the page, and an
 // account the poll worker has not answered yet arrives with this flag set, `data` empty, and `fetched_at`
 // an epoch placeholder. It is deliberately not the same thing as an empty `data` with no flag and no
-// message — that is an answer ("nothing to report"), while this is the absence of one. Absent means the
+// message: that is an answer ("nothing to report"), while this is the absence of one. Absent means the
 // account has been polled; the card must not print a provider note or an "Asked" stamp for a placeholder
 // instant there is nothing to attribute.
 export const schemaPublishedQuotaUsage = z.object({
@@ -199,7 +199,7 @@ export function publishedEntriesByEndpoint(
  *
  * The read carries one entry per account it can ask, so a capable account the worker has not reached
  * arrives as an entry marked `never_polled` beside an empty `data` and a placeholder instant, and an
- * account behind a provider that publishes nothing arrives as no entry at all — the card renders no block
+ * account behind a provider that publishes nothing arrives as no entry at all: the card renders no block
  * for that one. A null here is therefore not a missing provider: it is the card's own refresh in flight,
  * with the previous answer taken off screen and the new one not yet back. Both states have no figure to
  * attribute, so neither prints the ledger note or an "Asked" stamp, and neither is an error.
@@ -211,8 +211,8 @@ export function publishedWasNeverPolled(usage: PublishedQuotaUsage | null): bool
 /**
  * What a published read says when it has no buckets, or null when the rows are the answer.
  *
- * The API keeps a soft outcome — the credential was refused, the provider errored, nothing is
- * published — as a sentence beside an empty array rather than as a non-2xx, so the panel renders the
+ * The API keeps a soft outcome (the credential was refused, the provider errored, nothing is
+ * published) as a sentence beside an empty array rather than as a non-2xx, so the panel renders the
  * provider's own words when it has them and states the emptiness itself when it does not. A sentence
  * beside real buckets is not shown: it would read as a warning over data that arrived.
  */

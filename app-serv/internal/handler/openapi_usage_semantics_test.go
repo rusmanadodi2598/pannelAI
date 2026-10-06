@@ -1,23 +1,17 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/openapi_usage_semantics_test.go
-// @for       The served contract's stated semantics for the aggregate latency
-//
-//	and the free-text q scope (draft 010 F3 + F8).
-//
+// @for       The served contract's stated semantics for the aggregate latency and the free-text q scope (draft 010 F3 + F8).
 // @uses      encoding/json, strings, testing.
-// @reason    Draft 010 F3: latency_ms on an aggregate is a sum of per-request
+// @reason    Draft 010 F3: latency_ms on an aggregate is a sum of per-request latencies, and nothing on the wire said so, which is why the panel already refused to render it. F8: q matched the model only while the panel's placeholder promised a request id and an error code.
 //
-//	latencies, and nothing on the wire said so, which is why the panel
-//	already refused to render it. F8: q matched the model only while
-//	the panel's placeholder promised a request id and an error code.
 //	Both are statements a consumer reads from the contract, so these
 //	tests read the served document rather than the YAML it was
 //	generated from: a description lost in regeneration fails here.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package handler
 
@@ -64,7 +58,7 @@ func propertyDescription(t *testing.T, schemaName, property string) string {
 }
 
 // TestOpenAPIContract_AggregateLatencyIsStatedAsASum pins the semantic the
-// panel already acted on (draft 010 F3, owner decision D1 = document): the
+// panel already acted on: the
 // aggregate field is a sum that grows with the request count, the per-request
 // picture is the two percentiles, and the only field that means one
 // measurement is the record's own.
@@ -104,9 +98,9 @@ func TestOpenAPIContract_AggregateLatencyIsStatedAsASum(t *testing.T) {
 	})
 }
 
-// TestOpenAPIContract_FreeTextScopeIsStated pins what q searches (draft 010
-// F8, owner decision D4 = expand), so the panel's placeholder is a promise the
-// contract makes rather than one the gateway happens to keep.
+// TestOpenAPIContract_FreeTextScopeIsStated pins what q searches, so the
+// panel's placeholder is a promise the contract makes rather than one the
+// gateway happens to keep.
 func TestOpenAPIContract_FreeTextScopeIsStated(t *testing.T) {
 	cases := []struct {
 		path string

@@ -2,20 +2,11 @@
 //
 // @file      internal/service/media_search.go
 // @for       The web search use case of SPEC-API-001 §7.10.
-// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema,
-//
-//	context, encoding/json, strconv, strings, time.
-//
-// @reason    Search is the one media kind whose request shape is not fixed: the
-//
-//	reference carries a per-provider builder because search APIs
-//	disagree on the spelling of `q`/`query` and `num`/`count`. The
-//	registry declares those names, so the payload is built from the
-//	block rather than from a provider switch here.
-//
+// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema, context, encoding/json, strconv, strings, time.
+// @reason    Search is the one media kind whose request shape is not fixed: the reference carries a per-provider builder because search APIs disagree on the spelling of `q`/`query` and `num`/`count`. The registry declares those names, so the payload is built from the block rather than from a provider switch here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -121,7 +112,7 @@ func searchQuery(media registry.MediaConfig, queryParam, maxParam, query string,
 
 // searchBody is the JSON body a POST search provider expects. Its field names
 // come from the registry, which a struct tag cannot express, so the type
-// marshals itself — the one place a map is used, and it is closed by the
+// marshals itself, the one place a map is used, and it is closed by the
 // constructor above rather than assembled at a call site (AGENTS.md §1.4).
 type searchBody struct {
 	queryParam string

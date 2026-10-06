@@ -3,10 +3,7 @@
 // @file      internal/repository/redis/limiter.go
 // @for       Atomically counts login failures and bounds gateway request rates.
 // @uses      github.com/redis/go-redis/v9, internal/repository, context, time.
-// @reason    Concurrent login attempts and public requests must share durable,
-//
-//	bounded state instead of relying on process-local counters.
-//
+// @reason    Concurrent login attempts and public requests must share durable, bounded state instead of relying on process-local counters.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

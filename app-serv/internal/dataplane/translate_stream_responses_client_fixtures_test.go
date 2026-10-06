@@ -3,15 +3,10 @@
 // @file      internal/dataplane/translate_stream_responses_client_fixtures_test.go
 // @for       Shared helpers for the Responses client stream tests.
 // @uses      testing, encoding/json, strconv, strings.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose stream is a
-//
-//	named-event stream. Reading a named event needs its own unwrapper, and
-//	every table in the sibling test files builds the same chunks, so both
-//	live here rather than being restated per file.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose stream is a named-event stream. Reading a named event needs its own unwrapper, and every table in the sibling test files builds the same chunks, so both live here rather than being restated per file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

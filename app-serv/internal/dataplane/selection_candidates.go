@@ -3,22 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/selection_candidates.go
-// @for       The credential walk a request makes over one provider's accounts:
-//
-//	the first pick, and the next pick after a credential failed.
-//
+// @for       The credential walk a request makes over one provider's accounts: the first pick, and the next pick after a credential failed.
 // @uses      internal/domain, context.
-// @reason    SPEC-API-001 §7.7 fixes the failover order as credential-first: a
-//
-//	failed credential is followed by the provider's next healthy one
-//	before the next model is tried. The walk is policy the whole data
-//	plane depends on, so it lives in one place beside the ordering rule
-//	it walks, and the exclude set is what keeps one request from
-//	retrying a credential it already saw fail.
-//
+// @reason    SPEC-API-001 §7.7 fixes the failover order as credential-first: a failed credential is followed by the provider's next healthy one before the next model is tried. The walk is policy the whole data plane depends on, so it lives in one place beside the ordering rule it walks, and the exclude set is what keeps one request from retrying a credential it already saw fail.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 
@@ -29,22 +19,16 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// SelectNext returns the first usable credential of a provider that is outside
-// the spent set, so a request that already tried one account asks for the next
-// one rather than failing (SPEC-API-001 §7.7, credential-first failover).
-//
-// The walk follows the provider's rotation policy (§7.14): fill-first serves
-// the provider's endpoints in priority order and starts every request from the
-// first usable one, while round-robin advances the shared cursor and keeps one
-// endpoint for the policy's sticky limit. Inside the endpoint the policy picks
-// the key: the first healthy one by priority under fill-first, the
-// least-recently-used one under round-robin. A keyless endpoint is itself the
-// candidate either way, which covers both the credential-free accounts and the
-// oauth ones a login flow built: those carry their token in the endpoint
-// rather than in a key row, so demanding a key of them skipped the one
-// account a provider had. Each round-robin call advances the rotation cursor, so
-// a request that walks two credentials leaves the cursor two steps on;
-// rotation stays an optimisation, not a correctness input.
+// SelectNext returns the first usable credential of a provider outside the spent
+// set, so a request that already tried one account asks for the next rather than
+// failing. The walk follows the provider's rotation policy: fill-first serves
+// endpoints in priority order from the first usable one and picks its first healthy
+// key by priority, while round-robin advances a shared cursor, keeps one endpoint for
+// its sticky limit, and picks the least-recently-used key. A keyless endpoint is
+// itself the candidate either way, which covers the credential-free accounts and the
+// oauth ones a login flow built: those carry their token on the endpoint rather than
+// in a key row. Every round-robin call advances the cursor, so one walk can leave it
+// several steps on: rotation is an optimisation, not a correctness input.
 func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[string]struct{}) (Selection, error) {
 	now := s.clock()
 	endpoints, err := s.candidates(ctx, providerID)
@@ -61,6 +45,7 @@ func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[
 	if policy.UsesRotation() {
 		offset = s.offset(ctx, providerID, len(endpoints), policy.StickyLimit)
 	}
+	var credErr error
 	for i := range endpoints {
 		endpoint := endpoints[(offset+i)%len(endpoints)]
 		if !endpoint.Available(now) {
@@ -81,9 +66,18 @@ func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[
 		}
 		credential, err := s.credential(endpoint, key)
 		if err != nil {
-			return Selection{}, err
+			// An unreadable credential is one row's problem, not the provider's: a
+			// rotated process key leaves stale ciphertext on a single endpoint while
+			// the healthy accounts beside it still answer. Aborting here made one bad
+			// row take the whole provider down. The error is kept so the walk can
+			// report it if nothing else was usable either.
+			credErr = err
+			continue
 		}
 		return Selection{Endpoint: endpoint, Key: key, Credential: credential}, nil
+	}
+	if credErr != nil {
+		return Selection{}, credErr
 	}
 	return Selection{}, domain.NewNoProviderAvailableError("every upstream endpoint for provider " +
 		providerID + " is unavailable, has no usable key, or has spent its budget")

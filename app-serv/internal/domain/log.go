@@ -2,22 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/log.go
-// @for       The RequestLog aggregate and the capture, truncation, and
-//
-//	retention rules that govern it.
-//
+// @for       The RequestLog aggregate and the capture, truncation, and retention rules that govern it.
 // @uses      internal/domain (AppError constructors), strings, time.
-// @reason    SPEC-API-001 §7.13 makes body capture conditional on a setting and
-//
-//	truncated to a configured size, and makes retention delete rows
-//	older than a configured age. Both rules decide whether a byte is
-//	stored, so they live here where a unit test can exercise the
-//	boundary with no database, rather than inside the repository that
-//	happens to write the row.
-//
+// @reason    SPEC-API-001 §7.13 makes body capture conditional on a setting and truncated to a configured size, and makes retention delete rows older than a configured age. Both rules decide whether a byte is stored, so they live here where a unit test can exercise the boundary with no database, rather than inside the repository that happens to write the row.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 
@@ -145,18 +135,17 @@ func RehydrateRequestLog(requestID string, ts time.Time, gatewayKeyID, endpointI
 }
 
 // Accessors expose the row without allowing mutation.
-func (l RequestLog) RequestID() string           { return l.requestID }
-func (l RequestLog) TS() time.Time               { return l.ts }
-func (l RequestLog) GatewayKeyID() string        { return l.gatewayKeyID }
-func (l RequestLog) EndpointID() string          { return l.endpointID }
-func (l RequestLog) ProviderID() string          { return l.providerID }
-func (l RequestLog) Model() string               { return l.model }
-func (l RequestLog) Status() string              { return string(l.status) }
-func (l RequestLog) LogStatus() RequestLogStatus { return l.status }
-func (l RequestLog) LatencyMS() int64            { return l.latencyMS }
-func (l RequestLog) RequestBody() string         { return l.requestBody }
-func (l RequestLog) ResponseBody() string        { return l.responseBody }
-func (l RequestLog) Error() string               { return l.errText }
+func (l RequestLog) RequestID() string    { return l.requestID }
+func (l RequestLog) TS() time.Time        { return l.ts }
+func (l RequestLog) GatewayKeyID() string { return l.gatewayKeyID }
+func (l RequestLog) EndpointID() string   { return l.endpointID }
+func (l RequestLog) ProviderID() string   { return l.providerID }
+func (l RequestLog) Model() string        { return l.model }
+func (l RequestLog) Status() string       { return string(l.status) }
+func (l RequestLog) LatencyMS() int64     { return l.latencyMS }
+func (l RequestLog) RequestBody() string  { return l.requestBody }
+func (l RequestLog) ResponseBody() string { return l.responseBody }
+func (l RequestLog) Error() string        { return l.errText }
 
 // HasBodies reports whether either body was captured.
 func (l RequestLog) HasBodies() bool {
@@ -166,8 +155,8 @@ func (l RequestLog) HasBodies() bool {
 // LogFilter narrows a request-log read. From and To are always populated, so a
 // log query can never be an unbounded scan (AGENTS.md §1.7). Status is the
 // domain value object, so a value outside the closed set cannot be constructed
-// into a filter (draft 010 F2/F9: the logs route shares the usage decoder, so
-// it holds the same rule).
+// into a filter: the logs route shares the usage decoder, so it holds the
+// same rule.
 type LogFilter struct {
 	From       time.Time
 	To         time.Time

@@ -3,15 +3,10 @@
 // @file      internal/handler/embeddings.go
 // @for       POST /api/v1/embeddings, the P1 media data plane route.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    SPEC-API-001 §7.10 lists embeddings as the P1 media route and §7.15
-//
-//	serves it on the OpenAI wire. The credential placement differs per
-//	provider kind (§8.1), but that decision belongs to the service, so
-//	this handler only decodes, authenticates, calls, and encodes.
-//
+// @reason    SPEC-API-001 §7.10 lists embeddings as the P1 media route and §7.15 serves it on the OpenAI wire. The credential placement differs per provider kind (§8.1), but that decision belongs to the service, so this handler only decodes, authenticates, calls, and encodes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -29,16 +24,26 @@ type EmbeddingsHandler struct {
 	auth       service.GatewayAuthenticator
 }
 
-// NewEmbeddingsHandler validates deps and returns the handler. The chat service is
-// reused for authentication, because the §4 rule is one rule: a second
-// implementation of it is how the two routes start disagreeing about which key is
-// valid.
+// NewEmbeddingsHandler takes its authenticator from the chat service, because the
+// §4 rule is one rule: a second implementation of it is how the two routes start
+// disagreeing about which key is valid.
 func NewEmbeddingsHandler(embeddings *service.EmbeddingsService, auth service.GatewayAuthenticator) *EmbeddingsHandler {
 	return &EmbeddingsHandler{embeddings: embeddings, auth: auth}
 }
 
 // Embed serves POST /api/v1/embeddings.
+//
+// Authentication runs before the body is read, which is the §4 rule every
+// data-plane route follows (chat.go, systemone.go, the media routes): an
+// unauthenticated caller is refused whatever its body looks like, so a malformed
+// payload cannot be used to probe the schema or to cost an 8 MiB read.
 func (h *EmbeddingsHandler) Embed(w http.ResponseWriter, r *http.Request) {
+	key, err := h.auth.Authenticate(r.Context(), bearerToken(r))
+	if err != nil {
+		writeDataPlaneError(w, err)
+		return
+	}
+
 	raw, err := schema.ReadBody(r)
 	if err != nil {
 		writeDataPlaneError(w, err)
@@ -58,12 +63,6 @@ func (h *EmbeddingsHandler) Embed(w http.ResponseWriter, r *http.Request) {
 	// cannot see inside it.
 	if req.Input.IsEmpty() {
 		writeDataPlaneError(w, dataplane.ValidationError("field Input is required"))
-		return
-	}
-
-	key, err := h.auth.Authenticate(r.Context(), bearerToken(r))
-	if err != nil {
-		writeDataPlaneError(w, err)
 		return
 	}
 

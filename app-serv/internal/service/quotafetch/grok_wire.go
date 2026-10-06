@@ -4,14 +4,10 @@
 // @file      internal/service/quotafetch/grok_wire.go
 // @for       Decoding Grok's billing and user payloads into typed values.
 // @uses      encoding/json, math, strconv, strings.
-// @reason    Grok spells one numeric field three ways depending on which of its services answered,
-//
-//	and a plain float decode fails on two of the three. Keeping that shape in one file leaves the
-//	read itself free to talk about periods and tiers.
-//
+// @reason    Grok spells one numeric field three ways depending on which of its services answered, and a plain float decode fails on two of the three. Keeping that shape in one file leaves the read itself free to talk about periods and tiers.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

@@ -3,16 +3,10 @@
 // @file      internal/handler/changelog.go
 // @for       The served release notes (SPEC-API-001 §7.18).
 // @uses      net/http, internal/schema.
-// @reason    The reference fetches its changelog from a GitHub URL in the
-//
-//	browser; a self-hosted panel behind the §9 egress guard has no
-//	business fetching anything external, so §7.18 serves the history
-//	from the binary that earned it. Entries are embedded static data:
-//	the changelog describes the binary, and the binary carries it.
-//
+// @reason    The reference fetches its changelog from a GitHub URL in the browser; a self-hosted panel behind the §9 egress guard has no business fetching anything external, so §7.18 serves the history from the binary that earned it. Entries are embedded static data: the changelog describes the binary, and the binary carries it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package handler
 

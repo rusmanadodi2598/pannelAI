@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush_drain.go
-// @for       One flush cycle: read the changed windows from Redis, write them
-//
-//	to PostgreSQL, and settle what was written.
-//
+// @for       One flush cycle: read the changed windows from Redis, write them to PostgreSQL, and settle what was written.
 // @uses      context, fmt, log/slog, sort, internal/domain.
-// @reason    The batch mechanics are the part of the flush worker whose order
-//
-//	a review checks against AGENTS.md §1.7 (bounded batch, set-based
-//	write, settle only after durability), so they live in one file apart
-//	from the worker lifecycle (draft 005 F3). Naming the batch here is
-//	what makes retries attributable to the endpoints they belong to
-//	(draft 005 F4).
-//
+// @reason    The batch mechanics are the part of the flush worker whose order a review checks against AGENTS.md §1.7 (bounded batch, set-based write, settle only after durability), so they live in one file apart from the worker lifecycle (draft 005 F3). Naming the batch here is what makes retries attributable to the endpoints they belong to (draft 005 F4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 
@@ -77,7 +67,7 @@ func (f *QuotaFlusher) drain(ctx context.Context) {
 // batchIdentity names a batch by the endpoint and window kind each of its
 // windows bills against, so a retry of the same batch is recognised and a
 // different batch is not charged with its failures. Keying on the window kind
-// alone (draft 005 F4) made two failing batches of the same shape share one
+// alone made two failing batches of the same shape share one
 // attempt count, so one batch could be dead-lettered for failures it never
 // caused. The names are sorted because Pending reads live Redis state, and two
 // reads of one unchanged keyspace can arrive in a different order without the

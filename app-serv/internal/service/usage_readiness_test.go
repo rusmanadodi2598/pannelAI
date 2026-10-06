@@ -3,14 +3,10 @@
 // @file      internal/service/usage_readiness_test.go
 // @for       Usage read validation, pagination, aggregation delegation, and detail joining.
 // @uses      internal/domain, internal/repository, context, testing, time.
-// @reason    SPEC-API-001 §7.12 exposes four reads whose bounded filters and
-//
-//	captured-log join are service behavior. These doubles keep the
-//	service contract tested without a database or HTTP transport.
-//
+// @reason    SPEC-API-001 §7.12 exposes four reads whose bounded filters and captured-log join are service behavior. These doubles keep the service contract tested without a database or HTTP transport.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 

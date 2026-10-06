@@ -5,15 +5,10 @@
 // @file      internal/service/quotafetch/google_test.go
 // @for       Locks the Gemini CLI quota read and the project resolution both Google families share.
 // @uses      internal/service/quotafetch, io, net/http, net/http/httptest, strings, sync, testing, time
-// @reason    The quota endpoint only answers for a project it is told, and the project comes
-//
-//	from a second endpoint, so the two-call and one-call shapes are the
-//	regression worth pinning: a fetch that always asks twice burns a call,
-//	and one that never looks the project up answers nothing at all.
-//
+// @reason    The quota endpoint only answers for a project it is told, and the project comes from a second endpoint, so the two-call and one-call shapes are the regression worth pinning: a fetch that always asks twice burns a call, and one that never looks the project up answers nothing at all.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -39,7 +34,7 @@ const googleAccountBody = `{"cloudaicompanionProject":{"id":"proj-9"},
 	"currentTier":{"name":"legacy-tier"},"paidTier":{"id":"standard-tier"}}`
 
 // googleStub answers each Cloud Code Assist path and records the call it received, bodies
-// included — the project a call names is half of what these families get wrong.
+// included, the project a call names is half of what these families get wrong.
 type googleStub struct {
 	server  *httptest.Server
 	replies map[string]googleReply

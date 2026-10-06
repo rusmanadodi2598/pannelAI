@@ -1,14 +1,14 @@
 // The Connections section's delete paths and its two add affordances (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
 // What this screen owns is the operator's three actions on a provider's connections: remove one, add a key
-// (or Personal Access Token), and connect through OAuth. Removal is one route — `DELETE /endpoints/{id}` —
+// (or Personal Access Token), and connect through OAuth. Removal is one route (`DELETE /endpoints/{id}`)
 // whether the row carried an API key, a PAT, or a connected account's token, so the cases below drive all
 // three surfaces (table row, detail drawer, OAuth account row) and hold that each opens the same
 // confirmation, names the object, and reloads.
 //
 // The two buttons are the other half: a provider that declares both `oauth` and a key mode (Qoder) offers
 // "Add API Key" and "Add a connection" side by side, and the key dialog stores a pasted credential as an
-// `api_key` connection — not as the provider's own `oauth` auth type — because the value the operator typed
+// `api_key` connection (not as the provider's own `oauth` auth type) because the value the operator typed
 // is a static key.
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';

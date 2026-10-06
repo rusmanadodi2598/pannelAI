@@ -2,22 +2,12 @@
 // client address is this request really from.
 //
 // @file      internal/clientip/clientip_test.go
-// @for       The trusted-proxy rule: a forwarded chain is read only when the
-//
-//	direct peer is a proxy the operator named.
-//
+// @for       The trusted-proxy rule: a forwarded chain is read only when the direct peer is a proxy the operator named.
 // @uses      net, net/http, testing.
-// @reason    R20 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the limiter bucketed
-//
-//	every client behind a reverse proxy into one address, and reading
-//	X-Forwarded-For without a trust boundary would hand the bucket to
-//	any caller who can set a header. Both halves of that rule are
-//	pinned here: the chain is read only past a trusted peer, and a
-//	forgeable header is refused from any other peer.
-//
+// @reason    R20 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the limiter bucketed every client behind a reverse proxy into one address, and reading X-Forwarded-For without a trust boundary would hand the bucket to any caller who can set a header. Both halves of that rule are pinned here: the chain is read only past a trusted peer, and a forgeable header is refused from any other peer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package clientip
 
@@ -72,7 +62,7 @@ func TestAddress_NoTrustedProxiesKeepsThePeer(t *testing.T) {
 
 // TestAddress_AllTrustedHopsFallBackToThePeer pins that a chain of nothing but
 // trusted proxies still answers with an address the operator can hold
-// accountable — the proxy itself — rather than an empty bucket.
+// accountable, the proxy itself, rather than an empty bucket.
 func TestAddress_AllTrustedHopsFallBackToThePeer(t *testing.T) {
 	trusted := mustTrusted(t, []string{"10.0.0.0/8"})
 

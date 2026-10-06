@@ -4,17 +4,10 @@
 // @file      internal/provider/plugin_base.go
 // @for       The connector behaviour shared by every provider.
 // @uses      net/http, strconv, strings, time.
-// @reason    A connector should only override what actually differs, so the
-//
-//	conservative answer to every optional question lives here. For a plain
-//	OpenAI-compatible vendor that means only ProviderID is strictly
-//	required, which is what keeps the registry from needing one file per
-//	vendor. The optional seams a connector may add are declared here too,
-//	so the core reads one place to learn what a connector can do.
-//
+// @reason    A connector should only override what actually differs, so the conservative answer to every optional question lives here. For a plain OpenAI-compatible vendor that means only ProviderID is strictly required, which is what keeps the registry from needing one file per vendor. The optional seams a connector may add are declared here too, so the core reads one place to learn what a connector can do.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-21
 package provider
 

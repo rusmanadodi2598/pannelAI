@@ -3,24 +3,17 @@
 // @file      internal/service/oauth_flow_multiaccount_test.go
 // @for       Several identity-less OAuth accounts of one provider, each its own row.
 // @uses      context, fmt, testing, time, internal/registry.
-// @reason    A vendor that returns no user identity gives the gateway nothing to dedup on,
-//
-//	and the reference's answer is to insert a new connection each time
-//	(connectionsRepo.js:133 only dedups when an email exists). Our state round used to
-//	manufacture a constant synthetic email instead, which made every login after the
-//	first overwrite the stored credential. These tests hold the multi-account shape the
-//	panel already renders: distinct rows, numbered labels, no invented identity, and a
-//	first account whose token survives the second login.
-//
+// @reason    A vendor that returns no user identity gives the gateway nothing to dedup on, and the reference's answer is to insert a new connection each time (connectionsRepo.js:133 only dedups when an email exists). Our state round used to manufacture a constant synthetic email instead, which made every login after the first overwrite the stored credential. These tests hold the multi-account shape the panel already renders: distinct rows, numbered labels, no invented identity, and a first account whose token survives the second login.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package service
 
 import (
 	"context"
 	"fmt"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"testing"
 	"time"
 
@@ -31,17 +24,17 @@ import (
 // scriptStateRounds hands each login its own vendor round and its own token, so a
 // test can tell the stored rows apart by the credential they hold.
 func scriptStateRounds(fixture *oauthFlowFixture) {
-	fixture.tokens.stateRoundFn = func(*registry.OAuth) (StateRound, error) {
+	fixture.tokens.stateRoundFn = func(*registry.OAuth) (oauthhttp.StateRound, error) {
 		// The fake counts the call before handing it over, so the counter is this round.
 		n := fixture.tokens.stateRoundCalls
-		return StateRound{
+		return oauthhttp.StateRound{
 			State:    fmt.Sprintf("state-%d", n),
 			AuthURL:  fmt.Sprintf("https://vendor.example.com/login?state=state-%d", n),
-			Interval: 5 * time.Second, Expires: stateRoundRetryWindow,
+			Interval: 5 * time.Second, Expires: oauthhttp.StateRoundRetryWindow,
 		}, nil
 	}
-	fixture.tokens.statePollFn = func(state string) (DeviceTokenResponse, bool, error) {
-		return DeviceTokenResponse{
+	fixture.tokens.statePollFn = func(state string) (oauthhttp.DeviceTokenResponse, bool, error) {
+		return oauthhttp.DeviceTokenResponse{
 			AccessToken:  "access-" + state,
 			RefreshToken: "refresh-" + state,
 			ExpiresAt:    testNow.Add(2 * time.Hour),
@@ -78,7 +71,7 @@ func openedToken(t *testing.T, fixture oauthFlowFixture, endpointID string) stri
 	if credential == nil {
 		t.Fatalf("endpoint %s has no credential", endpointID)
 	}
-	value, err := fixture.sealer.Open(credential.AccessTokenEncrypted)
+	value, err := fixture.sealer.Open(credential.AccessTokenEncrypted())
 	if err != nil {
 		t.Fatalf("Open() error = %v", err)
 	}
@@ -139,13 +132,13 @@ func TestStateRound_AccountsCarryNoInventedIdentity(t *testing.T) {
 	second := connectOneRound(t, fixture)
 
 	accountOne := mustAccountOf(t, fixture, first)
-	if accountOne.Email != "" || accountOne.Name != "" || accountOne.WorkspaceID != "" {
+	if accountOne.Email().String() != "" || accountOne.Name() != "" || accountOne.WorkspaceID() != "" {
 		t.Fatalf("account = %+v, want no identity fields: this vendor returns none", accountOne)
 	}
-	if accountOne.MachineID == "" {
+	if accountOne.MachineID() == "" {
 		t.Fatal("account carries no machine id, so the round that made it cannot be traced")
 	}
-	if mustAccountOf(t, fixture, second).MachineID == accountOne.MachineID {
+	if mustAccountOf(t, fixture, second).MachineID() == accountOne.MachineID() {
 		t.Fatal("two rounds stored the same machine id: the second account is a copy, not a login")
 	}
 }

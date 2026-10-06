@@ -3,16 +3,10 @@
 // @file      internal/router/router_combo_vision_routes_test.go
 // @for       The §7.7 and §7.8 routes' session gate and verb table.
 // @uses      net/http, net/http/httptest, strings, testing.
-// @reason    The combo and vision-adapter journeys are pinned at the service
-//
-//	and handler layers; what only the mux can prove is the access
-//	control (OWASP A01 function-level rule: every route denies an
-//	unauthenticated caller, deny by default) and the method table (a
-//	verb the spec does not register is a 405, never a handler).
-//
+// @reason    The combo and vision-adapter journeys are pinned at the service and handler layers; what only the mux can prove is the access control (OWASP A01 function-level rule: every route denies an unauthenticated caller, deny by default) and the method table (a verb the spec does not register is a 405, never a handler).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package router
 

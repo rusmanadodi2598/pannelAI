@@ -2,21 +2,11 @@
 //
 // @file      internal/repository/redis/endpoint_cursor.go
 // @for       The round-robin cursor over one provider's upstream endpoints.
-// @uses      github.com/redis/go-redis/v9, context, crypto/sha256, encoding/hex,
-//
-//	time.
-//
-// @reason    SPEC-API-001 §4 puts sticky round-robin state in Redis, and it has to
-//
-//	live there rather than in the process: a per-instance cursor makes
-//	distribution depend on which replica answered, which is not
-//	distribution at all. It is also the one piece the data plane's
-//	`CursorStore` port has no implementation for, so this is that
-//	implementation rather than a second copy of anything.
-//
+// @uses      github.com/redis/go-redis/v9, context, crypto/sha256, encoding/hex, time.
+// @reason    SPEC-API-001 §4 puts sticky round-robin state in Redis, and it has to live there rather than in the process: a per-instance cursor makes distribution depend on which replica answered, which is not distribution at all. It is also the one piece the data plane's `CursorStore` port has no implementation for, so this is that implementation rather than a second copy of anything.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package redisrepo
 

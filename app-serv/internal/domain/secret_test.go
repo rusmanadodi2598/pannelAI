@@ -4,16 +4,10 @@
 // @file      internal/domain/secret_test.go
 // @for       Table-driven tests for sealing and opening a stored credential.
 // @uses      testing, strings.
-// @reason    Upstream keys and OAuth tokens are stored as ciphertext
-//
-//	(SPEC-API-001 §6), so this is the one place a credential crosses
-//	between plaintext and storage. A silent failure here either leaks
-//	a credential or makes a stored one unreadable, and neither shows
-//	up until a request fails.
-//
+// @reason    Upstream keys and OAuth tokens are stored as ciphertext (SPEC-API-001 §6), so this is the one place a credential crosses between plaintext and storage. A silent failure here either leaks a credential or makes a stored one unreadable, and neither shows up until a request fails.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 

@@ -1,22 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/endpoint_body.go
-// @for       Decoding helpers for the routes whose body may legitimately be absent,
-//
-//	and the required path-parameter reader.
-//
+// @for       Decoding helpers for the routes whose body may legitimately be absent, and the required path-parameter reader.
 // @uses      encoding/json, errors, internal/domain, internal/schema, io, net/http.
-// @reason    §7.5 gives the endpoint test route one optional field and §7.4 gives the
-//
-//	node test route the same, so a caller may post nothing at all and must
-//	still be served. schema.DecodeJSON rejects an absent body by design
-//	(every other management body is required), which is why the optional
-//	case needs its own entry point here rather than a relaxation of that
-//	rule. These are declared I/O boundaries (AGENTS.md §1.4).
-//
+// @reason    §7.5 gives the endpoint test route one optional field and §7.4 gives the node test route the same, so a caller may post nothing at all and must still be served. schema.DecodeJSON rejects an absent body by design (every other management body is required), which is why the optional case needs its own entry point here rather than a relaxation of that rule. These are declared I/O boundaries (AGENTS.md §1.4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -72,7 +62,7 @@ func decodeOptionalTestEndpoint(w http.ResponseWriter, r *http.Request) (schema.
 //
 // It is a second concrete function rather than one generic helper because a generic
 // version would need an `any` destination, which AGENTS.md §1.4 forbids outside a
-// declared boundary function — and a boundary function is exactly what this pair is.
+// declared boundary function, and a boundary function is exactly what this pair is.
 func decodeOptionalNodeTest(w http.ResponseWriter, r *http.Request) (schema.TestNodeRequest, bool) {
 	var req schema.TestNodeRequest
 	if r.Body == nil {

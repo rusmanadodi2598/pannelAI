@@ -1,28 +1,16 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_refresh_worker.go
-// @for       The background OAuth token refresher: sweep due tokens on a
+// @for       The background OAuth token refresher: sweep due tokens on a tick, retry with exponential backoff and jitter, dead-letter after the stated attempts (SYSTEM_MAP §6, P2).
+// @uses      context, log/slog, math/rand, strconv, sync, time, internal/domain.
+// @reason    AGENTS.md §1.6 forbids "just retry forever" and "no retry" as unstated defaults, so the policy is explicit here: one sweep per tick refreshes every due token of every code-flow provider, a failing endpoint backs off exponentially with jitter, and the fifth consecutive failure marks the endpoint error (the dead letter) instead of spending another grant.
 //
-//	tick, retry with exponential backoff and jitter, dead-letter
-//	after the stated attempts (SYSTEM_MAP §6, P2).
-//
-// @uses      context, log/slog, math/rand, strconv, sync, time,
-//
-//	internal/domain.
-//
-// @reason    AGENTS.md §1.6 forbids "just retry forever" and "no retry" as
-//
-//	unstated defaults, so the policy is explicit here: one sweep
-//	per tick refreshes every due token of every code-flow
-//	provider, a failing endpoint backs off exponentially with
-//	jitter, and the fifth consecutive failure marks the endpoint
-//	error (the dead letter) instead of spending another grant.
 //	The sweep is a method so the policy is testable without a
 //	ticker, and Run is only the clock that drives it.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

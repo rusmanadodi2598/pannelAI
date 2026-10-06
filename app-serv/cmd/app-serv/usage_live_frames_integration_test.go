@@ -3,32 +3,17 @@
 // Package main is the app-serv composition root.
 //
 // @file      cmd/app-serv/usage_live_frames_integration_test.go
-// @for       F4 live evidence: a real data-plane request lighting a node, the
+// @for       F4 live evidence: a real data-plane request lighting a node, the marker released when it finishes, and an error naming its provider.
+// @uses      internal/dataplane, internal/domain, internal/handler, internal/router, internal/schema, internal/service, bufio, context, encoding/json, net, net/http, net/http/httptest, os, strings, testing, time.
+// @reason    Draft 013 F4 is closed by "the route answers with a session and the live pass records a frame from the gateway itself". Every half of that has a unit test, and none of them proves the two halves meet: the marker is written by a real relay leg over a real socket, the store is the real Redis, and the frame is read off a real connection through the real router. That is the evidence the previous pass could not produce, and it is the difference between "the code should work" and "the frame arrived".
 //
-//	marker released when it finishes, and an error naming its provider.
-//
-// @uses      internal/dataplane, internal/domain, internal/handler, internal/router,
-//
-//	internal/schema, internal/service, bufio, context, encoding/json, net,
-//	net/http, net/http/httptest, os, strings, testing, time.
-//
-// @reason    Draft 013 F4 is closed by "the route answers with a session and the
-//
-//	live pass records a frame from the gateway itself". Every half of
-//	that has a unit test, and none of them proves the two halves meet:
-//	the marker is written by a real relay leg over a real socket, the
-//	store is the real Redis, and the frame is read off a real
-//	connection through the real router. That is the evidence the
-//	previous pass could not produce, and it is the difference between
-//	"the code should work" and "the frame arrived".
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	  PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
-//	    go test -race -tags=integration -run TestUsageLive ./cmd/app-serv/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
+//	  go test -race -tags=integration -run TestUsageLive ./cmd/app-serv/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package main
 
@@ -43,18 +28,13 @@ import (
 )
 
 // TestUsageLive_FrameCarriesARealRequestInFlight is the pass's central evidence:
-// a real data-plane call, through the real relay leg, over a real upstream, with
-// its marker read back off the real live route while the call is still running.
-//
-// The upstream holds its answer open on a channel, which is what makes the
-// interval observable: the frame is read between the request starting and the
-// upstream answering, so what it reports is a request genuinely in flight rather
-// than a marker written for a call that already finished.
-//
-// The call runs on its own goroutine and its result travels over a channel
-// rather than calling t.Fatalf: a failing assertion on a non-test goroutine does
-// not stop the test, and the release below has to run or the upstream would hold
-// the connection until the process exits.
+// a real data-plane call through the real relay leg and a real upstream, its
+// marker read off the real live route while the call is still running. The
+// upstream holds its answer open on a channel, so the frame lands between the
+// request starting and the upstream answering: a genuinely in-flight request, not
+// a marker for a call that finished. The call runs on its own goroutine and
+// reports over a channel, since t.Fatalf cannot fail a non-test goroutine;
+// close(release) must run or the upstream holds the socket until the process ends.
 func TestUsageLive_FrameCarriesARealRequestInFlight(t *testing.T) {
 	release := make(chan struct{})
 	upstream := newHoldingUpstream(t, release)

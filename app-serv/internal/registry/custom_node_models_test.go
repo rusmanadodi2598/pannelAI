@@ -2,14 +2,10 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/custom_node_models_test.go
-// @for       The node's model list: a synthesized entry carries the list the
-//
-//	node was handed, so every index consumer sees it.
-//
+// @for       The node's model list: a synthesized entry carries the list the node was handed, so every index consumer sees it.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.4 serves a custom node's models, and draft 017 §4.2
+// @reason    SPEC-API-001 §7.4 serves a custom node's models, and draft 017 §4.2 measured what a synthesized entry carried without this: `len(entry.Models)
 //
-//	measured what a synthesized entry carried without this: `len(entry.Models)
 //	= 0`, so the node appeared in four surfaces with no model at all. The
 //	list is injected rather than declared because a compatible node's models
 //	come from its own upstream; the registry is where it lands because every
@@ -17,8 +13,8 @@
 //	models from there.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-23
 package registry
 

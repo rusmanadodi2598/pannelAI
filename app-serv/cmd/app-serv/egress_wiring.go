@@ -1,21 +1,9 @@
 // Command app-serv wires the process-wide egress policy.
 //
 // @file      cmd/app-serv/egress_wiring.go
-// @for       Builds the one egress guard, the guarded HTTP client every
-//
-//	upstream dial shares, and the proxy route it selects per request.
-//
-// @uses      internal/config, internal/dataplane, internal/domain, internal/netguard,
-//
-//	context, fmt, net/http, net/url, strings, time.
-//
-// @reason    OWASP A01 makes the outbound policy one decision rather than one
-//
-//	per caller: the connectivity probe, the chat and media transports,
-//	the OAuth client, and the proxy test all dial an address an operator
-//	typed, so they must share one guard and one allowlist. Building it
-//	here is what keeps a second allowlist from appearing — the proxy
-//	wiring was the first caller and used to build its own.
+// @for       Builds the one egress guard, the guarded HTTP client every upstream dial shares, and the proxy route it selects per request.
+// @uses      internal/config, internal/dataplane, internal/domain, internal/netguard, context, fmt, net/http, net/url, strings, time.
+// @reason    OWASP A01 makes the outbound policy one decision rather than one per caller: the connectivity probe, the chat and media transports, the OAuth client, and the proxy test all dial an address an operator typed, so they must share one guard and one allowlist. Building it here is what keeps a second allowlist from appearing, the proxy wiring was the first caller and used to build its own.
 //
 //	SPEC-API-001 §7.11 makes the routing half of that decision here too:
 //	settings.network.outbound_proxy_* is read per request, so the guard
@@ -24,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package main
 
@@ -80,20 +68,11 @@ func buildEgress(cfg config.Config, settings networkSettingsReader) (egress, err
 }
 
 // egressProxy builds the route selector the shared client calls once per
-// request (G4, SPEC-API-001 §7.11).
-//
-// Two rules make it more than a lookup:
-//
-//   - A proxied request still has its destination validated. The dialer's guard
-//     sees the proxy's address, never the destination's, so without this check
-//     enabling a proxy would switch the A01 policy off for every call.
-//   - A settings read or a proxy URL that fails refuses the request instead of
-//     dialing direct. Quietly bypassing a proxy an operator enabled is the
-//     failure this setting exists to prevent.
-//
-// The settings are read per request — the same per-call rule the §7.10 media
-// override follows — so a change takes effect on the next call, not the next
-// boot.
+// request. A proxied request still has its destination validated: the dialer's
+// guard sees the proxy's address, never the destination's. A settings read or a
+// proxy URL that fails refuses the request rather than dialing direct. The
+// settings are read per request, so a change takes effect on the next call, not
+// the next boot.
 func egressProxy(guard *netguard.Guard, settings networkSettingsReader) func(*http.Request) (*url.URL, error) {
 	return func(req *http.Request) (*url.URL, error) {
 		ctx := req.Context()

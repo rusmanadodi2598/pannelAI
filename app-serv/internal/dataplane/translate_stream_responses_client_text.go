@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_responses_client_text.go
-// @for       The reasoning and message items a Responses client stream reports,
-//
-//	including the inline reasoning markup an upstream may wrap its
-//	thinking in.
-//
+// @for       The reasoning and message items a Responses client stream reports, including the inline reasoning markup an upstream may wrap its thinking in.
 // @uses      internal/schema, strings.
-// @reason    Text is the only item kind that changes destination mid-delta, so the
-//
-//	routing between the reasoning item and the message item is one
-//	concern. Keeping it out of the item shape holds both files inside the
-//	AGENTS.md §1.1 budget.
-//
+// @reason    Text is the only item kind that changes destination mid-delta, so the routing between the reasoning item and the message item is one concern. Keeping it out of the item shape holds both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

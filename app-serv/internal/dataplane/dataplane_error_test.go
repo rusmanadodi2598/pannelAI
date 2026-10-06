@@ -3,15 +3,10 @@
 // @file      internal/dataplane/dataplane_error_test.go
 // @for       Table-driven tests for the data-plane error codes and their status mapping.
 // @uses      errors, testing, internal/domain
-// @reason    SPEC-API-001 §4 and §8 fix the OpenAI error envelope and the HTTP status each code
-//
-//	answers with: MODEL_NOT_FOUND and PROVIDER_NOT_ROUTABLE are client errors, and an
-//	upstream failure is a 502. A code that maps to the wrong status is what turns an
-//	actionable refusal into an outage-shaped one, so both mappings are pinned here.
-//
+// @reason    SPEC-API-001 §4 and §8 fix the OpenAI error envelope and the HTTP status each code answers with: MODEL_NOT_FOUND and PROVIDER_NOT_ROUTABLE are client errors, and an upstream failure is a 502. A code that maps to the wrong status is what turns an actionable refusal into an outage-shaped one, so both mappings are pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 

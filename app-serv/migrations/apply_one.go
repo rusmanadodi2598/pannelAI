@@ -3,13 +3,7 @@
 // @file      migrations/apply_one.go
 // @for       Reading the ledger and applying one migration inside one transaction.
 // @uses      context, database/sql.
-// @reason    The ledger read and the apply-and-record transaction are the two
-//
-//	statements that make "applied at most once" true; keeping them beside
-//	the runner that decides *when* to call them would push migrate.go past
-//	the AGENTS.md §1.1 limit, and they change for a different reason: a
-//	statement change, not a scheduling change.
-//
+// @reason    The ledger read and the apply-and-record transaction are the two statements that make "applied at most once" true; keeping them beside the runner that decides *when* to call them would push migrate.go past the AGENTS.md §1.1 limit, and they change for a different reason: a statement change, not a scheduling change.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability experimental

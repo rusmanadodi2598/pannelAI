@@ -5,15 +5,10 @@
 // @file      internal/dataplane/stop_claude_answer_test.go
 // @for       The caller's `stop_sequences` on a one-body Anthropic answer.
 // @uses      strings, testing, internal/schema.
-// @reason    The single-body shape is where a caller reads the whole answer at once,
-//
-//	so the cut has to name the marker it honoured and leave a `tool_use`
-//	block alone. Measured live on 2026-09-30 through /api/v1/messages: the
-//	answer came back `A STOPHERE B` with `stop_reason: end_turn`.
-//
+// @reason    The single-body shape is where a caller reads the whole answer at once, so the cut has to name the marker it honoured and leave a `tool_use` block alone. Measured live on 2026-09-30 through /api/v1/messages: the answer came back `A STOPHERE B` with `stop_reason: end_turn`.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 

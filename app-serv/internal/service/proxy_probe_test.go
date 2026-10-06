@@ -3,16 +3,10 @@
 // @file      internal/service/proxy_probe_test.go
 // @for       The two proxy test routes' use case (SPEC-API-001 §7.11).
 // @uses      testing, context, errors, internal/domain.
-// @reason    §7.11's test is a diagnostic, so the tests pin three properties an
-//
-//	operator depends on: the stored status matches the answer, a refused
-//	destination is reported as a failure rather than a pass (OWASP A10,
-//	fail closed), and the probe receives the unsealed password while the
-//	stored row keeps only the sealed form.
-//
+// @reason    §7.11's test is a diagnostic, so the tests pin three properties an operator depends on: the stored status matches the answer, a refused destination is reported as a failure rather than a pass (OWASP A10, fail closed), and the probe receives the unsealed password while the stored row keeps only the sealed form.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -28,7 +22,7 @@ import (
 // agree, and the probe is handed the unsealed password.
 func TestProxyService_Test(t *testing.T) {
 	ctx := context.Background()
-	prober := &stubProxyProber{result: ProxyProbeResult{State: domain.EndpointTestOK, LatencyMS: 18}}
+	prober := &stubProxyProber{result: ProxyProbeResult{State: string(domain.EndpointTestOK), LatencyMS: 18}}
 	service, repo := newProxyFixture(t, prober)
 	created, err := service.Create(ctx, proxyDraft("pool", "proxy.example.com", 3128))
 	if err != nil {
@@ -39,7 +33,7 @@ func TestProxyService_Test(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Test() error = %v", err)
 	}
-	if status.State != domain.EndpointTestOK || status.LatencyMS != 18 || status.CheckedAt == nil {
+	if status.State != string(domain.EndpointTestOK) || status.LatencyMS != 18 || status.CheckedAt == nil {
 		t.Fatalf("Test() status = %+v, want ok/18 with a timestamp", status)
 	}
 	if len(prober.targets) != 1 {
@@ -57,7 +51,7 @@ func TestProxyService_Test(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetByID() error = %v", err)
 	}
-	if stored.Status().State != domain.EndpointTestOK || stored.Status().LatencyMS != 18 {
+	if stored.Status().State != string(domain.EndpointTestOK) || stored.Status().LatencyMS != 18 {
 		t.Fatalf("stored status = %+v, want the probed result", stored.Status())
 	}
 	if !isSealed(stored.PasswordEncrypted()) {
@@ -70,7 +64,7 @@ func TestProxyService_Test(t *testing.T) {
 func TestProxyService_Test_RefusalIsAResult(t *testing.T) {
 	ctx := context.Background()
 	prober := &stubProxyProber{result: ProxyProbeResult{
-		State: domain.EndpointTestFail, LatencyMS: 0,
+		State: string(domain.EndpointTestFail), LatencyMS: 0,
 		Message: "the proxy address was refused: a private address",
 	}}
 	service, repo := newProxyFixture(t, prober)
@@ -83,7 +77,7 @@ func TestProxyService_Test_RefusalIsAResult(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Test() error = %v, want the refusal reported as a result", err)
 	}
-	if status.State != domain.EndpointTestFail {
+	if status.State != string(domain.EndpointTestFail) {
 		t.Fatalf("Test() state = %q, want fail", status.State)
 	}
 	if status.Message == "" {
@@ -93,7 +87,7 @@ func TestProxyService_Test_RefusalIsAResult(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetByID() error = %v", err)
 	}
-	if stored.Status().State != domain.EndpointTestFail || stored.Status().Message == "" {
+	if stored.Status().State != string(domain.EndpointTestFail) || stored.Status().Message == "" {
 		t.Fatalf("stored status = %+v, want the failure and its reason", stored.Status())
 	}
 }
@@ -113,7 +107,7 @@ func TestProxyService_Test_UnknownStateFailsClosed(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Test() error = %v", err)
 			}
-			if status.State != domain.EndpointTestFail {
+			if status.State != string(domain.EndpointTestFail) {
 				t.Fatalf("Test() state = %q, want fail for an unrecognized state", status.State)
 			}
 		})
@@ -124,7 +118,7 @@ func TestProxyService_Test_UnknownStateFailsClosed(t *testing.T) {
 // anonymously rather than with an empty credential it never had.
 func TestProxyService_Test_NoPassword(t *testing.T) {
 	ctx := context.Background()
-	prober := &stubProxyProber{result: ProxyProbeResult{State: domain.EndpointTestOK}}
+	prober := &stubProxyProber{result: ProxyProbeResult{State: string(domain.EndpointTestOK)}}
 	service, _ := newProxyFixture(t, prober)
 	created, err := service.Create(ctx, ProxyDraft{
 		Label: "pool", Protocol: domain.ProxyProtocolSOCKS5, Host: "proxy.example.com", Port: 1080,
@@ -166,7 +160,7 @@ func TestProxyService_Test_ProberFailure(t *testing.T) {
 // without writing anything.
 func TestProxyService_TestCandidate(t *testing.T) {
 	ctx := context.Background()
-	prober := &stubProxyProber{result: ProxyProbeResult{State: domain.EndpointTestOK, LatencyMS: 7}}
+	prober := &stubProxyProber{result: ProxyProbeResult{State: string(domain.EndpointTestOK), LatencyMS: 7}}
 	service, repo := newProxyFixture(t, prober)
 
 	status, err := service.TestCandidate(ctx, ProxyTarget{
@@ -176,7 +170,7 @@ func TestProxyService_TestCandidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TestCandidate() error = %v", err)
 	}
-	if status.State != domain.EndpointTestOK || status.LatencyMS != 7 || status.CheckedAt == nil {
+	if status.State != string(domain.EndpointTestOK) || status.LatencyMS != 7 || status.CheckedAt == nil {
 		t.Fatalf("TestCandidate() status = %+v, want ok/7 with a timestamp", status)
 	}
 	if len(prober.targets) != 1 || prober.targets[0].Password != "typed-once" {

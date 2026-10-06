@@ -1,22 +1,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/model_catalog.go
-// @for       PostgreSQL persistence for models_custom (SPEC-API-001 §7.6) and
-//
-//	the driver-error translation the catalog repositories share.
-//
+// @for       PostgreSQL persistence for models_custom (SPEC-API-001 §7.6) and the driver-error translation the catalog repositories share.
 // @uses      github.com/jackc/pgx/v5, internal/domain, encoding/json, time.
-// @reason    A custom model is a row the operator owns and addresses by id, so
-//
-//	it persists per row. The capability set is jsonb because it is
-//	always read and written whole — it is part of the model, not a
-//	table of children — and the driver-error translation lives here
-//	because both catalog files must answer a duplicate with the same
-//	conflict sentinel.
-//
+// @reason    A custom model is a row the operator owns and addresses by id, so it persists per row. The capability set is jsonb because it is always read and written whole, it is part of the model, not a table of children, and the driver-error translation lives here because both catalog files must answer a duplicate with the same conflict sentinel.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 
@@ -46,6 +36,10 @@ func NewModelCatalogRepository(pool *pgxpool.Pool) *ModelCatalogRepository {
 }
 
 // Custom returns every custom model, newest first.
+//
+// The whole table, deliberately: these rows are operator-authored catalog
+// additions, the same set the resolver and the panel listing read in one pass,
+// and §1.7's bounded-N exception applies to a list that only a human grows.
 func (r *ModelCatalogRepository) Custom(ctx context.Context) ([]domain.CustomModel, error) {
 	const q = `
 SELECT id, provider_id, model_id, display_name, capabilities, created_at

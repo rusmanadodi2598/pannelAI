@@ -2,23 +2,11 @@
 //
 // @file      internal/dataplane/engine_forced_stream_incomplete_test.go
 // @for       Folding a Responses stream that ended on the output ceiling.
-// @uses      context, encoding/json, net/http, testing, internal/provider,
-//
-//	internal/registry, internal/schema.
-//
-// @reason    OpenCode Free answers `response.incomplete` whenever a request
-//
-//	stops on max_output_tokens, which the live upstream did on every
-//	short-budget call measured on 2026-09-24. A fold that only read
-//	`response.completed` treated that finished answer as a broken
-//	stream and answered 502 UPSTREAM_ERROR, so a correct answer became
-//	a failure the client could not use. The case lives in its own file
-//	because it pins a terminal-event vocabulary rather than the fold's
-//	shape (AGENTS.md §1.1 keeps each file to one concern).
-//
+// @uses      context, encoding/json, net/http, testing, internal/provider, internal/registry, internal/schema.
+// @reason    OpenCode Free answers `response.incomplete` whenever a request stops on max_output_tokens, which the live upstream did on every short-budget call measured on 2026-09-24. A fold that only read `response.completed` treated that finished answer as a broken stream and answered 502 UPSTREAM_ERROR, so a correct answer became a failure the client could not use. The case lives in its own file because it pins a terminal-event vocabulary rather than the fold's shape (AGENTS.md §1.1 keeps each file to one concern).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 

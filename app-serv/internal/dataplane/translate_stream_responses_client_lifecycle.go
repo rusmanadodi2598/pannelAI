@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_responses_client_lifecycle.go
-// @for       The opening, closing, and numbering of the events a Responses client
-//
-//	stream emits.
-//
+// @for       The opening, closing, and numbering of the events a Responses client stream emits.
 // @uses      internal/schema.
-// @reason    The API numbers every event and requires exactly one opening pair and
-//
-//	one closing event, so the numbering and the once-only guards are one
-//	concern. Keeping it out of the state file holds both inside the
-//	AGENTS.md §1.1 budget.
-//
+// @reason    The API numbers every event and requires exactly one opening pair and one closing event, so the numbering and the once-only guards are one concern. Keeping it out of the state file holds both inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

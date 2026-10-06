@@ -1,19 +1,9 @@
 // Command app-serv adapts the provider registry to the service's runtime lookup
 //
 // @file      cmd/app-serv/egress_guard_assert_test.go
-// @for       The structural assertion that every egress adapter the composition
-//
-//	root builds is bound to the process egress guard.
-//
+// @for       The structural assertion that every egress adapter the composition root builds is bound to the process egress guard.
 // @uses      go/ast, go/parser, go/token, os, path/filepath, strings, testing.
-// @reason    SPEC-API-001 §9.9 and OWASP A01 require every outbound dial to go
-//
-//	through internal/netguard. Review is what enforced that, and review is
-//	what draft 017 §4.8 found insufficient: the guard was wired into the
-//	probe alone while the class of operator-supplied destinations kept
-//	growing. A rule that depends on a reviewer noticing is a rule that
-//	decays, so this reads the composition root's own source and fails
-//	when a dialer is built without a guard parameter.
+// @reason    SPEC-API-001 §9.9 and OWASP A01 require every outbound dial to go through internal/netguard. Review is what enforced that, and review is what draft 017 §4.8 found insufficient: the guard was wired into the probe alone while the class of operator-supplied destinations kept growing. A rule that depends on a reviewer noticing is a rule that decays, so this reads the composition root's own source and fails when a dialer is built without a guard parameter.
 //
 //	It parses source rather than inspecting runtime values because the
 //	thing being asserted is a construction shape, not a behaviour: a
@@ -22,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -104,8 +94,8 @@ func TestEgressAdaptersTakeTheGuard(t *testing.T) {
 // made on a guard.
 //
 // It is separate from the constructor check because the two shapes are both
-// legitimate — newHTTPEndpointProber builds its dialer in the constructor,
-// newProxyProber builds its transport per call inside ProbeProxy — and a check
+// legitimate, newHTTPEndpointProber builds its dialer in the constructor,
+// newProxyProber builds its transport per call inside ProbeProxy, and a check
 // written for one would have missed the other. What must hold either way is that
 // the dialer comes from a guard rather than from a bare net.Dialer.
 func TestEveryDialerInTheCompositionRootIsTheGuards(t *testing.T) {

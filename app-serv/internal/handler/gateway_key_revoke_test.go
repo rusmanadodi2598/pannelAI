@@ -7,7 +7,7 @@
 // @reason    SPEC-API-001 §7.3 makes revocation terminal, so the test asserts the revoke instant is recorded and a second revoke is refused rather than silently succeeding.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 
 package handler

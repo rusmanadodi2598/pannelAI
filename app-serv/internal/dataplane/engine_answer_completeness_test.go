@@ -3,22 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_answer_completeness_test.go
-// @for       The rule that separates an upstream answer cut short by its ceiling
-//
-//	from one that simply had little to say.
-//
+// @for       The rule that separates an upstream answer cut short by its ceiling from one that simply had little to say.
 // @uses      testing, internal/schema (through the answer under test).
-// @reason    A reasoning model that spends the whole output ceiling thinking
-//
-//	answers 200 with an empty body (measured live on
-//	muse-spark-1.3-contributor-free, 2026-09-28), and the combo walk only
-//	leaves a member on an error. Pinning which empty answers count — and
-//	which are still an answer — is what keeps the walk from failing over a
-//	reply the client asked for.
-//
+// @reason    A reasoning model that spends the whole output ceiling thinking answers 200 with an empty body (measured live on muse-spark-1.3-contributor-free, 2026-09-28), and the combo walk only leaves a member on an error. Pinning which empty answers count, and which are still an answer, is what keeps the walk from failing over a reply the client asked for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package dataplane
 

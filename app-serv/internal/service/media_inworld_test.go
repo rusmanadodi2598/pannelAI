@@ -1,23 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_inworld_test.go
-// @for       The Inworld speech adapter: nested body, Basic credential, and the
-//
-//	base64 answer.
-//
-// @uses      internal/dataplane, internal/provider, internal/schema, context,
-//
-//	encoding/base64, encoding/json, testing.
-//
-// @reason    G5 ports one provider adapter at a time. Inworld is the Basic-auth
-//
-//	case, so these rows pin that the credential reaches the declared
-//	header and that a 200 without `audioContent` is a failure rather
-//	than an empty file.
-//
+// @for       The Inworld speech adapter: nested body, Basic credential, and the base64 answer.
+// @uses      internal/dataplane, internal/provider, internal/schema, context, encoding/base64, encoding/json, testing.
+// @reason    G5 ports one provider adapter at a time. Inworld is the Basic-auth case, so these rows pin that the credential reaches the declared header and that a 200 without `audioContent` is a failure rather than an empty file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

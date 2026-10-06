@@ -2,26 +2,15 @@
 //
 // @file      internal/repository/redis/usage_event_bus.go
 // @for       The Redis Pub/Sub transport the usage domain event crosses.
-// @uses      github.com/redis/go-redis/v9, internal/repository, context, errors,
-//
-//	time.
-//
-// @reason    AGENTS.md §2.3 names Redis Pub/Sub as the asynchronous transport
-//
-//	for cross-domain events, and SPEC-API-001 §6 already makes Redis a
-//	required dependency of this process. Pub/Sub is the right primitive
-//	here rather than a list or stream: the event is a notification that
-//	something happened, the durable record of the request is the usage
-//	row, and a consumer that was down should not replay history it never
-//	subscribed to. A stream would add retention and consumer-group state
-//	to solve a problem this event does not have.
+// @uses      github.com/redis/go-redis/v9, internal/repository, context, errors, time.
+// @reason    AGENTS.md §2.3 names Redis Pub/Sub as the asynchronous transport for cross-domain events, and SPEC-API-001 §6 already makes Redis a required dependency of this process. Pub/Sub is the right primitive here rather than a list or stream: the event is a notification that something happened, the durable record of the request is the usage row, and a consumer that was down should not replay history it never subscribed to. A stream would add retention and consumer-group state to solve a problem this event does not have.
 //
 //	The channel name is a constant, so a publisher and a subscriber cannot
 //	disagree about the topic by typo.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package redisrepo
 

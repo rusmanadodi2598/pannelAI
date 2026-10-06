@@ -2,22 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_active_test.go
-// @for       Table-driven tests for the in-flight marker: its invariants, its
-//
-//	wire codec, and the staleness cutoff the live read is bounded by.
-//
+// @for       Table-driven tests for the in-flight marker: its invariants, its wire codec, and the staleness cutoff the live read is bounded by.
 // @uses      encoding/json, strings, testing, time.
-// @reason    The marker is the one value the live drawing's "routing now" claim
-//
-//	rests on (R-36), and it crosses a shared Redis instance, so it is
-//	both a validated aggregate input and an untrusted decode. Each rule
-//	is pinned here: a marker missing its provider would light the wrong
-//	node, and a decoder that accepted a foreign member would put a node
-//	on screen for a value nothing wrote.
-//
+// @reason    The marker is the one value the live drawing's "routing now" claim rests on (R-36), and it crosses a shared Redis instance, so it is both a validated aggregate input and an untrusted decode. Each rule is pinned here: a marker missing its provider would light the wrong node, and a decoder that accepted a foreign member would put a node on screen for a value nothing wrote.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package domain
 

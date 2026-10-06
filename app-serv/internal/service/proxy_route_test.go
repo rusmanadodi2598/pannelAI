@@ -1,20 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy_route_test.go
-// @for       The plan table: what the pool offers a request, in what order,
-//
-//	and what is refused or degraded.
-//
+// @for       The plan table: what the pool offers a request, in what order, and what is refused or degraded.
 // @uses      context, testing, time, internal/domain.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1-D6: the plan is the engine's
-//
-//	one decision, so its table pins every rule the request path leans
-//	on: usability, stable order, parking, the static last resort, the
-//	empty-URL bypass, the malformed-URL refusal, and the exemption.
-//
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1-D6: the plan is the engine's one decision, so its table pins every rule the request path leans on: usability, stable order, parking, the static last resort, the empty-URL bypass, the malformed-URL refusal, and the exemption.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package service
 

@@ -3,15 +3,14 @@
 // @file      internal/service/media_record_stub_test.go
 // @for       The accounting doubles and fixture the media recording tests drive.
 // @uses      internal/dataplane, internal/domain, context, testing.
-// @reason    The recording tests assert field by field, so the recorder doubles
+// @reason    The recording tests assert field by field, so the recorder doubles collect what they were handed rather than rehydrating an aggregate.
 //
-//	collect what they were handed rather than rehydrating an aggregate.
 //	Keeping them beside the fixture leaves the test file itself about the
 //	rules under test, and keeps both files inside the §1.1 budget.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

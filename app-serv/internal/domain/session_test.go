@@ -3,10 +3,7 @@
 // @file      internal/domain/session_test.go
 // @for       Table-driven verification of session token signing and parsing.
 // @uses      testing, internal/domain.
-// @reason    Strict TDD requires generalized coverage of valid and malformed
-//
-//	opaque session credentials before they guard management routes.
-//
+// @reason    Strict TDD requires generalized coverage of valid and malformed opaque session credentials before they guard management routes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

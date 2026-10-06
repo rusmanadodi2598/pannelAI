@@ -1,28 +1,15 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_consume.go
-// @for       The subscriber half of the usage domain event: the production
-//
-//	consumer that mirrors every recorded request into the console ring.
-//
-// @uses      internal/domain, internal/repository, context, log/slog,
-//
-//	runtime/debug, time.
-//
-// @reason    AGENTS.md §2.3 makes an event real only when something consumes it,
-//
-//	and the console ring is the one surface in this process that is
-//	already a stream of lines an operator reads: the gateway's own record
-//	of what it served now reaches it through the event instead of a
-//	second write at the accounting site. That is what makes the seam
-//	observable rather than decorative — if the publisher stops, the
-//	console stops growing, and the panel shows it.
+// @for       The subscriber half of the usage domain event: the production consumer that mirrors every recorded request into the console ring.
+// @uses      internal/domain, internal/repository, context, log/slog, runtime/debug, time.
+// @reason    AGENTS.md §2.3 makes an event real only when something consumes it, and the console ring is the one surface in this process that is already a stream of lines an operator reads: the gateway's own record of what it served now reaches it through the event instead of a second write at the accounting site. That is what makes the seam observable rather than decorative, if the publisher stops, the console stops growing, and the panel shows it.
 //
 //	The consumer deliberately writes nothing durable. The usage row is
 //	the durable record; a subscriber that wrote a second copy would be a
 //	second source of truth for the same request.
 //
-//	RETRY POLICY (AGENTS.md §1.6)
+//	Retry policy (AGENTS.md §1.6)
 //
 //	A receive that times out is idleness, not failure, and costs nothing.
 //	A transport failure backs off exponentially from 250ms to 30s, with
@@ -30,14 +17,14 @@
 //	dead letter, because the subscription is the only state and losing it
 //	means the next attempt rebuilds it.
 //
-//	TERMINATION
+//	Termination
 //
 //	Run returns when its context is cancelled, closing its subscription
 //	on the way out. It owns exactly one goroutine and no others.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

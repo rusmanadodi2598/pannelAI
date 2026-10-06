@@ -2,23 +2,11 @@
 //
 // @file      cmd/app-serv/provider_index_test.go
 // @for       Tests that a stored custom node becomes a routable provider.
-// @uses      testing, context, errors, internal/dataplane, internal/domain,
-//
-//	internal/provider, internal/registry.
-//
-// @reason    SPEC-API-001 §7.4 says a provider node "becomes routable exactly
-//
-//	like a registry provider", and that claim spans three layers: the
-//	domain mints the id, the registry synthesizes the entry from it, and
-//	the resolver routes by it. Each layer's own test can pass while the
-//	seam between them is broken — which is what happened: the domain
-//	minted `pnd_…` ids that the registry refuses to synthesize, so the
-//	overlay failed and fell back to the embedded registry for every
-//	request. Only a test that runs the whole path catches that.
-//
+// @uses      testing, context, errors, internal/dataplane, internal/domain, internal/provider, internal/registry.
+// @reason    SPEC-API-001 §7.4 says a provider node "becomes routable exactly like a registry provider", and that claim spans three layers: the domain mints the id, the registry synthesizes the entry from it, and the resolver routes by it. Each layer's own test can pass while the seam between them is broken, which is what happened: the domain minted `pnd_…` ids that the registry refuses to synthesize, so the overlay failed and fell back to the embedded registry for every request. Only a test that runs the whole path catches that.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package main
 

@@ -3,15 +3,10 @@
 // @file      internal/schema/validator.go
 // @for       The single go-playground/validator engine shared by every request.
 // @uses      go-playground/validator/v10.
-// @reason    AGENTS.md "Stack" names struct-tag validation as one of the two
-//
-//	unavoidable third-party dependencies; constructing it once avoids
-//	re-compiling the rules on every request (validator is not safe to
-//	share while being mutated, so it is read-only after init).
-//
+// @reason    AGENTS.md "Stack" names struct-tag validation as one of the two unavoidable third-party dependencies; constructing it once avoids re-compiling the rules on every request (validator is not safe to share while being mutated, so it is read-only after init).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package schema
 

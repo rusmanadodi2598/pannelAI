@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_event_validate_test.go
-// @for       Table-driven tests for the invariants a usage event shares with the
-//
-//	aggregate it was derived from.
-//
+// @for       Table-driven tests for the invariants a usage event shares with the aggregate it was derived from.
 // @uses      testing, time.
-// @reason    The event is read back from a broker, so its invariants are the
-//
-//	gate that keeps a hostile or truncated payload out of every consumer
-//	(OWASP A08). They are the aggregate's own rules, so they are pinned
-//	once here and the codec's own table relies on them rather than
-//	restating them.
-//
+// @reason    The event is read back from a broker, so its invariants are the gate that keeps a hostile or truncated payload out of every consumer (OWASP A08). They are the aggregate's own rules, so they are pinned once here and the codec's own table relies on them rather than restating them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package domain
 

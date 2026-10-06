@@ -4,7 +4,7 @@
 // Split from `quota-published.test.ts` because the three flags the read gained (`unlimited`,
 // `is_credit_balance`, `recurring`, plus `unit` and `cached`) are a second subject: that file proves the
 // wire keeps amounts as strings and a ceiling as null-versus-zero, this one proves what a card DOES with
-// each of those states. They are the difference between the reference's screen and this one — a credit
+// each of those states. They are the difference between the reference's screen and this one: a credit
 // balance printed as a percentage of a total the provider never claimed, or an unlimited bucket drawn as a
 // spent bar, both read as data while teaching the operator the wrong fact.
 //

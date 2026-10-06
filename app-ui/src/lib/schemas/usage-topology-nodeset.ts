@@ -54,7 +54,7 @@ export function configuredProviders(providers: Provider[]): TopologyNodeEntry[] 
 /**
  * The combos the drawing puts a node on: every one the operator defined, in name order, up to the cap.
  *
- * A combo needs no endpoint and no credential of its own — it is a list of models the gateway resolves —
+ * A combo needs no endpoint and no credential of its own (it is a list of models the gateway resolves)
  * so there is no "configured" test to apply beyond the one the read already made by returning it. Its
  * identity on the wire is its name, because that is the string a client addresses and the string the
  * in-flight marker carries, so `id` and `name` are the same value here rather than two columns that could

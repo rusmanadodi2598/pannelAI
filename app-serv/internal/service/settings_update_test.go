@@ -1,25 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/settings_update_test.go
-// @for       The §7.14 partial PATCH: per-group persistence, the corrupted-row
-//
-//	fallback, and the round-trip the panel depends on.
-//
+// @for       The §7.14 partial PATCH: per-group persistence, the corrupted-row fallback, and the round-trip the panel depends on.
 // @uses      internal/domain, reflect, testing.
-//
-// @reason    SPEC-API-001 §7.14 makes the PATCH the one door every gateway
-//
-//	setting changes through, and §2.1 requires service logic to be
-//	proven beside its implementation: only the groups a patch touched
-//	may be written (concurrent PATCHes must not clobber each other),
-//	the deprecated caveman row must survive a token_saver write
-//	untouched (§7.9), and a stored row that predates a key or does not
-//	decode must fall back to the documented default rather than lock
-//	the panel out of its own settings.
-//
+// @reason    SPEC-API-001 §7.14 makes the PATCH the one door every gateway setting changes through, and §2.1 requires service logic to be proven beside its implementation: only the groups a patch touched may be written (concurrent PATCHes must not clobber each other), the deprecated caveman row must survive a token_saver write untouched (§7.9), and a stored row that predates a key or does not decode must fall back to the documented default rather than lock the panel out of its own settings.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 

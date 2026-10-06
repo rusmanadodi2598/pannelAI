@@ -3,20 +3,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/gateway_key_crud_test.go
-// @for       Integration coverage for the gateway key CRUD, pagination round
-//
-//	trip, and use counter.
-//
+// @for       Integration coverage for the gateway key CRUD, pagination round trip, and use counter.
 // @uses      internal/domain, internal/repository, context, errors, testing, time.
-// @reason    AGENTS.md §2.1 requires repository logic be tested, and the pagination
-//
-//	contract (page and total describing one snapshot) is enforced by
-//	the SQL, not by Go. Run with -tags=integration plus a DSN; a missing
-//	DSN fails rather than skipping (AGENTS.md §2.1).
-//
+// @reason    AGENTS.md §2.1 requires repository logic be tested, and the pagination contract (page and total describing one snapshot) is enforced by the SQL, not by Go. Run with -tags=integration plus a DSN; a missing DSN fails rather than skipping (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package postgres
 

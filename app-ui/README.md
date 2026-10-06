@@ -243,7 +243,7 @@ asks the gateway once per `interval_seconds` until the vendor grants the token.
 
 Two rules shaped the loop. The panel does not call `window.open`, which the reference does: an automatic
 navigation to a third party is a redirect the operator did not ask for, and the address is on screen so they
-can read the host first — the same rule the code flow's authorize link already kept, and recorded as a
+can read the host first, the same rule the code flow's authorize link already kept, and recorded as a
 deliberate deviation in `docs/PORT/README.md` §3. And the loop is one timer re-armed only after an answer
 arrives, never an interval, so an in-flight ask cannot stack a second one behind it; it stops at the
 round's own `expires_in` deadline, when the operator presses Stop waiting, and when the section unmounts.

@@ -7,7 +7,7 @@
 // @reason    The refill and bonus credit types must never merge, and each region must word its own messages.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package quotafetch
 
@@ -189,7 +189,7 @@ func TestCodeBuddy_RefillAndBonusPacksStaySeparate(t *testing.T) {
 // reference asks the registry for `transport.usage.url` and the transport headers,
 // so a declaration moved in the registry has to move the call. The family's built-in
 // stays the fallback for a caller that hands over no entry at all, which is what the
-// vercel entry — the one provider that declares no usage URL — still relies on.
+// vercel entry, the one provider that declares no usage URL, still relies on.
 func TestCodeBuddy_ReadsItsEndpointAndHeadersFromTheEntry(t *testing.T) {
 	var path, agent atomic.Value
 	path.Store("")

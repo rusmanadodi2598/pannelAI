@@ -3,17 +3,10 @@
 // @file      internal/router/envelope.go
 // @for       Restating the mux's own 404 and 405 answers in the §8 envelope.
 // @uses      encoding/json, log/slog, net/http, internal/schema.
-// @reason    SPEC-API-001 §8 gives every management error one shape, and the
-//
-//	mux produces two of them itself: an unknown path and a wrong verb
-//	are answered before any handler runs. Those answers are plain text,
-//	so they are withheld and re-written here. This lives apart from
-//	router.go because it is middleware, not the route table, and because
-//	the route table is already at the §1.1 line budget.
-//
+// @reason    SPEC-API-001 §8 gives every management error one shape, and the mux produces two of them itself: an unknown path and a wrong verb are answered before any handler runs. Those answers are plain text, so they are withheld and re-written here. This lives apart from router.go because it is middleware, not the route table, and because the route table is already at the §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package router
 
@@ -90,10 +83,10 @@ func (rec *statusRecorder) Write(b []byte) (int, error) {
 }
 
 // SetErrorCode forwards an error code to the recorder inside, so the access log
-// can name why the request failed (register G9). The forwarding is explicit
+// can name why the request failed. The forwarding is explicit
 // because Go promotes only the methods of the embedded interface
 // (http.ResponseWriter) and not the extra ones the concrete value behind it
-// carries — without this method a handler's SetErrorCode assertion would fail on
+// carries, without this method a handler's SetErrorCode assertion would fail on
 // the writer it actually receives, and the code would silently stop being logged.
 func (rec *statusRecorder) SetErrorCode(code string) {
 	if recorder, ok := rec.ResponseWriter.(schema.ErrorCodeRecorder); ok {
@@ -101,10 +94,21 @@ func (rec *statusRecorder) SetErrorCode(code string) {
 	}
 }
 
+// RequestID forwards the trace id the same way SetErrorCode forwards the code:
+// Go promotes only the embedded interface's methods, so without this the writer a
+// handler receives would not answer the question, and the handler's own error
+// line would be logged without the id the access log carries.
+func (rec *statusRecorder) RequestID() string {
+	if carrier, ok := rec.ResponseWriter.(schema.RequestIDCarrier); ok {
+		return carrier.RequestID()
+	}
+	return ""
+}
+
 // Flush forwards the flush to the writer inside, because Go promotes only the
 // methods of the embedded interface and not http.Flusher: without this method a
 // stream's `sseSink.Flush()` is a no-op under the chain, and the whole answer
-// arrives as one blob when the handler returns (draft 010 F5). A suppressed
+// arrives as one blob when the handler returns. A suppressed
 // response is never flushed: the flush would commit a status line of its own
 // before envelope() could write the §8 body it is withholding.
 func (rec *statusRecorder) Flush() {

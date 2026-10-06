@@ -1,27 +1,12 @@
 // Command app-serv wires the process-wide egress policy.
 //
 // @file      cmd/app-serv/proxy_route_planner_test.go
-// @for       The guarded planner adapter: a planned request has its destination
-//
-//	validated once, an empty plan does not, and a reported failure
-//	reaches the store.
-//
-// @uses      context, net/netip, testing, time, internal/domain,
-//
-//	internal/netguard, internal/repository, internal/service.
-//
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D8: a proxied request never
-//
-//	dials its destination, so the dialer's guard sees the proxy's address
-//	and the destination check has to happen in the planner, the same
-//	rule the static route applies in egressProxy, re-pinned here because
-//	a wiring change is exactly what could switch the control off. An
-//	empty plan is the shared client's request, whose dialer still
-//	validates at connect time, so the adapter must not double-refuse it.
-//
+// @for       The guarded planner adapter: a planned request has its destination validated once, an empty plan does not, and a reported failure reaches the store.
+// @uses      context, net/netip, testing, time, internal/domain, internal/netguard, internal/repository, internal/service.
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D8: a proxied request never dials its destination, so the dialer's guard sees the proxy's address and the destination check has to happen in the planner, the same rule the static route applies in egressProxy, re-pinned here because a wiring change is exactly what could switch the control off. An empty plan is the shared client's request, whose dialer still validates at connect time, so the adapter must not double-refuse it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package main
 
@@ -62,7 +47,13 @@ func (s *plannerRouteStore) Park(_ context.Context, proxyID string, _ time.Durat
 	return nil
 }
 
-func (s *plannerRouteStore) Parked(context.Context, string) (bool, error) { return false, nil }
+func (s *plannerRouteStore) ParkedAll(_ context.Context, proxyIDs []string) (map[string]bool, error) {
+	parked := make(map[string]bool, len(proxyIDs))
+	for _, id := range proxyIDs {
+		parked[id] = false
+	}
+	return parked, nil
+}
 
 // plannerSettings answers one stored document.
 type plannerSettings struct{ document domain.Settings }

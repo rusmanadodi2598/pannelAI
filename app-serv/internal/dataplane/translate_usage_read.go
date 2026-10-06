@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_usage_read.go
-// @for       Reading an upstream usage object into the OpenAI accounting block,
-//
-//	in whichever format the upstream wrote it.
-//
+// @for       Reading an upstream usage object into the OpenAI accounting block, in whichever format the upstream wrote it.
 // @uses      internal/schema.
-// @reason    Both the non-streamed reader and the two stream states fold usage the
-//
-//	same way, and a private copy per caller is how the two directions
-//	start disagreeing. They live in one file so a new format adds one
-//	reader rather than one per caller.
-//
+// @reason    Both the non-streamed reader and the two stream states fold usage the same way, and a private copy per caller is how the two directions start disagreeing. They live in one file so a new format adds one reader rather than one per caller.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -32,10 +24,10 @@ func claudeUsageFromObject(usage object) schema.MessagesUsage {
 	}
 }
 
-// openAIUsageFromObject reads an OpenAI usage object from a decoded chunk. A
-// null member decodes to a nil object, which is the upstream saying it has no
-// numbers rather than reporting zeros, so it yields nil: publishing a zero
-// usage would send a 0/0 chunk a client reads as measured (draft 021 F2).
+// openAIUsageFromObject reads an OpenAI usage object from a decoded chunk. A null
+// member decodes to a nil object, which is the upstream saying it has no numbers
+// rather than reporting zeros, so it yields nil: publishing a zero usage would send a
+// 0/0 chunk a client reads as measured.
 func openAIUsageFromObject(usage object) *schema.Usage {
 	if usage == nil {
 		return nil
@@ -46,7 +38,7 @@ func openAIUsageFromObject(usage object) *schema.Usage {
 		TotalTokens:      intField(usage, "total_tokens"),
 	}
 	// The details block is read as possibly absent rather than as a gate, because a
-	// vendor may state its cache split only at the usage top level — a call that
+	// vendor may state its cache split only at the usage top level, a call that
 	// reports `cache_creation_input_tokens` with no details block at all still owns
 	// a cache write the panel has to show.
 	details, _ := objectField(usage, "prompt_tokens_details")
@@ -67,18 +59,15 @@ func openAIUsageFromObject(usage object) *schema.Usage {
 	return &parsed
 }
 
-// openAICacheReadCount and openAICacheWriteCount read the two cache splits from
-// every place the OpenAI wire is seen to state them, and answer the one quantity
-// those places describe.
-//
-// The candidate spellings are alternative reports of a single number, never parts
-// of it: codebuddy-intl states its read as `prompt_tokens_details.cached_tokens`
-// while its top-level `cached_tokens` and `cache_read_input_tokens` stay 0
-// (measured 2026-09-30), and the write sits at the top level as
+// openAICacheReadCount and openAICacheWriteCount read the two cache splits from every
+// place the OpenAI wire is seen to state them, and answer the one quantity those
+// places describe. The candidate spellings are alternative reports of a single
+// number, never parts of it: a vendor may state its read only as
+// `prompt_tokens_details.cached_tokens` while its top-level `cached_tokens` and
+// `cache_read_input_tokens` stay 0, and the write only at the top level as
 // `cache_creation_input_tokens` or `prompt_cache_write_tokens` rather than in the
-// details block. Summing the spellings would bill the same token twice, so the
-// first one that carries a number wins, in the order OpenAI documents its own
-// field first.
+// details block. Summing the spellings would bill the same token twice, so the first
+// one that carries a number wins, OpenAI's own documented field first.
 func openAICacheReadCount(usage, details object) int {
 	return firstCounted(
 		usageMember{details, "cached_tokens"},

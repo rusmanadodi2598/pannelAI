@@ -7,7 +7,7 @@
 // @reason    AGENTS.md §2.1 requires a happy path and an auth/error path per route; SPEC-API-001 §4 forbids returning the secret after creation, so the read path must be proven hint-only.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 
 package handler

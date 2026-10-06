@@ -3,16 +3,10 @@
 // @file      internal/service/quota_published_worker.go
 // @for       The background provider poll: sweep the due queue on a tick, ask each account's provider through the existing live read, cache the answer.
 // @uses      context, log/slog, runtime/debug, sync, sync/atomic, time, internal/domain, internal/repository.
-// @reason    The quota screen may not fetch while it is read — one provider call per account
-//
-//	is the N+1 AGENTS.md §1.7 blocks here — and quota_published_cache.go only
-//	answers from a cache somebody fills. This is it; what one answer writes
-//	lives in quota_published_store.go and its intervals in
-//	quota_published_policy.go, split by reason to change.
-//
+// @reason    The quota screen may not fetch while it is read, one provider call per account is the N+1 AGENTS.md §1.7 blocks here, and quota_published_cache.go only answers from a cache somebody fills. This is it; what one answer writes lives in quota_published_store.go and its intervals in quota_published_policy.go, split by reason to change.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
 
@@ -31,7 +25,7 @@ import (
 // publishedPollFetch asks one account's provider at this instant. It is a field rather than a
 // direct call for the reason PublishedQuotaFetcher is one: a sweep is testable with no network
 // and no database. Production binds it to (*QuotaService).livePublishedUsage, which already
-// owns endpoint lookup, the refusals and the credential — this worker touches neither.
+// owns endpoint lookup, the refusals and the credential, this worker touches neither.
 type publishedPollFetch func(ctx context.Context, endpointID string) (PublishedUsage, error)
 
 // publishedEndpointSource is the one endpoint read the scheduler needs, narrow like EndpointFinder.
@@ -96,7 +90,7 @@ func NewQuotaPublishedWorker(deps QuotaPublishedWorkerDeps) (*QuotaPublishedWork
 	}, nil
 }
 
-// Run seeds and sweeps on the interval until ctx is cancelled — this worker's explicit
+// Run seeds and sweeps on the interval until ctx is cancelled, this worker's explicit
 // termination condition (§1.6). The loop's panic boundary is runSupervised.
 func (w *QuotaPublishedWorker) Run(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)

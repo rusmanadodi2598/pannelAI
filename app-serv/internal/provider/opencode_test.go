@@ -2,22 +2,12 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_test.go
-// @for       The OpenCode Free connector: its per-model URL, its request shape,
-//
-//	and the identity headers the free tier gates on.
-//
+// @for       The OpenCode Free connector: its per-model URL, its request shape, and the identity headers the free tier gates on.
 // @uses      testing, net/http, encoding/json, internal/registry.
-// @reason    The OpenCode free tier answers 403 to a request that does not carry
-//
-//	all of three things at once (a streamed body, the bash and read
-//	decoys, and the CLI's own identity headers), and 502 to a request
-//	sent to the host root. Both are upstream rules, not gateway
-//	choices, so they belong to the connector and are pinned here rather
-//	than left to a live probe.
-//
+// @reason    The OpenCode free tier answers 403 to a request that does not carry all of three things at once (a streamed body, the bash and read decoys, and the CLI's own identity headers), and 502 to a request sent to the host root. Both are upstream rules, not gateway choices, so they belong to the connector and are pinned here rather than left to a live probe.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-21
 package provider
 

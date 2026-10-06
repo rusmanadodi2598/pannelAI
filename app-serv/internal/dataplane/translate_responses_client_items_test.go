@@ -3,16 +3,10 @@
 // @file      internal/dataplane/translate_responses_client_items_test.go
 // @for       Table-driven tests for call, result, and reasoning item mapping.
 // @uses      testing, internal/schema.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose item array
-//
-//	assembles one assistant turn from several items and carries tool
-//	results and reasoning as items of their own. Getting that wrong
-//	breaks every tool-using client on the wire, so each rule is pinned
-//	here against a decoded body (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose item array assembles one assistant turn from several items and carries tool results and reasoning as items of their own. Getting that wrong breaks every tool-using client on the wire, so each rule is pinned here against a decoded body (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

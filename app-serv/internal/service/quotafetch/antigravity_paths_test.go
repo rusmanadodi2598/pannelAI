@@ -3,15 +3,10 @@
 // @file      internal/service/quotafetch/antigravity_paths_test.go
 // @for       Pinning that a registry-declared usage path replaces the built-in one.
 // @uses      context, net/http/httptest, strings, testing.
-// @reason    This family is the reason the plumbing exists. It reads three different paths, each
-//
-//	of which the registry may spell under its own key, and the original defect was that only one
-//	of those keys ever reached the fetcher — so a provider that moved a path got an empty URL and
-//	answered nothing while every test stayed green. A built-in-only test cannot see that.
-//
+// @reason    This family is the reason the plumbing exists. It reads three different paths, each of which the registry may spell under its own key, and the original defect was that only one of those keys ever reached the fetcher, so a provider that moved a path got an empty URL and answered nothing while every test stayed green. A built-in-only test cannot see that.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

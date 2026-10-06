@@ -3,24 +3,12 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/applier_test.go
-// @for       The request-path seam's doubles and the cases that must leave a
-//
-//	body untouched, plus the shape rules its output obeys.
-//
-// @uses      context, encoding/json, errors, testing, internal/domain,
-//
-//	internal/registry.
-//
-// @reason    SPEC-API-001 §7.14 stores one mode per provider and §7.15 carries
-//
-//	the suffix; AGENTS.md §2.1 requires the cases proven beside the seam,
-//	because every wrong answer here is silent: a body that gained a
-//	field the client did not ask for, or lost one it did. The precedence
-//	table lives in applier_precedence_test.go (AGENTS.md §1.1).
-//
+// @for       The request-path seam's doubles and the cases that must leave a body untouched, plus the shape rules its output obeys.
+// @uses      context, encoding/json, errors, testing, internal/domain, internal/registry.
+// @reason    SPEC-API-001 §7.14 stores one mode per provider and §7.15 carries the suffix; AGENTS.md §2.1 requires the cases proven beside the seam, because every wrong answer here is silent: a body that gained a field the client did not ask for, or lost one it did. The precedence table lives in applier_precedence_test.go (AGENTS.md §1.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package reasoning
 

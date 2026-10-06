@@ -7,7 +7,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
@@ -60,34 +60,6 @@ func TestCombo_ModelsReturnsACopy(t *testing.T) {
 	models[0] = RehydrateComboModel("mutated", 0)
 	if combo.Refs()[0] != "a/first" {
 		t.Fatalf("Models() exposed the aggregate's own slice: %v", combo.Refs())
-	}
-}
-
-// TestCombo_HasRef finds a reference the combo names, which is how the service
-// tells an alias that points at a combo from a coincidental string match.
-func TestCombo_HasRef(t *testing.T) {
-	combo, err := NewCombo("cmb_test", "daily", ComboFallback, 0, "",
-		[]ComboModel{comboModel(t, "openai/gpt-4o", 1), comboModel(t, "other-combo", 2)}, comboNow)
-	if err != nil {
-		t.Fatalf("NewCombo() error = %v", err)
-	}
-	cases := []struct {
-		name string
-		ref  string
-		want bool
-	}{
-		{"a listed model", "openai/gpt-4o", true},
-		{"a nested combo name", "other-combo", true},
-		{"a surrounding space is trimmed", "  other-combo  ", true},
-		{"an unlisted model", "anthropic/claude", false},
-		{"empty", "", false},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			if got := combo.HasRef(tc.ref); got != tc.want {
-				t.Fatalf("HasRef(%q) = %t, want %t", tc.ref, got, tc.want)
-			}
-		})
 	}
 }
 

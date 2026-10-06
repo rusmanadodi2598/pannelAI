@@ -1,4 +1,4 @@
-# Strict SSRF Rules — Outbound Destination Control
+# Strict SSRF Rules: Outbound Destination Control
 
 ## 1. Role Definition
 

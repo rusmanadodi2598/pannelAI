@@ -3,16 +3,10 @@
 // @file      internal/schema/provider_validate.go
 // @for       The §7.4 stateless credential-check contracts.
 // @uses      standard library only.
-// @reason    Draft 017 §4.6 adds two routes that validate a credential before a
-//
-//	row exists, so the request carries the destination and the credential
-//	together and nothing is stored. The response carries the method that
-//	proved the answer, because "valid" from a models probe and "valid" from
-//	a chat probe are different evidence.
-//
+// @reason    Draft 017 §4.6 adds two routes that validate a credential before a row exists, so the request carries the destination and the credential together and nothing is stored. The response carries the method that proved the answer, because "valid" from a models probe and "valid" from a chat probe are different evidence.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package schema
 

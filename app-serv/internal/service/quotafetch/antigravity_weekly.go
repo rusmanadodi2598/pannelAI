@@ -4,15 +4,10 @@
 // @file      internal/service/quotafetch/antigravity_weekly.go
 // @for       Turns Antigravity's quota summary into its four session and weekly rows.
 // @uses      internal/service/quotafetch, context, encoding/json, net/http, strings
-// @reason    The summary is the only surface that states a window per family rather than per
-//
-//	model, it answers under two different envelopes depending on the release,
-//	and it is best-effort: a summary that fails must never take the per-model
-//	windows down with it.
-//
+// @reason    The summary is the only surface that states a window per family rather than per model, it answers under two different envelopes depending on the release, and it is best-effort: a summary that fails must never take the per-model windows down with it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -89,8 +84,8 @@ type antigravityWeekBucket struct {
 	ResetTime         json.RawMessage `json:"resetTime"`
 }
 
-// fetchAntigravityWeekly reads the summary. It is best-effort by contract: every failure —
-// transport, refusal, an unreadable body — answers no rows and never a message, because the
+// fetchAntigravityWeekly reads the summary. It is best-effort by contract: every failure,
+// transport, refusal, an unreadable body, answers no rows and never a message, because the
 // per-model windows already on the card are the better answer than nothing.
 func fetchAntigravityWeekly(ctx context.Context, creds Credentials, token string, project string) []Quota {
 	endpoint := endpointFor(declaredOr(creds.Endpoints.QuotaSummaryAPIURL, antigravityQuotaSummaryURL), creds.Endpoint)
@@ -149,7 +144,7 @@ func antigravityWeekRow(groupName string, bucket antigravityWeekBucket) (string,
 	if !weekly && !session {
 		return "", Quota{}, false
 	}
-	// A session window disabled upstream is still the session window — the week was hit, and
+	// A session window disabled upstream is still the session window, the week was hit, and
 	// the card should show the 5-hour row empty rather than drop it. A disabled week is gone.
 	disabled := bucket.Disabled != nil && *bucket.Disabled
 	if disabled && weekly {
@@ -179,7 +174,7 @@ func antigravityWeekRow(groupName string, bucket antigravityWeekBucket) (string,
 }
 
 // antigravityBucketWindow classifies a bucket by its window type, falling back to the words
-// the provider puts in its id and name — older releases state no window at all.
+// the provider puts in its id and name, older releases state no window at all.
 func antigravityBucketWindow(bucket antigravityWeekBucket) (bool, bool) {
 	window := strings.ToLower(strings.TrimSpace(bucket.Window))
 	text := strings.ToLower(bucket.BucketID + " " + bucket.DisplayName)

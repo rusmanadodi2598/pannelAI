@@ -3,16 +3,10 @@
 // @file      internal/handler/endpoint_response.go
 // @for       Mapping an endpoint aggregate and its keys onto the §7.5 wire shapes.
 // @uses      internal/domain, internal/schema.
-// @reason    SPEC-API-001 §7.5 fixes what a client sees for an endpoint and a key,
-//
-//	and §6 requires the stored OAuth state to be redacted on read. The
-//	mapping lives here rather than in the schema package because the
-//	schema layer must stay free of domain types (AGENTS.md §1.5), and one
-//	mapper keeps the list, detail, and create responses from drifting.
-//
+// @reason    SPEC-API-001 §7.5 fixes what a client sees for an endpoint and a key, and §6 requires the stored OAuth state to be redacted on read. The mapping lives here rather than in the schema package because the schema layer must stay free of domain types (AGENTS.md §1.5), and one mapper keeps the list, detail, and create responses from drifting.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -78,9 +72,9 @@ func toEndpointResponse(endpoint domain.UpstreamEndpoint, now time.Time, withKey
 		CreatedAt:      schema.Timestamp(endpoint.CreatedAt()),
 		UpdatedAt:      schema.Timestamp(endpoint.UpdatedAt()),
 
-		// The connection-parity fields (draft 017 §4.1b): the operator-settable
+		// The connection-parity fields: the operator-settable
 		// routing values, the served-call run, and the last upstream failure
-		// the data plane recorded (R17).
+		// the data plane recorded.
 		GlobalPriority:      endpoint.GlobalPriority(),
 		DefaultModel:        endpoint.DefaultModel(),
 		ConsecutiveUseCount: endpoint.ConsecutiveUseCount(),
@@ -89,7 +83,7 @@ func toEndpointResponse(endpoint domain.UpstreamEndpoint, now time.Time, withKey
 	if oauth := endpoint.OAuth(); oauth != nil {
 		resp.OAuth = toOAuthResponse(oauth)
 	}
-	if test := endpoint.TestStatus(); test.State != "" {
+	if test := endpoint.TestStatus(); test.Recorded() {
 		resp.TestStatus = toTestStatusResponse(test)
 	}
 	if code, message, at := endpoint.LastError(); code != "" {
@@ -110,10 +104,10 @@ func toEndpointResponse(endpoint domain.UpstreamEndpoint, now time.Time, withKey
 // toAccountResponse renders the non-secret account identity.
 func toAccountResponse(account domain.EndpointAccount) schema.EndpointAccountResponse {
 	return schema.EndpointAccountResponse{
-		Name:        account.Name,
-		Email:       account.Email,
-		MachineID:   account.MachineID,
-		WorkspaceID: account.WorkspaceID,
+		Name:        account.Name(),
+		Email:       account.Email().String(),
+		MachineID:   account.MachineID(),
+		WorkspaceID: account.WorkspaceID(),
 	}
 }
 
@@ -124,18 +118,18 @@ func toAccountResponse(account domain.EndpointAccount) schema.EndpointAccountRes
 // against the provider.
 func toOAuthResponse(credential *domain.OAuthCredential) *schema.EndpointOAuthResponse {
 	resp := &schema.EndpointOAuthResponse{
-		Scopes:          credential.Scopes,
-		ProjectID:       credential.ProjectID,
-		AccountID:       credential.AccountID,
-		AccountEmail:    credential.AccountEmail,
-		HasAccessToken:  credential.AccessTokenEncrypted != "",
-		HasRefreshToken: credential.RefreshTokenEncrypted != "",
+		Scopes:          credential.Scopes(),
+		ProjectID:       credential.ProjectID(),
+		AccountID:       credential.AccountID(),
+		AccountEmail:    credential.AccountEmail().String(),
+		HasAccessToken:  credential.AccessTokenEncrypted() != "",
+		HasRefreshToken: credential.HasRefreshToken(),
 	}
-	if credential.ExpiresAt != nil {
-		resp.ExpiresAt = ptr(schema.Timestamp(*credential.ExpiresAt))
+	if expires := credential.ExpiresAt(); expires != nil {
+		resp.ExpiresAt = ptr(schema.Timestamp(*expires))
 	}
-	if credential.LastRefreshAt != nil {
-		resp.LastRefreshAt = ptr(schema.Timestamp(*credential.LastRefreshAt))
+	if refreshed := credential.LastRefreshAt(); refreshed != nil {
+		resp.LastRefreshAt = ptr(schema.Timestamp(*refreshed))
 	}
 	return resp
 }
@@ -153,12 +147,12 @@ func toEndpointErrorResponse(code, message string, at *time.Time) *schema.Endpoi
 // toTestStatusResponse renders the last connectivity result.
 func toTestStatusResponse(status domain.EndpointTestStatus) *schema.EndpointTestStatusResponse {
 	resp := &schema.EndpointTestStatusResponse{
-		State:     status.State,
-		LatencyMS: status.LatencyMS,
-		Message:   status.Message,
+		State:     string(status.State()),
+		LatencyMS: status.LatencyMS(),
+		Message:   status.Message(),
 	}
-	if status.CheckedAt != nil {
-		resp.CheckedAt = ptr(schema.Timestamp(*status.CheckedAt))
+	if checked := status.CheckedAt(); checked != nil {
+		resp.CheckedAt = ptr(schema.Timestamp(*checked))
 	}
 	return resp
 }

@@ -1,22 +1,12 @@
 // Command app-serv keeps the runtime provider overlay for a short window.
 //
 // @file      cmd/app-serv/provider_index_cache_test.go
-// @for       The overlay cache: one node read per TTL window, the last good
-//
-//	overlay served through a store failure, and invalidation forcing a
-//	rebuild the moment a node write lands.
-//
+// @for       The overlay cache: one node read per TTL window, the last good overlay served through a store failure, and invalidation forcing a rebuild the moment a node write lands.
 // @uses      internal/domain, internal/registry, context, sync, testing, time.
-// @reason    The overlay was rebuilt on every lookup — one full node query plus
-//
-//	a registry rebuild per request (draft 042 R06). The cache must still
-//	serve a node the operator just created (the adapter's founding
-//	property), so the window is asserted with an injected clock and the
-//	write path is pinned to invalidate.
-//
+// @reason    The overlay was rebuilt on every lookup, one full node query plus a registry rebuild per request (draft 042 R06). The cache must still serve a node the operator just created (the adapter's founding property), so the window is asserted with an injected clock and the write path is pinned to invalidate.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package main
 

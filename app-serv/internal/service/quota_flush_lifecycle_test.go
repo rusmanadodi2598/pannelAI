@@ -1,20 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush_lifecycle_test.go
-// @for       Tests for the flush worker's lifecycle: the single-flight guard
-//
-//	across its two goroutines, and its termination on context cancellation.
-//
+// @for       Tests for the flush worker's lifecycle: the single-flight guard across its two goroutines, and its termination on context cancellation.
 // @uses      context, sync, sync/atomic, testing, time.
-// @reason    AGENTS.md §1.6 forbids a fire-and-forget goroutine and requires a
-//
-//	recovered goroutine; this worker holds retry state across calls, so
-//	the guard is asserted under -race rather than argued (draft 005 F9
-//	split the original 300-line flusher test, lifecycle cases here).
-//
+// @reason    AGENTS.md §1.6 forbids a fire-and-forget goroutine and requires a recovered goroutine; this worker holds retry state across calls, so the guard is asserted under -race rather than argued (draft 005 F9 split the original 300-line flusher test, lifecycle cases here).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 

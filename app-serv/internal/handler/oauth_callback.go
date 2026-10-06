@@ -1,26 +1,17 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/oauth_callback.go
-// @for       The public OAuth callback: the browser redirect and the headless
+// @for       The public OAuth callback: the browser redirect and the headless JSON answer (SPEC-API-001 §7.4).
+// @uses      internal/domain, internal/schema, internal/service, net/http, net/url, strings.
+// @reason    §7.4 makes this the one route a provider's browser redirect can reach, so it cannot require a session, and it must answer two audiences with one handler: a browser that needs to land back in the panel, and a headless caller that asked for JSON with Accept.
 //
-//	JSON answer (SPEC-API-001 §7.4).
-//
-// @uses      internal/domain, internal/schema, internal/service, net/http,
-//
-//	net/url, strings.
-//
-// @reason    §7.4 makes this the one route a provider's browser redirect can
-//
-//	reach, so it cannot require a session, and it must answer two
-//	audiences with one handler: a browser that needs to land back in
-//	the panel, and a headless caller that asked for JSON with Accept.
 //	The browser branch also has to choose a redirect origin without
 //	trusting the request, which is why the configured base URL wins over
 //	anything the flow staged.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -82,7 +73,7 @@ func connectResult(connect service.OAuthConnect) schema.OAuthConnectResult {
 		EndpointID:   connect.Endpoint.ID(),
 		ProviderID:   connect.Endpoint.ProviderID(),
 		Label:        connect.Endpoint.Label(),
-		AccountEmail: connect.Endpoint.Account().Email,
+		AccountEmail: connect.Endpoint.Account().Email().String(),
 		TokenHint:    connect.TokenHint,
 		Created:      connect.Created,
 	}

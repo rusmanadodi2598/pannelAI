@@ -3,24 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_usage_read_test.go
-// @for       Reading the cache split out of an upstream usage object, in every
-//
-//	spelling the OpenAI wire is seen to use.
-//
+// @for       Reading the cache split out of an upstream usage object, in every spelling the OpenAI wire is seen to use.
 // @uses      testing, internal/schema.
-// @reason    This reader is the single funnel for six call sites, and the panel's
-//
-//	cache tiles are its only product. Measured live on 2026-09-30, codebuddy-intl
-//	states its read as `prompt_tokens_details.cached_tokens` while its top-level
-//	`cached_tokens` and `cache_read_input_tokens` stay 0, and would state a write
-//	at the top level as `cache_creation_input_tokens` or `prompt_cache_write_tokens`
-//	rather than in the details block. The spellings are alternative reports of ONE
-//	number, so both halves are pinned here: a write that still reads as zero when
-//	it only exists at the top level, and a count never taken twice.
-//
+// @reason    This reader is the single funnel for six call sites, and the panel's cache tiles are its only product. Measured live on 2026-09-30, codebuddy-intl states its read as `prompt_tokens_details.cached_tokens` while its top-level `cached_tokens` and `cache_read_input_tokens` stay 0, and would state a write at the top level as `cache_creation_input_tokens` or `prompt_cache_write_tokens` rather than in the details block. The spellings are alternative reports of ONE number, so both halves are pinned here: a write that still reads as zero when it only exists at the top level, and a count never taken twice.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 

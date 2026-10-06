@@ -2,23 +2,17 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_messages_test.go
-// @for       The Anthropic Messages leaf of the OpenCode connector: the
-// //
-//
-//	anthropic-version header that wire requires.
-//
+// @for       The Anthropic Messages leaf of the OpenCode connector: the anthropic-version header that wire requires.
 // @uses      testing, net/http.
-// @reason    The reference writes anthropic-version on every request whose URL
+// @reason    The reference writes anthropic-version on every request whose URL ends in /messages (the reference's executors/opencode.js:484), and the connector routes a claude-target model to that leaf without it.
 //
-//	ends in /messages (executors/opencode.js:484, commit 2b65c49f), and
-//	the connector routes a claude-target model to that leaf without it.
 //	The header is a property of the wire rather than of a provider, so it
 //	is decided from the URL the connector itself built, and the test pins
 //	that it is written there and nowhere else.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-24
 package provider
 

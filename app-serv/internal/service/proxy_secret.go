@@ -3,13 +3,10 @@
 // @file      internal/service/proxy_secret.go
 // @for       The password sealing helpers the proxy CRUD and probe paths share.
 // @uses      internal/domain.
-// @reason    §7.11 keeps the password write-only, so both the create/update
-// path and the probe path seal and open through the same helpers; they live
-// apart from the CRUD use cases because AGENTS.md §1.1 caps a file at 250 lines.
-//
+// @reason    §7.11 keeps the password write-only, so both the create/update path and the probe path seal and open through the same helpers; they live apart from the CRUD use cases because AGENTS.md §1.1 caps a file at 250 lines.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

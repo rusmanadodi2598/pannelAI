@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/dataplane_record_context_test.go
-// @for       The data-plane recorder's writes outlive the client that asked
-//
-//	for the call, both the served pair and a refusal's single log row.
-//
+// @for       The data-plane recorder's writes outlive the client that asked for the call, both the served pair and a refusal's single log row.
 // @uses      context, testing, internal/dataplane, internal/domain.
-// @reason    F6 was fixed for chat at its call site; the media, embeddings,
-//
-//	and systemone services share this recorder, so the rule lives in
-//	the recorder and these two tests cover every call site. The
-//	doubles refuse a write under a cancelled context the way a database
-//	driver does, and each test's negative control proves they
-//	discriminate before the positive assertion.
-//
+// @reason    F6 was fixed for chat at its call site; the media, embeddings, and systemone services share this recorder, so the rule lives in the recorder and these two tests cover every call site. The doubles refuse a write under a cancelled context the way a database driver does, and each test's negative control proves they discriminate before the positive assertion.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package service
 

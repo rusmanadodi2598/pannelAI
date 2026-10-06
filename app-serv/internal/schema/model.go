@@ -1,22 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/model.go
-// @for       The models catalog contracts: catalog entries, custom models, the
-//
-//	alias set, and the disabled set (SPEC-API-001 §7.6).
-//
+// @for       The models catalog contracts: catalog entries, custom models, the alias set, and the disabled set (SPEC-API-001 §7.6).
 // @uses      go-playground/validator/v10 through shared validation, internal/domain.
-//
-// @reason    AGENTS.md §2.4 requires a typed, validated struct before handler
-//
-//	logic, and §7.6 defines four payloads for one screen. Declaring
-//	them together keeps the merge the panel renders and the writes it
-//	sends describing the same object. The §7.14 level set is read here
-//	because the row it belongs to is projected here.
-//
+// @reason    AGENTS.md §2.4 requires a typed, validated struct before handler logic, and §7.6 defines four payloads for one screen. Declaring them together keeps the merge the panel renders and the writes it sends describing the same object. The §7.14 level set is read here because the row it belongs to is projected here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 

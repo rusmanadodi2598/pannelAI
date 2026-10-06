@@ -2,20 +2,12 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_responses_body_test.go
-// @for       The Responses body rules in one table: the members the connector
-//
-//	sets before a request leaves.
-//
+// @for       The Responses body rules in one table: the members the connector sets before a request leaves.
 // @uses      testing, internal/registry.
-// @reason    Each case is a single member the reference sets, so one table states
-//
-//	them together and a reader sees the whole list at once. Keeping it
-//	apart from the tool_choice and chat-decoy tests also holds both files
-//	inside the AGENTS.md section 1.1 budget.
-//
+// @reason    Each case is a single member the reference sets, so one table states them together and a reader sees the whole list at once. Keeping it apart from the tool_choice and chat-decoy tests also holds both files inside the AGENTS.md section 1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-24
 package provider
 

@@ -4,17 +4,10 @@
 // @file      internal/domain/proxy_protocol.go
 // @for       The proxy protocol set and the host/port value rules §7.11 stores.
 // @uses      net/netip, strings.
-// @reason    The host shape is a domain invariant because the SSRF guard
-//
-//	resolves what it is given — a host that is really a URL would move
-//	the guard's target, and the rule "no scheme, no userinfo, no path"
-//	is what keeps the two in step. It is separate from the aggregate
-//	because AGENTS.md §1.1 caps a file at 250 lines and the aggregate
-//	already carries its own transitions.
-//
+// @reason    The host shape is a domain invariant because the SSRF guard resolves what it is given, a host that is really a URL would move the guard's target, and the rule "no scheme, no userinfo, no path" is what keeps the two in step. It is separate from the aggregate because AGENTS.md §1.1 caps a file at 250 lines and the aggregate already carries its own transitions.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package domain
 

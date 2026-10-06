@@ -13,7 +13,7 @@ keputusan owner di depan implementasi.
 | **Scope** | `app-serv/.` saja. `app-ui/.` tidak disentuh pass ini |
 | **Permintaan owner** | Endpoint Combo & Vision: cara mengambil models id dan penanganan models id di sini masih tidak 1:1 dengan REFERENCE. Filtering yang seharusnya ketika penambahan models id adalah dari provider yang saat itu memang aktif (None Global Models ID). Intinya, Add Combo belum bekerja semestinya |
 | **Reference** | `decolua/9router`, checkout `/home/rusmanadodi/apps/9router`, `21583c03` = tag `v0.5.85` (2026-09-22) |
-| **Kaitan** | SPEC-API §7.6, §7.7, §7.8, §7.15; SPEC-UI §6.4; AGENTS.md §1.1–§1.9, §2.2; draft 017 (F2 daftar model node), draft 019 (permukaan panel) |
+| **Kaitan** | SPEC-API §7.6, §7.7, §7.8, §7.15; SPEC-UI §6.4; AGENTS.md §1.1-§1.9, §2.2; draft 017 (F2 daftar model node), draft 019 (permukaan panel) |
 | **Tanggal** | 2026-09-23 (DURING), 2026-09-24 (CLOSED) |
 
 ## 1. Ringkasan
@@ -21,7 +21,7 @@ keputusan owner di depan implementasi.
 Keluhan owner diterjemahkan menjadi pertanyaan yang bisa diukur, dan setiap jawabannya dibandingkan
 dengan reference pada baris yang bisa dibuka ulang. Semua pengukuran di bawah dijalankan hidup
 terhadap gateway yang berjalan (login sesi panel, gateway key sementara; semua baris probe
-dihapus lagi setelah diukur — sisa `combos=0`, `aliases=0`, `vision-adapter` dinonaktifkan kembali,
+dihapus lagi setelah diukur: sisa `combos=0`, `aliases=0`, `vision-adapter` dinonaktifkan kembali,
 gateway key probe dihapus).
 
 **Cara reference mengambil models id (hal yang owner tanyakan pertama):**
@@ -41,17 +41,17 @@ dari provider aktif di picker.
 diperbaiki adalah kesalahan-kesalahan terukur di bawah, yang membuat "Add Combo" gagal persis pada
 nama model yang sah.
 
-**Empat temuan dikerjakan (F1–F4), tiga dicatat sebagai non-finding (F6–F8), satu ditutup bersama
+**Empat temuan dikerjakan (F1-F4), tiga dicatat sebagai non-finding (F6-F8), satu ditutup bersama
 F2 (F5).** Tiga di antaranya cacat HIGH yang menjelaskan "Add Combo belum bekerja semestinya"
 secara langsung: F1 (combo bersarang gagal di runtime padahal diterima di tulis), F2 (ref bentuk
 alias/prefix provider ditolak di tulis padahal router menerimanya), F3 (vision adapter menolak dua
-dari tiga bentuk nama model yang panel tawarkan — akar yang sama dengan F2).
+dari tiga bentuk nama model yang panel tawarkan, akar yang sama dengan F2).
 
 ## 2. Bukti: tiga bentuk nama model, dua yang valid di runtime
 
 Router `app-serv` (`dataplane/resolve.go:91` → `registry.Index.Provider(name)` → `byName`) menerima
 **tiga bentuk** untuk segmen pertama sebuah model string: id (`openai/gpt-4o`), alias registry
-(`cc/claude-sonnet-4-5` — `cc` adalah alias `claude`), dan prefix node (`oczen/big-pickle`).
+(`cc/claude-sonnet-4-5`: `cc` adalah alias `claude`), dan prefix node (`oczen/big-pickle`).
 Terukur hidup: ketiganya mencapai selector (`NO_PROVIDER_AVAILABLE` pada provider yang benar,
 bukan `MODEL_NOT_FOUND`).
 
@@ -74,7 +74,7 @@ ditolak di tulis padahal model itu benar-benar routable.
 
 ## 3. Findings
 
-### 3.1 F1 (HIGH) — combo bersarang diterima di tulis, gagal di runtime
+### 3.1 F1 (HIGH): combo bersarang diterima di tulis, gagal di runtime
 
 **Status: CLOSED.**
 
@@ -87,7 +87,7 @@ POST /chat/completions model=outer                          -> MODEL_NOT_FOUND "
 ```
 
 Penyebabnya bukan validator. `dataplane/resolve_combo.go` (`resolveMember`) memanggil
-`resolveReference` lebih dulu — ref tanpa `/` langsung gagal — lalu mencoba **alias** saja. Combo
+`resolveReference` lebih dulu (ref tanpa `/` langsung gagal) lalu mencoba **alias** saja. Combo
 bersarang tidak pernah dicoba. Bandingkan dengan pemanggilan non-member: `engine.go` memanggil
 `resolver.Resolve(ctx, ref)` penuh untuk tiap member fallback/round-robin, yang **memang** melewati
 jalur combo. Jadi perilakunya tidak konsisten bergantung posisi member:
@@ -126,11 +126,11 @@ POST /combos/{outer}/test                                   -> results[0] {ref:"
 Runtime kini mencapai selector persis seperti member tidak-bersarang, dan test route melaporkan
 provider/model yang ter-resolve.
 
-**Test:** `internal/dataplane/resolve_combo_nested_test.go` (160 baris) — tabel 6 variasi (leading
+**Test:** `internal/dataplane/resolve_combo_nested_test.go` (160 baris): tabel 6 variasi (leading
 member, member belakangan, via alias, rantai satu tingkat, inner kosong, siklus) + dua test
 identitas dan keamanan siklus.
 
-### 3.2 F2 (HIGH) — ref bentuk alias/prefix ditolak di tulis, diterima di routing
+### 3.2 F2 (HIGH): ref bentuk alias/prefix ditolak di tulis, diterima di routing
 
 **Status: CLOSED.**
 
@@ -146,7 +146,7 @@ Sudah dibuktikan di §2. Ini menyentuh jalur tulis yang semuanya membaca `lookup
 | `GET /models/custom?provider_id=` | handler (diabaikan) | diabaikan → **memfilter**, dua arah |
 
 Perhatikan baris terakhir: parameter `?provider_id=` di rute custom **terdokumentasi di SPEC-API
-§7.6 dan CONTRACT YAML sejak P2 tetapi handler-nya mengabaikannya** — drift kontrak yang pass ini
+§7.6 dan CONTRACT YAML sejak P2 tetapi handler-nya mengabaikannya**: drift kontrak yang pass ini
 tutup sekalian. Filter-nya dua arah: baris custom yang tersimpan di bawah prefix node (tulisan yang
 sudah diterima sejak custom node ada) ditemukan oleh bentuk id, dan sebaliknya, karena menyimpan
 nama satu arah akan menyembunyikan setengah baris dari salah satu bentuk.
@@ -154,17 +154,17 @@ nama satu arah akan menyembunyikan setengah baris dari salah satu bentuk.
 **Yang dikerjakan.** Satu aturan untuk semua jalur tulis: **sebuah ref model valid bila router bisa
 meresolvekannya**. Implementasinya di `internal/service/model_catalog_canonical.go`:
 
-1. `catalogKeyFor` — kunci katalog dicoba eksak lebih dulu (ejaan operator), lalu segmen pertama
+1. `catalogKeyFor`: kunci katalog dicoba eksak lebih dulu (ejaan operator), lalu segmen pertama
    di-resolve lewat `index.Provider()` (lookup yang sama dengan router) dan kunci dibangun ulang
    di bawah id kanonik.
 2. `ModelExists`, `validateRefs` (member + judge), `ReplaceAliases` target, dan vision `Replace`
-   semuanya lewat kunci kanonik itu — satu tempat, bukan lima.
+   semuanya lewat kunci kanonik itu, satu tempat, bukan lima.
 3. Ref yang disimpan **tetap apa adanya** (bentuk yang diketik operator), karena router bisa
    meresolve ketiga bentuk; tidak ada rewrite diam-diam.
 4. `matchesCatalogFilter.provider_id` menerima semua ejaan provider (`providerNameSet`: id, alias,
    extra aliases) sehingga `provider_id=cc` menjawab baris yang sama dengan `provider_id=claude`.
 5. `Resolve` (jalur baca) melaporkan ref kanonik, dan `isDisabled` membandingkan kanonik di kedua
-   sisi — pasangan yang didisable di bawah id juga menyembunyikan ejaan alias/prefix model itu.
+   sisi, pasangan yang didisable di bawah id juga menyembunyikan ejaan alias/prefix model itu.
 
 **Keputusan implementasi yang menyimpang dari rencana awal.** Rencana awal draft menulis "baris
 custom node harus tersimpan di bawah id kanonik". Itu **tidak** dikerjakan: mengubah kunci yang
@@ -178,7 +178,7 @@ baris lama tidak ditemukan oleh ejaan apa pun.
 **Test:** `model_catalog_canonical_test.go` + `model_catalog_canonical_filters_test.go`
 (342 baris, dipecah di ambang §1.1) + `model_custom_filter_test.go` di handler (91 baris).
 
-### 3.3 F3 (HIGH) — vision adapter hanya menerima 1 dari 3 bentuk nama
+### 3.3 F3 (HIGH): vision adapter hanya menerima 1 dari 3 bentuk nama
 
 **Status: CLOSED (akar yang sama dengan F2).**
 
@@ -191,12 +191,12 @@ PUT /vision-adapter models=["claude/claude-sonnet-4-5-20250929"]   -> 200
 PUT /vision-adapter models=["openai-compatible-…/claude-fable-5"]  -> 200
 ```
 
-Akar masalahnya sama dengan F2 (satu sumber `lookups`), jadi menutup F2 menutup F3 — terverifikasi
+Akar masalahnya sama dengan F2 (satu sumber `lookups`), jadi menutup F2 menutup F3, terverifikasi
 hidup: `PUT` dengan bentuk alias kini `200`. Satu catatan khusus vision yang tetap: keputusan
 capability tetap pada pola model-id (`registry.VisionCapable`), yang memang keputusan reference
-yang sama (`capabilities.js`) — 1:1, tidak diubah.
+yang sama (`capabilities.js`), 1:1, tidak diubah.
 
-### 3.4 F4 (MEDIUM) — katalog menawarkan model yang tidak bisa dirouting chat
+### 3.4 F4 (MEDIUM): katalog menawarkan model yang tidak bisa dirouting chat
 
 **Status: CLOSED.**
 
@@ -210,8 +210,8 @@ model=black-forest-labs/flux... -> NO_PROVIDER_AVAILABLE (chat selector untuk pr
 ```
 
 Data plane sendiri sudah menolak keduanya dari `GET /api/v1/models` (`catalog.go`:
-`IsChatRoutable()` dan `IsChat()`). Jadi "listed" dan "answerable" — properti yang
-`internal/dataplane/catalog.go` nyatakan sebagai alasan berkas itu ada — pecah justru di jalur
+`IsChatRoutable()` dan `IsChat()`). Jadi "listed" dan "answerable" (properti yang
+`internal/dataplane/catalog.go` nyatakan sebagai alasan berkas itu ada) pecah justru di jalur
 tulis combo. Panel (`CombosTab.svelte:73-76`) membangun saran picker dari `listModelCatalog` penuh,
 jadi picker menawarkan model yang router tolak. Reference tidak punya masalah setara:
 picker-nya LLM-only untuk combo (`ModelSelectModal.js:183-190`, `filterByKind`).
@@ -220,42 +220,42 @@ picker-nya LLM-only untuk combo (`ModelSelectModal.js:183-190`, `filterByKind`).
 plane** (`ChatServable` di `ModelCatalogService`, `chatServable` di file kanonik):
 
 1. Provider `RoutableNeedsConnector` → `VALIDATION_ERROR "provider antigravity speaks antigravity,
-   which the gateway does not translate yet"` — alasan disebut, bukan generik.
+   which the gateway does not translate yet"`. Alasan disebut, bukan generik.
 2. Model `kind` non-chat (image/tts/stt/embedding/...) → `VALIDATION_ERROR "model ... is a media
    model (image), not a chat model"`.
 3. Kontrol benign: model chat yang dideklarasikan, model tak-dideklarasikan di provider
-   passthrough, dan baris custom di provider chat semuanya tetap diterima — aturan tidak boleh
+   passthrough, dan baris custom di provider chat semuanya tetap diterima. Aturan tidak boleh
    melebar sampai menolak yang routing terima.
 4. Katalog manajemen **tidak** difilter (ia memang katalog penuh; layar provider detail
-   membutuhkan baris media) — yang difilter adalah kesepakatan tulis; `kind` sudah tersaji di
+   membutuhkan baris media), yang difilter adalah kesepakatan tulis; `kind` sudah tersaji di
    baris katalog sehingga panel bisa menyaring sendiri.
 
 Kontrak diperbarui: SPEC-API §7.7 (POST) dan §7.8 (PUT) menyebut aturan servable + bentuk nama;
-changelog 2026-09-23 dicatat. CONTRACT YAML tidak berubah bentuk (validasi pesan, bukan schema) —
-gate openapi `-check` lulus tanpa regenerasi.
+changelog 2026-09-23 dicatat. CONTRACT YAML tidak berubah bentuk (validasi pesan, bukan schema).
+Gate openapi `-check` lulus tanpa regenerasi.
 
 **Verifikasi hidup (sesudah):** dua pesan penolakan di atas terukur persis; `cc/...` dan
 `oczen/...` tetap 201 (kontrol benign).
 
-**Test:** `combo_routable_test.go` (206 baris) — tabel 4 penolakan (member/judge ×
+**Test:** `combo_routable_test.go` (206 baris): tabel 4 penolakan (member/judge ×
 translator/media) + kontrol benign 2 varian + penolakan vision.
 
-### 3.5 F5 (MEDIUM) — bentuk prefix pada model node
+### 3.5 F5 (MEDIUM): bentuk prefix pada model node
 
 **Status: CLOSED bersama F2.** Model node kini bisa dirujuk dengan bentuk id maupun prefix di
 semua jalur tulis, dan kedua bentuk memfilter katalog dengan benar. Catatan pemetaan yang tersisa:
 reference menyuguhkan model node dengan **prefix** di picker (`ModelSelectModal.js:262-266`), dan
-panel `app-ui` menawarkan bentuk id dari katalog — keduanya kini valid, jadi selisih ini turun
+panel `app-ui` menawarkan bentuk id dari katalog. Keduanya kini valid, jadi selisih ini turun
 menjadi pilihan ejaan, bukan cacat.
 
-### 3.6 F6 (LOW) — test route combo
+### 3.6 F6 (LOW): test route combo
 
 **Non-finding.** `POST /combos/{id}/test` menjawab `results[].error` per member dengan error code
 resolver; tidak ada padanan reference yang perlu disamakan (reference tidak punya route test).
 Diperbaiki secara tidak langsung oleh F1: member bersarang kini ter-resolve di probe juga
 (terukur: probe atas combo luar melaporkan `provider_id`/`model_id` dari combo inner).
 
-### 3.7 F7 (LOW) — provider `no_auth` tanpa endpoint
+### 3.7 F7 (LOW): provider `no_auth` tanpa endpoint
 
 **Non-finding, dicatat.** Combo dengan member provider `no_auth` (mis. `opencode`) diterima di
 tulis; routing menjawab `NO_PROVIDER_AVAILABLE` sampai operator membuat satu baris endpoint tanpa
@@ -265,7 +265,7 @@ Ini selisih desain §7.5/§7.15 yang sudah tertulis (registry-driven, bukan conn
 drift. Tidak dikerjakan: mengubah jalur seleksi untuk 2 dari 94 provider bukan bagian keluhan
 owner.
 
-### 3.8 F8 (LOW) — bentuk GET vision adapter
+### 3.8 F8 (LOW): bentuk GET vision adapter
 
 **Non-finding.** `GET /vision-adapter` mengembalikan `{enabled, round_robin, models, updated_at}`;
 reference membaca konfigurasi yang sama dari `/api/settings` (`capacityAdapter`). Wire-nya beda
@@ -284,7 +284,7 @@ Semuanya dijalankan pada working tree akhir:
 | `staticcheck ./...` (+ tagged) | bersih |
 | `golangci-lint run` | **0 issues** |
 | `scrypts/gates/go-headers.sh` | **815** berkas Go ber-header lengkap |
-| `scrypts/gates/go-lint.sh` | lulus; satu band 220–250: `repository/postgres/quota.go` 222 — **milik pass kuota yang berjalan bersamaan**, bukan berkas pass ini |
+| `scrypts/gates/go-lint.sh` | lulus; satu band 220-250: `repository/postgres/quota.go` 222, **milik pass kuota yang berjalan bersamaan**, bukan berkas pass ini |
 | `scrypts/gates/contract-openapi.sh` | dokumen tersaji = YAML (tidak ada regenerasi yang perlu) |
 | `scrypts/gates/contract-drift.sh` | 11 kode error sepakat |
 | `scrypts/gates/secrets.sh` | PASS |
@@ -300,15 +300,15 @@ ambang §1.1 (`model_catalog_canonical_test.go` + `model_catalog_canonical_filte
   `app-serv` memvalidasi di tulis (waktu tulis) atas keputusan §7.7 yang tertulis. Pass ini tidak
   membalik keputusan itu; yang diperbaiki adalah kesepakatan bentuk nama (F2) supaya validasi
   tulis tidak menolak nama yang router terima. "Filter by active provider" adalah lapisan picker
-  panel (`app-ui`) — dicatat sebagai pekerjaan untuk pass `app-ui` berikutnya: picker combo panel
+  panel (`app-ui`), dicatat sebagai pekerjaan untuk pass `app-ui` berikutnya: picker combo panel
   sebaiknya hanya menawarkan provider yang punya endpoint aktif (atau no_auth), seperti
   `ModelSelectModal.js` reference.
 - **`comboStrategies` per-combo di settings** (reference `settingsRepo` + `chat.js:99-101`):
-  `app-serv` menyimpan strategi per combo di kolomnya sendiri — 1:1 kemampuan, bentuk beda atas
+  `app-serv` menyimpan strategi per combo di kolomnya sendiri, 1:1 kemampuan, bentuk beda atas
   keputusan §7.7. Tidak diubah.
 - **Presets** (`/api/combos/presets`, sumber cursor/claude): fitur reference yang SPEC-API §7.7
   tidak spesifikasikan. Tidak dikerjakan (YAGNI; menunggu permintaan eksplisit).
-- **Normalisasi kunci baris custom** (id kanonik di penyimpanan): lihat keputusan di §3.2 — filter
+- **Normalisasi kunci baris custom** (id kanonik di penyimpanan): lihat keputusan di §3.2. Filter
   dua arah dipilih daripada migration.
 
 ## 6. Keputusan yang diambil pass ini (ruling)
@@ -316,8 +316,8 @@ ambang §1.1 (`model_catalog_canonical_test.go` + `model_catalog_canonical_filte
 1. **F4 dikerjakan tanpa menunggu jawaban §6 versi DURING.** Menerima member yang runtime tolak
    adalah cacat terukur, bukan pilihan desain; menunggu akan meninggalkan picker yang menawarkan
    model gagal. Biaya bila salah: operator yang sengaja ingin combo di provider connector-only
-   harus menunggu connector itu ada — itu jujur, bukan kehilangan.
-2. **Presets dicatat, tidak dibangun** — di luar keluhan owner, tidak ada baris SPEC-API.
+   harus menunggu connector itu ada. Itu jujur, bukan kehilangan.
+2. **Presets dicatat, tidak dibangun**: di luar keluhan owner, tidak ada baris SPEC-API.
 3. **Filter dua arah, bukan normalisasi penyimpanan** (§3.2).
 
 ## 7. Pass perbaikan ulasan (2026-09-24)
@@ -328,16 +328,16 @@ gerbang dijalankan ulang:
 
 | # | Temuan ulasan | Perbaikan | Bukti |
 |---|---|---|---|
-| **C1** Critical | Resolusi combo bersarang eksponensial: guard kedalaman membatasi panjang rantai, bukan pekerjaan; pohon biner kedalaman 8 terukur 1.277 lookup, 16 terukur 262.141 | Memo per-resolusi (`resolveState`, dibuat per request, tidak pernah dibagikan — Resolver tetap aman konkuren) + `comboExpansionLimit` 256 sebagai pagar | Pohon gagal kedalaman 8: 31 lookup (dari 1.277). Live: akar 61 combo bersarang terlayani 0.23 dtk; graph yang melebihi batas berhenti MODEL_NOT_FOUND |
+| **C1** Critical | Resolusi combo bersarang eksponensial: guard kedalaman membatasi panjang rantai, bukan pekerjaan; pohon biner kedalaman 8 terukur 1.277 lookup, 16 terukur 262.141 | Memo per-resolusi (`resolveState`, dibuat per request, tidak pernah dibagikan: Resolver tetap aman konkuren) + `comboExpansionLimit` 256 sebagai pagar | Pohon gagal kedalaman 8: 31 lookup (dari 1.277). Live: akar 61 combo bersarang terlayani 0.23 dtk; graph yang melebihi batas berhenti MODEL_NOT_FOUND |
 | **I2** Important | `chatServable` salah dua arah: menolak id tak-terdeklarasi di provider passthrough (router melayaninya), menerima baris custom di provider non-passthrough (router menolaknya) | Aturan ditulis ulang dalam kata router: `ResolveParts` melayani model terdeklarasi, id bebas di provider passthrough, dan menolak sisanya | `openrouter/anything-at-all` kini 201 (terukur hidup); `openai/ghost-model` ditolak dengan alasan |
 | **I3** Important | Alias melewati aturan servability: alias ke model media diterima, lalu combo beranggotakan alias itu disimpan | `validateRefs` deref target alias sebelum menilai; alias yang menunjuk combo tetap diterima (combo dilayani anggota-anggotanya) | `pic → flux-kontext-max` lalu combo `pic` ditolak "is a media model (image)" |
-| **I4** Important | Id yang di-shadow alias provider lain dinilai dari provider yang salah | Tabel nama dibangun alias-dulu — aturan router sendiri (`load.go`): alias mengalahkan id | Test `shadowed/hidden` menyimpan karena router me-resolve `shadowed` ke pemilik alias (passthrough) |
+| **I4** Important | Id yang di-shadow alias provider lain dinilai dari provider yang salah | Tabel nama dibangun alias-dulu, aturan router sendiri (`load.go`): alias mengalahkan id | Test `shadowed/hidden` menyimpan karena router me-resolve `shadowed` ke pemilik alias (passthrough) |
 | **I5** Important | Filter katalog memanggil `Provider()` per baris → N+1 pembacaan node-list di produksi | Tabel nama dibangun sekali per request dari satu `All()`; komentar yang keliru ("sekali per filter") dibetulkan | `countingIndex` membatasi `Provider()` ≤2 per baca terfilter |
-| **M6–M9** Minor | `isDisabled` satu arah; `Update` menerima self-reference; siklus alias tanpa batas; filter custom over-match | `isDisabled` dua arah penuh; self-reference ditolak di tulis (`a combo cannot list itself`); `aliasHopLimit` 8; filter custom memakai tabel nama | Masing-masing ada test tabel |
+| **M6-M9** Minor | `isDisabled` satu arah; `Update` menerima self-reference; siklus alias tanpa batas; filter custom over-match | `isDisabled` dua arah penuh; self-reference ditolak di tulis (`a combo cannot list itself`); `aliasHopLimit` 8; filter custom memakai tabel nama | Masing-masing ada test tabel |
 
 Tambahan yang menyertai: `ReplaceDisabled` kini menerima semua ejaan (konsisten F2), dan pesan
 penolakan non-passthrough kini menyebut alasannya ("does not pass model ids through, and model X is
-not declared"), bukan generik "does not resolve" — tiga pin test lama diperbarui ke pesan baru.
+not declared"), bukan generik "does not resolve". Tiga pin test lama diperbarui ke pesan baru.
 
 ## 8. Status final (CLOSED 2026-09-24)
 

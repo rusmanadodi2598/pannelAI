@@ -3,23 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_responses_client_request.go
-// @for       Responses API request to OpenAI chat request translation, for a
-//
-//	client that called POST /api/v1/responses.
-//
+// @for       Responses API request to OpenAI chat request translation, for a client that called POST /api/v1/responses.
 // @uses      internal/schema.
-// @reason    SPEC-API-001 §7.15 serves the Responses wire and §8 refuses a format
-//
-//	the gateway cannot translate, so a client on that wire has to reach
-//	any resolved provider. The reference implements this direction as a
-//	pure function (openaiResponsesToOpenAIRequest,
-//	open-sse/translator/request/openai-responses.js), so this is one
-//	too: no clock, no I/O, no package state. The item-level rules live
-//	in translate_responses_client_items.go.
-//
+// @reason    SPEC-API-001 §7.15 serves the Responses wire and §8 refuses a format the gateway cannot translate, so a client on that wire has to reach any resolved provider. The reference implements this direction as a pure function (openaiResponsesToOpenAIRequest, open-sse/translator/request/openai-responses.js), so this is one too: no clock, no I/O, no package state. The item-level rules live in translate_responses_client_items.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

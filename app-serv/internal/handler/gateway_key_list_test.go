@@ -7,7 +7,7 @@
 // @reason    SPEC-API-001 §4 fixes the meta block (page, per_page, total) and the 100 cap; these cases cover defaults, mid-page, past-the-end, and clamped values so the bound is enforced rather than assumed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 
 package handler
@@ -25,7 +25,7 @@ import (
 
 // TestGatewayKey_List_Pagination verifies the meta block and that slicing
 // follows the requested page. per_page above the cap is a refusal rather than
-// a clamp (draft 010 F6, owner decision D3), and that refusal is pinned in
+// a clamp, and that refusal is pinned in
 // TestGatewayKey_List_InvalidPage beside the other out-of-range values.
 func TestGatewayKey_List_Pagination(t *testing.T) {
 	h, repo := newTestHandler(t)

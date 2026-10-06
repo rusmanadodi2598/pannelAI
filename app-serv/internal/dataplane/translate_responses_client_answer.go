@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_responses_client_answer.go
-// @for       Building the Responses answer a client on /api/v1/responses
-//
-//	receives, whichever format the upstream wrote it in.
-//
+// @for       Building the Responses answer a client on /api/v1/responses receives, whichever format the upstream wrote it in.
 // @uses      encoding/json, strings, internal/schema.
-// @reason    SPEC-API-001 §7.15 serves the Responses wire, so the answer has to
-//
-//	be assembled rather than forwarded whenever the resolved provider
-//	speaks another format. One builder folds the pivot form the
-//	translators already produce, which is what keeps three upstream
-//	formats from becoming three answer builders.
-//
+// @reason    SPEC-API-001 §7.15 serves the Responses wire, so the answer has to be assembled rather than forwarded whenever the resolved provider speaks another format. One builder folds the pivot form the translators already produce, which is what keeps three upstream formats from becoming three answer builders.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

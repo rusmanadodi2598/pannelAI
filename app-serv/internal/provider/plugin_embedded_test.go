@@ -2,21 +2,12 @@
 // upstream provider.
 //
 // @file      internal/provider/plugin_embedded_test.go
-// @for       The connector gap report and URL resolution driven against the
-//
-//	REAL embedded registry, not a fixture.
-//
+// @for       The connector gap report and URL resolution driven against the REAL embedded registry, not a fixture.
 // @uses      testing, strings, internal/registry.
-// @reason    A lookup asserted only against synthetic providers proves the
-//
-//	lookup, not the data it will meet. A provider that is listed but
-//	unanswerable is a routing failure waiting for traffic, so both the
-//	report a maintainer greps and the URL every entry resolves are
-//	measured over the document the binary embeds.
-//
+// @reason    A lookup asserted only against synthetic providers proves the lookup, not the data it will meet. A provider that is listed but unanswerable is a routing failure waiting for traffic, so both the report a maintainer greps and the URL every entry resolves are measured over the document the binary embeds.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-26
 package provider
 
@@ -84,7 +75,7 @@ func TestDefault_EmbeddedProvidersAllResolve(t *testing.T) {
 		if connector.ProviderID() != entry.ID {
 			t.Fatalf("connector for %s reports id %s", entry.ID, connector.ProviderID())
 		}
-		url, err := connector.Endpoint(Request{Provider: entry}, Credential{APIKey: "sk-x"})
+		url, err := connector.Endpoint(Request{Provider: entry}, Credential{apiKey: "sk-x"})
 		if entry.Transport.BaseURL == "" && len(entry.Transport.BaseURLs) == 0 {
 			// A media-only provider legitimately carries no chat URL.
 			if err == nil {

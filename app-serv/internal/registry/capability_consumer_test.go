@@ -3,26 +3,19 @@
 //
 // @file      internal/registry/capability_consumer_test.go
 // @for       The guard that the two capability consumers read one table.
-//
 // @uses      testing.
-// @reason    SPEC-API-001 §7.8 refuses a vision adapter whose model cannot read
-//
-//	images, and §7.6 filters the catalog by the same two names. Draft 017
-//	§4.4 found the consequence of those being two sources: the catalog
-//	answered zero rows while the adapter answered correctly, and neither
-//	was wrong on its own. This test fails when a second table reappears.
-//
+// @reason    SPEC-API-001 §7.8 refuses a vision adapter whose model cannot read images, and §7.6 filters the catalog by the same two names. Draft 017 §4.4 found the consequence of those being two sources: the catalog answered zero rows while the adapter answered correctly, and neither was wrong on its own. This test fails when a second table reappears.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-23
 package registry
 
 import "testing"
 
-// TestCapabilities_OneTableServesBothConsumers pins the property draft 017 §4.4
-// asks for: the vision adapter's predicate and the catalog's resolver are one
-// decision, so the two cannot disagree about a model.
+// TestCapabilities_OneTableServesBothConsumers pins the property both
+// consumers depend on: the vision adapter's predicate and the catalog's
+// resolver are one decision, so the two cannot disagree about a model.
 //
 // This is a guard, not a defect reproduction. It passed the moment
 // capability_resolve.go landed, because VisionCapable delegates to Capabilities;

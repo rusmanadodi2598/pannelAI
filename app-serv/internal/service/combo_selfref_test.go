@@ -1,23 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/combo_selfref_test.go
-// @for       The self-reference and alias-target halves of the combo write
-//
-//	rules: a combo cannot list itself, and an alias member is judged by
-//	whatever its target is.
-//
+// @for       The self-reference and alias-target halves of the combo write rules: a combo cannot list itself, and an alias member is judged by whatever its target is.
 // @uses      internal/domain, context, strings, testing.
-// @reason    A self-reference is the one cycle a write can produce without
-//
-//	touching the database, and an alias hop is how a media or
-//	untranslatable target would otherwise reach a saved member two writes
-//	after the rule that refuses the direct spelling. Both are pinned
-//	here, separated from the servability table at the AGENTS.md §1.1
-//	line limit.
-//
+// @reason    A self-reference is the one cycle a write can produce without touching the database, and an alias hop is how a media or untranslatable target would otherwise reach a saved member two writes after the rule that refuses the direct spelling. Both are pinned here, separated from the servability table at the AGENTS.md §1.1 line limit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 

@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_endpoint_key_reads.go
-// @for       Read helpers for the keys an UpstreamEndpoint owns, including the
-//
-//	selection the router performs.
-//
+// @for       Read helpers for the keys an UpstreamEndpoint owns, including the selection the router performs.
 // @uses      internal/domain (UpstreamKey), sort, time.
-// @reason    The router asks the same two questions on every request ("which key
-//
-//	may I spend" and "which one would you pick"), and the panel shows
-//	the second as its answer to "why did my request fail over". Keeping
-//	both beside the ordering rule is what stops the two answers from
-//	diverging.
-//
+// @reason    The router asks the same two questions on every request ("which key may I spend" and "which one would you pick"), and the panel shows the second as its answer to "why did my request fail over". Keeping both beside the ordering rule is what stops the two answers from diverging.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
@@ -35,8 +26,8 @@ func (e UpstreamEndpoint) Keys() []UpstreamKey {
 
 // Clone returns a copy of the endpoint that owns its key slice.
 //
-// UpstreamEndpoint carries its keys as a slice, so copying the value — which the
-// selection path does for every candidate — shares the key array with the original.
+// UpstreamEndpoint carries its keys as a slice, so copying the value, which the
+// selection path does for every candidate, shares the key array with the original.
 // A health write mutates a key in place, so two copies over one array race. The
 // clone keeps every field and gives the copy its own array.
 func (e UpstreamEndpoint) Clone() UpstreamEndpoint {
@@ -54,26 +45,6 @@ func (e UpstreamEndpoint) Key(id string) UpstreamKey {
 		}
 	}
 	return UpstreamKey{}
-}
-
-// KeyByPriority returns a copy of the key at a priority, or an empty key.
-func (e UpstreamEndpoint) KeyByPriority(priority int) UpstreamKey {
-	for _, key := range e.keys {
-		if key.Priority() == priority {
-			return key
-		}
-	}
-	return UpstreamKey{}
-}
-
-// HasKey reports whether the endpoint owns a key with that id.
-func (e UpstreamEndpoint) HasKey(id string) bool {
-	for _, key := range e.keys {
-		if key.ID() == id {
-			return true
-		}
-	}
-	return false
 }
 
 // ValidKeys returns the keys routing may spend, ordered by priority. A disabled

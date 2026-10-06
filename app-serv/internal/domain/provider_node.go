@@ -2,20 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/provider_node.go
-// @for       The ProviderNode aggregate root: a user-defined OpenAI-compatible
-//
-//	or Anthropic-compatible upstream (SPEC-API-001 §7.4).
-//
+// @for       The ProviderNode aggregate root: a user-defined OpenAI-compatible or Anthropic-compatible upstream (SPEC-API-001 §7.4).
 // @uses      internal/domain (ULID, error constructors), strings.
-// @reason    A node is not an endpoint: it has no credential of its own, and
-//
-//	its prefix becomes a model-string namespace. That namespace rule is
-//	the reason this is an aggregate with its own invariants rather than
-//	a row the endpoint service happens to read.
-//
+// @reason    A node is not an endpoint: it has no credential of its own, and its prefix becomes a model-string namespace. That namespace rule is the reason this is an aggregate with its own invariants rather than a row the endpoint service happens to read.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 

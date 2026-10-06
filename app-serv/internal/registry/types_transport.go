@@ -4,15 +4,10 @@
 // @file      internal/registry/types_transport.go
 // @for       Transport, authentication, retry, and OAuth shapes of a provider.
 // @uses      gopkg.in/yaml.v3 for the two union-typed fields.
-// @reason    SPEC-API-001 §5 defines the registry entry's transport as the
-//
-//	runtime HTTP contract; the reference declares two of its fields
-//	with more than one YAML shape, so those two get an explicit
-//	decoder here instead of a loosened type that hides the union.
-//
+// @reason    SPEC-API-001 §5 defines the registry entry's transport as the runtime HTTP contract; the reference declares two of its fields with more than one YAML shape, so those two get an explicit decoder here instead of a loosened type that hides the union.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 

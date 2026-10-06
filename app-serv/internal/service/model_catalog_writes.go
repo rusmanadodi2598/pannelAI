@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_writes.go
-// @for       The catalog's own write paths: custom models, the alias set, and
-//
-//	the disabled set (SPEC-API-001 §7.6).
-//
+// @for       The catalog's own write paths: custom models, the alias set, and the disabled set (SPEC-API-001 §7.6).
 // @uses      internal/domain, context, strings.
-// @reason    Every write here is validated against the same merged view the read
-//
-//	serves: an alias target must exist, and a disabled pair must name a
-//	catalog model. Keeping the read model and the write rules in one
-//	place is what stops them from drifting, which is the failure mode a
-//	"just insert it" store invites.
-//
+// @reason    Every write here is validated against the same merged view the read serves: an alias target must exist, and a disabled pair must name a catalog model. Keeping the read model and the write rules in one place is what stops them from drifting, which is the failure mode a "just insert it" store invites.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -28,9 +19,9 @@ import (
 
 // Custom returns every custom model, or one provider's when providerID is set.
 //
-// The filter accepts every spelling the provider answers to — its id, its
-// registry alias, or a node prefix — through the same canonical set the catalog
-// filter uses (draft 024 §3.2), so an operator narrowing by alias sees the same
+// The filter accepts every spelling the provider answers to, its id, its
+// registry alias, or a node prefix, through the same canonical set the catalog
+// filter uses, so an operator narrowing by alias sees the same
 // rows the id form shows. An empty value means "no filter", which is distinct
 // from a filter matching nothing.
 func (s *ModelCatalogService) Custom(ctx context.Context, providerID string) ([]domain.CustomModel, error) {
@@ -42,15 +33,13 @@ func (s *ModelCatalogService) Custom(ctx context.Context, providerID string) ([]
 	if trimmed == "" {
 		return models, nil
 	}
-	// The match is two-way because a custom row may carry either spelling: the
-	// write path has accepted the node prefix as a provider_id since custom
-	// nodes existed, so rows stored under `corp` must surface when the filter
-	// names the node's id, and vice versa. Matching only the filter's names
-	// against the row would hide every prefix-stored row from the id form.
+	// The match is two-way because a custom row may carry either spelling: the write path has
+	// accepted the node prefix as a provider_id since custom nodes existed, so rows stored under
+	// the prefix must surface when a filter names the node's id, and vice versa.
 	//
-	// Both directions read one name table, built from a single index snapshot:
-	// in production the index adapter rebuilds the node overlay on every
-	// Provider() call, so a per-row lookup would be one node-list query per row.
+	// Both directions read one name table built from a single index snapshot, because the index
+	// adapter rebuilds the node overlay on every Provider() call and a per-row lookup would be
+	// one node-list query per row (AGENTS.md §1.7).
 	names := providerNames(s.index)
 	target, known := names[trimmed]
 	if !known {
@@ -102,7 +91,7 @@ func (s *ModelCatalogService) RemoveCustom(ctx context.Context, id string) error
 	return s.repo.RemoveCustom(ctx, id)
 }
 
-// Aliases returns the whole alias set.
+// Aliases returns every alias row: no filter, no page, no per-provider slice.
 func (s *ModelCatalogService) Aliases(ctx context.Context) ([]domain.ModelAlias, error) {
 	return s.repo.Aliases(ctx)
 }
@@ -111,7 +100,7 @@ func (s *ModelCatalogService) Aliases(ctx context.Context) ([]domain.ModelAlias,
 //
 // The set is validated in full before anything is written, so a request with one
 // bad row leaves the previous set untouched: §8.1's all-or-nothing rule for bulk
-// writes applies here for the same reason — a half-replaced mapping is harder to
+// writes applies here for the same reason, a half-replaced mapping is harder to
 // reason about than a refused one.
 func (s *ModelCatalogService) ReplaceAliases(ctx context.Context, aliases []domain.ModelAlias) error {
 	view, err := newReferenceView(s, ctx)
@@ -171,7 +160,7 @@ func (s *ModelCatalogService) ReplaceDisabled(ctx context.Context, refs []domain
 		}
 		// A pair spelled with an alias or a node prefix names the same model as
 		// the id form, so it is accepted the same way every other write accepts
-		// it (draft 024 §3.2). The stored pair keeps the operator's spelling.
+		// it. The stored pair keeps the operator's spelling.
 		if view.resolvesIn(ref) {
 			continue
 		}

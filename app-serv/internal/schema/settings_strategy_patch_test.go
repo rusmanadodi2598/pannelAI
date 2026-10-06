@@ -1,24 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/settings_strategy_patch_test.go
-// @for       The outbound_proxy_strategy PATCH field: the closed set at the
-//
-//	boundary, the tag-versus-domain drift pin, the mapping into the
-//	domain patch, and the effective value the read answers.
-//
+// @for       The outbound_proxy_strategy PATCH field: the closed set at the boundary, the tag-versus-domain drift pin, the mapping into the domain patch, and the effective value the read answers.
 // @uses      testing, reflect, strings, internal/domain.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D2 makes the strategy a closed
-//
-//	set whose empty stored value reads as the default. The tag is what
-//	refuses a bad value at the boundary and the domain's parse is what
-//	the plan runs on, so a member added to one without the other would
-//	either poison every read (an out-of-set write that lands) or strand
-//	a valid one (a member the boundary refuses). The tests pin both
-//	directions, plus the read that answers fallback for a blank.
-//
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D2 makes the strategy a closed set whose empty stored value reads as the default. The tag is what refuses a bad value at the boundary and the domain's parse is what the plan runs on, so a member added to one without the other would either poison every read (an out-of-set write that lands) or strand a valid one (a member the boundary refuses). The tests pin both directions, plus the read that answers fallback for a blank.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package schema
 

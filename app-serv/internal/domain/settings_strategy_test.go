@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/settings_strategy_test.go
-// @for       The settings write path's strategy backstop: an out-of-set value
-//
-//	is refused before it is stored, whichever path carried it.
-//
+// @for       The settings write path's strategy backstop: an out-of-set value is refused before it is stored, whichever path carried it.
 // @uses      internal/domain (Settings, SettingsPatch), testing.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D2: a stored strategy the plan
-//
-//	cannot parse would refuse every proxied request the engine routes,
-//	so the write paths must never land one. The schema tag is the first
-//	gate; Settings.Update is the class-level backstop the §7.14 PATCH
-//	and any future writer share, and this file pins it without the tag.
-//
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D2: a stored strategy the plan cannot parse would refuse every proxied request the engine routes, so the write paths must never land one. The schema tag is the first gate; Settings.Update is the class-level backstop the §7.14 PATCH and any future writer share, and this file pins it without the tag.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package domain
 

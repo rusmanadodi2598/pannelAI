@@ -4,15 +4,10 @@
 // @file      internal/handler/quota_published_response.go
 // @for       Mapping provider-published quota answers onto the collection and detail bodies.
 // @uses      internal/schema, internal/service.
-// @reason    Two ledgers share one screen and neither corrects the other, so the mapping that
-//
-//	keeps them apart (decimal strings as the provider spelled them, a NULL ceiling that is not a
-//	zero, an attempt stamp that is not the figures' stamp) lives in one place instead of being
-//	repeated by each route that carries an answer.
-//
+// @reason    Two ledgers share one screen and neither corrects the other, so the mapping that keeps them apart (decimal strings as the provider spelled them, a NULL ceiling that is not a zero, an attempt stamp that is not the figures' stamp) lives in one place instead of being repeated by each route that carries an answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package handler
 
@@ -42,7 +37,7 @@ func publishedUsageResponse(usage service.PublishedUsage) schema.PublishedQuotaU
 
 // publishedUsageResponses maps a page's cached provider answers onto the collection
 // body. Always a non-nil slice: an account the worker has not answered is absent from the
-// array, and a page whose providers have all fallen silent still answers `[]` — the same
+// array, and a page whose providers have all fallen silent still answers `[]`, the same
 // rule `data` follows, because `null` would be a second spelling of "nothing here" that a
 // reader has to special-case.
 func publishedUsageResponses(answers []service.PublishedUsage) []schema.PublishedQuotaUsageResponse {

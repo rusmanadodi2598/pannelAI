@@ -1,24 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/media_test.go
-// @for       HTTP tests for the §7.10 audio routes: speech, transcription,
-//
-//	and voices.
-//
-// @uses      bytes, encoding/base64, mime/multipart, net/http,
-//
-//	net/http/httptest, strings, testing.
-//
-// @reason    Two of these routes answer with something other than JSON, which
-//
-//	is the part worth pinning: a client that asked for audio must not
-//	receive an error envelope, and one that asked for base64 must not
-//	receive bytes. The generation and search routes live in
-//	media_generation_test.go, the shared guards in media_guard_test.go.
-//
+// @for       HTTP tests for the §7.10 audio routes: speech, transcription, and voices.
+// @uses      bytes, encoding/base64, mime/multipart, net/http, net/http/httptest, strings, testing.
+// @reason    Two of these routes answer with something other than JSON, which is the part worth pinning: a client that asked for audio must not receive an error envelope, and one that asked for base64 must not receive bytes. The generation and search routes live in media_generation_test.go, the shared guards in media_guard_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

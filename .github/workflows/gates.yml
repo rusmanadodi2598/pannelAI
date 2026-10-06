@@ -1,0 +1,164 @@
+name: gates
+
+# AGENTS.md promises a CI gate in four places: §1.1 (the 250-line source limit),
+# §1.2 (the required file header), §1.4 (go vet, staticcheck, the linter suite)
+# and §2.1 (go test -race). The checks were implemented, but only as git hooks
+# under scrypts/hooks, which `--no-verify` walks straight past and a fresh clone
+# never runs at all. This workflow is the gate those sections describe.
+#
+# The checks are called individually rather than through scrypts/gates/all.sh
+# because all.sh also runs panel-check, which needs the app-ui dependency
+# install; wiring the panel surface is deliberately left out and named here so
+# the gap is visible rather than silently green.
+#
+# The vendor proofs (the `live` build tag, on top of `integration`) are
+# deliberately not run here either: they spend a real provider's quota and the
+# Qoder ones need PANNELAI_QODER_PAT, which a CI runner has no business holding.
+# go-lint still compiles them under `-tags=integration,live`, so a proof that
+# stops building fails this pipeline rather than rotting. An operator runs them
+# with PANNELAI_LIVE_PROOFS=1.
+#
+# Graphify (`/graphify update`) is a review step, not a shell gate, so it is not
+# reproduced here.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Go gates, contracts, secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    # go-test.sh runs the integration suite only when a DSN is present, and the
+    # harness refuses a database whose name does not say it is a test one because
+    # the suite truncates its tables. Both conditions are satisfied here, so the
+    # Postgres and Redis layers are actually exercised rather than compiled.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: gate
+          POSTGRES_DB: pannelai_gate_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      PANNELAI_TEST_POSTGRES_DSN: postgres://postgres:gate@127.0.0.1:5432/pannelai_gate_test?sslmode=disable
+      PANNELAI_TEST_REDIS_ADDR: 127.0.0.1:6379
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # changed_files reads the tree plus this base, so the §1.1 and §1.2 gates
+      # inspect the patch instead of an empty worktree. Event fields reach the
+      # script through env rather than interpolated into it: a branch name is
+      # author-controlled text, and pasting one into a shell line is how a ref name
+      # becomes a command.
+      - name: Resolve the revision the gates diff against
+        env:
+          GATES_EVENT: ${{ github.event_name }}
+          GATES_EVENT_BEFORE: ${{ github.event.before }}
+          GATES_HEAD_SHA: ${{ github.sha }}
+          GATES_PR_BASE: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [ "$GATES_EVENT" = pull_request ]; then
+            case "$GATES_PR_BASE" in
+              '' | *[!A-Za-z0-9._/-]*)
+                echo "gates: the pull request base ref is not a usable branch name" >&2
+                exit 1
+                ;;
+            esac
+            echo "GATES_BASE_REF=refs/remotes/origin/$GATES_PR_BASE" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          base="$GATES_EVENT_BEFORE"
+          case "$base" in
+            '' | *[!0-9a-f]*)
+              echo "gates: this push names no revision to compare against" >&2
+              exit 1
+              ;;
+          esac
+          if [ "$base" = 0000000000000000000000000000000000000000 ]; then
+            # A branch-creation push reports no base, and a diff against the all-zero
+            # SHA inspects nothing: the changed-file gates would report that as a pass.
+            # The pushed tip's own parent is the nearest answer that still describes
+            # this push; a tip with no parent has nothing to compare, so say it loudly.
+            if ! base="$(git rev-parse "$GATES_HEAD_SHA^" 2>/dev/null)"; then
+              echo "gates: this push created a branch with no revision behind it, so there is no diff for the changed-file gates to inspect" >&2
+              exit 1
+            fi
+          fi
+          echo "GATES_BASE_REF=$base" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app-serv/go.mod
+          cache: true
+
+      - name: Install the linters AGENTS.md §1.4 names
+        run: |
+          set -euo pipefail
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          # Pinned to the version scrypts/README requires (8.30+) and the hooks run
+          # with, because the two sides must enforce the same ruleset: 8.24.3 flags the
+          # sequential fixture in app-ui/tests/support/playground.ts as a generic API
+          # key and 8.30.1 does not, so a pipeline on the older binary fails on code the
+          # local gate passes. Bumping this pin is a ruleset change, so review it as one.
+          version=8.30.1
+          curl -sSfL -o /tmp/gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
+          tar -xzf /tmp/gitleaks.tgz -C /tmp
+          install -m 755 /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: gate scope routing table
+        run: bash scrypts/gates/gate-scope-test.sh
+
+      - name: go lint (vet, gofmt, staticcheck, golangci-lint, §1.1 line limit)
+        run: bash scrypts/gates/go-lint.sh
+
+      - name: go headers (AGENTS.md §1.2)
+        run: bash scrypts/gates/go-headers.sh
+
+      - name: antislop comment rules (R-02, separators, doc block length)
+        run: bash scrypts/gates/antislop.sh
+
+      - name: go test -race, plus the tagged suites (§2.1)
+        run: bash scrypts/gates/go-test.sh
+
+      - name: contract drift (SPEC-API to panel)
+        run: bash scrypts/gates/contract-drift.sh
+
+      - name: contract artifact (OpenAPI YAML to JSON)
+        run: bash scrypts/gates/contract-openapi.sh
+
+      - name: secrets (gitleaks)
+        run: bash scrypts/gates/secrets.sh --all

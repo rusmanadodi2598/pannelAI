@@ -3,15 +3,10 @@
 // @file      internal/dataplane/translate_responses_client_scalars_test.go
 // @for       Table-driven tests for the scalar members of a translated request.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, and the scalars a
-//
-//	client sets are what shape the call: the output ceiling under its
-//	Responses spelling, the sampling controls, and the model id. Each
-//	is a place a translation can silently drop a client's intent.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, and the scalars a client sets are what shape the call: the output ceiling under its Responses spelling, the sampling controls, and the model id. Each is a place a translation can silently drop a client's intent.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

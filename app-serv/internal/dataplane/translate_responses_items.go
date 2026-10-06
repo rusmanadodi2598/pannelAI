@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_responses_items.go
-// @for       The Responses API payload types and the item builders the request
-//
-//	translator writes them with.
-//
+// @for       The Responses API payload types and the item builders the request translator writes them with.
 // @uses      internal/schema, encoding/json.
-// @reason    The item vocabulary is a shape of its own: three item types, two
-//
-//	content-part types, and the rules that decide which one a chat member
-//	becomes. Keeping it beside the request translator (rather than in it)
-//	holds both files inside the AGENTS.md §1.1 budget.
-//
+// @reason    The item vocabulary is a shape of its own: three item types, two content-part types, and the rules that decide which one a chat member becomes. Keeping it beside the request translator (rather than in it) holds both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

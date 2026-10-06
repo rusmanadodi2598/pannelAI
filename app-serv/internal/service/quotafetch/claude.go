@@ -5,15 +5,10 @@
 // @file      internal/service/quotafetch/claude.go
 // @for       Asks Claude's OAuth usage endpoint and words its refusals.
 // @uses      internal/service/quotafetch, context, net/http, strconv, strings, time
-// @reason    The OAuth usage endpoint is rate-limited independently of chat and answers in
-//
-//	percentages rather than counters, so the read needs its own header set,
-//	its own cooldown outcome, and a fallback that only runs where a
-//	second endpoint could still answer something usable.
-//
+// @reason    The OAuth usage endpoint is rate-limited independently of chat and answers in percentages rather than counters, so the read needs its own header set, its own cooldown outcome, and a fallback that only runs where a second endpoint could still answer something usable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -65,7 +60,7 @@ func fetchClaude(ctx context.Context, creds Credentials) Result {
 
 	// A 429 is the endpoint throttling its own meter, not the credential: chat with the same
 	// token still works. Nothing is retried here and no fallback is attempted, because the
-	// only useful answer is the cooldown — see claudeRateLimited for who owns the countdown.
+	// only useful answer is the cooldown, see claudeRateLimited for who owns the countdown.
 	if response.status == http.StatusTooManyRequests {
 		return Result{Plan: claudePlanLabel, Message: claudeRateLimited(claudeRetryAfter(response.header))}
 	}

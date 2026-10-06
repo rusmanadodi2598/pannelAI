@@ -3,16 +3,10 @@
 // @file      internal/handler/token_count_test.go
 // @for       HTTP tests for POST /api/v1/messages/count_tokens.
 // @uses      encoding/json, net/http, net/http/httptest, strings, testing.
-// @reason    AGENTS.md §2.1 requires a happy-path, a validation-failure, and an
-//
-//	auth-failure test per route. The estimate is pinned through the wire
-//	as well, because the route's answer is a number a client trusts to
-//	decide whether a request fits, and the key may arrive in either of
-//	the two headers §4 accepts.
-//
+// @reason    AGENTS.md §2.1 requires a happy-path, a validation-failure, and an auth-failure test per route. The estimate is pinned through the wire as well, because the route's answer is a number a client trusts to decide whether a request fits, and the key may arrive in either of the two headers §4 accepts.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

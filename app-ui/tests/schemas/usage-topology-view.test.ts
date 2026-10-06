@@ -1,6 +1,6 @@
 // Live drawing derivation tests (src/lib/schemas/usage-topology-view.ts, draft 012 F3 and draft 043 F1).
 //
-// The layout rows pin the arithmetic — the two bands, the box height, the state precedence, the terminals —
+// The layout rows pin the arithmetic (the two bands, the box height, the state precedence, the terminals)
 // because the drawing itself holds none of it. Which entities get a node at all is the other file's subject,
 // in `usage-topology-nodeset.test.ts`.
 //
@@ -223,7 +223,7 @@ describe('topologyNodes', () => {
 
 	it('never returns a share of zero, at any count it is given', () => {
 		// The claim is narrow and it is the one that matters: a zero share makes the drawing's own unit zero,
-		// and every box on it — the nodes, the gateway, the beam strokes — collapses to nothing. A pair of
+		// and every box on it (the nodes, the gateway, the beam strokes) collapses to nothing. A pair of
 		// nodes mirrored across the horizontal axis is how that happens, because they share an x and only
 		// their vertical distance keeps them on different rows.
 		for (let providers = 0; providers <= 24; providers += 1) {

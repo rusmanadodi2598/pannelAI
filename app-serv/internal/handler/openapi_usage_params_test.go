@@ -1,24 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/openapi_usage_params_test.go
-// @for       Query-parameter parity for the §7.12 usage reads and the shared
-//
-//	pagination parameters, as the served contract declares them.
-//
+// @for       Query-parameter parity for the §7.12 usage reads and the shared pagination parameters, as the served contract declares them.
 // @uses      encoding/json, strings, testing.
-// @reason    Draft 010 F7: the YAML declared from/to as bare strings, the
-//
-//	enum parameters (group_by, granularity, status) as bare strings,
-//	and per_page with a maximum but no minimum or default, so a
-//	consumer could not learn from the contract what the boundary
-//	enforces. F6's owner decision (D3 = refuse) makes the pagination
-//	bounds part of the documented behaviour, and these tests pin the
-//	served document so a regeneration that loses a bound fails here
-//	rather than at a client.
-//
+// @reason    Draft 010 F7: the YAML declared from/to as bare strings, the enum parameters (group_by, granularity, status) as bare strings, and per_page with a maximum but no minimum or default, so a consumer could not learn from the contract what the boundary enforces. F6's owner decision (D3 = refuse) makes the pagination bounds part of the documented behaviour, and these tests pin the served document so a regeneration that loses a bound fails here rather than at a client.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package handler
 
@@ -28,7 +16,7 @@ import (
 )
 
 // usageParamSchema is the part of a query parameter's schema these tests read.
-// Description is carried for the semantics tests (draft 010 F3/F8), which pin
+// Description is carried for the semantics tests, which pin
 // the sentences a consumer reads rather than a bound.
 type usageParamSchema struct {
 	Type        string   `json:"type"`
@@ -73,7 +61,7 @@ func findUsageParam(t *testing.T, path, method, name string) (contractParameter,
 }
 
 // TestOpenAPIContract_UsageWindowParamsAreDateTimes pins the RFC3339 rule the
-// boundary enforces (draft 010 F7): a consumer reading the contract must learn
+// boundary enforces: a consumer reading the contract must learn
 // that from/to are timestamps, not bare strings.
 func TestOpenAPIContract_UsageWindowParamsAreDateTimes(t *testing.T) {
 	reads := []string{
@@ -102,7 +90,7 @@ func TestOpenAPIContract_UsageWindowParamsAreDateTimes(t *testing.T) {
 
 // TestOpenAPIContract_UsageEnumParams pins the closed sets the boundary
 // enforces: group_by, granularity on the reads that accept them, and the
-// status set shared with the logs route (draft 010 F2, already closed).
+// status set shared with the logs route.
 func TestOpenAPIContract_UsageEnumParams(t *testing.T) {
 	cases := []struct {
 		path string
@@ -135,8 +123,8 @@ func TestOpenAPIContract_UsageEnumParams(t *testing.T) {
 
 // TestOpenAPIContract_PaginationParamsAreBounded pins the pagination bounds on
 // every management list route that declares page/per_page, so the contract
-// states the same range the boundary enforces (draft 010 F6, owner decision
-// D3: refusal, with the documented default).
+// states the same range the boundary enforces (refusal, with the documented
+// default).
 func TestOpenAPIContract_PaginationParamsAreBounded(t *testing.T) {
 	doc := loadContract(t)
 	checked := 0

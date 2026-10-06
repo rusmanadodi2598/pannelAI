@@ -1,24 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_crypto.go
-// @for       The cryptographic primitives of one COSY signature: the AES payload,
-//
-//	the RSA-wrapped request key, and the ids the scheme draws.
-//
-// @uses      crypto/aes, crypto/cipher, crypto/rand, crypto/rsa, crypto/x509,
-//
-//	encoding/base64, encoding/json, encoding/pem, fmt.
-//
-// @reason    These are the parts a reviewer cannot check by reading the header
-//
-//	list: a CBC whose IV is the key, a padding scheme applied by hand because
-//	the cipher's own is switched off, and a wrapped key whose ciphertext the
-//	vendor alone can unwrap. Split from the composition of the headers so each
-//	can be read against the reference on its own terms.
-//
+// @for       The cryptographic primitives of one COSY signature: the AES payload, the RSA-wrapped request key, and the ids the scheme draws.
+// @uses      crypto/aes, crypto/cipher, crypto/rand, crypto/rsa, crypto/x509, encoding/base64, encoding/json, encoding/pem, fmt.
+// @reason    These are the parts a reviewer cannot check by reading the header list: a CBC whose IV is the key, a padding scheme applied by hand because the cipher's own is switched off, and a wrapped key whose ciphertext the vendor alone can unwrap. Split from the composition of the headers so each can be read against the reference on its own terms.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     util
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -56,12 +44,12 @@ func encryptCosyInfo(aesKey string, info cosyInfoPayload) (string, error) {
 // reader, and the padding its client uses is PKCS#1 v1.5: OAEP, which is the shape
 // Go now recommends, would arrive as ciphertext it cannot open.
 //
-// reason: the vendor's COSY scheme, not this gateway's choice of cipher (draft 036
-// slice D). OAEP, which Go now recommends, would arrive as ciphertext their server
-// cannot open, so the deprecated call is the only correct one here.
+// reason: the vendor's COSY scheme, not this gateway's choice of cipher. OAEP,
+// which Go now recommends, would arrive as ciphertext their server cannot
+// open, so the deprecated call is the only correct one here.
 func wrapAESKey(public *rsa.PublicKey, aesKey string) (string, error) {
 	//lint:ignore SA1019 the vendor's server unwraps PKCS#1 v1.5 only
-	sealed, err := rsa.EncryptPKCS1v15(rand.Reader, public, []byte(aesKey)) //nolint:staticcheck // the vendor's padding, not our preference
+	sealed, err := rsa.EncryptPKCS1v15(rand.Reader, public, []byte(aesKey)) //nolint:staticcheck // reason: the vendor's padding, not our preference.
 	if err != nil {
 		return "", fmt.Errorf("wrapping the cosy aes key: %w", err)
 	}
@@ -100,8 +88,8 @@ func parseQoderRSAPublicKey() (*rsa.PublicKey, error) {
 }
 
 // newQoderID formats sixteen CSPRNG bytes as the canonical UUID v4 string. Every id
-// the scheme draws is this shape — the request ids, the machine id, and the sixteen
-// leading characters of that string, which are the AES key — so the version and
+// the scheme draws is this shape, the request ids, the machine id, and the sixteen
+// leading characters of that string, which are the AES key, so the version and
 // variant bits are part of what the vendor reads, not decoration.
 func newQoderID() string {
 	var raw [16]byte

@@ -4,15 +4,10 @@
 // @file      internal/registry/load_test.go
 // @for       Table-driven tests for document decoding, indexing, and synthesis.
 // @uses      testing, internal/registry.
-// @reason    SPEC-API-001 §6 makes the registry the source of truth for every
-//
-//	provider, so a decode that silently drops a field is a routing bug
-//	that surfaces as a wrong upstream call; these tests pin the decode
-//	contract, the index, and the custom-node synthesis.
-//
+// @reason    SPEC-API-001 §6 makes the registry the source of truth for every provider, so a decode that silently drops a field is a routing bug that surfaces as a wrong upstream call; these tests pin the decode contract, the index, and the custom-node synthesis.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 

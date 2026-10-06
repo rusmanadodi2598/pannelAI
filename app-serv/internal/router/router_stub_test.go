@@ -2,19 +2,11 @@
 //
 // @file      internal/router/router_stub_test.go
 // @for       In-memory GatewayKeyRepository stub and the router test harness.
-// @uses      internal/domain, internal/handler, internal/repository,
-//
-//	internal/router, internal/schema, internal/service, net/http/httptest.
-//
-// @reason    AGENTS.md §2.1 requires route tests to run against the real mux;
-//
-//	this stub implements the repository contract so those tests need no
-//	live database, and it enforces the documented uniqueness rule
-//	instead of accepting what the real constraint would reject.
-//
+// @uses      internal/domain, internal/handler, internal/repository, internal/router, internal/schema, internal/service, net/http/httptest.
+// @reason    AGENTS.md §2.1 requires route tests to run against the real mux; this stub implements the repository contract so those tests need no live database, and it enforces the documented uniqueness rule instead of accepting what the real constraint would reject.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package router
 

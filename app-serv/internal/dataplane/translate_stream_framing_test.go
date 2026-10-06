@@ -3,25 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_framing_test.go
-// @for       The SSE shape of the frames the gateway builds itself: each one is
-//
-//	a complete event, the usage the upstream already delivered is not
-//	repeated, and the finish frame is emitted once (draft 021 F1, F2,
-//	F3; 034 F1).
-//
+// @for       The SSE shape of the frames the gateway builds itself: each one is a complete event, the usage the upstream already delivered is not repeated, and the finish frame is emitted once (draft 021 F1, F2, F3; 034 F1).
 // @uses      encoding/json, strings, testing.
-// @reason    The gateway's own frames left without `data: ` and without the
-//
-//	blank-line terminator, so a client glued them onto the next frame and
-//	never read a standalone `data: [DONE]` (F1); a null usage member
-//	became a zero-valued usage chunk (F2); and the upstream's finish frame
-//	was followed by a second, synthetic one (F3). These tests pin the
-//	client-visible bytes, which is where the panel's reader measured the
-//	truncated stream.
-//
+// @reason    The gateway's own frames left without `data: ` and without the blank-line terminator, so a client glued them onto the next frame and never read a standalone `data: [DONE]` (F1); a null usage member became a zero-valued usage chunk (F2); and the upstream's finish frame was followed by a second, synthetic one (F3). These tests pin the client-visible bytes, which is where the panel's reader measured the truncated stream.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package dataplane
 
@@ -144,7 +131,7 @@ func TestOpenAIStream_UsageChunkIsEmittedOnce(t *testing.T) {
 // TestOpenAIStream_NullUsageNeverBecomesAZeroChunk pins F2's other half and 034
 // F1 on the shape the free tier actually sent: the finish frame marks `usage`
 // null and the numbers arrive in a later usage-only frame, so the null must
-// never become a 0/0 chunk, and that later frame is the one delivery — Finish
+// never become a 0/0 chunk, and that later frame is the one delivery, Finish
 // adds no second copy of the numbers it already forwarded.
 func TestOpenAIStream_NullUsageNeverBecomesAZeroChunk(t *testing.T) {
 	state := NewStreamState("", "model-x", 1700000000, true)

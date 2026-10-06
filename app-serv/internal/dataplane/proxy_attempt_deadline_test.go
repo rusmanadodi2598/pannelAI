@@ -3,24 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/proxy_attempt_deadline_test.go
-// @for       The proxied attempt's context: the per-attempt deadline must bound
-//
-//	the outbound call exactly as it does on the direct path.
-//
-// @uses      context, net/http, net/http/httptest, net/url, provider, registry,
-//
-//	testing, time.
-//
-// @reason    A planned proxy walk clones the request with the context the dialer
-//
-//	was handed. Before this test that was the caller's context, so a
-//	registry timeout_ms never bounded a proxied call: the stall ran to the
-//	shared transport's 120 s header timeout instead of the attempt's own
-//	deadline. The code the client sees is the discriminator.
-//
+// @for       The proxied attempt's context: the per-attempt deadline must bound the outbound call exactly as it does on the direct path.
+// @uses      context, net/http, net/http/httptest, net/url, provider, registry, testing, time.
+// @reason    A planned proxy walk clones the request with the context the dialer was handed. Before this test that was the caller's context, so a registry timeout_ms never bounded a proxied call: the stall ran to the shared transport's 120 s header timeout instead of the attempt's own deadline. The code the client sees is the discriminator.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package dataplane
 

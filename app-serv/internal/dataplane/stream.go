@@ -5,16 +5,10 @@
 // @file      internal/dataplane/stream.go
 // @for       SSE framing and the idle guard that bounds a silent stream.
 // @uses      bytes, io, net/http, sync, time.
-// @reason    SPEC-API-001 §4 fixes SSE as the streaming mechanism, requires
-//
-//	X-Accel-Buffering: no, and gives a stream no total deadline but a
-//	300s idle read. Framing is a pure function and the guard is a
-//	reader decorator, so both are testable without a network, and a
-//	stalled upstream cannot hold a client connection open forever.
-//
+// @reason    SPEC-API-001 §4 fixes SSE as the streaming mechanism, requires X-Accel-Buffering: no, and gives a stream no total deadline but a 300s idle read. Framing is a pure function and the guard is a reader decorator, so both are testable without a network, and a stalled upstream cannot hold a client connection open forever.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -73,7 +67,7 @@ func DataPlaneHeaders(headers http.Header) {
 // stream and then dies would otherwise hold the client's connection until the
 // client gave up, leaving the gateway with a goroutine and a socket for a request
 // nobody is waiting for. Every read of at least one byte resets the window, so a
-// legitimately long answer is never cut off — only a genuine silence is.
+// legitimately long answer is never cut off, only a genuine silence is.
 type idleGuard struct {
 	body    io.ReadCloser
 	timeout time.Duration

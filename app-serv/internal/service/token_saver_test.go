@@ -3,14 +3,10 @@
 // @file      internal/service/token_saver_test.go
 // @for       Table-driven tests for the §7.9 read and whole replacement.
 // @uses      internal/domain, internal/repository, context, sync, testing.
-// @reason    The §7.9 write must reach the same patch machinery as the §7.14
-//
-//	PATCH: only the token_saver row changes, the deprecated caveman
-//	key is untouched, and a rejected document persists nothing.
-//
+// @reason    The §7.9 write must reach the same patch machinery as the §7.14 PATCH: only the token_saver row changes, the deprecated caveman key is untouched, and a rejected document persists nothing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

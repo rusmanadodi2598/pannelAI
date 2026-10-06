@@ -7,7 +7,7 @@
 // @reason    GitHub authenticates with a `token` scheme rather than a bearer and answers two different payload shapes, so a wrong scheme or host is the regression to catch.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -96,7 +96,7 @@ func TestGitHub_FreeQuotasReadUsedAndCeilingDirectly(t *testing.T) {
 }
 
 // The whole card depends on the `token` scheme and the identifying headers GitHub rejects a
-// call without — and exactly one request per read.
+// call without, and exactly one request per read.
 func TestGitHub_AuthenticatesWithTheTokenSchemeAndApiHeaders(t *testing.T) {
 	var calls atomic.Int64
 	var gotAuth, gotAPIVersion, gotEditor, gotMethod, gotPath atomic.Value

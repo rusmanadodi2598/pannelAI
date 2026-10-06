@@ -3,22 +3,17 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/media_gemini.go
-// @for       The Gemini embeddings payload shape: its URL, its typed request
-//
-//	bodies, and the single-versus-batch split.
-//
+// @for       The Gemini embeddings payload shape: its URL, its typed request bodies, and the single-versus-batch split.
 // @uses      internal/registry, encoding/json, strings.
-// @reason    Gemini addresses embeddings by model-qualified operation URLs and
+// @reason    Gemini addresses embeddings by model-qualified operation URLs and wraps batch inputs in a `requests` envelope, which is vendor shape rather than the §8.1 placement rule that media.go owns.
 //
-//	wraps batch inputs in a `requests` envelope, which is vendor
-//	shape rather than the §8.1 placement rule that media.go owns.
 //	Separating the two keeps the per-kind credential placement
 //	readable without a vendor dialect inside it, and gives the
 //	payload a typed home (AGENTS.md §1.4) instead of a map.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 

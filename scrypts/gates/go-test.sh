@@ -11,6 +11,15 @@
 # Redis-backed tests, which need PANNELAI_TEST_REDIS_ADDR and fail loudly
 # without it.
 #
+# The vendor proofs carry a second tag, `live`, on top of `integration`. They
+# spend a real provider's quota, need the network, and the Qoder ones fail
+# without PANNELAI_QODER_PAT, by design: a tagged run that passed
+# quietly with no credential would prove nothing. PANNELAI_LIVE_PROOFS=1 adds the
+# tag to the run, so an operator who means to pay for the proof gets it. A CI
+# runner has no credential and no business dialing a provider on every push, so
+# it stays off there; the proofs still compile in go-lint, which vets and
+# staticchecks `-tags=integration,live`.
+#
 # Exit codes: 0 all suites passed, 1 a suite failed.
 
 set -euo pipefail
@@ -41,8 +50,23 @@ while IFS= read -r dir; do
 	fi
 
 	if [ -n "${PANNELAI_TEST_POSTGRES_DSN:-}" ]; then
-		gate_start "integration     $rel (tagged)"
-		if (cd "$dir" && go test -race -tags=integration -count=1 ./...); then
+		tags="integration"
+		if [ "${PANNELAI_LIVE_PROOFS:-0}" = "1" ]; then
+			tags="integration,live"
+		fi
+		gate_start "integration     $rel (tagged: $tags)"
+		# `-p 1` runs one package's integration tests at a time. Four fixtures
+		# (quota counter, session revoke, usage active, and the live playground
+		# stack) clear the whole keyspace with FlushDB before they seed, and every
+		# package shares the one PANNELAI_TEST_REDIS_ADDR database, so a parallel run
+		# lets one
+		# package erase another's seed mid-flight. That is how
+		# TestQuotaCounterStore_RetiresSettledClosedWindows failed in CI while the
+		# suite had never run anywhere at all before: not a wrong assertion, a wrong
+		# schedule. Isolating each package into its own Redis DB would keep the
+		# parallelism and is the better shape, but it is a change to a shared helper
+		# that only CI can prove.
+		if (cd "$dir" && go test -race -p 1 -tags="$tags" -count=1 ./...); then
 			gate_pass "integration suite $rel"
 		else
 			gate_fail "integration suite $rel"

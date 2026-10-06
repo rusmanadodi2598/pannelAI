@@ -7,7 +7,7 @@
 // @reason    Zed authenticates with a combined user-id/token header and sends limits in three shapes, so both the scheme and the "unlimited"/zero coercion are regressions worth pinning.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

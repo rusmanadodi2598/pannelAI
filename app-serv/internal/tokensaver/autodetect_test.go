@@ -5,15 +5,10 @@
 // @file      internal/tokensaver/autodetect_test.go
 // @for       Table-driven tests for the detection order and the allowlist.
 // @uses      internal/domain, reflect, strings, testing.
-// @reason    SPEC-API-002 §5 makes the detection order observable, so the table
-//
-//	pins the two claims that are order-dependent: build output before
-//	the porcelain check, and a log before a diff. The registry test is
-//	what keeps the twelve names and their implementations in step.
-//
+// @reason    SPEC-API-002 §5 makes the detection order observable, so the table pins the two claims that are order-dependent: build output before the porcelain check, and a log before a diff. The registry test is what keeps the twelve names and their implementations in step.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

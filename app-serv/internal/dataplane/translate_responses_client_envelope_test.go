@@ -1,20 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/translate_responses_client_envelope_test.go
-// @for       Table-driven tests for the envelope and accounting of the Responses
-//
-//	answer a client receives.
-//
+// @for       Table-driven tests for the envelope and accounting of the Responses answer a client receives.
 // @uses      testing, internal/schema.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, and the id, status,
-//
-//	and token counts are what a client logs and bills against. Keeping
-//	them apart from the output shape holds both files inside the
-//	AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, and the id, status, and token counts are what a client logs and bills against. Keeping them apart from the output shape holds both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

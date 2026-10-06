@@ -5,12 +5,7 @@
 // @file      migrations/apply_test.go
 // @for       Tagged integration tests for the migration runner.
 // @uses      context, database/sql, os, testing, github.com/jackc/pgx/v5/stdlib.
-// @reason    The runner is what makes a fresh checkout boot against an empty
-//
-//	database, so a migration that fails to parse blocks every deployment
-//	while a unit test of the ledger would pass. These tests run the real
-//	statements against a real server, which is the only way a reserved
-//	word, a CHECK constraint, or a bad index name surfaces.
+// @reason    The runner is what makes a fresh checkout boot against an empty database, so a migration that fails to parse blocks every deployment while a unit test of the ledger would pass. These tests run the real statements against a real server, which is the only way a reserved word, a CHECK constraint, or a bad index name surfaces.
 //
 //	The `integration` tag keeps `go test ./...` hermetic (AGENTS.md §2.1
 //	forbids t.Skip as a way to sidestep a test); with the tag active the

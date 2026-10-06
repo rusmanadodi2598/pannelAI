@@ -3,16 +3,10 @@
 // @file      internal/router/router_media_routes_test.go
 // @for       Route-level tests for the §7.10 media provider routes.
 // @uses      net/http, net/http/httptest, strings, testing.
-// @reason    §7.10's management routes are their own vertical and the §7.6–§7.8
-//
-//	route-table files sit close to the AGENTS.md §1.1 line limit, so the
-//	table lives here. The session-gating table is duplicated on purpose:
-//	each vertical proves its own routes are guarded. The doubles are in
-//	router_media_stub_test.go.
-//
+// @reason    §7.10's management routes are their own vertical and the §7.6-§7.8 route-table files sit close to the AGENTS.md §1.1 line limit, so the table lives here. The session-gating table is duplicated on purpose: each vertical proves its own routes are guarded. The doubles are in router_media_stub_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package router
 

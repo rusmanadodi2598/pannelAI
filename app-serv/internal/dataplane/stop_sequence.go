@@ -3,24 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/stop_sequence.go
-// @for       Cutting an answer at a `stop` sequence the caller asked for, whichever
-//
-//	of the two served shapes the answer arrives in.
-//
+// @for       Cutting an answer at a `stop` sequence the caller asked for, whichever of the two served shapes the answer arrives in.
 // @uses      strings.
-// @reason    The OpenAI wire makes `stop` a promise the gateway keeps: a client that
-//
-//	asks to stop at a marker expects the marker and everything after it to be
-//	absent. Some upstreams on that wire ignore the member and answer in full,
-//	so the promise would silently not hold. Measured live against
-//	codebuddy-intl/deepseek-v4.1-flash on 2026-09-30: the answer was
-//	byte-identical with and without a stop sequence. The cut therefore happens
-//	here, on the way to the client, and a held-back tail means no fragment of a
-//	marker ever reaches the client even when the vendor splits it across frames.
-//
+// @reason    The OpenAI wire makes `stop` a promise the gateway keeps: a client that asks to stop at a marker expects the marker and everything after it to be absent. Some upstreams on that wire ignore the member and answer in full, so the promise would silently not hold. Measured live against codebuddy-intl/deepseek-v4.1-flash on 2026-09-30: the answer was byte-identical with and without a stop sequence. The cut therefore happens here, on the way to the client, and a held-back tail means no fragment of a marker ever reaches the client even when the vendor splits it across frames.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 

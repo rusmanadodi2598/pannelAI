@@ -3,15 +3,10 @@
 // @file      internal/handler/combo_test.go
 // @for       HTTP tests for the §7.7 combo routes.
 // @uses      net/http, net/http/httptest, strings, testing.
-// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path
-//
-//	per route, and §7.7's strategy rules are the rejections a client
-//	meets most often; the tests pin both the accepted shapes and the
-//	refusals through the real mux-compatible handler methods.
-//
+// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path per route, and §7.7's strategy rules are the rejections a client meets most often; the tests pin both the accepted shapes and the refusals through the real mux-compatible handler methods.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 

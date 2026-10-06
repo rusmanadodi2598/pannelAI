@@ -3,22 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_gemini_parts.go
-// @for       The part, image, tool, and function-result conversion the
-//
-//	OpenAI-to-Gemini direction needs, plus Gemini's name rules.
-//
+// @for       The part, image, tool, and function-result conversion the OpenAI-to-Gemini direction needs, plus Gemini's name rules.
 // @uses      internal/schema, encoding/json, strings.
-// @reason    Gemini's part shapes are the bulk of the direction's work and none of
-//
-//	them is reachable from the request builder without them: a tool
-//	result has to be paired by call id with the name its functionCall
-//	declared, and a name has to satisfy Gemini's character rules. Keeping
-//	these beside the request translation is what makes the pairing
-//	auditable in one place.
-//
+// @reason    Gemini's part shapes are the bulk of the direction's work and none of them is reachable from the request builder without them: a tool result has to be paired by call id with the name its functionCall declared, and a name has to satisfy Gemini's character rules. Keeping these beside the request translation is what makes the pairing auditable in one place.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 

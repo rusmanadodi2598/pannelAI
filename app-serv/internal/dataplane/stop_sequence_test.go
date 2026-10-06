@@ -3,19 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/stop_sequence_test.go
-// @for       The stop-sequence guard: what it cuts, what it withholds, and what it
-//
-//	hands back once an answer ends.
-//
+// @for       The stop-sequence guard: what it cuts, what it withholds, and what it hands back once an answer ends.
 // @uses      testing, internal/dataplane stopGuard.
-// @reason    The guard's whole difficulty is a marker that arrives in pieces, and a
-//
-//	table of fragments is the only way to pin that no part of a marker is
-//	ever shown while no real tail text is lost.
-//
+// @reason    The guard's whole difficulty is a marker that arrives in pieces, and a table of fragments is the only way to pin that no part of a marker is ever shown while no real tail text is lost.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 

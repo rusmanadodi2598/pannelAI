@@ -2,22 +2,15 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/types_media.go
-// @for       The non-chat service configuration a registry entry may declare:
-//
-//	embeddings, speech, images, search, and their per-kind auth.
-//
+// @for       The non-chat service configuration a registry entry may declare: embeddings, speech, images, search, and their per-kind auth.
 // @uses      standard library only.
-// @reason    A media service often authenticates differently from the same
+// @reason    A media service often authenticates differently from the same provider's chat transport: Gemini reads a query-param `key` for embeddings while its chat transport uses a header. Porting only `transport` would send the wrong credential form, so the media blocks are carried explicitly and the router chooses by kind.
 //
-//	provider's chat transport: Gemini reads a query-param `key` for
-//	embeddings while its chat transport uses a header. Porting only
-//	`transport` would send the wrong credential form, so the media
-//	blocks are carried explicitly and the router chooses by kind.
 //	§7.10 lists embeddings as P1, which is why this lands now.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 

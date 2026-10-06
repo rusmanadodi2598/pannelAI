@@ -5,16 +5,13 @@
 // @file      internal/tokensaver/autodetect.go
 // @for       Which filter claims a blob, in the reference's detection order.
 // @uses      regexp, strings.
-// @reason    SPEC-API-002 §5 fixes the detection order because it is
+// @reason    SPEC-API-002 §5 fixes the detection order because it is observable: build output must be claimed before the porcelain check or a cargo run reads as a dirty tree, and git-log must be claimed before git-diff or a log with an embedded diff loses its subjects.
 //
-//	observable: build output must be claimed before the porcelain check
-//	or a cargo run reads as a dirty tree, and git-log must be claimed
-//	before git-diff or a log with an embedded diff loses its subjects.
 //	Keeping the order in one function is what makes it auditable.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

@@ -2,19 +2,11 @@
 //
 // @file      internal/handler/media_generation_test.go
 // @for       HTTP tests for the §7.10 image, video, and search routes.
-// @uses      encoding/json, net/http, net/http/httptest, strings, testing,
-//
-//	internal/dataplane.
-//
-// @reason    Each of these routes answers with a normalized envelope rather
-//
-//	than the upstream's own body, so the shape a client parses is the
-//	thing to pin — including the refusal the video route owes while no
-//	provider declares the kind.
-//
+// @uses      encoding/json, net/http, net/http/httptest, strings, testing, internal/dataplane.
+// @reason    Each of these routes answers with a normalized envelope rather than the upstream's own body, so the shape a client parses is the thing to pin, including the refusal the video route owes while no provider declares the kind.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

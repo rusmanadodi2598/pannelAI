@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/combo.go
-// @for       The combo lifecycle: create, list, inspect, update, and delete
-//
-//	(SPEC-API-001 §7.7).
-//
+// @for       The combo lifecycle: create, list, inspect, update, and delete (SPEC-API-001 §7.7).
 // @uses      internal/domain, internal/repository, context, strings, time.
-// @reason    §7.7 makes a combo a model string the data plane resolves, which
-//
-//	puts two rules here that the aggregate cannot own alone: every ref
-//	must dereference one level to a model, a combo, or an alias at
-//	write time, and a delete must refuse while an alias still points at
-//	the combo. Both span aggregates, so the service is their home.
-//
+// @reason    §7.7 makes a combo a model string the data plane resolves, which puts two rules here that the aggregate cannot own alone: every ref must dereference one level to a model, a combo, or an alias at write time, and a delete must refuse while an alias still points at the combo. Both span aggregates, so the service is their home.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 

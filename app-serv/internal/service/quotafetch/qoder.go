@@ -1,25 +1,12 @@
 // Package quotafetch reads the quota a provider publishes for one of its connections.
 //
 // @file      internal/service/quotafetch/qoder.go
-// @for       The Qoder quota read: the credit buckets the vendor publishes, and the
-//
-//	token exchange a Personal Access Token needs before the endpoint
-//	accepts it.
-//
-// @uses      context, encoding/json, fmt, io, net/http, net/url, strconv, strings,
-//
-//	time, internal/provider.
-//
-// @reason    Qoder publishes credits rather than a percentage, in two buckets —
-//
-//	personal and organization — and its quota endpoint refuses a raw
-//	Personal Access Token, so a read that presented the stored credential
-//	would report a working account as broken. The exchange is the same one
-//	the chat path uses, against the same host.
-//
+// @for       The Qoder quota read: the credit buckets the vendor publishes, and the token exchange a Personal Access Token needs before the endpoint accepts it.
+// @uses      context, encoding/json, fmt, io, net/http, net/url, strconv, strings, time, internal/provider.
+// @reason    Qoder publishes credits rather than a percentage, in two buckets, personal and organization, and its quota endpoint refuses a raw Personal Access Token, so a read that presented the stored credential would report a working account as broken. The exchange is the same one the chat path uses, against the same host.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package quotafetch
 
@@ -27,7 +14,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -89,28 +75,16 @@ func fetchQoder(family string, openAPIBase string) func(context.Context, Credent
 			return Result{Message: message}
 		}
 
-		request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+		// The read goes through requestUsage, the one path in this package that
+		// scrubs what the call presented. A provider that quotes the refused
+		// request in its 4xx body would otherwise hand a live bearer to the poll
+		// worker, which caches the sentence in the state row behind the card.
+		response, err := requestUsage(ctx, http.MethodGet, endpoint, bearer(token, nil), "")
 		if err != nil {
 			return Result{Message: fmt.Sprintf("%s error: %s", family, err)}
 		}
-		request.Header.Set("Authorization", "Bearer "+token)
-		request.Header.Set("Accept", "application/json")
-
-		response, err := client.Do(request)
-		if err != nil {
-			return Result{Message: fmt.Sprintf("%s error: %s", family, err)}
-		}
-		defer func() {
-			// reason: the body is decoded below; a close error cannot be acted on.
-			_ = response.Body.Close()
-		}()
-
-		if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
-			return Result{Message: fmt.Sprintf("%s credential invalid or expired.", family)}
-		}
-		if response.StatusCode < 200 || response.StatusCode >= 300 {
-			body, _ := io.ReadAll(io.LimitReader(response.Body, 200))
-			return Result{Message: fmt.Sprintf("%s quota API error (%d)%s", family, response.StatusCode, quotaDetail(body))}
+		if failure, refused := response.softFailure(family); refused {
+			return failure
 		}
 
 		var payload struct {
@@ -121,7 +95,7 @@ func fetchQoder(family string, openAPIBase string) func(context.Context, Credent
 			OrganizationBucket qoderUsage      `json:"orgResourcePackage"`
 			ExpiresAt          json.RawMessage `json:"expiresAt"`
 		}
-		if err := json.NewDecoder(io.LimitReader(response.Body, 1<<20)).Decode(&payload); err != nil {
+		if err := json.Unmarshal(response.body, &payload); err != nil {
 			return Result{Message: fmt.Sprintf("%s error: %s", family, err)}
 		}
 		return qoderResult(payload.UserType, payload.IsQuotaExceeded,
@@ -130,7 +104,7 @@ func fetchQoder(family string, openAPIBase string) func(context.Context, Credent
 }
 
 // qoderReset reads the expiry the vendor publishes, dropping its "never resets"
-// sentinel. The measured answer carries 253402214400000 — the year 9999 — for a
+// sentinel. The measured answer carries 253402214400000, the year 9999, for a
 // plan whose allocation does not roll over, and a card that printed that as a reset
 // date would show a number nobody can act on.
 func qoderReset(raw json.RawMessage) time.Time {
@@ -159,17 +133,21 @@ func qoderQuotaToken(ctx context.Context, endpoint, openAPIBase string, creds Cr
 	base := strings.TrimSuffix(openAPIBase, "/")
 	if base == "" {
 		// The registry's usage endpoint and its openapi host share a service, so the
-		// answer's own origin is the fallback — and it is also what a test stub
+		// answer's own origin is the fallback, and it is also what a test stub
 		// redirects both calls with.
 		base = originOf(endpoint)
 	}
+	// The PAT is what this exchange presents, so it is what an error that quotes the
+	// request could hand back. scrubText is the same guard requestUsage applies to
+	// every quota read; the exchange builds its own request and needs it too.
+	secrets := []string{token}
 	exchanger, err := provider.NewQoderJobTokenClient(base, client)
 	if err != nil {
-		return "", fmt.Sprintf("Qoder error: %s", err)
+		return "", fmt.Sprintf("Qoder error: %s", scrubText(err.Error(), secrets))
 	}
 	jobToken, err := exchanger.JobToken(ctx, token)
 	if err != nil {
-		return "", fmt.Sprintf("Qoder error: %s", err)
+		return "", fmt.Sprintf("Qoder error: %s", scrubText(err.Error(), secrets))
 	}
 	return jobToken, ""
 }
@@ -177,7 +155,7 @@ func qoderQuotaToken(ctx context.Context, endpoint, openAPIBase string, creds Cr
 // qoderResult renders the published buckets as windows. A bucket that states no total
 // and no use is not reported, because a row of zeros reads as a spent allocation
 // rather than an absent one. When nothing publishes but the vendor says the quota is
-// exceeded, that is the fact worth reporting — the measured answer for a credits plan
+// exceeded, that is the fact worth reporting, the measured answer for a credits plan
 // with no credits does exactly this.
 func qoderResult(userType string, exceeded bool, personal, organization qoderUsage, resetsAt time.Time) Result {
 	quotas := make([]Quota, 0, 2)
@@ -208,16 +186,6 @@ func qoderResult(userType string, exceeded bool, personal, organization qoderUsa
 		result.Message = "Qoder published no quota for this account."
 	}
 	return result
-}
-
-// quotaDetail renders a provider error body for a message, with the leading separator
-// the existing families use, or nothing when the body was empty.
-func quotaDetail(body []byte) string {
-	detail := strings.TrimSpace(string(body))
-	if detail == "" {
-		return ""
-	}
-	return ": " + detail
 }
 
 // originOf reduces a URL to scheme and host, the part a sibling endpoint of the same

@@ -3,32 +3,17 @@
 // Package main is the app-serv composition root.
 //
 // @file      cmd/app-serv/usage_live_doubles_integration_test.go
-// @for       The live Usage pass's fixture, socket readers, and upstream
+// @for       The live Usage pass's fixture, socket readers, and upstream doubles.
+// @uses      internal/dataplane, internal/domain, internal/handler, internal/router, internal/schema, internal/service, bufio, context, encoding/json, net, net/http, net/http/httptest, os, strings, testing, time.
+// @reason    Draft 013 F4 is closed by "the route answers with a session and the live pass records a frame from the gateway itself". Every half of that has a unit test, and none of them proves the two halves meet: the marker is written by a real relay leg over a real socket, the store is the real Redis, and the frame is read off a real connection through the real router. That is the evidence the previous pass could not produce, and it is the difference between "the code should work" and "the frame arrived".
 //
-//	doubles.
-//
-// @uses      internal/dataplane, internal/domain, internal/handler, internal/router,
-//
-//	internal/schema, internal/service, bufio, context, encoding/json, net,
-//	net/http, net/http/httptest, os, strings, testing, time.
-//
-// @reason    Draft 013 F4 is closed by "the route answers with a session and the
-//
-//	live pass records a frame from the gateway itself". Every half of
-//	that has a unit test, and none of them proves the two halves meet:
-//	the marker is written by a real relay leg over a real socket, the
-//	store is the real Redis, and the frame is read off a real
-//	connection through the real router. That is the evidence the
-//	previous pass could not produce, and it is the difference between
-//	"the code should work" and "the frame arrived".
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	  PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
-//	    go test -race -tags=integration -run TestUsageLive ./cmd/app-serv/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
+//	  go test -race -tags=integration -run TestUsageLive ./cmd/app-serv/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package main
 

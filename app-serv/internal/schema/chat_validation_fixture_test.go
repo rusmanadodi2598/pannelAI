@@ -1,17 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/chat_validation_fixture_test.go
-// @for       The shared body builders and the decode-then-validate assertion
-// used by the chat contract tests.
+// @for       The shared body builders and the decode-then-validate assertion used by the chat contract tests.
 // @uses      testing.
-// @reason    Two test files walk the same two steps (decode, validate), so the
-// helper lives once beside them rather than being copied. It is separate
-// because a fixture is not a rule, and AGENTS.md §1.1 asks for the split
-// before the limit forces it.
-//
+// @reason    Two test files walk the same two steps (decode, validate), so the helper lives once beside them rather than being copied. It is separate because a fixture is not a rule, and AGENTS.md §1.1 asks for the split before the limit forces it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package schema
 

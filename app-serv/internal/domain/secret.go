@@ -2,23 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/secret.go
-// @for       The one place a stored credential crosses between plaintext and
-//
-//	ciphertext: AES-256-GCM sealing for upstream keys and OAuth tokens.
-//
+// @for       The one place a stored credential crosses between plaintext and ciphertext: AES-256-GCM sealing for upstream keys and OAuth tokens.
 // @uses      crypto/aes, crypto/cipher, crypto/rand, encoding/base64, fmt, strings.
-// @reason    SPEC-API-001 §6 stores upstream credentials encrypted with a key
-//
-//	from the environment. There must be exactly one implementation:
-//	sealing and opening have to agree on the key, the nonce
-//	discipline, and the storage format, or a value written by one path
-//	becomes unreadable by another, and a second implementation is
-//	precisely how that happens. The aggregate itself never sees the
-//	plaintext, so this type is what the service layer hands it.
-//
+// @reason    SPEC-API-001 §6 stores upstream credentials encrypted with a key from the environment. There must be exactly one implementation: sealing and opening have to agree on the key, the nonce discipline, and the storage format, or a value written by one path becomes unreadable by another, and a second implementation is precisely how that happens. The aggregate itself never sees the plaintext, so this type is what the service layer hands it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 

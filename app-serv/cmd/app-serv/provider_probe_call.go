@@ -1,24 +1,12 @@
 // Command app-serv performs one guarded probe request and classifies its answer.
 //
 // @file      cmd/app-serv/provider_probe_call.go
-// @for       The probe's single outbound request: destination check, credential
-//
-//	placement, and the status classification the panel reads.
-//
-// @uses      internal/domain, internal/provider, internal/registry,
-//
-//	internal/service, context, fmt, net/http, time.
-//
-// @reason    The classification is the whole value of a connectivity test: an
-//
-//	operator reads its result to decide whether to replace a credential or
-//	fix a URL. It is separate from the port surface in provider_probe.go
-//	because that file carries the two probe shapes, and AGENTS.md §1.1
-//	asks for the split before the limit forces it.
-//
+// @for       The probe's single outbound request: destination check, credential placement, and the status classification the panel reads.
+// @uses      internal/domain, internal/provider, internal/registry, internal/service, context, fmt, net/http, time.
+// @reason    The classification is the whole value of a connectivity test: an operator reads its result to decide whether to replace a credential or fix a URL. It is separate from the port surface in provider_probe.go because that file carries the two probe shapes, and AGENTS.md §1.1 asks for the split before the limit forces it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package main
 
@@ -69,7 +57,7 @@ func (p *httpEndpointProber) probe(ctx context.Context, target string, entry reg
 		// The call never completed, so there is no status; the message stays
 		// short because a transport error can carry a long internal chain.
 		return service.ProbeOutcome{
-			State:     domain.EndpointTestFail,
+			State:     string(domain.EndpointTestFail),
 			LatencyMS: latency,
 			Message:   "the upstream could not be reached",
 		}, nil
@@ -79,15 +67,15 @@ func (p *httpEndpointProber) probe(ctx context.Context, target string, entry reg
 	outcome := service.ProbeOutcome{LatencyMS: latency, Status: resp.StatusCode}
 	switch {
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
-		outcome.State = domain.EndpointTestOK
+		outcome.State = string(domain.EndpointTestOK)
 	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:
-		outcome.State = domain.EndpointTestFail
+		outcome.State = string(domain.EndpointTestFail)
 		outcome.Message = "the upstream rejected this credential"
 	default:
 		// Reachable but unhappy: the host and URL are proven, which is what a
 		// connectivity test asks, so the failure message names the status rather
 		// than blaming the credential.
-		outcome.State = domain.EndpointTestFail
+		outcome.State = string(domain.EndpointTestFail)
 		outcome.Message = fmt.Sprintf("the upstream answered %d", resp.StatusCode)
 	}
 	return outcome, nil
@@ -95,5 +83,5 @@ func (p *httpEndpointProber) probe(ctx context.Context, target string, entry reg
 
 // failure builds a failed outcome with the given English explanation.
 func failure(message string) service.ProbeOutcome {
-	return service.ProbeOutcome{State: domain.EndpointTestFail, Message: message}
+	return service.ProbeOutcome{State: string(domain.EndpointTestFail), Message: message}
 }

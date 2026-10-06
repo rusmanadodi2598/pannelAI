@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_responses_response.go
-// @for       Non-streamed Responses API answer translation, in both client
-//
-//	directions.
-//
+// @for       Non-streamed Responses API answer translation, in both client directions.
 // @uses      internal/schema.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable and §7.15
-//
-//	serves the OpenAI and Anthropic wires, so one upstream answer has to
-//	become either. Both directions read one decoded form, which is what
-//	keeps the text, tool calls, and usage from being extracted twice; the
-//	item readers live in translate_responses_answer.go.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable and §7.15 serves the OpenAI and Anthropic wires, so one upstream answer has to become either. Both directions read one decoded form, which is what keeps the text, tool calls, and usage from being extracted twice; the item readers live in translate_responses_answer.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

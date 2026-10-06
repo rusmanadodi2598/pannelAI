@@ -2,23 +2,17 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_levels.go
-// @for       The thinking levels a model accepts, ported from the reference's
-//
-//	thinkingLevels.js: the per-format sets, the model-name overrides, and
-//	the can-disable filter.
-//
+// @for       The thinking levels a model accepts, ported from the reference's thinkingLevels.js: the per-format sets, the model-name overrides, and the can-disable filter.
 // @uses      strings.
-// @reason    The reasoning control (§7.14) offers one list of modes per model,
+// @reason    The reasoning control (§7.14) offers one list of modes per model, and the reference computes that list from the same capability resolution capability_thinking.go carries (thinkingLevels.js:66-76).
 //
-//	and the reference computes that list from the same capability
-//	resolution capability_thinking.go carries (thinkingLevels.js:66-76).
 //	The sets are the reference's own, verified against its wire dispatch,
 //	because a level a model does not accept is a control that answers an
 //	upstream error instead of a choice.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-26
 package registry
 

@@ -5,16 +5,10 @@
 // @file      internal/service/quotafetch/google_quota.go
 // @for       Runs Antigravity's reads and assembles the windows the card is handed.
 // @uses      internal/service/quotafetch, context, fmt, net/http, strings, time, antigravity_models.go
-// @reason    The IDE meters a paid tier per model and a free tier not at all, and answers the
-//
-//	project, the tier and the windows from three different surfaces, so the
-//	read that shows the card the truth has to keep a tier-less account from
-//	being shown model rows and mark a session window spent when the whole
-//	family behind it is.
-//
+// @reason    The IDE meters a paid tier per model and a free tier not at all, and answers the project, the tier and the windows from three different surfaces, so the read that shows the card the truth has to keep a tier-less account from being shown model rows and mark a session window spent when the whole family behind it is.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

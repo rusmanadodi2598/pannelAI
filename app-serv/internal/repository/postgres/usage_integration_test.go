@@ -5,12 +5,7 @@
 // @file      internal/repository/postgres/usage_integration_test.go
 // @for       Integration tests for usage recording and the summary aggregation.
 // @uses      internal/domain, context, testing, time.
-// @reason    The aggregation is one set-based statement whose correctness
-//
-//	depends on SQL semantics a stub cannot reproduce: numeric
-//	summation that must stay exact, and a group-by whose column comes
-//	from a closed set. The zero-record range is the case a stub makes
-//	look right and PostgreSQL makes look empty.
+// @reason    The aggregation is one set-based statement whose correctness depends on SQL semantics a stub cannot reproduce: numeric summation that must stay exact, and a group-by whose column comes from a closed set. The zero-record range is the case a stub makes look right and PostgreSQL makes look empty.
 //
 //	The file carries an `integration` build tag so the default
 //	`go test ./...` stays hermetic; with the tag active the DSN is
@@ -21,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 

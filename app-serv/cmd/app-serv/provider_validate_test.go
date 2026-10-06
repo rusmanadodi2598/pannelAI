@@ -1,26 +1,12 @@
 // Command app-serv adapts the stateless credential check to HTTP.
 //
 // @file      cmd/app-serv/provider_validate_test.go
-// @for       The two reference rules the stateless check implements: the models →
-//
-//	chat fallback, and the Anthropic status rule.
-//
-// @uses      internal/domain, internal/netguard, internal/provider,
-//
-//	internal/registry, internal/service, context, net/http,
-//	net/http/httptest, sync/atomic, testing.
-//
-// @reason    Draft 017 §4.6 names both rules as the ones a naive implementation
-//
-//	gets wrong, and both are invisible to a status-only test: a fallback
-//	that never fires still reports the right answer for a server that has
-//	`/models`, and an Anthropic rule narrowed to 2xx still reports the right
-//	answer for a working key. Each case therefore asserts the *request path*
-//	as well as the outcome.
-//
+// @for       The two reference rules the stateless check implements: the models → chat fallback, and the Anthropic status rule.
+// @uses      internal/domain, internal/netguard, internal/provider, internal/registry, internal/service, context, net/http, net/http/httptest, sync/atomic, testing.
+// @reason    Draft 017 §4.6 names both rules as the ones a naive implementation gets wrong, and both are invisible to a status-only test: a fallback that never fires still reports the right answer for a server that has `/models`, and an Anthropic rule narrowed to 2xx still reports the right answer for a working key. Each case therefore asserts the *request path* as well as the outcome.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -110,32 +96,32 @@ func TestValidateNode_ModelsThenChatFallback(t *testing.T) {
 		{
 			name:         "a 200 on /models proves the key without a chat probe",
 			modelsStatus: http.StatusOK, chatStatus: http.StatusOK,
-			wantState: domain.EndpointTestOK, wantMethod: service.ProbeMethodModels, wantModels: 1, wantChat: 0,
+			wantState: string(domain.EndpointTestOK), wantMethod: service.ProbeMethodModels, wantModels: 1, wantChat: 0,
 		},
 		{
 			name:         "a 404 on /models falls back to chat, which proves the key",
 			modelsStatus: http.StatusNotFound, chatStatus: http.StatusOK,
-			wantState: domain.EndpointTestOK, wantMethod: service.ProbeMethodChat, wantModels: 1, wantChat: 1,
+			wantState: string(domain.EndpointTestOK), wantMethod: service.ProbeMethodChat, wantModels: 1, wantChat: 1,
 		},
 		{
 			name:         "a 404 on both is a failure that names the chat path",
 			modelsStatus: http.StatusNotFound, chatStatus: http.StatusNotFound,
-			wantState: domain.EndpointTestFail, wantMethod: service.ProbeMethodChat, wantModels: 1, wantChat: 1,
+			wantState: string(domain.EndpointTestFail), wantMethod: service.ProbeMethodChat, wantModels: 1, wantChat: 1,
 		},
 		{
 			name:         "a 401 on /models is rejected and is not retried",
 			modelsStatus: http.StatusUnauthorized, chatStatus: http.StatusOK,
-			wantState: domain.EndpointTestFail, wantMethod: service.ProbeMethodModels, wantModels: 1, wantChat: 0,
+			wantState: string(domain.EndpointTestFail), wantMethod: service.ProbeMethodModels, wantModels: 1, wantChat: 0,
 		},
 		{
 			name:         "a 403 on /models is rejected and is not retried",
 			modelsStatus: http.StatusForbidden, chatStatus: http.StatusOK,
-			wantState: domain.EndpointTestFail, wantMethod: service.ProbeMethodModels, wantModels: 1, wantChat: 0,
+			wantState: string(domain.EndpointTestFail), wantMethod: service.ProbeMethodModels, wantModels: 1, wantChat: 0,
 		},
 		{
 			name:         "a 500 on /models falls back to chat",
 			modelsStatus: http.StatusInternalServerError, chatStatus: http.StatusOK,
-			wantState: domain.EndpointTestOK, wantMethod: service.ProbeMethodChat, wantModels: 1, wantChat: 1,
+			wantState: string(domain.EndpointTestOK), wantMethod: service.ProbeMethodChat, wantModels: 1, wantChat: 1,
 		},
 	}
 	for _, tc := range cases {
@@ -174,12 +160,12 @@ func TestValidateNode_AnthropicAcceptsAnythingBut401And403(t *testing.T) {
 		status    int
 		wantState string
 	}{
-		{name: "a 200 is ok", status: http.StatusOK, wantState: domain.EndpointTestOK},
-		{name: "a 400 means the request was wrong, not the key", status: http.StatusBadRequest, wantState: domain.EndpointTestOK},
-		{name: "a 404 means the path was wrong, not the key", status: http.StatusNotFound, wantState: domain.EndpointTestOK},
-		{name: "a 529 means the provider is overloaded, not the key", status: 529, wantState: domain.EndpointTestOK},
-		{name: "a 401 is a rejected key", status: http.StatusUnauthorized, wantState: domain.EndpointTestFail},
-		{name: "a 403 is a rejected key", status: http.StatusForbidden, wantState: domain.EndpointTestFail},
+		{name: "a 200 is ok", status: http.StatusOK, wantState: string(domain.EndpointTestOK)},
+		{name: "a 400 means the request was wrong, not the key", status: http.StatusBadRequest, wantState: string(domain.EndpointTestOK)},
+		{name: "a 404 means the path was wrong, not the key", status: http.StatusNotFound, wantState: string(domain.EndpointTestOK)},
+		{name: "a 529 means the provider is overloaded, not the key", status: 529, wantState: string(domain.EndpointTestOK)},
+		{name: "a 401 is a rejected key", status: http.StatusUnauthorized, wantState: string(domain.EndpointTestFail)},
+		{name: "a 403 is a rejected key", status: http.StatusForbidden, wantState: string(domain.EndpointTestFail)},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

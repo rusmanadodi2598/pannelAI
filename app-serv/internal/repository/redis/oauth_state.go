@@ -3,18 +3,10 @@
 // @file      internal/repository/redis/oauth_state.go
 // @for       The single-use OAuth state staging area behind §7.4's callback.
 // @uses      github.com/redis/go-redis/v9, context, time.
-// @reason    SPEC-API-001 §4 makes `state` a replay guard: one callback may
-//
-//	consume it, within ten minutes, exactly once. Staging with SET NX
-//	refuses a guessed collision and the take runs as one atomic script,
-//	so two concurrent callbacks with one state cannot both win — the
-//	loser is told the state is gone, which is the replay answer. The
-//	script rather than GETDEL is what keeps the store working on Redis
-//	6.0 (owner decision D4, G14 in the P2 register).
-//
+// @reason    SPEC-API-001 §4 makes `state` a replay guard: one callback may consume it, within ten minutes, exactly once. Staging with SET NX refuses a guessed collision and the take runs as one atomic script, so two concurrent callbacks with one state cannot both win, the loser is told the state is gone, which is the replay answer. The script rather than GETDEL is what keeps the store working on Redis 6.0 (owner decision D4, G14 in the P2 register).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package redisrepo
 
@@ -95,8 +87,8 @@ func (s *OAuthStateStore) Take(ctx context.Context, state string) ([]byte, bool,
 	return []byte(payload), true, nil
 }
 
-// Peek reads the state's payload without consuming it. A polled flow — the
-// device authorization the panel asks about every couple of seconds — re-reads
+// Peek reads the state's payload without consuming it. A polled flow, the
+// device authorization the panel asks about every couple of seconds, re-reads
 // this until the upstream answers, so the read must leave the key and its TTL
 // untouched. A key that never existed or expired reports ok=false, the same
 // replay answer Take gives.

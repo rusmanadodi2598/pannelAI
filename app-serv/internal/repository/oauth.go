@@ -3,15 +3,10 @@
 // @file      internal/repository/oauth.go
 // @for       The OAuth state replay-guard boundary (SPEC-API-001 §4, §7.4).
 // @uses      context, time.
-// @reason    §4 makes the OAuth `state` single-use with a 10-minute TTL, so a
-//
-//	callback replayed or guessed cannot mint tokens. The guard is a
-//	storage concern the flow service depends on, never a driver: an
-//	in-memory implementation backs the tests, Redis backs production.
-//
+// @reason    §4 makes the OAuth `state` single-use with a 10-minute TTL, so a callback replayed or guessed cannot mint tokens. The guard is a storage concern the flow service depends on, never a driver: an in-memory implementation backs the tests, Redis backs production.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package repository
 
@@ -38,6 +33,6 @@ type OAuthStateStore interface {
 	// existed or expired reports ok=false.
 	Peek(ctx context.Context, state string) (payload []byte, ok bool, err error)
 	// Take removes and returns the state's payload. A state that never existed,
-	// expired, or was already taken reports ok=false — the replay answer.
+	// expired, or was already taken reports ok=false, the replay answer.
 	Take(ctx context.Context, state string) (payload []byte, ok bool, err error)
 }

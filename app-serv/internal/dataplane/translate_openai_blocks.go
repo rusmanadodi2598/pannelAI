@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_openai_blocks.go
-// @for       The message, block, and image conversion the Anthropic-to-OpenAI
-//
-//	direction applies.
-//
+// @for       The message, block, and image conversion the Anthropic-to-OpenAI direction applies.
 // @uses      internal/schema, encoding/json, strings.
-// @reason    OpenAI pairs a tool call with a separate `tool` message and
-//
-//	Anthropic nests the result inside the calling turn, so this file
-//	holds the split that makes a Claude Code conversation expressible on
-//	an OpenAI provider. It is separated from the request builder so the
-//	block rules are auditable on their own.
-//
+// @reason    OpenAI pairs a tool call with a separate `tool` message and Anthropic nests the result inside the calling turn, so this file holds the split that makes a Claude Code conversation expressible on an OpenAI provider. It is separated from the request builder so the block rules are auditable on their own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 

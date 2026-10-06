@@ -2,22 +2,17 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/types_retry.go
-// @for       The retry override a transport declares: how many attempts and,
-//
-//	for a provider whose transient recovers over seconds, how far apart.
-//
+// @for       The retry override a transport declares: how many attempts and, for a provider whose transient recovers over seconds, how far apart.
 // @uses      fmt, strconv, time, gopkg.in/yaml.v3.
-// @reason    The reference writes retry as a bare count, a per-status count, and
+// @reason    The reference writes retry as a bare count, a per-status count, and a per-status object, so the union of those shapes is decoded here rather than loosened into a map that would let a misspelled key silently disable a retry.
 //
-//	a per-status object, so the union of those shapes is decoded here rather than
-//	loosened into a map that would let a misspelled key silently disable a retry.
 //	The backoff base is separated from the attempt count because a provider whose
 //	upstream answers the same request "all backends failed" and serves it seconds
 //	later needs the retries spaced, not merely more of them.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-28
 package registry
 
@@ -42,9 +37,9 @@ type Retry struct {
 	// BackoffBaseMS overrides the gateway's default backoff base for one status.
 	// It exists for a provider whose transient refusal recovers over seconds, not
 	// milliseconds: Qoder's free-model pool answers the identical request "all
-	// backends failed" / "quota exceeded" and serves it seconds later (draft 036
-	// §9.2), so a sub-second retry re-fires inside the same fail-streak. An entry
-	// that declares no base keeps the gateway default, so this changes no other
+	// backends failed" / "quota exceeded" and serves it seconds later, so a
+	// sub-second retry re-fires inside the same fail-streak. An entry that
+	// declares no base keeps the gateway default, so this changes no other
 	// provider.
 	BackoffBaseMS map[int]int
 }

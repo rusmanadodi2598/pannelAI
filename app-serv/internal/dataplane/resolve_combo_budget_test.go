@@ -3,23 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/resolve_combo_budget_test.go
-// @for       Draft 024 F1 after review: one resolution's work is bounded, so a
-//
-//	stored graph cannot turn a request into an unbounded number of
-//	repository reads.
-//
+// @for       Draft 024 F1 after review: one resolution's work is bounded, so a stored graph cannot turn a request into an unbounded number of repository reads.
 // @uses      internal/domain, context, fmt, testing.
-// @reason    The depth guard alone bounded the chain length, not the work: a
-//
-//	combo whose members are combos re-walked every subtree once per path
-//	to it, so a modest fan-out cost lookups exponentially. These tests
-//	pin both bounds — the memo that collapses repeated subtrees, and the
-//	expansion limit that stops a graph the memo cannot collapse — and the
-//	alias-cycle guard the combo depth bound does not cover.
-//
+// @reason    The depth guard alone bounded the chain length, not the work: a combo whose members are combos re-walked every subtree once per path to it, so a modest fan-out cost lookups exponentially. These tests pin both bounds, the memo that collapses repeated subtrees, and the expansion limit that stops a graph the memo cannot collapse, and the alias-cycle guard the combo depth bound does not cover.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 
@@ -47,10 +36,6 @@ func (l *countingLookup) Combo(ctx context.Context, name string) (domain.Combo, 
 func (l *countingLookup) Alias(ctx context.Context, name string) (string, bool, error) {
 	l.aliasReads++
 	return l.inner.Alias(ctx, name)
-}
-
-func (l *countingLookup) Disabled(ctx context.Context, providerID, modelID string) (bool, error) {
-	return l.inner.Disabled(ctx, providerID, modelID)
 }
 
 func (l *countingLookup) DisabledPairs(ctx context.Context) ([]domain.ModelRef, error) {
@@ -156,7 +141,7 @@ func TestResolver_ComboExpansionIsBounded(t *testing.T) {
 // TestResolver_AliasCycleTerminates pins the one cycle shape the combo depth
 // bound does not cover: an alias whose target is another alias. The write path
 // refuses such a set, so this is the read path's behaviour for a row written
-// directly — it must terminate rather than recurse.
+// directly, it must terminate rather than recurse.
 func TestResolver_AliasCycleTerminates(t *testing.T) {
 	lookup := fakeLookup{
 		combos:  map[string]domain.Combo{},

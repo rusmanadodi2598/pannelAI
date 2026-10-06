@@ -1,28 +1,18 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_state_test.go
-// @for       The state round as a connect path: what the panel is offered, what
-//
-//	the round holds, and what a granted poll stores.
-//
+// @for       The state round as a connect path: what the panel is offered, what the round holds, and what a granted poll stores.
 // @uses      context, strings, testing, time.
-// @reason    CodeBuddy was reported to the panel as needing a connector, which
-//
-//	meant no operator could connect it from the screen at all. These tests
-//	pin the other answer: the flow is offered, the handle the panel holds
-//	is the vendor's own state, a pending poll leaves the round retryable,
-//	a granted poll stores a credential the refresh worker can renew —
-//	through the header endpoint rather than the form grant — and a second
-//	login updates one account instead of stacking another.
-//
+// @reason    CodeBuddy was reported to the panel as needing a connector, which meant no operator could connect it from the screen at all. These tests pin the other answer: the flow is offered, the handle the panel holds is the vendor's own state, a pending poll leaves the round retryable, a granted poll stores a credential the refresh worker can renew, through the header endpoint rather than the form grant, and a second login updates one account instead of stacking another.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package service
 
 import (
 	"context"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"strings"
 	"testing"
 	"time"
@@ -100,8 +90,8 @@ func TestStateDevicePoll_PendingKeepsTheRoundRetryable(t *testing.T) {
 
 func TestStateDevicePoll_ConnectsAndNamesTheRegion(t *testing.T) {
 	fixture := newStateFlowFixture(t)
-	fixture.tokens.statePollFn = func(string) (DeviceTokenResponse, bool, error) {
-		return DeviceTokenResponse{AccessToken: "cb-access", RefreshToken: "cb-refresh",
+	fixture.tokens.statePollFn = func(string) (oauthhttp.DeviceTokenResponse, bool, error) {
+		return oauthhttp.DeviceTokenResponse{AccessToken: "cb-access", RefreshToken: "cb-refresh",
 			ExpiresAt: testNow.Add(72 * time.Hour)}, false, nil
 	}
 	code := startDevice(t, fixture, stateProvider).DeviceCode
@@ -126,20 +116,20 @@ func TestStateDevicePoll_ConnectsAndNamesTheRegion(t *testing.T) {
 	// The state round returns no user identity, so the account states none either: an
 	// invented email is a dedup key every account of the region would share, which is
 	// how a second login used to spend the first one's credential.
-	if email := endpoint.Account().Email; email != "" {
+	if email := endpoint.Account().Email(); !email.IsZero() {
 		t.Fatalf("account email = %q, want none: this vendor returns no identity to key on", email)
 	}
-	if credential := endpoint.OAuth(); credential == nil || credential.ExpiresAt == nil {
+	if credential := endpoint.OAuth(); credential == nil || credential.ExpiresAt() == nil {
 		t.Fatalf("credential = %+v, want a stored expiry", credential)
-	} else if !credential.ExpiresAt.Equal(testNow.Add(72 * time.Hour)) {
-		t.Fatalf("expiry = %v, want the lifetime the vendor stated", credential.ExpiresAt)
+	} else if !credential.ExpiresAt().Equal(testNow.Add(72 * time.Hour)) {
+		t.Fatalf("expiry = %v, want the lifetime the vendor stated", credential.ExpiresAt())
 	}
 }
 
 func TestStateRefresh_RotatesThroughTheHeaderEndpoint(t *testing.T) {
 	fixture := newStateFlowFixture(t)
-	fixture.tokens.statePollFn = func(string) (DeviceTokenResponse, bool, error) {
-		return DeviceTokenResponse{AccessToken: "cb-access", RefreshToken: "cb-refresh",
+	fixture.tokens.statePollFn = func(string) (oauthhttp.DeviceTokenResponse, bool, error) {
+		return oauthhttp.DeviceTokenResponse{AccessToken: "cb-access", RefreshToken: "cb-refresh",
 			ExpiresAt: testNow.Add(time.Hour)}, false, nil
 	}
 	connected, err := fixture.service.DevicePoll(context.Background(), OAuthDevicePollInput{
@@ -172,7 +162,7 @@ func TestStateRefresh_RotatesThroughTheHeaderEndpoint(t *testing.T) {
 	if hint == nil {
 		t.Fatal("the endpoint lost its credential through the refresh")
 	}
-	opened, err := fixture.sealer.Open(hint.RefreshTokenEncrypted)
+	opened, err := fixture.sealer.Open(hint.RefreshTokenEncrypted())
 	if err != nil {
 		t.Fatalf("Open() error = %v", err)
 	}

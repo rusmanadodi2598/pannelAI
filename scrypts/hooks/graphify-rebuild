@@ -121,7 +121,7 @@ sys.exit(1)
 PY
 }
 
-# ---------------------------------------------------------------- run mode
+# run mode
 
 run_rebuild() {
 	local iteration=0
@@ -263,7 +263,7 @@ run_rebuild() {
 	log_line "iteration cap reached; the next trigger will pick up any remaining change"
 }
 
-# -------------------------------------------------------------- detach mode
+# detach mode
 
 detach() {
 	mkdir -p "$out"
@@ -290,7 +290,7 @@ detach() {
 	return 0
 }
 
-# --------------------------------------------------------------- entrypoint
+# entrypoint
 
 case "${1:-detach}" in
 run)

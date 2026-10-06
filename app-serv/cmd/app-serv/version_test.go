@@ -5,15 +5,10 @@
 // @file      cmd/app-serv/version_test.go
 // @for       Test that the version payload reports the loaded registry revision.
 // @uses      testing, internal/schema.
-// @reason    SPEC-API-001 §7.1 exposes registry_revision so an operator can tell
-//
-//	which registry a running gateway loaded. The field shipped as the
-//	literal "none" for as long as nothing asserted otherwise, which is a
-//	payload that answers the question wrongly rather than not at all.
-//
+// @reason    SPEC-API-001 §7.1 exposes registry_revision so an operator can tell which registry a running gateway loaded. The field shipped as the literal "none" for as long as nothing asserted otherwise, which is a payload that answers the question wrongly rather than not at all.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package main
 

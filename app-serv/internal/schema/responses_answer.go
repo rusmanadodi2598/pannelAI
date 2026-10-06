@@ -1,21 +1,12 @@
 // Package schema holds the typed contracts each route decodes into.
 //
 // @file      internal/schema/responses_answer.go
-// @for       The OpenAI Responses answer contract: the response object, its
-//
-//	output items, and the accounting it reports.
-//
+// @for       The OpenAI Responses answer contract: the response object, its output items, and the accounting it reports.
 // @uses      encoding/json.
-// @reason    SPEC-API-001 §7.15 makes POST /api/v1/responses a P3 deliverable,
-//
-//	and the answer has to be built rather than forwarded whenever the
-//	resolved provider speaks another format. One typed shape is what
-//	keeps the non-streamed answer and the streamed lifecycle events
-//	describing the same object.
-//
+// @reason    SPEC-API-001 §7.15 makes POST /api/v1/responses a P3 deliverable, and the answer has to be built rather than forwarded whenever the resolved provider speaks another format. One typed shape is what keeps the non-streamed answer and the streamed lifecycle events describing the same object.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 

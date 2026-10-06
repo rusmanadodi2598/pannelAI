@@ -2,7 +2,7 @@
 // docs/DRAFT/043-USAGE-COMBO-NODE-FLOW.md F1).
 //
 // Split from `usage-topology-view.ts` because the two answer different questions: this file is arithmetic
-// over a box — where a band's nodes land, how tall the box grows, how wide a label may be — and that file is
+// over a box (where a band's nodes land, how tall the box grows, how wide a label may be) and that file is
 // which node carries which state. Pure both, so both are testable without a DOM, a clock, or a socket. The
 // beam along a lit edge is a third question, and it lives in `usage-beam.ts`.
 
@@ -19,7 +19,7 @@ const RADIUS_Y = 34;
 
 // How far each band stays away from the horizontal axis, in degrees. Two nodes mirrored across that axis are
 // `2 * RADIUS_Y * sin(edge)` apart vertically, and the row they would collide on is `NODE_HEIGHT /
-// MIN_HEIGHT` of the box — 8.3%. Twelve degrees doubles that, so the margin survives whoever moves either
+// MIN_HEIGHT` of the box, 8.3%. Twelve degrees doubles that, so the margin survives whoever moves either
 // constant later. What it protects against is not cosmetic: two nodes with the same x and a shared row make
 // `nodeShare` return zero, and a share of zero is a drawing whose every box has collapsed to nothing.
 const BAND_EDGE_DEGREES = 12;

@@ -2,25 +2,12 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_fingerprint_test.go
-// @for       The tool-name rule the OpenCode free tier enforces: every declared
-// //
-//
-//	name is unique, and the decoy tools the gate reads are lowercase.
-//
+// @for       The tool-name rule the OpenCode free tier enforces: every declared name is unique, and the decoy tools the gate reads are lowercase.
 // @uses      testing, internal/registry.
-// @reason    Measured against the live upstream on 2026-09-24: a body declaring
-//
-//	the same tool name twice is refused 400 for any name, not only for the
-//	decoy quartet, and a body whose only bash/read are capitalised is
-//	refused 403 because the gate matches the lowercase spelling. Both
-//	failures surface as a provider error with no field named, so the
-//	connector has to hold the rule rather than forward it. The rules live
-//	in their own file because opencode_body_test.go already covers the
-//	field-name rules, and AGENTS.md §1.1 asks for the split.
-//
+// @reason    Measured against the live upstream on 2026-09-24: a body declaring the same tool name twice is refused 400 for any name, not only for the decoy quartet, and a body whose only bash/read are capitalised is refused 403 because the gate matches the lowercase spelling. Both failures surface as a provider error with no field named, so the connector has to hold the rule rather than forward it. The rules live in their own file because opencode_body_test.go already covers the field-name rules, and AGENTS.md §1.1 asks for the split.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-24
 package provider
 

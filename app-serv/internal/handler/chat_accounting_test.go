@@ -2,19 +2,11 @@
 //
 // @file      internal/handler/chat_accounting_test.go
 // @for       The accounting the chat route writes for one served request.
-// @uses      internal/dataplane, internal/domain, internal/service, net/http,
-//
-//	net/http/httptest, strings, sync, testing.
-//
-// @reason    F4 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires
-// the accounting seam to be exercised through the HTTP boundary, not only by
-// calling the recorder. SPEC-API-001 §7.12 makes one usage row per call that
-// reached an upstream part of the pipeline, and a refusal before any attempt
-// deliberately writes none, so both halves are pinned here.
-//
+// @uses      internal/dataplane, internal/domain, internal/service, net/http, net/http/httptest, strings, sync, testing.
+// @reason    F4 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires the accounting seam to be exercised through the HTTP boundary, not only by calling the recorder. SPEC-API-001 §7.12 makes one usage row per call that reached an upstream part of the pipeline, and a refusal before any attempt deliberately writes none, so both halves are pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package handler
 

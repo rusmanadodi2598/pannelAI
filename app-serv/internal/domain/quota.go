@@ -2,20 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/quota.go
-// @for       The quota vocabulary: window kinds, a usage window, and the budget
-//
-//	cap that makes the router skip an exhausted endpoint.
-//
+// @for       The quota vocabulary: window kinds, a usage window, and the budget cap that makes the router skip an exhausted endpoint.
 // @uses      internal/domain (Decimal, AppError constructors), time.
-// @reason    SPEC-API-001 §7.12 exposes windows and caps and §5 makes a window
-//
-//	"usage per endpoint with a reset instant"; the exhausted rule is a
-//	domain decision the router depends on, so it lives here rather than
-//	in the query that happens to read the counters.
-//
+// @reason    SPEC-API-001 §7.12 exposes windows and caps and §5 makes a window "usage per endpoint with a reset instant"; the exhausted rule is a domain decision the router depends on, so it lives here rather than in the query that happens to read the counters.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 
@@ -88,21 +80,22 @@ func (k QuotaWindowKind) NextReset(now time.Time) time.Time {
 }
 
 // AccountingKinds are the windows one served request bills against, in the
-// order they are written. A request advances every window it falls inside, so
-// the five-hour, daily, weekly, and monthly counters stay comparable: reporting
-// only the narrowest would make the panel's monthly total disagree with the
-// month-to-date figure the budget cap is compared against (§7.12).
-//
-// The set is fixed rather than configurable per provider because the spec fixes
-// the four kinds (SPEC-API-001 §6 CHECK constraint); a provider that reports its
-// own cadence does so through Report, which replaces a counter instead of adding.
+// order they are written. A request advances every window it falls inside, so the
+// four counters stay comparable and the panel's monthly total matches the
+// month-to-date figure the budget cap is compared against. The set is fixed, not
+// configurable per provider, because the schema CHECK constraint fixes these four
+// kinds. A number the provider publishes about itself is not one of these
+// counters: it is a PublishedWindowRow in the published cache, and the two are
+// never summed together.
 func AccountingKinds() []QuotaWindowKind {
 	return []QuotaWindowKind{QuotaWindowFiveHour, QuotaWindowDaily, QuotaWindowWeekly, QuotaWindowMonthly}
 }
 
 // QuotaSource distinguishes a number this gateway counted from one the provider
 // reported. The distinction is functional, not decorative: a computed counter
-// can be reconciled from usage_records while a reported one cannot.
+// can be reconciled from usage_records while a reported one cannot. Only the
+// reconciled write path stores a reported source today; a counter this gateway
+// accumulates always starts as computed.
 type QuotaSource string
 
 const (
@@ -198,41 +191,6 @@ func (w *QuotaWindow) Add(units int64, now time.Time) {
 	}
 	w.used += units
 	w.updatedAt = now.UTC()
-}
-
-// Report replaces the counter with a provider-reported value and marks the
-// source, because a reported number is authoritative and additive updates to it
-// would double-count.
-func (w *QuotaWindow) Report(used int64, resetsAt *time.Time, now time.Time) {
-	if used < 0 {
-		used = 0
-	}
-	w.used = used
-	w.resetsAt = resetsAt
-	w.source = QuotaSourceReported
-	w.updatedAt = now.UTC()
-}
-
-// Exhausted reports whether the window has reached its ceiling. A window with
-// no limit is never exhausted, which is the difference between "uncapped" and
-// "used up".
-func (w QuotaWindow) Exhausted() bool {
-	if w.limit == nil {
-		return false
-	}
-	return w.used >= *w.limit
-}
-
-// Remaining is the units left before the ceiling, or the second return being
-// false when the window is uncapped.
-func (w QuotaWindow) Remaining() (int64, bool) {
-	if w.limit == nil {
-		return 0, false
-	}
-	if *w.limit <= w.used {
-		return 0, true
-	}
-	return *w.limit - w.used, true
 }
 
 // ErrQuotaWindowNotFound is the sentinel a missing quota window maps to.

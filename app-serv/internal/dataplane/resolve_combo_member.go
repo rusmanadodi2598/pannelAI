@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/resolve_combo_member.go
-// @for       The member walk: one combo entry, its alias hop, and the
-//
-//	provider/model reference form.
-//
+// @for       The member walk: one combo entry, its alias hop, and the provider/model reference form.
 // @uses      internal/domain, context.
-// @reason    The depth and expansion guards live with the combo walk; the member
-//
-//	walk that consumes them is a separate concern — a member may be a
-//	reference, an alias, or a nested combo — so it sits here, apart from
-//	the budget the caller owns. Separated at the AGENTS.md §1.1 line
-//	limit.
-//
+// @reason    The depth and expansion guards live with the combo walk; the member walk that consumes them is a separate concern, a member may be a reference, an alias, or a nested combo, so it sits here, apart from the budget the caller owns. Separated at the AGENTS.md §1.1 line limit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 
@@ -30,7 +21,7 @@ import (
 // alias, or a combo name, and a member that names a combo resolves to that
 // combo's own leading member. The depth the chain has already walked travels
 // with the call so a stored cycle terminates at comboDepthLimit instead of
-// recursing without end (draft 024 §3.1).
+// recursing without end.
 func (r *Resolver) resolveMember(ctx context.Context, ref string, depth, aliasHops int, state *resolveState) (Resolution, error) {
 	// A combo is addressed by a bare name, so a reference carrying "/" cannot
 	// be one; that also keeps a provider whose id collides with a combo name

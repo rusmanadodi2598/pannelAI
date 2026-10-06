@@ -3,10 +3,7 @@
 // @file      internal/service/session.go
 // @for       Authenticated session verification, revocation, and password change.
 // @uses      internal/domain, internal/repository, internal/service/password.go.
-// @reason    Session state must be checked at every protected management boundary
-//
-//	and password updates must verify the current credential atomically.
-//
+// @reason    Session state must be checked at every protected management boundary and password updates must verify the current credential atomically.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -49,7 +46,7 @@ func (s *AuthService) Logout(ctx context.Context, token string) error {
 }
 
 // ChangePassword verifies the session and current password before a CAS update,
-// then revokes every session the account holds — the caller's included. A
+// then revokes every session the account holds, the caller's included. A
 // credential the holder just rotated must not leave any of its sessions alive,
 // and the panel answers the sign-out by returning the operator to the login
 // screen.

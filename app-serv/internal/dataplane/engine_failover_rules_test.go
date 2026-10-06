@@ -1,22 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_failover_rules_test.go
-// @for       The failover rules the draft 028 fixes added, beyond the five
-//
-//	acceptance probes: credential-first order, the class-aware stop, the
-//	combined client error, and first-failure parking.
-//
+// @for       The failover rules the draft 028 fixes added, beyond the five acceptance probes: credential-first order, the class-aware stop, the combined client error, and first-failure parking.
 // @uses      context, net/http, strings, testing, internal/domain, internal/registry.
-// @reason    SPEC-API-001 §7.7 now fixes the order as credentials first and names
-//
-//	the exhausted chain's error as the first failure's status with the last
-//	failure's message; §7.5 fixes the parking window per class. Each rule is
-//	a separate decision, so each is pinned on its own rather than inferred
-//	from the probes (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §7.7 now fixes the order as credentials first and names the exhausted chain's error as the first failure's status with the last failure's message; §7.5 fixes the parking window per class. Each rule is a separate decision, so each is pinned on its own rather than inferred from the probes (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 

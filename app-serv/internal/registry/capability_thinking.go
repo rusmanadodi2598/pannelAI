@@ -2,27 +2,17 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_thinking.go
-// @for       The reasoning decision for one model: whether it reasons, the wire
-//
-//	format its thinking takes, and whether thinking can be turned off.
-//
+// @for       The reasoning decision for one model: whether it reasons, the wire format its thinking takes, and whether thinking can be turned off.
 // @uses      strings (the glob matcher's normalisation).
-// @reason    The reference derives its thinking-level picker and its
-//
-//	thinking-format dispatch from three fields of the same capability
-//	resolution the port already carries for vision and tools
-//	(capabilities.js:562-605). The port reads them from
-//	capability_thinking_tables.go, in the reference's own layer order —
-//	provider override, exact id, ordered pattern, floor — because a
-//	reordered walk answers differently for every id two rows match.
+// @reason    The reference derives its thinking-level picker and its thinking-format dispatch from three fields of the same capability resolution the port already carries for vision and tools (capabilities.js:562-605). The port reads them from capability_thinking_tables.go, in the reference's own layer order, provider override, exact id, ordered pattern, floor, because a reordered walk answers differently for every id two rows match.
 //
 //	The answer is a value the data plane and the panel both read: the
 //	panel offers the levels §7.6's reasoning control can pick, and the
 //	relay path applies the picked mode in the format named here.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-26
 package registry
 
@@ -37,14 +27,12 @@ type ThinkingRange struct {
 
 // thinkingRule is one row of a reasoning table: the pattern it matches (empty
 // for the map-keyed layers, where the key is the id), the wire format the
-// model's thinking takes, whether the model can turn thinking off, and whether
-// the row reasons at all. A row with reasons false is a stop row: the reference
-// stops its walk there, so a later reasoning row must not claim the id.
-//
-// hasRange carries the row's budget clamp; the bounds are read only when it is
-// set, so a row with no clamp is not confused with one whose bounds are zero.
-// effort marks the rows whose format also reads a reasoning_effort level on top
-// of its thinking object (the reference's thinkingEffortSupported).
+// model's thinking takes, whether thinking can be turned off, and whether the
+// row reasons at all. A row with reasons false is a stop row: the walk ends
+// there, so a later reasoning row must not claim the id.
+// hasRange gates the budget clamp, so "no clamp" is not read as bounds of zero.
+// effort marks rows whose format also reads a reasoning_effort level on top of
+// its thinking object.
 type thinkingRule struct {
 	pattern       string
 	format        string

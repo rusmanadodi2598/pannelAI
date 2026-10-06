@@ -1,27 +1,20 @@
 // Command app-serv adapts the proxy connectivity port to HTTP.
 //
 // @file      cmd/app-serv/proxy_probe.go
-// @for       The net/http implementation of service.ProxyProber, guarded by
+// @for       The net/http implementation of service.ProxyProber, guarded by internal/netguard (SPEC-API-001 §7.11, OWASP A01).
+// @uses      internal/domain, internal/netguard, internal/service, context, errors, io, net/http, net/url, strconv, time.
+// @reason    §7.11 offers a connectivity test, and the test must reach the candidate, but AGENTS.md §1.5 forbids net/http in the service layer.
 //
-//	internal/netguard (SPEC-API-001 §7.11, OWASP A01).
-//
-// @uses      internal/domain, internal/netguard, internal/service, context,
-//
-//	errors, io, net/http, net/url, strconv, time.
-//
-// @reason    §7.11 offers a connectivity test, and the test must reach the
-//
-//	candidate — but AGENTS.md §1.5 forbids net/http in the service layer.
 //	The port lives in `internal/service`, this adapter lives in the
 //	composition root. Two rules live here rather than in the service:
 //	the destination is validated by the egress guard before any dial and
 //	again inside the dialer (OWASP A01), and the URL fetched through the
-//	proxy is a server-side constant, never a request field — a
+//	proxy is a server-side constant, never a request field, a
 //	client-supplied test URL would be a second SSRF seam.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package main
 
@@ -72,7 +65,7 @@ func (p *proxyProber) ProbeProxy(ctx context.Context, target service.ProxyTarget
 	// dialer's own Control hook repeats the check on the address it reaches,
 	// which is what closes the rebinding window.
 	if err := p.guard.CheckHost(ctx, target.Host); err != nil {
-		return service.ProxyProbeResult{State: domain.EndpointTestFail, Message: refusalMessage("proxy", err)}, nil
+		return service.ProxyProbeResult{State: string(domain.EndpointTestFail), Message: refusalMessage("proxy", err)}, nil
 	}
 
 	proxyURL := &url.URL{
@@ -109,7 +102,7 @@ func (p *proxyProber) ProbeProxy(ctx context.Context, target service.ProxyTarget
 	response, err := client.Do(request)
 	latency := int(time.Since(started).Milliseconds())
 	if err != nil {
-		return service.ProxyProbeResult{State: domain.EndpointTestFail, LatencyMS: latency, Message: transportMessage(err)}, nil
+		return service.ProxyProbeResult{State: string(domain.EndpointTestFail), LatencyMS: latency, Message: transportMessage(err)}, nil
 	}
 	defer func() { _ = response.Body.Close() }()
 	_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, proxyTestReadLimit))
@@ -118,20 +111,20 @@ func (p *proxyProber) ProbeProxy(ctx context.Context, target service.ProxyTarget
 }
 
 // classifyProxyStatus turns the answer into a result. Any status the proxy
-// carried proves the tunnel works — a 404 from the test URL is the target's
-// business — so only the proxy's own refusals are reported as failures.
+// carried proves the tunnel works, a 404 from the test URL is the target's
+// business, so only the proxy's own refusals are reported as failures.
 func classifyProxyStatus(status, latency int) service.ProxyProbeResult {
 	outcome := service.ProxyProbeResult{LatencyMS: latency}
 	switch {
 	case status >= 200 && status < 400:
-		outcome.State = domain.EndpointTestOK
+		outcome.State = string(domain.EndpointTestOK)
 	case status == http.StatusProxyAuthRequired,
 		status == http.StatusUnauthorized,
 		status == http.StatusForbidden:
-		outcome.State = domain.EndpointTestFail
+		outcome.State = string(domain.EndpointTestFail)
 		outcome.Message = "the proxy rejected the credentials"
 	default:
-		outcome.State = domain.EndpointTestFail
+		outcome.State = string(domain.EndpointTestFail)
 		outcome.Message = "the proxy answered " + strconv.Itoa(status)
 	}
 	return outcome

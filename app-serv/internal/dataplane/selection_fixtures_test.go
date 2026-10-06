@@ -3,16 +3,10 @@
 // @file      internal/dataplane/selection_fixtures_test.go
 // @for       The in-memory doubles and fixtures the selection and resolution tests build on.
 // @uses      context, sync, testing, time, internal/domain, internal/repository
-// @reason    SPEC-API-001 §7.5 fixes the selection rule (endpoint by priority, then a healthy
-//
-//	key, circuit-broken keys skipped), and a branch of it can only be exercised with a
-//	repository double: a storage failure, a key that is not active, and a credential the
-//	opener cannot read are all states a live database would make awkward to stage. The
-//	doubles live here so each test file reads as the rule it pins (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §7.5 fixes the selection rule (endpoint by priority, then a healthy key, circuit-broken keys skipped), and a branch of it can only be exercised with a repository double: a storage failure, a key that is not active, and a credential the opener cannot read are all states a live database would make awkward to stage. The doubles live here so each test file reads as the rule it pins (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -117,7 +111,10 @@ func (r *memEndpointRepo) GetByID(context.Context, string) (domain.UpstreamEndpo
 	return domain.UpstreamEndpoint{}, domain.ErrEndpointNotFound
 }
 func (r *memEndpointRepo) Update(context.Context, domain.UpstreamEndpoint) error { return nil }
-func (r *memEndpointRepo) Delete(context.Context, string) error                  { return nil }
+func (r *memEndpointRepo) UpdateIfUnchanged(context.Context, domain.UpstreamEndpoint, domain.OAuthCredential) error {
+	return nil
+}
+func (r *memEndpointRepo) Delete(context.Context, string) error { return nil }
 func (r *memEndpointRepo) AddKey(context.Context, string, domain.UpstreamKey) error {
 	return nil
 }
@@ -182,9 +179,17 @@ func buildEndpoint(t *testing.T, id string, priority int, status domain.Upstream
 
 // opener is a deterministic SecretOpener: the sealed value's inverse, so a test
 // can assert the plaintext only reaches the credential and never the selection.
-type opener struct{ err error }
+type opener struct {
+	err error
+	// failFor refuses to decrypt exactly these sealed values, which is how a test
+	// stages one stale ciphertext beside healthy accounts.
+	failFor map[string]error
+}
 
 func (o opener) Open(sealed string) (string, error) {
+	if err, ok := o.failFor[sealed]; ok {
+		return "", err
+	}
 	if o.err != nil {
 		return "", o.err
 	}

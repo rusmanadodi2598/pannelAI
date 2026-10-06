@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_probe_test.go
-// @for       Tests for what a connectivity test records: the endpoint's
-//
-//	test_status and the key's health (SPEC-API-001 §7.5).
-//
+// @for       Tests for what a connectivity test records: the endpoint's test_status and the key's health (SPEC-API-001 §7.5).
 // @uses      context, errors, testing, time, internal/domain.
-// @reason    §7.5 makes a test answer "does this credential work", and the answer has
-//
-//	to reach both the endpoint's test_status and the key's circuit state
-//	without a second health field. A plausible bug records one and not the
-//	other, or reports a refusal as a 500 instead of a fail state, so both are
-//	pinned here. The key-targeting rules live in
-//	endpoint_probe_selection_test.go.
-//
+// @reason    §7.5 makes a test answer "does this credential work", and the answer has to reach both the endpoint's test_status and the key's circuit state without a second health field. A plausible bug records one and not the other, or reports a refusal as a 500 instead of a fail state, so both are pinned here. The key-targeting rules live in endpoint_probe_selection_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -44,15 +34,15 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 	}{
 		{
 			name:          "a success records ok and resets the key",
-			outcome:       ProbeOutcome{State: domain.EndpointTestOK, LatencyMS: 42, Status: 200},
-			wantState:     domain.EndpointTestOK,
+			outcome:       ProbeOutcome{State: string(domain.EndpointTestOK), LatencyMS: 42, Status: 200},
+			wantState:     string(domain.EndpointTestOK),
 			wantKeyStatus: domain.UpstreamKeyActive,
 			wantUsedAtSet: true,
 		},
 		{
 			name:           "a refusal records fail and parks the key",
-			outcome:        ProbeOutcome{State: domain.EndpointTestFail, LatencyMS: 11, Status: 401, Message: "credential rejected"},
-			wantState:      domain.EndpointTestFail,
+			outcome:        ProbeOutcome{State: string(domain.EndpointTestFail), LatencyMS: 11, Status: 401, Message: "credential rejected"},
+			wantState:      string(domain.EndpointTestFail),
 			wantKeyStatus:  domain.UpstreamKeyError,
 			wantErrors:     1,
 			wantRateWindow: true,
@@ -60,7 +50,7 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 		{
 			name:           "a prober fault is recorded as a failure, not returned",
 			proberErr:      errors.New("no connector for this provider"),
-			wantState:      domain.EndpointTestFail,
+			wantState:      string(domain.EndpointTestFail),
 			wantKeyStatus:  domain.UpstreamKeyError,
 			wantErrors:     1,
 			wantRateWindow: true,
@@ -68,7 +58,7 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 		{
 			name:           "an unknown state reported by a connector becomes fail",
 			outcome:        ProbeOutcome{State: "maybe", LatencyMS: 5},
-			wantState:      domain.EndpointTestFail,
+			wantState:      string(domain.EndpointTestFail),
 			wantKeyStatus:  domain.UpstreamKeyError,
 			wantErrors:     1,
 			wantRateWindow: true,
@@ -97,10 +87,10 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got := reloaded.TestStatus().State; got != tc.wantState {
+			if got := reloaded.TestStatus().State(); string(got) != tc.wantState {
 				t.Fatalf("test_status = %q, want %q", got, tc.wantState)
 			}
-			if reloaded.TestStatus().CheckedAt == nil {
+			if reloaded.TestStatus().CheckedAt() == nil {
 				t.Fatal("test_status must carry the instant it was recorded at")
 			}
 
@@ -126,13 +116,64 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 	}
 }
 
+// TestEndpointService_TestLeavesTheKeyCircuitOnARequestShapedProbe is the rule
+// routing already applies and the probe did not: a 4xx the probe's own body caused
+// says nothing about the credential, so it must not spend a strike. The store raises
+// the count itself and the aggregate leaves it alone for this class, so the write
+// landed as a second strike on a key that had failed once for a real reason.
+func TestEndpointService_TestLeavesTheKeyCircuitOnARequestShapedProbe(t *testing.T) {
+	svc, store := newEndpointSvc(t)
+	endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
+	keyID := endpoint.Keys()[0].ID()
+
+	svc.prober = &fakeProber{outcome: ProbeOutcome{
+		State: string(domain.EndpointTestFail), LatencyMS: 7, Status: 401, Message: "credential rejected"}}
+	if _, _, err := svc.Test(context.Background(), endpoint.ID(), ""); err != nil {
+		t.Fatalf("Test() on the auth refusal: %v", err)
+	}
+	writesAfterAuthFailure := store.healthWrites
+	if got := store.keysByEndpoint[endpoint.ID()][0].ConsecutiveErrors(); got != 1 {
+		t.Fatalf("stored errors after a 401 probe = %d, want 1", got)
+	}
+
+	// The key is parked now, so the second probe names it: testing a parked key is
+	// what an operator does after fixing a credential.
+	svc.prober = &fakeProber{outcome: ProbeOutcome{
+		State: string(domain.EndpointTestFail), LatencyMS: 3, Status: 400, Message: "the body was refused"}}
+	_, outcome, err := svc.Test(context.Background(), endpoint.ID(), keyID)
+	if err != nil {
+		t.Fatalf("Test() on the request-shaped refusal: %v", err)
+	}
+	if outcome.State != string(domain.EndpointTestFail) {
+		t.Fatalf("outcome state = %q, want the refusal reported to the operator who asked", outcome.State)
+	}
+	if store.healthWrites != writesAfterAuthFailure {
+		t.Fatal("a request-shaped probe wrote key health, spending a strike the key never took")
+	}
+	stored := store.keysByEndpoint[endpoint.ID()][0]
+	if got := stored.ConsecutiveErrors(); got != 1 {
+		t.Fatalf("stored errors = %d, want the 401's single strike untouched", got)
+	}
+	if got := stored.LastError(); got != "credential rejected" {
+		t.Fatalf("stored last error = %q, want the reason the key actually failed on", got)
+	}
+
+	reloaded, err := svc.Get(context.Background(), endpoint.ID())
+	if err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+	if got := reloaded.TestStatus().State(); got != domain.EndpointTestFail {
+		t.Fatalf("test_status = %q, want the probe's own answer recorded anyway", got)
+	}
+}
+
 // TestEndpointService_TestParksOnFirstFailure pins the first-failure parking rule:
 // one refused probe parks the key in a window sized by the upstream's own status
 // (a 401 is the credential's failure, so two minutes), exactly as the same answer
 // would during routing, because the breaker owns that state rather than the probe.
 func TestEndpointService_TestParksOnFirstFailure(t *testing.T) {
 	svc, _ := newEndpointSvc(t)
-	svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestFail, Status: 401, Message: "rejected"}}
+	svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestFail), Status: 401, Message: "rejected"}}
 	endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary", "secondary")
 	ctx := context.Background()
 
@@ -158,7 +199,7 @@ func TestEndpointService_TestParksOnFirstFailure(t *testing.T) {
 		t.Fatal("a parked key must not be available inside its backoff window")
 	}
 	// A success clears it again, which is what makes a fixed credential recoverable.
-	svc.prober = &fakeProber{outcome: ProbeOutcome{State: domain.EndpointTestOK, Status: 200}}
+	svc.prober = &fakeProber{outcome: ProbeOutcome{State: string(domain.EndpointTestOK), Status: 200}}
 	if _, _, err := svc.Test(ctx, endpoint.ID(), endpoint.Keys()[0].ID()); err != nil {
 		t.Fatal(err)
 	}

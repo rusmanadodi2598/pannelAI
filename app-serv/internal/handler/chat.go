@@ -1,20 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/chat.go
-// @for       The chat data plane routes: POST /api/v1/chat/completions,
-//
-//	POST /api/v1/messages, and GET /api/v1/models.
-//
+// @for       The chat data plane routes: POST /api/v1/chat/completions, POST /api/v1/messages, and GET /api/v1/models.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    SPEC-API-001 §7.15 serves three routes on the OpenAI and Anthropic
-//
-//	wires, and §4 fixes the data plane auth header. AGENTS.md §1.5 keeps
-//	SQL and Redis out of here and validation in the schema layer, so this
-//	file only decodes, authenticates, calls, and encodes.
-//
+// @reason    SPEC-API-001 §7.15 serves three routes on the OpenAI and Anthropic wires, and §4 fixes the data plane auth header. AGENTS.md §1.5 keeps SQL and Redis out of here and validation in the schema layer, so this file only decodes, authenticates, calls, and encodes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -35,7 +27,6 @@ type ChatHandler struct {
 	chat *service.ChatService
 }
 
-// NewChatHandler validates deps and returns the handler.
 func NewChatHandler(chat *service.ChatService) *ChatHandler {
 	return &ChatHandler{chat: chat}
 }
@@ -57,9 +48,9 @@ func (h *ChatHandler) Responses(w http.ResponseWriter, r *http.Request) {
 
 // refuse records the one log row a schema refusal leaves and then writes the
 // client's error, so a request the gateway rejected before the pipeline is
-// still visible on the Logs screen the way an engine refusal already is
-// (draft 034 F4). Authentication failures stay unrecorded: they happen before
-// a body is read and carry no key to own the row.
+// still visible on the Logs screen the way an engine refusal already is.
+// Authentication failures stay unrecorded: they happen before a body is
+// read and carry no key to own the row.
 func (h *ChatHandler) refuse(w http.ResponseWriter, r *http.Request, raw []byte, key domain.GatewayKey, model string, failure error) {
 	h.chat.RecordRefusal(r.Context(), raw, key.ID(), model, failure)
 	writeDataPlaneError(w, failure)
@@ -142,15 +133,12 @@ func (h *ChatHandler) serve(w http.ResponseWriter, r *http.Request, route datapl
 }
 
 // stream commits SSE headers only when the first frame is ready, so a failure
-// before that point is still an ordinary HTTP error a client can act on.
-//
-// After the first frame the status line cannot change, and the stream ends
-// without the terminal `[DONE]` frame. That is deliberate rather than an
-// omission: `[DONE]` is the client's only signal that the answer is complete,
-// so emitting it for a truncated answer would make a broken response
-// indistinguishable from a whole one. The client sees the read end instead,
-// which is the same thing a dropped provider connection looks like to the
-// gateway itself.
+// before that point is still an ordinary HTTP error a client can act on. After
+// the first frame the status line cannot change, and the stream ends without the
+// terminal `[DONE]` frame: `[DONE]` is the client's only signal that the answer
+// is complete, so emitting it for a truncated answer would make a broken
+// response indistinguishable from a whole one. The client sees the read end
+// instead, which is what a dropped provider connection looks like here.
 func (h *ChatHandler) stream(w http.ResponseWriter, r *http.Request, request dataplane.Request, keyID string) {
 	sink := newSSESink(w)
 	if _, err := h.chat.Relay(r.Context(), request, sink, keyID); err != nil && !sink.wrote() {

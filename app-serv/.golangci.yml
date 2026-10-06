@@ -19,26 +19,26 @@ linters:
   default: standard
 
   enable:
-    # ---- unchecked errors (§1.4) ----
+    # unchecked errors (§1.4)
     - errcheck
 
-    # ---- unclosed HTTP bodies, rows, statements (§1.4) ----
+    # unclosed HTTP bodies, rows, statements (§1.4)
     - bodyclose
     - rowserrcheck
     - sqlclosecheck
 
-    # ---- context on outbound calls (§1.6) ----
+    # context on outbound calls (§1.6)
     - noctx
     - contextcheck
 
-    # ---- error hygiene (§1.6) ----
+    # error hygiene (§1.6)
     - errchkjson
     - nilerr
 
-    # ---- banned constructs (§1.4) ----
+    # banned constructs (§1.4)
     - forbidigo
 
-    # ---- everyday correctness ----
+    # everyday correctness
     - copyloopvar
     - gocritic
     - misspell
@@ -102,6 +102,12 @@ linters:
       # typed settings structs for JSON persistence, a union a concrete return
       # type cannot express without duplicating the switch per caller.
       - path: internal/service/settings\.go
+        linters: [forbidigo]
+
+      # logx formats one fail-open line. slog.Logger takes its key-value pairs as
+      # `...any`, so a helper that forwards caller-supplied pairs has no other
+      # spelling; the values are written to the log and never read back as data.
+      - path: internal/logx/.*\.go
         linters: [forbidigo]
 
       # The dataplane's wire translators (translate_*.go, engine_translate.go)

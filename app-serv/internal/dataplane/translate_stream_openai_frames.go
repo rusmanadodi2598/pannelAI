@@ -3,22 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_openai_frames.go
-// @for       The OpenAI chunk layer: the frames the gateway builds itself (the
-//
-//	content frame, the usage chunk, the stream identity, the marshal
-//	guard) and the re-framing of one upstream OpenAI chunk.
-//
+// @for       The OpenAI chunk layer: the frames the gateway builds itself (the content frame, the usage chunk, the stream identity, the marshal guard) and the re-framing of one upstream OpenAI chunk.
 // @uses      encoding/json, internal/schema.
-// @reason    The frame builders are the half of the OpenAI client wire the
-//
-//	gateway authors rather than forwards, and they are what draft 021's
-//	framing findings are about. The upstream re-framing joined them
-//	here for the AGENTS.md §1.1 budget: the translator keeps the state
-//	and this file owns what a frame is.
-//
+// @reason    The frame builders are the half of the OpenAI client wire the gateway authors rather than forwards, and they are what draft 021's framing findings are about. The upstream re-framing joined them here for the AGENTS.md §1.1 budget: the translator keeps the state and this file owns what a frame is.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package dataplane
 
@@ -46,7 +36,7 @@ func (s *StreamState) chunk(delta schema.Delta, finishReason *string) []byte {
 // for stream_options.include_usage: a client that reads the first choice from
 // every frame must not read content here. Emitting it marks usageSent, and so
 // does forwarding an upstream frame that already carries usage, so one stream
-// carries at most one delivery of the numbers (draft 021 F2, 034 F1).
+// carries at most one delivery of the numbers.
 func (s *StreamState) usageChunk() []byte {
 	s.usageSent = true
 	return Frame(mustFrame(schema.UsageChunk(s.ID, s.Created, s.Model, *s.usage)))
@@ -84,7 +74,7 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 	// The name the client is given is the one it asked for, which is what this
 	// field's own comment has always claimed. Adopting the upstream's `model`
 	// member broke that: Qoder answers every model it serves as `auto`, so a
-	// client that asked `qoder/qfmodel` was told its answer came from `auto` —
+	// client that asked `qoder/qfmodel` was told its answer came from `auto`,
 	// a name it cannot re-send, and one that routes to a pool the vendor
 	// answers 429 for. The echo is only used when nothing was asked for, where
 	// it is the sole name available.
@@ -94,9 +84,9 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 	if usage, ok := objectField(chunk, "usage"); ok {
 		s.usage = openAIUsageFromObject(usage)
 		// A forwarded frame that itself carries usage is the delivery the client
-		// asked for, so it marks usageSent and Finish appends nothing (draft 034
-		// F1). A null or empty member is not numbers on the wire, which leaves
-		// the decision to Finish's own guard.
+		// asked for, so it marks usageSent and Finish appends nothing. A null or
+		// empty member is not numbers on the wire, which leaves the decision to
+		// Finish's own guard.
 		if len(usage) > 0 {
 			s.usageSent = true
 		}
@@ -106,7 +96,7 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 			if reason := stringField(first, "finish_reason"); reason != "" {
 				// A second frame that closes again repeats the finish reason,
 				// which a client counting finish reasons reads as a second
-				// answer (draft 034 F2). The duplicate member is nulled and
+				// answer. The duplicate member is nulled and
 				// every other member, the usage it may carry included, still
 				// forwards; the first reason stays the stream's finish.
 				if s.finishSent {
@@ -116,7 +106,7 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 				} else {
 					// The frame about to be forwarded is the client's finish
 					// frame, so the stream is finished as of now and Finish
-					// must not add a second one (draft 021 F3).
+					// must not add a second one.
 					s.finishReason = reason
 					s.finishSent = true
 				}
@@ -150,6 +140,6 @@ func (s *StreamState) openAIFrames(payload []byte) [][]byte {
 
 	// The usage chunk is left to Finish, which runs for every stream: emitting it
 	// here as well is what sent two of them, the first priced before the
-	// upstream's numbers had arrived (draft 021 F2).
+	// upstream's numbers had arrived.
 	return [][]byte{Frame(encoded)}
 }

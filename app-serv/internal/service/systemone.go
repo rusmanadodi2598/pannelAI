@@ -1,23 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/systemone.go
-// @for       The System One (Jev) decision use case: resolve the model, select
-//
-//	an account, forward the decision payload, and record the call.
-//
-// @uses      internal/dataplane, internal/domain, internal/registry,
-//
-//	internal/schema, context, net/http, strings, time.
-//
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/systemone for models
-//
-//	declaring `kind: "systemone"`. The payload is the provider's own
-//	vocabulary, so it cannot ride the chat plane: the reference serves it
-//	from a separate handler that forwards the body untouched
-//	(open-sse/handlers/systemoneCore.js). The use case follows the media
-//	plane's shape rather than the chat plane's (one call, no combo chain,
-//	one usage row and one log row) because a decision model answers once
-//	rather than streaming, which is what the reference's own route does.
+// @for       The System One (Jev) decision use case: resolve the model, select an account, forward the decision payload, and record the call.
+// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema, context, net/http, strings, time.
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/systemone for models declaring `kind: "systemone"`. The payload is the provider's own vocabulary, so it cannot ride the chat plane: the reference serves it from a separate handler that forwards the body untouched (open-sse/handlers/systemoneCore.js). The use case follows the media plane's shape rather than the chat plane's (one call, no combo chain, one usage row and one log row) because a decision model answers once rather than streaming, which is what the reference's own route does.
 //
 //	It lives in two files for the AGENTS.md §1.1 budget: this one owns
 //	the service and the call, and systemone_target.go owns the URL and
@@ -25,14 +11,13 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"strings"
 	"time"
 
@@ -88,16 +73,11 @@ func NewSystemOneService(deps SystemOneServiceDeps) (*SystemOneService, error) {
 }
 
 // Decide resolves the model, selects an account, forwards the decision payload,
-// and returns the upstream's answer verbatim.
-//
-// The model must resolve to a provider that declares a `systemone` endpoint: a
-// chat model named on this route is refused by name, because the upstream would
-// read a decision payload it never receives. The reference applies the same rule
-// in its core, which refuses a provider without the block
-// (systemoneCore.js:20-26).
-//
-// A refusal before the call leaves one request log row and no usage row, the same
-// shape the embeddings plane gives a request refused before the pipeline ran.
+// and returns the upstream's answer verbatim. The model must resolve to a provider
+// declaring a `systemone` endpoint: a chat model named on this route is refused by
+// name, because the upstream would receive a decision payload it never parses. A
+// refusal before the call leaves one request log row and no usage row, the shape
+// the embeddings plane gives a refused request.
 func (s *SystemOneService) Decide(ctx context.Context, req schema.SystemOneRequest, keyID string) (json.RawMessage, error) {
 	call, err := s.resolveCall(ctx, req)
 	if err != nil {
@@ -161,8 +141,11 @@ func (s *SystemOneService) resolveCall(ctx context.Context, req schema.SystemOne
 	if err != nil {
 		return call, err
 	}
+	// The literal rather than http.MethodPost: §1.5 keeps net/http out of the
+	// service layer so this stays callable from a worker, and a method name is not
+	// a reason to import a transport package.
 	call.request = dataplane.MediaRequest{
-		Method: http.MethodPost, URL: target, Headers: headers, Body: body,
+		Method: "POST", URL: target, Headers: headers, Body: body,
 	}
 	return call, nil
 }

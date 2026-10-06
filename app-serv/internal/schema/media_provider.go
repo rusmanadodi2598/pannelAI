@@ -1,21 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/media_provider.go
-// @for       The media provider contracts: the kind filter, the detail answer,
-//
-//	and the per-kind override save (SPEC-API-001 §7.10).
-//
+// @for       The media provider contracts: the kind filter, the detail answer, and the per-kind override save (SPEC-API-001 §7.10).
 // @uses      nothing beyond the standard library; the mappers live in handler.
-// @reason    §7.10's save is a partial update of two values, and each reports
-//
-//	its own source (`registry` or `override`) because a provider may
-//	override its default model while keeping the registry's base URL —
-//	one shared "overridden" flag would mislabel that case and the panel
-//	would offer a reset that does nothing.
-//
+// @reason    §7.10's save is a partial update of two values, and each reports its own source (`registry` or `override`) because a provider may override its default model while keeping the registry's base URL, one shared "overridden" flag would mislabel that case and the panel would offer a reset that does nothing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 

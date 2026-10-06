@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_node_combo_guard.go
-// @for       The combo half of the node delete guard (draft 028 F3): a node
-//
-//	cannot be deleted while a stored combo still names it.
-//
+// @for       The combo half of the node delete guard (draft 028 F3): a node cannot be deleted while a stored combo still names it.
 // @uses      internal/domain, internal/repository, context, strings.
-// @reason    A combo member that outlives its provider is attempted on every
-//
-//	request and answers with a refusal about a model the client never
-//	named. The guard reads the combo table, which the node lifecycle
-//	file does not otherwise touch, and keeping it here holds
-//	provider_node.go inside the AGENTS.md §1.1 line budget.
-//
+// @reason    A combo member that outlives its provider is attempted on every request and answers with a refusal about a model the client never named. The guard reads the combo table, which the node lifecycle file does not otherwise touch, and keeping it here holds provider_node.go inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -28,7 +19,7 @@ import (
 )
 
 // ComboLister lists the stored combos, which is what makes a node delete refuse
-// while a combo still references the node as a member (draft 028 F3): a combo
+// while a combo still references the node as a member: a combo
 // whose member loses its provider is attempted on every request and answers
 // with a refusal about a model the client never named. It is satisfied by the
 // concrete combo repository.

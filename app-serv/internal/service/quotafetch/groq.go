@@ -5,15 +5,10 @@
 // @file      internal/service/quotafetch/groq.go
 // @for       Reads Groq's published quota off the rate-limit headers of GET /v1/models.
 // @uses      internal/service/quotafetch, net/http, strconv, time
-// @reason    Groq meters each key with rolling rate limits reported only as response
-//
-//	headers, and the reset value is a Go-style duration string rather than a
-//	timestamp, so the read lives off the headers and needs its own duration-to-
-//	instant conversion.
-//
+// @reason    Groq meters each key with rolling rate limits reported only as response headers, and the reset value is a Go-style duration string rather than a timestamp, so the read lives off the headers and needs its own duration-to- instant conversion.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

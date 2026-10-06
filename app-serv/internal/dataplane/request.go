@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/request.go
-// @for       One client request's resolved form: the route it arrived on, the
-//
-//	model it named, and the parameters routing needs.
-//
+// @for       One client request's resolved form: the route it arrived on, the model it named, and the parameters routing needs.
 // @uses      internal/reasoning, internal/schema.
-// @reason    SPEC-API-001 §7.15 serves two client wire formats over three routes,
-//
-//	so "what the client speaks" and "what the upstream speaks" are two
-//	independent facts. Declaring the request once here is what keeps the
-//	service from taking eight positional parameters and mixing them up.
-//
+// @reason    SPEC-API-001 §7.15 serves two client wire formats over three routes, so "what the client speaks" and "what the upstream speaks" are two independent facts. Declaring the request once here is what keeps the service from taking eight positional parameters and mixing them up.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -68,16 +60,16 @@ type Request struct {
 	// request and never changes the stored saver configuration.
 	TokenSaverBypass bool
 	// ThinkingOverride is the reasoning suffix the engine parsed off Model,
-	// filled by Relay before resolution so every relay leg of the call — combo
-	// members and a fusion judge included — carries the same override. A nil
+	// filled by Relay before resolution so every relay leg of the call, combo
+	// members and a fusion judge included, carries the same override. A nil
 	// one means the model string carried no suffix.
 	ThinkingOverride *reasoning.Suffix
 }
 
 // stopSequences returns the sequences the caller asked the answer to end at, read
 // from whichever client body the route decoded. Both wires spell the control
-// differently — OpenAI's `stop` takes a string or a list, Anthropic's
-// `stop_sequences` only a list — and both are the same request: do not show me the
+// differently, OpenAI's `stop` takes a string or a list, Anthropic's
+// `stop_sequences` only a list, and both are the same request: do not show me the
 // marker or anything after it.
 func (r Request) stopSequences() []string {
 	if r.Chat != nil {

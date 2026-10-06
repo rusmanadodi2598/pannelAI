@@ -1,21 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_opencode_free_acceptance_test.go
-// @for       The acceptance tests the owner asked for: the three OpenCode free
-//
-//	models answer with no credential, through the whole pipeline.
-//
+// @for       The acceptance tests the owner asked for: the three OpenCode free models answer with no credential, through the whole pipeline.
 // @uses      context, encoding/json, testing, internal/schema.
-// @reason    The fixtures live in engine_opencode_free_test.go so both files stay
-//
-//	inside the AGENTS.md section 1.1 budget. Keeping the scenarios separate
-//	from the stand-in also makes the file read as what it asserts: the
-//	upstream gate is measured once, and each test states one property of
-//	the lane.
-//
+// @reason    The fixtures live in engine_opencode_free_test.go so both files stay inside the AGENTS.md section 1.1 budget. Keeping the scenarios separate from the stand-in also makes the file read as what it asserts: the upstream gate is measured once, and each test states one property of the lane.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 
@@ -129,7 +120,7 @@ func TestOpenCodeFree_NoCredentialMaterialLeavesTheGateway(t *testing.T) {
 }
 
 // TestOpenCodeFree_DeclaredResponsesModelTakesTheResponsesWire pins the per-model
-// rule the port restored in draft 017: muse-spark-1.3-contributor-free is declared
+// rule the port restored: muse-spark-1.3-contributor-free is declared
 // with target_format openai-responses, so a chat client's request must be
 // translated and POSTed to /zen/v1/responses rather than forwarded to the chat
 // path. The stand-in refuses the wrong path, so this fails loudly on a regression.

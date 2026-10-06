@@ -1,29 +1,18 @@
-//go:build integration
+//go:build integration && live
 
 // Package dataplane implements the request-path data plane of app-serv.
 //
 // @file      internal/dataplane/qoder_live_translation_test.go
-// @for       One real Qoder stream run through the gateway's own translation, to pin
+// @for       One real Qoder stream run through the gateway's own translation, to pin the model name the caller ends up seeing.
+// @uses      bytes, context, io, net/http, os, strings, testing, time, internal/provider.
+// @reason    The bug lived between two packages: Qoder answers every model as `auto`, and the translation step adopted that echo. A unit test on each side could pass while a client still read the wrong name, so this runs the whole leg once against the vendor, sign, send, unwrap, translate, and asks the only question a client can: what does the answer call itself?
 //
-//	the model name the caller ends up seeing.
-//
-// @uses      bytes, context, io, net/http, os, strings, testing, time,
-//
-//	internal/provider.
-//
-// @reason    The bug lived between two packages: Qoder answers every model as `auto`,
-//
-//	and the translation step adopted that echo. A unit test on each side could
-//	pass while a client still read the wrong name, so this runs the whole
-//	leg once against the vendor — sign, send, unwrap, translate — and asks
-//	the only question a client can: what does the answer call itself?
-//
-//	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/dataplane/ -run QoderLiveTranslation
+//	PANNELAI_QODER_PAT='pt-…' \
+//	  go test -tags=integration,live ./internal/dataplane/ -run QoderLiveTranslation
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package dataplane
 
@@ -65,9 +54,7 @@ func TestQoderLiveTranslationNamesTheRequestedModel(t *testing.T) {
 	// A token-only credential: this is a PAT pasted into the panel, which stores
 	// nothing but the token, and the model the caller asked for is the one that has
 	// to come back.
-	credential := provider.Credential{
-		EndpointID: "ep_live", APIKey: pat, Family: provider.FamilyStaticKey,
-	}
+	credential := provider.StaticKey("ep_live", "", pat)
 	request := &provider.Request{
 		Model: registry.Model{ID: "qfmodel"}, Wire: "openai", Stream: true,
 		Body: []byte(`{"model":"qoder/qfmodel","messages":[{"role":"user",` +
@@ -106,7 +93,7 @@ func TestQoderLiveTranslationNamesTheRequestedModel(t *testing.T) {
 	unwrapped, failure := connector.OpenStream(response.Body)
 	if failure != nil {
 		if failure.Status == http.StatusTooManyRequests {
-			// The free pool runs short and recovers — measured 2026-09-28, the same
+			// The free pool runs short and recovers, measured 2026-09-28, the same
 			// request refused here was served minutes later on another account. That
 			// is the vendor's capacity to lend, not this chain's correctness to get
 			// right, and the retry that works around it is pinned in

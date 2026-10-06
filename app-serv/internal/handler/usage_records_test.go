@@ -1,25 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/usage_records_test.go
-// @for       Table-driven HTTP tests for the §7.12 records list and the
-//
-//	single-request detail, including the captured-log join.
-//
-// @uses      encoding/json, internal/domain, net/http, net/http/httptest,
-//
-//	strings, testing.
-//
-// @reason    Draft 010 F1: the records routes are where the pagination meta
-//
-//	block and the capture-policy join live, and neither had a
-//	request-to-response test. The per_page refusals are the F6 owner
-//	decision (D3 = refuse) reaching the wire, and the detail cases pin
-//	the honest distinction the panel renders: capture off, capture on
-//	with a stored log, and a missing usage row answering 404.
-//
+// @for       Table-driven HTTP tests for the §7.12 records list and the single-request detail, including the captured-log join.
+// @uses      encoding/json, internal/domain, net/http, net/http/httptest, strings, testing.
+// @reason    Draft 010 F1: the records routes are where the pagination meta block and the capture-policy join live, and neither had a request-to-response test. The per_page refusals are the F6 owner decision (D3 = refuse) reaching the wire, and the detail cases pin the honest distinction the panel renders: capture off, capture on with a stored log, and a missing usage row answering 404.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package handler
 
@@ -35,7 +22,7 @@ import (
 
 // TestUsageHandler_Records covers the paged read: the default page size, the
 // meta block echoing what the caller asked for, the pagination refusals the
-// shared decoder now makes (draft 010 F6), and a storage failure as 500.
+// shared decoder now makes, and a storage failure as 500.
 func TestUsageHandler_Records(t *testing.T) {
 	cases := []usageCase{
 		{

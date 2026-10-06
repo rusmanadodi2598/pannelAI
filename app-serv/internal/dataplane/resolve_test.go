@@ -3,14 +3,10 @@
 // @file      internal/dataplane/resolve_test.go
 // @for       Table-driven tests for the model-string resolution order.
 // @uses      context, testing, internal/domain
-// @reason    SPEC-API-001 §7.15 fixes the order a model string resolves in: combo name, then alias,
-//
-//	then provider/model. A request that resolves wrongly is served by the wrong account, so
-//	every step and every refusal code is pinned here (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §7.15 fixes the order a model string resolves in: combo name, then alias, then provider/model. A request that resolves wrongly is served by the wrong account, so every step and every refusal code is pinned here (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -22,7 +18,7 @@ import (
 )
 
 // TestResolver_Order pins the documented resolution order (SPEC-API-001 §7.15):
-// combo name, then alias, then provider/model, then MODEL_NOT_FOUND — including
+// combo name, then alias, then provider/model, then MODEL_NOT_FOUND, including
 // each failure and the provider-not-routable case §8 adds.
 func TestResolver_Order(t *testing.T) {
 	lookup := fakeLookup{

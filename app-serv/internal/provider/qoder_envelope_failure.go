@@ -1,20 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_envelope_failure.go
-// @for       What a Qoder refusal becomes: the failure the router acts on, read
-//
-//	out of the envelope's own code, message and nested detail.
-//
+// @for       What a Qoder refusal becomes: the failure the router acts on, read out of the envelope's own code, message and nested detail.
 // @uses      bytes, encoding/json, fmt, net/http, strings.
-// @reason    A spent account, a throttle and a broken answer all arrive wrapped
-//
-//	the same way and have to be told apart, because the pool's failover and
-//	the account's parking depend on which one this says it is. The frame
-//	decoder that produces these values lives beside this file.
-//
+// @reason    A spent account, a throttle and a broken answer all arrive wrapped the same way and have to be told apart, because the pool's failover and the account's parking depend on which one this says it is. The frame decoder that produces these values lives beside this file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-10-04
 package provider
 
@@ -28,7 +20,7 @@ import (
 
 // qoderRawFailureEchoBytes caps how much of a refusal is echoed into the
 // client-facing message. The body is already size-bounded upstream, but it is
-// the vendor's text — an HTML error page or a debug dump — not a message written
+// the vendor's text, an HTML error page or a debug dump, not a message written
 // for this client, and the head of it is enough to name what happened.
 const qoderRawFailureEchoBytes = 512
 
@@ -71,11 +63,11 @@ func qoderStreamFailure(envelope qoderEnvelope) *StreamFailure {
 		// The model backend's own reason rides in `details` as a second JSON string.
 		// It is the sentence an operator can act on: "Error in upstream response"
 		// names nothing, while "Workspace allocated quota exceeded" names the limit
-		// that was reached — and the vendor wraps that behind a generic 429 rather
+		// that was reached, and the vendor wraps that behind a generic 429 rather
 		// than the numeric billing codes.
 		if reason, nested := qoderQuotaDetail(qoderFieldText(payload.Details)); nested && reason != "" {
 			// The vendor's own sentence explains a refusal its status does not
-			// name — and the pool it complains about recovers: measured 2026-09-28,
+			// name, and the pool it complains about recovers: measured 2026-09-28,
 			// the identical request was refused twice and served on the third try.
 			// So this takes over the message without claiming the account is spent.
 			// Marking it quota would park the key and cancel the very retry that

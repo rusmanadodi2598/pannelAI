@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/embeddings_node.go
-// @for       The embeddings block synthesized for a custom OpenAI-compatible
-//
-//	node, which declares none of its own.
-//
+// @for       The embeddings block synthesized for a custom OpenAI-compatible node, which declares none of its own.
 // @uses      internal/registry, strings.
-// @reason    SPEC-API-001 §7.4 lets an operator add an OpenAI-compatible node,
-//
-//	and the reference serves embeddings for exactly those nodes through
-//	a dedicated adapter (`openaiCompatNode.js`). Without this branch a
-//	node that answers chat is refused on the embeddings route with
-//	"does not offer embeddings", which is a parity gap rather than a
-//	missing provider feature.
-//
+// @reason    SPEC-API-001 §7.4 lets an operator add an OpenAI-compatible node, and the reference serves embeddings for exactly those nodes through a dedicated adapter (`openaiCompatNode.js`). Without this branch a node that answers chat is refused on the embeddings route with "does not offer embeddings", which is a parity gap rather than a missing provider feature.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

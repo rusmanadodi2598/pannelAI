@@ -3,16 +3,10 @@
 // @file      internal/handler/quota_account_stub_test.go
 // @for       Answers the account page of the quota collection from the handler fixture's in-memory set.
 // @uses      context, internal/domain, sort, testing.
-// @reason    A quota page is grouped by accounts, not by counters, and the route tests need the
-//
-//	same grouping the SQL applies to answer them. It lives apart from the
-//	window paging stub because it models a different read, and the two must
-//	agree on which providers a page number means — an agreement this file
-//	reproduces rather than reuses.
-//
+// @reason    A quota page is grouped by accounts, not by counters, and the route tests need the same grouping the SQL applies to answer them. It lives apart from the window paging stub because it models a different read, and the two must agree on which providers a page number means, an agreement this file reproduces rather than reuses.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package handler
 

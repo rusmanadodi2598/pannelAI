@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_provider.go
-// @for       The media provider reads and the per-kind override save
-//
-//	(SPEC-API-001 §7.10).
-//
-// @uses      internal/domain, internal/registry, internal/repository, context,
-//
-//	sort, strings, time.
-//
-// @reason    §7.10 lists media-capable providers by kind and lets an operator
-//
-//	point one at their own host. The registry is the default and the
-//	stored override wins, so this layer is where the two meet; it is
-//	also where the wire kind (`search`) is mapped to the registry
-//	kind (`webSearch`), so neither vocabulary leaks into the other.
-//
+// @for       The media provider reads and the per-kind override save (SPEC-API-001 §7.10).
+// @uses      internal/domain, internal/registry, internal/repository, context, sort, strings, time.
+// @reason    §7.10 lists media-capable providers by kind and lets an operator point one at their own host. The registry is the default and the stored override wins, so this layer is where the two meet; it is also where the wire kind (`search`) is mapped to the registry kind (`webSearch`), so neither vocabulary leaks into the other.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -109,7 +97,7 @@ func (s *MediaProviderService) List(ctx context.Context, kind domain.MediaKind) 
 }
 
 // Detail returns every media kind one provider offers, or a not-found error
-// when the id is unknown or the provider offers none — the route is the media
+// when the id is unknown or the provider offers none, the route is the media
 // surface, so a provider with no media service is not on it.
 func (s *MediaProviderService) Detail(ctx context.Context, providerID string) ([]MediaServiceView, error) {
 	entry, ok := s.index.Provider(strings.TrimSpace(providerID))
@@ -132,8 +120,8 @@ func (s *MediaProviderService) Detail(ctx context.Context, providerID string) ([
 
 // Patch saves one provider's per-kind override and returns the resolved view.
 //
-// The save is refused when it would leave the provider unusable — no base URL
-// from either source — because §7.10 forbids a silent cloud fallback and a
+// The save is refused when it would leave the provider unusable, no base URL
+// from either source, because §7.10 forbids a silent cloud fallback and a
 // provider that cannot be dialed is exactly that (§7.10's "missing base_url ⇒
 // VALIDATION_ERROR").
 func (s *MediaProviderService) Patch(ctx context.Context, providerID string, draft MediaOverrideDraft) (MediaServiceView, error) {
@@ -167,8 +155,8 @@ func (s *MediaProviderService) Patch(ctx context.Context, providerID string, dra
 	return view, nil
 }
 
-// The resolution of registry defaults and stored overrides — viewsFor,
-// viewFor, MediaBaseURL, overrideIndex, and the kind vocabulary mapping — lives
+// The resolution of registry defaults and stored overrides, viewsFor,
+// viewFor, MediaBaseURL, overrideIndex, and the kind vocabulary mapping, lives
 // in media_provider_resolve.go: every read asks that question, and this file is
 // the use cases that ask it.
 

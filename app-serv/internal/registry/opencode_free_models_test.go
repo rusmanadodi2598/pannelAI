@@ -3,34 +3,23 @@
 // @file      internal/registry/opencode_free_models_test.go
 // @for       The OpenCode Free entry's declared models, pinned to the reference.
 // @uses      testing.
-// @reason    The port dropped the reference's static model list for opencode,
-//
-//	so its free models were answerable through passthrough yet absent
-//	from every models list, and resolved onto the provider's OpenAI
-//	format instead of the per-model formats the reference declares
-//	(9router PR #4073). Pinning the entry here keeps the catalog and
-//	the reference from drifting apart again.
-//
+// @reason    The port dropped the reference's static model list for opencode, so its free models were answerable through passthrough yet absent from every models list, and resolved onto the provider's OpenAI format instead of the per-model formats the reference declares (9router PR #4073). Pinning the entry here keeps the catalog and the reference from drifting apart again.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-20
 package registry
 
 import "testing"
 
 // TestEmbeddedOpenCode_FreeModels pins the opencode entry's declared models to
-// the reference registry (open-sse/providers/registry/opencode.js): each model's
-// id, display name, the upstream wire format it speaks, and whether the chat
-// plane may serve it at all.
-//
-// The reference declares four models here, and only three of them are chat: the
-// fourth is a System One decision model (`kind: "systemone"`), whose payload is
-// the provider's own vocabulary rather than a chat body. Carrying it in the
-// entry is what makes the catalog tell the truth (the id exists), and the kind
-// is what keeps the chat plane from answering it with the wrong body. The two
-// facts are asserted together so a future edit cannot quietly promote the
-// decision model back to chat.
+// the reference registry (open-sse/providers/registry/opencode.js): id, display
+// name, upstream wire format, chat eligibility. Four models are declared and
+// only three are chat: the fourth is a System One decision model
+// (`kind: "systemone"`) whose payload is the provider's own vocabulary.
+// Carrying it keeps the catalog truthful about the id and the kind keeps the
+// chat plane off it; both are asserted together so a future edit cannot quietly
+// promote the decision model back to chat.
 func TestEmbeddedOpenCode_FreeModels(t *testing.T) {
 	index, err := Load()
 	if err != nil {
@@ -46,9 +35,9 @@ func TestEmbeddedOpenCode_FreeModels(t *testing.T) {
 		name         string
 		targetFormat string
 		chat         bool
-		// minOutput is the ceiling the model still answers within, measured live
-		// on 2026-09-28: muse-spark 1.3 spends a small one entirely on thinking
-		// and answers an empty body.
+		// minOutput is the smallest output ceiling the model still answers
+		// within: muse-spark 1.3 spends a small one entirely on thinking and
+		// answers an empty body.
 		minOutput int
 	}{
 		{id: "muse-spark-1.2-contributor-free", name: "Muse Spark 1.2 Contributor Free", targetFormat: "openai-responses", chat: true},

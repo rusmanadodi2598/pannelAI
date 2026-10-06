@@ -1,21 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/chat_parts.go
-// @for       The multimodal and tool-calling members of the OpenAI chat
-//
-//	contract: content parts, images, tool definitions, and tool_choice.
-//
+// @for       The multimodal and tool-calling members of the OpenAI chat contract: content parts, images, tool definitions, and tool_choice.
 // @uses      bytes, encoding/json, internal/domain.
-// @reason    SPEC-API-001 §7.15 routes image-bearing and tool-calling requests, and
-//
-//	AGENTS.md §1.4 allows the union decoders only at a declared I/O
-//	boundary: content is genuinely two shapes on the wire (a string or an
-//	array of parts), so resolving it once here is what keeps a
-//	type-assertion chain out of the translator.
-//
+// @reason    SPEC-API-001 §7.15 routes image-bearing and tool-calling requests, and AGENTS.md §1.4 allows the union decoders only at a declared I/O boundary: content is genuinely two shapes on the wire (a string or an array of parts), so resolving it once here is what keeps a type-assertion chain out of the translator.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 

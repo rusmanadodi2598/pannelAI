@@ -5,13 +5,13 @@
 	// header that folds, a checkbox that feeds the bulk fold bar, and a pager that walks pages the gateway
 	// performs: the windows prop is already the page's groups, five to a page. The cards are grouped from the
 	// union of the page's accounts (windows and `published`), so a provider that has an account but no
-	// counted window yet still gets a card — the account the operator came to read is not hidden behind a
+	// counted window yet still gets a card: the account the operator came to read is not hidden behind a
 	// window that has not filled (the windowless-account gap).
 	//
 	// The provider's own answer rides in on the same read and is what the card body puts first; the gateway
-	// counted windows are reduced to one summary line per connection there. The percentage a row prints is
-	// percent USED and the bar's colour is the REMAINING share (quota-geometry.ts, in the panel's own tokens)
-	// — both conventions are the screen's, not reinvented here.
+	// counted windows are reduced to one summary line per connection there. The percentage a row prints
+	// is percent USED and the bar's colour is the REMAINING share (quota-geometry.ts, in the panel's own
+	// tokens). Both conventions are the screen's, not reinvented here.
 	//
 	// A window the gateway recorded without a provider (the credential-free lane's virtual endpoint) cannot
 	// sit under a provider heading. It gets its own card, whose body opens by saying the counts are local.

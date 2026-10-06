@@ -11,7 +11,7 @@
 	//
 	// Removing a connection lives here: a delete requested from a row or from the drawer opens one
 	// confirmation this list owns, so the two paths cannot disagree about what a delete means. The
-	// cascade — the endpoint's keys go with it — is stated in the dialog; here a success reloads the page's
+	// cascade (the endpoint's keys go with it) is stated in the dialog; here a success reloads the page's
 	// own window and closes any drawer that was showing the row that left.
 	import { untrack } from 'svelte';
 	import EndpointDeleteDialog from '$lib/components/EndpointDeleteDialog.svelte';

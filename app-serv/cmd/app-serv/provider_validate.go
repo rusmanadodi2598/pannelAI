@@ -1,24 +1,9 @@
 // Command app-serv adapts the stateless credential check to HTTP.
 //
 // @file      cmd/app-serv/provider_validate.go
-// @for       The net/http implementation of service.CredentialValidator: the
-// //
-//
-//	models probe, the chat fallback, and the Anthropic status rule.
-//
-// @uses      internal/domain, internal/netguard, internal/provider,
-//
-//	internal/registry, internal/service, context, fmt, net/http,
-//	strings, time. The request shapes are in provider_validate_request.go.
-//
-// @reason    SPEC-API-001 §7.4 has no validate route, so draft 017 §4.6's finding
-//
-//	is that a credential can only be tested after it is stored. The
-//	reference validates before the write, and its two non-obvious rules are
-//	ported here: an upstream that does not serve `/models` is probed with a
-//	one-token chat request instead of being reported broken, and an
-//	Anthropic wire treats anything but 401/403 as proof the key was
-//	accepted.
+// @for       The net/http implementation of service.CredentialValidator: the models probe, the chat fallback, and the Anthropic status rule.
+// @uses      internal/domain, internal/netguard, internal/provider, internal/registry, internal/service, context, fmt, net/http, strings, time. The request shapes are in provider_validate_request.go.
+// @reason    SPEC-API-001 §7.4 has no validate route, so draft 017 §4.6's finding is that a credential can only be tested after it is stored. The reference validates before the write, and its two non-obvious rules are ported here: an upstream that does not serve `/models` is probed with a one-token chat request instead of being reported broken, and an Anthropic wire treats anything but 401/403 as proof the key was accepted.
 //
 //	The destination is operator-supplied on both paths, so every request
 //	goes through the process egress guard (OWASP A01), pre-flight and at
@@ -26,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -128,7 +113,7 @@ func (p *httpEndpointProber) validate(ctx context.Context, req validateRequest) 
 	if req.anthropic {
 		return service.ValidateOutcomeForAnthropic(outcome.Status), nil
 	}
-	if outcome.State == domain.EndpointTestOK || outcome.Status == http.StatusUnauthorized || outcome.Status == http.StatusForbidden {
+	if outcome.State == string(domain.EndpointTestOK) || outcome.Status == http.StatusUnauthorized || outcome.Status == http.StatusForbidden {
 		return outcome, nil
 	}
 	// The models path is missing or unhappy for a reason that is not the
@@ -175,19 +160,19 @@ func (p *httpEndpointProber) probeWith(ctx context.Context, target string, req v
 	resp, err := p.client.Do(httpReq)
 	latency := int(time.Since(started).Milliseconds())
 	if err != nil {
-		return service.ProbeOutcome{State: domain.EndpointTestFail, LatencyMS: latency, Message: "the upstream could not be reached"}, nil
+		return service.ProbeOutcome{State: string(domain.EndpointTestFail), LatencyMS: latency, Message: "the upstream could not be reached"}, nil
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	outcome := service.ProbeOutcome{LatencyMS: latency, Status: resp.StatusCode}
 	switch {
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
-		outcome.State = domain.EndpointTestOK
+		outcome.State = string(domain.EndpointTestOK)
 	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:
-		outcome.State = domain.EndpointTestFail
+		outcome.State = string(domain.EndpointTestFail)
 		outcome.Message = "the upstream rejected this credential"
 	default:
-		outcome.State = domain.EndpointTestFail
+		outcome.State = string(domain.EndpointTestFail)
 		outcome.Message = fmt.Sprintf("the upstream answered %d", resp.StatusCode)
 	}
 	return outcome, nil

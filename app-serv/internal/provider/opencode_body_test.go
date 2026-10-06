@@ -2,22 +2,12 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_body_test.go
-// @for       The OpenCode Free request shape: forced streaming, the decoy tools,
-//
-//	the tool_choice rule, and the Responses field names.
-//
+// @for       The OpenCode Free request shape: forced streaming, the decoy tools, the tool_choice rule, and the Responses field names.
 // @uses      testing, encoding/json, internal/registry.
-// @reason    The free tier answers 403 to a body that does not carry a streamed
-//
-//	request and both decoy tools, and 400 to a Responses body that
-//	names max_tokens or a tool_choice other than auto. Those are upstream
-//	rules the gateway must apply on the way out, so each one is pinned
-//	against the decoded body rather than against a string the test would
-//	have to keep in step with the encoder.
-//
+// @reason    The free tier answers 403 to a body that does not carry a streamed request and both decoy tools, and 400 to a Responses body that names max_tokens or a tool_choice other than auto. Those are upstream rules the gateway must apply on the way out, so each one is pinned against the decoded body rather than against a string the test would have to keep in step with the encoder.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-21
 package provider
 

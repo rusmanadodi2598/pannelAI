@@ -3,17 +3,10 @@
 // @file      internal/handler/oauth_status_test.go
 // @for       HTTP tests for the §7.4 OAuth status and refresh routes.
 // @uses      context, net/http, net/http/httptest, strings, testing, time.
-// @reason    These two routes are the panel's view of credential health and the
-//
-//	operator's manual override of the worker, so the tables pin that the
-//	status answer never carries token material, that the derived refresh
-//	state reaches the wire, and that a refresh actually rotates the
-//	stored token. AGENTS.md §2.1 requires a happy and a validation path
-//	per route; both are here.
-//
+// @reason    These two routes are the panel's view of credential health and the operator's manual override of the worker, so the tables pin that the status answer never carries token material, that the derived refresh state reaches the wire, and that a refresh actually rotates the stored token. AGENTS.md §2.1 requires a happy and a validation path per route; both are here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -22,6 +15,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"time"
 )
 
@@ -56,9 +51,18 @@ func TestOAuthHandlerStatus(t *testing.T) {
 				if err != nil {
 					t.Fatalf("reloading: %v", err)
 				}
-				credential := *endpoint.OAuth()
-				credential.ExpiresAt = nil
-				endpoint.SetOAuth(&credential, oauthNow)
+				// Re-staged the way the repository loads a row whose provider never
+				// stated an expiry, which is the state this case is about.
+				stored := endpoint.OAuth()
+				endpoint.SetOAuth(domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{
+					AccessTokenEncrypted:  stored.AccessTokenEncrypted(),
+					RefreshTokenEncrypted: stored.RefreshTokenEncrypted(),
+					Scopes:                stored.Scopes(),
+					ProjectID:             stored.ProjectID(),
+					AccountID:             stored.AccountID(),
+					AccountEmail:          stored.AccountEmail().String(),
+					LastRefreshAt:         stored.LastRefreshAt(),
+				}), oauthNow)
 				if err := fixture.store.Update(context.Background(), endpoint); err != nil {
 					t.Fatalf("clearing the expiry: %v", err)
 				}
@@ -150,7 +154,7 @@ func TestOAuthHandlerRefresh(t *testing.T) {
 			if err != nil {
 				t.Fatalf("reloading: %v", err)
 			}
-			if endpoint.OAuth().LastRefreshAt == nil {
+			if endpoint.OAuth().LastRefreshAt() == nil {
 				t.Fatal("the refreshed account must record when it was refreshed")
 			}
 			if got, _ := body["endpoint_ids"].([]any); len(got) != int(tc.wantCount) {

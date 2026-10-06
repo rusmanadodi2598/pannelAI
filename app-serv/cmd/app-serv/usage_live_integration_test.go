@@ -3,32 +3,17 @@
 // Package main is the app-serv composition root.
 //
 // @file      cmd/app-serv/usage_live_integration_test.go
-// @for       F4 live evidence: the real gateway serving the live Usage route, a
+// @for       F4 live evidence: the real gateway serving the live Usage route, a real data-plane request lighting a node, and the frame carrying it.
+// @uses      internal/dataplane, internal/domain, internal/handler, internal/router, internal/schema, internal/service, bufio, context, encoding/json, net, net/http, net/http/httptest, os, strings, testing, time.
+// @reason    Draft 013 F4 is closed by "the route answers with a session and the live pass records a frame from the gateway itself". Every half of that has a unit test, and none of them proves the two halves meet: the marker is written by a real relay leg over a real socket, the store is the real Redis, and the frame is read off a real connection through the real router. That is the evidence the previous pass could not produce, and it is the difference between "the code should work" and "the frame arrived".
 //
-//	real data-plane request lighting a node, and the frame carrying it.
-//
-// @uses      internal/dataplane, internal/domain, internal/handler, internal/router,
-//
-//	internal/schema, internal/service, bufio, context, encoding/json, net,
-//	net/http, net/http/httptest, os, strings, testing, time.
-//
-// @reason    Draft 013 F4 is closed by "the route answers with a session and the
-//
-//	live pass records a frame from the gateway itself". Every half of
-//	that has a unit test, and none of them proves the two halves meet:
-//	the marker is written by a real relay leg over a real socket, the
-//	store is the real Redis, and the frame is read off a real
-//	connection through the real router. That is the evidence the
-//	previous pass could not produce, and it is the difference between
-//	"the code should work" and "the frame arrived".
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	  PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
-//	    go test -race -tags=integration -run TestUsageLive ./cmd/app-serv/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
+//	  go test -race -tags=integration -run TestUsageLive ./cmd/app-serv/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package main
 
@@ -59,13 +44,10 @@ type liveUsageFixture struct {
 // newLiveUsageFixture builds the live route over the stack's real Redis and
 // PostgreSQL, wired the way the composition root wires it: one store instance
 // serves both the tracker that writes markers and the service that reads them.
-//
-// The tracker has to exist before the stack, because the stack's engine is what
-// opens the markers: building it afterwards would leave the engine writing
-// nothing and the stream reading an always-empty set, which is a pass that
-// proves nothing while looking green. The fixture therefore opens its own client
-// to the same Redis the stack uses, which is what the composition root does with
-// one client: the store is keyed by name, so two clients reach the same set.
+// The tracker is built before the stack because the stack's engine opens the
+// markers; built after, the engine writes nothing and the stream reads an always
+// empty set. The fixture opens its own client to the same Redis the stack uses:
+// the store is keyed by name, so two clients reach one set.
 func newLiveUsageFixture(t *testing.T, upstream *liveUpstream) liveUsageFixture {
 	t.Helper()
 	raw := os.Getenv(liveRedisEnv)

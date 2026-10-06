@@ -1,13 +1,13 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_models_test.go
-// @for       Route-level tests for the §7.6–§7.8 model, combo, and vision (first half; split at the AGENTS.md §1.1 line limit).
+// @for       Route-level tests for the §7.6-§7.8 model, combo, and vision (first half; split at the AGENTS.md §1.1 line limit).
 // @uses      internal/domain, internal/handler, internal/registry,
 // @reason    AGENTS.md §2.1 requires a happy path, a validation-failure path,
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package router
 
@@ -19,7 +19,7 @@ import (
 )
 
 // managementRoutes is every route this vertical registers, with a body for the
-// verbs that need one. The table is the audit against the §7.6–§7.8 spec tables:
+// verbs that need one. The table is the audit against the §7.6-§7.8 spec tables:
 // a route that stops being registered fails here.
 var managementRoutes = []struct {
 	name   string

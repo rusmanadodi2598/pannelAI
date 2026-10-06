@@ -1,22 +1,12 @@
 // Package redis implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/proxy_rotation_test.go
-// @for       Tests for the proxy route store's key derivation and its
-//
-//	short-list path.
-//
+// @for       Tests for the proxy route store's key derivation and its short-list path.
 // @uses      context, reflect, strings, testing, internal/domain.
-// @reason    The atomic steps (the INCR script and the TTL set) only execute on
-//
-//	a live server; what a unit test can and must pin is that the two key
-//	families cannot collide with each other or with another namespace,
-//	that derivation is deterministic, and that a pool of fewer than two
-//	candidates is served without touching Redis (docs/PORT/
-//	008-PORT-PROXY-ENGINE.md D5, D6).
-//
+// @reason    The atomic steps (the INCR script and the TTL set) only execute on a live server; what a unit test can and must pin is that the two key families cannot collide with each other or with another namespace, that derivation is deterministic, and that a pool of fewer than two candidates is served without touching Redis (docs/PORT/ 008-PORT-PROXY-ENGINE.md D5, D6).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package redisrepo
 

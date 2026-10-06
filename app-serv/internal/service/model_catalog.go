@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog.go
-// @for       The merged model catalog: the embedded registry combined with the
-//
-//	models_custom and models_disabled rows (SPEC-API-001 §7.6).
-//
-// @uses      internal/domain, internal/repository, internal/registry, context,
-//
-//	time.
-//
-// @reason    §7.6 serves one catalog from three sources that disagree by
-//
-//	design: the registry is immutable config, custom rows are the
-//	operator's additions, and disabled rows are subtractions. Merging
-//	them here — in one place, in one order — is what lets the panel
-//	and the data plane ask the same question and get the same answer.
-//
+// @for       The merged model catalog: the embedded registry combined with the models_custom and models_disabled rows (SPEC-API-001 §7.6).
+// @uses      internal/domain, internal/repository, internal/registry, context, time.
+// @reason    §7.6 serves one catalog from three sources that disagree by design: the registry is immutable config, custom rows are the operator's additions, and disabled rows are subtractions. Merging them here, in one place, in one order, is what lets the panel and the data plane ask the same question and get the same answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -38,7 +26,7 @@ import (
 // Active is a pointer because it has three states: nil (the parameter was not
 // sent, so nothing is narrowed), true (only providers holding an active
 // endpoint), and false (the parameter was sent as false, which still narrows
-// nothing — draft 025 §6 ruling 2).
+// nothing.
 type CatalogFilter struct {
 	ProviderID string
 	Capability string
@@ -71,7 +59,7 @@ type ModelCatalogService struct {
 // ModelCatalogServiceDeps holds the collaborators the service needs. Active is
 // optional: it is the seam the `?active=true` catalog filter needs, so a
 // deployment that wires none still serves the whole catalog and the filter's
-// refusal names the missing seam (draft 025).
+// refusal names the missing seam.
 type ModelCatalogServiceDeps struct {
 	Index  CatalogIndex
 	Repo   repository.ModelCatalogRepository
@@ -115,8 +103,8 @@ func (s *ModelCatalogService) Catalog(ctx context.Context, filter CatalogFilter)
 	}
 	// The active predicate runs after the other filters so the roll-up measures
 	// only the providers the request actually asked about, and it is skipped
-	// entirely when the parameter was not sent or was sent as false — the plain
-	// catalog read stays free of a query it never needed (draft 025).
+	// entirely when the parameter was not sent or was sent as false, the plain
+	// catalog read stays free of a query it never needed.
 	if filter.Active != nil && *filter.Active {
 		active, err := s.activeProviders(ctx, distinctProviderIDs(matched))
 		if err != nil {

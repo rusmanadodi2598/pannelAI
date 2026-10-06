@@ -3,17 +3,10 @@
 // @file      internal/schema/token_saver_test.go
 // @for       Table-driven validation of the §7.9 replacement body.
 // @uses      internal/domain, reflect, strings, testing.
-// @reason    AGENTS.md §2.4 requires the contract validated at the boundary,
-//
-//	and TDD.md §2.5 requires the table to cover the whole input
-//	surface, not one happy sample: every group, every level word, the
-//	filter vocabulary, and the URL schemes the saver cannot dial. The
-//	tag-versus-registry test is what keeps the oneof list and
-//	domain.TokenSaverFilters from drifting apart.
-//
+// @reason    AGENTS.md §2.4 requires the contract validated at the boundary, and TDD.md §2.5 requires the table to cover the whole input surface, not one happy sample: every group, every level word, the filter vocabulary, and the URL schemes the saver cannot dial. The tag-versus-registry test is what keeps the oneof list and domain.TokenSaverFilters from drifting apart.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 

@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy_route_rotation_test.go
-// @for       The plan's rotation and degradation halves: round-robin through
-//
-//	the store, every degrade-instead-of-fail path, the credential
-//	composition, and the failure report.
-//
+// @for       The plan's rotation and degradation halves: round-robin through the store, every degrade-instead-of-fail path, the credential composition, and the failure report.
 // @uses      context, errors, testing, time, internal/domain.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D5/D6: rotation is an
-//
-//	optimisation and parking is a hint, so each of these paths must
-//	answer a working plan rather than an error, the opposite outcome
-//	from the refusals the plan table pins, which is why they live in
-//	their own file.
-//
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D5/D6: rotation is an optimisation and parking is a hint, so each of these paths must answer a working plan rather than an error, the opposite outcome from the refusals the plan table pins, which is why they live in their own file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package service
 

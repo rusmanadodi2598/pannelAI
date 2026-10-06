@@ -1,25 +1,18 @@
 // Package provider adapts a registry entry to the outbound HTTP call.
 //
 // @file      internal/provider/default_auth_query_test.go
-// @for       The query-parameter credential placement, and the header placement
-//
-//	it must not disturb.
-//
+// @for       The query-parameter credential placement, and the header placement it must not disturb.
 // @uses      internal/registry, net/http, net/http/httptest, strings, testing.
-// @reason    Draft 017 §4.2 measured that `app-serv` could not express a provider
+// @reason    Draft 017 §4.2 measured that `app-serv` could not express a provider that carries its credential in the query string: `AuthConfig` had only Header and Scheme, so the gemini family, whose models endpoint reads `?key=`, had no declaration for it. The reference applies exactly this rule in its models route (models/route.js:189, :634-637).
 //
-//	that carries its credential in the query string: `AuthConfig` had only
-//	Header and Scheme, so the gemini family — whose models endpoint reads
-//	`?key=` — had no declaration for it. The reference applies exactly this
-//	rule in its models route (models/route.js:189, :634-637).
-//
-//	The rule is asserted against the header path too, because the two are
-//	mutually exclusive in the reference: a request that sent both would
-//	leak the credential into a URL and a header at once.
+//	The rule is asserted against the header path too, and the two are
+//	mutually exclusive on the wire: an entry that declares both must send the
+//	credential in the header, because the query string is the placement that
+//	survives into an access log, a browser history and a Referer header.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-23
 package provider
 
@@ -70,9 +63,10 @@ func TestApplyAuth_AuthQuery(t *testing.T) {
 			wantHeader: "x-api-key",
 		},
 		{
-			name:      "the query wins when both are declared, matching the reference",
-			auth:      registry.AuthConfig{AuthQuery: "key", Header: "x-goog-api-key", Scheme: "raw"},
-			wantQuery: "key=" + secret,
+			name:        "a declared header wins when both are declared",
+			auth:        registry.AuthConfig{AuthQuery: "key", Header: "x-goog-api-key", Scheme: "raw"},
+			wantHeader:  "x-goog-api-key",
+			wantNoQuery: true,
 		},
 		{
 			name:        "no auth declared leaves both untouched",
@@ -92,9 +86,9 @@ func TestApplyAuth_AuthQuery(t *testing.T) {
 					t.Fatalf("header %s = %q, want the credential", tc.wantHeader, got)
 				}
 			}
-			if tc.auth.AuthQuery != "" {
-				// A query placement must not also send an auth header: the value
-				// would then be in two places, one of which is a URL.
+			if tc.auth.AuthQuery != "" && tc.auth.Header == "" {
+				// A query-only placement must not also send an auth header: the
+				// value would then be in two places, one of which is a URL.
 				for _, header := range []string{"Authorization", "x-api-key", "x-goog-api-key"} {
 					if got := req.Header.Get(header); got != "" {
 						t.Fatalf("a query-placed credential also sent %s: %q", header, got)

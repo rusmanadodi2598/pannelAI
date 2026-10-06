@@ -3,14 +3,10 @@
 // @file      internal/service/quotafetch/minimax.go
 // @for       Reads MiniMax's per-model session and weekly windows from the quota hosts it publishes.
 // @uses      internal/service/quotafetch, context, encoding/json, math, net/http, regexp, strconv, strings, time
-// @reason    MiniMax answers from two hosts whose counters mean opposite things — the token plan
-//
-//	counts what was spent, the coding plan what is left — and its M-series buckets ship a
-//	percentage only, so both shapes must be read apart or the card renders a flipped bar.
-//
+// @reason    MiniMax answers from two hosts whose counters mean opposite things, the token plan counts what was spent, the coding plan what is left, and its M-series buckets ship a percentage only, so both shapes must be read apart or the card renders a flipped bar.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

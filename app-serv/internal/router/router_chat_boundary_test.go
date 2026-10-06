@@ -1,21 +1,12 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_chat_boundary_test.go
-// @for       The chat route's router-level boundary: the request id it echoes,
-// the rate limit it answers, and the models route Playground reads.
-// @uses      internal/dataplane, internal/handler, internal/schema,
-//
-//	internal/service, net/http, net/http/httptest, strings, testing.
-//
-// @reason    F4 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires
-// the route itself, not only the handler, to prove the §4 request-id echo, the
-// §4 rate limit, and the §7.15 models list Playground needs to fill its model
-// selector. AGENTS.md §2.1 requires a validation failure and an auth failure per
-// protected route, so both are covered through the mux.
-//
+// @for       The chat route's router-level boundary: the request id it echoes, the rate limit it answers, and the models route Playground reads.
+// @uses      internal/dataplane, internal/handler, internal/schema, internal/service, net/http, net/http/httptest, strings, testing.
+// @reason    F4 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires the route itself, not only the handler, to prove the §4 request-id echo, the §4 rate limit, and the §7.15 models list Playground needs to fill its model selector. AGENTS.md §2.1 requires a validation failure and an auth failure per protected route, so both are covered through the mux.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package router
 

@@ -2,22 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_active_codec_test.go
-// @for       The in-flight marker's wire codec and the staleness cutoff the
-//
-//	live read is bounded by.
-//
+// @for       The in-flight marker's wire codec and the staleness cutoff the live read is bounded by.
 // @uses      encoding/json, strings, testing, time.
-// @reason    The marker is the one value the live drawing's "routing now" claim
-//
-//	rests on (R-36), and it crosses a shared Redis instance, so it is
-//	both a validated aggregate input and an untrusted decode. Each rule
-//	is pinned here: a marker missing its provider would light the wrong
-//	node, and a decoder that accepted a foreign member would put a node
-//	on screen for a value nothing wrote.
-//
+// @reason    The marker is the one value the live drawing's "routing now" claim rests on (R-36), and it crosses a shared Redis instance, so it is both a validated aggregate input and an untrusted decode. Each rule is pinned here: a marker missing its provider would light the wrong node, and a decoder that accepted a foreign member would put a node on screen for a value nothing wrote.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package domain
 
@@ -160,8 +150,8 @@ func TestActiveRequestCutoff(t *testing.T) {
 // in Redis undecodable, and the panel would draw an idle gateway.
 //
 // `combo` is omitted rather than sent empty, so a marker for a call that
-// addressed a single model — every media, embeddings and SystemOne call, and
-// most chat requests — encodes byte-for-byte as the shape an older build writes.
+// addressed a single model, every media, embeddings and SystemOne call, and
+// most chat requests, encodes byte-for-byte as the shape an older build writes.
 // That is what keeps a mixed-build window from losing markers over a field the
 // reader has never heard of.
 func TestActiveRequestWireShapeIsStable(t *testing.T) {

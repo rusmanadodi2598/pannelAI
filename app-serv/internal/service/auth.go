@@ -3,10 +3,7 @@
 // @file      internal/service/auth.go
 // @for       Dashboard login, logout, status, bootstrap, and password changes.
 // @uses      internal/domain, internal/repository, crypto password hashing.
-// @reason    SPEC-API-001 §7.2 requires revocable dashboard sessions and a
-//
-//	fail-closed password lifecycle over PostgreSQL and Redis.
-//
+// @reason    SPEC-API-001 §7.2 requires revocable dashboard sessions and a fail-closed password lifecycle over PostgreSQL and Redis.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

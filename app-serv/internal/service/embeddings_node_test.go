@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/embeddings_node_test.go
-// @for       The embeddings block a custom OpenAI-compatible node gets, and the
-//
-//	refusals that stay for the node kinds without such a service.
-//
-// @uses      internal/dataplane, internal/provider, internal/registry, context,
-//
-//	testing.
-//
-// @reason    A node is routable through the same pipeline as a registry
-//
-//	provider, so the synthesized block has to complete the URL and
-//	place the credential exactly as the reference's openaiCompatNode
-//	adapter does. Each row pins one shape of that rule, and the
-//	Anthropic-compatible row pins the refusal that must not move.
-//
+// @for       The embeddings block a custom OpenAI-compatible node gets, and the refusals that stay for the node kinds without such a service.
+// @uses      internal/dataplane, internal/provider, internal/registry, context, testing.
+// @reason    A node is routable through the same pipeline as a registry provider, so the synthesized block has to complete the URL and place the credential exactly as the reference's openaiCompatNode adapter does. Each row pins one shape of that rule, and the Anthropic-compatible row pins the refusal that must not move.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -92,7 +80,7 @@ func TestEmbeddingsService_NodeEmbeddingsMedia(t *testing.T) {
 			if err != nil {
 				t.Fatalf("mediaConfig() error = %v", err)
 			}
-			target, headers, err := dataplane.MediaTarget(media, baseURL, provider.Credential{APIKey: "sk-node"}, nil)
+			target, headers, err := dataplane.MediaTarget(media, baseURL, provider.StaticKey("", "", "sk-node"), nil)
 			if err != nil {
 				t.Fatalf("MediaTarget() error = %v", err)
 			}

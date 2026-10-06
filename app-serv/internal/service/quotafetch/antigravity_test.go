@@ -1,18 +1,14 @@
-// Antigravity family tests: the whole read — lookup, models, summary — in call order, the row
+// Antigravity family tests: the whole read, lookup, models, summary, in call order, the row
 // order the card is handed, the free-tier rule, and the reconciliation that marks a session
 // spent when its whole model family is.
 //
 // @file      internal/service/quotafetch/antigravity_test.go
 // @for       Locks Antigravity's read order, model allowlist, tier rule and refusal sentences.
 // @uses      internal/service/quotafetch, context, net/http, strings, testing, time
-// @reason    Three endpoints feed one card, and the two that matter most are the ones a wrong
-//
-//	order breaks silently: models before their weekly overlay, and a session
-//	row that has to read as spent when every model behind it is.
-//
+// @reason    Three endpoints feed one card, and the two that matter most are the ones a wrong order breaks silently: models before their weekly overlay, and a session row that has to read as spent when every model behind it is.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

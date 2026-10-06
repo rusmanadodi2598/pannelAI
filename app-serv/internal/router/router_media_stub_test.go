@@ -1,23 +1,12 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_media_stub_test.go
-// @for       The in-memory override store and media index the §7.10 route tests
-//
-//	drive.
-//
-// @uses      internal/domain, internal/handler, internal/registry,
-//
-//	internal/service, context, sort, testing.
-//
-// @reason    AGENTS.md §1.1 caps a file at 250 lines, so the doubles live apart
-//
-//	from the route table. The handler takes a concrete
-//	*service.MediaProviderService, so these build the real service over
-//	in-memory collaborators rather than faking the service itself.
-//
+// @for       The in-memory override store and media index the §7.10 route tests drive.
+// @uses      internal/domain, internal/handler, internal/registry, internal/service, context, sort, testing.
+// @reason    AGENTS.md §1.1 caps a file at 250 lines, so the doubles live apart from the route table. The handler takes a concrete *service.MediaProviderService, so these build the real service over in-memory collaborators rather than faking the service itself.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package router
 

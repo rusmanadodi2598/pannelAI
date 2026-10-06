@@ -3,16 +3,10 @@
 // @file      internal/dataplane/engine_codebuddy_wire_test.go
 // @for       The body that actually leaves the gateway for a CodeBuddy region.
 // @uses      context, encoding/json, net/http, net/http/httptest, testing, internal/provider, internal/registry, internal/schema.
-// @reason    The vendor answers a plain OpenAI message list with `11101 invalid request`, and the
-//
-//	rewrite that avoids it belongs to the connector. A unit test can show what the
-//	connector produced; only a wire test shows what the gateway put on the socket after
-//	translation and the forced stream were applied, which is the body the vendor either
-//	accepts or refuses.
-//
+// @reason    The vendor answers a plain OpenAI message list with `11101 invalid request`, and the rewrite that avoids it belongs to the connector. A unit test can show what the connector produced; only a wire test shows what the gateway put on the socket after translation and the forced stream were applied, which is the body the vendor either accepts or refuses.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package dataplane
 

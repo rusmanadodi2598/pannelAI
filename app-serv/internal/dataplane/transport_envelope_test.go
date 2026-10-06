@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/transport_envelope_test.go
-// @for       The transport's use of the envelope seam: an unwrapped body piped to
-//
-//	the client, and a refusal inside a 200 reported as a failure.
-//
+// @for       The transport's use of the envelope seam: an unwrapped body piped to the client, and a refusal inside a 200 reported as a failure.
 // @uses      io, net/http, net/http/httptest, provider, strings, testing.
-// @reason    A provider that hides its real status in the body only fails properly
-//
-//	if the transport reads the first frame before piping. That decision is
-//	worth a test of its own: without it, a spent account would stream an
-//	error envelope to the client and be recorded as a served answer.
-//
+// @reason    A provider that hides its real status in the body only fails properly if the transport reads the first frame before piping. That decision is worth a test of its own: without it, a spent account would stream an error envelope to the client and be recorded as a served answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package dataplane
 

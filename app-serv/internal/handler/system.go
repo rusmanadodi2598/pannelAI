@@ -3,15 +3,10 @@
 // @file      internal/handler/system.go
 // @for       The system endpoints: health and version (SPEC-API-001 §7.1).
 // @uses      internal/domain, internal/schema, internal/service.
-// @reason    §7.1 makes liveness report DB and Redis reachability so a probe
-//
-//	distinguishes "process is up" from "dependencies are healthy";
-//	AGENTS.md §1.5 keeps net/http out of the service layer, so the
-//	HTTP mapping (including a 503 when degraded) lives here.
-//
+// @reason    §7.1 makes liveness report DB and Redis reachability so a probe distinguishes "process is up" from "dependencies are healthy"; AGENTS.md §1.5 keeps net/http out of the service layer, so the HTTP mapping (including a 503 when degraded) lives here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package handler
 
@@ -35,7 +30,6 @@ type SystemHandlerDeps struct {
 	Health *service.HealthService
 }
 
-// NewSystemHandler validates deps and returns the handler.
 func NewSystemHandler(deps SystemHandlerDeps) *SystemHandler {
 	return &SystemHandler{info: deps.Info, health: deps.Health}
 }

@@ -1,10 +1,10 @@
 -- P1 parity: the five connection fields a reference "connection" carries and an
--- endpoint did not (draft 017 §4.1b, SPEC-API-001 §7.5).
+-- endpoint did not (SPEC-API-001 §7.5).
 --
 -- The endpoint stays the mutation boundary and the connection model is not
 -- imported: the reference keeps one row per credential, while this port keeps one
 -- endpoint with 1..N keys (§7.5). What is added here is the capability, not the
--- shape — the five fields an operator needs to express, on an endpoint, what a
+-- shape: the five fields an operator needs to express, on an endpoint, what a
 -- reference connection can express.
 --
 --   global_priority        order across providers, for the case where several

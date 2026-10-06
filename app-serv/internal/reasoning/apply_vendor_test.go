@@ -3,22 +3,12 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/apply_vendor_test.go
-// @for       The vendor dialects an OpenAI-wire provider declares for itself:
-//
-//	zai, qwen, deepseek, kimi, minimax, hunyuan, step, and commandcode.
-//
+// @for       The vendor dialects an OpenAI-wire provider declares for itself: zai, qwen, deepseek, kimi, minimax, hunyuan, step, and commandcode.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.15 ports thinkingUnified.js applyFormat, and these
-//
-//	eight formats are the ones that do not speak the plain OpenAI effort
-//	field: each renames it, wraps it in an envelope, or pairs it with its
-//	own switch, so each needs its own proof that the member it writes is
-//	the member its upstream reads. The gateway's own three wires are
-//	proven in apply_wire_test.go.
-//
+// @reason    SPEC-API-001 §7.15 ports thinkingUnified.js applyFormat, and these eight formats are the ones that do not speak the plain OpenAI effort field: each renames it, wraps it in an envelope, or pairs it with its own switch, so each needs its own proof that the member it writes is the member its upstream reads. The gateway's own three wires are proven in apply_wire_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package reasoning
 

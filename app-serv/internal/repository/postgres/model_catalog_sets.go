@@ -1,23 +1,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/model_catalog_sets.go
-// @for       Whole-set replacement and reads for model_aliases and
-//
-//	models_disabled (SPEC-API-001 §7.6).
-//
+// @for       Whole-set replacement and reads for model_aliases and models_disabled (SPEC-API-001 §7.6).
 // @uses      github.com/jackc/pgx/v5, internal/domain.
-// @reason    §7.6 replaces the alias set and the disabled set as a whole, so
-//
-//	each replacement runs in one transaction: an uncommitted delete is
-//	invisible to a concurrent reader, while a delete and an insert in
-//	separate statements would let one observe an alias mapping to
-//	nothing. §1.7 forbids a query per row, so the insert is a single
-//	statement over unnested arrays. These two sets share one shape and
-//	one write path, which is why they share one file.
-//
+// @reason    §7.6 replaces the alias set and the disabled set as a whole, so each replacement runs in one transaction: an uncommitted delete is invisible to a concurrent reader, while a delete and an insert in separate statements would let one observe an alias mapping to nothing. §1.7 forbids a query per row, so the insert is a single statement over unnested arrays. These two sets share one shape and one write path, which is why they share one file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 

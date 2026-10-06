@@ -1,26 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/embeddings_refusal_test.go
-// @for       The log row POST /embeddings leaves when a call is refused before
-//
-//	any upstream attempt, and the identity such a row can still name.
-//
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	testing, time.
-//
-// @reason    Register G20 names embeddings alongside the media routes: the
-//
-//	service wrote rows only after the call, so an unresolvable model, a
-//	combo, a provider without an embeddings block, or no usable account
-//	never appeared in the Logs screen. The resolution phase returns the
-//	identity resolved so far with its error, which is what these cases
-//	pin, together with the benign control that a served call still
-//	writes the accounting pair.
-//
+// @for       The log row POST /embeddings leaves when a call is refused before any upstream attempt, and the identity such a row can still name.
+// @uses      internal/dataplane, internal/domain, internal/schema, context, testing, time.
+// @reason    Register G20 names embeddings alongside the media routes: the service wrote rows only after the call, so an unresolvable model, a combo, a provider without an embeddings block, or no usable account never appeared in the Logs screen. The resolution phase returns the identity resolved so far with its error, which is what these cases pin, together with the benign control that a served call still writes the accounting pair.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -99,7 +85,7 @@ func embeddingsCombo(t *testing.T) domain.Combo {
 }
 
 // TestEmbeddingsService_RecordsRefusalsBeforeTheCall pins that a call refused
-// before any dial leaves exactly one request log row — no usage row — carrying
+// before any dial leaves exactly one request log row, no usage row, carrying
 // the refusal's code and the identity resolution had reached, under the
 // router's request id.
 func TestEmbeddingsService_RecordsRefusalsBeforeTheCall(t *testing.T) {

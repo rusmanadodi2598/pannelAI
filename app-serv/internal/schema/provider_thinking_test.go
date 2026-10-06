@@ -1,22 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/provider_thinking_test.go
-// @for       The §7.14 level sets the panel reads: the union a provider detail
-//
-//	carries, and the levels a custom-model or catalog row carries.
-//
+// @for       The §7.14 level sets the panel reads: the union a provider detail carries, and the levels a custom-model or catalog row carries.
 // @uses      testing, internal/domain, internal/registry.
-// @reason    The picker's options and the suffix a copied model name gains are
-//
-//	one decision each, and both are made from a level set the panel cannot
-//	compute: the tables live in the registry package. Asserting the two
-//	projections here is what keeps a picker from offering a level the
-//	upstream would refuse, and a suffix from being appended to a model
-//	that does not accept it.
-//
+// @reason    The picker's options and the suffix a copied model name gains are one decision each, and both are made from a level set the panel cannot compute: the tables live in the registry package. Asserting the two projections here is what keeps a picker from offering a level the upstream would refuse, and a suffix from being appended to a model that does not accept it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package schema
 
@@ -46,7 +36,7 @@ func declaredModel(t *testing.T, id, providerID, modelID string) domain.CustomMo
 
 // TestProviderDetailFrom_CarriesTheThinkingLevelUnion pins the union rule: the
 // levels of every declared model, in discovery order, without duplicates and
-// without "none" — which is the absence of a level rather than a choice.
+// without "none", which is the absence of a level rather than a choice.
 func TestProviderDetailFrom_CarriesTheThinkingLevelUnion(t *testing.T) {
 	entry := registry.Provider{
 		ID: "anthropic", Category: "apikey", Priority: 1,
@@ -77,7 +67,7 @@ func TestProviderDetailFrom_CarriesTheThinkingLevelUnion(t *testing.T) {
 // TestProviderDetailFrom_UnionIncludesTheDeclaredRows pins the union's second
 // source. A synthesized custom node carries no registry models at all, so
 // without its declared rows its detail answers no level set and the panel hides
-// the reasoning picker on exactly the screen whose rows copy the suffix — the
+// the reasoning picker on exactly the screen whose rows copy the suffix, the
 // gap the owner reported on 2026-09-27. A registry provider's declared rows
 // join its registry models in the same union, because the panel copies the
 // suffix onto those rows too.
@@ -113,7 +103,7 @@ func TestProviderDetailFrom_UnionIncludesTheDeclaredRows(t *testing.T) {
 
 // TestToCustomModelResponse_CarriesTheModelsOwnLevels pins the per-row answer:
 // a custom model that names a known model carries that model's levels, and one
-// the registry does not know carries none — the honest answer, because the
+// the registry does not know carries none, the honest answer, because the
 // panel would otherwise append a suffix the upstream refuses.
 func TestToCustomModelResponse_CarriesTheModelsOwnLevels(t *testing.T) {
 	known, err := domain.NewCustomModel("cm_1", "anthropic", "claude-opus-4-8", "Opus", nil, thinkingTestTime())

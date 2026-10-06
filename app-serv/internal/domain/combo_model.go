@@ -3,20 +3,11 @@
 //
 // @file      internal/domain/combo_model.go
 // @for       A combo's model entry and the shape rules its strategy imposes.
-// @uses      internal/domain (ComboStrategy, AppError constructors), sort,
-//
-//	strings.
-//
-// @reason    SPEC-API-001 §7.7 gives each strategy a different required field
-//
-//	set, and the three rules have to be enforced in one place or a
-//	create and a patch will drift. Keeping the entry type and the
-//	rules together — away from the aggregate's mutation surface —
-//	makes the rule table readable on one screen.
-//
+// @uses      internal/domain (ComboStrategy, AppError constructors), sort, strings.
+// @reason    SPEC-API-001 §7.7 gives each strategy a different required field set, and the three rules have to be enforced in one place or a create and a patch will drift. Keeping the entry type and the rules together, away from the aggregate's mutation surface, makes the rule table readable on one screen.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
@@ -70,17 +61,11 @@ type comboShape struct {
 	models      []ComboModel
 }
 
-// validateComboShape is the single place the strategy rules live (SPEC-API-001
-// §7.7):
-//
-//   - fusion requires judge_model, and a sticky limit is rejected because
-//     fusion fans out rather than rotating;
-//   - fallback and round_robin reject judge_model, because nothing would call
-//     the judge;
-//   - round_robin requires sticky_limit >= 1, since zero consecutive requests
-//     per model is not a rotation;
-//   - every strategy refuses an empty model list: a combo with nothing to try
-//     is a routing failure waiting to happen, not a configuration.
+// validateComboShape is the single place the strategy rules live:
+//   - fusion requires judge_model and rejects sticky_limit, because it fans out;
+//   - fallback and round_robin reject judge_model, because nothing calls a judge;
+//   - round_robin requires sticky_limit >= 1, since zero is not a rotation;
+//   - every strategy refuses an empty model list.
 //
 // A sticky limit sent for a strategy that ignores it is normalized rather than
 // rejected: the panel hides the control, so the value is not a user statement.
@@ -129,15 +114,13 @@ func normalizeComboRef(value string) (string, error) {
 }
 
 // orderComboModels validates every reference's shape, rejects a duplicated
-// reference, and sorts by priority. A duplicate cannot mean anything the router
-// could execute, and a stable sort keeps equal priorities in the order the
-// caller sent, so the panel's manual ordering survives a round-trip.
-//
-// The shape is re-checked here rather than trusted from NewComboModel: the
-// aggregate is the mutation boundary (AGENTS.md §2.2), so a combo assembled from
-// literals must be refused exactly like one built through the entry constructor.
-// A reference carrying whitespace would otherwise reach the router and be parsed
-// as two different model strings.
+// reference, and sorts by priority. The sort is stable, so equal priorities keep
+// the order the caller sent and the panel's manual ordering survives a
+// round-trip. Shape is re-checked here rather than trusted from NewComboModel:
+// the aggregate is the mutation boundary (AGENTS.md §2.2), so a combo assembled
+// from literals is refused exactly like one built through the entry constructor,
+// and a reference carrying whitespace would otherwise reach the router and be
+// parsed as two different model strings.
 func orderComboModels(models []ComboModel) ([]ComboModel, error) {
 	ordered := make([]ComboModel, len(models))
 	copy(ordered, models)

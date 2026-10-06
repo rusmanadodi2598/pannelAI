@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage.go
-// @for       The UsageRecord aggregate: one served request's tokens, cost, and
-//
-//	latency, as recorded after the upstream call completes.
-//
+// @for       The UsageRecord aggregate: one served request's tokens, cost, and latency, as recorded after the upstream call completes.
 // @uses      internal/domain (ULID, Decimal, AppError constructors), time.
-// @reason    SPEC-API-001 §7.12 makes this the accounting row the summary,
-//
-//	timeseries, records, and rollup are all read from, so its shape
-//	and its invariants belong in one aggregate: a negative token count
-//	or an unparseable cost must be rejected at construction, because a
-//	bad row silently skews every aggregate built on it.
-//
+// @reason    SPEC-API-001 §7.12 makes this the accounting row the summary, timeseries, records, and rollup are all read from, so its shape and its invariants belong in one aggregate: a negative token count or an unparseable cost must be rejected at construction, because a bad row silently skews every aggregate built on it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 
@@ -200,15 +191,10 @@ func (r UsageRecord) Status() string           { return string(r.status) }
 func (r UsageRecord) UsageStatus() UsageStatus { return r.status }
 func (r UsageRecord) ErrorCode() string        { return r.errorCode }
 
-// TotalTokens is every token the request consumed, including cache traffic.
-// The panel shows the four counters separately, but the monthly token cap is
-// compared against one number, and this is that number.
-func (r UsageRecord) TotalTokens() int64 {
-	return r.tokensIn + r.tokensOut + r.tokensCacheRead + r.tokensCacheWrite
-}
-
-// Totals projects the record into the aggregate shape the read side sums, so
-// an in-memory aggregation and a SQL rollup cannot disagree about a field.
+// Totals projects this one record into the aggregate shape the read side returns.
+// The panel's rollup is computed in SQL (repository/postgres/usage_read.go); this
+// is the single-row answer the read-side test doubles give so a route can be
+// driven without a database.
 func (r UsageRecord) Totals() UsageTotals {
 	totals := UsageTotals{
 		Requests:         1,
@@ -225,4 +211,10 @@ func (r UsageRecord) Totals() UsageTotals {
 		totals.ErrorCount = 1
 	}
 	return totals
+}
+
+// TotalTokens is every token the request consumed, cache traffic included. The
+// panel shows the four counters separately; the usage event carries this one.
+func (r UsageRecord) TotalTokens() int64 {
+	return r.tokensIn + r.tokensOut + r.tokensCacheRead + r.tokensCacheWrite
 }

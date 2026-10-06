@@ -2,21 +2,11 @@
 //
 // @file      cmd/app-serv/dataplane_inputs.go
 // @for       The collaborators the data plane is built from, as one value.
-//
-// @uses      internal/config, internal/dataplane, internal/provider,
-//
-//	internal/repository, internal/service, net/http, redis.
-//
-// @reason    A long positional parameter list is where two same-typed arguments
-//
-//	get transposed silently, so the collaborators travel as one named
-//	struct. It lives in its own file because the struct is a declaration
-//	rather than wiring, and because dataplane_wiring.go stays inside the
-//	AGENTS.md §1.1 line budget with it here.
-//
+// @uses      internal/config, internal/dataplane, internal/provider, internal/repository, internal/service, net/http, redis.
+// @reason    A long positional parameter list is where two same-typed arguments get transposed silently, so the collaborators travel as one named struct. It lives in its own file because the struct is a declaration rather than wiring, and because dataplane_wiring.go stays inside the AGENTS.md §1.1 line budget with it here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package main
 
@@ -43,7 +33,7 @@ type dataPlaneInputs struct {
 	Endpoints repository.EndpointRepository
 	// Active answers which providers hold an endpoint the router would still pick.
 	// The models list filters by it, so a client is never handed a model the
-	// selector has no candidate for (draft 021 F8).
+	// selector has no candidate for.
 	Active dataplane.ActiveEndpointReader
 	Combos repository.ComboRepository
 	// ComboOrder is the §7.7 order seam, satisfied by the combo service: the

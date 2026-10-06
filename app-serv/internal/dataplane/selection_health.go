@@ -1,22 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_health.go
-// @for       The health accounting a selection produces: the key circuit a
-//
-//	served or failed call updates, and its persistence.
-//
+// @for       The health accounting a selection produces: the key circuit a served or failed call updates, and its persistence.
 // @uses      internal/domain, context.
-// @reason    Selection and accounting are two jobs: Select decides who serves
-//
-//	the next request from the endpoint's current state, while these
-//	writes change that state afterwards. Keeping them apart also keeps
-//	the keyless rule readable, because a no_auth selection has no key
-//	circuit to write and must not fail the request on a bookkeeping
-//	error (G15 in the P2 register).
-//
+// @reason    Selection and accounting are two jobs: Select decides who serves the next request from the endpoint's current state, while these writes change that state afterwards. Keeping them apart also keeps the keyless rule readable, because a no_auth selection has no key circuit to write and must not fail the request on a bookkeeping error (G15 in the P2 register).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -49,7 +39,7 @@ func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error
 // RecordFailure applies a failed attempt to the endpoint's parity state and the
 // key's circuit. A request-shaped failure writes nothing: the request is the
 // cause, the credential is healthy, and the same body would fail identically on
-// any key — so it is not a connection state the operator needs to see. A
+// any key, so it is not a connection state the operator needs to see. A
 // keyless selection still records the parity error.
 func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reason string, class domain.KeyFailureClass) error {
 	if class == domain.KeyFailureRequest {

@@ -1,25 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/usage_live_lifecycle_test.go
-// @for       The live Usage route's lifecycle: a change is pushed, and a
-//
-//	disconnect ends the loop.
-//
-// @uses      context, encoding/json, net/http, net/http/httptest, testing, time,
-//
-//	internal/domain, internal/schema.
-//
-// @reason    AGENTS.md §1.6 requires every goroutine to have an explicit
-//
-//	termination condition, and a stream's loop is where that rule is
-//	easiest to break silently: a loop that kept reading against a closed
-//	connection looks identical to a healthy one until the sockets run
-//	out. These tests pin both halves, the push that makes the stream live
-//	and the stop that ends it.
-//
+// @for       The live Usage route's lifecycle: a change is pushed, and a disconnect ends the loop.
+// @uses      context, encoding/json, net/http, net/http/httptest, testing, time, internal/domain, internal/schema.
+// @reason    AGENTS.md §1.6 requires every goroutine to have an explicit termination condition, and a stream's loop is where that rule is easiest to break silently: a loop that kept reading against a closed connection looks identical to a healthy one until the sockets run out. These tests pin both halves, the push that makes the stream live and the stop that ends it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package handler
 

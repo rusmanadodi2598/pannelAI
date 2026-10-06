@@ -51,8 +51,8 @@
 
 	// The add action is split by capability, read from the provider's declared auth modes rather than its
 	// single derived auth type. A provider that takes a key offers the page-owned dialog; one that answers
-	// through OAuth offers this section's inline endpoint form. A provider that declares both — Qoder lists
-	// `oauth` and `apikey` — offers the two side by side, and the key affordance is named for the credential
+	// through OAuth offers this section's inline endpoint form. A provider that declares both (Qoder lists
+	// `oauth` and `apikey`) offers the two side by side, and the key affordance is named for the credential
 	// it actually collects (a Personal Access Token, not a generic API key) by the one shared rule the dialog
 	// field uses too.
 	const supportsKey = $derived(takesKeyCredential(provider.auth_type, provider.auth_modes));
@@ -103,7 +103,7 @@
 		</div>
 	</div>
 	<!-- The registry's credential-format sentence (draft 036 slice B): what the key looks like and
-	     where the operator mints one. Text, never a link — the panel does not navigate to a third
+	     where the operator mints one. Text, never a link: the panel does not navigate to a third
 	     party on the operator's behalf. -->
 	{#if provider.auth_hint}
 		<p class="text-sm text-[var(--color-text-muted)]">{provider.auth_hint}</p>

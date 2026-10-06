@@ -1,26 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_usage.go
-// @for       The published-quota read for one connection: what the provider itself
-//
-//	says it has left, as opposed to what this gateway counted.
-//
-// @uses      context, errors, internal/domain, internal/registry,
-//
-//	internal/service/quotafetch, strings, time.
-//
-// @reason    SPEC-API-001 §7.12 windows are counted here from routed traffic, and
-//
-//	`quotafetch` has read providers' published allocations all along with
-//	no caller. The two answers disagree by nature — a gateway counter
-//	knows what it sent, a provider knows what it sold — so they are kept
-//	apart rather than merged into one row: `quota_windows` names a fixed
-//	set of window kinds and no unit, and a credit balance forced into it
-//	would be rendered as a percentage of something it is not.
-//
+// @for       The published-quota read for one connection: what the provider itself says it has left, as opposed to what this gateway counted.
+// @uses      context, errors, internal/domain, internal/registry, internal/service/quotafetch, strings, time.
+// @reason    SPEC-API-001 §7.12 counts windows from routed traffic, and a provider's published allocation is a different answer: this gateway knows what it sent, the provider knows what it sold. They stay in separate rows because `quota_windows` names a fixed set of window kinds and no unit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package service
 
@@ -40,16 +26,13 @@ import (
 // network, while production uses the real `quotafetch.Fetch`.
 type PublishedQuotaFetcher func(ctx context.Context, family string, creds quotafetch.Credentials) quotafetch.Result
 
-// PublishedWindow is one bucket the provider published. `Total` is absent rather than
-// zero when the provider states a usage with no allocation behind it, because the
-// panel's card has to tell "unlimited" from "spent".
+// PublishedWindow is one bucket the provider published. `Total` is absent rather
+// than zero when a provider states a usage with no allocation behind it, so the
+// panel's card can tell "unlimited" from "spent".
 //
-// `Unit`, `Unlimited` and `IsCreditBalance` carry the three ways a provider's number
-// can fail to be a percentage of a ceiling: a dimension it names for itself
-// (requests, tokens, USD), an allowance with no ceiling to spend against, and a
-// prepaid balance that has finite money but no periodic cap. Flattening all three
-// into "used of total" would draw a full-or-empty bar over figures that were never
-// shares of anything.
+// `Unit`, `Unlimited` and `IsCreditBalance` carry the three ways a provider's
+// number is not a share of a ceiling; flattening them into "used of total" would
+// draw a bar over figures that were never shares of anything.
 type PublishedWindow struct {
 	Label           string
 	Used            float64
@@ -67,7 +50,7 @@ type PublishedWindow struct {
 //
 // `Cached` says which of the two it is: an answer the poll worker stored earlier, or
 // one this process asked the provider for just now. The distinction travels because
-// the card prints it — "3000 left" is only a fact as of its stamp, and a screen that
+// the card prints it, "3000 left" is only a fact as of its stamp, and a screen that
 // cannot say whether a number is a poll behind is a screen the operator cannot act on.
 type PublishedUsage struct {
 	EndpointID string
@@ -99,19 +82,14 @@ type PublishedUsage struct {
 }
 
 // PublishedUsage reads what the provider of one connection publishes about its own
-// allocation, cache-first: the number the poll worker stored is the number this route
-// serves, because asking the provider during a screen read is the fan-out this route
-// refuses (AGENTS.md §1.7, and the owner's standing rule for this screen).
-//
-// `force` is the operator's explicit override — one live call for one connection, the
-// same seam the reference's per-card refresh uses. It is opt-in per press rather than
-// what the page does on load, so a screen of a hundred accounts costs one provider
-// call only when someone asks for exactly that account's instant.
-//
-// A provider that declares no usage endpoint, or an account with no credential to ask
-// with, is a refusal the operator can act on; a provider that answers with an error or
-// nothing at all is a soft message, because the reference renders that sentence on the
-// card rather than failing the page.
+// allocation, cache-first: the number the poll worker stored is the number this
+// route serves, because asking providers inside a screen read is the fan-out this
+// route refuses. `force` is the operator's explicit override, one live call for one
+// connection, opt-in per press rather than on load, so a screen of a hundred
+// accounts costs a provider call only when one is asked for. A provider with no
+// usage endpoint, or an account with no credential, is a refusal the operator can
+// act on; a provider that errors or answers nothing is a soft message on the card,
+// not a failed page.
 func (s *QuotaService) PublishedUsage(ctx context.Context, endpointID string, force bool) (PublishedUsage, error) {
 	if s.usageFetch == nil || s.providers == nil || s.sealer == nil {
 		return PublishedUsage{}, domain.NewInternalError("published quota is not wired")
@@ -138,7 +116,7 @@ func (s *QuotaService) PublishedUsage(ctx context.Context, endpointID string, fo
 
 // livePublishedUsage asks the provider for one connection at this instant. It is what
 // `force` reaches for and what the poll worker calls for its own schedule, so the
-// refusal rules — unknown provider, no usage endpoint, no credential — are stated once
+// refusal rules, unknown provider, no usage endpoint, no credential, are stated once
 // and are the same answers the worker sees.
 func (s *QuotaService) livePublishedUsage(ctx context.Context, id string) (PublishedUsage, error) {
 	endpoint, err := s.endpoints.GetByID(ctx, id)
@@ -175,16 +153,16 @@ func (s *QuotaService) livePublishedUsage(ctx context.Context, id string) (Publi
 // fills only the field that secret belongs to: `quotafetch` reads whichever it is
 // given, and a device token handed over as a key would be asked of the provider in
 // the wrong shape. The endpoint's own auth type decides, exactly as routing decides
-// it — an account that authenticated by flow presents its access token, a key
+// it, an account that authenticated by flow presents its access token, a key
 // account presents its next usable key.
 func (s *QuotaService) publishedCredential(endpoint domain.UpstreamEndpoint, entry registry.Provider) (quotafetch.Credentials, error) {
 	switch endpoint.AuthType() {
 	case domain.UpstreamAuthOAuth:
 		credential := endpoint.OAuth()
-		if credential == nil || strings.TrimSpace(credential.AccessTokenEncrypted) == "" {
+		if credential == nil || strings.TrimSpace(credential.AccessTokenEncrypted()) == "" {
 			return quotafetch.Credentials{}, domain.NewValidationError("the account has no stored access token to ask with")
 		}
-		token, err := s.sealer.Open(credential.AccessTokenEncrypted)
+		token, err := s.sealer.Open(credential.AccessTokenEncrypted())
 		if err != nil {
 			return quotafetch.Credentials{}, err
 		}

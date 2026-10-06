@@ -3,15 +3,10 @@
 // @file      internal/dataplane/translate_stream_responses_client_test.go
 // @for       Table-driven tests for the Responses client stream lifecycle.
 // @uses      testing, slices.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose stream is a
-//
-//	named-event stream: a client dispatches on the event name and on the
-//	sequence number, so a missing, repeated, or misordered event is a
-//	broken answer even when every payload is right.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose stream is a named-event stream: a client dispatches on the event name and on the sequence number, so a missing, repeated, or misordered event is a broken answer even when every payload is right.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

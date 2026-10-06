@@ -1,22 +1,12 @@
 // Package dataplane implements the request-path data plane of app-serv.
 //
 // @file      internal/dataplane/retry_backoff_test.go
-// @for       The entry-declared seconds-scale backoff ladder that lets a replayable
-//
-//	transient refusal be retried far enough apart to escape an upstream that
-//	recovers over seconds (Qoder's free model, draft 036 §9.2).
-//
+// @for       The entry-declared seconds-scale backoff ladder that lets a replayable transient refusal be retried far enough apart to escape an upstream that recovers over seconds (Qoder's free model, draft 036 §9.2).
 // @uses      fmt, testing, time, internal/registry.
-// @reason    The default full-jitter backoff can draw a wait near zero, which re-fires
-//
-//	straight into the same fail-streak. An entry that declares a backoff base is
-//	the only thing that changes here, and every other provider must keep its
-//	sub-second ladder, so both the floor and the untouched default are pinned
-//	against bounds that hold regardless of the jitter draw.
-//
+// @reason    The default full-jitter backoff can draw a wait near zero, which re-fires straight into the same fail-streak. An entry that declares a backoff base is the only thing that changes here, and every other provider must keep its sub-second ladder, so both the floor and the untouched default are pinned against bounds that hold regardless of the jitter draw.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package dataplane
 
@@ -38,7 +28,7 @@ func qoderLike() registry.Provider {
 }
 
 // TestRetryWaitFloorSpaced proves the floored ladder: each attempt waits at least
-// half its window, the window doubles, and a long chain is capped — so a retry
+// half its window, the window doubles, and a long chain is capped, so a retry
 // cannot collapse to ~0 and re-fire inside the same fail-streak.
 func TestRetryWaitFloorSpaced(t *testing.T) {
 	cases := []struct {

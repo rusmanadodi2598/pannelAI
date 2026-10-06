@@ -1,34 +1,18 @@
-//go:build integration
+//go:build integration && live
 
 // Package dataplane implements the request-path data plane of app-serv.
 //
 // @file      internal/dataplane/qoder_live_retry_test.go
-// @for       One real Qoder free-model call driven through the transport's own retry
+// @for       One real Qoder free-model call driven through the transport's own retry loop, to prove the gateway rides out the vendor's transient capacity refusal instead of handing it back as a dead model.
+// @uses      context, io, net/http, os, strings, sync/atomic, testing, time, internal/provider, internal/registry.
+// @reason    The unit retry proof (transport_envelope_retry_test.go) drives a fake that refuses on schedule. This asks the vendor: Qoder's free model answers the signed request with "all backends failed" / "quota exceeded" and serves the identical request seconds later (draft 036 §9.2), so a single attempt can read as a broken provider. The claim worth proving live is not that the vendor never refuses, it does, but that the gateway retried a refusal the client never saw an answer for, rather than giving up on the first frame. It tolerates the vendor genuinely running out of its lent capacity; it does not tolerate a one-attempt give-up, which is the regression this whole change is about.
 //
-//	loop, to prove the gateway rides out the vendor's transient capacity refusal
-//	instead of handing it back as a dead model.
-//
-// @uses      context, io, net/http, os, strings, sync/atomic, testing, time,
-//
-//	internal/provider, internal/registry.
-//
-// @reason    The unit retry proof (transport_envelope_retry_test.go) drives a fake
-//
-//	that refuses on schedule. This asks the vendor: Qoder's free model answers the
-//	signed request with "all backends failed" / "quota exceeded" and serves the
-//	identical request seconds later (draft 036 §9.2), so a single attempt can read
-//	as a broken provider. The claim worth proving live is not that the vendor never
-//	refuses — it does — but that the gateway retried a refusal the client never saw
-//	an answer for, rather than giving up on the first frame. It tolerates the vendor
-//	genuinely running out of its lent capacity; it does not tolerate a one-attempt
-//	give-up, which is the regression this whole change is about.
-//
-//	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/dataplane/ -run QoderLiveRetry
+//	PANNELAI_QODER_PAT='pt-…' \
+//	  go test -tags=integration,live ./internal/dataplane/ -run QoderLiveRetry
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package dataplane
 
@@ -60,8 +44,8 @@ func (c *countingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 	return c.base.RoundTrip(req)
 }
 
-// TestQoderLiveRetryServesTheFreeModel asks Qwen3.8-Flash through the whole gateway —
-// shape, sign, and the floored seconds-scale retry — and asserts the retry loop is
+// TestQoderLiveRetryServesTheFreeModel asks Qwen3.8-Flash through the whole gateway,
+// shape, sign, and the floored seconds-scale retry, and asserts the retry loop is
 // the thing that reaches an answer, not a single lucky shot.
 func TestQoderLiveRetryServesTheFreeModel(t *testing.T) {
 	pat := strings.TrimSpace(os.Getenv("PANNELAI_QODER_PAT"))
@@ -99,9 +83,7 @@ func TestQoderLiveRetryServesTheFreeModel(t *testing.T) {
 		t.Fatalf("NewTransport() error = %v", err)
 	}
 
-	credential := provider.Credential{
-		EndpointID: "ep_live", KeyID: "k_live", APIKey: pat, Family: provider.FamilyStaticKey,
-	}
+	credential := provider.StaticKey("ep_live", "k_live", pat)
 	call := Call{
 		Provider: entry, Model: registry.Model{ID: "qfmodel"}, Wire: "openai", Stream: true,
 		Body: []byte(`{"model":"qoder/qfmodel","messages":[{"role":"user",` +
@@ -117,12 +99,12 @@ func TestQoderLiveRetryServesTheFreeModel(t *testing.T) {
 
 	if doErr != nil {
 		// The vendor can genuinely run its lent free capacity out for the whole
-		// ladder window. That is its capacity to lend, not a gateway fault — but a
+		// ladder window. That is its capacity to lend, not a gateway fault, but a
 		// gateway that gave up on the first frame is exactly the bug. So a failure
 		// is only acceptable when the retry loop actually repeated a refusal the
 		// client never saw an answer for.
 		if attempts < 2 {
-			t.Fatalf("the transport made %d chat attempt(s) then failed: %v — a retryable "+
+			t.Fatalf("the transport made %d chat attempt(s) then failed: %v, a retryable "+
 				"free-pool refusal must be repeated, not given up on", attempts, doErr)
 		}
 		t.Logf("the vendor's free pool stayed out across %d attempts: %v", attempts, doErr)

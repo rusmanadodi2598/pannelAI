@@ -1,17 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/chat_members_test.go
-// @for       Table-driven coverage of the nested chat members: the content
-// union, content parts, tool declarations, and the tool_choice control.
+// @for       Table-driven coverage of the nested chat members: the content union, content parts, tool declarations, and the tool_choice control.
 // @uses      testing.
-// @reason    F1 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires
-// a benign control, a boundary, and a malformed case per rule. These are the
-// nested members a struct tag cannot reach, so each closed set and each
-// discriminator is pinned here.
-//
+// @reason    F1 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires a benign control, a boundary, and a malformed case per rule. These are the nested members a struct tag cannot reach, so each closed set and each discriminator is pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package schema
 

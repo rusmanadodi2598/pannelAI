@@ -3,18 +3,10 @@
 // @file      internal/dataplane/resolve_opencode_test.go
 // @for       The OpenCode Free models' listing and wire-format resolution.
 // @uses      context, testing, internal/registry.
-// @reason    OpenCode Free is a no-auth passthrough provider, so nothing gates
-//
-//	its model strings: they resolve as-is. That is exactly why the
-//	declared list matters (9router PR #4073): a client cannot ask for
-//	oc/muse-spark-1.2-contributor-free if no models list ever mentions
-//	it, and the gateway must translate it to the Responses wire, not
-//	the provider's chat-completions one. Both properties are pinned
-//	against the embedded registry, where the bug lived.
-//
+// @reason    OpenCode Free is a no-auth passthrough provider, so nothing gates its model strings: they resolve as-is. That is exactly why the declared list matters (9router PR #4073): a client cannot ask for oc/muse-spark-1.2-contributor-free if no models list ever mentions it, and the gateway must translate it to the Responses wire, not the provider's chat-completions one. Both properties are pinned against the embedded registry, where the bug lived.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package dataplane
 

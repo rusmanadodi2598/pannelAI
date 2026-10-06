@@ -3,21 +3,12 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/rtk_test.go
-// @for       Table-driven tests for the JSON walk: the four tool-result shapes,
-//
-//	the two rules that protect content, and the caps.
-//
+// @for       Table-driven tests for the JSON walk: the four tool-result shapes, the two rules that protect content, and the caps.
 // @uses      encoding/json, fmt, strings, testing.
-// @reason    SPEC-API-002 §3 makes "tool results only" and "errors preserved"
-//
-//	structural claims, so each is driven as its own case rather than
-//	assumed from the walk's shape. TDD.md §2.5 also asks for the
-//	boundaries: a blob under the floor, one over the cap, and a body
-//	with no compressible shape at all.
-//
+// @reason    SPEC-API-002 §3 makes "tool results only" and "errors preserved" structural claims, so each is driven as its own case rather than assumed from the walk's shape. TDD.md §2.5 also asks for the boundaries: a blob under the floor, one over the cap, and a body with no compressible shape at all.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

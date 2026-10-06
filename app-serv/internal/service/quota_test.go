@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_test.go
-// @for       Table-driven tests for the cap write: which endpoint ids a cap is
-//
-//	accepted for, and which refusals the service answers with.
-//
+// @for       Table-driven tests for the cap write: which endpoint ids a cap is accepted for, and which refusals the service answers with.
 // @uses      context, errors, internal/domain, testing.
-// @reason    Draft 005 F2 found SetCap writing caps for endpoints that are not
-//
-//	configured, rows the router would never read, while its own doc
-//	comment claimed the opposite. These cases pin the refusal
-//	(NOT_FOUND for an unknown endpoint, ahead of any cap validation)
-//	and the wrapped storage failure, so the comment and the behaviour
-//	cannot drift apart again.
-//
+// @reason    Draft 005 F2 found SetCap writing caps for endpoints that are not configured, rows the router would never read, while its own doc comment claimed the opposite. These cases pin the refusal (NOT_FOUND for an unknown endpoint, ahead of any cap validation) and the wrapped storage failure, so the comment and the behaviour cannot drift apart again.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 

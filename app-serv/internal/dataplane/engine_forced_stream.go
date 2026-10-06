@@ -3,51 +3,37 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_forced_stream.go
-// @for       Serving a non-streaming client from a provider that only answers a
-//
-//	stream.
-//
+// @for       Serving a non-streaming client from a provider that only answers a stream.
 // @uses      internal/schema, bufio, bytes, io.
-// @reason    A provider may refuse a non-streaming request (OpenCode Free answers
-//
-//	403 to one), so a client that asked for a single JSON body has to be
-//	served from the stream the provider does send. The fold belongs here
-//	rather than in the connector: a connector owns the outbound shape, and
-//	turning an answer back into the client's wire is what the translation
-//	layer already does. The result is the upstream's own non-streamed
-//	wire, so every existing answer translator is reused unchanged.
-//
+// @reason    A provider may refuse a non-streaming request (OpenCode Free answers 403 to one), so a client that asked for a single JSON body has to be served from the stream the provider does send. The fold belongs here rather than in the connector: a connector owns the outbound shape, and turning an answer back into the client's wire is what the translation layer already does. The result is the upstream's own non-streamed wire, so every existing answer translator is reused unchanged.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package dataplane
 
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"io"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/streamio"
 )
 
-// maxFoldEvents bounds how many SSE events one folded answer may contain, so a
-// provider that never terminates cannot grow the fold without limit.
+// maxFoldEvents bounds how many SSE events one folded answer may contain. A
+// single event is bounded by maxEventBytes, and every event of an endless stream
+// is accumulated into one slice, so the count needs its own ceiling.
 const maxFoldEvents = 1 << 16
 
 // foldStream reads a forced stream to its end and returns the single upstream
 // answer it carried, in the upstream's own wire format, so the caller's existing
-// non-streamed translation applies unchanged.
-//
-// The resolved model is passed to the chat fold because a chat stream reports no
-// answer object to name: the model a client reads is assembled here, and an
-// upstream's own label (Qoder answers every model as `auto`) is not one the
-// caller can send back.
-//
-// The two wires are folded differently because they carry the answer
-// differently: a Responses stream states the whole response in its terminal
-// event, while a chat stream reports the answer as deltas that have to be
-// accumulated.
+// non-streamed translation applies unchanged. The resolved model is passed to the
+// chat fold because a chat stream reports no answer object to name, and an
+// upstream's own label (Qoder answers every model as `auto`) is not one the caller
+// can send back. A Responses stream folds from its terminal event, a chat stream by
+// accumulating deltas, because the two wires carry the answer differently.
 func foldStream(upstream *Upstream, resolution Resolution, stop []string) ([]byte, *schema.Usage, error) {
 	events, err := readFoldEvents(upstream.Body)
 	if err != nil {
@@ -68,7 +54,12 @@ func readFoldEvents(body io.Reader) ([][]byte, error) {
 	events := make([][]byte, 0, 16)
 
 	for {
-		line, err := reader.ReadBytes('\n')
+		// Bounded inside the read: an upstream that never sends a newline must not
+		// be the one deciding how much memory the fold holds.
+		line, err := streamio.ReadLine(reader, maxEventBytes)
+		if errors.Is(err, streamio.ErrTooLong) {
+			return nil, dataPlaneError(CodeUpstreamError, "the upstream stream contained an oversized event")
+		}
 		if len(line) > 0 {
 			if event.Len()+len(line) > maxEventBytes {
 				return nil, dataPlaneError(CodeUpstreamError, "the upstream stream contained an oversized event")
@@ -101,13 +92,12 @@ func readFoldEvents(body io.Reader) ([][]byte, error) {
 	}
 }
 
-// foldResponsesEvents returns the complete response the terminal event carries.
-//
-// The Responses API states the whole answer in `response.completed` (and in
-// `response.incomplete` when the model hit its ceiling), so the terminal event's
-// `response` member is the non-streamed body verbatim. Reading it rather than
-// re-assembling the deltas is what keeps a reasoning item, a tool call, and the
-// accounting from being reconstructed by hand.
+// foldResponsesEvents returns the complete response the terminal event carries. The
+// Responses API states the whole answer in `response.completed`, and in
+// `response.incomplete` when the model hit its ceiling, so that event's `response`
+// member is the non-streamed body verbatim. Reading it rather than re-assembling the
+// deltas is what keeps a reasoning item, a tool call, and the accounting from being
+// reconstructed by hand.
 func foldResponsesEvents(events [][]byte) ([]byte, *schema.Usage, error) {
 	for index := len(events) - 1; index >= 0; index-- {
 		event, ok := decodeObject(events[index])

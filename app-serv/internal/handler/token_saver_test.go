@@ -3,14 +3,10 @@
 // @file      internal/handler/token_saver_test.go
 // @for       HTTP tests for the §7.9 token-saver routes.
 // @uses      internal/domain, internal/service, net/http, strings, testing.
-// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path
-//
-//	per route. §7.9's write is a whole replacement, so the table also
-//	pins that a rejected body leaves the served document untouched.
-//
+// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path per route. §7.9's write is a whole replacement, so the table also pins that a rejected body leaves the served document untouched.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

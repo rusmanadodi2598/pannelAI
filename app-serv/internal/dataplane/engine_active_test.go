@@ -3,26 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_active_test.go
-// @for       The in-flight marker at the relay leg: one provider recorded while
-//
-//	its outbound call runs, and released on every exit.
-//
-// @uses      context, net/http, net/http/httptest, sync, testing, time,
-//
-//	internal/domain.
-//
-// @reason    The drawing's active node means "this provider is being called
-//
-//	right now" (SPEC-UI-001 §6.5), and the relay leg is the one place
-//	that knows both the provider and the interval. The release has to
-//	run on every exit, including a failure, or a node stays lit for a
-//	request that ended; that is what these tests pin, and they drive
-//	the real engine over the shared relay fixture so the exit paths are
-//	the production ones.
-//
+// @for       The in-flight marker at the relay leg: one provider recorded while its outbound call runs, and released on every exit.
+// @uses      context, net/http, net/http/httptest, sync, testing, time, internal/domain.
+// @reason    The drawing's active node means "this provider is being called right now" (SPEC-UI-001 §6.5), and the relay leg is the one place that knows both the provider and the interval. The release has to run on every exit, including a failure, or a node stays lit for a request that ended; that is what these tests pin, and they drive the real engine over the shared relay fixture so the exit paths are the production ones.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package dataplane
 

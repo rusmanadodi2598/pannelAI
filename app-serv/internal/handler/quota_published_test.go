@@ -3,15 +3,10 @@
 // @file      internal/handler/quota_published_test.go
 // @for       Proves GET /api/v1/quotas always answers published as an array, and names the gap when the cache cannot be read.
 // @uses      context, encoding/json, internal/domain, internal/repository, internal/service, net/http/httptest, testing, time.
-// @reason    The provider number now leads the card, so the array's shape is what the panel
-//
-//	parses strictly. An empty page has to read as "nothing answered yet", and a
-//	cache outage has to read as that too — a bare null would let a database fault
-//	look like accounts whose providers published nothing.
-//
+// @reason    The provider number now leads the card, so the array's shape is what the panel parses strictly. An empty page has to read as "nothing answered yet", and a cache outage has to read as that too, a bare null would let a database fault look like accounts whose providers published nothing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package handler
 

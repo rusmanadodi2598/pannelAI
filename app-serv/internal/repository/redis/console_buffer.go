@@ -3,13 +3,7 @@
 // @file      internal/repository/redis/console_buffer.go
 // @for       The bounded console log ring: append, read, and clear.
 // @uses      github.com/redis/go-redis/v9, context, time.
-// @reason    SPEC-API-001 §7.13 exposes a console ring buffer of the last N log
-//
-//	lines. It lives in Redis rather than process memory because the
-//	reference keeps it process-local and the panel polls it from a
-//	management route; a Redis LPUSH+LTRIM is what makes the bound
-//	hold across restarts and across more than one gateway process,
-//	where an in-process slice would give each process its own history.
+// @reason    SPEC-API-001 §7.13 exposes a console ring buffer of the last N log lines. It lives in Redis rather than process memory because the reference keeps it process-local and the panel polls it from a management route; a Redis LPUSH+LTRIM is what makes the bound hold across restarts and across more than one gateway process, where an in-process slice would give each process its own history.
 //
 //	The bound is enforced by the trim in the same statement as the
 //	append, so the list can never grow past max_records even briefly,
@@ -17,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package redisrepo
 

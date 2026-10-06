@@ -1,23 +1,12 @@
 // Command app-serv adapts the stateless credential check to HTTP.
 //
 // @file      cmd/app-serv/provider_validate_guard_test.go
-// @for       The two cases about what a check does *not* send: no request to a
-//
-//	refused destination, and a chat probe that names a model.
-//
-// @uses      internal/domain, internal/netguard, internal/provider,
-//
-//	internal/service, context, net/http, net/http/httptest, testing.
-//
-// @reason    Review Focus 1 applies to this path as much as to the model read:
-//
-//	the destination is operator-supplied, so a refused address must be
-//	reported as a refusal and never dialed. Keeping it apart from the
-//	status tables keeps each file's reason readable.
-//
+// @for       The two cases about what a check does *not* send: no request to a refused destination, and a chat probe that names a model.
+// @uses      internal/domain, internal/netguard, internal/provider, internal/service, context, net/http, net/http/httptest, testing.
+// @reason    Review Focus 1 applies to this path as much as to the model read: the destination is operator-supplied, so a refused address must be reported as a refusal and never dialed. Keeping it apart from the status tables keeps each file's reason readable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -59,8 +48,8 @@ func TestValidateNode_RefusesADeniedDestination(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ValidateNode() error = %v", err)
 	}
-	if outcome.State != domain.EndpointTestFail {
-		t.Fatalf("State = %q, want %q for a refused destination", outcome.State, domain.EndpointTestFail)
+	if outcome.State != string(domain.EndpointTestFail) {
+		t.Fatalf("State = %q, want %q for a refused destination", outcome.State, string(domain.EndpointTestFail))
 	}
 	if outcome.Message == "" {
 		t.Fatal("a refusal must carry the reason")

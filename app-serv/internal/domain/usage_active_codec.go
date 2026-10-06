@@ -3,22 +3,11 @@
 //
 // @file      internal/domain/usage_active_codec.go
 // @for       The in-flight marker's wire codec: the JSON the shared store keeps.
-//
 // @uses      internal/domain (ActiveRequest), bytes, encoding/json, fmt, time.
-// @reason    The store is a Redis instance other processes share, so a marker
-//
-//	read back is untrusted input (OWASP A08): the decoder re-applies
-//	every invariant the constructor enforces rather than trusting the
-//	value. The codec is kept out of the aggregate's own file because
-//	the two answer different questions — which call is running, and how
-//	a running call survives a process boundary — and because a member
-//	this build does not know is a contract change a reader has to be
-//	told about, which is a rule about the wire rather than about
-//	routing.
-//
+// @reason    The store is a Redis instance other processes share, so a marker read back is untrusted input (OWASP A08): the decoder re-applies every invariant the constructor enforces rather than trusting the value. The codec is kept out of the aggregate's own file because the two answer different questions, which call is running, and how a running call survives a process boundary, and because a member this build does not know is a contract change a reader has to be told about, which is a rule about the wire rather than about routing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package domain
 
@@ -34,7 +23,7 @@ import (
 // field cannot silently change what every already-stored marker decodes as.
 //
 // `combo` is omitted when empty so a marker for a call that addressed a single
-// model — every media, embeddings and SystemOne call, and most chat requests —
+// model, every media, embeddings and SystemOne call, and most chat requests,
 // encodes byte-for-byte as the shape an older build writes.
 type activeRequestWire struct {
 	MarkerID   string `json:"marker_id"`

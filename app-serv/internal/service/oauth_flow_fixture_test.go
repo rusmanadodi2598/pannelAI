@@ -1,30 +1,19 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_fixture_test.go
-// @for       The registry providers, fakes, and constructor the OAuth flow
-//
-//	tests share.
-//
-// @uses      testing, time, encoding/json, internal/domain, internal/registry,
-//
-//	internal/repository.
-//
-// @reason    The flow's rules must be provable without a registry binary, an
-//
-//	upstream, or Redis: the fakes stage and serve states and token
-//	grants in memory, and the providers here mirror the four registry
-//	shapes that matter (code flow with PKCE, code flow with userinfo,
-//	device flow, connector-required flow) without naming real vendors.
-//
+// @for       The registry providers, fakes, and constructor the OAuth flow tests share.
+// @uses      testing, time, encoding/json, internal/domain, internal/registry, internal/repository.
+// @reason    The flow's rules must be provable without a registry binary, an upstream, or Redis: the fakes stage and serve states and token grants in memory, and the providers here mirror the four registry shapes that matter (code flow with PKCE, code flow with userinfo, device flow, connector-required flow) without naming real vendors.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
 import (
 	"context"
 	"encoding/json"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"testing"
 	"time"
 
@@ -42,6 +31,10 @@ var oauthTestKey = []byte("0123456789abcdef0123456789abcdef")
 type fakeStateStore struct {
 	staged map[string]fakeStagedState
 	ttl    time.Duration
+	// takeMiss models the race a peek-then-take pair leaves open: the payload is
+	// still readable, and by the time the caller consumes it another consumer has
+	// already taken it.
+	takeMiss bool
 }
 
 type fakeStagedState struct {
@@ -66,6 +59,9 @@ func (f *fakeStateStore) Take(_ context.Context, state string) ([]byte, bool, er
 	if !ok {
 		return nil, false, nil
 	}
+	if f.takeMiss {
+		return staged.payload, false, nil
+	}
 	delete(f.staged, state)
 	return staged.payload, true, nil
 }
@@ -83,46 +79,46 @@ func (f *fakeStateStore) Peek(_ context.Context, state string) ([]byte, bool, er
 // fakeTokenClient serves scripted token grants and identities, capturing the
 // grants it received so a test can assert the wire values.
 type fakeTokenClient struct {
-	grantCalls     []TokenGrant
-	grantFn        func(TokenGrant) (TokenResponse, error)
+	grantCalls     []oauthhttp.TokenGrant
+	grantFn        func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error)
 	infoCalls      int
-	infoFn         func() (OAuthIdentity, error)
+	infoFn         func() (oauthhttp.OAuthIdentity, error)
 	devicePollCall []string
-	devicePollFn   func(nonce, verifier string) (DeviceTokenResponse, bool, error)
+	devicePollFn   func(nonce, verifier string) (oauthhttp.DeviceTokenResponse, bool, error)
 
 	stateRoundCalls    int
 	stateRoundPlatform string
-	stateRoundFn       func(*registry.OAuth) (StateRound, error)
+	stateRoundFn       func(*registry.OAuth) (oauthhttp.StateRound, error)
 	statePollCall      []string
-	statePollFn        func(state string) (DeviceTokenResponse, bool, error)
+	statePollFn        func(state string) (oauthhttp.DeviceTokenResponse, bool, error)
 	stateRefreshCall   []string
-	stateRefreshFn     func(refreshToken string) (TokenResponse, error)
+	stateRefreshFn     func(refreshToken string) (oauthhttp.TokenResponse, error)
 }
 
-func (f *fakeTokenClient) Grant(_ context.Context, _ string, _ string, grant TokenGrant) (TokenResponse, error) {
+func (f *fakeTokenClient) Grant(_ context.Context, _ string, _ string, grant oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
 	f.grantCalls = append(f.grantCalls, grant)
 	if f.grantFn != nil {
 		return f.grantFn(grant)
 	}
-	return TokenResponse{AccessToken: "at-issued", RefreshToken: "rt-issued", ExpiresIn: 3600}, nil
+	return oauthhttp.TokenResponse{AccessToken: "at-issued", RefreshToken: "rt-issued", ExpiresIn: 3600}, nil
 }
 
-func (f *fakeTokenClient) UserInfo(context.Context, string, string) (OAuthIdentity, error) {
+func (f *fakeTokenClient) UserInfo(context.Context, string, string) (oauthhttp.OAuthIdentity, error) {
 	f.infoCalls++
 	if f.infoFn != nil {
 		return f.infoFn()
 	}
-	return OAuthIdentity{}, nil
+	return oauthhttp.OAuthIdentity{}, nil
 }
 
 // DevicePoll records the nonce and verifier the flow spent, so a test can prove
 // the poll upstream carries the values the start staged rather than the caller's.
-func (f *fakeTokenClient) DevicePoll(_ context.Context, _, nonce, verifier string) (DeviceTokenResponse, bool, error) {
+func (f *fakeTokenClient) DevicePoll(_ context.Context, _, nonce, verifier string) (oauthhttp.DeviceTokenResponse, bool, error) {
 	f.devicePollCall = []string{nonce, verifier}
 	if f.devicePollFn != nil {
 		return f.devicePollFn(nonce, verifier)
 	}
-	return DeviceTokenResponse{}, true, nil
+	return oauthhttp.DeviceTokenResponse{}, true, nil
 }
 
 // oauthFlowFixture is one assembled flow service plus its seams.
@@ -220,11 +216,11 @@ func seedOAuthEndpoint(t *testing.T, fixture oauthFlowFixture, id, providerID, l
 	if err != nil {
 		t.Fatalf("seeding endpoint: %v", err)
 	}
-	endpoint.SetOAuth(&domain.OAuthCredential{
+	endpoint.SetOAuth(domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted: access, RefreshTokenEncrypted: refresh,
 		ExpiresAt: &expiry, AccountEmail: email,
-	}, testNow)
-	endpoint.SetAccount(domain.EndpointAccount{Email: email}, testNow)
+	}), testNow)
+	endpoint.SetAccount(domain.RehydrateEndpointAccount(domain.EndpointAccountInput{Email: email}), testNow)
 	if err := fixture.store.Create(context.Background(), endpoint); err != nil {
 		t.Fatalf("storing seeded endpoint: %v", err)
 	}

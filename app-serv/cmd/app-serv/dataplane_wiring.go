@@ -1,28 +1,12 @@
 // Command app-serv wires the P1 data-plane dependencies.
 //
 // @file      cmd/app-serv/dataplane_wiring.go
-// @for       Builds the data plane's resolver, selector, transport, engine, and
-//
-//	the chat and embeddings services on top of them.
-//
-// @uses      internal/dataplane, internal/reasoning, internal/repository/redis,
-//
-//	internal/router, internal/service, internal/tokensaver, log/slog.
-//
-// @reason    The data plane declares narrow ports and must not import a driver or a
-//
-//	service (AGENTS.md §1.5), so the composition root is where those ports
-//	meet their implementations. No adapter type is declared here, because
-//	none is needed: the gateway key repository answers the authentication
-//	and key-use seams, the settings service answers the require-key seam,
-//	and the usage and log services answer the accounting seams — each by a
-//	method written for its own use, which is what makes the seams narrow
-//	enough to satisfy without translation. The collaborators it draws on
-//	are declared in dataplane_inputs.go.
-//
+// @for       Builds the data plane's resolver, selector, transport, engine, and the chat and embeddings services on top of them.
+// @uses      internal/dataplane, internal/reasoning, internal/repository/redis, internal/router, internal/service, internal/tokensaver, log/slog.
+// @reason    The data plane declares narrow ports and must not import a driver or a service (AGENTS.md §1.5), so the composition root is where those ports meet their implementations. No adapter type is declared here, because none is needed: the gateway key repository answers the authentication and key-use seams, the settings service answers the require-key seam, and the usage and log services answer the accounting seams, each by a method written for its own use, which is what makes the seams narrow enough to satisfy without translation. The collaborators it draws on are declared in dataplane_inputs.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package main
 
@@ -38,7 +22,7 @@ import (
 )
 
 // dataPlane is the assembled data plane: the chat, embeddings, and media
-// services that share one engine, plus the engine itself — the §7.7 combo test
+// services that share one engine, plus the engine itself, the §7.7 combo test
 // probes through it, and rebuilding a second pipeline for that route would be a
 // second pipeline to keep in step.
 type dataPlane struct {
@@ -93,7 +77,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Gate: in.Quotas,
 		// A credential-free provider with no stored endpoint answers on a
 		// synthesized one, so a free lane is usable the moment its provider is
-		// listed (draft 029 F8; the reference injects the same connection).
+		// listed; the reference injects the same connection.
 		// The index is the embedded registry overlaid with stored custom nodes,
 		// so a node the operator created is answerable by the same rule.
 		Registry: in.Index,
@@ -143,7 +127,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 
 	// One counter instance for every accounting site, so the chat, media, and
 	// embeddings planes advance the same Redis keys and cannot disagree about
-	// which windows a call bills against (§7.12, register G22). It is built here
+	// which windows a call bills against (§7.12). It is built here
 	// because this is the only function that owns both the Redis client and the
 	// data plane's services.
 	quotas := service.NewQuotaCounter(redisrepo.NewQuotaCounterStore(in.Redis), slog.Default())
@@ -156,7 +140,7 @@ func buildDataPlane(in dataPlaneInputs) (dataPlane, error) {
 		Settings: in.Settings,
 		Usage:    in.Usage,
 		// The log service answers the §7.13 seam directly, so one chat call
-		// leaves the same accounting pair a media call does (register G18).
+		// leaves the same accounting pair a media call does.
 		Logs: in.Logs,
 		// The quota counters advance by the tokens the upstream billed, so the
 		// window the panel reads is what this gateway actually served (§7.12).

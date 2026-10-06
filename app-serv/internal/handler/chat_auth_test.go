@@ -3,18 +3,10 @@
 // @file      internal/handler/chat_auth_test.go
 // @for       The §4 data-plane credential extraction rule.
 // @uses      net/http, net/http/httptest, testing.
-// @reason    The data plane accepts the gateway key from either credential
-//
-//	header, because OpenAI-shaped clients send Authorization: Bearer
-//	while Anthropic-shaped clients send X-Api-Key. The extraction is
-//	the one place that rule lives, so a table pins it: a request built
-//	from each row must yield exactly the token that row carries, and a
-//	request with neither header yields nothing, which is what makes the
-//	later refusal a 401 rather than a silent skip.
-//
+// @reason    The data plane accepts the gateway key from either credential header, because OpenAI-shaped clients send Authorization: Bearer while Anthropic-shaped clients send X-Api-Key. The extraction is the one place that rule lives, so a table pins it: a request built from each row must yield exactly the token that row carries, and a request with neither header yields nothing, which is what makes the later refusal a 401 rather than a silent skip.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package handler
 

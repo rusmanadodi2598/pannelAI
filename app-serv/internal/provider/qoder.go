@@ -1,21 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder.go
-// @for       The Qoder connector: the host a credential is served from, and the
-//
-//	COSY signature that replaces a bearer token.
-//
+// @for       The Qoder connector: the host a credential is served from, and the COSY signature that replaces a bearer token.
 // @uses      io, net/http, net/url, strings, internal/registry.
-// @reason    Qoder breaks the two assumptions the default connector makes: the
-//
-//	inference host depends on which kind of token the account holds, and
-//	the credential is not placed in a header but woven into a signature
-//	over the exact bytes that go out. Both rules belong to the provider,
-//	so the core never learns either one.
-//
+// @reason    Qoder breaks the two assumptions the default connector makes: the inference host depends on which kind of token the account holds, and the credential is not placed in a header but woven into a signature over the exact bytes that go out. Both rules belong to the provider, so the core never learns either one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -48,8 +39,8 @@ type Qoder struct {
 // caller's, so the composition root decides whether a Personal Access Token exchange
 // rides the process egress guard. A nil client is refused rather than defaulted:
 // building an unguarded client here would let a PAT exchange, a catalog read, and an
-// identity call dial a registry-declared host outside the netguard (draft 042 R07,
-// docs/RULLES/SSRF.md §2.1).
+// identity call dial a registry-declared host outside the netguard
+// (docs/RULLES/SSRF.md §2.1).
 func NewQoder(entry registry.Provider, client *http.Client) (*Qoder, error) {
 	if entry.OAuth == nil {
 		return nil, fmt.Errorf("provider %s: a qoder connector needs an oauth block", entry.ID)
@@ -77,7 +68,7 @@ func NewQoder(entry registry.Provider, client *http.Client) (*Qoder, error) {
 // The registry entry names the full chat URL, so the only decision here is the host,
 // and the host follows the kind of credential the account holds: on intl a Personal
 // Access Token is exchanged for a job token before it signs anything, and job-token
-// traffic is served from a different gateway than device traffic (draft 036 §5). The
+// traffic is served from a different gateway than device traffic. The
 // choice is made from the stored credential rather than by performing the exchange
 // here, because a URL decision should not be the moment the gateway makes an outbound
 // call. A CN entry declares one gateway for every kind, so the swap never matches it.
@@ -131,7 +122,7 @@ func (c *Qoder) ApplyAuth(req *http.Request, cred Credential) error {
 }
 
 // signingToken is the credential a signed request presents: the stored device or job
-// token, or — for a Personal Access Token — an exchanged job token. A PAT never
+// token, or, for a Personal Access Token, an exchanged job token. A PAT never
 // reaches the wire itself, so there is no fallback path here by design.
 func (c *Qoder) signingToken(ctx context.Context, cred Credential) (string, error) {
 	value, err := c.credential(cred)
@@ -145,11 +136,14 @@ func (c *Qoder) signingToken(ctx context.Context, cred Credential) (string, erro
 }
 
 // credential reads the one value this account presents and refuses an account that
-// has none. The family decides nothing here — a Qoder device token and an exchanged
-// job token are both bearer material, and a static key is a Personal Access Token —
+// has none. The family decides nothing here, a Qoder device token and an exchanged
+// job token are both bearer material, and a static key is a Personal Access Token,
 // so only its emptiness matters.
 func (c *Qoder) credential(cred Credential) (string, error) {
-	_, value := cred.family()
+	_, value, err := cred.Secret()
+	if err != nil {
+		return "", err
+	}
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return "", fmt.Errorf("provider %s: the account carries no credential", c.entry.ID)
@@ -189,7 +183,7 @@ func qoderSwapHost(rawURL, fromBase, toBase string) (string, error) {
 }
 
 // qoderMaxSignBodyBytes bounds what the signer will hold in order to hash one body.
-// The vendor's own payload ceiling is 6MB (draft 036 §5), so this is that limit with
+// The vendor's own payload ceiling is 6MB, so this is that limit with
 // room for the envelope around it.
 const qoderMaxSignBodyBytes = 8 << 20
 

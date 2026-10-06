@@ -2,15 +2,11 @@
 //
 // @file      internal/handler/model_repo_stub_test.go
 // @for       The in-memory combo and adapter repositories for the handler tests, and the wired handler fixture they serve.
-// @uses      internal/domain, internal/registry, internal/repository,
-//
-//	internal/service, context, testing.
-//
+// @uses      internal/domain, internal/registry, internal/repository, internal/service, context, testing.
 // @reason    The catalog stub and the combo/adapter stubs are separate declarations; AGENTS.md §1.1 caps a file at 250 lines, so the latter moved here.
-//
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package handler
 
@@ -57,7 +53,7 @@ func (stubRotation) Next(_ context.Context, _ string, models []string, _ int) ([
 	return models, nil
 }
 
-// managementFixture is the wired handler set the §7.6–§7.8 tests drive.
+// managementFixture is the wired handler set the §7.6-§7.8 tests drive.
 type managementFixture struct {
 	model     *ModelHandler
 	combo     *ComboHandler
@@ -130,7 +126,7 @@ func newManagementFixture(t *testing.T) managementFixture {
 	if err != nil {
 		t.Fatalf("NewProviderModelTestService() error = %v", err)
 	}
-	proxyProber := &stubProxyProber{result: service.ProxyProbeResult{State: domain.EndpointTestOK, LatencyMS: 7}}
+	proxyProber := &stubProxyProber{result: service.ProxyProbeResult{State: string(domain.EndpointTestOK), LatencyMS: 7}}
 	proxyService, proxyRepo := newStubProxyService(t, proxyProber)
 	seedHandlerFixture(t, catalog, comboRepo)
 	return managementFixture{

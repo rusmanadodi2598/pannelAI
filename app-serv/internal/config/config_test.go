@@ -3,16 +3,10 @@
 // @file      internal/config/config_test.go
 // @for       Table-driven tests for environment parsing and range validation.
 // @uses      testing, standard library only.
-// @reason    AGENTS.md §2.1 requires tests alongside new config logic, and
-//
-//	§1.4 makes boot-time validation the only thing standing between a
-//	malformed environment and a server that starts degraded. These are
-//	exactly the boundaries a single smoke run cannot cover
-//	(docs/RULLES/TDD.md §2.5).
-//
+// @reason    AGENTS.md §2.1 requires tests alongside new config logic, and §1.4 makes boot-time validation the only thing standing between a malformed environment and a server that starts degraded. These are exactly the boundaries a single smoke run cannot cover (docs/RULLES/TDD.md §2.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package config
 
@@ -93,6 +87,12 @@ func TestLoad_Validation(t *testing.T) {
 		{"ttl above", map[string]string{"SESSION_TTL": "800h"}, nil, true}, {"ttl malformed", map[string]string{"SESSION_TTL": "one day"}, nil, true},
 		{"login fails zero", map[string]string{"LOGIN_MAX_FAILS": "0"}, nil, true}, {"lockout below", map[string]string{"LOGIN_LOCKOUT": "30s"}, nil, true},
 		{"rate zero", map[string]string{"RATE_LIMIT_PER_MIN": "0"}, nil, true}, {"rate negative", map[string]string{"RATE_LIMIT_PER_MIN": "-5"}, nil, true},
+		// A ceiling declared in the table must actually be applied: booting with a
+		// rate of a billion reads as a working limiter that has been switched off.
+		{"rate above ceiling", map[string]string{"RATE_LIMIT_PER_MIN": "999999999"}, nil, true},
+		{"rate at ceiling", map[string]string{"RATE_LIMIT_PER_MIN": "10000"}, nil, false},
+		{"login fails above ceiling", map[string]string{"LOGIN_MAX_FAILS": "1000000"}, nil, true},
+		{"poll concurrency above ceiling", map[string]string{"QUOTA_POLL_CONCURRENCY": "64"}, nil, true},
 		{"quota budget zero", map[string]string{"QUOTA_POLL_BUDGET": "0"}, nil, true},
 		{"quota budget negative", map[string]string{"QUOTA_POLL_BUDGET": "-1"}, nil, true},
 		{"quota budget above the ceiling", map[string]string{"QUOTA_POLL_BUDGET": "501"}, nil, true},
@@ -138,7 +138,7 @@ func TestLoad_Validation(t *testing.T) {
 
 // TestLoad_EgressAllowedTargets pins the allowlist parsing: entries are split
 // on commas, trimmed, and blanks dropped, so a trailing comma is not an entry
-// of "" — an empty entry would reach the guard as a prefix it cannot parse.
+// of "", an empty entry would reach the guard as a prefix it cannot parse.
 func TestLoad_EgressAllowedTargets(t *testing.T) {
 	cases := []struct {
 		name string

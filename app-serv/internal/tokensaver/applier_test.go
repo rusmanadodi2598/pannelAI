@@ -3,14 +3,10 @@
 // @file      internal/tokensaver/applier_test.go
 // @for       Table-driven tests for Apply: bypass, fail-open, order, and restore.
 // @uses      context, errors, net/http, testing.
-// @reason    SPEC-API-002 §8 pins the request-path behavior: the optional
-//
-//	saver steps must run in order and never abort an otherwise valid
-//	upstream body, so each failure mode is its own table case.
-//
+// @reason    SPEC-API-002 §8 pins the request-path behavior: the optional saver steps must run in order and never abort an otherwise valid upstream body, so each failure mode is its own table case.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package tokensaver
 

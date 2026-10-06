@@ -1,20 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_fusion_test.go
-// @for       Engine.Relay over a fusion combo: the fan-out, the judge synthesis,
-//
-//	and the degradation the reference defines (SPEC-API-001 §7.7).
-//
+// @for       Engine.Relay over a fusion combo: the fan-out, the judge synthesis, and the degradation the reference defines (SPEC-API-001 §7.7).
 // @uses      testing, context, strings, internal/domain, internal/schema.
-// @reason    SPEC-API-001 §10 makes fusion part of P2, and the strategy is only
-//
-//	proven when the pipeline runs as one piece: resolve the combo, fan
-//	out to every member in parallel, hand the panel's prose to the judge,
-//	and serve the judge's answer in the client's format.
-//
+// @reason    SPEC-API-001 §10 makes fusion part of P2, and the strategy is only proven when the pipeline runs as one piece: resolve the combo, fan out to every member in parallel, hand the panel's prose to the judge, and serve the judge's answer in the client's format.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

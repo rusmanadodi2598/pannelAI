@@ -2,20 +2,11 @@
 //
 // @file      internal/router/router_settings_routes_test.go
 // @for       Route-table tests for the §7.14 settings routes.
-//
-// @uses      internal/handler, internal/schema, internal/service, net/http,
-//
-//	net/http/httptest, strings, testing.
-//
-// @reason    The settings PATCH is the one door every gateway configuration
-//
-//	change goes through, so its session gate, its per-key validation,
-//	and its round-trip belong to the mux where §7.14 places them, not
-//	to the handler alone.
-//
+// @uses      internal/handler, internal/schema, internal/service, net/http, net/http/httptest, strings, testing.
+// @reason    The settings PATCH is the one door every gateway configuration change goes through, so its session gate, its per-key validation, and its round-trip belong to the mux where §7.14 places them, not to the handler alone.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package router
 

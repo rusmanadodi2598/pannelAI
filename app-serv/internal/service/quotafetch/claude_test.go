@@ -4,14 +4,10 @@
 // @file      internal/service/quotafetch/claude_test.go
 // @for       Locks the Claude usage read: row order, headers, the 429 cooldown and the legacy fallback.
 // @uses      internal/service/quotafetch, io, net/http, net/http/httptest, sync, testing, time
-// @reason    This card is rendered from the row order it is handed, its usage endpoint
-//
-//	rate-limits independently of chat, and its fallback changes host, so a
-//	read that keeps the labels and loses any of those three still looks fine.
-//
+// @reason    This card is rendered from the row order it is handed, its usage endpoint rate-limits independently of chat, and its fallback changes host, so a read that keeps the labels and loses any of those three still looks fine.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

@@ -513,7 +513,7 @@ render, dan `src/lib/api/client.ts:120` memformat issue Zod itu menjadi kalimat 
 Dua jalan keluar yang **tidak** diambil, dengan alasannya: meniru code dari state (delapan karakter
 pertama, misalnya) memberi operator sesuatu yang tidak pernah diminta vendor, dan code fiktif bukan data
 nyata; kata flow baru (`state`) menuntut panel mengenal nilai baru padahal perilaku yang operator lihat
-identik — buka link, setujui, panel bertanya sampai vendor memberi token.
+identik: buka link, setujui, panel bertanya sampai vendor memberi token.
 
 Yang dikerjakan: `user_code` menjadi **kondisional di kontrak** (dihapus dari `required:`, `minLength: 1`
 tetap menahan nilai yang hadir, `internal/handler/openapi.json` di-regenerate), `omitempty` pada tag Go,
@@ -541,7 +541,7 @@ codebuddy-cn   -> status 200, keys [device_code expires_in interval_seconds veri
 ```
 
 `user_code` **absent** di kedua jawaban, dan `verification_url` adalah halaman login vendor yang
-membawa state itu — jadi body yang dulu ditolak schema panel sekarang terbit apa adanya dari jalur
+membawa state itu, jadi body yang dulu ditolak schema panel sekarang terbit apa adanya dari jalur
 handler yang sama. Yang masih menunggu akun owner hanyalah langkah sesudahnya: operator membuka link
 itu dan menyetujui, sampai poll menjawab `connected`.
 
@@ -550,16 +550,16 @@ itu dan menyetujui, sampai poll menjawab `connected`.
 Temuannya, sebagaimana dicatat saat dibuka: `StatePoll` tidak pernah punya identitas untuk
 dikembalikan, dan kita **mengarang** satu email sintetis (`codebuddy-intl-user-`) yang nilainya sama
 untuk setiap login di region itu. Karena `connectAccount` mendedup lewat
-`FindOAuthEndpoint(providerID, account.Email, account.WorkspaceID)` — SQL-nya
+`FindOAuthEndpoint(providerID, account.Email, account.WorkspaceID)`, SQL-nya
 `(($2 <> '' AND account->>'email' = $2) OR ($3 <> '' AND account->>'workspace_id' = $3)) ORDER BY
-created_at, id LIMIT 1` (`internal/repository/postgres/endpoint_batch.go:130-146`) — login kedua selalu
+created_at, id LIMIT 1` (`internal/repository/postgres/endpoint_batch.go:130-146`), login kedua selalu
 cocok ke baris tertua dan **menimpa** kredensial akun pertama. `UNIQUE (provider_id, label)`
 (`migrations/000005_upstream_endpoints.up.sql:29`) bahkan menahan baris kedua kalau pun dedupnya lewat.
 
 Yang menentukan arah perbaikan adalah reading atas reference, bukan ide kita sendiri: di sana
 `createProviderConnection` **hanya** mendedup ketika `data.email` ada
 (`9router/src/lib/db/repos/connectionsRepo.js:133`), dan CodeBuddy `mapTokens` memang mengembalikan
-`providerSpecificData: {}` tanpa email (`src/lib/oauth/providers/codebuddy-intl.js:65-70`) — jadi tiap
+`providerSpecificData: {}` tanpa email (`src/lib/oauth/providers/codebuddy-intl.js:65-70`), jadi tiap
 login di reference adalah baris UUID baru, dan label akun kedua `"Account ${all.length+1}"` (`:181`).
 Artinya multi-akun reference bukan mekanisme identitas, melainkan **ketiadaan kunci dedup**. Fix yang
 benar: berhenti mengarang kunci.
@@ -574,7 +574,7 @@ Yang dikerjakan:
 - `accountLabel` (`internal/service/oauth_flow_connect.go`) menamai baris baru: identitas dari vendor →
   label seperti sebelumnya; tidak ada identitas → `Account N`, N **nama pertama yang belum dipakai** oleh
   provider itu, dibaca lewat `Store.List` satu halaman (`internal/repository/postgres/endpoint.go:60-66`).
-  Bukan `jumlah baris + 1`: hitungan itu adalah bug yang sama dengan bentuk rupangan — kalau `Account 1`
+  Bukan `jumlah baris + 1`: hitungan itu adalah bug yang sama dengan bentuk rupangan. Kalau `Account 1`
   dihapus dan `Account 2` masih ada, login berikutnya mendapat nama yang sudah dipegang baris tersisa,
   dan `UNIQUE (provider_id, label)` menolak akun yang vendor baru saja berikan. `connectLabel` yang lama
   dihapus karena cabang fallback-nya menjadi unreachable; dua fungsi bernama sama adalah cara lain untuk
@@ -589,7 +589,7 @@ tanpa field identitas (`Email`/`Name`/`WorkspaceID` kosong) dan `machine_id` yan
 `Account 2` → login baru memakai `Account 1`);
 `TestDeviceAccountEmail_LeavesIdentitylessRoundsUnKeyed` menahan kedua arah (state: kosong, PKCE:
 prefix historis). Satu case lama di `oauth_flow_callback_test.go` dipaksa berubah ekspektasi: provider
-callback tanpa userinfo dulu memakai label konstan `pkce-provider oauth`, sekarang `Account 1` — dan itu
+callback tanpa userinfo dulu memakai label konstan `pkce-provider oauth`, sekarang `Account 1`, dan itu
 bukan regresi, karena label konstan itu membuat login identitas-kosong **kedua** pada provider yang sama
 gagal di index UNIQUE.
 
@@ -599,15 +599,15 @@ tabel akun di-key `endpoint.endpoint_id` (`app-ui/src/lib/components/ProviderOAu
 
 ### 10.12 F7 CLOSED (2026-09-29): vendor menolak list pesan OpenAI polos dengan `11101`
 
-Login berhasil, `oauth/status` 200, `models/test` 200 — dan provider tetap tidak bisa dipakai. Penyebabnya
+Login berhasil, `oauth/status` 200, `models/test` 200, dan provider tetap tidak bisa dipakai. Penyebabnya
 bukan kredensial: CodeBuddy menjawab body OpenAI polos dengan **`11101 invalid request`** dan reference
 menghindarinya dengan menyusun ulang `messages` di
-`open-sse/executors/codebuddy-intl.js:20-38` — satu turn `system` pembuka `"You are CodeBuddy Code."`,
+`open-sse/executors/codebuddy-intl.js:20-38`, satu turn `system` pembuka `"You are CodeBuddy Code."`,
 `system`/`developer` milik klien dibuang, konten `user` berupa string diangkat jadi typed blocks
 `[{type:"text",text:…}]`, `reasoning_effort` `none`/`off` dihapus dan effort lain dicerminkan sebagai
 `reasoning_summary: "auto"`. Connector kita justru mendeskripsikan dirinya "tidak melakukan rewriting"
 (`internal/provider/codebuddy.go`) dan komentar wiring mengulang klaim yang sama
-(`cmd/app-serv/provider_wiring.go`) — dua pernyataan itu salah dan sudah diganti.
+(`cmd/app-serv/provider_wiring.go`), dua pernyataan itu salah dan sudah diganti.
 
 Keputusan owner (2026-09-29): **jangan buang instruksi klien.** System/developer text caller digabung ke
 satu turn `system` leading (`"You are CodeBuddy Code.\n\n<punya klien>"`), jadi request tetap punya satu
@@ -618,7 +618,7 @@ dengan field-nya; body yang bukan object, `messages` yang bukan list, dan `reaso
 
 Implementasinya `internal/provider/codebuddy_body.go`, menempel di seam opsional
 `provider.Transformer` (`internal/provider/plugin.go:85-92`) yang dipanggil `applyShape`
-(`internal/dataplane/transport_shape.go:39-49`) sebelum URL dibangun — jadi core tetap tidak bercabang pada
+(`internal/dataplane/transport_shape.go:39-49`) sebelum URL dibangun, jadi core tetap tidak bercabang pada
 provider id, dan jalur `models/test` ikut terbaiki karena probe adalah panggilan data plane sungguhan
 (`internal/service/provider_model_probe.go:15-16`).
 
@@ -630,7 +630,7 @@ ter-lipat jadi satu completion untuk klien non-stream).
 
 Dan live, 2026-09-29, dua panggilan ke `https://www.codebuddy.ai/v2/chat/completions` memakai akun yang
 sudah tersimpan di DB lokal (`ep_0387DB1598…`, satu baris untuk region itu) lewat driver sekali-pakai yang
-menjalani transform, endpoint, dan auth connector itu sendiri — bukan HTTP body yang ditulis tangan. Driver
+menjalani transform, endpoint, dan auth connector itu sendiri, bukan HTTP body yang ditulis tangan. Driver
 itu sudah dihapus dan tidak pernah ada di tree:
 
 1. `{"role":"user","content":"Reply with one word only: pong"}` → **200**, stream berisi delta `pong`,
@@ -639,7 +639,7 @@ itu sudah dihapus dan tidak pernah ada di tree:
    membuat §10.11 dibuka: vendor menerima system turn gabungan, jadi instruksi klien tidak perlu dibuang
    seperti reference melakukannya.
 2. `reasoning_effort: "high"` → **200** dengan `reasoning_content` yang mengalir per delta, dan body yang
-   keluar membawa `reasoning_summary: "auto"` di samping effort-nya — persis bentuk yang reference kirim.
+   keluar membawa `reasoning_summary: "auto"` di samping effort-nya, persis bentuk yang reference kirim.
 
 Yang belum bisa diukur dari sini: login **kedua** pada region yang lain, karena ronde state butuh operator
 membuka halaman vendor dan menyetujuinya di browser. Yang terbukti adalah sisi gateway-nya: akun kedua tidak

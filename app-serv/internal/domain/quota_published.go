@@ -2,24 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/quota_published.go
-// @for       The published-quota vocabulary: a provider's own buckets, the
-//
-//	scheduling state the poll worker reads, and the answer it stores.
-//
+// @for       The published-quota vocabulary: a provider's own buckets, the scheduling state the poll worker reads, and the answer it stores.
 // @uses      internal/domain (Decimal, AppError constructors), strings, time.
-// @reason    The quota screen shows what a provider says about itself, and that
-//
-//	vocabulary is the provider's, not the gateway's: a bucket is named by
-//	a label ("Claude & GPT (Weekly)"), so it cannot reuse QuotaWindowKind,
-//	whose set is closed to the four windows this gateway accounts for
-//	(migrations/000007). The rules the cache depends on — a missing ceiling
-//	is not a zero ceiling, and one answer cannot carry the same label twice —
-//	are domain decisions, so they live here rather than in the statement that
-//	happens to store them (AGENTS.md §2.2).
-//
+// @reason    The quota screen shows what a provider says about itself, and that vocabulary is the provider's, not the gateway's: a bucket is named by a label ("Claude & GPT (Weekly)"), so it cannot reuse QuotaWindowKind, whose set is closed to the four windows this gateway accounts for (migrations/000007). The rules the cache depends on, a missing ceiling is not a zero ceiling, and one answer cannot carry the same label twice, are domain decisions, so they live here rather than in the statement that happens to store them (AGENTS.md §2.2).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package domain
 
@@ -52,7 +40,7 @@ type PublishedState struct {
 // own label rather than by a window kind this gateway chose. Used and Total are
 // decimal strings for the reason cost is: SPEC-API-001 §4 forbids a float on the
 // wire, and the numeric(20, 6) column rounds a float the same way nobody asked
-// for. A percentage is deliberately absent — the panel derives it, so changing
+// for. A percentage is deliberately absent, the panel derives it, so changing
 // that display rule is not a backfill.
 type PublishedWindowRow struct {
 	EndpointID string
@@ -82,16 +70,13 @@ type PublishedWindowRow struct {
 // Ceiling returns the published ceiling and whether the provider stated one. The
 // second value, not the first, distinguishes unlimited from exhausted; a caller
 // that reads only the string cannot make that distinction, which is why this
-// accessor — not the field — is the documented way to ask.
+// accessor, not the field, is the documented way to ask.
 func (w PublishedWindowRow) Ceiling() (string, bool) {
 	if w.Total == nil {
 		return "", false
 	}
 	return *w.Total, true
 }
-
-// HasCeiling reports whether the provider published a limit for this bucket.
-func (w PublishedWindowRow) HasCeiling() bool { return w.Total != nil }
 
 // PublishedQuota is one endpoint's whole cached answer: its state plus the
 // buckets that answer published. An endpoint the cache has never heard of is
@@ -103,7 +88,7 @@ type PublishedQuota struct {
 }
 
 // PublishedAttempt is one poll's scheduling outcome: the instant it ran, when to run
-// again, how the failure run moved, and — the part that is not scheduling — the
+// again, how the failure run moved, and, the part that is not scheduling, the
 // sentence the provider answered with when it answered with no buckets at all.
 //
 // Plan and Message are pointers rather than strings because "this poll stated nothing
@@ -144,8 +129,8 @@ func (a PublishedAttempt) Validate() error {
 // the provider answered with and the buckets in it.
 //
 // It names no attempt columns on purpose. Storing an answer is not a scheduling
-// decision — the worker decides the next interval and records it through
-// RecordAttempt — so a write DTO that could carry NextAttemptAt would let a
+// decision, the worker decides the next interval and records it through
+// RecordAttempt, so a write DTO that could carry NextAttemptAt would let a
 // caller overwrite the schedule with a value it read a poll ago.
 type PublishedAnswer struct {
 	EndpointID string

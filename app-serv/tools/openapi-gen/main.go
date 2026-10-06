@@ -3,11 +3,7 @@
 // @file      tools/openapi-gen/main.go
 // @for       Deterministic generation of the embedded OpenAPI JSON artifact.
 // @uses      embed, flag, fmt, os, gopkg.in/yaml.v3.
-// @reason    Schema-first contract work needs one repeatable command that turns
-// the reviewed YAML into the file embedded by app-serv. Keeping generation in a
-// small tool makes the source/artifact boundary explicit and lets CI reject a
-// stale served document without making runtime code parse YAML.
-//
+// @reason    Schema-first contract work needs one repeatable command that turns the reviewed YAML into the file embedded by app-serv. Keeping generation in a small tool makes the source/artifact boundary explicit and lets CI reject a stale served document without making runtime code parse YAML.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability experimental

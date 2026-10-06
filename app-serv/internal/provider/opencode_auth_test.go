@@ -4,15 +4,10 @@
 // @file      internal/provider/opencode_auth_test.go
 // @for       The credential and identity the OpenCode free tier is presented.
 // @uses      testing, net/http.
-// @reason    The free tier reads a literal public bearer and the CLI's own
-//
-//	identity headers, and it accounts quota per session, so both the value
-//	and its stability are rules rather than details. They are pinned apart
-//	from the URL rule so each file stays inside the AGENTS.md §1.1 budget.
-//
+// @reason    The free tier reads a literal public bearer and the CLI's own identity headers, and it accounts quota per session, so both the value and its stability are rules rather than details. They are pinned apart from the URL rule so each file stays inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-21
 package provider
 

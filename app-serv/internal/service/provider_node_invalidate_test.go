@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_node_invalidate_test.go
-// @for       That a stored-node mutation invalidates a caching provider index
-//
-//	so the data plane sees the node on its next lookup.
-//
+// @for       That a stored-node mutation invalidates a caching provider index so the data plane sees the node on its next lookup.
 // @uses      context, testing, time, internal/domain, internal/registry.
-// @reason    R06 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: a cached overlay
-//
-//	without invalidation would serve a provider set that lags the
-//	operator's own writes, which reintroduces the bug the runtime
-//	index exists to prevent. The invalidation is a capability of the
-//	index, so the service calls it when the index opts in, and this
-//	test pins that Create and Delete each do.
-//
+// @reason    R06 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: a cached overlay without invalidation would serve a provider set that lags the operator's own writes, which reintroduces the bug the runtime index exists to prevent. The invalidation is a capability of the index, so the service calls it when the index opts in, and this test pins that Create and Delete each do.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package service
 

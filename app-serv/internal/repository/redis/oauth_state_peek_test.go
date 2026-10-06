@@ -4,25 +4,15 @@
 //
 // @file      internal/repository/redis/oauth_state_peek_test.go
 // @for       Integration tests for the polled read of the OAuth state store.
+// @uses      github.com/redis/go-redis/v9, context, os, testing, time, internal/repository.
+// @reason    A device flow re-reads its staged context on every poll, so the whole design rests on one property the callback never needed: a peek must not consume, must not clear the TTL, and must not extend it either. That is a `GET` against a key written with `SET NX … EX`, and the only way to know the driver behaves as read on a real server is to ask a real server.
 //
-// @uses      github.com/redis/go-redis/v9, context, os, testing, time,
-//
-//	internal/repository.
-//
-// @reason    A device flow re-reads its staged context on every poll, so the
-//
-//	whole design rests on one property the callback never needed: a
-//	peek must not consume, must not clear the TTL, and must not
-//	extend it either. That is a `GET` against a key written with
-//	`SET NX … EX`, and the only way to know the driver behaves as
-//	read on a real server is to ask a real server.
-//
-//	  PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
-//	    go test -race -tags=integration ./internal/repository/redis/
+//	PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
+//	  go test -race -tags=integration ./internal/repository/redis/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package redisrepo
 

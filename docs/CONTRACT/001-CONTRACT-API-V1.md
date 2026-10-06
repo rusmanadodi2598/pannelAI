@@ -264,7 +264,7 @@ Override disimpan per provider dan kind. `base_url` tidak boleh kosong setelah r
 | GET | `/api/v1/usage/records` | Session | `200 UsageRecordList` |
 | GET | `/api/v1/usage/records/{request_id}` | Session | `200 UsageRecordDetailResponse` |
 | GET | `/api/v1/usage/live` | Session | `200` SSE frames |
-| GET | `/api/v1/quotas` | Session | `200 QuotaWindowList` — `{data, meta, published[], published_note?}`; `per_page` menghitung grup provider, `published[]` adalah jawaban cache worker untuk endpoint pada halaman ini (satu query, bukan satu panggilan provider per akun) |
+| GET | `/api/v1/quotas` | Session | `200 QuotaWindowList`: `{data, meta, published[], published_note?}`; `per_page` menghitung grup provider, `published[]` adalah jawaban cache worker untuk endpoint pada halaman ini (satu query, bukan satu panggilan provider per akun) |
 | GET | `/api/v1/quotas/{endpoint_id}` | Session | `200 QuotaEndpointDetail` |
 | GET | `/api/v1/quotas/{endpoint_id}/usage` | Session | `200 PublishedQuotaUsageResponse`; dibaca dari cache, `?force=1` bertanya ke provider sekarang |
 | PUT | `/api/v1/quotas/{endpoint_id}` | Session | `200` |

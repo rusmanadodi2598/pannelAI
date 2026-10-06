@@ -1,20 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_provider_resolve.go
-// @for       Resolving registry defaults and stored overrides into effective
-//
-//	media values (SPEC-API-001 §7.10).
-//
+// @for       Resolving registry defaults and stored overrides into effective media values (SPEC-API-001 §7.10).
 // @uses      internal/domain, internal/registry, context, strings.
-// @reason    Every §7.10 read answers the same question — what does this
-//
-//	provider actually dial for this kind — so the resolution and the
-//	kind-vocabulary mapping sit in one file rather than beside each
-//	route that asks.
-//
+// @reason    Every §7.10 read answers the same question, what does this provider actually dial for this kind, so the resolution and the kind-vocabulary mapping sit in one file rather than beside each route that asks.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -57,7 +49,7 @@ func (s *MediaProviderService) overrideIndex(ctx context.Context) (map[string]do
 }
 
 // viewsFor builds one entry's views in the canonical kind order, so a list
-// renders the same way twice — a Go map iterates in a random order, which is
+// renders the same way twice, a Go map iterates in a random order, which is
 // why the order comes from domain.MediaKinds() rather than from the map.
 func viewsFor(entry registry.Provider, filter domain.MediaKind, overrides map[string]domain.MediaOverride) []MediaServiceView {
 	views := make([]MediaServiceView, 0, len(entry.Media))

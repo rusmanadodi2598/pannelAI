@@ -2,7 +2,7 @@
 // published-read block, the provider-first reshape of 2026-10-02).
 //
 // The measured failure this suite exists for: the screen used to read only the gateway's own counted
-// windows, and on the live gateway those rows carry no `limit` at all — an audit of a real page counted
+// windows, and on the live gateway those rows carry no `limit` at all. An audit of a real page counted
 // zero progress bars. The provider's numbers were reachable only behind a button on every card. They now
 // arrive on the collection read, so the first assertion here is the one that matters most: a card that
 // renders them WITHOUT firing a request per endpoint. A screen that fetched on render would look identical
@@ -126,7 +126,7 @@ describe('the provider numbers on load', () => {
 	});
 
 	it('offers no provider block to a connection whose provider publishes nothing', async () => {
-		// The gateway sends an entry for every account it can ask — including one marked never-polled —
+		// The gateway sends an entry for every account it can ask (including one marked never-polled),
 		// so an absent entry means there is nobody to ask. A block there would print "not polled yet"
 		// beside a provider that is never polled, and a button that has nothing behind it.
 		const stub = renderWith({});
@@ -330,7 +330,7 @@ describe('the page-level provider sentence', () => {
 		await screen.findByRole('heading', { name: 'anthropic' });
 		expect(screen.getAllByText(/Provider quota could not be read/)).toHaveLength(1);
 
-		// The counts under it are still the gateway's own and still render — the note names a gap, it does
+		// The counts under it are still the gateway's own and still render: the note names a gap, it does
 		// not replace the data. One line per connection, so two cards here make two lines.
 		expect(screen.getAllByText(/Counted by this gateway: 1 window/)).toHaveLength(2);
 	});

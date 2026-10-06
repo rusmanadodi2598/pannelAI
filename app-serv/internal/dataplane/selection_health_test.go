@@ -3,15 +3,10 @@
 // @file      internal/dataplane/selection_health_test.go
 // @for       Table-driven tests for how an outcome is accounted back onto the endpoint and key.
 // @uses      context, errors, strings, testing, time, internal/domain
-// @reason    SPEC-API-001 §7.5 requires an upstream outcome to change the domain's own health state
-//
-//	rather than a copy of it, and requires a storage failure or an unreadable credential to
-//	surface as an error rather than a silent skip. Both are what make the circuit breaker
-//	and the retry policy trustworthy (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §7.5 requires an upstream outcome to change the domain's own health state rather than a copy of it, and requires a storage failure or an unreadable credential to surface as an error rather than a silent skip. Both are what make the circuit breaker and the retry policy trustworthy (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 

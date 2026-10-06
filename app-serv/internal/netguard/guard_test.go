@@ -2,22 +2,12 @@
 // connects to it (OWASP A01 SSRF, docs/RULLES/OWASP.md).
 //
 // @file      internal/netguard/guard_test.go
-// @for       The egress guard's range rules, resolution rules, and dial-time
-//
-//	re-check, as tables over the obfuscation classes.
-//
+// @for       The egress guard's range rules, resolution rules, and dial-time re-check, as tables over the obfuscation classes.
 // @uses      testing, context, errors, net/netip, strings, syscall.
-// @reason    The OWASP rules require a parameterized table rather than a single
-//
-//	example payload, and require a benign case that must still be allowed:
-//	a guard that blocks everything passes a one-case test. The tables
-//	below vary the spelling of an address — decimal-free literals,
-//	IPv6-mapped forms, and transition addresses that embed IPv4 — because
-//	those are the shapes a bypass attempt takes.
-//
+// @reason    The OWASP rules require a parameterized table rather than a single example payload, and require a benign case that must still be allowed: a guard that blocks everything passes a one-case test. The tables below vary the spelling of an address, decimal-free literals, IPv6-mapped forms, and transition addresses that embed IPv4, because those are the shapes a bypass attempt takes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package netguard
 

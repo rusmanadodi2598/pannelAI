@@ -1,23 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_vision_test.go
-// @for       Who answers "can this model read an image" — the catalog the
-//
-//	operator wrote, or the predicate the composition root injected.
-//
+// @for       Who answers "can this model read an image", the catalog the operator wrote, or the predicate the composition root injected.
 // @uses      context, testing, internal/domain.
-// @reason    Measured live on 2026-09-29: the model configured as the vision
-//
-//	adapter answered a solid-red image as "gray" and said so in its own
-//	reasoning, while a pass-through model no table knew about answered it
-//	correctly. Both answers came from a name pattern that could not see the
-//	operator's own declarations. These tests pin the catalog as the authority
-//	in both directions and keep the predicate where it still decides: an id
-//	no catalog row speaks for.
-//
+// @reason    Measured live on 2026-09-29: the model configured as the vision adapter answered a solid-red image as "gray" and said so in its own reasoning, while a pass-through model no table knew about answered it correctly. Both answers came from a name pattern that could not see the operator's own declarations. These tests pin the catalog as the authority in both directions and keep the predicate where it still decides: an id no catalog row speaks for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package service
 

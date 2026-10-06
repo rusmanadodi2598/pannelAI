@@ -1,20 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_envelope_frame.go
-// @for       One Qoder SSE frame: its envelope, the answer wrapped inside it, and
-//
-//	what a refusal inside that envelope becomes.
-//
+// @for       One Qoder SSE frame: its envelope, the answer wrapped inside it, and what a refusal inside that envelope becomes.
 // @uses      bytes, encoding/json, errors, fmt, net/http, strings, time.
-// @reason    The vendor states a call's real outcome per frame rather than per
-//
-//	response, so parsing one frame and deciding what a refusal means are the
-//	parts worth reading on their own; the reader that applies them to a
-//	stream lives beside this file.
-//
+// @reason    The vendor states a call's real outcome per frame rather than per response, so parsing one frame and deciding what a refusal means are the parts worth reading on their own; the reader that applies them to a stream lives beside this file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -37,7 +29,7 @@ type qoderEnvelope struct {
 
 // qoderErrorChunk is the terminal frame a stream gets when the provider refuses after
 // the answer started. The status the client already received cannot change, so the
-// refusal is delivered as the answer's own content and finish — the shape the
+// refusal is delivered as the answer's own content and finish, the shape the
 // reference uses, in a typed form because the gateway does not build wire shapes out
 // of untyped maps (AGENTS.md §1.4).
 type qoderErrorChunk struct {
@@ -105,7 +97,7 @@ func (e qoderEnvelope) innerPayload() ([]byte, bool) {
 }
 
 // qoderErrorFrame closes a stream with the provider's reason as visible content and
-// the answer's own finish — the same shape the reference emits when a refusal arrives
+// the answer's own finish, the same shape the reference emits when a refusal arrives
 // too late to change the status the client already has.
 func qoderErrorFrame(envelope qoderEnvelope) []byte {
 	message := strings.TrimSpace(string(envelope.Body))

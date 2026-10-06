@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/chat_record_cost.go
-// @for       The chat plane's cost estimate: the rate tables' answer for the
-//
-//	tokens one call reported.
-//
+// @for       The chat plane's cost estimate: the rate tables' answer for the tokens one call reported.
 // @uses      internal/dataplane, internal/registry, internal/schema.
-// @reason    Live evidence 2026-09-23: every served chat call recorded
-//
-//	cost_usd = 0 because the usage row was built without the field, so
-//	the panel's cost series read zero for every model. The estimate
-//	itself lives in the registry's rate tables (the reference computes
-//	it locally rather than reading a price from the upstream), and this
-//	file is the one place that maps a call's outcome onto the formula's
-//	input, so the two accounting sites cannot map the cache and
-//	reasoning splits differently.
-//
+// @reason    Live evidence 2026-09-23: every served chat call recorded cost_usd = 0 because the usage row was built without the field, so the panel's cost series read zero for every model. The estimate itself lives in the registry's rate tables (the reference computes it locally rather than reading a price from the upstream), and this file is the one place that maps a call's outcome onto the formula's input, so the two accounting sites cannot map the cache and reasoning splits differently.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -38,7 +26,7 @@ const zeroCostUSD = "0.00000000"
 // chatCostEstimate renders the estimate a chat usage row carries. It answers
 // zero for a call that failed (nothing was delivered), for a call that reported
 // no usage (nothing was measured), and for a model the rate tables do not price
-// (no rate to apply) — the reference's own resolver answers null for the last
+// (no rate to apply), the reference's own resolver answers null for the last
 // case, and a zero estimate is what the panel renders as "no cost data".
 func chatCostEstimate(outcome dataplane.Outcome, errorCode string) string {
 	if errorCode != "" || outcome.Usage == nil {

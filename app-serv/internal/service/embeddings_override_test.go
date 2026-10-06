@@ -2,19 +2,11 @@
 //
 // @file      internal/service/embeddings_override_test.go
 // @for       The §7.10 override resolution the embeddings use case reads.
-// @uses      internal/domain, internal/registry, context, errors, strings,
-//
-//	testing.
-//
-// @reason    §7.10's save is only real if the data plane honours it, and the
-//
-//	rule has three outcomes worth pinning: a stored override wins, an
-//	absent one falls back to the registry, and a provider with neither
-//	is refused rather than defaulted to a cloud host.
-//
+// @uses      internal/domain, internal/registry, context, errors, strings, testing.
+// @reason    §7.10's save is only real if the data plane honours it, and the rule has three outcomes worth pinning: a stored override wins, an absent one falls back to the registry, and a provider with neither is refused rather than defaulted to a cloud host.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -43,8 +35,8 @@ func (r stubOverrideReader) MediaBaseURL(_ context.Context, providerID string, k
 }
 
 // embeddingEntry is the registry entry the resolution cases read. The
-// embedding block is always present — an entry that lacks it is the separate
-// not-routable case — and its base URL is whatever the case declares.
+// embedding block is always present, an entry that lacks it is the separate
+// not-routable case, and its base URL is whatever the case declares.
 func embeddingEntry(baseURL string) registry.Provider {
 	return registry.Provider{
 		ID: "openai", Display: registry.Display{Name: "OpenAI"},

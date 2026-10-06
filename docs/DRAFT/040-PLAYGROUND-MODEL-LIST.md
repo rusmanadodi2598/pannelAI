@@ -186,7 +186,7 @@ usage dan log baris bertambah untuk panggilan `th-1` yang menjawab.
   (`provider_model_probe_budget_test.go:33`) gagal pada assertion baris 43
   (`a probe that hit its budget must not report ok`). Mekanismenya di baris 35: budget
   `ProviderModelProbeTimeout = 20 * time.Second` (`provider_model_budget.go:33`) sementara stub
-  menjawab pada `timeout + 20 ms` — margin 0,1 %, jadi di bawah perebutan scheduler goroutine
+  menjawab pada `timeout + 20 ms`, margin 0,1 %, jadi di bawah perebutan scheduler goroutine
   deadline bisa kalah dan jawaban "yang telat" itu menang sebagai `OK`.
   Host ini 2 CPU, dan `go test -race ./...` menjalankan puluhan biner paket bersamaan.
   Buktinya, diukur pada `git worktree` HEAD `dcbc96d` tanpa satu pun perubahan batch ini:

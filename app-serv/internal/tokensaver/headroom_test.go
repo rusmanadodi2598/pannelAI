@@ -3,21 +3,12 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/headroom_test.go
-// @for       The external client's cases: the payload it sends, the answer it
-//
-//	accepts, and every failure it must report rather than swallow.
-//
+// @for       The external client's cases: the payload it sends, the answer it accepts, and every failure it must report rather than swallow.
 // @uses      context, encoding/json, io, net/http, net/http/httptest, testing.
-//
-// @reason    SPEC-API-001 §7.9 makes the saver fail open, and fail-open is only
-//
-//	safe when the caller is told which calls failed. TDD.md §2.5 also
-//	asks for the boundaries: an empty array, a non-array answer, a
-//	refusal, an unreachable proxy, and a proxy that never answers.
-//
+// @reason    SPEC-API-001 §7.9 makes the saver fail open, and fail-open is only safe when the caller is told which calls failed. TDD.md §2.5 also asks for the boundaries: an empty array, a non-array answer, a refusal, an unreachable proxy, and a proxy that never answers.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

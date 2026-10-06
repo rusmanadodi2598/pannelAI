@@ -2,17 +2,11 @@
 //
 // @file      internal/provider/qoder_messages_test.go
 // @for       The message reshaping and the token ceiling the agent payload is built from.
-//
 // @uses      encoding/json, strings, testing.
-// @reason    These are the two rules with no vendor call in them: which turn the
-//
-//	endpoint wants lifted out of the history, and what the model is allowed
-//	to write. They are table-driven so each client spelling is a named case
-//	rather than a claim about all of them.
-//
+// @reason    These are the two rules with no vendor call in them: which turn the endpoint wants lifted out of the history, and what the model is allowed to write. They are table-driven so each client spelling is a named case rather than a claim about all of them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 

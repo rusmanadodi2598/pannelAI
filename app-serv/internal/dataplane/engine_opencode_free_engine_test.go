@@ -1,21 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_opencode_free_engine_test.go
-// @for       The engine wiring the free-tier tests drive: the real pipeline over
-//
-//	the measured upstream stand-in.
-//
+// @for       The engine wiring the free-tier tests drive: the real pipeline over the measured upstream stand-in.
 // @uses      testing, internal/domain, internal/provider, internal/registry.
-// @reason    The wiring is the evidence that the lane works end to end: the
-//
-//	resolver, selector, transport, and connector are the production ones,
-//	and only the upstream address is the stand-in. Keeping it in its own
-//	file also keeps the fixture and acceptance files inside the AGENTS.md
-//	section 1.1 budget.
-//
+// @reason    The wiring is the evidence that the lane works end to end: the resolver, selector, transport, and connector are the production ones, and only the upstream address is the stand-in. Keeping it in its own file also keeps the fixture and acceptance files inside the AGENTS.md section 1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 
@@ -64,7 +55,7 @@ func newOpenCodeFreeEngine(t *testing.T, upstreamURL string, seen *[]openCodeFre
 
 // newOpenCodeFreeEngineWith is the same wiring with the endpoint row optional, so
 // a test can prove the virtual-endpoint rule reaches the whole pipeline rather
-// than only the selector (draft 029 F8). A run with no row is what an operator
+// than only the selector. A run with no row is what an operator
 // gets on a fresh install, before anything is configured.
 func newOpenCodeFreeEngineWith(t *testing.T, upstreamURL string, seen *[]openCodeFreeCall, withEndpoint bool) *Engine {
 	t.Helper()

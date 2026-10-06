@@ -4,16 +4,10 @@
 // @file      internal/registry/types_oauth.go
 // @for       The OAuth flow configuration a registry entry may declare.
 // @uses      gopkg.in/yaml.v3 for the union-typed scopes field.
-// @reason    SPEC-API-001 §7.4 exposes provider OAuth, and the reference's
-//
-//	providers differ so widely here (redirect, device code, poll, AWS
-//	SSO) that the union of their fields has to be carried explicitly;
-//	a free-form map would let a misspelled key disable a flow without
-//	saying so.
-//
+// @reason    SPEC-API-001 §7.4 exposes provider OAuth, and the reference's providers differ so widely here (redirect, device code, poll, AWS SSO) that the union of their fields has to be carried explicitly; a free-form map would let a misspelled key disable a flow without saying so.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 
@@ -119,16 +113,14 @@ type OAuth struct {
 	RefreshLeadMS     int64             `yaml:"refresh_lead_ms"`
 	MaxRefreshAgeMS   int64             `yaml:"max_refresh_age_ms"`
 	TrackRefreshAt    bool              `yaml:"track_refresh_at"`
-	// The fields below are declared by the reference on individual providers and
-	// were previously dropped. Each is carried because the reference reads it,
-	// and a dropped field is a flow that silently does less than the reference's:
-	//   - ValidationURL/WebAppURL/ModelsURL: the provider's own metadata
-	//     endpoints, which the reference surfaces to the operator.
-	//   - AuthorizeDeviceURL: the device-code flow's approval page.
-	//   - Referrer: the HTTP Referer the provider's login expects.
-	//   - RSAKeyExchange: the flow wraps its token exchange in RSA.
-	//   - Custom/Kn/CallbackParam: the provider's own exchange variant and the
-	//     query parameter its callback reads.
+	// These fields are declared by the reference on individual providers and
+	// were once dropped; a dropped field is a flow that silently does less.
+	//   ValidationURL/WebAppURL/ModelsURL: provider metadata endpoints shown to
+	//   the operator. AuthorizeDeviceURL: the device-code approval page.
+	//   Referrer: the HTTP Referer the provider's login expects.
+	//   RSAKeyExchange: the token exchange is wrapped in RSA.
+	//   Custom/Kn/CallbackParam: the provider's own exchange variant and the
+	//   query parameter its callback reads.
 	ValidationURL      string `yaml:"validation_url"`
 	WebAppURL          string `yaml:"web_app_url"`
 	ModelsURL          string `yaml:"models_url"`
@@ -169,15 +161,13 @@ func (o *OAuth) SupportsFlow() bool {
 }
 
 // StateExchangeFlow reports whether this provider authorizes by a state round:
-// the gateway asks the vendor for a state plus the browser URL that carries it,
-// hands that URL to the operator, and then polls the token endpoint with the
-// state until the vendor grants a token.
+// the gateway asks the vendor for a state plus the browser URL carrying it,
+// hands that URL to the operator, then polls the token endpoint with the state
+// until the vendor grants a token.
 //
-// It is a device flow in shape and in the panel's eyes — the operator opens a
-// link and the screen polls — but it shares no wire with the PKCE round the
-// generic device flow runs: no challenge, no nonce, and the round is minted by
-// the vendor rather than locally. That difference is why it gets its own name
-// instead of a flag on the older predicate.
+// It is a device flow in shape and in the panel's eyes but shares no wire with
+// the PKCE round: no challenge, no nonce, and the vendor mints the round. That
+// is why it has its own name rather than a flag on the older predicate.
 func (o *OAuth) StateExchangeFlow() bool {
 	if o == nil {
 		return false
@@ -186,16 +176,11 @@ func (o *OAuth) StateExchangeFlow() bool {
 }
 
 // RequiresCustomExchange reports whether this provider's token exchange cannot
-// be performed by a generic OAuth client. A poll-based or pre-authenticated
+// be performed by a generic OAuth client: a poll-based or pre-authenticated
 // flow does not answer a standard authorization-code request, so it needs a
-// connector rather than the shared fallback.
-//
-// A state round is deliberately NOT in this set. It looked like one because the
-// two predicates were conflated under a single field, and the cost landed on
-// CodeBuddy: the panel was told its credentials needed a connector that nothing
-// in this port requires, since the chat endpoint is plain OpenAI with a bearer
-// token, and the connect flow it does have is servable by the shared client.
-// The URLs below are the exchanges with no shared shape at all.
+// connector rather than the shared fallback. A state round is deliberately not
+// in this set, since its chat endpoint is plain OpenAI with a bearer token; only
+// InitiateURL and PollURLBase mark an exchange with no shared shape at all.
 func (o *OAuth) RequiresCustomExchange() bool {
 	if o == nil {
 		return false

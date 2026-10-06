@@ -1,25 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_model_probe.go
-// @for       The §7.4 model test: one provider's model probed by id, and a bounded
-//
-//	sweep over every chat model that provider offers (draft 017 §4.10, F10).
-//
-// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema,
-//
-//	context, time.
-//
-// @reason    The connection test answers "can this credential reach the
-//
-//	provider"; the operator's next question is "does this model answer",
-//	which only a per-model probe can tell them. The probe is the real
-//	data plane call rather than a second HTTP path, so a model the gateway
-//	cannot route never reports healthy from a route the gateway would not
-//	take.
-//
+// @for       The §7.4 model test: one provider's model probed by id, and a bounded sweep over every chat model that provider offers (draft 017 §4.10, F10).
+// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema, context, time.
+// @reason    The connection test answers "can this credential reach the provider"; the operator's next question is "does this model answer", which only a per-model probe can tell them. The probe is the real data plane call rather than a second HTTP path, so a model the gateway cannot route never reports healthy from a route the gateway would not take.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package service
 
@@ -39,6 +26,11 @@ import (
 type ProviderModelTestService struct {
 	providers *ProviderService
 	prober    ModelProber
+
+	// probeTimeout is the ceiling one model may take. It is a field rather than
+	// only the constant so a test can exercise "ran out of budget" in
+	// milliseconds; the zero value is never used, the constructor fills it.
+	probeTimeout time.Duration
 }
 
 // NewProviderModelTestService validates deps and returns a ready service. Both
@@ -51,14 +43,16 @@ func NewProviderModelTestService(providers *ProviderService, prober ModelProber)
 	if prober == nil {
 		return nil, domain.NewValidationError("provider model test service requires a data plane prober")
 	}
-	return &ProviderModelTestService{providers: providers, prober: prober}, nil
+	return &ProviderModelTestService{
+		providers: providers, prober: prober, probeTimeout: ProviderModelProbeTimeout,
+	}, nil
 }
 
 // TestModel probes exactly one model of one provider and reports its row.
 //
 // The model id is not required to appear in the catalog. A custom node is a
 // passthrough: its upstream accepts model strings the registry has never heard
-// of, and refusing them would make the node untestable — the pipeline's own
+// of, and refusing them would make the node untestable, the pipeline's own
 // MODEL_NOT_FOUND is the honest answer for a registry provider that does not
 // carry the id. What IS refused is a model the catalog declares as non-chat: the
 // probe is a chat call, so an embedding model's failure would describe the probe
@@ -82,7 +76,7 @@ func (s *ProviderModelTestService) TestModel(
 // The probes run one at a time for the reason the combo test states (§7.7): a
 // fan-out multiplies what one click spends against the operator's quota and
 // makes the reported order depend on which model happened to answer first. A
-// model whose probe failed is still a row — the sweep exists to say which ones.
+// model whose probe failed is still a row, the sweep exists to say which ones.
 func (s *ProviderModelTestService) TestModels(
 	ctx context.Context, providerID string, limit int,
 ) (schema.ProviderModelTestResponse, error) {
@@ -160,7 +154,7 @@ func (s *ProviderModelTestService) probe(
 	result := schema.ProviderModelTestResult{ModelID: modelID, Name: model.Name}
 	ref := provider.ID + "/" + modelID
 
-	probeCtx, cancel := context.WithTimeout(ctx, probeBudget(time.Until(end)))
+	probeCtx, cancel := context.WithTimeout(ctx, probeBudget(time.Until(end), s.probeTimeout))
 	defer cancel()
 
 	outcome, err := s.prober.Ping(probeCtx, ref)

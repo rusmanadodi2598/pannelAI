@@ -1,25 +1,12 @@
 // Command app-serv adapts a provider node's model list to HTTP.
 //
 // @file      cmd/app-serv/node_models_test.go
-// @for       The parsing, the fallback, the credential redaction, and the egress
-//
-//	refusal of the node model-list adapter.
-//
-// @uses      internal/domain, internal/netguard, internal/provider,
-//
-//	internal/registry, internal/service, context, encoding/json,
-//	net/http, net/http/httptest, strings, testing, time.
-//
-// @reason    SPEC-API-001 §7.4 serves a node's models, and the adapter is the one
-//
-//	place that dials an operator-supplied URL for that read. Two rules are
-//	asserted here rather than left to review: the warning never carries the
-//	credential (OWASP A09), and a destination the guard refuses produces a
-//	fallback rather than a request (OWASP A01).
-//
+// @for       The parsing, the fallback, the credential redaction, and the egress refusal of the node model-list adapter.
+// @uses      internal/domain, internal/netguard, internal/provider, internal/registry, internal/service, context, encoding/json, net/http, net/http/httptest, strings, testing, time.
+// @reason    SPEC-API-001 §7.4 serves a node's models, and the adapter is the one place that dials an operator-supplied URL for that read. Two rules are asserted here rather than left to review: the warning never carries the credential (OWASP A09), and a destination the guard refuses produces a fallback rather than a request (OWASP A01).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 

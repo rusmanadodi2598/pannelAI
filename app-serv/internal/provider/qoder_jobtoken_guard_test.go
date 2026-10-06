@@ -1,20 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_jobtoken_guard_test.go
-// @for       The boot-time refusals of the job-token exchanger: no base URL and
-//
-//	no guarded egress client both end the boot rather than the request.
-//
+// @for       The boot-time refusals of the job-token exchanger: no base URL and no guarded egress client both end the boot rather than the request.
 // @uses      testing.
-// @reason    The exchange is the one Qoder call that carries a customer's
-//
-//	Personal Access Token, so both halves of the guard the composition root
-//	is trusted to wire are pinned here together (draft 042 R07,
-//	docs/RULLES/SSRF.md §2.1).
-//
+// @reason    The exchange is the one Qoder call that carries a customer's Personal Access Token, so both halves of the guard the composition root is trusted to wire are pinned here together (draft 042 R07, docs/RULLES/SSRF.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-10-04
 package provider
 

@@ -4,15 +4,10 @@
 // @file      internal/registry/embedded_test.go
 // @for       Tests that the committed embedded document decodes into a complete provider index.
 // @uses      testing, strings, internal/registry.
-// @reason    SPEC-API-001 §6 makes the registry the source of truth for every
-//
-//	provider, so the ported document must decode into the shapes the
-//	reference carried, with no live third-party credential and no
-//	provider silently dropped on load.
-//
+// @reason    SPEC-API-001 §6 makes the registry the source of truth for every provider, so the ported document must decode into the shapes the reference carried, with no live third-party credential and no provider silently dropped on load.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 

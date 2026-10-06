@@ -3,10 +3,7 @@
 // @file      internal/schema/auth_test.go
 // @for       Table-driven validation of password byte limits at the HTTP boundary.
 // @uses      strings, testing, internal/schema.
-// @reason    bcrypt accepts at most 72 bytes, so validation must protect the
-//
-//	service from multi-byte inputs that pass rune-based max checks.
-//
+// @reason    bcrypt accepts at most 72 bytes, so validation must protect the service from multi-byte inputs that pass rune-based max checks.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

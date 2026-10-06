@@ -3,21 +3,12 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/apply_gemini.go
-// @for       The Gemini writers: the thinkingConfig block, the envelope it may
-//
-//	sit in, and the output-token floor it needs.
-//
+// @for       The Gemini writers: the thinkingConfig block, the envelope it may sit in, and the output-token floor it needs.
 // @uses      encoding/json.
-// @reason    SPEC-API-001 §7.15 gives Gemini two thinking formats (a level and a
-//
-//	budget), and both write into a nested generationConfig that the
-//	payload may wrap in a request envelope. Those three facts are one
-//	subject, so they live together, and apply_helpers.go stays inside
-//	the AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §7.15 gives Gemini two thinking formats (a level and a budget), and both write into a nested generationConfig that the payload may wrap in a request envelope. Those three facts are one subject, so they live together, and apply_helpers.go stays inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package reasoning
 

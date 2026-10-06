@@ -3,18 +3,14 @@
 // @file      internal/service/quota_published_cache.go
 // @for       The cached published-quota reads: the collection page's one batched query, and the per-endpoint cache-first read.
 // @uses      context, internal/domain, internal/repository, sort, time.
-// @reason    The quota screen must show what each provider publishes about itself, and
+// @reason    The quota screen must show what each provider publishes about itself, and asking providers during that read would spend one outbound call per account, the N+1 shape AGENTS.md §1.7 blocks on this route, at the owner's standing instruction. So a worker writes provider answers into a cache and every read here takes them from it, in one statement for the whole page.
 //
-//	asking providers during that read would spend one outbound call per account
-//	— the N+1 shape AGENTS.md §1.7 blocks on this route, at the owner's
-//	standing instruction. So a worker writes provider answers into a cache and
-//	every read here takes them from it, in one statement for the whole page.
 //	A card can still ask for a live number when the operator wants the instant
 //	rather than the last poll, which is the `force` path below.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
 
@@ -27,21 +23,15 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// PagePublished attaches the cached provider answer to the accounts one page names.
-//
-// The account list, not the counted windows, decides who gets an entry: an endpoint that
-// has routed nothing yet has no window row, and a card list built from windows alone
-// hides a provider whose quota the worker has actually answered for. Every account on the
-// page is therefore answered, and one the worker has never reached carries `NeverPolled`
-// so the card can say that plainly rather than look empty.
-//
-// It is still one query for the whole page: the ids come from the page's accounts and go
-// to the repository in a single batched read, so a page of forty accounts costs one
-// statement rather than forty.
-//
-// A read failure is returned to the caller rather than swallowed, but the handler keeps
-// the counted windows on the page when it happens: the gateway's own numbers are still
-// true, and losing them because a cache read failed would be the worse answer.
+// PagePublished attaches the cached provider answer to the accounts one page
+// names. The account list, not the counted windows, decides who gets an entry: an
+// endpoint that has routed nothing yet has no window row, so a card list built
+// from windows alone hides a provider the worker did answer for. Every account on
+// the page is answered, and one the worker never reached carries `NeverPolled` so
+// the card says that plainly rather than look empty. It stays one batched read for
+// the page, so forty accounts cost one statement. A read failure is returned, not
+// swallowed; the handler keeps the counted windows, as the gateway's own numbers
+// are still true and losing them over a cache read is the worse answer.
 func (s *QuotaService) PagePublished(ctx context.Context, accounts []domain.QuotaAccount) ([]PublishedUsage, error) {
 	if s.publishedCache == nil || len(accounts) == 0 {
 		return nil, nil
@@ -190,8 +180,11 @@ func publishedBefore(left, right PublishedWindow) bool {
 }
 
 // publishedAmount reads a stored decimal back as the number the bar is drawn from.
-// An unparseable amount is a corrupt row, not a zero: reporting zero would draw an
-// empty bar under a bucket that may be full.
+//
+// An unparseable amount answers zero, which is the honest limit of what a
+// display-only bar can do: the row is corrupt, the ceiling it belongs to is
+// unknown, and drawing no bar is the same visual answer as drawing an empty one.
+// The value never reaches accounting, which reads the stored strings directly.
 func publishedAmount(raw string) float64 {
 	parsed, err := strconv.ParseFloat(raw, 64)
 	if err != nil {

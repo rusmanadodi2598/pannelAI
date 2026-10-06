@@ -5,16 +5,10 @@
 // @file      internal/dataplane/translate_claude_to_openai.go
 // @for       Anthropic messages request to OpenAI chat request translation.
 // @uses      internal/schema, strings.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages to Claude Code while
-//
-//	the resolved provider may speak OpenAI, so this direction is what
-//	makes the Anthropic route provider-agnostic. It is a pure function
-//	(the reference's claude-to-openai.js) so it is testable without a
-//	network.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages to Claude Code while the resolved provider may speak OpenAI, so this direction is what makes the Anthropic route provider-agnostic. It is a pure function (the reference's claude-to-openai.js) so it is testable without a network.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 

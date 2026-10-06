@@ -3,15 +3,10 @@
 // @file      internal/service/provider_model_probe_test.go
 // @for       Table-driven tests for the provider model test service (draft 017 §4.10, F10).
 // @uses      internal/dataplane, internal/registry, internal/schema, context, testing, time.
-// @reason    The route's contract is "one result per model, whatever the upstream
-//
-//	did": a dead model is an answer, an unknown provider is an error, and
-//	a sweep that runs out of budget reports what it managed to test. Only
-//	a stubbed prober can show all three without a live provider.
-//
+// @reason    The route's contract is "one result per model, whatever the upstream did": a dead model is an answer, an unknown provider is an error, and a sweep that runs out of budget reports what it managed to test. Only a stubbed prober can show all three without a live provider.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package service
 

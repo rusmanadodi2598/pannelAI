@@ -3,24 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_claude.go
-// @for       Re-framing an upstream stream into Anthropic SSE events, so a client
-//
-//	on /api/v1/messages can be served by any provider.
-//
+// @for       Re-framing an upstream stream into Anthropic SSE events, so a client on /api/v1/messages can be served by any provider.
 // @uses      internal/schema.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages on the Anthropic wire,
-//
-//	and the resolved provider may speak OpenAI or the Responses API, so the
-//	framing has to be produced, not forwarded. Anthropic's stream is
-//	stricter than OpenAI's: every content block must be opened, fed, and
-//	closed in order, so this is a small state machine whose state the
-//	caller owns. Its delta and block-closing helpers live in
-//	translate_stream_claude_delta.go and translate_stream_claude_blocks.go,
-//	for the AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages on the Anthropic wire, and the resolved provider may speak OpenAI or the Responses API, so the framing has to be produced, not forwarded. Anthropic's stream is stricter than OpenAI's: every content block must be opened, fed, and closed in order, so this is a small state machine whose state the caller owns. Its delta and block-closing helpers live in translate_stream_claude_delta.go and translate_stream_claude_blocks.go, for the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -59,7 +47,7 @@ type ClaudeStreamState struct {
 	// stop is the guard that ends the answer at a `stop_sequences` member the
 	// caller named, and stopSequence is the marker that did. Anthropic reports
 	// both on the closing message_delta, so a cut is distinguishable from a model
-	// that simply finished — which is the one thing the OpenAI wire cannot say.
+	// that simply finished, which is the one thing the OpenAI wire cannot say.
 	stop         *stopGuard
 	stopSequence string
 }
@@ -157,6 +145,13 @@ func (s *ClaudeStreamState) Finish() [][]byte {
 // reported none.
 func (s *ClaudeStreamState) Usage() *schema.Usage { return s.usage }
 
+// mergeUsage folds one Anthropic usage block into the passthrough stream's
+// accounting, so a message_delta that names only the output side keeps the
+// prompt the message_start reported.
+func (s *ClaudeStreamState) mergeUsage(usage object) {
+	s.usage = mergedClaudeUsage(s.usage, usage)
+}
+
 // forwardClaude re-emits an Anthropic event the upstream already framed, keeping
 // the client's identity for the opening message.
 func (s *ClaudeStreamState) forwardClaude(chunk object) [][]byte {
@@ -165,10 +160,15 @@ func (s *ClaudeStreamState) forwardClaude(chunk object) [][]byte {
 			if id := stringField(message, "id"); id != "" && s.ID == "" {
 				s.ID = id
 			}
+			// message_start carries its numbers inside the message; message_delta
+			// carries them at the top level. The passthrough must read both
+			// places or the prompt side is never accounted for at all.
+			if usage, ok := objectField(message, "usage"); ok {
+				s.mergeUsage(usage)
+			}
 		}
 		if usage, ok := objectField(chunk, "usage"); ok {
-			parsed := ClaudeUsageToOpenAI(claudeUsageFromObject(usage))
-			s.usage = &parsed
+			s.mergeUsage(usage)
 		}
 		s.started = true
 		return [][]byte{eventFrame(eventType, mustJSON(chunk))}

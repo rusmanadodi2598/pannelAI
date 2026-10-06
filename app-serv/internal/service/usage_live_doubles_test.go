@@ -2,16 +2,11 @@
 //
 // @file      internal/service/usage_live_doubles_test.go
 // @for       The doubles and fixtures the live Usage service tests drive.
-//
 // @uses      internal/domain, internal/repository, context, sync, testing, time.
-// @reason    Two seams and one record builder, kept apart from the tests that
-//
-//	use them so each test file stays inside the AGENTS.md §1.1 budget and
-//	so a case reads as its own rule rather than as its own scaffolding.
-//
+// @reason    Two seams and one record builder, kept apart from the tests that use them so each test file stays inside the AGENTS.md §1.1 budget and so a case reads as its own rule rather than as its own scaffolding.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

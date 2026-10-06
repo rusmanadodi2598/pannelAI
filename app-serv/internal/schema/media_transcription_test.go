@@ -1,24 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/media_transcription_test.go
-// @for       The upload bound and the upload-name reduction that keep a
-//
-//	transcription from steering an upstream's storage or exhausting the
-//	gateway (SPEC-API-001 §7.10, OWASP A01/A10).
-//
-// @uses      bytes, errors, mime/multipart, net/http, net/http/httptest,
-//
-//	strings, testing.
-//
-// @reason    A mitigation must hold for the whole class, not one payload
-//
-//	(OWASP §2.2/§2.4), so each table carries the benign inputs that must
-//	survive alongside the shapes that must be refused, and the
-//	trailing-separator case the first implementation missed.
-//
+// @for       The upload bound and the upload-name reduction that keep a transcription from steering an upstream's storage or exhausting the gateway (SPEC-API-001 §7.10, OWASP A01/A10).
+// @uses      bytes, errors, mime/multipart, net/http, net/http/httptest, strings, testing.
+// @reason    A mitigation must hold for the whole class, not one payload (OWASP §2.2/§2.4), so each table carries the benign inputs that must survive alongside the shapes that must be refused, and the trailing-separator case the first implementation missed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 

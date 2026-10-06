@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/settings_reasoning_test.go
-// @for       The reasoning group's vocabulary, its per-provider resolution, and
-//
-//	the whole-map patch rule.
-//
+// @for       The reasoning group's vocabulary, its per-provider resolution, and the whole-map patch rule.
 // @uses      strings, testing.
-// @reason    SPEC-API-001 §7.14 stores one thinking mode per provider, and the
-//
-//	data plane injects it only when the client carries no reasoning
-//	intent of its own. AGENTS.md §2.1 requires the rule proven beside the
-//	group: a mode the injection cannot execute must never be stored, and
-//	"auto" must stay the absence of an entry rather than a value.
-//
+// @reason    SPEC-API-001 §7.14 stores one thinking mode per provider, and the data plane injects it only when the client carries no reasoning intent of its own. AGENTS.md §2.1 requires the rule proven beside the group: a mode the injection cannot execute must never be stored, and "auto" must stay the absence of an entry rather than a value.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package domain
 

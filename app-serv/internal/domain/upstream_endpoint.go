@@ -2,20 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_endpoint.go
-// @for       The UpstreamEndpoint aggregate root: one configured account at a
-//
-//	provider and the keys routing may spend for it (SPEC-API-001 §5, §7.5).
-//
+// @for       The UpstreamEndpoint aggregate root: one configured account at a provider and the keys routing may spend for it (SPEC-API-001 §5, §7.5).
 // @uses      internal/domain (ULID, AppError constructors, UpstreamKey).
-// @reason    The endpoint is the mutation boundary for its keys (AGENTS.md
-//
-//	§2.2): "the endpoint must keep one usable credential" is a rule
-//	about the collection, so it cannot live on a key, and the router
-//	reads the ordering this type owns.
-//
+// @reason    The endpoint is the mutation boundary for its keys (AGENTS.md §2.2): "the endpoint must keep one usable credential" is a rule about the collection, so it cannot live on a key, and the router reads the ordering this type owns.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
@@ -43,7 +35,7 @@ type UpstreamEndpoint struct {
 	updatedAt        time.Time
 	keys             []UpstreamKey
 
-	// The connection-parity fields (draft 017 §4.1b). Their rules live in
+	// The connection-parity fields. Their rules live in
 	// upstream_endpoint_parity.go.
 	globalPriority      int
 	defaultModel        string
@@ -185,7 +177,9 @@ func (e *UpstreamEndpoint) Update(label string, priority int, status string, now
 	return nil
 }
 
-// SetAccount replaces the identifying fields of the account.
+// SetAccount replaces the identifying fields of the account. The email is already
+// in its canonical spelling, because an EndpointAccount can only be built through
+// NewEndpointAccount or the repository's rehydrate path, both of which normalize it.
 func (e *UpstreamEndpoint) SetAccount(account EndpointAccount, now time.Time) {
 	e.account = account
 	e.updatedAt = now
@@ -197,23 +191,10 @@ func (e *UpstreamEndpoint) SetOAuth(credential *OAuthCredential, now time.Time) 
 	e.updatedAt = now
 }
 
-// RecordTest stores the outcome of a connectivity test.
+// RecordTest stores the outcome of a connectivity test, collapsing a state the
+// aggregate does not name to the failure spelling so the stored value stays inside
+// the two states the panel and the response schema can render.
 func (e *UpstreamEndpoint) RecordTest(state string, latencyMS int, message string, now time.Time) {
-	checked := now
-	e.testStatus = EndpointTestStatus{State: state, LatencyMS: latencyMS, CheckedAt: &checked, Message: message}
-	e.updatedAt = now
-}
-
-// MarkRateLimited puts the whole endpoint in a backoff window, which is what a
-// provider-wide quota rejection means: every key of this account is affected.
-func (e *UpstreamEndpoint) MarkRateLimited(until time.Time) {
-	window := until
-	e.rateLimitedUntil = &window
-}
-
-// ClearRateLimit lifts the endpoint-wide window after a served request.
-func (e *UpstreamEndpoint) ClearRateLimit(now time.Time) {
-	e.rateLimitedUntil = nil
-	e.lastUsedAt = &now
+	e.testStatus = NewEndpointTestStatus(state, latencyMS, message, now)
 	e.updatedAt = now
 }

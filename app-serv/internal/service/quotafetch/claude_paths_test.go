@@ -3,15 +3,10 @@
 // @file      internal/service/quotafetch/claude_paths_test.go
 // @for       Pinning that a registry-declared oauth_url or settings_url moves the call Claude makes.
 // @uses      context, net/http, strings, testing.
-// @reason    `oauth_url` is the key the original defect turned on: the registry declared it, the
-//
-//	service forwarded only `url`, and the family dialled an empty address with no sound. Every
-//	built-in-only test stayed green through that, so the declared spelling is what has to be asked
-//	for here — on the primary read and on the legacy pair it falls back to.
-//
+// @reason    `oauth_url` is the key the original defect turned on: the registry declared it, the service forwarded only `url`, and the family dialled an empty address with no sound. Every built-in-only test stayed green through that, so the declared spelling is what has to be asked for here, on the primary read and on the legacy pair it falls back to.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

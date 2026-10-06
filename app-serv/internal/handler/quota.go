@@ -1,21 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/quota.go
-// @for       The quota window reads, the published-quota read, and the budget-cap
-//
-//	write (SPEC-API-001 §7.12).
-//
+// @for       The quota window reads, the published-quota read, and the budget-cap write (SPEC-API-001 §7.12).
 // @uses      internal/domain, internal/schema, internal/service, net/http.
-// @reason    §7.12 exposes every endpoint's windows, one endpoint's windows, the
-//
-//	provider's own answer about one connection, and the cap that makes
-//	the router skip an exhausted endpoint. The cap body is validated
-//	before the service sees it (AGENTS.md §2.4), and the cost is a
-//	decimal string on the wire, never a float (§4).
-//
+// @reason    §7.12 exposes every endpoint's windows, one endpoint's windows, the provider's own answer about one connection, and the cap that makes the router skip an exhausted endpoint. The cap body is validated before the service sees it (AGENTS.md §2.4), and the cost is a decimal string on the wire, never a float (§4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package handler
 
@@ -32,7 +23,6 @@ type QuotaHandler struct {
 	quotas *service.QuotaService
 }
 
-// NewQuotaHandler validates deps and returns the handler.
 func NewQuotaHandler(quotas *service.QuotaService) *QuotaHandler {
 	return &QuotaHandler{quotas: quotas}
 }
@@ -42,7 +32,7 @@ func NewQuotaHandler(quotas *service.QuotaService) *QuotaHandler {
 // group, so one page carries whole cards; per_page counts groups on this route,
 // and the meta block reports the total group count. The params go through the
 // house decoder, so an out-of-range value is a refusal rather than a clamp
-// (SPEC-API-001 §4, draft 010 F6).
+// (SPEC-API-001 §4).
 func (h *QuotaHandler) List(w http.ResponseWriter, r *http.Request) {
 	page, perPage, err := schema.DecodePage(r)
 	if err != nil {
@@ -113,7 +103,7 @@ func (h *QuotaHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // PutCap serves PUT /api/v1/quotas/{endpoint_id}: it replaces the cap set for
 // one endpoint and returns the stored value. An endpoint the gateway does not
-// know is refused by the service with NOT_FOUND (draft 005 F2).
+// know is refused by the service with NOT_FOUND.
 func (h *QuotaHandler) PutCap(w http.ResponseWriter, r *http.Request) {
 	endpointID := r.PathValue("endpoint_id")
 	var req schema.QuotaCapRequest
@@ -144,15 +134,11 @@ func (h *QuotaHandler) PutCap(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUsage serves GET /api/v1/quotas/{endpoint_id}/usage: the provider's own
-// answer about one connection's allocation. It is a separate body from Get because
-// the two answers disagree by nature and neither is the other's correction
-// (draft 036 §6): §7.12's windows say what this gateway sent, this says what the
-// provider sold.
-//
-// The answer comes from the poll worker's cache by default. `?force=1` is the
-// operator's explicit press on one card and asks the provider now — one call for
-// one account, which is the same seam the reference's per-card refresh uses, and
-// the reason the page itself never has to fan out.
+// answer about one connection's allocation. It is a separate body from Get
+// because the two disagree by nature and neither is the other's correction: the
+// quota windows say what this gateway sent, this says what the provider sold.
+// The answer comes from the poll worker's cache by default; `?force=1` asks the
+// provider now, one call for one account, so the page itself never fans out.
 func (h *QuotaHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	usage, err := h.quotas.PublishedUsage(r.Context(), r.PathValue("endpoint_id"), wantForce(r))
 	if err != nil {
@@ -163,8 +149,8 @@ func (h *QuotaHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 }
 
 // wantForce reads the one query flag this route honours. Anything but a literal "1"
-// is a cache read, because a value the operator did not type — a stale bookmark, a
-// proxy that rewrites it — must not turn a page load into provider traffic.
+// is a cache read, because a value the operator did not type, a stale bookmark, a
+// proxy that rewrites it, must not turn a page load into provider traffic.
 func wantForce(r *http.Request) bool {
 	return r.URL.Query().Get("force") == "1"
 }

@@ -1,21 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/usage_route_helpers_test.go
-// @for       The shared table runner, assertion path, and pinned window for the
-//
-//	§7.12 usage route tests.
-//
+// @for       The shared table runner, assertion path, and pinned window for the §7.12 usage route tests.
 // @uses      encoding/json, net/http, net/http/httptest, strings, testing, time.
-// @reason    The summary/timeseries tests and the records/detail tests ask the
-//
-//	same questions of a response, and draft 010 F1's tables grew both
-//	files past the AGENTS.md §1.1 warning line. Keeping the walkers
-//	here means a route file reads as cases rather than as plumbing,
-//	and the two files stay inside the budget.
-//
+// @reason    The summary/timeseries tests and the records/detail tests ask the same questions of a response, and draft 010 F1's tables grew both files past the AGENTS.md §1.1 warning line. Keeping the walkers here means a route file reads as cases rather than as plumbing, and the two files stay inside the budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package handler
 

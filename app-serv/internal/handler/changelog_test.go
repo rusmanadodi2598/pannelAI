@@ -3,15 +3,10 @@
 // @file      internal/handler/changelog_test.go
 // @for       The §7.18 release notes' ordering and completeness.
 // @uses      net/http/httptest, encoding/json, testing.
-// @reason    The panel renders the entries as served, so the tests pin the
-//
-//	shape a consumer relies on: newest first, every field populated,
-//	and the version line anchored at the skeleton tag the repository
-//	actually carries.
-//
+// @reason    The panel renders the entries as served, so the tests pin the shape a consumer relies on: newest first, every field populated, and the version line anchored at the skeleton tag the repository actually carries.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package handler
 

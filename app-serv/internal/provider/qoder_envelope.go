@@ -1,23 +1,18 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_envelope.go
-// @for       Streaming Qoder answers through the envelope unwrap: the peek that
-//
-//	decides the call, and the body the core then reads.
-//
+// @for       Streaming Qoder answers through the envelope unwrap: the peek that decides the call, and the body the core then reads.
 // @uses      bufio, errors, io, net/http.
-// @reason    Qoder answers a chat with HTTP 200 and puts the real status inside
+// @reason    Qoder answers a chat with HTTP 200 and puts the real status inside each frame (measured, draft 036 §5.1). Without unwrapping, a spent account would be piped to the client as an answer and billed as one.
 //
-//	each frame (measured, draft 036 §5.1). Without unwrapping, a spent
-//	account would be piped to the client as an answer and billed as one.
 //	The first frame is therefore read before anything is piped, so a
 //	refusal there becomes a failure the router can act on. Reading one
 //	frame and deciding what its refusal means live in
 //	qoder_envelope_frame.go.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -33,9 +28,9 @@ import (
 //
 // The frames after the first carry the same wrapper, so the unwrap is a line
 // transform and the answer's own JSON survives byte-for-byte. That is what lets the
-// core's stream state keep doing the job it already does — one finish_reason and one
-// usage delivery, which is exactly Qoder's finish-then-usage pattern (draft 034 F2) —
-// instead of this connector growing a provider-specific coalescer.
+// core's stream state keep doing the job it already does, one finish_reason and one
+// usage delivery, which is exactly Qoder's finish-then-usage pattern, instead of
+// this connector growing a provider-specific coalescer.
 func (c *Qoder) OpenStream(body io.ReadCloser) (io.ReadCloser, *StreamFailure) {
 	if body == nil {
 		return nil, &StreamFailure{Status: http.StatusBadGateway, Message: "the provider sent no stream"}

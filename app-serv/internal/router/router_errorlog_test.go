@@ -1,23 +1,12 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_errorlog_test.go
-// @for       The §1.6/§8 rule that a failed request names its error code on the
-//
-//	access log line (register G9).
-//
+// @for       The §1.6/§8 rule that a failed request names its error code on the access log line (register G9).
 // @uses      bytes, log/slog, net/http, net/http/httptest, strings, testing.
-// @reason    The access line already carried the status and the request id; what
-//
-//	it lacked was the "why", so a media 502 or an OAuth callback 500
-//	named nothing an operator could act on. The code travels from the
-//	envelope writers to the logging recorder through the writer chain, so
-//	these tests drive the real mux rather than the recorder alone — the
-//	envelope middleware's forwarding is exactly what they pin — and they
-//	pin the negative case too: a served request must carry no code field.
-//
+// @reason    The access line already carried the status and the request id; what it lacked was the "why", so a media 502 or an OAuth callback 500 named nothing an operator could act on. The code travels from the envelope writers to the logging recorder through the writer chain, so these tests drive the real mux rather than the recorder alone, the envelope middleware's forwarding is exactly what they pin, and they pin the negative case too: a served request must carry no code field.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package router
 
@@ -52,9 +41,9 @@ func accessLine(t *testing.T, buffer *bytes.Buffer) string {
 	return lines[len(lines)-1]
 }
 
-// TestRoutes_AccessLogNamesTheFailureCode pins register G9: a failed request's
+// TestRoutes_AccessLogNamesTheFailureCode pins that a failed request's
 // access line carries the machine code beside the request id, whichever envelope
-// wrote it — a handler's management error, the mux's own 404/405, or a data-plane
+// wrote it, a handler's management error, the mux's own 404/405, or a data-plane
 // error. The media-wired fixture is the one router that carries both a
 // management and a data-plane route, so one table can cover all three writers.
 func TestRoutes_AccessLogNamesTheFailureCode(t *testing.T) {

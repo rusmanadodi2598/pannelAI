@@ -3,21 +3,12 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/filters.go
-// @for       The filter registry: the twelve canonical names and their
-//
-//	implementations.
-//
+// @for       The filter registry: the twelve canonical names and their implementations.
 // @uses      internal/domain (the canonical name list).
-// @reason    SPEC-API-002 §4 makes the name list the contract between the
-//
-//	configuration and the engine, so the registry is a map keyed by
-//	exactly domain.TokenSaverFilters. A test pins that the two agree,
-//	which is what stops a name from being configurable but unimplemented
-//	or implemented but unreachable.
-//
+// @reason    SPEC-API-002 §4 makes the name list the contract between the configuration and the engine, so the registry is a map keyed by exactly domain.TokenSaverFilters. A test pins that the two agree, which is what stops a name from being configurable but unimplemented or implemented but unreachable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

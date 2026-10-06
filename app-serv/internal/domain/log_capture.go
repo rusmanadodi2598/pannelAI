@@ -2,20 +2,16 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/log_capture.go
-// @for       The capture, truncation, and retention rules that decide whether a
-//
-//	byte is stored and for how long.
-//
+// @for       The capture, truncation, and retention rules that decide whether a byte is stored and for how long.
 // @uses      internal/domain (AppError constructors), strings, time.
-// @reason    SPEC-API-001 §7.13 makes body storage conditional on a setting and
+// @reason    SPEC-API-001 §7.13 makes body storage conditional on a setting and truncated to a configured size, with retention deleting older rows.
 //
-//	truncated to a configured size, with retention deleting older rows.
 //	Both rules decide what is persisted, so they live here where a unit
 //	test can exercise the boundary with no database.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 

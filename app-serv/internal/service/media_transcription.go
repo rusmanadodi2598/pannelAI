@@ -1,24 +1,17 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_transcription.go
-// @for       Format-specific transcription request and answer handling for the
+// @for       Format-specific transcription request and answer handling for the §7.10 media plane.
+// @uses      internal/dataplane, internal/registry, internal/schema, encoding/json, mime, strings.
+// @reason    OpenAI-compatible transcription is multipart, while Deepgram's adapter accepts the uploaded audio bytes and returns a nested transcript.
 //
-//	§7.10 media plane.
-//
-// @uses      internal/dataplane, internal/registry, internal/schema, encoding/json,
-//
-//	mime, strings.
-//
-// @reason    OpenAI-compatible transcription is multipart, while Deepgram's
-//
-//	adapter accepts the uploaded audio bytes and returns a nested transcript.
 //	Keeping both shapes here lets the shared media pipeline retain one
 //	selection, health, egress, and accounting path without pretending every
 //	provider speaks the same wire.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

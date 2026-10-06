@@ -3,20 +3,12 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/suffix_test.go
-// @for       The model(level) suffix: its shapes, its vocabulary, and the
-//
-//	strings it must leave untouched.
-//
+// @for       The model(level) suffix: its shapes, its vocabulary, and the strings it must leave untouched.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.15 ports the reference's per-model control, and the
-//
-//	suffix is a client-supplied string on the routing key: a parse that
-//	strips too much renames the model and one that strips too little sends
-//	the suffix upstream. Both are silent, so the shapes are pinned here.
-//
+// @reason    SPEC-API-001 §7.15 ports the reference's per-model control, and the suffix is a client-supplied string on the routing key: a parse that strips too much renames the model and one that strips too little sends the suffix upstream. Both are silent, so the shapes are pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package reasoning
 
@@ -59,26 +51,6 @@ func TestParseSuffix(t *testing.T) {
 				t.Fatalf("ParseSuffix(%q) override = %+v, want %+v", tc.model, got, tc.want)
 			}
 		})
-	}
-}
-
-// TestStripSuffix pins the resolver's view: the group goes, whatever it holds,
-// so an upstream never receives a suffix.
-func TestStripSuffix(t *testing.T) {
-	cases := map[string]string{
-		"gpt-5.5":           "gpt-5.5",
-		"gpt-5.5(high)":     "gpt-5.5",
-		"gpt-5.5(bogus)":    "gpt-5.5",
-		"gpt-5.5()":         "gpt-5.5()",
-		"model(a)extra":     "model(a)extra",
-		"openai/gpt-5(max)": "openai/gpt-5",
-		"gpt-5.5( high ) ":  "gpt-5.5",
-		"a(b)(c)":           "a(b)",
-	}
-	for model, want := range cases {
-		if got := StripSuffix(model); got != want {
-			t.Fatalf("StripSuffix(%q) = %q, want %q", model, got, want)
-		}
 	}
 }
 

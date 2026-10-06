@@ -3,15 +3,10 @@
 // @file      internal/service/media_call_entries_test.go
 // @for       The registry the §7.10 media call tests read.
 // @uses      internal/registry.
-// @reason    The entries are data, not behavior: keeping them beside the doubles
-//
-//	would push media_stub_test.go past the AGENTS.md §1.1 line budget as
-//	G5 ports more adapters, and a test that adds a provider should add one
-//	entry here rather than reshape the fixture.
-//
+// @reason    The entries are data, not behavior: keeping them beside the doubles would push media_stub_test.go past the AGENTS.md §1.1 line budget as G5 ports more adapters, and a test that adds a provider should add one entry here rather than reshape the fixture.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

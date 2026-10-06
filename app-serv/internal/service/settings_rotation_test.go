@@ -1,23 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/settings_rotation_test.go
-// @for       The one settings read the data plane's selector makes: the
-//
-//	credential rotation policy resolved per provider, and its behaviour
-//	over a row written before the keys existed.
-//
+// @for       The one settings read the data plane's selector makes: the credential rotation policy resolved per provider, and its behaviour over a row written before the keys existed.
 // @uses      context, testing, internal/domain.
-// @reason    SPEC-API-001 §7.5 makes the selector consult this read on every
-//
-//	selection. AGENTS.md §2.1 requires it proven beside the service: the
-//	per-provider resolution is what makes the panel's switch govern one
-//	provider rather than every request, and the read path must answer
-//	the documented defaults for a row that predates the keys instead of
-//	handing the selector an unset mode.
-//
+// @reason    SPEC-API-001 §7.5 makes the selector consult this read on every selection. AGENTS.md §2.1 requires it proven beside the service: the per-provider resolution is what makes the panel's switch govern one provider rather than every request, and the read path must answer the documented defaults for a row that predates the keys instead of handing the selector an unset mode.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 

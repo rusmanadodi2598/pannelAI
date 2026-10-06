@@ -7,7 +7,7 @@
 -- rarely fits speech.
 --
 -- The row is an override, not a copy: an empty base_url means "use the
--- registry's", which is why the columns default to '' rather than NULL — the
+-- registry's", which is why the columns default to '' rather than NULL: the
 -- service reads one representation, not two.
 
 CREATE TABLE IF NOT EXISTS media_provider_settings (

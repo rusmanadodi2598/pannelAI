@@ -3,25 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_openai.go
-// @for       Re-framing an upstream stream into OpenAI SSE frames, including the
-//
-//	usage chunk stream_options.include_usage asks for.
-//
+// @for       Re-framing an upstream stream into OpenAI SSE frames, including the usage chunk stream_options.include_usage asks for.
 // @uses      internal/schema.
-// @reason    SPEC-API-001 §4 fixes SSE as the transport and requires a usage chunk
-//
-//	when the client asked for one. Re-framing needs per-stream state
-//	(which content block is open, the next tool-call index, the last
-//	usage), and the state is passed in rather than held in a package
-//	variable, so a test drives every path directly and no clock decides
-//	what a frame contains. The Anthropic-event mapping lives in
-//	translate_stream_openai_claude.go, the usage readers in
-//	translate_usage_read.go, and the upstream chunk re-framing in
-//	translate_stream_openai_frames.go, all for the AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §4 fixes SSE as the transport and requires a usage chunk when the client asked for one. Re-framing needs per-stream state (which content block is open, the next tool-call index, the last usage), and the state is passed in rather than held in a package variable, so a test drives every path directly and no clock decides what a frame contains. The Anthropic-event mapping lives in translate_stream_openai_claude.go, the usage readers in translate_usage_read.go, and the upstream chunk re-framing in translate_stream_openai_frames.go, all for the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -65,7 +52,7 @@ type StreamState struct {
 	// counts as emitted the moment it is forwarded: a second, synthetic one is
 	// what a client counting finish reasons reads as a second answer. A second
 	// finish frame the upstream itself sends is the same harm, so its reason is
-	// stripped while its other members forward (draft 034 F2).
+	// stripped while its other members forward.
 	finishSent bool
 	// includeUsage reports whether the client asked for a usage chunk.
 	includeUsage bool
@@ -80,7 +67,7 @@ type StreamState struct {
 	// usageSent reports whether the client's stream already carried usage: the
 	// gateway's own chunk marks it when emitted, and so does a forwarded frame
 	// that itself carries a usage object, so one stream carries at most one
-	// delivery of the numbers (draft 021 F2, 034 F1). The upstream may state
+	// delivery of the numbers. The upstream may state
 	// them on the finish frame or in a frame after it; whichever form the
 	// client saw, Finish adds nothing once the numbers are on the wire.
 	usageSent bool
@@ -153,7 +140,7 @@ func (s *StreamState) Finish() [][]byte {
 		// The frame is built by the gateway, so it is framed here: a client only
 		// flushes what arrives as a complete event, and an unframed frame glued
 		// onto the terminal marker is what made the panel read the stream as
-		// truncated (draft 021 F1).
+		// truncated.
 		frames = append(frames, Frame(s.chunk(schema.Delta{}, &reason)))
 		s.finishSent = true
 	}

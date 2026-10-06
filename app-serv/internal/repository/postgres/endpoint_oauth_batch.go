@@ -1,27 +1,16 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/endpoint_oauth_batch.go
-// @for       The transactional apply step of the OAuth credential import, and
+// @for       The transactional apply step of the OAuth credential import, and the endpoint UPDATE it shares with the single write path.
+// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, internal/domain, context.
+// @reason    SPEC-API-001 §7.5 imports a batch of already-obtained OAuth credentials, and §8.1 makes that batch all-or-nothing: a refused row must leave no account behind. A row here either creates an endpoint or updates the one that already stands for the account, so the two statements have to run inside one transaction and the UPDATE has to be callable from both a transaction and the pool.
 //
-//	the endpoint UPDATE it shares with the single write path.
-//
-// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn,
-//
-//	internal/domain, context.
-//
-// @reason    SPEC-API-001 §7.5 imports a batch of already-obtained OAuth
-//
-//	credentials, and §8.1 makes that batch all-or-nothing: a refused
-//	row must leave no account behind. A row here either creates an
-//	endpoint or updates the one that already stands for the account,
-//	so the two statements have to run inside one transaction and the
-//	UPDATE has to be callable from both a transaction and the pool.
 //	The execer interface below is that second requirement, and it is
 //	why the UPDATE lives here rather than in endpoint.go.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 
@@ -60,7 +49,7 @@ func (r *EndpointRepository) ImportOAuthBatch(ctx context.Context, endpoints []d
 		for i, endpoint := range endpoints {
 			var err error
 			if existing[i] {
-				err = updateEndpoint(ctx, tx, endpoint)
+				err = updateEndpoint(ctx, tx, endpoint, nil)
 			} else {
 				err = insertEndpoint(ctx, tx, endpoint)
 			}
@@ -74,9 +63,13 @@ func (r *EndpointRepository) ImportOAuthBatch(ctx context.Context, endpoints []d
 
 // updateEndpoint persists an endpoint's own fields through any execer, including
 // its OAuth state (stored as ciphertext) and its account identity. Keys are
-// untouched: they have their own methods because a key change is a different
-// concern.
-func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint) error {
+// untouched: they have their own methods, a key change being a different concern.
+// loaded, when non-nil, makes the write a compare-and-swap on the stored
+// credential: the row is written only while its oauth still carries the two
+// ciphertexts this aggregate was loaded with. An OAuth rotation needs that, because
+// a refresh racing another would write the older credential back and lose the token
+// the vendor had already swapped.
+func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint, loaded *domain.OAuthCredential) error {
 	oauthJSON, err := marshalOAuth(endpoint.OAuth())
 	if err != nil {
 		return err
@@ -89,7 +82,7 @@ func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.Up
 	if err != nil {
 		return err
 	}
-	const q = `
+	q := `
 UPDATE upstream_endpoints
    SET label = $1,
        priority = $2,
@@ -116,11 +109,23 @@ UPDATE upstream_endpoints
 	}
 	args = append(args, parityColumns(endpoint)...)
 	args = append(args, endpoint.ID())
+	if loaded != nil {
+		// Both token fields are omitempty in the stored shape, so a credential that
+		// carries neither is absent from the jsonb rather than present and blank;
+		// COALESCE keeps that row comparable to the empty string the caller holds.
+		q += `
+   AND COALESCE(oauth->>'access_token_encrypted', '')  = $18
+   AND COALESCE(oauth->>'refresh_token_encrypted', '') = $19`
+		args = append(args, loaded.AccessTokenEncrypted(), loaded.RefreshTokenEncrypted())
+	}
 	tag, err := exec.Exec(ctx, q, args...)
 	if err != nil {
 		return translateEndpointError(err)
 	}
 	if tag.RowsAffected() == 0 {
+		if loaded != nil {
+			return domain.NewConflictError("the endpoint changed during this refresh")
+		}
 		return domain.ErrEndpointNotFound
 	}
 	return nil

@@ -1,28 +1,18 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_refresh_policy.go
-// @for       The rules a refresh and a connect decision are made of: which flow
-//
-//	the panel is offered, how a token is renewed, and the small
-//	accessors the refresh state is read through.
-//
+// @for       The rules a refresh and a connect decision are made of: which flow the panel is offered, how a token is renewed, and the small accessors the refresh state is read through.
 // @uses      context, strings, time, internal/domain, internal/registry.
-// @reason    These are the judgements, separated from the two routes that act on
-//
-//	them, so "what does this provider's oauth block mean" is answered in
-//	one place: `flowKind` for the panel's offer, `refreshGrant` for the
-//	shape a renewal takes. Grouping them here also keeps
-//	oauth_flow_refresh.go inside the AGENTS.md §1.1 budget that its own
-//	Status/Refresh routes would otherwise push past.
-//
+// @reason    These are the judgements, separated from the two routes that act on them, so "what does this provider's oauth block mean" is answered in one place: `flowKind` for the panel's offer, `refreshGrant` for the shape a renewal takes. Grouping them here also keeps oauth_flow_refresh.go inside the AGENTS.md §1.1 budget that its own Status/Refresh routes would otherwise push past.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package service
 
 import (
 	"context"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"strings"
 	"time"
 
@@ -50,15 +40,15 @@ func flowKind(oauth *registry.OAuth) string {
 // endpoint and posts an empty body, which no encoding of the standard grant
 // reaches; every other provider answers the ordinary form or JSON grant the
 // reference sends it.
-func (s *OAuthFlowService) refreshGrant(ctx context.Context, oauth *registry.OAuth, refreshToken string) (TokenResponse, error) {
+func (s *OAuthFlowService) refreshGrant(ctx context.Context, oauth *registry.OAuth, refreshToken string) (oauthhttp.TokenResponse, error) {
 	if oauth.StateExchangeFlow() {
-		client, ok := s.tokens.(StateRoundClient)
+		client, ok := s.tokens.(oauthhttp.StateRoundClient)
 		if !ok {
-			return TokenResponse{}, domain.NewInternalError("the state refresh needs a token client that speaks it")
+			return oauthhttp.TokenResponse{}, domain.NewInternalError("the state refresh needs a token client that speaks it")
 		}
 		return client.StateRefresh(ctx, oauth, refreshToken)
 	}
-	grant := TokenGrant{
+	grant := oauthhttp.TokenGrant{
 		GrantType:    "refresh_token",
 		RefreshToken: refreshToken,
 		ClientID:     oauth.ClientID,
@@ -92,12 +82,12 @@ func credentialExpiry(credential *domain.OAuthCredential) *time.Time {
 	if credential == nil {
 		return nil
 	}
-	return credential.ExpiresAt
+	return credential.ExpiresAt()
 }
 
 func lastRefresh(credential *domain.OAuthCredential) *time.Time {
 	if credential == nil {
 		return nil
 	}
-	return credential.LastRefreshAt
+	return credential.LastRefreshAt()
 }

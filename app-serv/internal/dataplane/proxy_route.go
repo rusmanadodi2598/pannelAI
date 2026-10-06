@@ -3,27 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/proxy_route.go
-// @for       The pool-driven dial: one planned walk across the proxy pool with
-//
-//	connect-stage failover and per-candidate transports.
-//
-// @uses      internal/domain, context, errors, fmt, net, net/http, net/url,
-//
-//	sync.
-//
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1/D7-D9: the pool rows are the
-//
-//	route when proxying is on, so the walk is what makes them serve
-//	traffic instead of decorating it. The walk is bounded (D7), only
-//	connect-stage errors fail over (a mid-response death must not
-//	re-send a request the upstream may have answered), each candidate
-//	dials through a clone of the shared client so the egress guard
-//	still sees every address (D8), and the shared client itself keeps
-//	its static proxy behaviour for the callers that do not walk (D9).
-//
+// @for       The pool-driven dial: one planned walk across the proxy pool with connect-stage failover and per-candidate transports.
+// @uses      internal/domain, context, errors, fmt, net, net/http, net/url, sync.
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1/D7-D9: the pool rows are the route when proxying is on, so the walk is what makes them serve traffic instead of decorating it. The walk is bounded (D7), only connect-stage errors fail over (a mid-response death must not re-send a request the upstream may have answered), each candidate dials through a clone of the shared client so the egress guard still sees every address (D8), and the shared client itself keeps its static proxy behaviour for the callers that do not walk (D9).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package dataplane
 

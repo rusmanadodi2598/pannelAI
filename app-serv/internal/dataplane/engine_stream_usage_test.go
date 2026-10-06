@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_stream_usage_test.go
-// @for       The accounting a streamed call reports on its outcome, so the usage
-//
-//	row records the numbers the upstream sent (draft 021 F5).
-//
+// @for       The accounting a streamed call reports on its outcome, so the usage row records the numbers the upstream sent (draft 021 F5).
 // @uses      context, testing.
-// @reason    A streamed call logged 0/0 tokens while the wire carried the
-//
-//	upstream's usage, because the relay leg wrote the usage into the
-//	outcome and the caller overwrote it with the nil the stream branch
-//	returned. The free-tier stand-in reports usage on its finish frame, so
-//	one relayed call is enough to pin the property end to end.
-//
+// @reason    A streamed call logged 0/0 tokens while the wire carried the upstream's usage, because the relay leg wrote the usage into the outcome and the caller overwrote it with the nil the stream branch returned. The free-tier stand-in reports usage on its finish frame, so one relayed call is enough to pin the property end to end.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package dataplane
 

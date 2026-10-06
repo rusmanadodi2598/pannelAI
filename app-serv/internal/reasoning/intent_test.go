@@ -3,21 +3,12 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/intent_test.go
-// @for       The client-intent extractor: every shape the three client wires
-//
-//	can carry, and the priority between them.
-//
+// @for       The client-intent extractor: every shape the three client wires can carry, and the priority between them.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.15 makes the client's own intent outrank the stored
-//
-//	provider mode. An extractor that misses a shape is a client whose
-//	explicit choice is silently overridden, so every shape the port
-//	accepts is pinned here, including the ones the gateway's own DTOs do
-//	not model but a raw body can still carry.
-//
+// @reason    SPEC-API-001 §7.15 makes the client's own intent outrank the stored provider mode. An extractor that misses a shape is a client whose explicit choice is silently overridden, so every shape the port accepts is pinned here, including the ones the gateway's own DTOs do not model but a raw body can still carry.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package reasoning
 

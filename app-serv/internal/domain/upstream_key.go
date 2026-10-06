@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_key.go
-// @for       The UpstreamKey entity: one credential under an upstream endpoint,
-//
-//	with the circuit-breaker state the router reads to decide whether a
-//	key may be used (SPEC-API-001 §7.5).
-//
+// @for       The UpstreamKey entity: one credential under an upstream endpoint, with the circuit-breaker state the router reads to decide whether a key may be used (SPEC-API-001 §7.5).
 // @uses      internal/domain (ULID, AppError constructors).
-// @reason    Key health is a domain rule, not a controller concern: the
-//
-//	threshold and the backoff decide whether a request is served or
-//	failed over, so they are enforced here where no caller can bypass
-//	them, and the stored value is opaque to everything above.
-//
+// @reason    Key health is a domain rule, not a controller concern: the threshold and the backoff decide whether a request is served or failed over, so they are enforced here where no caller can bypass them, and the stored value is opaque to everything above.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 

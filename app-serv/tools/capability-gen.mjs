@@ -45,7 +45,7 @@ const registryFile = path.resolve("internal/registry/registry.yaml");
 
 // parseRegistry reads the two id levels this corpus needs: the provider id at
 // two-space indent and each model id at six-space indent. A full YAML parser is
-// avoided on purpose — the generator must run with no dependency install, and
+// avoided on purpose: the generator must run with no dependency install, and
 // the file is machine-written by registry-gen.mjs so its shape is stable.
 function parseRegistry(text) {
   const providers = [];

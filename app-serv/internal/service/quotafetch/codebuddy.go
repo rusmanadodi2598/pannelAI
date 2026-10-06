@@ -3,14 +3,10 @@
 // @file      internal/service/quotafetch/codebuddy.go
 // @for       Asks one CodeBuddy region's billing endpoint with the identity that region's entry declares.
 // @uses      internal/service/quotafetch, net/http, encoding/json
-// @reason    The billing answer arrives as a doubled envelope behind a refusal-prone POST, so the
-//
-//	request and its two soft failures belong here; how the credit packages inside it
-//	become windows is read by codebuddy_packs.go.
-//
+// @reason    The billing answer arrives as a doubled envelope behind a refusal-prone POST, so the request and its two soft failures belong here; how the credit packages inside it become windows is read by codebuddy_packs.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package quotafetch
 
@@ -18,6 +14,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -93,7 +90,7 @@ func readCodeBuddy(ctx context.Context, family codebuddyFamily, creds Credential
 }
 
 // codebuddyHeaders prefers the identification the provider's registry entry
-// declares, falling back to the family's copy for a caller that handed no entry —
+// declares, falling back to the family's copy for a caller that handed no entry,
 // the same order the endpoint resolution follows, so headers cannot travel to a
 // host that was chosen from a different declaration.
 func codebuddyHeaders(family codebuddyFamily, creds Credentials) map[string]string {
@@ -122,20 +119,30 @@ func (e billingRejected) Error() string {
 }
 
 func postCodeBuddy(ctx context.Context, endpoint string, headers map[string]string, token string) (codebuddyEnvelope, error) {
+	// The bearer is merged before the request is built so the same map that goes on
+	// the wire is the one presentedSecrets reads. A Go transport error carries the
+	// URL and a provider's `msg` field can quote the request it refused, and both
+	// end up as a sentence the poll worker caches.
+	sent := make(map[string]string, len(headers)+1)
+	for key, value := range headers {
+		sent[key] = value
+	}
+	sent["Authorization"] = "Bearer " + token
+	sent["Accept"] = "application/json"
+	secrets := presentedSecrets(endpoint, sent)
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewBufferString("{}"))
 	if err != nil {
-		return codebuddyEnvelope{}, err
+		return codebuddyEnvelope{}, errors.New(scrubText(err.Error(), secrets))
 	}
-	request.Header.Set("Authorization", "Bearer "+token)
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Accept", "application/json")
-	for key, value := range headers {
+	for key, value := range sent {
 		request.Header.Set(key, value)
 	}
 
 	response, err := client.Do(request)
 	if err != nil {
-		return codebuddyEnvelope{}, err
+		return codebuddyEnvelope{}, errors.New(scrubText(err.Error(), secrets))
 	}
 	defer func() { _ = response.Body.Close() }()
 
@@ -155,7 +162,7 @@ func postCodeBuddy(ctx context.Context, endpoint string, headers map[string]stri
 		return codebuddyEnvelope{}, err
 	}
 	if envelope.Code != 0 {
-		message := envelope.Msg
+		message := scrubText(envelope.Msg, secrets)
 		if message == "" {
 			message = "unknown"
 		}

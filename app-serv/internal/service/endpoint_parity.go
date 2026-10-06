@@ -1,23 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_parity.go
-// @for       The one rule the connection-parity fields need beyond the
-//
-//	aggregate's own validation: a proxy binding must name a stored pool.
-//
+// @for       The one rule the connection-parity fields need beyond the aggregate's own validation: a proxy binding must name a stored pool.
 // @uses      internal/domain, context, strings.
-// @reason    Draft 017 §4.1b adds `proxy_pool_id` to an endpoint, and a dangling
-// //
-//
-//	id is the failure mode that matters: the column would hold a name that
-//	resolves to nothing, so an operator who deleted a pool would leave
-//	endpoints pointing at it with no error anywhere. The check lives here
-//	rather than in the domain because the proxy table is another aggregate,
-//	and a domain type must not read a repository (AGENTS.md §1.5).
-//
+// @reason    Draft 017 §4.1b adds `proxy_pool_id` to an endpoint, and a dangling id is the failure mode that matters: the column would hold a name that resolves to nothing, so an operator who deleted a pool would leave endpoints pointing at it with no error anywhere. The check lives here rather than in the domain because the proxy table is another aggregate, and a domain type must not read a repository (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 

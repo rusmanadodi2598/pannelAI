@@ -3,15 +3,10 @@
 // @file      internal/handler/provider.go
 // @for       The provider registry routes (SPEC-API-001 §7.4).
 // @uses      internal/schema, internal/service, net/http.
-// @reason    §7.4 serves the registry read-only, and AGENTS.md §1.5 keeps the
-//
-//	filtering and the store read in the service: this layer decodes a bounded
-//	filter, calls, and maps. Routability travels with every row because §8
-//	makes it the field a client reads before configuring an account.
-//
+// @reason    §7.4 serves the registry read-only, and AGENTS.md §1.5 keeps the filtering and the store read in the service: this layer decodes a bounded filter, calls, and maps. Routability travels with every row because §8 makes it the field a client reads before configuring an account.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package handler
 
@@ -28,7 +23,6 @@ type ProviderHandler struct {
 	providers *service.ProviderService
 }
 
-// NewProviderHandler validates deps and returns the handler.
 func NewProviderHandler(providers *service.ProviderService) *ProviderHandler {
 	return &ProviderHandler{providers: providers}
 }
@@ -96,15 +90,11 @@ func (h *ProviderHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 // Models serves GET /api/v1/providers/{provider_id}/models.
 //
-// The body names where the list came from. A registry provider answers from the
-// embedded document; a custom node's list is read from its own upstream, and a
-// node whose upstream cannot answer falls back to what the registry holds with a
-// warning — never a 5xx, because a node whose upstream is down still routes.
-//
-// The `?suggested` parameter is gone. §7.4 used to name it and the embedded
-// registry never carried a suggestion flag, so it filtered nothing while the
-// body answered `suggested: true` for every row; the reference has no such
-// parameter either (draft 017 §4.5). `source` is what replaced it.
+// The body names where the list came from: a registry provider answers from the
+// embedded document, a custom node from its own upstream. A node whose upstream
+// cannot answer falls back to what the registry holds, with a warning and never a
+// 5xx, because a node whose upstream is down still routes. `?suggested` is not
+// supported; `source` is the field that replaced it.
 func (h *ProviderHandler) Models(w http.ResponseWriter, r *http.Request) {
 	providerID, ok := pathValue(w, r, "provider_id")
 	if !ok {

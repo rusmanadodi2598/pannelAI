@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_node_combo_guard_test.go
-// @for       The node-delete guard draft 028 F3 adds: a delete refuses while a
-//
-//	stored combo still lists the node as a member, in either spelling the
-//	router accepts.
-//
+// @for       The node-delete guard draft 028 F3 adds: a delete refuses while a stored combo still lists the node as a member, in either spelling the router accepts.
 // @uses      internal/domain, internal/registry, context, strings, testing, time.
-// @reason    A combo member that outlives its provider is attempted on every
-//
-//	request and answers with a refusal about a model the client never
-//	named, which is exactly the defect draft 028 measured. The guard is
-//	the write-time half of the fix, so it is pinned here rather than only
-//	in the relay tests that pin the read-time half.
-//
+// @reason    A combo member that outlives its provider is attempted on every request and answers with a refusal about a model the client never named, which is exactly the defect draft 028 measured. The guard is the write-time half of the fix, so it is pinned here rather than only in the relay tests that pin the read-time half.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 

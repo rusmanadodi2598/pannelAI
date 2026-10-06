@@ -3,17 +3,10 @@
 // @file      internal/dataplane/translate_stream_responses_tools_test.go
 // @for       Table-driven tests for streamed tool calls and stream completion.
 // @uses      testing.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and a
-//
-//	streamed call is where the two wires differ most: the Responses
-//	stream opens a call by name and then feeds its arguments in
-//	fragments, so the index the fragments attach to is state the mapper
-//	has to keep. The finish reason and the failure frame are pinned
-//	here with it, since all three close the same stream.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and a streamed call is where the two wires differ most: the Responses stream opens a call by name and then feeds its arguments in fragments, so the index the fragments attach to is state the mapper has to keep. The finish reason and the failure frame are pinned here with it, since all three close the same stream.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

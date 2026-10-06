@@ -2,20 +2,15 @@
 //
 // @file      internal/router/router_dataplane_routes_test.go
 // @for       Route-table tests for the §7.15 Responses data-plane route.
-// @uses      internal/dataplane, internal/handler, internal/schema,
+// @uses      internal/dataplane, internal/handler, internal/schema, internal/service, net/http, net/http/httptest, strings, testing.
+// @reason    AGENTS.md §2.1 requires a validation-failure case per route, and §7.15's Responses route is the one a coding agent calls, so a forgotten registration would look like an outage rather than a 404.
 //
-//	internal/service, net/http, net/http/httptest, strings, testing.
-//
-// @reason    AGENTS.md §2.1 requires a validation-failure case per route, and
-//
-//	§7.15's Responses route is the one a coding agent calls, so a
-//	forgotten registration would look like an outage rather than a 404.
 //	The service is deliberately unwired: every case below fails in the
 //	route's own decode and validation, which is what the route owns.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package router
 

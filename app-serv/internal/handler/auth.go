@@ -3,10 +3,7 @@
 // @file      internal/handler/auth.go
 // @for       Dashboard authentication HTTP endpoints and session guard.
 // @uses      internal/clientip, internal/schema, internal/service, net, net/http.
-// @reason    SPEC-API-001 §7.2 defines the public auth contract while the
-//
-//	gateway-key management surface must reject unauthenticated calls.
-//
+// @reason    SPEC-API-001 §7.2 defines the public auth contract while the gateway-key management surface must reject unauthenticated calls.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable
@@ -16,8 +13,6 @@ package handler
 import (
 	"net"
 	"net/http"
-	"strconv"
-	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/clientip"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
@@ -33,7 +28,7 @@ type AuthHandler struct {
 
 // NewAuthHandler validates dependencies and returns an auth HTTP handler. The
 // trusted-proxy set decides which address the login limiter buckets a request
-// under; nil keeps every request on its direct peer (draft 042 R20).
+// under; nil keeps every request on its direct peer.
 func NewAuthHandler(auth *service.AuthService, cookie SessionCookieOptions, trustedProxies []*net.IPNet) *AuthHandler {
 	return &AuthHandler{auth: auth, cookie: cookie, proxies: trustedProxies}
 }
@@ -119,19 +114,7 @@ func (h *AuthHandler) RequireSession(next http.Handler) http.Handler {
 }
 
 // clientAddress answers which client the login limiter buckets this request
-// under — the same trusted-proxy rule the gateway limiter uses (draft 042 R20).
+// under, the same trusted-proxy rule the gateway limiter uses.
 func (h *AuthHandler) clientAddress(r *http.Request) string {
 	return clientip.Address(r.RemoteAddr, r.Header.Get("X-Forwarded-For"), h.proxies)
-}
-
-// RetryAfterSeconds converts a duration into the HTTP Retry-After value.
-func RetryAfterSeconds(d time.Duration) string {
-	return strconv.FormatInt(maxInt64(1, int64((d+time.Second-1)/time.Second)), 10)
-}
-
-func maxInt64(a, b int64) int64 {
-	if a > b {
-		return a
-	}
-	return b
 }

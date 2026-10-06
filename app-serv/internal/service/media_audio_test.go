@@ -2,19 +2,11 @@
 //
 // @file      internal/service/media_audio_test.go
 // @for       The speech, transcription, and voice payloads of §7.10.
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	encoding/json, mime/multipart, strings, testing.
-//
-// @reason    Each route's contract with its upstream is what these cases pin:
-//
-//	the speech payload the OpenAI shape expects, the multipart parts a
-//	transcription must carry, and which providers can answer a voice
-//	catalog at all.
-//
+// @uses      internal/dataplane, internal/domain, internal/schema, context, encoding/json, mime/multipart, strings, testing.
+// @reason    Each route's contract with its upstream is what these cases pin: the speech payload the OpenAI shape expects, the multipart parts a transcription must carry, and which providers can answer a voice catalog at all.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

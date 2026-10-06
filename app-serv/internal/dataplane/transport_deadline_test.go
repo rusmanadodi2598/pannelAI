@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/transport_deadline_test.go
-// @for       The deadline one outbound attempt runs under, per the client's shape
-//
-//	and the registry's override (draft 021, the fold's missing bound).
-//
+// @for       The deadline one outbound attempt runs under, per the client's shape and the registry's override (draft 021, the fold's missing bound).
 // @uses      testing, time, internal/registry.
-// @reason    A client that asked for one body stayed unbounded when its provider
-//
-//	refused a non-streaming request and the gateway folded a stream
-//	instead, because the deadline was chosen from the rewritten upstream
-//	shape. The rule is a pure function of the two inputs, so it is pinned
-//	here with no network (AGENTS.md §2.1).
-//
+// @reason    A client that asked for one body stayed unbounded when its provider refused a non-streaming request and the gateway folded a stream instead, because the deadline was chosen from the rewritten upstream shape. The rule is a pure function of the two inputs, so it is pinned here with no network (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package dataplane
 

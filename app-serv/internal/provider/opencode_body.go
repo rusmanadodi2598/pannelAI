@@ -4,22 +4,10 @@
 // @file      internal/provider/opencode_body.go
 // @for       The request shape the OpenCode Free tier accepts.
 // @uses      encoding/json.
-// @reason    The free tier answers 403 unless the outbound body both streams and
-//
-//	carries the bash and read decoy tools, and the Responses wire answers
-//	400 to `max_tokens`, to a `tool_choice` other than `auto`, and to an
-//	output ceiling below 16. Those rules are the provider's, so they are
-//	applied here rather than by a branch on the provider id in the
-//	translation layer. Everything is a set union or a rename over the
-//	client's own body: the client's tools, ceiling, and items all survive,
-//	because a gateway that dropped them would answer a different question
-//	than the one it was asked. A ceiling that survives is still raised to the
-//	minimum the model declares, because a reasoning model spends a smaller one
-//	on thinking and returns an empty body the upstream counts as success.
-//
+// @reason    The free tier answers 403 unless the outbound body both streams and carries the bash and read decoy tools, and the Responses wire answers 400 to `max_tokens`, to a `tool_choice` other than `auto`, and to an output ceiling below 16. Those rules are the provider's, so they are applied here rather than by a branch on the provider id in the translation layer. Everything is a set union or a rename over the client's own body: the client's tools, ceiling, and items all survive, because a gateway that dropped them would answer a different question than the one it was asked. A ceiling that survives is still raised to the minimum the model declares, because a reasoning model spends a smaller one on thinking and returns an empty body the upstream counts as success.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-21
 package provider
 
@@ -47,8 +35,8 @@ var openCodeDecoyNames = []string{openCodeDecoyBash, openCodeDecoyRead}
 
 // The Responses item type that carries a prior turn's reasoning. It is dropped
 // because the free tier pools anonymous credentials and a reasoning item is
-// bound to the caller it was issued to (the reference's sanitizeResponsesItems,
-// commit eafac37d).
+// bound to the caller it was issued to (the reference's own
+// sanitizeResponsesItems).
 const openCodeReasoningItem = "reasoning"
 
 // TransformRequest rewrites the outbound body into the shape the free tier
@@ -148,7 +136,7 @@ func openCodeOutputFloor(model registry.Model) int {
 }
 
 // clampOpenCodeCeiling raises an integer ceiling below the floor this request's
-// model needs. A ceiling the client never sent stays absent — raising a value
+// model needs. A ceiling the client never sent stays absent, raising a value
 // that exists is the narrow licence, inventing one the client did not ask for is
 // not. A member that is not a JSON integer is left exactly as the client wrote
 // it: the upstream's own validation answers for it, and rewriting a malformed

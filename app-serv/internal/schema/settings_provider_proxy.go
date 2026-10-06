@@ -1,20 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/settings_provider_proxy.go
-// @for       The per-provider proxy binding on the wire: its patch shape and
-//
-//	the two conversions between the domain map and JSON.
-//
+// @for       The per-provider proxy binding on the wire: its patch shape and the two conversions between the domain map and JSON.
 // @uses      internal/domain (ProviderProxy).
-// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D1 puts one binding per
-//
-//	provider in the settings document; the type and its conversions
-//	live here so settings_patch.go keeps one concern and stays under
-//	the file limit (AGENTS.md §1.1).
-//
+// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D1 puts one binding per provider in the settings document; the type and its conversions live here so settings_patch.go keeps one concern and stays under the file limit (AGENTS.md §1.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package schema
 

@@ -3,16 +3,10 @@
 // @file      internal/repository/postgres/usage.go
 // @for       Usage recording and the summary aggregation over usage_records.
 // @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository.
-// @reason    SPEC-API-001 §7.12 answers the summary read from one table and §6
-//
-//	indexes exactly the group-by dimensions offered. Recording is
-//	idempotent on the record's own id so a retried reporter call cannot
-//	double-count, and the group-by column is interpolated only from the
-//	closed domain set, never from caller text (AGENTS.md §1.7).
-//
+// @reason    SPEC-API-001 §7.12 answers the summary read from one table and §6 indexes exactly the group-by dimensions offered. Recording is idempotent on the record's own id so a retried reporter call cannot double-count, and the group-by column is interpolated only from the closed domain set, never from caller text (AGENTS.md §1.7).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 
@@ -38,11 +32,11 @@ const usageRecordColumns = `id, request_id, ts, coalesce(endpoint_id, ''), provi
 // `q` filter matches a case-insensitive substring of the row's identity or
 // error code as well as its model, because the panel's placeholder promises a
 // request id and an error code and an operator searching the id on screen must
-// not read an empty table (draft 010 F8, owner decision D4 = expand). A NULL
-// error_code needs no coalesce: `false OR NULL` excludes a row exactly as
-// `false` does, and the other three columns are NOT NULL, so the OR can only
-// add a match, never lose one. Keeping the FROM here means a read cannot
-// accidentally omit the table and reference bare columns.
+// not read an empty table. A NULL error_code needs no coalesce: `false OR
+// NULL` excludes a row exactly as `false` does, and the other three columns
+// are NOT NULL, so the OR can only add a match, never lose one. Keeping the
+// FROM here means a read cannot accidentally omit the table and reference
+// bare columns.
 const usageFilterClause = `
 	  FROM usage_records
 	 WHERE ts >= $1 AND ts <= $2
@@ -91,7 +85,7 @@ func NewUsageRepository(pool *pgxpool.Pool) *UsageRepository {
 // It is idempotent on the row's own id: recording the same record twice leaves
 // one row, so a reporter that retries after a timeout does not double-count.
 // Two calls carrying one request_id but different ids are two rows, which is
-// intended — a client retrying a gateway request is a second request and is
+// intended, a client retrying a gateway request is a second request and is
 // billed as one.
 func (r *UsageRepository) Record(ctx context.Context, record domain.UsageRecord) error {
 	const q = `

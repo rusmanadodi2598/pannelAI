@@ -3,18 +3,10 @@
 // @file      internal/handler/openapi_dto_test.go
 // @for       Contract-to-DTO agreement on property names.
 // @uses      encoding/json, reflect, sort, strings, testing, internal/schema.
-// @reason    AGENTS.md §2.4 CDD requires the published contract to be validated
-//
-//	against the typed structs, and the two can drift silently: a renamed
-//	json tag changes the wire while the YAML keeps describing the old
-//	field. This test pins the property set of every schema whose name
-//	matches a schema-package struct, so a rename fails here instead of at
-//	a client that reads a field the gateway stopped sending. The registry
-//	itself lives in openapi_dto_registry_test.go.
-//
+// @reason    AGENTS.md §2.4 CDD requires the published contract to be validated against the typed structs, and the two can drift silently: a renamed json tag changes the wire while the YAML keeps describing the old field. This test pins the property set of every schema whose name matches a schema-package struct, so a rename fails here instead of at a client that reads a field the gateway stopped sending. The registry itself lives in openapi_dto_registry_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package handler
 

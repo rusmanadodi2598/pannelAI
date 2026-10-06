@@ -1,25 +1,12 @@
 // Command app-serv adapts the connectivity probe port to HTTP.
 //
 // @file      cmd/app-serv/provider_probe_node_test.go
-// @for       The node-probe tests: a custom node's base URL is dialed with the
-//
-//	operator's credential, and the composed path is the one the node's
-//	type speaks.
-//
-// @uses      testing, context, net/http, net/http/httptest, sync/atomic, time,
-//
-//	internal/domain.
-//
-// @reason    A node has no registry entry, so the probe composes its target from
-//
-//	the base URL alone. That composition is the whole contract: a wrong
-//	path reports a working node as broken, and a doubled one reports a
-//	404 the operator reads as a credential problem. Split from the
-//	endpoint suite to keep both files under AGENTS.md §1.1.
-//
+// @for       The node-probe tests: a custom node's base URL is dialed with the operator's credential, and the composed path is the one the node's type speaks.
+// @uses      testing, context, net/http, net/http/httptest, sync/atomic, time, internal/domain.
+// @reason    A node has no registry entry, so the probe composes its target from the base URL alone. That composition is the whole contract: a wrong path reports a working node as broken, and a doubled one reports a 404 the operator reads as a credential problem. Split from the endpoint suite to keep both files under AGENTS.md §1.1.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -58,7 +45,7 @@ func TestProbeNode_UsesTheNodeBaseURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ProbeNode() error = %v", err)
 	}
-	if outcome.State != domain.EndpointTestOK {
+	if outcome.State != string(domain.EndpointTestOK) {
 		t.Fatalf("State = %q, want ok", outcome.State)
 	}
 	if gotPath != "/models" {
@@ -95,7 +82,7 @@ func TestProbeNode_NoCredentialStillProbes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ProbeNode() error = %v", err)
 	}
-	if outcome.State != domain.EndpointTestOK {
+	if outcome.State != string(domain.EndpointTestOK) {
 		t.Fatalf("State = %q, want ok", outcome.State)
 	}
 }
@@ -133,15 +120,15 @@ func TestProbeNode_RefusesADeniedAddress(t *testing.T) {
 	}{
 		{
 			name: "a loopback node is refused by default", baseURL: server.URL,
-			wantState: domain.EndpointTestFail, wantMsg: "loopback",
+			wantState: string(domain.EndpointTestFail), wantMsg: "loopback",
 		},
 		{
 			name: "the allowlisted loopback is probed", baseURL: server.URL,
-			allowed: []string{"127.0.0.1/32"}, wantState: domain.EndpointTestOK, wantHits: 1,
+			allowed: []string{"127.0.0.1/32"}, wantState: string(domain.EndpointTestOK), wantHits: 1,
 		},
 		{
 			name: "a private node address is refused", baseURL: "http://10.0.0.5/v1",
-			wantState: domain.EndpointTestFail, wantMsg: "private",
+			wantState: string(domain.EndpointTestFail), wantMsg: "private",
 		},
 	}
 	for _, tc := range cases {

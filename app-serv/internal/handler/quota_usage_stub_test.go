@@ -1,24 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/quota_usage_stub_test.go
-// @for       The doubles and the fixture the published-quota route is tested
-//
-//	against.
-//
-// @uses      context, encoding/json, internal/domain, internal/registry,
-//
-//	internal/schema, internal/service, internal/service/quotafetch,
-//	net/http/httptest, testing, time.
-//
-// @reason    The route's behaviour file should read as the list of answers a
-//
-//	client can get, so the wiring that produces them — a lookup over one
-//	endpoint, a sealed credential, a registry entry with named features —
-//	lives apart from the assertions.
-//
+// @for       The doubles and the fixture the published-quota route is tested against.
+// @uses      context, encoding/json, internal/domain, internal/registry, internal/schema, internal/service, internal/service/quotafetch, net/http/httptest, testing, time.
+// @reason    The route's behaviour file should read as the list of answers a client can get, so the wiring that produces them, a lookup over one endpoint, a sealed credential, a registry entry with named features, lives apart from the assertions.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-28
 package handler
 
@@ -69,9 +57,9 @@ func publishedOAuthEndpoint(t *testing.T, providerID, accessToken string) domain
 	if err != nil {
 		t.Fatalf("NewUpstreamEndpoint() error = %v", err)
 	}
-	endpoint.SetOAuth(&domain.OAuthCredential{
+	endpoint.SetOAuth(domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted: publishedSealed(t, accessToken), AccountEmail: "acct@example.com",
-	}, time.Now().UTC())
+	}), time.Now().UTC())
 	return endpoint
 }
 

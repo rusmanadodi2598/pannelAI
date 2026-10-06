@@ -1,21 +1,11 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_canonical.go
-// @for       The one rule that decides whether a model reference names a model
-//
-//	the chat plane can serve, shared by every write path that accepts one.
-//
+// @for       The one rule that decides whether a model reference names a model the chat plane can serve, shared by every write path that accepts one.
 // @uses      internal/domain, internal/registry, strings.
-// @reason    Draft 024 §3.2 measured the drift this file closes: the router
+// @reason    Draft 024 §3.2 measured the drift this file closes: the router resolves three spellings of the first segment (provider id, registry alias, node prefix) while the write paths read one, so a combo member spelled `cc/claude-...` or `oczen/big-pickle` was refused by a list the same gateway routes. Two answers to "does this model exist" is how a write and a request come to disagree, so the question is asked here once and every caller asks it here.
 //
-//	resolves three spellings of the first segment (provider id, registry
-//	alias, node prefix) while the write paths read one, so a combo member
-//	spelled `cc/claude-...` or `oczen/big-pickle` was refused by a list the
-//	same gateway routes. Two answers to "does this model exist" is how a
-//	write and a request come to disagree, so the question is asked here
-//	once and every caller asks it here.
-//
-//	The reference never validates a combo reference at all — its picker
+//	The reference never validates a combo reference at all, its picker
 //	offers only active connections and it trusts the operator (draft 024
 //	§1). This port validates at write time instead, which is a decision
 //	§7.7 already records; what this file fixes is that the validation
@@ -28,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -132,7 +122,7 @@ func (v referenceView) catalogKeyFor(ref domain.ModelRef) (string, bool) {
 
 // resolvesIn reports whether a reference names something the data plane could
 // route: a catalog row, or an undeclared id on a provider that passes model ids
-// through. It is the existence half of the rule, and the router's own test —
+// through. It is the existence half of the rule, and the router's own test,
 // `ResolveParts` answers a declared model, then a passthrough provider's
 // arbitrary id, then refuses everything else.
 func (v referenceView) resolvesIn(ref domain.ModelRef) bool {
@@ -149,26 +139,16 @@ func (v referenceView) resolvesIn(ref domain.ModelRef) bool {
 	return entry.PassthroughModels || entry.Custom
 }
 
-// chatServable answers whether a catalog reference can be served by the chat
-// data plane, and the sentence naming why not when it cannot. It is the
-// write-time half of the property the §7.15 list already holds: a model listed
-// there is answerable, and a reference the router would refuse must not save.
-//
-// Three refusals exist, and each is the router's own answer rather than a rule
-// invented here:
-//
-//   - the first segment names no provider, so every request to it answers
-//     MODEL_NOT_FOUND;
-//   - the provider's wire format has no translator, so every request answers
-//     PROVIDER_NOT_ROUTABLE;
-//   - the provider declares models and does not pass ids through, and the id is
-//     not among them, so the request answers MODEL_NOT_FOUND;
-//   - the row is a media model (`kind` image/tts/stt/embedding/...), which the
-//     chat selector never reaches.
-//
-// A declared chat model, an undeclared id on a passthrough provider, and a
-// custom node's id are all servable: the rule must not widen into refusing what
-// routing accepts.
+// chatServable answers whether a catalog reference can be served by the chat data
+// plane, and the sentence naming why not. It is the write-time half of a rule the
+// active list already holds: a model listed there is answerable, so a reference
+// the router would refuse must not save. Every refusal is the router's own answer
+// rather than a rule invented here: a first segment naming no provider, and an
+// undeclared id on a provider that does not pass ids through, both answer
+// MODEL_NOT_FOUND; an untranslated wire format answers PROVIDER_NOT_ROUTABLE; a
+// media kind (image, tts, stt, embedding) never reaches the chat selector. A
+// declared chat model, an undeclared id on a passthrough provider, and a custom
+// node's id are all servable: the rule must not refuse what routing accepts.
 func (v referenceView) chatServable(ref domain.ModelRef) error {
 	entry, ok := v.providerFor(ref.ProviderID())
 	if !ok {

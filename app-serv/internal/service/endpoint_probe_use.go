@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_probe_use.go
-// @for       The endpoint connectivity test: choosing the key to probe, opening
-//
-//	its credential, and recording the outcome on the aggregate.
-//
+// @for       The endpoint connectivity test: choosing the key to probe, opening its credential, and recording the outcome on the aggregate.
 // @uses      internal/dataplane, internal/domain, context, strings, time.
-// @reason    SPEC-API-001 §7.5 tests "does this credential work right now", which
-//
-//	is a different question from "which key would routing spend": a key
-//	parked in its circuit-breaker backoff is skipped by selection and is
-//	exactly what an operator re-tests after fixing it. Keeping that
-//	distinction, the credential opening, and the outcome recording in
-//	one file is what stops the panel and the router from disagreeing; it
-//	is separate from endpoint.go because AGENTS.md §1.1 caps a file at
-//	250 lines and the CRUD surface already fills one.
-//
+// @reason    SPEC-API-001 §7.5 tests "does this credential work right now", which is a different question from "which key would routing spend": a key parked in its circuit-breaker backoff is skipped by selection and is exactly what an operator re-tests after fixing it. Keeping that distinction, the credential opening, and the outcome recording in one file is what stops the panel and the router from disagreeing; it is separate from endpoint.go because AGENTS.md §1.1 caps a file at 250 lines and the CRUD surface already fills one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -62,10 +50,10 @@ func (s *EndpointService) Test(ctx context.Context, id, keyID string) (domain.Up
 	defer cancel()
 	outcome, err := s.prober.ProbeEndpoint(probeCtx, endpoint, key, credential)
 	if err != nil {
-		// The probe could not run at all — an unknown provider, an unbuildable
+		// The probe could not run at all, an unknown provider, an unbuildable
 		// URL. That is a failure of the test, recorded as one so the panel shows
 		// it rather than only the log.
-		outcome = ProbeOutcome{State: domain.EndpointTestFail, Message: "the connectivity test could not run"}
+		outcome = ProbeOutcome{State: string(domain.EndpointTestFail), Message: "the connectivity test could not run"}
 	}
 	outcome.State = normalizedTestState(outcome.State)
 	return s.recordProbe(ctx, endpoint, key, outcome, now)
@@ -76,20 +64,30 @@ func (s *EndpointService) Test(ctx context.Context, id, keyID string) (domain.Up
 // circuit breaker owns that state: a second health field would let the panel and
 // the router disagree about whether a key may be spent (§7.5). A refused probe
 // is classified from the upstream's own status, so a 401 parks the key exactly
-// as the same answer would during routing.
+// as the same answer would during routing, and a 400 parks nothing for the same
+// reason.
 func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.UpstreamEndpoint, key domain.UpstreamKey, outcome ProbeOutcome, now time.Time) (domain.UpstreamEndpoint, ProbeOutcome, error) {
 	endpoint.RecordTest(outcome.State, outcome.LatencyMS, outcome.Message, now)
-	if key.ID() != "" {
-		if outcome.State == domain.EndpointTestOK {
+	// A request-shaped refusal is the probe's own body at fault, not the
+	// credential, and routing records no key health for the same answer. The
+	// aggregate leaves the error count alone for that class, so writing it here
+	// would spend a strike on a key that never failed.
+	recordKeyHealth := key.ID() != ""
+	if recordKeyHealth {
+		class := dataplane.FailureClass(outcome.Status)
+		switch {
+		case outcome.State == string(domain.EndpointTestOK):
 			if _, err := endpoint.RecordKeySuccess(key.ID(), now); err != nil {
 				return domain.UpstreamEndpoint{}, ProbeOutcome{}, err
 			}
-		} else {
+		case class == domain.KeyFailureRequest:
+			recordKeyHealth = false
+		default:
 			reason := outcome.Message
 			if reason == "" {
 				reason = "connectivity test failed"
 			}
-			if _, err := endpoint.RecordKeyFailure(key.ID(), reason, dataplane.FailureClass(outcome.Status), now); err != nil {
+			if _, err := endpoint.RecordKeyFailure(key.ID(), reason, class, now); err != nil {
 				return domain.UpstreamEndpoint{}, ProbeOutcome{}, err
 			}
 		}
@@ -97,11 +95,11 @@ func (s *EndpointService) recordProbe(ctx context.Context, endpoint domain.Upstr
 	if err := s.store.Update(ctx, endpoint); err != nil {
 		return domain.UpstreamEndpoint{}, ProbeOutcome{}, err
 	}
-	if key.ID() == "" {
+	if !recordKeyHealth {
 		return endpoint, outcome, nil
 	}
 	if err := s.store.RecordKeyHealth(ctx, endpoint.Key(key.ID())); err != nil {
-		return domain.UpstreamEndpoint{}, outcome, err
+		return endpoint, outcome, err
 	}
 	return endpoint, outcome, nil
 }
@@ -148,10 +146,10 @@ func (s *EndpointService) credentialFor(endpoint domain.UpstreamEndpoint, key do
 	case domain.UpstreamAuthNone:
 		return "", nil
 	case domain.UpstreamAuthOAuth:
-		if endpoint.OAuth() == nil || endpoint.OAuth().AccessTokenEncrypted == "" {
+		if endpoint.OAuth() == nil || endpoint.OAuth().AccessTokenEncrypted() == "" {
 			return "", domain.NewValidationError("this endpoint has no credential to test")
 		}
-		return s.openCredential(endpoint.OAuth().AccessTokenEncrypted)
+		return s.openCredential(endpoint.OAuth().AccessTokenEncrypted())
 	default:
 		if key.EncryptedValue() == "" {
 			return "", domain.NewValidationError("this endpoint has no credential to test")
@@ -175,8 +173,8 @@ func (s *EndpointService) openCredential(sealed string) (string, error) {
 // stores, so a reporter that said anything else cannot write an unknown state the
 // panel would render blank.
 func normalizedTestState(state string) string {
-	if state == domain.EndpointTestOK {
-		return domain.EndpointTestOK
+	if state == string(domain.EndpointTestOK) {
+		return state
 	}
-	return domain.EndpointTestFail
+	return string(domain.EndpointTestFail)
 }

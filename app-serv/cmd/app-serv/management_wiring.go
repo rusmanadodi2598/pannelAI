@@ -1,23 +1,9 @@
 // Command app-serv wires the P1 management and data-plane dependencies.
 //
 // @file      cmd/app-serv/management_wiring.go
-// @for       Builds the P1 repositories, services, and handlers, and assembles
-//
-//	the router dependencies from them.
-//
-// @uses      internal/config, internal/dataplane, internal/domain,
-//
-//	internal/provider, internal/registry,
-//	internal/repository/{postgres,redis}, internal/service,
-//	internal/router, pgxpool, redis. The handlers themselves are built
-//	in management_handlers.go.
-//
-// @reason    AGENTS.md §1.5 makes this file wiring only: it constructs the
-//
-//	dependency graph and nothing else, so no business rule hides in the
-//	composition root. It is separate from main.go because the P1 surface
-//	is a dozen services; one file would blow the §1.1 line budget and mix
-//	the boot sequence with the graph.
+// @for       Builds the P1 repositories, services, and handlers, and assembles the router dependencies from them.
+// @uses      internal/config, internal/dataplane, internal/domain, internal/provider, internal/registry, internal/repository/{postgres,redis}, internal/service, internal/router, pgxpool, redis. The handlers themselves are built in management_handlers.go.
+// @reason    AGENTS.md §1.5 makes this file wiring only: it constructs the dependency graph and nothing else, so no business rule hides in the composition root. It is separate from main.go because the P1 surface is a dozen services; one file would blow the §1.1 line budget and mix the boot sequence with the graph.
 //
 //	Adapters that already exist in their own package are used as they
 //	are (`dataplane.NewCatalogLookup`, `dataplane.NewMediaTransport`); only
@@ -26,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package main
 
@@ -73,7 +59,7 @@ func buildManagement(
 	publishedRepo := postgres.NewPublishedQuotaRepository(pool)
 	logRepo := postgres.NewLogRepository(pool)
 
-	// A node's model list comes from the node's own upstream (draft 017 §4.2),
+	// A node's model list comes from the node's own upstream,
 	// so the read is wired before the index that carries its answer: the index
 	// attaches each node's list while it synthesizes the overlay.
 	nodeModels := newNodeModelSource(
@@ -94,7 +80,7 @@ func buildManagement(
 	// of the graph special-cases a provider id. It reads the runtime overlay for
 	// the same reason the data plane does: an endpoint under a custom node must
 	// probe as that node. §7.4's stateless credential checks share it: they ask
-	// the same question before a row exists (draft 017 §4.6).
+	// the same question before a row exists.
 	prober := newHTTPEndpointProber(runtimeIndex, connectors, egress.Guard)
 	validationSvc, err := service.NewCredentialValidationService(prober)
 	if err != nil {
@@ -176,7 +162,7 @@ func buildManagement(
 	}
 
 	// The §7.7 combo test probes through the engine, and the engine asks the combo
-	// service for the round-robin order, so the probe is its own service — a
+	// service for the round-robin order, so the probe is its own service, a
 	// method on that one would make the cycle real.
 	// §7.10 media providers and the §7.15 data plane, from the repositories the
 	// management side writes through, so a value written by one path is readable

@@ -1,20 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_forced_chat_test.go
-// @for       Folding an OpenAI chat stream back into the single completion it
-//
-//	stands for.
-//
+// @for       Folding an OpenAI chat stream back into the single completion it stands for.
 // @uses      testing, context, encoding/json, internal/schema.
-// @reason    A provider that forces streaming still has to answer a client that
-//
-//	asked for one JSON body, and a chat stream reports that answer as
-//	deltas rather than as one object. The accumulation is a separate
-//	concern from reading the events, so its test lives beside it.
-//
+// @reason    A provider that forces streaming still has to answer a client that asked for one JSON body, and a chat stream reports that answer as deltas rather than as one object. The accumulation is a separate concern from reading the events, so its test lives beside it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package dataplane
 

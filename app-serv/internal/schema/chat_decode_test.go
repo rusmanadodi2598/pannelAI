@@ -3,17 +3,10 @@
 // @file      internal/schema/chat_decode_test.go
 // @for       What a client is told when its chat body cannot be decoded.
 // @uses      testing, internal/schema ChatRequest.
-// @reason    The decode error is the one place a Go type reached a client: the
-//
-//	standard message names the destination struct and field type
-//	(`[]schema.ChatMessage`), which is a fact about this process rather
-//	than about the caller's body — not re-sendable, and nothing the caller
-//	can act on. The member at fault is the actionable half, so the test
-//	pins that half and forbids the other.
-//
+// @reason    The decode error is the one place a Go type reached a client: the standard message names the destination struct and field type (`[]schema.ChatMessage`), which is a fact about this process rather than about the caller's body, not re-sendable, and nothing the caller can act on. The member at fault is the actionable half, so the test pins that half and forbids the other.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package schema
 

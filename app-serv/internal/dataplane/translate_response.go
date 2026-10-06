@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_response.go
-// @for       Non-streamed response translation between the OpenAI and Anthropic
-//
-//	wire formats, in both directions.
-//
+// @for       Non-streamed response translation between the OpenAI and Anthropic wire formats, in both directions.
 // @uses      internal/schema, encoding/json.
-// @reason    SPEC-API-001 §7.15 serves both routes, so a client's format and the
-//
-//	upstream's format are independent: a Claude Code client may be served
-//	by an OpenAI provider and the reverse. These functions are pure, so
-//	every mapping is testable without a network, and the usage fold lives
-//	beside the response it belongs to.
-//
+// @reason    SPEC-API-001 §7.15 serves both routes, so a client's format and the upstream's format are independent: a Claude Code client may be served by an OpenAI provider and the reverse. These functions are pure, so every mapping is testable without a network, and the usage fold lives beside the response it belongs to.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 

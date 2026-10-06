@@ -2,20 +2,11 @@
 //
 // @file      internal/repository/postgres/endpoint_error_test.go
 // @for       Table-driven tests for the endpoint and key driver-error mapping.
-// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, errors,
-//
-//	net/http, testing, internal/domain.
-//
-// @reason    AGENTS.md §2.1 requires tests alongside repository logic, and this
-//
-//	mapping is what turns a constraint violation into the §8 code a client
-//	sees. Getting it wrong is invisible until a duplicate label silently
-//	returns 500 instead of CONFLICT, so it is pinned here — and it needs no
-//	database, because the input is a driver error value.
-//
+// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, errors, net/http, testing, internal/domain.
+// @reason    AGENTS.md §2.1 requires tests alongside repository logic, and this mapping is what turns a constraint violation into the §8 code a client sees. Getting it wrong is invisible until a duplicate label silently returns 500 instead of CONFLICT, so it is pinned here, and it needs no database, because the input is a driver error value.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 

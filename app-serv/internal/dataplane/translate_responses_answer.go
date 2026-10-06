@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_responses_answer.go
-// @for       Reading a Responses API answer: its output items, finish status, and
-//
-//	accounting.
-//
+// @for       Reading a Responses API answer: its output items, finish status, and accounting.
 // @uses      internal/schema.
-// @reason    Both client directions read one decoded form, so the item readers and
-//
-//	the usage fold are one concern. Keeping them beside the answer
-//	translator (rather than in it) holds both files inside the AGENTS.md
-//	§1.1 budget.
-//
+// @reason    Both client directions read one decoded form, so the item readers and the usage fold are one concern. Keeping them beside the answer translator (rather than in it) holds both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

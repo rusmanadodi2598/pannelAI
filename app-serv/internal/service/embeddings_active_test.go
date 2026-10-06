@@ -2,19 +2,11 @@
 //
 // @file      internal/service/embeddings_active_test.go
 // @for       The in-flight marker at the embeddings outbound seam.
-//
 // @uses      context, testing, internal/dataplane, internal/domain, internal/provider.
-// @reason    The media and embeddings planes reach an upstream through their own
-//
-//	services rather than the chat engine, so each one has to open and
-//	close its own marker (SPEC-UI-001 §6.5: the drawing shows what is
-//	routing now, whichever plane is routing it). The failure paths are
-//	the ones that matter: a marker left open on a rejected call keeps a
-//	node lit for a request that ended.
-//
+// @reason    The media and embeddings planes reach an upstream through their own services rather than the chat engine, so each one has to open and close its own marker (SPEC-UI-001 §6.5: the drawing shows what is routing now, whichever plane is routing it). The failure paths are the ones that matter: a marker left open on a rejected call keeps a node lit for a request that ended.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

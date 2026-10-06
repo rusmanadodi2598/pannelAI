@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_resolve.go
-// @for       Model-string resolution and the existence check every reference
-//
-//	inside a write goes through (SPEC-API-001 §7.15, §7.6).
-//
+// @for       Model-string resolution and the existence check every reference inside a write goes through (SPEC-API-001 §7.15, §7.6).
 // @uses      internal/domain, context, strings.
-// @reason    §7.15 fixes one resolution order — combo name, then alias, then
-//
-//	provider/model — and §7.6 requires an alias target to exist. Both
-//	answers come from the same merged view, so they live together: an
-//	alias validated against one view and resolved against another is
-//	exactly the drift this file prevents.
-//
+// @reason    §7.15 fixes one resolution order, combo name, then alias, then provider/model, and §7.6 requires an alias target to exist. Both answers come from the same merged view, so they live together: an alias validated against one view and resolved against another is exactly the drift this file prevents.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -50,7 +41,7 @@ type RefTarget struct {
 // judge model, and a vision adapter entry all validate through this, so they
 // cannot disagree about what "exists" means.
 //
-// The reference is accepted in every form the router resolves (draft 024 §3.2):
+// The reference is accepted in every form the router resolves:
 // the provider's id, its registry alias, or a node prefix. The first segment is
 // canonicalized through the index, which is the same lookup the data plane
 // performs, so a name the router would route is never refused here.
@@ -67,11 +58,10 @@ func (s *ModelCatalogService) ModelExists(ctx context.Context, ref domain.ModelR
 
 // ChatServable reports whether the chat data plane could serve a reference,
 // and why not when it cannot. It is the write-time half of the property the
-// §7.15 model list holds — listed and answerable are one property — so a
+// §7.15 model list holds, listed and answerable are one property, so a
 // reference the router would refuse (a provider with no chat translator, a
 // non-passthrough provider's undeclared id, a media model) is refused here with
-// the reason named, before it is saved as part of a combo or the vision adapter
-// (draft 024 §3.4).
+// the reason named, before it is saved as part of a combo or the vision adapter.
 func (s *ModelCatalogService) ChatServable(ctx context.Context, ref domain.ModelRef) error {
 	view, err := newReferenceView(s, ctx)
 	if err != nil {

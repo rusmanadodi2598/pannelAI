@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy.go
-// @for       The proxy pool use cases: sealed candidates, CRUD, and the two
-//
-//	connectivity tests (SPEC-API-001 §7.11).
-//
+// @for       The proxy pool use cases: sealed candidates, CRUD, and the two connectivity tests (SPEC-API-001 §7.11).
 // @uses      internal/domain, internal/repository, context, time.
-// @reason    §7.11 makes the password write-only and the test a diagnostic; both
-//
-//	are service rules rather than request-shape rules. The prober is a
-//	one-method seam because AGENTS.md §1.5 keeps net/http out of this
-//	layer — and because the SSRF guard must sit with the dialer that
-//	enforces it, so this layer only reports what the test found.
-//
+// @reason    §7.11 makes the password write-only and the test a diagnostic; both are service rules rather than request-shape rules. The prober is a one-method seam because AGENTS.md §1.5 keeps net/http out of this layer, and because the SSRF guard must sit with the dialer that enforces it, so this layer only reports what the test found.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -192,8 +183,8 @@ func (s *ProxyService) Update(ctx context.Context, id string, patch ProxyPatch) 
 }
 
 // applyCredentials seals a retyped password or reuses the stored secret for a
-// username-only change. A client that resends the same secret — rather than
-// the panel, which never holds it — does not invalidate the last test result.
+// username-only change. A client that resends the same secret, rather than
+// the panel, which never holds it, does not invalidate the last test result.
 func (s *ProxyService) applyCredentials(proxy *domain.Proxy, patch ProxyPatch, username string, now time.Time) error {
 	switch {
 	case patch.Password != nil && *patch.Password != "":

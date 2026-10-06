@@ -2,20 +2,12 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/index_test.go
-// @for       Table-driven tests for identifier resolution and the collision
-//
-//	rules the index enforces.
-//
+// @for       Table-driven tests for identifier resolution and the collision rules the index enforces.
 // @uses      testing, internal/registry.
-// @reason    Every model string the data plane receives is resolved through this
-//
-//	index, so an ambiguous identifier is a routing fault that only shows
-//	up in production traffic; these tests pin the resolution order and
-//	the refusals.
-//
+// @reason    Every model string the data plane receives is resolved through this index, so an ambiguous identifier is a routing fault that only shows up in production traffic; these tests pin the resolution order and the refusals.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-17
 package registry
 

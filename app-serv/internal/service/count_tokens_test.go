@@ -1,19 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/count_tokens_test.go
-// @for       Table-driven tests for the count_tokens estimate and the rule it
-//
-//	is derived by.
-//
+// @for       Table-driven tests for the count_tokens estimate and the rule it is derived by.
 // @uses      encoding/json, internal/schema, strings, testing.
-// @reason    TDD.md §2.5 requires boundary coverage, not one sample: the
-//
-//	rounding boundary is where a wrong implementation hides, and the
-//	request-level cases prove the text is summed before it is divided.
-//
+// @reason    TDD.md §2.5 requires boundary coverage, not one sample: the rounding boundary is where a wrong implementation hides, and the request-level cases prove the text is summed before it is divided.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

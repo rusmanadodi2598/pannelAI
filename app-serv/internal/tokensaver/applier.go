@@ -3,21 +3,12 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/applier.go
-// @for       Applying the enabled saver groups in their reference order, with
-//
-//	configuration read per request and every optional failure left open.
-//
+// @for       Applying the enabled saver groups in their reference order, with configuration read per request and every optional failure left open.
 // @uses      internal/domain, context, encoding/json, errors, net/http.
-// @reason    SPEC-API-002 §8 makes the saver pipeline a request-path concern but
-//
-// keeps each transform independently optional. This seam is where settings
-// become decisions: RTK first, Headroom second, and Ponytail last. The
-// caller only supplies the already translated upstream body, so no saver
-// can accidentally run against the client wire and then be translated away.
-//
+// @reason    SPEC-API-002 §8 makes the saver pipeline a request-path concern but keeps each transform independently optional. This seam is where settings become decisions: RTK first, Headroom second, and Ponytail last. The caller only supplies the already translated upstream body, so no saver can accidentally run against the client wire and then be translated away.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 
@@ -25,9 +16,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 )
 
 // SettingsReader is the narrow settings port the pipeline reads. The service
@@ -53,6 +46,10 @@ type ApplierDeps struct {
 	Settings   SettingsReader
 	Headroom   *HeadroomClient
 	Translator HeadroomTranslator
+	// Logger records the degradations this pipeline chooses to make: a settings
+	// read that failed, a compression that refused, a proxy that answered
+	// unusably. Optional: nil writes to slog.Default().
+	Logger *slog.Logger
 }
 
 // Applier applies the token-saver pipeline to one already translated upstream
@@ -62,6 +59,7 @@ type Applier struct {
 	settings   SettingsReader
 	headroom   *HeadroomClient
 	translator HeadroomTranslator
+	logger     *slog.Logger
 }
 
 // NewApplier validates the required settings port and returns an applier. A
@@ -76,7 +74,7 @@ func NewApplier(deps ApplierDeps) (*Applier, error) {
 		translator = rawHeadroomTranslator{}
 	}
 	return &Applier{
-		settings: deps.Settings, headroom: deps.Headroom, translator: translator,
+		settings: deps.Settings, headroom: deps.Headroom, translator: translator, logger: deps.Logger,
 	}, nil
 }
 
@@ -90,11 +88,17 @@ func (a *Applier) Apply(ctx context.Context, body []byte, wire, model string, by
 	}
 	settings, err := a.settings.Settings(ctx)
 	if err != nil {
+		logx.Degraded(a.logger, "token-saver settings unreadable, body served uncompressed", err,
+			"model", model)
 		return body
 	}
 	if settings.TokenSaver.RTK.Enabled {
-		if rewritten, _, compressErr := Compress(body, settings.TokenSaver.RTK.Filters); compressErr == nil {
+		rewritten, _, compressErr := Compress(body, settings.TokenSaver.RTK.Filters)
+		if compressErr == nil {
 			body = rewritten
+		} else {
+			logx.Degraded(a.logger, "RTK compression refused, body served unchanged", compressErr,
+				"model", model)
 		}
 	}
 	if settings.TokenSaver.Headroom.Enabled && a.headroom != nil && settings.TokenSaver.Headroom.URL != "" {
@@ -116,17 +120,24 @@ func (a *Applier) applyHeadroom(
 	settings domain.TokenSaverHeadroom,
 ) []byte {
 	request, ok, err := a.translator.Prepare(body, wire, model)
-	if err != nil || !ok {
+	if err != nil {
+		logx.Degraded(a.logger, "headroom request could not be prepared", err, "model", model)
+		return body
+	}
+	if !ok {
 		return body
 	}
 	request.URL = settings.URL
 	request.CompressUserMessages = settings.CompressUserMessages
 	result, err := a.headroom.Compress(ctx, request)
 	if err != nil {
+		logx.Degraded(a.logger, "headroom proxy unavailable, body served unchanged", err, "model", model)
 		return body
 	}
 	restored, err := a.translator.Restore(body, wire, model, result.Messages)
 	if err != nil {
+		logx.Degraded(a.logger, "headroom answer was not a shape the translator accepts", err,
+			"model", model)
 		return body
 	}
 	return restored

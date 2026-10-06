@@ -1,22 +1,15 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_active_seam_test.go
-// @for       The seam discipline behind `?active=true`: the roll-up is asked
-//
-//	once, only when the parameter asks for it, and a deployment that
-//	wires none refuses the question instead of answering it wrongly.
-//
+// @for       The seam discipline behind `?active=true`: the roll-up is asked once, only when the parameter asks for it, and a deployment that wires none refuses the question instead of answering it wrongly.
 // @uses      internal/domain, context, sync, testing.
-// @reason    Draft 025 F4/F2: the predicate is one query per read, not one per
+// @reason    Draft 025 F4/F2: the predicate is one query per read, not one per provider, and a missing counter must not read as "nothing is active", an empty answer and an unanswerable question are different facts, and the caller has to be able to tell them apart.
 //
-//	provider, and a missing counter must not read as "nothing is
-//	active" — an empty answer and an unanswerable question are
-//	different facts, and the caller has to be able to tell them apart.
 //	Separated from the filter table at the AGENTS.md §1.1 line limit.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -106,7 +99,7 @@ func TestModelCatalogService_CatalogWithoutActiveNeverCounts(t *testing.T) {
 }
 
 // TestModelCatalogService_CatalogActiveAcceptsEveryProviderSpelling keeps the
-// draft 024 F3 rule intact under the new predicate: the provider filter still
+// rule intact under the new predicate: the provider filter still
 // accepts the registry alias, the rows are stored under the canonical id, and
 // the active question is asked about that canonical id.
 func TestModelCatalogService_CatalogActiveAcceptsEveryProviderSpelling(t *testing.T) {
@@ -131,8 +124,8 @@ func TestModelCatalogService_CatalogActiveAcceptsEveryProviderSpelling(t *testin
 	wantCatalog(t, service, CatalogFilter{ProviderID: "ks", Active: ptrFalse()}, []string{"kserve/glm-4.7"})
 }
 
-// ptrFalse is the explicit-false filter, which means "do not narrow" (draft 025
-// §6 ruling 2) and is spelled once so the case above reads as intent.
+// ptrFalse is the explicit-false filter, which means "do not narrow" and is
+// spelled once so the case above reads as intent.
 func ptrFalse() *bool {
 	value := false
 	return &value

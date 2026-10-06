@@ -1,22 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/oauth.go
-// @for       Starting an authorization, reporting token state, and forcing a
-//
-//	refresh (SPEC-API-001 §7.4).
-//
+// @for       Starting an authorization, reporting token state, and forcing a refresh (SPEC-API-001 §7.4).
 // @uses      internal/schema, internal/service, net/http, strings.
-// @reason    §7.4 splits the four OAuth routes by audience: three are
-//
-//	session-gated management routes the panel calls, and the callback
-//	is public because the provider's browser redirect cannot carry a
-//	session cookie. The callback's two-audience answer lives in
-//	oauth_callback.go; what stays here is the management half, which
-//	only decodes, calls, and encodes.
-//
+// @reason    §7.4 splits the four OAuth routes by audience: three are session-gated management routes the panel calls, and the callback is public because the provider's browser redirect cannot carry a session cookie. The callback's two-audience answer lives in oauth_callback.go; what stays here is the management half, which only decodes, calls, and encodes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -38,7 +28,6 @@ type OAuthHandler struct {
 	baseURL string
 }
 
-// NewOAuthHandler validates deps and returns the handler.
 func NewOAuthHandler(flow *service.OAuthFlowService, baseURL string) *OAuthHandler {
 	return &OAuthHandler{flow: flow, baseURL: strings.TrimSuffix(strings.TrimSpace(baseURL), "/")}
 }

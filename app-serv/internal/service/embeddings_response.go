@@ -1,23 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/embeddings_response.go
-// @for       The answer half of the embeddings use case: normalizing either wire
-//
-//	shape into the OpenAI embeddings response the client expects.
-//
+// @for       The answer half of the embeddings use case: normalizing either wire shape into the OpenAI embeddings response the client expects.
 // @uses      internal/schema, encoding/json.
-// @reason    The request half (media-config resolution, credential placement) and
-//
-//	the answer half (shape normalization) change for different
-//	reasons: the request follows §8.1's placement rules, the answer
-//	follows what each upstream sends back. Keeping the OpenAI
-//	normalization and the Gemini conversion beside each other here is
-//	what makes the response contract auditable in one place, and keeps
-//	the use case file within the §1.1 line budget.
-//
+// @reason    The request half (media-config resolution, credential placement) and the answer half (shape normalization) change for different reasons: the request follows §8.1's placement rules, the answer follows what each upstream sends back. Keeping the OpenAI normalization and the Gemini conversion beside each other here is what makes the response contract auditable in one place, and keeps the use case file within the §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package service
 

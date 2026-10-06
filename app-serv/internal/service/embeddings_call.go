@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/embeddings_call.go
-// @for       The outbound half of the embeddings use case: one call, its
-//
-//	endpoint health, and its accounting pair.
-//
+// @for       The outbound half of the embeddings use case: one call, its endpoint health, and its accounting pair.
 // @uses      internal/dataplane, internal/domain, context, time.
-// @reason    Embed already resolves and shapes the request; the call itself
-//
-//	classifies its own outcome three ways (unreachable, rejected, served)
-//	and each way owes the client an error, the endpoint a health report,
-//	and the accounting one usage row plus one log. Keeping that in one
-//	place is what stops a fourth return path from forgetting the record,
-//	and it keeps embeddings.go under the §1.1 budget.
-//
+// @reason    Embed already resolves and shapes the request; the call itself classifies its own outcome three ways (unreachable, rejected, served) and each way owes the client an error, the endpoint a health report, and the accounting one usage row plus one log. Keeping that in one place is what stops a fourth return path from forgetting the record, and it keeps embeddings.go under the §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

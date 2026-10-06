@@ -1,20 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider.go
-// @for       The provider catalog reads: list, detail, and model list, each
-//
-//	carrying the routability the panel needs before it offers an endpoint.
-//
+// @for       The provider catalog reads: list, detail, and model list, each carrying the routability the panel needs before it offers an endpoint.
 // @uses      internal/domain, internal/registry, context, sort, strings.
-// @reason    SPEC-API-001 §7.4 serves the embedded registry over HTTP, and §8
-//
-//	makes "configured but never answerable" something the panel must be able to
-//	see. Filtering, paging, and the store read each already belong to another
-//	boundary, so this file is the orchestration between them and holds no SQL.
-//
+// @reason    SPEC-API-001 §7.4 serves the embedded registry over HTTP, and §8 makes "configured but never answerable" something the panel must be able to see. Filtering, paging, and the store read each already belong to another boundary, so this file is the orchestration between them and holds no SQL.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package service
 
@@ -46,7 +38,7 @@ type ProviderService struct {
 // optional: without it a provider list still renders, with every roll-up
 // reported as zero rather than the request failing. Source is optional too: a
 // deployment that wires none answers a custom node from the registry alone,
-// which is the state before draft 017 §4.2's fix rather than a failure. Custom
+// which is the degraded pre-overlay answer rather than a failure. Custom
 // is optional for the same reason: a deployment that never declares a custom
 // model answers the registry's own level set, which is the union before the
 // operator's rows existed.
@@ -126,10 +118,10 @@ func (s *ProviderService) List(ctx context.Context, filter ProviderFilter, page,
 // Models returns one provider's model list and the origin of that list.
 //
 // It used to return the registry entry alone, which for a custom node was an
-// entry with no models: draft 017 §4.2 measured the node appearing in four
-// surfaces with `len(entry.Models) = 0`. The list is resolved here rather than
-// in the overlay because the answer has two parts — the models and where they
-// came from — and the second belongs to the layer that decides.
+// entry with no models: the node was measured appearing in four surfaces
+// with `len(entry.Models) = 0`. The list is resolved here rather than
+// in the overlay because the answer has two parts, the models and where they
+// came from, and the second belongs to the layer that decides.
 func (s *ProviderService) Models(ctx context.Context, providerID string) (ProviderModelList, error) {
 	entry, ok := s.index.Provider(strings.TrimSpace(providerID))
 	if !ok {

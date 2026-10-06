@@ -1,20 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/media_guard_test.go
-// @for       The §4 key check and §4 validation envelope every §7.10
-//
-//	data-plane media route applies.
-//
+// @for       The §4 key check and §4 validation envelope every §7.10 data-plane media route applies.
 // @uses      net/http, net/http/httptest, strings, testing.
-// @reason    AGENTS.md §2.1 requires an auth-failure and a validation-failure
-//
-//	test per route, and both are cross-cutting here: the same envelope
-//	and the same key rule apply to all six, so one parameterized table
-//	per rule proves each route instead of six near-identical tests.
-//
+// @reason    AGENTS.md §2.1 requires an auth-failure and a validation-failure test per route, and both are cross-cutting here: the same envelope and the same key rule apply to all six, so one parameterized table per rule proves each route instead of six near-identical tests.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

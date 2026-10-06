@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/embeddings.go
-// @for       The embeddings data plane use case: media-config resolution, the
-//
-//	per-kind credential placement, and the OpenAI-shape normalization.
-//
+// @for       The embeddings data plane use case: media-config resolution, the per-kind credential placement, and the OpenAI-shape normalization.
 // @uses      internal/dataplane, internal/domain, internal/registry, internal/schema.
-// @reason    SPEC-API-001 §8.1 puts the credential placement in the kind's own
-//
-//	block because `auth_header: key` is a QUERY PARAMETER: Gemini's
-//	embedding config uses one while its chat transport does not. Reusing
-//	the chat transport would authenticate incorrectly rather than fail
-//	loudly, so the media path is its own use case, and §7.10 forbids a
-//	silent cloud fallback when a base URL is missing.
-//
+// @reason    SPEC-API-001 §8.1 puts the credential placement in the kind's own block because `auth_header: key` is a QUERY PARAMETER: Gemini's embedding config uses one while its chat transport does not. Reusing the chat transport would authenticate incorrectly rather than fail loudly, so the media path is its own use case, and §7.10 forbids a silent cloud fallback when a base URL is missing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -85,18 +75,14 @@ func NewEmbeddingsService(deps EmbeddingsServiceDeps) (*EmbeddingsService, error
 	}, nil
 }
 
-// Embed resolves the model, selects the account, performs the call, and returns the
-// answer in the OpenAI embeddings shape.
-//
-// Resolution runs through the same resolver the chat plane uses, so a model string
-// behaves identically on both routes; what differs is only the transport, which is
-// exactly what §8.1's per-kind placement exists for. The key id is the
-// authenticated caller's, recorded on both rows the call writes.
-//
-// A refusal before the call — an unresolvable model, a combo, a provider without
-// an embeddings block or base URL, no usable account — leaves one request log row
-// and no usage row (register G20), the same shape the chat plane gives a request
-// refused before the pipeline ran.
+// Embed resolves the model, selects the account, performs the call, and returns
+// the answer in the OpenAI embeddings shape. Resolution runs through the same
+// resolver the chat plane uses, so a model string behaves identically on both
+// routes and only the transport differs, which is what the per-kind credential
+// placement exists for. The key id is the authenticated caller's, recorded on
+// both rows. A refusal before the call, an unresolvable model, a combo, a
+// provider with no embeddings block or base URL, or no usable account leaves one
+// request log row and no usage row, the shape the chat plane gives a refusal.
 func (s *EmbeddingsService) Embed(ctx context.Context, req schema.EmbeddingsRequest, keyID string) (schema.EmbeddingsResponse, dataplane.Outcome, error) {
 	call, err := s.resolveCall(ctx, req)
 	if err != nil {

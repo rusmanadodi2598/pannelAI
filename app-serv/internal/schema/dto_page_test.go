@@ -3,18 +3,10 @@
 // @file      internal/schema/dto_page_test.go
 // @for       The shared page and per_page query decoder every list route reads.
 // @uses      net/http, net/http/httptest, testing.
-// @reason    Draft 010 F6: DecodePage clamped per_page above 100 silently, so
-//
-//	the three layers disagreed (the panel refuses 1..100 in Zod, the
-//	gateway clamped, the contract said nothing) and a caller could
-//	not tell a narrowed answer from the page it asked for. Owner
-//	decision D3 chose refusal, so the boundary now rejects what the
-//	contract will declare: page >= 1 and 1 <= per_page <= 100, with
-//	absent parameters keeping their documented defaults.
-//
+// @reason    Draft 010 F6: DecodePage clamped per_page above 100 silently, so the three layers disagreed (the panel refuses 1..100 in Zod, the gateway clamped, the contract said nothing) and a caller could not tell a narrowed answer from the page it asked for. Owner decision D3 chose refusal, so the boundary now rejects what the contract will declare: page >= 1 and 1 <= per_page <= 100, with absent parameters keeping their documented defaults.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package schema
 

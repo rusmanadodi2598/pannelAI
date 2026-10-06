@@ -1,20 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/combo.go
-// @for       The combo contracts: list, detail, create, patch, and the ordered
-//
-//	model list they all carry (SPEC-API-001 §7.7).
-//
+// @for       The combo contracts: list, detail, create, patch, and the ordered model list they all carry (SPEC-API-001 §7.7).
 // @uses      go-playground/validator/v10 through shared validation, internal/domain.
-// @reason    AGENTS.md §2.4 requires the typed contract before the handler, and
-//
-//	§7.7 makes create and patch the same shape: the panel edits the
-//	model list as a set and saves the whole combo. One request struct
-//	serves both routes, so the two can never diverge.
-//
+// @reason    AGENTS.md §2.4 requires the typed contract before the handler, and §7.7 makes create and patch the same shape: the panel edits the model list as a set and saves the whole combo. One request struct serves both routes, so the two can never diverge.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 

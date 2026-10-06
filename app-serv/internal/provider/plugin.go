@@ -2,14 +2,10 @@
 // upstream provider.
 //
 // @file      internal/provider/plugin.go
-// @for       The Plugin interface and the outcome a connector reports back to the
-//
-//	core.
-//
+// @for       The Plugin interface and the outcome a connector reports back to the core.
 // @uses      net/http, time.
-// @reason    Every provider differs in how it connects: some take an API key,
+// @reason    Every provider differs in how it connects: some take an API key, some an OAuth flow, some need no credential, and some accept both.
 //
-//	some an OAuth flow, some need no credential, and some accept both.
 //	The core must not learn those differences, or a fix for one
 //	provider becomes a change to shared code. A connector per provider
 //	keeps the difference inside one package, which is what makes a
@@ -20,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package provider
 
@@ -109,7 +105,7 @@ type StreamForcer interface {
 // StreamEnvelope is the optional seam a connector implements when its provider
 // answers a stream inside an envelope: the HTTP status says the call was accepted
 // while the first frame says whether it actually succeeded. A connector that needs
-// none is unchanged, exactly as with Transformer — the core type-asserts for it and
+// none is unchanged, exactly as with Transformer, the core type-asserts for it and
 // otherwise pipes the body through as it always has.
 //
 // An implementation must be safe for concurrent use and must not keep per-request
@@ -126,7 +122,7 @@ type StreamEnvelope interface {
 // StreamFailure is a provider's own answer that a streamed call did not succeed,
 // carried out of a body the HTTP status does not describe. Status is what the
 // provider reported, Quota says the account is spent rather than transiently
-// failing, and Message is the reason in the provider's words — English, and safe to
+// failing, and Message is the reason in the provider's words, English, and safe to
 // hand to the client's error envelope (AGENTS.md §1.3).
 type StreamFailure struct {
 	Status  int

@@ -2,21 +2,11 @@
 //
 // @file      internal/service/media_audio.go
 // @for       The speech, transcription, and voice use cases of SPEC-API-001 §7.10.
-// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema,
-//
-//	bytes, context, encoding/json, mime/multipart, strings.
-//
-// @reason    Each method here is one route's payload, built over the shared
-//
-//	pipeline in media_call.go: the reference's OpenAI-compatible
-//	transcription path forwards the caller's optional fields and
-//	returns the upstream body, and its speech path sends a fixed
-//	OpenAI payload — both are request shaping, which is this layer's
-//	job and not the handler's.
-//
+// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema, bytes, context, encoding/json, mime/multipart, strings.
+// @reason    Each method here is one route's payload, built over the shared pipeline in media_call.go: the reference's OpenAI-compatible transcription path forwards the caller's optional fields and returns the upstream body, and its speech path sends a fixed OpenAI payload, both are request shaping, which is this layer's job and not the handler's.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

@@ -5,15 +5,10 @@
 // @file      internal/tokensaver/ponytail_claude.go
 // @for       The Anthropic half of the ponytail injector.
 // @uses      encoding/json.
-// @reason    SPEC-API-002 §7 keeps the Anthropic system member out of the
-//
-//	message list: the wire rejects a system role inside messages, so the
-//	instruction is appended to the dedicated member, before the last
-//	cache-control block so the cached prefix stays intact.
-//
+// @reason    SPEC-API-002 §7 keeps the Anthropic system member out of the message list: the wire rejects a system role inside messages, so the instruction is appended to the dedicated member, before the last cache-control block so the cached prefix stays intact.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

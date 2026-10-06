@@ -3,18 +3,8 @@
 //
 // @file      internal/domain/usage_active.go
 // @for       The in-flight marker: one request the gateway is routing right now.
-//
 // @uses      internal/domain (NewULID), time.
-// @reason    SPEC-UI-001 §6.5 makes the drawing's "a provider is routing now"
-//
-//	claim come from a live stream, and a claim needs a source that
-//	disappears when the thing it describes does: the marker is written
-//	before the outbound call and removed after it, so the set of active
-//	providers is what this process is actually doing rather than what it
-//	once did. The 60 second window is the second half of that rule, and
-//	it is the panel's own guard figure: a gateway that dies mid-request
-//	never removes its marker, so a read that trusted the set forever
-//	would light a node for a request that no longer exists (R-36).
+// @reason    SPEC-UI-001 §6.5 makes the drawing's "a provider is routing now" claim come from a live stream, and a claim needs a source that disappears when the thing it describes does: the marker is written before the outbound call and removed after it, so the set of active providers is what this process is actually doing rather than what it once did. The 60 second window is the second half of that rule, and it is the panel's own guard figure: a gateway that dies mid-request never removes its marker, so a read that trusted the set forever would light a node for a request that no longer exists (R-36).
 //
 //	The marker names the combo a client addressed as well as the provider
 //	that answered, because SPEC-UI-001 §6.5 draws the request path and a
@@ -24,7 +14,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package domain
 
@@ -56,9 +46,9 @@ type ActiveRequest struct {
 	// Combo is the model combo the client addressed, or "" when the request
 	// addressed a single model. It travels beside Model rather than replacing
 	// it: the member is what answered and the combo is what the client named,
-	// and the drawing lights both. Only the chat plane resolves a combo — the
+	// and the drawing lights both. Only the chat plane resolves a combo, the
 	// media, embeddings and SystemOne planes refuse one before they mark
-	// anything — so an empty Combo is the normal value, not a missing one.
+	// anything, so an empty Combo is the normal value, not a missing one.
 	Combo string
 	// StartedAt is the instant the call began, which the staleness window is
 	// measured from.

@@ -2,7 +2,7 @@
 // (docs/SPEC-API/001-SPEC-API.md §7.14, §7.15; docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
 // Two rules hold this slice together, and both are asserted here. The mode is ONE settings value per
-// provider, so every write sends the whole map back — a panel that sent only its own provider's entry
+// provider, so every write sends the whole map back: a panel that sent only its own provider's entry
 // would erase every other provider's (the reference re-reads before it writes, page.js:419-436). And the
 // suffix is per model: a copied name gains `(level)` only where that model accepts it, so a model the
 // registry knows no levels for copies without one (page.js:177-182).

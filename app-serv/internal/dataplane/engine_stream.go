@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_stream.go
-// @for       Reading an upstream SSE body line by line and writing the client's
-//
-//	frames to the sink as they arrive.
-//
+// @for       Reading an upstream SSE body line by line and writing the client's frames to the sink as they arrive.
 // @uses      internal/schema, bufio, bytes, context, io, strings.
-// @reason    SPEC-API-001 §4 requires SSE passthrough with per-frame flushing and
-//
-//	a usage chunk when the client asked for one. Reading incrementally
-//	matters: buffering the whole stream would turn a live answer into one
-//	delayed blob, which is the property a CLI tool reports as "hangs".
-//
+// @reason    SPEC-API-001 §4 requires SSE passthrough with per-frame flushing and a usage chunk when the client asked for one. Reading incrementally matters: buffering the whole stream would turn a live answer into one delayed blob, which is the property a CLI tool reports as "hangs".
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -24,13 +16,16 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"io"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/streamio"
 )
 
-// maxEventBytes bounds one upstream SSE event, so a provider that never sends a
-// newline cannot grow a buffer without limit.
+// maxEventBytes bounds one upstream SSE event. The bound is enforced inside the
+// line read (internal/streamio), because a length check on what the reader
+// returns happens after the oversized line is already held.
 const maxEventBytes = 1 << 20
 
 // relayStream forwards a streamed answer to the sink, re-framing it into the
@@ -46,6 +41,12 @@ func (e *Engine) relayStream(
 	if sink == nil {
 		return internalError("a streamed request needs a sink", nil)
 	}
+	// The counter is what lets the combo walk tell a member that never started
+	// from one the client is already reading, so it wraps the sink for the whole
+	// leg and reports on every exit, the error exits included.
+	counted := &countedSink{FrameSink: sink}
+	sink = counted
+	defer func() { outcome.FramesWritten = counted.wrote }()
 
 	switch in.ClientFormat {
 	case schema.FormatAnthropic:
@@ -104,7 +105,12 @@ func (e *Engine) pump(
 			//nolint:nilerr // reason: there is no caller left to report the cancelled context to; a quiet stop is the documented behaviour for a disconnected client.
 			return nil
 		}
-		line, err := reader.ReadBytes('\n')
+		// The bound is inside the read, not applied to its result: an upstream that
+		// never sends a newline must not decide how much memory this process holds.
+		line, err := streamio.ReadLine(reader, maxEventBytes)
+		if errors.Is(err, streamio.ErrTooLong) {
+			return dataPlaneError(CodeUpstreamError, "the upstream stream contained an oversized event")
+		}
 		if len(line) > 0 {
 			if event.Len()+len(line) > maxEventBytes {
 				return dataPlaneError(CodeUpstreamError, "the upstream stream contained an oversized event")
@@ -181,6 +187,23 @@ func sseData(raw []byte) []byte {
 		return nil
 	}
 	return payload.Bytes()
+}
+
+// countedSink remembers whether any frame reached the client. A stream that has
+// spoken is committed to the member that spoke: starting another one through the
+// same sink would append a second answer to what the client is already reading,
+// and pay a second upstream for one request.
+type countedSink struct {
+	FrameSink
+	wrote bool
+}
+
+func (c *countedSink) WriteFrame(frame []byte) error {
+	if err := c.FrameSink.WriteFrame(frame); err != nil {
+		return err
+	}
+	c.wrote = true
+	return nil
 }
 
 // writeFrames writes each frame and flushes, so a client sees output as it is

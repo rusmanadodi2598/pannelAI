@@ -5,15 +5,10 @@
 // @file      internal/service/quotafetch/claude_org.go
 // @for       Reads Claude's organization settings and usage document into percent rows.
 // @uses      internal/service/quotafetch, context, encoding/json, net/http, sort, strings, time
-// @reason    Consumer OAuth tokens answer the primary endpoint and admin API tokens answer the
-//
-//	organization one, both in the same window document; the reference falls
-//	back from the first to the second, and the card needs the rows in the
-//	order the provider listed them rather than in map order.
-//
+// @reason    Consumer OAuth tokens answer the primary endpoint and admin API tokens answer the organization one, both in the same window document; the reference falls back from the first to the second, and the card needs the rows in the order the provider listed them rather than in map order.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

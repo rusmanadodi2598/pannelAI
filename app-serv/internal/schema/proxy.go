@@ -1,21 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/proxy.go
-// @for       The proxy pool contracts: list, create, patch, the two test routes,
-//
-//	and the status both routes report (SPEC-API-001 §7.11).
-//
+// @for       The proxy pool contracts: list, create, patch, the two test routes, and the status both routes report (SPEC-API-001 §7.11).
 // @uses      go-playground/validator/v10 through shared validation, internal/domain.
-// @reason    AGENTS.md §2.4 requires the typed contract before the handler, and
-//
-//	§7.11 makes the password write-only: it appears in a request and never
-//	in a response, which is why the response carries has_password rather
-//	than a value. The create and patch bodies are one struct for the same
-//	reason §7.7's are — the panel edits the whole form and saves it.
-//
+// @reason    AGENTS.md §2.4 requires the typed contract before the handler, and §7.11 makes the password write-only: it appears in a request and never in a response, which is why the response carries has_password rather than a value. The create and patch bodies are one struct for the same reason §7.7's are, the panel edits the whole form and saves it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 
@@ -131,7 +122,7 @@ func ToProxyResponses(proxies []domain.Proxy) []ProxyResponse {
 }
 
 // toProxyTestStatus renders a stored status, or nil when the candidate was
-// never tested — an untested candidate has no state to report, which is not the
+// never tested, an untested candidate has no state to report, which is not the
 // same as a failed one.
 func toProxyTestStatus(status domain.ProxyTestStatus) *ProxyTestStatusResponse {
 	if status.State == "" && status.CheckedAt == nil {

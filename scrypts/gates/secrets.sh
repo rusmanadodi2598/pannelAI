@@ -88,7 +88,18 @@ case "$mode" in
 	gate_start "gitleaks (working tree)"
 	scratch="$(mktemp -d)"
 	trap 'rm -rf "$scratch"' EXIT
+	# `--cached` still lists a path that was moved or deleted in the worktree but
+	# not yet staged, and tar then fails the whole scan on a file that has no
+	# content left to read. A gone path carries nothing to a push, so the list is
+	# filtered to what is on disk; anything that exists and cannot be copied still
+	# fails here, which is the direction that stays blocking.
 	if ! (cd "$root" && git ls-files -z --cached --others --exclude-standard |
+		while IFS= read -r -d '' entry; do
+			# `if` rather than `[ -f ] && printf`, which would leave a gone path as the
+			# loop's last status and, under pipefail, fail the scan this filter exists
+			# to let finish.
+			if [ -f "$entry" ]; then printf '%s\0' "$entry"; fi
+		done |
 		tar --null --no-recursion -T - -cf - | tar -xf - -C "$scratch"); then
 		gate_fail "could not materialise the pushable file list into $scratch"
 		failed=1

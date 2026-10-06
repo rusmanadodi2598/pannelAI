@@ -3,23 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/redirect_test.go
-// @for       The outbound client's redirect policy: an upstream 3xx is a
-//
-//	failure, never a hop that carries the credential and the body elsewhere.
-//
-// @uses      context, net/http, net/http/httptest, provider, registry,
-//
-//	sync/atomic, testing.
-//
-// @reason    Go strips only Authorization, Cookie and Www-Authenticate on a
-//
-//	cross-host redirect; the registry declares credentials in custom
-//	headers (x-api-key, x-goog-api-key), and a 307/308 re-sends the body,
-//	so following a redirect hands an account's key to the redirect target.
-//
+// @for       The outbound client's redirect policy: an upstream 3xx is a failure, never a hop that carries the credential and the body elsewhere.
+// @uses      context, net/http, net/http/httptest, provider, registry, sync/atomic, testing.
+// @reason    Go strips only Authorization, Cookie and Www-Authenticate on a cross-host redirect; the registry declares credentials in custom headers (x-api-key, x-goog-api-key), and a 307/308 re-sends the body, so following a redirect hands an account's key to the redirect target.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package dataplane
 

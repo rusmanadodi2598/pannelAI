@@ -3,25 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/proxy_connect_rejection_test.go
-// @for       Tests for the CONNECT-rejection class: a proxy that answers the
-//
-//	tunnel request with a non-200 status must park and fail over, not
-//	pass the answer off as the upstream's failure.
-//
-// @uses      internal/domain, context, errors, io, net, net/http,
-//
-//	net/http/httptest, net/url, strings, testing.
-//
-// @reason    The live failover test on 2026-09-26 found this class open: Go
-//
-//	reports a non-200 CONNECT as a plain error, so the walk read it as
-//	the upstream's and refused to spend the next candidate. The doubles
-//	here are a proxy that refuses the tunnel and one that opens it, so
-//	the class is pinned end to end over a real TLS destination.
-//
+// @for       Tests for the CONNECT-rejection class: a proxy that answers the tunnel request with a non-200 status must park and fail over, not pass the answer off as the upstream's failure.
+// @uses      internal/domain, context, errors, io, net, net/http, net/http/httptest, net/url, strings, testing.
+// @reason    The live failover test on 2026-09-26 found this class open: Go reports a non-200 CONNECT as a plain error, so the walk read it as the upstream's and refused to spend the next candidate. The doubles here are a proxy that refuses the tunnel and one that opens it, so the class is pinned end to end over a real TLS destination.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package dataplane
 

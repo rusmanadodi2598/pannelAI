@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/target.go
-// @for       The upstream wire formats the gateway can translate, and the mapping
-//
-//	from a registry format onto one.
-//
+// @for       The upstream wire formats the gateway can translate, and the mapping from a registry format onto one.
 // @uses      internal/registry.
-// @reason    SPEC-API-001 §8 makes PROVIDER_NOT_ROUTABLE the answer for a format
-//
-//	with no translator, so "which formats have one" is one decision that
-//	both the resolver and its tests read. It lives in its own file so
-//	resolve.go stays inside the AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §8 makes PROVIDER_NOT_ROUTABLE the answer for a format with no translator, so "which formats have one" is one decision that both the resolver and its tests read. It lives in its own file so resolve.go stays inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

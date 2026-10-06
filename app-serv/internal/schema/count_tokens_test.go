@@ -1,20 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/count_tokens_test.go
-// @for       Table-driven tests for the count_tokens contract: what the
-//
-//	estimate measures and what the route refuses.
-//
+// @for       Table-driven tests for the count_tokens contract: what the estimate measures and what the route refuses.
 // @uses      strings, testing.
-// @reason    TDD.md §2.5 requires the table to cover the whole input surface,
-//
-//	not one happy sample: both content shapes, every block kind that must
-//	not count, the empty and absent cases, and the fields the route
-//	tolerates because a CLI tool sends them.
-//
+// @reason    TDD.md §2.5 requires the table to cover the whole input surface, not one happy sample: both content shapes, every block kind that must not count, the empty and absent cases, and the fields the route tolerates because a CLI tool sends them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 

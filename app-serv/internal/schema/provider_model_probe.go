@@ -1,20 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/provider_model_probe.go
-// @for       The §7.4 model-test contract: one provider's model probed by id, or
-//
-//	every chat model it offers probed in one bounded sweep.
-//
+// @for       The §7.4 model-test contract: one provider's model probed by id, or every chat model it offers probed in one bounded sweep.
 // @uses      encoding/json tags only.
-// @reason    Draft 017 §4.10 (F10) recorded that the panel could only ask "does
-//
-//	this connection answer" and never "does this model answer". The answer
-//	is per model, so the DTO is one row per model plus the sweep's own
-//	budget bookkeeping.
-//
+// @reason    Draft 017 §4.10 (F10) recorded that the panel could only ask "does this connection answer" and never "does this model answer". The answer is per model, so the DTO is one row per model plus the sweep's own budget bookkeeping.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package schema
 
@@ -51,10 +43,10 @@ type ProviderModelTestResult struct {
 // ProviderModelTestResponse is the sweep's answer: the catalog it walked, how
 // much of the budget it spent, and one row per model it probed.
 //
-// Source and Warning are the model list's own origin (SPEC-API §7.4, draft 017
-// §4.9), carried because a sweep of a stale list proves less than a sweep of the
-// live one. Tested and Total are the truncation an operator can act on: the rows
-// that were not run are a number, not a silence.
+// Source and Warning are the model list's own origin (SPEC-API §7.4), carried
+// because a sweep of a stale list proves less than a sweep of the live one.
+// Tested and Total are the truncation an operator can act on: the rows that
+// were not run are a number, not a silence.
 type ProviderModelTestResponse struct {
 	ProviderID string                    `json:"provider_id"`
 	Source     string                    `json:"source"`

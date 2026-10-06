@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_ports.go
-// @for       The collaborator contracts the endpoint and node services are built
-//
-//	from: registry lookup, credential sealing, probing, and the
-//	aggregate store the frozen repository contract extends.
-//
+// @for       The collaborator contracts the endpoint and node services are built from: registry lookup, credential sealing, probing, and the aggregate store the frozen repository contract extends.
 // @uses      internal/domain, internal/registry, internal/repository, context.
-// @reason    repository.EndpointRepository is frozen and aggregate-scoped. The
-//
-//	batch routes it backs are all-or-nothing across a set of rows, which a
-//	per-aggregate contract cannot express, so the set operations are named
-//	here as EndpointStore — the frozen interface embedded, not replaced —
-//	and the concrete PostgreSQL repository implements them. The remaining
-//	ports keep the service testable without a database, a registry, a
-//	sealer, or an HTTP upstream (AGENTS.md §1.5).
-//
+// @reason    repository.EndpointRepository is frozen and aggregate-scoped. The batch routes it backs are all-or-nothing across a set of rows, which a per-aggregate contract cannot express, so the set operations are named here as EndpointStore, the frozen interface embedded, not replaced, and the concrete PostgreSQL repository implements them. The remaining ports keep the service testable without a database, a registry, a sealer, or an HTTP upstream (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -30,16 +18,14 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
 
-// ProviderIndex resolves a provider identifier, so the service can refuse a
-// provider_id the registry does not know (SPEC-API-001 §6: an unknown provider id
-// is a VALIDATION_ERROR). All and Categories are part of the contract because
-// §7.4 lists and filters the registry, and a list that could only look up ids
-// one at a time would force every caller to invent its own enumeration.
-//
-// It is an interface rather than a concrete *registry.Index because the runtime
-// view must include custom nodes created during the process's life: a fixed index
-// value would freeze the registry at boot and make a node just created through
-// POST /provider-nodes unusable as a provider_id.
+// ProviderIndex resolves a provider identifier so the service can refuse a
+// provider_id the registry does not know, which is a VALIDATION_ERROR. All and
+// Categories are in the contract because the provider screens enumerate and
+// filter the registry, and an id-at-a-time lookup would force every caller to
+// invent its own enumeration. It is an interface rather than a concrete
+// *registry.Index because the runtime view must include custom nodes created
+// during the process's life: a fixed value would freeze the registry at boot and
+// make a node just created through POST /provider-nodes unusable as a provider.
 type ProviderIndex interface {
 	// Provider resolves an id, alias, or node prefix to its entry.
 	Provider(name string) (registry.Provider, bool)
@@ -88,7 +74,7 @@ type BulkRowIndexer interface {
 // aggregate-scoped contract, embedded, plus the set operations a batch route
 // needs.
 //
-// Embedding rather than restating the methods is deliberate — the frozen
+// Embedding rather than restating the methods is deliberate, the frozen
 // interface stays the single definition of aggregate-scoped persistence, so a
 // change there becomes a compile error here instead of a silent drift.
 type EndpointStore interface {
@@ -109,13 +95,10 @@ type EndpointStore interface {
 	// transaction. existing[i] selects the statement for row i: true updates the
 	// endpoint that already stands for the account, false inserts a new one. The
 	// slice must have exactly one entry per endpoint, because a missing entry
-	// would silently turn an update into a duplicate insert.
-	//
-	// It exists beside CreateBatch because the OAuth import is the one batch
-	// route that updates as well as creates (§8.1: a re-import of the same
-	// account is an update), and CreateBatch cannot express that. An
-	// implementation SHOULD return an error satisfying BulkRowIndexer when it
-	// can attribute the refusal to one row.
+	// would silently turn an update into a duplicate insert. It sits beside
+	// CreateBatch because the OAuth import is the one batch route that updates as
+	// well as creates, which CreateBatch cannot express. An implementation SHOULD
+	// return an error satisfying BulkRowIndexer when it can name the refused row.
 	ImportOAuthBatch(ctx context.Context, endpoints []domain.UpstreamEndpoint, existing []bool) error
 
 	// IDsByProvider returns every endpoint id of the provider in the priority

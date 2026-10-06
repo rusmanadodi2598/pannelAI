@@ -1,20 +1,12 @@
 // Package repository defines storage contracts consumed by app-serv services.
 //
 // @file      internal/repository/endpoint.go
-// @for       Storage boundaries for upstream endpoints, their keys, and custom
-//
-//	provider nodes.
-//
+// @for       Storage boundaries for upstream endpoints, their keys, and custom provider nodes.
 // @uses      context, internal/domain.
-// @reason    AGENTS.md §1.5 requires services to depend on these interfaces and
-//
-//	never on a driver, and §2.2 requires repositories to save aggregate
-//	roots: the endpoint (with its keys) and the node are the roots here,
-//	so a key is never loaded or stored on its own.
-//
+// @reason    AGENTS.md §1.5 requires services to depend on these interfaces and never on a driver, and §2.2 requires repositories to save aggregate roots: the endpoint (with its keys) and the node are the roots here, so a key is never loaded or stored on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package repository
 
@@ -32,8 +24,8 @@ type EndpointFilter struct {
 }
 
 // EndpointRepository is the storage boundary for upstream endpoints and their
-// keys (SPEC-API-001 §7.5). An implementation MUST save the aggregate root —
-// endpoint and keys together — so a partially written account cannot exist.
+// keys (SPEC-API-001 §7.5). An implementation MUST save the aggregate root,
+// endpoint and keys together, so a partially written account cannot exist.
 type EndpointRepository interface {
 	// Create persists a new endpoint with its keys in one transaction. A
 	// duplicate (provider_id, label) must yield domain.ErrEndpointExists so the
@@ -52,6 +44,16 @@ type EndpointRepository interface {
 	// their own methods because a key change is a different concern.
 	Update(ctx context.Context, endpoint domain.UpstreamEndpoint) error
 
+	// UpdateIfUnchanged persists the same fields only while the stored credential is
+	// still loaded, the one the caller read, and answers domain.ConFLICT when it no
+	// longer is. A caller that must not overwrite a concurrent write (an OAuth
+	// rotation that raced another) uses this instead of Update and reloads rather
+	// than clobbering. The guard is the credential rather than the row's updated_at
+	// because every served request rewrites that timestamp: a refresh under traffic
+	// would lose a race it never ran, and five of those dead-letter a healthy
+	// account.
+	UpdateIfUnchanged(ctx context.Context, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential) error
+
 	// Delete removes the endpoint and, by cascade, its keys.
 	Delete(ctx context.Context, id string) error
 
@@ -65,13 +67,16 @@ type EndpointRepository interface {
 	// DeleteKey removes one key.
 	DeleteKey(ctx context.Context, endpointID, keyID string) error
 
-	// RecordKeyHealth persists a key's circuit-breaker state after an upstream
-	// call, without touching its label, priority, or credential.
+	// RecordKeyHealth persists a key's circuit-breaker transition after an
+	// upstream call, without touching its label, priority, or credential. The
+	// error count moves inside the store (one more failure, or a clear), because
+	// two failures that loaded the same starting value must not land as one.
 	RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error
 
-	// RecordUpstreamOutcome persists the endpoint's connection-parity state
+	// RecordUpstreamOutcome persists the endpoint's connection-parity transition
 	// (the use run and the last non-test upstream error) after a data-plane
-	// call, without touching its routing fields or keys.
+	// call, without touching its routing fields or keys. The use run counts in
+	// the store for the same reason.
 	RecordUpstreamOutcome(ctx context.Context, endpoint domain.UpstreamEndpoint) error
 
 	// Reorder assigns new priorities to every endpoint of one provider, so a

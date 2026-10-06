@@ -1,5 +1,5 @@
 -- P1 quota tracker: the cache of what a provider publishes about ITSELF
--- (SPEC-API-001 §7.12, draft 017 §4.3).
+-- (SPEC-API-001 §7.12).
 --
 -- The screen must show the provider's own numbers, but fetching them on read is
 -- forbidden: a quota screen over a few hundred accounts would fan out to a few
@@ -10,8 +10,8 @@
 -- the window rows are the buckets in that answer.
 --
 -- Why this is not `quota_windows` (000007). That table's `"window"` column is
--- CHECK-constrained to the four kinds this gateway accounts for — 5h, daily,
--- weekly, monthly — because those are OUR buckets. A provider's buckets are named
+-- CHECK-constrained to the four kinds this gateway accounts for (5h, daily,
+-- weekly, monthly) because those are OUR buckets. A provider's buckets are named
 -- in the provider's own words ("Claude & GPT (Weekly)", "5-hour limit",
 -- "weekly limit"), an unbounded vocabulary that no CHECK set can enumerate and
 -- that must not be squashed into four values just to reuse a table: the squash
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS quota_published_state (
     next_attempt_at      timestamptz NOT NULL DEFAULT now(),
     consecutive_failures integer     NOT NULL DEFAULT 0,
     -- The failure count is a run length, so a negative value is a bug in the
-    -- writer rather than a state worth representing — the same rule 000012 pins
+    -- writer rather than a state worth representing, the same rule 000012 pins
     -- on consecutive_use_count. It is also what a backoff interval is computed
     -- from, so one negative row would make every later interval shorter.
     CONSTRAINT quota_published_state_failures_check
@@ -59,7 +59,7 @@ CREATE INDEX IF NOT EXISTS idx_quota_published_state_due
 -- `total` is NULLABLE ON PURPOSE, and this is the one column a later reader will
 -- be tempted to "simplify" into NOT NULL DEFAULT 0. Do not. NULL and 0 are two
 -- different facts a provider states: NULL means the provider published no ceiling
--- at all (unlimited — nothing to divide by, so the panel draws no bar), while 0
+-- at all (unlimited: nothing to divide by, so the panel draws no bar), while 0
 -- means a ceiling that exists and is fully spent. Collapsing the two into 0 would
 -- render an unlimited allowance as an exhausted one, which is the single most
 -- misleading thing this screen could do. The distinction is the same one

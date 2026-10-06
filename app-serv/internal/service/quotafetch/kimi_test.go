@@ -7,7 +7,7 @@
 // @reason    Kimi meters one credential as a rolling window beside rate limits and names its tier with its own codes, so a flipped bar or an invented plan name reaches the provider card silently.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

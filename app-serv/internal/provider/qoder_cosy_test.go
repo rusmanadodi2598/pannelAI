@@ -1,22 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_cosy_test.go
-// @for       The composition of one COSY header set: its parts, their order, and
-//
-//	the refusals before any of it is built.
-//
+// @for       The composition of one COSY header set: its parts, their order, and the refusals before any of it is built.
 // @uses      bytes, strconv, strings, testing.
-//
-// @reason    The signature is an MD5 over five parts in a stated order, and the
-//
-//	order is the thing a port gets wrong quietly: every part is present,
-//	joined wrongly, and the vendor rejects the request. So the tests here
-//	rebuild the digest from what the headers publish rather than from what
-//	the signer kept in memory, which is how the server reads it.
-//
+// @reason    The signature is an MD5 over five parts in a stated order, and the order is the thing a port gets wrong quietly: every part is present, joined wrongly, and the vendor rejects the request. So the tests here rebuild the digest from what the headers publish rather than from what the signer kept in memory, which is how the server reads it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -71,7 +61,7 @@ func TestCosyHeadersCarryTheVendorFingerprint(t *testing.T) {
 }
 
 // TestCosySignatureIsRecomputableFromItsHeaders recomputes the digest the way the
-// vendor does — payload, wrapped key, timestamp, body, signing path, in that order —
+// vendor does, payload, wrapped key, timestamp, body, signing path, in that order,
 // from values the request publishes, and requires the signature sent to match. The
 // order is spelled out again here rather than called, so a reordered composition is a
 // failing test instead of a passing mirror.
@@ -183,7 +173,7 @@ func TestCosyRefusesAnAccountThatCannotSign(t *testing.T) {
 // TestQoderCosySignerIsWired runs the process's own signer rather than the fixed one:
 // the real clock, the real id source, and the vendor's key. It is the only place that
 // wiring is exercised before the connector arrives, and it proves the pair of things
-// a mis-wired signer would get wrong quietly — an unwired signer refuses every
+// a mis-wired signer would get wrong quietly, an unwired signer refuses every
 // request, and a corrupted key constant fails to parse.
 func TestQoderCosySignerIsWired(t *testing.T) {
 	header, err := qoderCosy.headers([]byte("a body"), cosyTestChatURL, cosyTestIdentity())

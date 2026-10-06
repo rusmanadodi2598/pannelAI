@@ -3,22 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_translate_stop_test.go
-// @for       The caller's `stop` reaching the upstream in one shape and cutting the
-//
-//	folded answer in the other.
-//
+// @for       The caller's `stop` reaching the upstream in one shape and cutting the folded answer in the other.
 // @uses      encoding/json, strings, testing, internal/schema.
-// @reason    The two halves are the two directions of the same promise, and both
-//
-//	were measured wrong live: a string-form `stop` drew a vendor refusal
-//	that the array form did not, and an array-form `stop` changed nothing
-//	at all because the upstream ignored it. A folded answer is where a
-//	non-streaming caller's text is assembled, so that is where the cut
-//	has to land.
-//
+// @reason    The two halves are the two directions of the same promise, and both were measured wrong live: a string-form `stop` drew a vendor refusal that the array form did not, and an array-form `stop` changed nothing at all because the upstream ignored it. A folded answer is where a non-streaming caller's text is assembled, so that is where the cut has to land.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-30
 package dataplane
 

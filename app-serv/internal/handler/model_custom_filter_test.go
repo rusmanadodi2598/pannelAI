@@ -1,22 +1,17 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/model_custom_filter_test.go
-// @for       Draft 024 F2's list half: `GET /models/custom?provider_id=`
-//
-//	narrows the custom rows, and it accepts every spelling the provider
-//	answers to.
-//
+// @for       Draft 024 F2's list half: `GET /models/custom?provider_id=` narrows the custom rows, and it accepts every spelling the provider answers to.
 // @uses      internal/domain, net/http, net/http/httptest, strings, testing.
-// @reason    §7.6's table documents the parameter and the handler ignored it, so
+// @reason    §7.6's table documents the parameter and the handler ignored it, so a panel filtering one provider's custom rows received every provider's.
 //
-//	a panel filtering one provider's custom rows received every provider's.
 //	The filter accepts the id, the registry alias, and a node prefix for
 //	the same reason the catalog filter does: the operator may know the
 //	provider by any of those names (draft 024 §3.2).
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package handler
 

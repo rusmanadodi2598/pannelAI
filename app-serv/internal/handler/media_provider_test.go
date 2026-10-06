@@ -3,15 +3,10 @@
 // @file      internal/handler/media_provider_test.go
 // @for       HTTP tests for the §7.10 media provider routes.
 // @uses      net/http, strings, testing.
-// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path
-//
-//	per route. The kind filter is the interesting one: an unknown kind must
-//	be a 400 naming the closed set, never an empty page a panel would render
-//	as "nothing configured".
-//
+// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path per route. The kind filter is the interesting one: an unknown kind must be a 400 naming the closed set, never an empty page a panel would render as "nothing configured".
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

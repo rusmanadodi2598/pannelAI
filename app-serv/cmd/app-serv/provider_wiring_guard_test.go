@@ -1,24 +1,12 @@
 // Command app-serv adapts the provider registry to the service's runtime lookup
 //
 // @file      cmd/app-serv/provider_wiring_guard_test.go
-// @for       The structural assertion that the Qoder connector's exchange
-//
-//	client is the guarded egress client the boot sequence builds.
-//
+// @for       The structural assertion that the Qoder connector's exchange client is the guarded egress client the boot sequence builds.
 // @uses      go/ast, go/parser, go/token, os, testing.
-// @reason    R07 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the composition root
-//
-//	passed a nil client to NewQoder, so the Personal Access Token
-//	exchange, the catalog, and the identity reads left through a
-//	client the egress guard never saw. The wiring shape is a
-//	construction, not a runtime behaviour — a nil client compiles and
-//	works until the first exchange — so, like egress_guard_assert_test.go,
-//	this reads the composition root's own source and fails when the
-//	call hands the connector nil.
-//
+// @reason    R07 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the composition root passed a nil client to NewQoder, so the Personal Access Token exchange, the catalog, and the identity reads left through a client the egress guard never saw. The wiring shape is a construction, not a runtime behaviour, a nil client compiles and works until the first exchange, so, like egress_guard_assert_test.go, this reads the composition root's own source and fails when the call hands the connector nil.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package main
 
@@ -87,7 +75,7 @@ func TestProviderWiring_QoderRidesTheGuardedClient(t *testing.T) {
 			return true
 		}
 		if ident, ok := call.Args[1].(*ast.Ident); ok && ident.Name == "nil" {
-			t.Errorf("provider.NewQoder is called with a nil client at %s — the PAT exchange would leave the egress guard (draft 042 R07)", fset.Position(call.Pos()))
+			t.Errorf("provider.NewQoder is called with a nil client at %s, the PAT exchange would leave the egress guard (draft 042 R07)", fset.Position(call.Pos()))
 		}
 		return true
 	})

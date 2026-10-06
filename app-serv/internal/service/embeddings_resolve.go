@@ -1,26 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/embeddings_resolve.go
-// @for       The resolution phase of one embeddings call: model to provider,
-//
-//	provider to media block and base URL, provider to account, and the
-//	identity a refusal can still name.
-//
-// @uses      internal/dataplane, internal/domain, internal/registry,
-//
-//	internal/schema, context, strings.
-//
-// @reason    Register G20: a refusal before the call must leave a log row with
-//
-//	the identity resolved so far, and the cleanest way to know how far
-//	resolution got is to build the identity before the first fallible
-//	step and return it with the error — the same rule G17's relayOnce
-//	settled for the chat plane. Splitting the phase here also keeps
-//	embeddings.go inside the §1.1 budget.
-//
+// @for       The resolution phase of one embeddings call: model to provider, provider to media block and base URL, provider to account, and the identity a refusal can still name.
+// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema, context, strings.
+// @reason    Register G20: a refusal before the call must leave a log row with the identity resolved so far, and the cleanest way to know how far resolution got is to build the identity before the first fallible step and return it with the error, the same rule G17's relayOnce settled for the chat plane. Splitting the phase here also keeps embeddings.go inside the §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -37,7 +23,7 @@ import (
 // embeddingsCall is one resolved embeddings call: the request to send, the
 // account it uses, and the identity its accounting rows carry. The outcome is
 // built before the first fallible step, so a refusal returns the call with
-// whatever identity resolution had already established (register G20).
+// whatever identity resolution had already established.
 type embeddingsCall struct {
 	outcome   dataplane.Outcome
 	request   dataplane.MediaRequest

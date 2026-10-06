@@ -3,24 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_relay.go
-// @for       One resolved provider's leg of the §7.15 pipeline: walk the
-//
-//	provider's credentials, translate the request once, call, and
-//	translate the answer back.
-//
+// @for       One resolved provider's leg of the §7.15 pipeline: walk the provider's credentials, translate the request once, call, and translate the answer back.
 // @uses      internal/domain, internal/reasoning, internal/schema, context, time.
-// @reason    SPEC-API-001 §7.7 fixes the failover order as credential-first, so
-//
-//	this leg walks the provider's healthy credentials before it gives
-//	up to the next combo member, and each attempt's outcome reports the
-//	identity it was attempted with so the chat plane records a failed
-//	call (register G17). It is also where the §7.15 reasoning injection
-//	runs, on the body the upstream receives. Keeping the leg here is
-//	what holds engine.go inside the AGENTS.md §1.1 line budget.
-//
+// @reason    SPEC-API-001 §7.7 fixes the failover order as credential-first, so this leg walks the provider's healthy credentials before it gives up to the next combo member, and each attempt's outcome reports the identity it was attempted with so the chat plane records a failed call (register G17). It is also where the §7.15 reasoning injection runs, on the body the upstream receives. Keeping the leg here is what holds engine.go inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -28,24 +16,21 @@ import (
 	"context"
 	"time"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/logx"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/reasoning"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
-// relayOnce handles one resolved provider: walk its credentials, translate,
-// call, and translate the answer back.
-//
-// The request is translated once, before any credential is spent: a translation
-// failure would repeat identically for every credential, so it fails the leg
-// with a zero outcome: no upstream call happened, so there is no identity to
-// record (draft 028 F3).
-//
-// Each credential that fails in a failover-worthy way is excluded and the next
-// healthy one is tried; a request-shaped refusal is handed back immediately,
-// because the same body would be refused identically everywhere (draft 028 F2).
-// When no credential remains, the leg reports the last in-leg failure with the
-// last attempted identity; when the very first selection is refused, it reports
-// the refusal with no identity at all.
+// relayOnce handles one resolved provider: walk its credentials, translate, call,
+// and translate the answer back. The request is translated once, before any
+// credential is spent, because a translation failure would repeat identically for
+// every credential: it fails the leg with a zero outcome, since no upstream call
+// happened and there is no identity to record. Each credential that fails in a
+// failover-worthy way is excluded and the next healthy one tried; a request-shaped
+// refusal is handed back immediately, because the same body would be refused
+// identically everywhere. When no credential remains the leg reports the last
+// in-leg failure with the last attempted identity, and when the very first selection
+// is refused it reports the refusal with no identity at all.
 func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolution, sink FrameSink) (Outcome, error) {
 	body, err := upstreamBody(in, resolution)
 	if err != nil {
@@ -98,7 +83,10 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 		// the failure path swallows the same class of error (recordFailure),
 		// and a 200 the client can use outranks a health row that did not
 		// land. reason: the served answer is the request's outcome.
-		_ = e.selector.RecordSuccess(ctx, selection)
+		if err := e.selector.RecordSuccess(ctx, selection); err != nil {
+			logx.Degraded(e.logger, "key health could not be recorded after a served call", err,
+				"endpoint_id", outcome.EndpointID, "key_id", selection.Key.ID())
+		}
 		return outcome, nil
 	}
 	spent := make(map[string]struct{})
@@ -118,7 +106,7 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 
 		// The marker opens once the credential is known and closes when this
 		// attempt ends, whichever way it ends, so the drawing lights a node for
-		// exactly as long as the provider is being called (SPEC-UI-001 §6.5).
+		// exactly as long as the provider is being called.
 		// The combo the client addressed travels with it: the member resolved here
 		// is what answered, and the combo is the stage the request entered through,
 		// so the drawing can light both. A nil seam returns a release that does
@@ -194,7 +182,7 @@ func (e *Engine) answer(
 	outcome.Body = body
 	// A streamed answer reports its usage through the outcome inside relayStream,
 	// and hands back no separate body: overwriting here would discard the numbers
-	// the upstream sent and record the call as 0/0 (draft 021 F5).
+	// the upstream sent and record the call as 0/0.
 	if usage != nil {
 		outcome.Usage = usage
 	}

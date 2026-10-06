@@ -3,20 +3,12 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/ponytail_test.go
-// @for       The shared test helpers, the chat-wire cases, and the inputs that
-//
-//	must leave a body untouched.
-//
+// @for       The shared test helpers, the chat-wire cases, and the inputs that must leave a body untouched.
 // @uses      encoding/json, fmt, strings, testing.
-// @reason    SPEC-API-002 §7 makes injection idempotent and leaves the wire
-//
-//	shapes to disagree about where a system slot lives. Both are claims
-//	about bytes, so each case reads the body back rather than trusting
-//	the injector's own report.
-//
+// @reason    SPEC-API-002 §7 makes injection idempotent and leaves the wire shapes to disagree about where a system slot lives. Both are claims about bytes, so each case reads the body back rather than trusting the injector's own report.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

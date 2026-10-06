@@ -4,15 +4,10 @@
 // @file      internal/domain/gateway_key_crypto.go
 // @for       The digest helper for gateway key secrets.
 // @uses      crypto/sha256, encoding/hex (standard library only).
-// @reason    A gateway key is stored only as a SHA-256 lookup digest
-//
-//	(SPEC-API-001 §6); the plaintext is shown once and compared by
-//	hashing the presented secret. Masking is a service-layer concern
-//	because the visible prefix is configurable (GATEWAY_KEY_PREFIX).
-//
+// @reason    A gateway key is stored only as a SHA-256 lookup digest (SPEC-API-001 §6); the plaintext is shown once and compared by hashing the presented secret. Masking is a service-layer concern because the visible prefix is configurable (GATEWAY_KEY_PREFIX).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package domain
 

@@ -2,19 +2,11 @@
 //
 // @file      internal/repository/postgres/proxy.go
 // @for       PostgreSQL persistence for saved proxy candidates (SPEC-API-001 §7.11).
-// @uses      github.com/jackc/pgx/v5, internal/domain, encoding/json, bytes,
-//
-//	errors, fmt, time.
-//
-// @reason    The status document is jsonb, so its codec lives beside the
-//
-//	statements that read and write it, and the driver's errors are
-//	translated here — a missing row is domain.ErrProxyNotFound, never
-//	pgx.ErrNoRows, so the service layer stays driver-free (AGENTS.md §1.5).
-//
+// @uses      github.com/jackc/pgx/v5, internal/domain, encoding/json, bytes, errors, fmt, time.
+// @reason    The status document is jsonb, so its codec lives beside the statements that read and write it, and the driver's errors are translated here, a missing row is domain.ErrProxyNotFound, never pgx.ErrNoRows, so the service layer stays driver-free (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package postgres
 
@@ -79,6 +71,10 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
 
 // List returns every candidate ordered by label, which is the order the panel
 // shows and the order an operator scans.
+//
+// Unbounded by design and stated as the §1.7 tradeoff: a proxy row exists only
+// because an operator created it, and the pool editor reads the whole list to
+// label every candidate's pool, so paging it would show a partial label set.
 func (r *ProxyRepository) List(ctx context.Context) ([]domain.Proxy, error) {
 	rows, err := r.pool.Query(ctx, `SELECT `+proxyColumns+` FROM proxies ORDER BY label, id`)
 	if err != nil {

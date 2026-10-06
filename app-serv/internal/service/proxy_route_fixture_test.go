@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy_route_fixture_test.go
-// @for       The proxy route tests' in-memory collaborators and row builders,
-//
-//	apart from the assertions so each file's reason stays readable.
-//
+// @for       The proxy route tests' in-memory collaborators and row builders, apart from the assertions so each file's reason stays readable.
 // @uses      context, testing, time, internal/domain.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1-D6: the plan is the engine's
-//
-//	one decision, and both of its test files drive the same fakes and
-//	row builders. Keeping them here means one definition serves every
-//	assertion, the way the egress guard's source-reading helpers sit
-//	apart from the assertions built on them.
-//
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1-D6: the plan is the engine's one decision, and both of its test files drive the same fakes and row builders. Keeping them here means one definition serves every assertion, the way the egress guard's source-reading helpers sit apart from the assertions built on them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package service
 
@@ -62,8 +53,12 @@ func (f *fakeRouteStore) Park(_ context.Context, proxyID string, _ time.Duration
 	return nil
 }
 
-func (f *fakeRouteStore) Parked(_ context.Context, proxyID string) (bool, error) {
-	return f.parked[proxyID], nil
+func (f *fakeRouteStore) ParkedAll(_ context.Context, proxyIDs []string) (map[string]bool, error) {
+	parked := make(map[string]bool, len(proxyIDs))
+	for _, id := range proxyIDs {
+		parked[id] = f.parked[id]
+	}
+	return parked, nil
 }
 
 type fakePlanSettings struct {

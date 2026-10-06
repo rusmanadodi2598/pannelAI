@@ -2,15 +2,11 @@
 //
 // @file      internal/handler/chat_http_test.go
 // @for       HTTP behavior coverage for the Playground Chat completions route.
-// @uses      internal/dataplane, internal/handler, net/http, net/http/httptest,
-// strings, testing.
-// @reason    F4 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires
-// the happy, validation, authentication, stream, and pre-frame failure paths
-// through the handler rather than only through helper or engine tests.
-//
+// @uses      internal/dataplane, internal/handler, net/http, net/http/httptest, strings, testing.
+// @reason    F4 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires the happy, validation, authentication, stream, and pre-frame failure paths through the handler rather than only through helper or engine tests.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package handler
 
@@ -37,7 +33,7 @@ func TestChatCompletionsHTTP_Table(t *testing.T) {
 		{name: "missing key", body: chatBody("test/model"), wantStatus: http.StatusUnauthorized, wantCode: "UNAUTHORIZED"},
 		{name: "invalid key", key: "sk-wrong", body: chatBody("test/model"), wantStatus: http.StatusUnauthorized, wantCode: "UNAUTHORIZED"},
 		// 404: §7.15 ends the resolution order here and the OpenAI wire answers an unknown
-		// model with it, so a client's retry policy reads the truth (draft 041).
+		// model with it, so a client's retry policy reads the truth.
 		{name: "unknown model", key: fixture.key, body: chatBody("ghost/not-a-model"), wantStatus: http.StatusNotFound, wantCode: "MODEL_NOT_FOUND"},
 		{name: "upstream pre-frame failure", key: fixture.key, body: chatBody("test/preframe"), wantStatus: http.StatusBadGateway, wantCode: "UPSTREAM_ERROR"},
 	}
@@ -73,7 +69,7 @@ func TestChatCompletionsHTTP_StreamLifecycle(t *testing.T) {
 		{name: "pre-frame failure remains HTTP error", model: "test/preframe", wantStatus: http.StatusBadGateway, wantType: "application/json", wantBody: "UPSTREAM_ERROR"},
 		// A stream for a model that resolves to nothing fails before any frame, so it is
 		// still an ordinary HTTP answer: the status the non-streamed path gives, not a 200
-		// under an SSE type (draft 009 F3), and not a 400 that invites the same retry.
+		// under an SSE type, and not a 400 that invites the same retry.
 		{name: "unknown model before the first frame", model: "ghost/not-a-model", wantStatus: http.StatusNotFound, wantType: "application/json", wantBody: "MODEL_NOT_FOUND"},
 	}
 	for _, tc := range cases {

@@ -3,14 +3,10 @@
 // @file      internal/service/quota_published_store.go
 // @for       Caching a provider's published answer and stamping its next poll.
 // @uses      context, internal/domain, time.
-// @reason    A poll has two decisions that read differently: when to ask again, which the worker owns,
-//
-//	and what a single answer writes — figures, or only a sentence when there are no figures. This file
-//	holds the second one, so the pruning rule that protects last-good numbers is stated once.
-//
+// @reason    A poll has two decisions that read differently: when to ask again, which the worker owns, and what a single answer writes, figures, or only a sentence when there are no figures. This file holds the second one, so the pruning rule that protects last-good numbers is stated once.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
 
@@ -49,18 +45,14 @@ func (w *QuotaPublishedWorker) storeAnswer(ctx context.Context, state domain.Pub
 	return true
 }
 
-// storeSoftAnswer covers a sentence with no buckets: the provider refused the credential, the
-// account published nothing, the family errored. StorePublished is the port's only window writer
-// and it prunes every label an answer lacks, so a zero-window answer would wipe the last good
-// buckets off the card. The sentence therefore travels on the attempt — the card's only honest
-// content for such an account — while stored numbers keep the older stamp they really have,
-// because RecordAttempt never touches fetched_at. A provider that answered in words did answer,
-// so its failure run stays where it was.
-// storeSoftAnswer writes an answer that carries no buckets. `failureDelta` is 0 when the
-// provider spoke (a sentence is still an answer) and 1 when it refused in the way the
-// reference throws: the sentence is stored either way, but only the second lengthens the
-// failure run, so a family that keeps erroring backs off instead of being polled forever
-// on its family floor.
+// storeSoftAnswer writes an answer that carries no buckets: the provider refused
+// the credential, the account published nothing, or the family errored.
+// StorePublished is the port's only window writer and prunes every label an answer
+// lacks, so a zero-window answer would wipe the last good buckets off the card;
+// the sentence travels on the attempt instead, and stored numbers keep their older
+// stamp because RecordAttempt never touches fetched_at. `failureDelta` is 0 when
+// the provider spoke and 1 when it threw, so only a throwing family lengthens the
+// failure run and backs off instead of being polled forever on its family floor.
 func (w *QuotaPublishedWorker) storeSoftAnswer(ctx context.Context, state domain.PublishedState, providerID string, now time.Time, result PublishedUsage, failureDelta int) {
 	attempt := publishedAttempt(state, providerID, now, failureDelta)
 	if message := strings.TrimSpace(result.Message); message != "" {

@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_search_test.go
-// @for       The `?q` filter of the provider list: what a query matches, and
-// //
-//
-//	what a blank or unmatched one answers.
-//
+// @for       The `?q` filter of the provider list: what a query matches, and what a blank or unmatched one answers.
 // @uses      internal/registry, context, testing.
-// @reason    SPEC-UI §14 Q13 left the search to the API, and the failure this
-//
-//	file pins is the silent one: before `q` existed the route answered
-//	the unfiltered registry to every spelling, so a panel search would
-//	have looked alive while filtering nothing. The matching rule is
-//	service behavior, so it is proven here rather than through the wire.
-//
+// @reason    SPEC-UI §14 Q13 left the search to the API, and the failure this file pins is the silent one: before `q` existed the route answered the unfiltered registry to every spelling, so a panel search would have looked alive while filtering nothing. The matching rule is service behavior, so it is proven here rather than through the wire.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-25
 package service
 

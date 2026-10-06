@@ -3,17 +3,10 @@
 // @file      internal/registry/credential_free_test.go
 // @for       The credential-free predicate both routing and the catalog read.
 // @uses      testing, internal/registry.
-// @reason    Draft 029 §4.8 F8 made routing synthesize an endpoint for a
-//
-//	credential-free provider, and the catalog's `?active=true` filter
-//	has to give the same answer or the panel hides a lane the router
-//	serves. The predicate therefore has more than one caller, and these
-//	cases pin each spelling the document uses rather than the one the
-//	live registry happened to carry.
-//
+// @reason    Draft 029 §4.8 F8 made routing synthesize an endpoint for a credential-free provider, and the catalog's `?active=true` filter has to give the same answer or the panel hides a lane the router serves. The predicate therefore has more than one caller, and these cases pin each spelling the document uses rather than the one the live registry happened to carry.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-24
 package registry
 

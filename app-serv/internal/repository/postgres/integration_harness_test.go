@@ -4,18 +4,8 @@
 //
 // @file      internal/repository/postgres/integration_harness_test.go
 // @for       Shared harness for the tagged PostgreSQL integration tests.
-// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations,
-//
-//	context, os, testing, time.
-//
-// @reason    AGENTS.md §1.7 gives repositories the constraint-level guarantees
-//
-//	(unique name, bounded pagination), and §2.1 requires that logic be
-//	tested. A stub cannot prove a UNIQUE index exists: the earlier P0
-//	schema had a plain index on name, so duplicates were accepted by
-//	PostgreSQL while the in-memory test double rejected them. These
-//	tests run against a real server, which is the only way that
-//	divergence surfaces.
+// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations, context, os, testing, time.
+// @reason    AGENTS.md §1.7 gives repositories the constraint-level guarantees (unique name, bounded pagination), and §2.1 requires that logic be tested. A stub cannot prove a UNIQUE index exists: the earlier P0 schema had a plain index on name, so duplicates were accepted by PostgreSQL while the in-memory test double rejected them. These tests run against a real server, which is the only way that divergence surfaces.
 //
 //	The file carries an `integration` build tag, so the default
 //	`go test ./...` does not compile it and stays hermetic (AGENTS.md §2.1
@@ -28,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package postgres
 
@@ -51,16 +41,10 @@ const testDSNEnv = "PANNELAI_TEST_POSTGRES_DSN"
 
 // newTestPool connects to the configured database and applies migrations, so
 // every integration test in this package shares one setup path.
-//
-// The database's name must declare itself a test database. Every harness in
-// this package TRUNCATEs the tables it reads, so pointing the variable at a
-// real database destroys its data — which happened once, when a run was aimed
-// at the dev database by copying POSTGRES_DSN instead of writing a test DSN:
-// the operator's endpoints and keys were truncated away and had to be
-// recovered from WAL. A name the guard accepts is one that names itself
-// disposable (`pannelai_test`, `pannelai_test_...`); anything else is refused
-// before a single statement runs, because a guard that runs after the first
-// TRUNCATE is not a guard.
+// The database name must declare itself a test database, by containing `test`:
+// every harness here TRUNCATEs the tables it reads, so pointing the variable at a
+// real database destroys its data. Anything else is refused before a single
+// statement runs.
 func newTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 
@@ -118,7 +102,7 @@ func requireTestDSN(t *testing.T) string {
 // guardTestDatabase refuses a DSN whose database name does not declare itself
 // a test database. The connection parameters are parsed with the same library
 // the pool uses, so a DSN the guard accepts is a DSN the pool can open, and the
-// check happens before migrations run — which is what makes it a guard rather
+// check happens before migrations run, which is what makes it a guard rather
 // than an apology.
 func guardTestDatabase(dsn string) error {
 	parsed, err := pgxpool.ParseConfig(dsn)

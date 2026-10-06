@@ -1,22 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_oauth_bulk.go
-// @for       Importing already-obtained OAuth credentials as endpoints
-//
-//	(SPEC-API-001 §7.5, §8.1).
-//
+// @for       Importing already-obtained OAuth credentials as endpoints (SPEC-API-001 §7.5, §8.1).
 // @uses      internal/domain, context, errors, strconv, strings, time.
-// @reason    The import path exists for accounts obtained on a machine with no
-//
-//	browser callback, so there is no authorization flow to run — only
-//	tokens to seal and an account identity to match. It is separate from
-//	endpoint_bulk.go because the two batches share the all-or-nothing
-//	rule but nothing else, and because AGENTS.md §1.1 caps a file at 250
-//	lines.
-//
+// @reason    The import path exists for accounts obtained on a machine with no browser callback, so there is no authorization flow to run, only tokens to seal and an account identity to match. It is separate from endpoint_bulk.go because the two batches share the all-or-nothing rule but nothing else, and because AGENTS.md §1.1 caps a file at 250 lines.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -51,16 +41,13 @@ type OAuthImportResult struct {
 	TokenHint string
 }
 
-// BulkImportOAuth imports already-obtained OAuth credentials as endpoints.
-//
-// An account identity already staged is updated in place rather than duplicated,
-// because §8.1 makes a re-import an update: importing the same account twice must
-// not leave two endpoints competing for one token set.
-//
-// Every row is sealed and matched before the store is called, so a batch with one
-// bad row writes nothing at all; the store then applies the whole set in a single
-// transaction. That is the §8.1 rule this route shares with /endpoints/bulk, and
-// it is why the loop below only builds values.
+// BulkImportOAuth imports already-obtained OAuth credentials as endpoints. An
+// account identity already staged is updated in place rather than duplicated:
+// importing the same account twice must not leave two endpoints competing for
+// one token set. Every row is sealed and matched before the store is called, so
+// a batch with one bad row writes nothing at all, and the store then applies the
+// whole set in a single transaction, the rule this route shares with
+// /endpoints/bulk. The loop below therefore only builds values.
 func (s *EndpointService) BulkImportOAuth(ctx context.Context, providerID string, accounts []OAuthAccountInput) ([]OAuthImportResult, error) {
 	if len(accounts) == 0 {
 		return nil, domain.NewValidationError("accounts is required")
@@ -127,7 +114,7 @@ func (s *EndpointService) buildOAuthImport(ctx context.Context, providerID strin
 	}
 	hint := domain.MaskSecret(accessToken)
 
-	existingID, err := s.store.FindOAuthEndpoint(ctx, providerID, account.Account.Email, account.Account.WorkspaceID)
+	existingID, err := s.store.FindOAuthEndpoint(ctx, providerID, account.Account.Email().String(), account.Account.WorkspaceID())
 	if err != nil && !errors.Is(err, domain.ErrEndpointNotFound) {
 		return domain.UpstreamEndpoint{}, false, "", err
 	}
@@ -164,15 +151,15 @@ func (s *EndpointService) sealOAuthCredential(account OAuthAccountInput, now tim
 		}
 	}
 	refreshed := now
-	return &domain.OAuthCredential{
+	return domain.NewOAuthCredential(domain.OAuthCredentialInput{
 		AccessTokenEncrypted:  accessSealed,
 		RefreshTokenEncrypted: refreshSealed,
 		ExpiresAt:             account.ExpiresAt,
 		Scopes:                account.Scopes,
-		AccountEmail:          account.Account.Email,
-		AccountID:             account.Account.WorkspaceID,
+		AccountEmail:          account.Account.Email().String(),
+		AccountID:             account.Account.WorkspaceID(),
 		LastRefreshAt:         &refreshed,
-	}, nil
+	})
 }
 
 // buildOAuthEndpoint stages a new oauth endpoint for an account never imported.
@@ -197,12 +184,12 @@ func buildOAuthEndpoint(providerID string, credential *domain.OAuthCredential, a
 // identity at all. Two accounts of one provider are told apart by exactly this.
 func defaultOAuthLabel(account domain.EndpointAccount) string {
 	switch {
-	case account.Email != "":
-		return account.Email
-	case account.WorkspaceID != "":
-		return "workspace-" + account.WorkspaceID
-	case account.Name != "":
-		return account.Name
+	case !account.Email().IsZero():
+		return account.Email().String()
+	case account.WorkspaceID() != "":
+		return "workspace-" + account.WorkspaceID()
+	case account.Name() != "":
+		return account.Name()
 	default:
 		return "oauth-account"
 	}

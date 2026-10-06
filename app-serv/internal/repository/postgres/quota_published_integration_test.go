@@ -3,22 +3,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/quota_published_integration_test.go
-// @for       The published-quota read path against a real server: the batched
-//
-//	query the quota screen runs, and the NULL ceiling it must not flatten.
-//
+// @for       The published-quota read path against a real server: the batched query the quota screen runs, and the NULL ceiling it must not flatten.
 // @uses      testing, context, time, internal/domain.
-// @reason    Two guarantees of this read are invisible to a stub. That N
-//
-//	endpoints cost one statement is only measurable against a server that can
-//	count them, and that a NULL ceiling survives as "no ceiling" is a property
-//	of the numeric column and the LEFT JOIN, not of the Go struct — the
-//	joining NULLs are exactly what makes an endpoint with no buckets decodable
-//	instead of an error (AGENTS.md §1.7, §2.1).
-//
+// @reason    Two guarantees of this read are invisible to a stub. That N endpoints cost one statement is only measurable against a server that can count them, and that a NULL ceiling survives as "no ceiling" is a property of the numeric column and the LEFT JOIN, not of the Go struct, the joining NULLs are exactly what makes an endpoint with no buckets decodable instead of an error (AGENTS.md §1.7, §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package postgres
 
@@ -128,8 +118,7 @@ func TestPublishedQuotaRepository_NullTotalSurvivesAsNoCeiling(t *testing.T) {
 	}
 
 	unlimited := byLabel["unlimited bucket"]
-	if unlimited.HasCeiling() {
-		value, _ := unlimited.Ceiling()
+	if value, ok := unlimited.Ceiling(); ok {
 		t.Fatalf("the uncapped bucket read back a ceiling %q, want none: NULL and 0 are different facts", value)
 	}
 	if unlimited.Total != nil {
@@ -143,13 +132,12 @@ func TestPublishedQuotaRepository_NullTotalSurvivesAsNoCeiling(t *testing.T) {
 	}
 
 	spent := byLabel["spent bucket"]
-	if !spent.HasCeiling() {
+	if value, ok := spent.Ceiling(); !ok {
 		t.Fatal("the spent bucket lost its ceiling: a stored 0 must not read back as unlimited")
-	}
-	if value, _ := spent.Ceiling(); value != "0.000000" {
+	} else if value != "0.000000" {
 		t.Fatalf("the spent bucket ceiling = %q, want zero rendered at the column scale", value)
 	}
-	if !byLabel["capped bucket"].HasCeiling() {
+	if _, ok := byLabel["capped bucket"].Ceiling(); !ok {
 		t.Fatal("the capped bucket lost its ceiling")
 	}
 }

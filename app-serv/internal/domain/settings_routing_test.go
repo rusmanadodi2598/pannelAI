@@ -2,22 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/settings_routing_test.go
-// @for       The credential rotation vocabulary, the per-provider override
-//
-//	resolution, the backfill of rows written before the keys existed,
-//	and the routing group's validation rules.
-//
+// @for       The credential rotation vocabulary, the per-provider override resolution, the backfill of rows written before the keys existed, and the routing group's validation rules.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.5 and §7.14 make the override-over-global rule the
-//
-//	one the data plane's selector depends on. AGENTS.md §2.1 requires
-//	it pinned beside the implementation: the resolution is where a
-//	panel write and the router's walk must agree, and the degradation
-//	rules are what keep a rotation setting from failing a request.
-//
+// @reason    SPEC-API-001 §7.5 and §7.14 make the override-over-global rule the one the data plane's selector depends on. AGENTS.md §2.1 requires it pinned beside the implementation: the resolution is where a panel write and the router's walk must agree, and the degradation rules are what keep a rotation setting from failing a request.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package domain
 

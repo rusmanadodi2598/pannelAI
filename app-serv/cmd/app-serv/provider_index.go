@@ -1,23 +1,12 @@
 // Command app-serv adapts the provider registry to the service's runtime lookup
 //
 // @file      cmd/app-serv/provider_index.go
-// @for       The runtime ProviderIndex: embedded registry entries overlaid with
-//
-//	the custom nodes stored in PostgreSQL.
-//
+// @for       The runtime ProviderIndex: embedded registry entries overlaid with the custom nodes stored in PostgreSQL.
 // @uses      context, sync, internal/domain, internal/registry, internal/service.
-// @reason    service.ProviderIndex is deliberately an interface rather than a
-//
-//	*registry.Index because a node created through POST /provider-nodes
-//	must become usable as a provider_id immediately. A boot-frozen index
-//	would accept the create and then refuse every endpoint aimed at it,
-//	which reads as a bug rather than as a limitation. This adapter is
-//	the composition root's job: it is the only layer allowed to know
-//	both the embedded registry and the node repository.
-//
+// @reason    service.ProviderIndex is deliberately an interface rather than a *registry.Index because a node created through POST /provider-nodes must become usable as a provider_id immediately. A boot-frozen index would accept the create and then refuse every endpoint aimed at it, which reads as a bug rather than as a limitation. This adapter is the composition root's job: it is the only layer allowed to know both the embedded registry and the node repository.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package main
 
@@ -49,18 +38,13 @@ const (
 )
 
 // runtimeProviderIndex resolves a provider identifier against the embedded
-// registry plus the currently stored custom nodes.
-//
-// The overlay is cached for overlayCacheTTL and rebuilt lazily. Rebuilding on
-// every lookup was one node query plus a registry rebuild per request (draft 042
-// R06). Freshness does not rest on the window alone: the service calls
-// InvalidateNodeOverlay on every node write, so a node the operator just created
-// or deleted is visible on the next lookup. The TTL is only the backstop for a
-// write made outside this process, such as a direct database change.
-//
-// A failed rebuild keeps serving the last good overlay rather than dropping to
-// the embedded registry alone: a brief node-table outage must not unlist every
-// custom provider and turn a read failure into a routing outage.
+// registry plus the currently stored custom nodes. The overlay is cached for
+// overlayCacheTTL and rebuilt lazily: rebuilding per lookup would cost one node
+// query plus a registry rebuild on every request. InvalidateNodeOverlay runs on
+// every node write, so a created or deleted node is visible on the next lookup;
+// the TTL only backstops a write made outside this process, a direct database
+// change. A failed rebuild keeps serving the last good overlay rather than the
+// embedded registry alone, so a node-table outage cannot unlist every provider.
 type runtimeProviderIndex struct {
 	embedded *registry.Index
 	nodes    nodeLister
@@ -165,18 +149,12 @@ func (r *runtimeProviderIndex) InvalidateNodeOverlay() {
 
 // loadNodes reads the stored nodes, each carrying its own model list.
 //
-// The mapping goes through service.NodeCustomNode rather than repeating the
-// field list here: that helper is the one place that knows how a stored node
-// becomes a registry node, and a second copy is how the two shapes drift — the
-// drift that left every custom node unsynthesizable until the id contract was
-// fixed.
-//
-// The model list is attached here rather than resolved by each consumer because
-// every consumer reads models from the index: the detail route, the catalog, and
-// the data plane all iterate Provider.Models, so one injection reaches all three
-// (draft 017 §4.2). A source that fails leaves the node with its declared list:
-// an upstream that is down must not make the node unresolvable, or a model-list
-// problem becomes a routing outage.
+// The mapping goes through service.NodeCustomNode, the one place that knows how
+// a stored node becomes a registry node. The model list is injected here rather
+// than resolved by each consumer because the detail route, the catalog and the
+// data plane all read Provider.Models from the index. A source that fails leaves
+// the node its declared list: an upstream that is down must not make the node
+// unresolvable.
 func (r *runtimeProviderIndex) loadNodes(ctx context.Context) ([]registry.CustomNode, error) {
 	rows, err := r.nodes.List(ctx)
 	if err != nil {

@@ -3,15 +3,10 @@
 // @file      internal/repository/settings.go
 // @for       The SettingsRepository boundary for the typed settings document.
 // @uses      context, internal/domain.
-// @reason    SPEC-API-001 §7.14 stores settings one row per key so a partial
-//
-//	PATCH is a single-row upsert and two writers cannot clobber each
-//	other's subtree; the service merges the documented defaults over
-//	what this boundary returns (AGENTS.md §1.5).
-//
+// @reason    SPEC-API-001 §7.14 stores settings one row per key so a partial PATCH is a single-row upsert and two writers cannot clobber each other's subtree; the service merges the documented defaults over what this boundary returns (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package repository
 

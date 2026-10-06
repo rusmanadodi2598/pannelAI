@@ -1,20 +1,12 @@
 // Package config reads process settings into a typed, validated struct.
 //
 // @file      internal/config/env.go
-// @for       The environment-reading helpers and small validators the loader
-//
-//	uses.
-//
+// @for       The environment-reading helpers and small validators the loader uses.
 // @uses      fmt, net/url, os, strconv, strings, time (standard library only).
-// @reason    The unset/empty distinction is a rule of its own — a variable that
-//
-//	is set but malformed must fail the boot rather than fall back to a
-//	default — and AGENTS.md §1.1 caps a file at 250 lines, so the helpers
-//	live here and the loader reads as the field list it is.
-//
+// @reason    The unset/empty distinction is a rule of its own, a variable that is set but malformed must fail the boot rather than fall back to a default, and AGENTS.md §1.1 caps a file at 250 lines, so the helpers live here and the loader reads as the field list it is.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package config
 

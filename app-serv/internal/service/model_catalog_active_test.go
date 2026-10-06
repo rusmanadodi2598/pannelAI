@@ -1,30 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_active_test.go
-// @for       The active-provider half of the catalog read: `?active=true`
-//
-//	answers only rows whose provider holds at least one active
-//	endpoint, because that is the population the router can serve.
-//
+// @for       The active-provider half of the catalog read: `?active=true` answers only rows whose provider holds at least one active endpoint, because that is the population the router can serve.
 // @uses      internal/domain, internal/registry, context, testing.
-// @reason    Draft 025 F1/F2 measured the picker offering 586 of 587 rows
-//
-//	that fail NO_PROVIDER_AVAILABLE on the first request: the panel
-//	asked for "only what is actually usable", and the route had no
-//	parameter to answer it. "Active" is the router's own population —
-//	its candidates query selects endpoints with status active under
-//	the provider's canonical id — so the predicate is stated in those
-//	terms rather than invented here: one status-active endpoint makes
-//	the provider active, a rate-limited active endpoint keeps it
-//	active (the runtime skip is a moment, not a configuration), and
-//	disabled or errored endpoints do not. A deployment that wires no
-//	counter is allowed everywhere else in the read graph, so asking
-//	the question it cannot answer is a named refusal rather than a
-//	silent unfiltered answer, which would read as "everything works".
-//
+// @reason    Draft 025 F1/F2 measured the picker offering 586 of 587 rows that fail NO_PROVIDER_AVAILABLE on the first request: the panel asked for "only what is actually usable", and the route had no parameter to answer it. "Active" is the router's own population, its candidates query selects endpoints with status active under the provider's canonical id, so the predicate is stated in those terms rather than invented here: one status-active endpoint makes the provider active, a rate-limited active endpoint keeps it active (the runtime skip is a moment, not a configuration), and disabled or errored endpoints do not. A deployment that wires no counter is allowed everywhere else in the read graph, so asking the question it cannot answer is a named refusal rather than a silent unfiltered answer, which would read as "everything works".
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -41,7 +23,7 @@ import (
 // The values are domain.EndpointStatusCounts so a table can be written the way
 // an operator thinks about a provider ("two active, one rate-limited") and the
 // stub translates it into the one fact the seam carries: whether a candidate
-// exists at all. That translation is the point — the seam deliberately does not
+// exists at all. That translation is the point, the seam deliberately does not
 // expose the roll-up, because the roll-up cannot express the candidate set.
 type stubActiveCounts struct {
 	byProvider map[string]domain.EndpointStatusCounts

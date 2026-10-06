@@ -3,7 +3,7 @@
 // The card's numbers arrive on the page read now, so what is left per connection is the operator's own
 // press: ask THIS provider, now, for this one connection. Three rules make that worth driving:
 //
-//   it must actually force the read — a panel that sent `force=true` would be served the poll worker's
+//   it must actually force the read: a panel that sent `force=true` would be served the poll worker's
 //   cache by a gateway that reads a literal "1", and the card would say "asked" while nothing was asked;
 //   it must land on one connection only, because the alternative is a shared result showing ep_1's balance
 //   under the heading the operator asked about as ep_2;

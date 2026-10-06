@@ -4,17 +4,10 @@
 // @file      internal/domain/decimal.go
 // @for       The decimal value object money and other exact amounts use.
 // @uses      errors, fmt, math/big, strings (standard library only).
-// @reason    SPEC-API-001 §4 requires cost to cross the wire as a decimal
-//
-//	string, never a float. A float cannot represent 0.1 exactly, so
-//	summing a month of per-request costs in float64 would drift from
-//	the sum a client computes from the strings it was shown. The
-//	value is carried as big.Rat here and rendered as an exact decimal
-//	string by the layers above.
-//
+// @reason    SPEC-API-001 §4 requires cost to cross the wire as a decimal string, never a float. A float cannot represent 0.1 exactly, so summing a month of per-request costs in float64 would drift from the sum a client computes from the strings it was shown. The value is carried as big.Rat here and rendered as an exact decimal string by the layers above.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 
@@ -78,12 +71,6 @@ func (d Decimal) Add(other Decimal) Decimal {
 // accept that check IsNegative rather than getting a silently clamped zero.
 func (d Decimal) Sub(other Decimal) Decimal {
 	return Decimal{value: new(big.Rat).Sub(d.rat(), other.rat())}
-}
-
-// MulInt scales by an integer, which is the aggregation step: a per-request
-// cost multiplied by a count stays exact under this operation.
-func (d Decimal) MulInt(factor int64) Decimal {
-	return Decimal{value: new(big.Rat).Mul(d.rat(), new(big.Rat).SetInt64(factor))}
 }
 
 // IsNegative reports whether the amount is below zero.

@@ -3,16 +3,14 @@
 // @file      internal/handler/provider_validate.go
 // @for       The §7.4 stateless credential-check routes.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    Draft 017 §4.6 adds two routes that prove a credential before a row
+// @reason    Draft 017 §4.6 adds two routes that prove a credential before a row exists. They live beside the node routes rather than in a new file per route because they share one shape: decode a validated DTO, call, map.
 //
-//	exists. They live beside the node routes rather than in a new file per
-//	route because they share one shape: decode a validated DTO, call, map.
 //	The handler holds no store, which is what makes the stateless property
 //	visible from the HTTP layer as well as the service.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package handler
 
@@ -28,7 +26,6 @@ type ProviderValidateHandler struct {
 	validation *service.CredentialValidationService
 }
 
-// NewProviderValidateHandler validates deps and returns the handler.
 func NewProviderValidateHandler(validation *service.CredentialValidationService) *ProviderValidateHandler {
 	return &ProviderValidateHandler{validation: validation}
 }
@@ -89,7 +86,7 @@ func (h *ProviderValidateHandler) Provider(w http.ResponseWriter, r *http.Reques
 //
 // It carries `method` as well as `state`, which is the field that makes the two
 // probes distinguishable: a client showing "valid" should be able to say which
-// request proved it (draft 017 §4.6).
+// request proved it.
 func validateResponse(outcome service.ProbeOutcome) schema.ValidateResponse {
 	return schema.ValidateResponse{
 		State:     outcome.State,

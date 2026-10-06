@@ -1,28 +1,14 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_client.go
-// @for       The OAuth token endpoint client: one grant call and one userinfo
-//
-//	call, each under an explicit deadline.
-//
-// @uses      context, encoding/json, errors,
-//
-//	net/http, strings, time.
-//
-// @reason    SPEC-API-001 §7.4 needs a code exchange and a refresh grant, and
-//
-//	§8.1 records that providers disagree on the grant body's encoding
-//	(claude answers JSON bodies, the rest answer form encoding), so the
-//	wire types live in oauth_grant.go and the identity decode in
-//	oauth_identity.go. What stays here is the transport: every token URL
-//	it calls comes from the embedded registry, never from a request, so
-//	the surface has no SSRF seam (OWASP A01).
-//
+// @file      internal/service/oauthhttp/oauth_client.go
+// @for       The OAuth token endpoint client: one grant call and one userinfo call, each under an explicit deadline.
+// @uses      context, encoding/json, errors, net/http, strings, time.
+// @reason    SPEC-API-001 §7.4 needs a code exchange and a refresh grant, and §8.1 records that providers disagree on the grant body's encoding (claude answers JSON bodies, the rest answer form encoding), so the wire types live in oauth_grant.go and the identity decode in oauth_identity.go. What stays here is the transport: every token URL it calls comes from the embedded registry, never from a request, so the surface has no SSRF seam (OWASP A01).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
-package service
+package oauthhttp
 
 import (
 	"context"
@@ -39,11 +25,15 @@ import (
 // tokenBodyLimit caps one answer read from a token or user-info endpoint. A
 // real OAuth answer is a few hundred bytes, so the ceiling is generous by
 // design and only there so a hostile or broken endpoint cannot stream JSON
-// into memory unbounded — the same bound the state and device-poll reads carry.
+// into memory unbounded, the same bound the state and device-poll reads carry.
 const tokenBodyLimit = 1 << 20
 
-// grantCallTimeout bounds one token-endpoint round trip. A token endpoint that
-// has not answered in 15 seconds will not answer usefully later in this request.
+// grantCallTimeout bounds one OAuth round trip: the token exchange, a device
+// poll, a state call and the user-info read. A provider that has not answered in
+// 15 seconds will not answer usefully later in this request, and the guarded
+// egress client deliberately carries no http.Client.Timeout of its own because
+// that would cut a stream the panel is still reading. The deadline therefore has
+// to live on the call, not on the shared client.
 const grantCallTimeout = 15 * time.Second
 
 // OAuthTokenClient is the outbound token-service seam. It is an interface so
@@ -110,6 +100,9 @@ func (c *OAuthHTTPClient) Grant(ctx context.Context, tokenURL, encoding string, 
 // endpoint is optional per provider, so a failure to answer is reported to the
 // caller, which decides whether the flow can proceed without an identity.
 func (c *OAuthHTTPClient) UserInfo(ctx context.Context, infoURL, accessToken string) (OAuthIdentity, error) {
+	ctx, cancel := context.WithTimeout(ctx, grantCallTimeout)
+	defer cancel()
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, infoURL, nil)
 	if err != nil {
 		return OAuthIdentity{}, domain.NewValidationError("the user info URL is invalid")

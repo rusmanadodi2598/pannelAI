@@ -1,20 +1,12 @@
 // Package domain holds the business objects and the rules that guard them.
 //
 // @file      internal/domain/upstream_endpoint_key_patch_test.go
-// @for       The PATCH path's key invariant: an api_key endpoint keeps at least
-//
-//	one active key through UpdateKey as it does through RemoveKey.
-//
+// @for       The PATCH path's key invariant: an api_key endpoint keeps at least one active key through UpdateKey as it does through RemoveKey.
 // @uses      testing, internal/domain.
-// @reason    The invariant lived only in SetKeyStatus, which the PATCH path
-//
-//	does not call, so a status PATCH could disable the last active key
-//	and leave the endpoint unroutable while DELETE of the same key was
-//	refused (draft 042 R03).
-//
+// @reason    The invariant lived only in SetKeyStatus, which the PATCH path does not call, so a status PATCH could disable the last active key and leave the endpoint unroutable while DELETE of the same key was refused (draft 042 R03).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package domain
 

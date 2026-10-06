@@ -1,23 +1,12 @@
 // Command app-serv shapes the requests a credential check sends.
 //
 // @file      cmd/app-serv/provider_validate_request.go
-// @for       The request shapes the stateless check needs: the one-token chat
-//
-//	probe, its model name, a node type's wire format, and the URL a
-//	provider is checked against.
-//
+// @for       The request shapes the stateless check needs: the one-token chat probe, its model name, a node type's wire format, and the URL a provider is checked against.
 // @uses      internal/domain, internal/registry, encoding/json, strings.
-// @reason    Draft 017 §4.6 ports the reference's chat fallback, and what the
-//
-//	fallback sends is what makes it useful: an upstream rejects an empty
-//	model name before it reads the credential, so a validation that omitted
-//	one would report a working key as broken. The validate URL belongs here
-//	too because it is derived from the same base URL the requests use
-//	(§4.2's second consequence: 18 entries declared one, 19 more yield one).
-//
+// @reason    Draft 017 §4.6 ports the reference's chat fallback, and what the fallback sends is what makes it useful: an upstream rejects an empty model name before it reads the credential, so a validation that omitted one would report a working key as broken. The validate URL belongs here too because it is derived from the same base URL the requests use (§4.2's second consequence: 18 entries declared one, 19 more yield one).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -83,15 +72,11 @@ func nodeFormat(check service.CredentialCheck) string {
 
 // validateTarget is the URL a provider's credential is checked against.
 //
-// A declared `transport.validate_url` wins. Otherwise it is derived from the
-// base URL by the reference's own rule (providers/validate/route.js:626-627):
-// replace a trailing `/chat/completions` or `/chatbot` with `/models`. That is
-// what takes probe coverage from the 18 entries that declare a URL to every
-// provider whose base names a chat path (draft 017 §4.2's second consequence).
-//
-// A base that names neither returns empty, and the caller reports the reason
-// rather than guessing a path — a guess produces a 404 that reads like a
-// credential problem.
+// A declared `transport.validate_url` wins. Otherwise a trailing
+// `/chat/completions` or `/chatbot` on the base URL is replaced with `/models`,
+// which brings every provider whose base names a chat path into probe coverage.
+// A base that names neither returns empty and the caller reports the reason,
+// because a guessed path yields a 404 that reads like a credential problem.
 func validateTarget(entry registry.Provider) string {
 	if declared := strings.TrimSpace(entry.Transport.ValidateURL); declared != "" {
 		return declared

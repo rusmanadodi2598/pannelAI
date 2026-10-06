@@ -4,15 +4,10 @@
 // @file      internal/domain/media_provider_test.go
 // @for       The media kind set and the base URL shape rule (SPEC-API-001 §7.10).
 // @uses      strings, testing, time.
-// @reason    The base URL becomes an outbound destination, so its shape is the
-//
-//	first SSRF layer and needs the parameterized table OWASP §2.5
-//	requires: several refusals, plus benign controls that must still
-//	be accepted, so an over-blocking rule fails the test too.
-//
+// @reason    The base URL becomes an outbound destination, so its shape is the first SSRF layer and needs the parameterized table OWASP §2.5 requires: several refusals, plus benign controls that must still be accepted, so an over-blocking rule fails the test too.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package domain
 
@@ -71,7 +66,7 @@ func TestNewMediaOverride_BaseURLShape(t *testing.T) {
 }
 
 // TestParseMediaKind pins the closed kind set: the wire values, the trim and
-// case rule, and the refusals — including the panel's own `web` label, which
+// case rule, and the refusals, including the panel's own `web` label, which
 // the panel maps to `search` before sending and which the API must not accept.
 func TestParseMediaKind(t *testing.T) {
 	cases := []struct {

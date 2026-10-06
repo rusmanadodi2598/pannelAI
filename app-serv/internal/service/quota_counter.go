@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_counter.go
-// @for       Advancing the Redis quota counters one served request bills
-//
-//	against, so the window the panel reads is a number this gateway
-//	actually counted (SPEC-API-001 §7.12, register G22).
-//
+// @for       Advancing the Redis quota counters one served request bills against, so the window the panel reads is a number this gateway actually counted (SPEC-API-001 §7.12, register G22).
 // @uses      internal/domain, internal/repository, context, log/slog, time.
-// @reason    §6 keeps quota counters in Redis and flushes them to PostgreSQL,
-//
-//	but the write side had no caller: the counter store was only ever
-//	read and cleared by the flush worker, so every window answered zero
-//	and the read routes described a table nothing filled. The counting
-//	rule belongs here rather than at each accounting site, because the
-//	chat, media, and embeddings planes must not disagree about which
-//	windows a call advances.
+// @reason    §6 keeps quota counters in Redis and flushes them to PostgreSQL, but the write side had no caller: the counter store was only ever read and cleared by the flush worker, so every window answered zero and the read routes described a table nothing filled. The counting rule belongs here rather than at each accounting site, because the chat, media, and embeddings planes must not disagree about which windows a call advances.
 //
 //	This is the ingestion half of the quota vertical. It deliberately
 //	does not enforce anything: whether an exhausted endpoint is skipped
@@ -22,7 +11,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 
@@ -64,18 +53,12 @@ func NewQuotaCounter(counters repository.QuotaCounterStore, logger *slog.Logger)
 }
 
 // Record advances one endpoint's counters by units, in every window the gateway
-// accounts for.
-//
-// A call with no endpoint, no positive units, or no store is a no-op: an
-// endpoint id is what the counter is keyed by, and a call that spent nothing
-// (a refusal, a zero-token answer) has nothing to add. Writing a zero would
-// create a key the flush worker then has to drain for no information.
-//
-// A failed increment is logged and not returned. The client already has its
-// answer, and failing a served call over accounting would turn it into an error
-// the client cannot act on — the same rule the usage and log writes follow.
-// The counter that failed to increment is the window under-reported, which the
-// panel's totals surface to an operator.
+// accounts for. A call with no endpoint, no positive units, or no store is a
+// no-op: the endpoint id is the counter key, a call that spent nothing (a
+// refusal, a zero-token answer) has nothing to add, and writing a zero leaves the
+// flush worker a key to drain for no information. A failed increment is logged and
+// not returned, the rule every accounting write here follows; the window it
+// under-reports is visible in the panel's totals.
 func (c *QuotaCounter) Record(ctx context.Context, endpointID string, units int64) {
 	if c == nil || c.counters == nil || endpointID == "" || units <= 0 {
 		return

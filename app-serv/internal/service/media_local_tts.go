@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_local_tts.go
-// @for       The two self-hosted speech adapters (Coqui, Tortoise) in the §7.10
-//
-//	media plane.
-//
+// @for       The two self-hosted speech adapters (Coqui, Tortoise) in the §7.10 media plane.
 // @uses      internal/schema, strings.
-// @reason    Both providers run on the operator's own machine, take no
-//
-//	credential, accept a small JSON body, and answer WAV bytes, so they
-//	share one file: the difference is which field names the speaker, and
-//	keeping that pair side by side is what makes the sameness visible
-//	instead of looking like two adapters that happen to agree.
-//
+// @reason    Both providers run on the operator's own machine, take no credential, accept a small JSON body, and answer WAV bytes, so they share one file: the difference is which field names the speaker, and keeping that pair side by side is what makes the sameness visible instead of looking like two adapters that happen to agree.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 

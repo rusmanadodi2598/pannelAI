@@ -7,7 +7,7 @@
 	// points at it.
 	//
 	// The order is the whole point of the reshape. The operator opens this screen to read what each account
-	// has left, and the gateway's own counters answer a different question — how much this proxy sent — so
+	// has left, and the gateway's own counters answer a different question (how much this proxy sent), so
 	// they are stated once, compactly, instead of taking a second full row set over the same connection.
 	// The two ledgers stay named and apart: neither is the other's correction (SPEC-API §7.12).
 	//
@@ -17,7 +17,7 @@
 	// An account with no counted window is still a connection in `group.endpoints` (QuotaCards groups cards
 	// from the union of the page's accounts, not from its windows): its provider block shows what the
 	// provider published, or the "not polled yet" state, and its counted summary line says honestly that this
-	// gateway holds no windows for it — `countedSummaryText([])` states the emptiness rather than a zero.
+	// gateway holds no windows for it: `countedSummaryText([])` states the emptiness rather than a zero.
 	import { countedSummaryText, type QuotaCardGroup } from '$lib/schemas/quota';
 	import type { PublishedQuotaUsage } from '$lib/schemas/quota-published';
 	import QuotaPublished from './QuotaPublished.svelte';

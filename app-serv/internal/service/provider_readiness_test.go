@@ -2,19 +2,11 @@
 //
 // @file      internal/service/provider_readiness_test.go
 // @for       Provider and custom-node readiness rules from SPEC-API-001 §7.4.
-// @uses      internal/domain, internal/registry, internal/repository, context,
-//
-//	testing, time.
-//
-// @reason    §7.4 puts prefix collision and referenced-node deletion in the
-//
-//	service, while provider filters and endpoint summaries are also
-//	service behavior. These tests keep those contract rules proven
-//	without a database or an upstream network.
-//
+// @uses      internal/domain, internal/registry, internal/repository, context, testing, time.
+// @reason    §7.4 puts prefix collision and referenced-node deletion in the service, while provider filters and endpoint summaries are also service behavior. These tests keep those contract rules proven without a database or an upstream network.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 

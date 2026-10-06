@@ -3,22 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/model_lookup.go
-// @for       The catalog read path resolution uses, adapted onto the combo and
-//
-//	model-catalog repositories.
-//
+// @for       The catalog read path resolution uses, adapted onto the combo and model-catalog repositories.
 // @uses      internal/domain, internal/repository, context.
-// @reason    SPEC-API-001 §7.15 resolves a model string through combos, then
-//
-//	aliases, then provider/model. Each of those reads is already owned by
-//	another boundary, so this file is the seam between them: it satisfies
-//	ModelLookup without the resolver depending on four repository
-//	contracts, and it is the only place that knows a disabled set is
-//	addressable by (provider, model).
-//
+// @reason    SPEC-API-001 §7.15 resolves a model string through combos, then aliases, then provider/model. Each of those reads is already owned by another boundary, so this file is the seam between them: it satisfies ModelLookup without the resolver depending on four repository contracts, and it is the only place that knows a disabled set is addressable by (provider, model).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -95,27 +85,9 @@ func (l *CatalogLookup) Alias(ctx context.Context, name string) (string, bool, e
 	return "", false, nil
 }
 
-// Disabled reports whether a model is hidden from routing (§7.6).
-//
-// The stored set is a small pair list read whole, so this is a membership test
-// rather than a query per model; the listing path asks for the whole set once
-// instead of calling this per row.
-func (l *CatalogLookup) Disabled(ctx context.Context, providerID, modelID string) (bool, error) {
-	disabled, err := l.catalog.Disabled(ctx)
-	if err != nil {
-		return false, err
-	}
-	for _, ref := range disabled {
-		if ref.ProviderID() == providerID && ref.ModelID() == modelID {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// DisabledPairs returns the whole disabled set, which is what the models list
-// filters with: loading it once per request is cheaper than asking about every
-// model in the catalog.
+// DisabledPairs returns the whole disabled set (§7.6), which is a small pair list
+// read once per request: the stored set is rewritten wholesale, so asking about one
+// pair at a time would read it again for every spelling and every model.
 func (l *CatalogLookup) DisabledPairs(ctx context.Context) ([]domain.ModelRef, error) {
 	return l.catalog.Disabled(ctx)
 }

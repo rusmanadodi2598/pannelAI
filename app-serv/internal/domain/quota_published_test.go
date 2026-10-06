@@ -2,24 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/quota_published_test.go
-// @for       Table-driven tests for the published-quota answer rules: the label
-//
-//	set one answer may hold, the amounts it may carry, and the ceiling accessor
-//	that separates "no ceiling" from "a spent one".
-//
+// @for       Table-driven tests for the published-quota answer rules: the label set one answer may hold, the amounts it may carry, and the ceiling accessor that separates "no ceiling" from "a spent one".
 // @uses      testing, time.
-// @reason    The cache is written by a worker that has no view of the schema, so
-//
-//	the rules that keep a stored answer readable — one label per bucket, no
-//	negative amount, an endpoint id that is not blank — have to be enforced
-//	where the vocabulary lives, not in the statement that happens to store it
-//	(AGENTS.md §2.2). A duplicate label in particular turns one batched upsert
-//	into a PostgreSQL error about affecting a row twice, which is a database
-//	message a client must never see (§1.3).
-//
+// @reason    The cache is written by a worker that has no view of the schema, so the rules that keep a stored answer readable, one label per bucket, no negative amount, an endpoint id that is not blank, have to be enforced where the vocabulary lives, not in the statement that happens to store it (AGENTS.md §2.2). A duplicate label in particular turns one batched upsert into a PostgreSQL error about affecting a row twice, which is a database message a client must never see (§1.3).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package domain
 
@@ -144,17 +132,11 @@ func TestPublishedAnswerValidate(t *testing.T) {
 // ceiling of zero are different facts, and only the pointer says which.
 func TestPublishedWindowRowCeilingKeepsNullApartFromZero(t *testing.T) {
 	unlimited := PublishedWindowRow{Label: "unlimited", Used: "7", Total: nil}
-	if unlimited.HasCeiling() {
-		t.Fatal("a nil ceiling reported a ceiling, so an unlimited allowance would render as a number")
-	}
 	if value, ok := unlimited.Ceiling(); ok || value != "" {
 		t.Fatalf("Ceiling() = %q/%v, want empty and false for an unstated ceiling", value, ok)
 	}
 
 	spent := PublishedWindowRow{Label: "spent", Used: "500", Total: strPtr("0")}
-	if !spent.HasCeiling() {
-		t.Fatal("a zero ceiling reported no ceiling, which would render an exhausted bucket as unlimited")
-	}
 	if value, ok := spent.Ceiling(); !ok || value != "0" {
 		t.Fatalf("Ceiling() = %q/%v, want the stored zero", value, ok)
 	}
@@ -180,6 +162,6 @@ func TestPublishedAnswerLabelsAreThePruneSet(t *testing.T) {
 	}
 }
 
-// strPtr is the one-line pointer helper the table rows need for an optional
-// ceiling; a field cannot take a literal address inline.
+// strPtr exists because a table row cannot take the address of a string literal
+// inline.
 func strPtr(value string) *string { return &value }

@@ -2,20 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_key_health_test.go
-// @for       Tests for key health transitions: class-aware parking, the
-//
-//	rate-limit ladder, and the reset on success.
-//
+// @for       Tests for key health transitions: class-aware parking, the rate-limit ladder, and the reset on success.
 // @uses      testing, time, internal/domain
-// @reason    The router skips keys a failure has parked, so the per-class
-//
-//	windows, the exclusive end of each window, and the reset on success
-//	must be pinned where a regression cannot silently route requests
-//	into a dead credential (SPEC-API-001 §7.5).
-//
+// @reason    The router skips keys a failure has parked, so the per-class windows, the exclusive end of each window, and the reset on success must be pinned where a regression cannot silently route requests into a dead credential (SPEC-API-001 §7.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 

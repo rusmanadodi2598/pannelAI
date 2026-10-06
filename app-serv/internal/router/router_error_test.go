@@ -2,14 +2,11 @@
 //
 // @file      internal/router/router_error_test.go
 // @for       Assertions that every error response is exactly one JSON document.
-// @uses      internal/router, internal/schema, net/http, net/http/httptest,
-//
-//	strings, encoding/json, testing.
-//
+// @uses      internal/router, internal/schema, net/http, net/http/httptest, strings, encoding/json, testing.
 // @reason    A middleware that appends an envelope on top of a handler body still passes a status check, so this decodes and then proves no second document follows.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package router
 

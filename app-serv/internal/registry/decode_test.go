@@ -2,20 +2,12 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/decode_test.go
-// @for       Decode tests for the fields whose shape varies across the reference
-//
-//	registry: scopes, headers, and the model catalog fields.
-//
+// @for       Decode tests for the fields whose shape varies across the reference registry: scopes, headers, and the model catalog fields.
 // @uses      testing, internal/registry.
-// @reason    These are the fields the reference writes in more than one YAML
-//
-//	shape, and each shape was a real porting defect. A decoder that
-//	accepts only one form silently drops the others, so every variant
-//	is pinned here rather than trusted.
-//
+// @reason    These are the fields the reference writes in more than one YAML shape, and each shape was a real porting defect. A decoder that accepts only one form silently drops the others, so every variant is pinned here rather than trusted.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     schema
+// @stability stable
 // @since     2026-09-17
 package registry
 

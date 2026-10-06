@@ -3,22 +3,9 @@
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/usage_active_store_test.go
-// @for       Integration tests for the in-flight marker store against a real
-//
-//	Redis: the round trip, the staleness prune, and the bound.
-//
-// @uses      github.com/redis/go-redis/v9, internal/domain, context, os,
-//
-//	testing, time.
-//
-// @reason    The store's whole contract is Redis behaviour: a sorted set scored
-//
-//	by the start instant, a range read bounded by a cutoff, and a prune
-//	that runs with the read. An in-memory double would prove the
-//	arithmetic but not that ZRANGEBYSCORE applies the score bound or that
-//	ZREMRANGEBYSCORE removes what it matched, and those are the two
-//	operations whose failure is silent: the set simply grows and the
-//	drawing lights stale nodes.
+// @for       Integration tests for the in-flight marker store against a real Redis: the round trip, the staleness prune, and the bound.
+// @uses      github.com/redis/go-redis/v9, internal/domain, context, os, testing, time.
+// @reason    The store's whole contract is Redis behaviour: a sorted set scored by the start instant, a range read bounded by a cutoff, and a prune that runs with the read. An in-memory double would prove the arithmetic but not that ZRANGEBYSCORE applies the score bound or that ZREMRANGEBYSCORE removes what it matched, and those are the two operations whose failure is silent: the set simply grows and the drawing lights stale nodes.
 //
 //	The file carries an `integration` build tag, so the default
 //	`go test ./...` stays hermetic on a machine with no Redis (AGENTS.md
@@ -30,7 +17,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package redisrepo
 

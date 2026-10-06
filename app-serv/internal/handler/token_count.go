@@ -3,15 +3,10 @@
 // @file      internal/handler/token_count.go
 // @for       POST /api/v1/messages/count_tokens, the P3 token estimate route.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    SPEC-API-001 §7.15 serves the route on the Anthropic wire under the
-//
-//	same §4 gateway-key rule as the chat routes. It shares that rule
-//	through the GatewayAuthenticator seam rather than the chat service,
-//	so the route can be proven without the engine the chat service needs.
-//
+// @reason    SPEC-API-001 §7.15 serves the route on the Anthropic wire under the same §4 gateway-key rule as the chat routes. It shares that rule through the GatewayAuthenticator seam rather than the chat service, so the route can be proven without the engine the chat service needs.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -28,20 +23,27 @@ type TokenCountHandler struct {
 	auth  service.GatewayAuthenticator
 }
 
-// NewTokenCountHandler validates deps and returns the handler. The chat service
-// is reused for authentication in production, because the §4 rule is one rule.
+// NewTokenCountHandler takes its authenticator from the chat service in
+// production, because the §4 rule is one rule.
 func NewTokenCountHandler(count *service.TokenCountService, auth service.GatewayAuthenticator) *TokenCountHandler {
 	return &TokenCountHandler{count: count, auth: auth}
 }
 
-// Count serves the route: read the body, decode and validate it against the
-// Anthropic contract, authenticate, then answer the estimate.
+// Count serves the route: authenticate, then read the body and decode and
+// validate it against the Anthropic contract, then answer the estimate.
 //
 // The route writes no usage or log row: it dials no upstream, so nothing is
 // spent, and it is not a refusal of a resolved model (the same boundary the
 // models list keeps). The authenticated call still advances the presenting
 // key's own counter through the §4 choke point (SPEC-API-001 §7.3).
 func (h *TokenCountHandler) Count(w http.ResponseWriter, r *http.Request) {
+	// Authentication first, exactly as the §4 rule every other data-plane route
+	// follows: the body is only read for a caller who already proved its key.
+	if _, err := h.auth.Authenticate(r.Context(), bearerToken(r)); err != nil {
+		writeDataPlaneError(w, err)
+		return
+	}
+
 	raw, err := schema.ReadBody(r)
 	if err != nil {
 		writeDataPlaneError(w, err)
@@ -53,10 +55,6 @@ func (h *TokenCountHandler) Count(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := schema.ValidateStruct(decoded); err != nil {
-		writeDataPlaneError(w, err)
-		return
-	}
-	if _, err := h.auth.Authenticate(r.Context(), bearerToken(r)); err != nil {
 		writeDataPlaneError(w, err)
 		return
 	}

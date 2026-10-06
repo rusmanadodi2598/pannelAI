@@ -1,23 +1,16 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/key_revocation_test.go
-// @for       The §7.3 revocation journey: a DELETE'd key stops serving the
-//
-//	data plane, indistinguishably from a key that never existed.
-//
+// @for       The §7.3 revocation journey: a DELETE'd key stops serving the data plane, indistinguishably from a key that never existed.
 // @uses      internal/domain, internal/repository, context, testing, time.
-// @reason    The revocation guarantee lives in the lookup's "active,
+// @reason    The revocation guarantee lives in the lookup's "active, non-revoked" rule (chat.go's GatewayKeyLookup contract and the Postgres WHERE clause). The auth tests stub that lookup, so nothing else pins the journey an operator relies on: issue a key, revoke it through §7.3, and the same plaintext is refused at the data plane.
 //
-//	non-revoked" rule (chat.go's GatewayKeyLookup contract and the
-//	Postgres WHERE clause). The auth tests stub that lookup, so nothing
-//	else pins the journey an operator relies on: issue a key, revoke it
-//	through §7.3, and the same plaintext is refused at the data plane.
 //	The in-memory repo mirrors the SQL semantics so the test fails if
 //	either side drifts.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package service
 

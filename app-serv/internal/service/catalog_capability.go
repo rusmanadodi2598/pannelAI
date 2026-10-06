@@ -1,24 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/catalog_capability.go
-// @for       How one catalog row answers a capability question: what the
-//
-//	registry document declares, plus what the model-id resolver decides.
-//
+// @for       How one catalog row answers a capability question: what the registry document declares, plus what the model-id resolver decides.
 // @uses      internal/domain, internal/registry, strings.
-// @reason    SPEC-API-001 §7.6 offers `?capability=vision|tools`, and draft 017
-//
-//	§4.4 measured both of them returning zero rows over the 507 models the
-//	embedded registry declares. The cause was two sources of truth for one
-//	word: the document carried media operations while the modality names
-//	lived in a model-id pattern table no catalog read. Keeping the two
-//	sources and their division of labour in one file is what makes the
-//	split readable, and it keeps the merge orchestration in
-//	model_catalog.go inside the AGENTS.md §1.1 line budget.
-//
+// @reason    SPEC-API-001 §7.6 offers `?capability=vision|tools`, and draft 017 §4.4 measured both of them returning zero rows over the 507 models the embedded registry declares. The cause was two sources of truth for one word: the document carried media operations while the modality names lived in a model-id pattern table no catalog read. Keeping the two sources and their division of labour in one file is what makes the split readable, and it keeps the merge orchestration in model_catalog.go inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package service
 
@@ -30,19 +18,12 @@ import (
 )
 
 // registryCapabilityNames is the capability set a registry model is filtered by:
-// what the document declares, plus what the resolver decides.
-//
-// Two sources, two jobs. The document's `capabilities:` list carries the media
-// operations (`edit`, `mask`, `text2img`) — facts about a row an operator reads,
-// which no model-id pattern can know. The resolver carries `vision` and `tools`
-// — judgements about a model id, which the document does not enumerate. Draft
-// 017 §4.4 measured what happens with only the first: both of the panel's two
-// filters answered zero rows across 507 registered models.
-//
-// Only `vision` is added as a name. `tools` is the resolver's floor, so emitting
-// it would add one string to nearly every row of the catalog to say nothing —
-// the filter still answers it, because matchesCatalogFilter asks the resolver
-// for the two modality names rather than reading this list for them.
+// the document's `capabilities:` list carries the media operations (`edit`,
+// `mask`, `text2img`), which no model-id pattern can know, while the resolver
+// owns the two modality names `vision` and `tools`. Only `vision` is added here:
+// `tools` is the resolver's floor, so emitting it would repeat one string across
+// nearly every catalog row to say nothing. The filter still answers `tools`,
+// because matchesCatalogFilter asks the resolver rather than reading this list.
 func registryCapabilityNames(providerID string, model registry.Model) domain.ModelCapabilities {
 	names := append([]string(nil), model.Capabilities...)
 	if registry.Capabilities(providerID, model.ID).Vision {
@@ -58,9 +39,9 @@ const capabilityVision = "vision"
 
 // matchesCatalogFilter applies the three documented query parameters.
 //
-// The provider filter accepts every spelling the provider answers to — its id,
-// its registry alias, and a node's prefix — because the row it selects is one
-// model and the operator may know it by any of those names (draft 024 §3.2).
+// The provider filter accepts every spelling the provider answers to, its id,
+// its registry alias, and a node's prefix, because the row it selects is one
+// model and the operator may know it by any of those names.
 // The name set is built from one index snapshot per request, never per row: in
 // production the index adapter rebuilds the node overlay on every Provider()
 // call, so a per-row lookup would turn one panel request into one node-list

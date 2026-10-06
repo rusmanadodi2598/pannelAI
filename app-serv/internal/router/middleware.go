@@ -3,16 +3,10 @@
 // @file      internal/router/middleware.go
 // @for       Cross-cutting HTTP middleware: request id, access log, panic recovery.
 // @uses      internal/domain, internal/schema, log/slog, net/http, time.
-// @reason    SPEC-API-001 §4 requires every request to be tagged with a
-//
-//	request_id and logged structurally, and §8 requires an
-//	INTERNAL_ERROR to be logged with that id. AGENTS.md §1.6 makes
-//	panic recovery at every boundary non-negotiable, so the 500 path
-//	reports the same id an operator can grep for.
-//
+// @reason    SPEC-API-001 §4 requires every request to be tagged with a request_id and logged structurally, and §8 requires an INTERNAL_ERROR to be logged with that id. AGENTS.md §1.6 makes panic recovery at every boundary non-negotiable, so the 500 path reports the same id an operator can grep for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package router
 
@@ -23,21 +17,18 @@ import (
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/requestctx"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
 // RequestIDHeader is the header a caller may supply or receive.
 const RequestIDHeader = "X-Request-Id"
 
-// contextKeyRequestID is the private context key for the request id.
-type contextKeyRequestID struct{}
-
 // RequestIDFrom returns the request id attached by requestID, or "" when the
-// middleware did not run.
-func RequestIDFrom(ctx context.Context) string {
-	id, _ := ctx.Value(contextKeyRequestID{}).(string)
-	return id
-}
+// middleware did not run. The key itself lives in internal/requestctx, below the
+// router and the handlers, so a handler can read the id for its own error log
+// without importing this package upward (AGENTS.md §1.5).
+func RequestIDFrom(ctx context.Context) string { return requestctx.From(ctx) }
 
 // chain wraps the mux in the middleware every route needs. The outermost
 // layers are the ones that must observe everything inside them: the request id
@@ -50,24 +41,48 @@ func chain(h http.Handler) http.Handler {
 // requestID gives every request an id, echoes it in the response, and puts it in
 // the context so error paths can attach it to their log lines (§4, §8). An id
 // supplied by the caller is kept, which lets a client correlate its own trace.
+//
+// A supplied id is kept only within the shape that is safe to reflect and log.
+// The value goes back in a response header and into every access-log line of the
+// request, so an unbounded one lets a single header put a megabyte into both, and
+// a forged id can poison an operator's grep for one trace.
 func requestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get(RequestIDHeader)
-		if id == "" {
+		if !usableRequestID(id) {
 			id = domain.NewULID(time.Now())
 		}
 		w.Header().Set(RequestIDHeader, id)
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), contextKeyRequestID{}, id)))
+		next.ServeHTTP(w, r.WithContext(requestctx.With(r.Context(), id)))
 	})
 }
 
+// maxRequestIDLength bounds a caller-supplied id. Real trace ids are short, and a
+// ULID is 26 characters, so the cap only ever rejects noise.
+const maxRequestIDLength = 64
+
+func usableRequestID(id string) bool {
+	if id == "" || len(id) > maxRequestIDLength {
+		return false
+	}
+	for index := 0; index < len(id); index++ {
+		if id[index] < 0x20 || id[index] == 0x7f {
+			return false
+		}
+	}
+	return true
+}
+
 // logging records one structured line per request with the status and duration,
-// plus the error code when the request failed (register G9), so one line answers
+// plus the error code when the request failed, so one line answers
 // "what happened" and "why" together.
 func logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
-		rec := &responseRecorder{ResponseWriter: w, status: http.StatusOK}
+		rec := &responseRecorder{
+			ResponseWriter: w, status: http.StatusOK,
+			requestID: RequestIDFrom(r.Context()),
+		}
 
 		next.ServeHTTP(rec, r)
 
@@ -81,7 +96,7 @@ func logging(next http.Handler) http.Handler {
 		// A failed request names its code; a served one carries no code field at
 		// all, so the field's presence means exactly "this request failed".
 		// The message is never logged: it can quote an upstream's text back,
-		// and that text can carry a credential (register G18).
+		// and that text can carry a credential.
 		if rec.errorCode != "" {
 			attrs = append(attrs, slog.String("code", rec.errorCode))
 		}
@@ -120,9 +135,16 @@ type responseRecorder struct {
 	wroteHeader bool
 	// errorCode is the machine code of the error envelope the handler wrote, or
 	// "" for a request that produced no error envelope. The error writers set it
-	// through SetErrorCode and the access log reads it (register G9).
+	// through SetErrorCode and the access log reads it.
 	errorCode string
+	// requestID is the trace id of the request this writer answers, captured from
+	// the context the request-id middleware already filled. A handler's error path
+	// reads it through schema.RequestIDCarrier so its own log line can be joined to
+	// the access-log line below.
+	requestID string
 }
+
+func (rec *responseRecorder) RequestID() string { return rec.requestID }
 
 // SetErrorCode records the code of an error response, so the access log line can
 // name it. The error writers reach this method through the envelope middleware's
@@ -132,8 +154,8 @@ func (rec *responseRecorder) SetErrorCode(code string) { rec.errorCode = code }
 // Flush forwards the flush to the writer inside. Go promotes only the methods of
 // the embedded interface and not http.Flusher, so without this method the writer
 // a handler receives stops implementing http.Flusher under the chain, `newSSESink`
-// stores a nil flusher, and every streamed answer is written at once (draft 010
-// F5). It is the same forwarding rule as SetErrorCode for the same reason.
+// stores a nil flusher, and every streamed answer is written at once. It is
+// the same forwarding rule as SetErrorCode for the same reason.
 func (rec *responseRecorder) Flush() {
 	if flusher, ok := rec.ResponseWriter.(http.Flusher); ok {
 		flusher.Flush()

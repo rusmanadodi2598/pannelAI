@@ -5,14 +5,10 @@
 // @file      internal/tokensaver/filters_git_test.go
 // @for       Table-driven tests for the three git filters.
 // @uses      strings, testing.
-// @reason    TDD.md §2.5 requires the table to carry the boundaries, so each
-//
-//	filter is driven with a realistic dump, a boundary case (an empty
-//	input, a single line, an oversized run), and the never-grow rule.
-//
+// @reason    TDD.md §2.5 requires the table to carry the boundaries, so each filter is driven with a realistic dump, a boundary case (an empty input, a single line, an oversized run), and the never-grow rule.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

@@ -1,21 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/provider_models.go
-// @for       The §7.4 model-list mappers: a registry entry's models onto the wire
-//
-//	shape, and a provider's stored account counts onto the status summary.
-//
+// @for       The §7.4 model-list mappers: a registry entry's models onto the wire shape, and a provider's stored account counts onto the status summary.
 // @uses      internal/domain, internal/registry.
-// @reason    The model list is the one §7.4 read whose body names its own origin
-//
-//	(§4.9), and draft 017 §4.5 removed the constant `suggested` flag from
-//	it. Keeping the mapping apart from the DTO declarations keeps the
-//	contract readable in one file and the projections in another, and
-//	keeps both inside the AGENTS.md §1.1 line budget.
-//
+// @reason    The model list is the one §7.4 read whose body names its own origin (§4.9), and draft 017 §4.5 removed the constant `suggested` flag from it. Keeping the mapping apart from the DTO declarations keeps the contract readable in one file and the projections in another, and keeps both inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package schema
 
@@ -42,21 +33,13 @@ func ProviderModelsFrom(entry registry.Provider) []ProviderModelResponse {
 }
 
 // providerThinkingLevels answers the union of the levels a provider's models
-// accept, in the reference's own order of discovery and without duplicates: the
-// §7.14 picker offers this set prefixed by "auto", and "none" is filtered out
-// because it is the absence of a level rather than one an operator picks
-// (page.js:186-203).
-//
-// Both halves of a provider's model set are read. A synthesized custom node
-// carries no registry models at all — the overlay fills only its transport and
-// display fields — so without the operator's declared rows its detail would
-// answer no level set and the panel would hide the picker on exactly the screen
-// whose rows the suffix is copied from. A registry provider's declared rows
-// join its registry models in the same union, for the same reason: the panel
-// copies the suffix onto those rows too.
-//
-// A provider whose models declare no reasoning answers nil, and the panel hides
-// the picker then.
+// accept, in the reference's discovery order and without duplicates. The picker
+// shows this set prefixed by "auto"; "none" is the absence of a level, not a
+// pickable one. Both model sets are read: a synthesized custom node carries no
+// registry models, so its operator-declared rows are what keep the picker on
+// the screen that copies the suffix, and a registry provider's declared rows
+// join its registry models for the same reason. Nothing declared answers nil,
+// which hides the picker.
 func providerThinkingLevels(entry registry.Provider, declared []domain.CustomModel) []string {
 	levels := make([]string, 0, 4)
 	seen := make(map[string]bool, 4)

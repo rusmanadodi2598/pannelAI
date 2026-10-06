@@ -1,17 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/chat_request_rules_test.go
-// @for       Table-driven coverage of the request-level chat contract rules:
-// the scalar bounds, the stop shapes, the response format, and the roles.
+// @for       Table-driven coverage of the request-level chat contract rules: the scalar bounds, the stop shapes, the response format, and the roles.
 // @uses      testing.
-// @reason    F1 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires
-// a benign control, a boundary, and a malformed case per rule. The numeric
-// bounds and the cross-field pairs are the members a client can get wrong
-// without noticing, so each is pinned here rather than left to the struct tag.
-//
+// @reason    F1 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires a benign control, a boundary, and a malformed case per rule. The numeric bounds and the cross-field pairs are the members a client can get wrong without noticing, so each is pinned here rather than left to the struct tag.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package schema
 

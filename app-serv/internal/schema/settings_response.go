@@ -3,9 +3,8 @@
 // @file      internal/schema/settings_response.go
 // @for       Mapping the service-owned settings document to the wire shape.
 // @uses      internal/domain.
-// @reason    SPEC-API-001 §7.14's response is the one place a stored document
+// @reason    SPEC-API-001 §7.14's response is the one place a stored document becomes a wire object, and every group that grows needs a line here.
 //
-//	becomes a wire object, and every group that grows needs a line here.
 //	It lives apart from settings_patch.go because that file states the
 //	write rules, and the two directions of the contract are reviewed
 //	against different things: the request against what a caller may say,
@@ -13,7 +12,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package schema
 

@@ -1,20 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/translate_stream_responses_client_calls_test.go
-// @for       Table-driven tests for the function_call items a Responses client
-//
-//	stream reports.
-//
+// @for       Table-driven tests for the function_call items a Responses client stream reports.
 // @uses      testing, slices.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, and a call arrives
-//
-//	as fragments spread across deltas: the id and name on the opening one,
-//	the arguments after it. A client dispatches on the assembled item, so
-//	losing a fragment or reopening a closed item is a broken tool call.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, and a call arrives as fragments spread across deltas: the id and name on the opening one, the arguments after it. A client dispatches on the assembled item, so losing a fragment or reopening a closed item is a broken tool call.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

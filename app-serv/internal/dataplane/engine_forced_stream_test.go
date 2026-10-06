@@ -1,26 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_forced_stream_test.go
-// @for       Serving a non-streaming client from a provider that only answers a
-//
-//	stream.
-//
-// @uses      testing, context, encoding/json, net/http, net/http/httptest,
-//
-//	internal/domain, internal/provider, internal/registry, internal/schema.
-//
-// @reason    OpenCode Free refuses a non-streaming request with 403, so a client
-//
-//	that asked for one JSON body has to be served from the stream the
-//	provider does send. The fold is the core's job, not the connector's:
-//	a connector owns the outbound shape, and turning an answer back into
-//	the client's wire is what the translation layer already does. Both
-//	upstream wires the gateway can receive are covered, because the
-//	free tier forces a stream on each.
-//
+// @for       Serving a non-streaming client from a provider that only answers a stream.
+// @uses      testing, context, encoding/json, net/http, net/http/httptest, internal/domain, internal/provider, internal/registry, internal/schema.
+// @reason    OpenCode Free refuses a non-streaming request with 403, so a client that asked for one JSON body has to be served from the stream the provider does send. The fold is the core's job, not the connector's: a connector owns the outbound shape, and turning an answer back into the client's wire is what the translation layer already does. Both upstream wires the gateway can receive are covered, because the free tier forces a stream on each.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package dataplane
 

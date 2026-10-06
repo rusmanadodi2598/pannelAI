@@ -4,15 +4,10 @@
 // @file      internal/service/quotafetch/google_account_test.go
 // @for       Locks Google project normalization, the bootstrap identification and the quota URL declaration.
 // @uses      internal/service/quotafetch, context, strings, testing
-// @reason    The project arrives as a bare id on one connection shape and an object on another,
-//
-//	and a lookup that forwards the object text as the project name is refused
-//	by the endpoint rather than by this package, so the failure would arrive
-//	as a provider error instead of as a bug.
-//
+// @reason    The project arrives as a bare id on one connection shape and an object on another, and a lookup that forwards the object text as the project name is refused by the endpoint rather than by this package, so the failure would arrive as a provider error instead of as a bug.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

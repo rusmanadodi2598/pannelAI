@@ -1,22 +1,12 @@
 // Command app-serv wires the media and embeddings planes.
 //
 // @file      cmd/app-serv/dataplane_media_wiring.go
-// @for       Builds the media and embeddings services over the engine they route
-//
-//	through.
-//
+// @for       Builds the media and embeddings services over the engine they route through.
 // @uses      internal/dataplane, internal/router, internal/service.
-// @reason    The media and embeddings planes ask the engine only for resolution
-//
-//	and selection, so they take narrow ports rather than the engine itself
-//	(register G20: a refusal has to be recordable without it). Building
-//	them here keeps the shared instance rules visible, one caller and one
-//	quota counter for every plane, and keeps dataplane_wiring.go inside
-//	its AGENTS.md §1.1 budget.
-//
+// @reason    The media and embeddings planes ask the engine only for resolution and selection, so they take narrow ports rather than the engine itself (register G20: a refusal has to be recordable without it). Building them here keeps the shared instance rules visible, one caller and one quota counter for every plane, and keeps dataplane_wiring.go inside its AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package main
 
@@ -42,7 +32,7 @@ func buildMediaPlanes(in dataPlaneInputs, engine *dataplane.Engine, quotas *serv
 	embeddings, err := service.NewEmbeddingsService(service.EmbeddingsServiceDeps{
 		// The embeddings use case asks the engine only for resolution and
 		// selection, so it takes the same narrow ports the media service does
-		// (register G20: a refusal has to be recordable without the engine).
+		// because a refusal has to be recordable without the engine.
 		Resolver:       engine.Resolver(),
 		Router:         mediaRouter{engine: engine},
 		Caller:         caller,

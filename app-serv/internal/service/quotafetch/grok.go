@@ -7,7 +7,7 @@
 // @reason    Grok meters a subscription as percentages the panel must render, never an absolute remaining.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

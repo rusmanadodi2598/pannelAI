@@ -3,23 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_fusion.go
-// @for       The fusion combo strategy: fan the prompt out to every member, then
-//
-//	let the judge model synthesize one final answer (SPEC-API-001 §7.7).
-//
+// @for       The fusion combo strategy: fan the prompt out to every member, then let the judge model synthesize one final answer (SPEC-API-001 §7.7).
 // @uses      context, sync.
-// @reason    SPEC-API-001 §7.7 defines fusion as fan-out plus synthesis, and the
-//
-//	reference fixes three semantics worth keeping: panel calls are
-//	non-streaming with tools withdrawn so each member answers in prose the
-//	judge can read, the judge keeps the client's stream flag and tools so
-//	the served answer is what the client asked for, and a panel that
-//	returns one answer is not fused. The request shaping those decisions
-//	need lives beside this file, in fusion_prompt.go.
-//
+// @reason    SPEC-API-001 §7.7 defines fusion as fan-out plus synthesis, and the reference fixes three semantics worth keeping: panel calls are non-streaming with tools withdrawn so each member answers in prose the judge can read, the judge keeps the client's stream flag and tools so the served answer is what the client asked for, and a panel that returns one answer is not fused. The request shaping those decisions need lives beside this file, in fusion_prompt.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -38,11 +27,9 @@ import (
 // completion order, so the limit costs latency only.
 const fusionFanOutLimit = 4
 
-// relayFusion serves a request addressed to a fusion combo.
-//
-// Latency is reported as the whole panel-and-judge duration the client waited,
-// not the judge call alone: a fan-out hides its cost from a field that measures
-// one upstream call.
+// relayFusion serves a request addressed to a fusion combo. Latency is reported as
+// the whole panel-and-judge duration the client waited, not the judge call alone: a
+// fan-out hides its cost from a field that measures one upstream call.
 func (e *Engine) relayFusion(ctx context.Context, in Request, resolution Resolution, sink FrameSink) (Outcome, error) {
 	started := e.clock()
 	members, resolveErr := e.fusionMembers(ctx, resolution)
@@ -60,7 +47,7 @@ func (e *Engine) relayFusion(ctx context.Context, in Request, resolution Resolut
 	switch len(answers) {
 	case 0:
 		// The panel is empty, so the client's error is the first member's
-		// failure; its identity travels with it (register G17).
+		// failure; its identity travels with it.
 		return failed, answerErr
 	case 1:
 		// One model answered, so there is nothing to fuse: answering directly
@@ -115,15 +102,11 @@ type fusionAnswer struct {
 }
 
 // fanOut calls every panel member in parallel and collects the prose answers, in
-// member order so the judge's source labels are stable.
-//
-// It also reports the first failed member's identity, because that member's
-// failure is the error the caller returns, and a recorded call names the attempt
-// its error belongs to (register G17).
-//
-// Each member writes only its own result slot, and each goroutine recovers from
-// a panic: AGENTS.md §1.6 makes the recovery non-negotiable, and a member that
-// panicked must cost its own answer rather than the whole process.
+// member order so the judge's source labels are stable. It also reports the first
+// failed member's identity, because that member's failure is the error the caller
+// returns and a recorded call names the attempt its error belongs to. Each member
+// writes only its own result slot, and each goroutine recovers from a panic: a
+// member that panicked costs its own answer, not the whole process.
 func (e *Engine) fanOut(ctx context.Context, in Request, combo domain.Combo, members []Resolution) ([]fusionAnswer, Outcome, error) {
 	type result struct {
 		answer fusionAnswer

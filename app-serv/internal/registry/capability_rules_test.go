@@ -2,38 +2,25 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_rules_test.go
-// @for       The capability resolver's own rules: the provider layer that
-//
-//	overrides the tables, the boundary inputs, and the membership test the
-//	catalog filter reads.
-//
+// @for       The capability resolver's own rules: the provider layer that overrides the tables, the boundary inputs, and the membership test the catalog filter reads.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.6 offers `?capability=vision|tools` and §7.8
-//
-//	refuses a vision adapter whose models cannot read images. The corpus
-//	test in capability_resolve_test.go proves the port agrees with the
-//	reference's own function; these cases prove the rules that corpus
-//	cannot exercise, because an absent, padded, or unknown id never
-//	appears in a generated row.
-//
+// @reason    SPEC-API-001 §7.6 offers `?capability=vision|tools` and §7.8 refuses a vision adapter whose models cannot read images. The corpus test in capability_resolve_test.go proves the port agrees with the reference's own function; these cases prove the rules that corpus cannot exercise, because an absent, padded, or unknown id never appears in a generated row.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-26
 package registry
 
 import "testing"
 
-// TestCapabilities_ProviderLayerIsLoadBearing pins the fact that made the
-// provider layer part of the port: the reference consults PROVIDER_CAPABILITIES
-// before its exact and pattern layers (capabilities.js:586-590), and at the
-// pinned revision that layer changes the vision answer for models the embedded
-// registry declares. The first version of this port omitted the layer because
-// the older pin measured zero such rows; the corpus now proves the opposite, so
-// the test asserts the layer is reached rather than that it is harmless.
+// TestCapabilities_ProviderLayerIsLoadBearing pins why the provider layer is
+// part of the port: it is consulted before the exact and pattern layers and, at
+// the pinned revision, it changes the vision answer for models the embedded
+// registry declares. So the test asserts the layer is reached rather than that
+// it is harmless.
 //
-// The list is deliberately small and named: these are the rows that fail if the
-// layer is dropped, so a reader sees exactly what the layer buys.
+// The list is small and named: these are the rows that fail if the layer is
+// dropped.
 func TestCapabilities_ProviderLayerIsLoadBearing(t *testing.T) {
 	cases := []struct {
 		provider string

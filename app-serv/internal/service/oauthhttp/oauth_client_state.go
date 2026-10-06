@@ -1,31 +1,14 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_client_state.go
-// @for       The state-round OAuth shape: the vendor-minted round, its poll, and
-//
-//	the refresh that rides a header instead of a form field.
-//
-// @uses      bytes, context, encoding/json, errors, fmt, io, net/http, strings,
-//
-//	time, internal/domain, internal/registry.
-//
-// @reason    CodeBuddy authorizes the way a device flow looks to an operator —
-//
-//	open a link, wait, get a token — but shares no wire with the PKCE round
-//	the generic device client runs. The reference's own
-//	`src/lib/oauth/providers/codebuddy-{cn,intl}.js` posts to the state
-//	endpoint for a `state` plus the browser URL, polls the token endpoint by
-//	`?state=`, and reads `code: 11217` as "not yet". None of that is
-//	expressible through the existing grant or poll shape, so it lives here
-//	rather than being bent into them, and the two regions differ only by
-//	domain, user agent, and platform — which the registry entry already
-//	carries.
-//
+// @file      internal/service/oauthhttp/oauth_client_state.go
+// @for       The state-round OAuth shape: the vendor-minted round, its poll, and the refresh that rides a header instead of a form field.
+// @uses      bytes, context, encoding/json, errors, fmt, io, net/http, strings, time, internal/domain, internal/registry.
+// @reason    CodeBuddy authorizes the way a device flow looks to an operator, open a link, wait, get a token, but shares no wire with the PKCE round the generic device client runs. The reference's own `src/lib/oauth/providers/codebuddy-{cn,intl}.js` posts to the state endpoint for a `state` plus the browser URL, polls the token endpoint by `?state=`, and reads `code: 11217` as "not yet". None of that is expressible through the existing grant or poll shape, so it lives here rather than being bent into them, and the two regions differ only by domain, user agent, and platform, which the registry entry already carries. Its net/http import is egress only, so a worker can call this the same way a route does (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
-package service
+package oauthhttp
 
 import (
 	"bytes"
@@ -52,12 +35,12 @@ const (
 	stateBodyLimit        = 1 << 20
 	stateRefreshSource    = "plugin"
 	stateAnswerEnvelope   = "the state endpoint answered without a token"
-	stateRoundRetryWindow = 300
+	StateRoundRetryWindow = 300
 )
 
 // StateRound is one vendor-minted authorization round: the handle every later
-// poll carries, and the URL the operator opens. There is no user code — the
-// reference sends none — so the panel shows the link alone.
+// poll carries, and the URL the operator opens. There is no user code, the
+// reference sends none, so the panel shows the link alone.
 type StateRound struct {
 	State    string
 	AuthURL  string
@@ -113,7 +96,7 @@ func (c *OAuthHTTPClient) StateRound(ctx context.Context, oauth *registry.OAuth)
 	}
 	return StateRound{
 		State: body.State, AuthURL: body.AuthURL,
-		Interval: statePollInterval(oauth), Expires: stateRoundRetryWindow,
+		Interval: statePollInterval(oauth), Expires: StateRoundRetryWindow,
 	}, nil
 }
 
@@ -183,6 +166,9 @@ func (c *OAuthHTTPClient) StateRefresh(ctx context.Context, oauth *registry.OAut
 // vendor's own refusal into the error the operator reads. A pending code is not an
 // error: it answers with a nil payload and a false verdict so the caller polls on.
 func (c *OAuthHTTPClient) stateCall(ctx context.Context, method, target string, headers map[string]string) (json.RawMessage, error) {
+	ctx, cancel := context.WithTimeout(ctx, grantCallTimeout)
+	defer cancel()
+
 	var body io.Reader
 	if method == http.MethodPost {
 		body = bytes.NewBufferString("{}")

@@ -1,26 +1,12 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/quota_test.go
-// @for       Table-driven HTTP tests for the §7.12 cap write: what the route
-//
-//	stores, what it echoes, and every refusal it answers.
-//
-// @uses      context, encoding/json, internal/domain, internal/service,
-//
-//	net/http, net/http/httptest, strings, testing, time.
-//
-// @reason    G12 in the P2 register locked the PUT round trip as one script;
-//
-//	draft 005 F2 adds the endpoint-existence refusal and F6 turns the
-//	single-scenario tests into tables (TDD.md §2.5), so the route's
-//	refusals are pinned as variations of one behaviour instead of four
-//	unrelated ones. The 401 answers of the three quota routes are the
-//	router sweep's property (TestEveryManagementRouteRejectsAnonymousCallers,
-//	draft 004 F4), so no per-route auth test is duplicated here.
-//
+// @for       Table-driven HTTP tests for the §7.12 cap write: what the route stores, what it echoes, and every refusal it answers.
+// @uses      context, encoding/json, internal/domain, internal/service, net/http, net/http/httptest, strings, testing, time.
+// @reason    G12 in the P2 register locked the PUT round trip as one script; draft 005 F2 adds the endpoint-existence refusal and F6 turns the single-scenario tests into tables (TDD.md §2.5), so the route's refusals are pinned as variations of one behaviour instead of four unrelated ones. The 401 answers of the three quota routes are the router sweep's property (TestEveryManagementRouteRejectsAnonymousCallers, draft 004 F4), so no per-route auth test is duplicated here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -120,8 +106,8 @@ func quotaRequest(method, body, endpointID string) *http.Request {
 }
 
 // TestQuotaHandler_PutCap covers the write route as one behaviour with
-// variations: what a legal cap stores and echoes, and every refusal, of which
-// the unknown endpoint is draft 005 F2's definition of done.
+// variations: what a legal cap stores and echoes, and every refusal, the
+// unknown endpoint among them.
 func TestQuotaHandler_PutCap(t *testing.T) {
 	cases := []struct {
 		name       string

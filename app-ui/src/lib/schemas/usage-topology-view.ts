@@ -3,7 +3,7 @@
 //
 // Three files answer three questions about the same picture: which entities get a node at all
 // (`usage-topology-nodeset.ts`), where a node goes and how wide it may be
-// (`usage-topology-geometry.ts`), and — here — which state each node and terminal carries. All three are
+// (`usage-topology-geometry.ts`), and (here) which state each node and terminal carries. All three are
 // pure, so the drawing itself holds no arithmetic and none of this needs a DOM, a clock, or a socket.
 //
 // The drawing is a request path, not a ring: `Client >> Combo >> Gateway >> Upstream >> Response`. The
@@ -41,7 +41,7 @@ export type TopologyNode = {
 /**
  * A terminal: one end of the path, drawn whether or not anything is flowing through it.
  *
- * Terminals are not nodes. They carry no identity from the wire, so they stay out of `nodes` — which is what
+ * Terminals are not nodes. They carry no identity from the wire, so they stay out of `nodes`, which is what
  * keeps the share from treating a fixed position as a data node's, and what keeps the drawing's tests from
  * finding them by label the way they find a provider.
  */

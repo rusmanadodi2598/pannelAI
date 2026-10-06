@@ -2,24 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/provider_node_url.go
-// @for       Validation and normalization of a provider node's base URL: the
-//
-//	absolute-http(s) rule, and the rule that a stored base carries
-//	neither a trailing slash nor the path the transport appends.
-//
+// @for       Validation and normalization of a provider node's base URL: the absolute-http(s) rule, and the rule that a stored base carries neither a trailing slash nor the path the transport appends.
 // @uses      net/url, strings.
-// @reason    A node stores a base ("https://host/v1"), not a full endpoint, and
-//
-//	the transport appends the path its type speaks. An operator who
-//	pastes the endpoint URL from a vendor's documentation therefore
-//	stores a base that already carries that path, and the call goes to
-//	a doubled path. The rule is one function here rather than a branch
-//	in each write path because the reference sanitized create and update
-//	separately, and that separation is exactly how the two drift.
-//
+// @reason    A node stores a base ("https://host/v1"), not a full endpoint, and the transport appends the path its type speaks. An operator who pastes the endpoint URL from a vendor's documentation therefore stores a base that already carries that path, and the call goes to a doubled path. The rule is one function here rather than a branch in each write path because the reference sanitized create and update separately, and that separation is exactly how the two drift.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package domain
 
@@ -70,15 +58,11 @@ func validateNodeBaseURL(raw string) error {
 
 // normalizeNodeBaseURL validates a base URL and returns the form the node
 // should store: no trailing slash, and no trailing copy of the path the
-// transport appends.
-//
-// Both halves are applied to the URL's PATH, never to the raw string. That is
-// what keeps a host that happens to spell the suffix — "https://messages" —
-// from losing its host, and it is why a query string survives untouched.
-//
-// The suffix is stripped repeatedly rather than once, so an operator who pasted
-// an already-doubled URL ("…/v1/messages/messages") is repaired to "…/v1"
-// instead of to another URL that is still wrong.
+// transport appends. Both halves are applied to the URL's PATH, never to the raw
+// string, which is what keeps a host that spells the suffix, "https://messages",
+// from losing its host, and what lets a query string survive untouched. The
+// suffix is stripped repeatedly rather than once, so a base that was already
+// doubled is repaired to its root instead of to another URL that is still wrong.
 func normalizeNodeBaseURL(raw string, nodeType NodeType, apiType string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
 	if err := validateNodeBaseURL(trimmed); err != nil {

@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_endpoint_keys.go
-// @for       Key CRUD and health transitions on an UpstreamEndpoint, plus the
-//
-//	read helpers the router and the panel use to pick a key.
-//
+// @for       Key CRUD and health transitions on an UpstreamEndpoint, plus the read helpers the router and the panel use to pick a key.
 // @uses      internal/domain (UpstreamKey, error constructors), sort, strings.
-// @reason    AGENTS.md §2.2 makes the aggregate root the only mutation boundary,
-//
-//	so every key change runs here rather than on a detached key value;
-//	this file holds that surface, and the "keep one usable credential"
-//	invariant is enforced on the collection because no single key can
-//	see it.
-//
+// @reason    AGENTS.md §2.2 makes the aggregate root the only mutation boundary, so every key change runs here rather than on a detached key value; this file holds that surface, and the "keep one usable credential" invariant is enforced on the collection because no single key can see it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package domain
 
@@ -45,8 +36,8 @@ func (e *UpstreamEndpoint) AddKey(label, valueEncrypted, keyHint string, priorit
 	return key, nil
 }
 
-// AttachKey adds an already-built key. It serves the repository load path and
-// tests that need a specific key identity.
+// AttachKey adds an already-built key. Production adds keys through AddKey; this
+// is the seam fixtures use to place a key with a specific identity.
 func (e *UpstreamEndpoint) AttachKey(key UpstreamKey) {
 	e.keys = append(e.keys, key)
 }
@@ -68,9 +59,8 @@ func (e *UpstreamEndpoint) RemoveKey(id string, now time.Time) error {
 }
 
 // refusesDeactivation reports whether moving e.keys[index] to next would leave
-// an api_key endpoint without an active key, which is the invariant RemoveKey
-// enforces. Every path that can deactivate a key runs it: RemoveKey, and the
-// two status-change methods.
+// an api_key endpoint without an active key. UpdateKey runs it on the status it
+// is given, and RemoveKey enforces the same invariant on the whole key.
 func (e *UpstreamEndpoint) refusesDeactivation(index int, next UpstreamKeyStatus) error {
 	if next == UpstreamKeyActive || e.authType != UpstreamAuthAPIKey {
 		return nil
@@ -123,30 +113,6 @@ func (e *UpstreamEndpoint) UpdateKey(id, label, valueEncrypted, keyHint string, 
 	e.keys[index] = key
 	e.updatedAt = now
 	return key, nil
-}
-
-// SetKeyStatus applies a status change to one key. It exists because Key returns
-// a copy: a caller cannot mutate the aggregate through a detached value
-// (AGENTS.md §2.2), so the transition has to run here.
-func (e *UpstreamEndpoint) SetKeyStatus(id, status string, now time.Time) (UpstreamKey, error) {
-	parsed, err := ParseUpstreamKeyStatus(status)
-	if err != nil {
-		return UpstreamKey{}, err
-	}
-	index := e.keyIndex(id)
-	if index < 0 {
-		return UpstreamKey{}, NewNotFoundError("upstream key not found")
-	}
-	// Refuse a change that would leave an api_key endpoint with no active key,
-	// the same invariant RemoveKey and UpdateKey enforce.
-	if err := e.refusesDeactivation(index, parsed); err != nil {
-		return UpstreamKey{}, err
-	}
-	if err := e.keys[index].Transition(parsed); err != nil {
-		return UpstreamKey{}, err
-	}
-	e.updatedAt = now
-	return e.keys[index], nil
 }
 
 // RecordKeyFailure applies a failed attempt to one key and returns its state, so

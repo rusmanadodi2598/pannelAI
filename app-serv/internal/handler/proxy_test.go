@@ -3,15 +3,10 @@
 // @file      internal/handler/proxy_test.go
 // @for       HTTP tests for the §7.11 proxy pool CRUD routes.
 // @uses      net/http, strconv, strings, testing.
-// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path
-//
-//	per route, and §7.11 makes the password write-only: the happy path
-//	asserts the plaintext never comes back, which is the one property a
-//	response-shape change would silently break.
-//
+// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path per route, and §7.11 makes the password write-only: the happy path asserts the plaintext never comes back, which is the one property a response-shape change would silently break.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 

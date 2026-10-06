@@ -3,28 +3,23 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine.go
-// @for       One chat request end to end: resolve, select, translate, call, and
-//
-//	hand back either a translated body or a stream of frames.
-//
+// @for       One chat request end to end: resolve, select, translate, call, and hand back either a translated body or a stream of frames.
 // @uses      internal/domain, internal/reasoning, context, time.
-// @reason    SPEC-API-001 §7.15 fixes the pipeline order (model resolve → format
+// @reason    SPEC-API-001 §7.15 fixes the pipeline order (model resolve → format translation → endpoint and key selection → upstream call → response translation → usage recording), and §7.15 adds the reasoning injection the client's model string and the stored mode resolve to.
 //
-//	translation → endpoint and key selection → upstream call → response
-//	translation → usage recording), and §7.15 adds the reasoning
-//	injection the client's model string and the stored mode resolve to.
 //	Keeping it in one place is what makes the order auditable, and
 //	keeping it out of the handler is what keeps the same path usable
 //	from a worker or a combo probe.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -55,6 +50,10 @@ type Engine struct {
 	// the live Usage stream can draw which nodes are routing now. A nil seam
 	// records nothing.
 	active ActiveRequests
+	// logger records the accounting writes the relay swallows on purpose: a health
+	// row that did not land must never replace the answer a client already got,
+	// but it still has to be findable (AGENTS.md §1.6).
+	logger *slog.Logger
 	clock  func() time.Time
 }
 
@@ -63,6 +62,9 @@ type EngineDeps struct {
 	Resolver  *Resolver
 	Selector  *Selector
 	Transport *Transport
+	// Logger records the degraded paths the relay chooses to swallow. Optional:
+	// nil writes to slog.Default(), so no wiring can hide a failed health row.
+	Logger *slog.Logger
 	// Vision augments image-bearing requests aimed at a model that cannot read
 	// images. Optional: nil keeps the pipeline free of the adapter entirely.
 	Vision VisionAugmenter
@@ -104,7 +106,7 @@ func NewEngine(deps EngineDeps) (*Engine, error) {
 	return &Engine{
 		resolver: deps.Resolver, selector: deps.Selector, transport: deps.Transport,
 		vision: deps.Vision, orders: deps.ComboOrder, saver: deps.TokenSaver,
-		thinking: deps.Thinking, active: deps.ActiveRequests, clock: clock,
+		thinking: deps.Thinking, active: deps.ActiveRequests, logger: deps.Logger, clock: clock,
 	}, nil
 }
 
@@ -116,8 +118,8 @@ func (e *Engine) Resolver() *Resolver { return e.resolver }
 // written to sink as it arrives and Outcome.Body stays nil.
 func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome, error) {
 	// A client may address a model with a trailing "(level)" reasoning suffix
-	// (SPEC-API-001 §7.15). The resolver must see the bare id — that is what
-	// the catalog and the registry declare — while the injection seam below
+	// (SPEC-API-001 §7.15). The resolver must see the bare id, that is what
+	// the catalog and the registry declare, while the injection seam below
 	// must see the override, so the string is split once here and carried on
 	// the request for every leg of the call.
 	model, override := reasoning.ParseSuffix(in.Model)
@@ -156,13 +158,13 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 	// be one of this request's own members is not a substitution: the combo chose
 	// that model on its own and the seam merely moved it. Measured live with
 	// opencode/muse-spark-1.3-contributor-free, which is both a member of the
-	// operator's combo and the configured adapter — reporting it as adapted would
+	// operator's combo and the configured adapter, reporting it as adapted would
 	// say the gateway reached for something the caller never named when it did not.
 	own := refs
 	refs, adapted := e.augmentForVision(ctx, in, refs)
 
 	// The walk tracks two failure kinds apart, because they answer the client
-	// differently (draft 028 F3): a member that reached an upstream call owns
+	// differently: a member that reached an upstream call owns
 	// the error and the recorded identity, while a member refused before any
 	// call (unresolvable, no endpoints, an untranslatable body) is only the
 	// fallback answer when no member was called at all. The chain's error is
@@ -191,8 +193,8 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 			// An adapter model the request did not address is not the model that
 			// billed, and the usage row belongs to the one the client asked for.
 			// Membership of the adapter's own list answers that wherever the seam
-			// placed it — which a leading-count test could not once a capable
-			// member is allowed to go first — and the second test keeps a member
+			// placed it, which a leading-count test could not once a capable
+			// member is allowed to go first, and the second test keeps a member
 			// the combo already addressed from being reported as borrowed.
 			if containsRef(adapted, ref) && !containsRef(own, ref) {
 				outcome.Model = resolution.ModelID
@@ -207,6 +209,12 @@ func (e *Engine) Relay(ctx context.Context, in Request, sink FrameSink) (Outcome
 		if outcome.ProviderID == "" {
 			preCallErr = relayErr
 			continue
+		}
+		if outcome.FramesWritten {
+			// The client is already reading this member's answer, so this leg is
+			// the end of the walk: another member would append its answer to the
+			// stream the client has open and pay twice for one request.
+			return outcome, relayErr
 		}
 		lastErr = relayErr
 		if firstErr == nil {

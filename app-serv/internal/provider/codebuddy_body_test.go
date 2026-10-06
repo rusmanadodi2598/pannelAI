@@ -4,17 +4,10 @@
 // @file      internal/provider/codebuddy_body_test.go
 // @for       The CodeBuddy outbound body: the leading system turn, typed user blocks, and the reasoning mirror.
 // @uses      encoding/json, testing, internal/registry.
-// @reason    The vendor answers a plain OpenAI body with `11101 invalid request`, and the reference
-//
-//	rebuilds the messages to avoid it (open-sse/executors/codebuddy-intl.js:20-38). The
-//	rewrite is the provider's whole shape requirement, so it is pinned here as data:
-//	one leading system turn that carries the caller's own system text rather than
-//	dropping it, user strings turned into typed blocks, array content left exactly as
-//	the translator built it, and reasoning reported the way this service reads it.
-//
+// @reason    The vendor answers a plain OpenAI body with `11101 invalid request`, and the reference rebuilds the messages to avoid it (open-sse/executors/codebuddy-intl.js:20-38). The rewrite is the provider's whole shape requirement, so it is pinned here as data: one leading system turn that carries the caller's own system text rather than dropping it, user strings turned into typed blocks, array content left exactly as the translator built it, and reasoning reported the way this service reads it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package provider
 

@@ -2,19 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/quota_cap_test.go
-// @for       Table-driven tests for the budget cap and the rule the router
-//
-//	skips an exhausted endpoint on.
-//
+// @for       Table-driven tests for the budget cap and the rule the router skips an exhausted endpoint on.
 // @uses      testing, time.
-// @reason    AGENTS.md §2.1 and §2.4 require the cap rule to be pinned: whether
-//
-//	a cap binds decides if an endpoint is skipped, and the boundary
-//	where usage equals the cap is the case an off-by-one gets wrong.
-//
+// @reason    AGENTS.md §2.1 and §2.4 require the cap rule to be pinned: whether a cap binds decides if an endpoint is skipped, and the boundary where usage equals the cap is the case an off-by-one gets wrong.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package domain
 

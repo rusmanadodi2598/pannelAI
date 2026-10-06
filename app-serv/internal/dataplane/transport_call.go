@@ -3,23 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/transport_call.go
-// @for       The outbound call itself: the retry loop, one attempt with its
-//
-//	classification, and the §4 deadlines the attempt runs under.
-//
+// @for       The outbound call itself: the retry loop, one attempt with its classification, and the §4 deadlines the attempt runs under.
 // @uses      internal/provider, bytes, context, errors, io, net/http, time.
-// @reason    SPEC-API-001 §4 fixes the deadlines (connect 10s, total 120s, no
-//
-//	total cap while streaming with a 300s idle read) and AGENTS.md §1.1
-//	asks for the split before the limit forces it. The loop owns the
-//	decision rather than the plugin: the plugin only says whether an
-//	outcome is worth repeating and the registry entry only says how many
-//	attempts the provider allows, so neither can multiply a request on
-//	its own.
-//
+// @reason    SPEC-API-001 §4 fixes the deadlines (connect 10s, total 120s, no total cap while streaming with a 300s idle read) and AGENTS.md §1.1 asks for the split before the limit forces it. The loop owns the decision rather than the plugin: the plugin only says whether an outcome is worth repeating and the registry entry only says how many attempts the provider allows, so neither can multiply a request on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 
@@ -39,19 +28,21 @@ import (
 func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	plugin := t.connectors.For(call.Provider)
 	request := RequestFor(call)
+	// The caller's context travels on the request because the Transformer seam
+	// has no parameter to carry it, and a connector that reads during shaping
+	// must stop when the client does rather than finish on its own clock.
+	request.Context = ctx
 	if err := applyShape(plugin, &request); err != nil {
 		return nil, err
 	}
-	// A connector that declares it refuses a non-streaming request is obeyed
-	// here rather than trusted to have rewritten its own body: the declaration
-	// would be meaningless if the core still sent the request the provider
-	// rejects. The rewrite is mechanical and wire-agnostic because every wire
-	// the gateway translates names this member `stream`.
+	// A connector that declares it refuses a non-streaming request is obeyed here rather than
+	// trusted to have rewritten its own body, since the declaration is meaningless if the core
+	// still sends what the provider rejects. The rewrite is mechanical and wire-agnostic because
+	// every wire the gateway translates names this member `stream`.
 	//
-	// The client's own shape is read first: it, not the rewritten upstream shape,
-	// decides the attempt's deadline, so a call a client made for one body stays
-	// bounded even when the provider answers it with a stream the gateway folds
-	// (draft 021, the missing total bound on the fold).
+	// The client's own shape is read first: it, not the rewritten upstream shape, decides the
+	// attempt's deadline, so a call made for one body stays bounded even when the provider
+	// answers it with a stream the gateway folds back.
 	clientStream := call.Stream
 	if forcesStream(plugin) && !request.Stream {
 		streamed, err := forceStreamMember(request.Body)
@@ -71,9 +62,25 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	call.Body = request.Body
 	call.Stream = request.Stream
 	deadline := attemptDeadline(clientStream, call.Provider)
+	// TotalTimeout is documented as bounding one non-streamed call end to end, so
+	// the budget is measured once here and each attempt gets what is left of it.
+	// Passing the full deadline per attempt let one call run twice the bound plus
+	// the backoff between them, and hold a handler goroutine that much longer than
+	// the contract says.
+	budgetEnds := time.Time{}
+	if deadline > 0 {
+		budgetEnds = time.Now().Add(deadline)
+	}
 
 	for retries := 0; ; retries++ {
-		upstream, failure, err := t.attempt(ctx, plugin, call, url, deadline)
+		attemptDeadlineLeft := deadline
+		if !budgetEnds.IsZero() {
+			attemptDeadlineLeft = time.Until(budgetEnds)
+			if attemptDeadlineLeft <= 0 {
+				return nil, timeoutError(context.DeadlineExceeded)
+			}
+		}
+		upstream, failure, err := t.attempt(ctx, plugin, call, url, attemptDeadlineLeft)
 		switch {
 		case err != nil:
 			decision := DecideRetry(call.Provider, plugin, Attempt{Retries: retries, Idempotent: call.Idempotent})

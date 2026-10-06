@@ -1,23 +1,12 @@
 // Command app-serv wires the live Usage surface.
 //
 // @file      cmd/app-serv/usage_live_wiring.go
-// @for       Builds the in-flight marker store and the live Usage service over
-//
-//	the shared Redis client and usage repository.
-//
-// @uses      internal/repository, internal/repository/redis, internal/router,
-//
-//	internal/service, fmt, log/slog, redis.
-//
-// @reason    The marker store is written by the data plane and read by the §7.12
-//
-//	route, so one instance has to serve both halves. Building it here
-//	keeps that single-instance rule visible, and keeps
-//	observability_wiring.go inside its AGENTS.md §1.1 budget.
-//
+// @for       Builds the in-flight marker store and the live Usage service over the shared Redis client and usage repository.
+// @uses      internal/repository, internal/repository/redis, internal/router, internal/service, fmt, log/slog, redis.
+// @reason    The marker store is written by the data plane and read by the §7.12 route, so one instance has to serve both halves. Building it here keeps that single-instance rule visible, and keeps observability_wiring.go inside its AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package main
 

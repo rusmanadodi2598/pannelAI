@@ -1,25 +1,12 @@
 // Package redis implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/proxy_rotation.go
-// @for       The proxy route engine's state: the round-robin counter and the
-//
-//	connect-failure cooldown (docs/PORT/008-PORT-PROXY-ENGINE.md D5, D6).
-//
-// @uses      github.com/redis/go-redis/v9, context, crypto/sha256, encoding/hex,
-//
-//	fmt, time.
-//
-// @reason    D5 makes the rotation cursor atomic across concurrent requests and
-//
-//	durable across restarts, which is exactly what the combo rotation's
-//	one INCR script already is; reusing the shape keeps the two rotation
-//	rules identical where they overlap. The cooldown is a SET with a TTL
-//	because a parked candidate must return to service without anyone
-//	remembering to unpark it.
-//
+// @for       The proxy route engine's state: the round-robin counter and the connect-failure cooldown (docs/PORT/008-PORT-PROXY-ENGINE.md D5, D6).
+// @uses      github.com/redis/go-redis/v9, context, crypto/sha256, encoding/hex, fmt, time.
+// @reason    D5 makes the rotation cursor atomic across concurrent requests and durable across restarts, which is exactly what the combo rotation's one INCR script already is; reusing the shape keeps the two rotation rules identical where they overlap. The cooldown is a SET with a TTL because a parked candidate must return to service without anyone remembering to unpark it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package redisrepo
 
@@ -97,15 +84,33 @@ func (s *ProxyRouteStore) Park(ctx context.Context, proxyID string, ttl time.Dur
 	return s.client.Set(callCtx, proxyParkKey(proxyID), "1", ttl).Err()
 }
 
-// Parked reports whether the candidate is inside its cooldown (D6).
-func (s *ProxyRouteStore) Parked(ctx context.Context, proxyID string) (bool, error) {
+// ParkedAll reads every candidate's cooldown in one pipeline. The keys are
+// distinct, so the batched EXISTS cannot answer "which of these are parked" as a
+// single count: the commands are collected per id and read back per id.
+func (s *ProxyRouteStore) ParkedAll(ctx context.Context, proxyIDs []string) (map[string]bool, error) {
+	parked := make(map[string]bool, len(proxyIDs))
+	if len(proxyIDs) == 0 {
+		return parked, nil
+	}
 	callCtx, cancel := context.WithTimeout(ctx, redisCallTimeout)
 	defer cancel()
-	count, err := s.client.Exists(callCtx, proxyParkKey(proxyID)).Result()
-	if err != nil {
-		return false, fmt.Errorf("reading proxy cooldown: %w", err)
+
+	pipe := s.client.Pipeline()
+	checks := make(map[string]*redis.IntCmd, len(proxyIDs))
+	for _, id := range proxyIDs {
+		checks[id] = pipe.Exists(callCtx, proxyParkKey(id))
 	}
-	return count > 0, nil
+	if err := pipe.Do(callCtx).Err(); err != nil {
+		return nil, fmt.Errorf("reading proxy cooldowns: %w", err)
+	}
+	for id, check := range checks {
+		count, err := check.Result()
+		if err != nil {
+			return nil, fmt.Errorf("reading the proxy cooldown for %s: %w", id, err)
+		}
+		parked[id] = count > 0
+	}
+	return parked, nil
 }
 
 // proxyRotationKey derives the counter's key for one pool key.

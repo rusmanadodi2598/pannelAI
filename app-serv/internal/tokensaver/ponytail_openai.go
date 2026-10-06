@@ -3,19 +3,12 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/ponytail_openai.go
-// @for       The OpenAI-shaped halves of the ponytail injector: the chat body
-//
-//	and the Responses body.
-//
+// @for       The OpenAI-shaped halves of the ponytail injector: the chat body and the Responses body.
 // @uses      encoding/json.
-// @reason    SPEC-API-002 §7 injects into whichever system slot the wire has:
-//
-//	a chat body carries a system message, and a Responses body carries
-//	an instructions string or a system message item.
-//
+// @reason    SPEC-API-002 §7 injects into whichever system slot the wire has: a chat body carries a system message, and a Responses body carries an instructions string or a system message item.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

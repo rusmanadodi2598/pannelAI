@@ -1,25 +1,12 @@
 // Command app-serv adapts the node store to the model-list read's dependencies.
 //
 // @file      cmd/app-serv/node_models_wiring.go
-// @for       The two reads the node model adapter needs from storage: a node's
-//
-//	target, and the credential of the endpoint that serves it.
-//
-// @uses      internal/domain, internal/registry, internal/repository,
-//
-//	internal/service, context, strings.
-//
-// @reason    SPEC-API-001 §7.4 serves a node's models, and the read needs two
-//
-//	things the adapter must not reach for itself: the stored node (to know
-//	its base URL) and the credential (to authenticate the read). Both are
-//	repository reads, and AGENTS.md §1.5 keeps storage out of the adapter's
-//	business rules — so they are narrow functions built here, in the one
-//	layer allowed to know every boundary.
-//
+// @for       The two reads the node model adapter needs from storage: a node's target, and the credential of the endpoint that serves it.
+// @uses      internal/domain, internal/registry, internal/repository, internal/service, context, strings.
+// @reason    SPEC-API-001 §7.4 serves a node's models, and the read needs two things the adapter must not reach for itself: the stored node (to know its base URL) and the credential (to authenticate the read). Both are repository reads, and AGENTS.md §1.5 keeps storage out of the adapter's business rules, so they are narrow functions built here, in the one layer allowed to know every boundary.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -106,18 +93,13 @@ func newNodeTargetLookup(nodes nodeReader) func(id string) (nodeTarget, bool) {
 }
 
 // newNodeCredentialSource opens the credential of the first active endpoint
-// under a node.
-//
-// A node carries no credential of its own (SPEC-API-001 §7.4): the credential
-// belongs to an endpoint, and the node's models read uses whichever endpoint the
-// operator configured for it. That is why the read is per node rather than per
-// endpoint: the list is a property of the upstream, and every endpoint under the
-// node reaches the same one.
-//
-// An empty credential is an answer, not a failure: an upstream needing no key is
-// a legitimate node, and the reference sends no auth header for one. A read or
-// open failure is also answered empty rather than as an error, so a sealed value
-// that cannot be opened produces a fallback list rather than a 500.
+// under a node. A node holds no credential of its own, so the read is per node
+// rather than per endpoint: every endpoint under a node reaches the same
+// upstream.
+// An empty credential is an answer, not a failure, because an upstream needing
+// no key is a legitimate node and the reference sends it no auth header. A read
+// or open failure answers empty too, so a sealed value that will not open
+// yields a fallback list rather than a 500.
 func newNodeCredentialSource(endpoints endpointKeyReader, opener service.SecretOpener) func(context.Context, string) (string, error) {
 	return func(ctx context.Context, nodeID string) (string, error) {
 		rows, _, err := endpoints.List(ctx, repository.EndpointFilter{ProviderID: nodeID}, repository.PageQuery{PerPage: 1})
@@ -137,7 +119,7 @@ func newNodeCredentialSource(endpoints endpointKeyReader, opener service.SecretO
 		}
 		plaintext, err := opener.Open(key.EncryptedValue())
 		if err != nil {
-			//nolint:nilerr // reason: a sealed value that will not open answers the same as no credential — a fallback list with a warning — rather than failing a read over a key it does not strictly need. The plaintext is never logged or returned.
+			//nolint:nilerr // reason: a sealed value that will not open answers the same as no credential, a fallback list with a warning, rather than failing a read over a key it does not strictly need. The plaintext is never logged or returned.
 			return "", nil
 		}
 		return plaintext, nil

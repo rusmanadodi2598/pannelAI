@@ -1,21 +1,13 @@
-//go:build integration
+//go:build integration && live
 
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/systemone_live_test.go
 // @for       The live decision-route run against the real OpenCode upstream.
-// @uses      context, encoding/json, testing, time, internal/dataplane,
+// @uses      context, encoding/json, testing, time, internal/dataplane, internal/domain, internal/provider, internal/registry, internal/schema.
+// @reason    The hermetic tests pin the route's shape against doubles. This file is the other half of the evidence R-35 asks for: the same route against the real upstream, so "the decision model answers" is a measurement rather than an inference. It carries the `integration,live` build tags because it spends the upstream's anonymous quota and needs the network.
 //
-//	internal/domain, internal/provider, internal/registry, internal/schema.
-//
-// @reason    The hermetic tests pin the route's shape against doubles. This file
-//
-//	is the other half of the evidence R-35 asks for: the same route against
-//	the real upstream, so "the decision model answers" is a measurement
-//	rather than an inference. It carries the `integration` build tag because
-//	it spends the upstream's anonymous quota and needs the network.
-//
-//	  go test -tags=integration -run TestSystemOneLive ./internal/service/
+//	  go test -tags=integration,live -run TestSystemOneLive ./internal/service/
 //
 //	It drives the real resolver over the embedded registry, the real HTTP
 //	caller, and the real entry block, and substitutes only the account
@@ -24,7 +16,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -79,10 +71,7 @@ type liveLookup struct{}
 func (liveLookup) Combo(context.Context, string) (domain.Combo, bool, error) {
 	return domain.Combo{}, false, nil
 }
-func (liveLookup) Alias(context.Context, string) (string, bool, error) { return "", false, nil }
-func (liveLookup) Disabled(context.Context, string, string) (bool, error) {
-	return false, nil
-}
+func (liveLookup) Alias(context.Context, string) (string, bool, error)      { return "", false, nil }
 func (liveLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (liveLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
 func (liveLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }

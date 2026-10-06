@@ -1,25 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/endpoint.go
-// @for       The request contracts for upstream endpoints, their keys, and the
-//
-//	bulk onboarding routes (SPEC-API-001 §7.5, §8.1).
-//
-// @uses      go-playground/validator/v10 (the documented struct-tag exception in
-//
-//	AGENTS.md "Stack"), internal/domain for the shared vocabulary.
-//
-// @reason    AGENTS.md §2.4 CDD requires a typed struct with validation tags
-//
-//	before handler logic, and §8.1 settles these shapes before the
-//	endpoint DTOs exist: one create shape serves the single route and
-//	each element of the bulk route, the auth vocabulary crosses as
-//	api_key|oauth|no_auth, and a credential is write-only so responses
-//	carry a hint.
-//
+// @for       The request contracts for upstream endpoints, their keys, and the bulk onboarding routes (SPEC-API-001 §7.5, §8.1).
+// @uses      go-playground/validator/v10 (the documented struct-tag exception in AGENTS.md "Stack"), internal/domain for the shared vocabulary.
+// @reason    AGENTS.md §2.4 CDD requires a typed struct with validation tags before handler logic, and §8.1 settles these shapes before the endpoint DTOs exist: one create shape serves the single route and each element of the bulk route, the auth vocabulary crosses as api_key|oauth|no_auth, and a credential is write-only so responses carry a hint.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package schema
 
@@ -51,7 +38,7 @@ var registryAuthAliases = map[string]string{
 //
 // It is the boundary §8.1 requires: the registry spells two values apikey and
 // none, the API publishes api_key and no_auth, and a caller must not have to
-// know both. Anything else — including cookie — is a VALIDATION_ERROR naming
+// know both. Anything else, including cookie, is a VALIDATION_ERROR naming
 // the accepted set, so the mistake is actionable rather than mysterious.
 func ParseAuthType(raw string) (domain.UpstreamAuthType, error) {
 	value := strings.TrimSpace(raw)
@@ -101,7 +88,7 @@ type UpdateEndpointRequest struct {
 	Priority *int    `json:"priority,omitempty" validate:"omitempty,min=1,max=10000"`
 	Status   *string `json:"status,omitempty" validate:"omitempty,oneof=active disabled"`
 
-	// The connection-parity fields (draft 017 §4.1b). Each is a pointer so
+	// The connection-parity fields. Each is a pointer so
 	// "omitted" stays distinct from "cleared": an operator removing a default
 	// model sends `""`, which is different from not mentioning it.
 	DefaultModel   *string `json:"default_model,omitempty" validate:"omitempty,max=200"`

@@ -1,20 +1,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/log.go
-// @for       PostgreSQL persistence for request logs, including capture-aware
-//
-//	insert and retention purge.
-//
+// @for       PostgreSQL persistence for request logs, including capture-aware insert and retention purge.
 // @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository.
-// @reason    SPEC-API-001 §7.13 lists logs newest first, omits bodies from the
-//
-//	list so a page is not megabytes, and deletes rows older than the
-//	retention setting. The list is always ranged and paged, and the
-//	purge is one statement with a cutoff (AGENTS.md §1.7).
-//
+// @reason    SPEC-API-001 §7.13 lists logs newest first, omits bodies from the list so a page is not megabytes, and deletes rows older than the retention setting. The list is always ranged and paged, and the purge is one statement with a cutoff (AGENTS.md §1.7).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 
@@ -40,11 +32,10 @@ const logDetailColumns = logListColumns + `, coalesce(request_body, ''), coalesc
 // ever unbounded. An empty parameter disables its filter, and the free-text `q`
 // matches a case-insensitive substring of the request id, the error text, and
 // the model, because the panel's placeholder promises a request id and an error
-// code (draft 010 F8, owner decision D4 = expand). A NULL error needs no
-// coalesce for the same reason a NULL error_code does not on the usage read:
-// `false OR NULL` excludes a row exactly as `false` does, so the OR can only
-// add a match. Keeping the FROM here means a read cannot reference a bare
-// column by mistake.
+// code. A NULL error needs no coalesce for the same reason a NULL error_code
+// does not on the usage read: `false OR NULL` excludes a row exactly as
+// `false` does, so the OR can only add a match. Keeping the FROM here means a
+// read cannot reference a bare column by mistake.
 const logFilterClause = `
 	  FROM request_logs
 	 WHERE ts >= $1 AND ts <= $2
@@ -112,6 +103,11 @@ func (r *LogRepository) List(ctx context.Context, filter domain.LogFilter, q rep
 		}
 		total = rowTotal
 		entries = append(entries, entry)
+	}
+	if err := rows.Err(); err != nil {
+		// A driver error mid-stream ends Next() quietly. Without this the page
+		// that was truncated by the failure is answered as a complete one.
+		return nil, 0, translateLogError(err)
 	}
 	if len(entries) == 0 {
 		count, err := r.count(ctx, filter)

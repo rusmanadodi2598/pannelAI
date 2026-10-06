@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_live_tracker.go
-// @for       Recording one call as in flight for as long as it is running, at
-//
-//	each plane's outbound seam.
-//
+// @for       Recording one call as in flight for as long as it is running, at each plane's outbound seam.
 // @uses      internal/domain, internal/repository, context, log/slog, time.
-// @reason    SPEC-UI-001 §6.5 makes the drawing's active node mean "a request is
-//
-//	being routed now", and only the gateway knows that interval. The
-//	tracker is the write half of the pair: `Begin` records a marker
-//	before the outbound call and returns the release that removes it
-//	after, so the two cannot be separated by a caller that forgets the
-//	second half.
+// @reason    SPEC-UI-001 §6.5 makes the drawing's active node mean "a request is being routed now", and only the gateway knows that interval. The tracker is the write half of the pair: `Begin` records a marker before the outbound call and returns the release that removes it after, so the two cannot be separated by a caller that forgets the second half.
 //
 //	It is one type applied at three seams rather than one central hook,
 //	because the gateway has three outbound planes (chat through the
@@ -29,7 +20,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 
@@ -71,17 +62,14 @@ func (t *ActiveRequestTracker) SetClock(clock func() time.Time) {
 	}
 }
 
-// markActiveRequest opens one marker through the seam and returns its release.
-//
-// It is the nil-safe form the media and embeddings planes share, because a typed
-// nil inside an interface still panics when its method is called: both services
-// hold the seam as an interface, so a deployment that wired no tracker would
-// reach a nil receiver rather than the no-op the seam promises. The engine keeps
-// its own copy of this rule on its side of the package boundary.
-//
-// These three strings are all a non-chat plane has: the media, embeddings and
-// SystemOne planes refuse a combo before they reach here, so the marker they
-// open carries no combo name rather than an unknown one.
+// markActiveRequest opens one marker through the seam and returns its release. It
+// is the nil-safe form the media and embeddings planes share, because a typed nil
+// inside an interface still panics when its method is called: both services hold
+// the seam as an interface, so a deployment that wired no tracker would reach a nil
+// receiver rather than the no-op the seam promises. The engine keeps its own copy of
+// this rule on its side of the package boundary. The three strings are all a
+// non-chat plane has, since those planes refuse a combo before reaching here, so a
+// marker carries no combo name rather than an unknown one.
 func markActiveRequest(ctx context.Context, active dataplane.ActiveRequests, providerID, endpointID, model string) func() {
 	if active == nil {
 		return func() {}
@@ -94,15 +82,12 @@ func markActiveRequest(ctx context.Context, active dataplane.ActiveRequests, pro
 }
 
 // Begin records one call as in flight and returns the function that releases it.
-//
-// The release is safe to call more than once, so a caller may both defer it and
-// call it explicitly on the path that ends the call, which is what the three
-// planes do: the marker has to disappear when the outbound call returns, not
-// only when the handler does.
-//
-// A call that resolved no provider records nothing: the marker's whole purpose
-// is to light a provider's node, and a marker with no provider would light
-// nothing while still occupying the set.
+// The release is safe to call more than once, so a caller may both defer it and call
+// it explicitly on the path that ends the call, which is what the three planes do:
+// the marker has to disappear when the outbound call returns, not only when the
+// handler does. A call that resolved no provider records nothing, because the
+// marker exists to light a provider's node and a providerless one lights nothing
+// while still occupying the set.
 func (t *ActiveRequestTracker) Begin(ctx context.Context, in dataplane.ActiveMarker) func() {
 	if t == nil || t.store == nil || in.ProviderID == "" {
 		return func() {}

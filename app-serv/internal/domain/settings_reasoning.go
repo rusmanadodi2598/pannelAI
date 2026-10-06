@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/settings_reasoning.go
-// @for       The reasoning group: the stored thinking-mode vocabulary, its
-//
-//	per-provider resolution, and the patch rules.
-//
+// @for       The reasoning group: the stored thinking-mode vocabulary, its per-provider resolution, and the patch rules.
 // @uses      strings.
-// @reason    SPEC-API-001 §7.14 gains a reasoning group for the reference's
-//
-//	providerThinking map: one mode per provider, applied to the outbound
-//	body when the client carries no reasoning intent of its own. Keeping
-//	the vocabulary here, beside the resolution rule, is what stops a
-//	stored mode the injection cannot execute from being written.
-//
+// @reason    SPEC-API-001 §7.14 gains a reasoning group for the reference's providerThinking map: one mode per provider, applied to the outbound body when the client carries no reasoning intent of its own. Keeping the vocabulary here, beside the resolution rule, is what stops a stored mode the injection cannot execute from being written.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package domain
 

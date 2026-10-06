@@ -7,7 +7,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 
@@ -86,7 +86,7 @@ func TestModelCatalogService_CatalogFilters(t *testing.T) {
 		}},
 		// The two modality names are resolved from the model id, so the fixture
 		// names ids the reference agrees are vision-capable rather than writing
-		// "vision" into its own data (draft 017 §4.4).
+		// "vision" into its own data.
 		// anthropic/claude-3 is the fixture's disabled row, so it is correctly
 		// absent from both answers: the disabled set subtracts before the
 		// capability filter runs.

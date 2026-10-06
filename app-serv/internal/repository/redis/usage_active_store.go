@@ -1,19 +1,9 @@
 // Package redis implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/usage_active_store.go
-// @for       The in-flight marker set: one member per request being routed now,
-//
-//	scored by its start instant.
-//
+// @for       The in-flight marker set: one member per request being routed now, scored by its start instant.
 // @uses      github.com/redis/go-redis/v9, internal/domain, context, fmt, time.
-// @reason    SPEC-UI-001 §6.5 makes the drawing's live state come from the
-//
-//	gateway, and the gateway is the only party that knows a request is
-//	between two instants. The store lives in Redis rather than in
-//	process memory because this service may run more than one replica:
-//	an in-process map would give each replica its own idea of what is
-//	active, and the stream would show a different set depending on which
-//	replica answered.
+// @reason    SPEC-UI-001 §6.5 makes the drawing's live state come from the gateway, and the gateway is the only party that knows a request is between two instants. The store lives in Redis rather than in process memory because this service may run more than one replica: an in-process map would give each replica its own idea of what is active, and the stream would show a different set depending on which replica answered.
 //
 //	A sorted set scored by the start instant is what makes the read
 //	bounded: ZRANGEBYSCORE applies the staleness cutoff and the limit in
@@ -25,7 +15,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package redisrepo
 
@@ -99,23 +89,14 @@ func (s *ActiveRequestStore) Finish(ctx context.Context, marker domain.ActiveReq
 	return nil
 }
 
-// Active returns the live markers, oldest first, bounded by limit.
-//
-// The stale members are pruned before the read rather than after it, so the set
-// cannot accumulate entries from a process that died mid-request: the prune and
-// the read are two commands under one deadline, and a read that fails leaves the
-// set no larger than it was.
-//
-// A member that fails to decode is skipped rather than failing the read: the
-// value came from a shared Redis instance, so one foreign member must not be
-// able to blank the whole drawing (OWASP A08). It is left in the set. Removing
-// what this build cannot parse is only safe while the codec is closed to every
-// later version — a marker written by a build that carries a field this one has
-// never seen is a live request belonging to another process, and deleting it
-// would let a reader with no idea what it erased suppress someone else's node.
-// The score prune the read already runs collects a genuinely dead member within
-// the 60 second window, so skipping costs a bounded amount of space and nothing
-// else.
+// Active returns the live markers, oldest first, bounded by limit. Stale members
+// are pruned before the read, not after, so a process that died mid-request
+// leaves nothing accumulating: prune and read are two commands under one
+// deadline, and a failed read never leaves the set larger than it was.
+// A member that fails to decode is skipped rather than fatal (OWASP A08): the
+// set is shared, and one foreign member must not blank the whole drawing. It
+// stays in the set because a newer build's live request is not ours to delete;
+// the score prune above reclaims a genuinely dead one within the 60 second cutoff.
 func (s *ActiveRequestStore) Active(ctx context.Context, now time.Time, limit int) ([]domain.ActiveRequest, error) {
 	if s == nil || s.client == nil || limit < 1 {
 		return nil, nil

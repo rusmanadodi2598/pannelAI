@@ -3,14 +3,10 @@
 // @file      internal/service/quotafetch/opencode.go
 // @for       Reads the rolling, weekly and monthly windows OpenCode publishes for one of its two products.
 // @uses      internal/service/quotafetch, context, encoding/json, net/http
-// @reason    Zen (pay-as-you-go) and Go (subscription) answer the same quota document from
-//
-//	different hosts with different words on the card, so a read that asked one
-//	host for both reports a working connection against the wrong allocation.
-//
+// @reason    Zen (pay-as-you-go) and Go (subscription) answer the same quota document from different hosts with different words on the card, so a read that asked one host for both reports a working connection against the wrong allocation.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -184,8 +180,8 @@ func openCodeWindow(label string, raw json.RawMessage) (Quota, bool) {
 }
 
 // openCodePercent reads a published share, which OpenCode sends as a JSON number on some
-// answers and as a numeric string on others. Anything else — absent, empty, unparseable,
-// not finite — is no reading at all, which is why it reports ok instead of answering zero.
+// answers and as a numeric string on others. Anything else, absent, empty, unparseable,
+// not finite, is no reading at all, which is why it reports ok instead of answering zero.
 func openCodePercent(raw json.RawMessage) (float64, bool) {
 	text := strings.Trim(strings.TrimSpace(string(raw)), `"`)
 	if text == "" || text == "null" {

@@ -2,19 +2,11 @@
 //
 // @file      internal/service/usage_event_policy_test.go
 // @for       Tests for the retry policy the usage event consumer states.
-//
 // @uses      testing, time.
-// @reason    AGENTS.md §1.6 forbids an unstated retry policy, so the consumer
-//
-//	declares its backoff bounds as constants. A constant is easy to
-//	change by accident and impossible to notice in review, so the shape
-//	the policy promises (grows, never shrinks, never crosses its
-//	ceiling, starts at its base) is pinned here rather than described in
-//	a comment.
-//
+// @reason    AGENTS.md §1.6 forbids an unstated retry policy, so the consumer declares its backoff bounds as constants. A constant is easy to change by accident and impossible to notice in review, so the shape the policy promises (grows, never shrinks, never crosses its ceiling, starts at its base) is pinned here rather than described in a comment.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

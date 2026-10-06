@@ -42,7 +42,7 @@
 		providerId: string;
 		/** The registry's own name for the provider, which is what the title says the key is added to. */
 		providerName: string;
-		/** The auth type the connection is stored as — a key type, since a key is what this dialog takes. */
+		/** The auth type the connection is stored as: a key type, since a key is what this dialog takes. */
 		authType: string;
 		/**
 		 * The registry's credential-format sentence (what a Personal Access Token looks like and where to

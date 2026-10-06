@@ -1,25 +1,16 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_relay_fixture_test.go
-// @for       The end-to-end relay fixture: registry and lookup doubles, a real
+// @for       The end-to-end relay fixture: registry and lookup doubles, a real HTTP upstream stand-in, and the wired engine the tests drive.
+// @uses      testing, net/http, net/http/httptest, encoding/json, context, internal/domain, internal/provider, internal/registry, internal/schema.
 //
-//	HTTP upstream stand-in, and the wired engine the tests drive.
-//
-// @uses      testing, net/http, net/http/httptest, encoding/json, context,
-//
-//	internal/domain, internal/provider, internal/registry, internal/schema.
 //	The seam engine below also wires internal/provider and the two body
 //	seams, which the relay tests share.
 //
-// @reason    The relay tests pin the pipeline as one piece, so their doubles are
-//
-//	shared wiring rather than per-test trivia. Keeping them in one
-//	file keeps the three tests about the behaviour they pin and keeps
-//	both files within the AGENTS.md section 1.1 line budget.
-//
+// @reason    The relay tests pin the pipeline as one piece, so their doubles are shared wiring rather than per-test trivia. Keeping them in one file keeps the three tests about the behaviour they pin and keeps both files within the AGENTS.md section 1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package dataplane
 
@@ -63,7 +54,7 @@ func (l relayLookup) Combo(_ context.Context, name string) (domain.Combo, bool, 
 }
 
 // comboRow builds a stored combo row for the fixtures: fallback, one sticky
-// request per model, no judge — the shape every pre-fusion test used.
+// request per model, no judge, the shape every pre-fusion test used.
 func comboRow(name string, refs ...string) domain.Combo {
 	return comboWithStrategy(name, domain.ComboFallback, 1, "", refs...)
 }
@@ -92,10 +83,7 @@ func comboWithStrategy(name string, strategy domain.ComboStrategy, stickyLimit i
 	return domain.RehydrateCombo("cmb_"+name, name, strategy, stickyLimit, judge, models, now, now)
 }
 
-func (relayLookup) Alias(context.Context, string) (string, bool, error) { return "", false, nil }
-func (relayLookup) Disabled(context.Context, string, string) (bool, error) {
-	return false, nil
-}
+func (relayLookup) Alias(context.Context, string) (string, bool, error)      { return "", false, nil }
 func (relayLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (relayLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
 func (relayLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }

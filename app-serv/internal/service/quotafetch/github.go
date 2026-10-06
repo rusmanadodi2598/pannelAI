@@ -1,19 +1,14 @@
 // The GitHub Copilot family: the copilot_internal/user endpoint, keyed by a GitHub OAuth
-// token presented with the `token` scheme (never `bearer`), reporting two response shapes —
+// token presented with the `token` scheme (never `bearer`), reporting two response shapes,
 // a paid plan's quota snapshots and a free plan's monthly quotas.
 //
 // @file      internal/service/quotafetch/github.go
 // @for       Reads GitHub Copilot's published quota off the copilot_internal/user endpoint.
 // @uses      internal/service/quotafetch, encoding/json, net/http, time
-// @reason    GitHub meters Copilot against two different payload shapes and authenticates
-//
-//	with a `token` scheme plus the API-version and editor identification the endpoint
-//	demands, and unlike the other families a failure here is an error the card shows
-//	rather than a benign note — so its messages keep an error flavour.
-//
+// @reason    GitHub meters Copilot against two different payload shapes and authenticates with a `token` scheme plus the API-version and editor identification the endpoint demands, and unlike the other families a failure here is an error the card shows rather than a benign note, so its messages keep an error flavour.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

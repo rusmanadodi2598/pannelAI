@@ -1,20 +1,12 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/settings_provider_proxy_test.go
-// @for       The per-provider proxy binding on the wire: the tag layer, the
-//
-//	lowering into the domain patch, and the read shape.
-//
+// @for       The per-provider proxy binding on the wire: the tag layer, the lowering into the domain patch, and the read shape.
 // @uses      encoding/json, testing, internal/domain.
-// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D6/D10: the binding is a map
-//
-//	of dynamic keys, so the tags must reach into the entries (dive) and
-//	the read must render an object rather than null, or the panel's own
-//	form validation fails on a document with no bindings.
-//
+// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D6/D10: the binding is a map of dynamic keys, so the tags must reach into the entries (dive) and the read must render an object rather than null, or the panel's own form validation fails on a document with no bindings.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package schema
 

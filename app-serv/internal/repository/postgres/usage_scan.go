@@ -3,16 +3,10 @@
 // @file      internal/repository/postgres/usage_scan.go
 // @for       Row decoding for usage reads and the usage driver-error mapping.
 // @uses      github.com/jackc/pgx/v5, internal/domain, fmt, time.
-// @reason    Every usage read decodes into the same aggregate projection, so
-//
-//	the scan order lives beside the projection const that fixes it: a
-//	single mismatch between a SELECT list and a Scan destination is an
-//	opaque runtime error, and keeping both in one package makes it
-//	reviewable in one place.
-//
+// @reason    Every usage read decodes into the same aggregate projection, so the scan order lives beside the projection const that fixes it: a single mismatch between a SELECT list and a Scan destination is an opaque runtime error, and keeping both in one package makes it reviewable in one place.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 

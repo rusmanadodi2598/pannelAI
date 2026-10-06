@@ -4,14 +4,10 @@
 // @file      internal/domain/settings_routing.go
 // @for       The routing group's credential rotation vocabulary and the resolved policy.
 // @uses      strings.
-// @reason    SPEC-API-001 §7.14 fixes the group's keys and §7.5 what the policy
-//
-//	means; one resolution rule makes the override win over the global
-//	default for the router, the read, and the write.
-//
+// @reason    SPEC-API-001 §7.14 fixes the group's keys and §7.5 what the policy means; one resolution rule makes the override win over the global default for the router, the read, and the write.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package domain
 

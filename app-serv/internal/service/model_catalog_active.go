@@ -1,32 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_active.go
-// @for       The active-provider predicate of the catalog read: which providers
-//
-//	the router can actually serve a request to right now.
-//
+// @for       The active-provider predicate of the catalog read: which providers the router can actually serve a request to right now.
 // @uses      internal/domain, context.
-// @reason    Draft 025 measured the panel's picker offering 586 of 587 rows
-//
-//	that answer NO_PROVIDER_AVAILABLE on the first request, because
-//	the catalog lists every model the registry declares while the
-//	router only reaches providers that hold an active endpoint. The
-//	reference answers this in the client (its picker filters
-//	activeProviders); this port moves the same question to the server
-//	so one parameter, `?active=true`, lets every caller ask it. The
-//	predicate is the router's own population, stated in its terms: the
-//	candidates query (selection.go) selects endpoints with status
-//	active under the provider's canonical id, so one status-active
-//	endpoint makes the provider active here, a rate-limited active
-//	endpoint keeps it active (the runtime skip is a moment, not a
-//	configuration), and disabled or errored endpoints do not. The
-//	roll-up is read once per request with every candidate id in that
-//	one call, because the same seam is already one query in
-//	PostgreSQL and a per-provider loop would turn one read into many.
-//
+// @reason    Draft 025 measured the panel's picker offering 586 of 587 rows that answer NO_PROVIDER_AVAILABLE on the first request, because the catalog lists every model the registry declares while the router only reaches providers that hold an active endpoint. The reference answers this in the client (its picker filters activeProviders); this port moves the same question to the server so one parameter, `?active=true`, lets every caller ask it. The predicate is the router's own population, stated in its terms: the candidates query (selection.go) selects endpoints with status active under the provider's canonical id, so one status-active endpoint makes the provider active here, a rate-limited active endpoint keeps it active (the runtime skip is a moment, not a configuration), and disabled or errored endpoints do not. The roll-up is read once per request with every candidate id in that one call, because the same seam is already one query in PostgreSQL and a per-provider loop would turn one read into many.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package service
 
@@ -43,45 +23,19 @@ import (
 // health tracking moves an endpoint to error without clearing its backoff
 // window, so a stale timestamp would count a dead account as pickable. The
 // question "which providers have a candidate" is one predicate over one table
-// and is answered as such — in one statement, for every id in the call.
+// and is answered as such, in one statement, for every id in the call.
 type ActiveProviderSet interface {
 	ActiveProviders(ctx context.Context, providerIDs []string) (map[string]bool, error)
 }
 
-// activeProviders answers which of the named providers hold a candidate
-// endpoint, in one read.
-//
-// The input is the candidate list the caller already narrowed — every distinct
-// provider id among the rows that matched the other filters — so a request that
-// asked for one provider measures that provider alone, and a request that asked
-// for nothing measures the catalog's own population. Ids are the canonical ids
-// the rows carry, which is the same spelling the endpoint table stores and the
-// router's candidates query selects by, so no name resolution happens here.
-//
-// The set is the router's own candidates predicate, which is deliberately not the
-// same as "healthy this second": an active endpoint in a backoff window is a
-// candidate the router will serve again when the window closes, while a disabled
-// or errored endpoint is a configuration an operator has to change. A provider
-// whose every endpoint is the former stays offered; one whose every endpoint is
-// the latter disappears, which is what makes the parameter worth asking for.
-//
-// A provider that needs no credential is added to the set even with no stored
-// row, because that is what the router does: `Selector.candidates` synthesizes a
-// virtual endpoint for a credential-free entry with no active row (draft 029 §4.8
-// F8), so `opencode/space-bunny-free` answers 200 with an empty endpoint table.
-// Reading only the table answered the opposite and hid the whole free lane from
-// the panel — the picker then offered the operator nothing that works, which is
-// how a custom node came to be built for a provider that needs none.
-//
-// The credential-free half is asked of the registry rather than guessed from the
-// row, so the filter and the router cannot disagree about which providers those
-// are: both read `Provider.NeedsNoCredential`.
-//
-// A missing seam is a refusal, not an empty answer: a deployment that wired no
-// set reader can answer the whole catalog but cannot answer "which providers
-// are active", and returning the unfiltered catalog under a parameter that
-// promised the opposite would tell the caller every model is usable when
-// nothing is.
+// activeProviders answers the router's candidates question, not "healthy this
+// second": an endpoint in a backoff window still counts, a disabled or errored
+// one does not. A credential-free provider is active with no stored row, because
+// the router synthesizes its endpoint, and which providers those are comes from
+// the registry so the filter and the router cannot disagree. Ids are canonical,
+// the spelling the endpoint table stores, so no name resolution happens here. A
+// missing seam is a refusal rather than an unfiltered catalog, which would
+// promise every model is usable when nothing is.
 func (s *ModelCatalogService) activeProviders(ctx context.Context, providerIDs []string) (map[string]bool, error) {
 	if s.active == nil {
 		return nil, domain.NewInternalError(

@@ -3,22 +3,12 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/applier_precedence_test.go
-// @for       Which source wins: the model string's suffix, the client's own
-//
-//	body, or the stored provider mode, per model family.
-//
+// @for       Which source wins: the model string's suffix, the client's own body, or the stored provider mode, per model family.
 // @uses      context, testing, internal/domain.
-// @reason    SPEC-API-001 §7.14 stores one mode per provider and §7.15 carries
-//
-//	the suffix, so the precedence is the seam's whole contract and a
-//	wrong answer is silent: a body that gained a field the client did
-//	not ask for, or lost one it did. The table is one file because it
-//	is one question, and applier_test.go keeps the cases that must
-//	leave a body untouched (AGENTS.md §1.1).
-//
+// @reason    SPEC-API-001 §7.14 stores one mode per provider and §7.15 carries the suffix, so the precedence is the seam's whole contract and a wrong answer is silent: a body that gained a field the client did not ask for, or lost one it did. The table is one file because it is one question, and applier_test.go keeps the cases that must leave a body untouched (AGENTS.md §1.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-26
 package reasoning
 

@@ -3,16 +3,10 @@
 // @file      internal/dataplane/translate_responses_usage_test.go
 // @for       Table-driven tests for the Responses reasoning fold and accounting.
 // @uses      testing.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and its
-//
-//	usage block counts differently from OpenAI's: input_tokens already
-//	includes the cached tokens, so folding it by addition is what keeps
-//	a client from being billed twice. The reasoning fold sits beside it
-//	because both are read from the same decoded answer.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and its usage block counts differently from OpenAI's: input_tokens already includes the cached tokens, so folding it by addition is what keeps a client from being billed twice. The reasoning fold sits beside it because both are read from the same decoded answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

@@ -5,15 +5,10 @@
 // @file      internal/dataplane/translate_responses_client_tools.go
 // @for       The tool-declaration rules the Responses-to-chat translation follows.
 // @uses      encoding/json, bytes, internal/schema.
-// @reason    SPEC-API-001 §7.15 serves the Responses wire, whose tool vocabulary
-//
-//	flattens OpenAI's `function` wrapper and adds hosted tools that carry
-//	no name at all. Both are rejections upstream when they are handled
-//	wrong, so the rules live in one place a test can pin.
-//
+// @reason    SPEC-API-001 §7.15 serves the Responses wire, whose tool vocabulary flattens OpenAI's `function` wrapper and adds hosted tools that carry no name at all. Both are rejections upstream when they are handled wrong, so the rules live in one place a test can pin.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

@@ -3,10 +3,7 @@
 // @file      internal/repository/postgres/auth.go
 // @for       Persists and atomically updates the singleton dashboard password hash.
 // @uses      pgx/v5/pgxpool, internal/domain, internal/repository.
-// @reason    Dashboard authentication needs durable bcrypt hash storage with a
-//
-//	compare-and-set update so concurrent password changes are safe.
-//
+// @reason    Dashboard authentication needs durable bcrypt hash storage with a compare-and-set update so concurrent password changes are safe.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

@@ -1,24 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_budget_test.go
-// @for       Table-driven tests for the §7.12 budget gate: an endpoint whose
-//
-//	stored cap is spent is skipped, and a gate that cannot answer
-//	does not take the data plane down.
-//
+// @for       Table-driven tests for the §7.12 budget gate: an endpoint whose stored cap is spent is skipped, and a gate that cannot answer does not take the data plane down.
 // @uses      context, errors, testing, time, internal/domain.
-// @reason    F1 of docs/DRAFT/005-QUOTA-TRACKER-CLOSURE.md found the cap rule
-//
-//	implemented and unreachable: domain.QuotaCap.Exhausted had no
-//	production caller, so the spec's "router stops picking exhausted
-//	endpoints" (§7.12) held in name only. These tests pin the two
-//	directions that matter: a spent cap is skipped even when it is the
-//	highest-priority endpoint, and a failing gate read fails open rather
-//	than locking every provider out.
-//
+// @reason    F1 of docs/DRAFT/005-QUOTA-TRACKER-CLOSURE.md found the cap rule implemented and unreachable: domain.QuotaCap.Exhausted had no production caller, so the spec's "router stops picking exhausted endpoints" (§7.12) held in name only. These tests pin the two directions that matter: a spent cap is skipped even when it is the highest-priority endpoint, and a failing gate read fails open rather than locking every provider out.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-20
 package dataplane
 

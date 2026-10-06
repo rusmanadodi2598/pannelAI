@@ -1,22 +1,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_body_test.go
-// @for       The agent body: what the vendor's catalogue contributes to it, and the
-//
-//	message reshaping it depends on.
-//
+// @for       The agent body: what the vendor's catalogue contributes to it, and the message reshaping it depends on.
 // @uses      encoding/json, io, net/http, net/http/httptest, strings, testing, time.
-// @reason    The endpoint refuses an OpenAI body and answers with a different model
-//
-//	when the configuration it is handed is wrong, so the two things this
-//	file can pin without a live account are that the payload carries the
-//	vendor's own object unchanged and that the identity fields are stable
-//	for one prompt. The catalogue stub is the vendor's real shape, captured
-//	live.
-//
+// @reason    The endpoint refuses an OpenAI body and answers with a different model when the configuration it is handed is wrong, so the two things this file can pin without a live account are that the payload carries the vendor's own object unchanged and that the identity fields are stable for one prompt. The catalogue stub is the vendor's real shape, captured live.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-27
 package provider
 
@@ -31,8 +21,8 @@ import (
 )
 
 // qoderCatalogFixture is the vendor's model list, reduced to the two entries a test
-// needs. The shape — a `chat` array of objects carrying key, is_reasoning and
-// max_output_tokens — is what the live service answered (draft 036 §5).
+// needs. The shape, a `chat` array of objects carrying key, is_reasoning and
+// max_output_tokens, is what the live service answered.
 const qoderCatalogFixture = `{"chat":[
  {"key":"ultimate","format":"openai","source":"system","is_vl":true,"is_reasoning":true,"max_output_tokens":16384,"vendor":"qoder"},
  {"key":"auto","format":"openai","source":"system","is_reasoning":false}
@@ -70,9 +60,9 @@ func newQoderStubVendor(t *testing.T, catalog string) (*Qoder, *int, *int) {
 }
 
 func qoderTestCredential() Credential {
-	return Credential{EndpointID: "ep_1", APIKey: "pt-secret", Family: FamilyStaticKey,
-		ProjectID: "user-7", Account: "dev@example.com",
-		Metadata: map[string]string{MetadataMachineID: "machine-fixed"}}
+	return Credential{endpointID: "ep_1", apiKey: "pt-secret", family: FamilyStaticKey,
+		projectID: "user-7", account: "dev@example.com",
+		metadata: map[string]string{MetadataMachineID: "machine-fixed"}}
 }
 
 func qoderTestRequest(t *testing.T, connector *Qoder, body string) *Request {

@@ -3,19 +3,12 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/filter_log.go
-// @for       The generic log filters: dedup-log, smart-truncate, and
-//
-//	read-numbered.
-//
+// @for       The generic log filters: dedup-log, smart-truncate, and read-numbered.
 // @uses      fmt, regexp, strings.
-// @reason    SPEC-API-002 §5 ports the reference's three fallbacks. They are
-//
-//	what catches the tool results no specific filter claims: repeated
-//	log noise, an oversized blob, and a line-numbered file dump.
-//
+// @reason    SPEC-API-002 §5 ports the reference's three fallbacks. They are what catches the tool results no specific filter claims: repeated log noise, an oversized blob, and a line-numbered file dump.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

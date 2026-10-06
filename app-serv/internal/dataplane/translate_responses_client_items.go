@@ -3,22 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_responses_client_items.go
-// @for       The item-level rules the Responses-to-chat translation follows:
-//
-//	which item becomes which message, and how content and tools map.
-//
+// @for       The item-level rules the Responses-to-chat translation follows: which item becomes which message, and how content and tools map.
 // @uses      encoding/json, strings, internal/schema.
-// @reason    SPEC-API-001 §7.15 serves the Responses wire, and its item array is
-//
-//	where the two wires differ most: one assistant turn is assembled
-//	from several items, a tool result is an item rather than a message,
-//	and reasoning attaches to the turn that follows it. Keeping the
-//	rules beside the translator (rather than in it) holds both files
-//	inside the AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §7.15 serves the Responses wire, and its item array is where the two wires differ most: one assistant turn is assembled from several items, a tool result is an item rather than a message, and reasoning attaches to the turn that follows it. Keeping the rules beside the translator (rather than in it) holds both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

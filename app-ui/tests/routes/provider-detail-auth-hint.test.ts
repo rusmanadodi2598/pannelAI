@@ -2,7 +2,7 @@
 // docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
 // The registry's auth_hint is the only place the operator learns what credential a provider wants
-// before any connection exists — for Qoder it names the PAT prefix and the page that mints one. The
+// before any connection exists: for Qoder it names the PAT prefix and the page that mints one. The
 // assertions here hold the two shapes the API answers: the verbatim sentence when the registry
 // declares one, and nothing at all when it does not (Go's omitempty delivers an absent key, and a
 // provider without a hint must not render an empty paragraph).

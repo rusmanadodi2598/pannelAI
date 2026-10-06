@@ -1,26 +1,14 @@
-// Package service implements the management-plane use cases of app-serv.
+// Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
-// @file      internal/service/oauth_client_device_test.go
-// @for       The device-token poll client's wire behaviour and the upstream's
-//
-//	expiry spellings (draft 036 slice A).
-//
-// @uses      testing, encoding/json, net/http, net/http/httptest, strings,
-//
-//	time.
-//
-// @reason    The poll is the one place the vendor's tolerances live: 202 and
-//
-//	404 both mean "not yet", a refusal may carry a message, and the
-//	expiry arrives as a number, a numeric string, or a date. Those
-//	rules cannot be proven from the flow service, which only ever sees
-//	the decoded answer, so an httptest upstream asserts them here.
-//
+// @file      internal/service/oauthhttp/oauth_client_device_test.go
+// @for       The device-token poll client's wire behaviour and the upstream's expiry spellings (draft 036 slice A).
+// @uses      testing, encoding/json, net/http, net/http/httptest, strings, time.
+// @reason    The poll is the one place the vendor's tolerances live: 202 and 404 both mean "not yet", a refusal may carry a message, and the expiry arrives as a number, a numeric string, or a date. Those rules cannot be proven from the flow service, which only ever sees the decoded answer, so an httptest upstream asserts them here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
-package service
+package oauthhttp
 
 import (
 	"context"
@@ -136,7 +124,7 @@ func TestDevicePoll_ReadsTheIssuedToken(t *testing.T) {
 }
 
 // TestDevicePoll_Refusals pins the answers that end a modal: a refusal that
-// quotes the vendor's own reason, and a 200 that carries no credential — storing
+// quotes the vendor's own reason, and a 200 that carries no credential, storing
 // nothing beats storing an empty token.
 func TestDevicePoll_Refusals(t *testing.T) {
 	cases := []struct {
@@ -221,13 +209,13 @@ func TestFloorDeviceExpiry(t *testing.T) {
 	now := time.Date(2026, 9, 27, 12, 0, 0, 0, time.UTC)
 	floor := now.Add(deviceExpiryFloor)
 
-	if got := floorDeviceExpiry(now.Add(-time.Hour), now); !got.Equal(floor) {
+	if got := FloorDeviceExpiry(now.Add(-time.Hour), now); !got.Equal(floor) {
 		t.Fatalf("a past expiry floored to %v, want %v", got, floor)
 	}
-	if got := floorDeviceExpiry(now.Add(time.Minute), now); !got.Equal(floor) {
+	if got := FloorDeviceExpiry(now.Add(time.Minute), now); !got.Equal(floor) {
 		t.Fatalf("a near expiry floored to %v, want %v", got, floor)
 	}
-	if got := floorDeviceExpiry(now.Add(48*time.Hour), now); !got.Equal(now.Add(48 * time.Hour)) {
+	if got := FloorDeviceExpiry(now.Add(48*time.Hour), now); !got.Equal(now.Add(48 * time.Hour)) {
 		t.Fatalf("a healthy expiry was changed to %v", got)
 	}
 }
@@ -238,3 +226,5 @@ func signedDiff(d time.Duration) time.Duration {
 	}
 	return d
 }
+
+func intPtr(value int) *int { return &value }

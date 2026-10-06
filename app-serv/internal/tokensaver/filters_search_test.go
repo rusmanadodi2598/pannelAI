@@ -5,14 +5,10 @@
 // @file      internal/tokensaver/filters_search_test.go
 // @for       Table-driven tests for grep, find, search-list, ls, and tree.
 // @uses      fmt, strings, testing.
-// @reason    TDD.md §2.5 requires the boundaries, so each of these filters is
-//
-//	driven with a realistic dump and with the cap that decides how much
-//	of it survives.
-//
+// @reason    TDD.md §2.5 requires the boundaries, so each of these filters is driven with a realistic dump and with the cap that decides how much of it survives.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

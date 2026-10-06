@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_reconnect_test.go
-// @for       Tests that the usage event consumer recovers from a failing
-//
-//	subscription instead of stopping.
-//
+// @for       Tests that the usage event consumer recovers from a failing subscription instead of stopping.
 // @uses      internal/domain, internal/repository, context, testing, time.
-// @reason    The consumer opens a subscription per attempt, and a broker that is
-//
-//	down at boot is the ordinary case this loop exists for: without it a
-//	process started before Redis would consume nothing for its whole
-//	lifetime while reporting healthy. The test drives the failure at the
-//	Subscribe call, which is where a down broker actually surfaces.
-//
+// @reason    The consumer opens a subscription per attempt, and a broker that is down at boot is the ordinary case this loop exists for: without it a process started before Redis would consume nothing for its whole lifetime while reporting healthy. The test drives the failure at the Subscribe call, which is where a down broker actually surfaces.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

@@ -1885,7 +1885,7 @@
           },
           "auth_hint": {
             "type": "string",
-            "description": "The registry's credential-format sentence (draft 036 slice B), served verbatim — it names the upstream URL where the operator mints the credential. Absent when the provider declares none."
+            "description": "The registry's credential-format sentence (draft 036 slice B), served verbatim, and it names the upstream URL where the operator mints the credential. Absent when the provider declares none."
           },
           "has_oauth": {
             "type": "boolean"
@@ -2511,7 +2511,7 @@
           },
           "published": {
             "type": "array",
-            "description": "The provider's own answer for every account belonging to the provider\ngroups on this page, served from the cache the poll worker writes.\nAccount, not counted window, is the unit here: an endpoint that has\nrouted no traffic has no counted row and still gets a card, which is\nwhy an entry may carry `never_polled`.\nIt rides on the collection because asking each provider during a page\nread is one outbound call per account — the N+1 shape AGENTS.md §1.7\nblocks here. Additive: a client reading only `data` sees exactly what\nit saw before.\n",
+            "description": "The provider's own answer for every account belonging to the provider\ngroups on this page, served from the cache the poll worker writes.\nAccount, not counted window, is the unit here: an endpoint that has\nrouted no traffic has no counted row and still gets a card, which is\nwhy an entry may carry `never_polled`.\nIt rides on the collection because asking each provider during a page\nread is one outbound call per account, the N+1 shape AGENTS.md §1.7\nblocks here. Additive: a client reading only `data` sees exactly what\nit saw before.\n",
             "items": {
               "$ref": "#/components/schemas/PublishedQuotaUsageResponse"
             }
@@ -2603,7 +2603,7 @@
       },
       "PublishedQuotaUsageResponse": {
         "type": "object",
-        "description": "The provider's own answer about one connection. `message` carries the\nsoft outcome — the family publishes nothing, the credential was refused,\nthe provider errored — and is then the whole answer with `data` empty.\n",
+        "description": "The provider's own answer about one connection. `message` carries the\nsoft outcome (the family publishes nothing, the credential was refused,\nthe provider errored) and is then the whole answer with `data` empty.\n",
         "properties": {
           "endpoint_id": {
             "type": "string"
@@ -2618,7 +2618,7 @@
           "fetched_at": {
             "type": "string",
             "format": "date-time",
-            "description": "When the provider said the FIGURES in `data`, not when this process\nserved them. It dates the numbers rather than the attempt: a soft\nanswer — a `message` with an empty `data` — is stored by the poll\nscheduler without touching the numbers, so its instant remains the\none the row was created with (the zero time, which serializes as\n0001-01-01T00:00:00Z) until a read that carried figures replaces\nit. That placeholder is not a stamp and must not be printed as one.\nFigures can also outlive the read that failed to refresh them, so\ndating them by a later attempt would be wrong the other way.\n"
+            "description": "When the provider said the FIGURES in `data`, not when this process\nserved them. It dates the numbers rather than the attempt: a soft\nanswer (a `message` with an empty `data`) is stored by the poll\nscheduler without touching the numbers, so its instant remains the\none the row was created with (the zero time, which serializes as\n0001-01-01T00:00:00Z) until a read that carried figures replaces\nit. That placeholder is not a stamp and must not be printed as one.\nFigures can also outlive the read that failed to refresh them, so\ndating them by a later attempt would be wrong the other way.\n"
           },
           "message": {
             "type": "string"
@@ -2645,7 +2645,7 @@
           },
           "never_polled": {
             "type": "boolean",
-            "description": "The account exists and is on this page, but the worker has not\nanswered for it yet. Absence of an answer is a different claim from\nan answer of absence — a provider that published nothing says so in\n`message` — and the card has to tell them apart. Such an entry\ncarries no numbers and no `fetched_at` worth printing.\n"
+            "description": "The account exists and is on this page, but the worker has not\nanswered for it yet. Absence of an answer is a different claim from\nan answer of absence (a provider that published nothing says so in\n`message`) and the card has to tell them apart. Such an entry\ncarries no numbers and no `fetched_at` worth printing.\n"
           }
         },
         "required": [
@@ -3796,7 +3796,7 @@
           },
           "auth_hint": {
             "type": "string",
-            "description": "The registry's credential-format sentence (draft 036 slice B), served verbatim — it names the upstream URL where the operator mints the credential. Absent when the provider declares none."
+            "description": "The registry's credential-format sentence (draft 036 slice B), served verbatim, and it names the upstream URL where the operator mints the credential. Absent when the provider declares none."
           },
           "has_oauth": {
             "type": "boolean"
@@ -5114,7 +5114,7 @@
           },
           "endpoint_id": {
             "type": "string",
-            "description": "Present only when connected — the upstream endpoint the flow landed."
+            "description": "Present only when connected, and it names the upstream endpoint the flow landed."
           },
           "token_hint": {
             "type": "string",
@@ -12191,7 +12191,7 @@
     "/api/v1/quotas/{endpoint_id}/usage": {
       "get": {
         "summary": "The provider's own quota for one endpoint",
-        "description": "The connection's published allocation, served from the cache the poll\nworker writes, as opposed to GET /api/v1/quotas/{endpoint_id}, which\nreports the windows this gateway counted. The two answers disagree by\nnature and neither corrects the other, so they are separate bodies.\n\n`?force=1` asks the provider for this one account at this instant\ninstead of reading the cache. It is the operator's explicit press on a\nsingle card — the same seam the reference's per-card refresh uses — and\nthe reason the screen itself never has to fan out. A value other than\n`1` is a cache read, so a stale bookmark or a rewriting proxy cannot\nturn a page load into provider traffic.\n\nA provider that publishes no usage endpoint, or an endpoint with no\nstored credential, is refused; a provider that answers with an error or\nnothing at all is a 200 with `message` and an empty `data`.\n",
+        "description": "The connection's published allocation, served from the cache the poll\nworker writes, as opposed to GET /api/v1/quotas/{endpoint_id}, which\nreports the windows this gateway counted. The two answers disagree by\nnature and neither corrects the other, so they are separate bodies.\n\n`?force=1` asks the provider for this one account at this instant\ninstead of reading the cache. It is the operator's explicit press on a\nsingle card (the same seam the reference's per-card refresh uses) and\nthe reason the screen itself never has to fan out. A value other than\n`1` is a cache read, so a stale bookmark or a rewriting proxy cannot\nturn a page load into provider traffic.\n\nA provider that publishes no usage endpoint, or an endpoint with no\nstored credential, is refused; a provider that answers with an error or\nnothing at all is a 200 with `message` and an empty `data`.\n",
         "tags": [
           "Quota Tracker"
         ],

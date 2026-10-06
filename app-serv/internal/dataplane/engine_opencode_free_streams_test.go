@@ -3,17 +3,10 @@
 // @file      internal/dataplane/engine_opencode_free_streams_test.go
 // @for       The SSE bodies the free-tier stand-in answers with, one per wire.
 // @uses      nothing outside the package.
-// @reason    The bodies are shared by the fixture and the acceptance tests, and
-//
-//	keeping them out of both is what lets each file stay inside the
-//	AGENTS.md section 1.1 budget. They are constants rather than a builder
-//	because the framing is the point: a chat model answers chat frames and
-//	a Responses model answers Responses events, and a test that could not
-//	tell them apart would not prove the per-model wire rule.
-//
+// @reason    The bodies are shared by the fixture and the acceptance tests, and keeping them out of both is what lets each file stay inside the AGENTS.md section 1.1 budget. They are constants rather than a builder because the framing is the point: a chat model answers chat frames and a Responses model answers Responses events, and a test that could not tell them apart would not prove the per-model wire rule.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-24
 package dataplane
 

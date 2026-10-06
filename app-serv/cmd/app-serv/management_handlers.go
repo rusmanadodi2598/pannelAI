@@ -1,20 +1,12 @@
 // Command app-serv assembles the management handler set.
 //
 // @file      cmd/app-serv/management_handlers.go
-// @for       The one place the management handlers are built, so the wiring
-//
-//	function stays about composing services.
-//
+// @for       The one place the management handlers are built, so the wiring function stays about composing services.
 // @uses      fmt, internal/handler, internal/service.
-// @reason    buildManagement was approaching the AGENTS.md §1.1 line limit, and
-//
-//	the handler construction is the part that grows every time a route is
-//	added: it is a list, not a decision. Keeping it apart lets the wiring
-//	file stay readable as the set of services it composes.
-//
+// @reason    buildManagement was approaching the AGENTS.md §1.1 line limit, and the handler construction is the part that grows every time a route is added: it is a list, not a decision. Keeping it apart lets the wiring file stay readable as the set of services it composes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 
@@ -56,7 +48,7 @@ type managementHandlerInputs struct {
 func buildManagementHandlers(in managementHandlerInputs) (managementDeps, error) {
 	// §7.4 model tests probe through the same engine a client request uses, so a
 	// model the gateway cannot route never reports healthy from a route it would
-	// not take (draft 017 §4.10). It is built here rather than in the wiring file
+	// not take. It is built here rather than in the wiring file
 	// for the reason the estimate route is: the inputs this function already holds
 	// are exactly the two it needs.
 	modelTestSvc, err := service.NewProviderModelTestService(in.Provider, in.Plane.Engine)

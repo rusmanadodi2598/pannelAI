@@ -3,27 +3,16 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/log_integration_test.go
-// @for       Integration tests for request-log insert, paging, detail, and the
+// @for       Integration tests for request-log insert, paging, detail, and the retention purge boundary.
+// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations, context, testing, time.
+// @reason    The purge boundary is the case worth a real server: a row exactly at the cutoff must survive, and a stub would accept whatever rule the code happened to implement. The list projection also has to omit the body columns, which is only observable against the real statement.
 //
-//	retention purge boundary.
-//
-// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations,
-//
-//	context, testing, time.
-//
-// @reason    The purge boundary is the case worth a real server: a row exactly
-//
-//	at the cutoff must survive, and a stub would accept whatever rule
-//	the code happened to implement. The list projection also has to
-//	omit the body columns, which is only observable against the real
-//	statement.
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	    go test -race -tags=integration ./internal/repository/postgres/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	  go test -race -tags=integration ./internal/repository/postgres/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-18
 package postgres
 

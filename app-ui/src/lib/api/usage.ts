@@ -107,7 +107,7 @@ export function replaceQuotaCap(
 // The provider's own answer for one connection (SPEC-API §7.12's published-read block). The collection read
 // carries these for the endpoints on its page, so a card needs no read of its own on load; this route is
 // what the operator's press on ONE card uses. `force` asks the provider now instead of answering from the
-// poll worker's cache — one call for one account, which is the seam that keeps the page itself from
+// poll worker's cache: one call for one account, which is the seam that keeps the page itself from
 // fanning out across hundreds of keys.
 export function getPublishedQuota(
 	endpointId: string,

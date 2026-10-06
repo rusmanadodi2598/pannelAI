@@ -1,27 +1,12 @@
 // Command app-serv adapts the connectivity probe port to HTTP.
 //
 // @file      cmd/app-serv/provider_probe_test.go
-// @for       Tests for the probe adapter's outcome classification and its
-//
-//	egress policy.
-//
-// @uses      testing, context, net/http, net/http/httptest, strings,
-//
-//	sync/atomic, internal/domain, internal/netguard, internal/provider,
-//	internal/registry, internal/service, time.
-//
-// @reason    The classification is the whole value of a connectivity test: an
-//
-//	operator reads its result to decide whether to replace a credential
-//	or fix a URL. Reporting a 404 as "your key is wrong" sends them to
-//	replace a working credential, so each status class is pinned here
-//	against a real server rather than asserted from reading the code. The
-//	egress table pins that a denied destination never reaches the wire,
-//	because a probe is the one request an operator points anywhere.
-//
+// @for       Tests for the probe adapter's outcome classification and its egress policy.
+// @uses      testing, context, net/http, net/http/httptest, strings, sync/atomic, internal/domain, internal/netguard, internal/provider, internal/registry, internal/service, time.
+// @reason    The classification is the whole value of a connectivity test: an operator reads its result to decide whether to replace a credential or fix a URL. Reporting a 404 as "your key is wrong" sends them to replace a working credential, so each status class is pinned here against a real server rather than asserted from reading the code. The egress table pins that a denied destination never reaches the wire, because a probe is the one request an operator points anywhere.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package main
 
@@ -72,18 +57,18 @@ func TestProbeEndpoint_ClassifiesOutcomes(t *testing.T) {
 		wantStatus int
 		wantMsg    bool
 	}{
-		{name: "200 is accepted", status: http.StatusOK, wantState: domain.EndpointTestOK, wantStatus: http.StatusOK},
-		{name: "204 is accepted", status: http.StatusNoContent, wantState: domain.EndpointTestOK, wantStatus: http.StatusNoContent},
+		{name: "200 is accepted", status: http.StatusOK, wantState: string(domain.EndpointTestOK), wantStatus: http.StatusOK},
+		{name: "204 is accepted", status: http.StatusNoContent, wantState: string(domain.EndpointTestOK), wantStatus: http.StatusNoContent},
 		{name: "401 blames the credential", status: http.StatusUnauthorized,
-			wantState: domain.EndpointTestFail, wantStatus: http.StatusUnauthorized, wantMsg: true},
+			wantState: string(domain.EndpointTestFail), wantStatus: http.StatusUnauthorized, wantMsg: true},
 		{name: "403 blames the credential", status: http.StatusForbidden,
-			wantState: domain.EndpointTestFail, wantStatus: http.StatusForbidden, wantMsg: true},
+			wantState: string(domain.EndpointTestFail), wantStatus: http.StatusForbidden, wantMsg: true},
 		{name: "404 does not blame the credential", status: http.StatusNotFound,
-			wantState: domain.EndpointTestFail, wantStatus: http.StatusNotFound, wantMsg: true},
+			wantState: string(domain.EndpointTestFail), wantStatus: http.StatusNotFound, wantMsg: true},
 		{name: "429 is reachable but unhappy", status: http.StatusTooManyRequests,
-			wantState: domain.EndpointTestFail, wantStatus: http.StatusTooManyRequests, wantMsg: true},
+			wantState: string(domain.EndpointTestFail), wantStatus: http.StatusTooManyRequests, wantMsg: true},
 		{name: "500 is reachable but unhappy", status: http.StatusInternalServerError,
-			wantState: domain.EndpointTestFail, wantStatus: http.StatusInternalServerError, wantMsg: true},
+			wantState: string(domain.EndpointTestFail), wantStatus: http.StatusInternalServerError, wantMsg: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -137,7 +122,7 @@ func TestProbeEndpoint_UnreachableHost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ProbeEndpoint() error = %v, want a failed outcome", err)
 	}
-	if outcome.State != domain.EndpointTestFail {
+	if outcome.State != string(domain.EndpointTestFail) {
 		t.Fatalf("State = %q, want fail", outcome.State)
 	}
 	if outcome.Status != 0 {
@@ -175,7 +160,7 @@ func TestProbeEndpoint_NoValidateURLIsAFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ProbeEndpoint() error = %v, want a failed outcome", err)
 	}
-	if outcome.State != domain.EndpointTestFail || outcome.Message == "" {
+	if outcome.State != string(domain.EndpointTestFail) || outcome.Message == "" {
 		t.Fatalf("outcome = %+v, want a failure naming the missing validate URL", outcome)
 	}
 }
@@ -207,7 +192,7 @@ func TestProbeEndpoint_RespectsTheContextDeadline(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ProbeEndpoint() error = %v, want a failed outcome", err)
 	}
-	if outcome.State != domain.EndpointTestFail {
+	if outcome.State != string(domain.EndpointTestFail) {
 		t.Fatalf("State = %q, want fail when the deadline expires", outcome.State)
 	}
 }

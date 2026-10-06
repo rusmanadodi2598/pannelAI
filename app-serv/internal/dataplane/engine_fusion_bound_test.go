@@ -3,22 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_fusion_bound_test.go
-// @for       The fusion fan-out's bound: a large panel is served in waves, not
-//
-//	as one goroutine per member against the shared connection pool.
-//
-// @uses      context, fmt, net/http, net/http/httptest, sync, testing, time,
-//
-//	internal/domain.
-//
-// @reason    A combo may name dozens of members and each relay can walk
-//
-//	credentials and retry, so an unbounded fan-out starves every other
-//	request on the process. The peak in-flight panel call is measured.
-//
+// @for       The fusion fan-out's bound: a large panel is served in waves, not as one goroutine per member against the shared connection pool.
+// @uses      context, fmt, net/http, net/http/httptest, sync, testing, time, internal/domain.
+// @reason    A combo may name dozens of members and each relay can walk credentials and retry, so an unbounded fan-out starves every other request on the process. The peak in-flight panel call is measured.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package dataplane
 

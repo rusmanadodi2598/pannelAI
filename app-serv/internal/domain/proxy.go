@@ -2,21 +2,12 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/proxy.go
-// @for       The Proxy aggregate root: a saved outbound proxy candidate and its
-//
-//	last connectivity test (SPEC-API-001 §7.11).
-//
+// @for       The Proxy aggregate root: a saved outbound proxy candidate and its last connectivity test (SPEC-API-001 §7.11).
 // @uses      internal/domain (ULID, error constructors), strings, time.
-// @reason    A proxy is a pool entry, not a routing rule: §7.11 assigns the pool
-//
-//	to traffic through settings, so what this aggregate owns is the
-//	candidate's own validity and its last test result. The protocol and
-//	host rules live in proxy_protocol.go so this file stays inside the
-//	AGENTS.md §1.1 line budget.
-//
+// @reason    A proxy is a pool entry, not a routing rule: §7.11 assigns the pool to traffic through settings, so what this aggregate owns is the candidate's own validity and its last test result. The protocol and host rules live in proxy_protocol.go so this file stays inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package domain
 

@@ -1,20 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/fusion_prompt_test.go
-// @for       Reading a panel member's prose back out of its answer, and the
-//
-//	directive the judge receives.
-//
+// @for       Reading a panel member's prose back out of its answer, and the directive the judge receives.
 // @uses      testing, strings, internal/schema.
-// @reason    Both are decidable without a network, so a table pins every
-//
-//	wire-format spelling here rather than in a fusion test that would
-//	report a regression as a mysterious panel failure. The request
-//	shaping these two feed is pinned beside them, in fusion_shape_test.go.
-//
+// @reason    Both are decidable without a network, so a table pins every wire-format spelling here rather than in a fusion test that would report a regression as a mysterious panel failure. The request shaping these two feed is pinned beside them, in fusion_shape_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

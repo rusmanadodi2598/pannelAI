@@ -2,24 +2,19 @@
 //
 // @file      internal/dataplane/answer_identity_test.go
 // @for       The model name a client reads back when it addressed a combo.
+// @uses      bytes, context, encoding/json, io, net/http, net/http/httptest, strings, testing, internal/domain, internal/registry.
+// @reason    A combo is a name an operator wrote in the panel and a client sends, and a round_robin combo serves a different member on each request.
 //
-// @uses      bytes, context, encoding/json, io, net/http, net/http/httptest,
-//
-//	strings, testing, internal/domain, internal/registry.
-//
-// @reason    A combo is a name an operator wrote in the panel and a client sends,
-//
-//	and a round_robin combo serves a different member on each request.
 //	Answering with the member's id therefore tells the caller nothing it
 //	can use, and nothing pinned that: the suite passed both before and after
-//	the naming change. These tests hold the rule from three directions —
+//	the naming change. These tests hold the rule from three directions,
 //	the folded answer, the re-framed stream, and the same-wire passthrough
-//	that reaches no translation step at all — and hold plain model requests
+//	that reaches no translation step at all, and hold plain model requests
 //	where they were.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package dataplane
 
@@ -202,8 +197,8 @@ func TestRelay_ComboStreamNamesTheComboInEveryFrame(t *testing.T) {
 
 // TestRelay_PlainModelNamesTheAddressedModel guards the other half of the rule: a
 // request that addressed no combo still gets back the name it sent. The vendor's
-// label is not one — it answers `alpha/works` as a bare or aliased id the gateway
-// will not route — so a caller that read it back and re-sent it got MODEL_NOT_FOUND.
+// label is not one, it answers `alpha/works` as a bare or aliased id the gateway
+// will not route, so a caller that read it back and re-sent it got MODEL_NOT_FOUND.
 func TestRelay_PlainModelNamesTheAddressedModel(t *testing.T) {
 	var calls int
 	server := newLabelingUpstream(t, &calls)

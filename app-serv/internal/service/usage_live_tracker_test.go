@@ -1,21 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_live_tracker_test.go
-// @for       Table-driven tests for the in-flight tracker: the marker's write,
-//
-//	its release, and the failures that must not reach the request path.
-//
+// @for       Table-driven tests for the in-flight tracker: the marker's write, its release, and the failures that must not reach the request path.
 // @uses      internal/domain, context, errors, testing, time.
-// @reason    The tracker is what makes the drawing's active node mean "a request
-//
-//	is running now", and its whole contract is a pair of writes around
-//	an interval: a marker that opens and never closes lights a node for
-//	a request that ended, and a store failure that reached the caller
-//	would fail a request over bookkeeping. Both rules are pinned here.
-//
+// @reason    The tracker is what makes the drawing's active node mean "a request is running now", and its whole contract is a pair of writes around an interval: a marker that opens and never closes lights a node for a request that ended, and a store failure that reached the caller would fail a request over bookkeeping. Both rules are pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package service
 

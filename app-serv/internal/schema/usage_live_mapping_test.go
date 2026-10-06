@@ -3,18 +3,10 @@
 // @file      internal/schema/usage_live_mapping_test.go
 // @for       The live frame's field-by-field mapping from the aggregate.
 // @uses      encoding/json, testing, time, internal/domain.
-// @reason    The frame's member names are a contract app-ui already parses with
-//
-//	Zod, and its values are a second contract: a status rendered from the
-//	wrong field, or a token count read from the wrong counter, would put
-//	a number on screen that no row supports. The cases cover the
-//	boundaries TDD.md §2.5 requires, including a zero token count, a
-//	large one, and a failed request whose code is the only failure fact
-//	the frame carries.
-//
+// @reason    The frame's member names are a contract app-ui already parses with Zod, and its values are a second contract: a status rendered from the wrong field, or a token count read from the wrong counter, would put a number on screen that no row supports. The cases cover the boundaries TDD.md §2.5 requires, including a zero token count, a large one, and a failed request whose code is the only failure fact the frame carries.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package schema
 

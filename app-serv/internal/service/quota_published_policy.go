@@ -4,32 +4,34 @@
 // @for       The published-quota poll worker's stated decisions: the family interval table, the failure backoff, the jitter, and who gets scheduled.
 // @uses      context, math/rand, strings, sync, time, internal/domain, internal/repository.
 // @reason    AGENTS.md §1.6 forbids "just retry forever" and "no retry" as unstated defaults, and §1.1 caps the file that would otherwise carry both these numbers and the sweep that spends them.
-//
-// RETRY POLICY — every endpoint is re-asked at its family's interval
-// (publishedPollInterval), never at a global one: claude 429s an account asked more often
-// than every ten minutes and the cloudcode families meter a project, so a faster default
-// would spend the allowance the screen exists to show. A poll returning a Go error — row
-// gone, credential will not open, cache refused the write — advances that endpoint's
-// consecutive-failure run and waits the larger of the family floor and the doubled backoff.
-// There is no in-process retry: the next sweep is the retry, so an outage costs a delayed
-// re-read rather than a hot loop against an endpoint already refusing us.
-//
-// DEAD-LETTER POLICY — a repeatedly failing endpoint is not dropped from the queue. It stays
-// scheduled at the ceiling interval and keeps its last good windows, because the ordinary
-// cause is a credential the operator must re-authenticate: a row deleted after N failures
-// needs a manual database edit to be polled again, while one left at the ceiling recovers on
-// the first sweep after the fix. The run travels to the card, so "asked twelve times, no
-// answer" is visible instead of silent. An endpoint stops being polled only by leaving the
-// fleet, which cascades its cache row away.
-//
-// TERMINATION — Run returns when its context is cancelled; Sweep waits every poll it spawned
-// through a wait-group, each in a goroutine that recovers its own panic.
-//
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
+
+// The published-quota poll worker's stated decisions, which AGENTS.md §1.6 requires every worker
+// to carry instead of imply. They sit here, beside the numbers they name; the sweep that spends
+// them is in quota_published.go.
+
+// Retry policy: every endpoint is re-asked at its family's interval (publishedPollInterval),
+// never at a global one, because a faster default spends the allowance the screen exists to
+// show. A poll returning a Go error, a row gone, a credential that will not open, or a cache
+// that refused the write advances that endpoint's consecutive-failure run and waits the larger
+// of the family floor and the doubled backoff. There is no in-process retry: the next sweep is
+// the retry, so an outage costs a delayed re-read rather than a hot loop against an endpoint
+// already refusing us.
+
+// Dead-letter policy: a repeatedly failing endpoint is not dropped from the queue. It stays
+// scheduled at the ceiling interval and keeps its last good windows, because the ordinary cause
+// is a credential the operator must re-authenticate. A row deleted after N failures needs a
+// manual database edit to be polled again, while one left at the ceiling recovers on the first
+// sweep after the fix. The run travels to the card, so "asked twelve times, no answer" is
+// visible instead of silent. An endpoint stops being polled only by leaving the fleet, which
+// cascades its cache row away.
+
+// Termination: Run returns when its context is cancelled, and Sweep waits every poll it spawned
+// through a wait-group, each in a goroutine that recovers its own panic.
 
 import (
 	"context"
@@ -50,7 +52,7 @@ const (
 	publishedPollBackoffCeiling = 30 * time.Minute
 )
 
-// publishedPollIntervals is keyed by the registry provider id the endpoint row names — the same
+// publishedPollIntervals is keyed by the registry provider id the endpoint row names, the same
 // key quotafetch dispatches on, so a slower cadence is stated once, where the family is already
 // known. claude is 10 minutes because its usage endpoint 429s a heavier cadence, as the
 // reference throttles it. gemini-cli and antigravity are the cloudcode-pa families, which meter
@@ -73,7 +75,7 @@ func publishedPollInterval(providerID string) time.Duration {
 
 // publishedNextDelay is the wait before one endpoint's next poll: the family floor with no
 // failure run, otherwise the larger of floor and the base doubled once per failure spent. The
-// max keeps a claude endpoint that failed twice — two minutes of backoff — from being polled
+// max keeps a claude endpoint that failed twice, two minutes of backoff, from being polled
 // five times faster than claude allows, and the doubling stops at half the ceiling.
 func publishedNextDelay(providerID string, failures int) time.Duration {
 	floor := publishedPollInterval(providerID)
@@ -102,7 +104,7 @@ func newPublishedJitter(seed int64) *publishedJitter {
 }
 
 // delay returns d plus up to a quarter of it. Nothing is added at the backoff ceiling, so the
-// ceiling stays a ceiling, nor to a zero delay — the seed stamp is due now.
+// ceiling stays a ceiling, nor to a zero delay, the seed stamp is due now.
 func (j *publishedJitter) delay(d time.Duration) time.Duration {
 	span := d / 4
 	if span <= 0 || d >= publishedPollBackoffCeiling {

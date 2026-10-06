@@ -1,21 +1,12 @@
 // Command app-serv adapts the proxy store to the endpoint service's one question.
 //
 // @file      cmd/app-serv/endpoint_parity_wiring.go
-// @for       The service.ProxyPoolFinder implementation: whether a proxy pool id
-//
-//	is stored.
-//
+// @for       The service.ProxyPoolFinder implementation: whether a proxy pool id is stored.
 // @uses      internal/domain, internal/repository, context, errors.
-// @reason    Draft 017 §4.1b binds an endpoint to a proxy pool, and a dangling id
-//
-//	is the failure that matters: the column would name something that
-//	resolves to nothing. The check is a port in the service and an adapter
-//	here, because AGENTS.md §1.5 keeps storage out of the service's own
-//	code.
-//
+// @reason    Draft 017 §4.1b binds an endpoint to a proxy pool, and a dangling id is the failure that matters: the column would name something that resolves to nothing. The check is a port in the service and an adapter here, because AGENTS.md §1.5 keeps storage out of the service's own code.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-23
 package main
 

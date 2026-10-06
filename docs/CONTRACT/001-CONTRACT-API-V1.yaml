@@ -1325,7 +1325,7 @@ components:
         auth_hint:
           type: string
           description: The registry's credential-format sentence (draft 036 slice
-            B), served verbatim — it names the upstream URL where the operator
+            B), served verbatim, and it names the upstream URL where the operator
             mints the credential. Absent when the provider declares none.
         has_oauth:
           type: boolean
@@ -1789,7 +1789,7 @@ components:
             routed no traffic has no counted row and still gets a card, which is
             why an entry may carry `never_polled`.
             It rides on the collection because asking each provider during a page
-            read is one outbound call per account — the N+1 shape AGENTS.md §1.7
+            read is one outbound call per account, the N+1 shape AGENTS.md §1.7
             blocks here. Additive: a client reading only `data` sees exactly what
             it saw before.
           items:
@@ -1872,8 +1872,8 @@ components:
       type: object
       description: |
         The provider's own answer about one connection. `message` carries the
-        soft outcome — the family publishes nothing, the credential was refused,
-        the provider errored — and is then the whole answer with `data` empty.
+        soft outcome (the family publishes nothing, the credential was refused,
+        the provider errored) and is then the whole answer with `data` empty.
       properties:
         endpoint_id:
           type: string
@@ -1888,7 +1888,7 @@ components:
           description: |
             When the provider said the FIGURES in `data`, not when this process
             served them. It dates the numbers rather than the attempt: a soft
-            answer — a `message` with an empty `data` — is stored by the poll
+            answer (a `message` with an empty `data`) is stored by the poll
             scheduler without touching the numbers, so its instant remains the
             one the row was created with (the zero time, which serializes as
             0001-01-01T00:00:00Z) until a read that carried figures replaces
@@ -1930,8 +1930,8 @@ components:
           description: |
             The account exists and is on this page, but the worker has not
             answered for it yet. Absence of an answer is a different claim from
-            an answer of absence — a provider that published nothing says so in
-            `message` — and the card has to tell them apart. Such an entry
+            an answer of absence (a provider that published nothing says so in
+            `message`) and the card has to tell them apart. Such an entry
             carries no numbers and no `fetched_at` worth printing.
       required:
       - endpoint_id
@@ -2769,7 +2769,7 @@ components:
         auth_hint:
           type: string
           description: The registry's credential-format sentence (draft 036 slice
-            B), served verbatim — it names the upstream URL where the operator
+            B), served verbatim, and it names the upstream URL where the operator
             mints the credential. Absent when the provider declares none.
         has_oauth:
           type: boolean
@@ -3726,7 +3726,7 @@ components:
           description: pending means the operator has not finished the vendor page yet and the caller keeps polling at the start's interval.
         endpoint_id:
           type: string
-          description: Present only when connected — the upstream endpoint the flow landed.
+          description: Present only when connected, and it names the upstream endpoint the flow landed.
         token_hint:
           type: string
           description: The masked credential hint of the connected account. The token itself never crosses this boundary.
@@ -8220,7 +8220,7 @@ paths:
 
         `?force=1` asks the provider for this one account at this instant
         instead of reading the cache. It is the operator's explicit press on a
-        single card — the same seam the reference's per-card refresh uses — and
+        single card (the same seam the reference's per-card refresh uses) and
         the reason the screen itself never has to fan out. A value other than
         `1` is a cache read, so a stale bookmark or a rewriting proxy cannot
         turn a page load into provider traffic.

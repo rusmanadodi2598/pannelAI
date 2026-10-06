@@ -1,24 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/translate_stream_openai_usage_test.go
-// @for       Table-driven tests for the one-delivery usage rule on the OpenAI
-//
-//	passthrough stream.
-//
+// @for       Table-driven tests for the one-delivery usage rule on the OpenAI passthrough stream.
 // @uses      strings, testing.
-// @reason    SPEC-API-001 §4 fixes the usage chunk stream_options.include_usage
-//
-//	asks for, and draft 034 F1 measured the passthrough forwarding an
-//	upstream frame that already carries usage while Finish appended a
-//	second copy of the same numbers. A client that sums every usage
-//	object on the wire would double its bill, so the boundary cases
-//	(usage on the finish frame, early usage, a restatement, null, empty,
-//	and an unasking client) are pinned here against the client-visible
-//	bytes with no network and no clock (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §4 fixes the usage chunk stream_options.include_usage asks for, and draft 034 F1 measured the passthrough forwarding an upstream frame that already carries usage while Finish appended a second copy of the same numbers. A client that sums every usage object on the wire would double its bill, so the boundary cases (usage on the finish frame, early usage, a restatement, null, empty, and an unasking client) are pinned here against the client-visible bytes with no network and no clock (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package dataplane
 
@@ -126,7 +114,7 @@ func TestOpenAIStream_UsageIsDeliveredOnce(t *testing.T) {
 }
 
 // TestOpenAIStream_SecondFinishIsStripped pins the one-finish invariant against
-// an upstream that closes twice (draft 034 F2): the first finish reason is the
+// an upstream that closes twice: the first finish reason is the
 // stream's end, and a second closing frame forwards with its finish_reason
 // nulled while the usage it may carry, and every other member, still reaches
 // the client.

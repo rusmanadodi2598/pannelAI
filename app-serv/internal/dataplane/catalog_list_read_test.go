@@ -3,16 +3,14 @@
 // @file      internal/dataplane/catalog_list_read_test.go
 // @for       The owner segment and the refusal behavior of GET /api/v1/models.
 // @uses      context, testing, internal/domain
-// @reason    The list is what a picker offers, so two rules beside the row set
+// @reason    The list is what a picker offers, so two rules beside the row set need pinning: a provider segment the operator never typed is not a usable answer, and a catalog read that failed must not come back as a short list.
 //
-//	need pinning: a provider segment the operator never typed is not a usable
-//	answer, and a catalog read that failed must not come back as a short list.
 //	They live apart from the row-set table because that table is already at the
 //	size where a second concern in the same file stops reading as one question.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package dataplane
 
@@ -103,13 +101,6 @@ func (f failingLookup) Combo(ctx context.Context, name string) (domain.Combo, bo
 
 func (f failingLookup) Alias(ctx context.Context, name string) (string, bool, error) {
 	return f.base.Alias(ctx, name)
-}
-
-func (f failingLookup) Disabled(ctx context.Context, providerID, modelID string) (bool, error) {
-	if f.refuse == "disabled read fails" {
-		return false, errStub
-	}
-	return f.base.Disabled(ctx, providerID, modelID)
 }
 
 func (f failingLookup) DisabledPairs(ctx context.Context) ([]domain.ModelRef, error) {

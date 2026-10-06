@@ -3,21 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/credential.go
-// @for       Assembling the credential an upstream call presents, from the
-//
-//	endpoint and the key selection picked.
-//
+// @for       Assembling the credential an upstream call presents, from the endpoint and the key selection picked.
 // @uses      internal/domain, internal/provider.
-// @reason    SPEC-API-001 §6 stores every upstream credential as AES-GCM
-//
-//	ciphertext, so the plaintext exists only between opening the stored
-//	value and the outbound request. Keeping that window in one function
-//	is what makes it auditable: the plaintext is returned to the caller
-//	for one call and never placed on the selection.
-//
+// @reason    SPEC-API-001 §6 stores every upstream credential as AES-GCM ciphertext, so the plaintext exists only between opening the stored value and the outbound request. Keeping that window in one function is what makes it auditable: the plaintext is returned to the caller for one call and never placed on the selection.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -35,43 +26,46 @@ import (
 // type always wins over the provider's default, because one account
 // authenticates exactly one way (SPEC-API-001 §8.1).
 func (s *Selector) credential(endpoint domain.UpstreamEndpoint, key domain.UpstreamKey) (provider.Credential, error) {
-	credential := provider.Credential{
+	account := endpoint.Account()
+	input := provider.CredentialInput{
 		EndpointID: endpoint.ID(),
 		KeyID:      key.ID(),
-		Account:    endpoint.Account().Email,
-		ProjectID:  endpoint.Account().WorkspaceID,
+		Account:    account.Email().String(),
+		ProjectID:  account.WorkspaceID(),
 	}
 	// The machine id a device login minted is not a secret and describes no
 	// workspace, so it rides in the slot Credential declares for provider-specific
 	// identity rather than in a field every provider would ignore.
-	if machine := endpoint.Account().MachineID; machine != "" {
-		credential.Metadata = map[string]string{provider.MetadataMachineID: machine}
+	if machine := account.MachineID(); machine != "" {
+		input.Metadata = map[string]string{provider.MetadataMachineID: machine}
 	}
 	switch endpoint.AuthType() {
 	case domain.UpstreamAuthNone:
-		return credential, nil
+		// A credential-free provider presents nothing, which is FamilyUnset and is
+		// the correct answer rather than an empty string in one of the two slots.
 	case domain.UpstreamAuthOAuth:
 		oauth := endpoint.OAuth()
-		if oauth == nil || oauth.AccessTokenEncrypted == "" {
+		if oauth == nil || oauth.AccessTokenEncrypted() == "" {
 			return provider.Credential{}, internalError("the selected endpoint has no stored token", nil)
 		}
-		token, err := s.open(oauth.AccessTokenEncrypted)
+		token, err := s.open(oauth.AccessTokenEncrypted())
 		if err != nil {
 			return provider.Credential{}, err
 		}
-		credential.AccessToken = token
-		if oauth.ProjectID != "" {
-			credential.ProjectID = oauth.ProjectID
+		input.AccessToken = token
+		input.Family = provider.FamilyOAuth
+		if project := oauth.ProjectID(); project != "" {
+			input.ProjectID = project
 		}
-		return credential, nil
 	default:
 		value, err := s.open(key.EncryptedValue())
 		if err != nil {
 			return provider.Credential{}, err
 		}
-		credential.APIKey = value
-		return credential, nil
+		input.APIKey = value
+		input.Family = provider.FamilyStaticKey
 	}
+	return provider.NewCredential(input)
 }
 
 // open decrypts a stored secret through the opener the composition root wired.

@@ -12,29 +12,29 @@ temuan bernomor F, bukti yang bisa diulang, rencana DURING, dan keputusan owner 
 | **Scope** | `app-serv/.` saja. `app-ui/.` tidak disentuh pass ini |
 | **Permintaan owner** | `app-serv` endpoint `/provider` disamakan 1:1 dengan REFERENCE: cara penanganan, cara penambahan provider (custom OpenAI Compatible, Anthropic, dan provider tertentu), cara mengambil models id, dan penanganan models id |
 | **Reference** | `decolua/9router`, checkout `/home/rusmanadodi/apps/9router`, **`21583c03` = tag `v0.5.85` (2026-09-22)**, `git pull` 2026-09-23 |
-| **Kaitan** | SPEC-API §6, §7.4, §7.5, §7.6; SPEC-UI §6.3; AGENTS.md §1.1–§1.9, §2.4; `docs/RULLES/OWASP.md` (A01 SSRF); draft 003, 004, 011 |
+| **Kaitan** | SPEC-API §6, §7.4, §7.5, §7.6; SPEC-UI §6.3; AGENTS.md §1.1-§1.9, §2.4; `docs/RULLES/OWASP.md` (A01 SSRF); draft 003, 004, 011 |
 | **Tanggal** | 2026-09-23 |
 
 ### 1.1 Keputusan owner (2026-09-23)
 
 | # | Pertanyaan (§7) | Jawaban | Konsekuensi |
 |---|---|---|---|
-| 1 | Arti `/providers` | **A — pertahankan registry**, tetapi tetap harus 1:1 dengan REFERENCE | Registry tetap sumber `GET /providers`; kesejajaran 1:1 di titik itu dipenuhi lewat pemetaan yang dinyatakan (§3.1), bukan dengan mengubah artinya |
-| 2 | Revisi reference sasaran | **Terbaru** — `git pull` dulu | Checkout sudah dinaikkan dari `db4499d6` (2026-06-19) ke `21583c03`/v0.5.85 (2026-09-22). Semua angka di dokumen ini diukur ulang terhadap revisi itu (§2.1) |
-| 3 | Cakupan | **Semua: F2–F6** | F2 (bagian A+B), F3, F4, F5, F6 masuk pass ini. F1, F7, F9, F10 mengikuti §6 |
+| 1 | Arti `/providers` | **A: pertahankan registry**, tetapi tetap harus 1:1 dengan REFERENCE | Registry tetap sumber `GET /providers`; kesejajaran 1:1 di titik itu dipenuhi lewat pemetaan yang dinyatakan (§3.1), bukan dengan mengubah artinya |
+| 2 | Revisi reference sasaran | **Terbaru**, `git pull` dulu | Checkout sudah dinaikkan dari `db4499d6` (2026-06-19) ke `21583c03`/v0.5.85 (2026-09-22). Semua angka di dokumen ini diukur ulang terhadap revisi itu (§2.1) |
+| 3 | Cakupan | **Semua: F2-F6** | F2 (bagian A+B), F3, F4, F5, F6 masuk pass ini. F1, F7, F9, F10 mengikuti §6 |
 
 ## 1. Ringkasan
 
 Permintaan owner diterjemahkan menjadi empat pertanyaan yang bisa diukur, dan setiap jawabannya
 dibandingkan dengan reference pada baris kode yang bisa dibuka ulang:
 
-1. **Cara penanganan** — apa yang sebenarnya dilakukan route itu.
-2. **Cara penambahan provider** — jalur mana yang sah untuk menambah provider, dan apa yang
+1. **Cara penanganan**: apa yang sebenarnya dilakukan route itu.
+2. **Cara penambahan provider**: jalur mana yang sah untuk menambah provider, dan apa yang
    divalidasi sebelum barisnya disimpan.
-3. **Cara mengambil models id** — dari mana daftar model datang.
-4. **Penanganan models id** — bagaimana id itu dipakai setelah ada.
+3. **Cara mengambil models id**: dari mana daftar model datang.
+4. **Penanganan models id**: bagaimana id itu dipakai setelah ada.
 
-Hasilnya: **empat hal sudah 1:1 secara sengaja**, dan **sepuluh temuan tercatat** (F1–F10), tiga di
+Hasilnya: **empat hal sudah 1:1 secara sengaja**, dan **sepuluh temuan tercatat** (F1-F10), tiga di
 antaranya cacat yang terukur hari ini:
 
 | Sudah 1:1 | Bukti |
@@ -50,19 +50,19 @@ dikerjakan apa adanya atau berubah bentuk.
 
 Tiga temuan di bawah ini bukan selisih gaya melainkan cacat yang terukur hari ini:
 
-- **F2** — node OpenAI-compatible/Anthropic-compatible yang baru dibuat mengembalikan daftar model
+- **F2**: node OpenAI-compatible/Anthropic-compatible yang baru dibuat mengembalikan daftar model
   **kosong**: entry yang disintesis tidak pernah diberi model, sehingga `ModelCount` = 0 dan katalog
   tidak memuat satu model pun untuk node itu. Diukur dengan menjalankan `WithCustom` atas registry
   nyata (§4.2).
-- **F3** — `base_url` tidak pernah disanitasi, sehingga node Anthropic-compatible yang operator isi
+- **F3**: `base_url` tidak pernah disanitasi, sehingga node Anthropic-compatible yang operator isi
   dengan `https://host/v1/messages` mengirim ke `https://host/v1/messages/messages`. Dibuktikan
   dengan menjalankan `joinPath` yang asli (§4.3).
-- **F4** — dua filter capability yang panel tawarkan (`vision`, `tools`) mengembalikan **nol baris**
+- **F4**: dua filter capability yang panel tawarkan (`vision`, `tools`) mengembalikan **nol baris**
   terhadap registry nyata, sementara 507 model terdaftar. Diukur dengan membaca registry yang di-embed
   (§4.4).
 
 Satu koreksi pembacaan dicatat di §4.2: versi pertama audit ini menyimpulkan "reference selalu
-mengambil daftar model dari upstream", dan itu keliru — untuk provider registry, reference membaca
+mengambil daftar model dari upstream", dan itu keliru. Untuk provider registry, reference membaca
 katalog statis, sama seperti `app-serv`. Yang live hanya jalur node kompatibel. Koreksinya dibiarkan
 tertulis, bukan dihapus, karena kesimpulan yang salah itu yang menentukan bentuk temuan.
 
@@ -70,7 +70,7 @@ tertulis, bukan dihapus, karena kesimpulan yang salah itu yang menentukan bentuk
 
 Tiga lapis, semuanya bisa diulang dari working tree ini.
 
-### 2.1 Revisi reference — sudah dinaikkan ke terbaru (keputusan owner 2)
+### 2.1 Revisi reference: sudah dinaikkan ke terbaru (keputusan owner 2)
 
 Owner memutuskan sasaran adalah **reference terbaru**. Checkout karena itu di-`git pull` pada
 2026-09-23, dan seluruh angka di dokumen ini diukur ulang terhadap revisi baru itu.
@@ -94,9 +94,9 @@ git rev-list --count db4499d6..HEAD          # 484
 
 Dua akibat yang harus diingat saat mengerjakan:
 
-1. `registry.yaml` yang di-embed masih setia pada `db4499d` — **484 commit** dan **27 entri** di
+1. `registry.yaml` yang di-embed masih setia pada `db4499d`, **484 commit** dan **27 entri** di
    belakang sasaran. Ini pertanyaan draft 011 §8 yang belum dijawab, dan pass ini tidak menjawabnya:
-   F2–F6 dikerjakan terhadap **mekanisme** v0.5.85, sedangkan isi registry tetap menunggu keputusan
+   F2-F6 dikerjakan terhadap **mekanisme** v0.5.85, sedangkan isi registry tetap menunggu keputusan
    regenerasi.
 2. Mekanisme di dalam route `/models` tumbuh hampir dua kali lipat antara kedua revisi, **tanpa satu
    pun route baru** (§2.3).
@@ -119,10 +119,10 @@ grep -c '^      - id: ' internal/registry/registry.yaml            # 507 model
 Selisih sasaran: **121 − 94 = 27 entri** (draft 011 menyebut 25 terhadap v0.5.81; angka bergerak
 karena sasarannya kini v0.5.85).
 
-### 2.1b Angka v0.5.85 yang jadi sasaran F2–F6
+### 2.1b Angka v0.5.85 yang jadi sasaran F2-F6
 
 Diukur dari working tree yang sudah di-pull. **Catatan metodologis:** dua baris terakhir di bawah ini
-menggantikan angka `grep` di versi pertama dokumen, yang **salah** — pola `grep -cE '^  "?[a-z0-9-]+"?: \{'`
+menggantikan angka `grep` di versi pertama dokumen, yang **salah**. Pola `grep -cE '^  "?[a-z0-9-]+"?: \{'`
 hanya cocok untuk entri yang ditulis sebagai objek literal, sementara mayoritas entri dibangun lewat
 helper `createOpenAIModelsConfig(url)`. Hitungan yang benar membaca blok `PROVIDER_MODELS_CONFIG`
 sampai penutupnya dan mengklasifikasi tiap kunci:
@@ -170,8 +170,8 @@ find src/app/api/providers src/app/api/provider-nodes -type f -name '*.js' | sor
 | `/api/providers/client` | GET | **tidak ada** (F10) |
 | `/api/providers/suggested-models` | GET | **tidak ada** (F5) |
 | `/api/providers/kilo/free-models` | GET | **tidak ada** (F5) |
-| `/api/provider-nodes` | GET, POST | `GET`/`POST /api/v1/provider-nodes` — **1:1** |
-| `/api/provider-nodes/[id]` | PUT, DELETE | `PATCH`/`DELETE /api/v1/provider-nodes/{id}` — **1:1** |
+| `/api/provider-nodes` | GET, POST | `GET`/`POST /api/v1/provider-nodes`, **1:1** |
+| `/api/provider-nodes/[id]` | PUT, DELETE | `PATCH`/`DELETE /api/v1/provider-nodes/{id}`, **1:1** |
 | `/api/provider-nodes/validate` | POST | **tidak ada** (F6) |
 | `/api/models` | GET, PUT | `GET /api/v1/models/catalog` + `models/aliases` |
 | `/api/models/alias` | GET, PUT, **DELETE** | `GET`/`PUT /api/v1/models/aliases` (tanpa DELETE) (F10) |
@@ -182,7 +182,7 @@ find src/app/api/providers src/app/api/provider-nodes -type f -name '*.js' | sor
 
 ### 2.3 Mekanisme `/models` tumbuh tanpa route baru
 
-Route-nya sendiri **tidak berubah** antara kedua revisi — yang tumbuh adalah isi route `/models`:
+Route-nya sendiri **tidak berubah** antara kedua revisi. Yang tumbuh adalah isi route `/models`:
 
 ```bash
 git diff --stat db4499d6 21583c03 -- src/app/api/providers src/app/api/provider-nodes
@@ -263,7 +263,7 @@ func (s *ProviderService) List(ctx context.Context, filter ProviderFilter, page,
 
 | # | Pilihan | Akibat |
 |---|---|---|
-| **A** | **Pertahankan arti sekarang** (registry), dan catat sebagai deviasi terkontrak | F2–F10 dikerjakan apa adanya. Tidak ada breaking change. Rekomendasi penulis |
+| **A** | **Pertahankan arti sekarang** (registry), dan catat sebagai deviasi terkontrak | F2-F10 dikerjakan apa adanya. Tidak ada breaking change. Rekomendasi penulis |
 | **B** | Tambah route baru `GET /api/v1/provider-accounts` yang meniru bentuk reference | 1:1 tersedia tanpa mematahkan §7.4; menambah permukaan baru yang harus dirawat |
 | **C** | Ubah arti `GET /api/v1/providers` menjadi daftar koneksi | 1:1 literal, tetapi breaking change, mematahkan panel, dan menduplikasi `/endpoints` |
 
@@ -310,10 +310,10 @@ rateLimitedUntil, expiresIn, errorCode, consecutiveUseCount, idToken, lastRefres
 | `projectId` | `account.project_id` | **1:1** |
 | `email` / `displayName` | `account.email` / `account.name` | **1:1** |
 | `lastError` / `lastErrorAt` / `errorCode` | `test_status` saja | **selisih**: reference menyimpan error terakhir yang tidak berasal dari test |
-| `globalPriority` | — | **selisih**: prioritas lintas-provider; `app-serv` hanya per-provider |
-| `defaultModel` | — | **selisih**: model bawaan per akun |
-| `consecutiveUseCount` | — | **selisih**: dasar rotasi round-robin di reference |
-| `proxyPoolId` (+ `connectionProxyEnabled/Url/NoProxy`) | — | **selisih**: proxy per akun; `app-serv` punya proxy pools di `/proxies` tapi belum terikat ke endpoint |
+| `globalPriority` | - | **selisih**: prioritas lintas-provider; `app-serv` hanya per-provider |
+| `defaultModel` | - | **selisih**: model bawaan per akun |
+| `consecutiveUseCount` | - | **selisih**: dasar rotasi round-robin di reference |
+| `proxyPoolId` (+ `connectionProxyEnabled/Url/NoProxy`) | - | **selisih**: proxy per akun; `app-serv` punya proxy pools di `/proxies` tapi belum terikat ke endpoint |
 | Satu connection = satu credential | Endpoint = 1..N key | **superset** (bukan selisih) |
 
 Lima baris "selisih" itu menjadi **F1b** di §4.1b, dan itulah bentuk konkret "tetap 1:1" di bawah
@@ -322,15 +322,15 @@ connection reference mampu lakukan.
 
 ## 4. Findings
 
-### 4.1 F1 (HIGH) — arti `/providers` berbeda dari reference
+### 4.1 F1 (HIGH): arti `/providers` berbeda dari reference
 
-**Status: DIJAWAB owner 2026-09-23 — pilihan A, pertahankan registry.**
+**Status: DIJAWAB owner 2026-09-23, pilihan A, pertahankan registry.**
 
 Bukan cacat, melainkan deviasi yang dispesifikasikan dan sekarang disetujui. Yang hilang bukan
 datanya (akun tersedia di `GET /api/v1/endpoints`), melainkan **bentuk** yang reference pakai.
 Kesejajaran 1:1 dipenuhi lewat pemetaan kemampuan di §3.1, bukan dengan memindahkan route.
 
-### 4.1b F1b (MEDIUM) — lima field connection reference belum punya padanan di endpoint
+### 4.1b F1b (MEDIUM): lima field connection reference belum punya padanan di endpoint
 
 **Status: masuk cakupan pass ini** (owner memilih "tetap harus 1:1", §1.1).
 
@@ -340,11 +340,11 @@ dan masing-masingnya bukan kosmetik:
 
 | Field reference | Kenapa berguna | Padanan `app-serv` |
 |---|---|---|
-| `globalPriority` | Urutan lintas-provider: provider mana yang dicoba lebih dulu saat beberapa punya akun aktif. Tanpa ini, urutan antar-provider tidak bisa dinyatakan. | — |
-| `defaultModel` | Model yang dipakai bila request tidak menyebut model. Dipakai juga oleh validate anthropic-compatible reference (`validate/route.js:160`). | — |
-| `consecutiveUseCount` | Penghitung pemakaian berurutan; dasar rotasi round-robin dan deteksi akun yang selalu kena rate limit. | — |
+| `globalPriority` | Urutan lintas-provider: provider mana yang dicoba lebih dulu saat beberapa punya akun aktif. Tanpa ini, urutan antar-provider tidak bisa dinyatakan. | - |
+| `defaultModel` | Model yang dipakai bila request tidak menyebut model. Dipakai juga oleh validate anthropic-compatible reference (`validate/route.js:160`). | - |
+| `consecutiveUseCount` | Penghitung pemakaian berurutan; dasar rotasi round-robin dan deteksi akun yang selalu kena rate limit. | - |
 | `lastError` / `lastErrorAt` / `errorCode` | Error terakhir yang **bukan** hasil test, mis. penolakan saat request sungguhan. `test_status` hanya menyimpan hasil probe, jadi kegagalan saat routing tidak terlihat di layar akun. | hanya `test_status` |
-| `proxyPoolId` (+ `connectionProxyEnabled/Url/NoProxy`) | Proxy per akun: akun yang perlu keluar lewat IP berbeda tidak bisa dinyatakan. `app-serv` sudah punya tabel proxy pools (§7.11) tetapi belum ada kolom yang mengikatnya ke endpoint. | — |
+| `proxyPoolId` (+ `connectionProxyEnabled/Url/NoProxy`) | Proxy per akun: akun yang perlu keluar lewat IP berbeda tidak bisa dinyatakan. `app-serv` sudah punya tabel proxy pools (§7.11) tetapi belum ada kolom yang mengikatnya ke endpoint. | - |
 
 **Risiko dan aturan.**
 
@@ -363,10 +363,10 @@ dibersihkan**, bukan body upstream mentah.
    `global_priority integer`, `default_model text`, `consecutive_use_count integer NOT NULL DEFAULT 0`,
    `last_error text`, `last_error_at timestamptz`, `error_code text`, `proxy_pool_id text`.
    Index: `(global_priority)` untuk urutan lintas-provider, `(proxy_pool_id)` untuk lookup.
-3. `domain.UpstreamEndpoint` — field unexported + method, mengikuti pola aggregate yang ada
+3. `domain.UpstreamEndpoint`: field unexported + method, mengikuti pola aggregate yang ada
    (AGENTS.md §2.2). `consecutive_use_count` naik di choke point yang sama yang menaikkan
    `request_count` (§4), supaya satu request tidak menghitung dua kali.
-4. `schema` — `UpdateEndpointRequest` menerima `default_model`, `global_priority`, `proxy_pool_id`;
+4. `schema`: `UpdateEndpointRequest` menerima `default_model`, `global_priority`, `proxy_pool_id`;
    `EndpointResponse` menyajikannya. `last_error`/`error_code` dibaca-saja.
 5. **Urutan pengerjaan: setelah F8**, karena `proxy_pool_id` menambah jalur egress baru.
 
@@ -374,7 +374,7 @@ dibersihkan**, bukan body upstream mentah.
 lewat `PATCH` (kecuali yang dibaca-saja); migration punya `down`; `last_error` tidak pernah memuat
 kredensial; proxy yang diikat ke endpoint tetap lewat guard.
 
-### 4.2 F2 (HIGH) — node kompatibel tidak punya daftar model sama sekali
+### 4.2 F2 (HIGH): node kompatibel tidak punya daftar model sama sekali
 
 **Koreksi atas pembacaan pertama.** Versi awal temuan ini menulis "reference mengambil daftar model
 langsung dari upstream" seolah itu berlaku untuk semua provider. Itu **salah**, dan pemeriksaan
@@ -382,11 +382,11 @@ ulang menemukan tiga jalur berbeda di reference:
 
 | Kasus | Sumber daftar di reference | Sitasi |
 |---|---|---|
-| Provider registry, layar detail | **Statis** — `getModelsByProviderId()` → `PROVIDER_MODELS` | `dashboard/providers/[id]/page.js:136`, `open-sse/config/providerModels.js:74-77` |
-| Node kompatibel, layar detail | **Live** — `CompatibleModelsSection` → `GET /api/providers/{id}/models` | `page.js:923-925`, `CompatibleModelsSection.js:151` |
+| Provider registry, layar detail | **Statis**, `getModelsByProviderId()` → `PROVIDER_MODELS` | `dashboard/providers/[id]/page.js:136`, `open-sse/config/providerModels.js:74-77` |
+| Node kompatibel, layar detail | **Live**, `CompatibleModelsSection` → `GET /api/providers/{id}/models` | `page.js:923-925`, `CompatibleModelsSection.js:151` |
 | Data plane `GET /api/v1/models` | Statis, **plus** `fetchCompatibleModelIds()` bila node kompatibel dan daftarnya kosong | `api/v1/models/route.js:262`, `:285` |
 
-Jadi untuk provider registry, `app-serv` **sudah 1:1** — keduanya statis dari katalog. Yang menjadi
+Jadi untuk provider registry, `app-serv` **sudah 1:1**. Keduanya statis dari katalog. Yang menjadi
 temuan adalah kasus kedua.
 
 **Ini deferral yang sudah tercatat, bukan penemuan baru.** SPEC-API sudah menyebutnya secara eksplisit,
@@ -397,7 +397,7 @@ dan kalimatnya menyebut persis kasus node kompatibel:
 > unported, since dynamic discovery is the compatible-provider behavior PR #4073's third part fixes,
 > not a property this list has**.
 >
-> — SPEC-API §7.15 changelog 2026-09-20
+> SPEC-API §7.15 changelog 2026-09-20
 
 Jadi temuan ini bukan drift yang tak terdeteksi; ia keputusan yang tercatat dan belum ditinjau ulang.
 Yang ditambahkan pass ini adalah **akibatnya yang terukur**: selama deferral itu berlaku, node yang
@@ -419,7 +419,7 @@ Diukur dengan menjalankan `WithCustom` yang asli atas registry nyata:
 node openai-compatible-01TEST resolves, but len(entry.Models) = 0
 ```
 
-**Bentuk cacatnya: bisa dijawab, tetapi tidak terdaftar.** Node tetap routable — `resolve.go:184`
+**Bentuk cacatnya: bisa dijawab, tetapi tidak terdaftar.** Node tetap routable. `resolve.go:184`
 memperlakukan `entry.Custom` sebagai passthrough, jadi `prefix/model` yang diketik operator tetap
 sampai ke upstream. Yang hilang adalah **daftar**:
 
@@ -438,10 +438,10 @@ passthrough yet appeared in no models list".
 Akibat praktisnya: operator yang baru membuat node OpenAI-compatible melihat node-nya berdiri tanpa
 satu pun model yang bisa dipilih di panel, dan katalog tidak menawarkannya. Satu-satunya jalan hari
 ini adalah mengetik `prefix/model` dari ingatan, atau menambah barisnya sendiri lewat
-`POST /models/custom` — yang berarti menyalin daftar yang upstream sudah punya.
+`POST /models/custom`, yang berarti menyalin daftar yang upstream sudah punya.
 
 **Tabel konfigurasi itu nyata, dan ia menunjukkan biaya sesungguhnya.** Reference menempatkan
-kredensial secara berbeda per provider — bukan satu jalur seragam:
+kredensial secara berbeda per provider, bukan satu jalur seragam:
 
 | Provider | Penempatan | Sitasi |
 |---|---|---|
@@ -467,28 +467,28 @@ Reference menulis URL validasi itu di dalam route, bukan di registry
 (`providers/validate/route.js` berisi switch panjang dengan URL per provider). Jadi 76 provider yang
 probe-nya hari ini menjawab "this provider does not declare a validation endpoint"
 (`cmd/app-serv/provider_probe.go:93-95`) kehilangan kemampuan itu karena dokumennya tidak memuat
-URL-nya — bukan karena providernya tidak bisa.
+URL-nya, bukan karena providernya tidak bisa.
 
 **Rencana DURING.** Dua bagian, dan yang pertama berdiri sendiri:
 
-*Bagian A — node kompatibel punya daftar model (menutup cacat).*
+*Bagian A: node kompatibel punya daftar model (menutup cacat).*
 
-1. `schema` — DTO hasil fetch: `{provider, models: [{id, name}], source: "upstream"|"registry", warning?}`. `source` wajib ada supaya panel bisa membedakan jawaban live dari jawaban cadangan.
-2. `service` — port `ModelLister` + implementasi HTTP di `cmd/app-serv/`, mengikuti pola `EndpointProber`/`NodeProber`: port di `service`, adapter di composition root, sehingga `internal/service` tetap bebas `net/http` (AGENTS.md §1.5).
+1. `schema`: DTO hasil fetch: `{provider, models: [{id, name}], source: "upstream"|"registry", warning?}`. `source` wajib ada supaya panel bisa membedakan jawaban live dari jawaban cadangan.
+2. `service`: port `ModelLister` + implementasi HTTP di `cmd/app-serv/`, mengikuti pola `EndpointProber`/`NodeProber`: port di `service`, adapter di composition root, sehingga `internal/service` tetap bebas `net/http` (AGENTS.md §1.5).
 3. **Fallback wajib**: upstream gagal → jawab daftar registry dengan `source: "registry"` + `warning`, jangan 5xx. Reference melakukan ini (`models/route.js:118-121`). Tanpa ini, node yang upstream-nya sedang mati kehilangan seluruh daftar modelnya.
 4. **Egress guard wajib** (F8): dial lewat `netguard.Guard`, sama seperti probe.
 
-*Bagian B — tabel penempatan kredensial per provider (menutup 76 provider tanpa validate URL).*
+*Bagian B: tabel penempatan kredensial per provider (menutup 76 provider tanpa validate URL).*
 
-5. `registry` — tambah `auth_query` ke `Transport` (untuk gemini) dan tabel penempatan kredensial per **format**, bukan per provider id, supaya satu aturan melayani satu keluarga.
-6. Isi `validate_url` untuk entri yang reference sudah punya URL-nya, lewat generator — bukan tambalan tangan, karena header `registry.yaml` melarangnya.
+5. `registry`: tambah `auth_query` ke `Transport` (untuk gemini) dan tabel penempatan kredensial per **format**, bukan per provider id, supaya satu aturan melayani satu keluarga.
+6. Isi `validate_url` untuk entri yang reference sudah punya URL-nya, lewat generator, bukan tambalan tangan, karena header `registry.yaml` melarangnya.
 
 **Kriteria selesai.** Node OpenAI-compatible yang dibuat lewat `POST /provider-nodes` muncul di
 `GET /providers/{id}/models`, di `GET /models/catalog?provider_id=<node>`, dan di data plane
 `GET /api/v1/models`; `source` menyatakan asal jawaban; upstream yang mati menghasilkan daftar
 cadangan, bukan 5xx; dan tidak ada `net/http` yang diimpor `internal/service`.
 
-### 4.3 F3 (HIGH) — `base_url` tidak disanitasi, dan ini cacat yang terukur
+### 4.3 F3 (HIGH): `base_url` tidak disanitasi, dan ini cacat yang terukur
 
 **Fakta.** Reference menyaring `base_url` node pada **dua** jalur (create dan update): buang `/` di
 akhir, lalu buang `/messages` (Anthropic) atau `/embeddings` (custom-embedding) di akhir:
@@ -517,8 +517,8 @@ base=https://api.anthropic.com/v1/              path=/messages   -> https://api.
 base=https://api.anthropic.com/v1               path=/messages   -> https://api.anthropic.com/v1/messages
 ```
 
-Baris pertama adalah cacatnya: operator yang menempel URL lengkap dari dokumentasi vendor — hal yang
-paling wajar dilakukan — mendapat 404 dari upstream, dan pesan yang muncul menunjuk ke kredensial
+Baris pertama adalah cacatnya: operator yang menempel URL lengkap dari dokumentasi vendor (hal yang
+paling wajar dilakukan) mendapat 404 dari upstream, dan pesan yang muncul menunjuk ke kredensial
 atau model, bukan ke URL.
 
 `joinPath` sudah benar untuk garis miring ganda; yang hilang adalah sanitasi **sufiks**, bukan
@@ -527,14 +527,14 @@ pemisah.
 **Rencana DURING.** Sanitasi di domain, bukan di handler, supaya `POST` dan `PATCH` tidak bisa
 berbeda (reference menyaring di dua tempat dan itulah yang membuatnya mudah lepas):
 
-1. `domain.ProviderNode` — tambah penyaring sufiks di `validateNodeBaseURL`/`Rebase`: buang `/`
+1. `domain.ProviderNode`: tambah penyaring sufiks di `validateNodeBaseURL`/`Rebase`: buang `/`
    berlebih di akhir, lalu buang sufiks per tipe (`/messages` untuk Anthropic-compatible,
    `/embeddings` untuk custom-embedding bila F7 dikerjakan).
 2. Simpan nilai yang sudah bersih, sehingga baris lama dan baru punya bentuk yang sama.
 3. Test tabel (TDD.md §2.5) minimal 5 variasi: dengan `/`, tanpa `/`, dengan `/messages`, dengan
    `/messages/`, dan URL polos yang **tidak boleh** berubah.
 4. Karena `ProbeNode` menyusun targetnya sendiri (`node.BaseURL() + "/models"`,
-   `cmd/app-serv/provider_probe.go:144`), ia ikut memakai perbaikan ini — dan garis miring gandanya
+   `cmd/app-serv/provider_probe.go:144`), ia ikut memakai perbaikan ini, dan garis miring gandanya
    hilang sekalian.
 
 **Kriteria selesai.** Node yang dibuat dengan `https://host/v1/messages` mengirim ke
@@ -547,7 +547,7 @@ Yang dikerjakan:
 | Berkas | Isi |
 |---|---|
 | `internal/domain/provider_node_url.go` (baru, 116) | `normalizeNodeBaseURL` + `nodeAppendedSuffix`; `validateNodeBaseURL` pindah ke sini karena keduanya aturan URL |
-| `internal/domain/provider_node_validate.go` (baru, 88) | `validateNodePrefix`, `nodeID`, `validateNodeAPIType` — dipecah dari aggregate karena file itu menembus 220 |
+| `internal/domain/provider_node_validate.go` (baru, 88) | `validateNodePrefix`, `nodeID`, `validateNodeAPIType`: dipecah dari aggregate karena file itu menembus 220 |
 | `internal/domain/provider_node.go` (165, tadinya 227) | constructor memanggil `normalizeNodeBaseURL`; `Rebase` juga |
 | `internal/domain/provider_node_suffix_test.go` (baru, 129) | tabel create-path, 10 variasi |
 | `internal/domain/provider_node_compose_test.go` (baru, 124) | tabel mutation-path + property komposisi, 6+5 variasi |
@@ -559,25 +559,25 @@ Yang dikerjakan:
 
 1. **Sufiks di-strip dari `parsed.Path`, bukan dari string mentah.** Rencana awal menulis "buang `/`
    berlebih di akhir, lalu buang sufiks". Kalau itu dilakukan pada string, host yang kebetulan
-   mengeja sufiksnya — `https://messages` — akan kehilangan host-nya. Bekerja pada `parsed.Path`
+   mengeja sufiksnya (`https://messages`) akan kehilangan host-nya. Bekerja pada `parsed.Path`
    membuat kasus itu tidak mungkin, dan query string ikut selamat tanpa penanganan khusus.
 2. **Strip diulang sampai stabil, bukan sekali.** Operator yang sudah menempel URL yang terlanjur
    ganda (`…/v1/messages/messages`) diperbaiki ke `…/v1`, bukan ke URL lain yang masih salah.
 
 **Yang sengaja TIDAK dilakukan.** `/embeddings` tidak ikut di-strip, karena `custom-embedding`
 belum ada di `app-serv` (F7). `nodeAppendedSuffix` mengembalikan `""` untuk tipe yang tidak dikenal,
-sehingga menambahkan tipe ketiga nanti hanya perlu satu baris di sana — dan sampai itu terjadi, tidak
+sehingga menambahkan tipe ketiga nanti hanya perlu satu baris di sana, dan sampai itu terjadi, tidak
 ada sufiks yang di-strip atas nama node yang tidak ada.
 
 **Bukti gate.** `go build`, `go vet`, `gofmt`, `staticcheck`, `golangci-lint` (0 issues),
 `go-headers.sh` (753 berkas) semuanya lulus. `scrypts/gates/go-lint.sh` melaporkan **nol** peringatan
-batas baris — dua berkas yang sempat masuk band 220–250 sudah dipecah.
+batas baris. Dua berkas yang sempat masuk band 220-250 sudah dipecah.
 
 **Cacat pre-existing yang ikut ditutup.** `cmd/app-serv/provider_probe_test.go` sudah 389 baris di
 `HEAD` (melewati batas 250) sebelum pass ini menyentuhnya. Karena pass ini menambah test di file itu,
 file tersebut dipecah menjadi tiga: suite endpoint, suite node, dan fixture bersama.
 
-### 4.4 F4 (HIGH) — dua filter capability yang panel tawarkan mengembalikan nol baris
+### 4.4 F4 (HIGH): dua filter capability yang panel tawarkan mengembalikan nol baris
 
 **Fakta.** SPEC-API §7.6 menjanjikan `?capability=vision|tools`. Panel menawarkan tepat dua nilai itu:
 
@@ -606,7 +606,7 @@ capability=mask      -> 1 models in the REAL registry
 Jadi kedua tombol filter yang panel render tidak pernah bisa mengembalikan satu baris pun, dari 507
 model yang terdaftar (`grep -c "^      - id: " registry.yaml` → 507). Test yang ada lulus karena
 memakai fixture yang menuliskan `vision` langsung di datanya
-(`internal/service/model_catalog_test.go:86`, `internal/handler/model_test.go:50`) — inilah persis
+(`internal/service/model_catalog_test.go:86`, `internal/handler/model_test.go:50`). Inilah persis
 pola yang `docs/RULLES/TDD.md` §2.1 larang: fixture yang membuktikan dirinya sendiri.
 
 **Akar masalahnya: dua sumber kebenaran untuk satu kata.** `app-serv` sudah punya tabel capability,
@@ -618,7 +618,7 @@ tetapi hanya separuh dan hanya untuk satu pemakai:
 | Vision adapter | `registry.VisionCapable()` (`capability.go`, 160 baris) | pola model id |
 
 Reference punya **satu** sumber untuk keduanya: `open-sse/providers/capabilities.js` (605 baris)
-dengan empat lapis resolusi — `PROVIDER_CAPABILITIES`, `MODEL_CAPABILITIES` (exact id),
+dengan empat lapis resolusi: `PROVIDER_CAPABILITIES`, `MODEL_CAPABILITIES` (exact id),
 `PATTERN_CAPABILITIES` (glob, ordered specific→generic), lalu `DEFAULT_CAPABILITIES` sebagai lantai
 aman, ditambah katalog models.dev dan `visionPatterns.js`.
 
@@ -632,7 +632,7 @@ aman, ditambah katalog models.dev dan `visionPatterns.js`.
 3. Catalog mengisi `Capabilities` dari resolver itu untuk setiap model registry, bukan hanya dari
    `registry.yaml`. Capability media (`edit`, `mask`, `text2img`) tetap dibaca dari YAML karena itu
    memang data dokumen.
-4. Jangan tulis ulang 605 baris apa adanya: port **keputusannya**, bukan bentuknya — mengikuti
+4. Jangan tulis ulang 605 baris apa adanya: port **keputusannya**, bukan bentuknya, mengikuti
    preseden yang sudah dipakai `capability.go:19-27`, dan pin hasilnya dengan test terhadap korpus
    yang dihasilkan dari `capabilities.js` sendiri.
 
@@ -640,7 +640,7 @@ aman, ditambah katalog models.dev dan `visionPatterns.js`.
 nyata; `capability.go` tidak lagi punya tabel pola sendiri; ada satu test yang membaca registry
 di-embed, bukan fixture.
 
-### 4.5 F5 (MEDIUM) — `?suggested=true` bukan parameter reference, dan implementasinya kosong
+### 4.5 F5 (MEDIUM): `?suggested=true` bukan parameter reference, dan implementasinya kosong
 
 **Fakta.** SPEC-API §7.4 menulis "`?suggested=true` returns suggested set", dan handler `app-serv`
 menerima parameter itu sebagai no-op:
@@ -671,7 +671,7 @@ klaim yang tidak diukur siapa pun. Dua langkah, dan langkah pertama tidak butuh 
 
 1. Hapus `?suggested` dari SPEC-API §7.4 bila owner memilih A di §3, atau ganti dengan bentuk
    reference (`modelsFetcher` + route `suggested-models`) bila memilih B. `Suggested: true` konstan
-   dihapus dari wire — field yang selalu sama tidak membawa informasi dan menyesatkan pembaca.
+   dihapus dari wire. Field yang selalu sama tidak membawa informasi dan menyesatkan pembaca.
 2. `modelsFetcher` untuk 4 entri itu ditambahkan ke `registry.yaml` lewat generator (saat ini
    generator sengaja tidak menulisnya, dan menyatakan alasannya di `tools/registry-gen.mjs:20-22`
    dan `:155-157`), dan route penyajinya mengikuti pola F2.
@@ -679,13 +679,13 @@ klaim yang tidak diukur siapa pun. Dua langkah, dan langkah pertama tidak butuh 
 **Kriteria selesai.** Tidak ada field wire yang nilainya konstan; SPEC-API §7.4 tidak menyebut
 parameter yang tidak ada di reference tanpa alasan tertulis.
 
-### 4.6 F6 (MEDIUM) — tidak ada validasi kredensial sebelum baris disimpan
+### 4.6 F6 (MEDIUM): tidak ada validasi kredensial sebelum baris disimpan
 
 **Fakta.** Reference memvalidasi kredensial **sebelum** menyimpan, di dua route terpisah:
 
-- `POST /api/providers/validate` (651 baris di master) — per provider, dengan cabang khusus per
+- `POST /api/providers/validate` (651 baris di master), per provider, dengan cabang khusus per
   keluarga: web provider, media provider, `cloudflare-ai`, `azure`, anthropic-compatible, dll.
-- `POST /api/provider-nodes/validate` (212 baris di master) — per base URL, dengan fallback chat.
+- `POST /api/provider-nodes/validate` (212 baris di master), per base URL, dengan fallback chat.
 
 `app-serv` hanya bisa menguji **sesudah** baris ada (`POST /api/v1/endpoints/{id}/test`), dan tidak
 punya route validate sama sekali:
@@ -697,22 +697,22 @@ grep -n "validate" app-serv/internal/router/router.go    # kosong
 **Dua perilaku reference yang mudah terlewat, dan keduanya bukan detail:**
 
 1. **Fallback chat ketika `/models` bukan 2xx.** Kalau `/models` menjawab 404, reference mencoba
-   `/chat/completions` dengan `max_tokens: 1` — karena banyak server kompatibel tidak menyediakan
+   `/chat/completions` dengan `max_tokens: 1`, karena banyak server kompatibel tidak menyediakan
    `/models` tetapi tetap bisa melayani chat. `app-serv` hanya tahu `/models`
    (`provider_probe.go:144`), jadi server seperti itu selalu dilaporkan gagal.
 2. **400/529 berarti kredensial diterima.** Untuk anthropic-compatible, reference menganggap
-   `status !== 401 && status !== 403` sebagai valid (`providers/validate/route.js:178`) — body yang
+   `status !== 401 && status !== 403` sebagai valid (`providers/validate/route.js:178`). Body yang
    ditolak karena `max_tokens` atau model tidak dikenal tetap membuktikan kuncinya diterima. Ini
    pembedaan yang benar antara "kunci salah" dan "permintaan salah", dan `app-serv` belum
    memisahkannya.
 
 **Rencana DURING.**
 
-1. Route baru `POST /api/v1/provider-nodes/validate` (tanpa id — node belum ada) dan
+1. Route baru `POST /api/v1/provider-nodes/validate` (tanpa id, node belum ada) dan
    `POST /api/v1/providers/validate`, keduanya **stateless**: body membawa `base_url`/`provider_id` +
    kredensial, tidak ada baris yang ditulis.
 2. Perluas `ProbeOutcome` (`internal/service/endpoint_probe.go:40-58`) dengan `Method` supaya jawaban
-   bisa menyebut jalur mana yang membuktikan (`models` atau `chat`) — reference sudah melakukan ini.
+   bisa menyebut jalur mana yang membuktikan (`models` atau `chat`). Reference sudah melakukan ini.
 3. Fallback `/models` → `/chat/completions` untuk node kompatibel, dan aturan
    `401/403 = kunci salah, lainnya = kunci benar` untuk Anthropic-compatible.
 4. Kredensial di body tidak boleh masuk log maupun pesan error (AGENTS.md §1.3, OWASP A09).
@@ -720,7 +720,7 @@ grep -n "validate" app-serv/internal/router/router.go    # kosong
 **Kriteria selesai.** Operator bisa membuktikan sebuah kredensial sebelum menyimpannya; jawabannya
 menyebut jalur yang dipakai; tidak ada baris DB yang ditulis oleh route validate.
 
-### 4.7 F7 (MEDIUM) — tipe node `custom-embedding` tidak ada
+### 4.7 F7 (MEDIUM): tipe node `custom-embedding` tidak ada
 
 **Fakta.** Reference punya **tiga** tipe node:
 
@@ -747,7 +747,7 @@ dispesifikasikan.
 
 **Biaya kalau dikerjakan.** Bukan satu `const`. Menyentuh: `domain.NodeType` + `validateNodeAPIType`
 (embedding tidak punya `api_type`), `registry.CustomNode.format()`/`chatPath()` (tidak ada
-`chat_path` — embedding memakai `/embeddings`), **CHECK constraint di migration** (lihat di bawah),
+`chat_path`; embedding memakai `/embeddings`), **CHECK constraint di migration** (lihat di bawah),
 `NodeService.List` filter, dan `ProbeNode` yang hari ini selalu menempel `/models`.
 
 ```sql
@@ -766,14 +766,14 @@ migration (up+down) → registry synthesis → probe (POST `/embeddings` dengan 
 **Kriteria selesai.** Tipe ketiga bisa dibuat, disintesis menjadi provider yang routable untuk
 embeddings, dan probe-nya memakai `/embeddings` bukan `/models`.
 
-### 4.8 F8 (MEDIUM) — guard SSRF hanya terpasang di jalur probe
+### 4.8 F8 (MEDIUM): guard SSRF hanya terpasang di jalur probe
 
 **Fakta.** `app-serv` sudah punya guard yang kuat, dan lebih ketat daripada reference:
 
 | Lapis | `app-serv` (`internal/netguard/`) | Reference |
 |---|---|---|
-| Tier 1 — tidak pernah jadi host | `hardDeniedPrefixes`: `0.0.0.0/8`, CGNAT `100.64.0.0/10` (tempat metadata Alibaba), `192.0.0.0/24`, broadcast, `240.0.0.0/4` + link-local/multicast/unspecified | tidak ada tier tetap |
-| Tier 2 — butuh allowlist | `needsAllowlist()` + `EGRESS_ALLOWED_TARGETS` | tidak ada |
+| Tier 1: tidak pernah jadi host | `hardDeniedPrefixes`: `0.0.0.0/8`, CGNAT `100.64.0.0/10` (tempat metadata Alibaba), `192.0.0.0/24`, broadcast, `240.0.0.0/4` + link-local/multicast/unspecified | tidak ada tier tetap |
+| Tier 2: butuh allowlist | `needsAllowlist()` + `EGRESS_ALLOWED_TARGETS` | tidak ada |
 | Anti-rebinding | `Control` hook memvalidasi IP **yang benar-benar didial**, setelah resolusi | tidak ada |
 | Semua jawaban DNS diperiksa | `CheckHost` gagal-tertutup bila satu alamat ditolak | tidak ada |
 
@@ -786,7 +786,7 @@ git diff db4499d6 21583c03 -- src/app/api/provider-nodes/validate/route.js
 # + if (!isLocalRequest(request)) { try { assertPublicUrl(baseUrl); } catch { return 400 } }
 ```
 
-**Yang menjadi temuan.** Guard `app-serv` hari ini hanya dipasang di satu jalur — prober
+**Yang menjadi temuan.** Guard `app-serv` hari ini hanya dipasang di satu jalur, prober
 (`cmd/app-serv/provider_probe.go:76`: `guard.NewDialer(...)`). F2 (daftar model node dari upstream)
 dan F6 (validate) **sama-sama mendial URL yang berasal dari operator**, jadi keduanya wajib lewat
 guard yang sama. Kalau tidak, F2 menjadi satu-satunya jalur keluar yang tidak diperiksa, dan itu
@@ -797,7 +797,7 @@ meninggalkan kelas serangannya terbuka di jalur lain.
 
 1. Setiap adapter baru di `cmd/app-serv/` yang mendial URL operator **wajib** menerima
    `*netguard.Guard` dan memakai `guard.NewDialer(...)`, seperti `newHTTPEndpointProber`.
-2. Tambahkan assertion struktural yang gagal bila sebuah adapter egress dibangun tanpa guard —
+2. Tambahkan assertion struktural yang gagal bila sebuah adapter egress dibangun tanpa guard,
    supaya aturannya tidak bergantung pada review.
 3. Test tabel (OWASP §2.5) minimal 5 variasi yang mencakup **satu kasus sah yang harus tetap
    diizinkan**, supaya perbaikannya tidak berubah menjadi over-blocking: URL publik lolos,
@@ -807,7 +807,7 @@ meninggalkan kelas serangannya terbuka di jalur lain.
 **Kriteria selesai.** Tidak ada jalur egress baru yang bisa dibangun tanpa guard; test-nya
 tabel-driven dan memuat kasus yang harus lolos.
 
-### 4.9 F9 (LOW) — bentuk amplop dan bentuk id node berbeda
+### 4.9 F9 (LOW): bentuk amplop dan bentuk id node berbeda
 
 **Fakta.** Reference menjawab daftar model dengan amplop yang menyebut asalnya:
 
@@ -817,7 +817,7 @@ return NextResponse.json({ provider: connection.provider, connectionId: connecti
 ```
 
 `app-serv` menjawab `{"data": [...]}` (`internal/schema/provider.go:112-115`). Tidak ada yang salah
-dengan `{"data":...}` — itu konsisten dengan sisa API `app-serv` — tetapi `provider`/`connectionId`
+dengan `{"data":...}` (itu konsisten dengan sisa API `app-serv`), tetapi `provider`/`connectionId`
 di reference berguna justru saat F2 dikerjakan: jawaban bisa datang dari upstream **atau** registry,
 dan amplop yang menyebut asalnya membuat panel tidak perlu menebak.
 
@@ -825,12 +825,12 @@ Bentuk id node juga berbeda: reference menyisipkan `apiType` ke dalam id
 (`openai-compatible-chat-<id>`), `app-serv` tidak (`openai-compatible-<ULID>`,
 `internal/domain/provider_node.go:201`). Karena `format()` sudah membaca `api_type` dari kolomnya
 sendiri (`internal/registry/custom_node.go:55-63`), bentuk `app-serv` konsisten dan tidak perlu
-ubah — dicatat supaya tidak dikira drift.
+ubah, dicatat supaya tidak dikira drift.
 
 **Rencana DURING.** Tambahkan `source` pada amplop model (bagian dari F2 bagian A langkah 1). Jangan
 ubah bentuk id node.
 
-### 4.10 F10 (LOW) — route siklus hidup model yang belum ada
+### 4.10 F10 (LOW): route siklus hidup model yang belum ada
 
 **Fakta.** Reference punya enam route yang `app-serv` belum punya:
 
@@ -859,7 +859,7 @@ Dicatat supaya tidak dikira belum diperiksa.
 | `DELETE /provider-nodes/{id}` menolak `CONFLICT` di `app-serv`, sedangkan reference meng-cascade koneksinya | `app-serv` lebih ketat dan itu pilihan §7.4 yang tertulis. Menghapus node yang masih dipakai akan meninggalkan endpoint yang menunjuk provider tidak ada |
 | `PATCH` vs `PUT` pada node | §7.4 memilih `PATCH`. Bentuk partial lebih benar untuk patch sebagian, dan itu yang handler pakai (`UpdateProviderNodeRequest` semua pointer) |
 | Satu koneksi per node di revisi yang dipin | Reference `origin/master` sudah **mengizinkannya banyak** untuk node LLM ("Compatible LLM nodes support multiple API-key connections (key pool)", `providers/route.js:129`). Model endpoint `app-serv` (1..N key per endpoint) sudah merupakan perilaku master, jadi tidak ada yang tertinggal |
-| `auth_modes` tidak ditegakkan | Reference master menambahkan `supportsApiKeyMode` untuk provider dual-auth (`providers/route.js:107`). `app-serv` membawa `auth_modes` sebagai data (`xai` satu-satunya dual-auth) tetapi belum memakainya untuk memvalidasi `auth_type` saat membuat endpoint. Ini longgar, bukan salah — dicatat di sini, dinaikkan bila owner mau |
+| `auth_modes` tidak ditegakkan | Reference master menambahkan `supportsApiKeyMode` untuk provider dual-auth (`providers/route.js:107`). `app-serv` membawa `auth_modes` sebagai data (`xai` satu-satunya dual-auth) tetapi belum memakainya untuk memvalidasi `auth_type` saat membuat endpoint. Ini longgar, bukan salah. Dicatat di sini, dinaikkan bila owner mau |
 | `transport.force_stream` dan `thinking_format` inert | Sudah dicatat draft 011 §2 sebagai deklarasi tanpa pembaca runtime. Bukan temuan baru pass ini |
 | `/api/providers/client` | Itu route untuk klien eksternal dengan penyaring field aman (`SAFE_FIELDS`/`SAFE_PSD_FIELDS`) dan paging. Berguna, tetapi bukan bagian permukaan `/provider` yang owner minta |
 
@@ -891,32 +891,32 @@ Di luar cakupan pass ini: **F1** (sudah dijawab), **F7** dan **F9/F10** (menungg
 
 | # | Pertanyaan | Jawaban | Akibat |
 |---|---|---|---|
-| 1 | Arti `/providers` | **A — pertahankan registry**, tetap 1:1 lewat pemetaan kemampuan | §3.1; melahirkan F1b |
-| 2 | Revisi reference sasaran | **Terbaru** — `git pull` | Checkout naik ke `21583c03`/v0.5.85; semua angka diukur ulang (§2.1) |
-| 3 | Cakupan | **Semua: F2–F6** | F2 (A+B), F3, F4, F5, F6 masuk pass ini; F1b ikut karena keputusan 1 |
+| 1 | Arti `/providers` | **A: pertahankan registry**, tetap 1:1 lewat pemetaan kemampuan | §3.1; melahirkan F1b |
+| 2 | Revisi reference sasaran | **Terbaru**, `git pull` | Checkout naik ke `21583c03`/v0.5.85; semua angka diukur ulang (§2.1) |
+| 3 | Cakupan | **Semua: F2-F6** | F2 (A+B), F3, F4, F5, F6 masuk pass ini; F1b ikut karena keputusan 1 |
 
 ### 7.2 Masih terbuka
 
 1. **F7 `custom-embedding`**: dikerjakan (butuh migration `00000N` + `down`) atau tetap ditolak
    seperti sekarang? Ini satu-satunya tipe node reference yang belum ada di `app-serv`.
-2. **F10**: **sebagian dijawab 2026-09-27** — owner meminta permukaan "test by models id" dikerjakan
+2. **F10**: **sebagian dijawab 2026-09-27**. Owner meminta permukaan "test by models id" dikerjakan
    1:1 dengan reference. Dua route mendarat: `POST /providers/{provider_id}/models/test` (satu model)
    dan `POST /providers/{provider_id}/test-models` (sapuan terbatas), plus kolom Test per baris di
    katalog `app-ui`. Rekornya di draft `037-PROVIDER-MODEL-TEST-READINESS.md`.
    Yang **masih terbuka**: `/models/availability` (cooldown per model), `DELETE /models/alias`,
    `POST/DELETE /models/disabled`, dan `POST /providers/test-batch`.
 3. **Regenerasi registry**: `registry.yaml` masih di `db4499d` (94 entri) sementara sasaran v0.5.85
-   punya 121. F2–F6 dikerjakan terhadap **mekanisme** v0.5.85, jadi keputusan ini tidak memblokir
-   pass ini — tetapi ia tetap terbuka, dan draft 011 §8 sudah menanyakannya lebih dulu.
+   punya 121. F2-F6 dikerjakan terhadap **mekanisme** v0.5.85, jadi keputusan ini tidak memblokir
+   pass ini, tetapi ia tetap terbuka, dan draft 011 §8 sudah menanyakannya lebih dulu.
 
-Tidak ada source `app-serv` yang diubah sebelum §7.1 dijawab; §7.1 sudah dijawab, jadi F2–F6 dan F1b
+Tidak ada source `app-serv` yang diubah sebelum §7.1 dijawab; §7.1 sudah dijawab, jadi F2-F6 dan F1b
 boleh dikerjakan.
 
 ## 8. Status per 2026-09-23
 
-- **CLOSED untuk scope pass ini** — lihat §9 untuk hasil per temuan, dua koreksi pembacaan, satu
+- **CLOSED untuk scope pass ini**: lihat §9 untuk hasil per temuan, dua koreksi pembacaan, satu
   deferral yang dinyatakan, dan angka gerbang. §7.2 tetap terbuka dan tidak memblokir.
-- **Keputusan owner §7.1 sudah dijawab** (A + reference terbaru + cakupan F2–F6); implementasi boleh
+- **Keputusan owner §7.1 sudah dijawab** (A + reference terbaru + cakupan F2-F6); implementasi boleh
   mulai. §7.2 masih terbuka dan tidak memblokir.
 - Reference sudah di-`git pull` ke **`21583c03` = v0.5.85 (2026-09-22)**, dan seluruh angka di dokumen
   ini diukur ulang terhadap revisi itu (§2.1, §2.1b).
@@ -928,12 +928,12 @@ boleh dikerjakan.
 - **Dua koreksi pembacaan dicatat, bukan dihapus.**
   1. Versi pertama F2 menyimpulkan "reference selalu mengambil daftar model dari upstream". Itu
      keliru: untuk provider registry, reference membaca katalog statis (`page.js:136`), sama seperti
-     `app-serv`. Setelah dikoreksi, cakupan temuan menyempit ke node kompatibel — dan justru di situ
+     `app-serv`. Setelah dikoreksi, cakupan temuan menyempit ke node kompatibel, dan justru di situ
      cacatnya nyata (`len(entry.Models) = 0`).
   2. Versi pertama §2.1b mencatat `PROVIDER_MODELS_CONFIG` 19 entri dan `customResolver` 11, hasil
      `grep` yang hanya cocok untuk entri berbentuk objek literal. Hitungan yang benar adalah
      **43 entri** (18 objek + 23 helper + 2 factory) dengan **12 entri** ber-`customResolver`.
-     Kesalahan ini penting karena ia menyembunyikan bahwa mayoritas entri dibangun lewat helper —
+     Kesalahan ini penting karena ia menyembunyikan bahwa mayoritas entri dibangun lewat helper,
      yang justru membuat tabel penempatan kredensial di F2 bagian B lebih masuk akal daripada 43
      blok terpisah.
 - Draft 011 masih memegang pertanyaan regenerasi registry yang sama; draft ini tidak menggantikannya,
@@ -973,7 +973,7 @@ terukur:
    sebabnya perbaikan pass ini menambah resolver + `tools`, bukan tabel baru.
 2. **F2 bagian B bukan "76 provider kehilangan validate URL".** Diukur ulang: **18** entri
    mendeklarasikan `validate_url`, **19** menurunkan URL dari `base_url`, **25** tidak punya
-   keduanya. Ke-18 deklarasi reference **sudah ada semua** di `registry.yaml` — tidak ada yang perlu
+   keduanya. Ke-18 deklarasi reference **sudah ada semua** di `registry.yaml`. Tidak ada yang perlu
    disalin. Celah sesungguhnya adalah **7 provider claude-format yang `base_url`-nya ADALAH endpoint
    messages**, sehingga menempelkan path tidak bisa menolong; reference mem-POST satu pesan
    satu-token ke URL itu dan membaca status. Itu yang ditambahkan `PlanFor`.
@@ -989,7 +989,7 @@ terukur:
 `proxy_pool_id` **tidak** diikatkan ke egress per-endpoint di pass ini, dan itu keputusan yang
 dicatat, bukan yang terlewat. Alasannya: data plane membangun **satu** `*http.Client` untuk semua
 endpoint (`dataplane.NewTransport(TransportDeps{Client})`), sehingga egress per-endpoint menuntut
-pool client per-proxy plus pemeriksaan guard per-request — mekanisme baru, bukan field baru. Aturan
+pool client per-proxy plus pemeriksaan guard per-request, mekanisme baru, bukan field baru. Aturan
 urutan draft §6 ("F1b setelah F8") dipenuhi dengan mendaratkan assertion guard F8 **lebih dulu**
 (Task 4). Yang operator dapat sekarang: field-nya tersimpan, tervalidasi terhadap tabel `proxies`
 (id menggantung ditolak), dan tersaji. Yang belum: lalulintasnya benar-benar keluar lewat proxy itu.
@@ -1007,19 +1007,19 @@ Semuanya dijalankan pada working tree akhir:
 | `staticcheck ./...` | bersih |
 | `golangci-lint run` | **0 issues** |
 | `scrypts/gates/go-headers.sh` | **800** berkas Go ber-header lengkap |
-| `scrypts/gates/go-lint.sh` | lulus; **0** berkas di band 220–250 |
+| `scrypts/gates/go-lint.sh` | lulus; **0** berkas di band 220-250 |
 | `scrypts/gates/contract-openapi.sh` | dokumen tersaji = YAML |
 | `scrypts/gates/contract-drift.sh` | 11 kode error sepakat |
 | `scrypts/gates/go-test.sh` | lulus |
 | `scrypts/gates/panel-check.sh` | lulus |
-| `scrypts/gates/secrets.sh --all` | commit bersih; working tree **122** temuan, **semuanya pra-ada** (120 `graphify-out/cache`, 2 `app-serv/.env` yang untracked dan ter-`.gitignore`) — pass ini menambah **0** |
+| `scrypts/gates/secrets.sh --all` | commit bersih; working tree **122** temuan, **semuanya pra-ada** (120 `graphify-out/cache`, 2 `app-serv/.env` yang untracked dan ter-`.gitignore`). Pass ini menambah **0** |
 
 ### 9.5 Yang sengaja TIDAK dikerjakan
 
 - **F7 `custom-embedding`**, **F9** (bentuk amplop/id), **F10** (enam route siklus hidup model):
   tetap menunggu keputusan §7.2, seperti sebelumnya.
 - **Regenerasi `registry.yaml`**: `tools/registry-gen.mjs` diukur dan **tidak** mereproduksi berkas
-  yang ter-commit — regenerasi dari pin `db4499d` menghasilkan `revision: 9router@db4499d6` dan
+  yang ter-commit. Regenerasi dari pin `db4499d` menghasilkan `revision: 9router@db4499d6` dan
   **kehilangan** tiga model OpenCode Free serta sepuluh voice TTS yang ditambahkan tangan di
   commit `34f2c38`. Karena itu `auth_query` **tidak** ditulis lewat regenerasi; generator hanya
   diperbaiki agar tidak menjatuhkannya bila kelak dijalankan. Ketidakreproduksian ini cacat

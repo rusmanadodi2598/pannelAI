@@ -3,14 +3,10 @@
 // @file      internal/service/quotafetch/minimax_soft_test.go
 // @for       Proves MiniMax's refusals stay soft sentences and its windows are filled per declared host.
 // @uses      internal/service/quotafetch, net/http/httptest, testing, time.
-// @reason    A dead key and an unimplemented family look identical to a page that broke,
-//
-//	unless each is its own answer: the reference renders the provider's sentence
-//	on the card, so the wording and the host slot it arrives from are pinned here.
-//
+// @reason    A dead key and an unimplemented family look identical to a page that broke, unless each is its own answer: the reference renders the provider's sentence on the card, so the wording and the host slot it arrives from are pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 

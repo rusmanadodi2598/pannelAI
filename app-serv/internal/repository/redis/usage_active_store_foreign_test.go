@@ -3,24 +3,12 @@
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/usage_active_store_foreign_test.go
-// @for       Integration test for the one read rule that cannot be pinned in
-//
-//	memory: what a real sorted set does with a member this build cannot
-//	parse.
-//
+// @for       Integration test for the one read rule that cannot be pinned in memory: what a real sorted set does with a member this build cannot parse.
 // @uses      internal/domain, github.com/redis/go-redis/v9, testing, time.
-// @reason    The claim is about Redis behaviour and about a value another
-//
-//	process wrote, so an in-memory double would prove the arithmetic of
-//	the filter but not that the member survives the read. Split from
-//	`usage_active_store_test.go` because that file crossed the AGENTS.md
-//	§1.1 budget with this row in it, and the seam is the subject: one
-//	file reads and writes what this build wrote, this one reads what it
-//	did not.
-//
+// @reason    The claim is about Redis behaviour and about a value another process wrote, so an in-memory double would prove the arithmetic of the filter but not that the member survives the read. Split from `usage_active_store_test.go` because that file crossed the AGENTS.md §1.1 budget with this row in it, and the seam is the subject: one file reads and writes what this build wrote, this one reads what it did not.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package redisrepo
 
@@ -37,7 +25,7 @@ import (
 // read's rule about an unreadable member: it is skipped, and it is left alone.
 //
 // The member below is what a build carrying a field this one has never seen
-// writes — the shape a rolling deploy actually produces. Deleting it would let a
+// writes, the shape a rolling deploy actually produces. Deleting it would let a
 // reader with no idea what it erased suppress another process's live request, so
 // the store drops it from the answer and keeps the value; the score prune the
 // same read runs collects it once its own window closes.

@@ -1,28 +1,18 @@
-//go:build integration
+//go:build integration && live
 
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_identity_live_test.go
-// @for       The live proof that a Personal Access Token with nothing else stored can
-//
-//	be signed, served, and answered.
-//
+// @for       The live proof that a Personal Access Token with nothing else stored can be signed, served, and answered.
 // @uses      bytes, io, net/http, strings, testing, time.
-// @reason    The panel's connection row for a pasted PAT carries a token and no
+// @reason    The panel's connection row for a pasted PAT carries a token and no identity: no user id, no email, no machine id, because nothing in the key-add path asks for them. The connector used to sign whatever it was handed, so every request on such a connection died in shaping and the provider looked broken. This is the state that bug shipped in, and it is the one only the vendor can confirm, a stub cannot prove the signed identity is the one the account answers.
 //
-//	identity: no user id, no email, no machine id, because nothing in the
-//	key-add path asks for them. The connector used to sign whatever it was
-//	handed, so every request on such a connection died in shaping and the
-//	provider looked broken. This is the state that bug shipped in, and it is
-//	the one only the vendor can confirm — a stub cannot prove the signed
-//	identity is the one the account answers.
-//
-//	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration ./internal/provider/ -run QoderLivePAT
+//	PANNELAI_QODER_PAT='pt-…' \
+//	  go test -tags=integration,live ./internal/provider/ -run QoderLivePAT
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     service
+// @stability stable
 // @since     2026-09-28
 package provider
 
@@ -54,9 +44,7 @@ func TestQoderLivePATWithoutStoredIdentity(t *testing.T) {
 		t.Fatalf("NewQoder() error = %v", err)
 	}
 
-	credential := Credential{
-		EndpointID: "ep_pat_only", APIKey: qoderLivePAT(t), Family: FamilyStaticKey,
-	}
+	credential := StaticKey("ep_pat_only", "", qoderLivePAT(t))
 
 	request := &Request{
 		Model:      registry.Model{ID: "qfmodel"},
@@ -134,7 +122,7 @@ func TestQoderLivePATWithoutStoredIdentity(t *testing.T) {
 
 // qoderVendorUnserved names the one refusal this gateway cannot cause or fix: the
 // vendor answered its own serving layer with no backends, or with a rate limit that
-// carries no credential complaint in it. An auth refusal looks different — the
+// carries no credential complaint in it. An auth refusal looks different, the
 // vendor rejects the signature, not the capacity.
 func qoderVendorUnserved(failure *StreamFailure) bool {
 	if failure.Status != http.StatusTooManyRequests && failure.Status != http.StatusBadGateway &&

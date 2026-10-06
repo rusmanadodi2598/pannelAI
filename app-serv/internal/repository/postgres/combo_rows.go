@@ -1,21 +1,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/combo_rows.go
-// @for       The read and write codec for a combos row, plus the driver-error
-//
-//	translation the combo repository answers with.
-//
+// @for       The read and write codec for a combos row, plus the driver-error translation the combo repository answers with.
 // @uses      github.com/jackc/pgx/v5, internal/domain, encoding/json, time.
-// @reason    A combo's models column is jsonb, so every read and every write
-//
-//	passes through the same pair of functions; keeping the codec and
-//	the row scanner beside each other is what stops an encode and a
-//	decode from drifting, and it keeps the repository's statement
-//	surface readable on one screen.
-//
+// @reason    A combo's models column is jsonb, so every read and every write passes through the same pair of functions; keeping the codec and the row scanner beside each other is what stops an encode and a decode from drifting, and it keeps the repository's statement surface readable on one screen.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package postgres
 

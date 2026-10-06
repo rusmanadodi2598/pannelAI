@@ -18,15 +18,15 @@ berkas `app-serv/` maupun `app-ui/` mana pun; tidak ada satu pun patch yang mend
 
 ## 0. Label temuan
 
-Register ini menomori temuanya sendiri (F1–F5 di bawah), sedangkan permintaan owner menyebut **label
+Register ini menomori temuanya sendiri (F1-F5 di bawah), sedangkan permintaan owner menyebut **label
 021**. Peta jawabannya:
 
 | Owner menyebut                  | Ini jawaban di      | Isi singkat                                                              |
 | ------------------------------- | ------------------- | ------------------------------------------------------------------------ |
-| 021 F2 — usage chunk dobel      | §3, jadi F1 di sini | Masih hidup di 5/5 stream; guard `usageSent` ada di sisi yang salah      |
-| 021 F3 — finish chunk dobel     | §4, jadi F2 di sini | Mekanisme gateway sudah beres; sisa duplikasi milik upstream `mimo` saja |
-| 021 F5 — stream dicatat 0/0     | §5, jadi F3 di sini | **CLOSED**; 20/20 baris ronde 1 mencatat token nyata                     |
-| (021 F1 — chunk tanpa `data: `) | §1 penutup          | Tidak terulang; `unframed=0` di 10/10 stream                             |
+| 021 F2: usage chunk dobel      | §3, jadi F1 di sini | Masih hidup di 5/5 stream; guard `usageSent` ada di sisi yang salah      |
+| 021 F3: finish chunk dobel     | §4, jadi F2 di sini | Mekanisme gateway sudah beres; sisa duplikasi milik upstream `mimo` saja |
+| 021 F5: stream dicatat 0/0     | §5, jadi F3 di sini | **CLOSED**; 20/20 baris ronde 1 mencatat token nyata                     |
+| (021 F1: chunk tanpa `data: `) | §1 penutup          | Tidak terulang; `unframed=0` di 10/10 stream                             |
 
 ## 1. Yang diuji, dan yang bekerja
 
@@ -36,7 +36,7 @@ owner adalah satu-satunya kunci gateway yang aktif. Dua ronde: **ronde 1** 20 pa
 satu panggilan per sel, tanpa probe), **ronde 2** 15 panggilan penelusuran akar.
 
 **32 dari 35 panggilan menjawab 200; tiga sisanya 400 `VALIDATION_ERROR` yang memang disengaja (§6).**
-Tidak ada satu pun panggilan yang menggantung: 32 panggilan yang menjawab berada di rentang 2,59 s–
+Tidak ada satu pun panggilan yang menggantung: 32 panggilan yang menjawab berada di rentang 2,59 s-
 20,60 s, tertinggi `th-1` tool-stream 20,6 s dan non-stream `th-1` 17,3 s. Pola lima hang pada 021 §21
 tidak terulang di kedua ronde ini.
 
@@ -65,11 +65,11 @@ Dua temuan di bawah bergantung pada satu penentuan atribusi, jadi aturannya diny
 alias-nya `map[string]json.RawMessage` (`translate_wire.go:61`, dipakai `translate_stream_openai.go:148`):
 
 - **frame yang diteruskan**: kunci tingkat atas tersusun ulang **alfabetis** (`choices, created, id,
-model, object[, usage]`), dan isi di dalam `choices` tetap byte aslinya karena ia `RawMessage` —
-  urutan kunci dalam bisa apa pun, mis. `index, finish_reason, delta`.
+model, object[, usage]`), dan isi di dalam `choices` tetap byte aslinya karena ia `RawMessage`.
+  Urutan kunci dalam bisa apa pun, mis. `index, finish_reason, delta`.
 - **frame yang dibangun gateway**: `mustFrame` mem-_marshal struct_ Go (`translate_stream_openai_frames.go:34`,
   `:50`), jadi urutannya adalah urutan deklarasi field: `id, object, created, model, choices[, usage]`,
-  dan delta-nya `schema.Delta{}` kosong — **tidak mungkin** memuat `"role"`.
+  dan delta-nya `schema.Delta{}` kosong, **tidak mungkin** memuat `"role"`.
 
 Sidik inilah yang dipakai §3 dan §4 untuk menunjuk pembuat tiap frame.
 
@@ -88,24 +88,24 @@ Ini kelanjutan langsung dari 021 F2, dan **masih hidup utuh**. Ronde 1 memanggil
 
 Yang pertama bersidik _diteruskan_ (`choices` di depan, dan pada lane opencode memuat anggota yang tidak
 dikenal schema: `"cost":"0"`, `prompt_tokens_details.audio_tokens`). Yang terakhir bersidik _dibangun
-gateway_: `{"id":"gen-…","object":"chat.completion.chunk","created":…,"model":"…","choices":[],"usage":{…}}`
-— persis urutan deklarasi `schema.UsageChunk` (`internal/schema/chat_response.go:122`).
+gateway_: `{"id":"gen-…","object":"chat.completion.chunk","created":…,"model":"…","choices":[],"usage":{…}}`,
+persis urutan deklarasi `schema.UsageChunk` (`internal/schema/chat_response.go:122`).
 
 **Akar.** Guard-nya ada di sisi yang salah. `usageSent` hanya diset di dalam `usageChunk()`
 (`translate_stream_openai_frames.go:49`), sementara frame upstream yang **sudah** membawa usage ke klien
-dibaca di `translate_stream_openai.go:158-160` hanya untuk mengisi `s.usage` — tanpa menandai bahwa
+dibaca di `translate_stream_openai.go:158-160` hanya untuk mengisi `s.usage`, tanpa menandai bahwa
 angka itu sudah lewat di kawat. `Finish()` lalu memeriksa `!s.usageSent`
 (`translate_stream_openai.go:133`) dan menambah chunk keduanya. Komentar di
 `translate_stream_openai_frames.go:46-47` menyatakan "Emitting it marks usageSent, so one stream carries
-at most one (draft 021 F2)" — klaim itu hanya benar untuk jalur sintetis, bukan untuk jalur penerusan
+at most one (draft 021 F2)". Klaim itu hanya benar untuk jalur sintetis, bukan untuk jalur penerusan
 yang justru dipakai keempat lane ini.
 
 Catatan: 021 §22.1 juga menduga chunk pertama adalah nol (0/0/0) karena `"usage":null`. **Tidak terulang
-ronde ini** — tidak ada satu pun chunk 0/0/0; keduanya memuat angka yang sama. Mekanisme lamanya
+ronde ini**: tidak ada satu pun chunk 0/0/0; keduanya memuat angka yang sama. Mekanisme lamanya
 (`openAIUsageFromObject(nil)`) sudah tertutup, sisa cacatnya murni duplikasi.
 
 **Dampak ke klien.** Klien yang menimpa totalnya (`usage = chunk.usage`) mendapat angka yang benar, jadi
-ini tidak merusak akuntansi; yang rusak adalah klien yang **menjumlahkan** — OpenAI SDK dan pelacak
+ini tidak merusak akuntansi; yang rusak adalah klien yang **menjumlahkan**: OpenAI SDK dan pelacak
 biaya yang meng-akumulasi tiap frame usage akan melipatduakan tagihan. Perbaikan yang paling murah:
 tandai `usageSent = true` saat `openAIFrames` meneruskan frame yang `usage` -nya bukan nil dan bukan
 objek kosong, sehingga `Finish()` tidak menambah apa pun.
@@ -114,10 +114,10 @@ objek kosong, sehingga `Finish()` tidak menambah apa pun.
 menandai `usageSent` di titik baca `usage` ketika objek yang diteruskan tidak kosong, sehingga
 `Finish()` tidak menambah chunk kedua; anggota `null` maupun `{}` bukan angka di kawat dan tetap
 menyerah pada guard `Finish` sendiri. TDD merah-hijau: tabel baru `TestOpenAIStream_UsageIsDeliveredOnce`
-(tujuh sel — usage di frame finish, restatement upstream, usage di frame awal, klien tanpa
+(tujuh sel: usage di frame finish, restatement upstream, usage di frame awal, klien tanpa
 `include_usage`, tanpa usage sama sekali, `null`, `{}`) dan dua test framing lama yang sebelumnya
 mem-pinkan kawat dobel dibalik ke aturan satu-penyampaian. Merah terbukti pada source lama (2 objek
-usage pada bentuk register, 3 pada restatement — yang ekstra dibangun gateway), hijau pada seluruh
+usage pada bentuk register, 3 pada restatement, yang ekstra dibangun gateway), hijau pada seluruh
 paket `dataplane` dan `go test -race ./...` lengkap; akuntansi `state.Usage()` dipinkan tidak berubah.
 
 ## 4. F2 (MEDIUM): `finish_reason` ganda pada `mimo-v2.6-flash-free` berasal dari upstream, bukan dari gateway
@@ -132,12 +132,12 @@ data: {"choices":[{"index":0,"finish_reason":"stop","delta":{"role":"assistant",
 ```
 
 Keduanya **bersidik frame yang diteruskan** (§2): `choices` di tingkat atas muncul lebih dulu, urutan
-dalam `index, finish_reason, delta` bukan urutan struct, dan delta-nya memuat `"role":"assistant"` —
+dalam `index, finish_reason, delta` bukan urutan struct, dan delta-nya memuat `"role":"assistant"`,
 sesuatu yang tidak bisa dihasilkan `s.chunk(schema.Delta{}, …)`. Jadi upstream opencode untuk model ini
 mengirim dua chunk penutup: satu yang menulangkan reasoning (`"reasoning":null`, bekas jalur fold
 `b51a214`), satu yang menutup konten sambil membawa usage.
 
-**Mekanisme 021 F3 — chunk sintetis gateway — sudah tertutup dan terverifikasi.** `openAIFrames` menandai
+**Mekanisme 021 F3 (chunk sintetis gateway) sudah tertutup dan terverifikasi.** `openAIFrames` menandai
 `finishSent` pada saat frame finish upstream diteruskan (`translate_stream_openai.go:161-170`), sehingga
 `Finish()` tidak menambah yang kedua (`:121`). Tidak ada frame ketiga di mana pun.
 
@@ -146,7 +146,7 @@ bisa tetap meneruskan apa adanya (aturan "forward verbatim" di `:173-175`, yang 
 yang tidak dimodelkan schema), atau mengenal pola "chunk penutup tanpa konten" dan memangkasnya. Klien
 yang berhenti membaca pada `finish_reason` pertama tidak terpengaruh; klien yang menghitung jumlah
 jawaban atau menunggu usage **setelah** finish akan salah baca. Kontrol langsung ke
-`opencode.ai/zen/v1` untuk memastikan bentuk upstream-nya tidak tercapai dari mesin ini — ia menjawab
+`opencode.ai/zen/v1` untuk memastikan bentuk upstream-nya tidak tercapai dari mesin ini. Ia menjawab
 403 `FreeTierError: OpenCode's free tier can only be used from within OpenCode`, dan percobaan lewat
 klien lain tidak dilakukan. Atribusi di atas karena itu bertumpu pada sidik byte §2, bukan pada
 perbandingan dua ujung.
@@ -154,7 +154,7 @@ perbandingan dua ujung.
 **Pengukuran REFERENCE 9Router (2026-09-27, atas perintah owner "Cek pada REFERENCE dulu").** Checkout
 `/home/rusmanadodi/apps/9router` @ `39e36d3d` (v0.5.86); `git diff 39e36d3d..f01fb909` (v0.5.91, tip
 origin/master) kosong atas keempat file yang diukur, jadi pembacaan valid di tip. Jalur yang setara
-dengan lane `mimo` — upstream OpenAI chat → klien OpenAI — **bukan translator melainkan passthrough**:
+dengan lane `mimo` (upstream OpenAI chat → klien OpenAI) **bukan translator melainkan passthrough**:
 `buildTransformStream` memilih `createPassthroughStreamWithLogger` bila `needsTranslation` salah, dan
 `needsTranslation` hanyalah `sourceFormat !== targetFormat` (`translator/index.js:226-228`;
 `handlers/chatCore/streamingHandler.js:37-41`). Loop passthrough (`utils/stream.js:141-247`) tetap
@@ -162,7 +162,7 @@ parse tiap baris `data:` dan menulis ulang sebagian frame, tetapi **tidak pernah
 mendedup finish**:
 
 - `hasValuableContent` (`utils/streamHelpers.js:41-50`) hanya menjatuhkan delta yang benar-benar kosong
-  tanpa `finish_reason` dan tanpa `role` — **kedua chunk penutup `mimo` lolos** dan diteruskan.
+  tanpa `finish_reason` dan tanpa `role`, **kedua chunk penutup `mimo` lolos** dan diteruskan.
 - Di setiap frame finish ia justru **menulis ulang usage**: tanpa usage valid → suntik
   `estimateUsage` + penanda `estimated: true` (`stream.js:210-217`, `usageTracking.js:396-402`); dengan
   usage → timpa dengan `addBufferToUsage(usage)` yang menambah **BUFFER_TOKENS = 2000** ke
@@ -170,61 +170,61 @@ mendedup finish**:
 - `[DONE]` diteruskan, dan flush menjamin satu bila upstream tak mengirimnya (`stream.js:391-414`).
 
 Jadi untuk bentuk `mimo` persis, kawat REFERENCE berakhir `finish(usage estimasi)`,
-`finish(usage asli + 2000)`, `[DONE]` — **duplikasi `finish_reason` yang sama** dengan app-serv, malah
+`finish(usage asli + 2000)`, `[DONE]`, **duplikasi `finish_reason` yang sama** dengan app-serv, malah
 lebih berat: usage menempel di kedua frame, angka kedua dinaikkan 2000, dan angka pertama karangan.
 **Vonis: F2 adalah PARITY.** app-serv sudah meneruskan kedua chunk persis seperti reference; tidak ada
 pola "chunk penutup tanpa konten" yang dipangkas di sisi reference, dan kebijakan suntik-estimasi-nya
 berlawanan dengan aturan app-serv (021 F2/§5: kawat dan akuntansi hanya membawa angka yang benar-benar
 dilihat, tidak pernah yang dikarang). Yang terbuka untuk keputusan owner tinggal tiga: (A) terima
-parity, tutup F2 tanpa kode; (B) menyimpang dari reference — pangkas chunk penutup yang delta-nya
+parity, tutup F2 tanpa kode; (B) menyimpang dari reference: pangkas chunk penutup yang delta-nya
 kosong kecuali yang terakhir, perbaikan kontrak klien yang tidak dimiliki reference; (C) port kebijakan
-usage-di-frame-finish ala reference (estimasi + buffer 2000) — menabrak aturan no-fabrication.
+usage-di-frame-finish ala reference (estimasi + buffer 2000), menabrak aturan no-fabrication.
 
 **Penutupan F2 lewat opsi B (2026-09-27, `6b68bb4`).** Pertanyaan lanjutan owner, "secara source jika
 tidak ambil REFERENCE apakah sudah benar?", membuka celah yang diukur dulu: invarian satu-finish yang
 sudah dinyatakan source (`translate_stream_openai.go:64-68`, alasan 021 F3) hanya dijaga terhadap
-frame buatan gateway — frame kedua upstream tetap membawa `finish_reason` kedua ke kawat, padahal
+frame buatan gateway. Frame kedua upstream tetap membawa `finish_reason` kedua ke kawat, padahal
 gateway bukan passthrough byte murni (tiap frame sudah di-decode dan re-marshal), jadi kontrak yang
 kita layankan (SPEC-API §4, satu chunk finish lalu opsional chunk usage) dilanggar oleh terusan itu.
 Owner memilih B ("gas aja B supaya solid di source kita"), dan patch-nya minimal: saat `finishSent`
 sudah `true` dan frame yang diteruskan masih membawa `finish_reason`, anggota duplikat itu di-null dan
-pilihan di-re-marshal (`translate_stream_openai.go:166-180`) — usage yang dibawanya tetap lewat
+pilihan di-re-marshal (`translate_stream_openai.go:166-180`), usage yang dibawanya tetap lewat
 (penanda `usageSent` F1 tidak berubah), semua anggota lain tetap lewat, `finishReason` state tetap
 milik finish pertama, dan nol angka dikarang. Kawat `mimo` kini: `finish(stop)`,
-`finish(null, usage)`, `[DONE]` — satu finish, satu usage, tanpa menyentuh reference. TDD
-merah-hijau: tabel `TestOpenAIStream_SecondFinishIsStripped` (empat sel — bentuk `mimo` dengan usage,
+`finish(null, usage)`, `[DONE]`, satu finish, satu usage, tanpa menyentuh reference. TDD
+merah-hijau: tabel `TestOpenAIStream_SecondFinishIsStripped` (empat sel: bentuk `mimo` dengan usage,
 bentuk yang sama tanpa `include_usage`, tutup kedua dengan nilai berbeda `length`, dan satu-finish
 yang tak tersentuh); merah terbukti pada source lama (2 finish di kawat, atau `length` lolos), hijau
 pada dataplane dan `go test -race ./...` lengkap.
 
-## 5. F3 (CLOSED): 021 F5 — stream tidak lagi dicatat 0/0
+## 5. F3 (CLOSED): 021 F5: stream tidak lagi dicatat 0/0
 
 Permintaan owner adalah memeriksa F5, dan F5 **beres**. Kolom `usage_records` bukan `prompt_tokens`
 melainkan `tokens_in`/`tokens_out`, dan tidak punya penanda stream, jadi tiap baris dicocokkan ke angka
-kawat yang sudah direkam di `/tmp/t1`. Dua puluh baris pada jam 11:35:37–11:35:52 persis sepadan dengan
+kawat yang sudah direkam di `/tmp/t1`. Dua puluh baris pada jam 11:35:37-11:35:52 persis sepadan dengan
 dua puluh panggilan ronde 1; tak satu pun bernilai nol. Contoh empat baris stream:
 
 | `ts`     | `model`                           | `tokens_in`/`tokens_out` | Angka di kawat | `endpoint_id`                   | `combo`    |
 | -------- | --------------------------------- | ------------------------ | -------------- | ------------------------------- | ---------- |
-| 11:35:37 | `deepseek-v4.1-flash:free`        | 38/38                    | 38/38/76       | `ep_0386EX3Z1D8JYP3XAHJAG8KP0A` | —          |
+| 11:35:37 | `deepseek-v4.1-flash:free`        | 38/38                    | 38/38/76       | `ep_0386EX3Z1D8JYP3XAHJAG8KP0A` | -          |
 | 11:35:38 | `space-bunny-free`                | 427/24                   | 427/24/451     | `virtual:opencode`              | `pi-agent` |
-| 11:35:39 | `mimo-v2.6-flash-free`            | 130/14                   | 130/14/144     | `virtual:opencode`              | —          |
-| 11:35:41 | `muse-spark-1.3-contributor-free` | 571/234                  | 571/234/805    | `virtual:opencode`              | —          |
+| 11:35:39 | `mimo-v2.6-flash-free`            | 130/14                   | 130/14/144     | `virtual:opencode`              | -          |
+| 11:35:41 | `muse-spark-1.3-contributor-free` | 571/234                  | 571/234/805    | `virtual:opencode`              | -          |
 
-Baris stream `th-1` mencatat 38/38 — sama dengan chunk usage upstream di kawat, meski panggilan
+Baris stream `th-1` mencatat 38/38, sama dengan chunk usage upstream di kawat, meski panggilan
 non-stream model yang sama mencatat 38/22. Jadi gateway mencatat apa yang dia lihat, bukan angka yang
 dia karang; selisihnya milik upstream, bukan jalur akuntansi. Jalur yang 021 §22.1 tunjuk
 (`engine_stream.go:77` lalu `engine_relay.go:168-169` menimpa dengan nil) sudah tidak menimpa.
 
 Rotasi combo ikut terverifikasi dari DB: baris `combo = pi-agent` tersebar ke tiga anggota berbeda
 (muse-spark 571/66 non-stream, mimo 197/28 tool, space-bunny 427/24 stream, muse-spark 610/1059
-reasoning), semuanya `endpoint_id = virtual:opencode` — keluarga OpenCode Free tetap melayani tanpa
+reasoning), semuanya `endpoint_id = virtual:opencode`, keluarga OpenCode Free tetap melayani tanpa
 kredensial dan tanpa baris endpoint.
 
 ## 6. F4 (LOW): panggilan yang ditolak validasi tidak menulis baris akuntansi sama sekali
 
 Tiga probe `reasoning_effort: "none"` dijawab `400 {"code":"VALIDATION_ERROR","message":"reasoning_effort
-has an unexpected value"}` dalam 0,16 s — pesan yang benar dan cepat. Tidak ada satu pun dari ketiganya
+has an unexpected value"}` dalam 0,16 s, pesan yang benar dan cepat. Tidak ada satu pun dari ketiganya
 yang meninggalkan baris di `usage_records` **atau** `request_logs`: jendela 28 menit berisi 34 baris
 (2 pra-tes + 32 panggilan yang melewati gerbang), persis sejumlah yang bukan 400.
 
@@ -246,7 +246,7 @@ kode yang dilayani ke klien, id kunci, body mentah, model bila decode sempat men
 sengaja tidak ditulis, sesuai aturan register G17 yang sudah tercatat di `record()`: panggilan yang
 tidak pernah mencapai percobaan tidak punya provider/model untuk ditagih. Kegagalan autentikasi tetap
 tidak direkam: terjadi sebelum body dibaca dan tidak punya kunci pemilik baris. TDD merah-hijau:
-`TestChatCompletionsHTTP_RefusalRecorded` (tiga sel di `chat_refusal_record_test.go` — probe
+`TestChatCompletionsHTTP_RefusalRecorded` (tiga sel di `chat_refusal_record_test.go`: probe
 `reasoning_effort` register dengan modelnya, body yang gagal di-decode tanpa model, dan sisi negatif
 panggilan yang dilayani yang barisnya tetap success; asersi mengikat kode di baris dengan kode yang
 dilayani di kawat), merah terbukti `log rows = 0, want 1` pada source lama, hijau pada handler +
@@ -263,19 +263,19 @@ dua pintu masuk yang melayani hal yang sama:
 | Sufiks `(level)` pada `model` | `none`, `off`, `auto`, `ultra`, angka budget, plus semua kunci `LevelToBudget` (`minimal…xhigh…max`)                                           | `reasoning/suffix.go:69-85`                  |
 | Kosakata internal             | `EffortLevels` = `minimal, low, medium, high, xhigh, max`; `LevelToBudget` mengenal `none` (= budget 0) dan memetakan `none`/`off` → `minimal` | `reasoning/levels.go:25`, `:31-37`, `:49-56` |
 
-Akibatnya `xhigh` dan `max` — dua level yang punya budget dan punya tes di paket `reasoning` — **tidak
+Akibatnya `xhigh` dan `max` (dua level yang punya budget dan punya tes di paket `reasoning`) **tidak
 bisa** diminta lewat field standar OpenAI, dan `none` tidak bisa diminta sama sekali lewat body, padahal
 mesin mengenalnya dan `intent_test.go:40` menguji bentuk itu. Yang belum diukur: apakah sufiks
 `(xhigh)`, `(max)`, `(none)` benar-benar mencapai upstream untuk keempat model ini, dan apakah
 `(level)` punya pengaruh terukur pada lane opencode. Ronde 2 sempat membanding `(high)` vs tanpa sufiks
-vs `(low)` pada `mimo`: `completion_tokens_details.reasoning_tokens` = 35 / 37 / 37 — perbedaan yang
+vs `(low)` pada `mimo`: `completion_tokens_details.reasoning_tokens` = 35 / 37 / 37, perbedaan yang
 tidak bisa dibaca sebagai efek level. Kesimpulan ditahan; itu pertanyaan lain, dan bukan bagian dari
 empat mode yang diminta.
 
 **Penutupan F5 (2026-09-27, `a87984f`).** Peta akarnya melengket: mesin membaca intent reasoning dari
 raw body lewat `reasoning.Extract` → `configFromEffort`, yang mengenal `none`/`off` (mode none),
-`auto` (default upstream), dan kata apa pun sebagai level yang kemudian diuji terhadap `LevelToBudget`
-— sementara `reasoning_effort` sama sekali tidak dikonsumsi di luar validasi (`ReasoningEffort` hanya
+`auto` (default upstream), dan kata apa pun sebagai level yang kemudian diuji terhadap `LevelToBudget`,
+sementara `reasoning_effort` sama sekali tidak dikonsumsi di luar validasi (`ReasoningEffort` hanya
 dibaca `chat_validation.go:66`), dan lintasan `/responses` bahkan tidak memvalidasi effort sedikit pun.
 Jadi validatorlah satu-satunya gerbang ketat, dan menutup `xhigh`/`max`/`none` membuat dua pintu yang
 melayani mesin yang sama tidak setara. Perbaikannya menurunkan kosakata dari sumbernya sendiri:
@@ -289,7 +289,7 @@ same-format. TDD merah-hijau: lima sel valid baru (`xhigh`, `max`, `none`, `off`
 `HIGH`) tetap hijau. Efek samping yang justru membuktikan: probe F4 `reasoning_effort: "none"` kini
 dijawab 200 lewat mesin sungguhan di test handler, jadi probenya dipindah ke kata yang masih ditolak.
 Pertanyaan terukur register ini (apakah sufiks `(xhigh)`/`(max)`/`(none)` benar-benar mengubah jawaban
-upstream) tetap terbuka — itu pengukuran live, bukan bagian patch.
+upstream) tetap terbuka. Itu pengukuran live, bukan bagian patch.
 
 ## 8. Cara mengulang
 
@@ -299,10 +299,10 @@ curl -sS -N -m 90 -H "Authorization: Bearer <kunci gateway>" -H "Content-Type: a
   -X POST "$BASE/chat/completions" -d '{"model":"opencode/mimo-v2.6-flash-free(high)",
   "max_tokens":512,"stream":true,"stream_options":{"include_usage":true},
   "messages":[{"role":"user","content":"Reply with one word only: pong"}]}' | tail -4
-# F1: sebelum 50340a8 — dua frame usage identik, satu bersidik struct (id lebih dulu) dan satu bersidik map (choices lebih dulu)
-# F1: setelah 50340a8 — satu frame usage saja (yang diteruskan); chunk sintetis tidak lagi ditambah
+# F1: sebelum 50340a8. Dua frame usage identik, satu bersidik struct (id lebih dulu) dan satu bersidik map (choices lebih dulu)
+# F1: setelah 50340a8. Satu frame usage saja (yang diteruskan); chunk sintetis tidak lagi ditambah
 # F2: grep -c '"finish_reason":"stop"'  → 2 pada mimo, 1 pada tiga lane lain
-# F2: setelah 6b68bb4 — 1 di semua lane; chunk penutup kedua membawa finish_reason:null (usage-nya tetap)
+# F2: setelah 6b68bb4, 1 di semua lane; chunk penutup kedua membawa finish_reason:null (usage-nya tetap)
 ```
 
 Penanda frame buatan gateway vs milik upstream: lihat §2. Akuntansi: cocokkan `tokens_in`/`tokens_out`
@@ -320,11 +320,11 @@ terakit dari delta; `m1-effort-none.out` menyimpan 400 §6). Skrip penganalisisn
   "dua angka identik" terbukti di kelimanya, tetapi mekanisme pendorong chunk kedua diverifikasi lewat
   kode, bukan lewat 20 stream terpisah.
 - F2 tidak punya kontrol upstream langsung (§4): 403 `FreeTierError`. Atribusinya bertumpu pada sidik
-  byte §2, yang merupakan argumen struktur — bukan observasi dua ujung.
+  byte §2, yang merupakan argumen struktur, bukan observasi dua ujung.
 - Angka `reasoning_tokens` untuk soal `(level)` datang dari tiga panggilan, tanpa pengulangan; itu
   cukup untuk menahan kesimpulan, tidak cukup untuk menyatakan sufiks diabaikan.
 - Pass ini tidak menguji: endpoint `responses`, mode non-chat (gambar/audio/embedding), `tool_choice`,
   `n>1`, `parallel_tool_calls`, batas laju, dan perilaku failover kredensial.
 - Gateway di `:9090` adalah proses `go run` milik owner yang berjalan sejak 11:30:53; tidak ada proses
   yang dihentikan atau dimulai ulang selama pengujian. Baris `usage_records` dan `request_logs` yang
-  ditambahkan kedua ronde dibiarkan apa adanya — tidak dibersihkan.
+  ditambahkan kedua ronde dibiarkan apa adanya, tidak dibersihkan.

@@ -2,21 +2,11 @@
 //
 // @file      internal/handler/oauth_callback_test.go
 // @for       HTTP tests for the §7.4 OAuth callback, both audiences.
-// @uses      internal/domain, internal/service, net/http, net/url, strings,
-//
-//	testing.
-//
-// @reason    The callback is the one public route of §7.4 and the only one with
-//
-//	two answers, so the table pins both: a browser gets a 302 back to
-//	the provider page carrying the outcome, a headless caller gets the
-//	JSON body it asked for. It also pins that no answer, in either
-//	shape, carries token material. The redirect-origin guard is in
-//	oauth_callback_guard_test.go.
-//
+// @uses      internal/domain, internal/service, net/http, net/url, strings, testing.
+// @reason    The callback is the one public route of §7.4 and the only one with two answers, so the table pins both: a browser gets a 302 back to the provider page carrying the outcome, a headless caller gets the JSON body it asked for. It also pins that no answer, in either shape, carries token material. The redirect-origin guard is in oauth_callback_guard_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package handler
 
@@ -27,7 +17,8 @@ import (
 	"testing"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
+
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 )
 
 func TestOAuthHandlerCallbackAnswersHeadlessCallers(t *testing.T) {
@@ -65,12 +56,12 @@ func TestOAuthHandlerCallbackAnswersHeadlessCallers(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fixture := newOAuthFixture(t, "https://gateway.example.com", oauthProvider("acme"))
-			fixture.tokens.infoFn = func() (service.OAuthIdentity, error) {
-				return service.OAuthIdentity{Sub: "sub-1", Email: "dev@example.com"}, nil
+			fixture.tokens.infoFn = func() (oauthhttp.OAuthIdentity, error) {
+				return oauthhttp.OAuthIdentity{Sub: "sub-1", Email: "dev@example.com"}, nil
 			}
 			if tc.refuse {
-				fixture.tokens.grantFn = func(service.TokenGrant) (service.TokenResponse, error) {
-					return service.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant")
+				fixture.tokens.grantFn = func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
+					return oauthhttp.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant")
 				}
 			}
 			state := tc.state
@@ -137,12 +128,12 @@ func TestOAuthHandlerCallbackRedirectsBrowsers(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fixture := newOAuthFixture(t, tc.baseURL, oauthProvider("acme"))
-			fixture.tokens.infoFn = func() (service.OAuthIdentity, error) {
-				return service.OAuthIdentity{Sub: "sub-1", Email: "dev@example.com"}, nil
+			fixture.tokens.infoFn = func() (oauthhttp.OAuthIdentity, error) {
+				return oauthhttp.OAuthIdentity{Sub: "sub-1", Email: "dev@example.com"}, nil
 			}
 			if tc.refuse {
-				fixture.tokens.grantFn = func(service.TokenGrant) (service.TokenResponse, error) {
-					return service.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant")
+				fixture.tokens.grantFn = func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
+					return oauthhttp.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant")
 				}
 			}
 			state := startOAuthFlow(t, fixture, "acme", tc.redirect)

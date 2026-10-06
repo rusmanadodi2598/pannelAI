@@ -3,15 +3,10 @@
 // @file      internal/dataplane/translate_responses_client_parts_test.go
 // @for       Table-driven tests for content-part and tool-declaration mapping.
 // @uses      testing, internal/schema.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose image part
-//
-//	carries a bare URL string rather than OpenAI's object and whose
-//	tool vocabulary is flattened. Both differ from the chat wire in a
-//	way that silently loses a client's input when mapped carelessly.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose image part carries a bare URL string rather than OpenAI's object and whose tool vocabulary is flattened. Both differ from the chat wire in a way that silently loses a client's input when mapped carelessly.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

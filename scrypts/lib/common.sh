@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-# ---------------------------------------------------------------- repository
+# repository
 
 # repo_root prints the absolute path of the repository root. A hook can run with
 # any working directory, so every gate resolves paths from here rather than
@@ -21,7 +21,7 @@ repo_root() {
 	}
 }
 
-# ---------------------------------------------------------------- reporting
+# reporting
 
 readonly C_RESET=$'\033[0m'
 readonly C_RED=$'\033[31m'
@@ -57,7 +57,7 @@ gate_skip() {
 	printf '%sSKIP%s %s\n' "$(_colour "$C_YELLOW")" "$(_colour "$C_RESET")" "$1"
 }
 
-# ------------------------------------------------------------------- tools
+# tools
 
 # have reports whether a command exists on PATH.
 have() {
@@ -96,7 +96,7 @@ tool_path() {
 	return 1
 }
 
-# ------------------------------------------------------------------- files
+# files
 
 # go_service_dirs prints the directories holding Go service modules, one per
 # line. Only `app-*/` is considered, which is the scope AGENTS.md §1.1 names
@@ -127,12 +127,31 @@ panel_dir() {
 
 # changed_files prints the files git considers changed, staged or not, plus
 # untracked ones. Used by gates that only need to inspect touched files.
+#
+# A CI checkout has a clean worktree, so an empty answer there would not be a
+# pass but a gate that inspected nothing. GATES_BASE_REF names the revision the
+# change is against (the pull request base, or the commit the push started from)
+# and adds that diff, which is what the hooks get from staged files for free.
 changed_files() {
-	local root
+	local root base
 	root="$(repo_root)"
+	base="${GATES_BASE_REF:-}"
+	# The all-zero SHA is what a branch-creation push reports as its "before". It is
+	# a well-formed object name without naming an object, and a diff against it lists
+	# no files, which the changed-file gates would read as a pass on an empty patch.
+	if [ "$base" = 0000000000000000000000000000000000000000 ]; then
+		base=""
+	fi
+	if [ -n "$base" ] && ! git -C "$root" rev-parse --verify --quiet "$base" >/dev/null; then
+		echo "gates: GATES_BASE_REF '$base' does not resolve in this checkout" >&2
+		return 1
+	fi
 	{
 		git -C "$root" diff --name-only
 		git -C "$root" diff --cached --name-only
 		git -C "$root" ls-files --others --exclude-standard
+		if [ -n "$base" ]; then
+			git -C "$root" diff --name-only "${base}...HEAD"
+		fi
 	} | sort -u
 }

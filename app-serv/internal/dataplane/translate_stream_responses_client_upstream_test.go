@@ -1,20 +1,12 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/translate_stream_responses_client_upstream_test.go
-// @for       Table-driven tests for a Responses client stream served by a Claude
-//
-//	or a Responses upstream.
-//
+// @for       Table-driven tests for a Responses client stream served by a Claude or a Responses upstream.
 // @uses      testing, slices.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses from any resolved
-//
-//	provider, so the lifecycle has to come out the same whichever format
-//	the upstream wrote. Both upstreams reach it through the chunk
-//	vocabulary, which is the property these tests hold.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses from any resolved provider, so the lifecycle has to come out the same whichever format the upstream wrote. Both upstreams reach it through the chunk vocabulary, which is the property these tests hold.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

@@ -3,15 +3,10 @@
 // @file      internal/service/quota_usage_endpoints_test.go
 // @for       Pins that every host a provider declares reaches the fetcher that asks for it.
 // @uses      internal/registry, internal/service/quotafetch, reflect, testing.
-// @reason    The published read once forwarded only `transport.usage.url`, so a family
-//
-//	reading `quota_url`, `quota_api_url`, `urls`, `oauth_url` or `user_url` was
-//	handed an empty address and called nothing. These cases are why that cannot
-//	happen quietly to a key the registry already spells out, or to one it adds later.
-//
+// @reason    The published read once forwarded only `transport.usage.url`, so a family reading `quota_url`, `quota_api_url`, `urls`, `oauth_url` or `user_url` was handed an empty address and called nothing. These cases are why that cannot happen quietly to a key the registry already spells out, or to one it adds later.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package service
 
@@ -104,7 +99,7 @@ func TestUsageBlockAndMirrorHaveEqualWidth(t *testing.T) {
 // account that stored its project, email or user id is lowered into the few keys a provider's
 // usage endpoint names, with blanks dropped rather than sent as empty strings.
 //
-// It does NOT prove the bootstrap call is gone — a mapper can be perfectly tested and never
+// It does NOT prove the bootstrap call is gone, a mapper can be perfectly tested and never
 // called, which is exactly how F6 shipped wrong once (see PORT 010 §3.6). That claim is held by
 // TestQuotaService_PublishedUsageCredential, which reads through the fetcher seam and asserts the
 // facts arrive on the credentials a real poll would carry.
@@ -117,19 +112,19 @@ func TestPublishedAccountDataHandsTheProjectID(t *testing.T) {
 	}{
 		{
 			name: "a stored project and identity travel together",
-			cred: &domain.OAuthCredential{ProjectID: "proj-1", AccountEmail: "op@example.test", AccountID: "user-9"},
+			cred: domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{ProjectID: "proj-1", AccountEmail: "op@example.test", AccountID: "user-9"}),
 			want: map[string]string{"projectId": "proj-1", "email": "op@example.test", "userId": "user-9"},
 		},
 		{
 			name:    "email falls back to the account row",
-			cred:    &domain.OAuthCredential{ProjectID: "proj-1"},
-			account: domain.EndpointAccount{Email: " acct@example.test "},
+			cred:    domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{ProjectID: "proj-1"}),
+			account: domain.RehydrateEndpointAccount(domain.EndpointAccountInput{Email: " acct@example.test "}),
 			want:    map[string]string{"projectId": "proj-1", "email": "acct@example.test"},
 		},
 		{
 			name:    "blank values are left out, not sent as empty",
-			cred:    &domain.OAuthCredential{ProjectID: "   ", AccountID: ""},
-			account: domain.EndpointAccount{Email: ""},
+			cred:    domain.RehydrateOAuthCredential(domain.OAuthCredentialInput{ProjectID: "   ", AccountID: ""}),
+			account: domain.RehydrateEndpointAccount(domain.EndpointAccountInput{Email: ""}),
 			want:    nil,
 		},
 		{name: "no credential hands no facts", cred: nil, want: nil},

@@ -3,15 +3,10 @@
 // @file      internal/router/router.go
 // @for       Route registration for the v1 management and data planes.
 // @uses      internal/handler, internal/schema, net/http, encoding/json.
-// @reason    SPEC-API-001 §4 pins the /api/v1 prefix for every route and §9
-//
-//	fixes the layer flow ending at the router; registering each route
-//	with its method makes the surface auditable at a glance and makes
-//	a forgotten verb a startup-visible mistake, not a 405 at runtime.
-//
+// @reason    SPEC-API-001 §4 pins the /api/v1 prefix for every route and §9 fixes the layer flow ending at the router; registering each route with its method makes the surface auditable at a glance and makes a forgotten verb a startup-visible mistake, not a 405 at runtime.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
-// @stability experimental
+// @stability stable
 // @since     2026-09-16
 package router
 
@@ -36,10 +31,12 @@ type Mux struct {
 
 // Deps holds the handlers the router wires up.
 //
-// Every handler is a pointer so an unset one is detectable, and New refuses to
-// register a route whose handler is missing: a nil handler would compile and
-// then panic on the first request, which is the failure mode the composition
-// root cannot see at boot.
+// Every handler is a pointer so an unset one is visible to the composition root,
+// which calls Deps.AssertWired before New: a deployment missing any handler a
+// route reaches fails at boot and names what is missing, rather than answering
+// 500 on that route the first time someone clicks it. The inline guards in New
+// cover the groups whose routes are conditional (auth, OAuth) and the data-plane
+// dependencies, so a mux can still be assembled for a narrower surface.
 type Deps struct {
 	System           *handler.SystemHandler
 	Auth             *handler.AuthHandler
@@ -79,7 +76,7 @@ type Deps struct {
 	RateLimitPerMin int
 	// TrustedProxies is the parsed TRUSTED_PROXY_CIDRS set: the peers whose
 	// forwarded chains the limiter may read. Nil keeps every request bucketed
-	// by its direct peer (draft 042 R20).
+	// by its direct peer.
 	TrustedProxies []*net.IPNet
 }
 
@@ -157,7 +154,7 @@ func New(deps Deps) *Mux {
 	mux.Handle("PATCH "+APIVersion+"/endpoints/{id}/keys/{key_id}", gateway(http.HandlerFunc(deps.EndpointKey.UpdateKey)))
 	mux.Handle("DELETE "+APIVersion+"/endpoints/{id}/keys/{key_id}", gateway(http.HandlerFunc(deps.EndpointKey.DeleteKey)))
 
-	// §7.6–§7.8 Models, combos, and the vision adapter are management routes, so
+	// §7.6-§7.8 Models, combos, and the vision adapter are management routes, so
 	// they share the same session guard the gateway keys use.
 	mux.Handle("GET "+APIVersion+"/models/catalog", gateway(http.HandlerFunc(deps.Model.Catalog)))
 	mux.Handle("GET "+APIVersion+"/models/custom", gateway(http.HandlerFunc(deps.Model.CustomList)))
@@ -192,7 +189,7 @@ func New(deps Deps) *Mux {
 	// media routes, registered together in router_media.go.
 	registerMediaRoutes(mux, deps, gateway)
 
-	// §7.12–§7.14 Usage, quotas, logs, and settings are management routes, so
+	// §7.12-§7.14 Usage, quotas, logs, and settings are management routes, so
 	// they share the same session guard.
 	mux.Handle("GET "+APIVersion+"/usage/summary", gateway(http.HandlerFunc(deps.Usage.Summary)))
 	mux.Handle("GET "+APIVersion+"/usage/timeseries", gateway(http.HandlerFunc(deps.Usage.Timeseries)))
@@ -207,7 +204,7 @@ func New(deps Deps) *Mux {
 	// The published read lives under the endpoint's own path rather than as a
 	// /quotas/live sibling because it answers one connection, like the two routes
 	// above it, and {endpoint_id}/usage is the shape the reference's per-connection
-	// usage route already uses (draft 036 §6).
+	// usage route already uses.
 	mux.Handle("GET "+APIVersion+"/quotas/{endpoint_id}/usage", gateway(http.HandlerFunc(deps.Quota.GetUsage)))
 	mux.Handle("GET "+APIVersion+"/logs/requests", gateway(http.HandlerFunc(deps.Log.Requests)))
 	mux.Handle("DELETE "+APIVersion+"/logs/requests", gateway(http.HandlerFunc(deps.Log.Purge)))
@@ -217,7 +214,7 @@ func New(deps Deps) *Mux {
 	mux.Handle("GET "+APIVersion+"/settings", gateway(http.HandlerFunc(deps.Settings.Get)))
 	mux.Handle("PATCH "+APIVersion+"/settings", gateway(http.HandlerFunc(deps.Settings.Patch)))
 
-	// §7.16–§7.18: the skill catalog, the served contract, and the release
+	// §7.16-§7.18: the skill catalog, the served contract, and the release
 	// notes are management routes over embedded static data, session-gated like
 	// the rest. The contract route answers with the document itself rather than
 	// the §8 envelope, so a reader can diff it against the spec.

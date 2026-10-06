@@ -2,21 +2,12 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_tables.go
-// @for       The capability tables the resolver reads: which models call tools,
-//
-//	which ids answer vision directly, and the per-provider vision overrides.
-//
+// @for       The capability tables the resolver reads: which models call tools, which ids answer vision directly, and the per-provider vision overrides.
 // @uses      (none; the tables are data read by capability_resolve.go).
-// @reason    Each table is a transcription of one layer in the reference's
-//
-//	capabilities.js, in the reference's own order. Keeping them apart
-//	from the resolver is what holds capability_resolve.go inside the
-//	AGENTS.md §1.1 budget, and it makes the port reviewable: a reader
-//	diffing this file against the reference sees one table per layer.
-//
+// @reason    Each table is a transcription of one layer in the reference's capabilities.js, in the reference's own order. Keeping them apart from the resolver is what holds capability_resolve.go inside the AGENTS.md §1.1 budget, and it makes the port reviewable: a reader diffing this file against the reference sees one table per layer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-24
 package registry
 

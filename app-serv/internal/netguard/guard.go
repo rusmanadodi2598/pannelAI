@@ -2,28 +2,19 @@
 // connects to it (OWASP A01 SSRF, docs/RULLES/OWASP.md).
 //
 // @file      internal/netguard/guard.go
-// @for       One generalized egress guard: resolve, validate every resolved
-//
-//	address, and re-check at connect time.
-//
+// @for       One generalized egress guard: resolve, validate every resolved address, and re-check at connect time.
 // @uses      context, errors, fmt, net, net/netip, strings, syscall, time.
-// @reason    A proxy candidate makes the server dial an address an operator
-//
-//	typed. Checking the string would be the pattern the OWASP rules
-//	blacklist: the check must run on the resolved IP, and again on the
-//	address the dialer is about to reach, or a DNS answer that changes
-//	between the two calls walks straight through. One guard, used by
-//	every such dialer, is what makes the rule hold for the class.
+// @reason    A proxy candidate makes the server dial an address an operator typed. Checking the string would be the pattern the OWASP rules blacklist: the check must run on the resolved IP, and again on the address the dialer is about to reach, or a DNS answer that changes between the two calls walks straight through. One guard, used by every such dialer, is what makes the rule hold for the class.
 //
 //	Two tiers, because a self-hosted gateway may legitimately reach its
 //	own network: addresses that are never a host (link-local, multicast,
 //	the reserved ranges, CGNAT) are refused outright, while loopback and
 //	private ranges are refused unless the operator names them in
-//	EGRESS_ALLOWED_TARGETS — default deny, allowlist to permit.
+//	EGRESS_ALLOWED_TARGETS, default deny, allowlist to permit.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package netguard
 
@@ -151,7 +142,7 @@ func (g *Guard) CheckIP(ip netip.Addr) error {
 	}
 	// The never-a-host tier is checked first, so a wide allowlist (an operator
 	// who wrote 0.0.0.0/0) cannot re-open the ranges that are not a host at
-	// all — the metadata address among them.
+	// all, the metadata address among them.
 	if reason := neverAHost(ip); reason != "" {
 		return &DeniedError{Reason: reason}
 	}
@@ -166,7 +157,7 @@ func (g *Guard) CheckIP(ip netip.Addr) error {
 
 // Control is the net.Dialer hook. It runs after the name has been resolved and
 // before the connection is made, so it validates the address actually being
-// reached — the second half of the anti-rebinding rule.
+// reached, the second half of the anti-rebinding rule.
 func (g *Guard) Control(network, address string, _ syscall.RawConn) error {
 	if network != "tcp" && network != "tcp4" && network != "tcp6" {
 		return nil

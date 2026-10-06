@@ -1,26 +1,18 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_callback_test.go
-// @for       Table-driven tests for completing an authorization (SPEC-API-001
-//
-//	§7.4 GET .../oauth/callback): replay, exchange, identity
-//	matching, and the sealing rule.
-//
+// @for       Table-driven tests for completing an authorization (SPEC-API-001 §7.4 GET .../oauth/callback): replay, exchange, identity matching, and the sealing rule.
 // @uses      context, strings, testing, time, internal/domain.
-// @reason    The callback is the only place tokens enter the system from a
-//
-//	provider, so the table pins the replay guard, the fail-closed
-//	identity rule, the update-not-duplicate account rule, and that no
-//	stored field ever carries plaintext token material.
-//
+// @reason    The callback is the only place tokens enter the system from a provider, so the table pins the replay guard, the fail-closed identity rule, the update-not-duplicate account rule, and that no stored field ever carries plaintext token material.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
 import (
 	"context"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"strings"
 	"testing"
 	"time"
@@ -45,8 +37,8 @@ func TestOAuthCallback(t *testing.T) {
 				return OAuthCallbackInput{ProviderID: "identity-provider", Code: "the-code", State: state}
 			},
 			tokens: func(f *fakeTokenClient) {
-				f.infoFn = func() (OAuthIdentity, error) {
-					return OAuthIdentity{Sub: "sub-123", Email: "dev@example.com", Name: "Dev One"}, nil
+				f.infoFn = func() (oauthhttp.OAuthIdentity, error) {
+					return oauthhttp.OAuthIdentity{Sub: "sub-123", Email: "dev@example.com", Name: "Dev One"}, nil
 				}
 			},
 			check: func(t *testing.T, fixture oauthFlowFixture, result OAuthConnect) {
@@ -57,8 +49,8 @@ func TestOAuthCallback(t *testing.T) {
 				if endpoint.AuthType() != domain.UpstreamAuthOAuth {
 					t.Fatalf("auth type = %q", endpoint.AuthType())
 				}
-				if endpoint.Account().Email != "dev@example.com" {
-					t.Fatalf("account email = %q", endpoint.Account().Email)
+				if endpoint.Account().Email().String() != "dev@example.com" {
+					t.Fatalf("account email = %q", endpoint.Account().Email())
 				}
 				if endpoint.Label() != "dev@example.com" {
 					t.Fatalf("label = %q, want the identity", endpoint.Label())
@@ -67,21 +59,21 @@ func TestOAuthCallback(t *testing.T) {
 				if cred == nil {
 					t.Fatal("no credential stored")
 				}
-				if strings.Contains(cred.AccessTokenEncrypted, "at-issued") {
+				if strings.Contains(cred.AccessTokenEncrypted(), "at-issued") {
 					t.Fatal("access token stored as plaintext")
 				}
-				if strings.Contains(cred.RefreshTokenEncrypted, "rt-issued") {
+				if strings.Contains(cred.RefreshTokenEncrypted(), "rt-issued") {
 					t.Fatal("refresh token stored as plaintext")
 				}
-				opened, err := fixture.sealer.Open(cred.AccessTokenEncrypted)
+				opened, err := fixture.sealer.Open(cred.AccessTokenEncrypted())
 				if err != nil || opened != "at-issued" {
 					t.Fatalf("sealed access token does not open to the issued value: %q (%v)", opened, err)
 				}
 				if result.TokenHint != domain.MaskSecret("at-issued") {
 					t.Fatalf("token hint = %q", result.TokenHint)
 				}
-				if cred.ExpiresAt == nil || !cred.ExpiresAt.Equal(testNow.Add(time.Hour)) {
-					t.Fatalf("expiry = %v, want now+expires_in", cred.ExpiresAt)
+				if cred.ExpiresAt() == nil || !cred.ExpiresAt().Equal(testNow.Add(time.Hour)) {
+					t.Fatalf("expiry = %v, want now+expires_in", cred.ExpiresAt())
 				}
 				if result.RedirectBase != "https://panel.example.com" {
 					t.Fatalf("redirect base = %q", result.RedirectBase)
@@ -97,8 +89,8 @@ func TestOAuthCallback(t *testing.T) {
 				return OAuthCallbackInput{ProviderID: "identity-provider", Code: "the-code", State: state}
 			},
 			tokens: func(f *fakeTokenClient) {
-				f.infoFn = func() (OAuthIdentity, error) {
-					return OAuthIdentity{Sub: "sub-123", Email: "dev@example.com"}, nil
+				f.infoFn = func() (oauthhttp.OAuthIdentity, error) {
+					return oauthhttp.OAuthIdentity{Sub: "sub-123", Email: "dev@example.com"}, nil
 				}
 			},
 			check: func(t *testing.T, fixture oauthFlowFixture, result OAuthConnect) {
@@ -108,7 +100,7 @@ func TestOAuthCallback(t *testing.T) {
 				if result.Endpoint.ID() != "ep_existing" {
 					t.Fatalf("endpoint id = %q, want the existing account updated", result.Endpoint.ID())
 				}
-				opened, err := fixture.sealer.Open(result.Endpoint.OAuth().AccessTokenEncrypted)
+				opened, err := fixture.sealer.Open(result.Endpoint.OAuth().AccessTokenEncrypted())
 				if err != nil || opened != "at-issued" {
 					t.Fatalf("token not replaced: %q (%v)", opened, err)
 				}
@@ -190,8 +182,8 @@ func TestOAuthCallback(t *testing.T) {
 				return OAuthCallbackInput{ProviderID: "identity-provider", Code: "bad-code", State: state}
 			},
 			tokens: func(f *fakeTokenClient) {
-				f.grantFn = func(TokenGrant) (TokenResponse, error) {
-					return TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant: invalid_grant: code expired")
+				f.grantFn = func(oauthhttp.TokenGrant) (oauthhttp.TokenResponse, error) {
+					return oauthhttp.TokenResponse{}, domain.NewUpstreamError("the token endpoint refused the grant: invalid_grant: code expired")
 				}
 			},
 			wantCode: "UPSTREAM_ERROR",
@@ -204,8 +196,8 @@ func TestOAuthCallback(t *testing.T) {
 				return OAuthCallbackInput{ProviderID: "identity-provider", Code: "the-code", State: state}
 			},
 			tokens: func(f *fakeTokenClient) {
-				f.infoFn = func() (OAuthIdentity, error) {
-					return OAuthIdentity{}, domain.NewUpstreamError("the user info endpoint rejected the request")
+				f.infoFn = func() (oauthhttp.OAuthIdentity, error) {
+					return oauthhttp.OAuthIdentity{}, domain.NewUpstreamError("the user info endpoint rejected the request")
 				}
 			},
 			wantCode: "UPSTREAM_ERROR",

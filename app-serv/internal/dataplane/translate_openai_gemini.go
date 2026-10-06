@@ -3,24 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_openai_gemini.go
-// @for       OpenAI chat request to Gemini generateContent payload translation,
-//
-//	and Gemini usage to the OpenAI accounting block.
-//
+// @for       OpenAI chat request to Gemini generateContent payload translation, and Gemini usage to the OpenAI accounting block.
 // @uses      internal/schema, encoding/json, strings.
-// @reason    SPEC-API-001 §7.15 lists Gemini among the translated formats and the
-//
-//	reference implements this direction as a pure function
-//	(open-sse/translator/request/openai-to-gemini.js). No P1 provider
-//	can reach it — every entry declaring format: gemini is reported as
-//	`routability: connector` because its protocol wraps the payload in a
-//	vendor envelope — so this is translation without a route, kept
-//	because the registry data it is written against is already on disk
-//	and a connector later needs exactly this payload.
-//
+// @reason    SPEC-API-001 §7.15 lists Gemini among the translated formats and the reference implements this direction as a pure function (open-sse/translator/request/openai-to-gemini.js). No P1 provider can reach it, every entry declaring format: gemini is reported as `routability: connector` because its protocol wraps the payload in a vendor envelope, so this is translation without a route, kept because the registry data it is written against is already on disk and a connector later needs exactly this payload.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package dataplane
 
@@ -31,8 +19,8 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
-// Gemini part discriminators. They are not wire fields — Gemini infers the part
-// kind from which member is present — so they name the members a reader greps
+// Gemini part discriminators. They are not wire fields, Gemini infers the part
+// kind from which member is present, so they name the members a reader greps
 // for rather than values on the wire.
 const (
 	GeminiPartFunctionCall     = "functionCall"
@@ -133,16 +121,13 @@ type GeminiFunctionDecl struct {
 	Parameters  json.RawMessage `json:"parameters"`
 }
 
-// OpenAIToGemini translates an OpenAI chat request into a Gemini
-// generateContent payload.
-//
-// Three shape differences are load-bearing. A system prompt has no place in
-// Gemini's contents, so it moves to systemInstruction (a lone system message is
-// treated as the user's first turn, exactly as the reference does). A tool
-// result is a functionResponse part inside a user turn, paired by call id, rather
-// than its own message. And tool arguments are an object rather than a JSON
-// string, so an unparseable argument string becomes an empty object instead of
-// invalid JSON.
+// OpenAIToGemini translates an OpenAI chat request into a Gemini generateContent
+// payload. Three shape differences are load-bearing. A system prompt has no place in
+// Gemini's contents, so it moves to systemInstruction, and a lone system message is
+// treated as the user's first turn. A tool result is a functionResponse part inside a
+// user turn, paired by call id, rather than its own message. Tool arguments are an
+// object rather than a JSON string, so an unparseable argument string becomes an
+// empty object instead of invalid JSON.
 func OpenAIToGemini(req schema.ChatRequest, upstreamModel string) GeminiRequest {
 	out := GeminiRequest{
 		Model:          upstreamModel,

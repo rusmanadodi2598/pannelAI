@@ -5,15 +5,10 @@
 // @file      internal/tokensaver/ponytail_prompts.go
 // @for       The three ponytail instructions, verbatim from the reference.
 // @uses      (none).
-// @reason    SPEC-API-002 §7 makes these prompts the saver's whole payload, so
-//
-//	they are data rather than logic. Keeping them in their own file is
-//	what makes a prompt change a reviewable diff instead of a buried
-//	string.
-//
+// @reason    SPEC-API-002 §7 makes these prompts the saver's whole payload, so they are data rather than logic. Keeping them in their own file is what makes a prompt change a reviewable diff instead of a buried string.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package tokensaver
 

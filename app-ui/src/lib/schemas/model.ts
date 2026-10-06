@@ -23,7 +23,7 @@ import { stringList } from './primitives';
 //
 // `thinking_levels` is the per-model half of the reasoning control (SPEC-API §7.14): the levels this
 // model accepts when appended to its name, absent when the registry knows none for it. It is optional
-// rather than defaulted because absent and empty answer different questions — absent means "append no
+// rather than defaulted because absent and empty answer different questions: absent means "append no
 // suffix", and a defaulted `[]` would say the same thing but hide that the API never answered.
 export const schemaCatalogModel = z.object({
 	id: z.string().min(1),

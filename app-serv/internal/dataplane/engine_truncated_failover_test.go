@@ -2,23 +2,11 @@
 //
 // @file      internal/dataplane/engine_truncated_failover_test.go
 // @for       The combo walk over a member that answered 200 with nothing in it.
-// @uses      encoding/json, net/http, net/http/httptest, strings, testing,
-//
-//	internal/domain, internal/schema.
-//
-// @reason    A reasoning model that spends its whole output ceiling on thinking
-//
-//	answers 200 with an empty body (measured live on
-//	muse-spark-1.3-contributor-free, 2026-09-28), and the walk only left a
-//	member on an error, so a combo rotated onto that member served the
-//	client nothing. These tests pin the other three answers the walk owes:
-//	try the next member, do not park the key that answered, prefer an empty
-//	body over an error, and leave a streamed answer alone because it has
-//	already reached the client.
-//
+// @uses      encoding/json, net/http, net/http/httptest, strings, testing, internal/domain, internal/schema.
+// @reason    A reasoning model that spends its whole output ceiling on thinking answers 200 with an empty body (measured live on muse-spark-1.3-contributor-free, 2026-09-28), and the walk only left a member on an error, so a combo rotated onto that member served the client nothing. These tests pin the other three answers the walk owes: try the next member, do not park the key that answered, prefer an empty body over an error, and leave a streamed answer alone because it has already reached the client.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-29
 package dataplane
 
@@ -86,7 +74,7 @@ func newTruncatingUpstream(t *testing.T, calls *int, emptyByModel map[string]boo
 // TestRelay_ComboSkipsAMemberThatAnsweredEmptyAtItsCeiling pins the reported case:
 // a round_robin combo whose leading member spends the ceiling on thinking must
 // serve the next member's answer, and must not treat the empty one as its key's
-// fault — the upstream answered, so the credential stays usable.
+// fault, the upstream answered, so the credential stays usable.
 func TestRelay_ComboSkipsAMemberThatAnsweredEmptyAtItsCeiling(t *testing.T) {
 	var calls int
 	server := newTruncatingUpstream(t, &calls, map[string]bool{"empty": true})

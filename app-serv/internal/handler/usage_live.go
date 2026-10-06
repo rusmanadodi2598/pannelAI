@@ -1,21 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/usage_live.go
-// @for       The live Usage stream: one SSE connection carrying the gateway's
-//
-//	in-flight set, its recent requests, and its last error provider.
-//
-// @uses      internal/schema, internal/service, context, encoding/json,
-//
-//	log/slog, net/http, runtime/debug, time.
-//
-// @reason    SPEC-API-001 §7.12 and SPEC-UI-001 §6.5 give /usage one stream, and
-//
-//	§4 fixes its framing: text/event-stream, `X-Accel-Buffering: no`, and
-//	the status line committed with the first frame so a failure before
-//	that point is still an ordinary HTTP error. The sink is the one the
-//	data plane already streams through, so this route inherits the
-//	Flusher forwarding draft 010 F5 fixed rather than re-deriving it.
+// @for       The live Usage stream: one SSE connection carrying the gateway's in-flight set, its recent requests, and its last error provider.
+// @uses      internal/schema, internal/service, context, encoding/json, log/slog, net/http, runtime/debug, time.
+// @reason    SPEC-API-001 §7.12 and SPEC-UI-001 §6.5 give /usage one stream, and §4 fixes its framing: text/event-stream, `X-Accel-Buffering: no`, and the status line committed with the first frame so a failure before that point is still an ordinary HTTP error. The sink is the one the data plane already streams through, so this route inherits the Flusher forwarding draft 010 F5 fixed rather than re-deriving it.
 //
 //	The loop is deliberately a read-and-compare rather than a poll: the
 //	first frame is the whole state, and every later frame is sent only
@@ -24,7 +12,7 @@
 //	comment is what holds an idle connection open through a proxy
 //	without claiming a change happened.
 //
-//	TERMINATION (AGENTS.md §1.6)
+//	Termination (AGENTS.md §1.6)
 //
 //	The loop ends on exactly four conditions, all explicit: the client
 //	disconnected (ctx done), the stream reached its stated maximum
@@ -34,7 +22,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
-// @stability experimental
+// @stability stable
 // @since     2026-09-22
 package handler
 
@@ -55,8 +43,7 @@ import (
 // The stream's own cadences, as defaults a test may shorten. The read interval is
 // short enough that a change reaches the screen promptly and long enough that a
 // quiet gateway costs one bounded read every second; the keepalive is under the
-// 25 seconds draft 010 §10.3 names, which is the interval an idle proxy needs to
-// see to keep the connection open.
+// 25 second bound an idle proxy needs to see to keep the connection open.
 const (
 	usageLiveReadInterval      = time.Second
 	usageLiveKeepaliveInterval = 20 * time.Second
@@ -115,7 +102,7 @@ func (h *UsageLiveHandler) Stream(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Nothing has been written, so this is still an ordinary HTTP error the
 		// client can act on rather than a success status carrying a failure.
-		slog.Warn("reading the first live frame failed", "error", err)
+		slog.Warn("reading the first live frame failed", "request_id", requestIDOf(w), "error", err)
 		schema.WriteError(w, err)
 		return
 	}
@@ -126,7 +113,7 @@ func (h *UsageLiveHandler) Stream(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), usageLiveMaxLifetime)
 	defer cancel()
 
-	last := encodeFrame(frame)
+	last := encodeFrame(frame, sink.requestID())
 	readTicker := time.NewTicker(h.readInterval)
 	defer readTicker.Stop()
 	keepaliveTicker := time.NewTicker(h.keepaliveEvery)
@@ -164,10 +151,16 @@ func (h *UsageLiveHandler) publish(ctx context.Context, sink *sseSink, last *[]b
 	if err != nil {
 		// A read that failed is stated rather than answered with an empty frame:
 		// "nothing is running" is a claim a failed read cannot support (R-36).
-		slog.Warn("reading a live frame failed; ending the stream", "error", err)
+		slog.Warn("reading a live frame failed; ending the stream", "request_id", sink.requestID(), "error", err)
 		return false
 	}
-	encoded := encodeFrame(frame)
+	encoded := encodeFrame(frame, sink.requestID())
+	if encoded == nil {
+		// The encode failed, so there is nothing to compare and nothing to send.
+		// Treating it as "unchanged" is the promise this path makes; writing the
+		// empty result would put a blank frame on the wire instead.
+		return true
+	}
 	if bytes.Equal(encoded, *last) {
 		return true
 	}
@@ -180,7 +173,7 @@ func (h *UsageLiveHandler) publish(ctx context.Context, sink *sseSink, last *[]b
 
 // writeFrame encodes and writes one frame under the panic boundary.
 func (h *UsageLiveHandler) writeFrame(sink *sseSink, frame schema.UsageLiveFrame) bool {
-	return h.writeBytes(sink, dataplane.Frame(encodeFrame(frame)))
+	return h.writeBytes(sink, dataplane.Frame(encodeFrame(frame, sink.requestID())))
 }
 
 // writeBytes writes and flushes one complete SSE frame, recovering a panic in
@@ -189,12 +182,16 @@ func (h *UsageLiveHandler) writeBytes(sink *sseSink, payload []byte) bool {
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			slog.Error("panic while writing a live frame",
-				"panic", recovered, "stack", string(debug.Stack()))
+				"request_id", sink.requestID(), "panic", recovered, "stack", string(debug.Stack()))
 		}
 	}()
 	if err := sink.WriteFrame(payload); err != nil {
 		// The client is gone; a failed write is how a disconnect usually
-		// surfaces, so it ends the stream quietly.
+		// surfaces, so it ends the stream quietly. Quietly is not the same as
+		// silently: the reason the stream stopped has to be on the record
+		// (AGENTS.md §1.6).
+		slog.Info("live stream write failed, ending the connection",
+			"request_id", sink.requestID(), "error", err)
 		return false
 	}
 	sink.Flush()
@@ -204,10 +201,10 @@ func (h *UsageLiveHandler) writeBytes(sink *sseSink, payload []byte) bool {
 // encodeFrame renders the frame's JSON. An encode failure cannot happen for a
 // frame built from strings and integers, and the caller treats an empty result as
 // an unchanged frame rather than sending a broken one.
-func encodeFrame(frame schema.UsageLiveFrame) []byte {
+func encodeFrame(frame schema.UsageLiveFrame, requestID string) []byte {
 	payload, err := json.Marshal(frame)
 	if err != nil {
-		slog.Error("encoding a live frame failed", "error", err)
+		slog.Error("encoding a live frame failed", "request_id", requestID, "error", err)
 		return nil
 	}
 	return payload

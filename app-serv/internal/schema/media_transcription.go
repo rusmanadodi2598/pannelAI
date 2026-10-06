@@ -2,19 +2,11 @@
 //
 // @file      internal/schema/media_transcription.go
 // @for       The transcription contract of SPEC-API-001 §7.10.
-// @uses      bytes, encoding/json, io, mime/multipart, net/http, strings,
-//
-//	internal/domain.
-//
-// @reason    A transcription is the one media request that is not JSON: it
-//
-//	arrives as multipart, so it is decoded and bounded here rather than
-//	in the handler, and the bound is what keeps an oversized upload off
-//	the filesystem. The speech and voice contracts live in media_audio.go.
-//
+// @uses      bytes, encoding/json, io, mime/multipart, net/http, strings, internal/domain.
+// @reason    A transcription is the one media request that is not JSON: it arrives as multipart, so it is decoded and bounded here rather than in the handler, and the bound is what keeps an oversized upload off the filesystem. The speech and voice contracts live in media_audio.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package schema
 
@@ -108,7 +100,7 @@ func readBounded(reader io.Reader, limit int64) ([]byte, error) {
 //
 // Trailing separators are trimmed before the base is taken: without that step
 // a name like `../../` reduces to an empty segment, the replacement is skipped,
-// and the traversal form is forwarded as-is — the one shape the reduction would
+// and the traversal form is forwarded as-is, the one shape the reduction would
 // otherwise miss. After trimming, every accepted name is a single segment with
 // no separator left, and the degenerate `.`/`..`/empty set collapses to the
 // default rather than reaching the upstream.

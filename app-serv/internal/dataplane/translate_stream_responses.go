@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_responses.go
-// @for       Mapping Responses API SSE events onto the OpenAI chunk vocabulary
-//
-//	the two client stream states already consume.
-//
+// @for       Mapping Responses API SSE events onto the OpenAI chunk vocabulary the two client stream states already consume.
 // @uses      encoding/json, strconv.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and its
-//
-//	stream is a named-event stream rather than a chunk stream. Mapping
-//	each event onto the chunk shape both client states already frame is
-//	what keeps this from being two more translators, one per client wire.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and its stream is a named-event stream rather than a chunk stream. Mapping each event onto the chunk shape both client states already frame is what keeps this from being two more translators, one per client wire.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package dataplane
 

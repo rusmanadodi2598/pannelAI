@@ -1,26 +1,17 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_device.go
-// @for       The device authorization flow: minting the verification round
+// @for       The device authorization flow: minting the verification round and polling it to a connect (draft 036 slice A, SPEC-API-001 §7.4).
+// @uses      context, crypto/rand, encoding/json, errors, fmt, net/url, strings, time, internal/domain, internal/registry, internal/repository.
+// @reason    A device-flow provider (Qoder) declares no authorize URL, so the code flow cannot serve it. The gateway mints the PKCE pair, nonce and machine id itself, hands the panel a device code, and answers one upstream poll per request until the vendor returns a token.
 //
-//	and polling it to a connect (draft 036 slice A, SPEC-API-001 §7.4).
-//
-// @uses      context, crypto/rand, encoding/json, errors, fmt, net/url,
-//
-//	strings, time, internal/domain, internal/registry, internal/repository.
-//
-// @reason    A device-flow provider (Qoder) declares no authorize URL, so the
-//
-//	code flow cannot serve it. The gateway mints the PKCE pair, nonce
-//	and machine id itself, hands the panel a device code, and answers
-//	one upstream poll per request until the vendor returns a token.
 //	The verifier and machine id never leave the gateway: the panel's
 //	only credential is the unguessable single-use device code, which
 //	is also what binds a poll to the flow that started it.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-27
 package service
 
@@ -30,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"net/url"
 	"strings"
 	"time"
@@ -168,7 +160,7 @@ func (s *OAuthFlowService) DeviceStart(ctx context.Context, in OAuthDeviceStartI
 
 // stateDeviceStart mints the round the way its vendor does: ask, get a state and
 // the URL that carries it, and stage the state under itself. No PKCE pair and no
-// nonce are generated, because this vendor never sees either — the handle the
+// nonce are generated, because this vendor never sees either, the handle the
 // panel holds IS the vendor's own state, and the poll is that one value.
 //
 // A machine id is still generated: the account this round connects is deduped by
@@ -176,7 +168,7 @@ func (s *OAuthFlowService) DeviceStart(ctx context.Context, in OAuthDeviceStartI
 // round, which is the behavior the reference gets from storing one credential
 // per provider.
 func (s *OAuthFlowService) stateDeviceStart(ctx context.Context, providerID string, oauth *registry.OAuth) (OAuthDeviceStart, error) {
-	client, ok := s.tokens.(StateRoundClient)
+	client, ok := s.tokens.(oauthhttp.StateRoundClient)
 	if !ok {
 		return OAuthDeviceStart{}, domain.NewInternalError("the state round needs a token client that speaks it")
 	}

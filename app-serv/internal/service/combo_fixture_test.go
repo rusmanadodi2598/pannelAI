@@ -1,19 +1,12 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/combo_fixture_test.go
-// @for       The combo fixture: the wired combo service and the reference
-//
-//	helpers every §7.7 test builds its draft from.
-//
+// @for       The combo fixture: the wired combo service and the reference helpers every §7.7 test builds its draft from.
 // @uses      internal/domain, internal/repository, context, testing.
-// @reason    A combo's refs may be a model, another combo, or an alias, so every
-//
-//	test needs all three present before it can create anything. Naming
-//	that setup once keeps each case's table about the rule it pins.
-//
+// @reason    A combo's refs may be a model, another combo, or an alias, so every test needs all three present before it can create anything. Naming that setup once keeps each case's table about the rule it pins.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-17
 package service
 

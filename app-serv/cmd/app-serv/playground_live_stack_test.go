@@ -3,20 +3,9 @@
 // Package main is the app-serv composition root.
 //
 // @file      cmd/app-serv/playground_live_stack_test.go
-// @for       The live Playground gateway under test: the real router over the
-//
-//	real services, wired to PostgreSQL, Redis, and a local upstream.
-//
-// @uses      internal/dataplane, internal/domain, internal/handler,
-// internal/provider, internal/registry, internal/repository/postgres,
-// internal/repository/redis, internal/router, internal/schema,
-// internal/service, context, os, testing, time.
-// @reason    F9 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires
-//
-//	repeatable evidence from one request through the whole gateway, and the
-//	evidence is only as good as the wiring behind it. This file builds that
-//	wiring from the real constructors, so the tests read as scenarios
-//	rather than as their own fixtures.
+// @for       The live Playground gateway under test: the real router over the real services, wired to PostgreSQL, Redis, and a local upstream.
+// @uses      internal/dataplane, internal/domain, internal/handler, internal/provider, internal/registry, internal/repository/postgres, internal/repository/redis, internal/router, internal/schema, internal/service, context, os, testing, time.
+// @reason    F9 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires repeatable evidence from one request through the whole gateway, and the evidence is only as good as the wiring behind it. This file builds that wiring from the real constructors, so the tests read as scenarios rather than as their own fixtures.
 //
 //	The file carries an `integration` build tag, so the default
 //	`go test ./...` stays hermetic. With the tag active both DSNs are
@@ -29,7 +18,7 @@
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
-// @stability experimental
+// @stability stable
 // @since     2026-09-21
 package main
 
@@ -78,7 +67,7 @@ type liveStack struct {
 //
 // An optional in-flight tracker is the one seam a live pass needs to add: the
 // Usage stream draws what the engine is calling, so a pass that reads that stream
-// has to hand the engine the same tracker the stream reads (draft 013 F4). The
+// has to hand the engine the same tracker the stream reads. The
 // variadic shape matches the fixture the data-plane tests already use, so a
 // caller that needs nothing extra passes nothing.
 func newLiveStack(t *testing.T, upstream *liveUpstream, active ...*service.ActiveRequestTracker) liveStack {
@@ -200,7 +189,7 @@ func newLiveStack(t *testing.T, upstream *liveUpstream, active ...*service.Activ
 // liveTestDSN reads the live-evidence PostgreSQL DSN and refuses one whose
 // database does not declare itself a test database. This stack truncates
 // upstream_endpoints CASCADE, so a run aimed at a real database deletes the
-// operator's accounts — which happened once, when the variable was pointed at
+// operator's accounts, which happened once, when the variable was pointed at
 // the dev database by copying POSTGRES_DSN. The guard runs before the pool is
 // opened, so it cannot be outrun by a later statement.
 func liveTestDSN(t *testing.T) string {

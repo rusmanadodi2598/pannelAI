@@ -2,20 +2,11 @@
 //
 // @file      internal/service/media_image.go
 // @for       The image and video generation use cases of SPEC-API-001 §7.10.
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	encoding/json.
-//
-// @reason    Both routes send a prompt and normalize the answer into the same
-//
-//	OpenAI envelope, so the normalization lives here once: the
-//	reference normalizes every adapter's answer into `{created,
-//	data:[{url|b64_json}]}`, and a client that reads `data[0].url`
-//	must keep working whichever provider answered.
-//
+// @uses      internal/dataplane, internal/domain, internal/schema, context, encoding/json.
+// @reason    Both routes send a prompt and normalize the answer into the same OpenAI envelope, so the normalization lives here once: the reference normalizes every adapter's answer into `{created, data:[{url|b64_json}]}`, and a client that reads `data[0].url` must keep working whichever provider answered.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-09-19
 package service
 
@@ -51,8 +42,8 @@ func (s *MediaCallService) GenerateImage(ctx context.Context, req schema.ImageRe
 }
 
 // GenerateVideo performs one video generation call. §7.10 registers the route,
-// and no registry provider declares a video block yet — the same state the
-// reference is in, where `videoConfig` is a recognized key nothing defines — so
+// and no registry provider declares a video block yet, the same state the
+// reference is in, where `videoConfig` is a recognized key nothing defines, so
 // the route answers PROVIDER_NOT_ROUTABLE until one does.
 func (s *MediaCallService) GenerateVideo(ctx context.Context, req schema.VideoRequest, keyID string) (schema.MediaGenerationResponse, dataplane.Outcome, error) {
 	call, err := s.prepareForCall(ctx, req.Model, domain.MediaKindVideo, nil, keyID)

@@ -3,20 +3,12 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_claude_billing_test.go
-// @for       The Claude-to-OpenAI system mapping: the billing header a Claude
-//
-//	Code client injects is stripped before the prompt is forwarded.
-//
+// @for       The Claude-to-OpenAI system mapping: the billing header a Claude Code client injects is stripped before the prompt is forwarded.
 // @uses      strings, testing, internal/schema.
-// @reason    The reference removes the header per system block
-//
-//	(claude-to-openai.js stripAnthropicBillingHeader) because it is
-//	client-side accounting, not conversation; forwarding it double-reports
-//	the session on an Anthropic upstream.
-//
+// @reason    The reference removes the header per system block (claude-to-openai.js stripAnthropicBillingHeader) because it is client-side accounting, not conversation; forwarding it double-reports the session on an Anthropic upstream.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-03
 package dataplane
 

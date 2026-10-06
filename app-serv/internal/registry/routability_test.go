@@ -2,23 +2,12 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/routability_test.go
-// @for       Tests for the format rule that decides whether a provider's chat
-//
-//	path can be served, and for the media configs that carry their own
-//	credential placement.
-//
+// @for       Tests for the format rule that decides whether a provider's chat path can be served, and for the media configs that carry their own credential placement.
 // @uses      testing, internal/registry.
-// @reason    A provider can be listed and configured yet still not answerable,
-//
-//	because P1 translates only the OpenAI, Anthropic, and OpenAI
-//	Responses formats. That gap has to be a value the caller reads, not
-//	a failure discovered under traffic; and a media service often
-//	authenticates differently from its provider's chat transport, so
-//	both rules are pinned here.
-//
+// @reason    A provider can be listed and configured yet still not answerable, because P1 translates only the OpenAI, Anthropic, and OpenAI Responses formats. That gap has to be a value the caller reads, not a failure discovered under traffic; and a media service often authenticates differently from its provider's chat transport, so both rules are pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
-// @layer     config
-// @stability experimental
+// @layer     domain
+// @stability stable
 // @since     2026-09-17
 package registry
 

@@ -3,14 +3,10 @@
 // @file      internal/service/quotafetch/commandcode.go
 // @for       Reads Command Code's plan cap, remaining credits and two rolling rate windows.
 // @uses      internal/service/quotafetch, context, encoding/json, fmt, math, net/http, net/url, strconv, strings
-// @reason    The provider splits this over three endpoints and states no ceiling on the credits
-//
-//	surface, so the cap has to come from the subscription and the wallet from the
-//	billing call, or the card would draw a balance as a share of nothing.
-//
+// @reason    The provider splits this over three endpoints and states no ceiling on the credits surface, so the cap has to come from the subscription and the wallet from the billing call, or the card would draw a balance as a share of nothing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
-// @stability experimental
+// @stability stable
 // @since     2026-10-02
 package quotafetch
 
@@ -206,7 +202,7 @@ func commandCodePlanName(planID string) string {
 }
 
 // commandCodeOrgQuery scopes the billing reads to the organization whoami named, and asks without
-// the parameter when the account stated none — the reference drops a null orgId rather than
+// the parameter when the account stated none, the reference drops a null orgId rather than
 // sending the word.
 func commandCodeOrgQuery(orgID json.RawMessage) string {
 	trimmed := strings.Trim(strings.TrimSpace(string(orgID)), `"`)
