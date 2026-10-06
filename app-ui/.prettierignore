@@ -1,5 +1,6 @@
 # Build output and dependencies.
 .svelte-kit/
+.svelte-check/
 build/
 node_modules/
 bun.lock

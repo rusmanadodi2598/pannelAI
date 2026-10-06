@@ -75,5 +75,5 @@ jobs:
       - name: gate scope routing table
         run: bash scrypts/gates/gate-scope-test.sh
 
-      - name: app-ui checks (prettier, eslint, svelte-check, vitest, build)
+      - name: app-ui checks (prettier, eslint, svelte-kit sync, svelte-check, vitest, build)
         run: bash scrypts/gates/panel-check.sh

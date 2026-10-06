@@ -9,6 +9,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
+		"sync": "svelte-kit sync",
 		"start": "bun --preload ./scripts/boot-log.ts build/index.js",
 		"preview": "vite preview",
 		"check": "svelte-check --tsgo --tsconfig ./tsconfig.json",

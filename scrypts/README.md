@@ -22,7 +22,7 @@ stale after an update.
 | `gates/go-headers.sh` | AGENTS.md §1.2 header contract on every hand-authored Go file |
 | `gates/antislop.sh` | antislop comment rules: R-02 tree-wide, separators, banners, emoji, ` , ` artifacts, header field shape, doc-block length and citations on changed Go files |
 | `gates/go-test.sh` | `go test -race`, plus the tagged integration suite when a DSN is set |
-| `gates/panel-check.sh` | app-ui: prettier, ESLint, svelte-check, vitest, production build |
+| `gates/panel-check.sh` | app-ui: prettier, ESLint, `svelte-kit sync`, svelte-check, vitest, production build |
 | `gates/gate-scope-test.sh` | the routing table in `lib/gate-scope.sh`: which change set earns which gates |
 | `gates/secrets.sh` | gitleaks over commits and the files a push would carry, or the staged patch |
 | `gates/contract-drift.sh` | SPEC-API §8 error codes against the panel's closed enum |

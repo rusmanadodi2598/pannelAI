@@ -20,6 +20,7 @@ node_modules/
 dist/
 build/
 .svelte-kit/
+.svelte-check/
 .output/
 *.tsbuildinfo
 bun.lockb.tmp

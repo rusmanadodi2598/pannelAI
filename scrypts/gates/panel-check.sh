@@ -107,6 +107,19 @@ fi
 
 # type check
 
+# svelte-check reads tsconfig.json, which extends .svelte-kit/tsconfig.json, and
+# that file only exists after SvelteKit has generated the project. A fresh clone has
+# no .svelte-kit at all (it is gitignored), where the check fails on a missing file
+# rather than on the code it was meant to look at. Syncing here keeps the gate
+# self-sufficient instead of trusting an install hook that may never have run.
+gate_start "svelte-kit sync"
+if run_script sync; then
+	gate_pass "svelte-kit sync"
+else
+	gate_fail "svelte-kit sync: the generated tsconfig is what svelte-check reads"
+	failed=1
+fi
+
 gate_start "svelte-check"
 if run_script check; then
 	gate_pass "svelte-check"
