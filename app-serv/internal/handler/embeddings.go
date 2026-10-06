@@ -24,10 +24,9 @@ type EmbeddingsHandler struct {
 	auth       service.GatewayAuthenticator
 }
 
-// NewEmbeddingsHandler validates deps and returns the handler. The chat service is
-// reused for authentication, because the §4 rule is one rule: a second
-// implementation of it is how the two routes start disagreeing about which key is
-// valid.
+// NewEmbeddingsHandler takes its authenticator from the chat service, because the
+// §4 rule is one rule: a second implementation of it is how the two routes start
+// disagreeing about which key is valid.
 func NewEmbeddingsHandler(embeddings *service.EmbeddingsService, auth service.GatewayAuthenticator) *EmbeddingsHandler {
 	return &EmbeddingsHandler{embeddings: embeddings, auth: auth}
 }

@@ -56,7 +56,8 @@ type ProxyRouteService struct {
 	clock    func() time.Time
 }
 
-// NewProxyRouteService validates deps and returns the service.
+// NewProxyRouteService returns the service, defaulting the clock to time.Now when
+// deps carry none.
 func NewProxyRouteService(deps ProxyRouteDeps) *ProxyRouteService {
 	clock := deps.Clock
 	if clock == nil {

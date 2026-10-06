@@ -29,10 +29,9 @@ type SystemOneHandler struct {
 	auth      service.GatewayAuthenticator
 }
 
-// NewSystemOneHandler validates deps and returns the handler. The chat service is
-// reused for authentication, because the §4 rule is one rule: a second
-// implementation of it is how two routes start disagreeing about which key is
-// valid.
+// NewSystemOneHandler takes its authenticator from the chat service, because the
+// §4 rule is one rule: a second implementation of it is how two routes start
+// disagreeing about which key is valid.
 func NewSystemOneHandler(systemone *service.SystemOneService, auth service.GatewayAuthenticator) *SystemOneHandler {
 	return &SystemOneHandler{systemone: systemone, auth: auth}
 }

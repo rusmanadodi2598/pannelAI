@@ -22,9 +22,9 @@ type MediaHandler struct {
 	auth  service.GatewayAuthenticator
 }
 
-// NewMediaHandler validates deps and returns the handler. The authenticator is
-// the chat service in production because §4's rule is one rule: a second
-// implementation is how two routes start disagreeing about which key is valid.
+// NewMediaHandler takes the §4 authenticator, which in production is the chat
+// service: a second implementation is how two routes start disagreeing about
+// which key is valid.
 func NewMediaHandler(media *service.MediaCallService, auth service.GatewayAuthenticator) *MediaHandler {
 	return &MediaHandler{media: media, auth: auth}
 }

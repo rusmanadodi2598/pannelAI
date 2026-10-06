@@ -23,8 +23,8 @@ type TokenCountHandler struct {
 	auth  service.GatewayAuthenticator
 }
 
-// NewTokenCountHandler validates deps and returns the handler. The chat service
-// is reused for authentication in production, because the §4 rule is one rule.
+// NewTokenCountHandler takes its authenticator from the chat service in
+// production, because the §4 rule is one rule.
 func NewTokenCountHandler(count *service.TokenCountService, auth service.GatewayAuthenticator) *TokenCountHandler {
 	return &TokenCountHandler{count: count, auth: auth}
 }
