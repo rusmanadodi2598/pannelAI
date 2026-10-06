@@ -233,7 +233,7 @@ scope="$(changed_text_paths)"
 # exclusion is gone rather than left in place out of habit.
 gate_start "R-02 no em or en dash (tree-wide)"
 dash_hits="$(grep_files "$DASH_RE" '*.go' '*.ts' '*.tsx' '*.js' '*.mjs' '*.svelte' '*.css' \
-	'*.sh' '*.bash' '*.yml' '*.yaml' '*.sql' '*.md' \
+	'*.sh' '*.bash' '*.yml' '*.yaml' '*.sql' '*.md' '*.example' \
 	':(exclude)**/node_modules/**' ':(exclude)**/dist/**' ':(exclude)**/build/**' \
 	':(exclude)**/*_gen.go' ':(exclude)*.pb.go' ':(exclude)app-serv/internal/handler/openapi.json' \
 	":(exclude)$SELF")"

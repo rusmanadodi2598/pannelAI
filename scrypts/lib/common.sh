@@ -136,11 +136,21 @@ changed_files() {
 	local root base
 	root="$(repo_root)"
 	base="${GATES_BASE_REF:-}"
+	# The all-zero SHA is what a branch-creation push reports as its "before". It is
+	# a well-formed object name without naming an object, and a diff against it lists
+	# no files, which the changed-file gates would read as a pass on an empty patch.
+	if [ "$base" = 0000000000000000000000000000000000000000 ]; then
+		base=""
+	fi
+	if [ -n "$base" ] && ! git -C "$root" rev-parse --verify --quiet "$base" >/dev/null; then
+		echo "gates: GATES_BASE_REF '$base' does not resolve in this checkout" >&2
+		return 1
+	fi
 	{
 		git -C "$root" diff --name-only
 		git -C "$root" diff --cached --name-only
 		git -C "$root" ls-files --others --exclude-standard
-		if [ -n "$base" ] && git -C "$root" rev-parse --verify --quiet "$base" >/dev/null; then
+		if [ -n "$base" ]; then
 			git -C "$root" diff --name-only "${base}...HEAD"
 		fi
 	} | sort -u

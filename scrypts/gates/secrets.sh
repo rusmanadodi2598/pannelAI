@@ -95,7 +95,10 @@ case "$mode" in
 	# fails here, which is the direction that stays blocking.
 	if ! (cd "$root" && git ls-files -z --cached --others --exclude-standard |
 		while IFS= read -r -d '' entry; do
-			[ -f "$entry" ] && printf '%s\0' "$entry"
+			# `if` rather than `[ -f ] && printf`, which would leave a gone path as the
+			# loop's last status and, under pipefail, fail the scan this filter exists
+			# to let finish.
+			if [ -f "$entry" ]; then printf '%s\0' "$entry"; fi
 		done |
 		tar --null --no-recursion -T - -cf - | tar -xf - -C "$scratch"); then
 		gate_fail "could not materialise the pushable file list into $scratch"

@@ -56,9 +56,10 @@ while IFS= read -r dir; do
 		fi
 		gate_start "integration     $rel (tagged: $tags)"
 		# `-p 1` runs one package's integration tests at a time. Four fixtures
-		# (quota counter, console buffer, and the settle and pending families) clear
-		# the whole keyspace with FlushDB before they seed, and every package shares
-		# the one PANNELAI_TEST_REDIS_ADDR database, so a parallel run lets one
+		# (quota counter, session revoke, usage active, and the live playground
+		# stack) clear the whole keyspace with FlushDB before they seed, and every
+		# package shares the one PANNELAI_TEST_REDIS_ADDR database, so a parallel run
+		# lets one
 		# package erase another's seed mid-flight. That is how
 		# TestQuotaCounterStore_RetiresSettledClosedWindows failed in CI while the
 		# suite had never run anywhere at all before: not a wrong assertion, a wrong

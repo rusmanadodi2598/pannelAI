@@ -67,6 +67,9 @@ fi
 # The comment rules R-02 and the structural checks have nothing else enforcing
 # them, which is how 725 dash lines survived one cleanup and how a blind sweep
 # left `colliding , so` behind. Cheap enough to run on every commit.
+# Like gofmt and the header contract above, this reads the working tree rather
+# than the staged patch: a violation elsewhere in the tree blocks the commit, and
+# only gitleaks below sees the staged content itself.
 gate_start "antislop comment rules"
 if bash "$root/scrypts/gates/antislop.sh"; then
 	gate_pass "antislop"

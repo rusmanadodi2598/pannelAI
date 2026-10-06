@@ -65,14 +65,53 @@ jobs:
     env:
       PANNELAI_TEST_POSTGRES_DSN: postgres://postgres:gate@127.0.0.1:5432/pannelai_gate_test?sslmode=disable
       PANNELAI_TEST_REDIS_ADDR: 127.0.0.1:6379
-      # changed_files reads the tree plus this base, so the §1.1 and §1.2 gates
-      # inspect the patch instead of an empty worktree.
-      GATES_BASE_REF: ${{ github.event_name == 'pull_request' && format('refs/remotes/origin/{0}', github.base_ref) || github.event.before }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # changed_files reads the tree plus this base, so the §1.1 and §1.2 gates
+      # inspect the patch instead of an empty worktree. Event fields reach the
+      # script through env rather than interpolated into it: a branch name is
+      # author-controlled text, and pasting one into a shell line is how a ref name
+      # becomes a command.
+      - name: Resolve the revision the gates diff against
+        env:
+          GATES_EVENT: ${{ github.event_name }}
+          GATES_EVENT_BEFORE: ${{ github.event.before }}
+          GATES_HEAD_SHA: ${{ github.sha }}
+          GATES_PR_BASE: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [ "$GATES_EVENT" = pull_request ]; then
+            case "$GATES_PR_BASE" in
+              '' | *[!A-Za-z0-9._/-]*)
+                echo "gates: the pull request base ref is not a usable branch name" >&2
+                exit 1
+                ;;
+            esac
+            echo "GATES_BASE_REF=refs/remotes/origin/$GATES_PR_BASE" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          base="$GATES_EVENT_BEFORE"
+          case "$base" in
+            '' | *[!0-9a-f]*)
+              echo "gates: this push names no revision to compare against" >&2
+              exit 1
+              ;;
+          esac
+          if [ "$base" = 0000000000000000000000000000000000000000 ]; then
+            # A branch-creation push reports no base, and a diff against the all-zero
+            # SHA inspects nothing: the changed-file gates would report that as a pass.
+            # The pushed tip's own parent is the nearest answer that still describes
+            # this push; a tip with no parent has nothing to compare, so say it loudly.
+            if ! base="$(git rev-parse "$GATES_HEAD_SHA^" 2>/dev/null)"; then
+              echo "gates: this push created a branch with no revision behind it, so there is no diff for the changed-file gates to inspect" >&2
+              exit 1
+            fi
+          fi
+          echo "GATES_BASE_REF=$base" >> "$GITHUB_ENV"
 
       - uses: actions/setup-go@v5
         with:
