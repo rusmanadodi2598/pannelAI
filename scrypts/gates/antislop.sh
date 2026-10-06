@@ -16,14 +16,19 @@
 #     request. That debt is swept, so the exclusion went with it instead of
 #     staying out of habit. A rule enforced only on the diff is a rule that
 #     regrows in the files nobody touched.
-#   - Citations are a WARNING, not a failure. 170 of them are legitimate
-#     references inside the §1.2 @reason headers, and audit 005 lists the
-#     residue, so failing would hold a commit hostage to lines its author did
-#     not write.
+#   - Citations are a WARNING, not a failure. 146 of them are legitimate
+#     references inside the §1.2 @reason headers, and the body-comment residue is
+#     zero, so failing would hold a commit hostage to lines its author did not
+#     write. What still matches below `package` is assertion text, not comments:
+#     go_body greps the region without isolating comments.
 #   - Citations ignore the region above a Go file's `package` line. AGENTS.md
 #     §1.2 mandates a @reason field there and names it where a file's rationale
 #     lives, so a draft reference inside it is the convention working as
 #     designed, not the slop. That boundary is audit 004 finding 5.
+#   - A wrapped §1.2 field value fails tree-wide. The header region is where the
+#     longest prose in the tree sat, and the doc-block length check below never
+#     read it: that awk reports at `^(func|type)`, and a header ends at
+#     `package`.
 #   - The structural checks run tree-wide, because the tree is clean for them
 #     now and a diff-only check would let a pattern return in an untouched file.
 #
@@ -68,6 +73,23 @@ readonly ENDMARK_RE='\}[[:space:]]*//[[:space:]]*end|^[[:space:]]*//[[:space:]]*
 # close. A SPEC-API or AGENTS.md section reference is NOT in this pattern: that
 # is the live contract, and pointing at it is an API-contract reference.
 readonly CITATION_RE='[dD]raft [0-9]+ +[FR§]|[dD]raft [0-9]+$|audit anti-slop [0-9]+|register G[0-9]+'
+# The eight AGENTS.md §1.2 header fields.
+readonly FIELD_TAG_RE='^// (@(file|for|uses|reason|author|layer|stability|since))[[:space:]]+'
+# A field value continued on an indented line: what gofmt rewrites a hand-wrapped
+# value into, and the reason the shape is worth a machine check rather than a
+# review note. grep for `@for` stops in mid-sentence.
+readonly FIELD_CONT_RE='^//\t'
+# A field value continued on a plain comment line, either directly under the tag
+# or after an empty comment line. A line opening with a lowercase letter is the
+# rest of the sentence; an uppercase one only continues while the field has not
+# finished its sentence. That boundary is what keeps a stated worker decision
+# (AGENTS.md §1.6), a new section rather than the tail of a field, out of this
+# check.
+readonly FIELD_PLAIN_RE='^// [^@[:space:]]'
+readonly FIELD_LOW_RE='^// [a-z]'
+readonly FIELD_ENDS_RE='[.!?:)"][[:space:]]*$'
+# Go files the header checks read. Generated output is exempt, same as §1.1.
+readonly GO_GLOBS=('*.go' ':(exclude)**/*_gen.go' ':(exclude)*.pb.go')
 
 # code_globs are the file types the tree-wide structural checks read. The
 # `*.example` entry is not decoration: env templates carry comments and were the
@@ -92,6 +114,48 @@ tree_scan() {
 	grep_files "$re" "${CODE_GLOBS[@]}" \
 		':(exclude)**/node_modules/**' ':(exclude)**/dist/**' ':(exclude)**/build/**' \
 		':(exclude)**/*_gen.go' ':(exclude)*.pb.go' ":(exclude)$SELF"
+}
+
+# wrapped_field_hits prints every §1.2 header line that continues a field value
+# onto a second line. The header region is everything above `package`.
+wrapped_field_hits() {
+	# Paths contain no spaces here, and awk needs one argument per file.
+	# shellcheck disable=SC2046
+	awk -v tagre="$FIELD_TAG_RE" -v contre="$FIELD_CONT_RE" \
+		-v plainre="$FIELD_PLAIN_RE" -v endsre="$FIELD_ENDS_RE" -v lowre="$FIELD_LOW_RE" '
+		FNR == 1              { inhdr = 1; anchor = "" }
+		/^package[[:space:]]/ { inhdr = 0 }
+		inhdr == 0            { next }
+		$0 ~ tagre            { anchor = $0; next }
+		/^\/\/[ \t]*$/        { next }
+		$0 ~ contre {
+			if (anchor != "") {
+				frag = $0
+				sub(/^\/\/\t+/, "", frag)
+				# An indented block after a finished sentence is structure rather than a
+				# wrapped value: the runnable `go test` lines and a deliberate paragraph are
+				# both written this way. Only a fragment opening in lowercase continues the
+				# field, which is the same test the sweep applies.
+				if (anchor ~ endsre && frag !~ /^[a-z]/) {
+					anchor = ""
+					next
+				}
+				printf "%s:%d: %s\n", FILENAME, FNR, substr($0, 1, 90)
+				anchor = anchor " " frag
+			}
+			next
+		}
+		$0 ~ plainre {
+			if (anchor != "" && (anchor !~ endsre || $0 ~ lowre)) {
+				printf "%s:%d: %s\n", FILENAME, FNR, substr($0, 1, 90)
+				anchor = anchor " " $0
+			} else {
+				anchor = ""
+			}
+			next
+		}
+		{ anchor = "" }
+	' $(git -C "$root" ls-files -- "${GO_GLOBS[@]}")
 }
 
 # text_paths lists tracked files the R-02 rule may apply to.
@@ -177,6 +241,7 @@ report "substitution artifact in a comment" "$(tree_scan "$ARTIFACT_RE")" || fai
 report "decorative separator" "$(tree_scan "$SEPARATOR_RE")" || failed=1
 report "ALL CAPS banner label" "$(tree_scan "$BANNER_RE")" || failed=1
 report "end marker" "$(tree_scan "$ENDMARK_RE")" || failed=1
+report "wrapped §1.2 field value (tree-wide)" "$(wrapped_field_hits)" || failed=1
 report "decorative emoji" \
 	"$(grep_files '[🚀✅🔒⚡✨📌🧪]' "${CODE_GLOBS[@]}" ':(exclude)**/node_modules/**' ":(exclude)$SELF")" ||
 	failed=1
