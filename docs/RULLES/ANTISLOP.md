@@ -99,6 +99,9 @@ These need a reader. They are listed here so they are enforceable in review, and
 one mistakes the document for a gate report.
 
 - A comment earns its place by adding information the code does not show. Being true is not sufficient.
+- A comment must not claim behaviour the code does not perform. This is worse than an echo and no linter catches it: a
+  doc line copied across a family of constructors says what the siblings do, not what this one does. Read the body
+  before repeating the sentence.
 - One concise comment per logical block, not one per line.
 - Sentence case, natural developer voice. "This function is responsible for validating whether the supplied credentials
   are valid" is stiff; "Validate credentials before issuing a token" is the same fact said normally.
@@ -155,11 +158,15 @@ can, and are named as such:
   reviewer can see at a glance.
 - Inline blocks past §2.6's eight-line cap: 7 measured, 5 now within it. The 2 above it state 9 and 4 distinct facts
   per §2.6, which is a pass, not a near-miss, and no check measures block length inside a function body.
+- Echo and false-claim doc comments: 26 constructors carried `NewX validates deps and returns the X` above a body that
+  is one assignment returning no error, so the sentence described its siblings rather than itself. It is gone where
+  nothing true remained (22 files), rewritten to the fact that was there (4 handlers that share the §4 authenticator,
+  and `NewProxyRouteService`, which defaults a clock), and five near-pure echoes were replaced by the constraint the
+  signature hides: bcrypt's fixed default cost, the alias read carrying no filter or page, and the vision rotation key
+  resolving to one global slot. No check exists for this class (§3), because only a reader can tell a claim from a
+  behaviour.
 
-Open:
-
-- 5 doc comments that echo half their own signature, like `NewChatHandler validates deps and returns the handler`.
-  Review-only; the cut is the echoing clause, not the fact beside it.
+Nothing from audit 006 is open.
 
 ---
 
