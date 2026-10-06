@@ -66,16 +66,15 @@ type QuotaRepository interface {
 	// the walk is stable across reads.
 	PageWindowsByProvider(ctx context.Context, page, perPage int) ([]domain.QuotaWindow, int64, error)
 
-	// PageAccountsByProvider returns every account belonging to the provider groups
-	// on this page, ordered so the groups keep the order the window page uses, with
-	// the same total group count. It exists because accounts are not windows: an
-	// endpoint that has routed no traffic has no counted row at all, and a card list
-	// built from windows alone hides a provider whose accounts exist and whose
-	// published quota the poll worker has answered for.
+	// PageAccountsByProvider returns every account belonging to the provider groups on
+	// this page, ordered so the groups keep the window page's order, with the same total
+	// group count.
 	//
-	// It is one statement for the whole page, bounded by the page's group count, so
-	// reading the screen stays constant-cost however many keys a provider holds
-	// (AGENTS.md §1.7).
+	// Accounts are not windows: an endpoint that has routed no traffic has no counted row
+	// at all, so a card list built from windows alone hides a provider whose accounts
+	// exist and whose published quota the poll worker has answered for. One statement for
+	// the whole page, bounded by the group count, keeps the read constant-cost however
+	// many keys a provider holds (AGENTS.md §1.7).
 	PageAccountsByProvider(ctx context.Context, page, perPage int) ([]domain.QuotaAccount, int64, error)
 
 	// UpsertWindows persists flushed counters. It is set-based: one statement

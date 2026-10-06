@@ -46,19 +46,18 @@ type PublishedQuotaRepository interface {
 	// one asks for nothing, so no query runs.
 	DueForRefresh(ctx context.Context, now time.Time, limit int) ([]domain.PublishedState, error)
 
-	// RecordAttempt stamps one endpoint's scheduling row after a poll, whether or
-	// not that poll produced buckets: last_attempt_at, the next interval, and the
-	// failure delta added to the consecutive-failure run the backoff is computed
-	// from. It creates the row when none exists, which is what makes a brand-new
-	// endpoint schedulable before it has ever succeeded, so provider_id is
-	// required. A zero delta records a good poll without touching the run; a
-	// negative delta is refused by domain.PublishedAttempt rather than clamped.
+	// RecordAttempt stamps one endpoint's scheduling row after a poll, whether or not that poll
+	// produced buckets: last_attempt_at, the next interval, and the failure delta added to the
+	// consecutive-failure run the backoff is computed from. It creates the row when none exists,
+	// so a brand-new endpoint is schedulable before it has ever succeeded, and provider_id is
+	// required. A zero delta records a good poll without touching the run; a negative delta is
+	// refused by domain.PublishedAttempt rather than clamped.
 	//
-	// An attempt may also carry the sentence a provider answered with when it
-	// published no buckets, a refused credential, an unimplemented family, an
-	// empty account. That is the card's only honest content for such an account, so
-	// it is stored on the state row rather than dropped: the window rows are not
-	// touched, and a stale number keeps the older stamp it really has.
+	// An attempt may also carry the sentence a provider answered with when it published no
+	// buckets, a refused credential, an unimplemented family, an empty account. That is the
+	// card's only honest content for such an account, so it goes on the state row instead of
+	// being dropped. Window rows are not touched, and a stale number keeps the older stamp it
+	// really has.
 	RecordAttempt(ctx context.Context, attempt domain.PublishedAttempt) error
 
 	// StorePublished writes one endpoint's answer atomically: the state envelope,

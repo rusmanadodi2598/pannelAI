@@ -69,18 +69,13 @@ func (s *ComboService) validateRefs(ctx context.Context, name string, draft Comb
 		aliasTargets[alias.Alias()] = alias.Target()
 	}
 
-	// resolve answers whether one reference names something the data plane
-	// could route and serve. A provider/model reference is canonicalized through
-	// the same alias-then-id lookup the router performs, so a member spelled with
-	// a registry alias (`cc/claude-...`) or a node prefix (`oczen/...`) validates
-	// exactly when the router would route it.
-	//
-	// An alias member is judged by its target, because that is what the router
-	// serves: an alias to a media model or to an untranslatable provider is
-	// refused exactly like the direct reference to it.
-	//
-	// A member naming the combo itself is refused outright: a self-reference is
-	// the one-cycle a write can produce without touching the database, and the
+	// resolve answers whether one reference names something the data plane could route and serve.
+	// A provider/model reference is canonicalized through the same alias-then-id lookup the router
+	// performs, so a member spelled with a registry alias (`cc/claude-...`) or a node prefix
+	// (`oczen/...`) validates exactly when the router would route it. An alias member is judged by
+	// its target: an alias to a media model or to an untranslatable provider is refused like the
+	// direct reference to it. A member naming the combo itself is refused outright, since a
+	// self-reference is the one cycle a write can produce without touching the database, and the
 	// runtime guard is a backstop for stored rows, not the first line.
 	resolve := func(ref string) error {
 		if strings.EqualFold(strings.TrimSpace(ref), name) {

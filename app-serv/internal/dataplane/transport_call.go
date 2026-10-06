@@ -35,15 +35,14 @@ func (t *Transport) Do(ctx context.Context, call Call) (*Upstream, error) {
 	if err := applyShape(plugin, &request); err != nil {
 		return nil, err
 	}
-	// A connector that declares it refuses a non-streaming request is obeyed
-	// here rather than trusted to have rewritten its own body: the declaration
-	// would be meaningless if the core still sent the request the provider
-	// rejects. The rewrite is mechanical and wire-agnostic because every wire
-	// the gateway translates names this member `stream`.
+	// A connector that declares it refuses a non-streaming request is obeyed here rather than
+	// trusted to have rewritten its own body, since the declaration is meaningless if the core
+	// still sends what the provider rejects. The rewrite is mechanical and wire-agnostic because
+	// every wire the gateway translates names this member `stream`.
 	//
-	// The client's own shape is read first: it, not the rewritten upstream shape,
-	// decides the attempt's deadline, so a call a client made for one body stays
-	// bounded even when the provider answers it with a stream the gateway folds.
+	// The client's own shape is read first: it, not the rewritten upstream shape, decides the
+	// attempt's deadline, so a call made for one body stays bounded even when the provider
+	// answers it with a stream the gateway folds back.
 	clientStream := call.Stream
 	if forcesStream(plugin) && !request.Stream {
 		streamed, err := forceStreamMember(request.Body)

@@ -33,15 +33,13 @@ func (s *ModelCatalogService) Custom(ctx context.Context, providerID string) ([]
 	if trimmed == "" {
 		return models, nil
 	}
-	// The match is two-way because a custom row may carry either spelling: the
-	// write path has accepted the node prefix as a provider_id since custom
-	// nodes existed, so rows stored under `corp` must surface when the filter
-	// names the node's id, and vice versa. Matching only the filter's names
-	// against the row would hide every prefix-stored row from the id form.
+	// The match is two-way because a custom row may carry either spelling: the write path has
+	// accepted the node prefix as a provider_id since custom nodes existed, so rows stored under
+	// the prefix must surface when a filter names the node's id, and vice versa.
 	//
-	// Both directions read one name table, built from a single index snapshot:
-	// in production the index adapter rebuilds the node overlay on every
-	// Provider() call, so a per-row lookup would be one node-list query per row.
+	// Both directions read one name table built from a single index snapshot, because the index
+	// adapter rebuilds the node overlay on every Provider() call and a per-row lookup would be
+	// one node-list query per row (AGENTS.md §1.7).
 	names := providerNames(s.index)
 	target, known := names[trimmed]
 	if !known {

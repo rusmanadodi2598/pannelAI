@@ -35,15 +35,11 @@ type CustomNode struct {
 	Prefix  string
 	APIType string
 	BaseURL string
-	// Models is the node's model list, and it is the upstream's answer rather
-	// than the operator's declaration: a compatible node's models are whatever
-	// its own `/models` returns (SPEC-API-001 §7.4). It is
-	// carried on the node so one injection reaches every index consumer, the
-	// detail route, the catalog, and the data plane all read Provider.Models
-	// and none of them has to know a node's list came from somewhere else.
-	//
-	// An empty list is legitimate and means the upstream was not asked or did
-	// not answer: the node stays routable either way, because a passthrough
+	// Models is the upstream's answer, not the operator's declaration: a compatible node's
+	// models are whatever its own `/models` returns (SPEC-API-001 §7.4). It rides on the node
+	// so one injection reaches every consumer, since the detail route, the catalog and the data
+	// plane all read Provider.Models. An empty list is legitimate, the upstream was not asked
+	// or did not answer, and the node stays routable either way, because a passthrough
 	// provider resolves any model string the operator types.
 	Models []Model
 }
