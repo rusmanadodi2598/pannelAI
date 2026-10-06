@@ -23,6 +23,7 @@ stale after an update.
 | `gates/antislop.sh` | antislop comment rules: R-02 tree-wide, separators, banners, emoji, ` , ` artifacts, header field shape, doc-block length and citations on changed Go files |
 | `gates/go-test.sh` | `go test -race`, plus the tagged integration suite when a DSN is set |
 | `gates/panel-check.sh` | app-ui: prettier, ESLint, svelte-check, vitest, production build |
+| `gates/gate-scope-test.sh` | the routing table in `lib/gate-scope.sh`: which change set earns which gates |
 | `gates/secrets.sh` | gitleaks over commits and the files a push would carry, or the staged patch |
 | `gates/contract-drift.sh` | SPEC-API §8 error codes against the panel's closed enum |
 | `gates/all.sh` | every gate above, with a summary |
@@ -39,7 +40,40 @@ SKIP_PANEL_BUILD=1 scrypts/gates/all.sh   # skip the slowest panel step
 | Hook | Runs | Why this split |
 |---|---|---|
 | `pre-commit` | gofmt on staged Go files, the header contract, gitleaks on the staged patch, contract drift when the spec or the error enum changed | These must not be deferred: a secret in history cannot be undone by deleting the file, and a stray formatting commit is noise. Everything here is fast, because a hook that takes minutes gets bypassed. |
-| `pre-push` | the full gate set | A push is what other people see, so the slow checks (test suite, staticcheck, panel build) belong here. |
+| `pre-push` | the gate set, routed to the half of the tree the push touches (see Push scope below) | A push is what other people see, so the slow checks (test suite, staticcheck, panel build) belong here. Routing keeps the panel suite off a Go-only push, which was the part of this hook that took twenty minutes. |
+
+## Push scope
+
+`pre-push` reads the refs git hands it, lists the files in that push, and runs the
+gates those files can break. `gates/gate-scope-test.sh` pins the table and runs in
+both hooks and CI, because a router that misroutes does not fail loudly: it reports a
+green push that never ran the check.
+
+| The push touches | Go gates | panel gates |
+|---|---|---|
+| `app-serv/**` | yes | no |
+| `app-ui/**` | no | yes |
+| `docs/SPEC-API/**`, `docs/CONTRACT/**`, `app-serv/internal/schema/**`, `app-serv/internal/handler/openapi.json`, `app-serv/tools/openapi-gen/**` | yes | yes |
+| `scrypts/**`, `.github/**` | yes | yes |
+| anything else | yes | yes |
+
+Both halves run in every case the router cannot decide, and it refuses to guess:
+
+- a push that creates a branch has no base to diff, so the base is unknown;
+- a remote SHA that is not in this repository (a force-push from another machine)
+  cannot be turned into a file list;
+- an empty file list, and no refs on stdin, are unknown rather than clean;
+- `antislop.sh`, `contract-drift.sh`, and `secrets.sh` always run: they are seconds
+  each, and the first two read both sides of the contract.
+
+`GATES_FORCE_ALL=1 git push` runs the whole set regardless, which is what to use
+after touching a shared surface you are not sure the table knows about yet.
+
+CI covers the skip rather than relying on it. `gates.yml` runs every backend check on
+every pull request with no path filter, and `gates-frontend.yml` runs the panel suite
+on any pull request or main push that touches the paths in the table above. So a
+Go-only push that skipped the panel locally is a change no pipeline claims to have
+tested, which is the honest reading rather than a loosened one.
 
 Bypass with `git commit --no-verify` / `git push --no-verify`. That should be
 rare and worth explaining in the pull request.

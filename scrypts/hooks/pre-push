@@ -1,27 +1,37 @@
 #!/usr/bin/env bash
-# Hook: pre-push. The full gate set, because a push is what other people see.
+# Hook: pre-push. The gate set, routed to the half of the tree the push touches.
 #
-# Everything here is justified by AGENTS.md's compliance checklist, and the
-# slower checks live here rather than in pre-commit so the commit path stays
-# fast enough that people do not bypass it.
+# Everything here is justified by AGENTS.md's compliance checklist, and the slower
+# checks live here rather than in pre-commit so the commit path stays fast enough
+# that people do not bypass it.
 #
-#   1. Go: build, vet, gofmt, staticcheck (default and integration-tagged),
-#      the race-enabled test suite, and golangci-lint when installed
+#   1. Go: build, vet, gofmt, staticcheck (default and integration-tagged) and the
+#      race-enabled test suite, with golangci-lint when installed
 #   2. app-ui: format, type check, tests, production build
 #   3. gitleaks across commits and the working tree
 #   4. contract drift between SPEC-API §8 and the panel's error enum
+#
+# 1 is skipped when no pushed path lives under app-serv and 2 when none lives under
+# app-ui; the rules, including the surfaces both halves read, are in
+# scrypts/lib/gate-scope.sh. The set itself is unchanged, only its routing, and an
+# unclassifiable push runs all of it. gates.yml additionally runs the panel suite on
+# every pull request that touches either side, so a local skip is never the only
+# thing standing between a change and main.
 #
 # A push to a remote also runs the integration suite when
 # PANNELAI_TEST_POSTGRES_DSN is set; otherwise it is reported as skipped.
 #
 # Install: scrypts/hooks/install.sh  (sets core.hooksPath)
+# Force the full set: GATES_FORCE_ALL=1 git push
 # Bypass:  git push --no-verify
 
 set -euo pipefail
 . "$(dirname "$0")/../lib/common.sh"
+. "$(dirname "$0")/../lib/gate-scope.sh"
 
 root="$(repo_root)"
 failed=0
+null_sha=0000000000000000000000000000000000000000
 
 run_gate() {
 	local label="$1"
@@ -35,12 +45,80 @@ run_gate() {
 	fi
 }
 
-run_gate "go lint (vet, gofmt, staticcheck)" bash "$root/scrypts/gates/go-lint.sh"
+# pushed_refs holds the stdin rows git hands the hook, one per ref being pushed:
+# local_ref local_sha remote_ref remote_sha. They are read up front because a git
+# command run inside the loop would otherwise eat the rows still pending on stdin.
+pushed_refs=()
+while IFS= read -r line; do
+	[ -n "$line" ] && pushed_refs+=("$line")
+done
+
+# push_unknown is set when the change set cannot be turned into a diff, which the
+# caller reports as "run everything" rather than as an empty, passing file list.
+push_unknown=""
+
+# pushed_paths holds every file the push carries.
+pushed_paths=()
+
+# collect_push reads the refs into pushed_paths, or explains why it could not.
+collect_push() {
+	local line local_ref local_sha remote_ref remote_sha seen=0 path
+	for line in ${pushed_refs[@]+"${pushed_refs[@]}"}; do
+		read -r local_ref local_sha remote_ref remote_sha <<<"$line"
+		[ -n "${local_sha:-}" ] || continue
+		if [ "$local_sha" = "$null_sha" ]; then
+			# A branch deletion pushes no content, so there is nothing to gate.
+			continue
+		fi
+		if [ "$remote_sha" = "$null_sha" ]; then
+			push_unknown="push creates $remote_ref, so there is no base to diff against"
+			return 0
+		fi
+		if ! git -C "$root" cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+			push_unknown="the remote's $remote_sha is not in this repository (a force-push from elsewhere)"
+			return 0
+		fi
+		while IFS= read -r path; do
+			[ -n "$path" ] && pushed_paths+=("$path")
+		done < <(git -C "$root" diff --name-only "$remote_sha..$local_sha")
+		seen=1
+	done
+	if [ "$seen" != 1 ]; then
+		push_unknown="git offered no ref to inspect"
+	fi
+	return 0
+}
+
+if [ "${GATES_FORCE_ALL:-0}" = "1" ]; then
+	gate_scope_unknown "GATES_FORCE_ALL=1"
+else
+	collect_push
+	if [ -n "$push_unknown" ]; then
+		gate_scope_unknown "$push_unknown"
+	elif [ "${#pushed_paths[@]}" = 0 ]; then
+		gate_scope_unknown "the push changed no files this repository can see"
+	else
+		gate_scope_from_files <<<"$(printf '%s\n' ${pushed_paths[@]+"${pushed_paths[@]}"})"
+	fi
+fi
+gate_scope_reason
+
+gate_start "push scope"
+printf 'go:    %s\npanel: %s\n' "$GATE_SCOPE_GO_WHY" "$GATE_SCOPE_FE_WHY"
+
+if [ "$GATE_SCOPE_GO" = 1 ]; then
+	run_gate "go lint (vet, gofmt, staticcheck)" bash "$root/scrypts/gates/go-lint.sh"
+	run_gate "go test (race)" bash "$root/scrypts/gates/go-test.sh"
+fi
+
 run_gate "antislop comment rules" bash "$root/scrypts/gates/antislop.sh"
-run_gate "go test (race)" bash "$root/scrypts/gates/go-test.sh"
-run_gate "panel checks" bash "$root/scrypts/gates/panel-check.sh"
-run_gate "secrets" bash "$root/scrypts/gates/secrets.sh" --all
 run_gate "contract drift" bash "$root/scrypts/gates/contract-drift.sh"
+
+if [ "$GATE_SCOPE_FE" = 1 ]; then
+	run_gate "panel checks" bash "$root/scrypts/gates/panel-check.sh"
+fi
+
+run_gate "secrets" bash "$root/scrypts/gates/secrets.sh" --all
 
 if [ "$failed" -ne 0 ]; then
 	printf '\n%spush blocked%s: fix the failures above, or use --no-verify to bypass (discouraged)\n' \

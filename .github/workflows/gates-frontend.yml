@@ -1,0 +1,79 @@
+name: gates-frontend
+
+# The panel suite, as a job of its own so a Go-only push does not pay for it.
+#
+# gates.yml has no path filter and still runs every backend check on every pull
+# request, including one that only touches app-ui. This workflow adds the half that
+# pipeline never covered: prettier, eslint, svelte-check, vitest, and the production
+# build. It exists so the local pre-push hook can skip the panel suite on a push that
+# moves no panel path without that skip being the only thing standing between the
+# change and main.
+#
+# The trigger paths are the same list the hook routes on (scrypts/lib/gate-scope.sh),
+# which is why they include the contract surfaces app-serv owns but app-ui renders:
+# the wire schema package, the generated openapi.json, and the SPEC-API and CONTRACT
+# documents. A change to any of those runs both halves of the pipeline.
+#
+# The runner installs the baseline Bun build, the one this repository documents for
+# CPUs without AVX2, and pins it to the version AGENTS.md names and the local hooks
+# run with. The pin matters for the same reason the gitleaks pin in gates.yml does:
+# two sides enforcing one ruleset.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app-ui/**'
+      - 'docs/SPEC-API/**'
+      - 'docs/CONTRACT/**'
+      - 'app-serv/internal/schema/**'
+      - 'app-serv/internal/handler/openapi.json'
+      - 'app-serv/tools/openapi-gen/**'
+      - 'scrypts/**'
+      - '.github/workflows/gates-frontend.yml'
+  pull_request:
+    paths:
+      - 'app-ui/**'
+      - 'docs/SPEC-API/**'
+      - 'docs/CONTRACT/**'
+      - 'app-serv/internal/schema/**'
+      - 'app-serv/internal/handler/openapi.json'
+      - 'app-serv/tools/openapi-gen/**'
+      - 'scrypts/**'
+      - '.github/workflows/gates-frontend.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  panel:
+    name: app-ui checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the pinned Bun
+        run: |
+          set -euo pipefail
+          # 1.3.0 is the version AGENTS.md names and the local hooks run with. The
+          # baseline build is deliberate: panel-check.sh documents that a non-baseline
+          # binary dies with SIGILL on a CPU without AVX2, and a gate that cannot start
+          # its runner reports nothing about the code it was supposed to check.
+          version=1.3.0
+          curl -sSfL -o /tmp/bun.zip \
+            "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-x64-baseline.zip"
+          unzip -q /tmp/bun.zip -d /tmp
+          install -m 755 "/tmp/bun-linux-x64-baseline/bun" /usr/local/bin/bun
+          bun --version
+
+      - name: Install the panel dependencies
+        working-directory: app-ui
+        run: bun install --frozen-lockfile
+
+      - name: gate scope routing table
+        run: bash scrypts/gates/gate-scope-test.sh
+
+      - name: app-ui checks (prettier, eslint, svelte-check, vitest, build)
+        run: bash scrypts/gates/panel-check.sh

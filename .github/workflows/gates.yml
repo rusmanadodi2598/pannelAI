@@ -139,6 +139,9 @@ jobs:
           install -m 755 /tmp/gitleaks /usr/local/bin/gitleaks
           gitleaks version
 
+      - name: gate scope routing table
+        run: bash scrypts/gates/gate-scope-test.sh
+
       - name: go lint (vet, gofmt, staticcheck, golangci-lint, §1.1 line limit)
         run: bash scrypts/gates/go-lint.sh
 
