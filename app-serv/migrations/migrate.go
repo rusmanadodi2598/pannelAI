@@ -2,19 +2,8 @@
 //
 // @file      migrations/migrate.go
 // @for       Embedded, ordered, once-only application of the sibling *.up.sql files.
-// @uses      embed, io/fs, sort, strings, database/sql, log/slog, time,
-//
-//	github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn,
-//	github.com/jackc/pgx/v5/stdlib.
-//
-// @reason    SPEC-API-001 §10 puts migrations in P0 and §6 puts them in
-//
-//	app-serv/migrations. Booting against a database without the schema
-//	fails at the first request, which is what a clean machine hits;
-//	applying them at boot makes a fresh checkout runnable. A ledger
-//	records what ran, so a migration is applied exactly once and a
-//	non-idempotent statement stays safe on later boots.
-//
+// @uses      embed, io/fs, sort, strings, database/sql, log/slog, time, github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, github.com/jackc/pgx/v5/stdlib.
+// @reason    SPEC-API-001 §10 puts migrations in P0 and §6 puts them in app-serv/migrations. Booting against a database without the schema fails at the first request, which is what a clean machine hits; applying them at boot makes a fresh checkout runnable. A ledger records what ran, so a migration is applied exactly once and a non-idempotent statement stays safe on later boots.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability experimental

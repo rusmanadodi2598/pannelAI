@@ -3,20 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/transport_call.go
-// @for       The outbound call itself: the retry loop, one attempt with its
-//
-//	classification, and the §4 deadlines the attempt runs under.
-//
+// @for       The outbound call itself: the retry loop, one attempt with its classification, and the §4 deadlines the attempt runs under.
 // @uses      internal/provider, bytes, context, errors, io, net/http, time.
-// @reason    SPEC-API-001 §4 fixes the deadlines (connect 10s, total 120s, no
-//
-//	total cap while streaming with a 300s idle read) and AGENTS.md §1.1
-//	asks for the split before the limit forces it. The loop owns the
-//	decision rather than the plugin: the plugin only says whether an
-//	outcome is worth repeating and the registry entry only says how many
-//	attempts the provider allows, so neither can multiply a request on
-//	its own.
-//
+// @reason    SPEC-API-001 §4 fixes the deadlines (connect 10s, total 120s, no total cap while streaming with a 300s idle read) and AGENTS.md §1.1 asks for the split before the limit forces it. The loop owns the decision rather than the plugin: the plugin only says whether an outcome is worth repeating and the registry entry only says how many attempts the provider allows, so neither can multiply a request on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

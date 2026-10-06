@@ -3,11 +3,7 @@
 // @file      internal/dataplane/translate_claude_tool_choice_test.go
 // @for       The tool_choice vocabulary on both sides of the translation.
 // @uses      testing, internal/schema.
-// @reason    Anthropic accepts a closed set of tool_choice shapes and rejects the
-//
-//	rest with a 400 that names nothing, so the parse and the mapping are
-//	pinned apart from the request translation they belong to.
-//
+// @reason    Anthropic accepts a closed set of tool_choice shapes and rejects the rest with a 400 that names nothing, so the parse and the mapping are pinned apart from the request translation they belong to.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

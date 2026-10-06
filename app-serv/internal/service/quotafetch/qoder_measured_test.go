@@ -1,18 +1,9 @@
 // Package quotafetch reads the quota a provider publishes for one of its connections.
 //
 // @file      internal/service/quotafetch/qoder_measured_test.go
-// @for       The Qoder quota mapping, pinned against the answer the live service
-//
-//	actually gave.
-//
+// @for       The Qoder quota mapping, pinned against the answer the live service actually gave.
 // @uses      encoding/json, fmt, strings, testing, time.
-// @reason    Every one of these cases came from a service answer rather than from
-//
-//	the reference's source: float-shaped counts, a plan name in `userType`,
-//	an exceeded account that publishes only zeros, and a year-9999 reset
-//	sentinel. An assumption about any of them is worth a named case,
-//	because each one fails quietly on a card.
-//
+// @reason    Every one of these cases came from a service answer rather than from the reference's source: float-shaped counts, a plan name in `userType`, an exceeded account that publishes only zeros, and a year-9999 reset sentinel. An assumption about any of them is worth a named case, because each one fails quietly on a card.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

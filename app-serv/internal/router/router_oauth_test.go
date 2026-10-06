@@ -2,16 +2,8 @@
 //
 // @file      internal/router/router_oauth_test.go
 // @for       Route-table and auth tests for the §7.4 OAuth routes.
-// @uses      internal/domain, internal/handler, internal/registry,
-//
-//	internal/repository, internal/service, net/http, strings, testing.
-//
-// @reason    §7.4 is the one section where three routes are session-gated and
-//
-//	the fourth is deliberately public, so the route table is where that
-//	difference is provable. AGENTS.md §2.1 also requires an auth-failure
-//	test for every protected route; the table supplies one per route.
-//
+// @uses      internal/domain, internal/handler, internal/registry, internal/repository, internal/service, net/http, strings, testing.
+// @reason    §7.4 is the one section where three routes are session-gated and the fourth is deliberately public, so the route table is where that difference is provable. AGENTS.md §2.1 also requires an auth-failure test for every protected route; the table supplies one per route.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

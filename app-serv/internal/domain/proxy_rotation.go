@@ -2,20 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/proxy_rotation.go
-// @for       The proxy route plan vocabulary: the rotation strategy's closed
-//
-//	set, a candidate's usability rule, and the dial URL it composes.
-//
+// @for       The proxy route plan vocabulary: the rotation strategy's closed set, a candidate's usability rule, and the dial URL it composes.
 // @uses      internal/domain (errors, Proxy), net/url, strings.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D2/D3: the strategy is a closed
-//
-//	set whose empty stored value reads as the default, usability is the
-//	aggregate's own rule (enabled, and the last probe is not a failure),
-//	and the dial URL is the aggregate's knowledge because only it knows
-//	how protocol, host, port, and the opened secret compose. The
-//	round-robin order itself reuses RotateRefs, so the distribution rule
-//	stays the one implementation the combo rotation already pins.
-//
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D2/D3: the strategy is a closed set whose empty stored value reads as the default, usability is the aggregate's own rule (enabled, and the last probe is not a failure), and the dial URL is the aggregate's knowledge because only it knows how protocol, host, port, and the opened secret compose. The round-robin order itself reuses RotateRefs, so the distribution rule stays the one implementation the combo rotation already pins.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

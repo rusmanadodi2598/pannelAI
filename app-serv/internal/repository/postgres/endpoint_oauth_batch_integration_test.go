@@ -4,20 +4,11 @@
 //
 // @file      internal/repository/postgres/endpoint_oauth_batch_integration_test.go
 // @for       Integration proof that the OAuth import batch is all-or-nothing.
-// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations,
+// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations, context, errors, os, testing, time.
+// @reason    SPEC-API-001 §8.1 promises that a refused row leaves no account behind. Only a real server can prove it: the guarantee is a property of the transaction, so an in-memory double that shares the same loop proves the loop, not the rollback. A row that collides on the primary key is the failure this file stages, and the assertion is that the row before it is absent afterwards.
 //
-//	context, errors, os, testing, time.
-//
-// @reason    SPEC-API-001 §8.1 promises that a refused row leaves no account
-//
-//	behind. Only a real server can prove it: the guarantee is a property
-//	of the transaction, so an in-memory double that shares the same
-//	loop proves the loop, not the rollback. A row that collides on the
-//	primary key is the failure this file stages, and the assertion is
-//	that the row before it is absent afterwards.
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	    go test -race -tags=integration ./internal/repository/postgres/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	  go test -race -tags=integration ./internal/repository/postgres/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository

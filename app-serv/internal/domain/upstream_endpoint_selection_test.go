@@ -4,11 +4,7 @@
 // @file      internal/domain/upstream_endpoint_selection_test.go
 // @for       Table-driven tests for how an endpoint picks the key it routes with.
 // @uses      testing, time.
-// @reason    The router reads these orderings directly: priority decides which
-//
-//	credential is spent first, health and backoff decide when the next one is
-//	skipped, so they are pinned apart from the endpoint CRUD tests.
-//
+// @reason    The router reads these orderings directly: priority decides which credential is spent first, health and backoff decide when the next one is skipped, so they are pinned apart from the endpoint CRUD tests.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

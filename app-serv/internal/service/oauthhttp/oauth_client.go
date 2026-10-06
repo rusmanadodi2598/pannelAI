@@ -1,23 +1,9 @@
 // Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
 // @file      internal/service/oauthhttp/oauth_client.go
-// @for       The OAuth token endpoint client: one grant call and one userinfo
-//
-//	call, each under an explicit deadline.
-//
-// @uses      context, encoding/json, errors,
-//
-//	net/http, strings, time.
-//
-// @reason    SPEC-API-001 §7.4 needs a code exchange and a refresh grant, and
-//
-//	§8.1 records that providers disagree on the grant body's encoding
-//	(claude answers JSON bodies, the rest answer form encoding), so the
-//	wire types live in oauth_grant.go and the identity decode in
-//	oauth_identity.go. What stays here is the transport: every token URL
-//	it calls comes from the embedded registry, never from a request, so
-//	the surface has no SSRF seam (OWASP A01).
-//
+// @for       The OAuth token endpoint client: one grant call and one userinfo call, each under an explicit deadline.
+// @uses      context, encoding/json, errors, net/http, strings, time.
+// @reason    SPEC-API-001 §7.4 needs a code exchange and a refresh grant, and §8.1 records that providers disagree on the grant body's encoding (claude answers JSON bodies, the rest answer form encoding), so the wire types live in oauth_grant.go and the identity decode in oauth_identity.go. What stays here is the transport: every token URL it calls comes from the embedded registry, never from a request, so the surface has no SSRF seam (OWASP A01).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

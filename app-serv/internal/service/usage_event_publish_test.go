@@ -1,22 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_publish_test.go
-// @for       Table-driven tests for the usage event publisher: the drop policy,
-//
-//	the publish failure policy, the panic boundary, and the drain.
-//
-// @uses      internal/domain, internal/repository, context, errors, sync,
-//
-//	testing, time.
-//
-// @reason    The publisher owns the one path that must never block a request, a
-//
-//	bounded queue whose overflow is a deliberate drop, and a goroutine
-//	that has to stop. Each of those is a rule that fails silently when
-//	it regresses: a blocking queue shows up as latency, a dropped event
-//	shows up as nothing at all. So the double counts what it received and
-//	the table asserts the counts, not just the absence of a crash.
-//
+// @for       Table-driven tests for the usage event publisher: the drop policy, the publish failure policy, the panic boundary, and the drain.
+// @uses      internal/domain, internal/repository, context, errors, sync, testing, time.
+// @reason    The publisher owns the one path that must never block a request, a bounded queue whose overflow is a deliberate drop, and a goroutine that has to stop. Each of those is a rule that fails silently when it regresses: a blocking queue shows up as latency, a dropped event shows up as nothing at all. So the double counts what it received and the table asserts the counts, not just the absence of a crash.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

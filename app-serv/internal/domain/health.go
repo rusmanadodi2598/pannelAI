@@ -4,11 +4,7 @@
 // @file      internal/domain/health.go
 // @for       The dependency health vocabulary shared by service and handler.
 // @uses      standard library only.
-// @reason    SPEC-API-001 §7.1 has health report dependency reachability; the
-//
-//	vocabulary belongs to the domain so the service never depends on
-//	the schema (DTO) layer (AGENTS.md §1.5 layer flow).
-//
+// @reason    SPEC-API-001 §7.1 has health report dependency reachability; the vocabulary belongs to the domain so the service never depends on the schema (DTO) layer (AGENTS.md §1.5 layer flow).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

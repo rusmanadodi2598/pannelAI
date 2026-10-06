@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_keys.go
-// @for       Upstream key CRUD and health on an endpoint: add, list, patch, and
-//
-//	remove, plus their batch forms (SPEC-API-001 §7.5).
-//
+// @for       Upstream key CRUD and health on an endpoint: add, list, patch, and remove, plus their batch forms (SPEC-API-001 §7.5).
 // @uses      internal/domain, internal/repository, context, strings.
-// @reason    §7.5 makes a key a child of the endpoint aggregate, so every mutation
-//
-//	runs through the root's own methods rather than writing a key row
-//	directly (AGENTS.md §2.2), that is what enforces "an api_key endpoint
-//	keeps at least one active key". The credential is sealed here so the
-//	aggregate never meets plaintext, and the sealed value is never read
-//	back out: a response carries the hint the aggregate already holds.
-//
+// @reason    §7.5 makes a key a child of the endpoint aggregate, so every mutation runs through the root's own methods rather than writing a key row directly (AGENTS.md §2.2), that is what enforces "an api_key endpoint keeps at least one active key". The credential is sealed here so the aggregate never meets plaintext, and the sealed value is never read back out: a response carries the hint the aggregate already holds.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

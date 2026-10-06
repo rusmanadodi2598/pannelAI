@@ -2,17 +2,8 @@
 //
 // @file      internal/router/router_panic_test.go
 // @for       Recovery behavior when a handler panics mid-request.
-// @uses      internal/router, internal/schema, net/http, net/http/httptest,
-//
-//	encoding/json, testing.
-//
-// @reason    AGENTS.md §1.6 makes panic recovery at every boundary
-//
-//	non-negotiable: an unrecovered panic takes down the whole binary,
-//	not just the request. That guarantee is the one a request cannot
-//	verify by succeeding, so it is asserted here directly, along with
-//	the §8 requirement that the failure is reported with a request id.
-//
+// @uses      internal/router, internal/schema, net/http, net/http/httptest, encoding/json, testing.
+// @reason    AGENTS.md §1.6 makes panic recovery at every boundary non-negotiable: an unrecovered panic takes down the whole binary, not just the request. That guarantee is the one a request cannot verify by succeeding, so it is asserted here directly, along with the §8 requirement that the failure is reported with a request id.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

@@ -2,23 +2,9 @@
 // subscriber.
 //
 // @file      cmd/app-serv/usage_event_wiring_test.go
-// @for       Tests that the composition root builds a publisher a recorder
-//
-//	emits into and a subscriber that consumes what it published.
-//
-// @uses      internal/domain, internal/repository, internal/service, context,
-//
-//	sync, testing, time.
-//
-// @reason    F4 of draft 010 is closed by "the event has at least one publisher
-//
-//	and one subscriber in production". Each half has its own unit tests,
-//	and both can pass while the composition root wires neither: the
-//	recorder is constructed with a nil publisher by default, and the
-//	worker table skips a nil worker silently. So the seam is asserted
-//	here, where the graph is assembled, against the same constructors the
-//	boot sequence calls.
-//
+// @for       Tests that the composition root builds a publisher a recorder emits into and a subscriber that consumes what it published.
+// @uses      internal/domain, internal/repository, internal/service, context, sync, testing, time.
+// @reason    F4 of draft 010 is closed by "the event has at least one publisher and one subscriber in production". Each half has its own unit tests, and both can pass while the composition root wires neither: the recorder is constructed with a nil publisher by default, and the worker table skips a nil worker silently. So the seam is asserted here, where the graph is assembled, against the same constructors the boot sequence calls.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

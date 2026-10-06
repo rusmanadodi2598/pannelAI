@@ -3,14 +3,7 @@
 // @file      internal/handler/oauth_callback_guard_test.go
 // @for       The callback's redirect-origin guard and its no-origin answer.
 // @uses      net/http, net/http/httptest, testing.
-// @reason    §7.4 sends a browser back to the panel after an authorization, and
-//
-//	that destination must never come from the request. The guard is
-//	tested directly rather than through a flow so every refused value is
-//	pinned, and the no-origin case is pinned separately because it is the
-//	deployment with no configured base URL: it answers JSON instead of
-//	guessing a host (OWASP A01).
-//
+// @reason    §7.4 sends a browser back to the panel after an authorization, and that destination must never come from the request. The guard is tested directly rather than through a flow so every refused value is pinned, and the no-origin case is pinned separately because it is the deployment with no configured base URL: it answers JSON instead of guessing a host (OWASP A01).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

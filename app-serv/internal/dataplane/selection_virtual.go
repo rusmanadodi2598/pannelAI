@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/selection_virtual.go
-// @for       The virtual credential-free endpoint: how a provider that needs no
-//
-//	account answers when the operator configured none.
-//
+// @for       The virtual credential-free endpoint: how a provider that needs no account answers when the operator configured none.
 // @uses      internal/domain, internal/provider, context, strings.
-// @reason    The reference injects a virtual connection for every `noAuth`
-//
-//	provider (src/sse/services/auth.js:45-63, `accessToken: "public"`), so
-//	a free lane is usable the moment its provider is listed. This port
-//	required a stored row instead: with none, selection answered
-//	NO_PROVIDER_AVAILABLE and the operator had to invent an endpoint
-//	before the free tier could be reached (draft 029 §4.8, F8).
+// @reason    The reference injects a virtual connection for every `noAuth` provider (src/sse/services/auth.js:45-63, `accessToken: "public"`), so a free lane is usable the moment its provider is listed. This port required a stored row instead: with none, selection answered NO_PROVIDER_AVAILABLE and the operator had to invent an endpoint before the free tier could be reached (draft 029 §4.8, F8).
 //
 //	The injection is deliberately narrow. It applies only when the provider
 //	needs no credential AND the operator stored no endpoint for it, so a

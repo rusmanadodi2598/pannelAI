@@ -2,17 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/quota.go
-// @for       The quota vocabulary: window kinds, a usage window, and the budget
-//
-//	cap that makes the router skip an exhausted endpoint.
-//
+// @for       The quota vocabulary: window kinds, a usage window, and the budget cap that makes the router skip an exhausted endpoint.
 // @uses      internal/domain (Decimal, AppError constructors), time.
-// @reason    SPEC-API-001 §7.12 exposes windows and caps and §5 makes a window
-//
-//	"usage per endpoint with a reset instant"; the exhausted rule is a
-//	domain decision the router depends on, so it lives here rather than
-//	in the query that happens to read the counters.
-//
+// @reason    SPEC-API-001 §7.12 exposes windows and caps and §5 makes a window "usage per endpoint with a reset instant"; the exhausted rule is a domain decision the router depends on, so it lives here rather than in the query that happens to read the counters.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

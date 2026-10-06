@@ -1,23 +1,9 @@
 // Command app-serv adapts the stateless credential check to HTTP.
 //
 // @file      cmd/app-serv/provider_validate_plan_test.go
-// @for       The provider path's per-format plan: a declared URL, a derived one,
-//
-//	and the Anthropic-wire POST that serves no model list.
-//
-// @uses      internal/domain, internal/netguard, internal/provider,
-//
-//	internal/registry, internal/service, context, net/http,
-//	net/http/httptest, testing.
-//
-// @reason    Draft 017 §4.2's second consequence is that 76 providers answered
-//
-//	"this provider declares no validation endpoint". The plan closes it per
-//	FORMAT, and the Anthropic wire is the case that cannot be closed by
-//	appending a path: its base IS the messages endpoint. This test drives
-//	the real adapter over a test server to prove the POST goes to that
-//	exact URL and the Anthropic status rule decides the answer.
-//
+// @for       The provider path's per-format plan: a declared URL, a derived one, and the Anthropic-wire POST that serves no model list.
+// @uses      internal/domain, internal/netguard, internal/provider, internal/registry, internal/service, context, net/http, net/http/httptest, testing.
+// @reason    Draft 017 §4.2's second consequence is that 76 providers answered "this provider declares no validation endpoint". The plan closes it per FORMAT, and the Anthropic wire is the case that cannot be closed by appending a path: its base IS the messages endpoint. This test drives the real adapter over a test server to prove the POST goes to that exact URL and the Anthropic status rule decides the answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

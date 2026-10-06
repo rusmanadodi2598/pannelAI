@@ -4,12 +4,7 @@
 // @file      internal/domain/media_provider_test.go
 // @for       The media kind set and the base URL shape rule (SPEC-API-001 §7.10).
 // @uses      strings, testing, time.
-// @reason    The base URL becomes an outbound destination, so its shape is the
-//
-//	first SSRF layer and needs the parameterized table OWASP §2.5
-//	requires: several refusals, plus benign controls that must still
-//	be accepted, so an over-blocking rule fails the test too.
-//
+// @reason    The base URL becomes an outbound destination, so its shape is the first SSRF layer and needs the parameterized table OWASP §2.5 requires: several refusals, plus benign controls that must still be accepted, so an over-blocking rule fails the test too.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

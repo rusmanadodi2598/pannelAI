@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_node_models.go
-// @for       The provider model read: which list a provider answers with, and
-//
-//	where it came from.
-//
+// @for       The provider model read: which list a provider answers with, and where it came from.
 // @uses      internal/domain, internal/registry, context.
-// @reason    SPEC-API-001 §7.4 serves `GET /providers/{id}/models`, and a custom
-//
-//	node's models are not in the embedded document (draft 017 §4.2). The
-//	registry provider answers from the document; a node's answer is read
-//	through NodeModelSource and falls back to whatever the registry already
-//	holds. Keeping that branch here, rather than in the handler or in the
-//	overlay, is what lets the detail route, the catalog, and the data plane
-//	share one answer, because they all read the same entry.
-//
+// @reason    SPEC-API-001 §7.4 serves `GET /providers/{id}/models`, and a custom node's models are not in the embedded document (draft 017 §4.2). The registry provider answers from the document; a node's answer is read through NodeModelSource and falls back to whatever the registry already holds. Keeping that branch here, rather than in the handler or in the overlay, is what lets the detail route, the catalog, and the data plane share one answer, because they all read the same entry.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

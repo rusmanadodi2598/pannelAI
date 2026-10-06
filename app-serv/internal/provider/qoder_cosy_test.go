@@ -1,19 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_cosy_test.go
-// @for       The composition of one COSY header set: its parts, their order, and
-//
-//	the refusals before any of it is built.
-//
+// @for       The composition of one COSY header set: its parts, their order, and the refusals before any of it is built.
 // @uses      bytes, strconv, strings, testing.
-//
-// @reason    The signature is an MD5 over five parts in a stated order, and the
-//
-//	order is the thing a port gets wrong quietly: every part is present,
-//	joined wrongly, and the vendor rejects the request. So the tests here
-//	rebuild the digest from what the headers publish rather than from what
-//	the signer kept in memory, which is how the server reads it.
-//
+// @reason    The signature is an MD5 over five parts in a stated order, and the order is the thing a port gets wrong quietly: every part is present, joined wrongly, and the vendor rejects the request. So the tests here rebuild the digest from what the headers publish rather than from what the signer kept in memory, which is how the server reads it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

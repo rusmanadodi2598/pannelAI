@@ -5,15 +5,10 @@
 // @file      internal/repository/postgres/log_retention_integration_test.go
 // @for       The retention purge half of the request-log integration suite.
 // @uses      internal/domain, testing, time.
-// @reason    The purge boundary is the case worth a real server: a row exactly
+// @reason    The purge boundary is the case worth a real server: a row exactly at the cutoff must survive, and a stub would accept whatever rule the code happened to implement. Separated from the list/detail tests at the AGENTS.md §1.1 line limit after the shared DSN guard was introduced (the file grew past the budget then).
 //
-//	at the cutoff must survive, and a stub would accept whatever rule
-//	the code happened to implement. Separated from the list/detail
-//	tests at the AGENTS.md §1.1 line limit after the shared DSN guard
-//	was introduced (the file grew past the budget then).
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	    go test -race -tags=integration ./internal/repository/postgres/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	  go test -race -tags=integration ./internal/repository/postgres/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository

@@ -3,21 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/proxy_route_test.go
-// @for       Tests for the pool-driven dial: failover across the plan's
-//
-//	attempts, the bounded walk, and the connect-stage classification.
-//
-// @uses      internal/domain, context, errors, net, net/http, net/url/httptest,
-//
-//	crypto/x509, strings, testing.
-//
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D7: the walk is what makes the
-//
-//	pool serve traffic instead of decorating it, so its rules are pinned
-//	here against httptest doubles: a dead candidate is a dial to a closed
-//	port, a live one is a server that answers, and the request body must
-//	survive the walk because the first attempt consumes it.
-//
+// @for       Tests for the pool-driven dial: failover across the plan's attempts, the bounded walk, and the connect-stage classification.
+// @uses      internal/domain, context, errors, net, net/http, net/url/httptest, crypto/x509, strings, testing.
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D7: the walk is what makes the pool serve traffic instead of decorating it, so its rules are pinned here against httptest doubles: a dead candidate is a dial to a closed port, a live one is a server that answers, and the request body must survive the walk because the first attempt consumes it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

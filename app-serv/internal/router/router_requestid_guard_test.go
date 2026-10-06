@@ -3,11 +3,7 @@
 // @file      internal/router/router_requestid_guard_test.go
 // @for       The shape a caller-supplied request id must keep to be echoed back.
 // @uses      net/http, net/http/httptest, strings, testing
-// @reason    The middleware reflects this header into the response and writes it into every
-//
-//	access-log line of the request, so an unbounded or control-character id is a megabyte
-//	of someone else's choosing in both, and a forged trace id that an operator then greps for.
-//
+// @reason    The middleware reflects this header into the response and writes it into every access-log line of the request, so an unbounded or control-character id is a megabyte of someone else's choosing in both, and a forged trace id that an operator then greps for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

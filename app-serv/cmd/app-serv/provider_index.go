@@ -1,20 +1,9 @@
 // Command app-serv adapts the provider registry to the service's runtime lookup
 //
 // @file      cmd/app-serv/provider_index.go
-// @for       The runtime ProviderIndex: embedded registry entries overlaid with
-//
-//	the custom nodes stored in PostgreSQL.
-//
+// @for       The runtime ProviderIndex: embedded registry entries overlaid with the custom nodes stored in PostgreSQL.
 // @uses      context, sync, internal/domain, internal/registry, internal/service.
-// @reason    service.ProviderIndex is deliberately an interface rather than a
-//
-//	*registry.Index because a node created through POST /provider-nodes
-//	must become usable as a provider_id immediately. A boot-frozen index
-//	would accept the create and then refuse every endpoint aimed at it,
-//	which reads as a bug rather than as a limitation. This adapter is
-//	the composition root's job: it is the only layer allowed to know
-//	both the embedded registry and the node repository.
-//
+// @reason    service.ProviderIndex is deliberately an interface rather than a *registry.Index because a node created through POST /provider-nodes must become usable as a provider_id immediately. A boot-frozen index would accept the create and then refuse every endpoint aimed at it, which reads as a bug rather than as a limitation. This adapter is the composition root's job: it is the only layer allowed to know both the embedded registry and the node repository.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

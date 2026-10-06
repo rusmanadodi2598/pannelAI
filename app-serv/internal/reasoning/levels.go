@@ -5,13 +5,7 @@
 // @file      internal/reasoning/levels.go
 // @for       The level and budget vocabularies the thinking formats share.
 // @uses      (no imports).
-// @reason    SPEC-API-001 §7.14 stores one thinking mode per provider and §7.15
-//
-//	carries the reference's suffix; both end as a field an upstream reads,
-//	and the level a caller names is not always the number that upstream
-//	wants. The maps are the reference's own (thinking.js), ported whole so
-//	a level the panel offers cannot mean a different budget here.
-//
+// @reason    SPEC-API-001 §7.14 stores one thinking mode per provider and §7.15 carries the reference's suffix; both end as a field an upstream reads, and the level a caller names is not always the number that upstream wants. The maps are the reference's own (thinking.js), ported whole so a level the panel offers cannot mean a different budget here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

@@ -3,11 +3,7 @@
 // @file      internal/service/media_provider_patch_test.go
 // @for       The §7.10 per-kind override save and the constructor's guard.
 // @uses      testing, context, strings, internal/domain, internal/registry.
-// @reason    A save is the one §7.10 management write, and its refusals are
-//
-//	silent failures if wrong: an unusable provider stored anyway, or a
-//	model the kind does not declare. The reads live beside this file.
-//
+// @reason    A save is the one §7.10 management write, and its refusals are silent failures if wrong: an unusable provider stored anyway, or a model the kind does not declare. The reads live beside this file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

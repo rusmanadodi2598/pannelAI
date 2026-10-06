@@ -3,11 +3,7 @@
 // @file      internal/service/quotafetch/commandcode.go
 // @for       Reads Command Code's plan cap, remaining credits and two rolling rate windows.
 // @uses      internal/service/quotafetch, context, encoding/json, fmt, math, net/http, net/url, strconv, strings
-// @reason    The provider splits this over three endpoints and states no ceiling on the credits
-//
-//	surface, so the cap has to come from the subscription and the wallet from the
-//	billing call, or the card would draw a balance as a share of nothing.
-//
+// @reason    The provider splits this over three endpoints and states no ceiling on the credits surface, so the cap has to come from the subscription and the wallet from the billing call, or the card would draw a balance as a share of nothing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

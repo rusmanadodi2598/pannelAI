@@ -5,11 +5,7 @@
 // @file      internal/repository/postgres/endpoint_key_health_integration_test.go
 // @for       The counter arithmetic a key's health transition produces inside the store.
 // @uses      context, testing, time, internal/domain
-// @reason    Two selectors can load one key at the same count and each record a failure. Writing the
-//
-//	value the aggregate computed would land one increment instead of two, and the circuit breaker
-//	that parks a bad credential would under-count exactly when a provider fails it hardest.
-//
+// @reason    Two selectors can load one key at the same count and each record a failure. Writing the value the aggregate computed would land one increment instead of two, and the circuit breaker that parks a bad credential would under-count exactly when a provider fails it hardest.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

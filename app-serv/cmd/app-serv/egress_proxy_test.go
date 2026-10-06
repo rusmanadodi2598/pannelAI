@@ -1,21 +1,9 @@
 // Command app-serv wires the process-wide egress policy.
 //
 // @file      cmd/app-serv/egress_proxy_test.go
-// @for       The §7.11 route table: what settings.network does to one outbound
-//
-//	call, and the A01 check that survives it.
-//
-// @uses      testing, errors, context, net/http, net/http/httptest,
-//
-//	internal/config, internal/domain, internal/netguard.
-//
-// @reason    G4 wires an operator's proxy into the dial path, and the security
-//
-//	risk is the interesting half: a proxied request never dials the
-//	destination, so the dialer's guard would stop seeing it. These rows
-//	pin that the destination is still validated, that a proxy is never
-//	quietly bypassed, and that a disabled proxy changes nothing.
-//
+// @for       The §7.11 route table: what settings.network does to one outbound call, and the A01 check that survives it.
+// @uses      testing, errors, context, net/http, net/http/httptest, internal/config, internal/domain, internal/netguard.
+// @reason    G4 wires an operator's proxy into the dial path, and the security risk is the interesting half: a proxied request never dials the destination, so the dialer's guard would stop seeing it. These rows pin that the destination is still validated, that a proxy is never quietly bypassed, and that a disabled proxy changes nothing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

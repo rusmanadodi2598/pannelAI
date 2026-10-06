@@ -4,12 +4,7 @@
 // @file      internal/domain/upstream_endpoint_keys_test.go
 // @for       The credential-set mutations an UpstreamEndpoint refuses.
 // @uses      testing.
-// @reason    "An api_key endpoint must keep at least one active key" is a rule
-//
-//	about the collection, so removal, status change and the duplicate
-//	label check are pinned together rather than spread over the entity
-//	table.
-//
+// @reason    "An api_key endpoint must keep at least one active key" is a rule about the collection, so removal, status change and the duplicate label check are pinned together rather than spread over the entity table.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

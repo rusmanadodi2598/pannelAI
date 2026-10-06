@@ -4,11 +4,7 @@
 // @file      internal/registry/custom_node_synthesize_test.go
 // @for       Table-driven tests for synthesizing a custom node and extending an index.
 // @uses      testing, internal/registry.
-// @reason    SPEC-API-001 §7.4 makes custom nodes P1: a synthesized provider
-// grants a user's own upstream a place in the routing table, so a wrong
-// format, priority, or alias, and any mutation of the shared index visible to
-// another request, are routing faults pinned here.
-//
+// @reason    SPEC-API-001 §7.4 makes custom nodes P1: a synthesized provider grants a user's own upstream a place in the routing table, so a wrong format, priority, or alias, and any mutation of the shared index visible to another request, are routing faults pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

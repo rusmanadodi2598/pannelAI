@@ -1,22 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_cosy.go
-// @for       The COSY header set one Qoder request carries, and the signature that
-//
-//	closes it.
-//
-// @uses      crypto/md5, crypto/rsa, encoding/base64, encoding/hex,
-//
-//	encoding/json, fmt, net/http, net/url, strconv, strings, time.
-//
-// @reason    Qoder does not read a bearer token: it reads a fingerprint of the
-//
-//	client, the account, the body and the path. The payload is the encrypted
-//	user info (see qoder_crypto.go), and the signature is an MD5 over five
-//	specific parts in a specific order, which is the only part of this scheme
-//	the gateway composes rather than encrypts. Ported verbatim, because none
-//	of it is inferable.
-//
+// @for       The COSY header set one Qoder request carries, and the signature that closes it.
+// @uses      crypto/md5, crypto/rsa, encoding/base64, encoding/hex, encoding/json, fmt, net/http, net/url, strconv, strings, time.
+// @reason    Qoder does not read a bearer token: it reads a fingerprint of the client, the account, the body and the path. The payload is the encrypted user info (see qoder_crypto.go), and the signature is an MD5 over five specific parts in a specific order, which is the only part of this scheme the gateway composes rather than encrypts. Ported verbatim, because none of it is inferable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -1,17 +1,9 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_stream_flush_test.go
-// @for       The streaming boundary: every wrapper in the production chain must
-// forward http.Flusher, so a frame reaches the client while the handler runs.
+// @for       The streaming boundary: every wrapper in the production chain must forward http.Flusher, so a frame reaches the client while the handler runs.
 // @uses      bufio, net/http, net/http/httptest, sync, testing, time.
-// @reason    F5 of docs/DRAFT/010-USAGE-ENDPOINT-READINESS.md found the chain
-// hiding http.Flusher from the SSE sink: Go promotes only the methods of the
-// embedded interface, so `w.(http.Flusher)` failed inside the chain, the sink
-// stored a nil flusher, and every stream arrived as one blob when the handler
-// returned. The rule is pinned over a real socket and at every layer, because
-// httptest.ResponseRecorder implements Flush itself and reports the broken
-// chain as healthy.
-//
+// @reason    F5 of docs/DRAFT/010-USAGE-ENDPOINT-READINESS.md found the chain hiding http.Flusher from the SSE sink: Go promotes only the methods of the embedded interface, so `w.(http.Flusher)` failed inside the chain, the sink stored a nil flusher, and every stream arrived as one blob when the handler returned. The rule is pinned over a real socket and at every layer, because httptest.ResponseRecorder implements Flush itself and reports the broken chain as healthy.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

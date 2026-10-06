@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/resolve_combo_member.go
-// @for       The member walk: one combo entry, its alias hop, and the
-//
-//	provider/model reference form.
-//
+// @for       The member walk: one combo entry, its alias hop, and the provider/model reference form.
 // @uses      internal/domain, context.
-// @reason    The depth and expansion guards live with the combo walk; the member
-//
-//	walk that consumes them is a separate concern, a member may be a
-//	reference, an alias, or a nested combo, so it sits here, apart from
-//	the budget the caller owns. Separated at the AGENTS.md §1.1 line
-//	limit.
-//
+// @reason    The depth and expansion guards live with the combo walk; the member walk that consumes them is a separate concern, a member may be a reference, an alias, or a nested combo, so it sits here, apart from the budget the caller owns. Separated at the AGENTS.md §1.1 line limit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

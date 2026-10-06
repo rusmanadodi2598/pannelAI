@@ -3,12 +3,7 @@
 // @file      internal/dataplane/translate_stream_test.go
 // @for       Tests for the SSE frame shape, the usage chunk, and retry decisions.
 // @uses      testing, internal/schema, net/http.
-// @reason    SPEC-API-001 §4 fixes both the SSE frame shape and the usage chunk
-//
-//	stream_options.include_usage asks for, and §4 also fixes the retry
-//	policy per status. Both are pure functions of their inputs, so they are
-//	pinned here with no network and no clock (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §4 fixes both the SSE frame shape and the usage chunk stream_options.include_usage asks for, and §4 also fixes the retry policy per status. Both are pure functions of their inputs, so they are pinned here with no network and no clock (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

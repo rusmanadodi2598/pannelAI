@@ -4,19 +4,7 @@
 // @file      internal/provider/opencode_body.go
 // @for       The request shape the OpenCode Free tier accepts.
 // @uses      encoding/json.
-// @reason    The free tier answers 403 unless the outbound body both streams and
-//
-//	carries the bash and read decoy tools, and the Responses wire answers
-//	400 to `max_tokens`, to a `tool_choice` other than `auto`, and to an
-//	output ceiling below 16. Those rules are the provider's, so they are
-//	applied here rather than by a branch on the provider id in the
-//	translation layer. Everything is a set union or a rename over the
-//	client's own body: the client's tools, ceiling, and items all survive,
-//	because a gateway that dropped them would answer a different question
-//	than the one it was asked. A ceiling that survives is still raised to the
-//	minimum the model declares, because a reasoning model spends a smaller one
-//	on thinking and returns an empty body the upstream counts as success.
-//
+// @reason    The free tier answers 403 unless the outbound body both streams and carries the bash and read decoy tools, and the Responses wire answers 400 to `max_tokens`, to a `tool_choice` other than `auto`, and to an output ceiling below 16. Those rules are the provider's, so they are applied here rather than by a branch on the provider id in the translation layer. Everything is a set union or a rename over the client's own body: the client's tools, ceiling, and items all survive, because a gateway that dropped them would answer a different question than the one it was asked. A ceiling that survives is still raised to the minimum the model declares, because a reasoning model spends a smaller one on thinking and returns an empty body the upstream counts as success.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

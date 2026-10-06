@@ -5,13 +5,7 @@
 // @file      cmd/app-serv/vision_capability_test.go
 // @for       Test for the vision predicate the adapter service is wired with.
 // @uses      testing, internal/domain.
-// @reason    The adapter is three lines, and the failure it guards against is
-//
-//	subtle: a wiring that supplies no predicate leaves the service on its
-//	reject-everything default, which looks like a working API that refuses
-//	every model (§7.8). Pinning the two answers keeps that from returning
-//	unnoticed.
-//
+// @reason    The adapter is three lines, and the failure it guards against is subtle: a wiring that supplies no predicate leaves the service on its reject-everything default, which looks like a working API that refuses every model (§7.8). Pinning the two answers keeps that from returning unnoticed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

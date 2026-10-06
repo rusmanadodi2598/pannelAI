@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_callback_test.go
-// @for       Table-driven tests for completing an authorization (SPEC-API-001
-//
-//	§7.4 GET .../oauth/callback): replay, exchange, identity
-//	matching, and the sealing rule.
-//
+// @for       Table-driven tests for completing an authorization (SPEC-API-001 §7.4 GET .../oauth/callback): replay, exchange, identity matching, and the sealing rule.
 // @uses      context, strings, testing, time, internal/domain.
-// @reason    The callback is the only place tokens enter the system from a
-//
-//	provider, so the table pins the replay guard, the fail-closed
-//	identity rule, the update-not-duplicate account rule, and that no
-//	stored field ever carries plaintext token material.
-//
+// @reason    The callback is the only place tokens enter the system from a provider, so the table pins the replay guard, the fail-closed identity rule, the update-not-duplicate account rule, and that no stored field ever carries plaintext token material.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

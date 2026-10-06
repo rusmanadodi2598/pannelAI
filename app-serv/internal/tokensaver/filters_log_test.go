@@ -3,16 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/filters_log_test.go
-// @for       Table-driven tests for dedup-log, smart-truncate, read-numbered,
-//
-//	and build-output.
-//
+// @for       Table-driven tests for dedup-log, smart-truncate, read-numbered, and build-output.
 // @uses      fmt, strings, testing.
-// @reason    TDD.md §2.5 requires the boundaries, and these four filters are the
-//
-//	ones whose caps decide the output, so each test drives both a small
-//	input (pass-through) and one past its cap.
-//
+// @reason    TDD.md §2.5 requires the boundaries, and these four filters are the ones whose caps decide the output, so each test drives both a small input (pass-through) and one past its cap.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

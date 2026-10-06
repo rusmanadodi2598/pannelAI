@@ -1,18 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/endpoint_keys.go
-// @for       The upstream key routes: list, add, patch, delete, and the key batch
-//
-//	(SPEC-API-001 §7.5).
-//
+// @for       The upstream key routes: list, add, patch, delete, and the key batch (SPEC-API-001 §7.5).
 // @uses      internal/domain, internal/schema, internal/service, net/http, time.
-// @reason    §7.5 makes a key a child collection of an endpoint, so every route is
-//
-//	scoped by the endpoint id and a value is write-only: a response
-//	carries key_hint and health, never the credential. AGENTS.md §1.5 keeps
-//	the sealing and the "keep one active key" rule in the service, so this
-//	layer only decodes, calls, and maps.
-//
+// @reason    §7.5 makes a key a child collection of an endpoint, so every route is scoped by the endpoint id and a value is write-only: a response carries key_hint and health, never the credential. AGENTS.md §1.5 keeps the sealing and the "keep one active key" rule in the service, so this layer only decodes, calls, and maps.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

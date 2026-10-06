@@ -1,24 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_consume_test.go
-// @for       Table-driven tests for the usage event consumer: what one event
-//
-//	renders, what a malformed payload does, and how a failing
-//	subscription recovers.
-//
-// @uses      internal/domain, internal/repository, context, errors, sync,
-//
-//	testing, time.
-//
-// @reason    The consumer is the half that makes the event real (F4's completion
-//
-//	criterion): without it the publisher writes to a channel nobody
-//	reads. Its rules are the ones that fail quietly, a malformed payload
-//	that takes the consumer down stops every later event, and a receive
-//	timeout mistaken for a fault turns an idle channel into a reconnect
-//	loop, so the double counts receives and the table asserts on lines
-//	the sink actually received.
-//
+// @for       Table-driven tests for the usage event consumer: what one event renders, what a malformed payload does, and how a failing subscription recovers.
+// @uses      internal/domain, internal/repository, context, errors, sync, testing, time.
+// @reason    The consumer is the half that makes the event real (F4's completion criterion): without it the publisher writes to a channel nobody reads. Its rules are the ones that fail quietly, a malformed payload that takes the consumer down stops every later event, and a receive timeout mistaken for a fault turns an idle channel into a reconnect loop, so the double counts receives and the table asserts on lines the sink actually received.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

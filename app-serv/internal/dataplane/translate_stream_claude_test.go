@@ -1,16 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/translate_stream_claude_test.go
-// @for       The stream-state translation of an Anthropic stream onto the OpenAI
-//
-//	framing, in both directions.
-//
+// @for       The stream-state translation of an Anthropic stream onto the OpenAI framing, in both directions.
 // @uses      testing, internal/schema.
-// @reason    Frame order is what a streaming client parses, so the role frame, the
-//
-//	deltas and the terminal marker are pinned apart from the retry policy
-//	that shares the file's name.
-//
+// @reason    Frame order is what a streaming client parses, so the role frame, the deltas and the terminal marker are pinned apart from the retry policy that shares the file's name.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

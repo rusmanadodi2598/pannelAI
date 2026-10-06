@@ -1,22 +1,9 @@
 // Package redis implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/proxy_rotation.go
-// @for       The proxy route engine's state: the round-robin counter and the
-//
-//	connect-failure cooldown (docs/PORT/008-PORT-PROXY-ENGINE.md D5, D6).
-//
-// @uses      github.com/redis/go-redis/v9, context, crypto/sha256, encoding/hex,
-//
-//	fmt, time.
-//
-// @reason    D5 makes the rotation cursor atomic across concurrent requests and
-//
-//	durable across restarts, which is exactly what the combo rotation's
-//	one INCR script already is; reusing the shape keeps the two rotation
-//	rules identical where they overlap. The cooldown is a SET with a TTL
-//	because a parked candidate must return to service without anyone
-//	remembering to unpark it.
-//
+// @for       The proxy route engine's state: the round-robin counter and the connect-failure cooldown (docs/PORT/008-PORT-PROXY-ENGINE.md D5, D6).
+// @uses      github.com/redis/go-redis/v9, context, crypto/sha256, encoding/hex, fmt, time.
+// @reason    D5 makes the rotation cursor atomic across concurrent requests and durable across restarts, which is exactly what the combo rotation's one INCR script already is; reusing the shape keeps the two rotation rules identical where they overlap. The cooldown is a SET with a TTL because a parked candidate must return to service without anyone remembering to unpark it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

@@ -3,13 +3,7 @@
 // @file      internal/dataplane/translate_stream_responses_test.go
 // @for       Table-driven tests for mapping Responses SSE events onto frames.
 // @uses      testing, encoding/json, strings.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and its
-//
-//	stream is a named-event stream rather than a chunk stream. The
-//	mapping is what a streaming client sees, and an event that carries
-//	nothing must produce no frame at all: an empty frame makes a client
-//	that counts frames mis-count the answer.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and its stream is a named-event stream rather than a chunk stream. The mapping is what a streaming client sees, and an event that carries nothing must produce no frame at all: an empty frame makes a client that counts frames mis-count the answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -1,23 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_jobtoken.go
-// @for       Turning a Qoder Personal Access Token into the short-lived job token
-//
-//	the vendor's signed endpoints accept, and keeping it until it is near
-//	its own expiry.
-//
-// @uses      bytes, context, crypto/sha256, encoding/hex, encoding/json, fmt, io,
-//
-//	net/http, strings, sync, time.
-//
-// @reason    A Personal Access Token cannot sign COSY: the vendor answers the
-//
-//	signed endpoints with a refusal, so every Qoder call that carries a
-//	`pt-` credential must exchange it first. The exchange is cheap to
-//	do once and expensive to do per request, so the lifetime the vendor
-//	states is what decides the reuse, with a buffer so a call never starts
-//	on a token that expires mid-flight.
-//
+// @for       Turning a Qoder Personal Access Token into the short-lived job token the vendor's signed endpoints accept, and keeping it until it is near its own expiry.
+// @uses      bytes, context, crypto/sha256, encoding/hex, encoding/json, fmt, io, net/http, strings, sync, time.
+// @reason    A Personal Access Token cannot sign COSY: the vendor answers the signed endpoints with a refusal, so every Qoder call that carries a `pt-` credential must exchange it first. The exchange is cheap to do once and expensive to do per request, so the lifetime the vendor states is what decides the reuse, with a buffer so a call never starts on a token that expires mid-flight.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

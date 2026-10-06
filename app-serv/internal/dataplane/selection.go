@@ -3,19 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/selection.go
-// @for       Candidate endpoint ordering, the key routing may spend, and the
-//
-//	health record written back after an upstream outcome.
-//
+// @for       Candidate endpoint ordering, the key routing may spend, and the health record written back after an upstream outcome.
 // @uses      internal/domain, internal/provider, internal/repository.
-// @reason    SPEC-API-001 §7.5 fixes the rule (endpoint by priority, then a
-//
-//	healthy key inside it, circuit-broken keys skipped). It is policy
-//	the whole data plane depends on, so it lives in one place: this
-//	file consults the circuit state the domain owns and writes it back
-//	through RecordKeyHealth, so the panel's answer and the router's
-//	answer cannot diverge and no second health model exists.
-//
+// @reason    SPEC-API-001 §7.5 fixes the rule (endpoint by priority, then a healthy key inside it, circuit-broken keys skipped). It is policy the whole data plane depends on, so it lives in one place: this file consults the circuit state the domain owns and writes it back through RecordKeyHealth, so the panel's answer and the router's answer cannot diverge and no second health model exists.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

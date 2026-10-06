@@ -3,19 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/ponytail.go
-// @for       The ponytail injector: appending the level's instruction to the
-//
-//	upstream body's system slot, and the wire-agnostic rules the
-//	injectors share.
-//
+// @for       The ponytail injector: appending the level's instruction to the upstream body's system slot, and the wire-agnostic rules the injectors share.
 // @uses      encoding/json, strings.
-// @reason    SPEC-API-002 §7 makes ponytail a bias rather than a transform: the
-//
-//	instruction has to reach the model as a system message, and the wire
-//	shapes disagree about where that lives. Injecting after translation
-//	is what keeps the instruction from being re-translated away. The
-//	shared rules live here so both wire files append the same way.
-//
+// @reason    SPEC-API-002 §7 makes ponytail a bias rather than a transform: the instruction has to reach the model as a system message, and the wire shapes disagree about where that lives. Injecting after translation is what keeps the instruction from being re-translated away. The shared rules live here so both wire files append the same way.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

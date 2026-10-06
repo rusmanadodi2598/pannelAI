@@ -4,11 +4,7 @@
 // @file      internal/domain/upstream_endpoint_test.go
 // @for       Table-driven tests for the endpoint aggregate and its key rules.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.5 makes the endpoint the mutation boundary for its
-//
-//	keys and requires it to keep at least one usable credential; these tests
-//	pin that invariant and the CRUD rules around it.
-//
+// @reason    SPEC-API-001 §7.5 makes the endpoint the mutation boundary for its keys and requires it to keep at least one usable credential; these tests pin that invariant and the CRUD rules around it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

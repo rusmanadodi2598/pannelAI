@@ -3,17 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/ping.go
-// @for       The bounded probe the combo test route runs against one model
-//
-//	reference (SPEC-API-001 §7.7).
-//
+// @for       The bounded probe the combo test route runs against one model reference (SPEC-API-001 §7.7).
 // @uses      internal/schema, context, encoding/json.
-// @reason    A probe is an ordinary data plane call, resolve, select, translate,
-//
-//	call, so it goes through Relay rather than a second HTTP path that
-//	would drift from the pipeline. What this file owns is only the request
-//	it invents and the ceiling that keeps it cheap.
-//
+// @reason    A probe is an ordinary data plane call, resolve, select, translate, call, so it goes through Relay rather than a second HTTP path that would drift from the pipeline. What this file owns is only the request it invents and the ceiling that keeps it cheap.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

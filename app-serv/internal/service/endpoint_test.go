@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_test.go
-// @for       Table-driven tests for endpoint creation, validation, and the
-//
-//	conflict paths (SPEC-API-001 §7.5).
-//
+// @for       Table-driven tests for endpoint creation, validation, and the conflict paths (SPEC-API-001 §7.5).
 // @uses      context, errors, testing, internal/domain.
-// @reason    AGENTS.md §2.1 requires tests alongside service logic, and §2.4 CDD
-//
-//	requires the boundary and negative cases a single example would miss:
-//	an unknown provider, a missing key on an api_key endpoint, a duplicate
-//	account, and the extreme end of a batch. Each case here is a rule a
-//	plausible bug would break.
-//
+// @reason    AGENTS.md §2.1 requires tests alongside service logic, and §2.4 CDD requires the boundary and negative cases a single example would miss: an unknown provider, a missing key on an api_key endpoint, a duplicate account, and the extreme end of a batch. Each case here is a rule a plausible bug would break.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,20 +3,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/usage_harness_integration_test.go
-// @for       Shared harness for the tagged usage integration tests: connect,
-//
-//	apply migrations, and seed records.
-//
-// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations,
-//
-//	context, os, testing, time.
-//
-// @reason    Both usage integration files need the same connection, the same
-//
-//	migration step, and the same seeding, so they share one harness
-//	rather than each carrying a copy that can drift. A stub cannot
-//	prove the schema this vertical reads exists; a real server can.
-//
+// @for       Shared harness for the tagged usage integration tests: connect, apply migrations, and seed records.
+// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations, context, os, testing, time.
+// @reason    Both usage integration files need the same connection, the same migration step, and the same seeding, so they share one harness rather than each carrying a copy that can drift. A stub cannot prove the schema this vertical reads exists; a real server can.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

@@ -4,12 +4,7 @@
 // @file      internal/domain/decimal_test.go
 // @for       Table-driven tests for the exact decimal value object.
 // @uses      math/big, testing.
-// @reason    AGENTS.md §2.1 and §2.4 require the arithmetic the cost figures
-//
-//	depend on to be pinned against boundary and extreme inputs. A float
-//	would pass a single 0.1 test and drift under a month of sums, so
-//	the cases below include the exact values a float cannot hold.
-//
+// @reason    AGENTS.md §2.1 and §2.4 require the arithmetic the cost figures depend on to be pinned against boundary and extreme inputs. A float would pass a single 0.1 test and drift under a month of sums, so the cases below include the exact values a float cannot hold.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

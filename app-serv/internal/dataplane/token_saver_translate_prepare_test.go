@@ -3,9 +3,7 @@
 // @file      internal/dataplane/token_saver_translate_prepare_test.go
 // @for       Table-driven tests for safe Headroom preparation across provider wires.
 // @uses      encoding/json, testing.
-// @reason    SPEC-API-002 §8.2 permits only message-shaped bodies into Headroom;
-// these cases pin supported wires, malformed input, refusal, and unknown targets.
-//
+// @reason    SPEC-API-002 §8.2 permits only message-shaped bodies into Headroom; these cases pin supported wires, malformed input, refusal, and unknown targets.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

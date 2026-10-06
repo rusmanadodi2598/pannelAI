@@ -2,16 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/oauth_refresh_test.go
-// @for       Table-driven tests for the token freshness rules and the
-//
-//	unhealthy transition.
-//
+// @for       Table-driven tests for the token freshness rules and the unhealthy transition.
 // @uses      testing, time.
-// @reason    The status route and the refresh worker must agree on "due", so
-//
-//	the boundary rows (exact lead instant, expired, no expiry) are
-//	pinned here rather than in either caller's tests.
-//
+// @reason    The status route and the refresh worker must agree on "due", so the boundary rows (exact lead instant, expired, no expiry) are pinned here rather than in either caller's tests.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

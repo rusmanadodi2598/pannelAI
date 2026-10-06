@@ -1,19 +1,10 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_device.go
-// @for       The device authorization flow: minting the verification round
+// @for       The device authorization flow: minting the verification round and polling it to a connect (draft 036 slice A, SPEC-API-001 §7.4).
+// @uses      context, crypto/rand, encoding/json, errors, fmt, net/url, strings, time, internal/domain, internal/registry, internal/repository.
+// @reason    A device-flow provider (Qoder) declares no authorize URL, so the code flow cannot serve it. The gateway mints the PKCE pair, nonce and machine id itself, hands the panel a device code, and answers one upstream poll per request until the vendor returns a token.
 //
-//	and polling it to a connect (draft 036 slice A, SPEC-API-001 §7.4).
-//
-// @uses      context, crypto/rand, encoding/json, errors, fmt, net/url,
-//
-//	strings, time, internal/domain, internal/registry, internal/repository.
-//
-// @reason    A device-flow provider (Qoder) declares no authorize URL, so the
-//
-//	code flow cannot serve it. The gateway mints the PKCE pair, nonce
-//	and machine id itself, hands the panel a device code, and answers
-//	one upstream poll per request until the vendor returns a token.
 //	The verifier and machine id never leave the gateway: the panel's
 //	only credential is the unguessable single-use device code, which
 //	is also what binds a poll to the flow that started it.

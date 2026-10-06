@@ -5,14 +5,7 @@
 // @file      internal/dataplane/errors.go
 // @for       The data plane error vocabulary and its OpenAI-envelope status.
 // @uses      internal/domain.
-// @reason    SPEC-API-001 §8 makes PROVIDER_NOT_ROUTABLE a data-plane code and §4
-//
-//	fixes the envelope: a CLI tool reads the OpenAI shape, not the
-//	management one. The management AppError maps a closed code set to
-//	statuses, and these codes are deliberately outside it, so the data
-//	plane carries its own small type rather than widening a contract the
-//	panel depends on.
-//
+// @reason    SPEC-API-001 §8 makes PROVIDER_NOT_ROUTABLE a data-plane code and §4 fixes the envelope: a CLI tool reads the OpenAI shape, not the management one. The management AppError maps a closed code set to statuses, and these codes are deliberately outside it, so the data plane carries its own small type rather than widening a contract the panel depends on.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

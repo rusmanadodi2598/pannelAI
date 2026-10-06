@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_minimax_test.go
-// @for       The MiniMax speech adapter: body defaults, hex audio, and the
-//
-//	business failure its 200 envelope can carry.
-//
-// @uses      internal/dataplane, internal/provider, internal/schema, context,
-//
-//	encoding/hex, encoding/json, testing.
-//
-// @reason    G5 ports one provider adapter at a time. MiniMax is the first whose
-//
-//	200 can be a failure (`base_resp.status_code`), so these rows pin
-//	that the call is recorded as a failure the client saw, not as a
-//	served call, and that the shared adapter serves both the .io and the
-//	.cn provider.
-//
+// @for       The MiniMax speech adapter: body defaults, hex audio, and the business failure its 200 envelope can carry.
+// @uses      internal/dataplane, internal/provider, internal/schema, context, encoding/hex, encoding/json, testing.
+// @reason    G5 ports one provider adapter at a time. MiniMax is the first whose 200 can be a failure (`base_resp.status_code`), so these rows pin that the call is recorded as a failure the client saw, not as a served call, and that the shared adapter serves both the .io and the .cn provider.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

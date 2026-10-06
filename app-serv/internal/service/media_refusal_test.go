@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_refusal_test.go
-// @for       The log row a §7.10 media call leaves when it is refused before any
-//
-//	upstream attempt.
-//
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	testing.
-//
-// @reason    Register G20: a refusal the client saw never appeared in the Logs
-//
-//	screen because the media routes wrote rows only after Perform. Each
-//	refusal class is a table case, unknown provider, untranslated
-//	format, missing base URL, no usable account, and search's own two
-//	refusals, so a new refusal path has to state what it records.
-//
+// @for       The log row a §7.10 media call leaves when it is refused before any upstream attempt.
+// @uses      internal/dataplane, internal/domain, internal/schema, context, testing.
+// @reason    Register G20: a refusal the client saw never appeared in the Logs screen because the media routes wrote rows only after Perform. Each refusal class is a table case, unknown provider, untranslated format, missing base URL, no usable account, and search's own two refusals, so a new refusal path has to state what it records.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -2,20 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_rules_test.go
-// @for       The capability resolver's own rules: the provider layer that
-//
-//	overrides the tables, the boundary inputs, and the membership test the
-//	catalog filter reads.
-//
+// @for       The capability resolver's own rules: the provider layer that overrides the tables, the boundary inputs, and the membership test the catalog filter reads.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.6 offers `?capability=vision|tools` and §7.8
-//
-//	refuses a vision adapter whose models cannot read images. The corpus
-//	test in capability_resolve_test.go proves the port agrees with the
-//	reference's own function; these cases prove the rules that corpus
-//	cannot exercise, because an absent, padded, or unknown id never
-//	appears in a generated row.
-//
+// @reason    SPEC-API-001 §7.6 offers `?capability=vision|tools` and §7.8 refuses a vision adapter whose models cannot read images. The corpus test in capability_resolve_test.go proves the port agrees with the reference's own function; these cases prove the rules that corpus cannot exercise, because an absent, padded, or unknown id never appears in a generated row.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

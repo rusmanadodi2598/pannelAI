@@ -1,29 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_active.go
-// @for       The active-provider predicate of the catalog read: which providers
-//
-//	the router can actually serve a request to right now.
-//
+// @for       The active-provider predicate of the catalog read: which providers the router can actually serve a request to right now.
 // @uses      internal/domain, context.
-// @reason    Draft 025 measured the panel's picker offering 586 of 587 rows
-//
-//	that answer NO_PROVIDER_AVAILABLE on the first request, because
-//	the catalog lists every model the registry declares while the
-//	router only reaches providers that hold an active endpoint. The
-//	reference answers this in the client (its picker filters
-//	activeProviders); this port moves the same question to the server
-//	so one parameter, `?active=true`, lets every caller ask it. The
-//	predicate is the router's own population, stated in its terms: the
-//	candidates query (selection.go) selects endpoints with status
-//	active under the provider's canonical id, so one status-active
-//	endpoint makes the provider active here, a rate-limited active
-//	endpoint keeps it active (the runtime skip is a moment, not a
-//	configuration), and disabled or errored endpoints do not. The
-//	roll-up is read once per request with every candidate id in that
-//	one call, because the same seam is already one query in
-//	PostgreSQL and a per-provider loop would turn one read into many.
-//
+// @reason    Draft 025 measured the panel's picker offering 586 of 587 rows that answer NO_PROVIDER_AVAILABLE on the first request, because the catalog lists every model the registry declares while the router only reaches providers that hold an active endpoint. The reference answers this in the client (its picker filters activeProviders); this port moves the same question to the server so one parameter, `?active=true`, lets every caller ask it. The predicate is the router's own population, stated in its terms: the candidates query (selection.go) selects endpoints with status active under the provider's canonical id, so one status-active endpoint makes the provider active here, a rate-limited active endpoint keeps it active (the runtime skip is a moment, not a configuration), and disabled or errored endpoints do not. The roll-up is read once per request with every candidate id in that one call, because the same seam is already one query in PostgreSQL and a per-provider loop would turn one read into many.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

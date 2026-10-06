@@ -3,10 +3,7 @@
 // @file      internal/handler/auth.go
 // @for       Dashboard authentication HTTP endpoints and session guard.
 // @uses      internal/clientip, internal/schema, internal/service, net, net/http.
-// @reason    SPEC-API-001 §7.2 defines the public auth contract while the
-//
-//	gateway-key management surface must reject unauthenticated calls.
-//
+// @reason    SPEC-API-001 §7.2 defines the public auth contract while the gateway-key management surface must reject unauthenticated calls.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

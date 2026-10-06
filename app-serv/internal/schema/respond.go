@@ -3,12 +3,7 @@
 // @file      internal/schema/respond.go
 // @for       The single serialization exit point for management handlers.
 // @uses      encoding/json, net/http, internal/domain.
-// @reason    AGENTS.md §1.3 requires every client response to be structured,
-//
-//	and SPEC-API-001 §8 requires the error envelope; funnelling both
-//	through here keeps no handler inventing a shape or leaking a
-//	driver message.
-//
+// @reason    AGENTS.md §1.3 requires every client response to be structured, and SPEC-API-001 §8 requires the error envelope; funnelling both through here keeps no handler inventing a shape or leaking a driver message.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

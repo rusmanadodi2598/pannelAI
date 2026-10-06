@@ -3,13 +3,7 @@
 // @file      internal/repository/postgres/gateway_key_error_test.go
 // @for       Table-driven tests for driver-to-domain error translation.
 // @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, errors, testing.
-// @reason    AGENTS.md §2.1 requires tests alongside repository logic, and this
-//
-//	mapping is what turns a PostgreSQL constraint violation into the
-//	§8 code a client sees. Getting it wrong is invisible until a
-//	duplicate name silently returns 500 instead of CONFLICT, so the
-//	rule is pinned here rather than left to a live smoke run.
-//
+// @reason    AGENTS.md §2.1 requires tests alongside repository logic, and this mapping is what turns a PostgreSQL constraint violation into the §8 code a client sees. Getting it wrong is invisible until a duplicate name silently returns 500 instead of CONFLICT, so the rule is pinned here rather than left to a live smoke run.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

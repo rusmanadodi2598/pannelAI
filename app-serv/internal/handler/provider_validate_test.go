@@ -1,20 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/provider_validate_test.go
-// @for       The §7.4 credential-check routes: the happy path, the validation
-//
-//	failure, and the auth failure AGENTS.md §2.1 requires per route.
-//
-// @uses      internal/domain, internal/service, net/http, net/http/httptest,
-//
-//	encoding/json, testing.
-//
-// @reason    Draft 017 §4.6 adds two routes whose whole value is that they write
-//
-//	nothing. The handler holds no store, so the no-write property is
-//	visible from this layer too, and the tests assert the wire carries
-//	`method`, because that is the field distinguishing the two probes.
-//
+// @for       The §7.4 credential-check routes: the happy path, the validation failure, and the auth failure AGENTS.md §2.1 requires per route.
+// @uses      internal/domain, internal/service, net/http, net/http/httptest, encoding/json, testing.
+// @reason    Draft 017 §4.6 adds two routes whose whole value is that they write nothing. The handler holds no store, so the no-write property is visible from this layer too, and the tests assert the wire carries `method`, because that is the field distinguishing the two probes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

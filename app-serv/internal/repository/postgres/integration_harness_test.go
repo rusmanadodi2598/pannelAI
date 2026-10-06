@@ -4,18 +4,8 @@
 //
 // @file      internal/repository/postgres/integration_harness_test.go
 // @for       Shared harness for the tagged PostgreSQL integration tests.
-// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations,
-//
-//	context, os, testing, time.
-//
-// @reason    AGENTS.md §1.7 gives repositories the constraint-level guarantees
-//
-//	(unique name, bounded pagination), and §2.1 requires that logic be
-//	tested. A stub cannot prove a UNIQUE index exists: the earlier P0
-//	schema had a plain index on name, so duplicates were accepted by
-//	PostgreSQL while the in-memory test double rejected them. These
-//	tests run against a real server, which is the only way that
-//	divergence surfaces.
+// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/migrations, context, os, testing, time.
+// @reason    AGENTS.md §1.7 gives repositories the constraint-level guarantees (unique name, bounded pagination), and §2.1 requires that logic be tested. A stub cannot prove a UNIQUE index exists: the earlier P0 schema had a plain index on name, so duplicates were accepted by PostgreSQL while the in-memory test double rejected them. These tests run against a real server, which is the only way that divergence surfaces.
 //
 //	The file carries an `integration` build tag, so the default
 //	`go test ./...` does not compile it and stays hermetic (AGENTS.md §2.1

@@ -2,17 +2,8 @@
 //
 // @file      cmd/app-serv/media_wiring.go
 // @for       Builds the media provider service behind its handler.
-// @uses      internal/handler, internal/repository/postgres, internal/service,
-//
-//	pgxpool.
-//
-// @reason    AGENTS.md §1.5 makes the composition root wiring only, and §1.1
-//
-//	keeps management_wiring.go inside its line budget. The index handed in
-//	is the runtime overlay, not the embedded registry: §7.10's detail route
-//	accepts the same provider ids §7.4 does, so a custom node must resolve
-//	here too.
-//
+// @uses      internal/handler, internal/repository/postgres, internal/service, pgxpool.
+// @reason    AGENTS.md §1.5 makes the composition root wiring only, and §1.1 keeps management_wiring.go inside its line budget. The index handed in is the runtime overlay, not the embedded registry: §7.10's detail route accepts the same provider ids §7.4 does, so a custom node must resolve here too.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

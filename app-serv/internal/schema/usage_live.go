@@ -1,20 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/usage_live.go
-// @for       The live Usage frame: the three facts a period window cannot carry,
-//
-//	in the shape the panel parses.
-//
+// @for       The live Usage frame: the three facts a period window cannot carry, in the shape the panel parses.
 // @uses      internal/domain, time.
-// @reason    SPEC-UI-001 §6.5 fixes the frame's contents (the requests in flight
-//
-//	now, the requests that just finished, and the provider the gateway
-//	last reported an error for) and app-ui already parses them with a Zod
-//	schema, so the member names are a contract between two applications
-//	rather than a local choice. Keeping the mapping here means the
-//	handler writes bytes and nothing else, and the panel's own rule (a
-//	key the frame omits is not a statement that nothing is happening)
-//	is satisfied by construction: every member is always present.
+// @reason    SPEC-UI-001 §6.5 fixes the frame's contents (the requests in flight now, the requests that just finished, and the provider the gateway last reported an error for) and app-ui already parses them with a Zod schema, so the member names are a contract between two applications rather than a local choice. Keeping the mapping here means the handler writes bytes and nothing else, and the panel's own rule (a key the frame omits is not a statement that nothing is happening) is satisfied by construction: every member is always present.
 //
 //	Both lists are always rendered as arrays, never as `null`. Go marshals
 //	a nil slice as `null`, and the panel normalizes that, but a frame

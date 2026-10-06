@@ -1,17 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/settings_reasoning_patch_test.go
-// @for       The reasoning group's PATCH contract: the mode vocabulary pinned
-//
-//	against the domain, the entry rule, and the lowering.
-//
+// @for       The reasoning group's PATCH contract: the mode vocabulary pinned against the domain, the entry rule, and the lowering.
 // @uses      encoding/json, reflect, strings, testing, internal/domain.
-// @reason    SPEC-API-001 §7.14 rejects a bad mode at the boundary, and the
-//
-//	tag is what does it; the vocabulary lives in the domain, so a mode
-//	added to one without the other is a silent hole. AGENTS.md §2.1
-//	requires the contract proven beside its DTO.
-//
+// @reason    SPEC-API-001 §7.14 rejects a bad mode at the boundary, and the tag is what does it; the vocabulary lives in the domain, so a mode added to one without the other is a silent hole. AGENTS.md §2.1 requires the contract proven beside its DTO.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

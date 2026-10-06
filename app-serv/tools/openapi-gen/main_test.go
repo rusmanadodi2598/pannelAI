@@ -1,18 +1,9 @@
 // Package main generates the served OpenAPI document from the contract YAML.
 //
 // @file      tools/openapi-gen/main_test.go
-// @for       The generated artifact matches the committed contract, and the
-//
-//	contract satisfies the rules a consumer depends on.
-//
+// @for       The generated artifact matches the committed contract, and the contract satisfies the rules a consumer depends on.
 // @uses      encoding/json, os, path/filepath, testing, gopkg.in/yaml.v3.
-// @reason    The generator's own test runs the real tool over the real contract,
-//
-//	so a rule that only exists in a fixture cannot pass while the shipped
-//	document violates it. The checks here are the ones no Go build
-//	catches: an unresolved reference, a stale artifact, or a scalar type
-//	the encoder changed.
-//
+// @reason    The generator's own test runs the real tool over the real contract, so a rule that only exists in a fixture cannot pass while the shipped document violates it. The checks here are the ones no Go build catches: an unresolved reference, a stale artifact, or a scalar type the encoder changed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability experimental

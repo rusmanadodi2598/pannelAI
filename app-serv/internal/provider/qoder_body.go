@@ -1,19 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_body.go
-// @for       The agent payload Qoder's chat endpoint answers, built from the request
-//
-//	the gateway already translated.
-//
+// @for       The agent payload Qoder's chat endpoint answers, built from the request the gateway already translated.
 // @uses      crypto/sha256, encoding/hex, encoding/json, fmt, strings, time.
-// @reason    Qoder does not read an OpenAI body. It reads an agent request whose
-//
-//	routing node is named, whose session and record ids the vendor dedupes
-//	on, and whose model is chosen by the configuration the vendor
-//	published for that account, a wrong or absent `model_config` is
-//	answered with a different model, silently (measured, draft 036 §5.1:
-//	a plain OpenAI body is refused with "None flow nodes found").
-//
+// @reason    Qoder does not read an OpenAI body. It reads an agent request whose routing node is named, whose session and record ids the vendor dedupes on, and whose model is chosen by the configuration the vendor published for that account, a wrong or absent `model_config` is answered with a different model, silently (measured, draft 036 §5.1: a plain OpenAI body is refused with "None flow nodes found").
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

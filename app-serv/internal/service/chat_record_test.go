@@ -1,18 +1,10 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/chat_record_test.go
-// @for       The §7.12/§7.13 accounting pair one chat call writes, on the
+// @for       The §7.12/§7.13 accounting pair one chat call writes, on the served path and on the failed one.
+// @uses      internal/dataplane, internal/domain, internal/schema, context, testing, time.
+// @reason    Register G17 and G18 (2026-09-19) are both about what a chat call leaves behind: the failed call wrote no usage row because the engine handed back a zero outcome, and no call wrote a request log at all.
 //
-//	served path and on the failed one.
-//
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	testing, time.
-//
-// @reason    Register G17 and G18 (2026-09-19) are both about what a chat call
-//
-//	leaves behind: the failed call wrote no usage row because the engine
-//	handed back a zero outcome, and no call wrote a request log at all.
 //	These tests pin the pair's shape, one row of each, one shared
 //	request id, identity and code on the failed one, bodies handed over
 //	untouched, so a later change to the pipeline cannot quietly drop

@@ -4,14 +4,7 @@
 // @file      internal/repository/postgres/quota_paging.go
 // @for       Paging the quota collection over provider groups and listing the accounts in the page's groups.
 // @uses      context, internal/domain, internal/repository/postgres, pgxpool, time.
-// @reason    A card is a provider and its accounts. Selecting groups from counted
-//
-//	windows alone hid every account that had not routed a request yet, a
-//	provider could be configured, polled by the worker, and publishing real
-//	quota, and still render no card at all. Both reads here select groups
-//	from the same source, so the window page and the account page can never
-//	disagree about which providers a given page number means.
-//
+// @reason    A card is a provider and its accounts. Selecting groups from counted windows alone hid every account that had not routed a request yet, a provider could be configured, polled by the worker, and publishing real quota, and still render no card at all. Both reads here select groups from the same source, so the window page and the account page can never disagree about which providers a given page number means.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

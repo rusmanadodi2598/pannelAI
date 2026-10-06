@@ -2,21 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/model_catalog_types.go
-// @for       The catalog rows the panel reads: a custom model, an alias
-//
-//	mapping, and the merged catalog entry.
-//
-// @uses      internal/domain (ModelRef, ModelCapabilities, AppError
-//
-//	constructors), strings, time.
-//
-// @reason    SPEC-API-001 §7.6 returns registry rows, custom rows, and alias
-//
-//	rows through one endpoint, so the read shape is declared once here
-//	rather than reassembled in each handler. The alias row carries no
-//	invariant beyond its shape, because whether a target exists spans
-//	two aggregates and is checked by the service.
-//
+// @for       The catalog rows the panel reads: a custom model, an alias mapping, and the merged catalog entry.
+// @uses      internal/domain (ModelRef, ModelCapabilities, AppError constructors), strings, time.
+// @reason    SPEC-API-001 §7.6 returns registry rows, custom rows, and alias rows through one endpoint, so the read shape is declared once here rather than reassembled in each handler. The alias row carries no invariant beyond its shape, because whether a target exists spans two aggregates and is checked by the service.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_degenerate_test.go
-// @for       Tests for the usage event consumer's degenerate wiring: no broker,
-//
-//	and no console ring.
-//
+// @for       Tests for the usage event consumer's degenerate wiring: no broker, and no console ring.
 // @uses      internal/domain, context, testing, time.
-// @reason    Both collaborators are optional in the composition root, and both
-//
-//	are wired in every other test in this package. A consumer that
-//	panicked or spun on a nil bus, or that stopped consuming because the
-//	ring was absent, would only show up in a deployment that wired one
-//	half, which is the deployment these tests describe.
-//
+// @reason    Both collaborators are optional in the composition root, and both are wired in every other test in this package. A consumer that panicked or spun on a nil bus, or that stopped consuming because the ring was absent, would only show up in a deployment that wired one half, which is the deployment these tests describe.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

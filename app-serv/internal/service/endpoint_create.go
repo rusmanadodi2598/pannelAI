@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_create.go
-// @for       Building one endpoint for storage: validating its provider, sealing
-//
-//	every credential, and renumbering siblings when a priority changes.
-//
+// @for       Building one endpoint for storage: validating its provider, sealing every credential, and renumbering siblings when a priority changes.
 // @uses      internal/domain, context, strconv, strings, time.
-// @reason    SPEC-API-001 §8.1 settles one create shape for the single route and
-//
-//	for each element of the bulk route, so the build step is shared rather
-//	than duplicated per entry point; the sibling renumber lives beside it
-//	because a priority is only meaningful against the provider's other
-//	endpoints. It is a separate file because AGENTS.md §1.1 caps a file at
-//	250 lines and the lifecycle surface already fills one.
-//
+// @reason    SPEC-API-001 §8.1 settles one create shape for the single route and for each element of the bulk route, so the build step is shared rather than duplicated per entry point; the sibling renumber lives beside it because a priority is only meaningful against the provider's other endpoints. It is a separate file because AGENTS.md §1.1 caps a file at 250 lines and the lifecycle surface already fills one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

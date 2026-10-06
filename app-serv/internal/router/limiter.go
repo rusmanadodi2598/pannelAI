@@ -2,16 +2,8 @@
 //
 // @file      internal/router/limiter.go
 // @for       Enforces the configured Redis-backed gateway request budget.
-// @uses      internal/clientip, internal/domain, internal/repository,
-//
-//	internal/schema, net, net/http.
-//
-// @reason    SPEC-API-001 §4 requires public traffic to be rate-limited by
-//
-//	configuration rather than leaving the validated value unused, and
-//	draft 042 R20 requires the bucket to name the real client when the
-//	gateway sits behind a proxy the operator has named as trusted.
-//
+// @uses      internal/clientip, internal/domain, internal/repository, internal/schema, net, net/http.
+// @reason    SPEC-API-001 §4 requires public traffic to be rate-limited by configuration rather than leaving the validated value unused, and draft 042 R20 requires the bucket to name the real client when the gateway sits behind a proxy the operator has named as trusted.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

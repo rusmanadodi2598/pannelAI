@@ -3,13 +3,7 @@
 // @file      internal/domain/quota_account.go
 // @for       One connection as the quota screen's card list sees it.
 // @uses      strings.
-// @reason    The quota cards page over provider groups, and a group is made of
-//
-//	accounts, which exist whether or not any traffic has been routed
-//	through them. Deriving the card list from counted windows instead hid
-//	every account that had not served a request yet, so a provider could
-//	be configured, polled, and published about, and still render nothing.
-//
+// @reason    The quota cards page over provider groups, and a group is made of accounts, which exist whether or not any traffic has been routed through them. Deriving the card list from counted windows instead hid every account that had not served a request yet, so a provider could be configured, polled, and published about, and still render nothing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

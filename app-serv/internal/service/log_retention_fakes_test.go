@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/log_retention_fakes_test.go
-// @for       The in-memory doubles the retention worker tests drive: a purger
-//
-//	that can block, fail, or panic, and the settings and log
-//	repositories behind the canonical purge.
-//
-// @uses      testing, context, encoding/json, sync, time, internal/domain,
-//
-//	internal/repository.
-//
-// @reason    The worker's rules (retry state, panic boundary, single-owner
-//
-//	cycles) and the LogService's dynamic cutoff are exercised
-//	against behaviour the doubles define once, so every test reads
-//	the same contract instead of restating its own.
-//
+// @for       The in-memory doubles the retention worker tests drive: a purger that can block, fail, or panic, and the settings and log repositories behind the canonical purge.
+// @uses      testing, context, encoding/json, sync, time, internal/domain, internal/repository.
+// @reason    The worker's rules (retry state, panic boundary, single-owner cycles) and the LogService's dynamic cutoff are exercised against behaviour the doubles define once, so every test reads the same contract instead of restating its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

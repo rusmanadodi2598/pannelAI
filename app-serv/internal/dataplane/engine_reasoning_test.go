@@ -1,23 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_reasoning_test.go
-// @for       The relay's §7.15 reasoning seam: which body it sees, which
-//
-//	identity it is told, and where the model string's "(level)" suffix
-//	travels.
-//
-// @uses      testing, context, net/http, net/http/httptest, strings,
-//
-//	internal/domain, internal/provider, internal/reasoning, internal/registry.
-//
-// @reason    The seam's contract is placement and identity, and both are only
-//
-//	observable end to end: a stub that records its inputs proves the
-//	injection runs on the body the upstream will receive, after
-//	resolution, and that the suffix is split off before resolution while
-//	still reaching the seam. Kept beside the relay tests, whose doubles
-//	it reuses, and out of engine_relay_test.go for the §1.1 line budget.
-//
+// @for       The relay's §7.15 reasoning seam: which body it sees, which identity it is told, and where the model string's "(level)" suffix travels.
+// @uses      testing, context, net/http, net/http/httptest, strings, internal/domain, internal/provider, internal/reasoning, internal/registry.
+// @reason    The seam's contract is placement and identity, and both are only observable end to end: a stub that records its inputs proves the injection runs on the body the upstream will receive, after resolution, and that the suffix is split off before resolution while still reaching the seam. Kept beside the relay tests, whose doubles it reuses, and out of engine_relay_test.go for the §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

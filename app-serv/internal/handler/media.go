@@ -3,12 +3,7 @@
 // @file      internal/handler/media.go
 // @for       The §7.10 data-plane media handler and its shared authentication.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    §7.10's media routes are one surface with one credential rule:
-//
-//	they authenticate with a gateway key exactly as the chat and embeddings
-//	wires do, so the authentication is written once here and each route
-//	file carries only its own decoding and answering.
-//
+// @reason    §7.10's media routes are one surface with one credential rule: they authenticate with a gateway key exactly as the chat and embeddings wires do, so the authentication is written once here and each route file carries only its own decoding and answering.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_state_fixture_test.go
-// @for       The test doubles the state round needs: a vendor that mints rounds,
-//
-//	and the two provider shapes the flow classification is argued on.
-//
+// @for       The test doubles the state round needs: a vendor that mints rounds, and the two provider shapes the flow classification is argued on.
 // @uses      context, time, internal/registry.
-// @reason    A state round is a second flow shape in the same seam, so its fake
-//
-//	answers live beside the ones that drive it rather than inflating the
-//	shared fixture past the AGENTS.md §1.1 budget. Both provider builders
-//	come along for the same argument in reverse: which shape counts as
-//	"the shared client can serve this" is exactly the distinction under
-//	test, so the two fixtures a status assertion compares are stated here
-//	together.
-//
+// @reason    A state round is a second flow shape in the same seam, so its fake answers live beside the ones that drive it rather than inflating the shared fixture past the AGENTS.md §1.1 budget. Both provider builders come along for the same argument in reverse: which shape counts as "the shared client can serve this" is exactly the distinction under test, so the two fixtures a status assertion compares are stated here together.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

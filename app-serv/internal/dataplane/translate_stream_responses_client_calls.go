@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_responses_client_calls.go
-// @for       The function_call items a Responses client stream reports, from the
-//
-//	first fragment that names a call to the closer that reports its
-//	arguments.
-//
+// @for       The function_call items a Responses client stream reports, from the first fragment that names a call to the closer that reports its arguments.
 // @uses      internal/schema, strconv.
-// @reason    A call arrives as fragments spread across deltas, so it needs an
-//
-//	accumulator keyed by the OpenAI tool-call index that the other item
-//	kinds do not. Keeping it separate holds every stream file inside the
-//	AGENTS.md §1.1 budget.
-//
+// @reason    A call arrives as fragments spread across deltas, so it needs an accumulator keyed by the OpenAI tool-call index that the other item kinds do not. Keeping it separate holds every stream file inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

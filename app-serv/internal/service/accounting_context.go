@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/accounting_context.go
-// @for       The context one accounting write runs under, so a client that
-//
-//	disconnected cannot erase the row its call left.
-//
+// @for       The context one accounting write runs under, so a client that disconnected cannot erase the row its call left.
 // @uses      context, time.
-// @reason    A call that died mid-flight wrote no row at all while its gateway
-//
-//	key counter still counted it (draft 021 F6): the write ran under the
-//	client's request context, which the server cancels the moment the
-//	client goes away. Accounting describes work already done, so it
-//	outlives the client, and it keeps its own bound (AGENTS.md §1.6).
-//
+// @reason    A call that died mid-flight wrote no row at all while its gateway key counter still counted it (draft 021 F6): the write ran under the client's request context, which the server cancels the moment the client goes away. Accounting describes work already done, so it outlives the client, and it keeps its own bound (AGENTS.md §1.6).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

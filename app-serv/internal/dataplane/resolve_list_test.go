@@ -3,11 +3,7 @@
 // @file      internal/dataplane/resolve_list_test.go
 // @for       Table-driven tests for the models list and the translator gate.
 // @uses      context, strings, testing, internal/domain, internal/registry
-// @reason    SPEC-API-001 §7.15 makes the models list a catalog of what is routable and §8 makes an
-//
-//	untranslated format a named refusal, so both are one decision read two ways: a model is
-//	listed when a request for it could be served. Both are pinned here.
-//
+// @reason    SPEC-API-001 §7.15 makes the models list a catalog of what is routable and §8 makes an untranslated format a named refusal, so both are one decision read two ways: a model is listed when a request for it could be served. Both are pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

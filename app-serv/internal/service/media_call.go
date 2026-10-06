@@ -1,22 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_call.go
-// @for       The shared pipeline of the §7.10 data-plane media routes: resolve
-//
-//	the provider and kind, resolve the base URL, select an endpoint, build
-//	the target, call, and record the outcome.
-//
-// @uses      internal/dataplane, internal/domain, internal/registry, context,
-//
-//	strings.
-//
-// @reason    Six media routes differ only in their payload and their answer
-//
-//	shape; the resolution rules are one rule. Keeping them here means
-//	the override precedence, the format gate, and the endpoint-health
-//	bookkeeping cannot drift between the routes, and §7.10's "no silent
-//	cloud fallback" is enforced once rather than six times.
-//
+// @for       The shared pipeline of the §7.10 data-plane media routes: resolve the provider and kind, resolve the base URL, select an endpoint, build the target, call, and record the outcome.
+// @uses      internal/dataplane, internal/domain, internal/registry, context, strings.
+// @reason    Six media routes differ only in their payload and their answer shape; the resolution rules are one rule. Keeping them here means the override precedence, the format gate, and the endpoint-health bookkeeping cannot drift between the routes, and §7.10's "no silent cloud fallback" is enforced once rather than six times.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

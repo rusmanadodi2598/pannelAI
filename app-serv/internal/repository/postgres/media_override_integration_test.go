@@ -3,16 +3,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/media_override_integration_test.go
-// @for       The media override repository against a real server: round trip,
-//
-//	upsert semantics, ordering, and the migration's CHECK constraint.
-//
+// @for       The media override repository against a real server: round trip, upsert semantics, ordering, and the migration's CHECK constraint.
 // @uses      testing, context, time, internal/domain.
-// @reason    The upsert is the whole contract, a save must replace the row,
-//
-//	not add a second one, and only a real server proves the conflict
-//	target is the primary key the migration declares. The kind CHECK
-//	exists twice (domain and schema) and the second one needs the server.
+// @reason    The upsert is the whole contract, a save must replace the row, not add a second one, and only a real server proves the conflict target is the primary key the migration declares. The kind CHECK exists twice (domain and schema) and the second one needs the server.
 //
 //	Run with:
 //	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \

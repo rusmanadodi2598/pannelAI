@@ -3,12 +3,7 @@
 // @file      internal/router/router_deps_guard.go
 // @for       The boot-time assertion that every handler a route reaches is wired.
 // @uses      fmt, strings.
-// @reason    Registering a route against a nil handler cannot fail at boot, so a
-//
-//	half-wired deployment would answer 500 on that route until someone
-//	clicks it. Asserting the whole set here turns that into a startup
-//	failure that names what is missing (AGENTS.md §1.4).
-//
+// @reason    Registering a route against a nil handler cannot fail at boot, so a half-wired deployment would answer 500 on that route until someone clicks it. Asserting the whole set here turns that into a startup failure that names what is missing (AGENTS.md §1.4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

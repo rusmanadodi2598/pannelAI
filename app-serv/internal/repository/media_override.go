@@ -3,13 +3,7 @@
 // @file      internal/repository/media_override.go
 // @for       Storage contract for per-kind media provider overrides (SPEC-API-001 §7.10).
 // @uses      context, internal/domain.
-// @reason    AGENTS.md §1.5 keeps services off the driver. The contract is three
-//
-//	methods because an override is a small keyed document: the routes
-//	need the whole set to render a list, the data plane asks for one
-//	row per request, and a save replaces the row, there is no
-//	read-then-mutate path that would need a wider read.
-//
+// @reason    AGENTS.md §1.5 keeps services off the driver. The contract is three methods because an override is a small keyed document: the routes need the whole set to render a list, the data plane asks for one row per request, and a save replaces the row, there is no read-then-mutate path that would need a wider read.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

@@ -1,24 +1,9 @@
 // Command app-serv wires the background workers to the process lifecycle.
 //
 // @file      cmd/app-serv/worker_wiring.go
-// @for       Starts the quota flush, log retention, OAuth refresh, and published-quota
-//
-//	poll workers, each with a panic boundary and a termination
-//	condition.
-//
-// @uses      internal/repository, internal/repository/postgres,
-//
-//	internal/repository/redis, internal/service, context, fmt, log/slog,
-//	runtime/debug, time, github.com/redis/go-redis/v9.
-//
-// @reason    AGENTS.md §1.6 requires every goroutine to recover from a panic and
-//
-//	to stop with the process, and SPEC-API-001 §6 gives all three
-//	workers their schedule. They live in one file because their shape is
-//	identical, construct, run until ctx is cancelled, supervise the
-//	panic, so a new worker has a pattern to follow rather than a new
-//	place to invent one.
-//
+// @for       Starts the quota flush, log retention, OAuth refresh, and published-quota poll workers, each with a panic boundary and a termination condition.
+// @uses      internal/repository, internal/repository/postgres, internal/repository/redis, internal/service, context, fmt, log/slog, runtime/debug, time, github.com/redis/go-redis/v9.
+// @reason    AGENTS.md §1.6 requires every goroutine to recover from a panic and to stop with the process, and SPEC-API-001 §6 gives all three workers their schedule. They live in one file because their shape is identical, construct, run until ctx is cancelled, supervise the panic, so a new worker has a pattern to follow rather than a new place to invent one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

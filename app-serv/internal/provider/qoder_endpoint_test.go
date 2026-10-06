@@ -1,18 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_endpoint_test.go
-// @for       The host a Qoder credential is served from, and the URL rewrite that
-//
-//	moves a job token to its own gateway.
-//
+// @for       The host a Qoder credential is served from, and the URL rewrite that moves a job token to its own gateway.
 // @uses      net/http, net/http/httptest, strings, testing, time, internal/registry.
-// @reason    The registry entry declares one chat URL, and the vendor serves two
-//
-//	hosts. Which one a call answers on depends on the credential the
-//	account holds, so the rule and its absence (a CN entry, a device
-//	token) are pinned here, together with the host fixtures the
-//	connector tests share.
-//
+// @reason    The registry entry declares one chat URL, and the vendor serves two hosts. Which one a call answers on depends on the credential the account holds, so the rule and its absence (a CN entry, a device token) are pinned here, together with the host fixtures the connector tests share.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

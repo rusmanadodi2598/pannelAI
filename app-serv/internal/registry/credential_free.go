@@ -4,17 +4,7 @@
 // @file      internal/registry/credential_free.go
 // @for       The one answer to "does this provider answer without a credential?"
 // @uses      strings (standard library only).
-// @reason    Two callers have to agree on this question, so it is asked here once
-//
-//	(AGENTS.md §1.1 keeps it out of load.go, which is about decoding):
-//	routing decides whether it may synthesize a virtual endpoint for a
-//	provider the operator configured none for (draft 029 §4.8 F8), and
-//	the catalog's `?active=true` filter decides whether a provider with no
-//	stored row is still one the router can serve. When those two answered
-//	separately, the filter hid the whole OpenCode free lane from the panel
-//	while the router served it with 200, so a credential-free provider
-//	looked like it needed configuration it did not need.
-//
+// @reason    Two callers have to agree on this question, so it is asked here once (AGENTS.md §1.1 keeps it out of load.go, which is about decoding): routing decides whether it may synthesize a virtual endpoint for a provider the operator configured none for (draft 029 §4.8 F8), and the catalog's `?active=true` filter decides whether a provider with no stored row is still one the router can serve. When those two answered separately, the filter hid the whole OpenCode free lane from the panel while the router served it with 200, so a credential-free provider looked like it needed configuration it did not need.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

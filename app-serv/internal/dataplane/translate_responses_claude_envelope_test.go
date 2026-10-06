@@ -3,13 +3,7 @@
 // @file      internal/dataplane/translate_responses_claude_envelope_test.go
 // @for       Table-driven tests for the Anthropic envelope a Responses answer becomes.
 // @uses      testing.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and an
-//
-//	Anthropic client reads an envelope whose counts differ from
-//	OpenAI's: its input count excludes what OpenAI's includes, its id
-//	must never be empty, and a malformed body must fail rather than
-//	yield a half-built message.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and an Anthropic client reads an envelope whose counts differ from OpenAI's: its input count excludes what OpenAI's includes, its id must never be empty, and a malformed body must fail rather than yield a half-built message.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

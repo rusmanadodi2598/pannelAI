@@ -3,12 +3,7 @@
 // @file      internal/repository/oauth.go
 // @for       The OAuth state replay-guard boundary (SPEC-API-001 §4, §7.4).
 // @uses      context, time.
-// @reason    §4 makes the OAuth `state` single-use with a 10-minute TTL, so a
-//
-//	callback replayed or guessed cannot mint tokens. The guard is a
-//	storage concern the flow service depends on, never a driver: an
-//	in-memory implementation backs the tests, Redis backs production.
-//
+// @reason    §4 makes the OAuth `state` single-use with a 10-minute TTL, so a callback replayed or guessed cannot mint tokens. The guard is a storage concern the flow service depends on, never a driver: an in-memory implementation backs the tests, Redis backs production.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

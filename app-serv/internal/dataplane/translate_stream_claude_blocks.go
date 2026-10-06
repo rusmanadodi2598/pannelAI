@@ -3,17 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_claude_blocks.go
-// @for       Closing the Anthropic content blocks a stream opened, and framing an
-//
-//	event for the wire.
-//
+// @for       Closing the Anthropic content blocks a stream opened, and framing an event for the wire.
 // @uses      internal/schema.
-// @reason    Anthropic requires every opened block to be closed in index order, so
-//
-//	the closing rules are one small concern that both Finish and the delta
-//	mapping call. Splitting them keeps both files inside the AGENTS.md
-//	§1.1 budget.
-//
+// @reason    Anthropic requires every opened block to be closed in index order, so the closing rules are one small concern that both Finish and the delta mapping call. Splitting them keeps both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

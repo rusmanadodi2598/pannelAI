@@ -3,11 +3,7 @@
 // @file      internal/dataplane/selection_credential_walk_test.go
 // @for       The selection walk past one endpoint whose credential cannot be decrypted.
 // @uses      context, errors, testing, time, internal/domain
-// @reason    A rotated process key leaves stale ciphertext on individual rows. Aborting the walk on
-//
-//	the first unreadable one made every healthy account of that provider unroutable, which is
-//	a provider outage caused by one bad row.
-//
+// @reason    A rotated process key leaves stale ciphertext on individual rows. Aborting the walk on the first unreadable one made every healthy account of that provider unroutable, which is a provider outage caused by one bad row.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

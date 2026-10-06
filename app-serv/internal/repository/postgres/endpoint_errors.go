@@ -2,18 +2,8 @@
 //
 // @file      internal/repository/postgres/endpoint_errors.go
 // @for       Driver-to-domain error translation for the endpoint and key tables.
-// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, internal/domain,
-//
-//	errors, fmt.
-//
-// @reason    A PostgreSQL constraint violation has to become the §8 code a client
-//
-//	sees, and getting it wrong is invisible until a duplicate label returns
-//	500 instead of CONFLICT. Keeping the mapping in one small file, rather
-//	than beside each statement, is what stops the endpoint and key paths
-//	from drifting apart, and it keeps the mapping testable without a
-//	database.
-//
+// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, internal/domain, errors, fmt.
+// @reason    A PostgreSQL constraint violation has to become the §8 code a client sees, and getting it wrong is invisible until a duplicate label returns 500 instead of CONFLICT. Keeping the mapping in one small file, rather than beside each statement, is what stops the endpoint and key paths from drifting apart, and it keeps the mapping testable without a database.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

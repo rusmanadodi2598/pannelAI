@@ -2,17 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_key_health.go
-// @for       The parked-or-usable state of an upstream key: which failures park
-//
-//	it, for how long, and what a success resets.
-//
+// @for       The parked-or-usable state of an upstream key: which failures park it, for how long, and what a success resets.
 // @uses      time.
-// @reason    SPEC-API-001 §7.5 defines the health model and the router's
-//
-//	correctness depends on it: parking a failing key is what makes
-//	failover work, so the classes, the windows, and the reset live
-//	together here rather than at each call site.
-//
+// @reason    SPEC-API-001 §7.5 defines the health model and the router's correctness depends on it: parking a failing key is what makes failover work, so the classes, the windows, and the reset live together here rather than at each call site.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

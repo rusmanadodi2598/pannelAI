@@ -3,15 +3,7 @@
 // @file      cmd/app-serv/provider_index_url_test.go
 // @for       Tests that a custom node reaches a callable upstream URL.
 // @uses      testing, internal/domain, internal/provider.
-// @reason    SPEC-API-001 §7.4 says a node "becomes routable exactly like a
-//
-//	registry provider", and resolving a model string is only half of
-//	that: the connector must also be handed a URL that reaches the
-//	node's chat endpoint. A node stores a base, so the path has to be
-//	appended, a bare base sends every call to the host root. It sits
-//	in its own file because provider_index_test.go covers resolution
-//	and is near the §1.1 budget.
-//
+// @reason    SPEC-API-001 §7.4 says a node "becomes routable exactly like a registry provider", and resolving a model string is only half of that: the connector must also be handed a URL that reaches the node's chat endpoint. A node stores a base, so the path has to be appended, a bare base sends every call to the host root. It sits in its own file because provider_index_test.go covers resolution and is near the §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

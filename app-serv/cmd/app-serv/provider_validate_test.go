@@ -1,23 +1,9 @@
 // Command app-serv adapts the stateless credential check to HTTP.
 //
 // @file      cmd/app-serv/provider_validate_test.go
-// @for       The two reference rules the stateless check implements: the models →
-//
-//	chat fallback, and the Anthropic status rule.
-//
-// @uses      internal/domain, internal/netguard, internal/provider,
-//
-//	internal/registry, internal/service, context, net/http,
-//	net/http/httptest, sync/atomic, testing.
-//
-// @reason    Draft 017 §4.6 names both rules as the ones a naive implementation
-//
-//	gets wrong, and both are invisible to a status-only test: a fallback
-//	that never fires still reports the right answer for a server that has
-//	`/models`, and an Anthropic rule narrowed to 2xx still reports the right
-//	answer for a working key. Each case therefore asserts the *request path*
-//	as well as the outcome.
-//
+// @for       The two reference rules the stateless check implements: the models → chat fallback, and the Anthropic status rule.
+// @uses      internal/domain, internal/netguard, internal/provider, internal/registry, internal/service, context, net/http, net/http/httptest, sync/atomic, testing.
+// @reason    Draft 017 §4.6 names both rules as the ones a naive implementation gets wrong, and both are invisible to a status-only test: a fallback that never fires still reports the right answer for a server that has `/models`, and an Anthropic rule narrowed to 2xx still reports the right answer for a working key. Each case therefore asserts the *request path* as well as the outcome.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

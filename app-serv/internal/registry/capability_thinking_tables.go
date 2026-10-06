@@ -2,18 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_thinking_tables.go
-// @for       The reasoning tables the thinking resolver reads: the ordered
-//
-//	pattern walk, the per-provider overrides, and the exact-id
-//	exceptions.
-//
+// @for       The reasoning tables the thinking resolver reads: the ordered pattern walk, the per-provider overrides, and the exact-id exceptions.
 // @uses      (none; the tables are data read by capability_thinking.go).
-// @reason    Each table is a transcription of one layer in the reference's
-//
-//	capabilities.js, in the reference's own order, so a reader diffing
-//	this file against the reference sees one row per pattern. Keeping
-//	them apart from the resolver holds capability_thinking.go inside the
-//	AGENTS.md §1.1 budget.
+// @reason    Each table is a transcription of one layer in the reference's capabilities.js, in the reference's own order, so a reader diffing this file against the reference sees one row per pattern. Keeping them apart from the resolver holds capability_thinking.go inside the AGENTS.md §1.1 budget.
 //
 //	The pattern table carries two kinds of row. A reasoning row answers
 //	true and names the wire format; a stop row answers false and exists

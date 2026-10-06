@@ -5,14 +5,7 @@
 // @file      internal/reasoning/suffix.go
 // @for       The "(level)" suffix a client may append to a model string.
 // @uses      regexp, strconv, strings.
-// @reason    SPEC-API-001 §7.15 ports the reference's per-model control: the
-//
-//	panel's reasoning select appends the suffix to copied model names, and
-//	the gateway must strip it before resolving the model and read it as an
-//	override that outranks the stored provider mode. Keeping the parse
-//	here, next to the maps it validates against, is what stops the
-//	resolver and the injection from disagreeing about the same string.
-//
+// @reason    SPEC-API-001 §7.15 ports the reference's per-model control: the panel's reasoning select appends the suffix to copied model names, and the gateway must strip it before resolving the model and read it as an override that outranks the stored provider mode. Keeping the parse here, next to the maps it validates against, is what stops the resolver and the injection from disagreeing about the same string.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

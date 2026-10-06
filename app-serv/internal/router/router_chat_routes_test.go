@@ -2,12 +2,8 @@
 //
 // @file      internal/router/router_chat_routes_test.go
 // @for       Registration and boundary behavior of the Playground Chat route.
-// @uses      internal/dataplane, internal/handler, internal/schema,
-// internal/service, net/http, net/http/httptest, strings, testing.
-// @reason    F4 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires
-// the route itself to prove POST registration, wrong-verb rejection, and the
-// data-plane credential boundary without a dashboard session.
-//
+// @uses      internal/dataplane, internal/handler, internal/schema, internal/service, net/http, net/http/httptest, strings, testing.
+// @reason    F4 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires the route itself to prove POST registration, wrong-verb rejection, and the data-plane credential boundary without a dashboard session.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

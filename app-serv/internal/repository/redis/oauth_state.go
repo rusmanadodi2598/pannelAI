@@ -3,15 +3,7 @@
 // @file      internal/repository/redis/oauth_state.go
 // @for       The single-use OAuth state staging area behind §7.4's callback.
 // @uses      github.com/redis/go-redis/v9, context, time.
-// @reason    SPEC-API-001 §4 makes `state` a replay guard: one callback may
-//
-//	consume it, within ten minutes, exactly once. Staging with SET NX
-//	refuses a guessed collision and the take runs as one atomic script,
-//	so two concurrent callbacks with one state cannot both win, the
-//	loser is told the state is gone, which is the replay answer. The
-//	script rather than GETDEL is what keeps the store working on Redis
-//	6.0 (owner decision D4, G14 in the P2 register).
-//
+// @reason    SPEC-API-001 §4 makes `state` a replay guard: one callback may consume it, within ten minutes, exactly once. Staging with SET NX refuses a guessed collision and the take runs as one atomic script, so two concurrent callbacks with one state cannot both win, the loser is told the state is gone, which is the replay answer. The script rather than GETDEL is what keeps the store working on Redis 6.0 (owner decision D4, G14 in the P2 register).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

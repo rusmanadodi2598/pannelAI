@@ -2,20 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/proxy_rotation_test.go
-// @for       Tests for the proxy route plan vocabulary: the strategy's closed
-//
-//	set, the usability rule, and the dial URL a candidate dials with.
-//
+// @for       Tests for the proxy route plan vocabulary: the strategy's closed set, the usability rule, and the dial URL a candidate dials with.
 // @uses      internal/domain, net/url, testing, time.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D2/D3: the strategy is a closed
-//
-//	set whose empty stored value reads as the default, usability is the
-//	aggregate's own rule (enabled, and the last probe is not a failure),
-//	and the dial URL is the aggregate's knowledge because only it knows
-//	how protocol, host, port, and the opened secret compose. Pinning all
-//	three here keeps the service a coordinator rather than a second
-//	implementation of the rules.
-//
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D2/D3: the strategy is a closed set whose empty stored value reads as the default, usability is the aggregate's own rule (enabled, and the last probe is not a failure), and the dial URL is the aggregate's knowledge because only it knows how protocol, host, port, and the opened secret compose. Pinning all three here keeps the service a coordinator rather than a second implementation of the rules.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

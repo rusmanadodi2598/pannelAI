@@ -2,13 +2,9 @@
 //
 // @file      internal/repository/redis/vision_rotation.go
 // @for       Persists the vision adapter's round-robin position under one key.
-// @uses      github.com/redis/go-redis/v9, internal/domain, context,
+// @uses      github.com/redis/go-redis/v9, internal/domain, context, crypto/sha256, encoding/json, encoding/hex, time.
+// @reason    SPEC-API-001 §7.8 asks the adapter to respect round_robin, which needs the rotation state to outlive the request that advanced it.
 //
-//	crypto/sha256, encoding/json, encoding/hex, time.
-//
-// @reason    SPEC-API-001 §7.8 asks the adapter to respect round_robin, which
-//
-//	needs the rotation state to outlive the request that advanced it.
 //	The state is advisory, a lost key costs one request of skew, not
 //	a wrong answer, so the store is a plain read and write under a
 //	namespaced, hashed key with a TTL, rather than the scripted

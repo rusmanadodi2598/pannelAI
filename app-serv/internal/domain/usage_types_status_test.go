@@ -2,20 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_types_status_test.go
-// @for       The usage and log filters' status as a domain value object
-//
-//	(draft 010 F2 + F9).
-//
+// @for       The usage and log filters' status as a domain value object (draft 010 F2 + F9).
 // @uses      testing, time.
-// @reason    Draft 010 F9: UsageFilter.Status was a raw string, so an
-//
-//	unknown status could be constructed straight into the domain by
-//	any non-HTTP caller and reach the repository's "empty means
-//	unfiltered" predicate as a silently-empty query. These cases pin
-//	the closed set at the constructor and at Validate for both filter
-//	types, so the class is closed by the type, not by one boundary
-//	checking one value.
-//
+// @reason    Draft 010 F9: UsageFilter.Status was a raw string, so an unknown status could be constructed straight into the domain by any non-HTTP caller and reach the repository's "empty means unfiltered" predicate as a silently-empty query. These cases pin the closed set at the constructor and at Validate for both filter types, so the class is closed by the type, not by one boundary checking one value.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_provider.go
-// @for       The media provider reads and the per-kind override save
-//
-//	(SPEC-API-001 §7.10).
-//
-// @uses      internal/domain, internal/registry, internal/repository, context,
-//
-//	sort, strings, time.
-//
-// @reason    §7.10 lists media-capable providers by kind and lets an operator
-//
-//	point one at their own host. The registry is the default and the
-//	stored override wins, so this layer is where the two meet; it is
-//	also where the wire kind (`search`) is mapped to the registry
-//	kind (`webSearch`), so neither vocabulary leaks into the other.
-//
+// @for       The media provider reads and the per-kind override save (SPEC-API-001 §7.10).
+// @uses      internal/domain, internal/registry, internal/repository, context, sort, strings, time.
+// @reason    §7.10 lists media-capable providers by kind and lets an operator point one at their own host. The registry is the default and the stored override wins, so this layer is where the two meet; it is also where the wire kind (`search`) is mapped to the registry kind (`webSearch`), so neither vocabulary leaks into the other.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

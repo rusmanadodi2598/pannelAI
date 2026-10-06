@@ -3,20 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/media_credential.go
-// @for       Where one media call's credential goes: the placement each kind's
-//
-//	block declares, and the schemes that are not a plain bearer.
-//
+// @for       Where one media call's credential goes: the placement each kind's block declares, and the schemes that are not a plain bearer.
 // @uses      internal/provider, internal/registry, strings.
-// @reason    SPEC-API-001 §8.1 makes the per-kind block the source of truth for
-//
-//	credential placement, and the branches grew past a plain
-//	bearer/query pair: Basic (Inworld), PlayHT's user id plus key,
-//	and a declared header name (ElevenLabs). Keeping them in one
-//	file means a new scheme is one case here rather than a second
-//	reader of the same declaration, and media.go stays inside the
-//	AGENTS.md §1.1 line budget.
-//
+// @reason    SPEC-API-001 §8.1 makes the per-kind block the source of truth for credential placement, and the branches grew past a plain bearer/query pair: Basic (Inworld), PlayHT's user id plus key, and a declared header name (ElevenLabs). Keeping them in one file means a new scheme is one case here rather than a second reader of the same declaration, and media.go stays inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

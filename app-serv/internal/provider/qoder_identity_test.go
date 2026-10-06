@@ -1,23 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_identity_test.go
-// @for       The identity a Qoder request is signed as: where the user id comes from,
-//
-//	what is cached, and what is refused.
-//
-// @uses      context, encoding/json, internal/registry, net/http, net/http/httptest,
-//
-//	strings, testing, time.
-//
-// @reason    A Personal Access Token pasted into the panel is only a token: nothing on
-//
-//	the connection row names the account behind it, and the vendor refuses a
-//	signature whose `uid` is empty. So the resolution rule, stored id first,
-//	vendor read second, refusal when neither answers, is what decides whether
-//	a PAT connection works at all, and it was missing: every request from such
-//	a connection died as a shaping failure. These cases drive a stub rather
-//	than the vendor so the cache and the refusals are observable.
-//
+// @for       The identity a Qoder request is signed as: where the user id comes from, what is cached, and what is refused.
+// @uses      context, encoding/json, internal/registry, net/http, net/http/httptest, strings, testing, time.
+// @reason    A Personal Access Token pasted into the panel is only a token: nothing on the connection row names the account behind it, and the vendor refuses a signature whose `uid` is empty. So the resolution rule, stored id first, vendor read second, refusal when neither answers, is what decides whether a PAT connection works at all, and it was missing: every request from such a connection died as a shaping failure. These cases drive a stub rather than the vendor so the cache and the refusals are observable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

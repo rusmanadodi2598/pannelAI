@@ -2,17 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_endpoint.go
-// @for       The UpstreamEndpoint aggregate root: one configured account at a
-//
-//	provider and the keys routing may spend for it (SPEC-API-001 §5, §7.5).
-//
+// @for       The UpstreamEndpoint aggregate root: one configured account at a provider and the keys routing may spend for it (SPEC-API-001 §5, §7.5).
 // @uses      internal/domain (ULID, AppError constructors, UpstreamKey).
-// @reason    The endpoint is the mutation boundary for its keys (AGENTS.md
-//
-//	§2.2): "the endpoint must keep one usable credential" is a rule
-//	about the collection, so it cannot live on a key, and the router
-//	reads the ordering this type owns.
-//
+// @reason    The endpoint is the mutation boundary for its keys (AGENTS.md §2.2): "the endpoint must keep one usable credential" is a rule about the collection, so it cannot live on a key, and the router reads the ordering this type owns.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

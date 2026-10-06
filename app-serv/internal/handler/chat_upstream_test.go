@@ -1,14 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/chat_upstream_test.go
-// @for       The upstream double the chat HTTP tests dial, and the model string
-// that selects each of its behaviours.
+// @for       The upstream double the chat HTTP tests dial, and the model string that selects each of its behaviours.
 // @uses      encoding/json, net/http, net/http/httptest, strings.
-// @reason    F3 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md needs a
-// failure before the first frame, a failure after one, and a malformed stream,
-// which are three different upstream behaviours rather than three fixtures. The
-// model string selects one, so the handler tests read as scenarios.
-//
+// @reason    F3 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md needs a failure before the first frame, a failure after one, and a malformed stream, which are three different upstream behaviours rather than three fixtures. The model string selects one, so the handler tests read as scenarios.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

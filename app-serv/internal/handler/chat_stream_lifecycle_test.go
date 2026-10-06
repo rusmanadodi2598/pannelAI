@@ -1,12 +1,10 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/chat_stream_lifecycle_test.go
-// @for       The stream status lifecycle: when the response is committed, and
-// what a failure before or after that point looks like to a client.
+// @for       The stream status lifecycle: when the response is committed, and what a failure before or after that point looks like to a client.
 // @uses      internal/schema, net/http, net/http/httptest, strings, testing.
-// @reason    F3 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md found the
-// handler committing 200 and the SSE headers before the relay ran, so a failure
-// with no frame yet answered a success status carrying a JSON error body.
+// @reason    F3 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md found the handler committing 200 and the SSE headers before the relay ran, so a failure with no frame yet answered a success status carrying a JSON error body.
+//
 // OWASP A10 requires a failed operation not to report success, and AGENTS.md
 // §1.3 requires the status to represent the error, so the commit point is
 // pinned here rather than left to review.

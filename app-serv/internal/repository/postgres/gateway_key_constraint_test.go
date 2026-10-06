@@ -5,14 +5,7 @@
 // @file      internal/repository/postgres/gateway_key_constraint_test.go
 // @for       Integration proof that the schema constraints the contract promises exist.
 // @uses      internal/domain, context, errors, testing, time.
-// @reason    A stub cannot prove a UNIQUE index exists: the earlier P0 schema carried a
-//
-//	plain index on name, so PostgreSQL accepted duplicates while the
-//	in-memory test double rejected them. Only a real server closes that
-//	gap, and CREATE and UPDATE are different statements, so both are
-//	covered. Run with -tags=integration plus a DSN; a missing DSN fails
-//	rather than skipping (AGENTS.md §2.1).
-//
+// @reason    A stub cannot prove a UNIQUE index exists: the earlier P0 schema carried a plain index on name, so PostgreSQL accepted duplicates while the in-memory test double rejected them. Only a real server closes that gap, and CREATE and UPDATE are different statements, so both are covered. Run with -tags=integration plus a DSN; a missing DSN fails rather than skipping (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

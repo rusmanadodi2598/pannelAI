@@ -3,18 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/rtk_json.go
-// @for       The JSON helpers the walk uses: objects and arrays that keep their
-//
-//	members raw, and encoders that do not escape HTML.
-//
+// @for       The JSON helpers the walk uses: objects and arrays that keep their members raw, and encoders that do not escape HTML.
 // @uses      bytes, encoding/json.
-// @reason    SPEC-API-002 §3 requires every member the engine does not rewrite to
-//
-//	survive byte for byte, which is why an untouched member is carried as
-//	raw JSON rather than decoded. The encoders turn HTML escaping off
-//	because a compressed blob is code, and json.Marshal would rewrite
-//	its "<" and "&".
-//
+// @reason    SPEC-API-002 §3 requires every member the engine does not rewrite to survive byte for byte, which is why an untouched member is carried as raw JSON rather than decoded. The encoders turn HTML escaping off because a compressed blob is code, and json.Marshal would rewrite its "<" and "&".
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

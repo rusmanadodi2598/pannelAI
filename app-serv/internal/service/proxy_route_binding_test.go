@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy_route_binding_test.go
-// @for       The per-provider binding's table: None, Global, a pinned pool, and
-//
-//	the strategy override that orders each walk.
-//
+// @for       The per-provider binding's table: None, Global, a pinned pool, and the strategy override that orders each walk.
 // @uses      context, testing, time, internal/domain.
-// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D2-D5/D8: the binding is the
-//
-//	pass's whole point, so every mode is pinned here: direct on `__none__`,
-//	the pin leading the walk, the pin working while the global switch is
-//	off, the graceful fallback when the pinned row is unusable or gone,
-//	and the per-provider cursor.
-//
+// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D2-D5/D8: the binding is the pass's whole point, so every mode is pinned here: direct on `__none__`, the pin leading the walk, the pin working while the global switch is off, the graceful fallback when the pinned row is unusable or gone, and the per-provider cursor.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

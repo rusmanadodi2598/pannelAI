@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_probe_selection_test.go
-// @for       Tests for which key a connectivity test targets and which paths
-//
-//	cannot probe at all (SPEC-API-001 §7.5).
-//
+// @for       Tests for which key a connectivity test targets and which paths cannot probe at all (SPEC-API-001 §7.5).
 // @uses      context, strconv, testing, internal/domain.
-// @reason    §7.5 lets an operator test a named key or the default one, and a key
-//
-//	inside its backoff is exactly what a manual test is for, so the targeting
-//	rules differ from the router's selection on purpose. A refusal that read
-//	as a 500, or a probe that ran on a blank credential, would both look
-//	like a broken upstream; what the probe records lives in
-//	endpoint_probe_test.go.
-//
+// @reason    §7.5 lets an operator test a named key or the default one, and a key inside its backoff is exactly what a manual test is for, so the targeting rules differ from the router's selection on purpose. A refusal that read as a 500, or a probe that ran on a blank credential, would both look like a broken upstream; what the probe records lives in endpoint_probe_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -4,13 +4,7 @@
 // @file      internal/provider/default.go
 // @for       The connector every provider without specialized handling uses.
 // @uses      internal/registry, net/http, strings.
-// @reason    Most registry providers speak a standard wire format with a static
-//
-//	credential, so they need no per-vendor code. This connector is what
-//	makes those providers routable with zero extra source: adding an
-//	entry to the embedded registry is enough, which is the property the
-//	plugin seam exists to give.
-//
+// @reason    Most registry providers speak a standard wire format with a static credential, so they need no per-vendor code. This connector is what makes those providers routable with zero extra source: adding an entry to the embedded registry is enough, which is the property the plugin seam exists to give.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

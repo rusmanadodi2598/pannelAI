@@ -3,17 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/rtk_walk.go
-// @for       The four wire shapes RTK rewrites, the text decision, and the
-//
-//	JSON helpers that keep an untouched member byte for byte.
-//
+// @for       The four wire shapes RTK rewrites, the text decision, and the JSON helpers that keep an untouched member byte for byte.
 // @uses      bytes, encoding/json.
-// @reason    SPEC-API-002 §3 fixes which shapes carry a tool result: an OpenAI
-//
-//	tool message, an Anthropic tool_result block, and a Responses
-//	function_call_output. Keeping them together is what makes the
-//	"never touch a user message" rule readable in one screen.
-//
+// @reason    SPEC-API-002 §3 fixes which shapes carry a tool result: an OpenAI tool message, an Anthropic tool_result block, and a Responses function_call_output. Keeping them together is what makes the "never touch a user message" rule readable in one screen.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

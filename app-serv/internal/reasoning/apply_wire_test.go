@@ -3,19 +3,9 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/apply_wire_test.go
-// @for       The formats the gateway's own three wires speak: OpenAI, the two
-//
-//	Claude shapes, and the two Gemini shapes.
-//
+// @for       The formats the gateway's own three wires speak: OpenAI, the two Claude shapes, and the two Gemini shapes.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.15 ports thinkingUnified.js applyFormat, and the
-//
-//	whole point of the port is that each upstream reads its own field: a
-//	format that writes the wrong member is a control that looks wired and
-//	does nothing. These five formats are the ones a wire target maps onto
-//	directly (apply.go's resolveFormat), which is why they are proven
-//	together; the vendor dialects live in apply_vendor_test.go.
-//
+// @reason    SPEC-API-001 §7.15 ports thinkingUnified.js applyFormat, and the whole point of the port is that each upstream reads its own field: a format that writes the wrong member is a control that looks wired and does nothing. These five formats are the ones a wire target maps onto directly (apply.go's resolveFormat), which is why they are proven together; the vendor dialects live in apply_vendor_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

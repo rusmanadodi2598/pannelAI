@@ -2,15 +2,8 @@
 //
 // @file      internal/provider/qoder_sse.go
 // @for       Reading one SSE event at a time from a provider stream.
-//
 // @uses      bufio, bytes, errors, io, strings.
-// @reason    The peek has to hand back every byte it took, or the first frame of the
-//
-//	answer is lost before the client reads it. So the reader here returns
-//	the raw event beside its payload rather than consuming it silently, and
-//	it bounds one event the way the core's own stream reader does, a
-//	provider that never sends a newline cannot grow a buffer without limit.
-//
+// @reason    The peek has to hand back every byte it took, or the first frame of the answer is lost before the client reads it. So the reader here returns the raw event beside its payload rather than consuming it silently, and it bounds one event the way the core's own stream reader does, a provider that never sends a newline cannot grow a buffer without limit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

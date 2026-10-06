@@ -1,23 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/quota_published_rows.go
-// @for       The row decoders and driver-error mapping of the published-quota
-//
-//	cache tables.
-//
-// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn,
-//
-//	internal/domain, errors, fmt, time.
-//
-// @reason    The cache is read through two shapes, a state row on its own for
-//
-//	the sweep and a state joined to a bucket for the screen, and both decode
-//	the same columns, so the decoders belong beside each other rather than
-//	inside the queries that use them: one Scan list per shape is what keeps a
-//	added column from being decoded correctly in one path and wrongly in the
-//	other. Same reasoning as usage_scan.go and combo_rows.go, and it keeps
-//	either file inside AGENTS.md §1.1.
-//
+// @for       The row decoders and driver-error mapping of the published-quota cache tables.
+// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, internal/domain, errors, fmt, time.
+// @reason    The cache is read through two shapes, a state row on its own for the sweep and a state joined to a bucket for the screen, and both decode the same columns, so the decoders belong beside each other rather than inside the queries that use them: one Scan list per shape is what keeps a added column from being decoded correctly in one path and wrongly in the other. Same reasoning as usage_scan.go and combo_rows.go, and it keeps either file inside AGENTS.md §1.1.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

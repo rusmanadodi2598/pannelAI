@@ -1,19 +1,9 @@
 // Package domain holds the entities and value objects of the gateway.
 //
 // @file      internal/domain/settings_tokensaver.go
-// @for       The §7.9 token-saver group and the two vocabularies it is written
-//
-//	with: the RTK filter names and the ponytail levels.
-//
+// @for       The §7.9 token-saver group and the two vocabularies it is written with: the RTK filter names and the ponytail levels.
 // @uses      none.
-// @reason    SPEC-API-002 §4 and §7 fix the twelve filter names and the three
-//
-//	levels, and both are pinned by tests against the packages that
-//	implement them, so they are value-object vocabulary rather than
-//	configuration. They live in their own file because settings.go holds
-//	the document these groups sit in, and AGENTS.md §1.1 keeps the two
-//	apart.
-//
+// @reason    SPEC-API-002 §4 and §7 fix the twelve filter names and the three levels, and both are pinned by tests against the packages that implement them, so they are value-object vocabulary rather than configuration. They live in their own file because settings.go holds the document these groups sit in, and AGENTS.md §1.1 keeps the two apart.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

@@ -5,11 +5,7 @@
 // @file      internal/tokensaver/autodetect_rules.go
 // @for       The shape predicates autodetection decides with.
 // @uses      regexp, strings.
-// @reason    SPEC-API-002 §5 ports each reference predicate as its own function,
-//
-//	so the detection order in autodetect.go reads as the order and not as
-//	a wall of pattern tests.
-//
+// @reason    SPEC-API-002 §5 ports each reference predicate as its own function, so the detection order in autodetect.go reads as the order and not as a wall of pattern tests.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

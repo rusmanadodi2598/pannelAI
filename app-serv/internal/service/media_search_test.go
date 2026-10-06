@@ -2,16 +2,8 @@
 //
 // @file      internal/service/media_search_test.go
 // @for       The web search payload and result normalization of §7.10.
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	encoding/json, net/url, strings, testing.
-//
-// @reason    Search is the kind whose request shape comes from the registry, so
-//
-//	the cases pin that the declared parameter names are the ones sent
-//	and that every list location the reference's providers answer with
-//	normalizes into the same result items.
-//
+// @uses      internal/dataplane, internal/domain, internal/schema, context, encoding/json, net/url, strings, testing.
+// @reason    Search is the kind whose request shape comes from the registry, so the cases pin that the declared parameter names are the ones sent and that every list location the reference's providers answer with normalizes into the same result items.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

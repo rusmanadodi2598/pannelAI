@@ -3,16 +3,10 @@
 // Package migrations applies the SQL schema app-serv depends on at boot.
 //
 // @file      migrations/published_quota_test.go
-// @for       Tagged integration test for 000013: the shape the published-quota
-//
-//	repository and the quota screen both compile against.
-//
+// @for       Tagged integration test for 000013: the shape the published-quota repository and the quota screen both compile against.
 // @uses      database/sql, testing, context.
-// @reason    A cache table is the kind of schema change whose failure is a
+// @reason    A cache table is the kind of schema change whose failure is a runtime one: a primary key that lost its second column silently accepts a duplicate bucket label, a nullable NOT NULL breaks the sweep's default, an index nobody declared makes the due-sweep a full sort, and a "simplified"
 //
-//	runtime one: a primary key that lost its second column silently accepts a
-//	duplicate bucket label, a nullable NOT NULL breaks the sweep's default, an
-//	index nobody declared makes the due-sweep a full sort, and a "simplified"
 //	NOT NULL total turns every unlimited provider allowance into an exhausted
 //	one on screen. Each is invisible until a real server parses the file, which
 //	is why apply_test.go asserts shape and this file does the same for the new

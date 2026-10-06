@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/combo_order.go
-// @for       The ordered model list one request routes through, the rotation
-//
-//	wiring that produces it, and the reference validation a combo write
-//	runs (SPEC-API-001 §7.7).
-//
+// @for       The ordered model list one request routes through, the rotation wiring that produces it, and the reference validation a combo write runs (SPEC-API-001 §7.7).
 // @uses      internal/domain, internal/repository, context, log/slog.
-// @reason    §7.7 makes write time the only moment a combo's references can be
-//
-//	checked, a router cannot dereference a stale name, and makes the
-//	round-robin order the one part of a combo a client observes request
-//	by request. Both concern the path from a stored combo to a served
-//	request, which is why they sit together, apart from the CRUD
-//	surface.
-//
+// @reason    §7.7 makes write time the only moment a combo's references can be checked, a router cannot dereference a stale name, and makes the round-robin order the one part of a combo a client observes request by request. Both concern the path from a stored combo to a served request, which is why they sit together, apart from the CRUD surface.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

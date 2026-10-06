@@ -1,18 +1,9 @@
 // Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
 // @file      internal/service/oauthhttp/oauth_grant_call_test.go
-// @for       That the token-endpoint call is built from the neutral grant
-//
-//	shape and its typed answer decoded as the wire carries it.
-//
+// @for       That the token-endpoint call is built from the neutral grant shape and its typed answer decoded as the wire carries it.
 // @uses      context, net/http, net/http/httptest, testing, internal/domain.
-// @reason    R19 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the grant seam spoke
-//
-//	*http.Request, an HTTP-layer type, inside the service layer
-//	(AGENTS.md §1.5). The seam now carries method, URL, headers, and
-//	body, and this test proves the wire request built from that shape
-//	is what a provider actually receives.
-//
+// @reason    R19 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the grant seam spoke *http.Request, an HTTP-layer type, inside the service layer (AGENTS.md §1.5). The seam now carries method, URL, headers, and body, and this test proves the wire request built from that shape is what a provider actually receives.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

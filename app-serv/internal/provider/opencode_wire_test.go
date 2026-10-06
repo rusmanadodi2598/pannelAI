@@ -2,17 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_wire_test.go
-// @for       The Responses-wire rules the OpenCode connector applies: the output
-//
-//	ceiling's field name, the statelessness of prior reasoning items, and
-//	the refusal of a body it cannot read.
-//
+// @for       The Responses-wire rules the OpenCode connector applies: the output ceiling's field name, the statelessness of prior reasoning items, and the refusal of a body it cannot read.
 // @uses      testing, encoding/json, internal/registry.
-// @reason    The Responses wire is stricter than the chat one, so its rules are
-//
-//	pinned apart from the shape the two wires share. Keeping them here
-//	also keeps both files inside the AGENTS.md §1.1 budget.
-//
+// @reason    The Responses wire is stricter than the chat one, so its rules are pinned apart from the shape the two wires share. Keeping them here also keeps both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,18 +3,9 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/apply.go
-// @for       Writing one resolved intent into the outbound body in the wire
-//
-//	shape its provider's format reads.
-//
+// @for       Writing one resolved intent into the outbound body in the wire shape its provider's format reads.
 // @uses      encoding/json.
-// @reason    SPEC-API-001 §7.15 ports the reference's thinkingUnified.js
-//
-//	applyFormat: thirteen provider-native shapes, each the field that
-//	upstream actually reads. A field the upstream ignores is a control
-//	that looks wired and does nothing, so each format's own dispatch is
-//	carried rather than one generic field.
-//
+// @reason    SPEC-API-001 §7.15 ports the reference's thinkingUnified.js applyFormat: thirteen provider-native shapes, each the field that upstream actually reads. A field the upstream ignores is a control that looks wired and does nothing, so each format's own dispatch is carried rather than one generic field.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

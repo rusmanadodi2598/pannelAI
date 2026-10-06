@@ -2,15 +2,8 @@
 //
 // @file      internal/router/router_proxy_stub_test.go
 // @for       The in-memory proxy store and prober the §7.11 route tests drive.
-// @uses      internal/domain, internal/handler, internal/service, context, sort,
-//
-//	strings, testing.
-//
-// @reason    AGENTS.md §1.1 caps a file at 250 lines and the route table plus
-//
-//	its cases already fills one; the doubles are a separate concern, and
-//	keeping them here means the route file reads as the audit table it is.
-//
+// @uses      internal/domain, internal/handler, internal/service, context, sort, strings, testing.
+// @reason    AGENTS.md §1.1 caps a file at 250 lines and the route table plus its cases already fills one; the doubles are a separate concern, and keeping them here means the route file reads as the audit table it is.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

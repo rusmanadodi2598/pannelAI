@@ -1,19 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_catalog.go
-// @for       The model configuration Qoder publishes to an authenticated account,
-//
-//	and the hour of reuse that keeps it off every request.
-//
+// @for       The model configuration Qoder publishes to an authenticated account, and the hour of reuse that keeps it off every request.
 // @uses      bytes, context, encoding/json, fmt, io, net/http, strings, sync, time.
-// @reason    Qoder's chat body carries the vendor's own `model_config` object, and
-//
-//	the endpoint silently answers with a different model when the object it
-//	is handed is wrong (the reference states this outright). The list is
-//	also the only place a model that joined the vendor's catalogue after
-//	the registry was generated can be named, so it is read from the
-//	service rather than copied into a table.
-//
+// @reason    Qoder's chat body carries the vendor's own `model_config` object, and the endpoint silently answers with a different model when the object it is handed is wrong (the reference states this outright). The list is also the only place a model that joined the vendor's catalogue after the registry was generated can be named, so it is read from the service rather than copied into a table.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,12 +3,7 @@
 // @file      internal/repository/postgres/gateway_key.go
 // @for       PostgreSQL persistence for the GatewayKey aggregate root.
 // @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository.
-// @reason    SPEC-API-001 §6 defines gateway_keys (SHA-256 digest lookup, hint,
-//
-//	soft revocation) and AGENTS.md §1.7 requires explicit pool limits,
-//	indexed lookups, and no unbounded queries; this is the only place
-//	SQL appears for this aggregate.
-//
+// @reason    SPEC-API-001 §6 defines gateway_keys (SHA-256 digest lookup, hint, soft revocation) and AGENTS.md §1.7 requires explicit pool limits, indexed lookups, and no unbounded queries; this is the only place SQL appears for this aggregate.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

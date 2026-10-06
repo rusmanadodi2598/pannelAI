@@ -1,23 +1,9 @@
 // Command app-serv wires the P1 management and data-plane dependencies.
 //
 // @file      cmd/app-serv/management_wiring.go
-// @for       Builds the P1 repositories, services, and handlers, and assembles
-//
-//	the router dependencies from them.
-//
-// @uses      internal/config, internal/dataplane, internal/domain,
-//
-//	internal/provider, internal/registry,
-//	internal/repository/{postgres,redis}, internal/service,
-//	internal/router, pgxpool, redis. The handlers themselves are built
-//	in management_handlers.go.
-//
-// @reason    AGENTS.md §1.5 makes this file wiring only: it constructs the
-//
-//	dependency graph and nothing else, so no business rule hides in the
-//	composition root. It is separate from main.go because the P1 surface
-//	is a dozen services; one file would blow the §1.1 line budget and mix
-//	the boot sequence with the graph.
+// @for       Builds the P1 repositories, services, and handlers, and assembles the router dependencies from them.
+// @uses      internal/config, internal/dataplane, internal/domain, internal/provider, internal/registry, internal/repository/{postgres,redis}, internal/service, internal/router, pgxpool, redis. The handlers themselves are built in management_handlers.go.
+// @reason    AGENTS.md §1.5 makes this file wiring only: it constructs the dependency graph and nothing else, so no business rule hides in the composition root. It is separate from main.go because the P1 surface is a dozen services; one file would blow the §1.1 line budget and mix the boot sequence with the graph.
 //
 //	Adapters that already exist in their own package are used as they
 //	are (`dataplane.NewCatalogLookup`, `dataplane.NewMediaTransport`); only

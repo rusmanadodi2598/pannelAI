@@ -3,11 +3,7 @@
 // @file      internal/dataplane/resolve_disabled_test.go
 // @for       The routing refusal a disabled pair must produce, and the fail-open on a failed read.
 // @uses      context, errors, testing, internal/domain
-// @reason    SPEC-API-001 §7.6 says a disabled model is hidden from routing, and the listing already
-//
-//	hid it: without this the operator's switch moved a model off the menu while leaving the
-//	door open, so a client naming it was still served and still billed.
-//
+// @reason    SPEC-API-001 §7.6 says a disabled model is hidden from routing, and the listing already hid it: without this the operator's switch moved a model off the menu while leaving the door open, so a client naming it was still served and still billed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

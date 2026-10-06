@@ -3,14 +3,7 @@
 // @file      internal/registry/opencode_free_models_test.go
 // @for       The OpenCode Free entry's declared models, pinned to the reference.
 // @uses      testing.
-// @reason    The port dropped the reference's static model list for opencode,
-//
-//	so its free models were answerable through passthrough yet absent
-//	from every models list, and resolved onto the provider's OpenAI
-//	format instead of the per-model formats the reference declares
-//	(9router PR #4073). Pinning the entry here keeps the catalog and
-//	the reference from drifting apart again.
-//
+// @reason    The port dropped the reference's static model list for opencode, so its free models were answerable through passthrough yet absent from every models list, and resolved onto the provider's OpenAI format instead of the per-model formats the reference declares (9router PR #4073). Pinning the entry here keeps the catalog and the reference from drifting apart again.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

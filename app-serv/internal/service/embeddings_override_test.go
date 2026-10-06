@@ -2,16 +2,8 @@
 //
 // @file      internal/service/embeddings_override_test.go
 // @for       The §7.10 override resolution the embeddings use case reads.
-// @uses      internal/domain, internal/registry, context, errors, strings,
-//
-//	testing.
-//
-// @reason    §7.10's save is only real if the data plane honours it, and the
-//
-//	rule has three outcomes worth pinning: a stored override wins, an
-//	absent one falls back to the registry, and a provider with neither
-//	is refused rather than defaulted to a cloud host.
-//
+// @uses      internal/domain, internal/registry, context, errors, strings, testing.
+// @reason    §7.10's save is only real if the data plane honours it, and the rule has three outcomes worth pinning: a stored override wins, an absent one falls back to the registry, and a provider with neither is refused rather than defaulted to a cloud host.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

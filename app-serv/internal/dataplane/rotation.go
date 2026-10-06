@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/rotation.go
-// @for       The round_robin combo strategy's distribution: which member leads
-//
-//	this request (SPEC-API-001 §7.7).
-//
+// @for       The round_robin combo strategy's distribution: which member leads this request (SPEC-API-001 §7.7).
 // @uses      internal/domain, context.
-// @reason    The distribution rule lives in the domain and the atomic counter in
-//
-//	Redis, so the engine's part is only to ask for the order and to fall
-//	back when the store cannot answer. Keeping that in one function is
-//	what makes "rotation is an optimisation, not a correctness input"
-//	true for every caller instead of a promise each one re-implements.
-//
+// @reason    The distribution rule lives in the domain and the atomic counter in Redis, so the engine's part is only to ask for the order and to fall back when the store cannot answer. Keeping that in one function is what makes "rotation is an optimisation, not a correctness input" true for every caller instead of a promise each one re-implements.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

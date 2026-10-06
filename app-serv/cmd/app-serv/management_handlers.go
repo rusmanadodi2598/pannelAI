@@ -1,17 +1,9 @@
 // Command app-serv assembles the management handler set.
 //
 // @file      cmd/app-serv/management_handlers.go
-// @for       The one place the management handlers are built, so the wiring
-//
-//	function stays about composing services.
-//
+// @for       The one place the management handlers are built, so the wiring function stays about composing services.
 // @uses      fmt, internal/handler, internal/service.
-// @reason    buildManagement was approaching the AGENTS.md §1.1 line limit, and
-//
-//	the handler construction is the part that grows every time a route is
-//	added: it is a list, not a decision. Keeping it apart lets the wiring
-//	file stay readable as the set of services it composes.
-//
+// @reason    buildManagement was approaching the AGENTS.md §1.1 line limit, and the handler construction is the part that grows every time a route is added: it is a list, not a decision. Keeping it apart lets the wiring file stay readable as the set of services it composes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

@@ -1,17 +1,9 @@
 // Command app-serv wires the process-wide egress policy.
 //
 // @file      cmd/app-serv/egress_proxy_route_test.go
-// @for       The routing decision itself: settings.network and one host in, a
-//
-//	route or a refusal out.
-//
+// @for       The routing decision itself: settings.network and one host in, a route or a refusal out.
 // @uses      testing, net/url, internal/domain.
-// @reason    The server-backed rows in egress_proxy_test.go prove the setting
-//
-//	reaches the transport; this table proves the rule those rows rest on,
-//	including the no-proxy spellings a person is most likely to get wrong
-//	(a bare suffix that must not match a longer label).
-//
+// @reason    The server-backed rows in egress_proxy_test.go prove the setting reaches the transport; this table proves the rule those rows rest on, including the no-proxy spellings a person is most likely to get wrong (a bare suffix that must not match a longer label).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

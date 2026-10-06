@@ -3,11 +3,7 @@
 // @file      internal/service/oauthhttp/helpers_test.go
 // @for       The assertions shared by the transport's own tests.
 // @uses      internal/domain, testing.
-// @reason    Each moved file needs the same domain-error check, and repeating a
-//
-//	five-line helper per file is how one assertion starts to disagree
-//	with the others.
-//
+// @reason    Each moved file needs the same domain-error check, and repeating a five-line helper per file is how one assertion starts to disagree with the others.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

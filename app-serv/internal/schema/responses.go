@@ -1,19 +1,9 @@
 // Package schema holds the typed contracts each route decodes into.
 //
 // @file      internal/schema/responses.go
-// @for       The OpenAI Responses request contract: its item vocabulary, the
-//
-//	input union, and the fields a Responses-only body may carry.
-//
+// @for       The OpenAI Responses request contract: its item vocabulary, the input union, and the fields a Responses-only body may carry.
 // @uses      encoding/json, internal/domain.
-// @reason    SPEC-API-001 §7.15 makes POST /api/v1/responses a P3 deliverable,
-//
-//	and the wire differs from the chat completions contract in three
-//	ways that have to be decoded rather than guessed: `input` is a
-//	union of a bare string and an item array, an item's content is a
-//	union of a bare string and a part array, and an item's kind is
-//	carried by `type` with a role fallback the CLI tools rely on.
-//
+// @reason    SPEC-API-001 §7.15 makes POST /api/v1/responses a P3 deliverable, and the wire differs from the chat completions contract in three ways that have to be decoded rather than guessed: `input` is a union of a bare string and an item array, an item's content is a union of a bare string and a part array, and an item's kind is carried by `type` with a role fallback the CLI tools rely on.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

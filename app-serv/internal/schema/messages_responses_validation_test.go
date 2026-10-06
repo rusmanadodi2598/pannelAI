@@ -3,10 +3,7 @@
 // @file      internal/schema/messages_responses_validation_test.go
 // @for       The validation that must reach inside an Anthropic content block and a Responses item.
 // @uses      testing
-// @reason    A tag on a nested type is only reached when the parent field dives. Both wires carried tags
-//
-//	below a field without one, so a malformed block or an unbounded number passed as validated input.
-//
+// @reason    A tag on a nested type is only reached when the parent field dives. Both wires carried tags below a field without one, so a malformed block or an unbounded number passed as validated input.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

@@ -2,20 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/pricing.go
-// @for       The embedded rate tables and the three-step resolver behind every
-//
-//	cost estimate the usage accounting writes.
-//
+// @for       The embedded rate tables and the three-step resolver behind every cost estimate the usage accounting writes.
 // @uses      embed, encoding/json, strings, sync (standard library only).
-// @reason    SPEC-API-001 §7.12 states the recorded cost figures are estimates
-//
-//	for display, and the reference computes them locally from
-//	$-per-million-token tables rather than reading a price from the
-//	upstream. The tables are generated from the reference
-//	(tools/pricing-gen.mjs) and embedded the way registry.yaml is, so a
-//	deployment carries its rates inside the binary and a rate change is
-//	a regeneration, not an edit.
-//
+// @reason    SPEC-API-001 §7.12 states the recorded cost figures are estimates for display, and the reference computes them locally from $-per-million-token tables rather than reading a price from the upstream. The tables are generated from the reference (tools/pricing-gen.mjs) and embedded the way registry.yaml is, so a deployment carries its rates inside the binary and a rate change is a regeneration, not an edit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

@@ -3,19 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/answer_identity.go
-// @for       The model name one answer is served under, and the rewrite that
-//
-//	places it on a body the gateway would otherwise forward untouched.
-//
+// @for       The model name one answer is served under, and the rewrite that places it on a body the gateway would otherwise forward untouched.
 // @uses      encoding/json, internal/dataplane Resolution.
-// @reason    A combo is a name an operator wrote and a client sends, so the
-//
-//	answer it produces has to carry that name back: the resolved member is a
-//	routing fact the caller cannot re-send, and a round_robin combo hands the
-//	same client a different member on every request. SPEC-API-001 §7.6 fixes
-//	the rule. The same-wire passthrough is the one path that never reaches a
-//	translation where a name could be chosen, so the stamp lives here.
-//
+// @reason    A combo is a name an operator wrote and a client sends, so the answer it produces has to carry that name back: the resolved member is a routing fact the caller cannot re-send, and a round_robin combo hands the same client a different member on every request. SPEC-API-001 §7.6 fixes the rule. The same-wire passthrough is the one path that never reaches a translation where a name could be chosen, so the stamp lives here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

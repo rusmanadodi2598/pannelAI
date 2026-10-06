@@ -5,12 +5,7 @@
 // @file      internal/reasoning/levels_test.go
 // @for       The level and budget maps, including every threshold boundary.
 // @uses      testing.
-// @reason    AGENTS.md §2.1 requires the maps proven beside their port: the
-//
-//	thresholds are the reference's own (thinking.js) and a boundary that
-//	drifts by one changes which level a numeric budget is read as, which
-//	is a silent behaviour change no caller can see.
-//
+// @reason    AGENTS.md §2.1 requires the maps proven beside their port: the thresholds are the reference's own (thinking.js) and a boundary that drifts by one changes which level a numeric budget is read as, which is a silent behaviour change no caller can see.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

@@ -1,20 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_identity.go
-// @for       The account a COSY signature is made as: the vendor's own user id behind
-//
-//	the credential a connection holds.
-//
+// @for       The account a COSY signature is made as: the vendor's own user id behind the credential a connection holds.
 // @uses      context, encoding/json, fmt, net/http, strings, sync, time.
-// @reason    Every signed Qoder request carries an encrypted identity whose `uid` is
-//
-//	the vendor's user id, and the vendor refuses a request without it. A device
-//	login learns that id during its own flow and stores it, but a Personal Access
-//	Token pasted into the panel is only a token: nothing on the connection row
-//	names the account behind it. Reading it from the vendor at sign time is
-//	what makes a PAT connection usable at all, the reference does the same,
-//	and refuses with "reconnect the account" when the id cannot be had.
-//
+// @reason    Every signed Qoder request carries an encrypted identity whose `uid` is the vendor's user id, and the vendor refuses a request without it. A device login learns that id during its own flow and stores it, but a Personal Access Token pasted into the panel is only a token: nothing on the connection row names the account behind it. Reading it from the vendor at sign time is what makes a PAT connection usable at all, the reference does the same, and refuses with "reconnect the account" when the id cannot be had.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

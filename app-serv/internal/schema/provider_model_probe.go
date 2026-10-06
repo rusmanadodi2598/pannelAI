@@ -1,17 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/provider_model_probe.go
-// @for       The §7.4 model-test contract: one provider's model probed by id, or
-//
-//	every chat model it offers probed in one bounded sweep.
-//
+// @for       The §7.4 model-test contract: one provider's model probed by id, or every chat model it offers probed in one bounded sweep.
 // @uses      encoding/json tags only.
-// @reason    Draft 017 §4.10 (F10) recorded that the panel could only ask "does
-//
-//	this connection answer" and never "does this model answer". The answer
-//	is per model, so the DTO is one row per model plus the sweep's own
-//	budget bookkeeping.
-//
+// @reason    Draft 017 §4.10 (F10) recorded that the panel could only ask "does this connection answer" and never "does this model answer". The answer is per model, so the DTO is one row per model plus the sweep's own budget bookkeeping.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

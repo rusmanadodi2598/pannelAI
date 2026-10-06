@@ -2,20 +2,8 @@
 //
 // @file      internal/handler/provider_detail_thinking_test.go
 // @for       The §7.4 detail route's reasoning level union on a custom node.
-//
-// @uses      internal/domain, internal/registry, internal/service, context,
-//
-//	encoding/json, net/http, net/http/httptest, reflect, testing, time.
-//
-// @reason    SPEC-API-001 §7.14 makes the detail body the union of the levels a
-//
-//	provider's models accept, and a synthesized custom node has no registry
-//	models, so the panel's picker on that screen exists only if this route
-//	carries the levels its declared rows accept. The owner reported the
-//	missing control on 2026-09-27; this file pins the wire answer, and the
-//	second case pins that a node with no declared rows answers no field at
-//	all rather than an empty one, which is what hides the picker.
-//
+// @uses      internal/domain, internal/registry, internal/service, context, encoding/json, net/http, net/http/httptest, reflect, testing, time.
+// @reason    SPEC-API-001 §7.14 makes the detail body the union of the levels a provider's models accept, and a synthesized custom node has no registry models, so the panel's picker on that screen exists only if this route carries the levels its declared rows accept. The owner reported the missing control on 2026-09-27; this file pins the wire answer, and the second case pins that a node with no declared rows answers no field at all rather than an empty one, which is what hides the picker.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

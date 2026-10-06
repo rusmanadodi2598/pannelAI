@@ -3,25 +3,13 @@
 // Package main is the app-serv composition root.
 //
 // @file      cmd/app-serv/playground_live_integration_test.go
-// @for       F9 live evidence: one Playground request through the real router,
+// @for       F9 live evidence: one Playground request through the real router, gateway-key auth, Redis rate limit and quota counter, PostgreSQL usage and log rows, and a guarded upstream, plus the refusal paths.
+// @uses      internal/dataplane, internal/router, net/http, net/http/httptest, context, strings, testing.
+// @reason    F9 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires evidence a reviewer can repeat, not a claim: status, machine code, request id, and row counts for one non-streamed and one streamed call, plus the refusals. The stack it runs against is built in playground_live_stack_test.go.
 //
-//	gateway-key auth, Redis rate limit and quota counter, PostgreSQL usage and
-//	log rows, and a guarded upstream, plus the refusal paths.
-//
-// @uses      internal/dataplane, internal/router, net/http, net/http/httptest,
-//
-//	context, strings, testing.
-//
-// @reason    F9 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires
-//
-//	evidence a reviewer can repeat, not a claim: status, machine code, request
-//	id, and row counts for one non-streamed and one streamed call, plus the
-//	refusals. The stack it runs against is built in
-//	playground_live_stack_test.go.
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	  PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
-//	    go test -race -tags=integration -run TestPlaygroundLive ./cmd/app-serv/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
+//	  go test -race -tags=integration -run TestPlaygroundLive ./cmd/app-serv/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config

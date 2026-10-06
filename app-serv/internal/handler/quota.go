@@ -1,18 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/quota.go
-// @for       The quota window reads, the published-quota read, and the budget-cap
-//
-//	write (SPEC-API-001 §7.12).
-//
+// @for       The quota window reads, the published-quota read, and the budget-cap write (SPEC-API-001 §7.12).
 // @uses      internal/domain, internal/schema, internal/service, net/http.
-// @reason    §7.12 exposes every endpoint's windows, one endpoint's windows, the
-//
-//	provider's own answer about one connection, and the cap that makes
-//	the router skip an exhausted endpoint. The cap body is validated
-//	before the service sees it (AGENTS.md §2.4), and the cost is a
-//	decimal string on the wire, never a float (§4).
-//
+// @reason    §7.12 exposes every endpoint's windows, one endpoint's windows, the provider's own answer about one connection, and the cap that makes the router skip an exhausted endpoint. The cap body is validated before the service sees it (AGENTS.md §2.4), and the cost is a decimal string on the wire, never a float (§4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

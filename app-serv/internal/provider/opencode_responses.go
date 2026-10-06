@@ -2,22 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_responses.go
-// @for       The Responses-wire field rules the connector applies before a
-//
-//	request leaves for the OpenCode upstream.
-//
+// @for       The Responses-wire field rules the connector applies before a request leaves for the OpenCode upstream.
 // @uses      encoding/json, strings, internal/registry.
-// @reason    The reference's transformRequest rewrites six members of a
-//
-//	Responses body that the upstream refuses or reads differently: it
-//	demotes tool_choice only for the models its registry lists, pins
-//	store to false, folds a chat-shaped reasoning_effort into
-//	reasoning:{effort,summary}, replaces an empty input with a placeholder
-//	turn, clamps an overlong call_id and stringifies an object arguments,
-//	and flattens a chat-shaped tool declaration. Each is a request the
-//	upstream would otherwise reject (or answer with a different tool), so
-//	the connector owns them rather than forwarding bytes the provider
-//	cannot read.
+// @reason    The reference's transformRequest rewrites six members of a Responses body that the upstream refuses or reads differently: it demotes tool_choice only for the models its registry lists, pins store to false, folds a chat-shaped reasoning_effort into reasoning:{effort,summary}, replaces an empty input with a placeholder turn, clamps an overlong call_id and stringifies an object arguments, and flattens a chat-shaped tool declaration. Each is a request the upstream would otherwise reject (or answer with a different tool), so the connector owns them rather than forwarding bytes the provider cannot read.
 //
 //	This is the one place the connector deliberately rewrites a
 //	same-format body, which the data plane's lossless rule otherwise

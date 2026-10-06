@@ -3,12 +3,8 @@
 // @file      internal/service/quota_published_cache.go
 // @for       The cached published-quota reads: the collection page's one batched query, and the per-endpoint cache-first read.
 // @uses      context, internal/domain, internal/repository, sort, time.
-// @reason    The quota screen must show what each provider publishes about itself, and
+// @reason    The quota screen must show what each provider publishes about itself, and asking providers during that read would spend one outbound call per account, the N+1 shape AGENTS.md §1.7 blocks on this route, at the owner's standing instruction. So a worker writes provider answers into a cache and every read here takes them from it, in one statement for the whole page.
 //
-//	asking providers during that read would spend one outbound call per account
-//	, the N+1 shape AGENTS.md §1.7 blocks on this route, at the owner's
-//	standing instruction. So a worker writes provider answers into a cache and
-//	every read here takes them from it, in one statement for the whole page.
 //	A card can still ask for a live number when the operator wants the instant
 //	rather than the last poll, which is the `force` path below.
 //

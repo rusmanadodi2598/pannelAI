@@ -1,16 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_call_test.go
-// @for       The model-string and base-URL resolution every §7.10 media route
-//
-//	shares.
-//
+// @for       The model-string and base-URL resolution every §7.10 media route shares.
 // @uses      internal/domain, context, strings, testing.
-// @reason    What a model string addresses and which base URL is in force are
-//
-//	the rules a route must not be able to drift on, and each is a silent
-//	failure if wrong. The perform-side rules live in media_perform_test.go.
-//
+// @reason    What a model string addresses and which base URL is in force are the rules a route must not be able to drift on, and each is a silent failure if wrong. The perform-side rules live in media_perform_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

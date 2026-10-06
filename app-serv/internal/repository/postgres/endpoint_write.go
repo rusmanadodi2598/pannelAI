@@ -1,19 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/endpoint_write.go
-// @for       The shared write helpers and the transaction boundary every mutating
-//
-//	statement in this package runs inside.
-//
+// @for       The shared write helpers and the transaction boundary every mutating statement in this package runs inside.
 // @uses      github.com/jackc/pgx/v5, internal/domain, context.
-// @reason    Create, CreateBatch, AddKeys, and Reorder all have to write the root and
-//
-//	its children together, so the transaction boundary and the key-writing
-//	statement are declared once here rather than repeated per caller, and
-//	one spelling is what makes "the aggregate is saved, or nothing" true on
-//	every path (AGENTS.md §2.2). It is separate from endpoint.go because
-//	AGENTS.md §1.1 caps a file at 250 lines.
-//
+// @reason    Create, CreateBatch, AddKeys, and Reorder all have to write the root and its children together, so the transaction boundary and the key-writing statement are declared once here rather than repeated per caller, and one spelling is what makes "the aggregate is saved, or nothing" true on every path (AGENTS.md §2.2). It is separate from endpoint.go because AGENTS.md §1.1 caps a file at 250 lines.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

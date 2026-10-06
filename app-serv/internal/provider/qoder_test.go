@@ -1,21 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_test.go
-// @for       The Qoder connector's two decisions: which host serves a credential,
-//
-//	and what a signed request puts on the wire.
-//
-// @uses      context, encoding/json, io, net/http, net/http/httptest, strings,
-//
-//	testing, time, internal/registry.
-//
-// @reason    These are the two places the gateway stops treating Qoder like an
-//
-//	OpenAI-compatible vendor. A host chosen wrong is a 403 from a working
-//	credential, and a signature computed over bytes that are not the ones
-//	sent is a rejection that looks like an auth failure, so both are
-//	pinned against a stub that records exactly what arrived.
-//
+// @for       The Qoder connector's two decisions: which host serves a credential, and what a signed request puts on the wire.
+// @uses      context, encoding/json, io, net/http, net/http/httptest, strings, testing, time, internal/registry.
+// @reason    These are the two places the gateway stops treating Qoder like an OpenAI-compatible vendor. A host chosen wrong is a 403 from a working credential, and a signature computed over bytes that are not the ones sent is a rejection that looks like an auth failure, so both are pinned against a stub that records exactly what arrived.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

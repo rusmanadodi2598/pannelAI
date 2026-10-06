@@ -4,16 +4,8 @@
 //
 // @file      internal/service/systemone_live_test.go
 // @for       The live decision-route run against the real OpenCode upstream.
-// @uses      context, encoding/json, testing, time, internal/dataplane,
-//
-//	internal/domain, internal/provider, internal/registry, internal/schema.
-//
-// @reason    The hermetic tests pin the route's shape against doubles. This file
-//
-//	is the other half of the evidence R-35 asks for: the same route against
-//	the real upstream, so "the decision model answers" is a measurement
-//	rather than an inference. It carries the `integration,live` build tags because
-//	it spends the upstream's anonymous quota and needs the network.
+// @uses      context, encoding/json, testing, time, internal/dataplane, internal/domain, internal/provider, internal/registry, internal/schema.
+// @reason    The hermetic tests pin the route's shape against doubles. This file is the other half of the evidence R-35 asks for: the same route against the real upstream, so "the decision model answers" is a measurement rather than an inference. It carries the `integration,live` build tags because it spends the upstream's anonymous quota and needs the network.
 //
 //	  go test -tags=integration,live -run TestSystemOneLive ./internal/service/
 //

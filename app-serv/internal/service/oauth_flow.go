@@ -1,22 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow.go
-// @for       Starting a provider authorization: state minting, PKCE, and the
-//
-//	authorize URL (SPEC-API-001 §7.4 POST .../oauth/start).
-//
-// @uses      crypto/rand, encoding/base64, encoding/json, net/url, strings,
-//
-//	time, internal/domain, internal/registry, internal/repository.
-//
-// @reason    §4 makes `state` a single-use, ten-minute replay guard and the
-//
-//	registry the only source of authorize endpoints, scopes, and
-//	the PKCE method, so this file mints the two random values,
-//	stages the flow's private context, and renders the URL the
-//	browser follows. Every value it emits is derived from the
-//	provider entry and CSPRNG output; nothing is per-provider code.
-//
+// @for       Starting a provider authorization: state minting, PKCE, and the authorize URL (SPEC-API-001 §7.4 POST .../oauth/start).
+// @uses      crypto/rand, encoding/base64, encoding/json, net/url, strings, time, internal/domain, internal/registry, internal/repository.
+// @reason    §4 makes `state` a single-use, ten-minute replay guard and the registry the only source of authorize endpoints, scopes, and the PKCE method, so this file mints the two random values, stages the flow's private context, and renders the URL the browser follows. Every value it emits is derived from the provider entry and CSPRNG output; nothing is per-provider code.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

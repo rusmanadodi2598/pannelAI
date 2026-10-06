@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_openai_claude.go
-// @for       Converting Anthropic stream events into OpenAI chunks, which is the
-//
-//	half of the OpenAI client stream that a Claude provider needs.
-//
+// @for       Converting Anthropic stream events into OpenAI chunks, which is the half of the OpenAI client stream that a Claude provider needs.
 // @uses      internal/schema, strings.
-// @reason    The OpenAI client state and its Anthropic-event mapping are two
-//
-//	concerns: one keeps the stream's identity and usage, the other maps
-//	event types. Splitting them keeps both files inside the AGENTS.md
-//	§1.1 budget, and keeping the mapping unframed lets a client state on
-//	another wire reuse it.
-//
+// @reason    The OpenAI client state and its Anthropic-event mapping are two concerns: one keeps the stream's identity and usage, the other maps event types. Splitting them keeps both files inside the AGENTS.md §1.1 budget, and keeping the mapping unframed lets a client state on another wire reuse it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -2,17 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_patterns.go
-// @for       The ordered vision pattern table, ported from the reference's own
-//
-//	PATTERN_CAPABILITIES.
-//
+// @for       The ordered vision pattern table, ported from the reference's own PATTERN_CAPABILITIES.
 // @uses      (none; the table is data read by capability_resolve.go).
-// @reason    The table is one row per reference pattern and nothing else, so it
-//
-//	grows whenever the reference adds a family. Keeping it in its own
-//	file is what holds capability.go inside the AGENTS.md §1.1 budget,
-//	and it makes the port's shape obvious: a reader comparing this list
-//	to open-sse/providers/capabilities.js sees one row per pattern.
+// @reason    The table is one row per reference pattern and nothing else, so it grows whenever the reference adds a family. Keeping it in its own file is what holds capability.go inside the AGENTS.md §1.1 budget, and it makes the port's shape obvious: a reader comparing this list to open-sse/providers/capabilities.js sees one row per pattern.
 //
 //	The rows are in the reference's own order because the first match
 //	wins: reordering them silently changes answers for every id that

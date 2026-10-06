@@ -3,14 +3,7 @@
 // @file      internal/repository/postgres/provider_node.go
 // @for       PostgreSQL persistence for the ProviderNode aggregate root.
 // @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository.
-// @reason    SPEC-API-001 §6 defines provider_nodes and §7.4 makes a node a
-//
-//	separate aggregate from an endpoint (a node carries no credential of
-//	its own), so it gets its own statements rather than a mode on the
-//	endpoint repository. The prefix is the model-string namespace and
-//	carries a UNIQUE index, which is why a collision must surface as
-//	domain.ErrNodePrefixTaken and not as a driver message.
-//
+// @reason    SPEC-API-001 §6 defines provider_nodes and §7.4 makes a node a separate aggregate from an endpoint (a node carries no credential of its own), so it gets its own statements rather than a mode on the endpoint repository. The prefix is the model-string namespace and carries a UNIQUE index, which is why a collision must surface as domain.ErrNodePrefixTaken and not as a driver message.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

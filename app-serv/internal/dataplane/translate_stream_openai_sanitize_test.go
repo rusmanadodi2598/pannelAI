@@ -3,20 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_openai_sanitize_test.go
-// @for       The forwarded chunk's shape on the way to the client: the empty
-//
-//	members a vendor writes on every frame, and the cut at the caller's
-//	stop sequences.
-//
+// @for       The forwarded chunk's shape on the way to the client: the empty members a vendor writes on every frame, and the cut at the caller's stop sequences.
 // @uses      strings, testing, internal/dataplane StreamState.
-// @reason    Both halves are only visible in a stream, and both were measured
-//
-//	live rather than inferred: a five-token answer arrived with eleven
-//	truthy-empty `tool_calls` members and an empty-string finish reason,
-//	and a `stop` sequence changed nothing at all. The payloads below are
-//	written as that vendor writes them, noise included, so the test fails
-//	if the noise comes back.
-//
+// @reason    Both halves are only visible in a stream, and both were measured live rather than inferred: a five-token answer arrived with eleven truthy-empty `tool_calls` members and an empty-string finish reason, and a `stop` sequence changed nothing at all. The payloads below are written as that vendor writes them, noise included, so the test fails if the noise comes back.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

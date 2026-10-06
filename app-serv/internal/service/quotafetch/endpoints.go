@@ -4,11 +4,7 @@
 // @file      internal/service/quotafetch/endpoints.go
 // @for       Resolving one family's usage URL from the registry block it declares.
 // @uses      internal/service/quotafetch, net/url, strings
-// @reason    A provider moves its billing endpoint without telling this gateway, and the
-//
-//	registry is where an operator records the move; reading the declared host
-//	first is what makes that record take effect instead of a stale copy here.
-//
+// @reason    A provider moves its billing endpoint without telling this gateway, and the registry is where an operator records the move; reading the declared host first is what makes that record take effect instead of a stale copy here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

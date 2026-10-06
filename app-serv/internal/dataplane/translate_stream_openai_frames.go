@@ -3,19 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_openai_frames.go
-// @for       The OpenAI chunk layer: the frames the gateway builds itself (the
-//
-//	content frame, the usage chunk, the stream identity, the marshal
-//	guard) and the re-framing of one upstream OpenAI chunk.
-//
+// @for       The OpenAI chunk layer: the frames the gateway builds itself (the content frame, the usage chunk, the stream identity, the marshal guard) and the re-framing of one upstream OpenAI chunk.
 // @uses      encoding/json, internal/schema.
-// @reason    The frame builders are the half of the OpenAI client wire the
-//
-//	gateway authors rather than forwards, and they are what draft 021's
-//	framing findings are about. The upstream re-framing joined them
-//	here for the AGENTS.md §1.1 budget: the translator keeps the state
-//	and this file owns what a frame is.
-//
+// @reason    The frame builders are the half of the OpenAI client wire the gateway authors rather than forwards, and they are what draft 021's framing findings are about. The upstream re-framing joined them here for the AGENTS.md §1.1 budget: the translator keeps the state and this file owns what a frame is.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -5,11 +5,7 @@
 // @file      internal/repository/redis/vision_rotation_absent_integration_test.go
 // @for       The difference between no rotation stored and Redis not answering.
 // @uses      context, os, testing, github.com/redis/go-redis/v9
-// @reason    The store's contract says an absent key is the zero state. Reading it as an error made
-//
-//	a first run indistinguishable from an outage, and the caller swallowed both, so rotation
-//	restarted silently every time Redis was merely down.
-//
+// @reason    The store's contract says an absent key is the zero state. Reading it as an error made a first run indistinguishable from an outage, and the caller swallowed both, so rotation restarted silently every time Redis was merely down.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

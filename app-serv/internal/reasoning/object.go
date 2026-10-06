@@ -3,18 +3,9 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/object.go
-// @for       The decoded-object helpers the thinking application mutates a body
-//
-//	through.
-//
+// @for       The decoded-object helpers the thinking application mutates a body through.
 // @uses      encoding/json.
-// @reason    SPEC-API-001 §7.15 applies a thinking config to whichever wire the
-//
-//	upstream speaks, and the formats disagree about where the field lives:
-//	a top-level member, a nested generationConfig, or the request envelope
-//	the CLI payloads wrap theirs in. One set of helpers is what keeps the
-//	format switch to the field each format actually writes.
-//
+// @reason    SPEC-API-001 §7.15 applies a thinking config to whichever wire the upstream speaks, and the formats disagree about where the field lives: a top-level member, a nested generationConfig, or the request envelope the CLI payloads wrap theirs in. One set of helpers is what keeps the format switch to the field each format actually writes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

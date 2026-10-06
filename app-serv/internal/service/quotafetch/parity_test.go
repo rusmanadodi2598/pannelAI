@@ -3,13 +3,7 @@
 // @file      internal/service/quotafetch/parity_test.go
 // @for       Asserts the fetcher map and the registry's usage-flagged providers are the same set.
 // @uses      internal/registry, internal/service/quotafetch, sort, testing.
-// @reason    Fourteen providers were marked `usage: true` in the registry with no handler
-//
-//	behind them, and a fifteenth fetcher was registered under an id the registry
-//	never carries, so it could only ever be reached from a test. Both directions
-//	of that mistake are one assertion each, and this screen's whole purpose is
-//	to show a provider's quota, so the set is checked rather than remembered.
-//
+// @reason    Fourteen providers were marked `usage: true` in the registry with no handler behind them, and a fifteenth fetcher was registered under an id the registry never carries, so it could only ever be reached from a test. Both directions of that mistake are one assertion each, and this screen's whole purpose is to show a provider's quota, so the set is checked rather than remembered.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

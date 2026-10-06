@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_doubles_test.go
-// @for       The in-memory broker, subscription, and event fixture every usage
-//
-//	event test drives.
-//
+// @for       The in-memory broker, subscription, and event fixture every usage event test drives.
 // @uses      internal/domain, internal/repository, context, sync, time.
-// @reason    The publisher and the consumer are two halves of one seam, so their
-//
-//	tests share one double: a broker that records what was published and
-//	hands it to whoever subscribed. Defining it twice would let the two
-//	halves' tests disagree about what the seam does, which is the failure
-//	this file exists to prevent. The subscription is mutex-guarded
-//	because the consumer reads it from its own goroutine while a test
-//	reads the delivered count.
-//
+// @reason    The publisher and the consumer are two halves of one seam, so their tests share one double: a broker that records what was published and hands it to whoever subscribed. Defining it twice would let the two halves' tests disagree about what the seam does, which is the failure this file exists to prevent. The subscription is mutex-guarded because the consumer reads it from its own goroutine while a test reads the delivered count.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

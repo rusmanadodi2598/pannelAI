@@ -1,19 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/media_stub_test.go
-// @for       The media caller, router, index, and authenticator the §7.10
-//
-//	data-plane route tests drive.
-//
-// @uses      internal/dataplane, internal/domain, internal/registry,
-//
-//	internal/service, context, testing, time.
-//
-// @reason    The handler takes a concrete *service.MediaCallService, so these
-//
-//	build the real service over doubles rather than faking the service,
-//	the seam production uses is the seam the tests use.
-//
+// @for       The media caller, router, index, and authenticator the §7.10 data-plane route tests drive.
+// @uses      internal/dataplane, internal/domain, internal/registry, internal/service, context, testing, time.
+// @reason    The handler takes a concrete *service.MediaCallService, so these build the real service over doubles rather than faking the service, the seam production uses is the seam the tests use.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

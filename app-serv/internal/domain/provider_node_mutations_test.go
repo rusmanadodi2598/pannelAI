@@ -4,11 +4,7 @@
 // @file      internal/domain/provider_node_mutations_test.go
 // @for       Identifier assignment and the PATCH surface of a custom provider node.
 // @uses      testing, time.
-// @reason    A supplied id must carry the node type's own prefix, and a PATCH
-//
-//	must not be able to move a node onto another prefix, which is how
-//	two node types would end up sharing a routing rule.
-//
+// @reason    A supplied id must carry the node type's own prefix, and a PATCH must not be able to move a node onto another prefix, which is how two node types would end up sharing a routing rule.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

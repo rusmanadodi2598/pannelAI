@@ -3,11 +3,7 @@
 // @file      internal/repository/postgres/quota_paging_integration_test.go
 // @for       The provider-grouped paging of quota windows against a real database.
 // @uses      context, testing, time, internal/domain.
-// @reason    PageWindowsByProvider counts groups and then reads their windows, and
-//
-//	only a live PostgreSQL can show that a page boundary cannot drop a
-//	group the count promised.
-//
+// @reason    PageWindowsByProvider counts groups and then reads their windows, and only a live PostgreSQL can show that a page boundary cannot drop a group the count promised.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

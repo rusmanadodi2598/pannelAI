@@ -3,21 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_openai_gemini.go
-// @for       OpenAI chat request to Gemini generateContent payload translation,
-//
-//	and Gemini usage to the OpenAI accounting block.
-//
+// @for       OpenAI chat request to Gemini generateContent payload translation, and Gemini usage to the OpenAI accounting block.
 // @uses      internal/schema, encoding/json, strings.
-// @reason    SPEC-API-001 §7.15 lists Gemini among the translated formats and the
-//
-//	reference implements this direction as a pure function
-//	(open-sse/translator/request/openai-to-gemini.js). No P1 provider
-//	can reach it, every entry declaring format: gemini is reported as
-//	`routability: connector` because its protocol wraps the payload in a
-//	vendor envelope, so this is translation without a route, kept
-//	because the registry data it is written against is already on disk
-//	and a connector later needs exactly this payload.
-//
+// @reason    SPEC-API-001 §7.15 lists Gemini among the translated formats and the reference implements this direction as a pure function (open-sse/translator/request/openai-to-gemini.js). No P1 provider can reach it, every entry declaring format: gemini is reported as `routability: connector` because its protocol wraps the payload in a vendor envelope, so this is translation without a route, kept because the registry data it is written against is already on disk and a connector later needs exactly this payload.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

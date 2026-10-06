@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/key_use.go
-// @for       The §7.3 key-usage rule: every authenticated data-plane call
-//
-//	advances the presenting key's counters.
-//
+// @for       The §7.3 key-usage rule: every authenticated data-plane call advances the presenting key's counters.
 // @uses      internal/domain, context, time.
-// @reason    SPEC-API-001 §7.3 exposes request_count and last_used_at on every
-//
-//	gateway key, and the register's D3 decision (2026-09-19) is that the
-//	counter follows every authenticated data-plane call. The write runs
-//	where the §4 rule is decided, ChatService.Authenticate, because that
-//	is the one place chat, models, media, and embeddings all ask whether a
-//	key may proceed, so one call site counts for every route instead of
-//	whichever routes remember to count.
-//
+// @reason    SPEC-API-001 §7.3 exposes request_count and last_used_at on every gateway key, and the register's D3 decision (2026-09-19) is that the counter follows every authenticated data-plane call. The write runs where the §4 rule is decided, ChatService.Authenticate, because that is the one place chat, models, media, and embeddings all ask whether a key may proceed, so one call site counts for every route instead of whichever routes remember to count.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

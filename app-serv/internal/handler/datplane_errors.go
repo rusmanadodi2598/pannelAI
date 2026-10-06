@@ -1,15 +1,10 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/datplane_errors.go
-// @for       The OpenAI error envelope writer and the SSE sink the data plane
-//
-//	responses use.
-//
+// @for       The OpenAI error envelope writer and the SSE sink the data plane responses use.
 // @uses      internal/dataplane, internal/schema, net/http, log/slog.
-// @reason    SPEC-API-001 §4 fixes the data plane envelope
+// @reason    SPEC-API-001 §4 fixes the data plane envelope (`{"error":{"message","type","code"}}`) and §8 makes it the shape a CLI tool reads, so the data plane never borrows the management envelope.
 //
-//	(`{"error":{"message","type","code"}}`) and §8 makes it the shape a CLI
-//	tool reads, so the data plane never borrows the management envelope.
 //	Both the writer and the sink are in one file because they are the two
 //	ways a data plane response is produced: as a body, or as frames.
 //

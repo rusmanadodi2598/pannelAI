@@ -1,21 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/provider_search_test.go
-// @for       The `?q` parameter of GET /api/v1/providers: the wire behaviour
-//
-//	of the filter and its refusal for an over-long query.
-//
-// @uses      internal/registry, internal/service, net/http, net/http/httptest,
-//
-//	encoding/json, strings, testing.
-//
-// @reason    SPEC-UI §14 Q13 and PORT 002 §4.1: before `q` existed the route
-//
-//	answered the unfiltered registry to every spelling, so the failure
-//	this file pins is silence rather than an error. The bound is
-//	validated here because §1.4 of AGENTS.md puts external input
-//	limits at the boundary, and 120 is the tag's own number.
-//
+// @for       The `?q` parameter of GET /api/v1/providers: the wire behaviour of the filter and its refusal for an over-long query.
+// @uses      internal/registry, internal/service, net/http, net/http/httptest, encoding/json, strings, testing.
+// @reason    SPEC-UI §14 Q13 and PORT 002 §4.1: before `q` existed the route answered the unfiltered registry to every spelling, so the failure this file pins is silence rather than an error. The bound is validated here because §1.4 of AGENTS.md puts external input limits at the boundary, and 120 is the tag's own number.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

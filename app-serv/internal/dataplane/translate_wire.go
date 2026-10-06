@@ -3,19 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_wire.go
-// @for       The JSON primitives and finish-reason mapping every translator
-//
-//	shares, plus the one role name Gemini spells differently.
-//
+// @for       The JSON primitives and finish-reason mapping every translator shares, plus the one role name Gemini spells differently.
 // @uses      encoding/json, strings.
-// @reason    SPEC-API-001 §7.15 makes format translation the data plane's core
-//
-//	job. Every translator reads the same untyped upstream payload, and
-//	the finish-reason mapping is mirrored in both directions: a private
-//	copy per file is how the two directions start disagreeing. The JSON
-//	readers are the declared decode boundary AGENTS.md §1.4 allows, so
-//	the type assertions live here rather than at a call site.
-//
+// @reason    SPEC-API-001 §7.15 makes format translation the data plane's core job. Every translator reads the same untyped upstream payload, and the finish-reason mapping is mirrored in both directions: a private copy per file is how the two directions start disagreeing. The JSON readers are the declared decode boundary AGENTS.md §1.4 allows, so the type assertions live here rather than at a call site.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

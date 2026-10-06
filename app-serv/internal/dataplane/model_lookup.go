@@ -3,19 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/model_lookup.go
-// @for       The catalog read path resolution uses, adapted onto the combo and
-//
-//	model-catalog repositories.
-//
+// @for       The catalog read path resolution uses, adapted onto the combo and model-catalog repositories.
 // @uses      internal/domain, internal/repository, context.
-// @reason    SPEC-API-001 §7.15 resolves a model string through combos, then
-//
-//	aliases, then provider/model. Each of those reads is already owned by
-//	another boundary, so this file is the seam between them: it satisfies
-//	ModelLookup without the resolver depending on four repository
-//	contracts, and it is the only place that knows a disabled set is
-//	addressable by (provider, model).
-//
+// @reason    SPEC-API-001 §7.15 resolves a model string through combos, then aliases, then provider/model. Each of those reads is already owned by another boundary, so this file is the seam between them: it satisfies ModelLookup without the resolver depending on four repository contracts, and it is the only place that knows a disabled set is addressable by (provider, model).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

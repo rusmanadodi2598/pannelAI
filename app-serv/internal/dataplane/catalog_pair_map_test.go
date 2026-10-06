@@ -1,19 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/catalog_pair_map_test.go
-// @for       That the custom-pair resolution in the models list reads one
-//
-//	snapshot of the registry rather than a lookup per pair.
-//
+// @for       That the custom-pair resolution in the models list reads one snapshot of the registry rather than a lookup per pair.
 // @uses      context, testing, internal/domain.
-// @reason    R06 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: ModelList resolved
-//
-//	every stored custom pair against the registry one pair at a time,
-//	so /models paid a registry lookup per operator row on top of the
-//	overlay build. The list already holds every entry from All(); this
-//	test pins that the pairs are answered from that snapshot, by
-//	counting the registry lookups a two-pair list takes.
-//
+// @reason    R06 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: ModelList resolved every stored custom pair against the registry one pair at a time, so /models paid a registry lookup per operator row on top of the overlay build. The list already holds every entry from All(); this test pins that the pairs are answered from that snapshot, by counting the registry lookups a two-pair list takes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

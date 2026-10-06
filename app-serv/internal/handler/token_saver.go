@@ -1,17 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/token_saver.go
-// @for       The token-saver read and whole-replacement routes (SPEC-API-001
-//
-//	§7.9).
-//
+// @for       The token-saver read and whole-replacement routes (SPEC-API-001 §7.9).
 // @uses      internal/schema, internal/service, net/http.
-// @reason    §7.9 defines one shape for the read and the write so the panel
-//
-//	can PUT back exactly what it GET. The handler keeps that symmetry:
-//	it decodes, calls the service, and encodes, and the deprecated
-//	caveman key has no route here by design (§7.9).
-//
+// @reason    §7.9 defines one shape for the read and the write so the panel can PUT back exactly what it GET. The handler keeps that symmetry: it decodes, calls the service, and encodes, and the deprecated caveman key has no route here by design (§7.9).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

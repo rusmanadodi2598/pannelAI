@@ -1,18 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_forced_control_test.go
-// @for       The control cases around a forced stream: a client that asked for
-//
-//	SSE still receives SSE, and a provider that forces nothing is
-//	untouched.
-//
+// @for       The control cases around a forced stream: a client that asked for SSE still receives SSE, and a provider that forces nothing is untouched.
 // @uses      testing, context, internal/registry.
-// @reason    The fold must only run for a client that asked for one body from a
-//
-//	provider that refuses to send one. A test that pins the opposite case
-//	is what keeps a future change from folding a stream a client is
-//	reading live, which would turn a live answer into one delayed blob.
-//
+// @reason    The fold must only run for a client that asked for one body from a provider that refuses to send one. A test that pins the opposite case is what keeps a future change from folding a stream a client is reading live, which would turn a live answer into one delayed blob.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

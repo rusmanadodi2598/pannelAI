@@ -3,10 +3,7 @@
 // @file      internal/repository/redis/session.go
 // @for       Stores revocable dashboard session digests with bounded TTLs.
 // @uses      github.com/redis/go-redis/v9, context, crypto/sha256.
-// @reason    Session cookies are opaque at the edge, while Redis provides
-//
-//	immediate revocation without keeping authentication state in Go.
-//
+// @reason    Session cookies are opaque at the edge, while Redis provides immediate revocation without keeping authentication state in Go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

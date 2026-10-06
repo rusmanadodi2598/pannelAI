@@ -2,10 +2,7 @@
 //
 // @file      internal/router/router_requestid_test.go
 // @for       The §4 requirement that every request carries a request id.
-// @uses      internal/router, internal/schema, net/http, net/http/httptest,
-//
-//	strings, encoding/json, testing.
-//
+// @uses      internal/router, internal/schema, net/http, net/http/httptest, strings, encoding/json, testing.
 // @reason    SPEC-API-001 §8 requires an INTERNAL_ERROR to be logged with a request id, so the id must exist and must survive when a caller supplies one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router

@@ -3,15 +3,8 @@
 //
 // @file      internal/registry/capability_consumer_test.go
 // @for       The guard that the two capability consumers read one table.
-//
 // @uses      testing.
-// @reason    SPEC-API-001 §7.8 refuses a vision adapter whose model cannot read
-//
-//	images, and §7.6 filters the catalog by the same two names. Draft 017
-//	§4.4 found the consequence of those being two sources: the catalog
-//	answered zero rows while the adapter answered correctly, and neither
-//	was wrong on its own. This test fails when a second table reappears.
-//
+// @reason    SPEC-API-001 §7.8 refuses a vision adapter whose model cannot read images, and §7.6 filters the catalog by the same two names. Draft 017 §4.4 found the consequence of those being two sources: the catalog answered zero rows while the adapter answered correctly, and neither was wrong on its own. This test fails when a second table reappears.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

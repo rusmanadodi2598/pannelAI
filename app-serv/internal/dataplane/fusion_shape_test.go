@@ -1,18 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/fusion_shape_test.go
-// @for       How a panel member and the judge are shaped: the same-format raw
-//
-//	body and the decoded request are both edited, or a cross-format call
-//	would keep what a same-format one withdrew.
-//
+// @for       How a panel member and the judge are shaped: the same-format raw body and the decoded request are both edited, or a cross-format call would keep what a same-format one withdrew.
 // @uses      testing, internal/schema.
-// @reason    These transformations decide what a panel member is asked and what
-//
-//	the judge keeps, and each is decidable without a network, so a table
-//	pins every wire-format spelling here rather than in a fusion test that
-//	would report a regression as a mysterious panel failure.
-//
+// @reason    These transformations decide what a panel member is asked and what the judge keeps, and each is decidable without a network, so a table pins every wire-format spelling here rather than in a fusion test that would report a regression as a mysterious panel failure.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

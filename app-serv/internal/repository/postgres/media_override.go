@@ -3,11 +3,7 @@
 // @file      internal/repository/postgres/media_override.go
 // @for       PostgreSQL persistence for per-kind media overrides (SPEC-API-001 §7.10).
 // @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgxpool, context, fmt.
-// @reason    The row is a keyed document with no relations, so the statements
-//
-//	are short; the only rule worth stating is that an upsert replaces
-//	the whole row, which is what makes a save idempotent.
-//
+// @reason    The row is a keyed document with no relations, so the statements are short; the only rule worth stating is that an upsert replaces the whole row, which is what makes a save idempotent.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

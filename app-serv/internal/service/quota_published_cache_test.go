@@ -3,12 +3,7 @@
 // @file      internal/service/quota_published_cache_test.go
 // @for       Proves the collection's provider numbers cost one query, and that a stored answer lowers intact.
 // @uses      context, internal/domain, internal/service, testing, time.
-// @reason    This screen's standing rule is that reading it never fans out to one
-//
-//	provider call per account. The rule holds only if the batched read stays
-//	batched, so the count of queries is asserted rather than assumed, and the
-//	distinction between "no ceiling" and "no answer yet" is asserted with it.
-//
+// @reason    This screen's standing rule is that reading it never fans out to one provider call per account. The rule holds only if the batched read stays batched, so the count of queries is asserted rather than assumed, and the distinction between "no ceiling" and "no answer yet" is asserted with it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

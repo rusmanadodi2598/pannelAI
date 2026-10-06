@@ -3,18 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/applier.go
-// @for       Applying the enabled saver groups in their reference order, with
-//
-//	configuration read per request and every optional failure left open.
-//
+// @for       Applying the enabled saver groups in their reference order, with configuration read per request and every optional failure left open.
 // @uses      internal/domain, context, encoding/json, errors, net/http.
-// @reason    SPEC-API-002 §8 makes the saver pipeline a request-path concern but
-//
-// keeps each transform independently optional. This seam is where settings
-// become decisions: RTK first, Headroom second, and Ponytail last. The
-// caller only supplies the already translated upstream body, so no saver
-// can accidentally run against the client wire and then be translated away.
-//
+// @reason    SPEC-API-002 §8 makes the saver pipeline a request-path concern but keeps each transform independently optional. This seam is where settings become decisions: RTK first, Headroom second, and Ponytail last. The caller only supplies the already translated upstream body, so no saver can accidentally run against the client wire and then be translated away.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

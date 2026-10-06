@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/catalog_capability.go
-// @for       How one catalog row answers a capability question: what the
-//
-//	registry document declares, plus what the model-id resolver decides.
-//
+// @for       How one catalog row answers a capability question: what the registry document declares, plus what the model-id resolver decides.
 // @uses      internal/domain, internal/registry, strings.
-// @reason    SPEC-API-001 §7.6 offers `?capability=vision|tools`, and draft 017
-//
-//	§4.4 measured both of them returning zero rows over the 507 models the
-//	embedded registry declares. The cause was two sources of truth for one
-//	word: the document carried media operations while the modality names
-//	lived in a model-id pattern table no catalog read. Keeping the two
-//	sources and their division of labour in one file is what makes the
-//	split readable, and it keeps the merge orchestration in
-//	model_catalog.go inside the AGENTS.md §1.1 line budget.
-//
+// @reason    SPEC-API-001 §7.6 offers `?capability=vision|tools`, and draft 017 §4.4 measured both of them returning zero rows over the 507 models the embedded registry declares. The cause was two sources of truth for one word: the document carried media operations while the modality names lived in a model-id pattern table no catalog read. Keeping the two sources and their division of labour in one file is what makes the split readable, and it keeps the merge orchestration in model_catalog.go inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,13 +3,7 @@
 // @file      internal/handler/usage_stub_test.go
 // @for       The in-memory usage and log repositories behind the §7.12 route tests.
 // @uses      context, sync, testing, time, internal/domain, internal/repository.
-// @reason    Draft 010 F1: the four Usage routes had service tests and a router
-//
-//	session sweep but no HTTP test that drives a handler method with
-//	a real request, so a mapper regression could only surface in the
-//	panel. The stubs and the route tables are separate declarations,
-//	which keeps each file inside the AGENTS.md §1.1 budget.
-//
+// @reason    Draft 010 F1: the four Usage routes had service tests and a router session sweep but no HTTP test that drives a handler method with a real request, so a mapper regression could only surface in the panel. The stubs and the route tables are separate declarations, which keeps each file inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

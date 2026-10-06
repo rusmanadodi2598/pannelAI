@@ -3,11 +3,7 @@
 // @file      internal/schema/chat_body_test.go
 // @for       Table-driven coverage of the bounded data-plane body reader.
 // @uses      net/http, net/http/httptest, strings, testing.
-// @reason    F1 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md found the
-// semantic rules untested at the boundary. The reader is the first rule every
-// chat route applies, and an unbounded read is a denial-of-service surface, so
-// the limit is pinned at the byte rather than trusted (AGENTS.md §1.4, §1.6).
-//
+// @reason    F1 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md found the semantic rules untested at the boundary. The reader is the first rule every chat route applies, and an unbounded read is a denial-of-service surface, so the limit is pinned at the byte rather than trusted (AGENTS.md §1.4, §1.6).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

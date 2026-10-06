@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy.go
-// @for       The proxy pool use cases: sealed candidates, CRUD, and the two
-//
-//	connectivity tests (SPEC-API-001 §7.11).
-//
+// @for       The proxy pool use cases: sealed candidates, CRUD, and the two connectivity tests (SPEC-API-001 §7.11).
 // @uses      internal/domain, internal/repository, context, time.
-// @reason    §7.11 makes the password write-only and the test a diagnostic; both
-//
-//	are service rules rather than request-shape rules. The prober is a
-//	one-method seam because AGENTS.md §1.5 keeps net/http out of this
-//	layer, and because the SSRF guard must sit with the dialer that
-//	enforces it, so this layer only reports what the test found.
-//
+// @reason    §7.11 makes the password write-only and the test a diagnostic; both are service rules rather than request-shape rules. The prober is a one-method seam because AGENTS.md §1.5 keeps net/http out of this layer, and because the SSRF guard must sit with the dialer that enforces it, so this layer only reports what the test found.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -2,23 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/vision_adapter.go
-// @for       The VisionAdapter aggregate root: the capability fallback that
-//
-//	routes an image-bearing request to a vision-capable model
-//	(SPEC-API-001 §7.8).
-//
-// @uses      internal/domain (ModelRef, ComboStrategy, AppError constructors),
-//
-//	sort, time.
-//
-// @reason    The adapter is a routing rule, when it fires, how it rotates,
-//
-//	and which models it may name, so it is an aggregate with its own
-//	invariants rather than a settings blob. Its ordering rule is the
-//	same ComboStrategy.NextOrder the combo round-robin uses, because
-//	the reference rotates both the same way, and duplicating that
-//	would let the two rotations drift.
-//
+// @for       The VisionAdapter aggregate root: the capability fallback that routes an image-bearing request to a vision-capable model (SPEC-API-001 §7.8).
+// @uses      internal/domain (ModelRef, ComboStrategy, AppError constructors), sort, time.
+// @reason    The adapter is a routing rule, when it fires, how it rotates, and which models it may name, so it is an aggregate with its own invariants rather than a settings blob. Its ordering rule is the same ComboStrategy.NextOrder the combo round-robin uses, because the reference rotates both the same way, and duplicating that would let the two rotations drift.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

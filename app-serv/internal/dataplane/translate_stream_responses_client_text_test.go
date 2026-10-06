@@ -1,17 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/translate_stream_responses_client_text_test.go
-// @for       Table-driven tests for the reasoning and message items a Responses
-//
-//	client stream reports.
-//
+// @for       Table-driven tests for the reasoning and message items a Responses client stream reports.
 // @uses      testing, slices.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, and reasoning and
-//
-//	text are the two item kinds a coding agent renders. A reasoning item
-//	that shares an index with the message, or a message that reopens after
-//	it closed, is a malformed answer even when the text is right.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, and reasoning and text are the two item kinds a coding agent renders. A reasoning item that shares an index with the message, or a message that reopens after it closed, is a malformed answer even when the text is right.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

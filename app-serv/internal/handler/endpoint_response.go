@@ -3,13 +3,7 @@
 // @file      internal/handler/endpoint_response.go
 // @for       Mapping an endpoint aggregate and its keys onto the §7.5 wire shapes.
 // @uses      internal/domain, internal/schema.
-// @reason    SPEC-API-001 §7.5 fixes what a client sees for an endpoint and a key,
-//
-//	and §6 requires the stored OAuth state to be redacted on read. The
-//	mapping lives here rather than in the schema package because the
-//	schema layer must stay free of domain types (AGENTS.md §1.5), and one
-//	mapper keeps the list, detail, and create responses from drifting.
-//
+// @reason    SPEC-API-001 §7.5 fixes what a client sees for an endpoint and a key, and §6 requires the stored OAuth state to be redacted on read. The mapping lives here rather than in the schema package because the schema layer must stay free of domain types (AGENTS.md §1.5), and one mapper keeps the list, detail, and create responses from drifting.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

@@ -1,22 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/zen_routing_test.go
-// @for       The multi-endpoint rule against the real registry: every model the
-//
-//	entry declares reaches a URL, and the claude-only ids reach the
-//	messages endpoint.
-//
+// @for       The multi-endpoint rule against the real registry: every model the entry declares reaches a URL, and the claude-only ids reach the messages endpoint.
 // @uses      testing, internal/provider, internal/registry.
-// @reason    Draft 029 F2 measured the broken shape on opencode-go
-//
-//	(".../chat/completions/zen/v1/messages") and the first fix for it
-//	refused 43 of opencode-zen's models instead, because the provider's
-//	default wire is openai while those models declare claude only. Both
-//	failures are about the same rule, so this test states the property
-//	that rules them out: every declared model builds a URL, and a model
-//	that supports the claude wire is sent to the messages endpoint when
-//	the request is translated into claude.
-//
+// @reason    Draft 029 F2 measured the broken shape on opencode-go (".../chat/completions/zen/v1/messages") and the first fix for it refused 43 of opencode-zen's models instead, because the provider's default wire is openai while those models declare claude only. Both failures are about the same rule, so this test states the property that rules them out: every declared model builds a URL, and a model that supports the claude wire is sent to the messages endpoint when the request is translated into claude.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

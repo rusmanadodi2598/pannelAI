@@ -1,21 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/combo.go
-// @for       PostgreSQL persistence for the Combo aggregate root
-//
-//	(SPEC-API-001 §7.7).
-//
-// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain,
-//
-//	internal/repository.
-//
-// @reason    A combo's model list is jsonb written whole, because it is part of
-//
-//	the aggregate: a child table would let a combo be loaded with a
-//	list the strategy could never produce. §1.7 forbids a query per
-//	row, so the list is one column rather than a join, and the page
-//	count comes from a window function in the same statement.
-//
+// @for       PostgreSQL persistence for the Combo aggregate root (SPEC-API-001 §7.7).
+// @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/repository.
+// @reason    A combo's model list is jsonb written whole, because it is part of the aggregate: a child table would let a combo be loaded with a list the strategy could never produce. §1.7 forbids a query per row, so the list is one column rather than a join, and the page count comes from a window function in the same statement.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

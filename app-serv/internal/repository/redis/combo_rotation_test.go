@@ -1,19 +1,9 @@
 // Package redis implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/combo_rotation_test.go
-// @for       Tests for the rotation store's key derivation and its no-Redis
-//
-//	paths.
-//
+// @for       Tests for the rotation store's key derivation and its no-Redis paths.
 // @uses      context, testing, internal/domain.
-// @reason    The store's atomic step is one INCR inside a Lua script, which only
-//
-//	a live server can execute; what a unit test can and must pin is the
-//	key naming (a collision would rotate the wrong combo) and the
-//	short-list path that never touches Redis. The distribution rule
-//	itself is tested in internal/domain, against the same function the
-//	store calls.
-//
+// @reason    The store's atomic step is one INCR inside a Lua script, which only a live server can execute; what a unit test can and must pin is the key naming (a collision would rotate the wrong combo) and the short-list path that never touches Redis. The distribution rule itself is tested in internal/domain, against the same function the store calls.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

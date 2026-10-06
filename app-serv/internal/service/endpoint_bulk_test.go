@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_bulk_test.go
-// @for       Table-driven tests for the two batch routes and their all-or-nothing
-//
-//	rule (SPEC-API-001 §7.5, §8.1).
-//
+// @for       Table-driven tests for the two batch routes and their all-or-nothing rule (SPEC-API-001 §7.5, §8.1).
 // @uses      context, errors, strconv, testing, time, internal/domain.
-// @reason    §8.1's rule is the one that is worst to get wrong: a batch that wrote a
-//
-//	prefix of its rows leaves a half-imported account list, which is harder to reason
-//	about than a refusal. Every negative case here asserts that NOTHING was written,
-//	not merely that an error came back.
-//
+// @reason    §8.1's rule is the one that is worst to get wrong: a batch that wrote a prefix of its rows leaves a half-imported account list, which is harder to reason about than a refusal. Every negative case here asserts that NOTHING was written, not merely that an error came back.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -2,18 +2,8 @@
 //
 // @file      internal/handler/oauth_callback_test.go
 // @for       HTTP tests for the §7.4 OAuth callback, both audiences.
-// @uses      internal/domain, internal/service, net/http, net/url, strings,
-//
-//	testing.
-//
-// @reason    The callback is the one public route of §7.4 and the only one with
-//
-//	two answers, so the table pins both: a browser gets a 302 back to
-//	the provider page carrying the outcome, a headless caller gets the
-//	JSON body it asked for. It also pins that no answer, in either
-//	shape, carries token material. The redirect-origin guard is in
-//	oauth_callback_guard_test.go.
-//
+// @uses      internal/domain, internal/service, net/http, net/url, strings, testing.
+// @reason    The callback is the one public route of §7.4 and the only one with two answers, so the table pins both: a browser gets a 302 back to the provider page carrying the outcome, a headless caller gets the JSON body it asked for. It also pins that no answer, in either shape, carries token material. The redirect-origin guard is in oauth_callback_guard_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

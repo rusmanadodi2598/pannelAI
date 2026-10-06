@@ -3,11 +3,7 @@
 // @file      internal/service/quota_published_seed.go
 // @for       Finding active accounts with no scheduling row and arming them for the sweep.
 // @uses      context, internal/domain, internal/repository.
-// @reason    A provider answer can only be cached for an account the queue knows about, and the
-//
-//	queue is filled from the endpoint list rather than from the counters, so an account that has
-//	routed nothing is still polled. Two bounded queries per tick, whatever the fleet size.
-//
+// @reason    A provider answer can only be cached for an account the queue knows about, and the queue is filled from the endpoint list rather than from the counters, so an account that has routed nothing is still polled. Two bounded queries per tick, whatever the fleet size.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -4,12 +4,7 @@
 // @file      internal/domain/upstream_endpoint_parity_load_test.go
 // @for       The load path for the connection-parity fields.
 // @uses      testing, time.
-// @reason    Draft 017 §4.1b adds five fields, and the load path is where they are
-//
-//	easiest to lose: a rehydrate that forgets one reports the zero value on
-//	every read while every write looks correct. Keeping it apart from the
-//	mutation tests keeps both files inside the AGENTS.md §1.1 line budget.
-//
+// @reason    Draft 017 §4.1b adds five fields, and the load path is where they are easiest to lose: a rehydrate that forgets one reports the zero value on every read while every write looks correct. Keeping it apart from the mutation tests keeps both files inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

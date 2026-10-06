@@ -2,18 +2,8 @@
 //
 // @file      cmd/app-serv/dataplane_inputs.go
 // @for       The collaborators the data plane is built from, as one value.
-//
-// @uses      internal/config, internal/dataplane, internal/provider,
-//
-//	internal/repository, internal/service, net/http, redis.
-//
-// @reason    A long positional parameter list is where two same-typed arguments
-//
-//	get transposed silently, so the collaborators travel as one named
-//	struct. It lives in its own file because the struct is a declaration
-//	rather than wiring, and because dataplane_wiring.go stays inside the
-//	AGENTS.md §1.1 line budget with it here.
-//
+// @uses      internal/config, internal/dataplane, internal/provider, internal/repository, internal/service, net/http, redis.
+// @reason    A long positional parameter list is where two same-typed arguments get transposed silently, so the collaborators travel as one named struct. It lives in its own file because the struct is a declaration rather than wiring, and because dataplane_wiring.go stays inside the AGENTS.md §1.1 line budget with it here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

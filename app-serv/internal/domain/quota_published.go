@@ -2,21 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/quota_published.go
-// @for       The published-quota vocabulary: a provider's own buckets, the
-//
-//	scheduling state the poll worker reads, and the answer it stores.
-//
+// @for       The published-quota vocabulary: a provider's own buckets, the scheduling state the poll worker reads, and the answer it stores.
 // @uses      internal/domain (Decimal, AppError constructors), strings, time.
-// @reason    The quota screen shows what a provider says about itself, and that
-//
-//	vocabulary is the provider's, not the gateway's: a bucket is named by
-//	a label ("Claude & GPT (Weekly)"), so it cannot reuse QuotaWindowKind,
-//	whose set is closed to the four windows this gateway accounts for
-//	(migrations/000007). The rules the cache depends on, a missing ceiling
-//	is not a zero ceiling, and one answer cannot carry the same label twice,
-//	are domain decisions, so they live here rather than in the statement that
-//	happens to store them (AGENTS.md §2.2).
-//
+// @reason    The quota screen shows what a provider says about itself, and that vocabulary is the provider's, not the gateway's: a bucket is named by a label ("Claude & GPT (Weekly)"), so it cannot reuse QuotaWindowKind, whose set is closed to the four windows this gateway accounts for (migrations/000007). The rules the cache depends on, a missing ceiling is not a zero ceiling, and one answer cannot carry the same label twice, are domain decisions, so they live here rather than in the statement that happens to store them (AGENTS.md §2.2).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

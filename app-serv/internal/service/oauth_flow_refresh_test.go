@@ -3,10 +3,7 @@
 // @file      internal/service/oauth_flow_refresh_test.go
 // @for       The manual OAuth refresh round and the grant it sends.
 // @uses      context, testing, time, internal/domain.
-// @reason    A refresh must exchange a refresh_token rather than repeat the code
-//
-//	round, and that is the one property a status read cannot show.
-//
+// @reason    A refresh must exchange a refresh_token rather than repeat the code round, and that is the one property a status read cannot show.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

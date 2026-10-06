@@ -1,23 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/quota_usage_test.go
-// @for       HTTP tests for GET /api/v1/quotas/{endpoint_id}/usage: the body a
-//
-//	provider's buckets become, and the refusals the route answers.
-//
-// @uses      encoding/json, internal/domain, internal/registry, internal/service,
-//
-//	internal/service/quotafetch, net/http, net/http/httptest, testing,
-//	time.
-//
-// @reason    The amounts on this route are the only ones in §7.12 that a provider
-//
-//	reports rather than this gateway counts, so the decimal-string rule
-//	(§4) and the difference between "no ceiling" and "a ceiling of zero"
-//	are pinned here at the wire, where a client would otherwise read a
-//	spent account and an unlimited one as the same card. The 401 answer
-//	is the router sweep's property, not this route's.
-//
+// @for       HTTP tests for GET /api/v1/quotas/{endpoint_id}/usage: the body a provider's buckets become, and the refusals the route answers.
+// @uses      encoding/json, internal/domain, internal/registry, internal/service, internal/service/quotafetch, net/http, net/http/httptest, testing, time.
+// @reason    The amounts on this route are the only ones in §7.12 that a provider reports rather than this gateway counts, so the decimal-string rule (§4) and the difference between "no ceiling" and "a ceiling of zero" are pinned here at the wire, where a client would otherwise read a spent account and an unlimited one as the same card. The 401 answer is the router sweep's property, not this route's.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

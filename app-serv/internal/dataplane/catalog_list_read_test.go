@@ -3,10 +3,8 @@
 // @file      internal/dataplane/catalog_list_read_test.go
 // @for       The owner segment and the refusal behavior of GET /api/v1/models.
 // @uses      context, testing, internal/domain
-// @reason    The list is what a picker offers, so two rules beside the row set
+// @reason    The list is what a picker offers, so two rules beside the row set need pinning: a provider segment the operator never typed is not a usable answer, and a catalog read that failed must not come back as a short list.
 //
-//	need pinning: a provider segment the operator never typed is not a usable
-//	answer, and a catalog read that failed must not come back as a short list.
 //	They live apart from the row-set table because that table is already at the
 //	size where a second concern in the same file stops reading as one question.
 //

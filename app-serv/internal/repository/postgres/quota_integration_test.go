@@ -3,17 +3,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/quota_integration_test.go
-// @for       Quota window persistence against a real server: the set-based
-//
-//	upsert, the conflict target, and the nil-limit distinction.
-//
+// @for       Quota window persistence against a real server: the set-based upsert, the conflict target, and the nil-limit distinction.
 // @uses      testing, context, math, time, internal/domain.
-// @reason    The flush statement names a reserved word as a column, so only a
-//
-//	real parser proves it is quoted correctly, and only the primary key
-//	proves the ON CONFLICT target matches the migration. The service
-//	tests stub UpsertWindows, so a broken statement stays green there
-//	(audit-001 finding 15).
+// @reason    The flush statement names a reserved word as a column, so only a real parser proves it is quoted correctly, and only the primary key proves the ON CONFLICT target matches the migration. The service tests stub UpsertWindows, so a broken statement stays green there (audit-001 finding 15).
 //
 //	Run with:
 //	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \

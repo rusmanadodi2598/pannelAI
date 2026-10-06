@@ -3,12 +3,7 @@
 // @file      internal/repository/proxy.go
 // @for       Storage contract for saved outbound proxy candidates (SPEC-API-001 §7.11).
 // @uses      context, internal/domain.
-// @reason    AGENTS.md §1.5 keeps services off the driver, and §2.2 makes the
-//
-//	candidate the aggregate root: its status document is written whole
-//	with every update, so the contract exposes the aggregate and never
-//	a status column on its own.
-//
+// @reason    AGENTS.md §1.5 keeps services off the driver, and §2.2 makes the candidate the aggregate root: its status document is written whole with every update, so the contract exposes the aggregate and never a status column on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

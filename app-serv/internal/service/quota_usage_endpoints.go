@@ -3,13 +3,7 @@
 // @file      internal/service/quota_usage_endpoints.go
 // @for       Maps one provider's declared usage block into the shape the quota fetcher reads.
 // @uses      internal/registry, internal/service/quotafetch.
-// @reason    The registry spells a provider's usage hosts under several keys and each family
-//
-//	asks one of them, so forwarding only `url` left a family that asks
-//	`quota_url`, `quota_api_url`, `urls`, `oauth_url` or `user_url` calling
-//	an empty address. Mapping the whole block once, here, is what keeps that
-//	a single fix rather than fourteen patches as each family lands.
-//
+// @reason    The registry spells a provider's usage hosts under several keys and each family asks one of them, so forwarding only `url` left a family that asks `quota_url`, `quota_api_url`, `urls`, `oauth_url` or `user_url` calling an empty address. Mapping the whole block once, here, is what keeps that a single fix rather than fourteen patches as each family lands.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

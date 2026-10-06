@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_refresh_worker_test.go
-// @for       Table-driven tests for the OAuth token refresh worker (P2, §6
-//
-//	of SYSTEM_MAP: exponential backoff with jitter, dead-letter marks
-//	the endpoint error).
-//
+// @for       Table-driven tests for the OAuth token refresh worker (P2, §6 of SYSTEM_MAP: exponential backoff with jitter, dead-letter marks the endpoint error).
 // @uses      context, sync, testing, time, internal/domain.
-// @reason    AGENTS.md §1.6 makes a worker's retry policy and dead-letter
-//
-//	behaviour explicit requirements, so the table pins: a due token
-//	is refreshed on the tick, a failing one is retried with a
-//	growing delay, and after the stated attempts the endpoint is
-//	marked error instead of retried forever. Cancellation ends the
-//	run within one tick.
-//
+// @reason    AGENTS.md §1.6 makes a worker's retry policy and dead-letter behaviour explicit requirements, so the table pins: a due token is refreshed on the tick, a failing one is retried with a growing delay, and after the stated attempts the endpoint is marked error instead of retried forever. Cancellation ends the run within one tick.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

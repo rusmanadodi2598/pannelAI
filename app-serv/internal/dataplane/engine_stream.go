@@ -3,17 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_stream.go
-// @for       Reading an upstream SSE body line by line and writing the client's
-//
-//	frames to the sink as they arrive.
-//
+// @for       Reading an upstream SSE body line by line and writing the client's frames to the sink as they arrive.
 // @uses      internal/schema, bufio, bytes, context, io, strings.
-// @reason    SPEC-API-001 §4 requires SSE passthrough with per-frame flushing and
-//
-//	a usage chunk when the client asked for one. Reading incrementally
-//	matters: buffering the whole stream would turn a live answer into one
-//	delayed blob, which is the property a CLI tool reports as "hangs".
-//
+// @reason    SPEC-API-001 §4 requires SSE passthrough with per-frame flushing and a usage chunk when the client asked for one. Reading incrementally matters: buffering the whole stream would turn a live answer into one delayed blob, which is the property a CLI tool reports as "hangs".
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

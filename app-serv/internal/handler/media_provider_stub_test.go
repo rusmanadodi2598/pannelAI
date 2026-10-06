@@ -1,20 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/media_provider_stub_test.go
-// @for       The in-memory override store, media index, and handler fixture the
-//
-//	§7.10 route tests drive.
-//
-// @uses      internal/domain, internal/registry, internal/service, context,
-//
-//	sort, testing.
-//
-// @reason    The handler takes a concrete *service.MediaProviderService, so the
-//
-//	route tests build the real service over doubles rather than faking the
-//	service itself, the seam the production wiring uses is the same one
-//	the tests use.
-//
+// @for       The in-memory override store, media index, and handler fixture the §7.10 route tests drive.
+// @uses      internal/domain, internal/registry, internal/service, context, sort, testing.
+// @reason    The handler takes a concrete *service.MediaProviderService, so the route tests build the real service over doubles rather than faking the service itself, the seam the production wiring uses is the same one the tests use.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

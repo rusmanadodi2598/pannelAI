@@ -3,18 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/ponytail_responses_test.go
-// @for       The Responses cases: the wire whose system slot is an instructions
-//
-//	string or a system message item.
-//
+// @for       The Responses cases: the wire whose system slot is an instructions string or a system message item.
 // @uses      encoding/json, fmt, strings, testing.
-// @reason    SPEC-API-002 §7 gives each wire its own slot and its own part type,
-//
-//	and the Anthropic case carries a rule the others do not: the
-//	instruction lands before the last cache-control block, so a cached
-//	prefix stays byte-identical. That is asserted by position, not by
-//	presence.
-//
+// @reason    SPEC-API-002 §7 gives each wire its own slot and its own part type, and the Anthropic case carries a rule the others do not: the instruction lands before the last cache-control block, so a cached prefix stays byte-identical. That is asserted by position, not by presence.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

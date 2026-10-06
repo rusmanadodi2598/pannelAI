@@ -2,16 +2,8 @@
 //
 // @file      cmd/app-serv/main.go
 // @for       Process bootstrap: config, dependencies, server lifecycle.
-// @uses      internal/config, internal/handler, internal/repository/postgres,
-//
-//	internal/router, internal/service.
-//
-// @reason    AGENTS.md §1.5 makes this file wiring only, no logic: it
-//
-//	constructs the dependency graph, fails fast on invalid config,
-//	and shuts down gracefully on termination. The pool limits are set
-//	here rather than left at library defaults (AGENTS.md §1.7).
-//
+// @uses      internal/config, internal/handler, internal/repository/postgres, internal/router, internal/service.
+// @reason    AGENTS.md §1.5 makes this file wiring only, no logic: it constructs the dependency graph, fails fast on invalid config, and shuts down gracefully on termination. The pool limits are set here rather than left at library defaults (AGENTS.md §1.7).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

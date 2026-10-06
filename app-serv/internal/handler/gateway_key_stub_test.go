@@ -2,16 +2,8 @@
 //
 // @file      internal/handler/gateway_key_stub_test.go
 // @for       In-memory GatewayKeyRepository stub and the HTTP test helpers.
-// @uses      internal/domain, internal/repository, internal/service,
-//
-//	internal/handler, net/http/httptest.
-//
-// @reason    The HTTP tests need the real repository contract without a live
-//
-//	database; this stub implements the same interface the postgres
-//	repository does, so the service and handler are exercised through
-//	the contract rather than through mocks of their own output.
-//
+// @uses      internal/domain, internal/repository, internal/service, internal/handler, net/http/httptest.
+// @reason    The HTTP tests need the real repository contract without a live database; this stub implements the same interface the postgres repository does, so the service and handler are exercised through the contract rather than through mocks of their own output.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

@@ -3,12 +3,7 @@
 // @file      internal/streamio/line.go
 // @for       One line of a byte stream, bounded by a caller-supplied ceiling.
 // @uses      bufio, errors, io
-// @reason    bufio.Reader.ReadBytes grows its own buffer until it finds the delimiter, so an
-//
-//	upstream that never sends a newline decides how much memory the gateway holds. A length
-//	check applied to its return value runs after that decision, which is why the bound has to
-//	sit inside the read.
-//
+// @reason    bufio.Reader.ReadBytes grows its own buffer until it finds the delimiter, so an upstream that never sends a newline decides how much memory the gateway holds. A length check applied to its return value runs after that decision, which is why the bound has to sit inside the read.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

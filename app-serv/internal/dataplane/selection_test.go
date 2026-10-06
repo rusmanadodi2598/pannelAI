@@ -3,9 +3,8 @@
 // @file      internal/dataplane/selection_test.go
 // @for       Table-driven tests for the endpoint and key selection order.
 // @uses      context, testing, time, internal/domain
-// @reason    SPEC-API-001 §7.5 fixes the selection rule: endpoints are tried in priority order, a
+// @reason    SPEC-API-001 §7.5 fixes the selection rule: endpoints are tried in priority order, a disabled endpoint is skipped, and a parked key is skipped in favour of a healthy one.
 //
-//	disabled endpoint is skipped, and a parked key is skipped in favour of a healthy one.
 //	It decides whether a request is served and which account pays for it, so every branch
 //	is pinned here against the in-memory double (AGENTS.md §2.1).
 //

@@ -2,16 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/index_lookup_test.go
-// @for       Table-driven tests for index lookup, copying, and the ordering the
-//
-//	list endpoint pages on.
-//
+// @for       Table-driven tests for index lookup, copying, and the ordering the list endpoint pages on.
 // @uses      testing, internal/registry.
-// @reason    The read paths of the index back both routing and the console list
-//
-//	endpoint, so a copy that leaks the shared slice or an unstable
-//	ordering corrupts callers far from the lookup; these tests pin them.
-//
+// @reason    The read paths of the index back both routing and the console list endpoint, so a copy that leaks the shared slice or an unstable ordering corrupts callers far from the lookup; these tests pin them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

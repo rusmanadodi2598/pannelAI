@@ -2,19 +2,9 @@
 // pluggable connectors (SPEC-API-001 §7.4).
 //
 // @file      internal/provider/codebuddy_choice_test.go
-// @for       The CodeBuddy forced tool choice: what a named function becomes, and
-//
-//	what is left exactly as the caller sent it.
-//
+// @for       The CodeBuddy forced tool choice: what a named function becomes, and what is left exactly as the caller sent it.
 // @uses      encoding/json, testing, internal/provider Request.
-// @reason    The vendor answers `auto` and `required` and refuses the OpenAI
-//
-//	named-function object, so the rewrite is the only way a caller that has
-//	already chosen its tool gets an answer. Pinned as data because the
-//	harm is silent: a narrowed tool list that dropped the wrong function, or
-//	a choice demoted to `auto`, would return a 200 with a tool call the
-//	caller did not ask for.
-//
+// @reason    The vendor answers `auto` and `required` and refuses the OpenAI named-function object, so the rewrite is the only way a caller that has already chosen its tool gets an answer. Pinned as data because the harm is silent: a narrowed tool list that dropped the wrong function, or a choice demoted to `auto`, would return a 200 with a tool call the caller did not ask for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

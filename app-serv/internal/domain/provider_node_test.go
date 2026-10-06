@@ -2,17 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/provider_node_test.go
-// @for       Table-driven tests for the custom node's prefix, type, and format
-//
-//	rules.
-//
+// @for       Table-driven tests for the custom node's prefix, type, and format rules.
 // @uses      testing, time.
-// @reason    A node's prefix is a model-string namespace and its api type picks
-//
-//	the endpoint the gateway calls, so a wrong value here routes a
-//	request to a URL that cannot serve it; both rules are domain
-//	invariants and are pinned as such.
-//
+// @reason    A node's prefix is a model-string namespace and its api type picks the endpoint the gateway calls, so a wrong value here routes a request to a URL that cannot serve it; both rules are domain invariants and are pinned as such.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

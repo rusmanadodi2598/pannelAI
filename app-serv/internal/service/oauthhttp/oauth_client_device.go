@@ -1,20 +1,9 @@
 // Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
 // @file      internal/service/oauthhttp/oauth_client_device.go
-// @for       The device-token poll client: one GET per poll attempt, the
-//
-//	pending verdicts, and the upstream's expiry hint parsing.
-//
+// @for       The device-token poll client: one GET per poll attempt, the pending verdicts, and the upstream's expiry hint parsing.
 // @uses      net/http, encoding/json, strings, time, internal/domain.
-// @reason    A device flow's poll is not a token grant: it is a GET whose
-//
-//	202/404 answers mean "keep waiting" and whose 200 body carries
-//	token material plus an expiry hint in any of three shapes. Keeping
-//	that translation here puts the wire tolerance in one place and
-//	leaves the flow service owning only the connect decision. The net/http
-//	import is egress only, so a worker can call this the same way a
-//	route does (AGENTS.md §1.5).
-//
+// @reason    A device flow's poll is not a token grant: it is a GET whose 202/404 answers mean "keep waiting" and whose 200 body carries token material plus an expiry hint in any of three shapes. Keeping that translation here puts the wire tolerance in one place and leaves the flow service owning only the connect decision. The net/http import is egress only, so a worker can call this the same way a route does (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

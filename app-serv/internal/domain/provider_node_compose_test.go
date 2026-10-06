@@ -2,17 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/provider_node_compose_test.go
-// @for       The base-URL rules on the mutation path, and the composition that
-//
-//	makes the rule matter: base + appended path must be one path.
-//
+// @for       The base-URL rules on the mutation path, and the composition that makes the rule matter: base + appended path must be one path.
 // @uses      testing, time.
-// @reason    The create path and the mutation path must agree, and the property
-//
-//	that decides whether they do is the composed URL rather than the
-//	stored string. Split from the create-path table to keep both files
-//	under AGENTS.md §1.1.
-//
+// @reason    The create path and the mutation path must agree, and the property that decides whether they do is the composed URL rather than the stored string. Split from the create-path table to keep both files under AGENTS.md §1.1.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

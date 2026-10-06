@@ -1,20 +1,9 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_errorlog_test.go
-// @for       The §1.6/§8 rule that a failed request names its error code on the
-//
-//	access log line (register G9).
-//
+// @for       The §1.6/§8 rule that a failed request names its error code on the access log line (register G9).
 // @uses      bytes, log/slog, net/http, net/http/httptest, strings, testing.
-// @reason    The access line already carried the status and the request id; what
-//
-//	it lacked was the "why", so a media 502 or an OAuth callback 500
-//	named nothing an operator could act on. The code travels from the
-//	envelope writers to the logging recorder through the writer chain, so
-//	these tests drive the real mux rather than the recorder alone, the
-//	envelope middleware's forwarding is exactly what they pin, and they
-//	pin the negative case too: a served request must carry no code field.
-//
+// @reason    The access line already carried the status and the request id; what it lacked was the "why", so a media 502 or an OAuth callback 500 named nothing an operator could act on. The code travels from the envelope writers to the logging recorder through the writer chain, so these tests drive the real mux rather than the recorder alone, the envelope middleware's forwarding is exactly what they pin, and they pin the negative case too: a served request must carry no code field.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

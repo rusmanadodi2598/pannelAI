@@ -2,14 +2,9 @@
 //
 // @file      internal/dataplane/answer_identity_test.go
 // @for       The model name a client reads back when it addressed a combo.
+// @uses      bytes, context, encoding/json, io, net/http, net/http/httptest, strings, testing, internal/domain, internal/registry.
+// @reason    A combo is a name an operator wrote in the panel and a client sends, and a round_robin combo serves a different member on each request.
 //
-// @uses      bytes, context, encoding/json, io, net/http, net/http/httptest,
-//
-//	strings, testing, internal/domain, internal/registry.
-//
-// @reason    A combo is a name an operator wrote in the panel and a client sends,
-//
-//	and a round_robin combo serves a different member on each request.
 //	Answering with the member's id therefore tells the caller nothing it
 //	can use, and nothing pinned that: the suite passed both before and after
 //	the naming change. These tests hold the rule from three directions,

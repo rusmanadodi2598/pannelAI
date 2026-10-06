@@ -2,18 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/provider_node_validate.go
-// @for       The ProviderNode field rules: the prefix namespace, the per-type
-//
-//	api_type rule, and the id shape.
-//
+// @for       The ProviderNode field rules: the prefix namespace, the per-type api_type rule, and the id shape.
 // @uses      internal/domain (ULID, error constructors), strings, time.
-// @reason    A prefix is a model-string namespace and an api type picks the
-//
-//	endpoint the gateway calls, so each rule spans a value's meaning
-//	rather than a field's shape, which is why they live in the domain
-//	rather than as struct tags. Split from the aggregate to keep both
-//	files under AGENTS.md §1.1.
-//
+// @reason    A prefix is a model-string namespace and an api type picks the endpoint the gateway calls, so each rule spans a value's meaning rather than a field's shape, which is why they live in the domain rather than as struct tags. Split from the aggregate to keep both files under AGENTS.md §1.1.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

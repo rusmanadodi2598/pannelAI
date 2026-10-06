@@ -5,13 +5,7 @@
 // @file      internal/dataplane/translate_openai_claude.go
 // @for       OpenAI chat request to Anthropic messages request translation.
 // @uses      internal/schema, encoding/json, strings.
-// @reason    SPEC-API-001 §7.15 makes translation the data plane's core job, and
-//
-//	the reference implements it as a pure function
-//	(open-sse/translator/request/openai-to-claude.js) precisely so it is
-//	testable without a network. This is that function: no clock, no I/O,
-//	no package state, so a test drives every rule directly.
-//
+// @reason    SPEC-API-001 §7.15 makes translation the data plane's core job, and the reference implements it as a pure function (open-sse/translator/request/openai-to-claude.js) precisely so it is testable without a network. This is that function: no clock, no I/O, no package state, so a test drives every rule directly.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,18 +3,8 @@
 //
 // @file      internal/domain/usage_active.go
 // @for       The in-flight marker: one request the gateway is routing right now.
-//
 // @uses      internal/domain (NewULID), time.
-// @reason    SPEC-UI-001 §6.5 makes the drawing's "a provider is routing now"
-//
-//	claim come from a live stream, and a claim needs a source that
-//	disappears when the thing it describes does: the marker is written
-//	before the outbound call and removed after it, so the set of active
-//	providers is what this process is actually doing rather than what it
-//	once did. The 60 second window is the second half of that rule, and
-//	it is the panel's own guard figure: a gateway that dies mid-request
-//	never removes its marker, so a read that trusted the set forever
-//	would light a node for a request that no longer exists (R-36).
+// @reason    SPEC-UI-001 §6.5 makes the drawing's "a provider is routing now" claim come from a live stream, and a claim needs a source that disappears when the thing it describes does: the marker is written before the outbound call and removed after it, so the set of active providers is what this process is actually doing rather than what it once did. The 60 second window is the second half of that rule, and it is the panel's own guard figure: a gateway that dies mid-request never removes its marker, so a read that trusted the set forever would light a node for a request that no longer exists (R-36).
 //
 //	The marker names the combo a client addressed as well as the provider
 //	that answered, because SPEC-UI-001 §6.5 draws the request path and a

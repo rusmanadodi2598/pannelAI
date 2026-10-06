@@ -4,15 +4,7 @@
 // @file      internal/registry/pricing_test.go
 // @for       The fallback chain and the token-to-cost formula, over a table.
 // @uses      testing, internal/registry.
-// @reason    The rate tables and the cost formula are a port of the reference's
-//
-//	pricing.js. The pair-by-pair comparison against the reference's own
-//	answers lives in pricing_corpus_test.go; what is pinned here are the
-//	order and the arithmetic edges a corpus cannot isolate, the
-//	provider override before the canonical model, the inclusive-prompt
-//	cache split, the clamp when the cache subsets exceed the prompt, the
-//	reasoning premium, and the zero answer for an unpriced model.
-//
+// @reason    The rate tables and the cost formula are a port of the reference's pricing.js. The pair-by-pair comparison against the reference's own answers lives in pricing_corpus_test.go; what is pinned here are the order and the arithmetic edges a corpus cannot isolate, the provider override before the canonical model, the inclusive-prompt cache split, the clamp when the cache subsets exceed the prompt, the reasoning premium, and the zero answer for an unpriced model.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

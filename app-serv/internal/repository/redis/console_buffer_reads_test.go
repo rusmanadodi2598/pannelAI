@@ -3,11 +3,7 @@
 // @file      internal/repository/redis/console_buffer_reads_test.go
 // @for       The read bound and the empty-line rule of the console buffer.
 // @uses      context, strings, testing, github.com/redis/go-redis/v9.
-// @reason    A reader asks for at most N lines and a blank write is not a line of
-//
-//	output, so both are read-side limits the eviction test does not
-//	reach.
-//
+// @reason    A reader asks for at most N lines and a blank write is not a line of output, so both are read-side limits the eviction test does not reach.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

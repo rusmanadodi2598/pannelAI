@@ -2,13 +2,8 @@
 //
 // @file      internal/tokensaver/applier_fixtures_test.go
 // @for       Shared fixtures for direct tests of the saver orchestrator.
-// @uses      internal/domain, context, encoding/json, errors, io, net/http,
-//
-//	net/http/httptest, strings, testing.
-//
-// @reason    The orchestrator needs concrete settings, translator, and proxy
-// fixtures so its fail-open behavior can be tested without production wiring.
-//
+// @uses      internal/domain, context, encoding/json, errors, io, net/http, net/http/httptest, strings, testing.
+// @reason    The orchestrator needs concrete settings, translator, and proxy fixtures so its fail-open behavior can be tested without production wiring.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

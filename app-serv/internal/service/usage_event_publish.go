@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_publish.go
-// @for       The publisher half of the usage domain event: a bounded queue and
-//
-//	one drain goroutine, fed by the recorder's choke point.
-//
-// @uses      internal/domain, internal/repository, context, log/slog,
-//
-//	runtime/debug, sync/atomic, time.
-//
-// @reason    AGENTS.md §2.3 makes a mutation on an aggregate root emit a domain
-//
-//	event, and the event must not put a broker round trip on the request
-//	path. The queue is what separates the two: Record enqueues and
-//	returns, one goroutine publishes.
+// @for       The publisher half of the usage domain event: a bounded queue and one drain goroutine, fed by the recorder's choke point.
+// @uses      internal/domain, internal/repository, context, log/slog, runtime/debug, sync/atomic, time.
+// @reason    AGENTS.md §2.3 makes a mutation on an aggregate root emit a domain event, and the event must not put a broker round trip on the request path. The queue is what separates the two: Record enqueues and returns, one goroutine publishes.
 //
 //	PUBLISH POLICY (AGENTS.md §1.6)
 //

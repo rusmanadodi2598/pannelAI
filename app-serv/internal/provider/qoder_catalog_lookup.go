@@ -4,11 +4,7 @@
 // @file      internal/provider/qoder_catalog_lookup.go
 // @for       The model lookup path over the cached catalogue, with one fetch per host.
 // @uses      encoding/json, fmt, sync, time
-// @reason    The model key is client-supplied, so a name the vendor does not list used to turn every
-//
-//	request into a fresh full-catalogue read: several concurrent requests read the same
-//	4 MiB document at once, and a repeated unknown name never learns to stop asking.
-//
+// @reason    The model key is client-supplied, so a name the vendor does not list used to turn every request into a fresh full-catalogue read: several concurrent requests read the same 4 MiB document at once, and a repeated unknown name never learns to stop asking.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

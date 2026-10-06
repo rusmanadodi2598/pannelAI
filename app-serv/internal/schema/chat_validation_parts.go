@@ -3,10 +3,7 @@
 // @file      internal/schema/chat_validation_parts.go
 // @for       The nested message and content rules of the OpenAI chat contract.
 // @uses      bytes, encoding/json, strconv, strings, internal/domain.
-// @reason    The union and closed vocabularies of the message array are a
-// separate concern from the request-level cross-field rules, and keeping them
-// apart holds both files inside the AGENTS.md §1.1 budget.
-//
+// @reason    The union and closed vocabularies of the message array are a separate concern from the request-level cross-field rules, and keeping them apart holds both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

@@ -3,12 +3,7 @@
 // @file      internal/handler/gateway_key.go
 // @for       The gateway key CRUD endpoints (SPEC-API-001 §7.3).
 // @uses      internal/schema, internal/service.
-// @reason    §7.3 requires the plaintext to be returned exactly once on create
-//
-//	and only key_hint thereafter; AGENTS.md §1.5 keeps validation in
-//	the schema layer and business rules in the service layer, so this
-//	handler only decodes, calls, and encodes.
-//
+// @reason    §7.3 requires the plaintext to be returned exactly once on create and only key_hint thereafter; AGENTS.md §1.5 keeps validation in the schema layer and business rules in the service layer, so this handler only decodes, calls, and encodes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

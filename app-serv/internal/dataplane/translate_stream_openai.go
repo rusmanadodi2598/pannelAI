@@ -3,22 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_openai.go
-// @for       Re-framing an upstream stream into OpenAI SSE frames, including the
-//
-//	usage chunk stream_options.include_usage asks for.
-//
+// @for       Re-framing an upstream stream into OpenAI SSE frames, including the usage chunk stream_options.include_usage asks for.
 // @uses      internal/schema.
-// @reason    SPEC-API-001 §4 fixes SSE as the transport and requires a usage chunk
-//
-//	when the client asked for one. Re-framing needs per-stream state
-//	(which content block is open, the next tool-call index, the last
-//	usage), and the state is passed in rather than held in a package
-//	variable, so a test drives every path directly and no clock decides
-//	what a frame contains. The Anthropic-event mapping lives in
-//	translate_stream_openai_claude.go, the usage readers in
-//	translate_usage_read.go, and the upstream chunk re-framing in
-//	translate_stream_openai_frames.go, all for the AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §4 fixes SSE as the transport and requires a usage chunk when the client asked for one. Re-framing needs per-stream state (which content block is open, the next tool-call index, the last usage), and the state is passed in rather than held in a package variable, so a test drives every path directly and no clock decides what a frame contains. The Anthropic-event mapping lives in translate_stream_openai_claude.go, the usage readers in translate_usage_read.go, and the upstream chunk re-framing in translate_stream_openai_frames.go, all for the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

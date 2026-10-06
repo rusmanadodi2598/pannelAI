@@ -2,19 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_auth.go
-// @for       The credential and identity the OpenCode connector presents, per
-//
-//	endpoint.
-//
+// @for       The credential and identity the OpenCode connector presents, per endpoint.
 // @uses      net/http, strings, internal/registry.
-// @reason    A keyed OpenCode lane reads a different header per wire: the chat
-//
-//	endpoint takes `Authorization: Bearer`, and the Messages endpoint takes
-//	a raw `x-api-key`. The free lane reads neither, because it pools
-//	anonymous traffic and presents the literal public bearer. Both rules
-//	are about the endpoint the request reached, which is why they live
-//	together and apart from the URL rule in opencode.go (AGENTS.md §1.1).
-//
+// @reason    A keyed OpenCode lane reads a different header per wire: the chat endpoint takes `Authorization: Bearer`, and the Messages endpoint takes a raw `x-api-key`. The free lane reads neither, because it pools anonymous traffic and presents the literal public bearer. Both rules are about the endpoint the request reached, which is why they live together and apart from the URL rule in opencode.go (AGENTS.md §1.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

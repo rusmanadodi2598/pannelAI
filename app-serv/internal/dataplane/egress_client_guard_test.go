@@ -3,19 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/egress_client_guard_test.go
-// @for       The rule that an outbound client is supplied, never invented: a
-//
-//	constructor handed a nil client refuses it instead of building an
-//	unguarded one.
-//
+// @for       The rule that an outbound client is supplied, never invented: a constructor handed a nil client refuses it instead of building an unguarded one.
 // @uses      internal/provider, net/http, net/url, testing.
-// @reason    docs/RULLES/SSRF.md §2.1 and §3 say a nil egress client must fail
-//
-//	rather than fall back. A client built inside these packages carries a
-//	plain net.Dialer and no proxy route, so a silent default would let the
-//	composition root look guarded while every call left unguarded, the same
-//	refusal draft 042 R07 already pins for the qoder connector.
-//
+// @reason    docs/RULLES/SSRF.md §2.1 and §3 say a nil egress client must fail rather than fall back. A client built inside these packages carries a plain net.Dialer and no proxy route, so a silent default would let the composition root look guarded while every call left unguarded, the same refusal draft 042 R07 already pins for the qoder connector.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

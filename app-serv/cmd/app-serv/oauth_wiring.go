@@ -1,21 +1,9 @@
 // Command app-serv wires the §7.4 OAuth flow into the management graph.
 //
 // @file      cmd/app-serv/oauth_wiring.go
-// @for       Builds the OAuth flow service, its handler, and its refresh worker
-//
-//	from the graph's shared seams.
-//
-// @uses      internal/config, internal/domain, internal/handler,
-//
-//	internal/repository/redis, internal/service, net/http, redis.
-//
-// @reason    AGENTS.md §1.5 makes this file wiring only, and §1.1 caps
-//
-//	management_wiring.go, which the OAuth block pushed over. It is a
-//	separate function rather than inline construction because the
-//	handler and the worker must share one flow service: two instances
-//	would mean two views of the same tokens.
-//
+// @for       Builds the OAuth flow service, its handler, and its refresh worker from the graph's shared seams.
+// @uses      internal/config, internal/domain, internal/handler, internal/repository/redis, internal/service, net/http, redis.
+// @reason    AGENTS.md §1.5 makes this file wiring only, and §1.1 caps management_wiring.go, which the OAuth block pushed over. It is a separate function rather than inline construction because the handler and the worker must share one flow service: two instances would mean two views of the same tokens.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

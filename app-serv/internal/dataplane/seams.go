@@ -3,21 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/seams.go
-// @for       The interfaces the pipeline talks to at its boundaries: the stream
-//
-//	sink it writes frames to and the two optional body seams it hands the
-//	translated upstream body to.
-//
+// @for       The interfaces the pipeline talks to at its boundaries: the stream sink it writes frames to and the two optional body seams it hands the translated upstream body to.
 // @uses      internal/reasoning, context.
-// @reason    A port belongs to the code that calls it, not to the package that
-//
-//	implements it: declaring these here is what keeps the engine free of
-//	net/http, of the token-saver graph, and of the settings store, and
-//	what lets a test stub one seam without building the pipeline behind
-//	it. They live in one file so engine.go stays inside the AGENTS.md
-//	§1.1 line budget and so "what the engine can be plugged into" is one
-//	list rather than three definitions scattered through the pipeline.
-//
+// @reason    A port belongs to the code that calls it, not to the package that implements it: declaring these here is what keeps the engine free of net/http, of the token-saver graph, and of the settings store, and what lets a test stub one seam without building the pipeline behind it. They live in one file so engine.go stays inside the AGENTS.md §1.1 line budget and so "what the engine can be plugged into" is one list rather than three definitions scattered through the pipeline.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -2,21 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/combo.go
-// @for       The Combo aggregate root: an ordered model list a client addresses
-//
-//	as one model string (SPEC-API-001 §7.7).
-//
-// @uses      internal/domain (ComboModel, ComboStrategy, AppError
-//
-//	constructors), time.
-//
-// @reason    A combo is a model string the data plane resolves, so its shape,
-//
-//	which strategies may carry a judge, which ones need a sticky
-//	limit, and that it names at least one model, is a routing rule
-//	rather than a request-shape rule. Keeping it here means the panel
-//	and the data plane cannot disagree about what a valid combo is.
-//
+// @for       The Combo aggregate root: an ordered model list a client addresses as one model string (SPEC-API-001 §7.7).
+// @uses      internal/domain (ComboModel, ComboStrategy, AppError constructors), time.
+// @reason    A combo is a model string the data plane resolves, so its shape, which strategies may carry a judge, which ones need a sticky limit, and that it names at least one model, is a routing rule rather than a request-shape rule. Keeping it here means the panel and the data plane cannot disagree about what a valid combo is.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

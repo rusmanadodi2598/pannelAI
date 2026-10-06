@@ -1,24 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy_route.go
-// @for       The proxy route engine's one decision: which proxy candidates a
-//
-//	request dials through, in which order (docs/PORT/
-//	008-PORT-PROXY-ENGINE.md D1-D6).
-//
-// @uses      internal/domain, internal/repository, context, net/url,
-//
-//	strings, time.
-//
-// @reason    §7.11 makes the pool a set of tested candidates and the owner's
-//
-//	directive makes it carry traffic: one service owns the plan so the
-//	two dataplane call sites walk one order rather than re-implementing
-//	the strategy. Every rule the plan applies (usability, exemption,
-//	stable order, rotation, parking, the static last resort) is pinned
-//	by proxy_route_test.go, and each degradation is deliberate: a pool
-//	the process cannot read must not take the data plane down.
-//
+// @for       The proxy route engine's one decision: which proxy candidates a request dials through, in which order (docs/PORT/ 008-PORT-PROXY-ENGINE.md D1-D6).
+// @uses      internal/domain, internal/repository, context, net/url, strings, time.
+// @reason    §7.11 makes the pool a set of tested candidates and the owner's directive makes it carry traffic: one service owns the plan so the two dataplane call sites walk one order rather than re-implementing the strategy. Every rule the plan applies (usability, exemption, stable order, rotation, parking, the static last resort) is pinned by proxy_route_test.go, and each degradation is deliberate: a pool the process cannot read must not take the data plane down.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

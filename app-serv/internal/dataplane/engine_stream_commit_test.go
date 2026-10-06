@@ -3,11 +3,7 @@
 // @file      internal/dataplane/engine_stream_commit_test.go
 // @for       The commitment a stream makes once its first frame has reached the client.
 // @uses      atomic, context, net/http, net/http/httptest, strings, testing, internal/domain
-// @reason    A mid-stream upstream failure is failover-worthy, and walking to the next combo member
-//
-//	after the client already has bytes appends a second answer to the stream it is reading and
-//	bills a second upstream for one request. This pins that the walk stops where the client began.
-//
+// @reason    A mid-stream upstream failure is failover-worthy, and walking to the next combo member after the client already has bytes appends a second answer to the stream it is reading and bills a second upstream for one request. This pins that the walk stops where the client began.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

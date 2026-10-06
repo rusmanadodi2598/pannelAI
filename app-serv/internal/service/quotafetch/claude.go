@@ -5,12 +5,7 @@
 // @file      internal/service/quotafetch/claude.go
 // @for       Asks Claude's OAuth usage endpoint and words its refusals.
 // @uses      internal/service/quotafetch, context, net/http, strconv, strings, time
-// @reason    The OAuth usage endpoint is rate-limited independently of chat and answers in
-//
-//	percentages rather than counters, so the read needs its own header set,
-//	its own cooldown outcome, and a fallback that only runs where a
-//	second endpoint could still answer something usable.
-//
+// @reason    The OAuth usage endpoint is rate-limited independently of chat and answers in percentages rather than counters, so the read needs its own header set, its own cooldown outcome, and a fallback that only runs where a second endpoint could still answer something usable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

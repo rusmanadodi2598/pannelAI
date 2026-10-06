@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_device_poll_test.go
-// @for       One poll of a device round: pending, success, refusal, and what
-//
-//	the staged state does in each (draft 036 slice A).
-//
+// @for       One poll of a device round: pending, success, refusal, and what the staged state does in each (draft 036 slice A).
 // @uses      context, errors, strings, testing, time.
-// @reason    The poll is the half of the device flow with a state machine
-//
-//	attached, and the rules worth proving are the quiet ones: a
-//	pending answer must not spend the round, a success must spend it
-//	exactly once, and a failure must leave it retryable.
-//
+// @reason    The poll is the half of the device flow with a state machine attached, and the rules worth proving are the quiet ones: a pending answer must not spend the round, a success must spend it exactly once, and a failure must leave it retryable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

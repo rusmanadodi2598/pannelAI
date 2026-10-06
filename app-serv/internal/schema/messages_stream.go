@@ -1,14 +1,10 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/messages_stream.go
-// @for       The streamed Anthropic wire: the one event shape, the message
-//
-//	intro a message_start carries, and the event and delta names.
-//
+// @for       The streamed Anthropic wire: the one event shape, the message intro a message_start carries, and the event and delta names.
 // @uses      encoding/json.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages with stream:true as
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages with stream:true as SSE, and the event vocabulary is a closed set the translators read.
 //
-//	SSE, and the event vocabulary is a closed set the translators read.
 //	Keeping it beside the request and response contract in messages.go
 //	crossed the AGENTS.md §1.1 budget.
 //

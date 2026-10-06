@@ -2,15 +2,8 @@
 //
 // @file      internal/service/usage_event_optional_test.go
 // @for       Tests that the usage recorder treats its broker as additive.
-//
 // @uses      internal/domain, context, testing.
-// @reason    The publisher is optional in UsageServiceDeps on purpose: a
-//
-//	deployment that wired no broker has to keep recording rows rather
-//	than refuse to boot. That property is invisible to every other test
-//	in this package, because they all wire a publisher, so it is pinned
-//	on its own.
-//
+// @reason    The publisher is optional in UsageServiceDeps on purpose: a deployment that wired no broker has to keep recording rows rather than refuse to boot. That property is invisible to every other test in this package, because they all wire a publisher, so it is pinned on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

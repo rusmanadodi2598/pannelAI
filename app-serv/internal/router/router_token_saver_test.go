@@ -2,15 +2,8 @@
 //
 // @file      internal/router/router_token_saver_test.go
 // @for       Route-table tests for the §7.9 token-saver routes.
-// @uses      internal/handler, internal/registry, internal/schema,
-//
-//	internal/service, net/http, net/http/httptest, strings, testing.
-//
-// @reason    The route's session gate and verb table are the mux's job, so they
-//
-//	are pinned through the real mux with the production auth fixture,
-//	not through the handler alone.
-//
+// @uses      internal/handler, internal/registry, internal/schema, internal/service, net/http, net/http/httptest, strings, testing.
+// @reason    The route's session gate and verb table are the mux's job, so they are pinned through the real mux with the production auth fixture, not through the handler alone.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

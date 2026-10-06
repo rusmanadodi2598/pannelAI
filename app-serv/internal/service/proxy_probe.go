@@ -3,13 +3,7 @@
 // @file      internal/service/proxy_probe.go
 // @for       The two proxy connectivity tests of SPEC-API-001 §7.11.
 // @uses      internal/domain, context.
-// @reason    §7.11 offers a stored test and a candidate test, and both must
-//
-//	answer with the same normalized state, a failed probe is a result,
-//	not an error. They are separate from the CRUD use cases because
-//	AGENTS.md §1.1 caps a file at 250 lines and the two paths only share
-//	the sealing helpers.
-//
+// @reason    §7.11 offers a stored test and a candidate test, and both must answer with the same normalized state, a failed probe is a result, not an error. They are separate from the CRUD use cases because AGENTS.md §1.1 caps a file at 250 lines and the two paths only share the sealing helpers.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

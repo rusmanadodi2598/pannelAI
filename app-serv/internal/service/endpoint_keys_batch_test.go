@@ -3,11 +3,7 @@
 // @file      internal/service/endpoint_keys_batch_test.go
 // @for       The all-or-nothing property of a bulk key add and its row attribution.
 // @uses      strconv, testing, internal/domain.
-// @reason    One rejected row must not leave the others attached, and the client
-//
-//	must be told which row failed; both are bulk-only rules with no
-//	single-key counterpart.
-//
+// @reason    One rejected row must not leave the others attached, and the client must be told which row failed; both are bulk-only rules with no single-key counterpart.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

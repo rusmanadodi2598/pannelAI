@@ -2,15 +2,10 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_event_codec_test.go
-// @for       Table-driven tests for the usage event's invariants and the wire
-//
-//	codec a publisher and a subscriber meet on.
-//
+// @for       Table-driven tests for the usage event's invariants and the wire codec a publisher and a subscriber meet on.
 // @uses      testing, time.
-// @reason    The event crosses a broker, so every payload the subscriber reads
+// @reason    The event crosses a broker, so every payload the subscriber reads is untrusted input: a truncated, mislabelled, or hostile message must be refused rather than decoded into a zero-valued event (OWASP A08).
 //
-//	is untrusted input: a truncated, mislabelled, or hostile message must
-//	be refused rather than decoded into a zero-valued event (OWASP A08).
 //	The invariants are the aggregate's own, so they are pinned here once
 //	for both directions of the codec, and every refusal case carries a
 //	benign control so an over-blocking validator fails the table too.

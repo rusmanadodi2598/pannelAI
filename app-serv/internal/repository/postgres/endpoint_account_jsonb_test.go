@@ -1,19 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/endpoint_account_jsonb_test.go
-// @for       The stored shape of an endpoint's account identity, proven by
-//
-//	writing it and reading it back.
-//
+// @for       The stored shape of an endpoint's account identity, proven by writing it and reading it back.
 // @uses      domain, strings, testing.
-// @reason    The account column is JSONB, so a field the payload struct does not
-//
-//	name is silently dropped rather than rejected: the write succeeds, the
-//	read returns empty, and the loss surfaces much later as a provider
-//	that authenticates as an anonymous device. A signed provider replays
-//	one of those fields, the machine id a login minted, on every
-//	request, which is what makes an in-memory round trip worth a test.
-//
+// @reason    The account column is JSONB, so a field the payload struct does not name is silently dropped rather than rejected: the write succeeds, the read returns empty, and the loss surfaces much later as a provider that authenticates as an anonymous device. A signed provider replays one of those fields, the machine id a login minted, on every request, which is what makes an in-memory round trip worth a test.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

@@ -1,24 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_live_test.go
-// @for       Table-driven tests for the live Usage service: the frame's recent
-//
-//	window, the provider an error is attributed to, and the in-flight
-//	tracker's write and release.
-//
-// @uses      internal/domain, internal/repository, internal/schema, context,
-//
-//	errors, sync, testing, time.
-//
-// @reason    The live frame is the one place the panel's "a provider is routing
-//
-//	now" claim comes from, so the three rules that keep it honest are
-//	pinned here: the recent read is bounded by both a window and a
-//	limit, `error_provider` is only claimed inside its own short window,
-//	and a released marker stops being drawn. Each of those fails
-//	silently when it regresses: an unbounded read looks fine until the
-//	table grows, and a stale error attribution looks like a real one.
-//
+// @for       Table-driven tests for the live Usage service: the frame's recent window, the provider an error is attributed to, and the in-flight tracker's write and release.
+// @uses      internal/domain, internal/repository, internal/schema, context, errors, sync, testing, time.
+// @reason    The live frame is the one place the panel's "a provider is routing now" claim comes from, so the three rules that keep it honest are pinned here: the recent read is bounded by both a window and a limit, `error_provider` is only claimed inside its own short window, and a released marker stops being drawn. Each of those fails silently when it regresses: an unbounded read looks fine until the table grows, and a stale error attribution looks like a real one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

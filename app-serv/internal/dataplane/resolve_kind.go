@@ -3,20 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/resolve_kind.go
-// @for       The kind a caller needs a model to have, and the rule that decides
-//
-//	whether one model satisfies it.
-//
+// @for       The kind a caller needs a model to have, and the rule that decides whether one model satisfies it.
 // @uses      internal/registry, strings.
-// @reason    A registry entry may declare models whose payload is not a chat
-//
-//	request (the reference's `kind: "systemone"` decision models), and each
-//	plane must refuse the other's models rather than serve them with the
-//	wrong body. That is one rule read twice, so it lives here instead of
-//	inside the resolution walk: the chat plane asks for a chat model, the
-//	decision route asks for a decision model, and neither can drift from
-//	the other's idea of which kinds are which.
-//
+// @reason    A registry entry may declare models whose payload is not a chat request (the reference's `kind: "systemone"` decision models), and each plane must refuse the other's models rather than serve them with the wrong body. That is one rule read twice, so it lives here instead of inside the resolution walk: the chat plane asks for a chat model, the decision route asks for a decision model, and neither can drift from the other's idea of which kinds are which.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

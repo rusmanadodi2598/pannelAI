@@ -2,18 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/auth_retry_test.go
-// @for       Table-driven tests for credential placement, retry decisions, and
-//
-//	quota classification.
-//
+// @for       Table-driven tests for credential placement, retry decisions, and quota classification.
 // @uses      testing, net/http, internal/registry.
-// @reason    These are the three connector decisions that used to be per-provider
-//
-//	branches in the core: which header carries the credential, whether an
-//	upstream outcome is worth retrying, and whether a rejection means the
-//	account is out of quota rather than briefly unhappy. Pinning them
-//	here is what makes the branch unnecessary.
-//
+// @reason    These are the three connector decisions that used to be per-provider branches in the core: which header carries the credential, whether an upstream outcome is worth retrying, and whether a rejection means the account is out of quota rather than briefly unhappy. Pinning them here is what makes the branch unnecessary.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

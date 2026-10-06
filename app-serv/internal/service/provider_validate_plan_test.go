@@ -2,17 +2,8 @@
 //
 // @file      internal/service/provider_validate_plan_test.go
 // @for       The per-format validation plan, measured over the REAL registry.
-//
 // @uses      internal/registry, testing.
-// @reason    Draft 017 §4.2's second consequence is that 76 providers answered
-//
-//	"this provider does not declare a validation endpoint" while the
-//	reference could check most of them. The plan is a small pure function,
-//	so it is asserted twice: as a table of shapes, and against every entry
-//	the embedded document declares, the second is the one that would have
-//	caught the original gap, because it names the providers left uncovered
-//	instead of trusting a hand-written sample.
-//
+// @reason    Draft 017 §4.2's second consequence is that 76 providers answered "this provider does not declare a validation endpoint" while the reference could check most of them. The plan is a small pure function, so it is asserted twice: as a table of shapes, and against every entry the embedded document declares, the second is the one that would have caught the original gap, because it names the providers left uncovered instead of trusting a hand-written sample.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

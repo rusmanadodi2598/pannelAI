@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/chat_record_cost_test.go
-// @for       The cost half of a chat call's usage row: the estimate the rate
-//
-//	tables produce, and the zero the paths without one must keep.
-//
+// @for       The cost half of a chat call's usage row: the estimate the rate tables produce, and the zero the paths without one must keep.
 // @uses      internal/dataplane, internal/registry, internal/schema, testing.
-// @reason    Live evidence 2026-09-23: every successful chat request wrote
-//
-//	cost_usd = 0 because chat_record.go never filled the field, so the
-//	panel's cost series and the month-to-date spend a budget cap is
-//	measured against both read zero. These tests pin the field to the
-//	rate tables' estimate for the model that was served, and pin the
-//	zero for the cases that must stay zero: an unpriced model, a call
-//	that reported no usage, and a call that failed.
-//
+// @reason    Live evidence 2026-09-23: every successful chat request wrote cost_usd = 0 because chat_record.go never filled the field, so the panel's cost series and the month-to-date spend a budget cap is measured against both read zero. These tests pin the field to the rate tables' estimate for the model that was served, and pin the zero for the cases that must stay zero: an unpriced model, a call that reported no usage, and a call that failed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,14 +3,10 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/stop_claude_test.go
-// @for       The caller's `stop_sequences` on the Anthropic wire: the streamed cut
-//
-//	and the one-body cut, each reported as a stop sequence.
-//
+// @for       The caller's `stop_sequences` on the Anthropic wire: the streamed cut and the one-body cut, each reported as a stop sequence.
 // @uses      encoding/json, strings, testing, internal/schema.
-// @reason    Anthropic distinguishes an answer the caller ended from one the model
+// @reason    Anthropic distinguishes an answer the caller ended from one the model finished, and only the marker itself carries that: `stop_reason:
 //
-// finished, and only the marker itself carries that: `stop_reason:
 // "stop_sequence"` plus `stop_sequence`. Measured live on 2026-09-30 the
 // gateway answered `A STOPHERE B` with `end_turn` through
 // /api/v1/messages. These pin both halves, the text the client must not

@@ -1,18 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/settings_reasoning_patch.go
-// @for       The reasoning group's PATCH DTO, its lowering into the domain
-//
-//	mutation, and the per-entry rules of the provider mode map.
-//
+// @for       The reasoning group's PATCH DTO, its lowering into the domain mutation, and the per-entry rules of the provider mode map.
 // @uses      internal/domain.
-// @reason    SPEC-API-001 §7.14 validates a PATCH per key. The provider mode
-//
-//	map is a whole replacement whose entries carry their own vocabulary,
-//	so keeping its DTO and checks together is what stops the settings
-//	patch file from growing past the line budget while the group stays
-//	one reviewable unit.
-//
+// @reason    SPEC-API-001 §7.14 validates a PATCH per key. The provider mode map is a whole replacement whose entries carry their own vocabulary, so keeping its DTO and checks together is what stops the settings patch file from growing past the line budget while the group stays one reviewable unit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

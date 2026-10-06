@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_claude_blocks.go
-// @for       The message, tool, and image conversion the OpenAI-to-Anthropic
-//
-//	direction applies.
-//
+// @for       The message, tool, and image conversion the OpenAI-to-Anthropic direction applies.
 // @uses      internal/schema, encoding/json, strings.
-// @reason    Anthropic enforces two ordering rules the OpenAI shape cannot
-//
-//	express, a tool_result stands alone in its own user turn and a turn
-//	ends at its tool_use, and both need the same block vocabulary and
-//	the same tool-name mapping. Keeping the conversion beside those rules
-//	is what makes the ordering auditable in one place.
-//
+// @reason    Anthropic enforces two ordering rules the OpenAI shape cannot express, a tool_result stands alone in its own user turn and a turn ends at its tool_use, and both need the same block vocabulary and the same tool-name mapping. Keeping the conversion beside those rules is what makes the ordering auditable in one place.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

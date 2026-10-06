@@ -1,20 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/endpoint_keys.go
-// @for       PostgreSQL persistence for the upstream_keys child rows, including
-//
-//	the transactional reorder of a provider's endpoints.
-//
+// @for       PostgreSQL persistence for the upstream_keys child rows, including the transactional reorder of a provider's endpoints.
 // @uses      github.com/jackc/pgx/v5, internal/domain, time.
-// @reason    A key is a child of the endpoint aggregate, so nothing here loads or
-//
-//	stores a key on its own: every statement is scoped by endpoint_id and
-//	the aggregate's invariant (an api_key endpoint keeps a usable
-//	credential) is enforced in the domain before a call arrives. The
-//	batch and reorder statements live here because AGENTS.md §1.7
-//	forbids a query per row and the interface's per-key methods cannot
-//	express one statement boundary across a set.
-//
+// @reason    A key is a child of the endpoint aggregate, so nothing here loads or stores a key on its own: every statement is scoped by endpoint_id and the aggregate's invariant (an api_key endpoint keeps a usable credential) is enforced in the domain before a call arrives. The batch and reorder statements live here because AGENTS.md §1.7 forbids a query per row and the interface's per-key methods cannot express one statement boundary across a set.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

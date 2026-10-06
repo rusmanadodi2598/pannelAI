@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota.go
-// @for       Quota window reads, budget-cap writes, and the Redis-to-PostgreSQL
-//
-//	counter flush worker.
-//
+// @for       Quota window reads, budget-cap writes, and the Redis-to-PostgreSQL counter flush worker.
 // @uses      internal/domain, internal/repository, context, log/slog, sync, time.
-// @reason    SPEC-API-001 §7.12 reads quota windows, writes budget caps the
-//
-//	router honours, and keeps hot counters in Redis flushed to
-//	PostgreSQL. The flush is the one place in this vertical that owns a
-//	long-lived goroutine, so its lifecycle is stated here rather than
-//	implied: see the worker section below.
-//
+// @reason    SPEC-API-001 §7.12 reads quota windows, writes budget caps the router honours, and keeps hot counters in Redis flushed to PostgreSQL. The flush is the one place in this vertical that owns a long-lived goroutine, so its lifecycle is stated here rather than implied: see the worker section below.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

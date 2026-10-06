@@ -3,13 +3,7 @@
 // @file      internal/handler/provider_node.go
 // @for       The custom provider node routes (SPEC-API-001 §7.4).
 // @uses      internal/domain, internal/schema, internal/service, net/http.
-// @reason    §7.4 fixes the node contract and AGENTS.md §1.5 keeps the prefix
-//
-//	collision and reference checks in the service: this layer decodes a
-//	validated DTO, calls, and maps. A node's prefix is a model-string
-//	namespace, so its refusal has to be the §8 CONFLICT a client can act
-//	on rather than a driver or registry message.
-//
+// @reason    §7.4 fixes the node contract and AGENTS.md §1.5 keeps the prefix collision and reference checks in the service: this layer decodes a validated DTO, calls, and maps. A node's prefix is a model-string namespace, so its refusal has to be the §8 CONFLICT a client can act on rather than a driver or registry message.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

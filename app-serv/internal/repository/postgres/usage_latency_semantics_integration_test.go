@@ -5,15 +5,7 @@
 // @file      internal/repository/postgres/usage_latency_semantics_integration_test.go
 // @for       The aggregate latency_ms semantic against a real server (draft 010 F3).
 // @uses      internal/domain, context, testing, time.
-// @reason    Draft 010 F3: the aggregate latency is a SUM of per-request
-//
-//	durations and nothing on the wire said so. The arithmetic test that
-//	already exists seeds three rows all at 100 ms, so a mean and a sum
-//	both read 300 and it cannot tell the two apart. These rows are
-//	deliberately unequal so the assertion fails if the projection ever
-//	becomes an average, which is the change owner decision D1 = document
-//	rules out: the contract now promises the sum, so the sum is pinned.
-//
+// @reason    Draft 010 F3: the aggregate latency is a SUM of per-request durations and nothing on the wire said so. The arithmetic test that already exists seeds three rows all at 100 ms, so a mean and a sum both read 300 and it cannot tell the two apart. These rows are deliberately unequal so the assertion fails if the projection ever becomes an average, which is the change owner decision D1 = document rules out: the contract now promises the sum, so the sum is pinned.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

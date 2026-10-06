@@ -3,12 +3,7 @@
 // @file      internal/router/router.go
 // @for       Route registration for the v1 management and data planes.
 // @uses      internal/handler, internal/schema, net/http, encoding/json.
-// @reason    SPEC-API-001 §4 pins the /api/v1 prefix for every route and §9
-//
-//	fixes the layer flow ending at the router; registering each route
-//	with its method makes the surface auditable at a glance and makes
-//	a forgotten verb a startup-visible mistake, not a 405 at runtime.
-//
+// @reason    SPEC-API-001 §4 pins the /api/v1 prefix for every route and §9 fixes the layer flow ending at the router; registering each route with its method makes the surface auditable at a glance and makes a forgotten verb a startup-visible mistake, not a 405 at runtime.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

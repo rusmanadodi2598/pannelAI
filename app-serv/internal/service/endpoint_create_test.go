@@ -3,11 +3,7 @@
 // @file      internal/service/endpoint_create_test.go
 // @for       The credential sealing and the duplicate-account refusal on create.
 // @uses      testing, internal/domain.
-// @reason    A create is the only moment a plaintext credential exists in this
-//
-//	service, so the seal and the uniqueness rule are pinned apart from
-//	the CRUD table.
-//
+// @reason    A create is the only moment a plaintext credential exists in this service, so the seal and the uniqueness rule are pinned apart from the CRUD table.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

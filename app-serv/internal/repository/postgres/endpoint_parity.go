@@ -3,15 +3,7 @@
 // @file      internal/repository/postgres/endpoint_parity.go
 // @for       The endpoint's connection-parity write after a data-plane outcome.
 // @uses      PostgreSQL connection pool, context, internal/domain.
-// @reason    R17 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the parity columns
-//
-//	migration 000012 added were read by the panel but written by no
-//	live path, so the screen could not show why an endpoint last
-//	failed. This is the narrow write the data plane's outcome takes,
-//	RecordKeyHealth's rule applied to the endpoint's own columns: a
-//	routing result must not rewrite a label, a priority, or a
-//	credential.
-//
+// @reason    R17 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the parity columns migration 000012 added were read by the panel but written by no live path, so the screen could not show why an endpoint last failed. This is the narrow write the data plane's outcome takes, RecordKeyHealth's rule applied to the endpoint's own columns: a routing result must not rewrite a label, a priority, or a credential.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

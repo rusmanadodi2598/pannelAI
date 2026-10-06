@@ -1,18 +1,10 @@
 // Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
 // @file      internal/service/oauthhttp/oauth_grant.go
-// @for       The token-endpoint wire types: one grant rendered as form or as
+// @for       The token-endpoint wire types: one grant rendered as form or as JSON, one typed answer, and the refusal mapping.
+// @uses      context, encoding/json, net/http, net/url, strconv, strings, internal/domain.
+// @reason    SPEC-API-001 §8.1 records that providers disagree on the grant body's encoding, so one grant type renders both ways and the disagreement stays at this boundary instead of reaching the flow.
 //
-//	JSON, one typed answer, and the refusal mapping.
-//
-// @uses      context, encoding/json, net/http, net/url, strconv, strings,
-//
-//	internal/domain.
-//
-// @reason    SPEC-API-001 §8.1 records that providers disagree on the grant
-//
-//	body's encoding, so one grant type renders both ways and the
-//	disagreement stays at this boundary instead of reaching the flow.
 //	Empty fields are omitted from either rendering, which is what lets
 //	the same type carry a code exchange, a refresh grant, and a device
 //	poll without a per-grant struct trio. The net/http import is egress only,

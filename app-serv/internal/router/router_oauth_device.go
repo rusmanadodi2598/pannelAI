@@ -2,14 +2,8 @@
 //
 // @file      internal/router/router_oauth_device.go
 // @for       The §7.4 device-flow routes: start a verification round, poll it.
-//
 // @uses      net/http.
-// @reason    A device flow belongs to the same provider section as the code
-//
-//	flow, but it has no public callback to serve: the panel asks twice
-//	under its own session. Registered apart because router.go is at its
-//	§1.1 budget, which is also why the node routes have their own file.
-//
+// @reason    A device flow belongs to the same provider section as the code flow, but it has no public callback to serve: the panel asks twice under its own session. Registered apart because router.go is at its §1.1 budget, which is also why the node routes have their own file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_elevenlabs_test.go
-// @for       The ElevenLabs speech adapter: body, voice path segment, declared
-//
-//	header, the missing-voice refusal, and the MP3 label.
-//
-// @uses      internal/dataplane, internal/provider, internal/schema, context,
-//
-//	encoding/json, strings, testing.
-//
-// @reason    G5 ports one provider adapter at a time. ElevenLabs is the first
-//
-//	adapter that shapes a URL of its own, so these rows pin that the
-//	voice lands in the path, that the model stays in the body, and that
-//	the OpenAI-shaped control is unaffected.
-//
+// @for       The ElevenLabs speech adapter: body, voice path segment, declared header, the missing-voice refusal, and the MP3 label.
+// @uses      internal/dataplane, internal/provider, internal/schema, context, encoding/json, strings, testing.
+// @reason    G5 ports one provider adapter at a time. ElevenLabs is the first adapter that shapes a URL of its own, so these rows pin that the voice lands in the path, that the model stays in the body, and that the OpenAI-shaped control is unaffected.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

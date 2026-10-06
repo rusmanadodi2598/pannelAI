@@ -2,17 +2,8 @@
 //
 // @file      internal/service/media_search.go
 // @for       The web search use case of SPEC-API-001 §7.10.
-// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema,
-//
-//	context, encoding/json, strconv, strings, time.
-//
-// @reason    Search is the one media kind whose request shape is not fixed: the
-//
-//	reference carries a per-provider builder because search APIs
-//	disagree on the spelling of `q`/`query` and `num`/`count`. The
-//	registry declares those names, so the payload is built from the
-//	block rather than from a provider switch here.
-//
+// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema, context, encoding/json, strconv, strings, time.
+// @reason    Search is the one media kind whose request shape is not fixed: the reference carries a per-provider builder because search APIs disagree on the spelling of `q`/`query` and `num`/`count`. The registry declares those names, so the payload is built from the block rather than from a provider switch here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

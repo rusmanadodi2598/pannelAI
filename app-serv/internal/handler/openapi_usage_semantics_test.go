@@ -1,16 +1,10 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/openapi_usage_semantics_test.go
-// @for       The served contract's stated semantics for the aggregate latency
-//
-//	and the free-text q scope (draft 010 F3 + F8).
-//
+// @for       The served contract's stated semantics for the aggregate latency and the free-text q scope (draft 010 F3 + F8).
 // @uses      encoding/json, strings, testing.
-// @reason    Draft 010 F3: latency_ms on an aggregate is a sum of per-request
+// @reason    Draft 010 F3: latency_ms on an aggregate is a sum of per-request latencies, and nothing on the wire said so, which is why the panel already refused to render it. F8: q matched the model only while the panel's placeholder promised a request id and an error code.
 //
-//	latencies, and nothing on the wire said so, which is why the panel
-//	already refused to render it. F8: q matched the model only while
-//	the panel's placeholder promised a request id and an error code.
 //	Both are statements a consumer reads from the contract, so these
 //	tests read the served document rather than the YAML it was
 //	generated from: a description lost in regeneration fails here.

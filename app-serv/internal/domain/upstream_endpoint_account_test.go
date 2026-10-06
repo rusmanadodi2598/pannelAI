@@ -4,11 +4,7 @@
 // @file      internal/domain/upstream_endpoint_account_test.go
 // @for       The account identity's canonical spelling and the credential constructor.
 // @uses      testing, time.
-// @reason    Two rules decide whether a re-import is recognised as the account it
-//
-//	already is: the email's canonical form and a credential that cannot
-//	exist without the ciphertext it names.
-//
+// @reason    Two rules decide whether a re-import is recognised as the account it already is: the email's canonical form and a credential that cannot exist without the ciphertext it names.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

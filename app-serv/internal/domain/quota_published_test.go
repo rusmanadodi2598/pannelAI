@@ -2,21 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/quota_published_test.go
-// @for       Table-driven tests for the published-quota answer rules: the label
-//
-//	set one answer may hold, the amounts it may carry, and the ceiling accessor
-//	that separates "no ceiling" from "a spent one".
-//
+// @for       Table-driven tests for the published-quota answer rules: the label set one answer may hold, the amounts it may carry, and the ceiling accessor that separates "no ceiling" from "a spent one".
 // @uses      testing, time.
-// @reason    The cache is written by a worker that has no view of the schema, so
-//
-//	the rules that keep a stored answer readable, one label per bucket, no
-//	negative amount, an endpoint id that is not blank, have to be enforced
-//	where the vocabulary lives, not in the statement that happens to store it
-//	(AGENTS.md §2.2). A duplicate label in particular turns one batched upsert
-//	into a PostgreSQL error about affecting a row twice, which is a database
-//	message a client must never see (§1.3).
-//
+// @reason    The cache is written by a worker that has no view of the schema, so the rules that keep a stored answer readable, one label per bucket, no negative amount, an endpoint id that is not blank, have to be enforced where the vocabulary lives, not in the statement that happens to store it (AGENTS.md §2.2). A duplicate label in particular turns one batched upsert into a PostgreSQL error about affecting a row twice, which is a database message a client must never see (§1.3).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

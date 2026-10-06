@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/vision_augmenter.go
-// @for       The data plane's vision augmentation seam, answered by the adapter
-//
-//	configuration, the catalog's capability judgement, and the rotation
-//	store.
-//
+// @for       The data plane's vision augmentation seam, answered by the adapter configuration, the catalog's capability judgement, and the rotation store.
 // @uses      internal/dataplane, internal/domain, internal/repository, context.
-// @reason    SPEC-API-001 §7.8 puts the augmentation policy in the adapter while
-//
-//	the request pipeline only knows the seam, so the two halves need
-//	one adapter between them. It lives in the service layer because it
-//	orchestrates the adapter use case and a repository, not transport,
-//	not SQL, and the composition root hands it to the engine as the
-//	seam's implementation.
-//
+// @reason    SPEC-API-001 §7.8 puts the augmentation policy in the adapter while the request pipeline only knows the seam, so the two halves need one adapter between them. It lives in the service layer because it orchestrates the adapter use case and a repository, not transport, not SQL, and the composition root hands it to the engine as the seam's implementation.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

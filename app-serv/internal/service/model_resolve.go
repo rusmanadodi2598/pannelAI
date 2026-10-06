@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_resolve.go
-// @for       Model-string resolution and the existence check every reference
-//
-//	inside a write goes through (SPEC-API-001 §7.15, §7.6).
-//
+// @for       Model-string resolution and the existence check every reference inside a write goes through (SPEC-API-001 §7.15, §7.6).
 // @uses      internal/domain, context, strings.
-// @reason    §7.15 fixes one resolution order, combo name, then alias, then
-//
-//	provider/model, and §7.6 requires an alias target to exist. Both
-//	answers come from the same merged view, so they live together: an
-//	alias validated against one view and resolved against another is
-//	exactly the drift this file prevents.
-//
+// @reason    §7.15 fixes one resolution order, combo name, then alias, then provider/model, and §7.6 requires an alias target to exist. Both answers come from the same merged view, so they live together: an alias validated against one view and resolved against another is exactly the drift this file prevents.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

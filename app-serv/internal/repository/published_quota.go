@@ -1,16 +1,10 @@
 // Package repository defines storage contracts consumed by app-serv services.
 //
 // @file      internal/repository/published_quota.go
-// @for       The published-quota cache boundary: the screen's one batched read
-//
-//	and the poll worker's sweep, store, and attempt bookkeeping.
-//
+// @for       The published-quota cache boundary: the screen's one batched read and the poll worker's sweep, store, and attempt bookkeeping.
 // @uses      context, time, internal/domain.
-// @reason    The quota screen must show the quota a provider publishes about
+// @reason    The quota screen must show the quota a provider publishes about itself, and fetching it on read would fan out one provider call per account, the N+1 shape AGENTS.md §1.7 blocks on this screen. So a worker writes the answers into a cache and the read is one statement.
 //
-//	itself, and fetching it on read would fan out one provider call per
-//	account, the N+1 shape AGENTS.md §1.7 blocks on this screen. So a
-//	worker writes the answers into a cache and the read is one statement.
 //	This boundary is what lets the service depend on that contract without
 //	importing a driver (§1.5), and it is stated as a port so the sweep and
 //	the read path cannot drift into two different shapes of the same table.

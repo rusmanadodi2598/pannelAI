@@ -2,17 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/index.go
-// @for       The read-only lookups the rest of the system performs on the loaded
-//
-//	registry: by identifier, by model, and by category.
-//
+// @for       The read-only lookups the rest of the system performs on the loaded registry: by identifier, by model, and by category.
 // @uses      internal/registry, sort, strings.
-// @reason    SPEC-API-001 §7.4 serves the registry over HTTP and the data plane
-//
-//	resolves every model string through it, so the lookups live in one
-//	place with the ordering rules written down; nothing here mutates
-//	the index, which is why the accessors return copies.
-//
+// @reason    SPEC-API-001 §7.4 serves the registry over HTTP and the data plane resolves every model string through it, so the lookups live in one place with the ordering rules written down; nothing here mutates the index, which is why the accessors return copies.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

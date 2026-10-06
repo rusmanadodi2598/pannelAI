@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/fusion_prompt.go
-// @for       How a fusion panel member and its judge are asked, and how an
-//
-//	answer is read back (SPEC-API-001 §7.7).
-//
+// @for       How a fusion panel member and its judge are asked, and how an answer is read back (SPEC-API-001 §7.7).
 // @uses      internal/schema, encoding/json, strconv, strings.
-// @reason    A panel member receives the client's request stripped to what it
-//
-//	must answer in prose, while the judge receives it whole plus one
-//	appended turn. Both shapes are edits to the same body, so keeping
-//	them together makes the difference between the two auditable, and
-//	keeping them out of the engine leaves the fan-out readable.
-//
+// @reason    A panel member receives the client's request stripped to what it must answer in prose, while the judge receives it whole plus one appended turn. Both shapes are edits to the same body, so keeping them together makes the difference between the two auditable, and keeping them out of the engine leaves the fan-out readable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

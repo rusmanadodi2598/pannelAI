@@ -1,23 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/vision_augmenter_test.go
-// @for       Tests for the data plane's vision augmentation seam: the
-//
-//	capability decline, where the adapter sits among the request's own
-//	candidates, the disabled adapter, the rotation advance, and the
-//	advisory rotation failure.
-//
-// @uses      context, errors, reflect, testing, internal/domain,
-//
-//	internal/repository.
-//
-// @reason    SPEC-API-001 §7.8 decides a served request's model order here, so
-//
-//	every branch, a candidate that reads images, one that cannot, a
-//	list holding both, a disabled adapter, the rotation, is pinned
-//	against the same in-memory doubles the adapter's own tests use, and
-//	the rotation write's advisory contract is stated by a test that
-//	makes the store fail.
+// @for       Tests for the data plane's vision augmentation seam: the capability decline, where the adapter sits among the request's own candidates, the disabled adapter, the rotation advance, and the advisory rotation failure.
+// @uses      context, errors, reflect, testing, internal/domain, internal/repository.
+// @reason    SPEC-API-001 §7.8 decides a served request's model order here, so every branch, a candidate that reads images, one that cannot, a list holding both, a disabled adapter, the rotation, is pinned against the same in-memory doubles the adapter's own tests use, and the rotation write's advisory contract is stated by a test that makes the store fail.
 //
 // The candidates are catalog rows the fixture declares by hand rather than
 // model ids chosen to trip a name pattern: measured live 2026-09-29 the

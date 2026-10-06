@@ -3,17 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/ponytail_prompts_test.go
-// @for       The prompt table's two standing claims: it is keyed by the domain's
-//
-//	level vocabulary, and it stays ASCII.
-//
+// @for       The prompt table's two standing claims: it is keyed by the domain's level vocabulary, and it stays ASCII.
 // @uses      internal/domain, strings, testing, unicode.
-// @reason    SPEC-API-002 §7 ports the reference's prompts verbatim, and the
-//
-//	panel accepts the same three level words. A test is what keeps the
-//	two from drifting silently: the schema tags, the domain validator,
-//	and this table are three separate copies of one vocabulary.
-//
+// @reason    SPEC-API-002 §7 ports the reference's prompts verbatim, and the panel accepts the same three level words. A test is what keeps the two from drifting silently: the schema tags, the domain validator, and this table are three separate copies of one vocabulary.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

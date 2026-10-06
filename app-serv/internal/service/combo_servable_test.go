@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/combo_servable_test.go
-// @for       Draft 024 F4 after review: the write-path servability rule must ask
-//
-//	the router's own question, in both directions.
-//
+// @for       Draft 024 F4 after review: the write-path servability rule must ask the router's own question, in both directions.
 // @uses      internal/domain, internal/registry, context, strings, testing.
-// @reason    The first cut judged servability from the catalog row, which is
-//
-//	neither what the router does nor complete: it refused a passthrough
-//	provider's undeclared id (the router serves it) and accepted a
-//	custom row on a non-passthrough provider (the router refuses it,
-//	because custom rows are not in the resolver's index). It also read
-//	the row's provider rather than the provider the reference resolves
-//	to, so an id shadowed by another provider's alias was judged against
-//	the wrong entry. These tests pin the router-shaped answer.
-//
+// @reason    The first cut judged servability from the catalog row, which is neither what the router does nor complete: it refused a passthrough provider's undeclared id (the router serves it) and accepted a custom row on a non-passthrough provider (the router refuses it, because custom rows are not in the resolver's index). It also read the row's provider rather than the provider the reference resolves to, so an id shadowed by another provider's alias was judged against the wrong entry. These tests pin the router-shaped answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

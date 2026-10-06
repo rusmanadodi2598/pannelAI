@@ -3,13 +3,7 @@
 // @file      internal/service/log_retention_test.go
 // @for       Table-driven tests for the request-log retention worker.
 // @uses      testing, context, time, internal/repository.
-// @reason    The retention worker owns a long-lived ticker, retry state, and a
-//
-//	panic boundary. A regression in any of those can leave rows forever,
-//	keep a goroutine alive after shutdown, or kill the process, so the
-//	worker is driven directly under the race detector and the canonical
-//	LogService purge is exercised for its dynamic settings behavior.
-//
+// @reason    The retention worker owns a long-lived ticker, retry state, and a panic boundary. A regression in any of those can leave rows forever, keep a goroutine alive after shutdown, or kill the process, so the worker is driven directly under the race detector and the canonical LogService purge is exercised for its dynamic settings behavior.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

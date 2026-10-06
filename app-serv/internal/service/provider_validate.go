@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_validate.go
-// @for       The stateless credential check: prove a credential before a row
-//
-//	exists, and say which path proved it.
-//
+// @for       The stateless credential check: prove a credential before a row exists, and say which path proved it.
 // @uses      internal/domain, context, strings.
-// @reason    SPEC-API-001 §7.4 offers no validate route, so the only way to test a
-//
-//	credential today is to store it first (draft 017 §4.6). The reference
-//	validates before the write, and two of its rules are not details: an
-//	upstream that does not serve `/models` is still validatable through a
-//	one-token chat probe, and for an Anthropic wire a 400 or 529 proves the
-//	key was *accepted*, the request was wrong, not the credential.
+// @reason    SPEC-API-001 §7.4 offers no validate route, so the only way to test a credential today is to store it first (draft 017 §4.6). The reference validates before the write, and two of its rules are not details: an upstream that does not serve `/models` is still validatable through a one-token chat probe, and for an Anthropic wire a 400 or 529 proves the key was *accepted*, the request was wrong, not the credential.
 //
 //	The check is stateless by construction: this file holds no store, and
 //	the port it declares takes the destination as a value. That is what

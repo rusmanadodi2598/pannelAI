@@ -1,19 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_body_test.go
-// @for       The agent body: what the vendor's catalogue contributes to it, and the
-//
-//	message reshaping it depends on.
-//
+// @for       The agent body: what the vendor's catalogue contributes to it, and the message reshaping it depends on.
 // @uses      encoding/json, io, net/http, net/http/httptest, strings, testing, time.
-// @reason    The endpoint refuses an OpenAI body and answers with a different model
-//
-//	when the configuration it is handed is wrong, so the two things this
-//	file can pin without a live account are that the payload carries the
-//	vendor's own object unchanged and that the identity fields are stable
-//	for one prompt. The catalogue stub is the vendor's real shape, captured
-//	live.
-//
+// @reason    The endpoint refuses an OpenAI body and answers with a different model when the configuration it is handed is wrong, so the two things this file can pin without a live account are that the payload carries the vendor's own object unchanged and that the identity fields are stable for one prompt. The catalogue stub is the vendor's real shape, captured live.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

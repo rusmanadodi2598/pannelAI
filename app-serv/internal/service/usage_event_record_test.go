@@ -1,23 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_record_test.go
-// @for       Table-driven tests for the recorder's event emission: that the
-//
-//	choke point emits exactly one event per stored row, and emits
-//	nothing for a row it refused.
-//
-// @uses      internal/domain, internal/repository, context, errors, sync,
-//
-//	testing, time.
-//
-// @reason    F4 of draft 010 is closed by "the event has a real publisher and a
-//
-//	real subscriber". The subscriber's own tests prove it consumes; this
-//	file proves the publisher is actually reached from the production
-//	path rather than only from a test that calls it directly. It is the
-//	seam test for the whole finding: if Record stops emitting, the
-//	channel goes quiet and nothing else fails.
-//
+// @for       Table-driven tests for the recorder's event emission: that the choke point emits exactly one event per stored row, and emits nothing for a row it refused.
+// @uses      internal/domain, internal/repository, context, errors, sync, testing, time.
+// @reason    F4 of draft 010 is closed by "the event has a real publisher and a real subscriber". The subscriber's own tests prove it consumes; this file proves the publisher is actually reached from the production path rather than only from a test that calls it directly. It is the seam test for the whole finding: if Record stops emitting, the channel goes quiet and nothing else fails.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

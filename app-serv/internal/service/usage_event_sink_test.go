@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_sink_test.go
-// @for       Tests for the usage event consumer's behaviour when its console
-//
-//	sink fails.
-//
+// @for       Tests for the usage event consumer's behaviour when its console sink fails.
 // @uses      internal/domain, context, errors, testing.
-// @reason    The ring is a view of the event, not the record: a Redis that is
-//
-//	down has to leave the consumer consuming, or one failing dependency
-//	stops every later event from being observed. That distinction is the
-//	whole reason the consumer writes nothing durable, so it is pinned on
-//	its own rather than as a case in the seam table.
-//
+// @reason    The ring is a view of the event, not the record: a Redis that is down has to leave the consumer consuming, or one failing dependency stops every later event from being observed. That distinction is the whole reason the consumer writes nothing durable, so it is pinned on its own rather than as a case in the seam table.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

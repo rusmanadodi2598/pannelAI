@@ -3,12 +3,7 @@
 // @file      cmd/app-serv/media_router.go
 // @for       Adapting the dataplane engine's selection seam to media services.
 // @uses      internal/dataplane, context.
-// @reason    Media calls need endpoint selection and circuit accounting but do not
-//
-// need the chat engine's request translation. Keeping this three-method
-// adapter separate leaves the main composition file focused on construction
-// and below the source-file line warning.
-//
+// @reason    Media calls need endpoint selection and circuit accounting but do not need the chat engine's request translation. Keeping this three-method adapter separate leaves the main composition file focused on construction and below the source-file line warning.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

@@ -2,17 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/log_test.go
-// @for       Table-driven tests for capture, truncation, and retention
-//
-//	boundaries.
-//
+// @for       Table-driven tests for capture, truncation, and retention boundaries.
 // @uses      testing, time.
-// @reason    AGENTS.md §2.1 and §2.4 require the capture and retention rules to
-//
-//	be pinned at their boundaries, because each one decides whether a
-//	byte is stored: an off-by-one at the capture cap silently stores a
-//	payload nobody intended to keep.
-//
+// @reason    AGENTS.md §2.1 and §2.4 require the capture and retention rules to be pinned at their boundaries, because each one decides whether a byte is stored: an off-by-one at the capture cap silently stores a payload nobody intended to keep.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

@@ -3,12 +3,7 @@
 // @file      internal/repository/log.go
 // @for       The RequestLogRepository boundary for captured request logs.
 // @uses      context, time, internal/domain.
-// @reason    SPEC-API-001 §7.13 stores request logs with bodies only when
-//
-//	capture is on, and deletes rows older than the retention setting;
-//	both are storage operations the service must invoke without
-//	knowing which driver implements them (AGENTS.md §1.5).
-//
+// @reason    SPEC-API-001 §7.13 stores request logs with bodies only when capture is on, and deletes rows older than the retention setting; both are storage operations the service must invoke without knowing which driver implements them (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

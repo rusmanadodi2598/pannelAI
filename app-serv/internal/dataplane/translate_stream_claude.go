@@ -3,21 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_claude.go
-// @for       Re-framing an upstream stream into Anthropic SSE events, so a client
-//
-//	on /api/v1/messages can be served by any provider.
-//
+// @for       Re-framing an upstream stream into Anthropic SSE events, so a client on /api/v1/messages can be served by any provider.
 // @uses      internal/schema.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages on the Anthropic wire,
-//
-//	and the resolved provider may speak OpenAI or the Responses API, so the
-//	framing has to be produced, not forwarded. Anthropic's stream is
-//	stricter than OpenAI's: every content block must be opened, fed, and
-//	closed in order, so this is a small state machine whose state the
-//	caller owns. Its delta and block-closing helpers live in
-//	translate_stream_claude_delta.go and translate_stream_claude_blocks.go,
-//	for the AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages on the Anthropic wire, and the resolved provider may speak OpenAI or the Responses API, so the framing has to be produced, not forwarded. Anthropic's stream is stricter than OpenAI's: every content block must be opened, fed, and closed in order, so this is a small state machine whose state the caller owns. Its delta and block-closing helpers live in translate_stream_claude_delta.go and translate_stream_claude_blocks.go, for the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

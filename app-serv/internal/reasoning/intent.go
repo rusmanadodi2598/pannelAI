@@ -5,14 +5,7 @@
 // @file      internal/reasoning/intent.go
 // @for       Reading the reasoning intent a client's own body carries.
 // @uses      encoding/json, strings.
-// @reason    SPEC-API-001 §7.15 ports the reference's rule that a client's own
-//
-//	reasoning intent is left alone: the provider mode is injected only when
-//	the client asked for nothing (chatCore.js:107-117), and the per-model
-//	suffix outranks both (thinkingUnified.js applyThinking). One extractor
-//	for every client wire is what makes that rule one comparison rather
-//	than a branch per format.
-//
+// @reason    SPEC-API-001 §7.15 ports the reference's rule that a client's own reasoning intent is left alone: the provider mode is injected only when the client asked for nothing (chatCore.js:107-117), and the per-model suffix outranks both (thinkingUnified.js applyThinking). One extractor for every client wire is what makes that rule one comparison rather than a branch per format.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

@@ -1,18 +1,9 @@
 // Command app-serv shapes the requests a credential check sends.
 //
 // @file      cmd/app-serv/provider_validate_target_test.go
-// @for       The validate-URL derivation: a declared URL wins, and a chat-path
-//
-//	base yields one.
-//
+// @for       The validate-URL derivation: a declared URL wins, and a chat-path base yields one.
 // @uses      internal/registry, testing.
-// @reason    Draft 017 §4.2's second measured consequence is that 18 of 94
-//
-//	providers declared a validation endpoint while 19 more name a base
-//	that yields one by the reference's own rule. That rule is a small
-//	pure function, so it is asserted as a table rather than through a
-//	request.
-//
+// @reason    Draft 017 §4.2's second measured consequence is that 18 of 94 providers declared a validation endpoint while 19 more name a base that yields one by the reference's own rule. That rule is a small pure function, so it is asserted as a table rather than through a request.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

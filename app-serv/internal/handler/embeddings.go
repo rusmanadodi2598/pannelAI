@@ -3,12 +3,7 @@
 // @file      internal/handler/embeddings.go
 // @for       POST /api/v1/embeddings, the P1 media data plane route.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    SPEC-API-001 §7.10 lists embeddings as the P1 media route and §7.15
-//
-//	serves it on the OpenAI wire. The credential placement differs per
-//	provider kind (§8.1), but that decision belongs to the service, so
-//	this handler only decodes, authenticates, calls, and encodes.
-//
+// @reason    SPEC-API-001 §7.10 lists embeddings as the P1 media route and §7.15 serves it on the OpenAI wire. The credential placement differs per provider kind (§8.1), but that decision belongs to the service, so this handler only decodes, authenticates, calls, and encodes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

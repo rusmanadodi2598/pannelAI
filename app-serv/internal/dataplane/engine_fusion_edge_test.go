@@ -1,18 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_fusion_edge_test.go
-// @for       The fusion edges: a client that asked for SSE, a panel thinned to
-//
-//	one answer, a reference that no longer resolves, and the identity a
-//	failed panel or judge leaves behind.
-//
+// @for       The fusion edges: a client that asked for SSE, a panel thinned to one answer, a reference that no longer resolves, and the identity a failed panel or judge leaves behind.
 // @uses      testing, context, strings.
-// @reason    Each edge decides the shape of the served answer rather than the
-//
-//	panel's composition, so they are pinned together: a streamed client
-//	must receive a stream, a stale reference must cost its own slot, and
-//	a failed call must still name the member it failed at (register G17).
-//
+// @reason    Each edge decides the shape of the served answer rather than the panel's composition, so they are pinned together: a streamed client must receive a stream, a stale reference must cost its own slot, and a failed call must still name the member it failed at (register G17).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

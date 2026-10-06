@@ -3,24 +3,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/endpoint_active_integration_test.go
-// @for       The candidate-provider read behind `?active=true`: which providers
-//
-//	hold at least one endpoint the router would still pick.
-//
+// @for       The candidate-provider read behind `?active=true`: which providers hold at least one endpoint the router would still pick.
 // @uses      github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain, context, testing, time.
-// @reason    The predicate is one SQL condition, status = 'active', but it is
+// @reason    The predicate is one SQL condition, status = 'active', but it is the same condition the data plane's candidates query narrows by, and only a real server can prove the two agree over stored shapes the in-memory fixtures cannot produce: an endpoint moved to error by health tracking keeps a stale backoff timestamp, and a disabled endpoint has its window cleared. Those rows are why the seam is a distinct query rather than an approximation over the roll-up, and this test stages all of them so the approximation can never creep back in as "equivalent".
 //
-//	the same condition the data plane's candidates query narrows by,
-//	and only a real server can prove the two agree over stored shapes
-//	the in-memory fixtures cannot produce: an endpoint moved to error
-//	by health tracking keeps a stale backoff timestamp, and a disabled
-//	endpoint has its window cleared. Those rows are why the seam is a
-//	distinct query rather than an approximation over the roll-up, and
-//	this test stages all of them so the approximation can never creep
-//	back in as "equivalent".
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	    go test -race -tags=integration ./internal/repository/postgres/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	  go test -race -tags=integration ./internal/repository/postgres/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository

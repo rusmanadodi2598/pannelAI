@@ -1,10 +1,7 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/count_tokens.go
-// @for       The Anthropic count_tokens contract: the estimate request, its
-//
-//	answer, and the message text the estimate is measured over.
-//
+// @for       The Anthropic count_tokens contract: the estimate request, its answer, and the message text the estimate is measured over.
 // @uses      encoding/json, internal/domain.
 // @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages/count_tokens in P3.
 //

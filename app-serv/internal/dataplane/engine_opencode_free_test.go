@@ -1,26 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_opencode_free_test.go
-// @for       The OpenCode free tier end to end: the three free models the
-//
-//	reference serves without any credential, through the whole pipeline.
-//
-// @uses      context, encoding/json, io, net/http, net/http/httptest, strings,
-//
-//	testing, internal/domain, internal/provider, internal/registry,
-//	internal/schema.
-//
-// @reason    The reference calls these models with `Authorization: Bearer public`
-//
-//	and no stored key at all (a virtual connection, src/sse/services/auth.js:46),
-//	and the upstream gates the whole lane on the request's own shape: it
-//	refuses 403 FreeTierError unless the body streams and declares the
-//	fingerprint tools. A hermetic test that only checks the connector's
-//	transform cannot prove the lane works, because the failure the gate
-//	produces is an upstream refusal, not a local error. This file drives
-//	the real resolver, selector, transport, and connector against an
-//	upstream stand-in that enforces the measured gate, so a regression
-//	that drops a required member fails here instead of in production.
+// @for       The OpenCode free tier end to end: the three free models the reference serves without any credential, through the whole pipeline.
+// @uses      context, encoding/json, io, net/http, net/http/httptest, strings, testing, internal/domain, internal/provider, internal/registry, internal/schema.
+// @reason    The reference calls these models with `Authorization: Bearer public` and no stored key at all (a virtual connection, src/sse/services/auth.js:46), and the upstream gates the whole lane on the request's own shape: it refuses 403 FreeTierError unless the body streams and declares the fingerprint tools. A hermetic test that only checks the connector's transform cannot prove the lane works, because the failure the gate produces is an upstream refusal, not a local error. This file drives the real resolver, selector, transport, and connector against an upstream stand-in that enforces the measured gate, so a regression that drops a required member fails here instead of in production.
 //
 //	The gate encoded below is measured, not invented: every rule was
 //	probed against the live upstream on 2026-09-24 and is listed with its

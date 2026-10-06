@@ -2,21 +2,9 @@
 // pluggable connectors (SPEC-API-001 §7.4).
 //
 // @file      internal/provider/codebuddy.go
-// @for       The CodeBuddy connector: the registry entry served, apart from the two
-//
-//	things this vendor's endpoint does not accept as they arrive.
-//
+// @for       The CodeBuddy connector: the registry entry served, apart from the two things this vendor's endpoint does not accept as they arrive.
 // @uses      internal/registry.
-// @reason    The reference forces every CodeBuddy request onto a stream at
-//
-//	`chatCore.js:133`, reading `forceStream: true` off the provider entry, and its
-//	executor rebuilds the message list because the vendor answers a plain OpenAI body
-//	with `11101`. This port decides forced streaming from the connector instead, a
-//	rule pinned by TestTransport_ForcesStreamIsDeclaredByTheConnector, so a provider
-//	that needs it has to say so here. Without this file the gateway sends
-//	`stream:false` to an SSE-only service whenever the client asked for one JSON body,
-//	and the body it sends is one the vendor refuses to read.
-//
+// @reason    The reference forces every CodeBuddy request onto a stream at `chatCore.js:133`, reading `forceStream: true` off the provider entry, and its executor rebuilds the message list because the vendor answers a plain OpenAI body with `11101`. This port decides forced streaming from the connector instead, a rule pinned by TestTransport_ForcesStreamIsDeclaredByTheConnector, so a provider that needs it has to say so here. Without this file the gateway sends `stream:false` to an SSE-only service whenever the client asked for one JSON body, and the body it sends is one the vendor refuses to read.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

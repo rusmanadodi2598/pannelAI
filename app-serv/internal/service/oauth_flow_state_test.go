@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_state_test.go
-// @for       The state round as a connect path: what the panel is offered, what
-//
-//	the round holds, and what a granted poll stores.
-//
+// @for       The state round as a connect path: what the panel is offered, what the round holds, and what a granted poll stores.
 // @uses      context, strings, testing, time.
-// @reason    CodeBuddy was reported to the panel as needing a connector, which
-//
-//	meant no operator could connect it from the screen at all. These tests
-//	pin the other answer: the flow is offered, the handle the panel holds
-//	is the vendor's own state, a pending poll leaves the round retryable,
-//	a granted poll stores a credential the refresh worker can renew,
-//	through the header endpoint rather than the form grant, and a second
-//	login updates one account instead of stacking another.
-//
+// @reason    CodeBuddy was reported to the panel as needing a connector, which meant no operator could connect it from the screen at all. These tests pin the other answer: the flow is offered, the handle the panel holds is the vendor's own state, a pending poll leaves the round retryable, a granted poll stores a credential the refresh worker can renew, through the header endpoint rather than the form grant, and a second login updates one account instead of stacking another.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_failure.go
-// @for       How one upstream failure is classified, recorded against the key's
-//
-//	parked-or-usable state, and reported to the client.
-//
+// @for       How one upstream failure is classified, recorded against the key's parked-or-usable state, and reported to the client.
 // @uses      internal/domain, net/http, context.
-// @reason    SPEC-API-001 §7.5 makes the health state a consequence of every
-//
-//	call, and §7.7 fixes which failures are worth another credential
-//	and which stop the chain. Both are about one failure rather than
-//	about the pipeline, so they live together here and the relay loop
-//	stays readable.
-//
+// @reason    SPEC-API-001 §7.5 makes the health state a consequence of every call, and §7.7 fixes which failures are worth another credential and which stop the chain. Both are about one failure rather than about the pipeline, so they live together here and the relay loop stays readable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

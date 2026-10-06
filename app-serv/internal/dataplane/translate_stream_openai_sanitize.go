@@ -3,26 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_stream_openai_sanitize.go
-// @for       Shaping one forwarded OpenAI chunk before the client sees it: the
-//
-//	empty members a vendor puts on every frame, and the cut at the
-//	caller's stop sequences.
-//
+// @for       Shaping one forwarded OpenAI chunk before the client sees it: the empty members a vendor puts on every frame, and the cut at the caller's stop sequences.
 // @uses      encoding/json, internal/dataplane object.
-// @reason    A same-format stream forwards the upstream's frames so that no
-//
-//	unmodelled field is lost, but that promise also carries through what
-//	a vendor should never have sent. Measured live on
-//	codebuddy-intl/deepseek-v4.1-flash (2026-09-30): every delta arrived
-//	with `tool_calls: []`, `function_call: null`, `refusal: ""` and
-//	`extra_fields: null`, and the finish reason arrived as `""` rather
-//	than null. A client that tests `if delta.tool_calls` reads a truthy
-//	empty list on all eleven frames of a five-token answer, and a client
-//	switching on `finish_reason` sees a value that is neither null nor a
-//	reason. The same measurement showed `stop` ignored outright, so the
-//	cut is applied here too. Both work per frame and remove nothing that
-//	carries a value.
-//
+// @reason    A same-format stream forwards the upstream's frames so that no unmodelled field is lost, but that promise also carries through what a vendor should never have sent. Measured live on codebuddy-intl/deepseek-v4.1-flash (2026-09-30): every delta arrived with `tool_calls: []`, `function_call: null`, `refusal: ""` and `extra_fields: null`, and the finish reason arrived as `""` rather than null. A client that tests `if delta.tool_calls` reads a truthy empty list on all eleven frames of a five-token answer, and a client switching on `finish_reason` sees a value that is neither null nor a reason. The same measurement showed `stop` ignored outright, so the cut is applied here too. Both work per frame and remove nothing that carries a value.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

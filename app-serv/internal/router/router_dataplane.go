@@ -1,17 +1,9 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_dataplane.go
-// @for       Registration of the §7.15 data-plane routes, split from the
-//
-//	management table so each file stays inside the AGENTS.md §1.1 budget.
-//
+// @for       Registration of the §7.15 data-plane routes, split from the management table so each file stays inside the AGENTS.md §1.1 budget.
 // @uses      net/http.
-// @reason    These routes are the one surface deliberately not session-gated, and
-//
-//	the reason is a credential fact rather than a style choice: a CLI
-//	tool cannot hold a dashboard cookie. Keeping them in one function is
-//	what makes that difference auditable.
-//
+// @reason    These routes are the one surface deliberately not session-gated, and the reason is a credential fact rather than a style choice: a CLI tool cannot hold a dashboard cookie. Keeping them in one function is what makes that difference auditable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

@@ -3,13 +3,7 @@
 // @file      internal/router/router_provider_nodes.go
 // @for       The §7.4 custom provider node and credential-check routes.
 // @uses      internal/handler, net/http.
-// @reason    §7.4 carries seven routes once the stateless credential checks land
-//
-//	(draft 017 §4.6), which pushed router.go past the AGENTS.md §1.1 line
-//	budget. They are split out rather than the file trimmed, because the
-//	node routes are one cohesive group: everything here answers a question
-//	about a provider the operator defined themselves.
-//
+// @reason    §7.4 carries seven routes once the stateless credential checks land (draft 017 §4.6), which pushed router.go past the AGENTS.md §1.1 line budget. They are split out rather than the file trimmed, because the node routes are one cohesive group: everything here answers a question about a provider the operator defined themselves.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

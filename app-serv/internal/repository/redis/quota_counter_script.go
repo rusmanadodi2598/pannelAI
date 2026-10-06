@@ -1,17 +1,9 @@
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/quota_counter_script.go
-// @for       The two atomic scripts behind the quota counter: the rollover
-//
-//	advance and the post-flush settle.
-//
+// @for       The two atomic scripts behind the quota counter: the rollover advance and the post-flush settle.
 // @uses      github.com/redis/go-redis/v9.
-// @reason    Both scripts compare a stored instant against the server's clock,
-//
-//	which only Redis can do atomically with the counter read. A
-//	read-then-write from Go would let a flush or a request land between
-//	the two and see a half-rolled window (AGENTS.md §2.1: the race is
-//	real, not theoretical, at a 30s tick against live traffic).
+// @reason    Both scripts compare a stored instant against the server's clock, which only Redis can do atomically with the counter read. A read-then-write from Go would let a flush or a request land between the two and see a half-rolled window (AGENTS.md §2.1: the race is real, not theoretical, at a 30s tick against live traffic).
 //
 //	Instants travel as unix MICROseconds, not nanoseconds: Lua numbers
 //	are doubles, and a nanosecond instant (~1.7e18) is past the 2^53

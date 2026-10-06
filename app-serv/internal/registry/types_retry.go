@@ -2,15 +2,10 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/types_retry.go
-// @for       The retry override a transport declares: how many attempts and,
-//
-//	for a provider whose transient recovers over seconds, how far apart.
-//
+// @for       The retry override a transport declares: how many attempts and, for a provider whose transient recovers over seconds, how far apart.
 // @uses      fmt, strconv, time, gopkg.in/yaml.v3.
-// @reason    The reference writes retry as a bare count, a per-status count, and
+// @reason    The reference writes retry as a bare count, a per-status count, and a per-status object, so the union of those shapes is decoded here rather than loosened into a map that would let a misspelled key silently disable a retry.
 //
-//	a per-status object, so the union of those shapes is decoded here rather than
-//	loosened into a map that would let a misspelled key silently disable a retry.
 //	The backoff base is separated from the attempt count because a provider whose
 //	upstream answers the same request "all backends failed" and serves it seconds
 //	later needs the retries spaced, not merely more of them.

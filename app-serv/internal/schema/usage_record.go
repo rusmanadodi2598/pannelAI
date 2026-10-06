@@ -3,12 +3,7 @@
 // @file      internal/schema/usage_record.go
 // @for       The raw usage record, quota window, and quota cap contracts.
 // @uses      internal/domain (UsageRecord, QuotaWindow, QuotaCap, ParseDecimal).
-// @reason    SPEC-API-001 §7.12 returns raw records, quota windows, and budget
-//
-//	caps; §4 requires cost as a decimal string and §2.4 requires the
-//	cap body typed and validated, so the money rule is enforced here
-//	as well as in the domain where the value object lives.
-//
+// @reason    SPEC-API-001 §7.12 returns raw records, quota windows, and budget caps; §4 requires cost as a decimal string and §2.4 requires the cap body typed and validated, so the money rule is enforced here as well as in the domain where the value object lives.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

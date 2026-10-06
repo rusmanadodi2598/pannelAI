@@ -4,12 +4,7 @@
 // @file      internal/domain/upstream_endpoint_values.go
 // @for       The account-identity value objects an upstream endpoint carries.
 // @uses      strings, time.
-// @reason    The account, its email and the last connectivity test are the three
-//
-//	values the panel and the duplicate-account rule both read, so their
-//	invariants live with them rather than in whichever caller built the
-//	struct last (AGENTS.md §2.2).
-//
+// @reason    The account, its email and the last connectivity test are the three values the panel and the duplicate-account rule both read, so their invariants live with them rather than in whichever caller built the struct last (AGENTS.md §2.2).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

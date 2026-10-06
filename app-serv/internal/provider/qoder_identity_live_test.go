@@ -3,22 +3,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_identity_live_test.go
-// @for       The live proof that a Personal Access Token with nothing else stored can
-//
-//	be signed, served, and answered.
-//
+// @for       The live proof that a Personal Access Token with nothing else stored can be signed, served, and answered.
 // @uses      bytes, io, net/http, strings, testing, time.
-// @reason    The panel's connection row for a pasted PAT carries a token and no
+// @reason    The panel's connection row for a pasted PAT carries a token and no identity: no user id, no email, no machine id, because nothing in the key-add path asks for them. The connector used to sign whatever it was handed, so every request on such a connection died in shaping and the provider looked broken. This is the state that bug shipped in, and it is the one only the vendor can confirm, a stub cannot prove the signed identity is the one the account answers.
 //
-//	identity: no user id, no email, no machine id, because nothing in the
-//	key-add path asks for them. The connector used to sign whatever it was
-//	handed, so every request on such a connection died in shaping and the
-//	provider looked broken. This is the state that bug shipped in, and it is
-//	the one only the vendor can confirm, a stub cannot prove the signed
-//	identity is the one the account answers.
-//
-//	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration,live ./internal/provider/ -run QoderLivePAT
+//	PANNELAI_QODER_PAT='pt-…' \
+//	  go test -tags=integration,live ./internal/provider/ -run QoderLivePAT
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

@@ -1,19 +1,9 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_session_sweep_test.go
-// @for       The whole-table session sweep: every registered pattern is either
-//
-//	session-gated or listed as an exclusion with a stated reason.
-//
+// @for       The whole-table session sweep: every registered pattern is either session-gated or listed as an exclusion with a stated reason.
 // @uses      net/http, net/http/httptest, strings, testing.
-// @reason    The per-area 401 tests only cover areas someone already touched, and
-//
-//	the gate lives on each registration line in router.go, so a new
-//	route that forgets gateway() is invisible to them. Walking the
-//	recorded table makes the gate a property of the table rather than of
-//	review, and forces every public or data-plane exception to state why
-//	it is one (draft 004 F4).
-//
+// @reason    The per-area 401 tests only cover areas someone already touched, and the gate lives on each registration line in router.go, so a new route that forgets gateway() is invisible to them. Walking the recorded table makes the gate a property of the table rather than of review, and forces every public or data-plane exception to state why it is one (draft 004 F4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

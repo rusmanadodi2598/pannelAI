@@ -4,12 +4,7 @@
 // @file      internal/service/quotafetch/antigravity_weekly_test.go
 // @for       Locks Antigravity's summary parsing and the identification its summary call carries.
 // @uses      internal/service/quotafetch, context, net/http, strings, testing, time
-// @reason    The summary answers under two envelopes and classifies a window by more than one
-//
-//	field, so the four row names it produces, and the disabled buckets that
-//	must not produce a fifth, are what a card cannot recover from getting
-//	wrong.
-//
+// @reason    The summary answers under two envelopes and classifies a window by more than one field, so the four row names it produces, and the disabled buckets that must not produce a fifth, are what a card cannot recover from getting wrong.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

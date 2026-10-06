@@ -1,19 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/provider_thinking_test.go
-// @for       The §7.14 level sets the panel reads: the union a provider detail
-//
-//	carries, and the levels a custom-model or catalog row carries.
-//
+// @for       The §7.14 level sets the panel reads: the union a provider detail carries, and the levels a custom-model or catalog row carries.
 // @uses      testing, internal/domain, internal/registry.
-// @reason    The picker's options and the suffix a copied model name gains are
-//
-//	one decision each, and both are made from a level set the panel cannot
-//	compute: the tables live in the registry package. Asserting the two
-//	projections here is what keeps a picker from offering a level the
-//	upstream would refuse, and a suffix from being appended to a model
-//	that does not accept it.
-//
+// @reason    The picker's options and the suffix a copied model name gains are one decision each, and both are made from a level set the panel cannot compute: the tables live in the registry package. Asserting the two projections here is what keeps a picker from offering a level the upstream would refuse, and a suffix from being appended to a model that does not accept it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

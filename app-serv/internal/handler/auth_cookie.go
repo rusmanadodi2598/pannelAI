@@ -3,10 +3,7 @@
 // @file      internal/handler/auth_cookie.go
 // @for       Reads, writes, and clears the dashboard session cookie.
 // @uses      net/http, time, internal/config.
-// @reason    SPEC-API-001 §7.2 fixes an HttpOnly session cookie as the browser
-//
-//	credential while keeping token formatting outside HTTP handlers.
-//
+// @reason    SPEC-API-001 §7.2 fixes an HttpOnly session cookie as the browser credential while keeping token formatting outside HTTP handlers.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

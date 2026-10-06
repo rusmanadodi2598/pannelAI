@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy_route_fixture_test.go
-// @for       The proxy route tests' in-memory collaborators and row builders,
-//
-//	apart from the assertions so each file's reason stays readable.
-//
+// @for       The proxy route tests' in-memory collaborators and row builders, apart from the assertions so each file's reason stays readable.
 // @uses      context, testing, time, internal/domain.
-// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1-D6: the plan is the engine's
-//
-//	one decision, and both of its test files drive the same fakes and
-//	row builders. Keeping them here means one definition serves every
-//	assertion, the way the egress guard's source-reading helpers sit
-//	apart from the assertions built on them.
-//
+// @reason    docs/PORT/008-PORT-PROXY-ENGINE.md D1-D6: the plan is the engine's one decision, and both of its test files drive the same fakes and row builders. Keeping them here means one definition serves every assertion, the way the egress guard's source-reading helpers sit apart from the assertions built on them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

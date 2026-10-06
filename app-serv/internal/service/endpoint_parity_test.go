@@ -1,14 +1,10 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_parity_test.go
-// @for       The connection-parity fields end to end through the service: a PATCH
-//
-//	that sets them, a read that returns them, and the two refusals.
-//
+// @for       The connection-parity fields end to end through the service: a PATCH that sets them, a read that returns them, and the two refusals.
 // @uses      internal/domain, context, errors, testing, time.
-// @reason    Draft 017 §4.1b adds five fields, and the failure mode that matters is
+// @reason    Draft 017 §4.1b adds five fields, and the failure mode that matters is a field that is accepted and then lost between the write and the read.
 //
-//	a field that is accepted and then lost between the write and the read.
 //	The stub store carries them explicitly (endpoint_stub_test.go), so this
 //	test proves the whole path rather than the aggregate alone.
 //

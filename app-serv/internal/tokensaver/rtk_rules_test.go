@@ -5,13 +5,7 @@
 // @file      internal/tokensaver/rtk_rules_test.go
 // @for       The RTK pass's protective rules and its caps, driven as cases.
 // @uses      fmt, strings, testing.
-// @reason    SPEC-API-002 §3 makes "tool results only" and "errors preserved"
-//
-//	structural claims, so each is its own case rather than something
-//	assumed from the walk's shape. TDD.md §2.5 also asks for the
-//	boundaries: a blob under the floor, one over the cap, and a filter
-//	outside the allowlist.
-//
+// @reason    SPEC-API-002 §3 makes "tool results only" and "errors preserved" structural claims, so each is its own case rather than something assumed from the walk's shape. TDD.md §2.5 also asks for the boundaries: a blob under the floor, one over the cap, and a filter outside the allowlist.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

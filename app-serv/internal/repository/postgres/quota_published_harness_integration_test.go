@@ -3,25 +3,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/quota_published_harness_integration_test.go
-// @for       The shared harness the published-quota integration tests run on: a
+// @for       The shared harness the published-quota integration tests run on: a statement-counting pool, an emptied cache, and one seeded account.
+// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgxpool, testing, context, strings, sync, time, internal/domain, internal/migrations.
+// @reason    "The screen reads the cache in one query" is the whole reason this table exists, and a stub cannot prove it: a stub counts nothing, and only a real server shows the difference between a batched `= ANY($1)` read and a per-id loop. So the harness is newTestPool plus a pgx QueryTracer, the same DSN guard and migration path every other harness in this package uses (usage_harness_integration_test.go being the precedent for a harness of its own), extended only by the counter.
 //
-//	statement-counting pool, an emptied cache, and one seeded account.
-//
-// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgxpool, testing,
-//
-//	context, strings, sync, time, internal/domain, internal/migrations.
-//
-// @reason    "The screen reads the cache in one query" is the whole reason this
-//
-//	table exists, and a stub cannot prove it: a stub counts nothing, and only a
-//	real server shows the difference between a batched `= ANY($1)` read and a
-//	per-id loop. So the harness is newTestPool plus a pgx QueryTracer, the same
-//	DSN guard and migration path every other harness in this package uses
-//	(usage_harness_integration_test.go being the precedent for a harness of its
-//	own), extended only by the counter.
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	    go test -race -tags=integration ./internal/repository/postgres/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	  go test -race -tags=integration ./internal/repository/postgres/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository

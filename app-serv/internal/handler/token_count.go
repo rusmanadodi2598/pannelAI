@@ -3,12 +3,7 @@
 // @file      internal/handler/token_count.go
 // @for       POST /api/v1/messages/count_tokens, the P3 token estimate route.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    SPEC-API-001 §7.15 serves the route on the Anthropic wire under the
-//
-//	same §4 gateway-key rule as the chat routes. It shares that rule
-//	through the GatewayAuthenticator seam rather than the chat service,
-//	so the route can be proven without the engine the chat service needs.
-//
+// @reason    SPEC-API-001 §7.15 serves the route on the Anthropic wire under the same §4 gateway-key rule as the chat routes. It shares that rule through the GatewayAuthenticator seam rather than the chat service, so the route can be proven without the engine the chat service needs.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

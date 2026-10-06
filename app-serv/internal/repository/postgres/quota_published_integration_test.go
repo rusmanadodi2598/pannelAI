@@ -3,19 +3,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/quota_published_integration_test.go
-// @for       The published-quota read path against a real server: the batched
-//
-//	query the quota screen runs, and the NULL ceiling it must not flatten.
-//
+// @for       The published-quota read path against a real server: the batched query the quota screen runs, and the NULL ceiling it must not flatten.
 // @uses      testing, context, time, internal/domain.
-// @reason    Two guarantees of this read are invisible to a stub. That N
-//
-//	endpoints cost one statement is only measurable against a server that can
-//	count them, and that a NULL ceiling survives as "no ceiling" is a property
-//	of the numeric column and the LEFT JOIN, not of the Go struct, the
-//	joining NULLs are exactly what makes an endpoint with no buckets decodable
-//	instead of an error (AGENTS.md §1.7, §2.1).
-//
+// @reason    Two guarantees of this read are invisible to a stub. That N endpoints cost one statement is only measurable against a server that can count them, and that a NULL ceiling survives as "no ceiling" is a property of the numeric column and the LEFT JOIN, not of the Go struct, the joining NULLs are exactly what makes an endpoint with no buckets decodable instead of an error (AGENTS.md §1.7, §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

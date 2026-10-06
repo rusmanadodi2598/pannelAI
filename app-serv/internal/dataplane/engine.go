@@ -3,16 +3,10 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine.go
-// @for       One chat request end to end: resolve, select, translate, call, and
-//
-//	hand back either a translated body or a stream of frames.
-//
+// @for       One chat request end to end: resolve, select, translate, call, and hand back either a translated body or a stream of frames.
 // @uses      internal/domain, internal/reasoning, context, time.
-// @reason    SPEC-API-001 §7.15 fixes the pipeline order (model resolve → format
+// @reason    SPEC-API-001 §7.15 fixes the pipeline order (model resolve → format translation → endpoint and key selection → upstream call → response translation → usage recording), and §7.15 adds the reasoning injection the client's model string and the stored mode resolve to.
 //
-//	translation → endpoint and key selection → upstream call → response
-//	translation → usage recording), and §7.15 adds the reasoning
-//	injection the client's model string and the stored mode resolve to.
 //	Keeping it in one place is what makes the order auditable, and
 //	keeping it out of the handler is what keeps the same path usable
 //	from a worker or a combo probe.

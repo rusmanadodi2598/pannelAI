@@ -3,14 +3,7 @@
 // @file      internal/handler/openapi_error_test.go
 // @for       The per-plane error envelope rule on the served contract.
 // @uses      encoding/json, strings, testing.
-// @reason    SPEC-API-001 §4 and §8 give the two planes different error
-//
-//	envelopes, and the panel's error enum is closed on the management
-//	one: a management route leaking the OpenAI shape would surface as an
-//	unparsable error. That rule spans every operation, so it is asserted
-//	here rather than left to review. Splitting it from the structural
-//	checks keeps both files inside the AGENTS.md §1.1 budget.
-//
+// @reason    SPEC-API-001 §4 and §8 give the two planes different error envelopes, and the panel's error enum is closed on the management one: a management route leaking the OpenAI shape would surface as an unparsable error. That rule spans every operation, so it is asserted here rather than left to review. Splitting it from the structural checks keeps both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

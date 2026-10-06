@@ -3,14 +3,7 @@
 // @file      internal/service/model_catalog_node_test.go
 // @for       The catalog and combo rules that apply to a custom provider node.
 // @uses      internal/domain, internal/registry, context, testing.
-// @reason    A node is routable everywhere the runtime overlay is handed over,
-//
-//	so the catalog and the combo reference check must read that same
-//	view: a model registered under a node has to appear in the
-//	catalog and be usable as a combo ref. These tests pin both, the
-//	pair that answered "unknown provider_id" and "does not resolve"
-//	when the catalog held the boot-time registry instead.
-//
+// @reason    A node is routable everywhere the runtime overlay is handed over, so the catalog and the combo reference check must read that same view: a model registered under a node has to appear in the catalog and be usable as a combo ref. These tests pin both, the pair that answered "unknown provider_id" and "does not resolve" when the catalog held the boot-time registry instead.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,14 +3,7 @@
 // @file      internal/dataplane/media_target_test.go
 // @for       The credential placement every media call shares (§8.1).
 // @uses      internal/provider, internal/registry, strings, testing.
-// @reason    G16 in the P2 register: the media path wrote
-//
-//	`Authorization: Bearer` with an empty secret where the chat path
-//	sends no header at all, so one account presented two credential
-//	rules. These rows pin all three placement branches and both
-//	credential states, because the branch that quietly adds a header is
-//	the one no live pass notices.
-//
+// @reason    G16 in the P2 register: the media path wrote `Authorization: Bearer` with an empty secret where the chat path sends no header at all, so one account presented two credential rules. These rows pin all three placement branches and both credential states, because the branch that quietly adds a header is the one no live pass notices.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

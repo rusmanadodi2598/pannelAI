@@ -1,20 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/oauth_device_test.go
-// @for       The §7.4 device routes' HTTP contract: the round start answers
-//
-//	and the verdicts one poll reports (draft 036 slice A).
-//
-// @uses      net/http, net/http/httptest, strings, testing, time,
-//
-//	internal/registry, internal/service.
-//
-// @reason    The panel renders exactly what these two routes write, so the
-//
-//	field names, the pending-versus-connected body, and which refusal
-//	reaches the operator as a 400 are the contract being tested here,
-//	not the flow's rules, which the service tests already hold.
-//
+// @for       The §7.4 device routes' HTTP contract: the round start answers and the verdicts one poll reports (draft 036 slice A).
+// @uses      net/http, net/http/httptest, strings, testing, time, internal/registry, internal/service.
+// @reason    The panel renders exactly what these two routes write, so the field names, the pending-versus-connected body, and which refusal reaches the operator as a 400 are the contract being tested here, not the flow's rules, which the service tests already hold.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

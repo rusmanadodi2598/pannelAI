@@ -3,12 +3,7 @@
 // @file      internal/service/media_cartesia.go
 // @for       The Cartesia speech adapter in the §7.10 media plane.
 // @uses      internal/schema, strings.
-// @reason    Cartesia's TTS endpoint accepts a provider-specific JSON body and
-//
-//	needs a version header in addition to its X-API-Key. Keeping that
-//	shape beside the other provider builders lets the shared pipeline
-//	continue to own selection, egress, health, and accounting.
-//
+// @reason    Cartesia's TTS endpoint accepts a provider-specific JSON body and needs a version header in addition to its X-API-Key. Keeping that shape beside the other provider builders lets the shared pipeline continue to own selection, egress, health, and accounting.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

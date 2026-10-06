@@ -3,13 +3,7 @@
 // @file      internal/dataplane/selection_fixtures_test.go
 // @for       The in-memory doubles and fixtures the selection and resolution tests build on.
 // @uses      context, sync, testing, time, internal/domain, internal/repository
-// @reason    SPEC-API-001 §7.5 fixes the selection rule (endpoint by priority, then a healthy
-//
-//	key, circuit-broken keys skipped), and a branch of it can only be exercised with a
-//	repository double: a storage failure, a key that is not active, and a credential the
-//	opener cannot read are all states a live database would make awkward to stage. The
-//	doubles live here so each test file reads as the rule it pins (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §7.5 fixes the selection rule (endpoint by priority, then a healthy key, circuit-broken keys skipped), and a branch of it can only be exercised with a repository double: a storage failure, a key that is not active, and a credential the opener cannot read are all states a live database would make awkward to stage. The doubles live here so each test file reads as the rule it pins (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

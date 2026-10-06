@@ -1,18 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/endpoint_response.go
-// @for       The upstream endpoint and key response shapes plus the bulk reports
-//
-//	(SPEC-API-001 §7.5, §8.1).
-//
+// @for       The upstream endpoint and key response shapes plus the bulk reports (SPEC-API-001 §7.5, §8.1).
 // @uses      standard library only.
-// @reason    §6 requires the stored OAuth state to be redacted on read and §8.1
-//
-//	requires a batch to report every row by index, so these shapes are the
-//	contract for what a client may see. They are separated from the request
-//	DTOs because a response shape has no validation tags and one file
-//	holding both would exceed the AGENTS.md §1.1 line budget.
-//
+// @reason    §6 requires the stored OAuth state to be redacted on read and §8.1 requires a batch to report every row by index, so these shapes are the contract for what a client may see. They are separated from the request DTOs because a response shape has no validation tags and one file holding both would exceed the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

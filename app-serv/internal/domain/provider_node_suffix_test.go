@@ -2,19 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/provider_node_suffix_test.go
-// @for       The base-URL suffix rule: a stored node base URL must not already
-//
-//	carry the path the transport appends (SPEC-API-001 §7.4).
-//
+// @for       The base-URL suffix rule: a stored node base URL must not already carry the path the transport appends (SPEC-API-001 §7.4).
 // @uses      testing, time.
-// @reason    The reference sanitizes a pasted endpoint URL on both write paths
-//
-//	(create and update) because the runtime appends the path itself, and
-//	a doubled path is a 404 the operator reads as a credential or model
-//	problem. The rule lives in the domain rather than in either handler
-//	so the two paths cannot drift apart, which is the shape the defect
-//	had. Ported from the reference at v0.5.85.
-//
+// @reason    The reference sanitizes a pasted endpoint URL on both write paths (create and update) because the runtime appends the path itself, and a doubled path is a 404 the operator reads as a credential or model problem. The rule lives in the domain rather than in either handler so the two paths cannot drift apart, which is the shape the defect had. Ported from the reference at v0.5.85.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

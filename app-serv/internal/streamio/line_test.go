@@ -3,11 +3,7 @@
 // @file      internal/streamio/line_test.go
 // @for       The bound a caller sets on one line, and what happens when an upstream exceeds it.
 // @uses      bufio, errors, io, strings, testing
-// @reason    The gateway reads SSE lines from providers it does not control. A reader that grows
-//
-//	until a delimiter arrives lets the upstream choose the process's memory, so the ceiling has
-//	to bite before the bytes are held, not after.
-//
+// @reason    The gateway reads SSE lines from providers it does not control. A reader that grows until a delimiter arrives lets the upstream choose the process's memory, so the ceiling has to bite before the bytes are held, not after.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

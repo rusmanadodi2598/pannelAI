@@ -3,20 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/vision.go
-// @for       The vision augmentation seam and the image-content detection the
-//
-//	engine consults before relaying (SPEC-API-001 §7.8).
-//
+// @for       The vision augmentation seam and the image-content detection the engine consults before relaying (SPEC-API-001 §7.8).
 // @uses      internal/schema, context.
-// @reason    Whether an image-bearing request should try other models first is a
-//
-//	policy of the vision adapter configuration, not of the pipeline:
-//	declaring it as a one-method seam keeps the engine ignorant of the
-//	adapter's storage and rotation, the way the transport is ignorant
-//	of any provider's quirk. The detection half is the pipeline's own
-//	business, only the decoded client body can answer it, so it is a
-//	function here rather than part of the seam.
-//
+// @reason    Whether an image-bearing request should try other models first is a policy of the vision adapter configuration, not of the pipeline: declaring it as a one-method seam keeps the engine ignorant of the adapter's storage and rotation, the way the transport is ignorant of any provider's quirk. The detection half is the pipeline's own business, only the decoded client body can answer it, so it is a function here rather than part of the seam.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

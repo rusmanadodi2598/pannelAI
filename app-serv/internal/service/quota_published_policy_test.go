@@ -3,12 +3,7 @@
 // @file      internal/service/quota_published_policy_test.go
 // @for       Tests for PublishedPollPolicy.WithSweepLimits and the boot guard around it.
 // @uses      testing, time.
-// @reason    The budget and the concurrency cap are the only provider-traffic knobs a deployment
-//
-//	can turn without a code change, so the merge rule (a value set wins, a value not set keeps the
-//	default) and the constructor's refusal to run on a zero are both worth pinning: the alternative
-//	is a sweep that silently asks nothing, or asks everything at once.
-//
+// @reason    The budget and the concurrency cap are the only provider-traffic knobs a deployment can turn without a code change, so the merge rule (a value set wins, a value not set keeps the default) and the constructor's refusal to run on a zero are both worth pinning: the alternative is a sweep that silently asks nothing, or asks everything at once.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

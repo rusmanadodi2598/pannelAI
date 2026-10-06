@@ -2,16 +2,8 @@
 //
 // @file      internal/dataplane/engine_vision_relay_test.go
 // @for       How the relay walk consults the §7.8 vision seam.
-//
 // @uses      context, errors, testing, internal/domain, internal/schema.
-// @reason    The seam decides a served request's model order, so the engine's
-//
-//	side of it, the whole candidate list handed over, the image-only
-//	guard, the fail-open direction, and whose name an adapter answer is
-//	recorded under, is one concern and gets one file. Splitting it out
-//	also keeps engine_relay_test.go inside the AGENTS.md §1.1 budget
-//	once the seam started reporting candidates rather than one model.
-//
+// @reason    The seam decides a served request's model order, so the engine's side of it, the whole candidate list handed over, the image-only guard, the fail-open direction, and whose name an adapter answer is recorded under, is one concern and gets one file. Splitting it out also keeps engine_relay_test.go inside the AGENTS.md §1.1 budget once the seam started reporting candidates rather than one model.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -1,19 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/gateway_key_use.go
-// @for       The gateway key use counter: one authenticated call, one row
-//
-//	update.
-//
+// @for       The gateway key use counter: one authenticated call, one row update.
 // @uses      github.com/jackc/pgx/v5/pgxpool, internal/domain, context, time.
-// @reason    SPEC-API-001 §7.3 exposes request_count and last_used_at on every
-//
-//	key, and until now nothing wrote them: the columns read 0 and NULL
-//	however many calls a key served (register G6). The increment is an
-//	UPDATE ... SET request_count = request_count + 1 rather than a
-//	read-modify-write, because two concurrent calls on one key would
-//	otherwise lose a count to whichever read finished first.
-//
+// @reason    SPEC-API-001 §7.3 exposes request_count and last_used_at on every key, and until now nothing wrote them: the columns read 0 and NULL however many calls a key served (register G6). The increment is an UPDATE ... SET request_count = request_count + 1 rather than a read-modify-write, because two concurrent calls on one key would otherwise lose a count to whichever read finished first.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

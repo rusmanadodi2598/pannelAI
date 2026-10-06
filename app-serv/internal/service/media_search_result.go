@@ -3,11 +3,7 @@
 // @file      internal/service/media_search_result.go
 // @for       Reading a search provider's answer into the §7.10 result shape.
 // @uses      internal/dataplane, internal/schema, encoding/json, strings.
-// @reason    Search APIs disagree on where the list lives and what a result's
-//
-//	fields are called, so the reading is one place with the spellings
-//	named rather than a branch per provider inside the use case.
-//
+// @reason    Search APIs disagree on where the list lives and what a result's fields are called, so the reading is one place with the spellings named rather than a branch per provider inside the use case.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

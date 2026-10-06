@@ -2,21 +2,8 @@
 //
 // @file      internal/handler/chat_refusal_record_test.go
 // @for       The request-log row a chat call the schema refused must leave.
-//
-// @uses      context, encoding/json, net/http, net/http/httptest, strings,
-//
-//	sync, testing, internal/domain, internal/service.
-//
-// @reason    Draft 034 F4 measured a schema refusal writing no row at all:
-//
-//	a routing failure is recorded in request_logs, a schema failure is
-//	not, so the panel's error-rate card and request list never see a
-//	client that repeats a malformed call. The refusal's row is pinned
-//	here at the HTTP boundary over the real service, alongside the
-//	negative side (a served call leaves no refusal row) and the register
-//	G17 rule it must not break (no usage row for a call that reached no
-//	attempt).
-//
+// @uses      context, encoding/json, net/http, net/http/httptest, strings, sync, testing, internal/domain, internal/service.
+// @reason    Draft 034 F4 measured a schema refusal writing no row at all: a routing failure is recorded in request_logs, a schema failure is not, so the panel's error-rate card and request list never see a client that repeats a malformed call. The refusal's row is pinned here at the HTTP boundary over the real service, alongside the negative side (a served call leaves no refusal row) and the register G17 rule it must not break (no usage row for a call that reached no attempt).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

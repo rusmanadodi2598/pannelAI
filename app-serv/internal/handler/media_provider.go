@@ -2,18 +2,8 @@
 //
 // @file      internal/handler/media_provider.go
 // @for       The media provider endpoints (SPEC-API-001 §7.10).
-// @uses      internal/schema, internal/service, internal/domain, internal/registry,
-//
-//	net/http, strings.
-//
-// @reason    §7.10 fixes three routes whose only work is decode → validate →
-//
-//	call → encode. The kind filter is parsed here rather than passed through
-//	so an unknown kind is a 400 naming the closed set instead of an empty
-//	page the panel would render as "nothing configured". The view → wire
-//	mapping lives here too: schema may not import service (it would cycle
-//	back through dataplane), so the layer that already holds both maps it.
-//
+// @uses      internal/schema, internal/service, internal/domain, internal/registry, net/http, strings.
+// @reason    §7.10 fixes three routes whose only work is decode → validate → call → encode. The kind filter is parsed here rather than passed through so an unknown kind is a 400 naming the closed set instead of an empty page the panel would render as "nothing configured". The view → wire mapping lives here too: schema may not import service (it would cycle back through dataplane), so the layer that already holds both maps it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

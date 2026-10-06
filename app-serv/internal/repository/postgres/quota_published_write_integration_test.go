@@ -3,19 +3,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/quota_published_write_integration_test.go
-// @for       The published-quota store against a real server: the label prune and
-//
-//	the batched write's statement count.
-//
+// @for       The published-quota store against a real server: the label prune and the batched write's statement count.
 // @uses      testing, context, time, internal/domain.
-// @reason    The worker is the only thing that keeps this cache honest, and its
-//
-//	two guarantees are constraint-level: a renamed bucket must vanish rather than
-//	linger beside its replacement, and one poll must cost one transaction whatever
-//	the bucket count. Neither is visible to a stub, and the cascade the prune and
-//	the upsert depend on only proves itself against a real server
-//	(AGENTS.md §1.7, §2.1).
-//
+// @reason    The worker is the only thing that keeps this cache honest, and its two guarantees are constraint-level: a renamed bucket must vanish rather than linger beside its replacement, and one poll must cost one transaction whatever the bucket count. Neither is visible to a stub, and the cascade the prune and the upsert depend on only proves itself against a real server (AGENTS.md §1.7, §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

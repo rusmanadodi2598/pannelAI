@@ -5,10 +5,8 @@
 // @file      migrations/published_quota_rollback_test.go
 // @for       Proving 000013's down migration drops both cache tables and that re-applying works.
 // @uses      context, database/sql, io/fs, testing.
-// @reason    "The down migration runs clean" was verified by hand once, which is not a guarantee
+// @reason    "The down migration runs clean" was verified by hand once, which is not a guarantee anybody else will honour later: a down file can drift from its up file silently, and a rollback that leaves one of the two tables behind is discovered on the way back up, not on the way down.
 //
-// anybody else will honour later: a down file can drift from its up file silently, and a rollback
-// that leaves one of the two tables behind is discovered on the way back up, not on the way down.
 // This test also pins the ledger step, because the runner skips anything already recorded ,
 // dropping tables without clearing the row leaves a schema that re-applies to nothing.
 //

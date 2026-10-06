@@ -1,21 +1,9 @@
 // Command app-serv performs one guarded probe request and classifies its answer.
 //
 // @file      cmd/app-serv/provider_probe_call.go
-// @for       The probe's single outbound request: destination check, credential
-//
-//	placement, and the status classification the panel reads.
-//
-// @uses      internal/domain, internal/provider, internal/registry,
-//
-//	internal/service, context, fmt, net/http, time.
-//
-// @reason    The classification is the whole value of a connectivity test: an
-//
-//	operator reads its result to decide whether to replace a credential or
-//	fix a URL. It is separate from the port surface in provider_probe.go
-//	because that file carries the two probe shapes, and AGENTS.md §1.1
-//	asks for the split before the limit forces it.
-//
+// @for       The probe's single outbound request: destination check, credential placement, and the status classification the panel reads.
+// @uses      internal/domain, internal/provider, internal/registry, internal/service, context, fmt, net/http, time.
+// @reason    The classification is the whole value of a connectivity test: an operator reads its result to decide whether to replace a credential or fix a URL. It is separate from the port surface in provider_probe.go because that file carries the two probe shapes, and AGENTS.md §1.1 asks for the split before the limit forces it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

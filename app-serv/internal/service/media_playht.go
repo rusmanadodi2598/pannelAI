@@ -3,12 +3,7 @@
 // @file      internal/service/media_playht.go
 // @for       The PlayHT speech adapter in the §7.10 media plane.
 // @uses      internal/schema, strings.
-// @reason    PlayHT's body names the voice and the engine in its own fields and
-//
-//	its API answers audio bytes, so the adapter is the request shape
-//	alone. The credential is a `userId:apiKey` pair the kind's block
-//	declares, which MediaTarget splits into the two headers.
-//
+// @reason    PlayHT's body names the voice and the engine in its own fields and its API answers audio bytes, so the adapter is the request shape alone. The credential is a `userId:apiKey` pair the kind's block declares, which MediaTarget splits into the two headers.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

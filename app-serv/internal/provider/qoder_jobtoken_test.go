@@ -1,19 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_jobtoken_test.go
-// @for       The Personal Access Token exchange: its request, its answers, and the
-//
-//	bound on which a job token is reused.
-//
+// @for       The Personal Access Token exchange: its request, its answers, and the bound on which a job token is reused.
 // @uses      encoding/json, net/http, net/http/httptest, strings, testing, time.
-// @reason    Measured against the live service (draft 036 §5), the exchange answers
-//
-//	with an RFC3339 `expires_at` and an `expires_in` in milliseconds, the
-//	reference treats the second as seconds, which would cache a day-long
-//	token for five seconds. Both shapes, the refusal that carries no
-//	token, and the one-call-per-credential discipline are what this file
-//	holds.
-//
+// @reason    Measured against the live service (draft 036 §5), the exchange answers with an RFC3339 `expires_at` and an `expires_in` in milliseconds, the reference treats the second as seconds, which would cache a day-long token for five seconds. Both shapes, the refusal that carries no token, and the one-call-per-credential discipline are what this file holds.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

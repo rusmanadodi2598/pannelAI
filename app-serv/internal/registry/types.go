@@ -4,12 +4,7 @@
 // @file      internal/registry/types.go
 // @for       The registry document shape: providers, display, models, features.
 // @uses      standard library only.
-// @reason    SPEC-API-001 §6 puts the provider registry in embedded static
-//
-//	config rather than database rows, and §7.4 needs every field the
-//	Providers screen renders; this file is the contract that the YAML
-//	document and the loader both have to satisfy.
-//
+// @reason    SPEC-API-001 §6 puts the provider registry in embedded static config rather than database rows, and §7.4 needs every field the Providers screen renders; this file is the contract that the YAML document and the loader both have to satisfy.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

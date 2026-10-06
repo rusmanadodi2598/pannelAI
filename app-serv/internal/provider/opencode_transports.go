@@ -2,20 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_transports.go
-// @for       The multi-endpoint rule: which endpoint a model is served on, and
-//
-//	which credential placement that endpoint reads.
-//
+// @for       The multi-endpoint rule: which endpoint a model is served on, and which credential placement that endpoint reads.
 // @uses      fmt, strings, internal/registry.
-// @reason    opencode-go and opencode-zen declare three endpoints each
-//
-//	(`transports[]` in the reference), and a model's `supportedFormats`
-//	decides which of them may answer it. Without this rule the connector
-//	built a path by appending a leaf to the entry's chat URL, which
-//	produced ".../chat/completions/zen/v1/messages": a URL that answers
-//	404 and names no cause. The endpoint table also carries the credential
-//	placement per wire, because the Messages endpoint reads a raw
-//	`x-api-key` where the chat endpoint reads a bearer.
+// @reason    opencode-go and opencode-zen declare three endpoints each (`transports[]` in the reference), and a model's `supportedFormats` decides which of them may answer it. Without this rule the connector built a path by appending a leaf to the entry's chat URL, which produced ".../chat/completions/zen/v1/messages": a URL that answers 404 and names no cause. The endpoint table also carries the credential placement per wire, because the Messages endpoint reads a raw `x-api-key` where the chat endpoint reads a bearer.
 //
 //	It lives apart from opencode.go because the resolution is a table
 //	lookup with its own failure modes, and AGENTS.md §1.1 asks for the

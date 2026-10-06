@@ -1,24 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/quota_published_write.go
-// @for       The published-quota cache write path: storing one endpoint's answer
-//
-//	with its label prune, and the attempt stamp the poll worker schedules from.
-//
-// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn,
-//
-//	internal/domain, context, time.
-//
-// @reason    The cache is the only thing the quota screen reads, so a write here
-//
-//	has to be all-or-nothing and set-based: a half-stored answer would show a
-//	bucket from one poll beside a plan from another, and a statement per bucket
-//	would make one poll of a hundred buckets a hundred round trips
-//	(AGENTS.md §1.7, §2.2). These statements change for a different reason than
-//	the reads in quota_published.go, a new scheduling rule, not a new display
-//	column, so they are a file of their own, which also keeps each half inside
-//	the §1.1 line budget.
-//
+// @for       The published-quota cache write path: storing one endpoint's answer with its label prune, and the attempt stamp the poll worker schedules from.
+// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, internal/domain, context, time.
+// @reason    The cache is the only thing the quota screen reads, so a write here has to be all-or-nothing and set-based: a half-stored answer would show a bucket from one poll beside a plan from another, and a statement per bucket would make one poll of a hundred buckets a hundred round trips (AGENTS.md §1.7, §2.2). These statements change for a different reason than the reads in quota_published.go, a new scheduling rule, not a new display column, so they are a file of their own, which also keeps each half inside the §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

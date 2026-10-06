@@ -4,13 +4,7 @@
 // @file      internal/registry/custom_node.go
 // @for       Synthesis of a user-defined provider node into a registry entry.
 // @uses      internal/registry, fmt, net/url, strings.
-// @reason    SPEC-API-001 §7.4 lets an operator define their own
-//
-//	OpenAI-compatible or Anthropic-compatible base URL. Synthesizing
-//	the provider entry here, rather than branching on "is this custom"
-//	in every downstream layer, is what keeps a node routable through
-//	exactly the same path as a registry provider.
-//
+// @reason    SPEC-API-001 §7.4 lets an operator define their own OpenAI-compatible or Anthropic-compatible base URL. Synthesizing the provider entry here, rather than branching on "is this custom" in every downstream layer, is what keeps a node routable through exactly the same path as a registry provider.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

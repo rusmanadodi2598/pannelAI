@@ -3,11 +3,7 @@
 // @file      internal/service/auth_test.go
 // @for       The password, session and limiter doubles every auth test is built on.
 // @uses      context, sync, testing, time, internal/domain, internal/repository.
-// @reason    AuthService reads three ports and nothing else; stubbing them once
-//
-//	here lets the flows in auth_flows_test.go be driven without a
-//	database, a session store, or a clock that waits for a lockout.
-//
+// @reason    AuthService reads three ports and nothing else; stubbing them once here lets the flows in auth_flows_test.go be driven without a database, a session store, or a clock that waits for a lockout.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

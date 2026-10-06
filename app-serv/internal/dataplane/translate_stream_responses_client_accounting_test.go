@@ -1,17 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/translate_stream_responses_client_accounting_test.go
-// @for       Table-driven tests for the identity and accounting a Responses client
-//
-//	stream reports.
-//
+// @for       Table-driven tests for the identity and accounting a Responses client stream reports.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, and the id and the
-//
-//	token counts are what a client logs and bills against. An answer that
-//	mints a second id, or reports a zero block where the upstream reported
-//	nothing, is wrong in a way the text alone would not show.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, and the id and the token counts are what a client logs and bills against. An answer that mints a second id, or reports a zero block where the upstream reported nothing, is wrong in a way the text alone would not show.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

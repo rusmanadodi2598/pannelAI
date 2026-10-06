@@ -3,12 +3,7 @@
 // @file      internal/dataplane/translate_responses_response_test.go
 // @for       Table-driven tests for Responses-to-client answer translation.
 // @uses      testing, internal/schema.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and an
-//
-//	answer read from it has to become either client wire. The rules
-//	that decide text, calls, finish reason, and accounting are what a
-//	client sees, so each is pinned here against a decoded body.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and an answer read from it has to become either client wire. The rules that decide text, calls, finish reason, and accounting are what a client sees, so each is pinned here against a decoded body.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

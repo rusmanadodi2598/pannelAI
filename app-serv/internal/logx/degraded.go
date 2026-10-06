@@ -3,14 +3,7 @@
 // @file      internal/logx/degraded.go
 // @for       One place that records a deliberate fail-open with the context needed to trace it.
 // @uses      log/slog
-// @reason    AGENTS.md §1.6 requires a structured log on every error path. Several components
-//
-//	choose to swallow a bookkeeping failure to keep serving the request, which is correct
-//
-// behaviour and untraceable unless the decision is written down with the object it
-// concerned. Dataplane, token-saver and reasoning all needed the same rule, so it lives
-// here rather than in three copies that can drift.
-//
+// @reason    AGENTS.md §1.6 requires a structured log on every error path. Several components choose to swallow a bookkeeping failure to keep serving the request, which is correct behaviour and untraceable unless the decision is written down with the object it concerned. Dataplane, token-saver and reasoning all needed the same rule, so it lives here rather than in three copies that can drift.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

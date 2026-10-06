@@ -2,18 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/connectors.go
-// @for       The connector registry: how a provider id resolves to the plugin
-//
-//	that handles it, and the fallback when none is registered.
-//
+// @for       The connector registry: how a provider id resolves to the plugin that handles it, and the fallback when none is registered.
 // @uses      internal/registry, fmt, sort, sync, strings.
-// @reason    The user's requirement is that a provider can be patched or added
-//
-//	without disturbing the others. That only holds if the core looks
-//	connectors up by id at runtime instead of branching on the id in
-//	shared code, so this file owns the lookup and nothing else knows
-//	which providers have a specialized connector.
-//
+// @reason    The user's requirement is that a provider can be patched or added without disturbing the others. That only holds if the core looks connectors up by id at runtime instead of branching on the id in shared code, so this file owns the lookup and nothing else knows which providers have a specialized connector.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

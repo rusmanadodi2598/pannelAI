@@ -4,11 +4,7 @@
 // @file      internal/service/quotafetch/grok_frame_test.go
 // @for       Locks the frame decoder's byte layout, bounds checks and soft-failure reasons.
 // @uses      internal/service/quotafetch, encoding/binary, math, testing, time
-// @reason    The decoder parses untrusted provider bytes; a regression that misreads the magic,
-//
-//	endianness or a length field would silently corrupt the weekly pool or panic, so the
-//	byte layout itself is pinned with fixtures rather than only through the family.
-//
+// @reason    The decoder parses untrusted provider bytes; a regression that misreads the magic, endianness or a length field would silently corrupt the weekly pool or panic, so the byte layout itself is pinned with fixtures rather than only through the family.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

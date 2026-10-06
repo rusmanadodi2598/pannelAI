@@ -3,14 +3,7 @@
 // @file      internal/router/envelope.go
 // @for       Restating the mux's own 404 and 405 answers in the §8 envelope.
 // @uses      encoding/json, log/slog, net/http, internal/schema.
-// @reason    SPEC-API-001 §8 gives every management error one shape, and the
-//
-//	mux produces two of them itself: an unknown path and a wrong verb
-//	are answered before any handler runs. Those answers are plain text,
-//	so they are withheld and re-written here. This lives apart from
-//	router.go because it is middleware, not the route table, and because
-//	the route table is already at the §1.1 line budget.
-//
+// @reason    SPEC-API-001 §8 gives every management error one shape, and the mux produces two of them itself: an unknown path and a wrong verb are answered before any handler runs. Those answers are plain text, so they are withheld and re-written here. This lives apart from router.go because it is middleware, not the route table, and because the route table is already at the §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

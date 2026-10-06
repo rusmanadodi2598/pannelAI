@@ -1,22 +1,9 @@
 // Command app-serv adapts the connectivity probe port to HTTP.
 //
 // @file      cmd/app-serv/provider_probe_node_test.go
-// @for       The node-probe tests: a custom node's base URL is dialed with the
-//
-//	operator's credential, and the composed path is the one the node's
-//	type speaks.
-//
-// @uses      testing, context, net/http, net/http/httptest, sync/atomic, time,
-//
-//	internal/domain.
-//
-// @reason    A node has no registry entry, so the probe composes its target from
-//
-//	the base URL alone. That composition is the whole contract: a wrong
-//	path reports a working node as broken, and a doubled one reports a
-//	404 the operator reads as a credential problem. Split from the
-//	endpoint suite to keep both files under AGENTS.md §1.1.
-//
+// @for       The node-probe tests: a custom node's base URL is dialed with the operator's credential, and the composed path is the one the node's type speaks.
+// @uses      testing, context, net/http, net/http/httptest, sync/atomic, time, internal/domain.
+// @reason    A node has no registry entry, so the probe composes its target from the base URL alone. That composition is the whole contract: a wrong path reports a working node as broken, and a doubled one reports a 404 the operator reads as a credential problem. Split from the endpoint suite to keep both files under AGENTS.md §1.1.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

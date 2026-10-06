@@ -1,20 +1,9 @@
 // Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
 // @file      internal/service/oauthhttp/oauth_client_test.go
-// @for       Table-driven tests for the OAuth token client's userinfo decode
-//
-//	(SPEC-API-001 §7.4: the account identity a callback matches on).
-//
-// @uses      encoding/json, io, net/http, net/http/httptest, net/url,
-//
-//	strings, testing.
-//
-// @reason    The identity decides whether a connect creates an account or
-// updates one, so the decode must survive every spelling a provider
-// uses for the same field: a numeric id, a string id, a null id, and
-// a payload with no id at all. A decode that fails on one spelling
-// would fail the whole callback and leave the account unconnectable.
-//
+// @for       Table-driven tests for the OAuth token client's userinfo decode (SPEC-API-001 §7.4: the account identity a callback matches on).
+// @uses      encoding/json, io, net/http, net/http/httptest, net/url, strings, testing.
+// @reason    The identity decides whether a connect creates an account or updates one, so the decode must survive every spelling a provider uses for the same field: a numeric id, a string id, a null id, and a payload with no id at all. A decode that fails on one spelling would fail the whole callback and leave the account unconnectable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

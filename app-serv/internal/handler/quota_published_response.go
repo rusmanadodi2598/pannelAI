@@ -4,12 +4,7 @@
 // @file      internal/handler/quota_published_response.go
 // @for       Mapping provider-published quota answers onto the collection and detail bodies.
 // @uses      internal/schema, internal/service.
-// @reason    Two ledgers share one screen and neither corrects the other, so the mapping that
-//
-//	keeps them apart (decimal strings as the provider spelled them, a NULL ceiling that is not a
-//	zero, an attempt stamp that is not the figures' stamp) lives in one place instead of being
-//	repeated by each route that carries an answer.
-//
+// @reason    Two ledgers share one screen and neither corrects the other, so the mapping that keeps them apart (decimal strings as the provider spelled them, a NULL ceiling that is not a zero, an attempt stamp that is not the figures' stamp) lives in one place instead of being repeated by each route that carries an answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

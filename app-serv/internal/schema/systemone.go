@@ -3,16 +3,7 @@
 // @file      internal/schema/systemone.go
 // @for       The System One (Jev) decision request and answer contracts.
 // @uses      bytes, encoding/json, internal/domain.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/systemone for models
-//
-//	declaring `kind: "systemone"`. The payload is the provider's own
-//	vocabulary rather than a chat request, and the reference forwards it
-//	untouched, so the fields the gateway must know are exactly the three
-//	that decide whether the call is well formed: the model, the state, and
-//	the questions map. Everything inside a question travels verbatim,
-//	because question-level shape is the upstream's business
-//	(open-sse/handlers/systemoneCore.js:28-36).
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/systemone for models declaring `kind: "systemone"`. The payload is the provider's own vocabulary rather than a chat request, and the reference forwards it untouched, so the fields the gateway must know are exactly the three that decide whether the call is well formed: the model, the state, and the questions map. Everything inside a question travels verbatim, because question-level shape is the upstream's business (open-sse/handlers/systemoneCore.js:28-36).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

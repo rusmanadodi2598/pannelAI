@@ -2,19 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/plugin_credential.go
-// @for       The credential one upstream account presents, and the auth family it
-//
-//	belongs to.
-//
+// @for       The credential one upstream account presents, and the auth family it belongs to.
 // @uses      fmt, strings.
-// @reason    A provider may read a different header per credential family, so
-//
-//	choosing the header and choosing the value separately is how an OAuth
-//	token ends up in a static-key header. Reducing every family to one
-//	shape is what lets the core never branch on which one is in use, and
-//	it lives apart from the Plugin interface because the interface is the
-//	seam while this is the value that travels through it.
-//
+// @reason    A provider may read a different header per credential family, so choosing the header and choosing the value separately is how an OAuth token ends up in a static-key header. Reducing every family to one shape is what lets the core never branch on which one is in use, and it lives apart from the Plugin interface because the interface is the seam while this is the value that travels through it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

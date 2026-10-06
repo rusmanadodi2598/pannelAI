@@ -1,17 +1,10 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/combo_routable_test.go
-// @for       Draft 024 F4: a combo or judge reference must name a model the
-//
-//	chat data plane can serve, and the refusal names why.
-//
+// @for       Draft 024 F4: a combo or judge reference must name a model the chat data plane can serve, and the refusal names why.
 // @uses      internal/domain, internal/registry, context, strings, testing.
-// @reason    The write path accepted a member the router refuses, measured:
+// @reason    The write path accepted a member the router refuses, measured: a member on a provider with no chat translator saved and then answered PROVIDER_NOT_ROUTABLE, and a media model saved and then missed the chat selector. The data plane's own list excludes both, so "listed" and "answerable" broke exactly where the panel draws its suggestions.
 //
-//	a member on a provider with no chat translator saved and then answered
-//	PROVIDER_NOT_ROUTABLE, and a media model saved and then missed the
-//	chat selector. The data plane's own list excludes both, so "listed"
-//	and "answerable" broke exactly where the panel draws its suggestions.
 //	The rule belongs at write time: a saved member that cannot serve is a
 //	routing failure the operator meets on the first request.
 //

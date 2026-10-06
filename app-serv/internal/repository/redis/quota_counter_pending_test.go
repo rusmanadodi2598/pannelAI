@@ -3,21 +3,9 @@
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/quota_counter_pending_test.go
-// @for       The flush batch's fairness: windows already mirrored do not crowd
-//
-//	a dirty endpoint out of Pending's limit.
-//
-// @uses      fmt, github.com/redis/go-redis/v9, internal/domain, context, os,
-//
-//	testing, time.
-//
-// @reason    Pending used to stop at `limit` keys and filter afterwards, so a
-//
-//	keyspace whose first SCAN keys were all settled returned an empty
-//	batch forever and a busy endpoint's counted usage never reached
-//	PostgreSQL (draft 042 R18). Only a live server can prove the scan
-//	behaviour, per this package's tagging rule.
-//
+// @for       The flush batch's fairness: windows already mirrored do not crowd a dirty endpoint out of Pending's limit.
+// @uses      fmt, github.com/redis/go-redis/v9, internal/domain, context, os, testing, time.
+// @reason    Pending used to stop at `limit` keys and filter afterwards, so a keyspace whose first SCAN keys were all settled returned an empty batch forever and a busy endpoint's counted usage never reached PostgreSQL (draft 042 R18). Only a live server can prove the scan behaviour, per this package's tagging rule.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

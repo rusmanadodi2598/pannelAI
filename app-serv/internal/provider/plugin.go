@@ -2,14 +2,10 @@
 // upstream provider.
 //
 // @file      internal/provider/plugin.go
-// @for       The Plugin interface and the outcome a connector reports back to the
-//
-//	core.
-//
+// @for       The Plugin interface and the outcome a connector reports back to the core.
 // @uses      net/http, time.
-// @reason    Every provider differs in how it connects: some take an API key,
+// @reason    Every provider differs in how it connects: some take an API key, some an OAuth flow, some need no credential, and some accept both.
 //
-//	some an OAuth flow, some need no credential, and some accept both.
 //	The core must not learn those differences, or a fix for one
 //	provider becomes a change to shared code. A connector per provider
 //	keeps the difference inside one package, which is what makes a

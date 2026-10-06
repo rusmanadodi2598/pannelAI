@@ -2,19 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/settings_provider_proxy.go
-// @for       The per-provider proxy binding: which pool one provider's calls
-//
-//	egress through, and the strategy that orders the walk.
-//
+// @for       The per-provider proxy binding: which pool one provider's calls egress through, and the strategy that orders the walk.
 // @uses      internal/domain (errors, proxy strategy), strings.
-// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D1-D3: the binding is one map
-//
-//	in the settings document keyed by provider id, mirroring the
-//	reference's providerStrategies and this port's own
-//	routing.provider_strategies, and the resolution rule (override over
-//	global, `__none__` distinct from empty) lives here so the read, the
-//	write, and the route plan cannot drift.
-//
+// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D1-D3: the binding is one map in the settings document keyed by provider id, mirroring the reference's providerStrategies and this port's own routing.provider_strategies, and the resolution rule (override over global, `__none__` distinct from empty) lives here so the read, the write, and the route plan cannot drift.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

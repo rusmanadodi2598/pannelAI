@@ -3,15 +3,7 @@
 // @file      internal/service/oauth_flow_multiaccount_test.go
 // @for       Several identity-less OAuth accounts of one provider, each its own row.
 // @uses      context, fmt, testing, time, internal/registry.
-// @reason    A vendor that returns no user identity gives the gateway nothing to dedup on,
-//
-//	and the reference's answer is to insert a new connection each time
-//	(connectionsRepo.js:133 only dedups when an email exists). Our state round used to
-//	manufacture a constant synthetic email instead, which made every login after the
-//	first overwrite the stored credential. These tests hold the multi-account shape the
-//	panel already renders: distinct rows, numbered labels, no invented identity, and a
-//	first account whose token survives the second login.
-//
+// @reason    A vendor that returns no user identity gives the gateway nothing to dedup on, and the reference's answer is to insert a new connection each time (connectionsRepo.js:133 only dedups when an email exists). Our state round used to manufacture a constant synthetic email instead, which made every login after the first overwrite the stored credential. These tests hold the multi-account shape the panel already renders: distinct rows, numbered labels, no invented identity, and a first account whose token survives the second login.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

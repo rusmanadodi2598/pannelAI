@@ -2,18 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_endpoint_key_reads.go
-// @for       Read helpers for the keys an UpstreamEndpoint owns, including the
-//
-//	selection the router performs.
-//
+// @for       Read helpers for the keys an UpstreamEndpoint owns, including the selection the router performs.
 // @uses      internal/domain (UpstreamKey), sort, time.
-// @reason    The router asks the same two questions on every request ("which key
-//
-//	may I spend" and "which one would you pick"), and the panel shows
-//	the second as its answer to "why did my request fail over". Keeping
-//	both beside the ordering rule is what stops the two answers from
-//	diverging.
-//
+// @reason    The router asks the same two questions on every request ("which key may I spend" and "which one would you pick"), and the panel shows the second as its answer to "why did my request fail over". Keeping both beside the ordering rule is what stops the two answers from diverging.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

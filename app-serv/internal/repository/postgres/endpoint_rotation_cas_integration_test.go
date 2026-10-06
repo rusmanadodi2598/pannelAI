@@ -5,11 +5,7 @@
 // @file      internal/repository/postgres/endpoint_rotation_cas_integration_test.go
 // @for       The compare-and-swap an endpoint write can ask PostgreSQL to perform.
 // @uses      context, testing, time, internal/domain
-// @reason    An OAuth rotation that raced another must lose instead of storing a token the vendor
-//
-//	already replaced. The guard lives in the WHERE clause, so it is pinned against a real row:
-//	a service-level double cannot prove the database honours it.
-//
+// @reason    An OAuth rotation that raced another must lose instead of storing a token the vendor already replaced. The guard lives in the WHERE clause, so it is pinned against a real row: a service-level double cannot prove the database honours it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

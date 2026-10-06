@@ -3,12 +3,7 @@
 // @file      internal/handler/provider.go
 // @for       The provider registry routes (SPEC-API-001 §7.4).
 // @uses      internal/schema, internal/service, net/http.
-// @reason    §7.4 serves the registry read-only, and AGENTS.md §1.5 keeps the
-//
-//	filtering and the store read in the service: this layer decodes a bounded
-//	filter, calls, and maps. Routability travels with every row because §8
-//	makes it the field a client reads before configuring an account.
-//
+// @reason    §7.4 serves the registry read-only, and AGENTS.md §1.5 keeps the filtering and the store read in the service: this layer decodes a bounded filter, calls, and maps. Routability travels with every row because §8 makes it the field a client reads before configuring an account.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

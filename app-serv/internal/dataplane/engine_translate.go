@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_translate.go
-// @for       Turning one client request into an upstream body, and one upstream
-//
-//	answer back into the client's wire format.
-//
+// @for       Turning one client request into an upstream body, and one upstream answer back into the client's wire format.
 // @uses      internal/schema, encoding/json.
-// @reason    SPEC-API-001 §7.15 makes translation the pipeline's core, and the two
-//
-//	directions are decided by three facts (the client's format, the
-//	upstream's format, and whether the body is streamed). Deciding them
-//	through one pair of functions is what keeps the matrix from becoming
-//	a branch at every call site.
-//
+// @reason    SPEC-API-001 §7.15 makes translation the pipeline's core, and the two directions are decided by three facts (the client's format, the upstream's format, and whether the body is streamed). Deciding them through one pair of functions is what keeps the matrix from becoming a branch at every call site.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,10 +3,7 @@
 // @file      internal/dataplane/resolve_disabled.go
 // @for       The operator disabled set applied to the routing path.
 // @uses      context, internal/domain (through the ModelLookup the resolver holds).
-// @reason    SPEC-API-001 §7.6 makes a disabled pair hidden from routing, and a rule the
-//
-//	listing applies while the router ignores it is a rule an operator cannot rely on.
-//
+// @reason    SPEC-API-001 §7.6 makes a disabled pair hidden from routing, and a rule the listing applies while the router ignores it is a rule an operator cannot rely on.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

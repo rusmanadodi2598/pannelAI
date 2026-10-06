@@ -3,20 +3,9 @@
 // Package main is the app-serv composition root.
 //
 // @file      cmd/app-serv/playground_live_stack_test.go
-// @for       The live Playground gateway under test: the real router over the
-//
-//	real services, wired to PostgreSQL, Redis, and a local upstream.
-//
-// @uses      internal/dataplane, internal/domain, internal/handler,
-// internal/provider, internal/registry, internal/repository/postgres,
-// internal/repository/redis, internal/router, internal/schema,
-// internal/service, context, os, testing, time.
-// @reason    F9 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires
-//
-//	repeatable evidence from one request through the whole gateway, and the
-//	evidence is only as good as the wiring behind it. This file builds that
-//	wiring from the real constructors, so the tests read as scenarios
-//	rather than as their own fixtures.
+// @for       The live Playground gateway under test: the real router over the real services, wired to PostgreSQL, Redis, and a local upstream.
+// @uses      internal/dataplane, internal/domain, internal/handler, internal/provider, internal/registry, internal/repository/postgres, internal/repository/redis, internal/router, internal/schema, internal/service, context, os, testing, time.
+// @reason    F9 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires repeatable evidence from one request through the whole gateway, and the evidence is only as good as the wiring behind it. This file builds that wiring from the real constructors, so the tests read as scenarios rather than as their own fixtures.
 //
 //	The file carries an `integration` build tag, so the default
 //	`go test ./...` stays hermetic. With the tag active both DSNs are

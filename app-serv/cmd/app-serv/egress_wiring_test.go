@@ -1,18 +1,10 @@
 // Command app-serv wires the process-wide egress policy.
 //
 // @file      cmd/app-serv/egress_wiring_test.go
-// @for       The egress wiring's table: what the built client refuses, what the
+// @for       The egress wiring's table: what the built client refuses, what the allowlist opens, and the boot failure a malformed entry causes.
+// @uses      testing, errors, net/http, net/http/httptest, net/netip, internal/config, internal/netguard.
+// @reason    The guard's own table pins the range rules; this one pins the (wiring), that the client the data plane actually dials with carries the guard's dialer, so the policy cannot be lost between the two.
 //
-//	allowlist opens, and the boot failure a malformed entry causes.
-//
-// @uses      testing, errors, net/http, net/http/httptest, net/netip,
-//
-//	internal/config, internal/netguard.
-//
-// @reason    The guard's own table pins the range rules; this one pins the
-//
-//	(wiring), that the client the data plane actually dials with carries
-//	the guard's dialer, so the policy cannot be lost between the two.
 //	The benign control matters as much as the refusals: a guard that
 //	blocked everything would pass a refusal-only test.
 //

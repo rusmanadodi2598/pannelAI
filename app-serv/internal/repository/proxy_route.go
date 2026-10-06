@@ -1,19 +1,9 @@
 // Package repository is the storage boundary app-serv services depend on.
 //
 // @file      internal/repository/proxy_route.go
-// @for       State contract for the proxy route engine: the round-robin
-//
-//	counter and the failure cooldown (docs/PORT/008-PORT-PROXY-ENGINE.md
-//	D5, D6).
-//
+// @for       State contract for the proxy route engine: the round-robin counter and the failure cooldown (docs/PORT/008-PORT-PROXY-ENGINE.md D5, D6).
 // @uses      context, time.
-// @reason    The engine's shared state is distribution and health hints, both
-//
-//	of which must be atomic across concurrent requests and survive a
-//	restart, which is Redis's job and not the process's. The contract
-//	lives apart from ProxyRepository because the route plan reads pool
-//	rows but writes none of them.
-//
+// @reason    The engine's shared state is distribution and health hints, both of which must be atomic across concurrent requests and survive a restart, which is Redis's job and not the process's. The contract lives apart from ProxyRepository because the route plan reads pool rows but writes none of them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

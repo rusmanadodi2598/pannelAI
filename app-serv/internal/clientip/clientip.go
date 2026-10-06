@@ -2,14 +2,10 @@
 // client address is this request really from.
 //
 // @file      internal/clientip/clientip.go
-// @for       The trusted-proxy rule for reading X-Forwarded-For, shared by the
-//
-//	gateway rate limiter and the login limiter.
-//
+// @for       The trusted-proxy rule for reading X-Forwarded-For, shared by the gateway rate limiter and the login limiter.
 // @uses      errors, fmt, net, strings.
-// @reason    R20 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the limiter bucketed
+// @reason    R20 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the limiter bucketed every client behind a reverse proxy into the proxy's one address.
 //
-//	every client behind a reverse proxy into the proxy's one address.
 //	Reading the forwarded header is the fix, but the header is
 //	forgeable, so it is only read past a peer the operator explicitly
 //	named as a proxy. One package owns the rule because two limiters

@@ -1,17 +1,10 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_canonical_test.go
-// @for       The canonical-name rule every model-ref write path shares: a ref
-//
-//	is valid in any form the router resolves (id, registry alias, node
-//	prefix), not only the id form the catalog rows carry.
-//
+// @for       The canonical-name rule every model-ref write path shares: a ref is valid in any form the router resolves (id, registry alias, node prefix), not only the id form the catalog rows carry.
 // @uses      internal/domain, internal/registry, context, strings, testing.
-// @reason    Draft 024 F2 measured the drift: the router resolves three forms
+// @reason    Draft 024 F2 measured the drift: the router resolves three forms of the first segment while ModelExists reads one, so a combo member spelled with the reference's own alias (`cc/claude-...`) or a node prefix was refused at write time by a list the same gateway routes.
 //
-//	of the first segment while ModelExists reads one, so a combo member
-//	spelled with the reference's own alias (`cc/claude-...`) or a node
-//	prefix was refused at write time by a list the same gateway routes.
 //	These tests pin the agreement: whatever the router accepts as a
 //	namespace, the write path accepts as a reference, and the catalog
 //	filter answers by the same canonical id.

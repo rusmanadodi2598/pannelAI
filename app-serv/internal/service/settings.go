@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/settings.go
-// @for       Reading the typed settings document and applying a validated
-//
-//	partial PATCH to it.
-//
+// @for       Reading the typed settings document and applying a validated partial PATCH to it.
 // @uses      internal/domain, internal/repository, encoding/json, context, time.
-// @reason    SPEC-API-001 §7.14 merges the documented defaults at read and
-//
-//	validates a PATCH per key. The merge and the per-key persistence
-//	live here so a stored row that predates a key still answers with
-//	the documented value, and so the deprecated caveman key is carried
-//	through untouched rather than dropped by a rewrite.
-//
+// @reason    SPEC-API-001 §7.14 merges the documented defaults at read and validates a PATCH per key. The merge and the per-key persistence live here so a stored row that predates a key still answers with the documented value, and so the deprecated caveman key is carried through untouched rather than dropped by a rewrite.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

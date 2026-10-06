@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_node_probe.go
-// @for       The provider node connectivity test and the node-to-registry mapping
-//
-//	a custom node needs to become routable.
-//
+// @for       The provider node connectivity test and the node-to-registry mapping a custom node needs to become routable.
 // @uses      internal/domain, internal/registry, context, strings.
-// @reason    SPEC-API-001 §7.4 requires a test that a node's base URL answers, and
-//
-//	a node has no test_status column, so unlike an endpoint's probe this
-//	one returns a result rather than storing state. The registry mapping
-//	lives beside it because both answer "is this node usable", and it
-//	keeps registry.CustomNode construction out of the registry package,
-//	which must not import the domain. It is separate from
-//	provider_node.go because AGENTS.md §1.1 caps a file at 250 lines.
-//
+// @reason    SPEC-API-001 §7.4 requires a test that a node's base URL answers, and a node has no test_status column, so unlike an endpoint's probe this one returns a result rather than storing state. The registry mapping lives beside it because both answer "is this node usable", and it keeps registry.CustomNode construction out of the registry package, which must not import the domain. It is separate from provider_node.go because AGENTS.md §1.1 caps a file at 250 lines.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

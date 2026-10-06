@@ -1,27 +1,9 @@
 // Command app-serv adapts the connectivity probe port to HTTP.
 //
 // @file      cmd/app-serv/provider_probe.go
-// @for       The net/http implementation of service.EndpointProber and
-//
-//	service.NodeProber.
-//
-// @uses      internal/dataplane, internal/domain, internal/netguard,
-//
-//	internal/provider, internal/registry, internal/service, net/http,
-//	time.
-//
-// @reason    SPEC-API-001 §7.5 and §7.4 offer a connectivity test, and the probe
-//
-//	must reach the upstream, but AGENTS.md §1.5 forbids net/http in the
-//	service layer. The port lives in `internal/service`, this adapter
-//	lives in the composition root, and that split is what keeps the
-//	service testable with a fake and the adapter free of business
-//	rules. It reaches the upstream through the `provider.Plugin` seam,
-//	so no probe special-cases a provider id. The destination goes
-//	through the process's egress guard (OWASP A01): a node's base_url is
-//	operator input, and a probe must not be the one dial that skips the
-//	policy the data plane follows.
-//
+// @for       The net/http implementation of service.EndpointProber and service.NodeProber.
+// @uses      internal/dataplane, internal/domain, internal/netguard, internal/provider, internal/registry, internal/service, net/http, time.
+// @reason    SPEC-API-001 §7.5 and §7.4 offer a connectivity test, and the probe must reach the upstream, but AGENTS.md §1.5 forbids net/http in the service layer. The port lives in `internal/service`, this adapter lives in the composition root, and that split is what keeps the service testable with a fake and the adapter free of business rules. It reaches the upstream through the `provider.Plugin` seam, so no probe special-cases a provider id. The destination goes through the process's egress guard (OWASP A01): a node's base_url is operator input, and a probe must not be the one dial that skips the policy the data plane follows.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

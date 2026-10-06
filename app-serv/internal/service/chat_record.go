@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/chat_record.go
-// @for       The accounting pair one chat call writes: a usage row and a
-//
-//	request log under the request's own identifier.
-//
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	log/slog, time.
-//
-// @reason    SPEC-API-001 §7.12/§7.13 make one recorded row per request part of
-//
-//	the §7.15 pipeline, and register G18 found the chat plane writing only
-//	the usage half. Keeping the pair beside chat.go means the failure path
-//	and the success path cannot disagree about which rows a call leaves,
-//	and keeps chat.go inside the AGENTS.md §1.1 line budget.
-//
+// @for       The accounting pair one chat call writes: a usage row and a request log under the request's own identifier.
+// @uses      internal/dataplane, internal/domain, internal/schema, context, log/slog, time.
+// @reason    SPEC-API-001 §7.12/§7.13 make one recorded row per request part of the §7.15 pipeline, and register G18 found the chat plane writing only the usage half. Keeping the pair beside chat.go means the failure path and the success path cannot disagree about which rows a call leaves, and keeps chat.go inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

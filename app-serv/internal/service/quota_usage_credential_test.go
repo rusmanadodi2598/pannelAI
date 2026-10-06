@@ -4,9 +4,8 @@
 // @file      internal/service/quota_usage_credential_test.go
 // @for       Which secret and which account facts a published read asks its provider with.
 // @uses      context, internal/domain, internal/service/quotafetch, testing.
-// @reason    The mapper from an endpoint's stored identity to a provider's account facts is
+// @reason    The mapper from an endpoint's stored identity to a provider's account facts is unit-tested where it lives, which cannot show that the credential builder calls it.
 //
-//	unit-tested where it lives, which cannot show that the credential builder calls it.
 //	This file reads through the seam the fetcher is faked at, so a family left to discover
 //	its own project by paying for a bootstrap call per poll fails here rather than in production.
 //

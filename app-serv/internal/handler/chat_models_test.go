@@ -3,11 +3,7 @@
 // @file      internal/handler/chat_models_test.go
 // @for       The §7.15 models list Playground reads to fill its model selector.
 // @uses      internal/dataplane, net/http, net/http/httptest, strings, testing.
-// @reason    F4 and F6 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md
-// require the route the panel depends on to prove its own contract: the OpenAI
-// list shape, the auth gate, and an empty catalog that answers an empty list
-// rather than a panic or a fabricated model.
-//
+// @reason    F4 and F6 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md require the route the panel depends on to prove its own contract: the OpenAI list shape, the auth gate, and an empty catalog that answers an empty list rather than a panic or a fabricated model.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

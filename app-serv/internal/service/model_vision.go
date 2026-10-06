@@ -2,19 +2,8 @@
 //
 // @file      internal/service/model_vision.go
 // @for       The one capability question the vision adapter asks the catalog.
-//
 // @uses      context, internal/domain, internal/registry.
-// @reason    SPEC-API-001 §7.8 refuses an adapter model that cannot read images,
-//
-//	and the data plane asks the same question to decide whether to adapt at
-//	all. Both used to be answered by a name pattern that never read the
-//	catalog: a custom model an operator declared vision-capable stayed
-//	invisible to routing, and a registered model the ported table asserted
-//	was never contradicted by what the operator actually saw. Measured live
-//	2026-09-29: the configured adapter answered a solid-red image as "gray"
-//	while a model the tables call blind answered it correctly. The catalog is
-//	the operator's statement, so it answers first.
-//
+// @reason    SPEC-API-001 §7.8 refuses an adapter model that cannot read images, and the data plane asks the same question to decide whether to adapt at all. Both used to be answered by a name pattern that never read the catalog: a custom model an operator declared vision-capable stayed invisible to routing, and a registered model the ported table asserted was never contradicted by what the operator actually saw. Measured live 2026-09-29: the configured adapter answered a solid-red image as "gray" while a model the tables call blind answered it correctly. The catalog is the operator's statement, so it answers first.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -4,12 +4,7 @@
 // @file      internal/service/quotafetch/google.go
 // @for       Reads Gemini CLI's per-model quota buckets from the Cloud Code Assist quota call.
 // @uses      internal/service/quotafetch, context, encoding/json, net/http, strings, google_account.go
-// @reason    The quota endpoint refuses a call that names no Cloud project, and the project is
-//
-//	stored on the connection rather than returned by the quota read, so this
-//	fetch has a lookup step in front of it and a project-less answer has to
-//	stay a sentence the operator can act on rather than a failed page.
-//
+// @reason    The quota endpoint refuses a call that names no Cloud project, and the project is stored on the connection rather than returned by the quota read, so this fetch has a lookup step in front of it and a project-less answer has to stay a sentence the operator can act on rather than a failed page.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

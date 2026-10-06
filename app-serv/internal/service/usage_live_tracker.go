@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_live_tracker.go
-// @for       Recording one call as in flight for as long as it is running, at
-//
-//	each plane's outbound seam.
-//
+// @for       Recording one call as in flight for as long as it is running, at each plane's outbound seam.
 // @uses      internal/domain, internal/repository, context, log/slog, time.
-// @reason    SPEC-UI-001 §6.5 makes the drawing's active node mean "a request is
-//
-//	being routed now", and only the gateway knows that interval. The
-//	tracker is the write half of the pair: `Begin` records a marker
-//	before the outbound call and returns the release that removes it
-//	after, so the two cannot be separated by a caller that forgets the
-//	second half.
+// @reason    SPEC-UI-001 §6.5 makes the drawing's active node mean "a request is being routed now", and only the gateway knows that interval. The tracker is the write half of the pair: `Begin` records a marker before the outbound call and returns the release that removes it after, so the two cannot be separated by a caller that forgets the second half.
 //
 //	It is one type applied at three seams rather than one central hook,
 //	because the gateway has three outbound planes (chat through the

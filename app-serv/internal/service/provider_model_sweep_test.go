@@ -1,16 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_model_sweep_test.go
-// @for       Table-driven tests for the bounded sweep over a provider's chat
-//
-//	models (SPEC-API-001 §7.4, draft 017 §4.10).
-//
+// @for       Table-driven tests for the bounded sweep over a provider's chat models (SPEC-API-001 §7.4, draft 017 §4.10).
 // @uses      internal/dataplane, internal/domain, internal/registry, testing, time.
-// @reason    The sweep is the route with a budget, an order, and a truncation to
-//
-//	report, which are three rules the single-model tests cannot see. They are
-//	tested apart so a change to the walk cannot pass by breaking the count.
-//
+// @reason    The sweep is the route with a budget, an order, and a truncation to report, which are three rules the single-model tests cannot see. They are tested apart so a change to the walk cannot pass by breaking the count.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_status_test.go
-// @for       Table-driven tests for the OAuth status report and the forced
-//
-//	refresh (SPEC-API-001 §7.4 GET .../oauth/status, POST .../oauth/refresh).
-//
+// @for       Table-driven tests for the OAuth status report and the forced refresh (SPEC-API-001 §7.4 GET .../oauth/status, POST .../oauth/refresh).
 // @uses      context, testing, time, internal/domain.
-// @reason    Status is what the panel reads to decide "connect more accounts"
-//
-//	or "tokens dying", and the forced refresh is the operator's
-//	manual override of the worker; both share the freshness rule,
-//	so the table pins that agreement and the grant the refresh
-//	sends upstream.
-//
+// @reason    Status is what the panel reads to decide "connect more accounts" or "tokens dying", and the forced refresh is the operator's manual override of the worker; both share the freshness rule, so the table pins that agreement and the grant the refresh sends upstream.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

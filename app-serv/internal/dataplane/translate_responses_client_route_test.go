@@ -1,17 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/translate_responses_client_route_test.go
-// @for       Table-driven tests for the upstream body a Responses client's
-//
-//	request becomes, per resolved target.
-//
+// @for       Table-driven tests for the upstream body a Responses client's request becomes, per resolved target.
 // @uses      testing, encoding/json, strings.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses from any resolved
-//
-//	provider, so the client's format has to reach every translator. A
-//	Responses-speaking target is forwarded verbatim, which is the rule
-//	that keeps an unmodelled field from being dropped.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses from any resolved provider, so the client's format has to reach every translator. A Responses-speaking target is forwarded verbatim, which is the rule that keeps an unmodelled field from being dropped.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

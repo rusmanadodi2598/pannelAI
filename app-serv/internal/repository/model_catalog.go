@@ -1,18 +1,9 @@
 // Package repository is the storage boundary app-serv services depend on.
 //
 // @file      internal/repository/model_catalog.go
-// @for       Storage contracts for the model catalog: custom models, the alias
-//
-//	set, the disabled set, and the vision adapter configuration.
-//
+// @for       Storage contracts for the model catalog: custom models, the alias set, the disabled set, and the vision adapter configuration.
 // @uses      context, internal/domain.
-// @reason    AGENTS.md §1.5 requires services to depend on an interface and
-//
-//	never on a driver. The alias and disabled sets are read and
-//	written whole (SPEC-API-001 §7.6 replaces the full set), so the
-//	contract says "set", not "row", and an implementation is free to
-//	satisfy it with one statement per set instead of one per row.
-//
+// @reason    AGENTS.md §1.5 requires services to depend on an interface and never on a driver. The alias and disabled sets are read and written whole (SPEC-API-001 §7.6 replaces the full set), so the contract says "set", not "row", and an implementation is free to satisfy it with one statement per set instead of one per row.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

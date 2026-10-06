@@ -5,13 +5,7 @@
 // @file      migrations/ownership_test.go
 // @for       Tagged integration test: every table belongs to the schema's app role.
 // @uses      context, database/sql, testing.
-// @reason    G19 was an ownership defect that only a real server exposes: the
-//
-//	P2 tables were created by a superuser boot, so the app role could not
-//	read them while every other table worked. A test that asserts the
-//	invariant across the whole schema catches the next table that lands
-//	with the wrong owner, not just the two this migration repaired.
-//
+// @reason    G19 was an ownership defect that only a real server exposes: the P2 tables were created by a superuser boot, so the app role could not read them while every other table worked. A test that asserts the invariant across the whole schema catches the next table that lands with the wrong owner, not just the two this migration repaired.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability experimental

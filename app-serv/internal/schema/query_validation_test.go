@@ -3,11 +3,7 @@
 // @file      internal/schema/query_validation_test.go
 // @for       The bounds on the list filters that arrive as query parameters.
 // @uses      strings, testing
-// @reason    These values were passed to the service trimmed only, so an over-long or nonsense
-//
-//	capability read as a narrowed filter while narrowing nothing (the failure draft 025 F5
-//	recording for `?active=`).
-//
+// @reason    These values were passed to the service trimmed only, so an over-long or nonsense capability read as a narrowed filter while narrowing nothing (the failure draft 025 F5 recording for `?active=`).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

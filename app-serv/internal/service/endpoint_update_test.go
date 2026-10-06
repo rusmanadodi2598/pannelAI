@@ -3,11 +3,7 @@
 // @file      internal/service/endpoint_update_test.go
 // @for       The PATCH and DELETE paths of the endpoint service.
 // @uses      context, testing, internal/domain.
-// @reason    Renumbering siblings and refusing to delete the last usable account
-//
-//	are rules about the whole collection, so they are pinned apart from
-//	the create path that only ever appends one row.
-//
+// @reason    Renumbering siblings and refusing to delete the last usable account are rules about the whole collection, so they are pinned apart from the create path that only ever appends one row.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

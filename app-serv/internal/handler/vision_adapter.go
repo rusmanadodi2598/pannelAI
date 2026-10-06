@@ -3,12 +3,7 @@
 // @file      internal/handler/vision_adapter.go
 // @for       The vision adapter endpoints (SPEC-API-001 §7.8).
 // @uses      internal/schema, internal/service, net/http.
-// @reason    §7.8 defines a GET and a PUT over one configuration, and the PUT is
-//
-//	a whole replacement rather than a merge; the handler's only job is
-//	to keep that symmetry, so what a client GETs is exactly what it may
-//	PUT back.
-//
+// @reason    §7.8 defines a GET and a PUT over one configuration, and the PUT is a whole replacement rather than a merge; the handler's only job is to keep that symmetry, so what a client GETs is exactly what it may PUT back.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

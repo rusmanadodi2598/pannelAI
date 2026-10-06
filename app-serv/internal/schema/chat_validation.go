@@ -1,16 +1,10 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/chat_validation.go
-// @for       The semantic rules of the OpenAI chat contract: the nested content
-//
-//	union, the stop shapes, and the cross-field response format.
-//
+// @for       The semantic rules of the OpenAI chat contract: the nested content union, the stop shapes, and the cross-field response format.
 // @uses      bytes, encoding/json, strconv, strings, internal/domain.
-// @reason    F1 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md found
+// @reason    F1 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md found struct tags alone accept shapes the translators cannot carry, so the rules the wire implies live beside the DTO instead of in the handler (AGENTS.md §1.4: no raw input reaches a translator unvalidated).
 //
-//	struct tags alone accept shapes the translators cannot carry, so the
-//	rules the wire implies live beside the DTO instead of in the handler
-//	(AGENTS.md §1.4: no raw input reaches a translator unvalidated).
 //	The closed sets are the protocol's own: an unknown role, part, or
 //	detail is refused rather than silently dropped downstream.
 //

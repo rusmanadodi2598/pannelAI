@@ -1,21 +1,9 @@
 // Command app-serv adapts a provider node's model list to HTTP.
 //
 // @file      cmd/app-serv/node_models_credential_test.go
-// @for       The two credential-placement cases of the node model read: a
-//
-//	destination the guard refuses, and a node with no credential at all.
-//
-// @uses      internal/netguard, internal/service, context, net/http,
-//
-//	net/http/httptest, strings, testing, time.
-//
-// @reason    Both cases are about what the adapter does *not* send, no request
-//
-//	to a refused address, no Authorization header for an empty credential
-//	, which is a different question from how it parses an answer. Keeping
-//	them apart keeps each file's reason readable and both inside the
-//	AGENTS.md §1.1 line budget.
-//
+// @for       The two credential-placement cases of the node model read: a destination the guard refuses, and a node with no credential at all.
+// @uses      internal/netguard, internal/service, context, net/http, net/http/httptest, strings, testing, time.
+// @reason    Both cases are about what the adapter does *not* send, no request to a refused address, no Authorization header for an empty credential, which is a different question from how it parses an answer. Keeping them apart keeps each file's reason readable and both inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

@@ -3,11 +3,7 @@
 // @file      internal/dataplane/translate_claude_to_openai_test.go
 // @for       Anthropic-to-OpenAI request translation and the usage fold.
 // @uses      encoding/json, testing, internal/schema.
-// @reason    The reverse direction has its own rules, a top-level system field
-//
-//	becoming a leading message and each tool_use turn standing alone, and
-//	they are pinned separately from the OpenAI-to-Anthropic half.
-//
+// @reason    The reverse direction has its own rules, a top-level system field becoming a leading message and each tool_use turn standing alone, and they are pinned separately from the OpenAI-to-Anthropic half.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

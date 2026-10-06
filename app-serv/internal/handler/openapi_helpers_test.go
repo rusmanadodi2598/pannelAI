@@ -1,17 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/openapi_helpers_test.go
-// @for       The shared walkers the structural and per-plane contract tests use:
-//
-//	reference collection, envelope resolution, and scheme detection.
-//
+// @for       The shared walkers the structural and per-plane contract tests use: reference collection, envelope resolution, and scheme detection.
 // @uses      encoding/json, testing.
-// @reason    These helpers answer questions about the document rather than assert
-//
-//	about it, and three test files ask them. Keeping them apart means a
-//	rule can be read without scrolling past the walkers it stands on,
-//	and both files stay inside the AGENTS.md §1.1 budget.
-//
+// @reason    These helpers answer questions about the document rather than assert about it, and three test files ask them. Keeping them apart means a rule can be read without scrolling past the walkers it stands on, and both files stay inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

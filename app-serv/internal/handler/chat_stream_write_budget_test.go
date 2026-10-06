@@ -1,18 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/chat_stream_write_budget_test.go
-// @for       The SSE sink's write budget: the deadline is renewed per frame, so
-//
-//	a stream that outlives the server's WriteTimeout still arrives.
-//
+// @for       The SSE sink's write budget: the deadline is renewed per frame, so a stream that outlives the server's WriteTimeout still arrives.
 // @uses      io, net/http, net/http/httptest, strings, testing, time.
-// @reason    Go sets the server WriteTimeout once, absolutely, when the request
-//
-//	headers are read, so a stream running past it is cut on its next
-//	frame with the client reading `unexpected EOF`. The sink must renew
-//	the deadline, and the end-to-end form here is what caught the defect
-//	(draft 042 R01).
-//
+// @reason    Go sets the server WriteTimeout once, absolutely, when the request headers are read, so a stream running past it is cut on its next frame with the client reading `unexpected EOF`. The sink must renew the deadline, and the end-to-end form here is what caught the defect (draft 042 R01).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

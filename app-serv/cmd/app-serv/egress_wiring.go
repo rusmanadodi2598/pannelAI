@@ -1,21 +1,9 @@
 // Command app-serv wires the process-wide egress policy.
 //
 // @file      cmd/app-serv/egress_wiring.go
-// @for       Builds the one egress guard, the guarded HTTP client every
-//
-//	upstream dial shares, and the proxy route it selects per request.
-//
-// @uses      internal/config, internal/dataplane, internal/domain, internal/netguard,
-//
-//	context, fmt, net/http, net/url, strings, time.
-//
-// @reason    OWASP A01 makes the outbound policy one decision rather than one
-//
-//	per caller: the connectivity probe, the chat and media transports,
-//	the OAuth client, and the proxy test all dial an address an operator
-//	typed, so they must share one guard and one allowlist. Building it
-//	here is what keeps a second allowlist from appearing, the proxy
-//	wiring was the first caller and used to build its own.
+// @for       Builds the one egress guard, the guarded HTTP client every upstream dial shares, and the proxy route it selects per request.
+// @uses      internal/config, internal/dataplane, internal/domain, internal/netguard, context, fmt, net/http, net/url, strings, time.
+// @reason    OWASP A01 makes the outbound policy one decision rather than one per caller: the connectivity probe, the chat and media transports, the OAuth client, and the proxy test all dial an address an operator typed, so they must share one guard and one allowlist. Building it here is what keeps a second allowlist from appearing, the proxy wiring was the first caller and used to build its own.
 //
 //	SPEC-API-001 §7.11 makes the routing half of that decision here too:
 //	settings.network.outbound_proxy_* is read per request, so the guard

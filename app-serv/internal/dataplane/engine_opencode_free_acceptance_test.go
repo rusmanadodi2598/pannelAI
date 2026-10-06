@@ -1,18 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_opencode_free_acceptance_test.go
-// @for       The acceptance tests the owner asked for: the three OpenCode free
-//
-//	models answer with no credential, through the whole pipeline.
-//
+// @for       The acceptance tests the owner asked for: the three OpenCode free models answer with no credential, through the whole pipeline.
 // @uses      context, encoding/json, testing, internal/schema.
-// @reason    The fixtures live in engine_opencode_free_test.go so both files stay
-//
-//	inside the AGENTS.md section 1.1 budget. Keeping the scenarios separate
-//	from the stand-in also makes the file read as what it asserts: the
-//	upstream gate is measured once, and each test states one property of
-//	the lane.
-//
+// @reason    The fixtures live in engine_opencode_free_test.go so both files stay inside the AGENTS.md section 1.1 budget. Keeping the scenarios separate from the stand-in also makes the file read as what it asserts: the upstream gate is measured once, and each test states one property of the lane.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

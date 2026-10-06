@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_disabled_test.go
-// @for       The two-sided canonical comparison the disabled set applies, so one
-//
-//	model is hidden whichever of its names the pair was stored under.
-//
+// @for       The two-sided canonical comparison the disabled set applies, so one model is hidden whichever of its names the pair was stored under.
 // @uses      internal/domain, context, testing.
-// @reason    Draft 024 F2 after review: a pair stored under a node prefix must
-//
-//	hide the node-id spelling too, and a pair stored under the id must
-//	hide the alias spelling, because the set is a judgement about the
-//	model rather than about one of its names. Separated from the
-//	canonical-form table at the AGENTS.md §1.1 line limit.
-//
+// @reason    Draft 024 F2 after review: a pair stored under a node prefix must hide the node-id spelling too, and a pair stored under the id must hide the alias spelling, because the set is a judgement about the model rather than about one of its names. Separated from the canonical-form table at the AGENTS.md §1.1 line limit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

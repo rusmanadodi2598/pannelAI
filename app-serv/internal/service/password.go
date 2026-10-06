@@ -3,10 +3,7 @@
 // @file      internal/service/password.go
 // @for       Provides the production bcrypt password hashing adapter.
 // @uses      golang.org/x/crypto/bcrypt.
-// @reason    Dashboard credentials require an adaptive one-way hash rather
-//
-//	than reversible storage or a process-local comparison.
-//
+// @reason    Dashboard credentials require an adaptive one-way hash rather than reversible storage or a process-local comparison.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

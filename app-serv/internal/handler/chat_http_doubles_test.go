@@ -1,19 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/chat_http_doubles_test.go
-// @for       The narrow doubles the chat HTTP fixture wires behind the real
-//
-//	registry, selector, transport, and key lookup.
-//
-// @uses      internal/dataplane, internal/domain, internal/provider,
-// internal/registry, internal/repository, internal/service, context,
-// net/http, sync, testing, time.
-// @reason    The fixture builder and the collaborators it stands on are separate
-//
-//	concerns: the builder describes the pipeline, the doubles describe
-//	the narrow storage an HTTP test can afford. Keeping them apart holds
-//	both files inside the AGENTS.md §1.1 budget.
-//
+// @for       The narrow doubles the chat HTTP fixture wires behind the real registry, selector, transport, and key lookup.
+// @uses      internal/dataplane, internal/domain, internal/provider, internal/registry, internal/repository, internal/service, context, net/http, sync, testing, time.
+// @reason    The fixture builder and the collaborators it stands on are separate concerns: the builder describes the pipeline, the doubles describe the narrow storage an HTTP test can afford. Keeping them apart holds both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

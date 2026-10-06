@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_resolve_disabled.go
-// @for       The disabled-set reads resolution performs, and the available-pair
-//
-//	view a set replacement validates against.
-//
+// @for       The disabled-set reads resolution performs, and the available-pair view a set replacement validates against.
 // @uses      internal/domain, context.
-// @reason    The disabled comparison is canonical on both sides (draft 024
-//
-//	F2): a pair stored under the id form must also hide the alias and
-//	prefix spellings of the same model, because the set is a judgement
-//	about the model, not about one of its names. Separated from the
-//	resolution entry point at the AGENTS.md §1.1 line limit.
-//
+// @reason    The disabled comparison is canonical on both sides (draft 024 F2): a pair stored under the id form must also hide the alias and prefix spellings of the same model, because the set is a judgement about the model, not about one of its names. Separated from the resolution entry point at the AGENTS.md §1.1 line limit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -1,21 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/endpoint_batch.go
-// @for       The set-scoped statements the bulk routes require: a batch create,
-//
-//	a batch key append, the sibling priority read, and the OAuth account
-//	lookup.
-//
+// @for       The set-scoped statements the bulk routes require: a batch create, a batch key append, the sibling priority read, and the OAuth account lookup.
 // @uses      github.com/jackc/pgx/v5, internal/domain, context.
-// @reason    SPEC-API-001 §8.1 makes a batch all-or-nothing, so everything here
-//
-//	runs inside ONE transaction and returns an error naming the offending
-//	row. repository.EndpointRepository is frozen and aggregate-scoped, so
-//	these statements extend the concrete type rather than the interface;
-//	the service declares the port it needs in endpoint_ports.go. Keeping
-//	them in one file is also what keeps the root repository inside the
-//	AGENTS.md §1.1 line budget.
-//
+// @reason    SPEC-API-001 §8.1 makes a batch all-or-nothing, so everything here runs inside ONE transaction and returns an error naming the offending row. repository.EndpointRepository is frozen and aggregate-scoped, so these statements extend the concrete type rather than the interface; the service declares the port it needs in endpoint_ports.go. Keeping them in one file is also what keeps the root repository inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

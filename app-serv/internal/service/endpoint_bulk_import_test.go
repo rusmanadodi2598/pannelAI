@@ -3,11 +3,7 @@
 // @file      internal/service/endpoint_bulk_import_test.go
 // @for       The OAuth bulk import that turns a vendor account list into endpoints.
 // @uses      testing, internal/domain.
-// @reason    Import names fresh endpoints after the identity the vendor states and
-//
-//	seals two tokens per row, which the credential-row bulk path does
-//	not do.
-//
+// @reason    Import names fresh endpoints after the identity the vendor states and seals two tokens per row, which the credential-row bulk path does not do.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

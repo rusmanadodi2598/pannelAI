@@ -3,12 +3,7 @@
 // @file      internal/repository/postgres/endpoint_summary.go
 // @for       The per-provider endpoint roll-up the provider list renders.
 // @uses      context, time, internal/domain.
-// @reason    SPEC-API-001 §7.4 publishes status_summary for every provider in
-//
-//	one list response. Reading it per provider would be an N+1 over a page of
-//	25 rows (AGENTS.md §1.7 forbids exactly that), so one GROUP BY answers the
-//	whole page and the service attaches the counts by provider id.
-//
+// @reason    SPEC-API-001 §7.4 publishes status_summary for every provider in one list response. Reading it per provider would be an N+1 over a page of 25 rows (AGENTS.md §1.7 forbids exactly that), so one GROUP BY answers the whole page and the service attaches the counts by provider id.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

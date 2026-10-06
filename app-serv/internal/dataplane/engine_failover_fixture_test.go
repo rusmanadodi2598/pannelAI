@@ -1,17 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_failover_fixture_test.go
-// @for       The upstream doubles the failover tests drive: a per-model status
-//
-//	server and a per-credential one.
-//
+// @for       The upstream doubles the failover tests drive: a per-model status server and a per-credential one.
 // @uses      encoding/json, net/http, net/http/httptest, strings, testing.
-// @reason    A model-shaped refusal and a credential-shaped one are the two
-//
-//	questions the failover tests ask, and neither can be answered by the
-//	relay fixture's fixed server. Keeping both here lets each test file
-//	read as the rule it pins (AGENTS.md §2.1).
-//
+// @reason    A model-shaped refusal and a credential-shaped one are the two questions the failover tests ask, and neither can be answered by the relay fixture's fixed server. Keeping both here lets each test file read as the rule it pins (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

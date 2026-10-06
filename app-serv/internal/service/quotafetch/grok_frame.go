@@ -4,11 +4,7 @@
 // @file      internal/service/quotafetch/grok_frame.go
 // @for       Decodes one GetGrokCreditsConfig gRPC-web answer into a usage ratio and a reset instant.
 // @uses      encoding/binary, errors, math, time
-// @reason    Grok publishes its weekly pool only as a binary protobuf frame, over bytes this
-//
-//	gateway does not control, so every length is bounds-checked against what
-//	remains before it is sliced, and any cap the frame declares is capped again here.
-//
+// @reason    Grok publishes its weekly pool only as a binary protobuf frame, over bytes this gateway does not control, so every length is bounds-checked against what remains before it is sliced, and any cap the frame declares is capped again here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

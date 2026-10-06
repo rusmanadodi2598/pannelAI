@@ -3,11 +3,7 @@
 // @file      internal/service/quota_published_store.go
 // @for       Caching a provider's published answer and stamping its next poll.
 // @uses      context, internal/domain, time.
-// @reason    A poll has two decisions that read differently: when to ask again, which the worker owns,
-//
-//	and what a single answer writes, figures, or only a sentence when there are no figures. This file
-//	holds the second one, so the pruning rule that protects last-good numbers is stated once.
-//
+// @reason    A poll has two decisions that read differently: when to ask again, which the worker owns, and what a single answer writes, figures, or only a sentence when there are no figures. This file holds the second one, so the pruning rule that protects last-good numbers is stated once.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

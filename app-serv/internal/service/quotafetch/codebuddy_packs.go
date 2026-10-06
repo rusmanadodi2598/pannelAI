@@ -3,11 +3,7 @@
 // @file      internal/service/quotafetch/codebuddy_packs.go
 // @for       Decodes one CodeBuddy billing answer and turns its credit packages into quota windows.
 // @uses      encoding/json, sort, time
-// @reason    A refill pack and a bonus pack look alike on the wire but must not be merged, so the
-//
-//	rule that separates them belongs with the fields it reads rather than with the request
-//	that fetches them.
-//
+// @reason    A refill pack and a bonus pack look alike on the wire but must not be merged, so the rule that separates them belongs with the fields it reads rather than with the request that fetches them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

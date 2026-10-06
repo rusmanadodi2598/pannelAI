@@ -1,19 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/settings_routing_patch_test.go
-// @for       The routing group's PATCH DTO: the per-key tags, the entry rule of
-//
-//	the provider override map, the lowering into the domain mutation,
-//	and the response mapping of the two rotation keys.
-//
+// @for       The routing group's PATCH DTO: the per-key tags, the entry rule of the provider override map, the lowering into the domain mutation, and the response mapping of the two rotation keys.
 // @uses      encoding/json, testing, internal/domain.
-// @reason    SPEC-API-001 §7.14 makes this DTO the one door a rotation setting
-//
-//	enters through. AGENTS.md §2.1 requires the boundary proven: a value
-//	outside the closed set must be refused before it reaches the
-//	aggregate, and the whole-map replacement is a wire semantic the
-//	panel's write depends on.
-//
+// @reason    SPEC-API-001 §7.14 makes this DTO the one door a rotation setting enters through. AGENTS.md §2.1 requires the boundary proven: a value outside the closed set must be refused before it reaches the aggregate, and the whole-map replacement is a wire semantic the panel's write depends on.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

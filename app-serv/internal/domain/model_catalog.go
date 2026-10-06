@@ -2,19 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/model_catalog.go
-// @for       The model reference and capability value objects, and the shape
-//
-//	rules every model string in the catalog must satisfy.
-//
+// @for       The model reference and capability value objects, and the shape rules every model string in the catalog must satisfy.
 // @uses      internal/domain (AppError constructors), sort, strings.
-// @reason    SPEC-API-001 §7.6 merges the embedded registry, models_custom, and
-//
-//	models_disabled into one catalog addressed by (provider_id,
-//	model_id), and §7.7 addresses combos and aliases by the same
-//	strings; declaring the reference and its parse rule once here is
-//	what stops four call sites from splitting a model string
-//	differently.
-//
+// @reason    SPEC-API-001 §7.6 merges the embedded registry, models_custom, and models_disabled into one catalog addressed by (provider_id, model_id), and §7.7 addresses combos and aliases by the same strings; declaring the reference and its parse rule once here is what stops four call sites from splitting a model string differently.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

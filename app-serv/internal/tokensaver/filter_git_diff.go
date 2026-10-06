@@ -3,17 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/filter_git_diff.go
-// @for       The git-diff filter: a unified diff compacted to file headers,
-//
-//	hunk starts, and a changed-line count per file.
-//
+// @for       The git-diff filter: a unified diff compacted to file headers, hunk starts, and a changed-line count per file.
 // @uses      fmt, strings.
-// @reason    SPEC-API-002 §5 ports the reference's git::compact_diff. A diff is
-//
-//	the single most expensive tool result a coding agent produces, and
-//	the model needs its shape (which files, which hunks) far more than
-//	it needs every context line.
-//
+// @reason    SPEC-API-002 §5 ports the reference's git::compact_diff. A diff is the single most expensive tool result a coding agent produces, and the model needs its shape (which files, which hunks) far more than it needs every context line.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

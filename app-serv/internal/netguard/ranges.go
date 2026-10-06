@@ -4,12 +4,7 @@
 // @file      internal/netguard/ranges.go
 // @for       The address-range tables and predicates the guard's two tiers use.
 // @uses      net/netip.
-// @reason    The tiers are data, not control flow, and AGENTS.md §1.1 caps a
-//
-//	file at 250 lines: keeping the ranges here means a new never-a-host
-//	range is a one-line addition to a table a reviewer can read whole,
-//	rather than another branch inside CheckIP.
-//
+// @reason    The tiers are data, not control flow, and AGENTS.md §1.1 caps a file at 250 lines: keeping the ranges here means a new never-a-host range is a one-line addition to a table a reviewer can read whole, rather than another branch inside CheckIP.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

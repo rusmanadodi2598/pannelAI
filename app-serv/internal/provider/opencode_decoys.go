@@ -4,14 +4,7 @@
 // @file      internal/provider/opencode_decoys.go
 // @for       The decoy tools the OpenCode free tier requires in every payload.
 // @uses      encoding/json.
-// @reason    The free tier answers 403 unless the payload declares both `bash`
-//
-//	and `read`, so the connector injects whichever is missing. The
-//	description is the reference's own text: it tells the model the tool
-//	is unavailable, which keeps a decoy from being called. They are
-//	separate from the rest of the transform because the shapes differ per
-//	wire and the injection is a set union over the client's own tools.
-//
+// @reason    The free tier answers 403 unless the payload declares both `bash` and `read`, so the connector injects whichever is missing. The description is the reference's own text: it tells the model the tool is unavailable, which keeps a decoy from being called. They are separate from the rest of the transform because the shapes differ per wire and the injection is a set union over the client's own tools.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

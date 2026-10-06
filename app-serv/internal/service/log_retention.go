@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/log_retention.go
-// @for       The bounded worker that removes request logs outside the configured
-//
-//	retention window.
-//
+// @for       The bounded worker that removes request logs outside the configured retention window.
 // @uses      context, errors, log/slog, runtime/debug, sync/atomic, time.
-// @reason    SPEC-API-001 §7.13 makes request-log retention a worker concern, and
-//
-//	AGENTS.md §1.6 requires every worker to state its retry policy,
-//	recover panics, and terminate explicitly. Keeping the worker over
-//	the LogService purge port means the scheduled path and the manual
-//	purge route share the same settings lookup and cutoff semantics.
+// @reason    SPEC-API-001 §7.13 makes request-log retention a worker concern, and AGENTS.md §1.6 requires every worker to state its retry policy, recover panics, and terminate explicitly. Keeping the worker over the LogService purge port means the scheduled path and the manual purge route share the same settings lookup and cutoff semantics.
 //
 // Retry policy
 //

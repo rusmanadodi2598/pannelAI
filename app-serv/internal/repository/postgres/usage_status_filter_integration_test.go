@@ -5,15 +5,7 @@
 // @file      internal/repository/postgres/usage_status_filter_integration_test.go
 // @for       The status filter's closed set against a real server (draft 010 F2).
 // @uses      internal/domain, context, testing, time.
-// @reason    Draft 010 F2: the status predicate is `($n = ” OR status = $n)`,
-//
-//	so the proof that closing the set at the boundary did not break the
-//	two members that must keep filtering has to run against PostgreSQL:
-//	an empty filter counts every seeded row, `success` counts only the
-//	successful ones, and `error` counts only the failed ones. The
-//	rejected values never reach this layer, which is the point: the
-//	table here pins that the ones that do reach it still work.
-//
+// @reason    Draft 010 F2: the status predicate is `($n = ” OR status = $n)`, so the proof that closing the set at the boundary did not break the two members that must keep filtering has to run against PostgreSQL: an empty filter counts every seeded row, `success` counts only the successful ones, and `error` counts only the failed ones. The rejected values never reach this layer, which is the point: the table here pins that the ones that do reach it still work.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

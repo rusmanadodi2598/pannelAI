@@ -3,13 +3,7 @@
 // @file      internal/handler/media_audio.go
 // @for       The §7.10 speech, transcription, and voice routes.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    Three of the six media routes answer with something other than a
-//
-//	JSON object the service produced: speech answers bytes (or base64 when
-//	asked), and a transcription forwards whatever the upstream said. The
-//	handler is where that choice belongs, so the service never writes to
-//	a response.
-//
+// @reason    Three of the six media routes answer with something other than a JSON object the service produced: speech answers bytes (or base64 when asked), and a transcription forwards whatever the upstream said. The handler is where that choice belongs, so the service never writes to a response.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

@@ -2,16 +2,8 @@
 //
 // @file      internal/service/media_inworld.go
 // @for       The Inworld speech adapter in the §7.10 media plane.
-// @uses      internal/dataplane, internal/schema, encoding/base64, encoding/json,
-//
-//	strings.
-//
-// @reason    Inworld authenticates with Basic and answers base64 audio inside
-//
-//	JSON, so both its body and its answer need the adapter. Keeping
-//	them together lets the shared pipeline own selection, egress,
-//	health, and accounting.
-//
+// @uses      internal/dataplane, internal/schema, encoding/base64, encoding/json, strings.
+// @reason    Inworld authenticates with Basic and answers base64 audio inside JSON, so both its body and its answer need the adapter. Keeping them together lets the shared pipeline own selection, egress, health, and accounting.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -4,10 +4,8 @@
 // @file      internal/domain/settings_caveman_test.go
 // @for       Tests pinning the DEPRECATED caveman saver key's contract.
 // @uses      encoding/json, reflect, strings, testing.
-// @reason    SPEC-API-001 §7.9 makes the caveman key a rule rather than a value:
+// @reason    SPEC-API-001 §7.9 makes the caveman key a rule rather than a value: it stays accepted and frozen so an exported reference configuration round-trips, it is never rendered, and it is removed in /api/v2.
 //
-//	it stays accepted and frozen so an exported reference configuration
-//	round-trips, it is never rendered, and it is removed in /api/v2.
 //	That rule needs a test, or "we did not add a control for it" is a
 //	comment nobody can enforce.
 //

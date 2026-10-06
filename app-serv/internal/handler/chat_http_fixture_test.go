@@ -2,14 +2,8 @@
 //
 // @file      internal/handler/chat_http_fixture_test.go
 // @for       The real ChatService fixture used by HTTP readiness tests.
-// @uses      internal/dataplane, internal/domain, internal/provider,
-// internal/registry, internal/repository, internal/service, internal/schema,
-// net/http, net/http/httptest, context, sync, testing.
-// @reason    F4 requires handler tests to cross the HTTP boundary into the real
-// service and engine. This fixture keeps the upstream and storage doubles
-// narrow while preserving production authentication, routing, transport,
-// translation, and error mapping.
-//
+// @uses      internal/dataplane, internal/domain, internal/provider, internal/registry, internal/repository, internal/service, internal/schema, net/http, net/http/httptest, context, sync, testing.
+// @reason    F4 requires handler tests to cross the HTTP boundary into the real service and engine. This fixture keeps the upstream and storage doubles narrow while preserving production authentication, routing, transport, translation, and error mapping.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

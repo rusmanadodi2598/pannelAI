@@ -3,11 +3,7 @@
 // @file      internal/handler/dataplane_error_log_test.go
 // @for       The request id a data-plane error line has to carry.
 // @uses      bytes, encoding/json, log/slog, net/http, net/http/httptest, testing
-// @reason    A router access-log line holds the request id and a handler's own failure line
-//
-//	held none, so an incident could not be joined from the two records the way AGENTS.md
-//	§1.6 requires. This pins the seam that makes the handler side carry it.
-//
+// @reason    A router access-log line holds the request id and a handler's own failure line held none, so an incident could not be joined from the two records the way AGENTS.md §1.6 requires. This pins the seam that makes the handler side carry it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

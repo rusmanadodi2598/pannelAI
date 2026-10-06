@@ -3,17 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/filter_build.go
-// @for       The build-output filter: a build log reduced to its errors, its
-//
-//	warnings, and its summary.
-//
+// @for       The build-output filter: a build log reduced to its errors, its warnings, and its summary.
 // @uses      fmt, regexp, strings.
-// @reason    SPEC-API-002 §5 ports the reference's build-output filter, which
-//
-//	covers npm, yarn, cargo, and the JVM builders. A build log is read
-//	for what failed, and the progress lines in between are the bulk of
-//	it.
-//
+// @reason    SPEC-API-002 §5 ports the reference's build-output filter, which covers npm, yarn, cargo, and the JVM builders. A build log is read for what failed, and the progress lines in between are the bulk of it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

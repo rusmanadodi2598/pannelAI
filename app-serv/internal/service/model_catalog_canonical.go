@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_canonical.go
-// @for       The one rule that decides whether a model reference names a model
-//
-//	the chat plane can serve, shared by every write path that accepts one.
-//
+// @for       The one rule that decides whether a model reference names a model the chat plane can serve, shared by every write path that accepts one.
 // @uses      internal/domain, internal/registry, strings.
-// @reason    Draft 024 §3.2 measured the drift this file closes: the router
-//
-//	resolves three spellings of the first segment (provider id, registry
-//	alias, node prefix) while the write paths read one, so a combo member
-//	spelled `cc/claude-...` or `oczen/big-pickle` was refused by a list the
-//	same gateway routes. Two answers to "does this model exist" is how a
-//	write and a request come to disagree, so the question is asked here
-//	once and every caller asks it here.
+// @reason    Draft 024 §3.2 measured the drift this file closes: the router resolves three spellings of the first segment (provider id, registry alias, node prefix) while the write paths read one, so a combo member spelled `cc/claude-...` or `oczen/big-pickle` was refused by a list the same gateway routes. Two answers to "does this model exist" is how a write and a request come to disagree, so the question is asked here once and every caller asks it here.
 //
 //	The reference never validates a combo reference at all, its picker
 //	offers only active connections and it trusts the operator (draft 024

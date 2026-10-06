@@ -1,18 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/messages.go
-// @for       The Anthropic messages wire contract: the /api/v1/messages request,
-//
-//	its non-streamed response, and the blocks both carry.
-//
+// @for       The Anthropic messages wire contract: the /api/v1/messages request, its non-streamed response, and the blocks both carry.
 // @uses      bytes, encoding/json, internal/domain.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages on the Anthropic
-//
-//	wire, and AGENTS.md §2.4 requires a typed, validated contract
-//	before any handler logic. Two of its fields are genuine unions
-//	(system and message content), so they are resolved once here rather
-//	than by every reader downstream.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages on the Anthropic wire, and AGENTS.md §2.4 requires a typed, validated contract before any handler logic. Two of its fields are genuine unions (system and message content), so they are resolved once here rather than by every reader downstream.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

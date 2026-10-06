@@ -3,13 +3,7 @@
 // @file      internal/dataplane/errors_status_test.go
 // @for       Table-driven tests for the data plane code to HTTP status and error type mapping.
 // @uses      net/http, strings, testing
-// @reason    SPEC-API-001 §7.15 and §8 publish one status per data plane code, and the OpenAI
-//
-//	wire is the contract this plane claims compatibility with, so a code mapped to the wrong
-//	status is not a cosmetic drift: a client's retry policy branches on it. MODEL_NOT_FOUND
-//	lived untested in statusFor until draft 041, which is how §7.15's 404 and the code's 400
-//	could disagree for eleven days without a failing test.
-//
+// @reason    SPEC-API-001 §7.15 and §8 publish one status per data plane code, and the OpenAI wire is the contract this plane claims compatibility with, so a code mapped to the wrong status is not a cosmetic drift: a client's retry policy branches on it. MODEL_NOT_FOUND lived untested in statusFor until draft 041, which is how §7.15's 404 and the code's 400 could disagree for eleven days without a failing test.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

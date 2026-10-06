@@ -2,18 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/quota_accounting_test.go
-// @for       Table-driven tests for the accounting window set and the reset
-//
-//	instant one served request records (register G22).
-//
+// @for       Table-driven tests for the accounting window set and the reset instant one served request records (register G22).
 // @uses      testing, time.
-// @reason    AGENTS.md §2.1 and §2.4 require the rule that decides which windows
-//
-//	a request bills against to be pinned: if a window were missing from
-//	the set, the counter the panel reads for it would stay at zero while
-//	the flush worker kept draining the others, and no test elsewhere
-//	would notice.
-//
+// @reason    AGENTS.md §2.1 and §2.4 require the rule that decides which windows a request bills against to be pinned: if a window were missing from the set, the counter the panel reads for it would stay at zero while the flush worker kept draining the others, and no test elsewhere would notice.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

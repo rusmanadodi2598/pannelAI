@@ -2,17 +2,10 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode.go
-// @for       The OpenCode Free connector: its per-model URL and the identity
-//
-//	headers the free tier gates on.
-//
+// @for       The OpenCode Free connector: its per-model URL and the identity headers the free tier gates on.
 // @uses      internal/registry, fmt, net/http, strings.
-// @reason    OpenCode Free is a no-auth provider whose models answer on three
+// @reason    OpenCode Free is a no-auth provider whose models answer on three different paths and whose free tier refuses a request that does not carry the CLI's own identity headers. Both are upstream rules, so both belong to a connector rather than to a branch on the provider id in shared code, which is the property the plugin seam exists to give.
 //
-//	different paths and whose free tier refuses a request that does not
-//	carry the CLI's own identity headers. Both are upstream rules, so both
-//	belong to a connector rather than to a branch on the provider id in
-//	shared code, which is the property the plugin seam exists to give.
 //	The request shape lives in opencode_body.go and the session identity
 //	in opencode_session.go, for the AGENTS.md §1.1 budget.
 //

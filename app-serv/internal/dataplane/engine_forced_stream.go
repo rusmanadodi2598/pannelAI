@@ -3,20 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_forced_stream.go
-// @for       Serving a non-streaming client from a provider that only answers a
-//
-//	stream.
-//
+// @for       Serving a non-streaming client from a provider that only answers a stream.
 // @uses      internal/schema, bufio, bytes, io.
-// @reason    A provider may refuse a non-streaming request (OpenCode Free answers
-//
-//	403 to one), so a client that asked for a single JSON body has to be
-//	served from the stream the provider does send. The fold belongs here
-//	rather than in the connector: a connector owns the outbound shape, and
-//	turning an answer back into the client's wire is what the translation
-//	layer already does. The result is the upstream's own non-streamed
-//	wire, so every existing answer translator is reused unchanged.
-//
+// @reason    A provider may refuse a non-streaming request (OpenCode Free answers 403 to one), so a client that asked for a single JSON body has to be served from the stream the provider does send. The fold belongs here rather than in the connector: a connector owns the outbound shape, and turning an answer back into the client's wire is what the translation layer already does. The result is the upstream's own non-streamed wire, so every existing answer translator is reused unchanged.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

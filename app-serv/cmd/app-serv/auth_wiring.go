@@ -3,10 +3,7 @@
 // @file      cmd/app-serv/auth_wiring.go
 // @for       Constructs and bootstraps dashboard authentication dependencies.
 // @uses      internal/config, internal/handler, internal/repository, internal/service, pgxpool, redis.
-// @reason    Keeping auth wiring separate preserves the composition root's line
-//
-//	limit while making PostgreSQL/Redis dependencies explicit.
-//
+// @reason    Keeping auth wiring separate preserves the composition root's line limit while making PostgreSQL/Redis dependencies explicit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

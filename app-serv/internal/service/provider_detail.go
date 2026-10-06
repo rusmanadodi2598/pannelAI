@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_detail.go
-// @for       The provider detail read: one entry, its stored state roll-up, and
-//
-//	the custom rows the operator declared for it.
-//
+// @for       The provider detail read: one entry, its stored state roll-up, and the custom rows the operator declared for it.
 // @uses      internal/domain, internal/registry, context, strings.
-// @reason    SPEC-API-001 §7.4 serves one provider's detail, and §7.14 makes
-//
-//	that body the union of the levels its models accept. A synthesized
-//	custom node carries no registry models, so the union needs the rows
-//	the operator declared, which live behind the model catalog's own
-//	store; reading them here is what keeps the schema layer a projection
-//	and the handler a decode-call-encode, and it is why this read sits in
-//	its own file rather than in provider.go, whose list and search reads
-//	are a separate concern and whose budget §1.1 caps.
-//
+// @reason    SPEC-API-001 §7.4 serves one provider's detail, and §7.14 makes that body the union of the levels its models accept. A synthesized custom node carries no registry models, so the union needs the rows the operator declared, which live behind the model catalog's own store; reading them here is what keeps the schema layer a projection and the handler a decode-call-encode, and it is why this read sits in its own file rather than in provider.go, whose list and search reads are a separate concern and whose budget §1.1 caps.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

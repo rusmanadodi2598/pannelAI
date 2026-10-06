@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush_drain.go
-// @for       One flush cycle: read the changed windows from Redis, write them
-//
-//	to PostgreSQL, and settle what was written.
-//
+// @for       One flush cycle: read the changed windows from Redis, write them to PostgreSQL, and settle what was written.
 // @uses      context, fmt, log/slog, sort, internal/domain.
-// @reason    The batch mechanics are the part of the flush worker whose order
-//
-//	a review checks against AGENTS.md §1.7 (bounded batch, set-based
-//	write, settle only after durability), so they live in one file apart
-//	from the worker lifecycle (draft 005 F3). Naming the batch here is
-//	what makes retries attributable to the endpoints they belong to
-//	(draft 005 F4).
-//
+// @reason    The batch mechanics are the part of the flush worker whose order a review checks against AGENTS.md §1.7 (bounded batch, set-based write, settle only after durability), so they live in one file apart from the worker lifecycle (draft 005 F3). Naming the batch here is what makes retries attributable to the endpoints they belong to (draft 005 F4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

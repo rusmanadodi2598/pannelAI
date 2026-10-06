@@ -2,21 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_responses_items.go
-// @for       The input-item and tool corrections the Responses wire needs before
-//
-//	a request leaves for the OpenCode upstream.
-//
+// @for       The input-item and tool corrections the Responses wire needs before a request leaves for the OpenCode upstream.
 // @uses      encoding/json, strings.
-// @reason    The strict Responses backends refuse four shapes outright: a tool
-//
-//	declaration still wrapped in OpenAI's `function` object, an object
-//	schema without a properties map, a call_id past 64 characters, and an
-//	`arguments` or `output` that is not a string (#393). Each correction is
-//	a rename or a clamp rather than a removal of the client's content,
-//	which is the narrow licence this connector has to rewrite a
-//	same-format body. The file is split from opencode_responses.go for the
-//	AGENTS.md §1.1 budget.
-//
+// @reason    The strict Responses backends refuse four shapes outright: a tool declaration still wrapped in OpenAI's `function` object, an object schema without a properties map, a call_id past 64 characters, and an `arguments` or `output` that is not a string (#393). Each correction is a rename or a clamp rather than a removal of the client's content, which is the narrow licence this connector has to rewrite a same-format body. The file is split from opencode_responses.go for the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

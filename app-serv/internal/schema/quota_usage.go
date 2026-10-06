@@ -1,19 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/quota_usage.go
-// @for       The published-quota read contract: what one connection's provider says
-//
-//	it has left.
-//
+// @for       The published-quota read contract: what one connection's provider says it has left.
 // @uses      strconv.
-// @reason    SPEC-API-001 §7.12's windows are counted by this gateway, so they are
-//
-//	integers. A provider's own allocation is not: it publishes credits and
-//	requests with fractions, and states no ceiling at all for an unlimited
-//	bucket. Those amounts cross the wire as decimal strings, the same §4
-//	rule cost follows, because a figure the panel has to divide to draw a
-//	bar must not arrive rounded by whoever encoded it.
-//
+// @reason    SPEC-API-001 §7.12's windows are counted by this gateway, so they are integers. A provider's own allocation is not: it publishes credits and requests with fractions, and states no ceiling at all for an unlimited bucket. Those amounts cross the wire as decimal strings, the same §4 rule cost follows, because a figure the panel has to divide to draw a bar must not arrive rounded by whoever encoded it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

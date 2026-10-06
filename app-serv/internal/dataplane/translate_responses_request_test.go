@@ -3,13 +3,7 @@
 // @file      internal/dataplane/translate_responses_request_test.go
 // @for       Table-driven tests for chat-to-Responses turn translation.
 // @uses      testing, internal/schema.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and the
-//
-//	rules that decide what an upstream sees, one instruction field,
-//	one item per turn, input text split from output text, are what a
-//	client on either wire depends on. Translation is a pure function,
-//	so these run with no network and no clock (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and the rules that decide what an upstream sees, one instruction field, one item per turn, input text split from output text, are what a client on either wire depends on. Translation is a pure function, so these run with no network and no clock (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

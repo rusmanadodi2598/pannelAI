@@ -1,19 +1,9 @@
 // Package repository defines storage contracts consumed by app-serv services.
 //
 // @file      internal/repository/usage_event.go
-// @for       The broker seam a domain event crosses: publish, and a
-//
-//	subscription a consumer drains.
-//
+// @for       The broker seam a domain event crosses: publish, and a subscription a consumer drains.
 // @uses      context, errors, time.
-// @reason    AGENTS.md §2.3 makes cross-domain stateful communication an
-//
-//	asynchronous event, and the transport is a broker the service layer
-//	must not name (AGENTS.md §1.5 keeps Redis out of `service`). The
-//	port is deliberately two methods rather than a general message bus:
-//	app-serv publishes one event on one channel, and a seam that could
-//	carry anything would let a second event type arrive without anyone
-//	deciding where its consumer lives.
+// @reason    AGENTS.md §2.3 makes cross-domain stateful communication an asynchronous event, and the transport is a broker the service layer must not name (AGENTS.md §1.5 keeps Redis out of `service`). The port is deliberately two methods rather than a general message bus: app-serv publishes one event on one channel, and a seam that could carry anything would let a second event type arrive without anyone deciding where its consumer lives.
 //
 //	Payloads are `[]byte` rather than a domain type on purpose: the codec
 //	that turns an event into its wire form belongs beside the aggregate

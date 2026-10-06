@@ -1,17 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/chat_response.go
-// @for       The OpenAI-wire response contracts: completion, streamed chunk,
-//
-//	usage block, and the models list.
-//
+// @for       The OpenAI-wire response contracts: completion, streamed chunk, usage block, and the models list.
 // @uses      internal/schema (ChatMessage, MessageContent).
-// @reason    SPEC-API-001 §7.15 serves these shapes to CLI tools and §4 fixes the
-//
-//	usage chunk that stream_options.include_usage asks for. Keeping them
-//	in the schema layer is what lets the translator and the handler agree
-//	on one wire shape instead of each declaring its own (AGENTS.md §2.4).
-//
+// @reason    SPEC-API-001 §7.15 serves these shapes to CLI tools and §4 fixes the usage chunk that stream_options.include_usage asks for. Keeping them in the schema layer is what lets the translator and the handler agree on one wire shape instead of each declaring its own (AGENTS.md §2.4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

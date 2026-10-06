@@ -1,17 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/token_saver.go
-// @for       The §7.9 token-saver contract: the standalone configuration
-//
-//	document and its replacement body.
-//
+// @for       The §7.9 token-saver contract: the standalone configuration document and its replacement body.
 // @uses      internal/domain (TokenSaverSettings and its groups).
-// @reason    SPEC-API-001 §7.9 serves the saver configuration as its own
-//
-//	endpoint so the panel edits it without reading the whole §7.14
-//	document, and the write is a whole replacement. One shape for the
-//	read and the write keeps the GET-what-you-PUT round-trip exact.
-//
+// @reason    SPEC-API-001 §7.9 serves the saver configuration as its own endpoint so the panel edits it without reading the whole §7.14 document, and the write is a whole replacement. One shape for the read and the write keeps the GET-what-you-PUT round-trip exact.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

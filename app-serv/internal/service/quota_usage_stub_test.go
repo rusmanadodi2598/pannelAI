@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_usage_stub_test.go
-// @for       The doubles the published-quota read is tested against: a lookup, a
-//
-//	recording fetcher, and the accounts it asks with.
-//
-// @uses      context, internal/domain, internal/registry,
-//
-//	internal/service/quotafetch, testing.
-//
-// @reason    The read is one seam away from the network, so everything that
-//
-//	replaces a network or a store lives here and the behaviour file stays
-//	short enough to read as a list of decisions.
-//
+// @for       The doubles the published-quota read is tested against: a lookup, a recording fetcher, and the accounts it asks with.
+// @uses      context, internal/domain, internal/registry, internal/service/quotafetch, testing.
+// @reason    The read is one seam away from the network, so everything that replaces a network or a store lives here and the behaviour file stays short enough to read as a list of decisions.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -2,17 +2,10 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_vision_name.go
-// @for       The reference's last-resort vision guess: a model id that names its
-//
-//	own modality.
-//
+// @for       The reference's last-resort vision guess: a model id that names its own modality.
 // @uses      regexp, strings.
-// @reason    The reference refines every capability answer with
+// @reason    The reference refines every capability answer with `looksLikeVisionModel` (capabilities.js:520), which reads the model id itself: vendors put the modality in the name ("qwen3-vl-plus", "glm-4.6v", "deepseek-v4-flash-vision-exp"), so a model nobody has catalogued yet still accepts images instead of silently dropping them.
 //
-//	`looksLikeVisionModel` (capabilities.js:520), which reads the model id
-//	itself: vendors put the modality in the name ("qwen3-vl-plus",
-//	"glm-4.6v", "deepseek-v4-flash-vision-exp"), so a model nobody has
-//	catalogued yet still accepts images instead of silently dropping them.
 //	It only ever turns vision ON, which is why it runs after the tables
 //	rather than before: a table that answered false must not be overridden
 //	by a name that happens to contain "omni".

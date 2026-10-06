@@ -1,23 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_refresh.go
-// @for       Reporting per-endpoint token state and refreshing tokens, forced
-//
-//	or due (SPEC-API-001 §7.4 GET .../oauth/status, POST
-//
-//	.../oauth/refresh).
-//
-// @uses      context, strings, time, internal/domain, internal/registry,
-//
-//	internal/repository.
-//
-// @reason    Status is the panel's view of credential health and refresh is
-//
-//	the operator's manual override of the worker; both derive
-//	"due" from the same domain rule so they can never disagree,
-//	and both write through the aggregate so a rotated token set
-//	replaces the sealed pair atomically.
-//
+// @for       Reporting per-endpoint token state and refreshing tokens, forced or due (SPEC-API-001 §7.4 GET .../oauth/status, POST .../oauth/refresh).
+// @uses      context, strings, time, internal/domain, internal/registry, internal/repository.
+// @reason    Status is the panel's view of credential health and refresh is the operator's manual override of the worker; both derive "due" from the same domain rule so they can never disagree, and both write through the aggregate so a rotated token set replaces the sealed pair atomically.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

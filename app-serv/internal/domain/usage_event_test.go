@@ -2,17 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_event_test.go
-// @for       Table-driven tests for the usage domain event a recorded request
-//
-//	publishes.
-//
+// @for       Table-driven tests for the usage domain event a recorded request publishes.
 // @uses      testing, time.
-// @reason    AGENTS.md §2.3 makes the event the seam a quota or log consumer
-//
-//	reacts to, so the payload it carries is a contract: an event missing
-//	the routing identity or the counter would leave a consumer unable
-//	to do its job, and nothing else would fail.
-//
+// @reason    AGENTS.md §2.3 makes the event the seam a quota or log consumer reacts to, so the payload it carries is a contract: an event missing the routing identity or the counter would leave a consumer unable to do its job, and nothing else would fail.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

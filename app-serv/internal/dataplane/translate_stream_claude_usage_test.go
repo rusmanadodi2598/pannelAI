@@ -3,9 +3,8 @@
 // @file      internal/dataplane/translate_stream_claude_usage_test.go
 // @for       The accounting a Claude-to-Claude passthrough stream reports when the numbers arrive in two events.
 // @uses      testing, internal/schema (the usage shape the stream reports).
-// @reason    Anthropic states the prompt once on message_start and the output cumulatively on message_delta, so a
+// @reason    Anthropic states the prompt once on message_start and the output cumulatively on message_delta, so a passthrough that reads only the top level and then overwrites reports a prompt of zero and bills the call short.
 //
-//	passthrough that reads only the top level and then overwrites reports a prompt of zero and bills the call short.
 //	The fold rule is already pinned for the translating direction; this pins it for the forwarded one.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>

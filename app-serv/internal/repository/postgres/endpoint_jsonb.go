@@ -2,18 +2,9 @@
 // contracts.
 //
 // @file      internal/repository/postgres/endpoint_jsonb.go
-// @for       The stored JSONB shapes of an endpoint row: its OAuth token set, its
-//
-//	account block, and its test status.
-//
+// @for       The stored JSONB shapes of an endpoint row: its OAuth token set, its account block, and its test status.
 // @uses      internal/domain, encoding/json, time.
-// @reason    AGENTS.md §1.6 makes these the columns that must never carry
-//
-//	plaintext: the OAuth token set is ciphertext at rest and a test status
-//	is a probe result. Keeping the codecs together, and apart from the
-//	row's scalar columns, keeps each file's reason readable and both
-//	inside the §1.1 line budget.
-//
+// @reason    AGENTS.md §1.6 makes these the columns that must never carry plaintext: the OAuth token set is ciphertext at rest and a test status is a probe result. Keeping the codecs together, and apart from the row's scalar columns, keeps each file's reason readable and both inside the §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

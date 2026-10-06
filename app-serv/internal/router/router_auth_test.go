@@ -3,10 +3,7 @@
 // @file      internal/router/router_auth_test.go
 // @for       Table-driven authentication and gateway-key route contract tests.
 // @uses      context, net/http/httptest, testing, time, internal/handler/service.
-// @reason    P0 exit criteria require happy, validation, and auth coverage per
-//
-//	route; the real Go 1.22 mux must prove session gating at /api/v1.
-//
+// @reason    P0 exit criteria require happy, validation, and auth coverage per route; the real Go 1.22 mux must prove session gating at /api/v1.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

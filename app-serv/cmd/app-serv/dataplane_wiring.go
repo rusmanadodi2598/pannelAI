@@ -1,25 +1,9 @@
 // Command app-serv wires the P1 data-plane dependencies.
 //
 // @file      cmd/app-serv/dataplane_wiring.go
-// @for       Builds the data plane's resolver, selector, transport, engine, and
-//
-//	the chat and embeddings services on top of them.
-//
-// @uses      internal/dataplane, internal/reasoning, internal/repository/redis,
-//
-//	internal/router, internal/service, internal/tokensaver, log/slog.
-//
-// @reason    The data plane declares narrow ports and must not import a driver or a
-//
-//	service (AGENTS.md §1.5), so the composition root is where those ports
-//	meet their implementations. No adapter type is declared here, because
-//	none is needed: the gateway key repository answers the authentication
-//	and key-use seams, the settings service answers the require-key seam,
-//	and the usage and log services answer the accounting seams, each by a
-//	method written for its own use, which is what makes the seams narrow
-//	enough to satisfy without translation. The collaborators it draws on
-//	are declared in dataplane_inputs.go.
-//
+// @for       Builds the data plane's resolver, selector, transport, engine, and the chat and embeddings services on top of them.
+// @uses      internal/dataplane, internal/reasoning, internal/repository/redis, internal/router, internal/service, internal/tokensaver, log/slog.
+// @reason    The data plane declares narrow ports and must not import a driver or a service (AGENTS.md §1.5), so the composition root is where those ports meet their implementations. No adapter type is declared here, because none is needed: the gateway key repository answers the authentication and key-use seams, the settings service answers the require-key seam, and the usage and log services answer the accounting seams, each by a method written for its own use, which is what makes the seams narrow enough to satisfy without translation. The collaborators it draws on are declared in dataplane_inputs.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

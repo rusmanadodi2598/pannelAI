@@ -1,17 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_envelope_failure.go
-// @for       What a Qoder refusal becomes: the failure the router acts on, read
-//
-//	out of the envelope's own code, message and nested detail.
-//
+// @for       What a Qoder refusal becomes: the failure the router acts on, read out of the envelope's own code, message and nested detail.
 // @uses      bytes, encoding/json, fmt, net/http, strings.
-// @reason    A spent account, a throttle and a broken answer all arrive wrapped
-//
-//	the same way and have to be told apart, because the pool's failover and
-//	the account's parking depend on which one this says it is. The frame
-//	decoder that produces these values lives beside this file.
-//
+// @reason    A spent account, a throttle and a broken answer all arrive wrapped the same way and have to be told apart, because the pool's failover and the account's parking depend on which one this says it is. The frame decoder that produces these values lives beside this file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

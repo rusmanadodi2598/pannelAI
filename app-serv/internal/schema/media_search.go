@@ -3,13 +3,7 @@
 // @file      internal/schema/media_search.go
 // @for       The web search contract of SPEC-API-001 §7.10.
 // @uses      encoding/json, internal/domain.
-// @reason    §7.10's search route takes a query and answers with the reference's
-//
-//	normalized envelope. The request accepts `provider` or `model`
-//	because the reference does: a caller who knows the search provider
-//	names it, and one who names a model has its provider resolved from
-//	the same string every other media route uses.
-//
+// @reason    §7.10's search route takes a query and answers with the reference's normalized envelope. The request accepts `provider` or `model` because the reference does: a caller who knows the search provider names it, and one who names a model has its provider resolved from the same string every other media route uses.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

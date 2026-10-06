@@ -2,19 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_resolve.go
-// @for       The one entry point every capability question goes through:
-//
-//	whether a model reads images, and whether it calls tools.
-//
+// @for       The one entry point every capability question goes through: whether a model reads images, and whether it calls tools.
 // @uses      strings.
-// @reason    SPEC-API-001 §7.6 filters the catalog by `?capability=vision|tools`
-//
-//	and §7.8 refuses a vision adapter whose model cannot read images. Those
-//	are two consumers asking one question, and the defect draft 017 §4.4
-//	measured was that only one of them could answer it: the catalog read
-//	`registry.yaml`'s capability strings (three media operations, no
-//	modality) while the vision adapter read a pattern table. One resolver
-//	here is what makes the two agree by construction.
+// @reason    SPEC-API-001 §7.6 filters the catalog by `?capability=vision|tools` and §7.8 refuses a vision adapter whose model cannot read images. Those are two consumers asking one question, and the defect draft 017 §4.4 measured was that only one of them could answer it: the catalog read `registry.yaml`'s capability strings (three media operations, no modality) while the vision adapter read a pattern table. One resolver here is what makes the two agree by construction.
 //
 //	The table itself stays in capability.go, which is the port of the
 //	reference's PATTERN_CAPABILITIES vision decision; this file adds the

@@ -1,23 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/quota_paging_test.go
-// @for       Table-driven HTTP tests for the paged §7.12 collection read:
-//
-//	group pages, the meta block, and the pagination refusals.
-//
-// @uses      encoding/json, internal/domain, net/http, net/http/httptest,
-//
-//	sort, strings, testing, time.
-//
-// @reason    Owner directive 2026-09-26 moved the collection read onto the
-//
-//	house pagination convention (docs/PORT/006-PORT-QUOTA-CARDS.md
-//	D5 filing): the page unit is the provider group, so a card never
-//	splits across pages, and the meta block states the total group
-//	count. The tables pin the page walk, the no-provider group
-//	counting as one group, the defaults, and the refusals, so the
-//	wire contract is proven rather than assumed.
-//
+// @for       Table-driven HTTP tests for the paged §7.12 collection read: group pages, the meta block, and the pagination refusals.
+// @uses      encoding/json, internal/domain, net/http, net/http/httptest, sort, strings, testing, time.
+// @reason    Owner directive 2026-09-26 moved the collection read onto the house pagination convention (docs/PORT/006-PORT-QUOTA-CARDS.md D5 filing): the page unit is the provider group, so a card never splits across pages, and the meta block states the total group count. The tables pin the page walk, the no-provider group counting as one group, the defaults, and the refusals, so the wire contract is proven rather than assumed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

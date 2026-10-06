@@ -2,16 +2,8 @@
 //
 // @file      internal/service/media_image_test.go
 // @for       The image and video generation payloads and normalization.
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	encoding/json, strings, testing.
-//
-// @reason    The normalization is the part a client depends on: whichever
-//
-//	provider answered, `data[0].url` must be where the asset is. The
-//	cases pin that, plus the refusals §7.10 owes a client naming a
-//	provider the gateway cannot serve.
-//
+// @uses      internal/dataplane, internal/domain, internal/schema, context, encoding/json, strings, testing.
+// @reason    The normalization is the part a client depends on: whichever provider answered, `data[0].url` must be where the asset is. The cases pin that, plus the refusals §7.10 owes a client naming a provider the gateway cannot serve.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

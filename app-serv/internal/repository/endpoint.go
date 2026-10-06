@@ -1,17 +1,9 @@
 // Package repository defines storage contracts consumed by app-serv services.
 //
 // @file      internal/repository/endpoint.go
-// @for       Storage boundaries for upstream endpoints, their keys, and custom
-//
-//	provider nodes.
-//
+// @for       Storage boundaries for upstream endpoints, their keys, and custom provider nodes.
 // @uses      context, internal/domain.
-// @reason    AGENTS.md §1.5 requires services to depend on these interfaces and
-//
-//	never on a driver, and §2.2 requires repositories to save aggregate
-//	roots: the endpoint (with its keys) and the node are the roots here,
-//	so a key is never loaded or stored on its own.
-//
+// @reason    AGENTS.md §1.5 requires services to depend on these interfaces and never on a driver, and §2.2 requires repositories to save aggregate roots: the endpoint (with its keys) and the node are the roots here, so a key is never loaded or stored on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

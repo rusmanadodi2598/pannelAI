@@ -1,17 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/vision_adapter.go
-// @for       The vision adapter contracts: the configuration payload and its
-//
-//	replacement body (SPEC-API-001 §7.8).
-//
+// @for       The vision adapter contracts: the configuration payload and its replacement body (SPEC-API-001 §7.8).
 // @uses      go-playground/validator/v10 through shared validation, internal/domain.
-// @reason    AGENTS.md §2.4 requires the contract before the handler, and §7.8
-//
-//	defines one shape for both the read and the write so the panel can
-//	PUT back exactly what it GET, a round-trip a differing write shape
-//	would break.
-//
+// @reason    AGENTS.md §2.4 requires the contract before the handler, and §7.8 defines one shape for both the read and the write so the panel can PUT back exactly what it GET, a round-trip a differing write shape would break.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

@@ -1,10 +1,7 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/count_tokens.go
-// @for       The §7.15 count_tokens use case: the token estimate and the rule
-//
-//	it is derived by.
-//
+// @for       The §7.15 count_tokens use case: the token estimate and the rule it is derived by.
 // @uses      internal/schema.
 // @reason    SPEC-API-001 §7.15 serves POST /api/v1/messages/count_tokens in P3.
 //

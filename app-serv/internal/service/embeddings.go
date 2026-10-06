@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/embeddings.go
-// @for       The embeddings data plane use case: media-config resolution, the
-//
-//	per-kind credential placement, and the OpenAI-shape normalization.
-//
+// @for       The embeddings data plane use case: media-config resolution, the per-kind credential placement, and the OpenAI-shape normalization.
 // @uses      internal/dataplane, internal/domain, internal/registry, internal/schema.
-// @reason    SPEC-API-001 §8.1 puts the credential placement in the kind's own
-//
-//	block because `auth_header: key` is a QUERY PARAMETER: Gemini's
-//	embedding config uses one while its chat transport does not. Reusing
-//	the chat transport would authenticate incorrectly rather than fail
-//	loudly, so the media path is its own use case, and §7.10 forbids a
-//	silent cloud fallback when a base URL is missing.
-//
+// @reason    SPEC-API-001 §8.1 puts the credential placement in the kind's own block because `auth_header: key` is a QUERY PARAMETER: Gemini's embedding config uses one while its chat transport does not. Reusing the chat transport would authenticate incorrectly rather than fail loudly, so the media path is its own use case, and §7.10 forbids a silent cloud fallback when a base URL is missing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

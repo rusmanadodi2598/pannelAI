@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_counter.go
-// @for       Advancing the Redis quota counters one served request bills
-//
-//	against, so the window the panel reads is a number this gateway
-//	actually counted (SPEC-API-001 §7.12, register G22).
-//
+// @for       Advancing the Redis quota counters one served request bills against, so the window the panel reads is a number this gateway actually counted (SPEC-API-001 §7.12, register G22).
 // @uses      internal/domain, internal/repository, context, log/slog, time.
-// @reason    §6 keeps quota counters in Redis and flushes them to PostgreSQL,
-//
-//	but the write side had no caller: the counter store was only ever
-//	read and cleared by the flush worker, so every window answered zero
-//	and the read routes described a table nothing filled. The counting
-//	rule belongs here rather than at each accounting site, because the
-//	chat, media, and embeddings planes must not disagree about which
-//	windows a call advances.
+// @reason    §6 keeps quota counters in Redis and flushes them to PostgreSQL, but the write side had no caller: the counter store was only ever read and cleared by the flush worker, so every window answered zero and the read routes described a table nothing filled. The counting rule belongs here rather than at each accounting site, because the chat, media, and embeddings planes must not disagree about which windows a call advances.
 //
 //	This is the ingestion half of the quota vertical. It deliberately
 //	does not enforce anything: whether an exhausted endpoint is skipped

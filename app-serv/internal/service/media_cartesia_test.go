@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_cartesia_test.go
-// @for       The Cartesia speech adapter: request body, version/auth headers,
-//
-// voice omission, and MP3 output labeling.
-//
-// @uses      internal/dataplane, internal/provider, internal/schema, context,
-//
-// encoding/json, testing.
-//
-// @reason    G5 ports one provider adapter at a time. Cartesia is a synchronous
-//
-// generic TTS adapter with one documented API-key header and a fixed MP3
-// output shape. These table cases keep its provider wire separate from
-// NVIDIA and the OpenAI-compatible control.
-//
+// @for       The Cartesia speech adapter: request body, version/auth headers, voice omission, and MP3 output labeling.
+// @uses      internal/dataplane, internal/provider, internal/schema, context, encoding/json, testing.
+// @reason    G5 ports one provider adapter at a time. Cartesia is a synchronous generic TTS adapter with one documented API-key header and a fixed MP3 output shape. These table cases keep its provider wire separate from NVIDIA and the OpenAI-compatible control.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

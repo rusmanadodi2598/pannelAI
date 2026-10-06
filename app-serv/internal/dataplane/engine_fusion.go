@@ -3,20 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_fusion.go
-// @for       The fusion combo strategy: fan the prompt out to every member, then
-//
-//	let the judge model synthesize one final answer (SPEC-API-001 §7.7).
-//
+// @for       The fusion combo strategy: fan the prompt out to every member, then let the judge model synthesize one final answer (SPEC-API-001 §7.7).
 // @uses      context, sync.
-// @reason    SPEC-API-001 §7.7 defines fusion as fan-out plus synthesis, and the
-//
-//	reference fixes three semantics worth keeping: panel calls are
-//	non-streaming with tools withdrawn so each member answers in prose the
-//	judge can read, the judge keeps the client's stream flag and tools so
-//	the served answer is what the client asked for, and a panel that
-//	returns one answer is not fused. The request shaping those decisions
-//	need lives beside this file, in fusion_prompt.go.
-//
+// @reason    SPEC-API-001 §7.7 defines fusion as fan-out plus synthesis, and the reference fixes three semantics worth keeping: panel calls are non-streaming with tools withdrawn so each member answers in prose the judge can read, the judge keeps the client's stream flag and tools so the served answer is what the client asked for, and a panel that returns one answer is not fused. The request shaping those decisions need lives beside this file, in fusion_prompt.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

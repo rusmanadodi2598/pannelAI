@@ -3,13 +3,7 @@
 // @file      internal/router/router_media_dataplane_test.go
 // @for       Route-level tests for the six §7.10 data-plane media routes.
 // @uses      net/http, net/http/httptest, strings, testing.
-// @reason    These routes are registered next to the management ones and share
-//
-//	the /api/v1/media prefix's neighbourhood, so the routing itself is
-//	worth pinning: they must be reachable without a dashboard session,
-//	and they must answer in the data-plane envelope rather than the
-//	management one. The doubles are in router_media_stub_test.go.
-//
+// @reason    These routes are registered next to the management ones and share the /api/v1/media prefix's neighbourhood, so the routing itself is worth pinning: they must be reachable without a dashboard session, and they must answer in the data-plane envelope rather than the management one. The doubles are in router_media_stub_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

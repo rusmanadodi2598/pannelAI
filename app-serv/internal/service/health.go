@@ -3,12 +3,7 @@
 // @file      internal/service/health.go
 // @for       Dependency liveness for PostgreSQL and Redis (SPEC-API-001 §7.1).
 // @uses      internal/domain, context, time.
-// @reason    A health probe must distinguish "process up" from "dependencies
-//
-//	reachable" so an orchestrator does not route traffic to a server
-//	that cannot serve. Dependencies arrive as Pinger interfaces, so
-//	this layer never holds a driver (AGENTS.md §1.5).
-//
+// @reason    A health probe must distinguish "process up" from "dependencies reachable" so an orchestrator does not route traffic to a server that cannot serve. Dependencies arrive as Pinger interfaces, so this layer never holds a driver (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

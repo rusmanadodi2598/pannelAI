@@ -3,13 +3,7 @@
 // @file      internal/repository/combo.go
 // @for       Storage contracts for combos and their round-robin rotation state.
 // @uses      context, internal/domain.
-// @reason    AGENTS.md §1.5 keeps services off the driver, and §2.2 makes the
-//
-//	combo the aggregate root: its model list is jsonb written whole,
-//	so the contract exposes the aggregate and never a child row. The
-//	rotation state is a separate contract because it lives in Redis
-//	(SPEC-API-001 §9.6) while the combo lives in PostgreSQL.
-//
+// @reason    AGENTS.md §1.5 keeps services off the driver, and §2.2 makes the combo the aggregate root: its model list is jsonb written whole, so the contract exposes the aggregate and never a child row. The rotation state is a separate contract because it lives in Redis (SPEC-API-001 §9.6) while the combo lives in PostgreSQL.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

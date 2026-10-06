@@ -3,19 +3,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_opencode_free_live_test.go
-// @for       The live free-tier acceptance run: the same three models against
-//
-//	the real opencode.ai upstream, with no credential configured.
-//
+// @for       The live free-tier acceptance run: the same three models against the real opencode.ai upstream, with no credential configured.
 // @uses      context, os, testing, internal/schema.
-// @reason    The hermetic tests in engine_opencode_free_test.go pin the lane's
-//
-//	shape against a stand-in built from the measured gate. This file is the
-//	other half of the evidence R-35 asks for: the same pipeline against the
-//	real upstream, so "the free tier answers" is a measurement rather than
-//	an inference. It carries the `integration,live` build tags because it spends
-//	the upstream's anonymous quota and needs the network, so the default
-//	`go test ./...` stays hermetic.
+// @reason    The hermetic tests in engine_opencode_free_test.go pin the lane's shape against a stand-in built from the measured gate. This file is the other half of the evidence R-35 asks for: the same pipeline against the real upstream, so "the free tier answers" is a measurement rather than an inference. It carries the `integration,live` build tags because it spends the upstream's anonymous quota and needs the network, so the default `go test ./...` stays hermetic.
 //
 //	  go test -tags=integration,live -run TestOpenCodeFreeLive ./internal/dataplane/
 //

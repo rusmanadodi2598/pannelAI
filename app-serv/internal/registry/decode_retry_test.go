@@ -2,13 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/decode_retry_test.go
-// @for       Decode tests for the retry field, whose shape varies across the
-// reference registry.
+// @for       Decode tests for the retry field, whose shape varies across the reference registry.
 // @uses      testing, internal/registry.
-// @reason    The reference writes retry as a bare count, a per-status count, and
-// a per-status attempts object, and a decoder that accepts only one form
-// silently drops the others, so every variant is pinned here rather than
-// trusted.
+// @reason    The reference writes retry as a bare count, a per-status count, and a per-status attempts object, and a decoder that accepts only one form silently drops the others, so every variant is pinned here rather than trusted.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

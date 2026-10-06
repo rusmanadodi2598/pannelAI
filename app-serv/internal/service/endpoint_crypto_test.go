@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_crypto_test.go
-// @for       The build-time credential-sealing helpers and the AES-GCM round-trip
-//
-//	the endpoint service depends on.
-//
+// @for       The build-time credential-sealing helpers and the AES-GCM round-trip the endpoint service depends on.
 // @uses      strings, testing, internal/domain.
-// @reason    SPEC-API-001 §6 requires upstream credentials encrypted at rest, and the
-//
-//	service's whole guarantee is that it hands the aggregate ciphertext
-//	rather than plaintext. The sealer itself is domain-owned and tested
-//	there; what this file pins is the composition the service relies on,
-//	every stored value is v1 ciphertext, the same plaintext seals to
-//	different ciphertext each time, and opening returns exactly what was
-//	sealed. That is the property a bug would silently break.
-//
+// @reason    SPEC-API-001 §6 requires upstream credentials encrypted at rest, and the service's whole guarantee is that it hands the aggregate ciphertext rather than plaintext. The sealer itself is domain-owned and tested there; what this file pins is the composition the service relies on, every stored value is v1 ciphertext, the same plaintext seals to different ciphertext each time, and opening returns exactly what was sealed. That is the property a bug would silently break.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -4,15 +4,7 @@
 // @file      internal/provider/endpoint_test.go
 // @for       Table-driven tests for the upstream URL a connector builds.
 // @uses      testing, internal/registry.
-// @reason    The registry stores a complete chat URL rather than a base, because
-//
-//	providers disagree about where the path ends and several add a
-//	suffix. The join rule is therefore "use the entry's URL and append
-//	what it declares", and every shape it has to survive is pinned
-//	here so the core never has to guess a path. A declared chat_path
-//	is the one entry that says its base_url is a base, so the join
-//	has to tolerate both readings.
-//
+// @reason    The registry stores a complete chat URL rather than a base, because providers disagree about where the path ends and several add a suffix. The join rule is therefore "use the entry's URL and append what it declares", and every shape it has to survive is pinned here so the core never has to guess a path. A declared chat_path is the one entry that says its base_url is a base, so the join has to tolerate both readings.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -2,18 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage.go
-// @for       The UsageRecord aggregate: one served request's tokens, cost, and
-//
-//	latency, as recorded after the upstream call completes.
-//
+// @for       The UsageRecord aggregate: one served request's tokens, cost, and latency, as recorded after the upstream call completes.
 // @uses      internal/domain (ULID, Decimal, AppError constructors), time.
-// @reason    SPEC-API-001 §7.12 makes this the accounting row the summary,
-//
-//	timeseries, records, and rollup are all read from, so its shape
-//	and its invariants belong in one aggregate: a negative token count
-//	or an unparseable cost must be rejected at construction, because a
-//	bad row silently skews every aggregate built on it.
-//
+// @reason    SPEC-API-001 §7.12 makes this the accounting row the summary, timeseries, records, and rollup are all read from, so its shape and its invariants belong in one aggregate: a negative token count or an unparseable cost must be rejected at construction, because a bad row silently skews every aggregate built on it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

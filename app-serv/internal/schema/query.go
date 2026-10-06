@@ -3,12 +3,7 @@
 // @file      internal/schema/query.go
 // @for       The typed shape of the list filters that arrive as query parameters.
 // @uses      none beyond the standard library; validated through ValidateStruct.
-// @reason    AGENTS.md §1.4 treats a query parameter as external input needing a typed contract,
-//
-//	and the handlers that read `?provider_id=`, `?capability=`, `?q=` and `?type=` were passing
-//	them to the service trimmed only. A misspelled value then reads as a narrowed list while
-//	narrowing nothing, which is the failure draft 025 F5 already fixed for `?active=`.
-//
+// @reason    AGENTS.md §1.4 treats a query parameter as external input needing a typed contract, and the handlers that read `?provider_id=`, `?capability=`, `?q=` and `?type=` were passing them to the service trimmed only. A misspelled value then reads as a narrowed list while narrowing nothing, which is the failure draft 025 F5 already fixed for `?active=`.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

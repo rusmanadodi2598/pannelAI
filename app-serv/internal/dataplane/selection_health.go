@@ -1,19 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_health.go
-// @for       The health accounting a selection produces: the key circuit a
-//
-//	served or failed call updates, and its persistence.
-//
+// @for       The health accounting a selection produces: the key circuit a served or failed call updates, and its persistence.
 // @uses      internal/domain, context.
-// @reason    Selection and accounting are two jobs: Select decides who serves
-//
-//	the next request from the endpoint's current state, while these
-//	writes change that state afterwards. Keeping them apart also keeps
-//	the keyless rule readable, because a no_auth selection has no key
-//	circuit to write and must not fail the request on a bookkeeping
-//	error (G15 in the P2 register).
-//
+// @reason    Selection and accounting are two jobs: Select decides who serves the next request from the endpoint's current state, while these writes change that state afterwards. Keeping them apart also keeps the keyless rule readable, because a no_auth selection has no key circuit to write and must not fail the request on a bookkeeping error (G15 in the P2 register).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

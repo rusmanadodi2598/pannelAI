@@ -3,13 +3,7 @@
 // @file      internal/service/media_perform_test.go
 // @for       How a media call's outcome reaches endpoint health.
 // @uses      internal/dataplane, internal/domain, context, errors, testing.
-// @reason    A served call, a rejection, and an unreachable upstream must land
-//
-//	in the same circuit state the chat plane reads, and the client must
-//	see a failure the gateway can explain. Each case is a table row so a
-//	new status can be added without rewriting a test. The resolution
-//	rules live in media_call_test.go.
-//
+// @reason    A served call, a rejection, and an unreachable upstream must land in the same circuit state the chat plane reads, and the client must see a failure the gateway can explain. Each case is a table row so a new status can be added without rewriting a test. The resolution rules live in media_call_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

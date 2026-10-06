@@ -3,25 +3,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_live_chat_test.go
-// @for       The live chain: an agent body built by this port, signed, sent, and
-//
-//	answered by the vendor.
-//
+// @for       The live chain: an agent body built by this port, signed, sent, and answered by the vendor.
 // @uses      bytes, encoding/json, io, net/http, strings, testing.
-// @reason    Every unit test of the body builder asserts the shape this gateway
+// @reason    Every unit test of the body builder asserts the shape this gateway produces. Only the vendor decides whether it reads it: the agent endpoint refuses a request whose routing fields it does not recognise, and its answer arrives wrapped. This file asks the real service and asserts the two things that would be wrong, that the call was refused for its body, and that an envelope reached a client, while staying independent of whether the account has credits left. The free model is what makes that independence a proof rather than a hope: qfmodel costs nothing to the account, so its case runs the same chain to the end and requires content.
 //
-//	produces. Only the vendor decides whether it reads it: the agent
-//	endpoint refuses a request whose routing fields it does not
-//	recognise, and its answer arrives wrapped. This file asks the real
-//	service and asserts the two things that would be wrong, that the
-//	call was refused for its body, and that an envelope reached a
-//	client, while staying independent of whether the account has
-//	credits left. The free model is what makes that independence a
-//	proof rather than a hope: qfmodel costs nothing to the account, so
-//	its case runs the same chain to the end and requires content.
-//
-//	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration,live ./internal/provider/ -run QoderLiveChat
+//	PANNELAI_QODER_PAT='pt-…' \
+//	  go test -tags=integration,live ./internal/provider/ -run QoderLiveChat
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

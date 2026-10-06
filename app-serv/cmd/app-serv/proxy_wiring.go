@@ -1,29 +1,9 @@
 // Command app-serv wires the §7.11 proxy pool graph.
 //
 // @file      cmd/app-serv/proxy_wiring.go
-// @for       Builds the proxy prober adapter, the proxy service behind its
-//
-//	handler, and the pool-driven route planner the data plane dials
-//	through, over the process's egress guard.
-//
-// @uses      internal/config, internal/dataplane, internal/domain, internal/handler,
-//
-//	internal/netguard, internal/repository/postgres, internal/repository/redis,
-//	internal/service, context, pgxpool, redis.
-//
-// @reason    AGENTS.md §1.5 makes the composition root wiring only, and §1.1
-//
-//	keeps management_wiring.go inside its line budget. The guard is built
-//	once in egress_wiring.go and passed in, because it is the process-wide
-//	egress policy (OWASP A01): the proxy test is one caller among several,
-//	and every one of them must share the same allowlist. The route
-//	planner (docs/PORT/008-PORT-PROXY-ENGINE.md D8) is wired beside the
-//	handler because both serve the pool: a plan that walks candidates
-//	must draw on the same rows the operator edits, and a proxied request
-//	must not switch the destination check off: the planner owns that
-//	check because its per-attempt transports dial the proxy, not the
-//	destination.
-//
+// @for       Builds the proxy prober adapter, the proxy service behind its handler, and the pool-driven route planner the data plane dials through, over the process's egress guard.
+// @uses      internal/config, internal/dataplane, internal/domain, internal/handler, internal/netguard, internal/repository/postgres, internal/repository/redis, internal/service, context, pgxpool, redis.
+// @reason    AGENTS.md §1.5 makes the composition root wiring only, and §1.1 keeps management_wiring.go inside its line budget. The guard is built once in egress_wiring.go and passed in, because it is the process-wide egress policy (OWASP A01): the proxy test is one caller among several, and every one of them must share the same allowlist. The route planner (docs/PORT/008-PORT-PROXY-ENGINE.md D8) is wired beside the handler because both serve the pool: a plan that walks candidates must draw on the same rows the operator edits, and a proxied request must not switch the destination check off: the planner owns that check because its per-attempt transports dial the proxy, not the destination.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

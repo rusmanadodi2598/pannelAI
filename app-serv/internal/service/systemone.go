@@ -1,23 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/systemone.go
-// @for       The System One (Jev) decision use case: resolve the model, select
-//
-//	an account, forward the decision payload, and record the call.
-//
-// @uses      internal/dataplane, internal/domain, internal/registry,
-//
-//	internal/schema, context, net/http, strings, time.
-//
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/systemone for models
-//
-//	declaring `kind: "systemone"`. The payload is the provider's own
-//	vocabulary, so it cannot ride the chat plane: the reference serves it
-//	from a separate handler that forwards the body untouched
-//	(open-sse/handlers/systemoneCore.js). The use case follows the media
-//	plane's shape rather than the chat plane's (one call, no combo chain,
-//	one usage row and one log row) because a decision model answers once
-//	rather than streaming, which is what the reference's own route does.
+// @for       The System One (Jev) decision use case: resolve the model, select an account, forward the decision payload, and record the call.
+// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema, context, net/http, strings, time.
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/systemone for models declaring `kind: "systemone"`. The payload is the provider's own vocabulary, so it cannot ride the chat plane: the reference serves it from a separate handler that forwards the body untouched (open-sse/handlers/systemoneCore.js). The use case follows the media plane's shape rather than the chat plane's (one call, no combo chain, one usage row and one log row) because a decision model answers once rather than streaming, which is what the reference's own route does.
 //
 //	It lives in two files for the AGENTS.md §1.1 budget: this one owns
 //	the service and the call, and systemone_target.go owns the URL and

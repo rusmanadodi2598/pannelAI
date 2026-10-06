@@ -1,22 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/endpoint_bulk.go
-// @for       The endpoint-level batch routes: several accounts in one call, several
-//
-//	keys on one endpoint, and the OAuth credential import
-//	(SPEC-API-001 §7.5, §8.1).
-//
-// @uses      internal/domain, internal/schema, internal/service, errors, net/http,
-//
-//	time.
-//
-// @reason    §8.1 makes a batch all-or-nothing but still requires every row's outcome
-//
-//	to be reported by index, so a refusal has to answer with both a machine
-//	code and the offending row, a bare §8 envelope could not carry the row
-//	and a bare body could not carry the code. The three batch routes share
-//	that rule, which is why they share one handler and one refusal writer.
-//
+// @for       The endpoint-level batch routes: several accounts in one call, several keys on one endpoint, and the OAuth credential import (SPEC-API-001 §7.5, §8.1).
+// @uses      internal/domain, internal/schema, internal/service, errors, net/http, time.
+// @reason    §8.1 makes a batch all-or-nothing but still requires every row's outcome to be reported by index, so a refusal has to answer with both a machine code and the offending row, a bare §8 envelope could not carry the row and a bare body could not carry the code. The three batch routes share that rule, which is why they share one handler and one refusal writer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

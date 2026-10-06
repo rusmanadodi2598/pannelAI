@@ -3,11 +3,7 @@
 // @file      internal/service/auth_flows_test.go
 // @for       The login table, the lockout reset, the password change and the session lifecycle.
 // @uses      testing, internal/domain.
-// @reason    Four flows over one AuthService, driven by the port doubles that live
-//
-//	in auth_test.go, so the behaviour is pinned without a database or a
-//	session store.
-//
+// @reason    Four flows over one AuthService, driven by the port doubles that live in auth_test.go, so the behaviour is pinned without a database or a session store.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

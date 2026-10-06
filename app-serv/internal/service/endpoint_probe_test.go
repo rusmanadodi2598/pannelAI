@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_probe_test.go
-// @for       Tests for what a connectivity test records: the endpoint's
-//
-//	test_status and the key's health (SPEC-API-001 §7.5).
-//
+// @for       Tests for what a connectivity test records: the endpoint's test_status and the key's health (SPEC-API-001 §7.5).
 // @uses      context, errors, testing, time, internal/domain.
-// @reason    §7.5 makes a test answer "does this credential work", and the answer has
-//
-//	to reach both the endpoint's test_status and the key's circuit state
-//	without a second health field. A plausible bug records one and not the
-//	other, or reports a refusal as a 500 instead of a fail state, so both are
-//	pinned here. The key-targeting rules live in
-//	endpoint_probe_selection_test.go.
-//
+// @reason    §7.5 makes a test answer "does this credential work", and the answer has to reach both the endpoint's test_status and the key's circuit state without a second health field. A plausible bug records one and not the other, or reports a refusal as a 500 instead of a fail state, so both are pinned here. The key-targeting rules live in endpoint_probe_selection_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

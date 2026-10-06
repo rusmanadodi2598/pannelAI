@@ -1,22 +1,9 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_usage_routes_test.go
-// @for       Route-table tests for the four §7.12 usage reads: the session gate,
-//
-//	the verb the mux refuses, and the request id every answer echoes.
-//
-// @uses      context, net/http, net/http/httptest, strings, testing, time,
-//
-//	internal/domain, internal/handler, internal/repository, internal/service.
-//
-// @reason    Draft 010 F1: the handler tests drive the methods directly, so the
-//
-//	gate and the verb table those methods sit behind had no test that
-//	could fail if a registration lost its `gateway()` wrapper. These
-//	cases drive the real mux with the production auth fixture, which is
-//	what makes the 401 and the 405 the mux's own answers rather than
-//	the handler's.
-//
+// @for       Route-table tests for the four §7.12 usage reads: the session gate, the verb the mux refuses, and the request id every answer echoes.
+// @uses      context, net/http, net/http/httptest, strings, testing, time, internal/domain, internal/handler, internal/repository, internal/service.
+// @reason    Draft 010 F1: the handler tests drive the methods directly, so the gate and the verb table those methods sit behind had no test that could fail if a registration lost its `gateway()` wrapper. These cases drive the real mux with the production auth fixture, which is what makes the 401 and the 405 the mux's own answers rather than the handler's.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

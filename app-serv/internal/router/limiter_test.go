@@ -1,23 +1,9 @@
 // Package router tests configured request throttling behavior.
 //
 // @file      internal/router/limiter_test.go
-// @for       Table-driven tests for the Redis rate-limiter middleware contract,
-//
-//	and the trusted-proxy rule that decides which address a request
-//	is bucketed under.
-//
-// @uses      context, errors, net, net/http, net/http/httptest, testing, time,
-//
-//	internal/clientip, internal/repository.
-//
-// @reason    RATE_LIMIT_PER_MIN must produce generalized 429 envelopes and
-//
-//	preserve successful traffic at configured boundaries. R20 of
-//	docs/DRAFT/042-CODE-REVIEW-FIXES.md added the address rule: a
-//	request behind a proxy the operator named is bucketed by the
-//	forwarded client, and a forgeable header is refused from any other
-//	peer, so the limiter's bucket is pinned here against both.
-//
+// @for       Table-driven tests for the Redis rate-limiter middleware contract, and the trusted-proxy rule that decides which address a request is bucketed under.
+// @uses      context, errors, net, net/http, net/http/httptest, testing, time, internal/clientip, internal/repository.
+// @reason    RATE_LIMIT_PER_MIN must produce generalized 429 envelopes and preserve successful traffic at configured boundaries. R20 of docs/DRAFT/042-CODE-REVIEW-FIXES.md added the address rule: a request behind a proxy the operator named is bucketed by the forwarded client, and a forgeable header is refused from any other peer, so the limiter's bucket is pinned here against both.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

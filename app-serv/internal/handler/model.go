@@ -1,17 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/model.go
-// @for       The model catalog endpoints: the merged catalog, custom models, the
-//
-//	alias set, and the disabled set (SPEC-API-001 §7.6).
-//
+// @for       The model catalog endpoints: the merged catalog, custom models, the alias set, and the disabled set (SPEC-API-001 §7.6).
 // @uses      internal/schema, internal/service, internal/domain, net/http.
-// @reason    §7.6 is four routes over one screen, and every one of them is
-//
-//	decode → validate → call → encode. Keeping them in one file makes
-//	the set auditable against the spec table; AGENTS.md §1.5 keeps the
-//	SQL and the merge out of here, so no branch below inspects a row.
-//
+// @reason    §7.6 is four routes over one screen, and every one of them is decode → validate → call → encode. Keeping them in one file makes the set auditable against the spec table; AGENTS.md §1.5 keeps the SQL and the merge out of here, so no branch below inspects a row.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

@@ -1,17 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/chat.go
-// @for       The chat data plane routes: POST /api/v1/chat/completions,
-//
-//	POST /api/v1/messages, and GET /api/v1/models.
-//
+// @for       The chat data plane routes: POST /api/v1/chat/completions, POST /api/v1/messages, and GET /api/v1/models.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    SPEC-API-001 §7.15 serves three routes on the OpenAI and Anthropic
-//
-//	wires, and §4 fixes the data plane auth header. AGENTS.md §1.5 keeps
-//	SQL and Redis out of here and validation in the schema layer, so this
-//	file only decodes, authenticates, calls, and encodes.
-//
+// @reason    SPEC-API-001 §7.15 serves three routes on the OpenAI and Anthropic wires, and §4 fixes the data plane auth header. AGENTS.md §1.5 keeps SQL and Redis out of here and validation in the schema layer, so this file only decodes, authenticates, calls, and encodes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

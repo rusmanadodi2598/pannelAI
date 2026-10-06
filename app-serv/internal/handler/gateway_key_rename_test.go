@@ -2,13 +2,9 @@
 //
 // @file      internal/handler/gateway_key_rename_test.go
 // @for       HTTP tests for a rename that collides with another key's name.
-// @uses      internal/handler, internal/schema, net/http, net/http/httptest,
+// @uses      internal/handler, internal/schema, net/http, net/http/httptest, strings, encoding/json, testing.
+// @reason    The repository contract rejects a duplicate name, and a rename is a different statement from a create; SPEC-API-001 §7.3 exposes both.
 //
-//	strings, encoding/json, testing.
-//
-// @reason    The repository contract rejects a duplicate name, and a rename is a
-//
-//	different statement from a create; SPEC-API-001 §7.3 exposes both.
 //	The stub mirrors the UNIQUE index so this covers the mapping from
 //	domain.ErrGatewayKeyExists to a 409 for the PATCH path.
 //

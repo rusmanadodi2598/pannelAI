@@ -1,20 +1,9 @@
 // Package quotafetch mirrors the reference's per-family quota readers.
 //
 // @file      internal/service/quotafetch/egress_client_test.go
-// @for       That every quota read leaves through the egress client the
-//
-//	composition root installs, and that the shared client refuses a
-//	redirect rather than following one.
-//
+// @for       That every quota read leaves through the egress client the composition root installs, and that the shared client refuses a redirect rather than following one.
 // @uses      context, net/http, net/http/httptest, sync/atomic, testing.
-// @reason    R08 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the package's shared
-//
-//	client was built bare, so every family's read left without the
-//	process egress guard and followed redirects a quota host could use
-//	to bounce a credential cross-host. The client is package state,
-//	so only a live request through it can prove the install and the
-//	redirect refusal.
-//
+// @reason    R08 of docs/DRAFT/042-CODE-REVIEW-FIXES.md: the package's shared client was built bare, so every family's read left without the process egress guard and followed redirects a quota host could use to bounce a credential cross-host. The client is package state, so only a live request through it can prove the install and the redirect refusal.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

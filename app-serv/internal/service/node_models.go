@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/node_models.go
-// @for       The port a custom provider node's model list is read through, and
-//
-//	the value it answers with.
-//
+// @for       The port a custom provider node's model list is read through, and the value it answers with.
 // @uses      internal/domain, internal/registry, context.
-// @reason    SPEC-API-001 §7.4 serves a node's models, and a compatible node's
-//
-//	models live at its own upstream rather than in the embedded document
-//	(draft 017 §4.2). AGENTS.md §1.5 forbids net/http in this layer, so the
-//	read is a port here and the adapter lives in the composition root,
-//	the same split EndpointProber and NodeProber already use.
+// @reason    SPEC-API-001 §7.4 serves a node's models, and a compatible node's models live at its own upstream rather than in the embedded document (draft 017 §4.2). AGENTS.md §1.5 forbids net/http in this layer, so the read is a port here and the adapter lives in the composition root, the same split EndpointProber and NodeProber already use.
 //
 //	The origin travels with the list because the two answers are not
 //	interchangeable: a list read from the upstream is what the node offers

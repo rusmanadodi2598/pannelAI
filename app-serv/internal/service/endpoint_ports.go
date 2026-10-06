@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_ports.go
-// @for       The collaborator contracts the endpoint and node services are built
-//
-//	from: registry lookup, credential sealing, probing, and the
-//	aggregate store the frozen repository contract extends.
-//
+// @for       The collaborator contracts the endpoint and node services are built from: registry lookup, credential sealing, probing, and the aggregate store the frozen repository contract extends.
 // @uses      internal/domain, internal/registry, internal/repository, context.
-// @reason    repository.EndpointRepository is frozen and aggregate-scoped. The
-//
-//	batch routes it backs are all-or-nothing across a set of rows, which a
-//	per-aggregate contract cannot express, so the set operations are named
-//	here as EndpointStore, the frozen interface embedded, not replaced,
-//	and the concrete PostgreSQL repository implements them. The remaining
-//	ports keep the service testable without a database, a registry, a
-//	sealer, or an HTTP upstream (AGENTS.md §1.5).
-//
+// @reason    repository.EndpointRepository is frozen and aggregate-scoped. The batch routes it backs are all-or-nothing across a set of rows, which a per-aggregate contract cannot express, so the set operations are named here as EndpointStore, the frozen interface embedded, not replaced, and the concrete PostgreSQL repository implements them. The remaining ports keep the service testable without a database, a registry, a sealer, or an HTTP upstream (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

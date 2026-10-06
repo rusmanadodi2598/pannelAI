@@ -3,17 +3,10 @@
 // Package main is the app-serv composition root.
 //
 // @file      cmd/app-serv/usage_event_live_test.go
-// @for       F4 live evidence: one recorded request whose domain event crosses a
+// @for       F4 live evidence: one recorded request whose domain event crosses a real Redis and lands in the console ring a real consumer reads.
+// @uses      internal/domain, internal/repository/redis, internal/service, context, strings, testing, time.
+// @reason    F4 of docs/DRAFT/010-USAGE-ENDPOINT-READINESS.md is closed by "the event has at least one publisher and one subscriber in production".
 //
-//	real Redis and lands in the console ring a real consumer reads.
-//
-// @uses      internal/domain, internal/repository/redis, internal/service,
-//
-//	context, strings, testing, time.
-//
-// @reason    F4 of docs/DRAFT/010-USAGE-ENDPOINT-READINESS.md is closed by "the
-//
-//	event has at least one publisher and one subscriber in production".
 //	Unit tests can show each half works against a double; only a live
 //	pass shows the two halves meet on the same channel with the real
 //	client, which is the part that was missing for the whole life of

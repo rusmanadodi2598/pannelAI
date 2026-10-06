@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/key_use_test.go
-// @for       The §7.3 rule that an admitted data-plane call advances the
-//
-//	presenting key's request counter.
-//
+// @for       The §7.3 rule that an admitted data-plane call advances the presenting key's request counter.
 // @uses      internal/domain, context, errors, testing, time.
-// @reason    The register's G6 decision (2026-09-19) is that `request_count`
-//
-//	follows every authenticated data-plane call, and the counter is
-//	written where the §4 rule is decided, ChatService.Authenticate,
-//	so one test covers chat, models, media, and embeddings at once. The
-//	cases pin the three ways authentication ends (admitted, refused,
-//	disabled) and the one way the write can fail.
-//
+// @reason    The register's G6 decision (2026-09-19) is that `request_count` follows every authenticated data-plane call, and the counter is written where the §4 rule is decided, ChatService.Authenticate, so one test covers chat, models, media, and embeddings at once. The cases pin the three ways authentication ends (admitted, refused, disabled) and the one way the write can fail.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

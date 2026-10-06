@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider.go
-// @for       The provider catalog reads: list, detail, and model list, each
-//
-//	carrying the routability the panel needs before it offers an endpoint.
-//
+// @for       The provider catalog reads: list, detail, and model list, each carrying the routability the panel needs before it offers an endpoint.
 // @uses      internal/domain, internal/registry, context, sort, strings.
-// @reason    SPEC-API-001 §7.4 serves the embedded registry over HTTP, and §8
-//
-//	makes "configured but never answerable" something the panel must be able to
-//	see. Filtering, paging, and the store read each already belong to another
-//	boundary, so this file is the orchestration between them and holds no SQL.
-//
+// @reason    SPEC-API-001 §7.4 serves the embedded registry over HTTP, and §8 makes "configured but never answerable" something the panel must be able to see. Filtering, paging, and the store read each already belong to another boundary, so this file is the orchestration between them and holds no SQL.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

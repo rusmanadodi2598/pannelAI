@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_usage.go
-// @for       The published-quota read for one connection: what the provider itself
-//
-//	says it has left, as opposed to what this gateway counted.
-//
-// @uses      context, errors, internal/domain, internal/registry,
-//
-//	internal/service/quotafetch, strings, time.
-//
-// @reason    SPEC-API-001 §7.12 counts windows from routed traffic, and a
-//
-//	provider's published allocation is a different answer: this gateway
-//	knows what it sent, the provider knows what it sold. They stay in
-//	separate rows because `quota_windows` names a fixed set of window
-//	kinds and no unit.
-//
+// @for       The published-quota read for one connection: what the provider itself says it has left, as opposed to what this gateway counted.
+// @uses      context, errors, internal/domain, internal/registry, internal/service/quotafetch, strings, time.
+// @reason    SPEC-API-001 §7.12 counts windows from routed traffic, and a provider's published allocation is a different answer: this gateway knows what it sent, the provider knows what it sold. They stay in separate rows because `quota_windows` names a fixed set of window kinds and no unit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

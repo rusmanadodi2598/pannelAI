@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/settings_provider_proxy_test.go
-// @for       The write-time rule the per-provider binding adds: a pool id must
-//
-//	name a stored row before it is stored.
-//
+// @for       The write-time rule the per-provider binding adds: a pool id must name a stored row before it is stored.
 // @uses      context, testing, internal/domain.
-// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D6: a dangling id is the
-//
-//	failure mode that matters, because the route plan would silently fall
-//	through to the rest of the pool and the operator would never learn
-//	their binding does nothing. The rule mirrors the endpoint parity
-//	check, including its "no finder means refuse" direction.
-//
+// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D6: a dangling id is the failure mode that matters, because the route plan would silently fall through to the rest of the pool and the operator would never learn their binding does nothing. The rule mirrors the endpoint parity check, including its "no finder means refuse" direction.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,13 +3,7 @@
 // @file      internal/service/quotafetch/kimi_failure.go
 // @for       Turning a Kimi error body into the sentence the card renders, and coercing the values its windows carry.
 // @uses      internal/service/quotafetch, encoding/json, math, net/http, strconv, strings, time
-// @reason    This surface refuses in the Connect-RPC shape, nesting the reason and the localized
-//
-//	sentence inside the first detail's own debug block, so reading a refusal
-//	here is a different job from reading a quota window, and the reference
-//	quotes the provider's own sentence, because that sentence is the only
-//	part of a rejection an operator can act on.
-//
+// @reason    This surface refuses in the Connect-RPC shape, nesting the reason and the localized sentence inside the first detail's own debug block, so reading a refusal here is a different job from reading a quota window, and the reference quotes the provider's own sentence, because that sentence is the only part of a rejection an operator can act on.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

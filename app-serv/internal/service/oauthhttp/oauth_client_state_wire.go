@@ -2,17 +2,8 @@
 //
 // @file      internal/service/oauthhttp/oauth_client_state_wire.go
 // @for       The headers and URLs the state round's vendor reads its calls by.
-//
 // @uses      net/url, strings, time, internal/registry.
-// @reason    CodeBuddy authenticates by shape rather than by secret: which host it
-//
-//	thinks it is talking to (`X-Domain`), that the caller is a plugin rather
-//	than a browser (`X-Requested-With`, the `X-No-*` negations), and that
-//	the refresh token rides a header. Each is a detail a generic OAuth client
-//	would guess wrong, so they are stated once here and named. Kept apart
-//	from the calls themselves so both files stay inside the AGENTS.md §1.1
-//	budget and the wire contract can be read on its own.
-//
+// @reason    CodeBuddy authenticates by shape rather than by secret: which host it thinks it is talking to (`X-Domain`), that the caller is a plugin rather than a browser (`X-Requested-With`, the `X-No-*` negations), and that the refresh token rides a header. Each is a detail a generic OAuth client would guess wrong, so they are stated once here and named. Kept apart from the calls themselves so both files stay inside the AGENTS.md §1.1 budget and the wire contract can be read on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

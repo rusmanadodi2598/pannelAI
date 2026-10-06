@@ -1,17 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/oauth.go
-// @for       The provider OAuth flow contracts: start, callback, status, refresh
-//
-//	(SPEC-API-001 §7.4).
-//
+// @for       The provider OAuth flow contracts: start, callback, status, refresh (SPEC-API-001 §7.4).
 // @uses      encoding/json, internal/domain.
-// @reason    §7.4 pins the OAuth routes as P2 and §6 forbids token material in
-//
-//	any response, so the shapes are defined by what they must NOT carry:
-//	start returns a URL and a state only, callback returns identity and a
-//	hint, and status reports expiry without the tokens themselves.
-//
+// @reason    §7.4 pins the OAuth routes as P2 and §6 forbids token material in any response, so the shapes are defined by what they must NOT carry: start returns a URL and a state only, callback returns identity and a hint, and status reports expiry without the tokens themselves.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

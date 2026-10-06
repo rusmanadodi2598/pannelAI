@@ -3,24 +3,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_live_test.go
-// @for       The live fixtures of Qoder's credential path, and the proof that a
+// @for       The live fixtures of Qoder's credential path, and the proof that a Personal Access Token becomes a job token that reads an account.
+// @uses      bytes, context, encoding/json, io, net/http, os, strings, testing, time.
+// @reason    A parser written against a documented shape is a guess until the service answers. This file asks the real service the two questions the exchange and the identity read depend on, and keeps the fixtures the signed cases beside it reuse. It carries the `integration,live` tags because it spends a credential and reaches outside the process; with the tag active and no token set it fails rather than passing quietly.
 //
-//	Personal Access Token becomes a job token that reads an account.
-//
-// @uses      bytes, context, encoding/json, io, net/http, os, strings, testing,
-//
-//	time.
-//
-// @reason    A parser written against a documented shape is a guess until the
-//
-//	service answers. This file asks the real service the two questions the
-//	exchange and the identity read depend on, and keeps the fixtures the
-//	signed cases beside it reuse. It carries the `integration,live` tags because
-//	it spends a credential and reaches outside the process; with the tag
-//	active and no token set it fails rather than passing quietly.
-//
-//	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration,live ./internal/provider/ -run QoderLive
+//	PANNELAI_QODER_PAT='pt-…' \
+//	  go test -tags=integration,live ./internal/provider/ -run QoderLive
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

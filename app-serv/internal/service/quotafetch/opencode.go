@@ -3,11 +3,7 @@
 // @file      internal/service/quotafetch/opencode.go
 // @for       Reads the rolling, weekly and monthly windows OpenCode publishes for one of its two products.
 // @uses      internal/service/quotafetch, context, encoding/json, net/http
-// @reason    Zen (pay-as-you-go) and Go (subscription) answer the same quota document from
-//
-//	different hosts with different words on the card, so a read that asked one
-//	host for both reports a working connection against the wrong allocation.
-//
+// @reason    Zen (pay-as-you-go) and Go (subscription) answer the same quota document from different hosts with different words on the card, so a read that asked one host for both reports a working connection against the wrong allocation.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

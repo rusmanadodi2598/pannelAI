@@ -1,22 +1,9 @@
 // Command app-serv adapts a provider node's model list to HTTP.
 //
 // @file      cmd/app-serv/node_models_cache_test.go
-// @for       The cache window: one upstream read per node per TTL, not one per
-//
-//	lookup.
-//
-// @uses      internal/netguard, internal/provider, internal/service, context,
-//
-//	net/http, net/http/httptest, sync/atomic, testing, time.
-//
-// @reason    The provider index overlay that calls this adapter rebuilds on every
-//
-//	Provider/All lookup (cmd/app-serv/provider_index.go), and one catalog
-//	request walks the whole index. Without a cache, rendering one panel
-//	page would dial every custom node's upstream once per row. The window
-//	is asserted with an injected clock so the test states the TTL rather
-//	than sleeping through it.
-//
+// @for       The cache window: one upstream read per node per TTL, not one per lookup.
+// @uses      internal/netguard, internal/provider, internal/service, context, net/http, net/http/httptest, sync/atomic, testing, time.
+// @reason    The provider index overlay that calls this adapter rebuilds on every Provider/All lookup (cmd/app-serv/provider_index.go), and one catalog request walks the whole index. Without a cache, rendering one panel page would dial every custom node's upstream once per row. The window is asserted with an injected clock so the test states the TTL rather than sleeping through it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

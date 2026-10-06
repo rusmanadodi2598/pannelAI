@@ -2,18 +2,8 @@
 //
 // @file      internal/handler/oauth_stub_test.go
 // @for       The in-memory seams the §7.4 OAuth handler tests are built from.
-// @uses      context, sync, testing, time, internal/domain, internal/registry,
-//
-//	internal/repository, internal/service.
-//
-// @reason    The handler's job is the HTTP contract, so its tests drive a real
-//
-//	OAuthFlowService over fakes that answer in memory: no registry
-//	binary, no PostgreSQL, no Redis, and no token ever leaves the
-//	process. The fakes mirror the four registry shapes that matter
-//	(code flow with PKCE, code flow with userinfo, device flow,
-//	connector-required flow) without naming a vendor.
-//
+// @uses      context, sync, testing, time, internal/domain, internal/registry, internal/repository, internal/service.
+// @reason    The handler's job is the HTTP contract, so its tests drive a real OAuthFlowService over fakes that answer in memory: no registry binary, no PostgreSQL, no Redis, and no token ever leaves the process. The fakes mirror the four registry shapes that matter (code flow with PKCE, code flow with userinfo, device flow, connector-required flow) without naming a vendor.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

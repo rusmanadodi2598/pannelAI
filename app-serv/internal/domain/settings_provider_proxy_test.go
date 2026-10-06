@@ -2,17 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/settings_provider_proxy_test.go
-// @for       The per-provider proxy binding: how it resolves against the global
-//
-//	setting and what the write path refuses to store.
-//
+// @for       The per-provider proxy binding: how it resolves against the global setting and what the write path refuses to store.
 // @uses      internal/domain (Settings, SettingsPatch, NetworkSettings), testing.
-// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D1-D3/D6: the binding decides
-//
-//	which pool one provider's calls walk, so both halves matter: the
-//	resolution (override over global, `__none__` distinct from empty) and
-//	the backstop that keeps a dead entry out of the document.
-//
+// @reason    docs/PORT/009-PORT-PROVIDER-PROXY.md D1-D3/D6: the binding decides which pool one provider's calls walk, so both halves matter: the resolution (override over global, `__none__` distinct from empty) and the backstop that keeps a dead entry out of the document.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

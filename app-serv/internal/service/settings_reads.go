@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/settings_reads.go
-// @for       The named settings reads the data plane's seams ask for, so no
-//
-//	seam decodes the whole document.
-//
+// @for       The named settings reads the data plane's seams ask for, so no seam decodes the whole document.
 // @uses      internal/domain, context.
-// @reason    The selector needs one provider's credential rotation policy and
-//
-//	the reasoning injection needs one provider's thinking mode; both are
-//	questions about the same stored document, and answering them here is
-//	what keeps §7.14's shape out of the data plane. They live beside the
-//	read they wrap, in their own file so settings.go stays inside the
-//	AGENTS.md §1.1 budget.
-//
+// @reason    The selector needs one provider's credential rotation policy and the reasoning injection needs one provider's thinking mode; both are questions about the same stored document, and answering them here is what keeps §7.14's shape out of the data plane. They live beside the read they wrap, in their own file so settings.go stays inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

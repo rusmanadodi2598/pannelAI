@@ -1,16 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/proxy_stub_test.go
-// @for       The in-memory proxy repository, prober, and fixture the §7.11
-//
-//	tests drive.
-//
+// @for       The in-memory proxy repository, prober, and fixture the §7.11 tests drive.
 // @uses      context, sort, testing, internal/domain.
-// @reason    The store and the dialer are the two things the service must not
-//
-//	own, so both are doubles here; keeping them with the fixture leaves
-//	each test about the rule it pins.
-//
+// @reason    The store and the dialer are the two things the service must not own, so both are doubles here; keeping them with the fixture leaves each test about the rule it pins.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

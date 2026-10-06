@@ -4,12 +4,7 @@
 // @file      internal/domain/usage_types.go
 // @for       The usage vocabulary: filters, group-by dimensions, and totals.
 // @uses      internal/domain (Decimal, AppError constructors), math/big, time.
-// @reason    SPEC-API-001 §7.12 fixes the group-by dimension set and the cost
-//
-//	rule, so the closed sets and the aggregation arithmetic live here
-//	where a unit test can exercise them with no database, and the
-//	summary, timeseries, and records reads all speak one filter type.
-//
+// @reason    SPEC-API-001 §7.12 fixes the group-by dimension set and the cost rule, so the closed sets and the aggregation arithmetic live here where a unit test can exercise them with no database, and the summary, timeseries, and records reads all speak one filter type.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

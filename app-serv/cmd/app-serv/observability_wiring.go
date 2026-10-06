@@ -1,21 +1,9 @@
 // Command app-serv wires the usage, quota, and log services.
 //
 // @file      cmd/app-serv/observability_wiring.go
-// @for       Builds the usage, quota, and log services over the shared usage,
-//
-//	quota, and log repositories.
-//
-// @uses      internal/repository, internal/repository/redis, internal/service,
-//
-//	fmt, redis.
-//
-// @reason    The three services read the same repositories, the quota service
-//
-//	computes from the usage records, and the log service writes the rows
-//	the usage detail route reads, so building them together keeps that
-//	sharing visible. AGENTS.md §1.1 caps management_wiring.go, which is
-//	the file that would otherwise carry this block.
-//
+// @for       Builds the usage, quota, and log services over the shared usage, quota, and log repositories.
+// @uses      internal/repository, internal/repository/redis, internal/service, fmt, redis.
+// @reason    The three services read the same repositories, the quota service computes from the usage records, and the log service writes the rows the usage detail route reads, so building them together keeps that sharing visible. AGENTS.md §1.1 caps management_wiring.go, which is the file that would otherwise carry this block.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

@@ -2,19 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_event_codec.go
-// @for       The wire form of the usage domain event: encode, and a decode that
-//
-//	re-validates before it returns.
-//
+// @for       The wire form of the usage domain event: encode, and a decode that re-validates before it returns.
 // @uses      internal/domain (UsageEvent), encoding/json, fmt, strings, time.
-// @reason    AGENTS.md §2.3 makes the event the seam between the recorder and
-//
-//	its consumers, and a broker is an untrusted input path: whatever can
-//	publish to the channel can hand this process a payload. The codec is
-//	here rather than in the repository so both directions of the
-//	contract live beside the aggregate that defines its invariants, and
-//	the decoder re-applies those invariants instead of trusting the
-//	envelope (OWASP A08).
+// @reason    AGENTS.md §2.3 makes the event the seam between the recorder and its consumers, and a broker is an untrusted input path: whatever can publish to the channel can hand this process a payload. The codec is here rather than in the repository so both directions of the contract live beside the aggregate that defines its invariants, and the decoder re-applies those invariants instead of trusting the envelope (OWASP A08).
 //
 //	The wire form is an explicit struct rather than a tagged version of
 //	UsageEvent: the event's fields are unexported-by-convention and the

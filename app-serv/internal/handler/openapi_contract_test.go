@@ -3,15 +3,7 @@
 // @file      internal/handler/openapi_contract_test.go
 // @for       Structural validation of the served OpenAPI contract.
 // @uses      encoding/json, strings, testing.
-// @reason    SPEC-API-001 §7.17 serves the document as the contract of record
-//
-//	for app-ui and the CLI tools, and AGENTS.md §2.4 makes that contract
-//	the source an implementation follows. A document that parses but
-//	carries an unresolvable reference, a missing response, or a path
-//	parameter a client cannot fill would still be served, so those rules
-//	are asserted here rather than left to review. The per-plane error
-//	envelope rule lives in openapi_error_test.go.
-//
+// @reason    SPEC-API-001 §7.17 serves the document as the contract of record for app-ui and the CLI tools, and AGENTS.md §2.4 makes that contract the source an implementation follows. A document that parses but carries an unresolvable reference, a missing response, or a path parameter a client cannot fill would still be served, so those rules are asserted here rather than left to review. The per-plane error envelope rule lives in openapi_error_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

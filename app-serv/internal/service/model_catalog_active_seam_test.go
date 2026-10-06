@@ -1,17 +1,10 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_active_seam_test.go
-// @for       The seam discipline behind `?active=true`: the roll-up is asked
-//
-//	once, only when the parameter asks for it, and a deployment that
-//	wires none refuses the question instead of answering it wrongly.
-//
+// @for       The seam discipline behind `?active=true`: the roll-up is asked once, only when the parameter asks for it, and a deployment that wires none refuses the question instead of answering it wrongly.
 // @uses      internal/domain, context, sync, testing.
-// @reason    Draft 025 F4/F2: the predicate is one query per read, not one per
+// @reason    Draft 025 F4/F2: the predicate is one query per read, not one per provider, and a missing counter must not read as "nothing is active", an empty answer and an unanswerable question are different facts, and the caller has to be able to tell them apart.
 //
-//	provider, and a missing counter must not read as "nothing is
-//	active", an empty answer and an unanswerable question are
-//	different facts, and the caller has to be able to tell them apart.
 //	Separated from the filter table at the AGENTS.md §1.1 line limit.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>

@@ -4,11 +4,7 @@
 // @file      internal/provider/qoder_catalog_stampede_test.go
 // @for       One catalogue read per host under concurrent lookups, and one per unknown model.
 // @uses      sync, testing
-// @reason    The model key arrives from the client, so a name the vendor does not list used to
-//
-//	re-read the whole catalogue on every request, and concurrent requests each ran their
-//	own read of the same multi-megabyte document.
-//
+// @reason    The model key arrives from the client, so a name the vendor does not list used to re-read the whole catalogue on every request, and concurrent requests each ran their own read of the same multi-megabyte document.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,11 +3,7 @@
 // @file      internal/service/oauth_flow_refresh_cas_test.go
 // @for       The compare-and-swap an OAuth rotation writes through.
 // @uses      context, testing, time, internal/domain
-// @reason    A forced refresh and the worker's own sweep can both load one endpoint and both rotate
-//
-//	its token. Written as a plain UPDATE the slower one lands last and stores a token the vendor
-//	has already replaced, which kills the account until the operator re-authenticates.
-//
+// @reason    A forced refresh and the worker's own sweep can both load one endpoint and both rotate its token. Written as a plain UPDATE the slower one lands last and stores a token the vendor has already replaced, which kills the account until the operator re-authenticates.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

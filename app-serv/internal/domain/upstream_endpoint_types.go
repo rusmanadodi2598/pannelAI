@@ -2,17 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_endpoint_types.go
-// @for       The endpoint vocabulary: status, auth type, and the credential the
-//
-//	entity carries for an OAuth account.
-//
+// @for       The endpoint vocabulary: status, auth type, and the credential the entity carries for an OAuth account.
 // @uses      internal/domain (error constructors), strings, time.
-// @reason    SPEC-API-001 §5 names these as the shared language between the
-//
-//	panel and the router, so they are declared once here rather than
-//	as DTO fields; keeping the parse functions beside the types is what
-//	keeps a wire value validated before it reaches an entity.
-//
+// @reason    SPEC-API-001 §5 names these as the shared language between the panel and the router, so they are declared once here rather than as DTO fields; keeping the parse functions beside the types is what keeps a wire value validated before it reaches an entity.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

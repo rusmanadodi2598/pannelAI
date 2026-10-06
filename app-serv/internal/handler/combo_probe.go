@@ -3,13 +3,7 @@
 // @file      internal/handler/combo_probe.go
 // @for       The combo test endpoint (SPEC-API-001 §7.7).
 // @uses      internal/schema, internal/service, net/http.
-// @reason    The route shares the combo resource but not its dependency: probing
-//
-//	needs the data plane, and the data plane is built after the combo
-//	service, so the test lives in its own handler rather than widening the
-//	CRUD handler's constructor. The split mirrors the endpoint family,
-//	where keys and bulk onboarding already have handlers of their own.
-//
+// @reason    The route shares the combo resource but not its dependency: probing needs the data plane, and the data plane is built after the combo service, so the test lives in its own handler rather than widening the CRUD handler's constructor. The split mirrors the endpoint family, where keys and bulk onboarding already have handlers of their own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

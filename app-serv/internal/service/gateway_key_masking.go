@@ -3,12 +3,7 @@
 // @file      internal/service/gateway_key_masking.go
 // @for       The key_hint transform: "<prefix>…<last four>" (SPEC-API-001 §4).
 // @uses      standard library only.
-// @reason    SPEC-API-001 §4 fixes the hint as sk-…abcd and §4 makes the key
-//
-//	prefix configurable, so the transform needs the configured prefix
-//	and belongs with the service that issues the credential. It must
-//	never reveal more than the family plus the trailing characters.
-//
+// @reason    SPEC-API-001 §4 fixes the hint as sk-…abcd and §4 makes the key prefix configurable, so the transform needs the configured prefix and belongs with the service that issues the credential. It must never reveal more than the family plus the trailing characters.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

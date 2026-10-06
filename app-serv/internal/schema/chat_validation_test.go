@@ -3,9 +3,7 @@
 // @file      internal/schema/chat_validation_test.go
 // @for       Table-driven semantic validation coverage for OpenAI chat requests.
 // @uses      encoding/json, testing.
-// @reason    F1 of the Playground Chat readiness plan requires nested union and
-// semantic rules that struct tags alone cannot express.
-//
+// @reason    F1 of the Playground Chat readiness plan requires nested union and semantic rules that struct tags alone cannot express.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

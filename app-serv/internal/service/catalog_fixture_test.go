@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/catalog_fixture_test.go
-// @for       The shared catalog fixture: a small registry plus the wired catalog
-//
-//	service the §7.6 and §7.7 tests run against.
-//
+// @for       The shared catalog fixture: a small registry plus the wired catalog service the §7.6 and §7.7 tests run against.
 // @uses      internal/domain, internal/registry, context, testing, time.
-// @reason    The catalog merges three sources, so a test of the merge must be
-//
-//	able to place rows in each one independently. Naming the fixture's
-//	providers locally keeps every assertion independent of the embedded
-//	registry's contents, which change with the reference.
-//
+// @reason    The catalog merges three sources, so a test of the merge must be able to place rows in each one independently. Naming the fixture's providers locally keeps every assertion independent of the embedded registry's contents, which change with the reference.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

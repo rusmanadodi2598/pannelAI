@@ -3,12 +3,7 @@
 // @file      internal/router/router_deps_guard_test.go
 // @for       Tests for the boot-time assertion over the router's dependencies.
 // @uses      fmt, reflect, strings, testing, internal/handler.
-// @reason    The guard is a hand-written list beside a struct it must not fall
-//
-//	behind, so the test enumerates Deps by reflection: a handler field
-//	added without a check makes this fail rather than leaving a route
-//	that can only be discovered by clicking it.
-//
+// @reason    The guard is a hand-written list beside a struct it must not fall behind, so the test enumerates Deps by reflection: a handler field added without a check makes this fail rather than leaving a route that can only be discovered by clicking it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

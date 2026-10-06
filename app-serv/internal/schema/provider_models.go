@@ -1,18 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/provider_models.go
-// @for       The §7.4 model-list mappers: a registry entry's models onto the wire
-//
-//	shape, and a provider's stored account counts onto the status summary.
-//
+// @for       The §7.4 model-list mappers: a registry entry's models onto the wire shape, and a provider's stored account counts onto the status summary.
 // @uses      internal/domain, internal/registry.
-// @reason    The model list is the one §7.4 read whose body names its own origin
-//
-//	(§4.9), and draft 017 §4.5 removed the constant `suggested` flag from
-//	it. Keeping the mapping apart from the DTO declarations keeps the
-//	contract readable in one file and the projections in another, and
-//	keeps both inside the AGENTS.md §1.1 line budget.
-//
+// @reason    The model list is the one §7.4 read whose body names its own origin (§4.9), and draft 017 §4.5 removed the constant `suggested` flag from it. Keeping the mapping apart from the DTO declarations keeps the contract readable in one file and the projections in another, and keeps both inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

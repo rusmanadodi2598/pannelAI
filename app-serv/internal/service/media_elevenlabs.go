@@ -3,12 +3,7 @@
 // @file      internal/service/media_elevenlabs.go
 // @for       The ElevenLabs speech adapter in the §7.10 media plane.
 // @uses      internal/dataplane, internal/schema, encoding/json, net/url, strings.
-// @reason    ElevenLabs names the voice in its path and reads the model from the
-//
-//	body, so it is the first adapter that shapes a URL of its own. Keeping
-//	that beside its body means the shared pipeline still owns selection,
-//	egress, health, and accounting.
-//
+// @reason    ElevenLabs names the voice in its path and reads the model from the body, so it is the first adapter that shapes a URL of its own. Keeping that beside its body means the shared pipeline still owns selection, egress, health, and accounting.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

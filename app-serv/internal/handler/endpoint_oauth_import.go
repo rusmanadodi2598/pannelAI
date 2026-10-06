@@ -1,18 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/endpoint_oauth_import.go
-// @for       Importing already-obtained OAuth credentials as endpoints
-//
-//	(SPEC-API-001 §7.5, §8.1).
-//
+// @for       Importing already-obtained OAuth credentials as endpoints (SPEC-API-001 §7.5, §8.1).
 // @uses      internal/domain, internal/schema, internal/service, net/http, time.
-// @reason    The import path exists for accounts obtained on a machine with no
-//
-//	browser callback, so there is no authorization flow to run, only
-//	tokens to seal and an account identity to match. Its response is the
-//	same per-row report the other batches use, so it shares this handler,
-//	and its own file keeps the AGENTS.md §1.1 line budget.
-//
+// @reason    The import path exists for accounts obtained on a machine with no browser callback, so there is no authorization flow to run, only tokens to seal and an account identity to match. Its response is the same per-row report the other batches use, so it shares this handler, and its own file keeps the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

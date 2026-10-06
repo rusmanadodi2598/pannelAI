@@ -1,20 +1,9 @@
 // Command app-serv adapts a provider node's model list to HTTP.
 //
 // @file      cmd/app-serv/node_models.go
-// @for       The net/http implementation of service.NodeModelSource: read a
-//
-//	compatible node's own model list, and fall back when it cannot answer.
-//
-// @uses      internal/netguard, internal/provider, internal/registry,
-//
-//	internal/service, context, fmt, io, net/http, strings, sync, time.
-//
-// @reason    SPEC-API-001 §7.4 serves a node's models and draft 017 §4.2 measured
-//
-//	that a synthesized node carried none, so the node appeared in four
-//	surfaces with `len(entry.Models) = 0`. AGENTS.md §1.5 forbids net/http in
-//	the service layer, so the read is an adapter here and a port there, the
-//	same split the connectivity probe uses.
+// @for       The net/http implementation of service.NodeModelSource: read a compatible node's own model list, and fall back when it cannot answer.
+// @uses      internal/netguard, internal/provider, internal/registry, internal/service, context, fmt, io, net/http, strings, sync, time.
+// @reason    SPEC-API-001 §7.4 serves a node's models and draft 017 §4.2 measured that a synthesized node carried none, so the node appeared in four surfaces with `len(entry.Models) = 0`. AGENTS.md §1.5 forbids net/http in the service layer, so the read is an adapter here and a port there, the same split the connectivity probe uses.
 //
 //	Two rules are structural rather than incidental. The destination is
 //	operator-supplied, so it goes through the same egress guard the probe

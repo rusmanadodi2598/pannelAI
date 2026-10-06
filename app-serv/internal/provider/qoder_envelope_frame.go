@@ -1,17 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_envelope_frame.go
-// @for       One Qoder SSE frame: its envelope, the answer wrapped inside it, and
-//
-//	what a refusal inside that envelope becomes.
-//
+// @for       One Qoder SSE frame: its envelope, the answer wrapped inside it, and what a refusal inside that envelope becomes.
 // @uses      bytes, encoding/json, errors, fmt, net/http, strings, time.
-// @reason    The vendor states a call's real outcome per frame rather than per
-//
-//	response, so parsing one frame and deciding what a refusal means are the
-//	parts worth reading on their own; the reader that applies them to a
-//	stream lives beside this file.
-//
+// @reason    The vendor states a call's real outcome per frame rather than per response, so parsing one frame and deciding what a refusal means are the parts worth reading on their own; the reader that applies them to a stream lives beside this file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

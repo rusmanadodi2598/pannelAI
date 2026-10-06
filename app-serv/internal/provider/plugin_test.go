@@ -2,17 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/plugin_test.go
-// @for       Table-driven tests for connector registration, lookup, and the
-//
-//	per-provider fallback.
-//
+// @for       Table-driven tests for connector registration, lookup, and the per-provider fallback.
 // @uses      testing, net/http, internal/registry.
-// @reason    The seam exists so a provider can be patched or added without
-//
-//	touching shared code, which only holds if the core truly routes
-//	through lookup rather than branching on ids. These tests pin that
-//	property and the URL/auth rules that made the branch unnecessary.
-//
+// @reason    The seam exists so a provider can be patched or added without touching shared code, which only holds if the core truly routes through lookup rather than branching on ids. These tests pin that property and the URL/auth rules that made the branch unnecessary.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

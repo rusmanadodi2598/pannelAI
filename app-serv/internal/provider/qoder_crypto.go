@@ -1,21 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_crypto.go
-// @for       The cryptographic primitives of one COSY signature: the AES payload,
-//
-//	the RSA-wrapped request key, and the ids the scheme draws.
-//
-// @uses      crypto/aes, crypto/cipher, crypto/rand, crypto/rsa, crypto/x509,
-//
-//	encoding/base64, encoding/json, encoding/pem, fmt.
-//
-// @reason    These are the parts a reviewer cannot check by reading the header
-//
-//	list: a CBC whose IV is the key, a padding scheme applied by hand because
-//	the cipher's own is switched off, and a wrapped key whose ciphertext the
-//	vendor alone can unwrap. Split from the composition of the headers so each
-//	can be read against the reference on its own terms.
-//
+// @for       The cryptographic primitives of one COSY signature: the AES payload, the RSA-wrapped request key, and the ids the scheme draws.
+// @uses      crypto/aes, crypto/cipher, crypto/rand, crypto/rsa, crypto/x509, encoding/base64, encoding/json, encoding/pem, fmt.
+// @reason    These are the parts a reviewer cannot check by reading the header list: a CBC whose IV is the key, a padding scheme applied by hand because the cipher's own is switched off, and a wrapped key whose ciphertext the vendor alone can unwrap. Split from the composition of the headers so each can be read against the reference on its own terms.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

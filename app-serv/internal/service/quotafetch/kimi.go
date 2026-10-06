@@ -3,11 +3,7 @@
 // @file      internal/service/quotafetch/kimi.go
 // @for       Reads Kimi's published usage window and rate limit, and the plan tier they belong to.
 // @uses      internal/service/quotafetch, context, encoding/json, fmt, math, net/http, regexp, strconv, strings, time
-// @reason    Kimi authenticates this surface two ways, a stored API key as a raw x-api-key, an
-//
-//	OAuth connection as a bearer token with device identification, and its 403 means "no usage
-//	entitlement", not a dead session, so the two refusals stay distinct.
-//
+// @reason    Kimi authenticates this surface two ways, a stored API key as a raw x-api-key, an OAuth connection as a bearer token with device identification, and its 403 means "no usage entitlement", not a dead session, so the two refusals stay distinct.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

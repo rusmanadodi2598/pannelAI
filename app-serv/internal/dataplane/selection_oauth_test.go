@@ -1,20 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_oauth_test.go
-// @for       The selection of an oauth endpoint, which carries its credential in
-//
-//	the stored token and owns no key row to pick.
-//
+// @for       The selection of an oauth endpoint, which carries its credential in the stored token and owns no key row to pick.
 // @uses      internal/domain, context, testing, time.
-// @reason    SelectNext demanded a healthy key from every endpoint except a
-//
-//	no_auth one, so an oauth account built by a device flow was never
-//	eligible and the provider answered NO_PROVIDER_AVAILABLE even
-//	though its token was valid. These tests pin the fix: the endpoint
-//	is selectable with no material, the credential it presents is the
-//	stored token, and its health writes stay no-ops like the keyless
-//	case they belong to.
-//
+// @reason    SelectNext demanded a healthy key from every endpoint except a no_auth one, so an oauth account built by a device flow was never eligible and the provider answered NO_PROVIDER_AVAILABLE even though its token was valid. These tests pin the fix: the endpoint is selectable with no material, the credential it presents is the stored token, and its health writes stay no-ops like the keyless case they belong to.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

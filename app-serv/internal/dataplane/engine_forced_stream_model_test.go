@@ -1,16 +1,10 @@
 // Package dataplane implements the request-path data plane of app-serv.
 //
 // @file      internal/dataplane/engine_forced_stream_model_test.go
-// @for       What a folded answer names as its model when the upstream calls every
-//
-//	model by one of its own labels.
-//
+// @for       What a folded answer names as its model when the upstream calls every model by one of its own labels.
 // @uses      io, strings, testing, internal/registry.
-// @reason    A provider that only answers streams is folded back into one body and
+// @reason    A provider that only answers streams is folded back into one body and forwarded as written when the client speaks the same wire, so the model name the client reads comes from the fold rather than from the translation step, and Qoder writes `auto` into every chunk it sends.
 //
-//	forwarded as written when the client speaks the same wire, so the model
-//	name the client reads comes from the fold rather than from the
-//	translation step, and Qoder writes `auto` into every chunk it sends.
 //	That name is the provider's routing label: it is neither the model the
 //	caller asked for nor one the caller can send back, because retrying it
 //	reaches a pool the vendor answers 429 for.

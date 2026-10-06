@@ -1,17 +1,9 @@
 // Package provider adapts a registry entry to the outbound HTTP call.
 //
 // @file      internal/provider/default_auth_query_test.go
-// @for       The query-parameter credential placement, and the header placement
-//
-//	it must not disturb.
-//
+// @for       The query-parameter credential placement, and the header placement it must not disturb.
 // @uses      internal/registry, net/http, net/http/httptest, strings, testing.
-// @reason    Draft 017 §4.2 measured that `app-serv` could not express a provider
-//
-//	that carries its credential in the query string: `AuthConfig` had only
-//	Header and Scheme, so the gemini family, whose models endpoint reads
-//	`?key=`, had no declaration for it. The reference applies exactly this
-//	rule in its models route (models/route.js:189, :634-637).
+// @reason    Draft 017 §4.2 measured that `app-serv` could not express a provider that carries its credential in the query string: `AuthConfig` had only Header and Scheme, so the gemini family, whose models endpoint reads `?key=`, had no declaration for it. The reference applies exactly this rule in its models route (models/route.js:189, :634-637).
 //
 //	The rule is asserted against the header path too, and the two are
 //	mutually exclusive on the wire: an entry that declares both must send the

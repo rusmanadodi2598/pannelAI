@@ -3,12 +3,7 @@
 // @file      internal/handler/oauth_device_state_round_test.go
 // @for       The wire body a vendor-minted (state) device round answers with, next to the PKCE round's.
 // @uses      net/http, strings, testing, internal/handler.
-// @reason    A state round has no short code at all, and the panel once refused to render one
-//
-//	because the route still promised a `user_code`: the field is conditional now, so the
-//	absence is the contract being pinned here, alongside the handle and the link the panel
-//	does need. The PKCE round's code is pinned by TestDeviceStartAnswersTheVerificationRound.
-//
+// @reason    A state round has no short code at all, and the panel once refused to render one because the route still promised a `user_code`: the field is conditional now, so the absence is the contract being pinned here, alongside the handle and the link the panel does need. The PKCE round's code is pinned by TestDeviceStartAnswersTheVerificationRound.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

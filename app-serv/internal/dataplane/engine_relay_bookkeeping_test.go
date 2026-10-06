@@ -3,19 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_relay_bookkeeping_test.go
-// @for       The served-answer rule: a health write that fails after the
-//
-//	upstream answered must not replace the answer with an error.
-//
-// @uses      context, errors, strings, testing, internal/domain,
-//
-//	internal/registry.
-//
-// @reason    The failure path already swallows its bookkeeping error
-//
-//	(recordFailure); the success path returned it, so a Postgres blip or
-//	a key deleted mid-request turned a served 200 into a client error.
-//
+// @for       The served-answer rule: a health write that fails after the upstream answered must not replace the answer with an error.
+// @uses      context, errors, strings, testing, internal/domain, internal/registry.
+// @reason    The failure path already swallows its bookkeeping error (recordFailure); the success path returned it, so a Postgres blip or a key deleted mid-request turned a served 200 into a client error.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

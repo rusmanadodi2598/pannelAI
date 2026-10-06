@@ -5,10 +5,8 @@
 // @file      internal/dataplane/retry.go
 // @for       The retry decision for one upstream target and its backoff.
 // @uses      internal/provider, internal/registry, net/http, math/rand/v2, time.
-// @reason    SPEC-API-001 §4 fixes the policy (default three attempts on
+// @reason    SPEC-API-001 §4 fixes the policy (default three attempts on 429/5xx/network with exponential backoff and jitter, per-provider override, and never more than one retry of a non-idempotent POST).
 //
-//	429/5xx/network with exponential backoff and jitter, per-provider
-//	override, and never more than one retry of a non-idempotent POST).
 //	Keeping it a pure function of the attempt, the status, the header,
 //	the registry entry, and the plugin is what makes the policy
 //	testable per status without a network or a clock, which the

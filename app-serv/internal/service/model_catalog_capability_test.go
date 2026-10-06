@@ -2,18 +2,8 @@
 //
 // @file      internal/service/model_catalog_capability_test.go
 // @for       The capability filter measured against the REAL embedded registry.
-//
 // @uses      internal/domain, internal/registry, context, testing.
-// @reason    SPEC-API-001 §7.6 promises `?capability=vision|tools`, and the
-//
-//	fixture-based tests this file sits beside could not fail: they wrote
-//	"vision" into their own registry data, so they proved the filter
-//	matches a string it was handed rather than that the panel's two
-//	buttons return anything. Draft 017 §4.4 measured the consequence,
-//	both filters answered zero rows over 507 registered models. This
-//	test reads the embedded document instead, which is what the
-//	operator's panel reads.
-//
+// @reason    SPEC-API-001 §7.6 promises `?capability=vision|tools`, and the fixture-based tests this file sits beside could not fail: they wrote "vision" into their own registry data, so they proved the filter matches a string it was handed rather than that the panel's two buttons return anything. Draft 017 §4.4 measured the consequence, both filters answered zero rows over 507 registered models. This test reads the embedded document instead, which is what the operator's panel reads.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

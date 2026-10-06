@@ -3,12 +3,7 @@
 // @file      internal/service/proxy_test.go
 // @for       The proxy pool's create, update, and delete rules (SPEC-API-001 §7.11).
 // @uses      testing, context, errors, strings, internal/domain.
-// @reason    §7.11 makes the password write-only and the status a proof that a
-//
-//	candidate was tested; the tests pin that a save which changes nothing
-//	does not erase the proof, and that an empty password does not erase the
-//	secret, the two silent losses an operator would only notice later.
-//
+// @reason    §7.11 makes the password write-only and the status a proof that a candidate was tested; the tests pin that a save which changes nothing does not erase the proof, and that an empty password does not erase the secret, the two silent losses an operator would only notice later.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

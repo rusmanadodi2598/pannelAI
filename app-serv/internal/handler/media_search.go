@@ -3,11 +3,7 @@
 // @file      internal/handler/media_search.go
 // @for       The §7.10 web search route.
 // @uses      internal/schema, net/http.
-// @reason    The route decodes, authenticates, calls, and answers the normalized
-//
-//	envelope; the provider and parameter decisions belong to the service,
-//	so nothing provider-specific reaches this layer.
-//
+// @reason    The route decodes, authenticates, calls, and answers the normalized envelope; the provider and parameter decisions belong to the service, so nothing provider-specific reaches this layer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

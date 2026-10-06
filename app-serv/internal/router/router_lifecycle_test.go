@@ -2,10 +2,7 @@
 //
 // @file      internal/router/router_lifecycle_test.go
 // @for       The full create, read, revoke HTTP lifecycle through the mux.
-// @uses      internal/router, internal/schema, net/http, net/http/httptest,
-//
-//	strings, encoding/json, testing.
-//
+// @uses      internal/router, internal/schema, net/http, net/http/httptest, strings, encoding/json, testing.
 // @reason    The individual endpoints can each pass while the lifecycle between them is broken; this walks create, get, and delete as one flow.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router

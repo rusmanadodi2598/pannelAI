@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_connect.go
-// @for       Landing a provider token set on an account: sealing, the identity
-//
-//	match, and the update-or-create write both connect paths share.
-//
+// @for       Landing a provider token set on an account: sealing, the identity match, and the update-or-create write both connect paths share.
 // @uses      context, errors, fmt, strings, time, internal/domain, internal/repository.
-// @reason    A code callback and a device poll produce the same thing, one
-//
-//	account's credentials, and the rule that keeps them agreeing is
-//	non-obvious: match on email and workspace, seal both tokens, name a
-//	fresh endpoint after its identity. Written twice those rules drift
-//	apart, so this file owns them once.
-//
+// @reason    A code callback and a device poll produce the same thing, one account's credentials, and the rule that keeps them agreeing is non-obvious: match on email and workspace, seal both tokens, name a fresh endpoint after its identity. Written twice those rules drift apart, so this file owns them once.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -2,17 +2,9 @@
 // subscriber.
 //
 // @file      cmd/app-serv/usage_event_wiring_doubles_test.go
-// @for       The in-memory broker, subscription, and stores the wiring test
-//
-//	drives.
-//
+// @for       The in-memory broker, subscription, and stores the wiring test drives.
 // @uses      internal/domain, internal/repository, context, sync, time.
-// @reason    The wiring test follows one recorded request to the console line it
-//
-//	produced, which needs a broker shared by both halves. Keeping the
-//	doubles here leaves the test itself readable as the scenario it
-//	describes: record a request, then assert the line.
-//
+// @reason    The wiring test follows one recorded request to the console line it produced, which needs a broker shared by both halves. Keeping the doubles here leaves the test itself readable as the scenario it describes: record a request, then assert the line.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

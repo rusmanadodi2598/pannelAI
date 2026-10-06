@@ -1,18 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/settings_routing_patch.go
-// @for       The routing group's PATCH DTO, its lowering into the domain
-//
-//	mutation, and the per-entry rules of the provider override map.
-//
+// @for       The routing group's PATCH DTO, its lowering into the domain mutation, and the per-entry rules of the provider override map.
 // @uses      internal/domain.
-// @reason    SPEC-API-001 §7.14 validates a PATCH per key. The provider
-//
-//	override map is the one value whose entries carry their own rules,
-//	so keeping its DTO and its checks together is what stops the
-//	settings patch file from growing past the line budget while the
-//	group stays one reviewable unit.
-//
+// @reason    SPEC-API-001 §7.14 validates a PATCH per key. The provider override map is the one value whose entries carry their own rules, so keeping its DTO and its checks together is what stops the settings patch file from growing past the line budget while the group stays one reviewable unit.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_playht_test.go
-// @for       The PlayHT speech adapter: body, the paired credential headers, and
-//
-//	the declared Accept header.
-//
-// @uses      internal/dataplane, internal/provider, internal/schema, context,
-//
-//	encoding/json, testing.
-//
-// @reason    G5 ports one provider adapter at a time. PlayHT is the two-header
-//
-//	credential case (`userId:apiKey`), so these rows pin the split, the
-//	voice default, and that the OpenAI-shaped control still gets one
-//	Authorization header.
-//
+// @for       The PlayHT speech adapter: body, the paired credential headers, and the declared Accept header.
+// @uses      internal/dataplane, internal/provider, internal/schema, context, encoding/json, testing.
+// @reason    G5 ports one provider adapter at a time. PlayHT is the two-header credential case (`userId:apiKey`), so these rows pin the split, the voice default, and that the OpenAI-shaped control still gets one Authorization header.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

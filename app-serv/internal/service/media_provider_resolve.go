@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_provider_resolve.go
-// @for       Resolving registry defaults and stored overrides into effective
-//
-//	media values (SPEC-API-001 §7.10).
-//
+// @for       Resolving registry defaults and stored overrides into effective media values (SPEC-API-001 §7.10).
 // @uses      internal/domain, internal/registry, context, strings.
-// @reason    Every §7.10 read answers the same question, what does this
-//
-//	provider actually dial for this kind, so the resolution and the
-//	kind-vocabulary mapping sit in one file rather than beside each
-//	route that asks.
-//
+// @reason    Every §7.10 read answers the same question, what does this provider actually dial for this kind, so the resolution and the kind-vocabulary mapping sit in one file rather than beside each route that asks.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

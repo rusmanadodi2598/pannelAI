@@ -1,15 +1,10 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_credential_free_test.go
-// @for       The `?active=true` predicate for a credential-free provider that
-//
-//	holds no endpoint row, which the router serves anyway.
-//
+// @for       The `?active=true` predicate for a credential-free provider that holds no endpoint row, which the router serves anyway.
 // @uses      context, testing, internal/domain, internal/registry.
-// @reason    Draft 029 §4.8 F8 taught selection to synthesize a virtual
+// @reason    Draft 029 §4.8 F8 taught selection to synthesize a virtual endpoint for a credential-free provider with no stored row, so `opencode/space-bunny-free` answers 200 on an empty endpoint table.
 //
-//	endpoint for a credential-free provider with no stored row, so
-//	`opencode/space-bunny-free` answers 200 on an empty endpoint table.
 //	The catalog's active filter was written against the older premise
 //	("no row means not a candidate"), so it hid the whole free lane from
 //	the panel while the router answered it, the disagreement that made

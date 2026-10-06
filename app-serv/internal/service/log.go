@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/log.go
-// @for       Request-log read, capture-aware write, purge, and the console
-//
-//	ring buffer the management route exposes.
-//
+// @for       Request-log read, capture-aware write, purge, and the console ring buffer the management route exposes.
 // @uses      internal/domain, internal/repository, context, time.
-// @reason    SPEC-API-001 §7.13 makes body capture and the console buffer bound
-//
-//	settings-driven, and the purge retention-driven. Deciding that here
-//	means the repository only ever stores what the settings allow, and
-//	the settings themselves are read through the settings service
-//	rather than by a second reader of the same table.
-//
+// @reason    SPEC-API-001 §7.13 makes body capture and the console buffer bound settings-driven, and the purge retention-driven. Deciding that here means the repository only ever stores what the settings allow, and the settings themselves are read through the settings service rather than by a second reader of the same table.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

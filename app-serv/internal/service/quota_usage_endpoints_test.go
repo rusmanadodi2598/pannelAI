@@ -3,12 +3,7 @@
 // @file      internal/service/quota_usage_endpoints_test.go
 // @for       Pins that every host a provider declares reaches the fetcher that asks for it.
 // @uses      internal/registry, internal/service/quotafetch, reflect, testing.
-// @reason    The published read once forwarded only `transport.usage.url`, so a family
-//
-//	reading `quota_url`, `quota_api_url`, `urls`, `oauth_url` or `user_url` was
-//	handed an empty address and called nothing. These cases are why that cannot
-//	happen quietly to a key the registry already spells out, or to one it adds later.
-//
+// @reason    The published read once forwarded only `transport.usage.url`, so a family reading `quota_url`, `quota_api_url`, `urls`, `oauth_url` or `user_url` was handed an empty address and called nothing. These cases are why that cannot happen quietly to a key the registry already spells out, or to one it adds later.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

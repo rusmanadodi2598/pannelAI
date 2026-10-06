@@ -1,22 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_model_probe.go
-// @for       The §7.4 model test: one provider's model probed by id, and a bounded
-//
-//	sweep over every chat model that provider offers (draft 017 §4.10, F10).
-//
-// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema,
-//
-//	context, time.
-//
-// @reason    The connection test answers "can this credential reach the
-//
-//	provider"; the operator's next question is "does this model answer",
-//	which only a per-model probe can tell them. The probe is the real
-//	data plane call rather than a second HTTP path, so a model the gateway
-//	cannot route never reports healthy from a route the gateway would not
-//	take.
-//
+// @for       The §7.4 model test: one provider's model probed by id, and a bounded sweep over every chat model that provider offers (draft 017 §4.10, F10).
+// @uses      internal/dataplane, internal/domain, internal/registry, internal/schema, context, time.
+// @reason    The connection test answers "can this credential reach the provider"; the operator's next question is "does this model answer", which only a per-model probe can tell them. The probe is the real data plane call rather than a second HTTP path, so a model the gateway cannot route never reports healthy from a route the gateway would not take.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

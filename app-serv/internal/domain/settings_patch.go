@@ -2,21 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/settings_patch.go
-// @for       The partial settings mutation, its per-key application, and the
-//
-//	whole-document validation a patch is checked against.
-//
-// @uses      internal/domain (Settings, ComboStrategy, AppError constructors),
-//
-//	(net/url).
-//
-// @reason    SPEC-API-001 §7.14 validates a PATCH per key, and the rules that
-//
-//	matter are the cross-key ones: a per-field tag can reject one value,
-//	but only the assembled document can reject a combination that is
-//	incoherent as a whole. Keeping the apply-and-validate here is what
-//	stops a layer from writing a document its own rules forbid.
-//
+// @for       The partial settings mutation, its per-key application, and the whole-document validation a patch is checked against.
+// @uses      internal/domain (Settings, ComboStrategy, AppError constructors), (net/url).
+// @reason    SPEC-API-001 §7.14 validates a PATCH per key, and the rules that matter are the cross-key ones: a per-field tag can reject one value, but only the assembled document can reject a combination that is incoherent as a whole. Keeping the apply-and-validate here is what stops a layer from writing a document its own rules forbid.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

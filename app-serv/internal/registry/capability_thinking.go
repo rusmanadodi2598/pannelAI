@@ -2,19 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_thinking.go
-// @for       The reasoning decision for one model: whether it reasons, the wire
-//
-//	format its thinking takes, and whether thinking can be turned off.
-//
+// @for       The reasoning decision for one model: whether it reasons, the wire format its thinking takes, and whether thinking can be turned off.
 // @uses      strings (the glob matcher's normalisation).
-// @reason    The reference derives its thinking-level picker and its
-//
-//	thinking-format dispatch from three fields of the same capability
-//	resolution the port already carries for vision and tools
-//	(capabilities.js:562-605). The port reads them from
-//	capability_thinking_tables.go, in the reference's own layer order,
-//	provider override, exact id, ordered pattern, floor, because a
-//	reordered walk answers differently for every id two rows match.
+// @reason    The reference derives its thinking-level picker and its thinking-format dispatch from three fields of the same capability resolution the port already carries for vision and tools (capabilities.js:562-605). The port reads them from capability_thinking_tables.go, in the reference's own layer order, provider override, exact id, ordered pattern, floor, because a reordered walk answers differently for every id two rows match.
 //
 //	The answer is a value the data plane and the panel both read: the
 //	panel offers the levels §7.6's reasoning control can pick, and the

@@ -1,19 +1,9 @@
 // Package repository defines storage contracts consumed by app-serv services.
 //
 // @file      internal/repository/usage_active.go
-// @for       The in-flight marker store: record one call while it runs, remove
-//
-//	it when it ends, and read the bounded live set.
-//
+// @for       The in-flight marker store: record one call while it runs, remove it when it ends, and read the bounded live set.
 // @uses      internal/domain, context.
-// @reason    SPEC-UI-001 §6.5 makes the drawing's live state come from the
-//
-//	gateway rather than from a poll, and the gateway is the only party
-//	that knows a request is between two instants. The port is three
-//	methods over one key because that is the whole lifecycle: a marker
-//	is written before the outbound call, removed after it, and read by
-//	the stream. Keeping it here rather than in the service keeps Redis
-//	out of `service` (AGENTS.md §1.5).
+// @reason    SPEC-UI-001 §6.5 makes the drawing's live state come from the gateway rather than from a poll, and the gateway is the only party that knows a request is between two instants. The port is three methods over one key because that is the whole lifecycle: a marker is written before the outbound call, removed after it, and read by the stream. Keeping it here rather than in the service keeps Redis out of `service` (AGENTS.md §1.5).
 //
 //	The read is deliberately bounded and takes its own clock, so the
 //	staleness rule belongs to one place and a caller cannot ask for an

@@ -1,18 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_opencode_free_engine_test.go
-// @for       The engine wiring the free-tier tests drive: the real pipeline over
-//
-//	the measured upstream stand-in.
-//
+// @for       The engine wiring the free-tier tests drive: the real pipeline over the measured upstream stand-in.
 // @uses      testing, internal/domain, internal/provider, internal/registry.
-// @reason    The wiring is the evidence that the lane works end to end: the
-//
-//	resolver, selector, transport, and connector are the production ones,
-//	and only the upstream address is the stand-in. Keeping it in its own
-//	file also keeps the fixture and acceptance files inside the AGENTS.md
-//	section 1.1 budget.
-//
+// @reason    The wiring is the evidence that the lane works end to end: the resolver, selector, transport, and connector are the production ones, and only the upstream address is the stand-in. Keeping it in its own file also keeps the fixture and acceptance files inside the AGENTS.md section 1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

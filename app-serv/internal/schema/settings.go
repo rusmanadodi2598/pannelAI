@@ -3,12 +3,7 @@
 // @file      internal/schema/settings.go
 // @for       The settings read/patch contract and its per-key validation.
 // @uses      internal/domain (Settings, SettingsPatch, ParseComboStrategy).
-// @reason    SPEC-API-001 §7.14 fixes the settings surface and §2.4 requires the
-//
-//	contract as typed structs with validation tags before the handler,
-//	so a PATCH is validated per key here rather than by the service
-//	guessing what a client meant.
-//
+// @reason    SPEC-API-001 §7.14 fixes the settings surface and §2.4 requires the contract as typed structs with validation tags before the handler, so a PATCH is validated per key here rather than by the service guessing what a client meant.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

@@ -4,11 +4,7 @@
 // @file      internal/handler/oauth_state_stub_test.go
 // @for       Answers the StateRoundClient seam for handler tests that drive a vendor-minted round.
 // @uses      context, internal/registry, internal/service.
-// @reason    The seam is optional on purpose, so the shared stub does not carry it; a test that
-//
-//	starts a state round needs one client that does, and it answers a fixed round because
-//	what these tests pin is the wire body the panel receives, not the vendor's cadence.
-//
+// @reason    The seam is optional on purpose, so the shared stub does not carry it; a test that starts a state round needs one client that does, and it answers a fixed round because what these tests pin is the wire body the panel receives, not the vendor's cadence.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

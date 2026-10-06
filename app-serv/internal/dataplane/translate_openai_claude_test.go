@@ -3,12 +3,7 @@
 // @file      internal/dataplane/translate_openai_claude_test.go
 // @for       Table-driven tests for OpenAI ↔ Anthropic request translation.
 // @uses      testing, internal/schema.
-// @reason    SPEC-API-001 §7.15 makes translation the data plane's core job, so
-//
-//	every rule it implements, system hoisting, tool ordering, image
-//	mapping, and usage folding, is pinned here. Translation is a pure
-//	function, so these run with no network and no clock (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §7.15 makes translation the data plane's core job, so every rule it implements, system hoisting, tool ordering, image mapping, and usage folding, is pinned here. Translation is a pure function, so these run with no network and no clock (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

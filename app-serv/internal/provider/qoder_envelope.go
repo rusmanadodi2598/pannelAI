@@ -1,15 +1,10 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_envelope.go
-// @for       Streaming Qoder answers through the envelope unwrap: the peek that
-//
-//	decides the call, and the body the core then reads.
-//
+// @for       Streaming Qoder answers through the envelope unwrap: the peek that decides the call, and the body the core then reads.
 // @uses      bufio, errors, io, net/http.
-// @reason    Qoder answers a chat with HTTP 200 and puts the real status inside
+// @reason    Qoder answers a chat with HTTP 200 and puts the real status inside each frame (measured, draft 036 §5.1). Without unwrapping, a spent account would be piped to the client as an answer and billed as one.
 //
-//	each frame (measured, draft 036 §5.1). Without unwrapping, a spent
-//	account would be piped to the client as an answer and billed as one.
 //	The first frame is therefore read before anything is piped, so a
 //	refusal there becomes a failure the router can act on. Reading one
 //	frame and deciding what its refusal means live in

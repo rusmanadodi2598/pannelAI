@@ -5,11 +5,7 @@
 // @file      internal/tokensaver/constants.go
 // @for       The engine's caps, all of them ports of the reference's constants.
 // @uses      (none).
-// @reason    SPEC-API-002 §5 makes every cap a documented number. Keeping them
-//
-//	here is what lets the filters read as logic instead of as a wall of
-//	literals, and what makes a cap change one edit rather than a hunt.
-//
+// @reason    SPEC-API-002 §5 makes every cap a documented number. Keeping them here is what lets the filters read as logic instead of as a wall of literals, and what makes a cap change one edit rather than a hunt.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

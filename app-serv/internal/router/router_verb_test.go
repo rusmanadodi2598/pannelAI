@@ -2,10 +2,7 @@
 //
 // @file      internal/router/router_verb_test.go
 // @for       Status assertions for every registered route plus the wrong-verb path.
-// @uses      internal/router, internal/schema, net/http, net/http/httptest,
-//
-//	strings, encoding/json, testing.
-//
+// @uses      internal/router, internal/schema, net/http, net/http/httptest, strings, encoding/json, testing.
 // @reason    A route that was never registered answers 405 where the contract promises a handler, which is exactly the defect a status-only test catches cheaply.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router

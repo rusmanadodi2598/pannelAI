@@ -1,15 +1,10 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/endpoint_response_parity_test.go
-// @for       That an endpoint's connection-parity fields reach the §7.5 wire
-//
-//	shape the panel renders.
-//
+// @for       That an endpoint's connection-parity fields reach the §7.5 wire shape the panel renders.
 // @uses      testing, time, internal/domain, internal/schema.
-// @reason    R17 of docs/DRAFT/042-CODE-REVIEW-FIXES.md found the schema's
+// @reason    R17 of docs/DRAFT/042-CODE-REVIEW-FIXES.md found the schema's parity fields declared but never mapped, so a panel could not show why an endpoint last failed even after the data plane recorded it.
 //
-//	parity fields declared but never mapped, so a panel could not show
-//	why an endpoint last failed even after the data plane recorded it.
 //	The mapper is pinned here so the fields cannot silently drop out of
 //	the wire again.
 //

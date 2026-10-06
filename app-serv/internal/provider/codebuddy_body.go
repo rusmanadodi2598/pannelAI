@@ -4,14 +4,7 @@
 // @file      internal/provider/codebuddy_body.go
 // @for       Rewrites an outbound CodeBuddy chat body into the shape the vendor accepts.
 // @uses      encoding/json, fmt, strings.
-// @reason    The vendor answers a plain OpenAI body with `11101 invalid request`; it wants a
-//
-//	system turn leading the conversation and user content as typed blocks rather than a bare
-//	string (the reference's executors/codebuddy-intl.js:20-38). The caller's own system text
-//	is folded into that one leading turn instead of dropped, so a client that steers the
-//	model through a system prompt keeps its instruction and the request still has exactly one
-//	system message, which is what the live vendor was measured accepting on 2026-09-29.
-//
+// @reason    The vendor answers a plain OpenAI body with `11101 invalid request`; it wants a system turn leading the conversation and user content as typed blocks rather than a bare string (the reference's executors/codebuddy-intl.js:20-38). The caller's own system text is folded into that one leading turn instead of dropped, so a client that steers the model through a system prompt keeps its instruction and the request still has exactly one system message, which is what the live vendor was measured accepting on 2026-09-29.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,11 +3,7 @@
 // @file      internal/service/quotafetch/codebuddy.go
 // @for       Asks one CodeBuddy region's billing endpoint with the identity that region's entry declares.
 // @uses      internal/service/quotafetch, net/http, encoding/json
-// @reason    The billing answer arrives as a doubled envelope behind a refusal-prone POST, so the
-//
-//	request and its two soft failures belong here; how the credit packages inside it
-//	become windows is read by codebuddy_packs.go.
-//
+// @reason    The billing answer arrives as a doubled envelope behind a refusal-prone POST, so the request and its two soft failures belong here; how the credit packages inside it become windows is read by codebuddy_packs.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

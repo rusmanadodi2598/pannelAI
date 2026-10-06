@@ -3,15 +3,7 @@
 // @file      internal/schema/usage_filter_status_test.go
 // @for       The status filter's closed set at the wire boundary (draft 010 F2).
 // @uses      internal/domain, net/http, net/http/httptest, testing, time.
-// @reason    Draft 010 F2: the status query parameter accepted values outside
-//
-//	the domain's closed set (success|error), and the repository's
-//	"empty means unfiltered" predicate turned any unknown value into a
-//	silently empty 200 instead of a 400. The panel already validates
-//	this field as a Zod enum, so these cases pin the gateway to the
-//	same set, including the benign values that must keep passing and
-//	the trim rule that runs before the check.
-//
+// @reason    Draft 010 F2: the status query parameter accepted values outside the domain's closed set (success|error), and the repository's "empty means unfiltered" predicate turned any unknown value into a silently empty 200 instead of a 400. The panel already validates this field as a Zod enum, so these cases pin the gateway to the same set, including the benign values that must keep passing and the trim rule that runs before the check.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

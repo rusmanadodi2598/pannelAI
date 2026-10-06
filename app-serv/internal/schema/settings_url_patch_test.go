@@ -1,18 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/settings_url_patch_test.go
-// @for       The URL fields of the §7.14 PATCH: empty clears, malformed is
-//
-//	refused, and the headroom coherence rule still holds after a clear.
-//
+// @for       The URL fields of the §7.14 PATCH: empty clears, malformed is refused, and the headroom coherence rule still holds after a clear.
 // @uses      testing, internal/domain.
-// @reason    §7.14 makes a partial PATCH the only door a settings write enters
-//
-//	through, and the panel sends outbound_proxy_url: "" when the operator
-//	empties the field: the tag layer used to refuse that with 400, which is
-//	the one way an operator removes a stored URL. The tests pin the three
-//	faces of one rule, clear accepted, junk refused, coherence kept.
-//
+// @reason    §7.14 makes a partial PATCH the only door a settings write enters through, and the panel sends outbound_proxy_url: "" when the operator empties the field: the tag layer used to refuse that with 400, which is the one way an operator removes a stored URL. The tests pin the three faces of one rule, clear accepted, junk refused, coherence kept.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

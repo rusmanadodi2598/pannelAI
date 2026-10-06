@@ -3,10 +3,7 @@
 // @file      internal/domain/auth.go
 // @for       Authentication and session error vocabulary for the management plane.
 // @uses      standard library time and internal domain error constructors.
-// @reason    Auth handlers need stable English error codes without exposing
-//
-//	bcrypt, PostgreSQL, or Redis implementation details.
-//
+// @reason    Auth handlers need stable English error codes without exposing bcrypt, PostgreSQL, or Redis implementation details.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

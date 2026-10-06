@@ -3,12 +3,7 @@
 // @file      internal/repository/usage.go
 // @for       Storage boundaries for usage records, quota windows, and quota caps.
 // @uses      context, time, internal/domain.
-// @reason    AGENTS.md §1.5 requires services to depend on these interfaces and
-//
-//	never on a driver. The read side is four aggregations over one
-//	table, so they share one boundary: a caller cannot read the summary
-//	from a different place than the records it summarizes.
-//
+// @reason    AGENTS.md §1.5 requires services to depend on these interfaces and never on a driver. The read side is four aggregations over one table, so they share one boundary: a caller cannot read the summary from a different place than the records it summarizes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

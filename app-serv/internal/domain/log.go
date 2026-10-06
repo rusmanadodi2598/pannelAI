@@ -2,19 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/log.go
-// @for       The RequestLog aggregate and the capture, truncation, and
-//
-//	retention rules that govern it.
-//
+// @for       The RequestLog aggregate and the capture, truncation, and retention rules that govern it.
 // @uses      internal/domain (AppError constructors), strings, time.
-// @reason    SPEC-API-001 §7.13 makes body capture conditional on a setting and
-//
-//	truncated to a configured size, and makes retention delete rows
-//	older than a configured age. Both rules decide whether a byte is
-//	stored, so they live here where a unit test can exercise the
-//	boundary with no database, rather than inside the repository that
-//	happens to write the row.
-//
+// @reason    SPEC-API-001 §7.13 makes body capture conditional on a setting and truncated to a configured size, and makes retention delete rows older than a configured age. Both rules decide whether a byte is stored, so they live here where a unit test can exercise the boundary with no database, rather than inside the repository that happens to write the row.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

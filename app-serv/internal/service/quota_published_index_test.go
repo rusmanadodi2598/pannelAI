@@ -3,12 +3,7 @@
 // @file      internal/service/quota_published_index_test.go
 // @for       Pins that an account behind a provider with no usage endpoint is left out of the published answer.
 // @uses      context, internal/domain, internal/registry, internal/service, testing, time.
-// @reason    "Not polled yet" promises a poll that will never arrive, and a provider that
-//
-//	publishes no quota at all is not waiting for anything. Telling those two
-//	apart is the difference between a queue and a capability, so the filter
-//	that decides it gets its own test.
-//
+// @reason    "Not polled yet" promises a poll that will never arrive, and a provider that publishes no quota at all is not waiting for anything. Telling those two apart is the difference between a queue and a capability, so the filter that decides it gets its own test.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

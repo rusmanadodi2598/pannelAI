@@ -3,11 +3,7 @@
 // @file      cmd/app-serv/shutdown_drain.go
 // @for       The graceful stop of the HTTP server and the counter drain that must follow it.
 // @uses      context, errors, log/slog, net/http, sync, time, internal/service (the quota flusher).
-// @reason    The quota flusher settles Redis counters on a tick, and its own contract says the
-//
-//	composition root flushes on shutdown; without that call every restart discarded the
-//	spend since the last tick and the panel read a total lower than the keys actually paid.
-//
+// @reason    The quota flusher settles Redis counters on a tick, and its own contract says the composition root flushes on shutdown; without that call every restart discarded the spend since the last tick and the panel read a total lower than the keys actually paid.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

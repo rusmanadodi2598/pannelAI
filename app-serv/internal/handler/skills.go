@@ -3,14 +3,7 @@
 // @file      internal/handler/skills.go
 // @for       The agent skill catalog route (SPEC-API-001 §7.16).
 // @uses      net/http, internal/schema.
-// @reason    §7.16 serves the catalog the panel's skills page renders. The
-//
-//	documents themselves are owner-authored content in the product
-//	repository, so the gateway's whole job is the metadata and the two
-//	URLs a user pastes into an agent; it never serves a SKILL.md body,
-//	which keeps a capability doc from drifting from what the gateway
-//	serves.
-//
+// @reason    §7.16 serves the catalog the panel's skills page renders. The documents themselves are owner-authored content in the product repository, so the gateway's whole job is the metadata and the two URLs a user pastes into an agent; it never serves a SKILL.md body, which keeps a capability doc from drifting from what the gateway serves.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

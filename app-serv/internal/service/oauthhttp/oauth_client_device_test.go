@@ -1,21 +1,9 @@
 // Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
 // @file      internal/service/oauthhttp/oauth_client_device_test.go
-// @for       The device-token poll client's wire behaviour and the upstream's
-//
-//	expiry spellings (draft 036 slice A).
-//
-// @uses      testing, encoding/json, net/http, net/http/httptest, strings,
-//
-//	time.
-//
-// @reason    The poll is the one place the vendor's tolerances live: 202 and
-//
-//	404 both mean "not yet", a refusal may carry a message, and the
-//	expiry arrives as a number, a numeric string, or a date. Those
-//	rules cannot be proven from the flow service, which only ever sees
-//	the decoded answer, so an httptest upstream asserts them here.
-//
+// @for       The device-token poll client's wire behaviour and the upstream's expiry spellings (draft 036 slice A).
+// @uses      testing, encoding/json, net/http, net/http/httptest, strings, time.
+// @reason    The poll is the one place the vendor's tolerances live: 202 and 404 both mean "not yet", a refusal may carry a message, and the expiry arrives as a number, a numeric string, or a date. Those rules cannot be proven from the flow service, which only ever sees the decoded answer, so an httptest upstream asserts them here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

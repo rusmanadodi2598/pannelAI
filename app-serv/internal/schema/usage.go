@@ -3,12 +3,7 @@
 // @file      internal/schema/usage.go
 // @for       The usage filter query and the summary/timeseries contracts.
 // @uses      internal/domain (UsageFilter, UsageTotals).
-// @reason    SPEC-API-001 §7.12 fixes the filter set (from, to, group_by,
-//
-//	granularity) and §2.4 requires those as typed structs validated
-//	before the service sees them, so an unknown group_by and
-//	granularity are 400s here rather than silently ignored queries.
-//
+// @reason    SPEC-API-001 §7.12 fixes the filter set (from, to, group_by, granularity) and §2.4 requires those as typed structs validated before the service sees them, so an unknown group_by and granularity are 400s here rather than silently ignored queries.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

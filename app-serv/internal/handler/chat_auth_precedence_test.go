@@ -1,16 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/chat_auth_precedence_test.go
-// @for       The §7.15 pipeline order: authentication is settled before the
-// request body is read or validated.
+// @for       The §7.15 pipeline order: authentication is settled before the request body is read or validated.
 // @uses      net/http, net/http/httptest, strings, testing.
-// @reason    F2 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md found the
-// handler decoding before authenticating, so a malformed body answered
-// VALIDATION_ERROR to a caller who had presented no credential. SPEC-API-001
-// §7.15 fixes auth first, and OWASP A07 requires the credential gate to run
-// before any protected operation, including a schema read that would otherwise
-// let an anonymous caller probe the contract.
-//
+// @reason    F2 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md found the handler decoding before authenticating, so a malformed body answered VALIDATION_ERROR to a caller who had presented no credential. SPEC-API-001 §7.15 fixes auth first, and OWASP A07 requires the credential gate to run before any protected operation, including a schema read that would otherwise let an anonymous caller probe the contract.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

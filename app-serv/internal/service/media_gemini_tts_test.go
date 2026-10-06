@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_gemini_tts_test.go
-// @for       The Gemini speech adapter: the generateContent URL, the prompt, the
-//
-//	voice, and the PCM-to-WAV answer.
-//
-// @uses      internal/dataplane, internal/provider, internal/schema, bytes, context,
-//
-//	encoding/base64, encoding/binary, encoding/json, testing.
-//
-// @reason    G5 ports one provider adapter at a time. Gemini is the case where
-//
-//	the model is a path segment, the credential a query parameter, and
-//	the answer raw PCM, so these rows pin all three and the no-audio
-//	refusal that a 200 can carry.
-//
+// @for       The Gemini speech adapter: the generateContent URL, the prompt, the voice, and the PCM-to-WAV answer.
+// @uses      internal/dataplane, internal/provider, internal/schema, bytes, context, encoding/base64, encoding/binary, encoding/json, testing.
+// @reason    G5 ports one provider adapter at a time. Gemini is the case where the model is a path segment, the credential a query parameter, and the answer raw PCM, so these rows pin all three and the no-audio refusal that a 200 can carry.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

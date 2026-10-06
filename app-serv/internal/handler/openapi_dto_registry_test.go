@@ -3,11 +3,7 @@
 // @file      internal/handler/openapi_dto_registry_test.go
 // @for       The contract-schema to Go-struct registry the DTO parity test walks.
 // @uses      reflect, internal/schema.
-// @reason    The registry is data, not a rule: it names which contract schema
-// renders which struct. It lives apart from the comparison so a schema addition
-// is one line in one place, and so both files stay inside the AGENTS.md §1.1
-// budget.
-//
+// @reason    The registry is data, not a rule: it names which contract schema renders which struct. It lives apart from the comparison so a schema addition is one line in one place, and so both files stay inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

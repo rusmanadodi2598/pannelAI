@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_validate_test.go
-// @for       The stateless credential check: the two reference status rules, the
-//
-//	fallback path, and the no-write property.
-//
+// @for       The stateless credential check: the two reference status rules, the fallback path, and the no-write property.
 // @uses      internal/domain, context, testing.
-// @reason    SPEC-API-001 §7.4 offers no validate route (draft 017 §4.6), and the
-//
-//	two rules a naive implementation gets wrong are both here: a 404 on
-//	`/models` must fall back to a chat probe rather than report a failure,
-//	and an Anthropic 400 or 529 proves the key was accepted. The stateless
-//	property is asserted too, because it is the one that would rot first,
-//	a validation that quietly wrote a row would still pass every other
-//	test in this file.
-//
+// @reason    SPEC-API-001 §7.4 offers no validate route (draft 017 §4.6), and the two rules a naive implementation gets wrong are both here: a 404 on `/models` must fall back to a chat probe rather than report a failure, and an Anthropic 400 or 529 proves the key was accepted. The stateless property is asserted too, because it is the one that would rot first, a validation that quietly wrote a row would still pass every other test in this file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

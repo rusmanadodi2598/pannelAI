@@ -1,20 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_fixture_test.go
-// @for       The fixed-clock signer, the account it signs as, and the readers the
-//
-//	Qoder signature tests share.
-//
-// @uses      crypto/rand, crypto/rsa, encoding/base64, encoding/json, net/http,
-//
-//	strings, testing, time.
-//
-// @reason    A signature over a random key and a random clock cannot be asserted
-//
-//	against a literal. These fixtures make both deterministic and read the
-//	credential header back the way a server would, which is what lets the
-//	two test files beside them check composition instead of guessing it.
-//
+// @for       The fixed-clock signer, the account it signs as, and the readers the Qoder signature tests share.
+// @uses      crypto/rand, crypto/rsa, encoding/base64, encoding/json, net/http, strings, testing, time.
+// @reason    A signature over a random key and a random clock cannot be asserted against a literal. These fixtures make both deterministic and read the credential header back the way a server would, which is what lets the two test files beside them check composition instead of guessing it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

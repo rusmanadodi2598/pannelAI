@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog_writes.go
-// @for       The catalog's own write paths: custom models, the alias set, and
-//
-//	the disabled set (SPEC-API-001 §7.6).
-//
+// @for       The catalog's own write paths: custom models, the alias set, and the disabled set (SPEC-API-001 §7.6).
 // @uses      internal/domain, context, strings.
-// @reason    Every write here is validated against the same merged view the read
-//
-//	serves: an alias target must exist, and a disabled pair must name a
-//	catalog model. Keeping the read model and the write rules in one
-//	place is what stops them from drifting, which is the failure mode a
-//	"just insert it" store invites.
-//
+// @reason    Every write here is validated against the same merged view the read serves: an alias target must exist, and a disabled pair must name a catalog model. Keeping the read model and the write rules in one place is what stops them from drifting, which is the failure mode a "just insert it" store invites.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

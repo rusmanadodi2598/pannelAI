@@ -3,12 +3,7 @@
 // @file      internal/service/quotafetch/failure_policy_test.go
 // @for       Pinning which provider refusals count as a failed read and which are an answer.
 // @uses      context, net/http, net/http/httptest, testing.
-// @reason    Most reference usage handlers answer a failure with a message; github's and the
-//
-//	cloudcode one antigravity reads through throw instead. A fetcher has no caller to throw at,
-//	so the split survives as a flag, and if it is lost, a family that errors every tick is
-//	recorded as healthy and never backs off. That is a silent failure, so it is tested directly.
-//
+// @reason    Most reference usage handlers answer a failure with a message; github's and the cloudcode one antigravity reads through throw instead. A fetcher has no caller to throw at, so the split survives as a flag, and if it is lost, a family that errors every tick is recorded as healthy and never backs off. That is a silent failure, so it is tested directly.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

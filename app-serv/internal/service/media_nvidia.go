@@ -3,13 +3,7 @@
 // @file      internal/service/media_nvidia.go
 // @for       The NVIDIA NIM speech adapter in the §7.10 media plane.
 // @uses      internal/schema, strings.
-// @reason    NVIDIA's TTS endpoint accepts a small provider-specific JSON shape
-//
-//	and returns WAV bytes, while the surrounding route keeps the OpenAI-ish
-//	speech response. Keeping its voice default and request body together
-//	prevents the generic OpenAI builder from sending `input` as a string;
-//	the output label lives with the other formats in media_speech.go.
-//
+// @reason    NVIDIA's TTS endpoint accepts a small provider-specific JSON shape and returns WAV bytes, while the surrounding route keeps the OpenAI-ish speech response. Keeping its voice default and request body together prevents the generic OpenAI builder from sending `input` as a string; the output label lives with the other formats in media_speech.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

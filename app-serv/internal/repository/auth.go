@@ -3,10 +3,7 @@
 // @file      internal/repository/auth.go
 // @for       Password, session, and rate-limit persistence boundaries.
 // @uses      context and time from the standard library.
-// @reason    Auth orchestration must remain independent of PostgreSQL and Redis
-//
-//	implementations while preserving bounded external calls.
-//
+// @reason    Auth orchestration must remain independent of PostgreSQL and Redis implementations while preserving bounded external calls.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

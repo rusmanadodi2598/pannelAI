@@ -2,18 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability_thinking_test.go
-// @for       Tests for the reasoning tables and the thinking-level sets: the
-//
-//	layer boundaries, the shadowing rows, and the can-disable filter.
-//
+// @for       Tests for the reasoning tables and the thinking-level sets: the layer boundaries, the shadowing rows, and the can-disable filter.
 // @uses      testing.
-// @reason    The corpus test pins every model the registry declares, but it
-//
-//	cannot say which layer answered: a resolver that dropped the provider
-//	overrides would still pass on rows the pattern table happens to answer
-//	the same way. These tests name the boundaries, so the layer that goes
-//	missing fails by name instead of as a silent fall-through.
-//
+// @reason    The corpus test pins every model the registry declares, but it cannot say which layer answered: a resolver that dropped the provider overrides would still pass on rows the pattern table happens to answer the same way. These tests name the boundaries, so the layer that goes missing fails by name instead of as a silent fall-through.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

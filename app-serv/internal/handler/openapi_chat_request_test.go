@@ -3,11 +3,7 @@
 // @file      internal/handler/openapi_chat_request_test.go
 // @for       Request-schema parity for the two chat wires.
 // @uses      encoding/json, reflect, strings, testing, internal/schema.
-// @reason    F5 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md found
-// the served contract describing POST /api/v1/chat/completions with the
-// Anthropic MessagesRequest. This test pins the request reference per wire and
-// the property set of the Chat request DTO, so the two cannot drift apart again.
-//
+// @reason    F5 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md found the served contract describing POST /api/v1/chat/completions with the Anthropic MessagesRequest. This test pins the request reference per wire and the property set of the Chat request DTO, so the two cannot drift apart again.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_model_budget.go
-// @for       The budget rules the provider model test applies to one probe and to
-//
-//	one sweep (SPEC-API-001 §7.4, draft 017 §4.10).
-//
+// @for       The budget rules the provider model test applies to one probe and to one sweep (SPEC-API-001 §7.4, draft 017 §4.10).
 // @uses      internal/registry, context, time.
-// @reason    A probe is only cheap because its ceiling is decided somewhere, and
-//
-//	that decision is separable from the walk it bounds. Splitting it keeps both
-//	files inside the AGENTS.md §1.1 budget and makes the ceiling readable in one
-//	place when an operator asks why a sweep stopped.
-//
+// @reason    A probe is only cheap because its ceiling is decided somewhere, and that decision is separable from the walk it bounds. Splitting it keeps both files inside the AGENTS.md §1.1 budget and makes the ceiling readable in one place when an operator asks why a sweep stopped.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,20 +3,9 @@
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/quota_counter_test.go
-// @for       Integration tests for the quota counter against a real Redis: the
-//
-//	running window total, its rollover, and the settle rule.
-//
-// @uses      github.com/redis/go-redis/v9, internal/domain, context, os,
-//
-//	testing, time.
-//
-// @reason    The counter's whole contract is Redis behaviour: an atomic
-//
-//	rollover and a conditional retire, neither of which an in-memory
-//	double can prove. A double would pass while the real script
-//	compared the wrong field or deleted a live window, and the loss is
-//	silent: the window simply reads low.
+// @for       Integration tests for the quota counter against a real Redis: the running window total, its rollover, and the settle rule.
+// @uses      github.com/redis/go-redis/v9, internal/domain, context, os, testing, time.
+// @reason    The counter's whole contract is Redis behaviour: an atomic rollover and a conditional retire, neither of which an in-memory double can prove. A double would pass while the real script compared the wrong field or deleted a live window, and the loss is silent: the window simply reads low.
 //
 //	The file carries an `integration` build tag, so the default
 //	`go test ./...` stays hermetic on a machine with no Redis (AGENTS.md

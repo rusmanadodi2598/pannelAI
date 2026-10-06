@@ -3,13 +3,7 @@
 // @file      internal/service/quotafetch/request_test.go
 // @for       Proves a credential this gateway presented never reads back as provider text.
 // @uses      internal/service/quotafetch, net/http/httptest, strings, testing.
-// @reason    Several providers quote the request they refused inside their 4xx body, and a
-//
-//	Go transport error carries the request URL. Both end up as a sentence on an
-//	operator's card, and the poll worker caches every sentence into the database,
-//	so an unscrubbed echo would store a live bearer token on disk for a screen that
-//	never needs it. One choke point means no family has to remember this.
-//
+// @reason    Several providers quote the request they refused inside their 4xx body, and a Go transport error carries the request URL. Both end up as a sentence on an operator's card, and the poll worker caches every sentence into the database, so an unscrubbed echo would store a live bearer token on disk for a screen that never needs it. One choke point means no family has to remember this.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_detail_test.go
-// @for       The provider detail read: the entry, its roll-up, and the custom
-//
-//	rows the §7.14 level union is computed from.
-//
+// @for       The provider detail read: the entry, its roll-up, and the custom rows the §7.14 level union is computed from.
 // @uses      internal/domain, internal/registry, context, errors, testing.
-// @reason    SPEC-API-001 §7.4 serves one provider's detail, and §7.14 makes
-//
-//	that body the union of the levels its models accept. A custom node has
-//	no registry models, so the read this file covers is what decides
-//	whether its screen carries a reasoning picker at all; and a read that
-//	failed must not be reported as "declares none", which is the
-//	distinction the second and third cases exist to hold.
-//
+// @reason    SPEC-API-001 §7.4 serves one provider's detail, and §7.14 makes that body the union of the levels its models accept. A custom node has no registry models, so the read this file covers is what decides whether its screen carries a reasoning picker at all; and a read that failed must not be reported as "declares none", which is the distinction the second and third cases exist to hold.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

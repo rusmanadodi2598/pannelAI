@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/resolve.go
-// @for       Model-string resolution: combo name, then alias, then
-//
-//	provider/model, and the routability gate.
-//
+// @for       Model-string resolution: combo name, then alias, then provider/model, and the routability gate.
 // @uses      internal/domain, internal/registry.
-// @reason    SPEC-API-001 §7.15 fixes the order and the failure code
-//
-//	(MODEL_NOT_FOUND), and §8 adds PROVIDER_NOT_ROUTABLE for a
-//	provider whose protocol has no translator: both answers decide
-//	whether a request is served at all, so they are computed here
-//	once instead of being re-derived by each caller.
-//
+// @reason    SPEC-API-001 §7.15 fixes the order and the failure code (MODEL_NOT_FOUND), and §8 adds PROVIDER_NOT_ROUTABLE for a provider whose protocol has no translator: both answers decide whether a request is served at all, so they are computed here once instead of being re-derived by each caller.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

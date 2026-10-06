@@ -1,18 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_key_policy_test.go
-// @for       The key rule inside one endpoint under each credential rotation
-//
-//	policy: priority order for fill-first, least-recently-used for
-//	round-robin.
-//
+// @for       The key rule inside one endpoint under each credential rotation policy: priority order for fill-first, least-recently-used for round-robin.
 // @uses      context, testing, time, internal/domain.
-// @reason    SPEC-API-001 §7.5 fixes both walks. The fixture holds two healthy
-//
-//	keys whose priority order and recency order disagree, so each case
-//	proves its rule instead of reading whichever key happens to come
-//	first.
-//
+// @reason    SPEC-API-001 §7.5 fixes both walks. The fixture holds two healthy keys whose priority order and recency order disagree, so each case proves its rule instead of reading whichever key happens to come first.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

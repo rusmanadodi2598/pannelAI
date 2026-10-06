@@ -3,13 +3,7 @@
 // @file      internal/service/quota_published_worker.go
 // @for       The background provider poll: sweep the due queue on a tick, ask each account's provider through the existing live read, cache the answer.
 // @uses      context, log/slog, runtime/debug, sync, sync/atomic, time, internal/domain, internal/repository.
-// @reason    The quota screen may not fetch while it is read, one provider call per account
-//
-//	is the N+1 AGENTS.md §1.7 blocks here, and quota_published_cache.go only
-//	answers from a cache somebody fills. This is it; what one answer writes
-//	lives in quota_published_store.go and its intervals in
-//	quota_published_policy.go, split by reason to change.
-//
+// @reason    The quota screen may not fetch while it is read, one provider call per account is the N+1 AGENTS.md §1.7 blocks here, and quota_published_cache.go only answers from a cache somebody fills. This is it; what one answer writes lives in quota_published_store.go and its intervals in quota_published_policy.go, split by reason to change.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

@@ -2,22 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_transports_test.go
-// @for       The multi-endpoint rule: a model is served on the endpoint its own
-//
-//	declared formats allow, with that endpoint's credential placement.
-//
+// @for       The multi-endpoint rule: a model is served on the endpoint its own declared formats allow, with that endpoint's credential placement.
 // @uses      testing, net/http, internal/registry.
-// @reason    The reference's opencode-go and opencode-zen entries declare three
-//
-//	endpoints each (`transports[]`), and a model's `supportedFormats`
-//	decides which of them may answer it. Measured on the previous port:
-//	minimax-m2.7 (target claude) was sent to
-//	".../chat/completions/zen/v1/messages", a URL that concatenates the
-//	chat endpoint with the messages path, and its credential was placed as
-//	an Authorization bearer where the wire reads x-api-key. Both are
-//	failures the upstream answers with a 4xx that names no cause, so the
-//	rule is pinned here.
-//
+// @reason    The reference's opencode-go and opencode-zen entries declare three endpoints each (`transports[]`), and a model's `supportedFormats` decides which of them may answer it. Measured on the previous port: minimax-m2.7 (target claude) was sent to ".../chat/completions/zen/v1/messages", a URL that concatenates the chat endpoint with the messages path, and its credential was placed as an Authorization bearer where the wire reads x-api-key. Both are failures the upstream answers with a 4xx that names no cause, so the rule is pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

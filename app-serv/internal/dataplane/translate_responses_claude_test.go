@@ -3,13 +3,7 @@
 // @file      internal/dataplane/translate_responses_claude_test.go
 // @for       Table-driven tests for Responses-to-Anthropic answer translation.
 // @uses      testing, internal/schema.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and a
-//
-//	client on /api/v1/messages can resolve to a provider that speaks
-//	it. Anthropic's envelope differs in both block order and stop
-//	reason, and its input count excludes what OpenAI's includes, so
-//	each rule is pinned here rather than left to the shared fold.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and a client on /api/v1/messages can resolve to a provider that speaks it. Anthropic's envelope differs in both block order and stop reason, and its input count excludes what OpenAI's includes, so each rule is pinned here rather than left to the shared fold.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

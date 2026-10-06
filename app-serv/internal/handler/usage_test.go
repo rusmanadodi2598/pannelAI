@@ -1,22 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/usage_test.go
-// @for       Table-driven HTTP tests for the §7.12 usage summary and timeseries
-//
-//	reads: what the routes answer, what they forward, and every refusal.
-//
+// @for       Table-driven HTTP tests for the §7.12 usage summary and timeseries reads: what the routes answer, what they forward, and every refusal.
 // @uses      internal/domain, net/http, net/http/httptest, strings, testing.
-//
-// @reason    Draft 010 F1: the four usage routes had service coverage and a
-//
-//	router session sweep but no request-to-response test, so AGENTS.md
-//	§2.1 (happy, validation, auth per route) was unmet and a mapper
-//	regression could only surface in the panel. Each route is one
-//	behaviour with variations (TDD.md §2.5). The 401 answers are the
-//	router sweep's property, so they live in the router package's usage
-//	route test; the records and detail routes have their own sibling
-//	file to stay inside the §1.1 budget.
-//
+// @reason    Draft 010 F1: the four usage routes had service coverage and a router session sweep but no request-to-response test, so AGENTS.md §2.1 (happy, validation, auth per route) was unmet and a mapper regression could only surface in the panel. Each route is one behaviour with variations (TDD.md §2.5). The 401 answers are the router sweep's property, so they live in the router package's usage route test; the records and detail routes have their own sibling file to stay inside the §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

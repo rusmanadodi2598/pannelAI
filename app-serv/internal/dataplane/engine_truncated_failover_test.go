@@ -2,20 +2,8 @@
 //
 // @file      internal/dataplane/engine_truncated_failover_test.go
 // @for       The combo walk over a member that answered 200 with nothing in it.
-// @uses      encoding/json, net/http, net/http/httptest, strings, testing,
-//
-//	internal/domain, internal/schema.
-//
-// @reason    A reasoning model that spends its whole output ceiling on thinking
-//
-//	answers 200 with an empty body (measured live on
-//	muse-spark-1.3-contributor-free, 2026-09-28), and the walk only left a
-//	member on an error, so a combo rotated onto that member served the
-//	client nothing. These tests pin the other three answers the walk owes:
-//	try the next member, do not park the key that answered, prefer an empty
-//	body over an error, and leave a streamed answer alone because it has
-//	already reached the client.
-//
+// @uses      encoding/json, net/http, net/http/httptest, strings, testing, internal/domain, internal/schema.
+// @reason    A reasoning model that spends its whole output ceiling on thinking answers 200 with an empty body (measured live on muse-spark-1.3-contributor-free, 2026-09-28), and the walk only left a member on an error, so a combo rotated onto that member served the client nothing. These tests pin the other three answers the walk owes: try the next member, do not park the key that answered, prefer an empty body over an error, and leave a streamed answer alone because it has already reached the client.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

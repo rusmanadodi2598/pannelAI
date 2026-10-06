@@ -3,17 +3,8 @@
 //
 // @file      internal/domain/combo_model.go
 // @for       A combo's model entry and the shape rules its strategy imposes.
-// @uses      internal/domain (ComboStrategy, AppError constructors), sort,
-//
-//	strings.
-//
-// @reason    SPEC-API-001 §7.7 gives each strategy a different required field
-//
-//	set, and the three rules have to be enforced in one place or a
-//	create and a patch will drift. Keeping the entry type and the
-//	rules together, away from the aggregate's mutation surface,
-//	makes the rule table readable on one screen.
-//
+// @uses      internal/domain (ComboStrategy, AppError constructors), sort, strings.
+// @reason    SPEC-API-001 §7.7 gives each strategy a different required field set, and the three rules have to be enforced in one place or a create and a patch will drift. Keeping the entry type and the rules together, away from the aggregate's mutation surface, makes the rule table readable on one screen.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

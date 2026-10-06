@@ -3,11 +3,7 @@
 // @file      internal/dataplane/translate_openai_claude_image_test.go
 // @for       How an image reference is placed when a chat crosses to Anthropic.
 // @uses      testing, internal/schema.
-// @reason    A data URI and an http(s) URL are different contracts, one is
-//
-//	inlined as base64 and the other is fetched by the upstream, so the
-//	branch is pinned on its own rather than inside the request table.
-//
+// @reason    A data URI and an http(s) URL are different contracts, one is inlined as base64 and the other is fetched by the upstream, so the branch is pinned on its own rather than inside the request table.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

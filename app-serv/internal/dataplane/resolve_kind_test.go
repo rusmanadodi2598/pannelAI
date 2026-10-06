@@ -3,21 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/resolve_kind_test.go
-// @for       The kind guard: a model that is not a chat model is refused by the
-//
-//	chat plane rather than served with a chat body.
-//
+// @for       The kind guard: a model that is not a chat model is refused by the chat plane rather than served with a chat body.
 // @uses      context, testing, internal/registry.
-// @reason    A provider entry may declare a model whose payload is its own
-//
-//	vocabulary rather than a chat request (the reference's
-//	`kind: "systemone"`, served by a separate route). Measured before this
-//	guard existed: `opencode/jev-1.13-free` resolved to target `openai`
-//	and was served as a chat completion, so the chat body was sent to an
-//	endpoint that answers a decision payload. Refusing by name is the
-//	honest answer until that route exists, because a 404 the client can
-//	read beats a request the upstream cannot parse.
-//
+// @reason    A provider entry may declare a model whose payload is its own vocabulary rather than a chat request (the reference's `kind: "systemone"`, served by a separate route). Measured before this guard existed: `opencode/jev-1.13-free` resolved to target `openai` and was served as a chat completion, so the chat body was sent to an endpoint that answers a decision payload. Refusing by name is the honest answer until that route exists, because a 404 the client can read beats a request the upstream cannot parse.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

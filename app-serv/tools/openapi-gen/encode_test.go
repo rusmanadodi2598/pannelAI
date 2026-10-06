@@ -3,13 +3,7 @@
 // @file      tools/openapi-gen/encode_test.go
 // @for       Table-driven checks for deterministic YAML-to-JSON encoding.
 // @uses      strings, testing, gopkg.in/yaml.v3.
-// @reason    The generator is the boundary between the schema-first YAML and
-//
-//	the JSON embedded by app-serv. A parser that silently changes scalar
-//	types, object order, or aliases would produce a contract different from
-//	the reviewed source, so the encoder is tested with varied YAML values
-//	and nested structures rather than one fixture.
-//
+// @reason    The generator is the boundary between the schema-first YAML and the JSON embedded by app-serv. A parser that silently changes scalar types, object order, or aliases would produce a contract different from the reviewed source, so the encoder is tested with varied YAML values and nested structures rather than one fixture.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability experimental

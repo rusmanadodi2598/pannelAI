@@ -1,18 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder.go
-// @for       The Qoder connector: the host a credential is served from, and the
-//
-//	COSY signature that replaces a bearer token.
-//
+// @for       The Qoder connector: the host a credential is served from, and the COSY signature that replaces a bearer token.
 // @uses      io, net/http, net/url, strings, internal/registry.
-// @reason    Qoder breaks the two assumptions the default connector makes: the
-//
-//	inference host depends on which kind of token the account holds, and
-//	the credential is not placed in a header but woven into a signature
-//	over the exact bytes that go out. Both rules belong to the provider,
-//	so the core never learns either one.
-//
+// @reason    Qoder breaks the two assumptions the default connector makes: the inference host depends on which kind of token the account holds, and the credential is not placed in a header but woven into a signature over the exact bytes that go out. Both rules belong to the provider, so the core never learns either one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

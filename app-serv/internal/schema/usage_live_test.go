@@ -1,18 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/usage_live_test.go
-// @for       Table-driven tests for the live frame: the wire shape the panel
-//
-//	reads, and the mapping from the aggregate the gateway holds.
-//
+// @for       Table-driven tests for the live frame: the wire shape the panel reads, and the mapping from the aggregate the gateway holds.
 // @uses      encoding/json, testing, time, internal/domain.
-// @reason    The frame is a contract app-ui already parses with Zod
-//
-//	(`src/lib/schemas/usage-live.ts`), so its member names and its
-//	null-versus-empty rules are pinned here rather than left to review:
-//	a renamed member makes the panel drop every frame silently, which
-//	looks exactly like a gateway with nothing to report.
-//
+// @reason    The frame is a contract app-ui already parses with Zod (`src/lib/schemas/usage-live.ts`), so its member names and its null-versus-empty rules are pinned here rather than left to review: a renamed member makes the panel drop every frame silently, which looks exactly like a gateway with nothing to report.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

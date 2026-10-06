@@ -1,20 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_constants.go
-// @for       The client identity Qoder's COSY layer fingerprints, and the two
-//
-//	alphabets and the key its body and payload are built from.
-//
+// @for       The client identity Qoder's COSY layer fingerprints, and the two alphabets and the key its body and payload are built from.
 // @uses      nothing beyond the constants themselves.
-// @reason    Every value here is a fact of the vendor's wire rather than a
-//
-//	choice made in this file: the client statics are what qodercli sends,
-//	the alphabets are its body obfuscation, and the RSA key is the one its
-//	server unwraps. They sit together so a reviewer can check the whole set
-//	against the reference in one pass instead of finding one header value in
-//	each of four files. Endpoints and token prefixes arrive with the
-//	connector that reads them.
-//
+// @reason    Every value here is a fact of the vendor's wire rather than a choice made in this file: the client statics are what qodercli sends, the alphabets are its body obfuscation, and the RSA key is the one its server unwraps. They sit together so a reviewer can check the whole set against the reference in one pass instead of finding one header value in each of four files. Endpoints and token prefixes arrive with the connector that reads them.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -1,24 +1,9 @@
 // Command app-serv adapts the connectivity probe port to HTTP.
 //
 // @file      cmd/app-serv/provider_probe_test.go
-// @for       Tests for the probe adapter's outcome classification and its
-//
-//	egress policy.
-//
-// @uses      testing, context, net/http, net/http/httptest, strings,
-//
-//	sync/atomic, internal/domain, internal/netguard, internal/provider,
-//	internal/registry, internal/service, time.
-//
-// @reason    The classification is the whole value of a connectivity test: an
-//
-//	operator reads its result to decide whether to replace a credential
-//	or fix a URL. Reporting a 404 as "your key is wrong" sends them to
-//	replace a working credential, so each status class is pinned here
-//	against a real server rather than asserted from reading the code. The
-//	egress table pins that a denied destination never reaches the wire,
-//	because a probe is the one request an operator points anywhere.
-//
+// @for       Tests for the probe adapter's outcome classification and its egress policy.
+// @uses      testing, context, net/http, net/http/httptest, strings, sync/atomic, internal/domain, internal/netguard, internal/provider, internal/registry, internal/service, time.
+// @reason    The classification is the whole value of a connectivity test: an operator reads its result to decide whether to replace a credential or fix a URL. Reporting a 404 as "your key is wrong" sends them to replace a working credential, so each status class is pinned here against a real server rather than asserted from reading the code. The egress table pins that a denied destination never reaches the wire, because a probe is the one request an operator points anywhere.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

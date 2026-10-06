@@ -3,15 +3,8 @@
 //
 // @file      internal/domain/settings_apply.go
 // @for       The write-only helpers a settings patch is applied through.
-//
 // @uses      (no imports).
-// @reason    SPEC-API-001 §7.14 makes a nil field mean "leave unchanged", so
-//
-//	every group's application reduces to "write only when carried". The
-//	helpers are split from settings_patch.go because the whole-map groups
-//	keep arriving and that file is one reviewable unit only while it
-//	states the rules rather than the plumbing.
-//
+// @reason    SPEC-API-001 §7.14 makes a nil field mean "leave unchanged", so every group's application reduces to "write only when carried". The helpers are split from settings_patch.go because the whole-map groups keep arriving and that file is one reviewable unit only while it states the rules rather than the plumbing.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

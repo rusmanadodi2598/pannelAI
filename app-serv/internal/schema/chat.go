@@ -1,20 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/chat.go
-// @for       The OpenAI-wire chat request and the body reader the data plane
-//
-//	decodes it from.
-//
+// @for       The OpenAI-wire chat request and the body reader the data plane decodes it from.
 // @uses      bytes, encoding/json, io, net/http, internal/domain.
-// @reason    SPEC-API-001 §7.15 serves CLI tools the OpenAI wire format, and
-//
-//	AGENTS.md §2.4 requires a typed, validated contract before any
-//	handler logic. Unknown fields are deliberately accepted here,
-//	unlike the management plane: this endpoint proxies a third-party
-//	protocol whose field set grows without notice, so refusing an
-//	unknown key would break a client over a field the gateway was only
-//	going to pass along.
-//
+// @reason    SPEC-API-001 §7.15 serves CLI tools the OpenAI wire format, and AGENTS.md §2.4 requires a typed, validated contract before any handler logic. Unknown fields are deliberately accepted here, unlike the management plane: this endpoint proxies a third-party protocol whose field set grows without notice, so refusing an unknown key would break a client over a field the gateway was only going to pass along.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

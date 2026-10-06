@@ -2,22 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/opencode_responses_test.go
-// @for       The Responses-wire field rules the reference applies before a
-//
-//	request leaves for the OpenCode upstream.
-//
+// @for       The Responses-wire field rules the reference applies before a request leaves for the OpenCode upstream.
 // @uses      testing, internal/registry.
-// @reason    Six byte-level differences were measured between this connector and
-//
-//	the reference's transformRequest, each one a request the upstream
-//	refuses or answers differently: a tool_choice forced to auto on a model
-//	that does not have the quirk, an absent store, a chat-shaped
-//	reasoning_effort, an empty input array, an overlong call_id with an
-//	object arguments, and a chat-shaped tool declaration. They are pinned
-//	together because they share one decision (how far the connector may
-//	rewrite a same-format body) and because the reference applies them in
-//	one function.
-//
+// @reason    Six byte-level differences were measured between this connector and the reference's transformRequest, each one a request the upstream refuses or answers differently: a tool_choice forced to auto on a model that does not have the quirk, an absent store, a chat-shaped reasoning_effort, an empty input array, an overlong call_id with an object arguments, and a chat-shaped tool declaration. They are pinned together because they share one decision (how far the connector may rewrite a same-format body) and because the reference applies them in one function.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

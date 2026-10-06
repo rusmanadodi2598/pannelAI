@@ -3,12 +3,7 @@
 // @file      internal/handler/provider_model_probe_test.go
 // @for       HTTP tests for the §7.4 model test routes (draft 017 §4.10, F10).
 // @uses      internal/dataplane, net/http, net/http/httptest, testing.
-// @reason    These routes answer 200 for a model that failed and 4xx only for a
-//
-//	request that was not a question, the opposite of most of the
-//	management surface. That inversion has to be pinned at the HTTP edge,
-//	where the status code is what a client branches on.
-//
+// @reason    These routes answer 200 for a model that failed and 4xx only for a request that was not a question, the opposite of most of the management surface. That inversion has to be pinned at the HTTP edge, where the status code is what a client branches on.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

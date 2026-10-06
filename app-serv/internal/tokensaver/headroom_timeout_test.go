@@ -5,12 +5,7 @@
 // @file      internal/tokensaver/headroom_timeout_test.go
 // @for       Headroom refusal and deadline cases.
 // @uses      context, encoding/json, net/http, net/http/httptest, testing, time.
-// @reason    SPEC-API-001 §7.9 makes the saver fail open and bounds its optional
-//
-// external call. These cases prove malformed input, a refused proxy,
-// an unreachable proxy, and a proxy that answers after the deadline all
-// become errors the caller can ignore while keeping the request body.
-//
+// @reason    SPEC-API-001 §7.9 makes the saver fail open and bounds its optional external call. These cases prove malformed input, a refused proxy, an unreachable proxy, and a proxy that answers after the deadline all become errors the caller can ignore while keeping the request body.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

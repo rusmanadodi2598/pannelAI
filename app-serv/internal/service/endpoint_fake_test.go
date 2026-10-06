@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_fake_test.go
-// @for       The fake provider index, prober, and the fixtures the endpoint
-//
-//	service's table-driven tests share.
-//
+// @for       The fake provider index, prober, and the fixtures the endpoint service's table-driven tests share.
 // @uses      context, testing, time, internal/domain, internal/registry.
-// @reason    AGENTS.md §2.1 requires the service logic to be tested, and these
-//
-//	doubles are what make that possible without a registry binary, a
-//	sealer key from the environment, or an HTTP upstream. They live beside
-//	the store double but in their own file because AGENTS.md §1.1 caps a
-//	file at 250 lines.
-//
+// @reason    AGENTS.md §2.1 requires the service logic to be tested, and these doubles are what make that possible without a registry binary, a sealer key from the environment, or an HTTP upstream. They live beside the store double but in their own file because AGENTS.md §1.1 caps a file at 250 lines.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -1,19 +1,9 @@
 // Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
 // @file      internal/service/oauthhttp/oauth_identity.go
-// @for       The account identity a userinfo endpoint reports, decoded from
-//
-//	every field spelling providers disagree on.
-//
+// @for       The account identity a userinfo endpoint reports, decoded from every field spelling providers disagree on.
 // @uses      encoding/json, internal/domain.
-// @reason    SPEC-API-001 §8.1 makes a re-import an update rather than a
-//
-//	duplicate, so the callback has to recognize an account it already
-//	holds. That match reads email, then workspace id, then login, and
-//	providers disagree on which of those they send and whether the id is
-//	a JSON number or a JSON string, so the tolerance lives in one type
-//	rather than in a branch at each call site.
-//
+// @reason    SPEC-API-001 §8.1 makes a re-import an update rather than a duplicate, so the callback has to recognize an account it already holds. That match reads email, then workspace id, then login, and providers disagree on which of those they send and whether the id is a JSON number or a JSON string, so the tolerance lives in one type rather than in a branch at each call site.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

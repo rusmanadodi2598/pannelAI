@@ -1,22 +1,9 @@
 // Package quotafetch reads the quota a provider publishes for one of its connections.
 //
 // @file      internal/service/quotafetch/qoder.go
-// @for       The Qoder quota read: the credit buckets the vendor publishes, and the
-//
-//	token exchange a Personal Access Token needs before the endpoint
-//	accepts it.
-//
-// @uses      context, encoding/json, fmt, io, net/http, net/url, strconv, strings,
-//
-//	time, internal/provider.
-//
-// @reason    Qoder publishes credits rather than a percentage, in two buckets,
-//
-//	personal and organization, and its quota endpoint refuses a raw
-//	Personal Access Token, so a read that presented the stored credential
-//	would report a working account as broken. The exchange is the same one
-//	the chat path uses, against the same host.
-//
+// @for       The Qoder quota read: the credit buckets the vendor publishes, and the token exchange a Personal Access Token needs before the endpoint accepts it.
+// @uses      context, encoding/json, fmt, io, net/http, net/url, strconv, strings, time, internal/provider.
+// @reason    Qoder publishes credits rather than a percentage, in two buckets, personal and organization, and its quota endpoint refuses a raw Personal Access Token, so a read that presented the stored credential would report a working account as broken. The exchange is the same one the chat path uses, against the same host.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

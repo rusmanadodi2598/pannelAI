@@ -3,17 +3,9 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/suffix_test.go
-// @for       The model(level) suffix: its shapes, its vocabulary, and the
-//
-//	strings it must leave untouched.
-//
+// @for       The model(level) suffix: its shapes, its vocabulary, and the strings it must leave untouched.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.15 ports the reference's per-model control, and the
-//
-//	suffix is a client-supplied string on the routing key: a parse that
-//	strips too much renames the model and one that strips too little sends
-//	the suffix upstream. Both are silent, so the shapes are pinned here.
-//
+// @reason    SPEC-API-001 §7.15 ports the reference's per-model control, and the suffix is a client-supplied string on the routing key: a parse that strips too much renames the model and one that strips too little sends the suffix upstream. Both are silent, so the shapes are pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

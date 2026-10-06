@@ -2,16 +2,8 @@
 //
 // @file      internal/service/provider_node_models_test.go
 // @for       The origin and the fallback a node's model list answers with.
-//
 // @uses      internal/domain, internal/registry, context, errors, testing.
-// @reason    SPEC-API-001 §7.4 serves a node's models, and draft 017 §4.2
-//
-//	measured the two failures this covers: a node whose upstream answers
-//	was reported as having no models at all, and a node whose upstream is
-//	down had no list to fall back to. The origin is asserted separately
-//	from the list because a client reads them together: a fallback
-//	presented as current is the failure `source` exists to prevent.
-//
+// @reason    SPEC-API-001 §7.4 serves a node's models, and draft 017 §4.2 measured the two failures this covers: a node whose upstream answers was reported as having no models at all, and a node whose upstream is down had no list to fall back to. The origin is asserted separately from the list because a client reads them together: a fallback presented as current is the failure `source` exists to prevent.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

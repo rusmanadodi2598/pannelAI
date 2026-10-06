@@ -1,18 +1,9 @@
 // Command app-serv wires the provider plugin dependencies.
 //
 // @file      cmd/app-serv/provider_wiring.go
-// @for       Installs the connector registry and loads the embedded provider
-//
-//	registry at boot.
-//
+// @for       Installs the connector registry and loads the embedded provider registry at boot.
 // @uses      internal/provider, internal/registry, fmt, log/slog.
-// @reason    The provider seam is installed once, before the server accepts
-//
-//	traffic, so a provider patch or addition is a registration here
-//	rather than a branch in shared code. Keeping it out of main.go
-//	preserves the composition root's line budget, as auth_wiring.go
-//	already does for authentication.
-//
+// @reason    The provider seam is installed once, before the server accepts traffic, so a provider patch or addition is a registration here rather than a branch in shared code. Keeping it out of main.go preserves the composition root's line budget, as auth_wiring.go already does for authentication.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

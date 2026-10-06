@@ -4,12 +4,7 @@
 // @file      internal/provider/opencode_choice_test.go
 // @for       The tool_choice rule the OpenCode Responses wire enforces.
 // @uses      testing, internal/registry.
-// @reason    The Responses wire answers 400 to any tool_choice other than auto, so
-//
-//	the connector normalises whatever a client sent rather than forwarding
-//	it to be rejected. The chat wire accepts `none`, so the rule is
-//	per-wire and pinned on its own.
-//
+// @reason    The Responses wire answers 400 to any tool_choice other than auto, so the connector normalises whatever a client sent rather than forwarding it to be rejected. The chat wire accepts `none`, so the rule is per-wire and pinned on its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

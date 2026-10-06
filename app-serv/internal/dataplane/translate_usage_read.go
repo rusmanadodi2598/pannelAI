@@ -3,17 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/translate_usage_read.go
-// @for       Reading an upstream usage object into the OpenAI accounting block,
-//
-//	in whichever format the upstream wrote it.
-//
+// @for       Reading an upstream usage object into the OpenAI accounting block, in whichever format the upstream wrote it.
 // @uses      internal/schema.
-// @reason    Both the non-streamed reader and the two stream states fold usage the
-//
-//	same way, and a private copy per caller is how the two directions
-//	start disagreeing. They live in one file so a new format adds one
-//	reader rather than one per caller.
-//
+// @reason    Both the non-streamed reader and the two stream states fold usage the same way, and a private copy per caller is how the two directions start disagreeing. They live in one file so a new format adds one reader rather than one per caller.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -4,15 +4,7 @@
 // @file      internal/provider/opencode_session.go
 // @for       The canonical OpenCode session identity a free-tier request carries.
 // @uses      crypto/sha256, encoding/hex, strings.
-// @reason    The free tier accounts quota per session and refuses any value that
-//
-//	is not the CLI's own canonical shape, so a gateway that mints a
-//	random id per request burns the quota it is trying to spend (the
-//	reference fixed exactly that: one stable session per identity, commit
-//	0c6ab4f9). Deriving it from the endpoint id makes it stable without
-//	the connector holding per-request state, which it must not: a
-//	connector is built once and shared by concurrent requests.
-//
+// @reason    The free tier accounts quota per session and refuses any value that is not the CLI's own canonical shape, so a gateway that mints a random id per request burns the quota it is trying to spend (the reference fixed exactly that: one stable session per identity, commit 0c6ab4f9). Deriving it from the endpoint id makes it stable without the connector holding per-request state, which it must not: a connector is built once and shared by concurrent requests.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

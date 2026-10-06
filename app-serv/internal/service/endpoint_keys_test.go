@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_keys_test.go
-// @for       Table-driven tests for key CRUD, the key batch, and the all-or-nothing
-//
-//	rule (SPEC-API-001 §7.5, §8.1).
-//
+// @for       Table-driven tests for key CRUD, the key batch, and the all-or-nothing rule (SPEC-API-001 §7.5, §8.1).
 // @uses      context, errors, strconv, testing, internal/domain.
-// @reason    §7.5 makes a key a child of the endpoint aggregate with a rule no single
-//
-//	key can enforce, an api_key endpoint keeps at least one active credential, and
-//	§8.1 makes a batch refuse as a whole. Both are rules a plausible bug breaks while
-//	every other test still passes, which is why they are pinned here.
-//
+// @reason    §7.5 makes a key a child of the endpoint aggregate with a rule no single key can enforce, an api_key endpoint keeps at least one active credential, and §8.1 makes a batch refuse as a whole. Both are rules a plausible bug breaks while every other test still passes, which is why they are pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

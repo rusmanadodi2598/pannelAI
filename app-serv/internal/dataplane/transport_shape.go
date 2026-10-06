@@ -3,19 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/transport_shape.go
-// @for       The optional connector seams the transport applies before a call:
-//
-//	a request transform, and a declared forced stream.
-//
+// @for       The optional connector seams the transport applies before a call: a request transform, and a declared forced stream.
 // @uses      internal/provider, internal/registry, encoding/json.
-// @reason    A provider may need its outbound request rewritten, or may refuse a
-//
-//	non-streaming one, and neither is something the core should learn by
-//	provider id. Both are optional interfaces a connector implements, so
-//	they are applied here through one type assertion each and a connector
-//	that implements neither is untouched. They live apart from the call
-//	loop so that file stays about policy, as AGENTS.md §1.1 asks.
-//
+// @reason    A provider may need its outbound request rewritten, or may refuse a non-streaming one, and neither is something the core should learn by provider id. Both are optional interfaces a connector implements, so they are applied here through one type assertion each and a connector that implements neither is untouched. They live apart from the call loop so that file stays about policy, as AGENTS.md §1.1 asks.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

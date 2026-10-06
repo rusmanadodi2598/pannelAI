@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_shape.go
-// @for       How a media request addresses a provider: the model string, the
-//
-//	kind's declaration, and the format gate.
-//
+// @for       How a media request addresses a provider: the model string, the kind's declaration, and the format gate.
 // @uses      internal/dataplane, internal/domain, internal/registry, strings.
-// @reason    These rules are what "routable" means for a media call, and they
-//
-//	are separate from the call pipeline because they answer questions a
-//	route may ask before it builds a payload. Keeping them apart also
-//	keeps media_call.go inside the AGENTS.md §1.1 line budget.
-//
+// @reason    These rules are what "routable" means for a media call, and they are separate from the call pipeline because they answer questions a route may ask before it builds a payload. Keeping them apart also keeps media_call.go inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

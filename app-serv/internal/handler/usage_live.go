@@ -1,21 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/usage_live.go
-// @for       The live Usage stream: one SSE connection carrying the gateway's
-//
-//	in-flight set, its recent requests, and its last error provider.
-//
-// @uses      internal/schema, internal/service, context, encoding/json,
-//
-//	log/slog, net/http, runtime/debug, time.
-//
-// @reason    SPEC-API-001 §7.12 and SPEC-UI-001 §6.5 give /usage one stream, and
-//
-//	§4 fixes its framing: text/event-stream, `X-Accel-Buffering: no`, and
-//	the status line committed with the first frame so a failure before
-//	that point is still an ordinary HTTP error. The sink is the one the
-//	data plane already streams through, so this route inherits the
-//	Flusher forwarding draft 010 F5 fixed rather than re-deriving it.
+// @for       The live Usage stream: one SSE connection carrying the gateway's in-flight set, its recent requests, and its last error provider.
+// @uses      internal/schema, internal/service, context, encoding/json, log/slog, net/http, runtime/debug, time.
+// @reason    SPEC-API-001 §7.12 and SPEC-UI-001 §6.5 give /usage one stream, and §4 fixes its framing: text/event-stream, `X-Accel-Buffering: no`, and the status line committed with the first frame so a failure before that point is still an ordinary HTTP error. The sink is the one the data plane already streams through, so this route inherits the Flusher forwarding draft 010 F5 fixed rather than re-deriving it.
 //
 //	The loop is deliberately a read-and-compare rather than a poll: the
 //	first frame is the whole state, and every later frame is sent only

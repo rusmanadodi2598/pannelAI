@@ -3,13 +3,7 @@
 // @file      internal/service/token_saver.go
 // @for       Reading and wholly replacing the §7.9 token-saver configuration.
 // @uses      internal/domain, internal/repository, context.
-// @reason    SPEC-API-001 §7.9 gives the saver configuration its own endpoints
-//
-//	so the panel edits it without round-tripping the whole §7.14
-//	document. The write lands in the same settings patch machinery the
-//	§7.14 PATCH uses, so there is exactly one persistence path for the
-//	group and the deprecated caveman key is untouched by construction.
-//
+// @reason    SPEC-API-001 §7.9 gives the saver configuration its own endpoints so the panel edits it without round-tripping the whole §7.14 document. The write lands in the same settings patch machinery the §7.14 PATCH uses, so there is exactly one persistence path for the group and the deprecated caveman key is untouched by construction.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,20 +3,12 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/usage_read_integration_test.go
-// @for       Integration tests for the timeseries, paged list, detail, and
-//
-//	monthly rollup reads.
-//
+// @for       Integration tests for the timeseries, paged list, detail, and monthly rollup reads.
 // @uses      internal/domain, context, testing, time.
-// @reason    The timeseries bucket boundary is the database's date_bin, and the
+// @reason    The timeseries bucket boundary is the database's date_bin, and the paged read's count comes from a window function in the same statement: neither is reproducible against a stub, and the page past the last row is the case a stub makes look right and PostgreSQL makes return nothing.
 //
-//	paged read's count comes from a window function in the same
-//	statement: neither is reproducible against a stub, and the page past
-//	the last row is the case a stub makes look right and PostgreSQL
-//	makes return nothing.
-//
-//	  PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
-//	    go test -race -tags=integration ./internal/repository/postgres/
+//	PANNELAI_TEST_POSTGRES_DSN='postgres://...' \
+//	  go test -race -tags=integration ./internal/repository/postgres/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository

@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_probe_use.go
-// @for       The endpoint connectivity test: choosing the key to probe, opening
-//
-//	its credential, and recording the outcome on the aggregate.
-//
+// @for       The endpoint connectivity test: choosing the key to probe, opening its credential, and recording the outcome on the aggregate.
 // @uses      internal/dataplane, internal/domain, context, strings, time.
-// @reason    SPEC-API-001 §7.5 tests "does this credential work right now", which
-//
-//	is a different question from "which key would routing spend": a key
-//	parked in its circuit-breaker backoff is skipped by selection and is
-//	exactly what an operator re-tests after fixing it. Keeping that
-//	distinction, the credential opening, and the outcome recording in
-//	one file is what stops the panel and the router from disagreeing; it
-//	is separate from endpoint.go because AGENTS.md §1.1 caps a file at
-//	250 lines and the CRUD surface already fills one.
-//
+// @reason    SPEC-API-001 §7.5 tests "does this credential work right now", which is a different question from "which key would routing spend": a key parked in its circuit-breaker backoff is skipped by selection and is exactly what an operator re-tests after fixing it. Keeping that distinction, the credential opening, and the outcome recording in one file is what stops the panel and the router from disagreeing; it is separate from endpoint.go because AGENTS.md §1.1 caps a file at 250 lines and the CRUD surface already fills one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

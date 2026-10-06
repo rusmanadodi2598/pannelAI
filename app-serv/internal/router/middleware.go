@@ -3,13 +3,7 @@
 // @file      internal/router/middleware.go
 // @for       Cross-cutting HTTP middleware: request id, access log, panic recovery.
 // @uses      internal/domain, internal/schema, log/slog, net/http, time.
-// @reason    SPEC-API-001 §4 requires every request to be tagged with a
-//
-//	request_id and logged structurally, and §8 requires an
-//	INTERNAL_ERROR to be logged with that id. AGENTS.md §1.6 makes
-//	panic recovery at every boundary non-negotiable, so the 500 path
-//	reports the same id an operator can grep for.
-//
+// @reason    SPEC-API-001 §4 requires every request to be tagged with a request_id and logged structurally, and §8 requires an INTERNAL_ERROR to be logged with that id. AGENTS.md §1.6 makes panic recovery at every boundary non-negotiable, so the 500 path reports the same id an operator can grep for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

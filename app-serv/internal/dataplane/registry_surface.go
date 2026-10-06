@@ -5,13 +5,7 @@
 // @file      internal/dataplane/registry_surface.go
 // @for       The registry questions the resolver and the models list ask.
 // @uses      internal/registry.
-// @reason    The gateway reads providers through a surface rather than the
-//
-//	concrete index so a node the operator created after boot is routable by
-//	the next request. The interface lives apart from resolve.go because the
-//	resolution rules and the surface they are asked through are two concerns,
-//	and one file carrying both had reached the AGENTS.md §1.1 ceiling.
-//
+// @reason    The gateway reads providers through a surface rather than the concrete index so a node the operator created after boot is routable by the next request. The interface lives apart from resolve.go because the resolution rules and the surface they are asked through are two concerns, and one file carrying both had reached the AGENTS.md §1.1 ceiling.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

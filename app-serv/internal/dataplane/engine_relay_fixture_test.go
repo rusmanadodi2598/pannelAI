@@ -1,22 +1,13 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_relay_fixture_test.go
-// @for       The end-to-end relay fixture: registry and lookup doubles, a real
+// @for       The end-to-end relay fixture: registry and lookup doubles, a real HTTP upstream stand-in, and the wired engine the tests drive.
+// @uses      testing, net/http, net/http/httptest, encoding/json, context, internal/domain, internal/provider, internal/registry, internal/schema.
 //
-//	HTTP upstream stand-in, and the wired engine the tests drive.
-//
-// @uses      testing, net/http, net/http/httptest, encoding/json, context,
-//
-//	internal/domain, internal/provider, internal/registry, internal/schema.
 //	The seam engine below also wires internal/provider and the two body
 //	seams, which the relay tests share.
 //
-// @reason    The relay tests pin the pipeline as one piece, so their doubles are
-//
-//	shared wiring rather than per-test trivia. Keeping them in one
-//	file keeps the three tests about the behaviour they pin and keeps
-//	both files within the AGENTS.md section 1.1 line budget.
-//
+// @reason    The relay tests pin the pipeline as one piece, so their doubles are shared wiring rather than per-test trivia. Keeping them in one file keeps the three tests about the behaviour they pin and keeps both files within the AGENTS.md section 1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

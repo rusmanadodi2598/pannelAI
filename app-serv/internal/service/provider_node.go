@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/provider_node.go
-// @for       The custom provider node lifecycle: create, list, inspect, patch,
-//
-//	delete, and connectivity test (SPEC-API-001 §7.4).
-//
+// @for       The custom provider node lifecycle: create, list, inspect, patch, delete, and connectivity test (SPEC-API-001 §7.4).
 // @uses      internal/domain, internal/repository, context, strings, time.
-// @reason    §7.4 lets an operator define their own OpenAI-compatible or
-//
-//	Anthropic-compatible base URL, and a node's prefix becomes a
-//	model-string namespace. That makes two rules the service owns: the
-//	prefix must not collide with a registry identifier or alias, and a
-//	delete must refuse while an endpoint still references the node,
-//	both of which need the registry and the endpoints table, not just the
-//	node row (AGENTS.md §1.5 keeps that orchestration here).
-//
+// @reason    §7.4 lets an operator define their own OpenAI-compatible or Anthropic-compatible base URL, and a node's prefix becomes a model-string namespace. That makes two rules the service owns: the prefix must not collide with a registry identifier or alias, and a delete must refuse while an endpoint still references the node, both of which need the registry and the endpoints table, not just the node row (AGENTS.md §1.5 keeps that orchestration here).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

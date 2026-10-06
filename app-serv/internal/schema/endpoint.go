@@ -1,22 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/endpoint.go
-// @for       The request contracts for upstream endpoints, their keys, and the
-//
-//	bulk onboarding routes (SPEC-API-001 §7.5, §8.1).
-//
-// @uses      go-playground/validator/v10 (the documented struct-tag exception in
-//
-//	AGENTS.md "Stack"), internal/domain for the shared vocabulary.
-//
-// @reason    AGENTS.md §2.4 CDD requires a typed struct with validation tags
-//
-//	before handler logic, and §8.1 settles these shapes before the
-//	endpoint DTOs exist: one create shape serves the single route and
-//	each element of the bulk route, the auth vocabulary crosses as
-//	api_key|oauth|no_auth, and a credential is write-only so responses
-//	carry a hint.
-//
+// @for       The request contracts for upstream endpoints, their keys, and the bulk onboarding routes (SPEC-API-001 §7.5, §8.1).
+// @uses      go-playground/validator/v10 (the documented struct-tag exception in AGENTS.md "Stack"), internal/domain for the shared vocabulary.
+// @reason    AGENTS.md §2.4 CDD requires a typed struct with validation tags before handler logic, and §8.1 settles these shapes before the endpoint DTOs exist: one create shape serves the single route and each element of the bulk route, the auth vocabulary crosses as api_key|oauth|no_auth, and a credential is write-only so responses carry a hint.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

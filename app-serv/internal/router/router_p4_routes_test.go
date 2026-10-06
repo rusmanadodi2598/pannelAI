@@ -1,17 +1,10 @@
 // Package router maps HTTP routes to handlers.
 //
 // @file      internal/router/router_p4_routes_test.go
-// @for       Route-table tests for the §7.16 to §7.18 static routes, and the
+// @for       Route-table tests for the §7.16 to §7.18 static routes, and the §7.17 contract-coverage pin.
+// @uses      internal/handler, internal/registry, internal/schema, internal/service, encoding/json, net/http, net/http/httptest, strings, testing.
+// @reason    The routes' session gate and verb table are the mux's job, so they are pinned through the real mux with the production auth fixture.
 //
-//	§7.17 contract-coverage pin.
-//
-// @uses      internal/handler, internal/registry, internal/schema,
-//
-//	internal/service, encoding/json, net/http, net/http/httptest, strings, testing.
-//
-// @reason    The routes' session gate and verb table are the mux's job, so they
-//
-//	are pinned through the real mux with the production auth fixture.
 //	The coverage pin walks Mux.Routes against the served document,
 //	which is what turns a route missing from openapi.json into a
 //	build failure rather than a doc lag.

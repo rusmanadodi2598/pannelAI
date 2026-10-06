@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_nvidia_test.go
-// @for       The NVIDIA NIM TTS adapter: nested JSON request, voice default,
-//
-//	WAV output label, and the OpenAI-shaped control.
-//
-// @uses      internal/dataplane, internal/provider, internal/schema, context,
-//
-//	encoding/json, testing.
-//
-// @reason    G5 ports one provider adapter at a time. NVIDIA is a small generic
-//
-//	TTS adapter with a declared model set and no polling or provider-specific
-//	credential composition. These table cases pin its wire shape and keep
-//	the existing OpenAI speech path from drifting.
-//
+// @for       The NVIDIA NIM TTS adapter: nested JSON request, voice default, WAV output label, and the OpenAI-shaped control.
+// @uses      internal/dataplane, internal/provider, internal/schema, context, encoding/json, testing.
+// @reason    G5 ports one provider adapter at a time. NVIDIA is a small generic TTS adapter with a declared model set and no polling or provider-specific credential composition. These table cases pin its wire shape and keep the existing OpenAI speech path from drifting.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

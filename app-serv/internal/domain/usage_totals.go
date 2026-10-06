@@ -2,18 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_totals.go
-// @for       The UsageTotals aggregate: summing the counters and deriving the
-//
-//	error rate a summary displays.
-//
+// @for       The UsageTotals aggregate: summing the counters and deriving the error rate a summary displays.
 // @uses      internal/domain (Decimal), math/big.
-// @reason    SPEC-API-001 §4 makes cost a decimal string on the wire, so the
-//
-//	sum that produces it must be exact: a float would drift from the sum
-//	a client computes from the strings it was shown. The rule lives
-//	beside the totals type rather than in the query, so an in-memory
-//	sum and a SQL rollup cannot disagree.
-//
+// @reason    SPEC-API-001 §4 makes cost a decimal string on the wire, so the sum that produces it must be exact: a float would drift from the sum a client computes from the strings it was shown. The rule lives beside the totals type rather than in the query, so an in-memory sum and a SQL rollup cannot disagree.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

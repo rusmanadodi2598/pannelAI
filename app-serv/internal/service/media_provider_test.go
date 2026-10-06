@@ -3,10 +3,8 @@
 // @file      internal/service/media_provider_test.go
 // @for       The §7.10 media provider reads.
 // @uses      testing, context, time, internal/domain.
-// @reason    The rules worth pinning are the resolutions: an override wins over
+// @reason    The rules worth pinning are the resolutions: an override wins over the registry, an all-empty override reads as "not overridden", and the listing order is canonical. Each is a silent failure if wrong.
 //
-//	the registry, an all-empty override reads as "not overridden", and
-//	the listing order is canonical. Each is a silent failure if wrong.
 //	The save's refusals live in media_provider_patch_test.go.
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>

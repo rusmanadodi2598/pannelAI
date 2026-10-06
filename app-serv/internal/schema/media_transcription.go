@@ -2,16 +2,8 @@
 //
 // @file      internal/schema/media_transcription.go
 // @for       The transcription contract of SPEC-API-001 §7.10.
-// @uses      bytes, encoding/json, io, mime/multipart, net/http, strings,
-//
-//	internal/domain.
-//
-// @reason    A transcription is the one media request that is not JSON: it
-//
-//	arrives as multipart, so it is decoded and bounded here rather than
-//	in the handler, and the bound is what keeps an oversized upload off
-//	the filesystem. The speech and voice contracts live in media_audio.go.
-//
+// @uses      bytes, encoding/json, io, mime/multipart, net/http, strings, internal/domain.
+// @reason    A transcription is the one media request that is not JSON: it arrives as multipart, so it is decoded and bounded here rather than in the handler, and the bound is what keeps an oversized upload off the filesystem. The speech and voice contracts live in media_audio.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

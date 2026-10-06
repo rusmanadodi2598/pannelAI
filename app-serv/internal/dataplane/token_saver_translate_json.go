@@ -5,9 +5,8 @@
 // @file      internal/dataplane/token_saver_translate_json.go
 // @for       The raw JSON boundaries used while restoring compressed saver output.
 // @uses      bytes, encoding/json, internal/schema.
-// @reason    The Headroom adapter must replace selected members without dropping
+// @reason    The Headroom adapter must replace selected members without dropping fields the upstream wire carries but the typed translator does not model.
 //
-// fields the upstream wire carries but the typed translator does not model.
 // These helpers keep that boundary explicit and keep the main pivot file
 // below the source-file line limit.
 //

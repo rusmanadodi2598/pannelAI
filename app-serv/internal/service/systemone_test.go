@@ -1,22 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/systemone_test.go
-// @for       The decision route's rules: what it forwards, what it refuses, and
-//
-//	the accounting pair a call leaves.
-//
-// @uses      context, encoding/json, strings, testing, internal/dataplane,
-//
-//	internal/domain, internal/registry, internal/schema.
-//
-// @reason    SPEC-API-001 §7.15 serves the route and draft 029 F6 measured why it
-//
-//	matters: before it existed, `opencode/jev-1.13-free` resolved onto the
-//	chat wire and a chat body was sent to a decision endpoint. These tests
-//	pin the route's own contract (the body is forwarded verbatim with the
-//	resolved model, the block's headers travel, the session is written) and
-//	the refusals that keep the two planes from serving the same id.
-//
+// @for       The decision route's rules: what it forwards, what it refuses, and the accounting pair a call leaves.
+// @uses      context, encoding/json, strings, testing, internal/dataplane, internal/domain, internal/registry, internal/schema.
+// @reason    SPEC-API-001 §7.15 serves the route and draft 029 F6 measured why it matters: before it existed, `opencode/jev-1.13-free` resolved onto the chat wire and a chat body was sent to a decision endpoint. These tests pin the route's own contract (the body is forwarded verbatim with the resolved model, the block's headers travel, the session is written) and the refusals that keep the two planes from serving the same id.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

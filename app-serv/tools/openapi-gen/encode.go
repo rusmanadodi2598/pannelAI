@@ -3,12 +3,7 @@
 // @file      tools/openapi-gen/encode.go
 // @for       YAML node tree to JSON, preserving the order the contract declares.
 // @uses      bytes, encoding/json, gopkg.in/yaml.v3, strconv.
-// @reason    The contract is the source of truth (AGENTS.md §2.4 CDD), and a
-// generated artifact has to be byte-stable: a JSON object rebuilt from a Go map
-// would reorder members on every run and turn a one-line contract edit into a
-// whole-file diff. Walking the YAML node tree keeps the author's order, which is
-// the order a reader of the served document sees.
-//
+// @reason    The contract is the source of truth (AGENTS.md §2.4 CDD), and a generated artifact has to be byte-stable: a JSON object rebuilt from a Go map would reorder members on every run and turn a one-line contract edit into a whole-file diff. Walking the YAML node tree keeps the author's order, which is the order a reader of the served document sees.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability experimental

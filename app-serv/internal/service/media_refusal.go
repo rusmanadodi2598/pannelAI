@@ -1,22 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_refusal.go
-// @for       The log row a §7.10 media call leaves when it is refused before
-//
-//	any upstream attempt, and the identity such a row can still name.
-//
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	strings.
-//
-// @reason    Register G20: the chat plane records every call, including one
-//
-//	refused before the pipeline ran, while the media routes wrote rows
-//	only after Perform, so a refusal the client saw never appeared in
-//	the Logs screen. The identity rule lives here because a refusal has
-//	no resolved call to read it from, only the model string the client
-//	sent.
-//
+// @for       The log row a §7.10 media call leaves when it is refused before any upstream attempt, and the identity such a row can still name.
+// @uses      internal/dataplane, internal/domain, internal/schema, context, strings.
+// @reason    Register G20: the chat plane records every call, including one refused before the pipeline ran, while the media routes wrote rows only after Perform, so a refusal the client saw never appeared in the Logs screen. The identity rule lives here because a refusal has no resolved call to read it from, only the model string the client sent.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

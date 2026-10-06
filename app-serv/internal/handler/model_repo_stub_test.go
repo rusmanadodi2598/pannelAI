@@ -2,12 +2,8 @@
 //
 // @file      internal/handler/model_repo_stub_test.go
 // @for       The in-memory combo and adapter repositories for the handler tests, and the wired handler fixture they serve.
-// @uses      internal/domain, internal/registry, internal/repository,
-//
-//	internal/service, context, testing.
-//
+// @uses      internal/domain, internal/registry, internal/repository, internal/service, context, testing.
 // @reason    The catalog stub and the combo/adapter stubs are separate declarations; AGENTS.md §1.1 caps a file at 250 lines, so the latter moved here.
-//
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

@@ -3,11 +3,7 @@
 // @file      internal/dataplane/resolve_fixtures_test.go
 // @for       The lookup double and registry index the resolution tests build on.
 // @uses      context, testing, internal/domain, internal/registry
-// @reason    SPEC-API-001 §7.15 fixes the resolution order (combo, alias, provider/model) and the
-//
-//	models list, and both read a lookup the resolver does not own. The double and the
-//	registry index live here so the resolution tests read as the rule they pin.
-//
+// @reason    SPEC-API-001 §7.15 fixes the resolution order (combo, alias, provider/model) and the models list, and both read a lookup the resolver does not own. The double and the registry index live here so the resolution tests read as the rule they pin.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

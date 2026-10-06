@@ -2,18 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_endpoint_keys.go
-// @for       Key CRUD and health transitions on an UpstreamEndpoint, plus the
-//
-//	read helpers the router and the panel use to pick a key.
-//
+// @for       Key CRUD and health transitions on an UpstreamEndpoint, plus the read helpers the router and the panel use to pick a key.
 // @uses      internal/domain (UpstreamKey, error constructors), sort, strings.
-// @reason    AGENTS.md §2.2 makes the aggregate root the only mutation boundary,
-//
-//	so every key change runs here rather than on a detached key value;
-//	this file holds that surface, and the "keep one usable credential"
-//	invariant is enforced on the collection because no single key can
-//	see it.
-//
+// @reason    AGENTS.md §2.2 makes the aggregate root the only mutation boundary, so every key change runs here rather than on a detached key value; this file holds that surface, and the "keep one usable credential" invariant is enforced on the collection because no single key can see it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

@@ -4,11 +4,7 @@
 // @file      internal/domain/settings_filter_test.go
 // @for       The token-saver filter allowlist and the cross-key rules settings reject.
 // @uses      reflect, testing.
-// @reason    Both are settings-wide invariants: a PATCH replaces the allowlist
-//
-//	rather than appending to it, and two individually valid keys can
-//	conflict with each other.
-//
+// @reason    Both are settings-wide invariants: a PATCH replaces the allowlist rather than appending to it, and two individually valid keys can conflict with each other.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

@@ -3,9 +3,8 @@
 // @file      internal/handler/systemone.go
 // @for       POST /api/v1/systemone, the System One (Jev) decision route.
 // @uses      internal/schema, internal/service, net/http.
-// @reason    SPEC-API-001 §7.15 serves the route, and the handler follows the
+// @reason    SPEC-API-001 §7.15 serves the route, and the handler follows the embeddings route's shape: decode, validate, authenticate, call, write.
 //
-//	embeddings route's shape: decode, validate, authenticate, call, write.
 //	The answer is forwarded as the upstream wrote it, because a decision
 //	answer's vocabulary belongs to the provider (per-question confidences
 //	rather than a chat message), so re-encoding it through a typed struct

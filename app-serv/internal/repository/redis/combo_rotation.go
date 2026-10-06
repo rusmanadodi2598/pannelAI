@@ -2,17 +2,9 @@
 //
 // @file      internal/repository/redis/combo_rotation.go
 // @for       Advances the round-robin rotation state of a combo atomically.
-// @uses      github.com/redis/go-redis/v9, internal/domain,
+// @uses      github.com/redis/go-redis/v9, internal/domain, internal/repository, context, crypto/sha256, fmt, time.
+// @reason    SPEC-API-001 §9.6 puts sticky round-robin state in Redis, and §7.7 makes the rotation a distribution rule: two concurrent requests for one combo must land on different models rather than both reading the same state. The script below therefore owns exactly one thing, an atomic request counter, and the ordering rule stays in domain.RotationRequestIndex, which a unit test runs without Redis.
 //
-//	internal/repository, context, crypto/sha256, fmt, time.
-//
-// @reason    SPEC-API-001 §9.6 puts sticky round-robin state in Redis, and §7.7
-//
-//	makes the rotation a distribution rule: two concurrent requests for
-//	one combo must land on different models rather than both reading
-//	the same state. The script below therefore owns exactly one thing,
-//	an atomic request counter, and the ordering rule stays in
-//	domain.RotationRequestIndex, which a unit test runs without Redis.
 //	Splitting it that way is what stops the stored state and the served
 //	order from becoming two implementations of one rule.
 //

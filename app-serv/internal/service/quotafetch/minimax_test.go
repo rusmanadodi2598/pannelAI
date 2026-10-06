@@ -3,10 +3,7 @@
 // @file      internal/service/quotafetch/minimax_test.go
 // @for       Locks the MiniMax quota read: rows and labels, both hosts and their order, refusals.
 // @uses      internal/service/quotafetch, net/http/httptest
-// @reason    Two hosts publish the same fields with opposite meanings and the registry may declare
-//
-//	both, one or neither, so a flipped bar or a skipped host misleads the operator silently.
-//
+// @reason    Two hosts publish the same fields with opposite meanings and the registry may declare both, one or neither, so a flipped bar or a skipped host misleads the operator silently.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

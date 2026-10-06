@@ -1,21 +1,10 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/endpoint_oauth_batch.go
-// @for       The transactional apply step of the OAuth credential import, and
+// @for       The transactional apply step of the OAuth credential import, and the endpoint UPDATE it shares with the single write path.
+// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, internal/domain, context.
+// @reason    SPEC-API-001 §7.5 imports a batch of already-obtained OAuth credentials, and §8.1 makes that batch all-or-nothing: a refused row must leave no account behind. A row here either creates an endpoint or updates the one that already stands for the account, so the two statements have to run inside one transaction and the UPDATE has to be callable from both a transaction and the pool.
 //
-//	the endpoint UPDATE it shares with the single write path.
-//
-// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn,
-//
-//	internal/domain, context.
-//
-// @reason    SPEC-API-001 §7.5 imports a batch of already-obtained OAuth
-//
-//	credentials, and §8.1 makes that batch all-or-nothing: a refused
-//	row must leave no account behind. A row here either creates an
-//	endpoint or updates the one that already stands for the account,
-//	so the two statements have to run inside one transaction and the
-//	UPDATE has to be callable from both a transaction and the pool.
 //	The execer interface below is that second requirement, and it is
 //	why the UPDATE lives here rather than in endpoint.go.
 //

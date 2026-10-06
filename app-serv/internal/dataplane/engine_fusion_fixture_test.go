@@ -1,19 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_fusion_fixture_test.go
-// @for       The fusion fixture: an upstream that records every panel and judge
-//
-//	call, a sink that keeps the frames, and the request builders.
-//
-// @uses      testing, net/http, net/http/httptest, encoding/json, context,
-//
-//	sync, internal/domain, internal/registry, internal/schema.
-//
-// @reason    A fusion test has to prove who was asked what, which models were
-//
-//	consulted, whether they streamed, and what the judge was told, so
-//	the recording stand-in is shared wiring rather than per-test trivia.
-//
+// @for       The fusion fixture: an upstream that records every panel and judge call, a sink that keeps the frames, and the request builders.
+// @uses      testing, net/http, net/http/httptest, encoding/json, context, sync, internal/domain, internal/registry, internal/schema.
+// @reason    A fusion test has to prove who was asked what, which models were consulted, whether they streamed, and what the judge was told, so the recording stand-in is shared wiring rather than per-test trivia.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -5,17 +5,7 @@
 // @file      internal/dataplane/transport.go
 // @for       The transport's shape and the shared HTTP client it dials with.
 // @uses      internal/provider, net, net/http, sort, time.
-// @reason    SPEC-API-001 §4 fixes the timeouts (connect 10s, total 120s, no
-//
-//	total cap while streaming with a 300s idle read) and AGENTS.md §1.6
-//	requires every outbound call to run under a context deadline. The
-//	pool limits live here because one client serves every upstream call
-//	(AGENTS.md §1.7), and its dialer is the seam the composition root
-//	injects the egress guard through (OWASP A01). Nothing here branches
-//	on a provider id: the URL and the credential placement come from
-//	provider.Plugin, which is what makes a new provider a registry entry
-//	rather than a change to shared code.
-//
+// @reason    SPEC-API-001 §4 fixes the timeouts (connect 10s, total 120s, no total cap while streaming with a 300s idle read) and AGENTS.md §1.6 requires every outbound call to run under a context deadline. The pool limits live here because one client serves every upstream call (AGENTS.md §1.7), and its dialer is the seam the composition root injects the egress guard through (OWASP A01). Nothing here branches on a provider id: the URL and the credential placement come from provider.Plugin, which is what makes a new provider a registry entry rather than a change to shared code.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

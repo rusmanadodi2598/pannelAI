@@ -3,11 +3,7 @@
 // @file      internal/config/config.go
 // @for       Typed environment configuration for app-serv, validated once at boot.
 // @uses      fmt, strings, time (the env-reading helpers are in env.go).
-// @reason    SPEC-API-001 §4 and AGENTS.md §1.4 require env vars to become a
-//
-//	typed Config with fail-fast validation, so no raw os.Getenv()
-//	reaches business logic.
-//
+// @reason    SPEC-API-001 §4 and AGENTS.md §1.4 require env vars to become a typed Config with fail-fast validation, so no raw os.Getenv() reaches business logic.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

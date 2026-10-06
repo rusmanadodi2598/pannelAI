@@ -1,23 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/usage_live_doubles_test.go
-// @for       The double, the socket reader, and the route wrapper the live Usage
-//
-//	handler tests share.
-//
-// @uses      bufio, net, net/http, net/http/httptest, strings, sync, testing,
-//
-//	time, internal/domain, internal/repository, internal/schema, internal/service.
-//
-// @reason    A stream is the one answer whose timing is part of its contract
-//
-//	(SPEC-API-001 §4: the status line and SSE headers are committed on
-//	the first frame, so a failure with no frame yet is still an ordinary
-//	HTTP error). These tests drive a real socket rather than a recorder,
-//	because httptest.ResponseRecorder reports a buffered answer as
-//	healthy and cannot show that the first frame arrived while the
-//	handler was still running.
-//
+// @for       The double, the socket reader, and the route wrapper the live Usage handler tests share.
+// @uses      bufio, net, net/http, net/http/httptest, strings, sync, testing, time, internal/domain, internal/repository, internal/schema, internal/service.
+// @reason    A stream is the one answer whose timing is part of its contract (SPEC-API-001 §4: the status line and SSE headers are committed on the first frame, so a failure with no frame yet is still an ordinary HTTP error). These tests drive a real socket rather than a recorder, because httptest.ResponseRecorder reports a buffered answer as healthy and cannot show that the first frame arrived while the handler was still running.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

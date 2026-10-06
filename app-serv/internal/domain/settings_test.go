@@ -2,18 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/settings_test.go
-// @for       Table-driven tests for the settings defaults, partial patch, and
-//
-//	the deprecated caveman key.
-//
+// @for       Table-driven tests for the settings defaults, partial patch, and the deprecated caveman key.
 // @uses      encoding/json, testing.
-// @reason    AGENTS.md §2.1 and §2.4 require the defaults and the per-key
-//
-//	validation to be pinned, and SPEC-API-001 §7.9 makes the caveman key
-//	a rule rather than a value: it stays accepted and frozen so an
-//	exported reference configuration round-trips, and it is never
-//	rendered. That rule needs a test or it is a comment.
-//
+// @reason    AGENTS.md §2.1 and §2.4 require the defaults and the per-key validation to be pinned, and SPEC-API-001 §7.9 makes the caveman key a rule rather than a value: it stays accepted and frozen so an exported reference configuration round-trips, and it is never rendered. That rule needs a test or it is a comment.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

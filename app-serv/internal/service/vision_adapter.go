@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/vision_adapter.go
-// @for       The vision adapter configuration: read it, replace it, validate its
-//
-//	model list against the catalog, and order it for one request
-//	(SPEC-API-001 §7.8).
-//
+// @for       The vision adapter configuration: read it, replace it, validate its model list against the catalog, and order it for one request (SPEC-API-001 §7.8).
 // @uses      internal/domain, internal/repository, context, time.
-// @reason    §7.8 requires every adapter model to be a catalog model a vision
-//
-//	capability check accepts, and the capability data is not in the
-//	registry yet. The predicate therefore arrives as a dependency
-//	(domain.VisionCapabilityCheck) rather than being guessed here: when
-//	the capability table lands, the composition root swaps the
-//	predicate and nothing else changes.
-//
+// @reason    §7.8 requires every adapter model to be a catalog model a vision capability check accepts, and the capability data is not in the registry yet. The predicate therefore arrives as a dependency (domain.VisionCapabilityCheck) rather than being guessed here: when the capability table lands, the composition root swaps the predicate and nothing else changes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

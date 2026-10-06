@@ -2,16 +2,8 @@
 //
 // @file      internal/provider/qoder_encoding.go
 // @for       The body obfuscation Qoder's chat endpoint reads as Encode=1.
-//
 // @uses      encoding/base64, strings.
-// @reason    The vendor puts a WAF in front of the chat endpoint and the
-//
-//	official client does not send plaintext JSON to it, so a gateway
-//	that sent a readable body would be pattern-matched. The scheme is
-//	base64, then thirds reordered, then a character substitution: an
-//	obfuscation, not encryption, and the whole reason it can live in
-//	one pure function.
-//
+// @reason    The vendor puts a WAF in front of the chat endpoint and the official client does not send plaintext JSON to it, so a gateway that sent a readable body would be pattern-matched. The scheme is base64, then thirds reordered, then a character substitution: an obfuscation, not encryption, and the whole reason it can live in one pure function.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

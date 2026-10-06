@@ -1,18 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_body_types.go
-// @for       The two payload shapes of a Qoder chat call: what the gateway translated, and what
-//
-//	the vendor reads.
-//
+// @for       The two payload shapes of a Qoder chat call: what the gateway translated, and what the vendor reads.
 // @uses      encoding/json.
-// @reason    The vendor reads an agent request, not an OpenAI one, and every field here is
-//
-//	named because several of them route the call (`chat_task`, `agent_id`,
-//	`session_type`) while a wrong `model_config` is answered with a different
-//	model. They sit apart from the builder so the wire shape can be read against
-//	the reference without the derivation in the way.
-//
+// @reason    The vendor reads an agent request, not an OpenAI one, and every field here is named because several of them route the call (`chat_task`, `agent_id`, `session_type`) while a wrong `model_config` is answered with a different model. They sit apart from the builder so the wire shape can be read against the reference without the derivation in the way.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

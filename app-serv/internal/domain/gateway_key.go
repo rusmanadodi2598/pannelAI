@@ -2,16 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/gateway_key.go
-// @for       The GatewayKey aggregate root: the client-facing credential CLI
-//
-//	tools present as Authorization: Bearer against the data plane.
-//
+// @for       The GatewayKey aggregate root: the client-facing credential CLI tools present as Authorization: Bearer against the data plane.
 // @uses      internal/domain (ULID, error sentinels).
-// @reason    SPEC-API-001 §7.3 needs a revocable key whose plaintext is shown
-//
-//	once and whose later reads expose only key_hint; the transitions
-//	are enforced here so no caller can put the entity in a bad state.
-//
+// @reason    SPEC-API-001 §7.3 needs a revocable key whose plaintext is shown once and whose later reads expose only key_hint; the transitions are enforced here so no caller can put the entity in a bad state.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

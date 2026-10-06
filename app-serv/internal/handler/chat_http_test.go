@@ -2,12 +2,8 @@
 //
 // @file      internal/handler/chat_http_test.go
 // @for       HTTP behavior coverage for the Playground Chat completions route.
-// @uses      internal/dataplane, internal/handler, net/http, net/http/httptest,
-// strings, testing.
-// @reason    F4 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires
-// the happy, validation, authentication, stream, and pre-frame failure paths
-// through the handler rather than only through helper or engine tests.
-//
+// @uses      internal/dataplane, internal/handler, net/http, net/http/httptest, strings, testing.
+// @reason    F4 of docs/DRAFT/009-PLAYGROUND-CHAT-ENDPOINT-READINESS.md requires the happy, validation, authentication, stream, and pre-frame failure paths through the handler rather than only through helper or engine tests.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

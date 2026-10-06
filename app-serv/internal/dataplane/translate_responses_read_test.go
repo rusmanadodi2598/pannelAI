@@ -3,13 +3,7 @@
 // @file      internal/dataplane/translate_responses_read_test.go
 // @for       Table-driven tests for reading the parts of a Responses answer.
 // @uses      testing.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and an
-//
-//	upstream may emit item kinds the gateway does not model or parts it
-//	cannot carry. Each reader has to skip what it cannot use without
-//	failing the answer, since the rest of it is still what the client
-//	asked for.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and an upstream may emit item kinds the gateway does not model or parts it cannot carry. Each reader has to skip what it cannot use without failing the answer, since the rest of it is still what the client asked for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

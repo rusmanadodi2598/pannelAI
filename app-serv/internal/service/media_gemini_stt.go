@@ -2,17 +2,8 @@
 //
 // @file      internal/service/media_gemini_stt.go
 // @for       The Gemini transcription adapter in the §7.10 media plane.
-// @uses      internal/dataplane, internal/schema, encoding/base64,
-//
-//	encoding/json, strings.
-//
-// @reason    Gemini's transcription surface is the generateContent call its
-//
-//	speech surface already uses: the model is a path segment, the
-//	credential rides in the query, the audio travels inline as base64,
-//	and the answer is text rather than audio. Keeping it beside its TTS
-//	sibling means both adapters share one URL shape and one gate.
-//
+// @uses      internal/dataplane, internal/schema, encoding/base64, encoding/json, strings.
+// @reason    Gemini's transcription surface is the generateContent call its speech surface already uses: the model is a path segment, the credential rides in the query, the audio travels inline as base64, and the answer is text rather than audio. Keeping it beside its TTS sibling means both adapters share one URL shape and one gate.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

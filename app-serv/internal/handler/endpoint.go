@@ -1,18 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/endpoint.go
-// @for       The upstream endpoint CRUD, test, and batch routes
-//
-//	(SPEC-API-001 §7.5).
-//
+// @for       The upstream endpoint CRUD, test, and batch routes (SPEC-API-001 §7.5).
 // @uses      internal/domain, internal/schema, internal/service, net/http, time.
-// @reason    §7.5 fixes the endpoint wire contract and AGENTS.md §1.5 keeps SQL and
-//
-//	business rules out of this layer: the handler decodes a validated DTO,
-//	calls the service, and maps the aggregate onto the response shape. A
-//	credential never appears in a response, only the hint the aggregate
-//	already holds.
-//
+// @reason    §7.5 fixes the endpoint wire contract and AGENTS.md §1.5 keeps SQL and business rules out of this layer: the handler decodes a validated DTO, calls the service, and maps the aggregate onto the response shape. A credential never appears in a response, only the hint the aggregate already holds.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

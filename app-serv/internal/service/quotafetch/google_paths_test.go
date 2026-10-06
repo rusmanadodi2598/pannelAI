@@ -3,11 +3,7 @@
 // @file      internal/service/quotafetch/google_paths_test.go
 // @for       Pinning that a registry-declared load_code_assist_url moves the project lookup.
 // @uses      context, strings, testing.
-// @reason    gemini-cli has no quota path of its own to get wrong until it looks its project up,
-//
-//	so the bootstrap is the one call whose address the registry actually chooses. Declaring it
-//	and silently asking the built-in is the defect this family would otherwise repeat quietly.
-//
+// @reason    gemini-cli has no quota path of its own to get wrong until it looks its project up, so the bootstrap is the one call whose address the registry actually chooses. Declaring it and silently asking the built-in is the defect this family would otherwise repeat quietly.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

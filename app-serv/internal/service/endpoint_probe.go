@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_probe.go
-// @for       The outbound port a connectivity test uses, expressed without any
-//
-//	HTTP type.
-//
+// @for       The outbound port a connectivity test uses, expressed without any HTTP type.
 // @uses      internal/domain, context, time.
-// @reason    SPEC-API-001 §7.5 and §7.4 both offer a connectivity test, and a
-//
-//	test has to reach the upstream, but AGENTS.md §1.5 forbids net/http
-//	in this layer and the layer above already owns the request. Declaring
-//	the port here is what lets the service orchestrate a probe (record
-//	the outcome on the aggregate, trip the key's circuit) while the
-//	net/http adapter lives in the composition root, so neither layer
-//	learns about the other's world.
-//
+// @reason    SPEC-API-001 §7.5 and §7.4 both offer a connectivity test, and a test has to reach the upstream, but AGENTS.md §1.5 forbids net/http in this layer and the layer above already owns the request. Declaring the port here is what lets the service orchestrate a probe (record the outcome on the aggregate, trip the key's circuit) while the net/http adapter lives in the composition root, so neither layer learns about the other's world.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

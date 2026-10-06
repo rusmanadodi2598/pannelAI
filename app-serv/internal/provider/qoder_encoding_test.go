@@ -2,16 +2,8 @@
 //
 // @file      internal/provider/qoder_encoding_test.go
 // @for       The body obfuscation, against vectors the reference produced.
-//
 // @uses      encoding/json, os, path/filepath, strings, testing.
-// @reason    The obfuscation is a vendor's algorithm with no room for taste: one
-//
-//	reordered third or one substituted character off and the WAF reads a
-//	plaintext body. The expected values are the reference encoder's own
-//	output, captured in `testdata/qoder_encoding_vectors.json` and read
-//	back here, so a drift is caught rather than self-confirmed, and
-//	not re-typed by hand, which is how a vector first went wrong.
-//
+// @reason    The obfuscation is a vendor's algorithm with no room for taste: one reordered third or one substituted character off and the WAF reads a plaintext body. The expected values are the reference encoder's own output, captured in `testdata/qoder_encoding_vectors.json` and read back here, so a drift is caught rather than self-confirmed, and not re-typed by hand, which is how a vector first went wrong.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

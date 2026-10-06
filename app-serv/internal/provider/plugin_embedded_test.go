@@ -2,18 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/plugin_embedded_test.go
-// @for       The connector gap report and URL resolution driven against the
-//
-//	REAL embedded registry, not a fixture.
-//
+// @for       The connector gap report and URL resolution driven against the REAL embedded registry, not a fixture.
 // @uses      testing, strings, internal/registry.
-// @reason    A lookup asserted only against synthetic providers proves the
-//
-//	lookup, not the data it will meet. A provider that is listed but
-//	unanswerable is a routing failure waiting for traffic, so both the
-//	report a maintainer greps and the URL every entry resolves are
-//	measured over the document the binary embeds.
-//
+// @reason    A lookup asserted only against synthetic providers proves the lookup, not the data it will meet. A provider that is listed but unanswerable is a routing failure waiting for traffic, so both the report a maintainer greps and the URL every entry resolves are measured over the document the binary embeds.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

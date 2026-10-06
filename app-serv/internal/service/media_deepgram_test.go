@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_deepgram_test.go
-// @for       The Deepgram STT adapter: binary request shape, auth, query, MIME,
-//
-//	and nested transcript normalization.
-//
-// @uses      internal/dataplane, internal/provider, internal/schema, context,
-//
-//	encoding/json, net/url, strings, testing.
-//
-// @reason    G5 ports one provider adapter at a time. Deepgram is the smallest
-//
-//	decision-free adapter: one binary POST, no polling, and a documented
-//	`Authorization: Token` header. These table cases prove its request
-//	shape without weakening the shared selection, health, or accounting
-//	pipeline.
-//
+// @for       The Deepgram STT adapter: binary request shape, auth, query, MIME, and nested transcript normalization.
+// @uses      internal/dataplane, internal/provider, internal/schema, context, encoding/json, net/url, strings, testing.
+// @reason    G5 ports one provider adapter at a time. Deepgram is the smallest decision-free adapter: one binary POST, no polling, and a documented `Authorization: Token` header. These table cases prove its request shape without weakening the shared selection, health, or accounting pipeline.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

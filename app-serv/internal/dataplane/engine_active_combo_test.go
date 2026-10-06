@@ -3,21 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_active_combo_test.go
-// @for       The combo name on the in-flight marker the relay leg opens: carried
-//
-//	on every attempted member, and absent on a call that addressed one
-//	model.
-//
+// @for       The combo name on the in-flight marker the relay leg opens: carried on every attempted member, and absent on a call that addressed one model.
 // @uses      context, internal/domain, testing.
-// @reason    SPEC-UI-001 §6.5 draws `Client >> Combo >> Gateway >> Upstream`, so
-//
-//	a request that addressed a combo has to light that combo's node while
-//	its members are being called. The relay leg is the only place that
-//	knows both names, and the two facts sit next to each other on the
-//	marker, so the failure this pins is the quiet one: a marker that
-//	named only the member is indistinguishable, on the panel, from a
-//	request that addressed that member directly.
-//
+// @reason    SPEC-UI-001 §6.5 draws `Client >> Combo >> Gateway >> Upstream`, so a request that addressed a combo has to light that combo's node while its members are being called. The relay leg is the only place that knows both names, and the two facts sit next to each other on the marker, so the failure this pins is the quiet one: a marker that named only the member is indistinguishable, on the panel, from a request that addressed that member directly.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

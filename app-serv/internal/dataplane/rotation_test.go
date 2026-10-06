@@ -1,18 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/rotation_test.go
-// @for       The round_robin strategy end to end: the rotated leader serves, and
-//
-//	an order the seam cannot answer falls back to priority order.
-//
+// @for       The round_robin strategy end to end: the rotated leader serves, and an order the seam cannot answer falls back to priority order.
 // @uses      testing, context, errors, sync, internal/domain.
-// @reason    SPEC-API-001 §7.7 makes round_robin a distribution rule and §9.6
-//
-//	puts its state in Redis, so the two halves have to be proven
-//	together: the engine must ask for the order with the combo's own
-//	sticky limit, serve the leader the store returned, and still serve
-//	the request when the store is down.
-//
+// @reason    SPEC-API-001 §7.7 makes round_robin a distribution rule and §9.6 puts its state in Redis, so the two halves have to be proven together: the engine must ask for the order with the combo's own sticky limit, serve the leader the store returned, and still serve the request when the store is down.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

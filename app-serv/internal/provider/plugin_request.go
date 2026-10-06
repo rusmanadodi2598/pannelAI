@@ -2,18 +2,9 @@
 // upstream provider.
 //
 // @file      internal/provider/plugin_request.go
-// @for       The request a connector is asked to perform, the response it returns,
-//
-//	and the accounting that travels with it.
-//
+// @for       The request a connector is asked to perform, the response it returns, and the accounting that travels with it.
 // @uses      internal/registry, net/http.
-// @reason    A connector decides how to authenticate and which URL to call, so it
-//
-//	has to receive the resolved model and the already-translated body
-//	rather than re-deriving either. The body is streamed rather than
-//	buffered because a chat completion can be long and the core forwards
-//	it without needing the whole payload.
-//
+// @reason    A connector decides how to authenticate and which URL to call, so it has to receive the resolved model and the already-translated body rather than re-deriving either. The body is streamed rather than buffered because a chat completion can be long and the core forwards it without needing the whole payload.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

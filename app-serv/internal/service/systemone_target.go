@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/systemone_target.go
-// @for       The URL and headers one decision call presents: the entry's own
-//
-//	block, the account's credential, and the session the Zen lanes require.
-//
+// @for       The URL and headers one decision call presents: the entry's own block, the account's credential, and the session the Zen lanes require.
 // @uses      internal/dataplane, internal/domain, internal/registry, net/url, strings.
-// @reason    The reference builds these from `systemoneConfig` plus the account
-//
-//	(systemoneCore.js:39-46): the block's headers, the credential as a
-//	bearer, and a fresh `x-opencode-session` per call. Keeping them apart
-//	from the use case is what holds systemone.go inside the AGENTS.md §1.1
-//	budget, and it makes the one place a header is decided reviewable.
-//
+// @reason    The reference builds these from `systemoneConfig` plus the account (systemoneCore.js:39-46): the block's headers, the credential as a bearer, and a fresh `x-opencode-session` per call. Keeping them apart from the use case is what holds systemone.go inside the AGENTS.md §1.1 budget, and it makes the one place a header is decided reviewable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

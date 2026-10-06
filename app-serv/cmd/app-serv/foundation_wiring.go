@@ -1,20 +1,9 @@
 // Command app-serv wires the process-wide collaborators the graph is built on.
 //
 // @file      cmd/app-serv/foundation_wiring.go
-// @for       Builds the settings service, the egress policy, and the credential
-//
-//	sealer: the three collaborators every other builder reads.
-//
-// @uses      internal/config, internal/domain, internal/repository/postgres,
-//
-//	internal/service, fmt, pgxpool.
-//
-// @reason    These three are built before anything else and read by everything
-//
-//	else, so giving them their own builder keeps buildManagement's
-//	sequence about the graph rather than about its foundation, and keeps
-//	both files inside the AGENTS.md §1.1 budget.
-//
+// @for       Builds the settings service, the egress policy, and the credential sealer: the three collaborators every other builder reads.
+// @uses      internal/config, internal/domain, internal/repository/postgres, internal/service, fmt, pgxpool.
+// @reason    These three are built before anything else and read by everything else, so giving them their own builder keeps buildManagement's sequence about the graph rather than about its foundation, and keeps both files inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

@@ -2,18 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/combo_strategy.go
-// @for       The combo strategy value object and the pure round-robin rotation
-//
-//	that turns a model list plus its state into the next order.
-//
+// @for       The combo strategy value object and the pure round-robin rotation that turns a model list plus its state into the next order.
 // @uses      strings, internal/domain (AppError constructors).
-// @reason    SPEC-API-001 §7.7 ports combo.js, whose rotation is a state
-//
-//	machine over (model list, sticky limit, state). Keeping it a pure
-//	function here means the distribution rule is unit-testable without
-//	a clock, a database, or Redis, and the Redis store only persists
-//	the state this function returns.
-//
+// @reason    SPEC-API-001 §7.7 ports combo.js, whose rotation is a state machine over (model list, sticky limit, state). Keeping it a pure function here means the distribution rule is unit-testable without a clock, a database, or Redis, and the Redis store only persists the state this function returns.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

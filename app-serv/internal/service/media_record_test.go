@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_record_test.go
-// @for       The accounting pair one media call writes: one §7.12 usage row and
-//
-//	one §7.13 request log, under the request's own identifier.
-//
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	errors, strings, testing.
-//
-// @reason    The register's G6 decision (2026-09-19) is that a media call is
-//
-//	recorded like any other served request, with tokens 0 and the kind's
-//	own per-query price. Each row is a table case so a new ending
-//	(served, rejected, unreachable) has to state what it records rather
-//	than inheriting an untested default.
-//
+// @for       The accounting pair one media call writes: one §7.12 usage row and one §7.13 request log, under the request's own identifier.
+// @uses      internal/dataplane, internal/domain, internal/schema, context, errors, strings, testing.
+// @reason    The register's G6 decision (2026-09-19) is that a media call is recorded like any other served request, with tokens 0 and the kind's own per-query price. Each row is a table case so a new ending (served, rejected, unreachable) has to state what it records rather than inheriting an untested default.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

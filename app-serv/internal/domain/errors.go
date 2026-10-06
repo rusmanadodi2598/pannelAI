@@ -4,12 +4,7 @@
 // @file      internal/domain/errors.go
 // @for       The AppError envelope and the sentinel errors layers match on.
 // @uses      errors, standard library only.
-// @reason    SPEC-API-001 §8 fixes the management error shape (code + English
-//
-//	message) and its HTTP mapping; centralizing it here keeps handlers
-//	from inventing codes and keeps driver messages off the wire
-//	(AGENTS.md §1.3).
-//
+// @reason    SPEC-API-001 §8 fixes the management error shape (code + English message) and its HTTP mapping; centralizing it here keeps handlers from inventing codes and keeps driver messages off the wire (AGENTS.md §1.3).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

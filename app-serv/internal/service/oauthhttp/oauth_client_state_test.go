@@ -1,20 +1,10 @@
 // Package oauthhttp performs the OAuth rounds the flow service orchestrates.
 //
 // @file      internal/service/oauthhttp/oauth_client_state_test.go
-// @for       The wire of the state round: the headers the vendor demands, the
+// @for       The wire of the state round: the headers the vendor demands, the queries it reads its round from, and the codes it answers with.
+// @uses      context, io, net/http, net/http/httptest, strings, testing, time, internal/registry.
+// @reason    The reference's CodeBuddy module is precise about things a generic OAuth client would guess wrong: the platform is a query parameter on the state call, the round handle comes back as `state`, `X-Domain` must equal the provider host, the poll is a GET with the state in the query and no authorization header, and `code: 11217` means "wait" rather than "fail".
 //
-//	queries it reads its round from, and the codes it answers with.
-//
-// @uses      context, io, net/http, net/http/httptest, strings, testing, time,
-//
-//	internal/registry.
-//
-// @reason    The reference's CodeBuddy module is precise about things a generic
-//
-//	OAuth client would guess wrong: the platform is a query parameter on the
-//	state call, the round handle comes back as `state`, `X-Domain` must equal
-//	the provider host, the poll is a GET with the state in the query and no
-//	authorization header, and `code: 11217` means "wait" rather than "fail".
 //	Each of those is an assertion here, against a real HTTP server, because a
 //	fake would pass whatever shape the fake happened to invent.
 //

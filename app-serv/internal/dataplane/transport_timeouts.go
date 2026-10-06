@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/transport_timeouts.go
-// @for       The deadlines one outbound attempt runs under: which one applies,
-//
-//	and the registry overrides that replace them.
-//
+// @for       The deadlines one outbound attempt runs under: which one applies, and the registry overrides that replace them.
 // @uses      time, internal/registry.
-// @reason    SPEC-API-001 §4 fixes the deadlines and AGENTS.md §1.6 requires
-//
-//	every outbound call to carry one. They are read at two different
-//	moments (the retry loop decides, the attempt applies), so they live
-//	together here rather than at either call site, which is also what keeps
-//	transport_call.go inside the AGENTS.md §1.1 split warning.
-//
+// @reason    SPEC-API-001 §4 fixes the deadlines and AGENTS.md §1.6 requires every outbound call to carry one. They are read at two different moments (the retry loop decides, the attempt applies), so they live together here rather than at either call site, which is also what keeps transport_call.go inside the AGENTS.md §1.1 split warning.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

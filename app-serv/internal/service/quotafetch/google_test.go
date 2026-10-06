@@ -5,12 +5,7 @@
 // @file      internal/service/quotafetch/google_test.go
 // @for       Locks the Gemini CLI quota read and the project resolution both Google families share.
 // @uses      internal/service/quotafetch, io, net/http, net/http/httptest, strings, sync, testing, time
-// @reason    The quota endpoint only answers for a project it is told, and the project comes
-//
-//	from a second endpoint, so the two-call and one-call shapes are the
-//	regression worth pinning: a fetch that always asks twice burns a call,
-//	and one that never looks the project up answers nothing at all.
-//
+// @reason    The quota endpoint only answers for a project it is told, and the project comes from a second endpoint, so the two-call and one-call shapes are the regression worth pinning: a fetch that always asks twice burns a call, and one that never looks the project up answers nothing at all.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

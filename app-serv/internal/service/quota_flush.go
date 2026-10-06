@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush.go
-// @for       The quota flush worker's lifecycle: one bounded goroutine, a
-//
-//	single-flight guard, and the composition-root entry point.
-//
-// @uses      internal/domain, internal/repository, log/slog, runtime/debug,
-//
-//	sync, sync/atomic, time.
-//
-// @reason    AGENTS.md §1.6 requires every worker to recover from panic and to
-//
-//	have an explicit termination condition, which is lifecycle, not
-//	batch mechanics: this file states who runs, when, and how it stops,
-//	while the batch itself lives in quota_flush_drain.go and the stated
-//	retry and dead-letter behaviour in quota_flush_policy.go
-//	(draft 005 F3).
+// @for       The quota flush worker's lifecycle: one bounded goroutine, a single-flight guard, and the composition-root entry point.
+// @uses      internal/domain, internal/repository, log/slog, runtime/debug, sync, sync/atomic, time.
+// @reason    AGENTS.md §1.6 requires every worker to recover from panic and to have an explicit termination condition, which is lifecycle, not batch mechanics: this file states who runs, when, and how it stops, while the batch itself lives in quota_flush_drain.go and the stated retry and dead-letter behaviour in quota_flush_policy.go (draft 005 F3).
 //
 // Termination
 //

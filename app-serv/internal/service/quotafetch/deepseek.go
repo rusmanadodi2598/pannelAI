@@ -3,11 +3,7 @@
 // @file      internal/service/quotafetch/deepseek.go
 // @for       Reads DeepSeek's per-currency balance and the availability flag that names the account.
 // @uses      internal/service/quotafetch, context, encoding/json, net/http
-// @reason    DeepSeek bills a prepaid wallet rather than a capped window, so its answer has
-//
-//	to reach the card as an amount of money: drawn as a window it would render a
-//	balance as a share of something the provider never stated a ceiling for.
-//
+// @reason    DeepSeek bills a prepaid wallet rather than a capped window, so its answer has to reach the card as an amount of money: drawn as a window it would render a balance as a share of something the provider never stated a ceiling for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

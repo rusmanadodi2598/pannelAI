@@ -3,11 +3,7 @@
 // @file      cmd/app-serv/shutdown_drain_test.go
 // @for       The drain the stop path must run, and the order it runs in.
 // @uses      context, net, net/http, testing, time
-// @reason    The quota flusher's contract says the composition root flushes on shutdown. A stop path
-//
-//	that never calls it silently loses the spend since the last tick on every restart, so the
-//	capability needs a test that fails when the call disappears.
-//
+// @reason    The quota flusher's contract says the composition root flushes on shutdown. A stop path that never calls it silently loses the spend since the last tick on every restart, so the capability needs a test that fails when the call disappears.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

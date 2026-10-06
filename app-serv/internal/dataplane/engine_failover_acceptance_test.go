@@ -1,22 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_failover_acceptance_test.go
-// @for       The five acceptance probes draft 028 section 2.4 defines, kept as
-//
-//	permanent tests: credential-first failover, member identity, the
-//	request-scoped refusal, and key rotation.
-//
-// @uses      context, encoding/json, net/http, net/http/httptest, strings,
-//
-//	testing, internal/domain, internal/registry.
-//
-// @reason    The draft measured these behaviours as five failures and made them
-//
-//	the completion criteria of the F1-F4 fixes, so keeping them as tests
-//	means a later change that re-introduces model-first failover, a stale
-//	member owning the error, or a pinned key breaks a test rather than
-//	only disagreeing with a document (AGENTS.md section 2.1).
-//
+// @for       The five acceptance probes draft 028 section 2.4 defines, kept as permanent tests: credential-first failover, member identity, the request-scoped refusal, and key rotation.
+// @uses      context, encoding/json, net/http, net/http/httptest, strings, testing, internal/domain, internal/registry.
+// @reason    The draft measured these behaviours as five failures and made them the completion criteria of the F1-F4 fixes, so keeping them as tests means a later change that re-introduces model-first failover, a stale member owning the error, or a pinned key breaks a test rather than only disagreeing with a document (AGENTS.md section 2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,10 +3,7 @@
 // "this one" half is carried by handing it a single tool.
 //
 // @file      internal/provider/codebuddy_choice.go
-// @for       Rewriting a tool_choice that names one function into the request this
-//
-//	vendor answers.
-//
+// @for       Rewriting a tool_choice that names one function into the request this vendor answers.
 // @uses      encoding/json, fmt.
 // @reason    Measured live on codebuddy-intl/deepseek-v4.1-flash on 2026-09-30:
 //

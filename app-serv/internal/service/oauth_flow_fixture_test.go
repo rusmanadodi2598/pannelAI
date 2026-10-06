@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_fixture_test.go
-// @for       The registry providers, fakes, and constructor the OAuth flow
-//
-//	tests share.
-//
-// @uses      testing, time, encoding/json, internal/domain, internal/registry,
-//
-//	internal/repository.
-//
-// @reason    The flow's rules must be provable without a registry binary, an
-//
-//	upstream, or Redis: the fakes stage and serve states and token
-//	grants in memory, and the providers here mirror the four registry
-//	shapes that matter (code flow with PKCE, code flow with userinfo,
-//	device flow, connector-required flow) without naming real vendors.
-//
+// @for       The registry providers, fakes, and constructor the OAuth flow tests share.
+// @uses      testing, time, encoding/json, internal/domain, internal/registry, internal/repository.
+// @reason    The flow's rules must be provable without a registry binary, an upstream, or Redis: the fakes stage and serve states and token grants in memory, and the providers here mirror the four registry shapes that matter (code flow with PKCE, code flow with userinfo, device flow, connector-required flow) without naming real vendors.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

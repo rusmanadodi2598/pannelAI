@@ -1,15 +1,10 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_noauth_test.go
-// @for       The selection and health rules for a no_auth endpoint, which
-//
-//	presents no credential and therefore owns no key to pick.
-//
+// @for       The selection and health rules for a no_auth endpoint, which presents no credential and therefore owns no key to pick.
 // @uses      internal/domain, context, testing, time.
-// @reason    G15 in the P2 register: Select demanded a usable key before it
+// @reason    G15 in the P2 register: Select demanded a usable key before it consulted the endpoint's auth type, so a no_auth endpoint without keys answered NO_PROVIDER_AVAILABLE while Available() reported it usable.
 //
-//	consulted the endpoint's auth type, so a no_auth endpoint without keys
-//	answered NO_PROVIDER_AVAILABLE while Available() reported it usable.
 //	These tests pin the two halves of the fix: such an endpoint is
 //	selected with no material, and the health write it produces is a
 //	no-op instead of a not-found error that would fail the request.

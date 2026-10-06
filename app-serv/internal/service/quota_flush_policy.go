@@ -1,17 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush_policy.go
-// @for       The quota flush worker's stated retry and dead-letter policy, and
-//
-//	the knobs that implement it.
-//
+// @for       The quota flush worker's stated retry and dead-letter policy, and the knobs that implement it.
 // @uses      time.
-// @reason    AGENTS.md §1.6 requires every worker to state its retry and
-//
-//	dead-letter behaviour explicitly rather than leave them implied by
-//	the loop. The statement is kept beside the policy type it
-//	describes, carved out of the worker file so neither concern has to
-//	scroll past the other (draft 005 F3).
+// @reason    AGENTS.md §1.6 requires every worker to state its retry and dead-letter behaviour explicitly rather than leave them implied by the loop. The statement is kept beside the policy type it describes, carved out of the worker file so neither concern has to scroll past the other (draft 005 F3).
 //
 // Retry policy
 //

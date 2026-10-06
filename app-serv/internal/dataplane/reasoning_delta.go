@@ -3,21 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/reasoning_delta.go
-// @for       Reading one chat delta's reasoning text across the vendor shapes
-//
-//	the reference's extractReasoningText answers.
-//
+// @for       Reading one chat delta's reasoning text across the vendor shapes the reference's extractReasoningText answers.
 // @uses      encoding/json.
-// @reason    A forced stream is folded into one completion, and vendors report
-//
-//	reasoning under three different delta fields: reasoning_content
-//	(GLM, Qwen, DeepSeek, Kimi), reasoning (compat layers), and
-//	reasoning_details[] (MiniMax reasoning_split, OpenRouter). Porting
-//	the reference's one extraction rule
-//	(open-sse/translator/concerns/reasoning.js) keeps the fold and the
-//	reference from disagreeing about the same delta, and deciding per
-//	delta stops a frame that carries two shapes from being counted twice.
-//
+// @reason    A forced stream is folded into one completion, and vendors report reasoning under three different delta fields: reasoning_content (GLM, Qwen, DeepSeek, Kimi), reasoning (compat layers), and reasoning_details[] (MiniMax reasoning_split, OpenRouter). Porting the reference's one extraction rule (open-sse/translator/concerns/reasoning.js) keeps the fold and the reference from disagreeing about the same delta, and deciding per delta stops a frame that carries two shapes from being counted twice.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

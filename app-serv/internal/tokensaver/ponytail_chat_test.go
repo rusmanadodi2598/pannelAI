@@ -5,11 +5,7 @@
 // @file      internal/tokensaver/ponytail_chat_test.go
 // @for       The OpenAI chat cases: the wire whose system slot is a message.
 // @uses      fmt, strings, testing.
-// @reason    SPEC-API-002 §7 injects into the first system or developer message,
-//
-//	and creates one when the body has neither. Each case reads the slot
-//	back, so a change in position or part type fails rather than passes.
-//
+// @reason    SPEC-API-002 §7 injects into the first system or developer message, and creates one when the body has neither. Each case reads the slot back, so a change in position or part type fails rather than passes.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

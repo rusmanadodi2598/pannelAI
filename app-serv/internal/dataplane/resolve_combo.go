@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/resolve_combo.go
-// @for       The model-string forms resolution walks: a combo's members, the
-//
-//	provider/model reference, and the memo and depth guard that keep a
-//	stored graph from costing more than the request deserves.
-//
+// @for       The model-string forms resolution walks: a combo's members, the provider/model reference, and the memo and depth guard that keep a stored graph from costing more than the request deserves.
 // @uses      internal/domain, context.
-// @reason    SPEC-API-001 §7.7 allows a combo entry to be a provider/model
-//
-//	reference, a combo name, or an alias, and permits exactly one
-//	dereference level. That rule, plus the strategy and judge the
-//	fusion path executes, is what this file owns, so resolve.go stays
-//	about the resolution entry point and its routability gate.
+// @reason    SPEC-API-001 §7.7 allows a combo entry to be a provider/model reference, a combo name, or an alias, and permits exactly one dereference level. That rule, plus the strategy and judge the fusion path executes, is what this file owns, so resolve.go stays about the resolution entry point and its routability gate.
 //
 //	Two bounds guard the walk, and they are different things. The depth
 //	bound stops a cycle: a stored `A→B→A` terminates instead of

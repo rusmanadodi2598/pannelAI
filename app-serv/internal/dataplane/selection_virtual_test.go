@@ -1,16 +1,10 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/selection_virtual_test.go
-// @for       The virtual endpoint a credential-free provider answers on when the
-//
-//	operator stored none.
-//
+// @for       The virtual endpoint a credential-free provider answers on when the operator stored none.
 // @uses      context, testing, internal/domain, internal/registry.
-// @reason    Draft 029 §4.8 measured the gap: the reference injects a virtual
+// @reason    Draft 029 §4.8 measured the gap: the reference injects a virtual connection for every `noAuth` provider (src/sse/services/auth.js:45-63), so a free lane works the moment its provider is listed, while this port answered NO_PROVIDER_AVAILABLE until an operator invented an endpoint.
 //
-//	connection for every `noAuth` provider (src/sse/services/auth.js:45-63),
-//	so a free lane works the moment its provider is listed, while this port
-//	answered NO_PROVIDER_AVAILABLE until an operator invented an endpoint.
 //	The rule is narrow on purpose, and these cases pin both directions: it
 //	must fire for a credential-free provider with no row, and it must not
 //	fire for a provider that needs a credential, for one that already has

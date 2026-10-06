@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint.go
-// @for       The upstream endpoint lifecycle: create, list, inspect, patch,
-//
-//	delete, and connectivity test (SPEC-API-001 §7.5).
-//
+// @for       The upstream endpoint lifecycle: create, list, inspect, patch, delete, and connectivity test (SPEC-API-001 §7.5).
 // @uses      internal/domain, internal/repository, context, strings, time.
-// @reason    §7.5 makes the endpoint the account an operator configures, and
-//
-//	AGENTS.md §1.5 puts orchestration here with no net/http import: this
-//	layer validates a provider_id against the registry, seals every
-//	credential before the aggregate sees it, renumbers siblings when a
-//	priority changes, and records a probe's outcome through the
-//	aggregate's own methods rather than by writing fields.
-//
+// @reason    §7.5 makes the endpoint the account an operator configures, and AGENTS.md §1.5 puts orchestration here with no net/http import: this layer validates a provider_id against the registry, seals every credential before the aggregate sees it, renumbers siblings when a priority changes, and records a probe's outcome through the aggregate's own methods rather than by writing fields.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

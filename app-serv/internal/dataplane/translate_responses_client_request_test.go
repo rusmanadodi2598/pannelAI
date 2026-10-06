@@ -3,12 +3,7 @@
 // @file      internal/dataplane/translate_responses_client_request_test.go
 // @for       Table-driven tests for Responses-to-chat request translation.
 // @uses      testing, internal/schema.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, so a client on
-//
-//	that wire has to reach every resolved provider. The instruction
-//	field and the input union are what the client's request means, and
-//	both are pinned here against a decoded body (AGENTS.md §2.1).
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, so a client on that wire has to reach every resolved provider. The instruction field and the input union are what the client's request means, and both are pinned here against a decoded body (AGENTS.md §2.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

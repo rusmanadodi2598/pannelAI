@@ -5,12 +5,7 @@
 // @file      internal/service/quotafetch/google_account.go
 // @for       Resolves a Google project and tier and turns published fractions into windows.
 // @uses      internal/service/quotafetch, context, encoding/json, math, net/http, runtime, strconv, strings, time
-// @reason    Both quota endpoints are scoped to a Cloud project they never name themselves,
-//
-//	both publish shares rather than counters, and both refuse a call that
-//	carries the wrong client identification, so the two fetchers need one
-//	place that knows how the product introduces itself.
-//
+// @reason    Both quota endpoints are scoped to a Cloud project they never name themselves, both publish shares rather than counters, and both refuse a call that carries the wrong client identification, so the two fetchers need one place that knows how the product introduces itself.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

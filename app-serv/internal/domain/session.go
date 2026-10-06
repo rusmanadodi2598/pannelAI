@@ -3,10 +3,7 @@
 // @file      internal/domain/session.go
 // @for       Creates and verifies opaque HMAC-signed dashboard session tokens.
 // @uses      crypto/hmac, crypto/rand, crypto/sha256, encoding/base64.
-// @reason    Session credentials must be unforgeable while remaining opaque to
-//
-//	clients and independently revocable through a Redis digest.
-//
+// @reason    Session credentials must be unforgeable while remaining opaque to clients and independently revocable through a Redis digest.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

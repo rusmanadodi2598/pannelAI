@@ -3,21 +3,12 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_live_cosy_test.go
-// @for       The live proof that a request signed by this port is served by the
-//
-//	vendor, on the host its credential kind is expected to use.
-//
+// @for       The live proof that a request signed by this port is served by the vendor, on the host its credential kind is expected to use.
 // @uses      net/http, strings, testing.
-// @reason    A signature can be self-consistent and still be wrong: the vendor
+// @reason    A signature can be self-consistent and still be wrong: the vendor decides that, not a test that recomputes the same MD5. A model list is the cheapest request that proves it, an empty body, no quota spent, and a refusal on any header the vendor reads differently, and the second case measures the host rule rather than trusting the reference's note about it.
 //
-//	decides that, not a test that recomputes the same MD5. A model list is
-//	the cheapest request that proves it, an empty body, no quota spent, and
-//	a refusal on any header the vendor reads differently, and the second
-//	case measures the host rule rather than trusting the reference's note
-//	about it.
-//
-//	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration,live ./internal/provider/ -run QoderLive
+//	PANNELAI_QODER_PAT='pt-…' \
+//	  go test -tags=integration,live ./internal/provider/ -run QoderLive
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

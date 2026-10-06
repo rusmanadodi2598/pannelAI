@@ -3,11 +3,7 @@
 // @file      internal/dataplane/translate_stream_retry_test.go
 // @for       The retry decision and its backoff bounds.
 // @uses      net/http, testing, internal/provider, internal/registry, internal/schema.
-// @reason    Whether an upstream answer is worth repeating is a policy with a status
-//
-//	table and a ceiling (SPEC-API-001 §4), and it needs a connector
-//	fixture of its own rather than the stream fixtures.
-//
+// @reason    Whether an upstream answer is worth repeating is a policy with a status table and a ceiling (SPEC-API-001 §4), and it needs a connector fixture of its own rather than the stream fixtures.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

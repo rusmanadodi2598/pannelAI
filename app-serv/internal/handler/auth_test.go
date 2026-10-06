@@ -3,10 +3,7 @@
 // @file      internal/handler/auth_test.go
 // @for       Table-driven auth endpoint tests through typed service contracts.
 // @uses      context, net/http/httptest, testing, time, internal/domain/service.
-// @reason    Strict TDD requires happy, validation, and authentication cases
-//
-//	for every P0 auth route without mocking handler output.
-//
+// @reason    Strict TDD requires happy, validation, and authentication cases for every P0 auth route without mocking handler output.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

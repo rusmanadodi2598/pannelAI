@@ -3,13 +3,7 @@
 // @file      internal/service/proxy_probe_test.go
 // @for       The two proxy test routes' use case (SPEC-API-001 §7.11).
 // @uses      testing, context, errors, internal/domain.
-// @reason    §7.11's test is a diagnostic, so the tests pin three properties an
-//
-//	operator depends on: the stored status matches the answer, a refused
-//	destination is reported as a failure rather than a pass (OWASP A10,
-//	fail closed), and the probe receives the unsealed password while the
-//	stored row keeps only the sealed form.
-//
+// @reason    §7.11's test is a diagnostic, so the tests pin three properties an operator depends on: the stored status matches the answer, a refused destination is reported as a failure rather than a pass (OWASP A10, fail closed), and the probe receives the unsealed password while the stored row keeps only the sealed form.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

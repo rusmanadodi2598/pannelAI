@@ -1,18 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/oauth_device.go
-// @for       The two device-flow routes: minting a verification round and
-//
-//	answering one poll of it (SPEC-API-001 §7.4).
-//
+// @for       The two device-flow routes: minting a verification round and answering one poll of it (SPEC-API-001 §7.4).
 // @uses      internal/schema, internal/service, net/http.
-// @reason    A device flow has no browser callback, so the panel drives it by
-//
-//	asking: start once, poll until the vendor answers. Both routes are
-//	management routes, the operator's own session is what makes the
-//	poll belong to the flow that started it, and each one is a
-//	decode, a call, and an encode with no policy of its own.
-//
+// @reason    A device flow has no browser callback, so the panel drives it by asking: start once, poll until the vendor answers. Both routes are management routes, the operator's own session is what makes the poll belong to the flow that started it, and each one is a decode, a call, and an encode with no policy of its own.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

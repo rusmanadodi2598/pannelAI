@@ -3,14 +3,7 @@
 // @file      internal/handler/oauth_status_test.go
 // @for       HTTP tests for the §7.4 OAuth status and refresh routes.
 // @uses      context, net/http, net/http/httptest, strings, testing, time.
-// @reason    These two routes are the panel's view of credential health and the
-//
-//	operator's manual override of the worker, so the tables pin that the
-//	status answer never carries token material, that the derived refresh
-//	state reaches the wire, and that a refresh actually rotates the
-//	stored token. AGENTS.md §2.1 requires a happy and a validation path
-//	per route; both are here.
-//
+// @reason    These two routes are the panel's view of credential health and the operator's manual override of the worker, so the tables pin that the status answer never carries token material, that the derived refresh state reaches the wire, and that a refresh actually rotates the stored token. AGENTS.md §2.1 requires a happy and a validation path per route; both are here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

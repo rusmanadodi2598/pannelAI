@@ -4,13 +4,7 @@
 // @file      internal/registry/types_oauth.go
 // @for       The OAuth flow configuration a registry entry may declare.
 // @uses      gopkg.in/yaml.v3 for the union-typed scopes field.
-// @reason    SPEC-API-001 §7.4 exposes provider OAuth, and the reference's
-//
-//	providers differ so widely here (redirect, device code, poll, AWS
-//	SSO) that the union of their fields has to be carried explicitly;
-//	a free-form map would let a misspelled key disable a flow without
-//	saying so.
-//
+// @reason    SPEC-API-001 §7.4 exposes provider OAuth, and the reference's providers differ so widely here (redirect, device code, poll, AWS SSO) that the union of their fields has to be carried explicitly; a free-form map would let a misspelled key disable a flow without saying so.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

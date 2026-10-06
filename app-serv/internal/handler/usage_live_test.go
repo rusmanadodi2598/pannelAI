@@ -1,23 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/usage_live_test.go
-// @for       The live Usage route's framing: the contract headers, the first
-//
-//	frame, and the keepalive.
-//
-// @uses      context, encoding/json, testing, time, internal/domain,
-//
-//	internal/schema.
-//
-// @reason    A stream is the one answer whose timing is part of its contract
-//
-//	(SPEC-API-001 §4: the status line and SSE headers are committed on
-//	the first frame, so a failure with no frame yet is still an ordinary
-//	HTTP error). These tests drive a real socket rather than a recorder,
-//	because httptest.ResponseRecorder reports a buffered answer as
-//	healthy and cannot show that the first frame arrived while the
-//	handler was still running.
-//
+// @for       The live Usage route's framing: the contract headers, the first frame, and the keepalive.
+// @uses      context, encoding/json, testing, time, internal/domain, internal/schema.
+// @reason    A stream is the one answer whose timing is part of its contract (SPEC-API-001 §4: the status line and SSE headers are committed on the first frame, so a failure with no frame yet is still an ordinary HTTP error). These tests drive a real socket rather than a recorder, because httptest.ResponseRecorder reports a buffered answer as healthy and cannot show that the first frame arrived while the handler was still running.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

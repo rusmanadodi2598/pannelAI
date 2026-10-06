@@ -3,12 +3,7 @@
 // @file      internal/handler/dataplane_auth_order_test.go
 // @for       The refusal an unauthenticated caller gets before its body is read.
 // @uses      net/http, testing, internal/dataplane
-// @reason    Two data-plane routes read and validated the body before checking the key, so a
-//
-//	caller with no credential could cost an 8 MiB read and learn the schema from the
-//	VALIDATION_ERROR it got back. The rest of the plane authenticates first, and this pins
-//	that these two now do the same.
-//
+// @reason    Two data-plane routes read and validated the body before checking the key, so a caller with no credential could cost an 8 MiB read and learn the schema from the VALIDATION_ERROR it got back. The rest of the plane authenticates first, and this pins that these two now do the same.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

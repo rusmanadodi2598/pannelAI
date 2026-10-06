@@ -3,17 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/request.go
-// @for       One client request's resolved form: the route it arrived on, the
-//
-//	model it named, and the parameters routing needs.
-//
+// @for       One client request's resolved form: the route it arrived on, the model it named, and the parameters routing needs.
 // @uses      internal/reasoning, internal/schema.
-// @reason    SPEC-API-001 §7.15 serves two client wire formats over three routes,
-//
-//	so "what the client speaks" and "what the upstream speaks" are two
-//	independent facts. Declaring the request once here is what keeps the
-//	service from taking eight positional parameters and mixing them up.
-//
+// @reason    SPEC-API-001 §7.15 serves two client wire formats over three routes, so "what the client speaks" and "what the upstream speaks" are two independent facts. Declaring the request once here is what keeps the service from taking eight positional parameters and mixing them up.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -2,18 +2,10 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/media_provider.go
-// @for       The media kind set and the per-provider override an operator saves
-//
-//	(SPEC-API-001 §7.10).
-//
+// @for       The media kind set and the per-provider override an operator saves (SPEC-API-001 §7.10).
 // @uses      net/url, strings, time.
-// @reason    The kind set is closed because each member maps to one route and
+// @reason    The kind set is closed because each member maps to one route and one request shape, and the base URL is validated here because it becomes an outbound destination: a shape check at the boundary is what this layer can prove (OWASP A01). The dial-time guard (`internal/netguard`) is wired for proxy candidates; upstream dials, this one and the chat plane's alike, do not pass through it yet.
 //
-//	one request shape, and the base URL is validated here because it
-//	becomes an outbound destination: a shape check at the boundary is
-//	what this layer can prove (OWASP A01). The dial-time guard
-//	(`internal/netguard`) is wired for proxy candidates; upstream dials
-//	, this one and the chat plane's alike, do not pass through it yet.
 //	The registry's own kind names (`webSearch`) stay out of this package
 //	, the mapping is the service's job, so the wire vocabulary and the
 //	registry vocabulary cannot be confused for one another.

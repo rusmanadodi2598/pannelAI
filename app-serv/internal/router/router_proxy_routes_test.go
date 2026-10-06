@@ -3,14 +3,7 @@
 // @file      internal/router/router_proxy_routes_test.go
 // @for       Route-level tests for the §7.11 proxy pool routes.
 // @uses      encoding/json, net/http, net/http/httptest, strings, testing.
-// @reason    §7.11's six routes are their own vertical, and the §7.6-§7.8
-//
-//	route-table files sit close to the AGENTS.md §1.1 line limit, so the
-//	proxy table lives here rather than growing those files. The
-//	session-gating table is duplicated on purpose: each vertical proves
-//	its own routes are guarded. The doubles are in
-//	router_proxy_stub_test.go.
-//
+// @reason    §7.11's six routes are their own vertical, and the §7.6-§7.8 route-table files sit close to the AGENTS.md §1.1 line limit, so the proxy table lives here rather than growing those files. The session-gating table is duplicated on purpose: each vertical proves its own routes are guarded. The doubles are in router_proxy_stub_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     router
 // @stability stable

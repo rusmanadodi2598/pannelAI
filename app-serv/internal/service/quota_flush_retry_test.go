@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush_retry_test.go
-// @for       Tests for the flush worker's retry and dead-letter policy, and the
-//
-//	batch identity that keeps one batch's failures off another's.
-//
+// @for       Tests for the flush worker's retry and dead-letter policy, and the batch identity that keeps one batch's failures off another's.
 // @uses      context, sync/atomic, testing, time, internal/domain.
-// @reason    The stated policy (quota_flush_policy.go) is a promise about what
-//
-//	happens to counters when a write keeps failing: they are retried a
-//	bounded number of times and then left in Redis, never dropped. Draft
-//	005 F4 found the identity that decides "the same batch" keyed to the
-//	wrong field, so one batch could be dead-lettered for another's
-//	failures; these cases lock the per-endpoint behaviour.
-//
+// @reason    The stated policy (quota_flush_policy.go) is a promise about what happens to counters when a write keeps failing: they are retried a bounded number of times and then left in Redis, never dropped. Draft 005 F4 found the identity that decides "the same batch" keyed to the wrong field, so one batch could be dead-lettered for another's failures; these cases lock the per-endpoint behaviour.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

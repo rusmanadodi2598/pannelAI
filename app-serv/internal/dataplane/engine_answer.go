@@ -3,14 +3,10 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/engine_answer.go
-// @for       Converting one non-streamed upstream answer into the client's wire
-//
-//	format.
-//
+// @for       Converting one non-streamed upstream answer into the client's wire format.
 // @uses      internal/schema, io.
-// @reason    SPEC-API-001 §7.15 serves three client wires from three upstream
+// @reason    SPEC-API-001 §7.15 serves three client wires from three upstream formats, so the non-streamed answer has its own pair of decisions.
 //
-//	formats, so the non-streamed answer has its own pair of decisions.
 //	Keeping it out of the stream file holds both inside the AGENTS.md
 //	§1.1 budget.
 //

@@ -1,16 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_test.go
-// @for       Table-driven tests for starting an authorization (SPEC-API-001
-//
-//	§7.4 POST .../oauth/start).
-//
+// @for       Table-driven tests for starting an authorization (SPEC-API-001 §7.4 POST .../oauth/start).
 // @uses      net/url, strings, testing, time.
-// @reason    Start is the only place a state and a PKCE verifier are born,
-//
-//	so the table pins the rules a provider entry must satisfy, the
-//	authorize URL's query contract, and the ten-minute staging TTL.
-//
+// @reason    Start is the only place a state and a PKCE verifier are born, so the table pins the rules a provider entry must satisfy, the authorize URL's query contract, and the ten-minute staging TTL.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

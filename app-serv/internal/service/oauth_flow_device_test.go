@@ -1,22 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_device_test.go
-// @for       The Qoder device authorization flow: start, poll, and the
-//
-//	connect the poll lands (draft 036 slice A).
-//
-// @uses      context, encoding/json, errors, net/url, strings, testing,
-//
-//	internal/domain, internal/registry.
-//
-// @reason    The device flow is the first start path the gateway itself mints
-//
-//	a verification URL for, and the first connect whose identity is
-//	fail-open. The table asserts the wire shapes the panel renders
-//	(verification URL, user code, cadence) and the state lifecycle the
-//	replay guard promises: pending polls re-read, a success consumes
-//	exactly once, and a failure leaves the flow retryable.
-//
+// @for       The Qoder device authorization flow: start, poll, and the connect the poll lands (draft 036 slice A).
+// @uses      context, encoding/json, errors, net/url, strings, testing, internal/domain, internal/registry.
+// @reason    The device flow is the first start path the gateway itself mints a verification URL for, and the first connect whose identity is fail-open. The table asserts the wire shapes the panel renders (verification URL, user code, cadence) and the state lifecycle the replay guard promises: pending polls re-read, a success consumes exactly once, and a failure leaves the flow retryable.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

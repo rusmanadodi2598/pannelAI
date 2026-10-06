@@ -1,21 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/openapi_usage_params_test.go
-// @for       Query-parameter parity for the §7.12 usage reads and the shared
-//
-//	pagination parameters, as the served contract declares them.
-//
+// @for       Query-parameter parity for the §7.12 usage reads and the shared pagination parameters, as the served contract declares them.
 // @uses      encoding/json, strings, testing.
-// @reason    Draft 010 F7: the YAML declared from/to as bare strings, the
-//
-//	enum parameters (group_by, granularity, status) as bare strings,
-//	and per_page with a maximum but no minimum or default, so a
-//	consumer could not learn from the contract what the boundary
-//	enforces. F6's owner decision (D3 = refuse) makes the pagination
-//	bounds part of the documented behaviour, and these tests pin the
-//	served document so a regeneration that loses a bound fails here
-//	rather than at a client.
-//
+// @reason    Draft 010 F7: the YAML declared from/to as bare strings, the enum parameters (group_by, granularity, status) as bare strings, and per_page with a maximum but no minimum or default, so a consumer could not learn from the contract what the boundary enforces. F6's owner decision (D3 = refuse) makes the pagination bounds part of the documented behaviour, and these tests pin the served document so a regeneration that loses a bound fails here rather than at a client.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

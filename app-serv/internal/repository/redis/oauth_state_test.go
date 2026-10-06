@@ -3,22 +3,9 @@
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/oauth_state_test.go
-// @for       Integration tests for the OAuth state store: staging, the
-//
-//	single-use take, the replay answer, and the TTL bound.
-//
-// @uses      github.com/redis/go-redis/v9, context, errors, os, testing, time,
-//
-//	internal/repository.
-//
-// @reason    G14 in the P2 register: the store had no test at all, so the one
-//
-//	command it depends on went unnoticed until a live callback answered
-//	500. The replay guard is a security rule (SPEC-API-001 §4), so its
-//	exact behaviour is pinned against a real server: one take wins, a
-//	second gets the documented replay answer, a colliding stage is
-//	refused without replacing the first flow's verifier, and an
-//	abandoned state expires on its own.
+// @for       Integration tests for the OAuth state store: staging, the single-use take, the replay answer, and the TTL bound.
+// @uses      github.com/redis/go-redis/v9, context, errors, os, testing, time, internal/repository.
+// @reason    G14 in the P2 register: the store had no test at all, so the one command it depends on went unnoticed until a live callback answered 500. The replay guard is a security rule (SPEC-API-001 §4), so its exact behaviour is pinned against a real server: one take wins, a second gets the documented replay answer, a colliding stage is refused without replacing the first flow's verifier, and an abandoned state expires on its own.
 //
 //	The file carries an `integration` build tag, so the default
 //	`go test ./...` stays hermetic on a machine with no Redis (AGENTS.md §2.1

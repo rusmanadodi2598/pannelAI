@@ -5,16 +5,7 @@
 // @file      internal/repository/postgres/usage_query_scope_integration_test.go
 // @for       The free-text q scope against a real server (draft 010 F8).
 // @uses      internal/domain, internal/repository, context, testing, time.
-// @reason    Draft 010 F8: q compiled to `model ILIKE` only, while the panel's
-//
-//	placeholder promised a request id and an error code, so an operator
-//	searching the id they could see on screen read an empty table. The
-//	expanded predicate is `request_id OR id OR error_code OR model`, and
-//	only a real server can prove the OR, the case-insensitivity, and the
-//	NULL handling: a stub would accept whatever the Go code did, and an
-//	unhandled NULL in `error_code ILIKE ...` would silently drop rows
-//	that matched on a different column.
-//
+// @reason    Draft 010 F8: q compiled to `model ILIKE` only, while the panel's placeholder promised a request id and an error code, so an operator searching the id they could see on screen read an empty table. The expanded predicate is `request_id OR id OR error_code OR model`, and only a real server can prove the OR, the case-insensitivity, and the NULL handling: a stub would accept whatever the Go code did, and an unhandled NULL in `error_code ILIKE ...` would silently drop rows that matched on a different column.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

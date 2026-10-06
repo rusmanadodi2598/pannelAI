@@ -3,21 +3,12 @@
 // Package redisrepo implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/usage_event_policy_test.go
-// @for       Integration tests for the transport's stated policies against a
-//
-//	real server: a publish nobody hears, an empty payload, and a
-//	double close.
-//
+// @for       Integration tests for the transport's stated policies against a real server: a publish nobody hears, an empty payload, and a double close.
 // @uses      github.com/redis/go-redis/v9, internal/domain, context, testing.
-// @reason    Each of these is a policy rather than a mechanism, and a policy is
+// @reason    Each of these is a policy rather than a mechanism, and a policy is exactly what an in-memory double would restate rather than verify: that the real client reports success for a publish with zero subscribers, and that closing a subscription twice is quiet. The build tag matches the file these share a harness with.
 //
-//	exactly what an in-memory double would restate rather than verify:
-//	that the real client reports success for a publish with zero
-//	subscribers, and that closing a subscription twice is quiet. The
-//	build tag matches the file these share a harness with.
-//
-//	  PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
-//	    go test -race -tags=integration ./internal/repository/redis/
+//	PANNELAI_TEST_REDIS_ADDR='[user:password@]host:port' \
+//	  go test -race -tags=integration ./internal/repository/redis/
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository

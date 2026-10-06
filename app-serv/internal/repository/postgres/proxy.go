@@ -2,16 +2,8 @@
 //
 // @file      internal/repository/postgres/proxy.go
 // @for       PostgreSQL persistence for saved proxy candidates (SPEC-API-001 §7.11).
-// @uses      github.com/jackc/pgx/v5, internal/domain, encoding/json, bytes,
-//
-//	errors, fmt, time.
-//
-// @reason    The status document is jsonb, so its codec lives beside the
-//
-//	statements that read and write it, and the driver's errors are
-//	translated here, a missing row is domain.ErrProxyNotFound, never
-//	pgx.ErrNoRows, so the service layer stays driver-free (AGENTS.md §1.5).
-//
+// @uses      github.com/jackc/pgx/v5, internal/domain, encoding/json, bytes, errors, fmt, time.
+// @reason    The status document is jsonb, so its codec lives beside the statements that read and write it, and the driver's errors are translated here, a missing row is domain.ErrProxyNotFound, never pgx.ErrNoRows, so the service layer stays driver-free (AGENTS.md §1.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

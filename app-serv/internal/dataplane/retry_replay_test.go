@@ -1,20 +1,9 @@
 // Package dataplane implements the request-path data plane of app-serv.
 //
 // @file      internal/dataplane/retry_replay_test.go
-// @for       The one case where a non-idempotent POST may use the entry's full retry
-//
-//	budget: a refusal the client never saw an answer for.
-//
+// @for       The one case where a non-idempotent POST may use the entry's full retry budget: a refusal the client never saw an answer for.
 // @uses      internal/registry, net/http, testing.
-// @reason    Measured 2026-09-28 against Qoder's free model: the identical request was
-//
-//	refused twice with a nested capacity complaint and served on the third
-//	try. The POST cap stopped the gateway at two attempts, so a provider
-//	that refuses before any byte of the answer reaches the caller looked
-//	like a spent model. The rule that fixes it is narrow, a refusal read
-//	out of the first frame leaves no answer to duplicate, and a cap lifted
-//	too far would let the gateway re-bill a call the client already saw.
-//
+// @reason    Measured 2026-09-28 against Qoder's free model: the identical request was refused twice with a nested capacity complaint and served on the third try. The POST cap stopped the gateway at two attempts, so a provider that refuses before any byte of the answer reaches the caller looked like a spent model. The rule that fixes it is narrow, a refusal read out of the first frame leaves no answer to duplicate, and a cap lifted too far would let the gateway re-bill a call the client already saw.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

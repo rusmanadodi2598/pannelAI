@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_device_poll.go
-// @for       One poll of a device authorization round, and the connect a
-//
-//	successful poll lands (draft 036 slice A, SPEC-API-001 §7.4).
-//
-// @uses      context, encoding/json, strings, internal/domain,
-//
-//	internal/registry.
-//
-// @reason    The poll is where a device flow can go wrong quietly: a vendor
-//
-//	that answers "not yet" with a 404, an identity read that fails after
-//	the login already succeeded, a token handed out twice. Each of those
-//	lives here, beside the one state rule they all turn on, the staged
-//	round is consumed only once the upstream has actually issued.
-//
+// @for       One poll of a device authorization round, and the connect a successful poll lands (draft 036 slice A, SPEC-API-001 §7.4).
+// @uses      context, encoding/json, strings, internal/domain, internal/registry.
+// @reason    The poll is where a device flow can go wrong quietly: a vendor that answers "not yet" with a 404, an identity read that fails after the login already succeeded, a token handed out twice. Each of those lives here, beside the one state rule they all turn on, the staged round is consumed only once the upstream has actually issued.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

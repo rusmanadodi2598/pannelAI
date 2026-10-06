@@ -1,18 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/accounting_context_test.go
-// @for       The accounting write's context: it survives the client and keeps its
-//
-//	own deadline (draft 021 F6).
-//
+// @for       The accounting write's context: it survives the client and keeps its own deadline (draft 021 F6).
 // @uses      context, testing, time, internal/domain.
-// @reason    A call that died mid-flight left no row while its key counter still
-//
-//	counted it. The write ran under the client's context, so the test
-//	carries a recorder that fails exactly the way a database driver does
-//	on a cancelled context, and the negative control proves the recorder
-//	would have refused the write the client's own context asked for.
-//
+// @reason    A call that died mid-flight left no row while its key counter still counted it. The write ran under the client's context, so the test carries a recorder that fails exactly the way a database driver does on a cancelled context, and the negative control proves the recorder would have refused the write the client's own context asked for.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

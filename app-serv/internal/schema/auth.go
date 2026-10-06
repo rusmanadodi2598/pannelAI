@@ -3,10 +3,7 @@
 // @file      internal/schema/auth.go
 // @for       Dashboard authentication request and session status contracts.
 // @uses      github.com/go-playground/validator/v10 through shared validation.
-// @reason    SPEC-API-001 §7.2 requires typed, validated auth payloads and a
-//
-//	stable status response before handlers can process credentials.
-//
+// @reason    SPEC-API-001 §7.2 requires typed, validated auth payloads and a stable status response before handlers can process credentials.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

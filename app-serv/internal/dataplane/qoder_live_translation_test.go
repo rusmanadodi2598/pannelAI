@@ -3,23 +3,12 @@
 // Package dataplane implements the request-path data plane of app-serv.
 //
 // @file      internal/dataplane/qoder_live_translation_test.go
-// @for       One real Qoder stream run through the gateway's own translation, to pin
+// @for       One real Qoder stream run through the gateway's own translation, to pin the model name the caller ends up seeing.
+// @uses      bytes, context, io, net/http, os, strings, testing, time, internal/provider.
+// @reason    The bug lived between two packages: Qoder answers every model as `auto`, and the translation step adopted that echo. A unit test on each side could pass while a client still read the wrong name, so this runs the whole leg once against the vendor, sign, send, unwrap, translate, and asks the only question a client can: what does the answer call itself?
 //
-//	the model name the caller ends up seeing.
-//
-// @uses      bytes, context, io, net/http, os, strings, testing, time,
-//
-//	internal/provider.
-//
-// @reason    The bug lived between two packages: Qoder answers every model as `auto`,
-//
-//	and the translation step adopted that echo. A unit test on each side could
-//	pass while a client still read the wrong name, so this runs the whole
-//	leg once against the vendor, sign, send, unwrap, translate, and asks
-//	the only question a client can: what does the answer call itself?
-//
-//	  PANNELAI_QODER_PAT='pt-…' \
-//	    go test -tags=integration,live ./internal/dataplane/ -run QoderLiveTranslation
+//	PANNELAI_QODER_PAT='pt-…' \
+//	  go test -tags=integration,live ./internal/dataplane/ -run QoderLiveTranslation
 //
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service

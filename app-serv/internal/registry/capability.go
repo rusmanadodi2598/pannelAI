@@ -2,18 +2,10 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/capability.go
-// @for       The model capability the registry cannot carry as data yet: whether
-//
-//	a model reads images.
-//
+// @for       The model capability the registry cannot carry as data yet: whether a model reads images.
 // @uses      strings (the glob matcher).
-// @reason    SPEC-API-001 §7.8 refuses a vision adapter whose models cannot read
+// @reason    SPEC-API-001 §7.8 refuses a vision adapter whose models cannot read images, and nothing in the registry or the reference's provider files declares that: the knowledge lives in the reference's open-sse/providers/capabilities.js, which resolves it from a table of model-id patterns. This file is that table, ported; capability_resolve.go is the one entry point that reads it.
 //
-//	images, and nothing in the registry or the reference's provider files
-//	declares that: the knowledge lives in the reference's
-//	open-sse/providers/capabilities.js, which resolves it from a table of
-//	model-id patterns. This file is that table, ported; capability_resolve.go
-//	is the one entry point that reads it.
 //	It is a port rather than a regeneration of registry.yaml
 //	because the YAML is the provider catalog (what exists, and where it
 //	points), while this is a judgement about models the catalog does not

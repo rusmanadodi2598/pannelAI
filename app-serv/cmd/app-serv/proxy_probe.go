@@ -1,17 +1,10 @@
 // Command app-serv adapts the proxy connectivity port to HTTP.
 //
 // @file      cmd/app-serv/proxy_probe.go
-// @for       The net/http implementation of service.ProxyProber, guarded by
+// @for       The net/http implementation of service.ProxyProber, guarded by internal/netguard (SPEC-API-001 §7.11, OWASP A01).
+// @uses      internal/domain, internal/netguard, internal/service, context, errors, io, net/http, net/url, strconv, time.
+// @reason    §7.11 offers a connectivity test, and the test must reach the candidate, but AGENTS.md §1.5 forbids net/http in the service layer.
 //
-//	internal/netguard (SPEC-API-001 §7.11, OWASP A01).
-//
-// @uses      internal/domain, internal/netguard, internal/service, context,
-//
-//	errors, io, net/http, net/url, strconv, time.
-//
-// @reason    §7.11 offers a connectivity test, and the test must reach the
-//
-//	candidate, but AGENTS.md §1.5 forbids net/http in the service layer.
 //	The port lives in `internal/service`, this adapter lives in the
 //	composition root. Two rules live here rather than in the service:
 //	the destination is validated by the egress guard before any dial and

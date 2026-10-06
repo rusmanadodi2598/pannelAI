@@ -3,11 +3,7 @@
 // @file      internal/service/quotafetch/glm.go
 // @for       Reads GLM's published session and weekly limits and the plan tier they belong to.
 // @uses      internal/service/quotafetch, context, encoding/json, net/http
-// @reason    GLM meters a coding plan in percentages against intervals it names itself, an
-//
-//	N-hour session as well as a week, so the rows have to be read from the
-//	provider's interval codes rather than guessed at from a fixed window here.
-//
+// @reason    GLM meters a coding plan in percentages against intervals it names itself, an N-hour session as well as a week, so the rows have to be read from the provider's interval codes rather than guessed at from a fixed window here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

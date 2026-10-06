@@ -3,11 +3,7 @@
 // @file      internal/service/endpoint_keys_remove_test.go
 // @for       Key removal against unknown ids and the keep-one-credential rule.
 // @uses      testing, internal/domain.
-// @reason    SPEC-API-001 §7.5 refuses to strip an api_key endpoint of its last
-//
-//	usable credential, which is the invariant the aggregate cannot
-//	check from a single key.
-//
+// @reason    SPEC-API-001 §7.5 refuses to strip an api_key endpoint of its last usable credential, which is the invariant the aggregate cannot check from a single key.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

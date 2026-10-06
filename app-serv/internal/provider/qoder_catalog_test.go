@@ -2,14 +2,8 @@
 //
 // @file      internal/provider/qoder_catalog_test.go
 // @for       The vendor catalogue read: its signature, and the lookup the body builder needs.
-//
 // @uses      encoding/json, io, net/http, net/http/httptest, strings, testing.
-// @reason    The configuration the chat body carries comes from an authenticated read, so
-//
-//	what matters is that the read is signed as the account and that the
-//	lookup finds a model wherever the vendor grouped it. Both are pinned here
-//	against a stub serving the captured answer shape.
-//
+// @reason    The configuration the chat body carries comes from an authenticated read, so what matters is that the read is signed as the account and that the lookup finds a model wherever the vendor grouped it. Both are pinned here against a stub serving the captured answer shape.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

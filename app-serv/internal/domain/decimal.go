@@ -4,14 +4,7 @@
 // @file      internal/domain/decimal.go
 // @for       The decimal value object money and other exact amounts use.
 // @uses      errors, fmt, math/big, strings (standard library only).
-// @reason    SPEC-API-001 §4 requires cost to cross the wire as a decimal
-//
-//	string, never a float. A float cannot represent 0.1 exactly, so
-//	summing a month of per-request costs in float64 would drift from
-//	the sum a client computes from the strings it was shown. The
-//	value is carried as big.Rat here and rendered as an exact decimal
-//	string by the layers above.
-//
+// @reason    SPEC-API-001 §4 requires cost to cross the wire as a decimal string, never a float. A float cannot represent 0.1 exactly, so summing a month of per-request costs in float64 would drift from the sum a client computes from the strings it was shown. The value is carried as big.Rat here and rendered as an exact decimal string by the layers above.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

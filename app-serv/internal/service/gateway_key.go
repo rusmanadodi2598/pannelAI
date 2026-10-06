@@ -3,11 +3,7 @@
 // @file      internal/service/gateway_key.go
 // @for       The gateway key lifecycle: issue, list, inspect, rename, revoke.
 // @uses      internal/domain, internal/repository.
-// @reason    SPEC-API-001 §7.3 fixes this behavior (plaintext returned once,
-//
-//	hints thereafter, terminal revocation) and AGENTS.md §1.5 puts
-//	orchestration in this layer with no net/http import.
-//
+// @reason    SPEC-API-001 §7.3 fixes this behavior (plaintext returned once, hints thereafter, terminal revocation) and AGENTS.md §1.5 puts orchestration in this layer with no net/http import.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

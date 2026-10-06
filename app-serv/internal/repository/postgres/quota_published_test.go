@@ -1,24 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/quota_published_test.go
-// @for       The driver-error mapping, the NULL decoders, and the no-query guards
-//
-//	of the published-quota repository, without a server.
-//
-// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn,
-//
-//	internal/domain, context, errors, testing, time.
-//
-// @reason    The same reasoning gateway_key_error_test.go gives for existing
-//
-//	without a database: a client sees a code, and a code that stops mapping is
-//
-// invisible until someone gets 500 where they should get 404. The two
-//
-//	guard clauses are here for the same reason, they are the no-N+1 and
-//	no-unbounded-sweep promises, and they must hold on the default
-//	`go test ./...` run, not only where a Postgres exists.
-//
+// @for       The driver-error mapping, the NULL decoders, and the no-query guards of the published-quota repository, without a server.
+// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgconn, internal/domain, context, errors, testing, time.
+// @reason    The same reasoning gateway_key_error_test.go gives for existing without a database: a client sees a code, and a code that stops mapping is invisible until someone gets 500 where they should get 404. The two guard clauses are here for the same reason, they are the no-N+1 and no-unbounded-sweep promises, and they must hold on the default `go test ./...` run, not only where a Postgres exists.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

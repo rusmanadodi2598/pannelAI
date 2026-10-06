@@ -3,12 +3,7 @@
 // @file      internal/service/oauth_flow_callback_redirect_test.go
 // @for       The staged redirect a callback must spend, and the refusals around it.
 // @uses      context, testing, internal/domain.
-// @reason    These two cases read the grant the exchange actually sent, redirect, client id, PKCE
-//
-//	verifier, rather than the account it produced, which is what the callback table next
-//	door already pins. `startFlow` lives here because they are the tests that need a real
-//	Start instead of a hand-crafted payload, and the table shares it from the same package.
-//
+// @reason    These two cases read the grant the exchange actually sent, redirect, client id, PKCE verifier, rather than the account it produced, which is what the callback table next door already pins. `startFlow` lives here because they are the tests that need a real Start instead of a hand-crafted payload, and the table shares it from the same package.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

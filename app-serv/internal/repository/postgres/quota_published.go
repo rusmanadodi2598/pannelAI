@@ -1,23 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/quota_published.go
-// @for       The published-quota cache read path: the screen's one batched
-//
-//	query over the cached answers, and the sweep's due-endpoint queue.
-//
-// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgxpool,
-//
-//	internal/domain, internal/repository, context, time.
-//
-// @reason    The quota screen shows what each provider publishes about itself,
-//
-//	and it may not fetch that on read: a page of accounts would become a page
-//	of provider calls, the exact N+1 AGENTS.md §1.7 blocks on this screen. A
-//	worker writes the answers (quota_published_write.go) and this file reads
-//	them back in ONE statement for the whole batch. The two halves are split
-//	because they change for different reasons, a new display column here, a
-//	new scheduling rule there, and §1.1 caps the file either way.
-//
+// @for       The published-quota cache read path: the screen's one batched query over the cached answers, and the sweep's due-endpoint queue.
+// @uses      github.com/jackc/pgx/v5, github.com/jackc/pgx/v5/pgxpool, internal/domain, internal/repository, context, time.
+// @reason    The quota screen shows what each provider publishes about itself, and it may not fetch that on read: a page of accounts would become a page of provider calls, the exact N+1 AGENTS.md §1.7 blocks on this screen. A worker writes the answers (quota_published_write.go) and this file reads them back in ONE statement for the whole batch. The two halves are split because they change for different reasons, a new display column here, a new scheduling rule there, and §1.1 caps the file either way.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

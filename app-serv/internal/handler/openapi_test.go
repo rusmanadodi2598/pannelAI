@@ -3,13 +3,7 @@
 // @file      internal/handler/openapi_test.go
 // @for       The embedded contract's structural invariants.
 // @uses      encoding/json, strings, testing.
-// @reason    §7.17 serves the document as the contract of record, so the tests
-//
-//	pin what a diffing consumer relies on: a declared OpenAPI
-//	version, paths that all carry the §11.1 version prefix, and the
-//	two auth schemes §4 names. Route coverage lives in the router
-//	package, beside the mux the document must match.
-//
+// @reason    §7.17 serves the document as the contract of record, so the tests pin what a diffing consumer relies on: a declared OpenAPI version, paths that all carry the §11.1 version prefix, and the two auth schemes §4 names. Route coverage lives in the router package, beside the mux the document must match.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

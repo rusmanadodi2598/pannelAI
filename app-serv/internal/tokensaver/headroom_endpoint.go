@@ -5,12 +5,7 @@
 // @file      internal/tokensaver/headroom_endpoint.go
 // @for       Building and redacting the external compression endpoint.
 // @uses      errors, fmt, net/url, strings.
-// @reason    SPEC-API-001 §7.9 accepts a base URL rather than a fixed host, so
-//
-// the endpoint must preserve an operator's path and query while adding
-// the one documented compression path. Redaction is kept beside the
-// builder because URL credentials and query tokens must not enter errors.
-//
+// @reason    SPEC-API-001 §7.9 accepts a base URL rather than a fixed host, so the endpoint must preserve an operator's path and query while adding the one documented compression path. Redaction is kept beside the builder because URL credentials and query tokens must not enter errors.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

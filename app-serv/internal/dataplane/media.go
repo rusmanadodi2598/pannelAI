@@ -3,22 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/media.go
-// @for       The media call surface: one outbound request to a non-chat service,
-//
-//	with the URL and headers its own kind declares.
-//
-// @uses      internal/provider, internal/registry, bytes, context, io, net/http,
-//
-//	net/url, strings, time.
-//
-// @reason    SPEC-API-001 §8.1 requires a media service's credential placement to
-//
-//	come from its per-kind block, because `auth_header: key` is a QUERY
-//	PARAMETER rather than a header. Keeping the call and the target
-//	construction in one file is what stops a caller from reaching for
-//	the chat transport and authenticating incorrectly instead of
-//	failing loudly; the placement branches live in media_credential.go.
-//
+// @for       The media call surface: one outbound request to a non-chat service, with the URL and headers its own kind declares.
+// @uses      internal/provider, internal/registry, bytes, context, io, net/http, net/url, strings, time.
+// @reason    SPEC-API-001 §8.1 requires a media service's credential placement to come from its per-kind block, because `auth_header: key` is a QUERY PARAMETER rather than a header. Keeping the call and the target construction in one file is what stops a caller from reaching for the chat transport and authenticating incorrectly instead of failing loudly; the placement branches live in media_credential.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

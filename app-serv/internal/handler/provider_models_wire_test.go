@@ -1,22 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/provider_models_wire_test.go
-// @for       The §7.4 model-list body: the origin it names, and the constant
-//
-//	field it no longer carries.
-//
-// @uses      internal/registry, internal/service, net/http, net/http/httptest,
-//
-//	strings, testing.
-//
-// @reason    Draft 017 §4.5 measured `suggested: true` on every row of a route
-//
-//	whose `?suggested` parameter filtered nothing, and §4.9 recorded that
-//	the reference's envelope names the list's origin instead. Both facts
-//	are about the wire, so they are asserted on the wire: a field that is
-//	constant is a field a client cannot act on, and its removal is only
-//	real if the response no longer contains it.
-//
+// @for       The §7.4 model-list body: the origin it names, and the constant field it no longer carries.
+// @uses      internal/registry, internal/service, net/http, net/http/httptest, strings, testing.
+// @reason    Draft 017 §4.5 measured `suggested: true` on every row of a route whose `?suggested` parameter filtered nothing, and §4.9 recorded that the reference's envelope names the list's origin instead. Both facts are about the wire, so they are asserted on the wire: a field that is constant is a field a client cannot act on, and its removal is only real if the response no longer contains it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

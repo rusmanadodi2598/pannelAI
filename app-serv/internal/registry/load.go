@@ -4,13 +4,7 @@
 // @file      internal/registry/load.go
 // @for       Strict decoding of the embedded registry and its identifier index.
 // @uses      embed, gopkg.in/yaml.v3, fmt, net/url, sort, strings.
-// @reason    SPEC-API-001 §6 makes the registry embedded static config and §7.4
-//
-//	serves it over HTTP, so it is decoded exactly once and never
-//	mutated afterwards. Decoding is strict because a key that does not
-//	match a struct tag is a field the router silently stops honouring;
-//	turning that into a boot failure is the only way drift is noticed.
-//
+// @reason    SPEC-API-001 §6 makes the registry embedded static config and §7.4 serves it over HTTP, so it is decoded exactly once and never mutated afterwards. Decoding is strict because a key that does not match a struct tag is a field the router silently stops honouring; turning that into a boot failure is the only way drift is noticed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

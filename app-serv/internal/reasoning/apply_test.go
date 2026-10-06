@@ -3,14 +3,10 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/apply_test.go
-// @for       The strip-then-write rule, the display read, the budget
-//
-//	conversion, and the doubles every format case is driven through.
-//
+// @for       The strip-then-write rule, the display read, the budget conversion, and the doubles every format case is driven through.
 // @uses      encoding/json, reflect, testing.
-// @reason    SPEC-API-001 §7.15 ports thinkingUnified.js, whose two halves are
+// @reason    SPEC-API-001 §7.15 ports thinkingUnified.js, whose two halves are "remove whatever the client sent" and "write what this upstream reads".
 //
-//	"remove whatever the client sent" and "write what this upstream reads".
 //	The strip half is proven here in one place because it is one rule
 //	applied to every shape; the per-format writes live in
 //	apply_wire_test.go and apply_vendor_test.go (AGENTS.md §1.1).

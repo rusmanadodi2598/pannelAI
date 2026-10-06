@@ -3,17 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/filter_git_status.go
-// @for       The git-status filter: a status dump reduced to one branch line
-//
-//	and per-group file counts.
-//
+// @for       The git-status filter: a status dump reduced to one branch line and per-group file counts.
 // @uses      fmt, regexp, strings.
-// @reason    SPEC-API-002 §5 ports the reference's format_status_output, which
-//
-//	reads both the long form a human runs and the porcelain form an
-//	agent runs. The compressed answer tells the model what changed
-//	without spending a line per file.
-//
+// @reason    SPEC-API-002 §5 ports the reference's format_status_output, which reads both the long form a human runs and the porcelain form an agent runs. The compressed answer tells the model what changed without spending a line per file.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

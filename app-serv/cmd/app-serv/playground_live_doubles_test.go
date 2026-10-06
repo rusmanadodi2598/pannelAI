@@ -3,19 +3,9 @@
 // Package main is the app-serv composition root.
 //
 // @file      cmd/app-serv/playground_live_doubles_test.go
-// @for       The live evidence's narrow doubles: the local upstream, the
-//
-//	provider lookup, the model lookup, and the request helpers.
-//
-// @uses      internal/dataplane, internal/domain, internal/registry,
-// internal/repository, internal/repository/postgres, encoding/json,
-// net/http, net/http/httptest, strings, testing.
-// @reason    The upstream and the lookups are narrow stand-ins for a provider the
-//
-//	evidence must not need, and the request helpers are how every case
-//	reaches the mux. They are separate from the stack builder so both
-//	files stay inside the AGENTS.md §1.1 budget.
-//
+// @for       The live evidence's narrow doubles: the local upstream, the provider lookup, the model lookup, and the request helpers.
+// @uses      internal/dataplane, internal/domain, internal/registry, internal/repository, internal/repository/postgres, encoding/json, net/http, net/http/httptest, strings, testing.
+// @reason    The upstream and the lookups are narrow stand-ins for a provider the evidence must not need, and the request helpers are how every case reaches the mux. They are separate from the stack builder so both files stay inside the AGENTS.md §1.1 budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

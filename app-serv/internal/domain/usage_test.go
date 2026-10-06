@@ -2,17 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/usage_test.go
-// @for       Table-driven tests for the UsageRecord aggregate's validation and
-//
-//	projection into the aggregate totals.
-//
+// @for       Table-driven tests for the UsageRecord aggregate's validation and projection into the aggregate totals.
 // @uses      testing, time.
-// @reason    AGENTS.md §2.1 and §2.4 require the recorder's invariants to be
-//
-//	pinned: a row with a negative counter or an unparseable cost would
-//	skew every summary, group, and bucket built on it, so the rejection
-//	path needs a test as much as the happy path does.
-//
+// @reason    AGENTS.md §2.1 and §2.4 require the recorder's invariants to be pinned: a row with a negative counter or an unparseable cost would skew every summary, group, and bucket built on it, so the rejection path needs a test as much as the happy path does.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

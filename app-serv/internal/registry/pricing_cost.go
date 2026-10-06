@@ -2,22 +2,9 @@
 // catalog loaded once at boot.
 //
 // @file      internal/registry/pricing_cost.go
-// @for       The token-to-cost estimate: the reference's additive formula over
-//
-//	the embedded rates, in exact rational arithmetic.
-//
+// @for       The token-to-cost estimate: the reference's additive formula over the embedded rates, in exact rational arithmetic.
 // @uses      math/big, strings, internal/registry (the resolved rates).
-// @reason    SPEC-API-001 §4 requires cost to cross the wire as a decimal
-//
-//	string and §7.12 states the figure is an estimate for display. The
-//	reference computes it in float64, which is where its own 8th
-//	decimal drifts; this port keeps the sum exact and renders it at the
-//	column's scale, so the number a client reads back is the number
-//	the gateway computed. The formula is the reference's, including its
-//	conventions: prompt_tokens is cache-inclusive, so the cached and
-//	cache-creation subsets are subtracted before the full input rate
-//	applies, and reasoning tokens are a premium added on their own rate.
-//
+// @reason    SPEC-API-001 §4 requires cost to cross the wire as a decimal string and §7.12 states the figure is an estimate for display. The reference computes it in float64, which is where its own 8th decimal drifts; this port keeps the sum exact and renders it at the column's scale, so the number a client reads back is the number the gateway computed. The formula is the reference's, including its conventions: prompt_tokens is cache-inclusive, so the cached and cache-creation subsets are subtracted before the full input rate applies, and reasoning tokens are a premium added on their own rate.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

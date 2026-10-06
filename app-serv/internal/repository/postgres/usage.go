@@ -3,13 +3,7 @@
 // @file      internal/repository/postgres/usage.go
 // @for       Usage recording and the summary aggregation over usage_records.
 // @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository.
-// @reason    SPEC-API-001 §7.12 answers the summary read from one table and §6
-//
-//	indexes exactly the group-by dimensions offered. Recording is
-//	idempotent on the record's own id so a retried reporter call cannot
-//	double-count, and the group-by column is interpolated only from the
-//	closed domain set, never from caller text (AGENTS.md §1.7).
-//
+// @reason    SPEC-API-001 §7.12 answers the summary read from one table and §6 indexes exactly the group-by dimensions offered. Recording is idempotent on the record's own id so a retried reporter call cannot double-count, and the group-by column is interpolated only from the closed domain set, never from caller text (AGENTS.md §1.7).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

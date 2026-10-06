@@ -3,14 +3,7 @@
 // @file      internal/service/usage.go
 // @for       The usage recorder and the summary, timeseries, and records reads.
 // @uses      internal/domain, internal/repository, context, time.
-// @reason    SPEC-API-001 §7.12 makes one aggregate the source for a summary, a
-//
-//	chart, a paged list, and a single-request detail that joins the
-//	captured log. Orchestrating that join, and deciding the default read
-//	window, belongs here where no net/http import is needed
-//	(AGENTS.md §1.5), so the same reads serve a worker or a future
-//	export job.
-//
+// @reason    SPEC-API-001 §7.12 makes one aggregate the source for a summary, a chart, a paged list, and a single-request detail that joins the captured log. Orchestrating that join, and deciding the default read window, belongs here where no net/http import is needed (AGENTS.md §1.5), so the same reads serve a worker or a future export job.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

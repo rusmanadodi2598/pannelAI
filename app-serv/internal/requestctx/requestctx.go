@@ -3,12 +3,7 @@
 // @file      internal/requestctx/requestctx.go
 // @for       Storing and reading the request id across layers.
 // @uses      context
-// @reason    The router sets the id and the handlers are the ones that log failures worth
-//
-//	tracing, but a handler reaching into the router for the accessor would import upward
-//	against AGENTS.md §1.5. The key therefore lives below both of them, in the one place
-//	that owns no layer.
-//
+// @reason    The router sets the id and the handlers are the ones that log failures worth tracing, but a handler reaching into the router for the accessor would import upward against AGENTS.md §1.5. The key therefore lives below both of them, in the one place that owns no layer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

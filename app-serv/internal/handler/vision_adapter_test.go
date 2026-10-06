@@ -3,12 +3,7 @@
 // @file      internal/handler/vision_adapter_test.go
 // @for       HTTP tests for the §7.8 vision adapter routes.
 // @uses      net/http, strings, testing.
-// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path
-//
-//	per route. §7.8's write is a whole replacement whose models come
-//	from the catalog, and the catalog is what answers the vision
-//	question, so the tests pin the exact refusals an operator meets.
-//
+// @reason    AGENTS.md §2.1 requires a happy path and a validation-failure path per route. §7.8's write is a whole replacement whose models come from the catalog, and the catalog is what answers the vision question, so the tests pin the exact refusals an operator meets.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

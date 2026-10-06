@@ -3,12 +3,7 @@
 // @file      internal/service/quotafetch/request.go
 // @for       Performs one provider quota request and turns a refused or failed answer into the reference's soft message.
 // @uses      internal/service/quotafetch, net/http, encoding/json
-// @reason    Each family repeats the same three moves, send one bounded request, treat a
-//
-//	401/403 as a dead credential, treat a non-2xx as a sentence the card renders
-//	rather than a failure of the page. Reading them once keeps a family from
-//	inventing a fourth behaviour where the reference agreed on one.
-//
+// @reason    Each family repeats the same three moves, send one bounded request, treat a 401/403 as a dead credential, treat a non-2xx as a sentence the card renders rather than a failure of the page. Reading them once keeps a family from inventing a fourth behaviour where the reference agreed on one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

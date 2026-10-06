@@ -3,20 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/resolve_combo_nested_test.go
-// @for       Draft 024 F1: a combo member that is itself a combo resolves one
-//
-//	dereference level deep at runtime, exactly as the write path accepted
-//	it, and a cycle between two combos terminates instead of recursing.
-//
+// @for       Draft 024 F1: a combo member that is itself a combo resolves one dereference level deep at runtime, exactly as the write path accepted it, and a cycle between two combos terminates instead of recursing.
 // @uses      internal/domain, context, testing.
-// @reason    §7.7 accepts a combo name as a member and §7.15 resolves a combo
-//
-//	name as a model string, but resolveMember skipped the combo path, so a
-//	nested member saved and then answered MODEL_NOT_FOUND. The write path
-//	and the runtime must agree about what a saved member means; these
-//	tests pin the runtime half and the cycle guard that makes the
-//	agreement safe.
-//
+// @reason    §7.7 accepts a combo name as a member and §7.15 resolves a combo name as a model string, but resolveMember skipped the combo path, so a nested member saved and then answered MODEL_NOT_FOUND. The write path and the runtime must agree about what a saved member means; these tests pin the runtime half and the cycle guard that makes the agreement safe.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

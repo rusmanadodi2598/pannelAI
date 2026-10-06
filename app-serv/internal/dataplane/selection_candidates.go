@@ -3,19 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/selection_candidates.go
-// @for       The credential walk a request makes over one provider's accounts:
-//
-//	the first pick, and the next pick after a credential failed.
-//
+// @for       The credential walk a request makes over one provider's accounts: the first pick, and the next pick after a credential failed.
 // @uses      internal/domain, context.
-// @reason    SPEC-API-001 §7.7 fixes the failover order as credential-first: a
-//
-//	failed credential is followed by the provider's next healthy one
-//	before the next model is tried. The walk is policy the whole data
-//	plane depends on, so it lives in one place beside the ordering rule
-//	it walks, and the exclude set is what keeps one request from
-//	retrying a credential it already saw fail.
-//
+// @reason    SPEC-API-001 §7.7 fixes the failover order as credential-first: a failed credential is followed by the provider's next healthy one before the next model is tried. The walk is policy the whole data plane depends on, so it lives in one place beside the ordering rule it walks, and the exclude set is what keeps one request from retrying a credential it already saw fail.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

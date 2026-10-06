@@ -3,13 +3,7 @@
 // @file      internal/schema/media_image.go
 // @for       The image and video generation contracts of SPEC-API-001 §7.10.
 // @uses      encoding/json, internal/domain.
-// @reason    Both routes send a prompt to a provider's generation endpoint and
-//
-//	answer with the same OpenAI envelope the reference normalizes to,
-//	so the request bodies differ only in the knobs the reference
-//	forwards for images. §7.10's video route declares no provider yet,
-//	and the type is still written because the route is registered.
-//
+// @reason    Both routes send a prompt to a provider's generation endpoint and answer with the same OpenAI envelope the reference normalizes to, so the request bodies differ only in the knobs the reference forwards for images. §7.10's video route declares no provider yet, and the type is still written because the route is registered.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

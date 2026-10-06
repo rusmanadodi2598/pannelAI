@@ -3,10 +3,7 @@
 // @file      internal/service/session.go
 // @for       Authenticated session verification, revocation, and password change.
 // @uses      internal/domain, internal/repository, internal/service/password.go.
-// @reason    Session state must be checked at every protected management boundary
-//
-//	and password updates must verify the current credential atomically.
-//
+// @reason    Session state must be checked at every protected management boundary and password updates must verify the current credential atomically.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

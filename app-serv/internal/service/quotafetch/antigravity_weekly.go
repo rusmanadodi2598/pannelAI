@@ -4,12 +4,7 @@
 // @file      internal/service/quotafetch/antigravity_weekly.go
 // @for       Turns Antigravity's quota summary into its four session and weekly rows.
 // @uses      internal/service/quotafetch, context, encoding/json, net/http, strings
-// @reason    The summary is the only surface that states a window per family rather than per
-//
-//	model, it answers under two different envelopes depending on the release,
-//	and it is best-effort: a summary that fails must never take the per-model
-//	windows down with it.
-//
+// @reason    The summary is the only surface that states a window per family rather than per model, it answers under two different envelopes depending on the release, and it is best-effort: a summary that fails must never take the per-model windows down with it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

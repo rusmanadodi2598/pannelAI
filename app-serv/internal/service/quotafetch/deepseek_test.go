@@ -3,10 +3,7 @@
 // @file      internal/service/quotafetch/deepseek_test.go
 // @for       Locks the DeepSeek balance read: credit-balance rows, currency labels, plan wording.
 // @uses      internal/service/quotafetch, net/http/httptest
-// @reason    DeepSeek publishes a prepaid wallet, not a capped window, so the failures worth
-//
-//	pinning are silent: a balance drawn as a share of a ceiling nobody stated.
-//
+// @reason    DeepSeek publishes a prepaid wallet, not a capped window, so the failures worth pinning are silent: a balance drawn as a share of a ceiling nobody stated.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

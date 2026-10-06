@@ -3,13 +3,7 @@
 // @file      internal/handler/openapi.go
 // @for       The served machine-readable contract (SPEC-API-001 §7.17).
 // @uses      embed, net/http.
-// @reason    A self-hosted gateway's panel cannot assume internet access, so
-//
-//	§7.17 serves the contract from the binary instead of pointing at
-//	an external docs site. The document is static; the router test that
-//	pins every registered pattern onto it is what turns a forgotten
-//	route into a build failure rather than a doc lag.
-//
+// @reason    A self-hosted gateway's panel cannot assume internet access, so §7.17 serves the contract from the binary instead of pointing at an external docs site. The document is static; the router test that pins every registered pattern onto it is what turns a forgotten route into a build failure rather than a doc lag.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

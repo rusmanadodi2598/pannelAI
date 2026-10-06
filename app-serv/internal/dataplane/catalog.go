@@ -5,10 +5,8 @@
 // @file      internal/dataplane/catalog.go
 // @for       The models list the data plane publishes, in the OpenAI list shape.
 // @uses      internal/schema, internal/registry, context, sort.
-// @reason    SPEC-API-001 §7.15 serves GET /api/v1/models as `{object:"list",
+// @reason    SPEC-API-001 §7.15 serves GET /api/v1/models as `{object:"list", data:[...]}` over the routable models and combos, and §7.6 makes the disabled set hide a model from the catalog and from routing alike.
 //
-//	data:[...]}` over the routable models and combos, and §7.6 makes the
-//	disabled set hide a model from the catalog and from routing alike.
 //	Building the list from the same registry, the same translator check,
 //	and the same disabled set the router reads is what keeps "listed" and
 //	"answerable" one property instead of two.

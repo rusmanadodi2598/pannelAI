@@ -2,20 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/oauth_refresh.go
-// @for       The freshness rules of an OAuth token set and the endpoint
-//
-//	transition a dead-lettered refresh takes.
-//
+// @for       The freshness rules of an OAuth token set and the endpoint transition a dead-lettered refresh takes.
 // @uses      internal/domain (error constructors), time.
-// @reason    SPEC-API-001 §7.4 reports token expiry per endpoint and the
-//
-//	refresh worker (§10, P2) must decide "due" the same way the status
-//	route reports it, so the derivation lives once in the domain where
-//	both callers read it. MarkUnhealthy is here too because the
-//	dead-letter decision is a business rule: the account stopped being
-//	routable because its credential died, which is health tracking, not
-//	a PATCH a client could make.
-//
+// @reason    SPEC-API-001 §7.4 reports token expiry per endpoint and the refresh worker (§10, P2) must decide "due" the same way the status route reports it, so the derivation lives once in the domain where both callers read it. MarkUnhealthy is here too because the dead-letter decision is a business rule: the account stopped being routable because its credential died, which is health tracking, not a PATCH a client could make.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

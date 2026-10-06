@@ -2,17 +2,8 @@
 //
 // @file      internal/service/media_image.go
 // @for       The image and video generation use cases of SPEC-API-001 §7.10.
-// @uses      internal/dataplane, internal/domain, internal/schema, context,
-//
-//	encoding/json.
-//
-// @reason    Both routes send a prompt and normalize the answer into the same
-//
-//	OpenAI envelope, so the normalization lives here once: the
-//	reference normalizes every adapter's answer into `{created,
-//	data:[{url|b64_json}]}`, and a client that reads `data[0].url`
-//	must keep working whichever provider answered.
-//
+// @uses      internal/dataplane, internal/domain, internal/schema, context, encoding/json.
+// @reason    Both routes send a prompt and normalize the answer into the same OpenAI envelope, so the normalization lives here once: the reference normalizes every adapter's answer into `{created, data:[{url|b64_json}]}`, and a client that reads `data[0].url` must keep working whichever provider answered.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

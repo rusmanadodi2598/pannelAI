@@ -1,19 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_oauth_bulk.go
-// @for       Importing already-obtained OAuth credentials as endpoints
-//
-//	(SPEC-API-001 §7.5, §8.1).
-//
+// @for       Importing already-obtained OAuth credentials as endpoints (SPEC-API-001 §7.5, §8.1).
 // @uses      internal/domain, context, errors, strconv, strings, time.
-// @reason    The import path exists for accounts obtained on a machine with no
-//
-//	browser callback, so there is no authorization flow to run, only
-//	tokens to seal and an account identity to match. It is separate from
-//	endpoint_bulk.go because the two batches share the all-or-nothing
-//	rule but nothing else, and because AGENTS.md §1.1 caps a file at 250
-//	lines.
-//
+// @reason    The import path exists for accounts obtained on a machine with no browser callback, so there is no authorization flow to run, only tokens to seal and an account identity to match. It is separate from endpoint_bulk.go because the two batches share the all-or-nothing rule but nothing else, and because AGENTS.md §1.1 caps a file at 250 lines.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

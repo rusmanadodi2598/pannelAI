@@ -1,16 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_provider_stub_test.go
-// @for       The in-memory override store, media-capable index, and endpoint
-//
-//	counter the §7.10 tests drive.
-//
+// @for       The in-memory override store, media-capable index, and endpoint counter the §7.10 tests drive.
 // @uses      context, internal/domain, internal/registry, testing.
-// @reason    The three collaborators are the ones the service must not own, so
-//
-//	all three are doubles here; keeping them together leaves each test
-//	about the rule it pins.
-//
+// @reason    The three collaborators are the ones the service must not own, so all three are doubles here; keeping them together leaves each test about the rule it pins.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

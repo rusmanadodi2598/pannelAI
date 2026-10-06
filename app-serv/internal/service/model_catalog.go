@@ -1,21 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/model_catalog.go
-// @for       The merged model catalog: the embedded registry combined with the
-//
-//	models_custom and models_disabled rows (SPEC-API-001 §7.6).
-//
-// @uses      internal/domain, internal/repository, internal/registry, context,
-//
-//	time.
-//
-// @reason    §7.6 serves one catalog from three sources that disagree by
-//
-//	design: the registry is immutable config, custom rows are the
-//	operator's additions, and disabled rows are subtractions. Merging
-//	them here, in one place, in one order, is what lets the panel
-//	and the data plane ask the same question and get the same answer.
-//
+// @for       The merged model catalog: the embedded registry combined with the models_custom and models_disabled rows (SPEC-API-001 §7.6).
+// @uses      internal/domain, internal/repository, internal/registry, context, time.
+// @reason    §7.6 serves one catalog from three sources that disagree by design: the registry is immutable config, custom rows are the operator's additions, and disabled rows are subtractions. Merging them here, in one place, in one order, is what lets the panel and the data plane ask the same question and get the same answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

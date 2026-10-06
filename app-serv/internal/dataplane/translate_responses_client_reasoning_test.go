@@ -3,13 +3,7 @@
 // @file      internal/dataplane/translate_responses_client_reasoning_test.go
 // @for       Table-driven tests for where a reasoning item's text attaches.
 // @uses      testing.
-// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose reasoning
-//
-//	travels as an item of its own while the chat wire carries it as a
-//	member of the assistant turn. Attaching it to the wrong turn either
-//	loses what the model was thinking or tells the upstream something
-//	the client did not.
-//
+// @reason    SPEC-API-001 §7.15 serves POST /api/v1/responses, whose reasoning travels as an item of its own while the chat wire carries it as a member of the assistant turn. Attaching it to the wrong turn either loses what the model was thinking or tells the upstream something the client did not.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -1,19 +1,9 @@
 // Package redis implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/usage_active_store.go
-// @for       The in-flight marker set: one member per request being routed now,
-//
-//	scored by its start instant.
-//
+// @for       The in-flight marker set: one member per request being routed now, scored by its start instant.
 // @uses      github.com/redis/go-redis/v9, internal/domain, context, fmt, time.
-// @reason    SPEC-UI-001 §6.5 makes the drawing's live state come from the
-//
-//	gateway, and the gateway is the only party that knows a request is
-//	between two instants. The store lives in Redis rather than in
-//	process memory because this service may run more than one replica:
-//	an in-process map would give each replica its own idea of what is
-//	active, and the stream would show a different set depending on which
-//	replica answered.
+// @reason    SPEC-UI-001 §6.5 makes the drawing's live state come from the gateway, and the gateway is the only party that knows a request is between two instants. The store lives in Redis rather than in process memory because this service may run more than one replica: an in-process map would give each replica its own idea of what is active, and the stream would show a different set depending on which replica answered.
 //
 //	A sorted set scored by the start instant is what makes the read
 //	bounded: ZRANGEBYSCORE applies the staleness cutoff and the limit in

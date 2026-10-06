@@ -3,12 +3,7 @@
 // @file      internal/schema/provider.go
 // @for       The provider registry read contracts (SPEC-API-001 §7.4).
 // @uses      internal/domain, internal/registry.
-// @reason    §7.4 serves the embedded registry over HTTP, and §8.1 requires the
-//
-//	panel to read a provider's routability before configuring an endpoint that
-//	can never answer. The wire shape is fixed here rather than derived from the
-//	YAML struct so a registry field rename cannot silently change the API.
-//
+// @reason    §7.4 serves the embedded registry over HTTP, and §8.1 requires the panel to read a provider's routability before configuring an endpoint that can never answer. The wire shape is fixed here rather than derived from the YAML struct so a registry field rename cannot silently change the API.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

@@ -3,13 +3,7 @@
 // @file      internal/service/quota_published_failure_test.go
 // @for       Tests for the worker's handling of a failed (not merely soft) provider answer.
 // @uses      context, testing, time.
-// @reason    A provider that errors is not a provider that answered. If the worker filed the
-//
-//	error as a soft answer, the failure run would never grow, the backoff would never engage,
-//	and a broken endpoint would be polled on the family floor forever while the cache looked
-//	healthy. The sentence still has to be stored and the last good buckets kept, so this is
-//	the one place where "keep the data" and "count the failure" have to hold at once.
-//
+// @reason    A provider that errors is not a provider that answered. If the worker filed the error as a soft answer, the failure run would never grow, the backoff would never engage, and a broken endpoint would be polled on the family floor forever while the cache looked healthy. The sentence still has to be stored and the last good buckets kept, so this is the one place where "keep the data" and "count the failure" have to hold at once.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

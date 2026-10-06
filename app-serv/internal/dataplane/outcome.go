@@ -3,17 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/outcome.go
-// @for       What one relayed call produced: the identity it was attempted
-//
-//	under, the answer, the accounting, and the latency.
-//
+// @for       What one relayed call produced: the identity it was attempted under, the answer, the accounting, and the latency.
 // @uses      internal/schema.
-// @reason    The outcome crosses the engine's boundary into accounting, logging,
-//
-//	and the handlers, so its shape is a contract rather than an internal
-//	detail. Declaring it in its own file keeps engine.go inside the
-//	AGENTS.md §1.1 line budget and gives that contract one home.
-//
+// @reason    The outcome crosses the engine's boundary into accounting, logging, and the handlers, so its shape is a contract rather than an internal detail. Declaring it in its own file keeps engine.go inside the AGENTS.md §1.1 line budget and gives that contract one home.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

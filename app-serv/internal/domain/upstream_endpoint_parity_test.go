@@ -2,19 +2,9 @@
 // of the pannelAI gateway (SPEC-API-001 §5).
 //
 // @file      internal/domain/upstream_endpoint_parity_test.go
-// @for       The connection-parity fields on an endpoint: routing order, the
-//
-//	default model, the consecutive-use counter, the last upstream error,
-//	and the proxy binding.
-//
+// @for       The connection-parity fields on an endpoint: routing order, the default model, the consecutive-use counter, the last upstream error, and the proxy binding.
 // @uses      strings, testing, time.
-// @reason    Draft 017 §4.1b lists five fields a reference connection has and an
-//
-//	endpoint did not. Two of them carry rules rather than data, and both
-//	are asserted here: `consecutive_use_count` is what a round-robin or a
-//	rate-limit detector reads, and `last_error` must never store a
-//	credential (OWASP A09) because it holds text an upstream sent.
-//
+// @reason    Draft 017 §4.1b lists five fields a reference connection has and an endpoint did not. Two of them carry rules rather than data, and both are asserted here: `consecutive_use_count` is what a round-robin or a rate-limit detector reads, and `last_error` must never store a credential (OWASP A09) because it holds text an upstream sent.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

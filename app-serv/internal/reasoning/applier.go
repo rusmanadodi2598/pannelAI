@@ -3,18 +3,9 @@
 // that turns a reasoning intent into the field an upstream reads.
 //
 // @file      internal/reasoning/applier.go
-// @for       The request-path seam: resolving one call's reasoning config and
-//
-//	writing it into the already translated upstream body.
-//
+// @for       The request-path seam: resolving one call's reasoning config and writing it into the already translated upstream body.
 // @uses      internal/domain, internal/registry, context, encoding/json, errors.
-// @reason    SPEC-API-001 §7.14 stores one thinking mode per provider and §7.15
-//
-//	carries the reference's per-model suffix. Both are decisions about an
-//	outbound body, and the engine hands this seam the body it has already
-//	translated, so a config is written once, in the shape the upstream
-//	reads, and never translated away afterwards.
-//
+// @reason    SPEC-API-001 §7.14 stores one thinking mode per provider and §7.15 carries the reference's per-model suffix. Both are decisions about an outbound body, and the engine hands this seam the body it has already translated, so a config is written once, in the shape the upstream reads, and never translated away afterwards.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

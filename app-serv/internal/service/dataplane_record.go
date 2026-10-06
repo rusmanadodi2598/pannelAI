@@ -1,22 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/dataplane_record.go
-// @for       The accounting pair a served data-plane call writes: one usage row
-//
-//	and one request log, under the request's own identifier.
-//
+// @for       The accounting pair a served data-plane call writes: one usage row and one request log, under the request's own identifier.
 // @uses      internal/dataplane, internal/domain, context, strconv, time.
-// @reason    SPEC-API-001 §7.15's pipeline ends with "usage + quota + log
-//
-//	recording", and the media plane has no token counts to record; the
-//	owner's D3 decision (2026-09-19) is that a media call still produces
-//	both rows, with tokens 0 and the kind's own per-query price where one
-//	is declared. Writing that rule once here is what keeps the media and
-//	embeddings services from disagreeing about what a recorded call looks
-//	like, the way they would if each built its own row. Both writes also
-//	outlive the client that asked for the call (draft 021 F6), which is
-//	why the detachment lives here rather than at each call site.
-//
+// @reason    SPEC-API-001 §7.15's pipeline ends with "usage + quota + log recording", and the media plane has no token counts to record; the owner's D3 decision (2026-09-19) is that a media call still produces both rows, with tokens 0 and the kind's own per-query price where one is declared. Writing that rule once here is what keeps the media and embeddings services from disagreeing about what a recorded call looks like, the way they would if each built its own row. Both writes also outlive the client that asked for the call (draft 021 F6), which is why the detachment lives here rather than at each call site.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

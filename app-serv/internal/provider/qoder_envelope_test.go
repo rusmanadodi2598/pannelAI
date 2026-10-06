@@ -1,17 +1,9 @@
 // Package provider implements the per-provider connectors the gateway calls.
 //
 // @file      internal/provider/qoder_envelope_test.go
-// @for       The envelope unwrap: what a refusal becomes, and what a client reads
-//
-//	when the provider's answer arrives wrapped.
-//
+// @for       The envelope unwrap: what a refusal becomes, and what a client reads when the provider's answer arrives wrapped.
 // @uses      io, net/http, strings, testing.
-// @reason    The vendor hides the real status inside each frame, so a spent account
-//
-//	arrives as HTTP 200 (draft 036 §5.1) and the only thing between that
-//	and a billed success is this unwrap. The refusal case uses the exact
-//	bytes the live service sent, captured 2026-09-27.
-//
+// @reason    The vendor hides the real status inside each frame, so a spent account arrives as HTTP 200 (draft 036 §5.1) and the only thing between that and a billed success is this unwrap. The refusal case uses the exact bytes the live service sent, captured 2026-09-27.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

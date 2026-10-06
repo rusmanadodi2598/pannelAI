@@ -3,19 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/credential_test.go
-// @for       The assembly of the credential one upstream call presents, from the
-//
-//	stored account.
-//
+// @for       The assembly of the credential one upstream call presents, from the stored account.
 // @uses      internal/domain, internal/provider, testing, time.
-// @reason    SPEC-API-001 §6 keeps every credential as ciphertext until the moment
-//
-//	it is sent, and §8.1 makes the endpoint's own auth type decide the
-//	shape. The non-secret identity beside it is what a signed provider
-//	reads on every call, a machine id a device login minted and nothing
-//	else carries, so the assembly is worth pinning: a field dropped here
-//	turns into a rejected request upstream, far from its cause.
-//
+// @reason    SPEC-API-001 §6 keeps every credential as ciphertext until the moment it is sent, and §8.1 makes the endpoint's own auth type decide the shape. The non-secret identity beside it is what a signed provider reads on every call, a machine id a device login minted and nothing else carries, so the assembly is worth pinning: a field dropped here turns into a rejected request upstream, far from its cause.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

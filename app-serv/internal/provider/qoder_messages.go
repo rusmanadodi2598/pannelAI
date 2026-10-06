@@ -2,14 +2,8 @@
 //
 // @file      internal/provider/qoder_messages.go
 // @for       Reading and reshaping the message turns a Qoder request carries.
-//
 // @uses      encoding/json, strings.
-// @reason    The vendor accepts a plain string for a text turn and an array only when a
-//
-//	turn carries an image, and it wants every system turn lifted out of the
-//	history into its own field. That is a small set of reads over a shape clients
-//	write many ways, so it is kept where a reviewer can check each case.
-//
+// @reason    The vendor accepts a plain string for a text turn and an array only when a turn carries an image, and it wants every system turn lifted out of the history into its own field. That is a small set of reads over a shape clients write many ways, so it is kept where a reviewer can check each case.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

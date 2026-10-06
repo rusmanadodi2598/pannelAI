@@ -1,22 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_usage_test.go
-// @for       Table-driven tests for the published-quota read: which credential it
-//
-//	asks with, what it refuses before calling, and how a provider's
-//	buckets become windows.
-//
-// @uses      context, errors, internal/domain, internal/registry,
-//
-//	internal/service/quotafetch, testing, time.
-//
-// @reason    The read reaches the network through one seam, so the whole routing
-//
-//	decision, the feature gate, the credential kind, the ceiling that is
-//	not a zero, is testable without a provider. Draft 036 §6 is the
-//	definition of done: a spent account and an unlimited account must
-//	not render as the same card.
-//
+// @for       Table-driven tests for the published-quota read: which credential it asks with, what it refuses before calling, and how a provider's buckets become windows.
+// @uses      context, errors, internal/domain, internal/registry, internal/service/quotafetch, testing, time.
+// @reason    The read reaches the network through one seam, so the whole routing decision, the feature gate, the credential kind, the ceiling that is not a zero, is testable without a provider. Draft 036 §6 is the definition of done: a spent account and an unlimited account must not render as the same card.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

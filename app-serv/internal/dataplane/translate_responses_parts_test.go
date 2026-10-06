@@ -3,13 +3,7 @@
 // @file      internal/dataplane/translate_responses_parts_test.go
 // @for       Table-driven tests for how a Responses item's content is rendered.
 // @uses      testing, internal/schema.
-// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and its
-//
-//	content vocabulary differs from OpenAI's in both directions: an
-//	image part carries a detail default, an unknown part has no field
-//	to live in, and a tool result must arrive as a plain string. Each
-//	is a rejection upstream when it is wrong, so each is pinned here.
-//
+// @reason    SPEC-API-001 §10 makes the Responses API a P3 deliverable, and its content vocabulary differs from OpenAI's in both directions: an image part carries a detail default, an unknown part has no field to live in, and a tool result must arrive as a plain string. Each is a rejection upstream when it is wrong, so each is pinned here.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

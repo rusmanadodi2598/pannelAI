@@ -1,19 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/usage_record_test.go
-// @for       Table-driven tests for the quota cap body validation: the one
-//
-//	rule set the wire applies before the service sees a cap.
-//
+// @for       Table-driven tests for the quota cap body validation: the one rule set the wire applies before the service sees a cap.
 // @uses      internal/domain, strings, testing.
-// @reason    Draft 005 F5 found two validators that could disagree: the schema
-//
-//	checked parseability and sign while the domain also rejected a
-//	degenerate zero-cost cap, so the error a client saw depended on
-//	which path ran first. These cases pin the shared rule set
-//	(domain.ValidateQuotaCapValues) at the wire boundary, including the
-//	ceilings that keep a typo from reaching the driver.
-//
+// @reason    Draft 005 F5 found two validators that could disagree: the schema checked parseability and sign while the domain also rejected a degenerate zero-cost cap, so the error a client saw depended on which path ran first. These cases pin the shared rule set (domain.ValidateQuotaCapValues) at the wire boundary, including the ceilings that keep a typo from reaching the driver.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable

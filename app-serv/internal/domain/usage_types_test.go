@@ -4,13 +4,7 @@
 // @file      internal/domain/usage_types_test.go
 // @for       Table-driven tests for aggregation arithmetic and the group-by set.
 // @uses      testing, time.
-// @reason    AGENTS.md §2.1 and §2.4 require the aggregation the summary, the
-//
-//	group breakdown, and the timeseries all display to be pinned,
-//	including the zero-record range. A summary that is wrong only for
-//	an empty window or only for the error rate is exactly the defect a
-//	happy-path test misses.
-//
+// @reason    AGENTS.md §2.1 and §2.4 require the aggregation the summary, the group breakdown, and the timeseries all display to be pinned, including the zero-record range. A summary that is wrong only for an empty window or only for the error rate is exactly the defect a happy-path test misses.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

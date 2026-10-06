@@ -1,18 +1,9 @@
 // Command app-serv adapts the provider registry to the service's runtime lookup
 //
 // @file      cmd/app-serv/egress_guard_assert_helpers_test.go
-// @for       The source-reading helpers the egress-guard assertions are built
-//
-//	from.
-//
+// @for       The source-reading helpers the egress-guard assertions are built from.
 // @uses      go/ast, go/parser, go/token, os, path/filepath, strings, testing.
-// @reason    The assertions in egress_guard_assert_test.go are statements about
-//
-//	construction shapes, so they read this package's own source. Keeping
-//	the reading apart from the assertions keeps each file's reason
-//	readable: one file says what must hold, the other says how the
-//	source is asked.
-//
+// @reason    The assertions in egress_guard_assert_test.go are statements about construction shapes, so they read this package's own source. Keeping the reading apart from the assertions keeps each file's reason readable: one file says what must hold, the other says how the source is asked.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

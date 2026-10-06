@@ -2,20 +2,8 @@
 //
 // @file      internal/repository/postgres/endpoint.go
 // @for       PostgreSQL persistence for the UpstreamEndpoint aggregate root.
-// @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository,
-//
-//	context.
-//
-// @reason    SPEC-API-001 §6 defines upstream_endpoints and §7.5 makes the
-//
-//	endpoint the mutation boundary for its keys, so AGENTS.md §2.2
-//	requires this repository to save the root, endpoint and keys
-//	together, and load it the same way. Keys for a whole page are
-//	fetched in one statement rather than per row (§1.7). A key's own
-//	statements live in endpoint_keys.go, its row codec in endpoint_row.go,
-//	and the driver-error mapping in endpoint_errors.go; this file owns the
-//	root's statements.
-//
+// @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository, context.
+// @reason    SPEC-API-001 §6 defines upstream_endpoints and §7.5 makes the endpoint the mutation boundary for its keys, so AGENTS.md §2.2 requires this repository to save the root, endpoint and keys together, and load it the same way. Keys for a whole page are fetched in one statement rather than per row (§1.7). A key's own statements live in endpoint_keys.go, its row codec in endpoint_row.go, and the driver-error mapping in endpoint_errors.go; this file owns the root's statements.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

@@ -1,20 +1,9 @@
 // Command app-serv builds the media and data-plane halves of the graph.
 //
 // @file      cmd/app-serv/management_dataplane_wiring.go
-// @for       The §7.10 media provider services and the §7.15 data plane, built
-//
-//	from the repositories the management side writes through.
-//
-// @uses      internal/domain, internal/registry, internal/repository/postgres,
-//
-//	internal/service, pgxpool, redis.
-//
-// @reason    buildManagement was at the AGENTS.md §1.1 warning threshold, and this
-//
-//	block is the part that grows with every data-plane route. It is a
-//	distinct job, it builds the plane that serves client traffic, not the
-//	management graph, so it is separate rather than trimmed.
-//
+// @for       The §7.10 media provider services and the §7.15 data plane, built from the repositories the management side writes through.
+// @uses      internal/domain, internal/registry, internal/repository/postgres, internal/service, pgxpool, redis.
+// @reason    buildManagement was at the AGENTS.md §1.1 warning threshold, and this block is the part that grows with every data-plane route. It is a distinct job, it builds the plane that serves client traffic, not the management graph, so it is separate rather than trimmed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

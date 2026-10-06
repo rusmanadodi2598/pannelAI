@@ -3,13 +3,7 @@
 // @file      internal/repository/postgres/quota.go
 // @for       PostgreSQL persistence for quota windows and endpoint budget caps.
 // @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository.
-// @reason    SPEC-API-001 §7.12 reads windows per endpoint and per collection,
-//
-//	and §6 stores a cap as one row per endpoint. The flush worker writes
-//	a whole batch, so the upsert is set-based: a statement per window
-//	would make a flush of a thousand endpoints a thousand round trips
-//	(AGENTS.md §1.7).
-//
+// @reason    SPEC-API-001 §7.12 reads windows per endpoint and per collection, and §6 stores a cap as one row per endpoint. The flush worker writes a whole batch, so the upsert is set-based: a statement per window would make a flush of a thousand endpoints a thousand round trips (AGENTS.md §1.7).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

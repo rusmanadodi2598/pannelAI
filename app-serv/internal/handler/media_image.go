@@ -3,11 +3,7 @@
 // @file      internal/handler/media_image.go
 // @for       The §7.10 image and video generation routes.
 // @uses      internal/schema, net/http.
-// @reason    Both routes decode a JSON body, authenticate, call, and answer the
-//
-//	normalized envelope, so they share one request path and differ only in
-//	the contract they decode into.
-//
+// @reason    Both routes decode a JSON body, authenticate, call, and answer the normalized envelope, so they share one request path and differ only in the contract they decode into.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

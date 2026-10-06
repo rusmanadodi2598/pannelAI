@@ -4,12 +4,7 @@
 // @file      internal/domain/quota_test.go
 // @for       Table-driven tests for quota windows, rollover, and budget caps.
 // @uses      testing, time.
-// @reason    AGENTS.md §2.1 and §2.4 require the rules the router reads to be
-//
-//	pinned: whether a window is exhausted decides if an endpoint is
-//	skipped, and whether a rollover resets the counter decides whether a
-//	provider's quota is counted twice.
-//
+// @reason    AGENTS.md §2.1 and §2.4 require the rules the router reads to be pinned: whether a window is exhausted decides if an endpoint is skipped, and whether a rollover resets the counter decides whether a provider's quota is counted twice.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     domain
 // @stability stable

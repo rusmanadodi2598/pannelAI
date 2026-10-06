@@ -1,14 +1,10 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/endpoint_stub_test.go
-// @for       The in-memory EndpointStore double the endpoint service's tests are
-//
-//	built on.
-//
+// @for       The in-memory EndpointStore double the endpoint service's tests are built on.
 // @uses      context, time, internal/domain, internal/repository.
-// @reason    AGENTS.md §2.1 forbids t.Skip as a way to sidestep a test, so the service
+// @reason    AGENTS.md §2.1 forbids t.Skip as a way to sidestep a test, so the service is exercised without a database by implementing the store interface here.
 //
-//	is exercised without a database by implementing the store interface here.
 //	Keys are held in their own slice per endpoint rather than inside the
 //	endpoint value, mirroring the two tables the migration declares: a double
 //	that stored keys inside the aggregate would accept a write the real

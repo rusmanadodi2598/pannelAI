@@ -1,20 +1,9 @@
 // Package dataplane implements the request-path data plane of app-serv.
 //
 // @file      internal/dataplane/transport_envelope_retry_test.go
-// @for       The transport's behaviour when a wrapped provider refuses inside the
-//
-//	first frame and serves on a later attempt.
-//
+// @for       The transport's behaviour when a wrapped provider refuses inside the first frame and serves on a later attempt.
 // @uses      context, io, net/http, net/http/httptest, strings, testing.
-// @reason    Qoder's free model was measured refusing the identical request twice and
-//
-//	serving it on the third try (draft 036 §9.2). Whether the gateway repeats
-//	a refusal at all is decided by the transport, not the connector, and the
-//	non-idempotent POST cap stopped it one attempt short of the answer. That
-//	is the whole difference between the provider looking broken and working,
-//	so it is pinned end to end here: attempts counted, body handed on, and
-//	nothing piped before the answer.
-//
+// @reason    Qoder's free model was measured refusing the identical request twice and serving it on the third try (draft 036 §9.2). Whether the gateway repeats a refusal at all is decided by the transport, not the connector, and the non-idempotent POST cap stopped it one attempt short of the answer. That is the whole difference between the provider looking broken and working, so it is pinned end to end here: attempts counted, body handed on, and nothing piped before the answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

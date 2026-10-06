@@ -1,19 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_relay_identity_test.go
-// @for       The routing identity a failed relay call still reports (register
-//
-//	G17): the member that was attempted, and which member an exhausted
-//	combo names.
-//
+// @for       The routing identity a failed relay call still reports (register G17): the member that was attempted, and which member an exhausted combo names.
 // @uses      testing, context, internal/domain.
-// @reason    The chat plane writes its usage row from the outcome the engine
-//
-//	returns, so a failure that reports nothing is a failure the panel
-//	cannot show. Pinning the identity here keeps that rule beside the
-//	pipeline rather than inside the service's recorder, and keeps
-//	engine_relay_test.go inside the AGENTS.md §1.1 line budget.
-//
+// @reason    The chat plane writes its usage row from the outcome the engine returns, so a failure that reports nothing is a failure the panel cannot show. Pinning the identity here keeps that rule beside the pipeline rather than inside the service's recorder, and keeps engine_relay_test.go inside the AGENTS.md §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

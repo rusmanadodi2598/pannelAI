@@ -3,23 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/stop_claude_answer.go
-// @for       Honouring the caller's `stop_sequences` on a one-body Anthropic answer
-//
-//	the upstream answered past.
-//
+// @for       Honouring the caller's `stop_sequences` on a one-body Anthropic answer the upstream answered past.
 // @uses      encoding/json, internal/schema.
-// @reason    The Anthropic wire makes the same promise the OpenAI wire does and
-//
-//	keeps it differently: a cut there is reported as
-//	`stop_reason: "stop_sequence"` with the marker itself in
-//	`stop_sequence`, not as a bare `stop`. Measured live on 2026-09-30 against
-//	codebuddy-intl through /api/v1/messages, an upstream that ignores
-//	`stop` answered `A STOPHERE B` in full and closed with `end_turn`, so
-//	the caller received text it had asked not to see and a reason that said the
-//	model had simply finished. This runs on the body the gateway serves, after
-//	translation, so it holds whichever way the upstream wrote, translated from
-//	OpenAI or Responses, or forwarded from a Claude one untouched.
-//
+// @reason    The Anthropic wire makes the same promise the OpenAI wire does and keeps it differently: a cut there is reported as `stop_reason: "stop_sequence"` with the marker itself in `stop_sequence`, not as a bare `stop`. Measured live on 2026-09-30 against codebuddy-intl through /api/v1/messages, an upstream that ignores `stop` answered `A STOPHERE B` in full and closed with `end_turn`, so the caller received text it had asked not to see and a reason that said the model had simply finished. This runs on the body the gateway serves, after translation, so it holds whichever way the upstream wrote, translated from OpenAI or Responses, or forwarded from a Claude one untouched.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

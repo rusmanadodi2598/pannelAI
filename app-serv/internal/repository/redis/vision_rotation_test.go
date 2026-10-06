@@ -1,19 +1,9 @@
 // Package redis implements Redis-backed state repositories for app-serv.
 //
 // @file      internal/repository/redis/vision_rotation_test.go
-// @for       Tests for the vision rotation key's derivation, which is the part
-//
-//	of the store a unit test can pin without a server.
-//
+// @for       Tests for the vision rotation key's derivation, which is the part of the store a unit test can pin without a server.
 // @uses      testing.
-// @reason    The store's read and write are plain Redis calls, so what a unit
-//
-//	test can and must pin is the key naming: the rotation is one key
-//	per deployment, and a derivation that collided with another
-//	namespace would make the adapter share state with it. The
-//	state's read-write behaviour is covered by the augmenter's tests
-//	through the repository interface.
-//
+// @reason    The store's read and write are plain Redis calls, so what a unit test can and must pin is the key naming: the rotation is one key per deployment, and a derivation that collided with another namespace would make the adapter share state with it. The state's read-write behaviour is covered by the augmenter's tests through the repository interface.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

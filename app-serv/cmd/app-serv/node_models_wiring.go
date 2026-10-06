@@ -1,22 +1,9 @@
 // Command app-serv adapts the node store to the model-list read's dependencies.
 //
 // @file      cmd/app-serv/node_models_wiring.go
-// @for       The two reads the node model adapter needs from storage: a node's
-//
-//	target, and the credential of the endpoint that serves it.
-//
-// @uses      internal/domain, internal/registry, internal/repository,
-//
-//	internal/service, context, strings.
-//
-// @reason    SPEC-API-001 §7.4 serves a node's models, and the read needs two
-//
-//	things the adapter must not reach for itself: the stored node (to know
-//	its base URL) and the credential (to authenticate the read). Both are
-//	repository reads, and AGENTS.md §1.5 keeps storage out of the adapter's
-//	business rules, so they are narrow functions built here, in the one
-//	layer allowed to know every boundary.
-//
+// @for       The two reads the node model adapter needs from storage: a node's target, and the credential of the endpoint that serves it.
+// @uses      internal/domain, internal/registry, internal/repository, internal/service, context, strings.
+// @reason    SPEC-API-001 §7.4 serves a node's models, and the read needs two things the adapter must not reach for itself: the stored node (to know its base URL) and the credential (to authenticate the read). Both are repository reads, and AGENTS.md §1.5 keeps storage out of the adapter's business rules, so they are narrow functions built here, in the one layer allowed to know every boundary.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

@@ -1,22 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/usage_event_consume.go
-// @for       The subscriber half of the usage domain event: the production
-//
-//	consumer that mirrors every recorded request into the console ring.
-//
-// @uses      internal/domain, internal/repository, context, log/slog,
-//
-//	runtime/debug, time.
-//
-// @reason    AGENTS.md §2.3 makes an event real only when something consumes it,
-//
-//	and the console ring is the one surface in this process that is
-//	already a stream of lines an operator reads: the gateway's own record
-//	of what it served now reaches it through the event instead of a
-//	second write at the accounting site. That is what makes the seam
-//	observable rather than decorative, if the publisher stops, the
-//	console stops growing, and the panel shows it.
+// @for       The subscriber half of the usage domain event: the production consumer that mirrors every recorded request into the console ring.
+// @uses      internal/domain, internal/repository, context, log/slog, runtime/debug, time.
+// @reason    AGENTS.md §2.3 makes an event real only when something consumes it, and the console ring is the one surface in this process that is already a stream of lines an operator reads: the gateway's own record of what it served now reaches it through the event instead of a second write at the accounting site. That is what makes the seam observable rather than decorative, if the publisher stops, the console stops growing, and the panel shows it.
 //
 //	The consumer deliberately writes nothing durable. The usage row is
 //	the durable record; a subscriber that wrote a second copy would be a

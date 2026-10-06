@@ -1,23 +1,9 @@
 // Command app-serv adapts the stateless credential check to HTTP.
 //
 // @file      cmd/app-serv/provider_validate.go
-// @for       The net/http implementation of service.CredentialValidator: the
-//
-//	models probe, the chat fallback, and the Anthropic status rule.
-//
-// @uses      internal/domain, internal/netguard, internal/provider,
-//
-//	internal/registry, internal/service, context, fmt, net/http,
-//	strings, time. The request shapes are in provider_validate_request.go.
-//
-// @reason    SPEC-API-001 §7.4 has no validate route, so draft 017 §4.6's finding
-//
-//	is that a credential can only be tested after it is stored. The
-//	reference validates before the write, and its two non-obvious rules are
-//	ported here: an upstream that does not serve `/models` is probed with a
-//	one-token chat request instead of being reported broken, and an
-//	Anthropic wire treats anything but 401/403 as proof the key was
-//	accepted.
+// @for       The net/http implementation of service.CredentialValidator: the models probe, the chat fallback, and the Anthropic status rule.
+// @uses      internal/domain, internal/netguard, internal/provider, internal/registry, internal/service, context, fmt, net/http, strings, time. The request shapes are in provider_validate_request.go.
+// @reason    SPEC-API-001 §7.4 has no validate route, so draft 017 §4.6's finding is that a credential can only be tested after it is stored. The reference validates before the write, and its two non-obvious rules are ported here: an upstream that does not serve `/models` is probed with a one-token chat request instead of being reported broken, and an Anthropic wire treats anything but 401/403 as proof the key was accepted.
 //
 //	The destination is operator-supplied on both paths, so every request
 //	goes through the process egress guard (OWASP A01), pre-flight and at

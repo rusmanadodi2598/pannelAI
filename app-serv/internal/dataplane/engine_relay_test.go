@@ -1,20 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_relay_test.go
-// @for       The Engine.Relay end-to-end tests: a combo request that fails over
-//
-//	from a down member to a healthy one over a real HTTP upstream.
-//
+// @for       The Engine.Relay end-to-end tests: a combo request that fails over from a down member to a healthy one over a real HTTP upstream.
 // @uses      testing, context, strings, internal/domain, internal/schema.
-// @reason    SPEC-API-001 §10 makes "a CLI tool completes a request through
-//
-//	combo fallback" P1's exit criterion. That sentence is only proven
-//	when the pipeline runs as one piece, resolve the combo, select the
-//	account, call the first upstream, fail over on its failure, and
-//	translate the second member's answer back, so the engine is driven
-//	end to end instead of asserting each branch separately, and the
-//	circuit writes each member's attempt left behind are checked too.
-//
+// @reason    SPEC-API-001 §10 makes "a CLI tool completes a request through combo fallback" P1's exit criterion. That sentence is only proven when the pipeline runs as one piece, resolve the combo, select the account, call the first upstream, fail over on its failure, and translate the second member's answer back, so the engine is driven end to end instead of asserting each branch separately, and the circuit writes each member's attempt left behind are checked too.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

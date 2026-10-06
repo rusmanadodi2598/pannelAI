@@ -5,13 +5,7 @@
 // @file      internal/repository/redis/console_buffer_test.go
 // @for       Integration tests for the bounded console ring's eviction.
 // @uses      github.com/redis/go-redis/v9, context, os, testing.
-// @reason    The ring's whole contract is its bound: SPEC-API-001 §7.13 calls it
-//
-//	"the last N lines" and §9 forbids unbounded growth. An in-memory
-//	double would prove the trim happens but not that Redis applies it
-//	to the list, and the trim is the one operation whose failure is
-//	silent, the buffer simply grows. These tests run against a real
-//	server reached through PANNELAI_TEST_REDIS_ADDR.
+// @reason    The ring's whole contract is its bound: SPEC-API-001 §7.13 calls it "the last N lines" and §9 forbids unbounded growth. An in-memory double would prove the trim happens but not that Redis applies it to the list, and the trim is the one operation whose failure is silent, the buffer simply grows. These tests run against a real server reached through PANNELAI_TEST_REDIS_ADDR.
 //
 //	The file carries an `integration` build tag, so the default
 //	`go test ./...` stays hermetic on a machine with no Redis (AGENTS.md §2.1

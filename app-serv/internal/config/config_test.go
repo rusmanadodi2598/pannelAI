@@ -3,13 +3,7 @@
 // @file      internal/config/config_test.go
 // @for       Table-driven tests for environment parsing and range validation.
 // @uses      testing, standard library only.
-// @reason    AGENTS.md §2.1 requires tests alongside new config logic, and
-//
-//	§1.4 makes boot-time validation the only thing standing between a
-//	malformed environment and a server that starts degraded. These are
-//	exactly the boundaries a single smoke run cannot cover
-//	(docs/RULLES/TDD.md §2.5).
-//
+// @reason    AGENTS.md §2.1 requires tests alongside new config logic, and §1.4 makes boot-time validation the only thing standing between a malformed environment and a server that starts degraded. These are exactly the boundaries a single smoke run cannot cover (docs/RULLES/TDD.md §2.5).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

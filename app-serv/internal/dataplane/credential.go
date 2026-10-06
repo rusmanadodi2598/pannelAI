@@ -3,18 +3,9 @@
 // and performs the outbound call.
 //
 // @file      internal/dataplane/credential.go
-// @for       Assembling the credential an upstream call presents, from the
-//
-//	endpoint and the key selection picked.
-//
+// @for       Assembling the credential an upstream call presents, from the endpoint and the key selection picked.
 // @uses      internal/domain, internal/provider.
-// @reason    SPEC-API-001 §6 stores every upstream credential as AES-GCM
-//
-//	ciphertext, so the plaintext exists only between opening the stored
-//	value and the outbound request. Keeping that window in one function
-//	is what makes it auditable: the plaintext is returned to the caller
-//	for one call and never placed on the selection.
-//
+// @reason    SPEC-API-001 §6 stores every upstream credential as AES-GCM ciphertext, so the plaintext exists only between opening the stored value and the outbound request. Keeping that window in one function is what makes it auditable: the plaintext is returned to the caller for one call and never placed on the selection.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

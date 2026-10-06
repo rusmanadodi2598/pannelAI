@@ -3,16 +3,9 @@
 // headroom external-compression client.
 //
 // @file      internal/tokensaver/filter_git_log.go
-// @for       The git-log filter: commit headers, subjects, authors, and stats,
-//
-//	with the bodies and embedded diffs dropped.
-//
+// @for       The git-log filter: commit headers, subjects, authors, and stats, with the bodies and embedded diffs dropped.
 // @uses      fmt, regexp, strings.
-// @reason    SPEC-API-002 §5 ports the reference's git-log filter. A log is
-//
-//	read for "what happened", which the headers and subjects carry; the
-//	per-commit bodies are what makes the result expensive.
-//
+// @reason    SPEC-API-002 §5 ports the reference's git-log filter. A log is read for "what happened", which the headers and subjects carry; the per-commit bodies are what makes the result expensive.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     util
 // @stability stable

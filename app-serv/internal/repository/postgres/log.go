@@ -1,17 +1,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/log.go
-// @for       PostgreSQL persistence for request logs, including capture-aware
-//
-//	insert and retention purge.
-//
+// @for       PostgreSQL persistence for request logs, including capture-aware insert and retention purge.
 // @uses      github.com/jackc/pgx/v5, internal/domain, internal/repository.
-// @reason    SPEC-API-001 §7.13 lists logs newest first, omits bodies from the
-//
-//	list so a page is not megabytes, and deletes rows older than the
-//	retention setting. The list is always ranged and paged, and the
-//	purge is one statement with a cutoff (AGENTS.md §1.7).
-//
+// @reason    SPEC-API-001 §7.13 lists logs newest first, omits bodies from the list so a page is not megabytes, and deletes rows older than the retention setting. The list is always ranged and paged, and the purge is one statement with a cutoff (AGENTS.md §1.7).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

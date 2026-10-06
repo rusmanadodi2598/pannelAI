@@ -1,23 +1,9 @@
 // Command app-serv adapts a provider node's model list to HTTP.
 //
 // @file      cmd/app-serv/node_models_surfaces_test.go
-// @for       Draft 017 §4.2's acceptance: a node's upstream list reaches all
-//
-//	three surfaces that read models from the registry.
-//
-// @uses      internal/dataplane, internal/domain, internal/netguard,
-//
-//	internal/provider, internal/registry, internal/service, context,
-//	net/http, net/http/httptest, testing, time.
-//
-// @reason    The finding was not that one route answered an empty list; it was
-//
-//	that four surfaces agreed on the empty answer because they all read
-//	`Provider.Models`. The fix injects at that one point, so the proof has
-//	to be at the surfaces: the detail route, the catalog, and the data
-//	plane must each show the upstream's models. Asserting only the
-//	adapter's own answer would pass with the injection removed.
-//
+// @for       Draft 017 §4.2's acceptance: a node's upstream list reaches all three surfaces that read models from the registry.
+// @uses      internal/dataplane, internal/domain, internal/netguard, internal/provider, internal/registry, internal/service, context, net/http, net/http/httptest, testing, time.
+// @reason    The finding was not that one route answered an empty list; it was that four surfaces agreed on the empty answer because they all read `Provider.Models`. The fix injects at that one point, so the proof has to be at the surfaces: the detail route, the catalog, and the data plane must each show the upstream's models. Asserting only the adapter's own answer would pass with the injection removed.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     config
 // @stability stable

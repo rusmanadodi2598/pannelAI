@@ -1,20 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/openapi_usage_live_test.go
-// @for       The live Usage route's contract: the stream media type, the frame
-//
-//	shape a generated client reads, and the session requirement.
-//
+// @for       The live Usage route's contract: the stream media type, the frame shape a generated client reads, and the session requirement.
 // @uses      encoding/json, sort, strings, testing.
-// @reason    A generated client cannot read a stream it was not told about: an
-//
-//	operation documented only as `application/json` produces a client
-//	that buffers, which turns a live view into one delayed blob. The
-//	route is also the one Usage read whose response is not the §8
-//	envelope, so the two facts that make it usable (the event-stream
-//	media type and a frame schema) are pinned here rather than left to
-//	review.
-//
+// @reason    A generated client cannot read a stream it was not told about: an operation documented only as `application/json` produces a client that buffers, which turns a live view into one delayed blob. The route is also the one Usage read whose response is not the §8 envelope, so the two facts that make it usable (the event-stream media type and a frame schema) are pinned here rather than left to review.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable

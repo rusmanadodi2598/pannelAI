@@ -3,11 +3,7 @@
 // @file      internal/repository/gateway_key.go
 // @for       The GatewayKeyRepository contract: load and persist gateway keys.
 // @uses      internal/domain.
-// @reason    AGENTS.md §1.5 requires services to depend on this interface and
-//
-//	never on a driver, and §2.2 requires repositories to save
-//	aggregate roots (gateway_keys is the aggregate for credentials).
-//
+// @reason    AGENTS.md §1.5 requires services to depend on this interface and never on a driver, and §2.2 requires repositories to save aggregate roots (gateway_keys is the aggregate for credentials).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

@@ -3,11 +3,7 @@
 // @file      internal/service/quotafetch/qoder_scrub_test.go
 // @for       The credential a Qoder 4xx body can quote back before it reaches the card.
 // @uses      context, fmt, net/http, net/http/httptest, strings, testing
-// @reason    requestUsage scrubs what a call presented because providers quote the request
-//
-//	they refused, and the poll worker caches every answer. fetchQoder used to build its own
-//	request, so this pins the scrub on the path that replaced it.
-//
+// @reason    requestUsage scrubs what a call presented because providers quote the request they refused, and the poll worker caches every answer. fetchQoder used to build its own request, so this pins the scrub on the path that replaced it.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

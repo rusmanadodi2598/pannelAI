@@ -1,20 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow_refresh_policy.go
-// @for       The rules a refresh and a connect decision are made of: which flow
-//
-//	the panel is offered, how a token is renewed, and the small
-//	accessors the refresh state is read through.
-//
+// @for       The rules a refresh and a connect decision are made of: which flow the panel is offered, how a token is renewed, and the small accessors the refresh state is read through.
 // @uses      context, strings, time, internal/domain, internal/registry.
-// @reason    These are the judgements, separated from the two routes that act on
-//
-//	them, so "what does this provider's oauth block mean" is answered in
-//	one place: `flowKind` for the panel's offer, `refreshGrant` for the
-//	shape a renewal takes. Grouping them here also keeps
-//	oauth_flow_refresh.go inside the AGENTS.md §1.1 budget that its own
-//	Status/Refresh routes would otherwise push past.
-//
+// @reason    These are the judgements, separated from the two routes that act on them, so "what does this provider's oauth block mean" is answered in one place: `flowKind` for the panel's offer, `refreshGrant` for the shape a renewal takes. Grouping them here also keeps oauth_flow_refresh.go inside the AGENTS.md §1.1 budget that its own Status/Refresh routes would otherwise push past.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable

@@ -3,19 +3,9 @@
 // Package postgres implements the repository contracts against PostgreSQL.
 //
 // @file      internal/repository/postgres/quota_published_schedule_integration_test.go
-// @for       The published-quota scheduling columns against a real server: the
-//
-//	attempt stamp the poll worker writes and the due queue it reads.
-//
+// @for       The published-quota scheduling columns against a real server: the attempt stamp the poll worker writes and the due queue it reads.
 // @uses      testing, context, time, internal/domain.
-// @reason    The sweep is the only thing that decides how often a provider gets
-//
-//	queried, so its two failure modes are expensive in opposite directions: a
-//	brand-new endpoint that never becomes due leaves the screen blank forever,
-//	and a due set read without its ordering key sorts the whole table every
-//	tick. Both are properties of the row the database holds, not of the Go
-//	code, and neither is reachable without a server (AGENTS.md §1.7).
-//
+// @reason    The sweep is the only thing that decides how often a provider gets queried, so its two failure modes are expensive in opposite directions: a brand-new endpoint that never becomes due leaves the screen blank forever, and a due set read without its ordering key sorts the whole table every tick. Both are properties of the row the database holds, not of the Go code, and neither is reachable without a server (AGENTS.md §1.7).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable

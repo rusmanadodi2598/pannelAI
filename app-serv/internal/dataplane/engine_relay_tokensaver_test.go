@@ -1,23 +1,9 @@
 // Package dataplane routes a client request through the gateway.
 //
 // @file      internal/dataplane/engine_relay_tokensaver_test.go
-// @for       The relay's token-saver seam (SPEC-API-002 §8): which body the
-//
-//	pipeline sees, which model name it names, and where the bypass
-//	flag travels.
-//
-// @uses      testing, context, io, net/http, net/http/httptest, strings,
-//
-//	internal/domain, internal/registry.
-//
-// @reason    The seam's contract is placement, and placement is only observable
-//
-//	end to end: a stub that records its inputs proves the saver runs on
-//	the body the upstream will receive, after resolution (the member's
-//	model, not the client's string) and before the call (the upstream
-//	receives the rewrite). Kept beside the relay tests, whose doubles
-//	it reuses, and out of engine_relay_test.go for the §1.1 line budget.
-//
+// @for       The relay's token-saver seam (SPEC-API-002 §8): which body the pipeline sees, which model name it names, and where the bypass flag travels.
+// @uses      testing, context, io, net/http, net/http/httptest, strings, internal/domain, internal/registry.
+// @reason    The seam's contract is placement, and placement is only observable end to end: a stub that records its inputs proves the saver runs on the body the upstream will receive, after resolution (the member's model, not the client's string) and before the call (the upstream receives the rewrite). Kept beside the relay tests, whose doubles it reuses, and out of engine_relay_test.go for the §1.1 line budget.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
