@@ -1,9 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/oauth_flow.go
-// @for       Starting a provider authorization: state minting, PKCE, and the authorize URL (SPEC-API-001 §7.4 POST .../oauth/start).
-// @uses      crypto/rand, encoding/base64, encoding/json, net/url, strings, time, internal/domain, internal/registry, internal/repository.
-// @reason    §4 makes `state` a single-use, ten-minute replay guard and the registry the only source of authorize endpoints, scopes, and the PKCE method, so this file mints the two random values, stages the flow's private context, and renders the URL the browser follows. Every value it emits is derived from the provider entry and CSPRNG output; nothing is per-provider code.
+// @for       Starting a provider authorization: the single-use state, its staged context, and the answer the panel follows (SPEC-API-001 §7.4 POST .../oauth/start).
+// @uses      context, encoding/json, strings, time, internal/domain, internal/repository, internal/service/oauthhttp.
+// @reason    §4 makes `state` a single-use, ten-minute replay guard and the registry the only source of authorize endpoints, scopes, and the PKCE method, so this file mints the two random values and stages the flow's private context; the URL they travel in is oauth_flow_authorize.go. Every value it emits is derived from the provider entry and CSPRNG output; nothing is per-provider code.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -12,17 +12,12 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
-	"net/url"
 	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
 
@@ -40,7 +35,7 @@ type OAuthAccountStore interface {
 	List(ctx context.Context, filter repository.EndpointFilter, q repository.PageQuery) ([]domain.UpstreamEndpoint, int64, error)
 	GetByID(ctx context.Context, id string) (domain.UpstreamEndpoint, error)
 	Update(ctx context.Context, endpoint domain.UpstreamEndpoint) error
-	UpdateIfUnchanged(ctx context.Context, endpoint domain.UpstreamEndpoint, loadedAt time.Time) error
+	UpdateIfUnchanged(ctx context.Context, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential) error
 	FindOAuthEndpoint(ctx context.Context, providerID, email, workspaceID string) (string, error)
 }
 
@@ -151,73 +146,4 @@ func (s *OAuthFlowService) Start(ctx context.Context, in OAuthStartInput) (OAuth
 		return OAuthStart{}, err
 	}
 	return OAuthStart{AuthorizeURL: authorize, State: state}, nil
-}
-
-// coreAuthorizeParams are the parameters this service owns. A provider's
-// extra_params may add to them but never replace them, because a vendor extra
-// that overrode response_type would break the flow the state was staged for.
-var coreAuthorizeParams = map[string]struct{}{
-	"response_type": {}, "client_id": {}, "redirect_uri": {}, "state": {},
-	"scope": {}, "code_challenge": {}, "code_challenge_method": {},
-}
-
-// buildAuthorizeURL renders the provider's authorize endpoint with the query
-// the code flow requires. Scopes join with a space (OAuth's form encoding) and
-// the PKCE pair rides along only when a verifier exists.
-func buildAuthorizeURL(oauth *registry.OAuth, redirect, state, verifier string) (string, error) {
-	parsed, err := url.Parse(oauth.AuthorizeURL)
-	if err != nil {
-		return "", domain.NewInternalError("the provider's authorize URL is malformed")
-	}
-	query := parsed.Query()
-	query.Set("response_type", "code")
-	query.Set("client_id", oauth.ClientID)
-	query.Set("redirect_uri", redirect)
-	query.Set("state", state)
-	if scopes := oauth.ScopeList(); len(scopes) > 0 {
-		query.Set("scope", strings.Join(scopes, " "))
-	}
-	if verifier != "" {
-		query.Set("code_challenge", pkceChallenge(verifier))
-		query.Set("code_challenge_method", "S256")
-	}
-	for name, value := range oauth.ExtraParams {
-		if _, core := coreAuthorizeParams[name]; !core {
-			query.Set(name, value)
-		}
-	}
-	parsed.RawQuery = query.Encode()
-	return parsed.String(), nil
-}
-
-// pkceChallenge computes the S256 challenge of a verifier: unpadded base64url
-// of the verifier's SHA-256, per RFC 7636.
-func pkceChallenge(verifier string) string {
-	sum := sha256.Sum256([]byte(verifier))
-	return base64.RawURLEncoding.EncodeToString(sum[:])
-}
-
-// randomToken returns n CSPRNG bytes as unpadded base64url, the alphabet both
-// the state and the PKCE verifier use because it survives a query parameter
-// without further encoding.
-func randomToken(n int) (string, error) {
-	raw := make([]byte, n)
-	if _, err := rand.Read(raw); err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(raw), nil
-}
-
-// validateRedirectURI admits only absolute http(s) redirects. Anything else,
-// including javascript: and file:, is refused at the boundary rather than
-// stored in a state a browser will later be sent to.
-func validateRedirectURI(raw string) error {
-	parsed, err := url.Parse(raw)
-	if err != nil || parsed.Host == "" {
-		return domain.NewValidationError("redirect_uri must be an absolute http(s) URL")
-	}
-	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return domain.NewValidationError("redirect_uri must be an absolute http(s) URL")
-	}
-	return nil
 }

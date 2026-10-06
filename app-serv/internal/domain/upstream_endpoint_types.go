@@ -146,6 +146,7 @@ func (c *OAuthCredential) HasRefreshToken() bool {
 // one, and the stamp of when it happened. A blank refresh keeps the token the
 // account already holds, because some providers renew the access token only and
 // dropping the refresh material would end the account's ability to renew at all.
+// A grant that reports no lifetime keeps the expiry held for the same reason.
 //
 // It returns a value rather than mutating one: the aggregate hands out this
 // credential to read, and a caller that wrote through that pointer would change
@@ -159,7 +160,9 @@ func (c OAuthCredential) Rotated(accessToken, refreshToken string, expiresAt *ti
 	if strings.TrimSpace(refreshToken) != "" {
 		rotated.refreshTokenEncrypted = strings.TrimSpace(refreshToken)
 	}
-	rotated.expiresAt = expiresAt
+	if expiresAt != nil {
+		rotated.expiresAt = expiresAt
+	}
 	rotated.scopes = append([]string(nil), c.scopes...)
 	stamped := now.UTC()
 	rotated.lastRefreshAt = &stamped

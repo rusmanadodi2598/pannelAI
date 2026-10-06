@@ -33,10 +33,8 @@ type ModelLookup interface {
 	Combo(ctx context.Context, name string) (combo domain.Combo, found bool, err error)
 	// Alias returns an alias's target, and whether the alias exists.
 	Alias(ctx context.Context, name string) (target string, found bool, err error)
-	// Disabled reports whether one model is hidden from routing.
-	Disabled(ctx context.Context, providerID, modelID string) (bool, error)
-	// DisabledPairs returns the whole disabled set, which is what the catalog
-	// listing filters with in one read.
+	// DisabledPairs returns the whole disabled set, which both the catalog listing
+	// and the routing path filter with, in one read each.
 	DisabledPairs(ctx context.Context) ([]domain.ModelRef, error)
 	// ComboNames returns every combo name, because a combo is addressed by name
 	// as a model string.
@@ -179,7 +177,7 @@ func (r *Resolver) ResolvePartsForKind(ctx context.Context, providerName, modelI
 		return Resolution{}, dataPlaneError(CodeProviderNotRoutable,
 			"provider "+entry.ID+" speaks a wire format the gateway does not translate")
 	}
-	if err := r.refuseIfDisabled(ctx, entry.ID, modelID); err != nil {
+	if err := r.refuseIfDisabled(ctx, entry, modelID); err != nil {
 		return Resolution{}, err
 	}
 

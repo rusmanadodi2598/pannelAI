@@ -14,6 +14,7 @@ package provider
 import (
 	"context"
 	"errors"
+	"net/http"
 	"sync"
 	"testing"
 	"time"
@@ -120,4 +121,52 @@ func TestQoderCatalog_ACancelledCallerStopsWaiting(t *testing.T) {
 		t.Fatalf("catalogue reads = %d, want none spent on a caller that left", got)
 	}
 	close(fetch.ready)
+}
+
+// panickingRoundTripper fails a read the way a decoder meeting a shape it cannot
+// hold does, so the fetch slot the leader opened is what the test measures.
+type panickingRoundTripper struct{}
+
+func (panickingRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	panic("the catalogue reader lost its footing")
+}
+
+// TestQoderCatalog_APanickingReadClosesTheSlot is the leak the leader's defer
+// guards: a read that panics never reaches the completion after it, and the slot it
+// opened stays in the map with its channel unclosed. Callers already joined on it
+// wait on that channel for as long as their own context lasts, and the host never
+// recovers on its own.
+func TestQoderCatalog_APanickingReadClosesTheSlot(t *testing.T) {
+	connector, _, _ := newQoderStubVendor(t, qoderCatalogFixture)
+	cred := qoderTestCredential()
+	connector.client = &http.Client{Transport: panickingRoundTripper{}}
+
+	base, err := connector.inferenceBase(cred)
+	if err != nil {
+		t.Fatalf("inferenceBase() error = %v", err)
+	}
+	fetch, leader := connector.catalog.beginFetch(base)
+	if !leader {
+		t.Fatal("this test expected to hold the fetch slot itself")
+	}
+
+	panicked := func() (didPanic bool) {
+		defer func() { didPanic = recover() != nil }()
+		connector.runFetch(context.Background(), cred, base, fetch)
+		return false
+	}()
+	if !panicked {
+		t.Fatal("runFetch swallowed the read's panic: a crashed host has to stay visible to the boundary")
+	}
+	select {
+	case <-fetch.ready:
+	default:
+		t.Fatal("the panicking read left the fetch open: every caller joined on it waits forever")
+	}
+	if fetch.err == nil {
+		t.Fatal("the panicking read published no answer, so its callers were served an empty catalogue")
+	}
+	if held := connector.catalog.inflight[base]; held != nil {
+		t.Fatalf("host %s still holds an inflight read that nobody is running", base)
+	}
 }

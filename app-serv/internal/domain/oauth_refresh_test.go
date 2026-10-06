@@ -44,6 +44,45 @@ func TestOAuthRefreshState(t *testing.T) {
 	}
 }
 
+func TestOAuthCredentialRotatedKeepsAnExpiryTheGrantOmits(t *testing.T) {
+	now := time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)
+	held := ptrTime(now.Add(2 * time.Hour))
+	replacement := ptrTime(now.Add(3 * time.Hour))
+	cases := []struct {
+		name       string
+		grant      *time.Time
+		wantExpiry *time.Time
+	}{
+		{"a grant without expires_in keeps the expiry the account holds", nil, held},
+		{"a grant with expires_in replaces it", replacement, replacement},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cred := OAuthCredential{
+				accessTokenEncrypted:  "old-access",
+				refreshTokenEncrypted: "old-refresh",
+				expiresAt:             held,
+			}
+			rotated, err := cred.Rotated("new-access", "", tc.grant, now)
+			if err != nil {
+				t.Fatalf("Rotated() error = %v", err)
+			}
+			got := rotated.ExpiresAt()
+			if got == nil || *got != *tc.wantExpiry {
+				t.Fatalf("expiry = %v, want %v", got, tc.wantExpiry)
+			}
+			// A nil expiry is RefreshMissing, and the sweep only renews RefreshDue,
+			// so losing the expiry silently retires the account.
+			if state := OAuthRefreshState(&rotated, time.Hour, now); state == RefreshMissing {
+				t.Fatalf("state = %q: the account left the refresh sweep", state)
+			}
+			if refreshed := rotated.RefreshTokenEncrypted(); refreshed != "old-refresh" {
+				t.Fatalf("refresh token = %q, want the one the account already held", refreshed)
+			}
+		})
+	}
+}
+
 func TestMarkUnhealthySetsErrorStatusAndReason(t *testing.T) {
 	now := time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)
 	cases := []struct {

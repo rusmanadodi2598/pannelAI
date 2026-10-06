@@ -76,6 +76,40 @@ func TestResolver_DisabledRefusesRouting(t *testing.T) {
 	}
 }
 
+func TestResolver_DisabledRefusesRoutingByEveryProviderSpelling(t *testing.T) {
+	// The listing hides a model disabled under any spelling the entry answers to.
+	// Routing has to answer the same way, or the model leaves the menu and stays
+	// billed.
+	cases := []struct {
+		name        string
+		disabledAs  string
+		clientNames string
+		model       string
+	}{
+		{"the canonical id the registry keys by", "lit", "lit", "lit-chat"},
+		{"the alias, client naming the canonical id", "lt", "lit", "lit-chat"},
+		{"the alias, client naming the alias", "lt", "lt", "lit-chat"},
+		{"the node prefix, client naming the node id", nodePfx, nodeID, "work-model"},
+		{"the node prefix, client naming the prefix", nodePfx, nodePfx, "work-model"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			lookup := fakeLookup{disabled: []domain.ModelRef{ref(t, tc.disabledAs, tc.model)}}
+			resolver, err := NewResolver(catalogIndex(t), lookup)
+			if err != nil {
+				t.Fatalf("NewResolver() error = %v", err)
+			}
+			_, err = resolver.ResolvePartsForKind(context.Background(), tc.clientNames, tc.model, KindChat)
+			if err == nil {
+				t.Fatal("ResolvePartsForKind() served the model, and the listing already hides it")
+			}
+			if code := AsError(err).Code; code != CodeModelNotFound {
+				t.Fatalf("ResolvePartsForKind() code = %q, want %q", code, CodeModelNotFound)
+			}
+		})
+	}
+}
+
 func TestResolver_DisabledRefusesComboMembers(t *testing.T) {
 	lookup := fakeLookup{
 		combos:   map[string]domain.Combo{"lit-combo": comboRow("lit-combo", "lit/lit-chat")},

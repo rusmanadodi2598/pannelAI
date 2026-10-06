@@ -116,6 +116,57 @@ func TestEndpointService_TestRecordsBothStatuses(t *testing.T) {
 	}
 }
 
+// TestEndpointService_TestLeavesTheKeyCircuitOnARequestShapedProbe is the rule
+// routing already applies and the probe did not: a 4xx the probe's own body caused
+// says nothing about the credential, so it must not spend a strike. The store raises
+// the count itself and the aggregate leaves it alone for this class, so the write
+// landed as a second strike on a key that had failed once for a real reason.
+func TestEndpointService_TestLeavesTheKeyCircuitOnARequestShapedProbe(t *testing.T) {
+	svc, store := newEndpointSvc(t)
+	endpoint := keyedEndpointWith(t, svc, "deepseek", "acct", "primary")
+	keyID := endpoint.Keys()[0].ID()
+
+	svc.prober = &fakeProber{outcome: ProbeOutcome{
+		State: string(domain.EndpointTestFail), LatencyMS: 7, Status: 401, Message: "credential rejected"}}
+	if _, _, err := svc.Test(context.Background(), endpoint.ID(), ""); err != nil {
+		t.Fatalf("Test() on the auth refusal: %v", err)
+	}
+	writesAfterAuthFailure := store.healthWrites
+	if got := store.keysByEndpoint[endpoint.ID()][0].ConsecutiveErrors(); got != 1 {
+		t.Fatalf("stored errors after a 401 probe = %d, want 1", got)
+	}
+
+	// The key is parked now, so the second probe names it: testing a parked key is
+	// what an operator does after fixing a credential.
+	svc.prober = &fakeProber{outcome: ProbeOutcome{
+		State: string(domain.EndpointTestFail), LatencyMS: 3, Status: 400, Message: "the body was refused"}}
+	_, outcome, err := svc.Test(context.Background(), endpoint.ID(), keyID)
+	if err != nil {
+		t.Fatalf("Test() on the request-shaped refusal: %v", err)
+	}
+	if outcome.State != string(domain.EndpointTestFail) {
+		t.Fatalf("outcome state = %q, want the refusal reported to the operator who asked", outcome.State)
+	}
+	if store.healthWrites != writesAfterAuthFailure {
+		t.Fatal("a request-shaped probe wrote key health, spending a strike the key never took")
+	}
+	stored := store.keysByEndpoint[endpoint.ID()][0]
+	if got := stored.ConsecutiveErrors(); got != 1 {
+		t.Fatalf("stored errors = %d, want the 401's single strike untouched", got)
+	}
+	if got := stored.LastError(); got != "credential rejected" {
+		t.Fatalf("stored last error = %q, want the reason the key actually failed on", got)
+	}
+
+	reloaded, err := svc.Get(context.Background(), endpoint.ID())
+	if err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+	if got := reloaded.TestStatus().State(); got != domain.EndpointTestFail {
+		t.Fatalf("test_status = %q, want the probe's own answer recorded anyway", got)
+	}
+}
+
 // TestEndpointService_TestParksOnFirstFailure pins the first-failure parking rule:
 // one refused probe parks the key in a window sized by the upstream's own status
 // (a 401 is the credential's failure, so two minutes), exactly as the same answer

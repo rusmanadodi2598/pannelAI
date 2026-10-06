@@ -45,10 +45,7 @@ type chatModelLookup struct{}
 func (chatModelLookup) Combo(context.Context, string) (domain.Combo, bool, error) {
 	return domain.Combo{}, false, nil
 }
-func (chatModelLookup) Alias(context.Context, string) (string, bool, error) { return "", false, nil }
-func (chatModelLookup) Disabled(context.Context, string, string) (bool, error) {
-	return false, nil
-}
+func (chatModelLookup) Alias(context.Context, string) (string, bool, error)      { return "", false, nil }
 func (chatModelLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (chatModelLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
 func (chatModelLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }
@@ -132,7 +129,7 @@ func (r *chatEndpointRepository) GetByID(context.Context, string) (domain.Upstre
 	return domain.UpstreamEndpoint{}, domain.ErrEndpointNotFound
 }
 func (r *chatEndpointRepository) Update(context.Context, domain.UpstreamEndpoint) error { return nil }
-func (r *chatEndpointRepository) UpdateIfUnchanged(context.Context, domain.UpstreamEndpoint, time.Time) error {
+func (r *chatEndpointRepository) UpdateIfUnchanged(context.Context, domain.UpstreamEndpoint, domain.OAuthCredential) error {
 	return nil
 }
 func (r *chatEndpointRepository) Delete(context.Context, string) error { return nil }

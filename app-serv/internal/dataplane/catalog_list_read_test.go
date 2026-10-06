@@ -103,13 +103,6 @@ func (f failingLookup) Alias(ctx context.Context, name string) (string, bool, er
 	return f.base.Alias(ctx, name)
 }
 
-func (f failingLookup) Disabled(ctx context.Context, providerID, modelID string) (bool, error) {
-	if f.refuse == "disabled read fails" {
-		return false, errStub
-	}
-	return f.base.Disabled(ctx, providerID, modelID)
-}
-
 func (f failingLookup) DisabledPairs(ctx context.Context) ([]domain.ModelRef, error) {
 	if f.refuse == "disabled read fails" {
 		return nil, errStub

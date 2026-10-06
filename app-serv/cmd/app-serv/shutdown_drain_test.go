@@ -60,7 +60,7 @@ func TestServeDrainsCountersAfterTheServerStops(t *testing.T) {
 	// serve blocks, so it runs on its own goroutine and the readiness poll stays
 	// on the test goroutine, which is the only one allowed to fail the test.
 	done := make(chan error, 1)
-	go func() { done <- serve(ctx, srv, drain) }()
+	go func() { done <- serve(ctx, srv, drain, shutdownTimeout) }()
 
 	waitServing(t, addr)
 	cancel()
@@ -83,7 +83,7 @@ func TestServeWithoutADrainStillStopsCleanly(t *testing.T) {
 	srv := &http.Server{Addr: addr, Handler: http.NewServeMux()}
 
 	done := make(chan error, 1)
-	go func() { done <- serve(ctx, srv, nil) }()
+	go func() { done <- serve(ctx, srv, nil, shutdownTimeout) }()
 
 	waitServing(t, addr)
 	cancel()
@@ -95,6 +95,67 @@ func TestServeWithoutADrainStillStopsCleanly(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("serve() did not return after its context was cancelled")
 	}
+}
+
+// TestServeDrainsAfterATimedOutShutdown is the long-stream case the flush exists
+// for: the window runs out while a request is still open, and the spend that
+// request just made is what a restart would otherwise lose. The drain has to carry
+// its own budget too, because the shutdown window is gone by then.
+func TestServeDrainsAfterATimedOutShutdown(t *testing.T) {
+	addr := freeLocalAddr(t)
+	started := make(chan struct{})
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		select {
+		case <-r.Context().Done():
+		case <-time.After(time.Second):
+		}
+	})
+	srv := &http.Server{Addr: addr, Handler: handler}
+
+	drainCtx := make(chan context.Context, 1)
+	drain := func(ctx context.Context) { drainCtx <- ctx }
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- serve(ctx, srv, drain, 50*time.Millisecond) }()
+	waitServing(t, addr)
+
+	clientDone := make(chan struct{})
+	go func() {
+		defer close(clientDone)
+		response, err := http.Get("http://" + addr + "/stream")
+		if err == nil {
+			_ = response.Body.Close()
+		}
+	}()
+	<-started
+	cancel()
+
+	var shutdownErr error
+	select {
+	case shutdownErr = <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("serve() did not return after its shutdown window ran out")
+	}
+	if shutdownErr == nil {
+		t.Fatal("serve() reported a clean stop with a request still open when the window ran out")
+	}
+
+	select {
+	case got := <-drainCtx:
+		deadline, ok := got.Deadline()
+		if !ok {
+			t.Fatal("the drain ran on a context with no deadline of its own")
+		}
+		if !time.Now().Before(deadline) {
+			t.Fatal("the drain ran on the deadline the shutdown had already consumed")
+		}
+	default:
+		t.Fatal("the counters were never flushed after a timed-out shutdown")
+	}
+	<-clientDone
 }
 
 func TestQuotaDrainIsAbsentWithoutAFlusher(t *testing.T) {

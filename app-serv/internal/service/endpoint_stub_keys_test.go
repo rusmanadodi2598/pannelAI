@@ -58,6 +58,7 @@ func (s *memEndpointStore) DeleteKey(_ context.Context, endpointID, keyID string
 }
 
 func (s *memEndpointStore) RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error {
+	s.healthWrites++
 	return s.UpdateKey(ctx, key)
 }
 

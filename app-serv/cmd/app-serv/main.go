@@ -137,7 +137,7 @@ func run() error {
 		MaxHeaderBytes: 64 << 10,
 	}
 
-	return serve(ctx, srv, quotaDrain(mgmt.QuotaFlusher))
+	return serve(ctx, srv, quotaDrain(mgmt.QuotaFlusher), shutdownTimeout)
 }
 
 // logLevel maps the validated configuration value to a slog level. Config has

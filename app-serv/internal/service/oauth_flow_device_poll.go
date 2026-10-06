@@ -13,6 +13,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service/oauthhttp"
 	"strings"
 
@@ -85,11 +86,15 @@ func (s *OAuthFlowService) DevicePoll(ctx context.Context, in OAuthDevicePollInp
 		return OAuthDevicePoll{}, domain.NewValidationError("the device code is unknown, expired, or already used")
 	}
 
+	account, err := s.deviceAccount(ctx, oauth, token, payload.MachineID)
+	if err != nil {
+		return OAuthDevicePoll{}, err
+	}
 	now := s.clock()
 	expires := oauthhttp.FloorDeviceExpiry(token.ExpiresAt, now)
 	connect, err := s.connectAccount(ctx, provider.ID, connectTokens{
 		AccessToken: token.AccessToken, RefreshToken: token.RefreshToken, ExpiresAt: &expires,
-	}, s.deviceAccount(ctx, oauth, token, payload.MachineID), "", now)
+	}, account, "", now)
 	if err != nil {
 		return OAuthDevicePoll{}, err
 	}
@@ -136,8 +141,12 @@ func deviceAccountEmail(oauth *registry.OAuth, userID string) string {
 // whatever the token answer itself stated rather than blocking a login the vendor
 // already granted. A vendor that states nothing in either place leaves the account
 // with no identity, which is the honest answer and the one that keeps the next login
-// a separate account.
-func (s *OAuthFlowService) deviceAccount(ctx context.Context, oauth *registry.OAuth, token oauthhttp.DeviceTokenResponse, machineID string) domain.EndpointAccount {
+// a separate account. The fail-open stops at an address the grammar refuses twice:
+// storing that account would drop the machine and workspace ids the next login is
+// deduped on, so the login is refused with its cause instead.
+func (s *OAuthFlowService) deviceAccount(
+	ctx context.Context, oauth *registry.OAuth, token oauthhttp.DeviceTokenResponse, machineID string,
+) (domain.EndpointAccount, error) {
 	synthetic := deviceAccountEmail(oauth, token.UserID)
 	name, email := token.UserID, synthetic
 	if oauth.UserInfoURL != "" && token.AccessToken != "" {
@@ -154,13 +163,17 @@ func (s *OAuthFlowService) deviceAccount(ctx context.Context, oauth *registry.OA
 		Name: name, Email: email, MachineID: machineID, WorkspaceID: token.UserID,
 	})
 	if err == nil {
-		return account
+		return account, nil
 	}
 	// A vendor that answers an unusable address still has a granted login worth
 	// keeping, so the identity falls back to the synthetic one this path would
 	// have used with no userinfo at all rather than losing the whole account.
-	account, _ = domain.NewEndpointAccount(domain.EndpointAccountInput{
+	fallback, fallbackErr := domain.NewEndpointAccount(domain.EndpointAccountInput{
 		Name: name, Email: synthetic, MachineID: machineID, WorkspaceID: token.UserID,
 	})
-	return account
+	if fallbackErr != nil {
+		return domain.EndpointAccount{}, fmt.Errorf(
+			"storing a device login the vendor named an unusable identity for: %w", fallbackErr)
+	}
+	return fallback, nil
 }

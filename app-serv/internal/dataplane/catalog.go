@@ -21,6 +21,7 @@ import (
 	"context"
 	"sort"
 
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
@@ -39,10 +40,7 @@ func (r *Resolver) ModelList(ctx context.Context) (schema.ModelList, error) {
 	if err != nil {
 		return schema.ModelList{}, err
 	}
-	disabled := make(map[disabledKey]struct{}, len(disabledPairs))
-	for _, ref := range disabledPairs {
-		disabled[disabledKey{provider: ref.ProviderID(), model: ref.ModelID()}] = struct{}{}
-	}
+	disabled := disabledIndex(disabledPairs)
 
 	customPairs, err := r.lookup.CustomModels(ctx)
 	if err != nil {
@@ -189,4 +187,15 @@ func listedOwner(entry registry.Provider) string {
 type disabledKey struct {
 	provider string
 	model    string
+}
+
+// disabledIndex keys one read of the disabled set for the membership test both the
+// listing and the routing path apply. They share it because they must agree: a
+// second way to ask the question is how the menu and the router drift apart.
+func disabledIndex(refs []domain.ModelRef) map[disabledKey]struct{} {
+	index := make(map[disabledKey]struct{}, len(refs))
+	for _, ref := range refs {
+		index[disabledKey{provider: ref.ProviderID(), model: ref.ModelID()}] = struct{}{}
+	}
+	return index
 }

@@ -39,7 +39,7 @@ func (emptyOAuthStore) GetByID(context.Context, string) (domain.UpstreamEndpoint
 	return domain.UpstreamEndpoint{}, domain.ErrEndpointNotFound
 }
 func (emptyOAuthStore) Update(context.Context, domain.UpstreamEndpoint) error { return nil }
-func (emptyOAuthStore) UpdateIfUnchanged(context.Context, domain.UpstreamEndpoint, time.Time) error {
+func (emptyOAuthStore) UpdateIfUnchanged(context.Context, domain.UpstreamEndpoint, domain.OAuthCredential) error {
 	return nil
 }
 func (emptyOAuthStore) FindOAuthEndpoint(context.Context, string, string, string) (string, error) {

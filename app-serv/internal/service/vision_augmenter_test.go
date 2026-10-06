@@ -175,6 +175,29 @@ func TestVisionAugmenter_CapableCandidateOutranksTheAdapter(t *testing.T) {
 	}
 }
 
+// TestVisionAugmenter_KeepsTheRequestOrderAmongSeeingCandidates pins the split's
+// contract: a candidate the catalog cannot be asked about stays where the request
+// put it. Sorting by parseability instead would lift an alias above the capable
+// model the client listed first, and the combo walk would run after the model it
+// was meant to follow.
+func TestVisionAugmenter_KeepsTheRequestOrderAmongSeeingCandidates(t *testing.T) {
+	ctx := context.Background()
+	augmenter, service := newAugmenter(t, ctx, nil)
+	enabledAdapter(t, ctx, service)
+
+	const comboName = "fusion-combo"
+	refs, adapted, err := augmenter.Augment(ctx, []string{seeingModel, comboName, blindModel})
+	if err != nil {
+		t.Fatalf("Augment() error = %v", err)
+	}
+	if want := []string{seeingModel, comboName, adapterSeed, blindModel}; !reflect.DeepEqual(refs, want) {
+		t.Fatalf("Augment() refs = %v, want %v", refs, want)
+	}
+	if !reflect.DeepEqual(adapted, []string{adapterSeed}) {
+		t.Fatalf("Augment() adapted = %v, want only the adapter's own model reported", adapted)
+	}
+}
+
 // TestVisionAugmenter_AdvisoryRotationFailureDoesNotBlockServing pins the
 // rotation store's contract: a store that cannot answer costs the rotation,
 // never the request, the augmentation still applies.

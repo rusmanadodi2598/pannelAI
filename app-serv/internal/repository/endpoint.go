@@ -12,7 +12,6 @@ package repository
 
 import (
 	"context"
-	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
@@ -45,12 +44,15 @@ type EndpointRepository interface {
 	// their own methods because a key change is a different concern.
 	Update(ctx context.Context, endpoint domain.UpstreamEndpoint) error
 
-	// UpdateIfUnchanged persists the same fields only while the stored row still
-	// carries loadedAt, the timestamp the aggregate was read with, and answers
-	// domain.ConFLICT when it no longer does. A caller that must not overwrite a
-	// concurrent write (an OAuth rotation that raced another) uses this instead of
-	// Update and reloads rather than clobbering.
-	UpdateIfUnchanged(ctx context.Context, endpoint domain.UpstreamEndpoint, loadedAt time.Time) error
+	// UpdateIfUnchanged persists the same fields only while the stored credential is
+	// still loaded, the one the caller read, and answers domain.ConFLICT when it no
+	// longer is. A caller that must not overwrite a concurrent write (an OAuth
+	// rotation that raced another) uses this instead of Update and reloads rather
+	// than clobbering. The guard is the credential rather than the row's updated_at
+	// because every served request rewrites that timestamp: a refresh under traffic
+	// would lose a race it never ran, and five of those dead-letter a healthy
+	// account.
+	UpdateIfUnchanged(ctx context.Context, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential) error
 
 	// Delete removes the endpoint and, by cascade, its keys.
 	Delete(ctx context.Context, id string) error

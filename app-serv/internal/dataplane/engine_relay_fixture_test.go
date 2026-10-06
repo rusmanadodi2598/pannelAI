@@ -83,10 +83,7 @@ func comboWithStrategy(name string, strategy domain.ComboStrategy, stickyLimit i
 	return domain.RehydrateCombo("cmb_"+name, name, strategy, stickyLimit, judge, models, now, now)
 }
 
-func (relayLookup) Alias(context.Context, string) (string, bool, error) { return "", false, nil }
-func (relayLookup) Disabled(context.Context, string, string) (bool, error) {
-	return false, nil
-}
+func (relayLookup) Alias(context.Context, string) (string, bool, error)      { return "", false, nil }
 func (relayLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (relayLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
 func (relayLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }

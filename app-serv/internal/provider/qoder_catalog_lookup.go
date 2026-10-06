@@ -78,8 +78,7 @@ func (c *Qoder) modelConfig(ctx context.Context, cred Credential, modelKey strin
 
 	fetch, leader := c.catalog.beginFetch(base)
 	if leader {
-		raw, fetchErr := c.fetchCatalog(ctx, cred, base)
-		c.catalog.completeFetch(base, fetch, raw, fetchErr)
+		c.runFetch(ctx, cred, base, fetch)
 	} else {
 		select {
 		case <-fetch.ready:
@@ -98,6 +97,23 @@ func (c *Qoder) modelConfig(ctx context.Context, cred Credential, modelKey strin
 	}
 	c.catalog.write(key, config, c.catalog.now())
 	return config, nil
+}
+
+// runFetch is the leader's catalogue read. It publishes the answer from a defer
+// because a read that panics must still close the slot it opened: a slot left open
+// parks every later caller on that host on a channel nobody will ever close. The
+// panic travels on, because the goroutine boundary is what decides what a panic
+// costs, and a swallowed one would answer "no catalogue" to a host that crashed.
+func (c *Qoder) runFetch(ctx context.Context, cred Credential, base string, fetch *catalogFetch) {
+	defer func() {
+		if panicked := recover(); panicked != nil {
+			c.catalog.completeFetch(base, fetch, nil, fmt.Errorf(
+				"provider %s: the model catalogue read panicked: %v", c.entry.ID, panicked))
+			panic(panicked)
+		}
+	}()
+	raw, fetchErr := c.fetchCatalog(ctx, cred, base)
+	c.catalog.completeFetch(base, fetch, raw, fetchErr)
 }
 
 // isMiss reports a model key refused recently, so an unknown name costs one

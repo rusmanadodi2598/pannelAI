@@ -44,18 +44,6 @@ func (l fakeLookup) Alias(_ context.Context, name string) (string, bool, error) 
 	return target, ok, nil
 }
 
-func (l fakeLookup) Disabled(_ context.Context, providerID, modelID string) (bool, error) {
-	if l.err != nil {
-		return false, l.err
-	}
-	for _, ref := range l.disabled {
-		if ref.ProviderID() == providerID && ref.ModelID() == modelID {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func (l fakeLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) {
 	return l.disabled, l.err
 }

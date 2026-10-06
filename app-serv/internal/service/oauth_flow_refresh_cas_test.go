@@ -18,7 +18,7 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-func TestOAuthRefresh_ConditionsTheWriteOnTheLoadedRow(t *testing.T) {
+func TestOAuthRefresh_ConditionsTheWriteOnTheLoadedCredential(t *testing.T) {
 	fixture := newOAuthFlowFixture(t, providerWithIdentity("identity-provider"))
 	seeded := seedOAuthEndpoint(t, fixture, "ep_cas", "identity-provider",
 		"cas@example.com", "cas@example.com", testNow.Add(-time.Minute))
@@ -26,9 +26,11 @@ func TestOAuthRefresh_ConditionsTheWriteOnTheLoadedRow(t *testing.T) {
 	if _, err := fixture.service.Refresh(context.Background(), "identity-provider", "ep_cas"); err != nil {
 		t.Fatalf("Refresh() error = %v", err)
 	}
-	if got := fixture.store.casLoadedAt; !got.Equal(seeded.UpdatedAt()) {
-		t.Fatalf("write conditioned on %v, want the timestamp the row was loaded with (%v)",
-			got, seeded.UpdatedAt())
+	want := seeded.OAuth()
+	got := fixture.store.casLoadedCredential
+	if got.AccessTokenEncrypted() != want.AccessTokenEncrypted() ||
+		got.RefreshTokenEncrypted() != want.RefreshTokenEncrypted() {
+		t.Fatal("the write was conditioned on a credential other than the one the row was loaded with")
 	}
 }
 

@@ -71,10 +71,7 @@ type liveLookup struct{}
 func (liveLookup) Combo(context.Context, string) (domain.Combo, bool, error) {
 	return domain.Combo{}, false, nil
 }
-func (liveLookup) Alias(context.Context, string) (string, bool, error) { return "", false, nil }
-func (liveLookup) Disabled(context.Context, string, string) (bool, error) {
-	return false, nil
-}
+func (liveLookup) Alias(context.Context, string) (string, bool, error)      { return "", false, nil }
 func (liveLookup) DisabledPairs(context.Context) ([]domain.ModelRef, error) { return nil, nil }
 func (liveLookup) ComboNames(context.Context) ([]string, error)             { return nil, nil }
 func (liveLookup) CustomModels(context.Context) ([]domain.ModelRef, error)  { return nil, nil }

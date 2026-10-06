@@ -38,10 +38,6 @@ func (l *countingLookup) Alias(ctx context.Context, name string) (string, bool, 
 	return l.inner.Alias(ctx, name)
 }
 
-func (l *countingLookup) Disabled(ctx context.Context, providerID, modelID string) (bool, error) {
-	return l.inner.Disabled(ctx, providerID, modelID)
-}
-
 func (l *countingLookup) DisabledPairs(ctx context.Context) ([]domain.ModelRef, error) {
 	return l.inner.DisabledPairs(ctx)
 }

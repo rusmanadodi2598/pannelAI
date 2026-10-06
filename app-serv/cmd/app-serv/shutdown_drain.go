@@ -16,18 +16,21 @@ import (
 	"log/slog"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
 
 // serve runs the HTTP server until it receives a termination signal, then shuts
-// down within shutdownTimeout. Every goroutine here has an explicit termination
+// it down within window. Every goroutine here has an explicit termination
 // condition (AGENTS.md §1.6).
 //
-// drain, when present, runs after the last in-flight request has been served and
-// the server goroutine has returned: settling counters is only correct once
-// nothing can still add to them.
-func serve(ctx context.Context, srv *http.Server, drain func(context.Context)) error {
+// drain, when present, runs after the server goroutine returns and whether or not
+// the stop succeeded. Settling counters is only correct once nothing can still add
+// to them, but a window that ran out with a stream still open is the case the flush
+// exists for, and skipping it would discard the spend that request just made. It
+// gets a window of its own because the shutdown spent the first one.
+func serve(ctx context.Context, srv *http.Server, drain func(context.Context), window time.Duration) error {
 	serverErr := make(chan error, 1)
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -55,16 +58,19 @@ func serve(ctx context.Context, srv *http.Server, drain func(context.Context)) e
 	// The parent ctx is already cancelled here, so deriving this timeout from it
 	// would abort the drain instantly: context.Background() is the correct root
 	// for a bounded shutdown window.
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), window)
 	defer cancel()
 	//nolint:contextcheck // reason: ctx is already cancelled, so it cannot root the drain timeout.
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		return err
-	}
+	shutdownErr := srv.Shutdown(shutdownCtx)
 	wg.Wait()
 	if drain != nil {
-		//nolint:contextcheck // reason: the drain must run after cancellation, inside the window opened above.
-		drain(shutdownCtx)
+		drainCtx, drainCancel := context.WithTimeout(context.Background(), window)
+		defer drainCancel()
+		//nolint:contextcheck // reason: the drain must run after cancellation, in a window the shutdown did not spend.
+		drain(drainCtx)
+	}
+	if shutdownErr != nil {
+		return shutdownErr
 	}
 	slog.Info("app-serv stopped cleanly")
 	return nil

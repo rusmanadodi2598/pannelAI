@@ -37,11 +37,14 @@ type memEndpointStore struct {
 	// labelKey mirrors idx_upstream_endpoints_provider_label, so a duplicate
 	// account is refused here exactly as PostgreSQL would refuse it.
 	labelKey map[string]string
-	// casLoadedAt records the timestamp the last UpdateIfUnchanged was conditioned
-	// on, and casReject makes that call answer the way PostgreSQL does when the row
-	// moved under the caller.
-	casLoadedAt time.Time
-	casReject   bool
+	// casLoadedCredential records the credential the last UpdateIfUnchanged was
+	// conditioned on, and casReject makes that call answer the way PostgreSQL does
+	// when the row moved under the caller.
+	casLoadedCredential domain.OAuthCredential
+	casReject           bool
+	// healthWrites counts the key-health writes a caller made, so a test can pin
+	// that an outcome which must not touch the circuit really wrote nothing.
+	healthWrites int
 }
 
 func newMemEndpointStore() *memEndpointStore {
@@ -93,41 +96,6 @@ func (s *memEndpointStore) Create(_ context.Context, endpoint domain.UpstreamEnd
 	s.keysByEndpoint[endpoint.ID()] = endpoint.Keys()
 	return nil
 }
-
-// CreateBatch mirrors the real all-or-nothing behaviour: every row is checked first,
-// and the offending index is attributed, so a test can prove a refused batch wrote
-// nothing.
-func (s *memEndpointStore) CreateBatch(_ context.Context, endpoints []domain.UpstreamEndpoint) error {
-	if len(endpoints) == 0 {
-		return nil
-	}
-	seen := make(map[string]struct{}, len(endpoints))
-	for i, endpoint := range endpoints {
-		key := accountKey(endpoint.ProviderID(), endpoint.Label())
-		if _, dup := s.labelKey[key]; dup {
-			return rowError(i, domain.ErrEndpointExists)
-		}
-		if _, dup := seen[key]; dup {
-			return rowError(i, domain.ErrEndpointExists)
-		}
-		seen[key] = struct{}{}
-	}
-	for _, endpoint := range endpoints {
-		s.labelKey[accountKey(endpoint.ProviderID(), endpoint.Label())] = endpoint.ID()
-		s.store(endpoint)
-		s.keysByEndpoint[endpoint.ID()] = endpoint.Keys()
-	}
-	return nil
-}
-
-func (s *memEndpointStore) AddKeys(_ context.Context, endpointID string, keys []domain.UpstreamKey) error {
-	if _, ok := s.byID[endpointID]; !ok {
-		return domain.ErrEndpointNotFound
-	}
-	s.keysByEndpoint[endpointID] = append(s.keysByEndpoint[endpointID], keys...)
-	return nil
-}
-
 func (s *memEndpointStore) List(_ context.Context, filter repository.EndpointFilter, q repository.PageQuery) ([]domain.UpstreamEndpoint, int64, error) {
 	all := make([]domain.UpstreamEndpoint, 0, len(s.byID))
 	for _, endpoint := range s.byID {
@@ -167,17 +135,25 @@ func (s *memEndpointStore) Update(_ context.Context, endpoint domain.UpstreamEnd
 	return nil
 }
 
-func (s *memEndpointStore) UpdateIfUnchanged(_ context.Context, endpoint domain.UpstreamEndpoint, loadedAt time.Time) error {
+func (s *memEndpointStore) UpdateIfUnchanged(_ context.Context, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential) error {
 	stored, ok := s.byID[endpoint.ID()]
 	if !ok {
 		return domain.ErrEndpointNotFound
 	}
-	s.casLoadedAt = loadedAt
-	if s.casReject || !stored.UpdatedAt().Equal(loadedAt) {
+	s.casLoadedCredential = loaded
+	if s.casReject || !sameSealedCredential(stored.OAuth(), loaded) {
 		return domain.NewConflictError("the endpoint changed during this refresh")
 	}
 	s.store(endpoint)
 	return nil
+}
+
+// sameSealedCredential answers the way the real predicate does: the stored
+// credential still holds the two ciphertexts the caller conditioned its write on.
+func sameSealedCredential(stored *domain.OAuthCredential, loaded domain.OAuthCredential) bool {
+	return stored != nil &&
+		stored.AccessTokenEncrypted() == loaded.AccessTokenEncrypted() &&
+		stored.RefreshTokenEncrypted() == loaded.RefreshTokenEncrypted()
 }
 
 func (s *memEndpointStore) Delete(_ context.Context, id string) error {
@@ -188,45 +164,5 @@ func (s *memEndpointStore) Delete(_ context.Context, id string) error {
 	delete(s.labelKey, accountKey(endpoint.ProviderID(), endpoint.Label()))
 	delete(s.keysByEndpoint, id)
 	delete(s.byID, id)
-	return nil
-}
-
-// ImportOAuthBatch mirrors the real all-or-nothing import: every row is applied
-// only after the whole batch has been checked, and the offending index is
-// attributed. It exists because the OAuth import both creates and updates, which
-// CreateBatch cannot express.
-func (s *memEndpointStore) ImportOAuthBatch(_ context.Context, endpoints []domain.UpstreamEndpoint, existing []bool) error {
-	if len(endpoints) == 0 {
-		return nil
-	}
-	if len(existing) != len(endpoints) {
-		return domain.NewInternalError("oauth import batch: existing flags do not match the endpoint count")
-	}
-	seen := make(map[string]struct{}, len(endpoints))
-	for i, endpoint := range endpoints {
-		if existing[i] {
-			if _, ok := s.byID[endpoint.ID()]; !ok {
-				return rowError(i, domain.ErrEndpointNotFound)
-			}
-			continue
-		}
-		key := accountKey(endpoint.ProviderID(), endpoint.Label())
-		if _, dup := s.labelKey[key]; dup {
-			return rowError(i, domain.ErrEndpointExists)
-		}
-		if _, dup := seen[key]; dup {
-			return rowError(i, domain.ErrEndpointExists)
-		}
-		seen[key] = struct{}{}
-	}
-	for i, endpoint := range endpoints {
-		if existing[i] {
-			s.store(endpoint)
-			continue
-		}
-		s.labelKey[accountKey(endpoint.ProviderID(), endpoint.Label())] = endpoint.ID()
-		s.store(endpoint)
-		s.keysByEndpoint[endpoint.ID()] = endpoint.Keys()
-	}
 	return nil
 }

@@ -16,7 +16,6 @@ package postgres
 
 import (
 	"context"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -65,12 +64,12 @@ func (r *EndpointRepository) ImportOAuthBatch(ctx context.Context, endpoints []d
 // updateEndpoint persists an endpoint's own fields through any execer, including
 // its OAuth state (stored as ciphertext) and its account identity. Keys are
 // untouched: they have their own methods, a key change being a different concern.
-// loadedAt, when non-nil, makes the write a compare-and-swap on `updated_at`:
-// the row is written only while it still carries the value this aggregate was
-// loaded with. An OAuth rotation needs that, because a refresh racing another
-// would write the older credential back and lose the token the vendor had
-// already swapped.
-func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint, loadedAt *time.Time) error {
+// loaded, when non-nil, makes the write a compare-and-swap on the stored
+// credential: the row is written only while its oauth still carries the two
+// ciphertexts this aggregate was loaded with. An OAuth rotation needs that, because
+// a refresh racing another would write the older credential back and lose the token
+// the vendor had already swapped.
+func updateEndpoint(ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint, loaded *domain.OAuthCredential) error {
 	oauthJSON, err := marshalOAuth(endpoint.OAuth())
 	if err != nil {
 		return err
@@ -110,17 +109,21 @@ UPDATE upstream_endpoints
 	}
 	args = append(args, parityColumns(endpoint)...)
 	args = append(args, endpoint.ID())
-	if loadedAt != nil {
+	if loaded != nil {
+		// Both token fields are omitempty in the stored shape, so a credential that
+		// carries neither is absent from the jsonb rather than present and blank;
+		// COALESCE keeps that row comparable to the empty string the caller holds.
 		q += `
-   AND updated_at = $18`
-		args = append(args, *loadedAt)
+   AND COALESCE(oauth->>'access_token_encrypted', '')  = $18
+   AND COALESCE(oauth->>'refresh_token_encrypted', '') = $19`
+		args = append(args, loaded.AccessTokenEncrypted(), loaded.RefreshTokenEncrypted())
 	}
 	tag, err := exec.Exec(ctx, q, args...)
 	if err != nil {
 		return translateEndpointError(err)
 	}
 	if tag.RowsAffected() == 0 {
-		if loadedAt != nil {
+		if loaded != nil {
 			return domain.NewConflictError("the endpoint changed during this refresh")
 		}
 		return domain.ErrEndpointNotFound

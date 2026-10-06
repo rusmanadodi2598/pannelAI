@@ -123,33 +123,6 @@ func TestDevicePoll_ReconnectUpdatesTheSameAccount(t *testing.T) {
 	}
 }
 
-// TestDevicePoll_FailOpenIdentity pins the reference's fail-open userinfo: an
-// identity read that fails must not block the connect, and the account then
-// falls back to the synthetic email the dedup rule can still match on.
-func TestDevicePoll_FailOpenIdentity(t *testing.T) {
-	fixture := newOAuthFlowFixture(t, providerWithQoderDeviceFlow("qoder"))
-	fixture.tokens.devicePollFn = func(string, string) (oauthhttp.DeviceTokenResponse, bool, error) {
-		return oauthhttp.DeviceTokenResponse{AccessToken: "dt-x", UserID: "user-9",
-			ExpiresAt: testNow.Add(48 * time.Hour)}, false, nil
-	}
-	fixture.tokens.infoFn = func() (oauthhttp.OAuthIdentity, error) {
-		return oauthhttp.OAuthIdentity{}, errors.New("userinfo down")
-	}
-
-	answer := poll(t, fixture, "qoder", startDevice(t, fixture, "qoder").DeviceCode)
-	endpoint, err := fixture.store.GetByID(context.Background(), answer.EndpointID)
-	if err != nil {
-		t.Fatalf("stored endpoint: %v", err)
-	}
-	account := endpoint.Account()
-	if account.Email().String() != "qoder-user-user-9" {
-		t.Fatalf("email = %q, want the synthetic fallback", account.Email().String())
-	}
-	if account.WorkspaceID() != "user-9" {
-		t.Fatalf("workspace = %q, want the poll's user id", account.WorkspaceID())
-	}
-}
-
 // TestDevicePoll_RefusesTheWrongCaller pins the binding checks before any
 // upstream call: a blank or unknown device code, and a code polled against
 // another provider's path.

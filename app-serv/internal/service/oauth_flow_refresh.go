@@ -148,10 +148,11 @@ func (s *OAuthFlowService) refreshEndpoint(ctx context.Context, oauth *registry.
 	}
 
 	now := s.clock()
-	// The row's timestamp before anything is written to it: the persist below is
-	// conditioned on it, so a refresh that raced another one loses cleanly instead
-	// of writing the older credential over the token the vendor already rotated.
-	loadedAt := endpoint.UpdatedAt()
+	// The credential as the row holds it before anything is written: the persist
+	// below is conditioned on it, so a refresh that raced another one loses cleanly
+	// instead of writing the older credential over the token the vendor already
+	// rotated.
+	loaded := *credential
 	accessSealed, err := s.sealer.Seal(token.AccessToken)
 	if err != nil {
 		return nil, domain.NewInternalError("the access token could not be stored")
@@ -175,7 +176,7 @@ func (s *OAuthFlowService) refreshEndpoint(ctx context.Context, oauth *registry.
 	}
 
 	endpoint.SetOAuth(&next, now)
-	if err := s.store.UpdateIfUnchanged(ctx, endpoint, loadedAt); err != nil {
+	if err := s.store.UpdateIfUnchanged(ctx, endpoint, loaded); err != nil {
 		return nil, err
 	}
 	return next.ExpiresAt(), nil

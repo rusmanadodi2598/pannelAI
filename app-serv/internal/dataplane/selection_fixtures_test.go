@@ -111,7 +111,7 @@ func (r *memEndpointRepo) GetByID(context.Context, string) (domain.UpstreamEndpo
 	return domain.UpstreamEndpoint{}, domain.ErrEndpointNotFound
 }
 func (r *memEndpointRepo) Update(context.Context, domain.UpstreamEndpoint) error { return nil }
-func (r *memEndpointRepo) UpdateIfUnchanged(context.Context, domain.UpstreamEndpoint, time.Time) error {
+func (r *memEndpointRepo) UpdateIfUnchanged(context.Context, domain.UpstreamEndpoint, domain.OAuthCredential) error {
 	return nil
 }
 func (r *memEndpointRepo) Delete(context.Context, string) error { return nil }

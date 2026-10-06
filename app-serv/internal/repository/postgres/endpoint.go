@@ -12,7 +12,6 @@ package postgres
 
 import (
 	"context"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -141,15 +140,15 @@ func (r *EndpointRepository) Update(ctx context.Context, endpoint domain.Upstrea
 	return updateEndpoint(ctx, r.pool, endpoint, nil)
 }
 
-// UpdateIfUnchanged writes an endpoint only while the stored row still carries
-// the updated_at the caller loaded, and reports a conflict when it no longer
-// does. The OAuth rotation needs it: a forced refresh racing the worker's would
-// otherwise write the older credential over the token the vendor had already
+// UpdateIfUnchanged writes an endpoint only while the stored credential still
+// carries the two ciphertexts the caller loaded, and reports a conflict when it no
+// longer does. The OAuth rotation needs it: a forced refresh racing the worker's
+// would otherwise write the older credential over the token the vendor had already
 // swapped, and the account would be dead until the operator re-authenticated.
 func (r *EndpointRepository) UpdateIfUnchanged(
-	ctx context.Context, endpoint domain.UpstreamEndpoint, loadedAt time.Time,
+	ctx context.Context, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential,
 ) error {
-	return updateEndpoint(ctx, r.pool, endpoint, &loadedAt)
+	return updateEndpoint(ctx, r.pool, endpoint, &loaded)
 }
 
 // Delete removes the endpoint; its keys go with it through the ON DELETE

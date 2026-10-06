@@ -112,10 +112,9 @@ func (a *VisionAugmenter) splitBySight(ctx context.Context, candidates []string)
 	for index, candidate := range candidates {
 		ref, parseErr := domain.ParseModelRef(candidate)
 		if parseErr != nil {
-			// A reference the catalog cannot be asked about (a nested combo name,
-			// an alias the walk resolves in its own step) is no evidence of
-			// blindness, so it stays where the request put it.
-			seeing = append(seeing, candidate)
+			// The zero ref marks "the catalog cannot be asked about it", decided in
+			// the pass below so it keeps its place in the list rather than the pass
+			// it happened to be readable in.
 			continue
 		}
 		asked[index] = ref
@@ -128,10 +127,9 @@ func (a *VisionAugmenter) splitBySight(ctx context.Context, candidates []string)
 	}
 	for index, candidate := range candidates {
 		ref := asked[index]
-		if ref.String() == "" {
-			continue // already counted as seeing
-		}
-		if capable[ref.String()] {
+		// A reference the catalog cannot be asked about (a nested combo name, an
+		// alias the walk resolves in its own step) is no evidence of blindness.
+		if ref.String() == "" || capable[ref.String()] {
 			seeing = append(seeing, candidate)
 			continue
 		}
