@@ -19,16 +19,19 @@
 #   - Citations are a WARNING, not a failure. 146 of them are legitimate
 #     references inside the §1.2 @reason headers, and the body-comment residue is
 #     zero, so failing would hold a commit hostage to lines its author did not
-#     write. What still matches below `package` is assertion text, not comments:
-#     go_body greps the region without isolating comments.
-#   - Citations ignore the region above a Go file's `package` line. AGENTS.md
-#     §1.2 mandates a @reason field there and names it where a file's rationale
-#     lives, so a draft reference inside it is the convention working as
-#     designed, not the slop. That boundary is audit 004 finding 5.
-#   - A wrapped §1.2 field value fails tree-wide. The header region is where the
-#     longest prose in the tree sat, and the doc-block length check below never
-#     read it: that awk reports at `^(func|type)`, and a header ends at
-#     `package`.
+#     write.
+#   - Citations read only comment text, and only below a Go file's `package`
+#     line. Above it, AGENTS.md §1.2 mandates a @reason field and names it where
+#     a file's rationale lives, so a draft reference there is the convention
+#     working as designed (audit 004 finding 5). Below it, a `draft 017 §4.6`
+#     written inside a t.Fatalf message is a test naming the case it asserts, so
+#     the string part of a line is dropped before matching: reading the whole
+#     region reported five such strings as comment debt that was never there.
+#   - The §1.2 header shape fails tree-wide: a field value continued onto a
+#     second line, and a prose paragraph between the fields. The header region is
+#     where the longest prose in the tree sat, and the doc-block length check
+#     below never read it: that awk reports at `^(func|type)`, and a header ends
+#     at `package`.
 #   - The structural checks run tree-wide, because the tree is clean for them
 #     now and a diff-only check would let a pattern return in an untouched file.
 #
@@ -87,7 +90,9 @@ readonly FIELD_CONT_RE='^//\t'
 # check.
 readonly FIELD_PLAIN_RE='^// [^@[:space:]]'
 readonly FIELD_LOW_RE='^// [a-z]'
-readonly FIELD_ENDS_RE='[.!?:)"][[:space:]]*$'
+# A field whose text ends here has finished its sentence. A colon is not in this
+# set: a colon introduces the line after it, so the value is not finished.
+readonly FIELD_ENDS_RE='[.!?)"][[:space:]]*$'
 # Go files the header checks read. Generated output is exempt, same as §1.1.
 readonly GO_GLOBS=('*.go' ':(exclude)**/*_gen.go' ':(exclude)*.pb.go')
 
@@ -116,17 +121,18 @@ tree_scan() {
 		':(exclude)**/*_gen.go' ':(exclude)*.pb.go' ":(exclude)$SELF"
 }
 
-# wrapped_field_hits prints every §1.2 header line that continues a field value
-# onto a second line. The header region is everything above `package`.
-wrapped_field_hits() {
+# header_shape_hits prints every §1.2 header line that either continues a field
+# value onto a second line or puts a prose paragraph between the fields. The header
+# region is everything above `package`.
+header_shape_hits() {
 	# Paths contain no spaces here, and awk needs one argument per file.
 	# shellcheck disable=SC2046
 	awk -v tagre="$FIELD_TAG_RE" -v contre="$FIELD_CONT_RE" \
 		-v plainre="$FIELD_PLAIN_RE" -v endsre="$FIELD_ENDS_RE" -v lowre="$FIELD_LOW_RE" '
-		FNR == 1              { inhdr = 1; anchor = "" }
+		FNR == 1              { inhdr = 1; anchor = ""; seen = 0 }
 		/^package[[:space:]]/ { inhdr = 0 }
 		inhdr == 0            { next }
-		$0 ~ tagre            { anchor = $0; next }
+		$0 ~ tagre            { anchor = $0; seen = 1; next }
 		/^\/\/[ \t]*$/        { next }
 		$0 ~ contre {
 			if (anchor != "") {
@@ -150,6 +156,14 @@ wrapped_field_hits() {
 				printf "%s:%d: %s\n", FILENAME, FNR, substr($0, 1, 90)
 				anchor = anchor " " $0
 			} else {
+				# AGENTS.md §1.2 fixes the header as eight fields and nothing else, so a
+				# paragraph of prose here is either the rest of the field above it or a
+				# section that belongs in the file body. An indented block is exempt: it
+				# is structure, and that is where the runnable examples live.
+				if (seen) {
+					printf "%s:%d: prose between the §1.2 fields: %s\n",
+						FILENAME, FNR, substr($0, 4, 80)
+				}
 				anchor = ""
 			}
 			next
@@ -173,12 +187,22 @@ changed_text_paths() {
 	comm -12 <(text_paths | sort -u) <(changed_files | sort -u)
 }
 
-# go_body prints the lines of a Go file below its `package` declaration, which
-# is where the §1.2 mandated header ends.
-go_body() {
+# go_body_comments prints only the comment text below a Go file's `package` line,
+# which is where the §1.2 mandated header ends.
+# The citation rule is about comments, and a `draft 017 §4.6` written into a
+# t.Fatalf message is a test naming the case it asserts, not scratch work left in
+# a comment, so the string part of a line is dropped before matching.
+go_body_comments() {
 	local file="$1" pkg
 	pkg="$(grep -n '^package ' "$root/$file" | head -1 | cut -d: -f1 || true)"
-	awk -v start="${pkg:-0}" 'NR > start' "$root/$file"
+	awk -v start="${pkg:-0}" '
+	NR > start {
+		pos = index($0, "//")
+		if (pos == 0) next
+		prefix = substr($0, 1, pos - 1)
+		if (gsub(/"/, "\"", prefix) % 2 == 1) next
+		print substr($0, pos)
+	}' "$root/$file"
 }
 
 # report prints each hit and returns 1 when there were any.
@@ -226,7 +250,7 @@ else
 		[ -n "$f" ] || continue
 		[ "${f##*.}" = "go" ] || continue
 		[ -f "$root/$f" ] || continue
-		c="$(go_body "$f" | grep -E "$CITATION_RE" || true)"
+		c="$(go_body_comments "$f" | grep -E "$CITATION_RE" || true)"
 		[ -n "$c" ] || continue
 		gate_start "scratch citation to review in $f: $(printf '%s\n' "$c" | head -1 | cut -c1-110)"
 		cite_hits=$((cite_hits + 1))
@@ -241,7 +265,7 @@ report "substitution artifact in a comment" "$(tree_scan "$ARTIFACT_RE")" || fai
 report "decorative separator" "$(tree_scan "$SEPARATOR_RE")" || failed=1
 report "ALL CAPS banner label" "$(tree_scan "$BANNER_RE")" || failed=1
 report "end marker" "$(tree_scan "$ENDMARK_RE")" || failed=1
-report "wrapped §1.2 field value (tree-wide)" "$(wrapped_field_hits)" || failed=1
+report "§1.2 header shape (tree-wide)" "$(header_shape_hits)" || failed=1
 report "decorative emoji" \
 	"$(grep_files '[🚀✅🔒⚡✨📌🧪]' "${CODE_GLOBS[@]}" ':(exclude)**/node_modules/**' ":(exclude)$SELF")" ||
 	failed=1
