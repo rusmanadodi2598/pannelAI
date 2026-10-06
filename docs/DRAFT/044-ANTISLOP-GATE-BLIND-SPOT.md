@@ -11,7 +11,7 @@ hijau. Waktu dipanggil, gerbang itu cek satu hal dan mengklaim hal lain.
 
 | | |
 | --- | --- |
-| **Status** | **HIGH selesai (F1, F2, F3) dan MEDIUM selesai (F4, F5, F6), plus F8 yang ikut tertutup.** F7 tetap OPEN. Bukti di §Hasil |
+| **Status** | **CLOSED. HIGH (F1-F3), MEDIUM (F4-F6), LOW (F7-F8) selesai.** F8 ikut tertutup bareng F4. Bukti di §Hasil |
 | **Mechanism** | AFTER (audit) lalu DURING untuk tulisan baru |
 | **Scope** | `scrypts/gates/antislop.sh` (aturan baru + angka yang dikoreksi), `scrypts/gates/all.sh` (label), `docs/RULLES/ANTISLOP.md` §2.1, §2.6, §2.7 baru, §4, §6, dan header komentar 1194 file Go. Nol baris executable berubah |
 | **Sumber temuan** | PR #2 `fix/anti-slop-audit-003-remediation`, head `f8067e0`, 23 commit, 1325 file berubah |
@@ -286,9 +286,33 @@ ikut tercetak dan setiap edit komentar field terlihat seperti perubahan kode. Se
 ter-commit diverifikasi ulang dengan alat yang benar: 1194 file, 0 kode berubah. Bug itu cuma bisa laporan palsu
 "berubah", tidak sebaliknya, jadi klaim HIGH tetap berdiri; sekarang ia terbukti, bukan disimpulkan.
 
-### F7 tetap OPEN
+### F7 selesai, dan temuan aslinya bukan gema
 
-Lima doc comment yang menggema setengah signature (`chat.go`, `Aliases` di `model_catalog_writes.go`,
-`vision_rotation.go`, dan dua dengan bentuk sama). Satu baris per tempat, tidak ada cek untuk ini, dan memotongnya
-tidak mengubah apa pun selain baris kedua tiap komentar itu.
+Audit 006 mencatat F7 sebagai lima doc comment yang menggema setengah signature, prioritas LOW. Waktu digarap, yang
+ketemu kelas lain: `NewXHandler validates deps and returns the handler` beredar di 56 file, dan untuk 26 di antaranya
+kalimat itu **salah**. Konstructor-konstructor itu cuma `return &T{dep: dep}` dan tidak mengembalikan error; yang
+memeriksa deps adalah saudara mereka di layer service (`NewEngine`, `NewSelector`, `NewTransport`, semuanya `error)`
+dan nil-check). Doc line diwariskan antar keluarga file, dan yang dibaca reader adalah klaim perilaku yang tidak ada.
+
+Komentar ini lebih buruk dari gema: gema hanya boros satu baris, klaim palsu mengirim orang ke tempat yang salah waktu
+debug. Tidak ada linter yang menangkapnya; statik check tidak membandingkan kalimat dengan body.
+
+Yang dilakukan, comment-only semuanya:
+
+- 22 file: baris doc dihapus. Tidak ada fakta tersisa untuk disimpan; doc route di bawahnya sudah membawa faktualnya.
+- 4 handler (`embeddings.go`, `media.go`, `systemone.go`, `token_count.go`) dan `NewProxyRouteService`: kalimat pertamanya
+  dibuang, kalimat keduanya justru yang berharga (authenticator §4 dipakai bareng supaya dua route tidak mulai
+  berbeda pendapat soal key mana yang valid; clock default ke `time.Now`). Doc sekarang mulai dari fakta itu.
+- 5 gema diganti constraint yang tidak terlihat di signature: `Hash` jalan di bcrypt default cost yang tidak bisa
+  diubah lewat method ini; `Aliases` tanpa filter dan tanpa page; `visionRotationKey` cuma fungsi dari konstanta
+  prefix, jadi semua proses dan semua request menghormati satu slot rotasi yang sama; `NewHealthService` "returns a
+  ready service" dihapus (ready itu padding).
+
+Dibuktikan, bukan dinyatakan: skrip klasifikasi membandingkan klaim di doc dengan body-nya (signature punya `error)`?
+ada nil-check?) dan melaporkan 29 klaim benar / 26 salah / 1 mixed sebelum, dan 0 salah sesudah. `staticcheck`,
+`golangci-lint`, dan `go-headers` tetap hijau tanpa doc line itu, jadi tidak ada aturan yang menuntut baris kosong
+tersebut.
+
+§3 ANTISLOP.md sekarang menuliskan kelasnya sebagai aturan review: komentar tidak boleh mengklaim perilaku yang kode
+tidak lakukan, dan ini sengaja tidak ditulis sebagai aturan yang di-enforce, karena tidak ada cek untuk itu.
 
