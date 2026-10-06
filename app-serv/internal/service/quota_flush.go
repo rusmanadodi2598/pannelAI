@@ -4,12 +4,6 @@
 // @for       The quota flush worker's lifecycle: one bounded goroutine, a single-flight guard, and the composition-root entry point.
 // @uses      internal/domain, internal/repository, log/slog, runtime/debug, sync, sync/atomic, time.
 // @reason    AGENTS.md §1.6 requires every worker to recover from panic and to have an explicit termination condition, which is lifecycle, not batch mechanics: this file states who runs, when, and how it stops, while the batch itself lives in quota_flush_drain.go and the stated retry and dead-letter behaviour in quota_flush_policy.go (draft 005 F3).
-//
-// Termination
-//
-//	Run returns when its context is cancelled; it spawns no goroutine that
-//	outlives that return.
-//
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable

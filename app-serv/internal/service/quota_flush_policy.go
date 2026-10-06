@@ -4,24 +4,6 @@
 // @for       The quota flush worker's stated retry and dead-letter policy, and the knobs that implement it.
 // @uses      time.
 // @reason    AGENTS.md §1.6 requires every worker to state its retry and dead-letter behaviour explicitly rather than leave them implied by the loop. The statement is kept beside the policy type it describes, carved out of the worker file so neither concern has to scroll past the other (draft 005 F3).
-//
-// Retry policy
-//
-//	A failed flush is retried on the worker's next tick with the same batch.
-//	There is no in-worker retry loop: the tick is the backoff, so a database
-//	outage costs one failed tick rather than a hot retry storm against a
-//	database already struggling. MaxAttempts bounds how many consecutive ticks
-//	one batch is retried for.
-//
-// Dead-letter policy
-//
-//	After MaxAttempts consecutive failures on the same batch, the batch is
-//	dead-lettered: it is logged at error level with the batch identity and
-//	the last error, and the counters are LEFT IN REDIS, so a restart or a
-//	later successful tick still flushes them. Nothing is discarded, and no
-//	separate dead-letter store is invented: the counters are the running
-//	total in Redis, and Settle runs only after a successful write.
-//
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     worker
 // @stability stable
