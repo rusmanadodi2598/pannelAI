@@ -28,9 +28,10 @@ the document never claims enforcement it does not have.
 - Choose by the mark's actual job: an explanation or consequence takes a colon or a new sentence, an appositive takes a
   comma, a mid-sentence aside takes parentheses. **Never substitute the character and leave the spacing behind**, which
   is how `colliding , so` reached six files in one automated sweep.
-- Enforced on changed files, the same incremental contract AGENTS.md §1.1 and §1.2 use. `docs/**` and `AGENTS.md` are
-  excluded by name because they carry legacy debt this repo has not decided to sweep; the exclusion is printed on every
-  run that touches them, so it stays a visible decision instead of a quiet hole.
+- Enforced TREE-WIDE, on every tracked text file, and it fails on any use. It used to be a changed-files check with
+  `docs/**` and `AGENTS.md` excluded by name while the tree carried the legacy debt; that debt is swept, so the exclusion
+  went with it instead of staying out of habit. A rule enforced only on the diff is a rule that regrows in the files
+  nobody touched.
 
 ### 2.2 No Decorative Separators or ALL CAPS Banners
 
@@ -64,9 +65,27 @@ the document never claims enforcement it does not have.
 ### 2.6 A Comment's Length Is Its Fact Count
 
 - One line per irreducible fact. Past about eight lines the block is being argued rather than stated.
-- The gate fails a Go doc block over 16 lines and warns past 10, on changed files. A block that genuinely holds five
-  constraints takes five lines; that is a pass, not a near-miss, and the fix is never to compress a fact into fewer
-  words.
+- The gate fails a Go doc block over 16 lines and warns past 10, measured on the block above a `func` or `type` in a
+  changed file. A block that genuinely holds five constraints takes five lines; that is a pass, not a near-miss, and the
+  fix is never to compress a fact into fewer words.
+- A file header is not measured by total length. Once §2.7 holds, a header is eight field lines plus whatever free prose
+  sits among them, so its line count says nothing; that prose is §3 material.
+
+### 2.7 A §1.2 Field Value Stays on One Line
+
+- AGENTS.md §1.2 fixes the header as eight one-line fields so `@for` and `@reason` grep cleanly. A value continued on a
+  second line breaks that, and gofmt makes it worse: a hand-wrapped value comes back as an indented block with empty
+  comment lines around it. Before this rule existed, 1194 of 1245 Go files carried at least one wrapped field.
+- The gate fails tree-wide on three shapes: an indented continuation of a field, a plain comment line directly under
+  the tag, and a plain comment line after an empty one. A line opening with a lowercase letter is the rest of the
+  sentence; an uppercase one continues only while the field has not finished it. A field ending with terminal
+  punctuation is complete, so what follows it is a new section rather than the tail of a value, and that boundary keeps
+  a stated worker decision (AGENTS.md §1.6) out of the check.
+- An indented block that follows a field which has finished its sentence is structure, not a wrapped value, and is left
+  alone: 158 headers keep a runnable `go test` example exactly that way. Only a block opening in lowercase continues the
+  field. The same test is in the sweep and in the gate, so the two cannot drift apart.
+- A fragment that opens with a comma, semicolon or bracket attaches to the word before it. Joining with a space instead
+  writes `credential , which`, which is the artifact §2.1 forbids.
 
 ---
 
@@ -91,10 +110,12 @@ is deleting exactly these.
 ## 4. Citations: What May Be Referenced, and From Where
 
 - A `draft NNN` or audit-pass reference in a comment below a Go file's `package` line is scratch work pointing at a
-  document that closes and moves. State the fact; drop the pointer. The gate warns rather than fails, because the tree
-  carries 142 of them and a commit must not be held hostage to lines its author did not write.
+  document that closes and moves. State the fact; drop the pointer. The gate warns rather than fails, because a commit
+  must not be held hostage to lines its author did not write. Body-comment residue is now zero: the 6 matches the gate
+  prints on a full run are all inside `t.Fatalf` and `t.Errorf` strings, which the check reads as comments because it
+  greps the region below `package` without isolating comments (recorded as debt in §6).
 - The same reference inside the `@reason` field of the AGENTS.md §1.2 file header is **by design**. §1.2 names that
-  field as where a file's rationale lives, and 701 citations sit there legitimately. The gate ignores that region for
+  field as where a file's rationale lives, and 146 citations sit there legitimately. The gate ignores that region for
   this rule.
 - `SPEC-API-001 §n` and `AGENTS.md §n` pointers stay. Those name the live contract and the live rule, which is a
   reference, not a stale ticket.
@@ -111,12 +132,29 @@ generated output; the gate itself is exempt because its pattern constants contai
 
 ## 6. Known Debt
 
-Recorded rather than hidden, so the backlog can only shrink. The gate prints the current count on every run.
+Recorded rather than hidden, so the backlog can only shrink. Each item names what it was measured against, because the
+gate prints no counts and a number nobody recomputes is how §4 and §6 went stale once already.
 
-- 821 em/en dash lines across 27 markdown files, mostly dated planning records under `docs/DRAFT/` and the contract of
-  record under `docs/SPEC-API/`. Whether to retype a closed historical document is an owner decision, not a sweep.
-- 50 dash lines in `AGENTS.md` itself, which is excluded from R-02 for the same reason.
-- 142 `draft NNN` citations in body comments outside any single change.
+Closed by the audit 003 and 004 sweeps, and kept closed by the checks above:
+
+- em and en dash lines across markdown, specs and `AGENTS.md`: 0, tree-wide, failed on by R-02 (§2.1).
+- `draft NNN` citations in body comments: 0 in comments. The 6 matches still printed by the citation warning are
+  assertion strings, not comments (§4).
+- §1.2 field values wrapped across lines: 5788 continuations joined across 1194 of 1245 Go files, now a tree-wide
+  failure (§2.7).
+
+Open, each one waiting on a decision rather than on typing:
+
+- Free prose between the §1.2 tags in 15 files: worker retry, dead-letter and termination statements written into the
+  header, in two different shapes. The facts are required by AGENTS.md §1.6; the location and shape are the question.
+  Together with the 158 preserved indented examples this is why 65 headers run past 16 lines and why header length is
+  not a metric (§2.6).
+- 7 inline comment blocks inside function bodies past §2.6's eight-line cap, from 656 runs of three lines or more. The
+  length check measures blocks above a declaration, so these are review-only until someone decides whether to widen it.
+- The citation warning reads the whole region below `package`, so it fires on `t.Fatalf` text. Fixing it is what would
+  make the warning worth promoting to a failure.
+- 5 doc comments that echo half their own signature, and 3 header labels that use a comma where §2.1 assigns the job to
+  a colon.
 
 ---
 
