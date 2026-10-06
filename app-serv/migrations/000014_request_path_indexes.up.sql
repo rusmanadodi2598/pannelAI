@@ -25,6 +25,11 @@
 --
 -- Every statement is idempotent, as the runner requires (migrations/apply_test.go's
 -- TestApply_IsIdempotent).
+--
+-- Two things this file does not get right on its own, and 000015 carries the note.
+-- The email index below is built over the bare expression while the dedup read filters
+-- `lower(account->>'email')`, so it is replaced one version later, and the two log
+-- table builds hold a write lock on a populated table for the length of the boot.
 
 CREATE INDEX IF NOT EXISTS idx_request_logs_gateway_key_ts
     ON request_logs (gateway_key_id, ts DESC);
