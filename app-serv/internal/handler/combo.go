@@ -24,7 +24,6 @@ type ComboHandler struct {
 	combos *service.ComboService
 }
 
-// NewComboHandler validates deps and returns the handler.
 func NewComboHandler(combos *service.ComboService) *ComboHandler {
 	return &ComboHandler{combos: combos}
 }

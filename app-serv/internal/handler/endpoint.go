@@ -23,7 +23,6 @@ type EndpointHandler struct {
 	endpoints *service.EndpointService
 }
 
-// NewEndpointHandler validates deps and returns the handler.
 func NewEndpointHandler(endpoints *service.EndpointService) *EndpointHandler {
 	return &EndpointHandler{endpoints: endpoints}
 }

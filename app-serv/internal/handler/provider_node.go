@@ -24,7 +24,6 @@ type ProviderNodeHandler struct {
 	nodes *service.NodeService
 }
 
-// NewProviderNodeHandler validates deps and returns the handler.
 func NewProviderNodeHandler(nodes *service.NodeService) *ProviderNodeHandler {
 	return &ProviderNodeHandler{nodes: nodes}
 }

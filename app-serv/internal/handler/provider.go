@@ -23,7 +23,6 @@ type ProviderHandler struct {
 	providers *service.ProviderService
 }
 
-// NewProviderHandler validates deps and returns the handler.
 func NewProviderHandler(providers *service.ProviderService) *ProviderHandler {
 	return &ProviderHandler{providers: providers}
 }

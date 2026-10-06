@@ -30,7 +30,6 @@ type SystemHandlerDeps struct {
 	Health *service.HealthService
 }
 
-// NewSystemHandler validates deps and returns the handler.
 func NewSystemHandler(deps SystemHandlerDeps) *SystemHandler {
 	return &SystemHandler{info: deps.Info, health: deps.Health}
 }

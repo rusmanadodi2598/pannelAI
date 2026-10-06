@@ -30,7 +30,6 @@ type ProviderModelTestHandler struct {
 // route's contract is that a model has to be named.
 const modelIDRequiredMessage = "a model id is required"
 
-// NewProviderModelTestHandler validates deps and returns the handler.
 func NewProviderModelTestHandler(tests *service.ProviderModelTestService) *ProviderModelTestHandler {
 	return &ProviderModelTestHandler{tests: tests}
 }

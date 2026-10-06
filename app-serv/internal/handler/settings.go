@@ -22,7 +22,6 @@ type SettingsHandler struct {
 	settings *service.SettingsService
 }
 
-// NewSettingsHandler validates deps and returns the handler.
 func NewSettingsHandler(settings *service.SettingsService) *SettingsHandler {
 	return &SettingsHandler{settings: settings}
 }

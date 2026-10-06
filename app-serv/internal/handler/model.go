@@ -24,7 +24,6 @@ type ModelHandler struct {
 	catalog *service.ModelCatalogService
 }
 
-// NewModelHandler validates deps and returns the handler.
 func NewModelHandler(catalog *service.ModelCatalogService) *ModelHandler {
 	return &ModelHandler{catalog: catalog}
 }

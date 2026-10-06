@@ -22,7 +22,6 @@ type VisionAdapterHandler struct {
 	adapter *service.VisionAdapterService
 }
 
-// NewVisionAdapterHandler validates deps and returns the handler.
 func NewVisionAdapterHandler(adapter *service.VisionAdapterService) *VisionAdapterHandler {
 	return &VisionAdapterHandler{adapter: adapter}
 }

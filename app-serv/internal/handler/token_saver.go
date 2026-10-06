@@ -22,7 +22,6 @@ type TokenSaverHandler struct {
 	saver *service.TokenSaverService
 }
 
-// NewTokenSaverHandler validates deps and returns the handler.
 func NewTokenSaverHandler(saver *service.TokenSaverService) *TokenSaverHandler {
 	return &TokenSaverHandler{saver: saver}
 }

@@ -25,7 +25,6 @@ type LogHandler struct {
 	clock func() time.Time
 }
 
-// NewLogHandler validates deps and returns the handler.
 func NewLogHandler(logs *service.LogService) *LogHandler {
 	return &LogHandler{logs: logs, clock: time.Now}
 }

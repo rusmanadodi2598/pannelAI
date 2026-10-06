@@ -28,7 +28,6 @@ type OAuthHandler struct {
 	baseURL string
 }
 
-// NewOAuthHandler validates deps and returns the handler.
 func NewOAuthHandler(flow *service.OAuthFlowService, baseURL string) *OAuthHandler {
 	return &OAuthHandler{flow: flow, baseURL: strings.TrimSuffix(strings.TrimSpace(baseURL), "/")}
 }

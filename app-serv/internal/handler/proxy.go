@@ -23,7 +23,6 @@ type ProxyHandler struct {
 	proxies *service.ProxyService
 }
 
-// NewProxyHandler validates deps and returns the handler.
 func NewProxyHandler(proxies *service.ProxyService) *ProxyHandler {
 	return &ProxyHandler{proxies: proxies}
 }

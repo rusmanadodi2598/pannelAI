@@ -25,7 +25,6 @@ type MediaProviderHandler struct {
 	media *service.MediaProviderService
 }
 
-// NewMediaProviderHandler validates deps and returns the handler.
 func NewMediaProviderHandler(media *service.MediaProviderService) *MediaProviderHandler {
 	return &MediaProviderHandler{media: media}
 }

@@ -25,7 +25,6 @@ type UsageHandler struct {
 	clock func() time.Time
 }
 
-// NewUsageHandler validates deps and returns the handler.
 func NewUsageHandler(usage *service.UsageService) *UsageHandler {
 	return &UsageHandler{usage: usage, clock: time.Now}
 }

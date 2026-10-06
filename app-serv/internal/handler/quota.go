@@ -23,7 +23,6 @@ type QuotaHandler struct {
 	quotas *service.QuotaService
 }
 
-// NewQuotaHandler validates deps and returns the handler.
 func NewQuotaHandler(quotas *service.QuotaService) *QuotaHandler {
 	return &QuotaHandler{quotas: quotas}
 }

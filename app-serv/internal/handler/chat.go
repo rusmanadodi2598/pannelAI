@@ -27,7 +27,6 @@ type ChatHandler struct {
 	chat *service.ChatService
 }
 
-// NewChatHandler validates deps and returns the handler.
 func NewChatHandler(chat *service.ChatService) *ChatHandler {
 	return &ChatHandler{chat: chat}
 }

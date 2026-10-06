@@ -26,7 +26,6 @@ type EndpointKeyHandler struct {
 	endpoints *service.EndpointService
 }
 
-// NewEndpointKeyHandler validates deps and returns the handler.
 func NewEndpointKeyHandler(endpoints *service.EndpointService) *EndpointKeyHandler {
 	return &EndpointKeyHandler{endpoints: endpoints}
 }

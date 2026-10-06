@@ -23,7 +23,6 @@ type GatewayKeyHandler struct {
 	keys *service.GatewayKeyService
 }
 
-// NewGatewayKeyHandler validates deps and returns the handler.
 func NewGatewayKeyHandler(keys *service.GatewayKeyService) *GatewayKeyHandler {
 	return &GatewayKeyHandler{keys: keys}
 }

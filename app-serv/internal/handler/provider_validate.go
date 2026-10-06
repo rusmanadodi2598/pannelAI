@@ -26,7 +26,6 @@ type ProviderValidateHandler struct {
 	validation *service.CredentialValidationService
 }
 
-// NewProviderValidateHandler validates deps and returns the handler.
 func NewProviderValidateHandler(validation *service.CredentialValidationService) *ProviderValidateHandler {
 	return &ProviderValidateHandler{validation: validation}
 }

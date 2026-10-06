@@ -25,7 +25,6 @@ type EndpointBulkHandler struct {
 	endpoints *service.EndpointService
 }
 
-// NewEndpointBulkHandler validates deps and returns the handler.
 func NewEndpointBulkHandler(endpoints *service.EndpointService) *EndpointBulkHandler {
 	return &EndpointBulkHandler{endpoints: endpoints}
 }

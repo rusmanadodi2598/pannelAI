@@ -22,7 +22,6 @@ type ComboTestHandler struct {
 	tests *service.ComboTestService
 }
 
-// NewComboTestHandler validates deps and returns the handler.
 func NewComboTestHandler(tests *service.ComboTestService) *ComboTestHandler {
 	return &ComboTestHandler{tests: tests}
 }
