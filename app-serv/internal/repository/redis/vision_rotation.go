@@ -86,7 +86,8 @@ func (s *VisionRotationStore) Save(ctx context.Context, state domain.RotationSta
 	return s.client.Set(callCtx, visionRotationKey(), encoded, visionRotationTTL).Err()
 }
 
-// visionRotationKey derives the Redis key the adapter's rotation occupies.
+// visionRotationKey is the prefix plus its own digest, and it depends on nothing
+// else: every process and every request address the same rotation slot.
 func visionRotationKey() string {
 	digest := sha256.Sum256([]byte(visionRotationPrefix))
 	return visionRotationPrefix + hex.EncodeToString(digest[:])

@@ -21,7 +21,8 @@ type PasswordHasher interface {
 // BcryptHasher implements PasswordHasher using bcrypt's adaptive work factor.
 type BcryptHasher struct{}
 
-// Hash returns a bcrypt password hash.
+// Hash runs at bcrypt's default cost, which this signature does not let a caller
+// change.
 func (BcryptHasher) Hash(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(hash), err

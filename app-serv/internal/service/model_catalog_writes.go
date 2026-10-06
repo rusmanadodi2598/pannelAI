@@ -91,7 +91,7 @@ func (s *ModelCatalogService) RemoveCustom(ctx context.Context, id string) error
 	return s.repo.RemoveCustom(ctx, id)
 }
 
-// Aliases returns the whole alias set.
+// Aliases returns every alias row: no filter, no page, no per-provider slice.
 func (s *ModelCatalogService) Aliases(ctx context.Context) ([]domain.ModelAlias, error) {
 	return s.repo.Aliases(ctx)
 }

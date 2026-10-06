@@ -46,7 +46,6 @@ type HealthServiceDeps struct {
 	Redis    Pinger
 }
 
-// NewHealthService returns a ready service.
 func NewHealthService(deps HealthServiceDeps) *HealthService {
 	return &HealthService{postgres: deps.Postgres, redis: deps.Redis}
 }
