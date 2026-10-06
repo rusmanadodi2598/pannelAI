@@ -81,6 +81,10 @@ the document never claims enforcement it does not have.
   sentence; an uppercase one continues only while the field has not finished it. A field ending with terminal
   punctuation is complete, so what follows it is a new section rather than the tail of a value, and that boundary keeps
   a stated worker decision (AGENTS.md §1.6) out of the check.
+- A prose paragraph between two fields fails as well. The header is those eight fields and nothing else, so a section
+  sitting among them is either the tail of the field above it, which belongs in that field, or content that belongs in
+  the file body or on a declaration's own doc comment. AGENTS.md §1.6's worker statements are the common case, and they
+  read better beside the code that runs them, where `go doc` also shows them.
 - An indented block that follows a field which has finished its sentence is structure, not a wrapped value, and is left
   alone: 158 headers keep a runnable `go test` example exactly that way. Only a block opening in lowercase continues the
   field. The same test is in the sweep and in the gate, so the two cannot drift apart.
@@ -135,26 +139,27 @@ generated output; the gate itself is exempt because its pattern constants contai
 Recorded rather than hidden, so the backlog can only shrink. Each item names what it was measured against, because the
 gate prints no counts and a number nobody recomputes is how §4 and §6 went stale once already.
 
-Closed by the audit 003 and 004 sweeps, and kept closed by the checks above:
+Closed by the audit 003, 004 and 006 sweeps. Items with a check behind them cannot come back; items marked review-only
+can, and are named as such:
 
 - em and en dash lines across markdown, specs and `AGENTS.md`: 0, tree-wide, failed on by R-02 (§2.1).
-- `draft NNN` citations in body comments: 0 in comments. The 6 matches still printed by the citation warning are
-  assertion strings, not comments (§4).
 - §1.2 field values wrapped across lines: 5788 continuations joined across 1194 of 1245 Go files, now a tree-wide
   failure (§2.7).
+- Free prose between the §1.2 tags: 0, now a tree-wide failure (§2.7). Four worker files carried their AGENTS.md §1.6
+  statements there; those moved to the file body beside the numbers they name, three more blocks were deleted because
+  the declaration's own doc comment already stated them, and the one fact no doc carried (MaxAttempts bounds
+  consecutive failures, then resets) went onto `recordFailure`.
+- `draft NNN` citations in body comments: 0 in comments, and the citation check now reads comment text only, so a
+  `t.Fatalf` naming the case it asserts is no longer counted as comment debt (§4).
+- Three labels that used a comma where §2.1 assigns a colon: now colons. Review-only, and they are three lines a
+  reviewer can see at a glance.
+- Inline blocks past §2.6's eight-line cap: 7 measured, 5 now within it. The 2 above it state 9 and 4 distinct facts
+  per §2.6, which is a pass, not a near-miss, and no check measures block length inside a function body.
 
-Open, each one waiting on a decision rather than on typing:
+Open:
 
-- Free prose between the §1.2 tags in 15 files: worker retry, dead-letter and termination statements written into the
-  header, in two different shapes. The facts are required by AGENTS.md §1.6; the location and shape are the question.
-  Together with the 158 preserved indented examples this is why 65 headers run past 16 lines and why header length is
-  not a metric (§2.6).
-- 7 inline comment blocks inside function bodies past §2.6's eight-line cap, from 656 runs of three lines or more. The
-  length check measures blocks above a declaration, so these are review-only until someone decides whether to widen it.
-- The citation warning reads the whole region below `package`, so it fires on `t.Fatalf` text. Fixing it is what would
-  make the warning worth promoting to a failure.
-- 5 doc comments that echo half their own signature, and 3 header labels that use a comma where §2.1 assigns the job to
-  a colon.
+- 5 doc comments that echo half their own signature, like `NewChatHandler validates deps and returns the handler`.
+  Review-only; the cut is the echoing clause, not the fact beside it.
 
 ---
 
