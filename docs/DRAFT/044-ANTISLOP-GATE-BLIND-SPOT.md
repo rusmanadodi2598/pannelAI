@@ -11,7 +11,7 @@ hijau. Waktu dipanggil, gerbang itu cek satu hal dan mengklaim hal lain.
 
 | | |
 | --- | --- |
-| **Status** | **HIGH selesai (F1, F2, F3).** F4-F8 dicatat, tidak disentuh, menunggu keputusan owner. Bukti di §Hasil |
+| **Status** | **HIGH selesai (F1, F2, F3) dan MEDIUM selesai (F4, F5, F6), plus F8 yang ikut tertutup.** F7 tetap OPEN. Bukti di §Hasil |
 | **Mechanism** | AFTER (audit) lalu DURING untuk tulisan baru |
 | **Scope** | `scrypts/gates/antislop.sh` (aturan baru + angka yang dikoreksi), `scrypts/gates/all.sh` (label), `docs/RULLES/ANTISLOP.md` §2.1, §2.6, §2.7 baru, §4, §6, dan header komentar 1194 file Go. Nol baris executable berubah |
 | **Sumber temuan** | PR #2 `fix/anti-slop-audit-003-remediation`, head `f8067e0`, 23 commit, 1325 file berubah |
@@ -222,9 +222,73 @@ bukan aturannya.
 | Distribusi panjang header sesudah | <=8: 0, 9-10: 696, 11-16: 484, >16: 65 (15 prose F4 + 158 contoh ber-indent, semuanya struktur yang disengaja) |
 | Site yang dianggap sambungan oleh gate | 0 di seluruh tree |
 
-### Yang tidak disentuh
+### F4 selesai: prosa keluar dari header, dan F8 ikut tertutup
 
-F4 sampai F8 tetap OPEN. F1 sengaja membuat F4 lebih terlihat, bukan lebih diam: 15 file dengan prosa di antara tag
-adalah satu-satunya header yang kini menonjol, dan §6 menyebut lokasinya. Putukan bentuknya (kolon vs heading, di header
-atau di body) adalah keputusan owner, dan F8 ikut terikat di sana.
+Aturannya dulu, baru isinya. `wrapped_field_hits` jadi `header_shape_hits`: selain nilai field yang menyambung, kini
+**paragraf prosa di antara dua field** juga FAIL tree-wide. Header adalah delapan field itu dan bukan yang lain.
+
+Empat file worker membawa pernyataan §1.6 (retry, dead-letter, termination) di antara tag:
+
+- `quota_published_policy.go`: tiga blok pindah ke body file, tepat di samping angka yang mereka namai, dengan satu
+  kalimat rationale yang ternyata sudah ada di doc `publishedPollIntervals` dipangkas agar tidak dobel.
+- `quota_flush.go`, `quota_flush_policy.go`, `log_retention.go`: bloknya **dihapus**, bukan dipindah. Doc `Run`,
+  doc tipe `QuotaFlushPolicy`, dan doc `recordFailure` sudah menyatakan fakta yang sama; blok header adalah duplikasi.
+  Satu fakta memang belum ada di mana pun (MaxAttempts membatasi kegagalan beruntun lalu mereset pencacah) dan itu
+  masuk ke doc `recordFailure`, tempat `go doc` menampilkannya.
+- Keempat header sekarang tepat 10 baris, 8 field.
+
+Lima file lain punya kasus berbeda: paragraf kedua `@reason` yang menggantung di tengah header. Empat di antaranya
+terbawa oleh perbaikan definisi, yaitu bahwa **titik dua tidak menutup kalimat**; ia memperkenalkan baris sesudahnya,
+jadi nilai field yang putus setelah `stop_reason:` kini ikut terserap. Satu file digabung tangan, dan penggabungan itu
+menyingkap artefak nyata: `anything already recorded ,` di `published_quota_rollback_test.go`, koma yang selama ini
+tersembunyi karena gerbang membaca pola `kata , kata` per baris dan barisnya terbelah tepat di situ.
+
+F8 ikut selesai karena pemindahan yang sama: `Retry policy,` / `Dead-letter policy,` / `Termination,` jadi titik dua.
+Sisa tiga tembakan grep pola itu (`RetryAfter, when positive,` dan dua lainnya) adalah appositive biasa, bukan heading.
+
+### F5 selesai, dengan hasil yang tidak seragam dan itu benar
+
+Tujuh blok inline lewat batas delapan baris. Yang dipotong: rantai argumen, kalimat yang menyatakan ulang fakta
+sebelahnya, dan satu cerita insiden. Tidak ada fakta yang dipadatkan jadi lebih sedikit kata.
+
+| Lokasi | Sebelum | Sesudah |
+| --- | --- | --- |
+| `service/combo_order.go` | 13 | 9 |
+| `repository/published_quota.go` | 13 | 12 |
+| `dataplane/outcome.go` | 11 | 9 |
+| `registry/custom_node.go` | 10 | 6 |
+| `repository/usage.go` | 10 | 9 |
+| `service/model_catalog_writes.go` | 9 | 7 |
+| `dataplane/transport_call.go` | 9 | 9 |
+
+Dua blok terakhir tetap lewat batas dan itu bukan kegagalan pass ini: `published_quota.go` menyatakan sembilan fakta
+berbeda (apa yang distempel, baris dibuat kalau belum ada, delta nol, delta negatif ditolak, kalimat provider, ke baris
+mana kalimat itu disimpan, window row tidak disentuh, nomor basi mempertahankan stamp-nya) dan `transport_call.go`
+empat. §2.6 bilang blok yang memang memegang lima batasan mengambil lima baris; memaksa keduanya ke delapan berarti
+membuang fakta, yaitu kegagalan yang paling dokumen ini peringatkan. Yang hilang dari `outcome.go` justru yang seharusnya:
+cerita "model adapter buta melayani gambar merah sebagai abu-abu selama satu combo penuh", riwayat insiden, bukan
+batasan bagi pembaca field itu.
+
+Belum ada cek yang mengukur panjang blok di dalam body; itu §3 material dan pass ini tidak melebarkannya diam-diam.
+
+### F6 selesai: cek sitasi hanya membaca komentar
+
+`go_body_comments` mengambil bagian komentar dari sebuah baris dan membuang `//` yang terletak di dalam string (paritas
+tanda kutip). `go_body` ikut dihapus karena tidak ada lagi yang memanggilnya. Dibuktikan dua arah: komentar berisi
+`draft 099 F1` dilaporkan, `t.Errorf` berisi `draft 017 §4.6` tidak. Lima peringatan yang masih tercetak sepanjang pass
+HIGH sekarang hilang, dan itu syarat supaya peringatan ini layak dinaikkan jadi FAIL suatu hari nanti.
+
+### Satu kesalahan alat, bukan pohon
+
+Jalankan pertama MEDIUM melaporkan `code changed: 4`. Yang salah verifier saya, bukan tree: `cmcheck` membersihkan Doc
+pada file, func, type, value dan import, tapi tidak pada `*ast.Field`, jadi komentar anggota struct dan method interface
+ikut tercetak dan setiap edit komentar field terlihat seperti perubahan kode. Setelah diperbaiki, sapuan yang sudah
+ter-commit diverifikasi ulang dengan alat yang benar: 1194 file, 0 kode berubah. Bug itu cuma bisa laporan palsu
+"berubah", tidak sebaliknya, jadi klaim HIGH tetap berdiri; sekarang ia terbukti, bukan disimpulkan.
+
+### F7 tetap OPEN
+
+Lima doc comment yang menggema setengah signature (`chat.go`, `Aliases` di `model_catalog_writes.go`,
+`vision_rotation.go`, dan dua dengan bentuk sama). Satu baris per tempat, tidak ada cek untuk ini, dan memotongnya
+tidak mengubah apa pun selain baris kedua tiap komentar itu.
 
