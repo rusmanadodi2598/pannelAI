@@ -9,7 +9,7 @@ menghapus provider.
 
 | | |
 | --- | --- |
-| **Status** | **HIGH ter-commit `b41f54b`, MEDIUM ter-commit `0f151b1`. F4 sebagian besar sudah landed bersama `b41f54b` (komentar yang menuliskan aturan lama akan menjadi klaim palsu dalam commit yang sama yang menghapus aturannya); sisa F4 satu doc comment di `api/provider-nodes.ts`, yang ikut `0f151b1`. F5 adalah catatan, bukan kode: ia sudah tertulis di dokumen ini. Suite panel penuh di atas HEAD sudah selesai: 183 file, 2985 test, semuanya lolos. Yang tersisa untuk ronde berikutnya hanya keputusan bentuk, bukan celah: memisahkan dialog delete dari kartunya mengikuti `ComboDeleteDialog`** |
+| **Status** | **Selesai. HIGH `b41f54b`; dokumen MEDIUM `0f151b1`; ronde lanjutan `5934041` (penolakan combo terbukti lewat API hidup, dan konfirmasi delete menjadi komponen sendiri). F4 landed bersama commit yang menghapus aturannya, kecuali satu doc comment yang ikut `0f151b1`. F5 terukur live dan sengaja ditinggal. Tidak ada butir yang terbuka di draft ini. Bukti: suite panel penuh 183 file / 2985 test lolos di atas `0f151b1`, `go test -race ./...` app-serv exit 0 di atas `b41f54b`, dan ronde lanjutan hanya menyentuh panel (`5934041`: 4 file 28 test, `svelte-check` 0/0)** |
 | **Mechanism** | DURING: tulisan baru mengikuti R-02 dan R-31, dan pesan yang dikirim ke operator harus bisa dibuktikan produk |
 | **Scope** | **Bukan comment-only.** F1 mengubah `app-serv` service, repository, dan wiring; F2 mengubah komponen panel dan testnya; F3 mengubah dokumen kontrak; F4 menyunting komentar yang menuliskan aturan lama. Keluar dari guardrail antislop-code, atas izin eksplisit owner, seperti F4 dan F12 pada 045 |
 | **Sumber temuan** | Laporan owner, log `app-serv` 2026-10-07 20:47 (`DELETE /api/v1/provider-nodes/anthropic-compatible-0388PGVSAVAW7MD0VTT2X9SAYA` → `409 CONFLICT`), lalu pengukuran terhadap PostgreSQL nyata dan pohon kode saat ini |
@@ -184,7 +184,8 @@ Baris `models_custom` dan `models_disabled` keyed by `provider_id` tetap ada set
 sana, jadi tidak ada cascade yang bisa diminta. Baris itu tidak terjangkau: kuncinya id node yang sudah mati dan id
 node tidak dipakai ulang. Menuliskan ini di sini, bukan menghapusnya diam-diam, supaya audit berikutnya tahu bahwa
 sisa ini dipilih, bukan terlewat. Kalau suatu saat prefix boleh dipakai ulang, kalimat di "Keputusan desain" di atas
-salah, dan sisa ini menjadi bug sungguhan.
+salah, dan sisa ini menjadi bug sungguhan. Terukur pada ronde lanjutan: setelah node probe dihapus,
+`models_custom` untuk id node itu masih berisi 1 baris.
 
 ## Rencana verifikasi
 
@@ -264,6 +265,40 @@ Bukti ronde ini: `scrypts/gates/antislop.sh` PASS (tree-wide R-02 ikut membaca d
 dijalankan sekali lagi atas seluruh pohon: **183 file, 2985 test, lolos semua** (exit 0, durasi 1208 s).
 
 
+
+### Ronde lanjutan (MEDIUM): penolakan combo terbukti live, dan konfirmasi jadi komponen sendiri
+
+**Penolakan combo terukur lewat API nyata**, di binary hasil pass ini, pada port 127.0.0.1:9098 dengan node
+buatan sendiri (`zzguard`), satu koneksi dengan satu kunci, satu baris `models_custom`, dan satu combo
+`zz-guard-probe` yang menyebut node itu:
+
+```text
+delete while a combo names it: 409 {"code":"CONFLICT","message":"combo zz-guard-probe still references this provider"}
+after the refusal:  node=1 endpoints=1 keys=1 custom_models=1
+delete once the combo is gone: 204
+after:              node=0 endpoints=0 keys=0 custom_models=1
+```
+
+Baris kedua yang penting: penolakan tidak menghapus apa pun, jadi urutan guard-sebelum-erase terbukti pada server
+hidup, bukan hanya oleh assertion di test service. `custom_models=1` yang tertinggal setelah node hilang adalah F5
+yang terukur: `models_custom` dan `models_disabled` tidak punya FK ke node, jadi barisnya memang tinggal, dan id
+node tidak dipakai ulang sehingga baris itu tidak terjangkau. Semua baris probe dibersihkan dan dihitung ulang:
+node, combo, dan baris model probe kembali nol.
+
+Dua hal yang membuat probe pertama gagal, dan keduanya fakta, bukan tebakan:
+
+1. `POST /combos` menolak nama yang berisi spasi; aturannya huruf, angka, titik, strip, underscore.
+2. Sebuah ref combo harus resolve lewat jalur yang sama dengan router, jadi node baru wajib punya baris model
+   sendiri. Ref ke model yang belum ada ditolak `VALIDATION_ERROR`, bukan `CONFLICT`.
+
+**Konfirmasi delete menjadi komponennya sendiri** (`5934041`). `ProviderNodeDeleteDialog.svelte` 84 baris mengikuti
+bentuk `ComboDeleteDialog`: state dan panggilan API tetap di parent, komponen menerima `connections`, `error`,
+`conflict`, `deleting`. `CustomProviderCard.svelte` turun dari 263 ke 225 baris. Perilakunya tidak berubah: empat
+kasus delete tetap dijalankan melalui kartu, jadi jalur yang sesungguhnya dipakai operator yang tertutup, dan tidak
+ada test terisolasi untuk komponen itu karena ia tidak dipakai di tempat lain. Terukur: 4 file, 28 test lolos;
+`svelte-check --tsgo` 0 errors 0 warnings; eslint dan prettier bersih.
+
+## Yang tidak dilakukan pass ini
 
 - Tidak menambah route "move endpoint" atau membuat `provider_id` bisa di-patch. Yang diminta adalah menghapus
   provider, dan kata "move" dihapus dari panel karena ia menjanjikan jalur yang tidak ada, bukan karena jalurnya
