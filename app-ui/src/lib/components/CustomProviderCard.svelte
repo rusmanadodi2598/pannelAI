@@ -21,7 +21,7 @@
 	import { untrack } from 'svelte';
 	import CustomProviderDialog from '$lib/components/CustomProviderDialog.svelte';
 	import CustomProviderTest from '$lib/components/CustomProviderTest.svelte';
-	import Modal from '$lib/components/Modal.svelte';
+	import ProviderNodeDeleteDialog from '$lib/components/ProviderNodeDeleteDialog.svelte';
 	import ProviderNodeFacts from '$lib/components/ProviderNodeFacts.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
@@ -76,19 +76,6 @@
 	// The connections a confirmed delete takes with it; `null` is the count not being known.
 	let connections = $state<number | null>(null);
 
-	// Read here rather than taken from the page's provider read, whose total is not refreshed by every
-	// connection added below: a stale number in front of an action that destroys credentials is not a
-	// fact a confirmation may state, and a failed read drops the number instead of guessing one.
-	const cascade = $derived(
-		connections === null
-			? 'Its stored connections go with it, keys included.'
-			: connections === 1
-				? 'Its 1 stored connection goes with it, keys included.'
-				: connections > 1
-					? `Its ${connections} stored connections go with it, keys included.`
-					: null
-	);
-
 	// The type comes from the id, which is the public contract (§7.4), and not from the node: the dialog
 	// needs it before the read lands, and a node whose read failed still has to open a usable dialog.
 	const type = $derived<NodeType>(nodeTypeOfId(providerId) ?? 'openai-compatible');
@@ -122,7 +109,8 @@
 		await load(providerId);
 	}
 
-	// The confirmation reads what it will take before the destructive button can be pressed.
+	// Read on opening rather than reused from the page's provider total, which no connection write below
+	// refreshes: the dialog drops the number rather than state a stale one in front of a credential loss.
 	async function askDelete(): Promise<void> {
 		deleteError = null;
 		conflict = false;
@@ -223,41 +211,15 @@
 		onclose={() => (editing = false)}
 	/>
 
-	<Modal title="Delete this custom provider" open={confirming} onclose={() => (confirming = false)}>
-		<p>
-			Delete <span class="font-medium">{node.name}</span> ({node.prefix}/model)? Requests naming a
-			model under that prefix stop resolving.
-		</p>
-
-		{#if cascade}
-			<p class="mt-3">{cascade}</p>
-		{/if}
-
-		{#if deleteError}
-			{#if conflict}
-				<p class="mt-3 text-[var(--color-danger)]" role="alert">
-					Not deleted: {deleteError}
-					<a href={resolve('/combos')} class="underline">Combos</a> is where that membership is edited.
-				</p>
-			{:else}
-				<p class="mt-3 text-[var(--color-danger)]" role="alert">
-					This provider was not deleted. {deleteError}
-				</p>
-			{/if}
-		{/if}
-
-		{#snippet footer()}
-			<button type="button" class="min-h-11 underline" onclick={() => (confirming = false)}
-				>Keep it</button
-			>
-			<button
-				type="button"
-				class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[var(--color-accent-text)] disabled:opacity-50"
-				disabled={deleting}
-				onclick={remove}
-			>
-				{deleting ? 'Deleting' : 'Delete the provider'}
-			</button>
-		{/snippet}
-	</Modal>
+	<ProviderNodeDeleteDialog
+		open={confirming}
+		name={node.name}
+		prefix={node.prefix}
+		{connections}
+		error={deleteError}
+		{conflict}
+		{deleting}
+		onconfirm={remove}
+		oncancel={() => (confirming = false)}
+	/>
 {/if}
