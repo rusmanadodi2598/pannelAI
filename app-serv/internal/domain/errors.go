@@ -114,7 +114,6 @@ var (
 	ErrEndpointExists   = NewConflictError("an endpoint with this label already exists for this provider")
 	ErrNodeNotFound     = NewNotFoundError("provider node not found")
 	ErrNodePrefixTaken  = NewConflictError("this prefix is already in use")
-	ErrNodeInUse        = NewConflictError("an endpoint still references this provider")
 
 	ErrProxyNotFound = NewNotFoundError("proxy not found")
 )

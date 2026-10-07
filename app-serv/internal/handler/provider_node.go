@@ -114,8 +114,9 @@ func (h *ProviderNodeHandler) Update(w http.ResponseWriter, r *http.Request) {
 	schema.WriteJSON(w, http.StatusOK, toNodeResponse(node))
 }
 
-// Delete serves DELETE /api/v1/provider-nodes/{id}, refused while an endpoint still
-// references the node (CONFLICT, §7.4).
+// Delete serves DELETE /api/v1/provider-nodes/{id}. The node's endpoints go with it
+// (§7.4); a combo that still names the node is refused (CONFLICT) rather than
+// silently losing a member.
 func (h *ProviderNodeHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, ok := pathValue(w, r, "id")
 	if !ok {

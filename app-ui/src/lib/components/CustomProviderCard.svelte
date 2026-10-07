@@ -14,7 +14,8 @@
 	//
 	// Edit, Test, and Delete live here rather than in the list's rows, which is the reference's shape: the
 	// list is for finding a node, and this is where its state changes. Delete confirms first because it
-	// cannot be undone, and the API refuses it outright while an endpoint still references the node.
+	// cannot be undone and it takes the node's connections with it, keys included; the API still refuses a
+	// node a combo names, and that one answer is the only reason a confirmed delete comes back unchanged.
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
@@ -24,6 +25,7 @@
 	import ProviderNodeFacts from '$lib/components/ProviderNodeFacts.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
+	import { listEndpointLabels } from '$lib/api/endpoints';
 	import { deleteProviderNode, getProviderNode } from '$lib/api/provider-nodes';
 	import {
 		NODE_TYPE_LABELS,
@@ -69,8 +71,23 @@
 	let confirming = $state(false);
 	let deleting = $state(false);
 	let deleteError = $state<string | null>(null);
-	/** The delete failure was the API's CONFLICT: an endpoint still references this node. */
+	/** The delete failure was the API's CONFLICT: a combo still names this node as a member. */
 	let conflict = $state(false);
+	// The connections a confirmed delete takes with it; `null` is the count not being known.
+	let connections = $state<number | null>(null);
+
+	// Read here rather than taken from the page's provider read, whose total is not refreshed by every
+	// connection added below: a stale number in front of an action that destroys credentials is not a
+	// fact a confirmation may state, and a failed read drops the number instead of guessing one.
+	const cascade = $derived(
+		connections === null
+			? 'Its stored connections go with it, keys included.'
+			: connections === 1
+				? 'Its 1 stored connection goes with it, keys included.'
+				: connections > 1
+					? `Its ${connections} stored connections go with it, keys included.`
+					: null
+	);
 
 	// The type comes from the id, which is the public contract (§7.4), and not from the node: the dialog
 	// needs it before the read lands, and a node whose read failed still has to open a usable dialog.
@@ -103,6 +120,17 @@
 
 	async function reload(): Promise<void> {
 		await load(providerId);
+	}
+
+	// The confirmation reads what it will take before the destructive button can be pressed.
+	async function askDelete(): Promise<void> {
+		deleteError = null;
+		conflict = false;
+		connections = null;
+		confirming = true;
+
+		const result = await listEndpointLabels({ provider_id: providerId, page: 1, per_page: 1 });
+		connections = result.ok ? result.data.meta.total : null;
 	}
 
 	async function remove(): Promise<void> {
@@ -173,11 +201,7 @@
 					class="{iconActionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]"
 					aria-label="Delete"
 					title="Delete"
-					onclick={() => {
-						deleteError = null;
-						conflict = false;
-						confirming = true;
-					}}
+					onclick={askDelete}
 				>
 					<DeleteIcon class="size-4" aria-hidden="true" />
 				</button>
@@ -205,10 +229,15 @@
 			model under that prefix stop resolving.
 		</p>
 
+		{#if cascade}
+			<p class="mt-3">{cascade}</p>
+		{/if}
+
 		{#if deleteError}
 			{#if conflict}
 				<p class="mt-3 text-[var(--color-danger)]" role="alert">
-					Still referenced. {deleteError} Remove or move its endpoints first.
+					Not deleted: {deleteError}
+					<a href={resolve('/combos')} class="underline">Combos</a> is where that membership is edited.
 				</p>
 			{:else}
 				<p class="mt-3 text-[var(--color-danger)]" role="alert">

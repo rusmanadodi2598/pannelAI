@@ -6,9 +6,13 @@
 // document no matter what was sent would let a screen that never re-reads pass.
 //
 // Two refusals the gateway makes are expressible rather than assumed, because both are answers the panel
-// has to render rather than predict: a prefix another provider already uses (CONFLICT), and a delete
-// while an endpoint still references the node (CONFLICT). The probe's answer is a state and a latency,
+// has to render rather than predict: a prefix another provider already uses (CONFLICT), and a delete while
+// a combo still names the node (CONFLICT, naming the combo). The probe's answer is a state and a latency,
 // never an HTTP failure, which is what the route does with a credential it refuses.
+//
+// The delete confirmation reads how many connections the node holds, so the label-only endpoint route is
+// answered here too: `connections` states that count per provider id, and a stub that left the route out
+// would only ever exercise the confirmation's no-number branch.
 
 import { vi } from 'vitest';
 
@@ -39,8 +43,12 @@ export type NodeStub = {
 	writeStatus: number;
 	/** Prefixes whose create is refused, so a collision is expressible. */
 	takenPrefixes: string[];
-	/** Node ids whose delete is refused because an endpoint still points at them. */
-	referenced: string[];
+	/** Node ids whose delete is refused because a combo still names them. */
+	comboReferenced: string[];
+	/** How many connections each provider id holds, which the delete confirmation states. */
+	connections: Record<string, number>;
+	/** When true the count read fails, which is the state the confirmation renders without a number. */
+	connectionsUnknown: boolean;
 	testState: string;
 	testMessage: string;
 };
@@ -56,7 +64,9 @@ export function stubProviderNodes(overrides: Partial<NodeStub> = {}): NodeStub {
 		readStatus: 200,
 		writeStatus: 200,
 		takenPrefixes: [],
-		referenced: [],
+		comboReferenced: [],
+		connections: {},
+		connectionsUnknown: false,
 		testState: 'ok',
 		testMessage: '',
 		...overrides
@@ -82,6 +92,25 @@ export function stubProviderNodes(overrides: Partial<NodeStub> = {}): NodeStub {
 			init?.body === undefined ? {} : JSON.parse(String(init.body));
 
 		if (method === 'GET') stub.reads.push(url);
+
+		// The connection count the delete confirmation asks for. Only `total` is read there, so the rows
+		// come back empty and the meta carries the count the case declared.
+		const endpoints = /\/endpoints\?(.*)$/.exec(url);
+		if (method === 'GET' && endpoints) {
+			if (stub.connectionsUnknown) {
+				return refusal('INTERNAL_ERROR', 'The endpoint store is unreachable.', 503);
+			}
+			const params = new URLSearchParams(endpoints[1]);
+			const provider = params.get('provider_id') ?? '';
+			return json({
+				data: [],
+				meta: {
+					page: Number(params.get('page') ?? 1),
+					per_page: Number(params.get('per_page') ?? 1),
+					total: stub.connections[provider] ?? 0
+				}
+			});
+		}
 
 		// The probe route is matched before the stored one, because `/provider-nodes/x/test` also matches
 		// the stored route's shape at a glance and the order is what keeps them apart.
@@ -144,8 +173,8 @@ export function stubProviderNodes(overrides: Partial<NodeStub> = {}): NodeStub {
 				if (stub.writeStatus !== 200) {
 					return refusal('INTERNAL_ERROR', 'The provider was not deleted.', stub.writeStatus);
 				}
-				if (stub.referenced.includes(id)) {
-					return refusal('CONFLICT', 'an endpoint still references this provider', 409);
+				if (stub.comboReferenced.includes(id)) {
+					return refusal('CONFLICT', 'combo "prod fallback" still references this provider', 409);
 				}
 				if (!row) return refusal('NOT_FOUND', 'That provider no longer exists.', 404);
 

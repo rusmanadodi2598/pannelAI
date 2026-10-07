@@ -3,7 +3,7 @@
 // @file      internal/service/provider_node.go
 // @for       The custom provider node lifecycle: create, list, inspect, patch, delete, and connectivity test (SPEC-API-001 §7.4).
 // @uses      internal/domain, internal/repository, context, strings, time.
-// @reason    §7.4 lets an operator define their own OpenAI-compatible or Anthropic-compatible base URL, and a node's prefix becomes a model-string namespace. That makes two rules the service owns: the prefix must not collide with a registry identifier or alias, and a delete must refuse while an endpoint still references the node, both of which need the registry and the endpoints table, not just the node row (AGENTS.md §1.5 keeps that orchestration here).
+// @reason    §7.4 lets an operator define their own OpenAI-compatible or Anthropic-compatible base URL, and a node's prefix becomes a model-string namespace. That makes two rules the service owns: the prefix must not collide with a registry identifier or alias, and a delete has to take the node's endpoints with it while refusing a node a combo still names, both of which need the registry, the endpoints table and the combo table, not just the node row (AGENTS.md §1.5 keeps that orchestration here).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -21,31 +21,32 @@ import (
 
 // NodeService implements SPEC-API-001 §7.4.
 type NodeService struct {
-	store  repository.NodeRepository
-	index  ProviderIndex
-	counts EndpointCounter
-	combos ComboLister
-	prober NodeProber
-	clock  func() time.Time
+	store     repository.NodeRepository
+	index     ProviderIndex
+	endpoints EndpointEraser
+	combos    ComboLister
+	prober    NodeProber
+	clock     func() time.Time
 }
 
-// EndpointCounter reports how many endpoints reference a provider id, which is what
-// makes a node delete refuse while one still does (domain.ErrNodeInUse). It is
-// satisfied by the concrete endpoint repository and by the node repository, both of
-// which already read that count.
-type EndpointCounter interface {
-	CountEndpoints(ctx context.Context, providerID string) (int64, error)
+// EndpointEraser removes every endpoint that references a provider id, which is
+// what lets a node delete take its connections with it. An endpoint is routed by
+// the base URL and wire format stored on the node row, so a node gone leaves a
+// connection nothing can answer with. The keys go through the cascade the schema
+// declares on upstream_keys.endpoint_id.
+type EndpointEraser interface {
+	DeleteByProvider(ctx context.Context, providerID string) error
 }
 
 // NodeServiceDeps holds the collaborators the service needs. Prober may be nil: a
 // deployment without one still serves node CRUD. Combos may be nil: a
 // deployment without a combo table skips the member check.
 type NodeServiceDeps struct {
-	Store  repository.NodeRepository
-	Index  ProviderIndex
-	Counts EndpointCounter
-	Combos ComboLister
-	Prober NodeProber
+	Store     repository.NodeRepository
+	Index     ProviderIndex
+	Endpoints EndpointEraser
+	Combos    ComboLister
+	Prober    NodeProber
 }
 
 // NewNodeService validates deps and returns a ready service.
@@ -56,16 +57,16 @@ func NewNodeService(deps NodeServiceDeps) (*NodeService, error) {
 	if deps.Index == nil {
 		return nil, domain.NewValidationError("provider index is required")
 	}
-	if deps.Counts == nil {
-		return nil, domain.NewValidationError("endpoint counter is required")
+	if deps.Endpoints == nil {
+		return nil, domain.NewValidationError("endpoint eraser is required")
 	}
 	return &NodeService{
-		store:  deps.Store,
-		index:  deps.Index,
-		counts: deps.Counts,
-		combos: deps.Combos,
-		prober: deps.Prober,
-		clock:  time.Now,
+		store:     deps.Store,
+		index:     deps.Index,
+		endpoints: deps.Endpoints,
+		combos:    deps.Combos,
+		prober:    deps.Prober,
+		clock:     time.Now,
 	}, nil
 }
 
@@ -176,24 +177,24 @@ func (s *NodeService) Update(ctx context.Context, id string, patch NodePatch) (d
 	return node, nil
 }
 
-// Delete removes a node, refusing while an endpoint still references it
-// (domain.ErrNodeInUse) or while a combo lists the node as a member, naming the
-// combo. The reference is by provider id string rather than by foreign key (a
-// built-in provider has no node row at all), so the check has to run here
-// rather than be declared in the schema.
+// Delete removes a node together with the endpoints that reference it, because an
+// endpoint routed by a base URL that no longer exists cannot answer anything and
+// cannot be moved: `provider_id` is not writable on an endpoint. The stored keys go
+// with their endpoints through the cascade the schema declares. A combo that still
+// names the node is refused instead (CONFLICT, naming the combo), since silently
+// dropping a member would change routing the operator did not ask about. The
+// reference is by provider id string rather than by foreign key (a built-in provider
+// has no node row at all), so both the erase and the guard have to run here rather
+// than be declared in the schema.
 func (s *NodeService) Delete(ctx context.Context, id string) error {
 	node, err := s.store.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	count, err := s.counts.CountEndpoints(ctx, node.ID())
-	if err != nil {
+	if err := s.rejectComboReference(ctx, node.ID(), node.Prefix()); err != nil {
 		return err
 	}
-	if count > 0 {
-		return domain.ErrNodeInUse
-	}
-	if err := s.rejectComboReference(ctx, node.ID(), node.Prefix()); err != nil {
+	if err := s.endpoints.DeleteByProvider(ctx, node.ID()); err != nil {
 		return err
 	}
 	if err := s.store.Delete(ctx, id); err != nil {

@@ -37,7 +37,7 @@ func TestNodeService_MutationsInvalidateTheOverlayCache(t *testing.T) {
 		entries: []registry.Provider{{ID: "openai"}},
 	}}
 	svc, err := NewNodeService(NodeServiceDeps{
-		Store: store, Index: index, Counts: readinessEndpointCounts{},
+		Store: store, Index: index, Endpoints: &readinessEndpointErasures{},
 	})
 	if err != nil {
 		t.Fatalf("NewNodeService() error = %v", err)

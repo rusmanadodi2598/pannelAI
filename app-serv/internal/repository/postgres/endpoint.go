@@ -164,16 +164,16 @@ func (r *EndpointRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// CountEndpoints reports how many endpoints reference a provider id, which is
-// what lets a node delete refuse while one still does (domain.ErrNodeInUse).
-func (r *EndpointRepository) CountEndpoints(ctx context.Context, providerID string) (int64, error) {
-	var count int64
-	err := r.pool.QueryRow(ctx,
-		`SELECT count(*) FROM upstream_endpoints WHERE provider_id = $1`, providerID).Scan(&count)
+// DeleteByProvider removes every endpoint that references a provider id, and the
+// cascade the schema declares on upstream_keys.endpoint_id takes their stored keys
+// with them. Deleting zero rows is a success: a node with no connection is the
+// ordinary state, not an error to report.
+func (r *EndpointRepository) DeleteByProvider(ctx context.Context, providerID string) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM upstream_endpoints WHERE provider_id = $1`, providerID)
 	if err != nil {
-		return 0, translateEndpointError(err)
+		return translateEndpointError(err)
 	}
-	return count, nil
+	return nil
 }
 
 // keysForEndpoints loads the keys of several endpoints in one statement, keyed

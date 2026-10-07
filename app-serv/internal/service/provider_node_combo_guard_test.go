@@ -27,9 +27,10 @@ import (
 func TestNodeService_DeleteRefusesWhileAComboReferencesTheNode(t *testing.T) {
 	store := newReadinessNodeStore()
 	combos := newStubComboRepo()
+	erasures := &readinessEndpointErasures{}
 	svc, err := NewNodeService(NodeServiceDeps{
 		Store: store, Index: readinessProviderIndex{entries: []registry.Provider{{ID: "openai"}}},
-		Counts: readinessEndpointCounts{}, Combos: combos,
+		Endpoints: erasures, Combos: combos,
 	})
 	if err != nil {
 		t.Fatalf("NewNodeService() error = %v", err)
@@ -50,23 +51,34 @@ func TestNodeService_DeleteRefusesWhileAComboReferencesTheNode(t *testing.T) {
 
 	// The id spelling blocks it, and the refusal names the combo.
 	blocking := seedGuardCombo(t, combos, "by-id", node.ID()+"/gpt-4o")
-	assertComboBlocksDelete(t, svc, store, node.ID(), blocking.Name())
+	assertComboBlocksDelete(t, svc, store, erasures, node.ID(), blocking.Name())
 	dropGuardCombo(combos, blocking)
 
 	// So does the prefix spelling, which the router accepts just as it accepts
 	// the id (combo_order.go canonicalizes a member through the same lookup).
 	blocking = seedGuardCombo(t, combos, "by-prefix", node.Prefix()+"/gpt-4o")
-	assertComboBlocksDelete(t, svc, store, node.ID(), blocking.Name())
+	assertComboBlocksDelete(t, svc, store, erasures, node.ID(), blocking.Name())
 	dropGuardCombo(combos, blocking)
 
 	if err := svc.Delete(context.Background(), node.ID()); err != nil {
 		t.Fatalf("delete after the blocking combos are gone: %v", err)
 	}
+	if len(erasures.providers) != 1 || erasures.providers[0] != node.ID() {
+		t.Fatalf("connections erased for %v, want exactly the deleted node", erasures.providers)
+	}
 }
 
-// assertComboBlocksDelete asserts the delete is refused with the combo named,
-// and that the refused delete left the node in place.
-func assertComboBlocksDelete(t *testing.T, svc *NodeService, store *readinessNodeStore, nodeID, comboName string) {
+// assertComboBlocksDelete asserts the delete is refused with the combo named, that
+// the refused delete left the node in place, and that it erased no connections
+// either: the guard has to run before the erase, or a refused delete would still
+// have destroyed the rows it was refusing to lose.
+func assertComboBlocksDelete(
+	t *testing.T,
+	svc *NodeService,
+	store *readinessNodeStore,
+	erasures *readinessEndpointErasures,
+	nodeID, comboName string,
+) {
 	t.Helper()
 	err := svc.Delete(context.Background(), nodeID)
 	mustAppError(t, err, "CONFLICT")
@@ -75,6 +87,9 @@ func assertComboBlocksDelete(t *testing.T, svc *NodeService, store *readinessNod
 	}
 	if _, ok := store.nodes[nodeID]; !ok {
 		t.Fatal("the refused delete removed the node")
+	}
+	if len(erasures.providers) != 0 {
+		t.Fatalf("the refused delete erased connections for %v", erasures.providers)
 	}
 }
 
