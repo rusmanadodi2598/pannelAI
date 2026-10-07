@@ -9,7 +9,7 @@ menghapus provider.
 
 | | |
 | --- | --- |
-| **Status** | **HIGH ter-commit `b41f54b`, MEDIUM ter-commit `0f151b1`. F4 sebagian besar sudah landed bersama `b41f54b` (komentar yang menuliskan aturan lama akan menjadi klaim palsu dalam commit yang sama yang menghapus aturannya); sisa F4 satu doc comment di `api/provider-nodes.ts`, yang ikut `0f151b1`. F5 adalah catatan, bukan kode: ia sudah tertulis di dokumen ini. Yang tersisa untuk ronde berikutnya hanya keputusan bentuk, bukan celah: memisahkan dialog delete dari kartunya mengikuti `ComboDeleteDialog`** |
+| **Status** | **HIGH ter-commit `b41f54b`, MEDIUM ter-commit `0f151b1`. F4 sebagian besar sudah landed bersama `b41f54b` (komentar yang menuliskan aturan lama akan menjadi klaim palsu dalam commit yang sama yang menghapus aturannya); sisa F4 satu doc comment di `api/provider-nodes.ts`, yang ikut `0f151b1`. F5 adalah catatan, bukan kode: ia sudah tertulis di dokumen ini. Suite panel penuh di atas HEAD sudah selesai: 183 file, 2985 test, semuanya lolos. Yang tersisa untuk ronde berikutnya hanya keputusan bentuk, bukan celah: memisahkan dialog delete dari kartunya mengikuti `ComboDeleteDialog`** |
 | **Mechanism** | DURING: tulisan baru mengikuti R-02 dan R-31, dan pesan yang dikirim ke operator harus bisa dibuktikan produk |
 | **Scope** | **Bukan comment-only.** F1 mengubah `app-serv` service, repository, dan wiring; F2 mengubah komponen panel dan testnya; F3 mengubah dokumen kontrak; F4 menyunting komentar yang menuliskan aturan lama. Keluar dari guardrail antislop-code, atas izin eksplisit owner, seperti F4 dan F12 pada 045 |
 | **Sumber temuan** | Laporan owner, log `app-serv` 2026-10-07 20:47 (`DELETE /api/v1/provider-nodes/anthropic-compatible-0388PGVSAVAW7MD0VTT2X9SAYA` → `409 CONFLICT`), lalu pengukuran terhadap PostgreSQL nyata dan pohon kode saat ini |
@@ -260,7 +260,8 @@ dan itu tetap benar), dan `SYSTEM_MAP.md` (tidak ada tabel, kolom, atau jalur as
 
 Bukti ronde ini: `scrypts/gates/antislop.sh` PASS (tree-wide R-02 ikut membaca dua spesifikasi dan README),
 `prettier --check` untuk `app-ui/README.md` dan `src/lib/api/provider-nodes.ts` bersih, dan
-`vitest run tests/api/provider-nodes.test.ts` 11 test lolos.
+`vitest run tests/api/provider-nodes.test.ts` 11 test lolos. Setelah kedua tier landed, suite panel penuh
+dijalankan sekali lagi atas seluruh pohon: **183 file, 2985 test, lolos semua** (exit 0, durasi 1208 s).
 
 
 
