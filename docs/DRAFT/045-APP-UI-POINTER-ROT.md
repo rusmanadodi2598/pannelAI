@@ -200,6 +200,35 @@ Tiga klaim lain ikut diperiksa dan **benar**: `model-picker-data.ts:10` tentang 
 asal registry helper-nya, `server/playground-relay.ts` tentang gateway yang tidak meng-echo credential. Panel ini
 sebagian besar benar. F1-F3 adalah yang berhenti benar.
 
+### Sisa gap ditutup, dan dua klaim audit dibatalkan oleh pengecekan sendiri
+
+**Pertanyaan terbuka F3a tidak perlu keputusan owner.** Jawabannya ada di kode: `TokenSaverHeadroomResponse.URL`
+dideklarasikan `json:"url"` tanpa `omitempty` (`app-serv/internal/schema/settings.go:99-102`), jadi key itu selalu
+ada di setiap respons apa pun nilai `enabled`, dan `""` adalah nilai tersimpan. Artinya skema panel benar dan yang
+salah hanya komentarnya. Tidak ada perubahan perilaku yang tertunda. Ini catatan metode, bukan cuma hasil: saya
+menuliskannya sebagai pertanyaan owner padahal jawabannya satu grep.
+
+**F10 tertutup dengan membatalkan premisnya sendiri.** Audit menulis baris `//` kosong di sembilan
+`primitives/*/index.ts` itu "bukan artifact: ia memisahkan grup import supaya formatter menahan nama type-only
+bersama nama value". Diuji: baris itu dihapus, `prettier --check` tetap menyatakan file terformat, dan
+`prettier --write` tidak mengubah apa pun lanjutan. Jadi klaim itu **salah**, dan penutupannya bukan anotasi tapi
+dibiarkan sebagai sisa template generator di direktori yang §1 kecualikan. Ini kesalahan kedua di audit ini yang
+gugur oleh pengecekan (`:174` yang pertama), dan pola penyebabnya sama: menulis mekanisme yang belum diuji.
+
+**F12 tertutup dengan test, dan testnya dibuktikan dulu.** `tests/schemas/usage-topology-geometry.test.ts` membaca
+blok node dari `UsageTopologyDrawing.svelte`, mengambil lima metric yang scaled dari class list-nya sendiri (bukan
+menuliskannya ulang), menjumlahkan, dan membandingkan ke `NODE_MAX_WIDTH`. Ini pola yang sama dengan
+`tests/tokens/contrast.test.ts`, yang membaca `src/app.css` alih-alih menyatakan token ulang, dan jawabannya untuk
+batasan yang sama: jsdom tidak menjalankan Tailwind cascade. Dibuktikan dengan menggeser padding node ke 12 lalu
+melihatnya gagal di angka yang benar (`expected 138 to be 130`), kemudian file dikembalikan bersih lewat
+`git checkout`. Komentar di atas konstantanya sekarang menyebut test itu, mengikuti cara `constants.ts:3-5`
+melakukan hal yang sama.
+
+**F8 tertutup untuk pengecualian, satu sub-pertanyaan masih terbuka.** Yang sudah: primitives tercatat sebagai
+generated di §1 dan di `GENERATED_GLOBS`. Yang belum: `sidebar/constants.ts` adalah file tulisan tangan di dalam
+direktori yang dikecualikan, dan hari ini ia hanya dilindungi komentar plus test-nya sendiri, bukan oleh daftar
+file hand-carried yang eksplisit. Itu keputusan owner, bukan pekerjaan pass ini.
+
 ## Rencana verifikasi
 
 1. `bun run format:check` (atau `prettier --check src tests`), karena edit komentar bisa menyentuh panjang baris.

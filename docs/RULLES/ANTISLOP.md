@@ -231,10 +231,21 @@ Panel (`app-ui`), measured in the audit 007 pass rather than inherited from the 
   open owner question, because if the gateway really omits that key then the schema is wrong too and that is a behaviour
   change, not a comment change. No check exists for this class on either half (§3).
 - `src/lib/primitives/**`: excluded as generated output (§1), so the seven echoes the shadcn-svelte CLI writes into it
-  are left as they are; hand-cleaning them would be undone by the next `add`. `sidebar/constants.ts` inside that
-  directory is hand-carried and records its own divergence.
+  and the nine bare `//` lines inside its `index.ts` files are left exactly as written. Both were tested before being
+  left: the bare `//` turns out **not** to be formatter load-bearing (prettier reports the file formatted with it
+  deleted and changes nothing on `--write`), so it is template residue rather than a mechanism, and hand-editing it
+  would be undone by the next `bun x shadcn-svelte add`. `sidebar/constants.ts` inside that directory is hand-carried
+  and records its own divergence; naming every such file is the one part of this item still open.
 - Panel comment block length: not measured, by the reasoning in §2.6, and listed in §3 so the document does not claim a
   check it does not have.
+- Derived figures that a comment explains: `NODE_MAX_WIDTH` is now pinned by
+  `tests/schemas/usage-topology-geometry.test.ts`, which sums the drawing's own scaled class metrics rather than
+  restating them, and the constant's comment names that test. The class of claim this covers, a comment that quotes
+  numbers living in another file, is review-only for everything the test does not reach.
+- `headroom.url` on the token-saver read: the read schema requires the key and the gateway always sends it, confirmed
+  at the source (`TokenSaverHeadroomResponse.URL` is `json:"url"` with no `omitempty`), so the panel's `z.string()` is
+  correct and the comment that called it optional was the only defect. Recorded here because it began life as an open
+  owner question that turned out to be a grep.
 
 Nothing from audit 006 is open. From audit 007, items 4 and 8 were closed by the same pass that wrote this ledger: the
 gate reads the panel for every rule that can apply there, and the primitives directory's status is recorded in §1 as
