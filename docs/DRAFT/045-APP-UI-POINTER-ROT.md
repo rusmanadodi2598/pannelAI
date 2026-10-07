@@ -2,8 +2,11 @@
 
 Dokumen kerja pass ini menutup audit antislop 007 atas `app-ui`. Auditnya ada di
 `anti-slop/audit-007-2026-10-07.md` (direktori itu di-ignore git, jadi keputusan dan buktinya diulang di sini).
-Yang disentuh pass ini: **komentar**. Nol baris executable, nol identifier, nol import, nol format, nol logika
-di `app-ui/**`. Ini dibatasi oleh scope guardrail antislop-code, dan ditegakkan dengan `git diff` di bagian Hasil.
+Untuk F1-F3, F5-F7, F9, F11 dan F13 yang disentuh hanya **komentar**: nol baris executable, nol identifier, nol
+import, nol format, nol logika di `app-ui/**`, dan itu dibatasi oleh scope guardrail antislop-code serta ditegakkan
+dengan perbandingan byte-per-byte di bagian Hasil. F4 keluar dari batas itu: ia mengubah
+`scrypts/gates/antislop.sh` dan `docs/RULLES/ANTISLOP.md`, dan itu atas izin eksplisit owner, bukan oleh pass
+komentar.
 
 Kenapa pass ini perlu ada, dan kenapa ia bukan lanjutan otomatis dari 001-004: kelas slop generik di panel sudah
 bersih (dash, separator, banner, end marker, emoji, TODO, narasi langkah: semuanya 0 terukur). Yang tersisa adalah
@@ -14,9 +17,9 @@ pembaca ke deklarasi yang salah.
 
 | | |
 | --- | --- |
-| **Status** | **HIGH (F1-F3) ter-commit `80abbaa`. MEDIUM F5-F7 ter-commit `6860901`. LOW F9, F11, F13 selesai pada pass ini. F10 menunggu keputusan F8; F12 butuh test, bukan komentar. F4 dan F8 masih keputusan owner** |
+| **Status** | **HIGH (F1-F3) ter-commit `80abbaa`. MEDIUM F5-F7 ter-commit `6860901`. LOW F9, F11, F13 ter-commit `aa95471`. F4 selesai pada pass ini (gerbang + ANTISLOP.md). F8 tertutup sebagian: pengecualian primitives tercatat, sisanya masih keputusan. F10 menunggu F8, F12 butuh test. Scope pass ini bukan comment-only lagi: `scrypts/gates/antislop.sh` berubah, atas izin owner** |
 | **Mechanism** | AFTER (audit 007) lalu DURING untuk tulisan baru |
-| **Scope** | Komentar di `app-ui/src/**` dan `app-ui/tests/**`. Perkiraan 47 file: 11 titik pointer `.go`, 41 file dengan pointer `.js`/`.css` (tumpang tindih), 3 file klaim perilaku |
+| **Scope** | Komentar di `app-ui/src/**` dan `app-ui/tests/**` untuk F1-F3, F5-F7, F9, F11, F13 (semuanya terbukti comment-only). Untuk F4: `scrypts/gates/antislop.sh` dan `docs/RULLES/ANTISLOP.md`, yang adalah perubahan alat dan tata kelola, bukan komentar, dan itu atas izin eksplisit owner karena guardrail antislop-code sendiri melarangnya |
 | **Sumber temuan** | `anti-slop/audit-007-2026-10-07.md`, terukur atas 5.879 baris komentar di 320 file `src` + 3.141 di `tests` |
 | **Struktural (AGENTS.md §1.9)** | N/A, no structural change: tidak ada domain boundary, data structure, service interaction, atau async topology yang bergerak |
 
@@ -427,7 +430,70 @@ yang membaca kelas Tailwind di `UsageTopologyDrawing.svelte` dan mengikatnya ke 
 perubahan kode dan di luar guardrail pass ini. Angka 130 diverifikasi manual saat audit (16+8+8+96+2) dan
 masih benar; yang hilang bukan kebenarannya tapi jaringnya.
 
+### F4 selesai: gerbang sekarang membaca panel, dan dua cek baru benar-benar menggigit
+
+Alasannya bukan "suka angka", tapi bentuk repo ini: `app-serv` dan `app-ui` diperiksa dengan check yang sama
+secara independen. Tiga aturan §2 yang tadinya hanya membaca Go sekarang membaca keduanya, dengan satu pengecualian
+yang diukur lebih dulu, bukan diasumsikan.
+
+Yang berubah di `scrypts/gates/antislop.sh`:
+
+1. **Sitasi (`CITATION_RE` + bentuk path `docs/DRAFT/`), FAIL pada file panel yang berubah.** Go tetap
+   warn. Asimetrinya disengaja dan alasannya tertulis di dalam gate: Go punya region `@reason` yang sah
+   menurut §1.2, panel tidak, dan residu komentar panel sudah 0 di 533 file, jadi sitasi yang muncul di file
+   panel yang berubah pasti baris yang penulisnya tulis sendiri, yaitu satu-satunya kasus yang failure bisa
+   tangkap dengan adil.
+2. **Suppression beralasan, FAIL tree-wide untuk panel.** `PANEL_SUPPRESS_RE` menuntut ` -- ` sesudah
+   directive. Polanya hanya cocok kalau komentar *dimulai* dengan directive dan nama rule-nya membawa slash
+   plugin; itu bukan kehalusan, itu yang membuat kalimat di `eslint.config.js` yang *membahas* directive
+   tidak terbaca sebagai pelanggaran. `eslint-enable` juga sengaja dikeluarkan: ia membuka lagi aturan, bukan
+   menekan, jadi tidak butuh alasan.
+3. **`GENERATED_GLOBS`** menahan `app-ui/src/lib/primitives/**` dari semua check struktural, termasuk cek
+   emoji yang tadinya membacanya. Ini menutup mode kegagalan yang §1 ada untuk pencegahinya: gerbang yang
+   bisa menggagalkan commit karena teks yang tidak ditulis siapa pun.
+
+Yang **tidak** porting, dan ini bagian yang paling butuh bukti: ambang panjang blok §2.6 tidak dipindah ke
+panel. Diukur dulu, baru diputuskan. Dari 567 file Go non-test, **0** blok doc di atas `func`/`type` lewat 10
+baris; di panel ada **14** blok deklarasi lewat 10 baris dan semuanya lolos tes-jumlah-fakta §2.6. "Fail di
+16" yang disalin mentah akan pertama kali menabrak `schemas/quota.ts:118`, blok enam constraint yang audit
+007 sendiri nyatakan layak, dan agent berikutnya akan kompres fakta demi memuaskan angka. Jadi panjang blok
+panel masuk §3 sebagai review-only, dengan alasannya tertulis di §2.6.
+
+`docs/RULLES/ANTISLOP.md` ikut diubah karena itulah inti F4: §2 kini memuat tabel jangkauan per aturan untuk
+dua setengah repo, §1 menyebut primitives dalam daftar generated, §2.5 dan §4 menulis aturan panel apa adanya,
+§3 menambah dua baris review-only yang jujur, dan §6 mencatat angka panel supaya backlog hanya bisa menyusut.
+
+### Bukti F4: cek yang tidak pernah menyala bukan cek
+
+Ketiganya diuji dengan positif palsu dan kontrol, bukan hanya dengan "hijau":
+
+| Uji | Hasil |
+| --- | --- |
+| Pohon bersih | PASS, semua check |
+| Panel: komentar `draft 012 F1` pada file yang berubah | **FAIL** `"cites a closed draft in a comment"` |
+| Panel: `eslint-disable` tanpa reason | **FAIL** `"panel suppression without a reason"` |
+| Emoji di luar primitives (kontrol) | **FAIL**, membuktikan cek emoji bekerja |
+| Emoji yang sama di dalam `primitives/` | **PASS**, membuktikan yang menahan adalah pengecualian, bukan cek yang rusak |
+| `git grep` pola directive sebelum pengetatan | 3 prose match (`eslint.config.js:12,47`, `panel-check.sh:94`) yang akan jadi positif palsu; setelah pengetatan: 0 |
+| `eslint-enable` | 1 match muncul saat pola terlalu longgar; dikeluarkan dengan alasan |
+| `bash -n`, `gate-scope-test.sh`, `go-headers`, `contract-drift`, `contract-openapi` | semuanya PASS |
+
+File probe dibuat, di-stage, diuji, lalu dihapus; tidak ada satu pun yang tersisa di tree. Urutan ini penting
+dicatat: sebelum menulis satu baris gate pun, ketiga detektor diukur dulu dan hasilnya 0 di 533 file panel,
+karena menyalakan cek atas tree yang masih punya residu akan membuat gerbang gagal untuk baris yang bukan
+karya penulis commit, yaitu kegagalan yang persis audit 006 item 1 dan 6 perbaiki di sisi Go.
+
+### F8 ikut tertutup sebagian, dan sisanya masih keputusan
+
+Pengecualian primitives adalah separuh dari F8 dan itu sekarang tertulis di §1 plus `GENERATED_GLOBS`. Keputusan
+itu saya ambil dari bukti yang sudah ada di repo (`.prettierignore` dan `eslint.config.js` dua-duanya menyatakan
+direktori itu generated dan tidak diedit tangan), bukan dari ruling owner, dan §6 menulis itu secara eksplisit:
+membaliknya cukup dua suntingan. Separuh yang lain masih terbuka: apakah 7 gema suara generator di dalamnya dibiarkan
+(F10 menunggu ini) dan apakah `sidebar/constants.ts` perlu daftar file hand-carried yang lebih eksplisit.
+
 ### Verifikasi (LOW)
+
+
 
 Tujuh file berubah, semua komentar: perbandingan byte-per-byte dengan komentar dibuka kembali memberi 0 file
 dengan konten non-komentar berbeda. `prettier --check .` PASS, `eslint .` nol output, `svelte-check --tsgo` 0
