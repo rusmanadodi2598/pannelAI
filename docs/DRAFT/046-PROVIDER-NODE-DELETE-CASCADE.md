@@ -9,7 +9,7 @@ menghapus provider.
 
 | | |
 | --- | --- |
-| **Status** | Belum dikerjakan. Rencana disetujui owner 2026-10-07 ("DELETE Custom Provider harus bekerja, dan seharusnya proses delete bisa hapus provider") |
+| **Status** | **HIGH (F1, F2) ter-commit `b41f54b`. Sebagian F4 ikut landed pada commit itu juga: komentar yang menuliskan aturan lama akan menjadi klaim palsu dalam commit yang sama yang menghapus aturannya, jadi itu tidak bisa ditunda ke MEDIUM. Sisanya: F3 (dua spesifikasi + satu baris README), sisa F4 (komentar yang tidak ikut berubah oleh F1), F5 (catatan, bukan kode)** |
 | **Mechanism** | DURING: tulisan baru mengikuti R-02 dan R-31, dan pesan yang dikirim ke operator harus bisa dibuktikan produk |
 | **Scope** | **Bukan comment-only.** F1 mengubah `app-serv` service, repository, dan wiring; F2 mengubah komponen panel dan testnya; F3 mengubah dokumen kontrak; F4 menyunting komentar yang menuliskan aturan lama. Keluar dari guardrail antislop-code, atas izin eksplisit owner, seperti F4 dan F12 pada 045 |
 | **Sumber temuan** | Laporan owner, log `app-serv` 2026-10-07 20:47 (`DELETE /api/v1/provider-nodes/anthropic-compatible-0388PGVSAVAW7MD0VTT2X9SAYA` → `409 CONFLICT`), lalu pengukuran terhadap PostgreSQL nyata dan pohon kode saat ini |
@@ -79,12 +79,14 @@ harus menjadi langkah terakhir yang boleh gagal.
 `app-serv/internal/service/provider_node.go`:
 
 - Port `EndpointCounter` (`CountEndpoints`) diganti `EndpointEraser` dengan `DeleteByProvider(ctx, providerID)
-  (int64, error)`. Satu port, bukan dua: nilai `int64` yang dikembalikan adalah jumlah baris yang ikut pergi, jadi
-  angka itu tersedia untuk log terstruktur tanpa query tambahan.
+  error`. Rencana semula menulis port ini mengembalikan `(int64, error)` supaya jumlahnya tersedia untuk log
+  terstruktur; itu dibatalkan sebelum kode ditulis, karena `NodeService` tidak punya logger dan DELETE menjawab
+  `204` tanpa body, jadi angka itu tidak akan dibaca siapa pun. Port yang mengembalikan nilai yang tidak dipakai
+  adalah port yang salah bentuk.
 - `NodeService.Delete` menjadi: baca node → `rejectComboReference` → hapus endpoint milik node → hapus node →
   `invalidateOverlay`. Hitung-dan-tolak hilang dari fungsi ini.
-- `deps.Counts` diikuti nama field dan pesan validasinya ("endpoint counter is required") harus ikut berubah; ia
-  bukan counter lagi.
+- `deps.Counts` berganti nama menjadi `deps.Endpoints` beserta pesan validasinya ("endpoint eraser is required");
+  ia bukan counter lagi.
 
 `app-serv/internal/repository/postgres/endpoint.go`: tambah `DeleteByProvider` di sebelah `Delete`, dan hapus
 `CountEndpoints` milik file itu. Yang terakhir ini hanya ada untuk memenuhi port `EndpointCounter` (interface
@@ -99,7 +101,7 @@ Mesin penolakan yang dihapus seluruhnya, terhitung dari grep `CountEndpoints` di
 | `postgres.NodeRepository.CountEndpoints` | duplikat query yang sama, tidak pernah dipakai NodeService (wiring mengikat port ke endpoint repo) | dihapus |
 | `repository.NodeRepository.CountEndpoints` | deklarasi di kontrak, alasan satu-satunya fake store harus punya method ini | dihapus |
 | `readinessNodeStore.CountEndpoints` | fake, hanya ada karena kontrak di atas | dihapus |
-| `readinessEndpointCounts.CountEndpoints` | fake port | jadi `readinessEndpointEraser` |
+| `readinessEndpointCounts.CountEndpoints` | fake port | diganti `readinessEndpointErasures`, yang mencatat id provider yang dihapus |
 
 `repository.EndpointRepository` sengaja tidak ikut menambah `DeleteByProvider`: NodeService memakai port sempit
 miliknya sendiri, dan menambah method ke kontrak besar berarti memaksa setiap fake endpoint repository ikut
@@ -206,7 +208,44 @@ Setiap klaim di bawah diukur, bukan dinyatakan:
 6. Percobaan combo: node yang menjadi anggota combo harus tetap 409, dan pesan harus menyebut nama combo itu. Ini
    membuktikan guard yang disengaja bertahan, bukan ikut tersapu cascade.
 
-## Yang tidak dilakukan pass ini
+## Hasil
+
+### HIGH (F1, F2), ter-commit `b41f54b`
+
+15 file, +315/−120. Yang diukur, bukan dinyatakan:
+
+| Bukti | Hasil |
+| --- | --- |
+| `go build ./...`, `go vet`, `golangci-lint`, `staticcheck` dan `staticcheck -tags=integration,live` di `app-serv` | semuanya bersih, 0 issues |
+| `scrypts/gates/go-headers.sh` | 1240 file Go header lengkap |
+| `go test -race -count=1 ./...` di `app-serv` | exit 0, semua package ok |
+| Cascade betulan, `go test -tags=integration -run TestIntegration_DeleteByProvider` | `--- PASS: TestIntegration_DeleteByProviderTakesTheEndpointsAndTheirKeys (0.88s)` |
+| `svelte-check --tsgo`, `eslint`, `prettier --check .` di panel | 0 errors, 0 warnings, bersih |
+| `vitest run custom-provider-card` | 13 test lolos (empat kasus delete: angka, nol, tanpa angka, dan penolakan combo) |
+| `vitest run provider` | 29 file, 390 test lolos |
+| Ronde nyata terhadap API | node sementara + 2 koneksi + 3 kunci → `DELETE` = `204`, ketiga tabel kembali 0 untuk id itu, dan 10 endpoint milik provider lain tidak tersentuh |
+
+Cascade diuji pada database scratch `pannelai_schema_test` yang dibuat khusus untuk run ini dan di-drop
+sesudahnya: harness integrasi menolak database yang namanya tidak memuat `test` justru karena setiap fixture
+di package itu TRUNCATE, jadi menjalankannya terhadap `pannelai` milik owner akan menghancurkan datanya.
+
+Ronde nyata memakai binary hasil build dari kode ini, dijalankan pada port 127.0.0.1:9097 agar instance yang
+sudah jalan di :9090 tidak diganggu. Baris yang dibuatnya hanya node dan combo probe saja, dan keduanya
+dihapus lagi oleh test itu sendiri.
+
+**Yang tidak terbukti live.** Penolakan combo tidak sempat diukur lewat API: `POST /combos` untuk probe
+menjawab 400 sebelum bagian delete dijalankan, dan bentuk body-nya tidak direproduksi pada ronde ini. Jalur
+itu tetap terbukti di level service, dan test-nya sekarang ikut gagal kalau penolakan menghapus apa pun
+(`assertComboBlocksDelete` memeriksa `erasures` kosong), jadi urutan guard-sebelum-erase terkunci oleh test,
+bukan hanya oleh komentar. Kode guard sendiri tidak berubah pada pass ini, yang berubah hanya letaknya.
+
+**Dua keputusan bentuk yang tercatat.** `CustomProviderCard.svelte` sekarang 263 baris, lewat dari anggaran
+lunak 220 baris panel; dialognya memang bisa berdiri sendiri sebagai komponen mengikuti `ComboDeleteDialog`,
+dan itu pekerjaan yang layak satu pass sendiri, bukan sisipan di commit HIGH. Dan delete ini dua statement,
+bukan satu transaksi: urutannya dipilih supaya kegagalan meninggalkan node tanpa koneksi (terlihat, bisa
+diulang) daripada meninggalkan kredensial yatim milik provider yang sudah mati.
+
+
 
 - Tidak menambah route "move endpoint" atau membuat `provider_id` bisa di-patch. Yang diminta adalah menghapus
   provider, dan kata "move" dihapus dari panel karena ia menjanjikan jalur yang tidak ada, bukan karena jalurnya
