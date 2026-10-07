@@ -9,7 +9,7 @@ menghapus provider.
 
 | | |
 | --- | --- |
-| **Status** | **Selesai. HIGH `b41f54b`; dokumen MEDIUM `0f151b1`; ronde lanjutan `5934041` (penolakan combo terbukti lewat API hidup, dan konfirmasi delete menjadi komponen sendiri). F4 landed bersama commit yang menghapus aturannya, kecuali satu doc comment yang ikut `0f151b1`. F5 terukur live dan sengaja ditinggal. Tidak ada butir yang terbuka di draft ini. Bukti: suite panel penuh 183 file / 2985 test lolos di atas `0f151b1`, `go test -race ./...` app-serv exit 0 di atas `b41f54b`, dan ronde lanjutan hanya menyentuh panel (`5934041`: 4 file 28 test, `svelte-check` 0/0)** |
+| **Status** | **Selesai. HIGH `b41f54b`; dokumen MEDIUM `0f151b1`; ronde lanjutan `5934041` (penolakan combo terbukti lewat API hidup, dan konfirmasi delete menjadi komponen sendiri). F4 landed bersama commit yang menghapus aturannya, kecuali satu doc comment yang ikut `0f151b1`. F5 terukur live dan sengaja ditinggal. Tidak ada butir yang terbuka di draft ini. Bukti: suite panel penuh 183 file / 2985 test lolos di atas `0f151b1`, dan `scrypts/gates/go-test.sh` di atas HEAD `0ee46f2` menjawab `PASS go test -race app-serv` dengan `SKIP integration suite: PANNELAI_TEST_POSTGRES_DSN is not set`; test ber-tag itu tetap terbukti karena ia dijalankan terpisah terhadap PostgreSQL nyata di database scratch. Ronde `5934041` hanya menyentuh panel (4 file 28 test, `svelte-check` 0/0)** |
 | **Mechanism** | DURING: tulisan baru mengikuti R-02 dan R-31, dan pesan yang dikirim ke operator harus bisa dibuktikan produk |
 | **Scope** | **Bukan comment-only.** F1 mengubah `app-serv` service, repository, dan wiring; F2 mengubah komponen panel dan testnya; F3 mengubah dokumen kontrak; F4 menyunting komentar yang menuliskan aturan lama. Keluar dari guardrail antislop-code, atas izin eksplisit owner, seperti F4 dan F12 pada 045 |
 | **Sumber temuan** | Laporan owner, log `app-serv` 2026-10-07 20:47 (`DELETE /api/v1/provider-nodes/anthropic-compatible-0388PGVSAVAW7MD0VTT2X9SAYA` → `409 CONFLICT`), lalu pengukuran terhadap PostgreSQL nyata dan pohon kode saat ini |
@@ -297,6 +297,10 @@ bentuk `ComboDeleteDialog`: state dan panggilan API tetap di parent, komponen me
 kasus delete tetap dijalankan melalui kartu, jadi jalur yang sesungguhnya dipakai operator yang tertutup, dan tidak
 ada test terisolasi untuk komponen itu karena ia tidak dipakai di tempat lain. Terukur: 4 file, 28 test lolos;
 `svelte-check --tsgo` 0 errors 0 warnings; eslint dan prettier bersih.
+
+Gerbang Go atas HEAD menjawab `PASS go test -race app-serv` dengan
+`SKIP integration suite skipped: PANNELAI_TEST_POSTGRES_DSN is not set`: skip itu justru alasan test cascade
+dijalankan sendiri terhadap PostgreSQL nyata, bukan dibiarkan tidak pernah berjalan.
 
 ## Yang tidak dilakukan pass ini
 
