@@ -516,8 +516,9 @@ export function stubModels(overrides: Partial<ModelStub> = {}): ModelStub {
 		}
 
 		// The create route, which is what the page's key dialog posts to. It refuses an endpoint the API
-		// would refuse (an `api_key` endpoint carries at least one key, `endpoint_create.go:53-55`) and
-		// answers the row the list then renders, so the page's own re-read is visible in a test.
+		// would refuse (an `api_key` endpoint carries at least one key, `service/endpoint_create.go`,
+		// `buildEndpoint`) and answers the row the list then renders, so the page's own re-read is visible
+		// in a test.
 		if (method === 'POST' && parsed.pathname.endsWith('/endpoints')) {
 			stub.endpointCreates.push(body);
 

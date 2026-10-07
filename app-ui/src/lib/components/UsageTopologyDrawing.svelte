@@ -54,7 +54,7 @@
 	let { layout, inFlight, live }: Props = $props();
 
 	// Per state: the dot's fill, the node's own border, and the label's colour. Active is the only state
-	// that takes the status colour and the reference's soft glow (`ProviderTopology.js:41-42`, the same
+	// that takes the status colour and the reference's soft glow (`ProviderTopology.js`, the same
 	// 16px radius at a quarter alpha), and it keeps them while the stream is down: colour is state, motion
 	// is not.
 	const STATE: Record<TopologyState, { dot: string; node: string; label: string }> = {
@@ -95,9 +95,9 @@
 >
 	<UsageTopologyEdges {layout} {live} />
 
-	<!-- The gateway, which is the reference's router node (`ProviderTopology.js:99-130`): while it is
+	<!-- The gateway, which is the reference's router node (`ProviderTopology.js`): while it is
 	     routing, the card pulses, the mark shakes, the label flickers and the count sits in a glowing
-	     badge (`globals.css:513-524`, the same 0.75s, 0.45s and 0.7s cycles). Each of the four keeps one
+	     badge (`globals.css`, the same 0.75s, 0.45s and 0.7s cycles). Each of the four keeps one
 	     glow layer in the status colour instead of the reference's four-layer neon stack, which is the dose
 	     cap R-13 asks for. -->
 	<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">

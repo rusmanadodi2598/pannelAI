@@ -7,15 +7,15 @@
 // Every value here is arithmetic over the path's normalized length rather than the edge's real length,
 // which is why the drawing component renders what these return and computes nothing itself.
 //
-// The beam is the reference fork's (`ProviderTopology.js:137-245`, `globals.css:504-535` on `origin/master`,
-// commit `a8c9d380`): a halo, a plasma and a core stroke, six orbs and five sparks. Its counts, widths,
+// The beam is the reference fork's (`ProviderTopology.js` and `globals.css`, at commit `a8c9d380`): a halo, a
+// plasma and a core stroke, six orbs and five sparks. Its counts, widths,
 // speeds and phases are the reference's own. The three dash periods are not, and each is named where it is
 // declared: they are the panel's numbers, chosen so that every period divides the normalized path and a
 // cycle has no seam.
 
 /**
  * The two dashed strokes' patterns. The reference's are `8 6` and `14 10` along its own pixel paths, and
- * one animation cycle there moves the offset by -36 (`globals.css:504-506`), which is not a whole number of
+ * one animation cycle there moves the offset by -36, which is not a whole number of
  * either pattern: its dashes jump at the end of every cycle.
  *
  * The panel's paths are normalized to `pathLength="100"`, so the two patterns here are chosen with periods

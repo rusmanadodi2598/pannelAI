@@ -16,16 +16,15 @@
 	// Validation runs on submit rather than on every keystroke (§8.4.5), and the messages are the
 	// schema's, so the panel and the gateway describe a rule the same way.
 	//
-	// The copy per type is the reference's own (`AddCompatibleModal.js:7-30`): the vendor URL is the field's
-	// value rather than its placeholder, each variant names itself in the name and prefix placeholders, and
-	// switching the API type puts the vendor URL back (`:54-62`). The variant's base URL hint is stated under
-	// the field whatever the value is, the way the reference's `Input` renders its `hint` prop (`:166`), so
-	// the copy that says which URL belongs there is never replaced by the preview; the joined URL is an extra
-	// line below it.
-	// The reference's **Check** (a key plus an optional model id, validated before the node exists; handler
-	// `:93-112`, controls `:168-194`) is deliberately not built: the route it calls
-	// has no counterpart in app-serv yet (measured 405; draft 017 F6), and a control that calls a route
-	// nothing serves is a dead control (R-26). The draft records it as the one gap this dialog still has.
+	// The copy per type is the reference's own (`AddCompatibleModal.js`): the vendor URL is the field's value
+	// rather than its placeholder, each variant names itself in the name and prefix placeholders, and
+	// switching the API type puts the vendor URL back. The variant's base URL hint is stated under the field
+	// whatever the value is, the way the reference's `Input` renders its `hint` prop, so the copy that says
+	// which URL belongs there is never replaced by the preview; the joined URL is an extra line below it.
+	// The reference's **Check** (a key plus an optional model id, validated before the node exists) is
+	// deliberately not built: the route it calls has no counterpart in app-serv yet (measured 405; draft 017
+	// F6), and a control that calls a route nothing serves is a dead control (R-26). The draft records it as
+	// the one gap this dialog still has.
 	import FormIssues from '$lib/components/FormIssues.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import Modal from '$lib/components/Modal.svelte';
@@ -78,7 +77,7 @@
 	let saving = $state(false);
 
 	// The copy the dialog states for the type it is opening: the reference keeps one table per variant
-	// (`AddCompatibleModal.js:6-28`), so the name and prefix hints cannot describe the two differently.
+	// (`AddCompatibleModal.js`), so the name and prefix hints cannot describe the two differently.
 	const copy = $derived(NODE_COPY[type]);
 
 	// Follows the node the page opened, so a second Edit opens that node rather than the first one's
@@ -94,7 +93,7 @@
 
 	// Switching the wire format puts the vendor URL back in the field: the base URL a chat node was typed
 	// against is not the one a responses node should call, and the reference resets it the same way
-	// (`AddCompatibleModal.js:45-47`). Only an add resets, because an edit's URL is the stored one.
+	// (`AddCompatibleModal.js`). Only an add resets, because an edit's URL is the stored one.
 	function changeAPIType(value: string): void {
 		draft.api_type = value === 'responses' ? 'responses' : 'chat';
 		if (!editing) draft.base_url = NODE_BASE_URL_DEFAULTS[type];

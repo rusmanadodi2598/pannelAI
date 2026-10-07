@@ -32,7 +32,7 @@ describe('the custom provider card', () => {
 		renderCard(stub);
 
 		// The heading names the node's type and the line under it is the request the gateway will make,
-		// which is the reference's own card (`providers/[id]/page.js:1451-1455`).
+		// which is the reference's own card (`providers/[id]/page.js`).
 		expect(await screen.findByRole('heading', { name: 'OpenAI Compatible Details' })).toBeTruthy();
 		expect(squashed(screen.getByText(/Chat Completions · https/))).toContain(
 			'Chat Completions · https://llm.example.com/v1/chat/completions'

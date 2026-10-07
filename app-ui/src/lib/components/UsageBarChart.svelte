@@ -6,7 +6,7 @@
 	// information, and a flex row inherits the theme's colours and the panel's responsive behaviour.
 	//
 	// Both charts are horizontal, unlike the reference's provider chart, which draws vertical bars and cuts
-	// the provider name at ten characters (`ProviderBarChart.js:75`). A provider or model name is long, this
+	// the provider name at ten characters (`ProviderBarChart.js`). A provider or model name is long, this
 	// card is one of two in a row, and a truncated name is a defect the panel does not need to copy: here
 	// the name column truncates with CSS, so the full name stays in the markup and in the title attribute.
 	//

@@ -2,7 +2,7 @@
 	// The provider screen's reasoning picker (docs/SPEC-API/001-SPEC-API.md §7.14, §7.15;
 	// docs/SPEC-UI/001-SPEC-UI.md §6.3).
 	//
-	// This is the reference's per-provider control (`providers/[id]/page.js:1748-1766`) in our
+	// This is the reference's per-provider control (`providers/[id]/page.js`) in our
 	// settings-map shape: it writes one provider's entry of `reasoning.provider_thinking`, so it reads
 	// and writes the settings document through the screen's store. The map is one value (§7.14): a write
 	// sends the whole map back, and a provider with no entry follows the reasoning setting each request
@@ -11,8 +11,8 @@
 	// The options are the levels the provider's own models accept, which is the union the server projects
 	// onto the provider detail (§7.14, the reference's `providerThinkingLevels`): a level no model accepts
 	// would be a control that answers an upstream error instead of a choice. `Auto` is the picker's word
-	// for the absent entry and deletes it, which is the reference's own rule (`saveThinkingConfig`,
-	// page.js:419-436). The select carries the reference's own title, because the suffix it warns about
+	// for the absent entry and deletes it, which is the reference's own rule (`saveThinkingConfig`).
+	// The select carries the reference's own title, because the suffix it warns about
 	// is appended by the two model tables below rather than by this control.
 	//
 	// A stored mode the current model set no longer accepts stays on the list rather than falling back to

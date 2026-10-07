@@ -1,12 +1,12 @@
 <script lang="ts">
 	// The `/models` import on a custom node's models section (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 	//
-	// The reference's own control (`providers/[id]/CompatibleModelsSection.js:125-159`): ask the node's
+	// The reference's own control (`providers/[id]/CompatibleModelsSection.js`): ask the node's
 	// upstream what it serves, and declare every model this node does not carry yet. It is its own component
 	// because the flow owns three states the list around it does not (importing, the gate, the outcome),
 	// and because the models section is at its own size limit.
 	//
-	// The gate is the reference's too (`:161`, `:190-194`): a node whose connections are all disabled has
+	// The gate is the reference's too: a node whose connections are all disabled has
 	// nothing to ask, so the control is disabled with the sentence that says what to do about it. The read
 	// is this component's own, and a read that fails leaves the gate open: the import's own answer is the
 	// truth, and a control disabled by a read that never landed would hide a working action.
@@ -71,7 +71,7 @@
 		const seen = new Set(known);
 		const fresh = result.data.data.filter((row) => !seen.has(row.id));
 
-		// The two answers the reference reports (`:139-153`): nothing came back, or everything that came
+		// The two answers the reference reports: nothing came back, or everything that came
 		// back is already declared. Neither is an error, so neither reads as one.
 		if (result.data.data.length === 0) {
 			importing = false;

@@ -6,7 +6,7 @@
 	// but not the prefix, the api type, or when the node was created. Those are the facts an operator edits
 	// against, so they are read from the node's own route (§7.4).
 	//
-	// The card is the reference's own (`providers/[id]/page.js:1447-1506`): its title names the node's type,
+	// The card is the reference's own (`providers/[id]/page.js`): its title names the node's type,
 	// its first line is the request the gateway will make, and the three actions that change the node sit
 	// on it. Add API Key belongs here as much as on the Connections section, because it is the first thing
 	// an operator does with a node that has no connection yet. The prefix is reported upward because the

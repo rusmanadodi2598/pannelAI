@@ -1,7 +1,7 @@
 <script lang="ts">
 	// The Connections section of the provider detail screen (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 	//
-	// The section is the reference's own block (`providers/[id]/page.js:1508-1741`): a heading, the
+	// The section is the reference's own block (`providers/[id]/page.js`): a heading, the
 	// rotation switch, the action that adds a connection, and the list. It is its own component because
 	// both kinds of provider screen render it and the two put it in different places: the registry
 	// screen leads with its facts and its model sections, while a custom node leads with this, because a

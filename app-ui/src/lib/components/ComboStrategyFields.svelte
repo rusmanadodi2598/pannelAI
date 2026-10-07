@@ -8,7 +8,7 @@
 	//
 	// The judge is still a text field, because a ref the picker cannot offer yet is still a ref the router
 	// may resolve. Its Choose button opens the editor's picker in single-select mode, which is the
-	// reference's own shape for this field (`combos/page.js:688-698`).
+	// reference's own shape for this field (`combos/page.js`).
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { usesJudgeModel, usesStickyLimit, type ComboStrategy } from '$lib/schemas/combo';
 

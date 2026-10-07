@@ -95,7 +95,7 @@ export type ThinkingMode = (typeof THINKING_MODES)[number];
 // stored entry is in. It is not a storable mode: choosing it deletes the entry.
 export const THINKING_AUTO = 'auto';
 
-// The label a level renders with, on the reference's own rule (page.js:1760): the word
+// The label a level renders with, on the reference's own rule (`page.js`): the word
 // capitalized. `auto` is spelled out because "Auto" alone would not say what it follows.
 export function thinkingModeLabel(mode: string): string {
 	if (mode === THINKING_AUTO) return 'Auto (follow the request)';
@@ -103,7 +103,7 @@ export function thinkingModeLabel(mode: string): string {
 }
 
 // The suffix a copied model name gains when the control is set to a level that model
-// accepts (SPEC-API §7.15, the reference's resolveThinkingSuffix at page.js:177-182): the
+// accepts (SPEC-API §7.15, the reference's `resolveThinkingSuffix`): the
 // gateway strips the group before resolving the model and reads it as this call's override.
 // An empty string is the no-suffix answer, so a caller appends the result unconditionally.
 export function thinkingSuffix(levels: readonly string[] | undefined, mode: string): string {

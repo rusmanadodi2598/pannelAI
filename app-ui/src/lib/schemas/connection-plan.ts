@@ -11,19 +11,19 @@
 //
 // One deliberate difference from that planner: a line that *does* carry a name keeps it when it is free,
 // because the reference's own copy promises the format `name|apiKey` while its code appends an index to
-// every line (`bulkAdd.js:76-96`), a suffix that only exists to protect the upsert the panel does not
+// every line (`bulkAdd.js`), a suffix that only exists to protect the upsert the panel does not
 // have. A line without a name gets `Key <n>`, which is the reference's own base and the behaviour its
-// copy calls "auto-named by index" (`AddApiKeyModal.js:206`).
+// copy calls "auto-named by index" (`AddApiKeyModal.js`).
 
 /** One planned connection: the row's own line number, the name it will carry, and its key. */
 export type PlannedConnection = { line: number; label: string; value: string };
 
-/** The base a line without a name of its own gets, matching the reference (`bulkAdd.js:60`). */
+/** The base a line without a name of its own gets, matching the reference (`bulkAdd.js`). */
 const AUTO_NAME_BASE = 'Key';
 
 /**
  * The smallest free name for `base`: `base <n>` from 1 up, or `base` itself where the caller allows the
- * bare form. Case-insensitive, like the reference's own comparison (`bulkAdd.js:80`).
+ * bare form. Case-insensitive, like the reference's own comparison (`bulkAdd.js`).
  *
  * A generated name is never the bare base: a bare line has no name to reuse, so `Key` alone would be a
  * name the operator never chose and could not tell from the next one's.

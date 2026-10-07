@@ -1,11 +1,11 @@
 <script lang="ts">
 	// Panel error view (docs/SPEC-UI/001-SPEC-UI.md §5.1, §8.2).
 	//
-	// The only error the panel raises on its own is a route that does not exist, so 404 is the case with
-	// real copy: it names the requested path and offers the way back. Every other status renders from the
-	// same shape without echoing the server's message, because a raw message can leak detail and §8.2
-	// asks for one panel voice per code. The requested path is rendered in its own element rather than
-	// interpolated into a sentence so a long address wraps instead of overflowing the page (R-03).
+	// The only error the panel raises on its own is a route that does not exist, so 404 is the one status
+	// with a detail the panel can add: the requested path. The copy table covers 403, 404 and a fallback
+	// for anything else, and no branch echoes the server's message, because a raw message can leak detail
+	// and §8.2 asks for one panel voice per code. The requested path is rendered in its own element rather
+	// than interpolated into a sentence so a long address wraps instead of overflowing the page (R-03).
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import StateMessage from '$lib/components/StateMessage.svelte';

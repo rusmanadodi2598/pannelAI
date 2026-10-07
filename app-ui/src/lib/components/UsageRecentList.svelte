@@ -12,10 +12,10 @@
 	// The exact instant is not lost: the same request_id opens its record on the Records tab, where the
 	// drawer prints the timestamp the API sent.
 	//
-	// The token split is the reference's own In/Out pair (`UsageStats.js:61` for the header, `:78-80` for the
-	// two figures), in the words the tiles use rather than its arrows, because the row is read beside tiles
+	// The token split is the reference's own In/Out pair (`UsageStats.js`, its header and its two figures), in
+	// the words the tiles use rather than its arrows, because the row is read beside tiles
 	// that say "Tokens in" and "Tokens out" and a bare arrow needs a legend. A frame that does not report a
-	// figure says so: the reference prints `0` for a value it never received (`UsageTable.js:8`), which is a
+	// figure says so: the reference prints `0` for a value it never received (`UsageTable.js`), which is a
 	// claim, and this list does not make it. The space between a figure and its direction is an expression
 	// because Svelte trims the leading whitespace of the element holding the word, which would print
 	// "12,345in"; the file carries one lint disable for that expression, with the same reason.

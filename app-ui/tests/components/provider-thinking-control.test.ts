@@ -3,9 +3,9 @@
 //
 // Two rules hold this slice together, and both are asserted here. The mode is ONE settings value per
 // provider, so every write sends the whole map back: a panel that sent only its own provider's entry
-// would erase every other provider's (the reference re-reads before it writes, page.js:419-436). And the
+// would erase every other provider's (the reference re-reads before it writes). And the
 // suffix is per model: a copied name gains `(level)` only where that model accepts it, so a model the
-// registry knows no levels for copies without one (page.js:177-182).
+// registry knows no levels for copies without one (`resolveThinkingSuffix`).
 //
 // The picker's own cases render it with the store the page owns and the load the page's effect performs,
 // so the assertions are about the control's rules. The page-level cases at the bottom hold the wiring

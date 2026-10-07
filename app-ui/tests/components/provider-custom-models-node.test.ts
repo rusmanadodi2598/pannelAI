@@ -2,7 +2,7 @@
 //
 // A node has no registry catalog, so the rows this section lists ARE its models. That is why it states the
 // string each row is addressed by and offers the reference's import
-// (`providers/[id]/CompatibleModelsSection.js:125-187`). The cases here hold the node's copy, the addressed
+// (`providers/[id]/CompatibleModelsSection.js`). The cases here hold the node's copy, the addressed
 // string with its copy control, the gate the reference puts on the import, and the four answers the import
 // can give.
 

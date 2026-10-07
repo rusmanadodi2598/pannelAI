@@ -35,7 +35,7 @@ const HEIGHT_BASE = 120;
 
 // The node box at its largest, in the pixels the drawing's own metrics are written in: the widest node the
 // panel draws today (padding 8 + dot 8 + gap 8 + label 96 + border 2), and the node height the reference
-// fork lays its own nodes out at (`ProviderTopology.js:265` on `origin/master`, `nodeH = 30`).
+// fork lays its own nodes out at (`nodeH = 30` in `ProviderTopology.js`).
 //
 // `NODE_MAX_WIDTH` is exported because the drawing's unit is derived from it: `--u` is the box's width over
 // the width at which a node reaches this cap, so the drawing shrinks below the cap and never grows past it.

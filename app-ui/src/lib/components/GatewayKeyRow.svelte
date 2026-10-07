@@ -3,7 +3,7 @@
 	//
 	// Rename and enable/disable live here because they act on a single key; deletion does not, because it
 	// needs a confirmation dialog that belongs to the screen. The destructive action is labelled Delete,
-	// which is the reference's own name for it (`EndpointPageClient.js:647-668`); it calls the terminal
+	// which is the reference's own name for it (`EndpointPageClient.js`); it calls the terminal
 	// DELETE route of SPEC-API §7.3, which the domain calls revocation.
 	//
 	// Every action is icon-only (owner directive, 2026-09-24): the glyph comes from the one icon map and

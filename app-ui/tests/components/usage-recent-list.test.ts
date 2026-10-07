@@ -115,7 +115,7 @@ describe('UsageRecentList', () => {
 		});
 
 		// A zero that arrived is a measured figure, so it is printed as one; the same cell on a frame that
-		// never carried the field is an absence, and the reference's `0` there (`UsageTable.js:8`) would be
+		// never carried the field is an absence, and the reference's `0` there (`UsageTable.js`) would be
 		// a claim this list cannot make.
 		expect(squashed(row())).toContain('0 in');
 		expect(squashed(row())).toContain('1,200 out');

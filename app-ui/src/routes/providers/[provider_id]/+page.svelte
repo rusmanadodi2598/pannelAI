@@ -10,7 +10,7 @@
 	// (disabled), which models it declares itself (custom), and what the gateway routes through it (its
 	// connections), followed by the proxy binding and the OAuth section for an OAuth provider.
 	//
-	// A custom node gets the reference's own page instead (`providers/[id]/page.js:1447-1819`), because
+	// A custom node gets the reference's own page instead (`providers/[id]/page.js`), because
 	// none of those five questions is the registry's to answer for it: the node's facts are its own details
 	// card, its models are exactly the ones declared for it (there is no registry catalog behind it), and
 	// the connection that carries its credential is the first thing to set up. So the details card leads,

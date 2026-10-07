@@ -69,8 +69,9 @@ const schemaRtkGroup = z.object({
 	filters: z.array(z.string().min(1))
 });
 
-// The external compression group as the API returns it. The URL is optional because the group is usually
-// disabled; the write schema below is the one that checks its shape.
+// The external compression group as the API returns it. §7.9 serves all three keys whatever `enabled`
+// says, so an empty `url` is a stored value rather than a missing one and a plain string is the honest
+// read; the write schema below is the one that checks the shape.
 const schemaHeadroomGroup = z.object({
 	enabled: z.boolean(),
 	url: z.string(),

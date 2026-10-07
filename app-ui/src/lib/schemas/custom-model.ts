@@ -114,8 +114,8 @@ export type CreateCustomModelBody = {
 };
 
 // The display name is filled from the model id when the field was left blank: the wire refuses an empty one
-// (`schema/model.go:47`), and the id is what the row would show anyway (`customModelLabel`), so asking for a
-// second name would be a field with no consequence (draft 019 D2).
+// (`schema/model.go`, `CreateCustomModelRequest.DisplayName`), and the id is what the row would show anyway
+// (`customModelLabel`), so asking for a second name would be a field with no consequence (draft 019 D2).
 export function customModelBody(providerId: string, form: CustomModelForm): CreateCustomModelBody {
 	const name = form.display_name.trim();
 	return {

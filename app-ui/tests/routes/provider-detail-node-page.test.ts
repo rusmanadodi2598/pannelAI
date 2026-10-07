@@ -2,7 +2,7 @@
 // §6.3).
 //
 // The owner's correction was about this screen's concept. The reference renders a node's page as the node
-// itself, then its connections, then its models (`providers/[id]/page.js:1447-1819`), while the panel
+// itself, then its connections, then its models (`providers/[id]/page.js`), while the panel
 // rendered the registry's blocks and put the connection list last. The cases here hold the shape in place:
 // the block order, the registry blocks that must not appear for a node, and the two places the key dialog
 // opens from. What the models section does once it is rendered is in
@@ -32,8 +32,8 @@ let stub: ModelStub;
 beforeEach(() => {
 	stub = stubModels({
 		providers: ['openai', NODE_ID],
-		// The gateway synthesizes a node's entry with `auth_type: "api_key"` (`custom_node.go:155-160`), so
-		// the screen offers the key dialog the way the live one does.
+		// The gateway synthesizes a node's entry with `auth_type: "api_key"` (`registry/custom_node.go`,
+		// `Index.Synthesize`), so the screen offers the key dialog the way the live one does.
 		authType: 'api_key',
 		providerNode: nodeRow(),
 		custom: [

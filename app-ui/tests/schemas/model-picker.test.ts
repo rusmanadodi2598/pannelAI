@@ -227,7 +227,7 @@ describe('pickerSections', () => {
 		// The vision tab's own call: the catalog was read for `vision`, so the provider that answered with
 		// no such model is left out rather than offered as a dashed ref. The combos are not passed either,
 		// which is the reference's own rule for a capability-filtered picker
-		// (`ModelSelectModal.js:427`).
+		// (`ModelSelectModal.js`).
 		const sections = pickerSections({
 			catalog: [model({ id: 'openai/gpt-4o', provider_id: 'openai', capabilities: ['vision'] })],
 			providers: [

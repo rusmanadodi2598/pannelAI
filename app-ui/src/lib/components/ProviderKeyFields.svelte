@@ -30,7 +30,7 @@
 		maxConnections: number;
 	} = $props();
 
-	// The reference's own example (`AddApiKeyModal.js:9`). A template literal rather than a quoted
+	// The reference's own example (`AddApiKeyModal.js`). A template literal rather than a quoted
 	// attribute: the example is three lines, and `\n` inside an attribute value would reach the field as a
 	// backslash and an n.
 	const PASTE_PLACEHOLDER = `name1|sk-key1
