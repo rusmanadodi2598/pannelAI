@@ -9,7 +9,7 @@ menghapus provider.
 
 | | |
 | --- | --- |
-| **Status** | **HIGH (F1, F2) ter-commit `b41f54b`. Sebagian F4 ikut landed pada commit itu juga: komentar yang menuliskan aturan lama akan menjadi klaim palsu dalam commit yang sama yang menghapus aturannya, jadi itu tidak bisa ditunda ke MEDIUM. Sisanya: F3 (dua spesifikasi + satu baris README), sisa F4 (komentar yang tidak ikut berubah oleh F1), F5 (catatan, bukan kode)** |
+| **Status** | **HIGH ter-commit `b41f54b`, MEDIUM ter-commit `0f151b1`. F4 sebagian besar sudah landed bersama `b41f54b` (komentar yang menuliskan aturan lama akan menjadi klaim palsu dalam commit yang sama yang menghapus aturannya); sisa F4 satu doc comment di `api/provider-nodes.ts`, yang ikut `0f151b1`. F5 adalah catatan, bukan kode: ia sudah tertulis di dokumen ini. Yang tersisa untuk ronde berikutnya hanya keputusan bentuk, bukan celah: memisahkan dialog delete dari kartunya mengikuti `ComboDeleteDialog`** |
 | **Mechanism** | DURING: tulisan baru mengikuti R-02 dan R-31, dan pesan yang dikirim ke operator harus bisa dibuktikan produk |
 | **Scope** | **Bukan comment-only.** F1 mengubah `app-serv` service, repository, dan wiring; F2 mengubah komponen panel dan testnya; F3 mengubah dokumen kontrak; F4 menyunting komentar yang menuliskan aturan lama. Keluar dari guardrail antislop-code, atas izin eksplisit owner, seperti F4 dan F12 pada 045 |
 | **Sumber temuan** | Laporan owner, log `app-serv` 2026-10-07 20:47 (`DELETE /api/v1/provider-nodes/anthropic-compatible-0388PGVSAVAW7MD0VTT2X9SAYA` → `409 CONFLICT`), lalu pengukuran terhadap PostgreSQL nyata dan pohon kode saat ini |
@@ -239,11 +239,28 @@ itu tetap terbukti di level service, dan test-nya sekarang ikut gagal kalau peno
 (`assertComboBlocksDelete` memeriksa `erasures` kosong), jadi urutan guard-sebelum-erase terkunci oleh test,
 bukan hanya oleh komentar. Kode guard sendiri tidak berubah pada pass ini, yang berubah hanya letaknya.
 
-**Dua keputusan bentuk yang tercatat.** `CustomProviderCard.svelte` sekarang 263 baris, lewat dari anggaran
-lunak 220 baris panel; dialognya memang bisa berdiri sendiri sebagai komponen mengikuti `ComboDeleteDialog`,
-dan itu pekerjaan yang layak satu pass sendiri, bukan sisipan di commit HIGH. Dan delete ini dua statement,
-bukan satu transaksi: urutannya dipilih supaya kegagalan meninggalkan node tanpa koneksi (terlihat, bisa
-diulang) daripada meninggalkan kredensial yatim milik provider yang sudah mati.
+### MEDIUM (F3, sisa F4)
+
+Tiga permukaan dokumen yang menyatakan aturan lama, semuanya ditemukan oleh grep
+`still references|references it` atas `.md`, bukan diasumsikan:
+
+| Tempat | Yang berubah |
+| --- | --- |
+| `docs/SPEC-API` §7.4, baris route DELETE | dari "refused while an endpoint still references it" menjadi cascade + penolakan combo. Lebar sel dihitung ulang ke 210 karakter agar tabel tetap rata dengan pemisah kolomnya |
+| `docs/SPEC-API`, entri changelog | satu entri 2026-10-07: kenapa penolakan itu membuat tombol tidak bisa dipakai, apa yang ikut dan apa yang sengaja ditinggal (riwayat pemakaian), dan kenapa guard combo jalan lebih dulu |
+| `docs/SPEC-UI` §6.3, blok "Custom provider node" | kalimat konfirmasi sekarang menyebut yang ikut terhapus, sumber angkanya, dan apa yang terjadi kalau bacaan itu gagal |
+| `docs/SPEC-UI`, entri changelog | satu entri 2026-10-07 tentang kalimat yang menumpuk dua klaim dan promise "move" yang tidak pernah ada |
+| `app-ui/README.md` | baris "The gateway's refusals are rendered as it stated them" berpindah dari endpoint ke combo, plus satu baris baru untuk keputusan konfirmasi-nama-akibat. Panjang baris 368 karakter, sama dengan tetangganya, dan `prettier --check README.md` lolos |
+| `app-ui/src/lib/api/provider-nodes.ts` | sisa F4: doc `deleteProviderNode` masih menulis alasan penolakan yang lama |
+
+Yang diperiksa dan sengaja tidak diubah: `app-serv/internal/handler/openapi.json` (summary "Remove a node" dan
+respons `409` tetap benar, karena combo sudah menolaknya sebelum perubahan ini), prosa §7.4 (ia tidak pernah
+menyebut penolakan ini, hanya tabelnya), entri changelog 2026-09-24 di §7.5/§7.7 (kalimat penutupnya bicara combo,
+dan itu tetap benar), dan `SYSTEM_MAP.md` (tidak ada tabel, kolom, atau jalur asinkron yang bergerak).
+
+Bukti ronde ini: `scrypts/gates/antislop.sh` PASS (tree-wide R-02 ikut membaca dua spesifikasi dan README),
+`prettier --check` untuk `app-ui/README.md` dan `src/lib/api/provider-nodes.ts` bersih, dan
+`vitest run tests/api/provider-nodes.test.ts` 11 test lolos.
 
 
 
