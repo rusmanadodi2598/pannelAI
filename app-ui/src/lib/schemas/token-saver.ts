@@ -1,7 +1,7 @@
 // Token saver contract, mirroring docs/SPEC-API/001-SPEC-API.md §7.9 and the sections in
 // docs/SPEC-UI/001-SPEC-UI.md §6.7.
 //
-// Three groups ship: RTK, Headroom, and Ponytail. `caveman` is DEPRECATED: the API
+// Three groups ship: RTK, Headroom, and Ponytail. `caveman` is deprecated: the API
 // keeps the key frozen for round-trip compatibility and §6.7 forbids the panel rendering a section, a
 // control, a label, or an upgrade hint for it. The delivered response does not carry the key at all, so
 // nothing here parses it and nothing can render it.

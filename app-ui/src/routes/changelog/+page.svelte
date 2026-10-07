@@ -116,7 +116,7 @@
 			description={copy.empty.description(CHANGELOG_PATH)}
 		/>
 	{:else if changelog}
-		<!-- What was read, stated as facts about the route rather than as a claim about the gateway. -->
+		<!-- Where the line below came from, stated as a fact about its source (SPEC-UI §8.10 rule 4). -->
 		<div
 			class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-text-muted)]"
 		>

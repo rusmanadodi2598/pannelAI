@@ -14,7 +14,7 @@ pembaca ke deklarasi yang salah.
 
 | | |
 | --- | --- |
-| **Status** | **HIGH (F1-F3) selesai dan ter-commit (`80abbaa`). MEDIUM F5, F6, F7 selesai pada pass ini. F4 dan F8 menunggu keputusan owner. LOW F9-F13 belum** |
+| **Status** | **HIGH (F1-F3) ter-commit `80abbaa`. MEDIUM F5-F7 ter-commit `6860901`. LOW F9, F11, F13 selesai pada pass ini. F10 menunggu keputusan F8; F12 butuh test, bukan komentar. F4 dan F8 masih keputusan owner** |
 | **Mechanism** | AFTER (audit 007) lalu DURING untuk tulisan baru |
 | **Scope** | Komentar di `app-ui/src/**` dan `app-ui/tests/**`. Perkiraan 47 file: 11 titik pointer `.go`, 41 file dengan pointer `.js`/`.css` (tumpang tindih), 3 file klaim perilaku |
 | **Sumber temuan** | `anti-slop/audit-007-2026-10-07.md`, terukur atas 5.879 baris komentar di 320 file `src` + 3.141 di `tests` |
@@ -397,7 +397,46 @@ pohon final, yaitu pohon yang didaftarkan di bagian ini. Guardrail scope: 120 fi
 byte-per-byte dengan komentar dibuka kembali memberi **0 file dengan konten non-komentar berbeda**. Diff: 287
 insertions / 332 deletions, net -45 baris, yang memang bentuk yang diharapkan dari membuang pointer dan stempel.
 
-Dua hal yang bikin pass ini layak dicatat sebagai pelajaran alat, bukan cuma hasil: artefak `//.` dan klausa
+### F9, F11, F13 selesai
+
+- **F9.** `utils.ts:21,23` sekarang menulaskan alasannya dengan bentuk `--` yang sama dipakai sembilan
+  directive lain di panel: slot sebuah component adalah nilai render apa pun, dan helper ini dipanggil by name
+  oleh primitives generated, jadi tipe-nya bukan milik panel. `eslint .` tetap nol output sesudah edit, dan
+  itu bukti bahwa disable-nya masih bekerja: aturannya `error` di `eslint.config.js:71`, jadi kalau reason
+  tadi merusakkan direktifnya, dua error akan muncul. Sekarang 11 dari 11 suppression beralasan.
+- **F11.** Empat route tidak lagi menyalin satu alasan dengan noun ditukar. Keempatnya sekarang menunjuk
+  sumber yang benar-benar ada: `SPEC-UI §8.10 rule 4`, "No invented numbers, uptime figures, user counts, or
+  compliance claims anywhere in the panel (R-17, R-36)". Yang tadi itu bukan sekadar duplikasi: salinan
+  keempat sudah bergeser ("claim about the documents", jamak) persis karena tidak ada satu sumber. Sekarang
+  aturannya tinggal satu tempat dan empat baris komentar hanya menandai baris sumber di bawahnya.
+- **F13.** `DEPRECATED` jadi `deprecated` di dua tempat. Sisa huruf kapital seluruh `src` + `tests` untuk
+  kata itu: 0.
+
+### F10 dan F12 berhenti, dan keduanya berhenti karena alasan yang berbeda
+
+**F10** (sembilan baris `//` kosong di `lib/primitives/*/index.ts`) tidak dikerjakan, dan itu keputusan,
+kemalasan bukan. Direktori itu `.prettierignore` nyatakan "not hand-edited" dan `eslint.config.js:35`
+mengabaikannya; annotating sembilan baris di dalamnya adalah suntingan tangan pada output generator yang
+`bun x shadcn-svelte add` berikutnya akan timpa, dan itu persis pekerjaan yang F8 harus putuskan lebih dulu.
+Kata kuncinya: F10 tidak bisa diselesaikan tanpa F8, dan audit 007 salah menyusun urutannya.
+
+**F12** (`NODE_MAX_WIDTH = 130` yang terjabar benar hari ini tapi tidak dipegang apa pun) butuh **test**,
+bukan komentar. Pola yang benar sudah ada di repo: `constants.ts:3-5` menyebut
+`tests/navigation/sidebar-metrics.test.ts` sebagai hal yang menjaga 264px. Meniru itu berarti menulis assertion
+yang membaca kelas Tailwind di `UsageTopologyDrawing.svelte` dan mengikatnya ke konstanta geometri, yaitu
+perubahan kode dan di luar guardrail pass ini. Angka 130 diverifikasi manual saat audit (16+8+8+96+2) dan
+masih benar; yang hilang bukan kebenarannya tapi jaringnya.
+
+### Verifikasi (LOW)
+
+Tujuh file berubah, semua komentar: perbandingan byte-per-byte dengan komentar dibuka kembali memberi 0 file
+dengan konten non-komentar berbeda. `prettier --check .` PASS, `eslint .` nol output, `svelte-check --tsgo` 0
+errors 0 warnings, `scrypts/gates/antislop.sh` PASS. Suite penuh: **exit 0 atas pohon LOW ini**, 1197s, 182
+jsdom environment dibuat yaitu satu per file test. Ekor output run ini terpotong oleh filter `tail`, jadi
+angka 2981 tidak dikutip dari run ini; yang run ini jamin adalah exit 0, dan vitest keluar bukan-nol pada
+satu test gagal pun.
+
+Dua hal dari pass MEDIUM yang layak dicatat sebagai pelajaran alat, bukan cuma hasil: artefak `//.` dan klausa
 "until it was measured live" yang saya buat sendiri dengan membuang tanggal tanpa memperbaiki sisa kalimatnya.
 Keduanya bentuk kegagalan yang sama: menghapus token tanpa membaca kalimat yang tersisa. Karena itu urutan
 kerja yang benar untuk kelas ini adalah transform lalu **baca hasil baris per baris**, bukan transform lalu
