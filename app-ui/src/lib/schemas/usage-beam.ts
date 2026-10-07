@@ -1,4 +1,4 @@
-// The live drawing's routing beam (docs/DRAFT/015-USAGE-NODE-MOTION-PARITY.md F1).
+// The live drawing's routing beam.
 //
 // Split from `usage-topology-view.ts` when the beam's own numbers arrived: that file answers where a node
 // goes and which providers get one, this one answers what travels along the edge of an active one. Both are
@@ -30,8 +30,7 @@ export const BEAM_PLASMA_DASH = '14 11';
  *
  * The reference's six orbs are yellow, cyan and white; the panel has one status colour, so the third tone
  * is the text colour. It is what makes a dot visible at all: measured in the browser, a dot in the status
- * colour alone merged into the plasma stroke and the beam read as one solid bar in both themes (draft 015
- * F2).
+ * colour alone merged into the plasma stroke and the beam read as one solid bar in both themes.
  */
 export type BeamTone = 'ok' | 'text';
 
@@ -60,9 +59,8 @@ export type BeamSpark = BeamParticle & {
  * offset by -100, which is one whole period, so the dot leaves at the far end exactly as the loop restarts
  * at the near one.
  *
- * The first attempt here used the count itself as the period (`100 / 6`), which painted six dots per orb
- * line: the edge carried 61 dots where the reference carries 11, and the beam read as a chain in the
- * browser rather than as particles (draft 015 F2).
+ * The count is not the period: `100 / 6` paints one dot per orb every cycle, and the edge then reads as a
+ * chain rather than as particles.
  */
 export const BEAM_PARTICLE_DASH = '0.01 99.99';
 

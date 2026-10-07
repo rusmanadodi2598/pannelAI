@@ -1,14 +1,13 @@
 <script lang="ts">
-	// The Combos tab's toolbar (docs/SPEC-UI/001-SPEC-UI.md §6.4, §8.11; owner directive, 2026-09-25).
+	// The Combos tab's toolbar (docs/SPEC-UI/001-SPEC-UI.md §6.4, §8.11).
 	//
 	// One row holds what the operator reaches for together: the sentence that says what a combo is, the
-	// create action, and the refresh control. Before this pass they were two blocks stacked vertically, so
-	// the create button sat on a line of its own below the copy. The row is the reason this is a component
-	// rather than markup in the tab: it is the shape the owner asked for ("compact, symmetric"), and it has
-	// one contract to hold (every control one height, glyph + label, wrapping as a block on a narrow screen).
+	// create action, and the refresh control. That row is why this is a component rather than markup in the
+	// tab: the shape is required to be compact and symmetric, and it has one contract to hold (every control
+	// one height, glyph + label, wrapping as a block on a narrow screen).
 	//
-	// Split out of `CombosTab` when the icon pass pushed that file past the 220-line warning, on the seam
-	// its own comment already named: the tab owns the list and the writes, this owns the row above them.
+	// Split from `CombosTab` on the seam that file already names: the tab owns the list and the writes, this
+	// owns the row above them.
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import { CONTROL_ICONS } from '$lib/icons';
 

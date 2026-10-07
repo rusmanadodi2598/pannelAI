@@ -1,6 +1,5 @@
 <script lang="ts">
-	// One hop of the live drawing's request path (docs/DRAFT/012 F3; the beam is draft 015 F1, the split
-	// from the edge list is docs/DRAFT/043 F2).
+	// One hop of the live drawing's request path.
 	//
 	// A hop is drawn one of two ways and never both: one line, in the state's own weight and colour, while
 	// nothing is travelling it; the reference fork's beam (`ProviderTopology.js`) while a request is
@@ -17,7 +16,7 @@
 	//
 	// The unit `--u` is the drawing box's own. It is set on the drawing's root, inherited here, and every
 	// width below is written as its own pixel value times it, so the beam shrinks with a narrow box exactly
-	// as the node boxes do (draft 018 F2).
+	// as the node boxes do.
 	import {
 		BEAM_CORE_DASH,
 		BEAM_PARTICLE_DASH,

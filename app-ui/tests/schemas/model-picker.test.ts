@@ -2,7 +2,7 @@
 //
 // The rule under test is the one the reference's picker turns on and this panel lacked: only providers
 // that are configured right now may be offered, and a provider with no endpoint row cannot route even
-// when the registry marks it no_auth (draft 024 §3.7), so it is not offered either. Two further rules keep
+// when the registry marks it no_auth, so it is not offered either. Two further rules keep
 // a chip from being an offer that cannot be saved: a connector-only provider and a media model. What the
 // search does to the sections has its own file (`model-picker-filter.test.ts`).
 
@@ -186,7 +186,7 @@ describe('pickerSections', () => {
 	});
 
 	it('drops a connector-only provider even when it has an endpoint', () => {
-		// The write path refuses its refs (`PROVIDER_NOT_ROUTABLE`, draft 024 F4), so the picker must not
+		// The write path refuses its refs (`PROVIDER_NOT_ROUTABLE`), so the picker must not
 		// offer them: a chip that cannot be saved is the same defect as a chip that cannot route.
 		const sections = pickerSections({
 			catalog: [

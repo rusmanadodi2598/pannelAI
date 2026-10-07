@@ -10,7 +10,7 @@
 	// as the table while typing is never overwritten by the mirror.
 	//
 	// The provider and gateway-key selects read their own vocabularies, which is the one place on this
-	// screen that does: neither read builds the request, and the bar is what needs the names (draft 014 F3).
+	// screen that does: neither read builds the request, and the bar is what needs the names.
 	// A registry that cannot be read leaves the select offering the value the URL carries and a line saying
 	// why, rather than silently showing "Any provider" over a filtered table.
 	import { onMount } from 'svelte';

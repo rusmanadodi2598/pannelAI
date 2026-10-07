@@ -1,8 +1,8 @@
 // The endpoint form inside a provider's Connections section (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
 // A provider whose auth type takes no key has no Add API Key button, so this form is its only way to a
-// connection. Since 2026-09-24 it renders here instead of on the Endpoint & Key page, which no longer
-// carries upstream endpoints at all, so what these cases hold is the path from this screen to the wire
+// connection. It renders here rather than on the Endpoint & Key page, which carries only gateway keys, so
+// what these cases hold is the path from this screen to the wire
 // and back into the table below it: one POST, the row the API stored, and the form closed behind it.
 //
 // The sibling file `provider-detail-key-dialog.test.ts` covers the key dialog, which stays the path for

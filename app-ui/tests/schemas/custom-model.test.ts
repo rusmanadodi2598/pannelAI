@@ -102,7 +102,7 @@ describe('schemaCustomModelForm', () => {
 	});
 
 	// The display name is optional even though the wire requires one: the reference adds a model with its
-	// id alone (draft 019 D2). That rule and the body it produces live in `custom-model-display-name.test.ts`.
+	// id alone. That rule and the body it produces live in `custom-model-display-name.test.ts`.
 	it('accepts a model id at the API bound', () => {
 		expect(schemaCustomModelForm.safeParse({ ...valid, model_id: 'a'.repeat(200) }).success).toBe(
 			true

@@ -1,5 +1,5 @@
 // The published-quota read's contract and its mappings (docs/SPEC-UI/001-SPEC-UI.md §6.6,
-// docs/SPEC-API/001-SPEC-API.md §7.12's published-read block, draft 036 §7).
+// docs/SPEC-API/001-SPEC-API.md §7.12's published-read block).
 //
 // The rule this file exists for is the one the wire turns on: amounts here are REPORTED by a provider,
 // not counted by this gateway, so they arrive as decimal strings that may carry fractions ("12.5") and a

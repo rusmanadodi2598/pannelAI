@@ -1,4 +1,4 @@
-// Live panel connection tests (src/lib/components/UsageLivePanel.svelte, draft 012 F2).
+// Live panel connection tests (src/lib/components/UsageLivePanel.svelte).
 //
 // The panel owns the stream, so these rows are about what an operator reads and can do about the
 // connection: the label, the reason it is not live, and the two controls. What the two reads put on the

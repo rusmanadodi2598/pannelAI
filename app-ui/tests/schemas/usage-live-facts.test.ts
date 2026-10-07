@@ -1,10 +1,9 @@
-// Live fact derivation tests (src/lib/schemas/usage-live-view.ts, draft 035 F2).
+// Live fact derivation tests (src/lib/schemas/usage-live-view.ts).
 //
-// Split from `usage-live-view.test.ts`, which the facts rows would have pushed past the line limit,
-// the same way draft 023 split the icon tests on their seam (§1.1). The facts are the three live states
-// the row may state in words, and they left the drawing's frame on purpose: the owner's correction of
-// 2026-09-27 moved the sentence out of the node animation and into a tab of the live row, so this
-// derivation is what decides what that tab may say. §2.5: both functions run a table, and each row is
+// Split from `usage-live-view.test.ts`, which the facts rows would have pushed past the line limit (§1.1).
+// The facts are the three live states the row may state in words, and they live in the row rather than in
+// the drawing's frame: the frame is hidden from assistive technology, so this derivation is what decides
+// what that tab may say. §2.5: both functions run a table, and each row is
 // reported on its own name.
 
 import { describe, expect, it } from 'vitest';
@@ -42,8 +41,8 @@ type FactsCase = {
 
 const FACTS_CASES: FactsCase[] = [
 	{
-		// The owner's correction of 2026-09-23 survives the move: absence is stated by the other tabs
-		// (the connection chip names the idle state), never by a sentence that never changes.
+		// Absence is stated by the other tabs (the connection chip names the idle state), never by a
+		// sentence that never changes.
 		name: 'states no fact while the stream has reported nothing that happened',
 		active: [],
 		last: '',

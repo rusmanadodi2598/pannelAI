@@ -5,11 +5,9 @@
 	// because a test stores its result: the row's "last test" column is what the API recorded, not
 	// what this page saw. §8.6.3 is why the write path ends in `load()` rather than in a local patch.
 	//
-	// The empty state is not §6.9's sentence as written, and it no longer needs to be reconciled the
-	// old way: SPEC-API §7.11 used to route only the global `network.outbound_proxy_url`, which made
-	// "Add one to route upstream calls through it" false. The pool engine
-	// (docs/PORT/008-PORT-PROXY-ENGINE.md D1) made the rows the route, so the spec's sentence is now
-	// true and the copy below says what is true again; SPEC-UI §14 Q15 records the resolution.
+	// The empty state's sentence is the one SPEC-API §7.11 supports: the pool rows route upstream calls, not
+	// only the global `network.outbound_proxy_url` (docs/PORT/008-PORT-PROXY-ENGINE.md D1), so "Add one to
+	// route upstream calls through it" is true and SPEC-UI §14 Q15 records the resolution.
 	//
 	// The outbound settings are their own card with their own load, so a settings failure cannot stop
 	// the pool from rendering. §6.13 links here from Settings instead of duplicating that form.
@@ -146,8 +144,8 @@
 				<AddManyIcon class="size-4" aria-hidden="true" />
 				{showBatch ? 'Hide the paste box' : 'Add several at once'}
 			</button>
-			<!-- Refresh lives only in the shared control above (owner directive, 2026-09-26): a second
-			     plain "Refresh" here was the same action written twice, and the shared control renders in
+			<!-- Refresh lives only in the shared control above: a second
+			     plain "Refresh" here would be the same action written twice, and the shared control renders in
 			     every state this toolbar can appear in. -->
 		</div>
 

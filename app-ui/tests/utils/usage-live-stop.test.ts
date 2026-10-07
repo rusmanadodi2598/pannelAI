@@ -1,4 +1,4 @@
-// Usage live stop-condition tests (src/lib/usage-live.ts, draft 012 F2).
+// Usage live stop-condition tests (src/lib/usage-live.ts).
 //
 // §8.6.1 requires a self-refreshing screen to be pausable and to stop while the tab is hidden. The stream
 // is the third medium that rule applies to, and these rows are what it means for one: an aborted request,

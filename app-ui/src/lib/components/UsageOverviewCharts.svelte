@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The Overview tab's charts (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 014 F2).
+	// The Overview tab's charts (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 	//
 	// Two cards: the requests series, and one value series that switches between tokens and cost. The
 	// reference's chart carries the same Tokens/Cost switch, and it is local state rather than a URL

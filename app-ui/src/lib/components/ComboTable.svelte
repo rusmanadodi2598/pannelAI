@@ -24,7 +24,7 @@
 
 	// One target size and one hover wash for every action, so the cell reads as a set. Each variant carries
 	// exactly one `text-*` colour: two competing utilities resolve by stylesheet order, and the muted one
-	// silently won the destructive button's colour until it was measured live (2026-09-24).
+	// silently wins the destructive button's colour.
 	const actionBase =
 		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
 	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;

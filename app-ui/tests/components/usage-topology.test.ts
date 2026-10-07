@@ -1,11 +1,9 @@
-// Live drawing tests (src/lib/components/UsageTopology.svelte, draft 012 F3).
+// Live drawing tests (src/lib/components/UsageTopology.svelte).
 //
 // The drawing is decorative by construction: it is hidden from assistive technology, and the facts it
-// encodes are stated in words by the live row above it (draft 035 F2 moved that sentence out of this
-// frame, where it had been pushing the node animation around). The rows are about the graphic and about
+// encodes are stated in words by the live row above it. The rows are about the graphic and about
 // what the graphic must not carry: which node pulses, what the pulse does when the frame stops naming
-// that provider, and which sentences the frame no longer states (owner's corrections, 2026-09-23 and
-// 2026-09-27).
+// that provider, and which sentences the frame does not state.
 //
 // The path those nodes form (the combos, the terminals, and the hops between the stages) is next door in
 // `usage-topology-path.test.ts`, and the rows about motion being withheld are in
@@ -105,10 +103,9 @@ describe('UsageTopology', () => {
 	});
 
 	it('carries no sentence of its own, since the live row states the facts', () => {
-		// Draft 035 F2: the owner's node animation lost the paragraph that pushed it around. The frame now
-		// draws, and the words that name what is happening live in the row above (usage-live-row.test.ts).
-		// The absence is asserted even with every fact in motion, because a fact in motion is exactly when
-		// the paragraph used to appear.
+		// The frame draws, and the words that name what is happening live in the row above
+		// (usage-live-row.test.ts). The absence is asserted even with every fact in motion, because a moving
+		// fact is exactly when a sentence would most easily reappear here.
 		const container = draw({
 			active: [entry('openai', 'gpt-4o')],
 			last: 'anthropic',
@@ -128,9 +125,8 @@ describe('UsageTopology', () => {
 	});
 
 	it('sizes a node from the drawing unit, so a narrow box draws a smaller node', () => {
-		// Draft 016 F8: the node boxes were pixel-sized inside a percentage layout, so at 390px two of them
-		// intersected by 47px. The box now carries the unit and every metric is written as its own pixel
-		// value times it (draft 018 F1).
+		// Pixel-sized nodes inside a percentage layout intersect at a phone's width, which is why the box
+		// carries the unit and every metric is written as its own pixel value times it.
 		const container = draw({ providers: [{ id: 'openai', name: 'OpenAI' }] });
 		const root = container.querySelector('div[aria-hidden="true"]') as HTMLElement;
 		const node = nodeFor(container, 'OpenAI');
@@ -141,7 +137,7 @@ describe('UsageTopology', () => {
 		expect(style).toContain('--u: min(1, calc(var(--share) * tan(atan2(100cqw, 130px))))');
 		// The font size is on the box rather than on the drawing: an element is not its own query container, so
 		// a font size declared on the drawing resolved against the page and the browser measured 8.4px text in
-		// 47px nodes at 390px (draft 018 F1).
+		// 47px nodes at 390px.
 		expect(style).not.toContain('font-size');
 		expect(node.classList.contains('[font-size:calc(14px*var(--u))]')).toBe(true);
 		expect(node.classList.contains('px-[calc(8px*var(--u))]')).toBe(true);
@@ -153,9 +149,9 @@ describe('UsageTopology', () => {
 	});
 
 	it('draws the routing node label in the status colour and the other states plainly', () => {
-		// Draft 023 F1's colour rule, kept where it always lived: only a routing node's label takes the
+		// The colour rule, kept where it always lived: only a routing node's label takes the
 		// status colour, and the finished and error nodes keep the default label colour. The row copy of
-		// this rule travels with the facts (usage-live-row.test.ts, draft 035 F2).
+		// this rule travels with the facts (usage-live-row.test.ts).
 		const container = draw({
 			providers: [
 				{ id: 'openai', name: 'OpenAI' },

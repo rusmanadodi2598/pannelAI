@@ -14,7 +14,7 @@ pembaca ke deklarasi yang salah.
 
 | | |
 | --- | --- |
-| **Status** | **KERJA. HIGH (F1, F2, F3) dikerjakan pada pass ini. MEDIUM dan LOW tercatat, belum dikerjakan** |
+| **Status** | **HIGH (F1-F3) selesai dan ter-commit (`80abbaa`). MEDIUM F5, F6, F7 selesai pada pass ini. F4 dan F8 menunggu keputusan owner. LOW F9-F13 belum** |
 | **Mechanism** | AFTER (audit 007) lalu DURING untuk tulisan baru |
 | **Scope** | Komentar di `app-ui/src/**` dan `app-ui/tests/**`. Perkiraan 47 file: 11 titik pointer `.go`, 41 file dengan pointer `.js`/`.css` (tumpang tindih), 3 file klaim perilaku |
 | **Sumber temuan** | `anti-slop/audit-007-2026-10-07.md`, terukur atas 5.879 baris komentar di 320 file `src` + 3.141 di `tests` |
@@ -281,7 +281,86 @@ koordinat dan tidak ikut menggerogoti kelas lain.
   fallback juga punya copy lengkap, dan aksi "Back to endpoint keys" dirender untuk semua status. Klausa yang
   masih benar ("the only error the panel raises on its own is a route that does not exist") dipertahankan.
 
-### Verifikasi
+### F5 selesai: 138 sitasi `draft NNN` turun jadi 1, dan yang 1 itu memang dilindungi §4
+
+Sweep atas `src` (62 baris) dan `tests` (76) plus perbaikan tangan untuk 22 titik yang strukturnya tidak bisa
+disubstitusi buta. Yang tersisa satu: `tests/schemas/provider.test.ts:61` memakai `draft 036` di dalam **judul
+test**, bukan di komentar. §4 sudah memutuskan kelas itu di sisi Go, dan keputusannya berbunyi "a `draft 017
+§4.6` written inside a t.Fatalf message is a test naming the case it asserts": sebuah test yang menamai kasus
+yang ia jagit bukan komentar, jadi itu ditinggalkan. Ini juga kelas yang audit 006 item 6 tutup.
+
+Yang dilakukan tiap titik: klausa sitasi dihapus, kalimat faktanya dibiarkan utuh. Dalam 8 tempat kalimatnya
+memang *hanya* sitasi (misal `/** The bar charts' provider-dimension read (draft 016 F1). */`), dan di situ
+yang benar adalah buang pointer dan biarkan nama deklarasi bekerja; kalau itu meninggalkan baris tanpa isi,
+barisnya ikut hilang.
+
+Pointer ke SPEC-UI, SPEC-API, PORT dan `§` tidak disentuh sama sekali: 515 baris memuatnya dan §4 menyebutnya
+legal. Nama file Go yang menunjuk simbol (`dataplane/selection_virtual.go`) juga ditahan, karena itu simbol,
+bukan koordinat.
+
+Dua artefak yang muncul dari sweep dan ketemu oleh review, bukan oleh keberuntungan: satu baris jadi `*.`
+belaka (period ditinggal sendirian setelah parenthetical dihapus), satu lagi jadi `//.` di awal baris. Yang
+ketiga lebih serius dan tidak bisa ditangkap pemeriksaan bentuk: `usage-live.ts:16` kehilangan anak kalimatnya
+karena pola "sitasi di awal tanda kurung" menelan sampai koma berikutnya, menghasilkan `/** The route so the
+request carries the cookie. */`. Semuanya diperbaiki, dan pola berbahaya itu dibuang dari script sebelum pass
+`tests` dijalankan: pass `tests` menghasilkan 0 artefak bentuk.
+
+### F6 selesai: 61 baris berkomentar bertanggal turun jadi 4, dan keempatnya memang isi
+
+Tanggal yang dihapus: `(owner directive, 2026-09-26)`, `(owner, 2026-09-17)`, `measured live 2026-09-24`,
+`added server-side on 2026-09-25`, `reshape 2026-10-02`, `the owner's correction of 2026-09-27`. Faktanya
+tetap di tempatnya; yang hilang cuma stempel.
+
+Empat yang sengaja dipertahankan, dan ini bagian penting dari kerjanya: `changelog.ts:12` dan
+`changelog-contract.test.ts:89` memakai `2026-02-30` sebagai *contoh tanggal tidak valid* yang skema harus
+tolak; `quota.test.ts:348` memakai `2026-10-01T00:00:00Z` sebagai waktu refill fixture; `changelog.test.ts:165`
+memakai `2026-09-19` sebagai tanggal rilis yang dipakai dua versi untuk berurut. Menghapusnya akan merusak
+test, bukan membersihkan komentar.
+
+Satu keputusan bentuk yang perlu dicatat: `(owner directive, 2026-09-25)` dihapus **whole**, bukan jadi
+`(owner directive)`. Alasannya, di 24 dari 26 tempat kalimat di sekitarnya sudah menyebut aturannya sendiri
+("every control one height, glyph + label", "the shared contract is that the button keeps the action's name"),
+sehingga menyisakan kata "owner directive" adalah menyimpan label tanpa fakta. Tempat yang otoritasnya benar-benar
+menanggung beban menuliskannya sebagai klausa, bukan sebagai stempel: `combo-dialog-icons.test.ts` sekarang
+berbunyi "a silent change to 44px would override recorded owner direction", yang adalah alasan, bukan tanggal.
+
+Satuan ukur yang ikut dibuang bersama tanggalnya karena kelasnya sama: `4 of 16 rows`, `opencode-zen has 1
+account and 0 counted windows`, `61 dots where the reference carries 11`, `intersected by 47px`. Semuanya
+snapshot dari satu kali pengukuran live yang akan busuk persis seperti yang audit 006 item 3 temukan di sisi
+markdown. Yang ditulis sekarang adalah aturannya: sebuah account bisa tidak punya window sama sekali, sebuah
+baris provider kosong itu sah, memakai count sebagai period melukis satu dot per orb per siklus.
+
+### F7 selesai untuk `src`: narasi diubah jadi constraint, bukan dibuang
+
+Sept situs yang audit namai, plus tiga yang ketemu setelahnya. Yang dikerjakan bukan menghapus kalimat
+penjelasan: kalimatnya ditulis ulang supaya berbicara tentang sekarang.
+
+| Sebelum | Sesudah |
+| --- | --- |
+| "Before this line existed the file was written and tested but never loaded, and the whole panel rendered unstyled" | klausa itu dihapus; kalimat pertama sudah memegang constraint-nya |
+| "Before this pass they were two blocks stacked vertically, so the create button sat on a line of its own below the copy" | dihapus; yang tersisa "the shape is required to be compact and symmetric" |
+| "SPEC-API §7.11 used to route only the global..., so the spec's sentence is now true" | "the empty state's sentence is the one SPEC-API §7.11 supports: the pool rows route upstream calls" |
+| "The form used to send `key_value`, which made every create fail" | "a field that exists on the form has no place on the wire" |
+| "a provider with accounts but no counted window used to get no card at all" | "gets no card at all if grouping walks `windows` only" |
+| "The first attempt here used the count itself as the period..., the edge carried 61 dots where the reference carries 11" | "The count is not the period: `100 / 6` paints one dot per orb every cycle" |
+| "reading `key` instead made every create fail the parse" | "reading `key` instead fails the parse and the one-time key never reaches the modal" |
+| "Split out of `CombosTab` when the icon pass pushed that file past the 220-line warning" | "Split from `CombosTab` on the seam that file already names" |
+
+Klausul "220-line warning" layak dicatat sendiri: tidak ada satu pun cek di `scrypts/gates`, tidak ada aturan
+`max-lines` di `eslint.config.js`, dan tidak ada di `package.json`, yang menegakkan angka 220 untuk `.svelte`
+atau `.ts`. Jadi kalimat itu bukan sejarah yang tidak berguna, ia klaim tentang alat yang tidak ada. Ini kelas
+yang sama dengan yang bikin audit 007 menaikkan prioritasnya sendiri.
+
+Yang **tidak** disentuh, dan ini penting agar filternya tidak jadi perusak: `used to` di dalam file test yang
+menjelaskan regresi yang ia jagit (`endpoint-write.test.ts:4` "The regression this file exists for is the
+mapping itself", `changelog.test.ts:128`, `quota.test.ts:294` "The old behaviour must not regress"). §3
+melindungi edge case dan asumsi, dan sebuah test yang tidak boleh lagi gagal tanpa menjelaskan kenapa test itu
+ada adalah persis informasi yang §3 minta ditahan. Yang dihapus di file test hanya stempel dan snapshot
+yang busuk (F6), bukan alasannya.
+
+
+
+### Verifikasi (HIGH)
 
 | Check | Hasil |
 | --- | --- |
@@ -299,4 +378,29 @@ Bukti pendukung F4 dari pass ini sendiri: gerbang dipanggil atas diff yang mengu
 mencetak "PASS scratch-work citations (changed Go files)". Tidak satu pun dari 50 file itu dibaca untuk
 sitasi, suppression, atau panjang, persis seperti yang dinyatakan F4. Sebuah pass komentar pada `.ts` dan
 `.svelte` lolos gerbang tanpa mengatakan apa pun tentang komentar `.ts` dan `.svelte`.
+
+### Verifikasi (MEDIUM F5-F7)
+
+Ukuran selesai, semuanya terukur dan bukan sampling:
+
+| Kelas | Sebelum (audit 007) | Sesudah |
+| --- | --- | --- |
+| Sitasi `draft NNN` / `docs/DRAFT` / `review line` di komentar | 138 | 1, dan itu judul test, dilindungi §4 |
+| Baris komentar membawa tanggal | 61 | 4, keempatnya isi (contoh tanggal invalid, waktu refill fixture, tanggal rilis untuk pengurutan) |
+| Pointer `file.ext:NN` | 82 | 0 |
+| Narasi "used to" di komentar `src` | 8 blok | 0, dua sisa adalah "refused to" false positive |
+| Artefak bentuk (`//.`, `*.`, klausa menggantung) | - | 0 setelah dua kali ditemukan dan diperbaiki |
+
+Check: `prettier --check .` PASS, `eslint .` nol output, `svelte-check --tsgo` 0 errors 0 warnings,
+`scrypts/gates/antislop.sh` PASS, `bun run test` **PASS 2981 dari 2981 test, 182 file, exit 0** (1226s) di atas
+pohon final, yaitu pohon yang didaftarkan di bagian ini. Guardrail scope: 120 file berubah, dan perbandingan
+byte-per-byte dengan komentar dibuka kembali memberi **0 file dengan konten non-komentar berbeda**. Diff: 287
+insertions / 332 deletions, net -45 baris, yang memang bentuk yang diharapkan dari membuang pointer dan stempel.
+
+Dua hal yang bikin pass ini layak dicatat sebagai pelajaran alat, bukan cuma hasil: artefak `//.` dan klausa
+"until it was measured live" yang saya buat sendiri dengan membuang tanggal tanpa memperbaiki sisa kalimatnya.
+Keduanya bentuk kegagalan yang sama: menghapus token tanpa membaca kalimat yang tersisa. Karena itu urutan
+kerja yang benar untuk kelas ini adalah transform lalu **baca hasil baris per baris**, bukan transform lalu
+lapor hijau.
+
 

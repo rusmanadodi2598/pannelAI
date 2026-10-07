@@ -1,5 +1,4 @@
-// The live drawing's geometry (docs/DRAFT/018-USAGE-DRAWING-SIZING-PARITY.md, and the two bands of
-// docs/DRAFT/043-USAGE-COMBO-NODE-FLOW.md F1).
+// The live drawing's geometry, including the two bands a node sits on.
 //
 // Split from `usage-topology-view.ts` because the two answer different questions: this file is arithmetic
 // over a box (where a band's nodes land, how tall the box grows, how wide a label may be) and that file is

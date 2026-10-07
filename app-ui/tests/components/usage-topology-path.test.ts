@@ -1,7 +1,7 @@
 // The live drawing's request path (src/lib/components/UsageTopologyEdges.svelte and
-// UsageTopologyHop.svelte, docs/DRAFT/043-USAGE-COMBO-NODE-FLOW.md F1/F2).
+// UsageTopologyHop.svelte).
 //
-// Split from `usage-topology.test.ts` on the seam the drafts already use: that file is about which node
+// Split from `usage-topology.test.ts` on an existing seam: that file is about which node
 // carries which state, this one is about the path the nodes form (`Client >> Combo >> Gateway >> Upstream
 // >> Response`) and about the hops between the stages. The rows are about which hops exist and which of
 // them a frame lights, because a hop is drawn eleven lines when it is carrying a beam and one when it is

@@ -80,7 +80,7 @@ describe('testing a custom provider', () => {
 });
 
 describe("the card's verb actions", () => {
-	// Both are icon-only since 2026-09-25 (PORT 002 D4): the shared contract is that the button keeps the
+	// Both are icon-only (PORT 002 D4): the shared contract is that the button keeps the
 	// action's name for the screen reader and the tooltip while the glyph stays decorative.
 	it('renders Edit and Delete without visible text, with their names kept', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });

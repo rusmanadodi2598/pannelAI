@@ -1,9 +1,9 @@
-// The Overview's bar charts (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 016 F1 and F2).
+// The Overview's bar charts (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 //
 // The reference draws one chart per dimension from a single stats read that carries every dimension at once
 // (`UsageStats.js`, `ProviderBarChart.js`, `TopModelsChart.js`). This panel's
 // summary answers for one dimension per call, so the pair asks for the two dimensions it draws and reuses
-// the tab's own response when the operator's breakdown is one of them (draft 016 F4).
+// the tab's own response when the operator's breakdown is one of them.
 //
 // Everything here is arithmetic over groups the API returned: which groups are drawn, in what order, how
 // long each bar is, and the sentence that states the same facts in words. The components render what these
@@ -120,7 +120,7 @@ export function barsSummary(
  *
  * It is the standard compact formatter rather than the reference's hand-rolled thresholds, because those
  * print `1000.0K` for 999,999: the unit boundary belongs to the formatter, and a wart the reference has is
- * not a behaviour to copy (draft 016 F1). The locale is pinned like the panel's other number formats, so
+ * not a behaviour to copy. The locale is pinned like the panel's other number formats, so
  * the figure does not change with the reader's machine.
  *
  * It rounds, and the exact figure is one disclosure away in the chart's own table, which is why the chart

@@ -4,8 +4,8 @@
 // which of them answers a read, and these decide what a read says. Every builder takes an override bag so a
 // row can change one field without restating the body.
 //
-// The summary fixture carries the model breakdown, because that is the tab's default `group_by` (draft 014
-// F1) and a fixture that answered an empty group block would leave every test reading the empty state
+// The summary fixture carries the model breakdown, because that is the tab's default `group_by` and a
+// fixture that answered an empty group block would leave every test reading the empty state
 // instead of the table.
 
 import { provider } from './providers-route-stub';
@@ -66,7 +66,7 @@ export function summaryBody(overrides: Record<string, unknown> = {}): Record<str
 }
 
 /**
- * The bar charts' provider-dimension answer (draft 016 F1).
+ * The bar charts' provider-dimension answer.
  *
  * Its figures appear nowhere else on the screen: a chart cell that repeated a tile's number would make a
  * `getByText` assertion about the tile pass while it read the chart.

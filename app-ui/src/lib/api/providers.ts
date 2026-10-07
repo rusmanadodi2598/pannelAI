@@ -80,7 +80,7 @@ export function listProviderModels(providerId: string): Promise<ApiResult<Provid
 	});
 }
 
-// Probes one model of one provider through the data plane (§7.4, draft 017 §4.10). A model that refused is
+// Probes one model of one provider through the data plane (§7.4). A model that refused is
 // an answered row, not a failed request, so only a refusal of the request itself reaches `error`.
 export function testProviderModel(
 	providerId: string,

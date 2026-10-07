@@ -1,4 +1,4 @@
-// The two halves of the Usage tab together (draft 012 F2).
+// The two halves of the Usage tab together.
 //
 // The rule this file exists for is a negative one: the stream must not be able to change a figure the REST
 // reads returned. It is proved by giving a frame every aggregate-shaped field a gateway might send and

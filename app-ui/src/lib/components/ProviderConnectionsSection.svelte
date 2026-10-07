@@ -13,9 +13,8 @@
 	//
 	// The add action is split by auth type. A provider that takes a key gets the dialog the page owns,
 	// because a key is the credential and the reference's own Add API Key button sits here. A provider that
-	// takes none gets this section's inline endpoint form instead: since 2026-09-24 the Endpoint & Key page
-	// carries only gateway keys, so the form that used to live on its second tab renders here, next to the
-	// list it fills.
+	// takes none gets this section's inline endpoint form instead: the Endpoint & Key page carries only
+	// gateway keys, so the endpoint form belongs here, next to the list it fills.
 	//
 	// The rotation switch is its own component, because it is a self-contained control with its own read,
 	// write, and status lines; this section only decides where it sits.
@@ -102,7 +101,7 @@
 			{/if}
 		</div>
 	</div>
-	<!-- The registry's credential-format sentence (draft 036 slice B): what the key looks like and
+	<!-- The registry's credential-format sentence: what the key looks like and
 	     where the operator mints one. Text, never a link: the panel does not navigate to a third
 	     party on the operator's behalf. -->
 	{#if provider.auth_hint}

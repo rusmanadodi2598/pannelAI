@@ -1,4 +1,4 @@
-// Row actions render as icon-only buttons (owner directive, 2026-09-24).
+// Row actions render as icon-only buttons.
 //
 // The two tables of the Endpoint & Key page are asserted here together because the contract is one
 // contract: when the visible text goes, the button must still carry the action's name as its accessible
@@ -8,7 +8,7 @@
 //
 // The destructive action's colour is part of the same contract: it must carry exactly one `text-*`
 // utility, the danger one, because two competing utilities resolve by stylesheet order and the muted one
-// silently won the Delete button's colour until it was measured live (2026-09-24). jsdom has no Tailwind
+// silently wins the Delete button's colour. jsdom has no Tailwind
 // cascade, so the class list is the only part of that rule a unit test can hold.
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';

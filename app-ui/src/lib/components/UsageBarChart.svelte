@@ -1,5 +1,5 @@
 <script lang="ts">
-	// One bar chart of the Overview (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 016 F1 and F2).
+	// One bar chart of the Overview (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 	//
 	// Bars are laid out in CSS rather than SVG, for the reason the series chart gives: there is no axis to
 	// scale and no series to overlay, so a viewBox would add coordinate arithmetic without adding

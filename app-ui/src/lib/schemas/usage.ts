@@ -53,7 +53,7 @@ export const USAGE_GROUP_BY_LABELS: Record<UsageGroupBy, string> = {
 };
 
 // The breakdown selector also offers "none". The API has no parameter for "do not break down", it has the
-// absence of one, so the URL needs a word for that absence and `group_by=none` is that word (draft 014 F1).
+// absence of one, so the URL needs a word for that absence and `group_by=none` is that word.
 // The default is a breakdown by model, because the first question the window answers is which models
 // consumed it, and the reference's own table opens on its model view.
 export const USAGE_BREAKDOWN_NONE = 'none';
@@ -61,7 +61,7 @@ export const schemaUsageBreakdown = z.enum([...USAGE_GROUP_BYS, USAGE_BREAKDOWN_
 export type UsageBreakdown = z.infer<typeof schemaUsageBreakdown>;
 export const DEFAULT_USAGE_BREAKDOWN: UsageBreakdown = 'model';
 
-// The breakdown table's own controls (draft 014 F1). The reference keeps its sort in the URL and so does
+// The breakdown table's own controls. The reference keeps its sort in the URL and so does
 // this screen: a sorted view is a view someone can share. `key` sorts the dimension's own text, which is
 // the only column compared as a string; the rest compare numbers.
 export const USAGE_SORTS = [

@@ -1,4 +1,4 @@
-// Tests for the provider model test contracts (docs/SPEC-API/001-SPEC-API.md §7.4, draft 017 §4.10).
+// Tests for the provider model test contracts (docs/SPEC-API/001-SPEC-API.md §7.4).
 //
 // The route inverts the usual rule: a model that refused to answer is a RESULT, and only a request that
 // was not a question is an error. So the schema's job is to keep a failure readable without inventing

@@ -1,10 +1,10 @@
-// Proxy Pools control glyph tests (owner directive, 2026-09-26, PORT 007).
+// Proxy Pools control glyph tests.
 //
 // Every control the directive names carries a glyph from the icon maps, never an emoticon and never
 // bare text, and the screen carries exactly one refresh control: the shared "Refresh now" control is
 // the only one, so the toolbar's plain "Refresh" button is asserted as an absence. The row actions
 // follow the icon-only contract the Endpoint & Key tables already hold, with the name carrying the
-// row it acts on, and the destructive action keeps the one-text-colour rule measured on 2026-09-24.
+// row it acts on, and the destructive action keeps the one-text-colour rule.
 
 import { cleanup, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';

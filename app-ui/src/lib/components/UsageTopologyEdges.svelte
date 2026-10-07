@@ -1,6 +1,5 @@
 <script lang="ts">
-	// The live drawing's edges (docs/DRAFT/012 F3; the beam is draft 015 F1, the split is draft 018, and the
-	// request path is docs/DRAFT/043 F2).
+	// The live drawing's edges, one per hop of the path a request takes.
 	//
 	// One SVG stretched over the drawing box, holding every hop of the path the request takes:
 	// `Client >> Combo >> Gateway >> Upstream >> Response`. The hop itself (one line, or the beam that

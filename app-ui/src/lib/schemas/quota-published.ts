@@ -1,5 +1,5 @@
 // The published-quota read's schemas and mappings (docs/SPEC-UI/001-SPEC-UI.md §6.6,
-// docs/SPEC-API/001-SPEC-API.md §7.12's published-read block, docs/DRAFT/036 §7).
+// docs/SPEC-API/001-SPEC-API.md §7.12's published-read block).
 //
 // Split from `quota.ts` and `quota-cap.ts` because this is the third thing the quota screen holds: the
 // counted windows are what this gateway sent, the cap is what the operator told the router to enforce,

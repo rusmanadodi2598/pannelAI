@@ -65,7 +65,7 @@ export type UpdateGatewayKeyForm = z.infer<typeof schemaUpdateGatewayKeyForm>;
 // The plaintext key is returned exactly once, on create, and the wire names it `plaintext_key`
 // (`app-serv/internal/schema/dto.go`, `omitempty` so it is absent on every other response). SPEC-API §7.3
 // says "returns full key once" without naming the field, so the served name is the one to parse: reading
-// `key` instead made every create fail the parse and no one-time key ever reached the modal.
+// `key` instead fails the parse and the one-time key never reaches the modal.
 export const schemaCreatedGatewayKey = z.object({
 	id: gatewayKeyId,
 	name: label,

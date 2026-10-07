@@ -1,4 +1,4 @@
-// The Combo & Vision dialogs' footer controls (owner directive, 2026-09-25; SPEC-UI §8.11).
+// The Combo & Vision dialogs' footer controls.
 //
 // Split from `combo-vision-icons.test.ts` by concern: that file holds the row actions and the toolbar, this
 // one holds the modal footers and the picker, which share the glyph + label shape PORT 002 gave the
@@ -112,11 +112,9 @@ describe('the picker dialogs', () => {
 	});
 
 	it('gives the dialog close control the 36px size DESIGN.md §7 fixes for a dialog', () => {
-		// The live click-through on 2026-09-25 measured this control at 36px and the first reading called it a
-		// defect against R-03's 44px. It is not: `DESIGN.md` §7 fixes 36px for a dialog's own controls and
-		// reserves 44px for the sidebar, which is a touch surface at every breakpoint. The earlier pass that
-		// shipped the icon-only copy control recorded the same decision (`app-ui/README.md`, 2026-09-24). A
-		// silent change to 44px would have overridden recorded owner direction, so the size is pinned here
+		// `DESIGN.md` §7 fixes 36px for a dialog's own controls and reserves 44px for the sidebar, which is a
+		// touch surface at every breakpoint, so 36px here is not the R-03 defect it looks like at a glance.
+		// A silent change to 44px would override recorded owner direction, so the size is pinned here
 		// instead, and the port document records the reading as deliberate rather than as a fix.
 		render(ModelPickerDialog, {
 			props: {

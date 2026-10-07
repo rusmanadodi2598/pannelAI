@@ -122,7 +122,7 @@ describe('CopyButton', () => {
 	});
 });
 
-// The icon-only shape the two modals use (owner directive, 2026-09-24). The word leaves the face of the
+// The icon-only shape the two modals use. The word leaves the face of the
 // button and becomes its accessible name, so the control still announces itself while the value and the
 // outcome sentence stay the only text beside it. The outcome is part of the shape: a copy that reported
 // nothing would be a dead control, pressed in either shape.

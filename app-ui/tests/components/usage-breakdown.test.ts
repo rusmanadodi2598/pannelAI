@@ -1,4 +1,4 @@
-// The Usage Overview breakdown table (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 014 F1).
+// The Usage Overview breakdown table (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 //
 // The table is the part of the tab that answers "which models consumed this window", and two of its rules
 // are not visible in the markup: the sort orders the whole response rather than a page of it (the API
@@ -79,7 +79,7 @@ describe('UsageOverviewTab breakdown', () => {
 		await renderOverview();
 
 		// Exactly one read asked for the model breakdown: the tab's own. The two bar charts reuse it rather
-		// than reading the same dimension again (draft 016 F4).
+		// than reading the same dimension again.
 		expect(summaryQueries(stub, 'model')).toHaveLength(1);
 
 		const table = screen.getByRole('table', { name: 'Usage broken down by model' });

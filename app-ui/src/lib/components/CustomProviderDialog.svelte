@@ -22,9 +22,8 @@
 	// whatever the value is, the way the reference's `Input` renders its `hint` prop, so the copy that says
 	// which URL belongs there is never replaced by the preview; the joined URL is an extra line below it.
 	// The reference's **Check** (a key plus an optional model id, validated before the node exists) is
-	// deliberately not built: the route it calls has no counterpart in app-serv yet (measured 405; draft 017
-	// F6), and a control that calls a route nothing serves is a dead control (R-26). The draft records it as
-	// the one gap this dialog still has.
+	// deliberately not built: the route it calls has no counterpart in app-serv yet (measured 405), and a
+	// control that calls a route nothing serves is a dead control (R-26).
 	import FormIssues from '$lib/components/FormIssues.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import Modal from '$lib/components/Modal.svelte';

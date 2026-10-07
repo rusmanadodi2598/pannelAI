@@ -55,8 +55,8 @@ describe('normalizeNoProxyList contract', () => {
 					expect(host, at).toBe(host.toLowerCase());
 					// Only the comma is forbidden here. Internal whitespace survives, because SPEC-UI §7.2
 					// gives `outbound_no_proxy` its own row: trimmed, deduplicated, empty entries dropped.
-					// It does not require each entry to pass the proxy host rule, and that gap is recorded
-					// in anti-slop/audit-004-2026-09-16.md rather than asserted away here.
+					// It does not require each entry to pass the proxy host rule, and this case does not
+					// assert one.
 					expect(host.includes(','), at).toBe(false);
 				}
 

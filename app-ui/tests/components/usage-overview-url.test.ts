@@ -63,7 +63,7 @@ describe('UsageOverviewTab URL', () => {
 		});
 
 		// The tab's own read, named by the dimension the URL chose: the two bar charts read the same route
-		// for their own dimensions (draft 016 F4).
+		// for their own dimensions.
 		const query = lastSummaryQuery(stub, 'model');
 		expect(Date.parse(query.get('to') ?? '') - Date.parse(query.get('from') ?? '')).toBe(
 			30 * 24 * HOUR_MS

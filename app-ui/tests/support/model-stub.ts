@@ -114,7 +114,7 @@ export type ModelStub = {
 	authModes: string[];
 	/**
 	 * The registry's credential-format sentence the detail row carries, or null for the omitempty
-	 * shape where the key is absent entirely (draft 036 slice B).
+	 * shape where the key is absent entirely.
 	 */
 	authHint: string | null;
 	/** The endpoint rows the Endpoints section lists. */

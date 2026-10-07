@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The group-by breakdown of a usage summary (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 014 F1).
+	// The group-by breakdown of a usage summary (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 	//
 	// The first column is named by the dimension the operator chose, because the API returns a bare `key`
 	// and a column headed "Key" would leave the reader to remember which selector is set.
@@ -7,11 +7,11 @@
 	// A provider key is resolved to its name when the registry was read, because `openai` is a name the
 	// operator has to translate and the reference resolves it too. Every other dimension is rendered as it
 	// arrives: the endpoint and gateway-key screens are where those names are looked up, and this tab reads
-	// neither, which is a deviation from the reference recorded in draft 014 F6.
+	// neither, which is a deviation from the reference.
 	//
 	// The table carries no Costs/Tokens toggle of its own. The reference's exists because its value columns
 	// switch between a token view and a cost view, and switching here would hide figures this table already
-	// shows at once; the toggle belongs to the chart, which can draw one series at a time (draft 014 F6, F2).
+	// shows at once; the toggle belongs to the chart, which can draw one series at a time.
 	//
 	// The sort is view state and lives in the URL (§8.4.2), so a sorted breakdown is a view someone can
 	// share. It orders the whole response rather than a page of it, because the API sends the complete

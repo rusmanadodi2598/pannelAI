@@ -1,4 +1,4 @@
-// A custom node's models section and its `/models` import (draft 019 F5, docs/SPEC-UI/001-SPEC-UI.md §6.3).
+// A custom node's models section and its `/models` import.
 //
 // A node has no registry catalog, so the rows this section lists ARE its models. That is why it states the
 // string each row is addressed by and offers the reference's import

@@ -1,5 +1,5 @@
 <script lang="ts">
-	// One quota card's body (docs/PORT/005-PORT-QUOTA-CARDS.md D1/D6; provider-first reshape 2026-10-02):
+	// One quota card's body (PORT 005 D1/D6, provider-first):
 	// the sentence the provider-less lane opens with, then one group per connection whose FIRST thing is
 	// what the provider itself reports, with this gateway's counted windows reduced to one summary line
 	// beneath it. Split out of QuotaCards so the card (fold, checkbox, pagination) and the rows stay under

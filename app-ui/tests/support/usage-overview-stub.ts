@@ -2,7 +2,7 @@
 //
 // The screen makes more than four reads on mount: the summary for the dimension the URL chose, the
 // timeseries, the registry (which resolves a provider key to its name for the breakdown table), the bar
-// charts' own dimension reads (draft 016 F1 and F2), and the live stream's route. The stub answers all of
+// charts' own dimension reads, and the live stream's route. The stub answers all of
 // them and records every request in order, because the assertions in the test files are about what the
 // panel asked for rather than about what it rendered from the answer.
 //
@@ -15,7 +15,7 @@
 // summary request" no longer names one.
 //
 // The live route is answered 404 rather than left unhandled. That is what a gateway without the route
-// answers (draft 012 F4), and it keeps this stub from mistaking the stream for one of the reads. The two
+// answers, and it keeps this stub from mistaking the stream for one of the reads. The two
 // halves are exercised together in `usage-overview-live.test.ts`.
 //
 // The bodies themselves live in `tests/support/usage-fixtures.ts`: this file decides which of them answers
@@ -30,9 +30,9 @@ export type UsageStub = {
 	requested: string[];
 	/** The tab's own summary read, whatever dimension the URL chose. */
 	summary: Record<string, unknown>;
-	/** The bar charts' provider-dimension read (draft 016 F1). */
+	/** The bar charts' provider-dimension read. */
 	providerSummary: Record<string, unknown>;
-	/** The bar charts' model-dimension read (draft 016 F2). */
+	/** The bar charts' model-dimension read. */
 	modelSummary: Record<string, unknown>;
 	timeseries: Record<string, unknown>;
 	providers: Record<string, unknown>;

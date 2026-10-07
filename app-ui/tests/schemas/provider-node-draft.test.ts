@@ -120,7 +120,7 @@ describe('the node draft', () => {
 });
 
 describe('drafts', () => {
-	// The vendor URL is the field's value, not its placeholder (draft 019 F4): the reference pre-fills it
+	// The vendor URL is the field's value, not its placeholder: the reference pre-fills it
 	// (`AddCompatibleModal.js`), so the common case is a save with nothing typed.
 	for (const type of ['openai-compatible', 'anthropic-compatible'] as const) {
 		it(`starts a new ${type} draft with the vendor URL already in the field`, () => {

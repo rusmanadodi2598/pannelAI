@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The live half of the Usage overview (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md F2 and F3).
+	// The live half of the Usage overview.
 	//
 	// The division of labour is the point of this component. The totals and the charts on this tab come
 	// from the REST reads and are never touched by anything here. What arrives on the stream is in flight
@@ -33,9 +33,8 @@
 	// is in flight, so an idle screen runs no clock at all.
 	const ACTIVE_TICK_MS = 1_000;
 
-	// The one box every tab on this row wears. The two controls already carried it; the owner's
-	// correction of 2026-09-27 asked the chip and the new facts tab to join them rather than sit at
-	// their own text size (draft 035 F1), and 44px is the panel's floor for a control's touch target
+	// The one box every tab on this row wears, the chip and the facts tab included: neither sits at its own
+	// text size, and 44px is the panel's floor for a control's touch target
 	// (SPEC-UI §8.6 rule 3).
 	const TAB_BOX =
 		'inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm';
@@ -162,13 +161,13 @@
 
 		<!-- eslint-disable svelte/no-useless-mustaches -- label and value sit in adjacent spans and
 		     Svelte drops the whitespace between elements on separate lines, so each `{' '}` below is the
-		     space the sentence needs when a screen reader reads its text content (draft 035, review
-		     line 30). A flex container lays whitespace-only runs out as nothing, so the `gap-1` spacing
+		     space the sentence needs when a screen reader reads its text content. A flex container lays
+		     whitespace-only runs out as nothing, so the `gap-1` spacing
 		     is unchanged. -->
-		<!-- The live facts, stated in the row rather than in the drawing's frame (draft 035 F2): a
+		<!-- The live facts, stated in the row rather than in the drawing's frame: a
 		     statement in the matched tab box, not a control. It wraps inside its own box and shrinks
 		     below its content (`min-w-0`), so a long joined provider list breaks at the row's edge
-		     instead of widening the page (review lines 1 and 31). No fact means no tab at all, which
+		     instead of widening the page. No fact means no tab at all, which
 		     keeps the owner's rule that a screen states what happened and never what did not
 		     (2026-09-23). -->
 		{#if facts.length > 0}
@@ -210,7 +209,7 @@
 
 	<!-- `live` is what the drawing needs to move: motion says "happening now", so it is reserved for a
 	     connection frames are arriving on. A paused or dropped stream leaves the last known state on
-	     screen in colour and stops every moving part (draft 013 F2). -->
+	     screen in colour and stops every moving part. -->
 	<UsageTopology {providers} {combos} {active} {last} {error} live={report.status === 'live'} />
 
 	<!-- Rendered only when the frame carries finished requests. While none has, the screen's statement of

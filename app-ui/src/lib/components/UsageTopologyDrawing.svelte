@@ -1,16 +1,13 @@
 <script lang="ts">
-	// The live drawing's box (docs/DRAFT/012 F3, extended by draft 013 F1/F2 and draft 015 F1).
+	// The live drawing's box.
 	//
-	// Split from `UsageTopology.svelte` when the beam arrived: the frame around the drawing (caption, empty
-	// state, and the sentences that carried the same facts until draft 035 F2 moved them into the live row)
-	// and the drawing itself crossed the line budget together, and the seam is real rather than arithmetic.
-	// The drawing is still hidden from assistive technology; the facts it encodes are now stated by the live
-	// row above the frame.
+	// Split from `UsageTopology.svelte` on a real seam rather than an arithmetic one: the frame around the
+	// drawing (caption and empty state) is one job, and the drawing is another. The drawing is hidden from
+	// assistive technology; the facts it encodes are stated in words by the live row above the frame.
 	//
 	// Three parts, and the middle one is its own file: this box and the cards it publishes (the gateway,
 	// one card per node on each band, and the two terminals on the vertical axis), the hops
-	// (`UsageTopologyEdges.svelte`, split out by draft 018 and redrawn as a path by draft 043), and the beam
-	// each lit hop carries (`UsageTopologyHop.svelte`).
+	// (`UsageTopologyEdges.svelte`), and the beam each lit hop carries (`UsageTopologyHop.svelte`).
 	//
 	// Everything positional is a percentage, so the same layout fills a phone and a desktop panel with no
 	// measurement and no resize observer.
@@ -21,7 +18,7 @@
 	// `topologyNodes`, so the drawing shrinks with a narrow box exactly as the reference fork's fitView
 	// shrinks its whole canvas, and stops shrinking once a node is as wide as the panel ever draws one. The
 	// node boxes, the gateway and the beam's strokes all take the same unit, so a phone draws a smaller
-	// drawing rather than a collided one (draft 018 F1/F2). The one metric that does not scale is the 1px box
+	// drawing rather than a collided one. The one metric that does not scale is the 1px box
 	// border: a hairline is the panel's token for an edge, and below a pixel it would not be drawn at all.
 	//
 	// Every metric is written on the element that uses it, and that is not a style choice: an element is not
@@ -30,7 +27,7 @@
 	// text inside 47px nodes at 390px, because the text resolved against the page while the padding resolved
 	// against the drawing. Both are on the node and gateway boxes now, and both resolve against the drawing.
 	//
-	// Motion belongs to the live state alone (draft 013 F2). The two things that move on entry (a card
+	// Motion belongs to the live state alone. The two things that move on entry (a card
 	// fading in when it appears, and the box growing when the node count changes) are not that motion: they
 	// say "this drawing is the same drawing, with one more thing on it", and both stop for a reader who
 	// asked for reduced motion.

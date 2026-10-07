@@ -8,7 +8,8 @@
 // That separation is the fix this module carries. `POST /endpoints` takes `keys`, an array of
 // `{label?, value, priority?}` (app-serv `internal/schema/endpoint.go`, `EndpointKeyInput`), and its decoder
 // sets `DisallowUnknownFields` (`internal/schema/validator.go`, `jsonDecoder`), so a body carrying a
-// form-only field is refused outright. The form used to send `key_value`, which made every create fail.
+// form-only field is refused outright, which is the failure this catches: a field that exists on the form
+// has no place on the wire.
 //
 // The batch body is the same rule one level up: `POST /endpoints/bulk` takes one element per account
 // (`BulkEndpointInput`), so a paste of N keys becomes N connections of the provider

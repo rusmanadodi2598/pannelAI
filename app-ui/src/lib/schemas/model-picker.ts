@@ -6,12 +6,10 @@
 // registry, and a provider that was never configured must not be offered as if it could route.
 //
 // The union is the reference's own, because a credential-free provider needs no configuration to be
-// routable: the router synthesizes a virtual endpoint for it when the operator stored none (draft 029
-// §4.8 F8, `dataplane/selection_virtual.go`), so `opencode/space-bunny-free` answers 200 with an empty
-// endpoint table. Reading only `endpoint_count > 0` was this module's earlier premise (that a no_auth
-// provider with no row answers `NO_PROVIDER_AVAILABLE` like any other) and F8 made that premise false.
-// Leaving it here hid the whole free lane from the picker, which is how a custom node came to be built
-// for a provider that needs no configuration at all.
+// routable: the router synthesizes a virtual endpoint for it when the operator stored none
+// (`dataplane/selection_virtual.go`), so `opencode/space-bunny-free` answers 200 with an empty endpoint
+// table. `endpoint_count > 0` alone is therefore the wrong test: it hides the whole free lane, and a custom
+// node then gets built for a provider that needs no configuration at all.
 //
 // A provider the catalog carries but the list does not (the registry's hidden entries, which the list
 // route excludes because their id is reachable only through another entry's alias) is dropped rather
@@ -21,7 +19,7 @@
 // Two further rules come from the same question ("could a ref this picker offers ever answer?"), and both
 // read fields the panel already has: a provider whose chat path needs a connector is dropped
 // (`routability`), and a media model is dropped (`kind`). Both are refs the write path refuses with a
-// concrete reason (draft 024 F4), so offering them would be a save that cannot succeed.
+// concrete reason, so offering them would be a save that cannot succeed.
 
 import type { CatalogModel } from './model';
 import { catalogModelLabel } from './model';
@@ -54,7 +52,7 @@ export function activeProviderIds(providers: Provider[]): Set<string> {
 
 // The kinds that serve chat completions, which is the registry's own rule (`registry/types.go`, `IsChat`):
 // a model with no kind is chat, and so is one declared `llm` or `chat`. Every other kind is media, so the
-// write path refuses it (draft 024 F4) and the picker must not offer it.
+// write path refuses it and the picker must not offer it.
 function isChatModel(model: CatalogModel): boolean {
 	const kind = model.kind ?? '';
 	return kind === '' || kind === 'llm' || kind === 'chat';
@@ -96,7 +94,7 @@ export function pickerSections({
 		if (!active.has(provider.id)) continue;
 
 		// A provider whose chat path needs a connector can be configured but never answers chat
-		// (`RoutableNeedsConnector`; draft 024 F4 refuses its refs at write time), so it is not offered.
+		// (`RoutableNeedsConnector`, whose refs the write path refuses), so it is not offered.
 		if (provider.routability !== 'native') continue;
 
 		const options = catalog

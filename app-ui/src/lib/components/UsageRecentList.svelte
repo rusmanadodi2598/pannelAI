@@ -1,12 +1,11 @@
 <script lang="ts">
-	// The requests a live frame says have just finished (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md F2,
-	// draft 014 F4, draft 016 F3, and the separator by draft 023 F2).
+	// The requests a live frame says have just finished.
 	//
 	// The time beside each row is how long ago it finished rather than the instant it finished, which is
 	// what the reference's own table shows and what makes the list readable at a glance. It is kept fresh by
 	// a ticker while there is a row to date: a frozen "just now" would be a wrong figure a minute later, and
 	// the row is a claim about now. That is not the drawing's motion, which stays gated on a connection
-	// frames are arriving on (draft 013 F2): this clock is text that has to keep being true, and it moves
+	// frames are arriving on: this clock is text that has to keep being true, and it moves
 	// nothing on screen.
 	//
 	// The exact instant is not lost: the same request_id opens its record on the Records tab, where the
@@ -55,10 +54,10 @@
 
 <!-- eslint-disable svelte/no-useless-mustaches -- the token split needs a literal space between a figure and
      its direction, and Svelte trims the leading whitespace of the element that holds the word, so `{' '}` is
-     load-bearing here rather than useless (draft 016 F3). -->
+     load-bearing here rather than useless. -->
 <div class="flex flex-col gap-2">
-	<!-- The panel's tab idiom with nothing focusable in it: the owner asked for the finished list to be set
-	     off by a tab, not to be a tab anyone can click (owner's correction, 2026-09-23, draft 023 F2). The
+	<!-- The panel's tab idiom with nothing focusable in it: the finished list reads as a tab and is set
+	     off by one, but no one can click it. The
 	     label carries the accent rule the active tab carries, and the strip carries its border. -->
 	<div class="flex border-b border-[var(--color-border)]">
 		<span class="-mb-px border-b-2 border-[var(--color-accent)] px-3 py-2 text-sm font-medium"

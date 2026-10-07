@@ -1,4 +1,4 @@
-// Per-model test state for one provider's catalog (docs/SPEC-API/001-SPEC-API.md §7.4, draft 017 §4.10).
+// Per-model test state for one provider's catalog (docs/SPEC-API/001-SPEC-API.md §7.4).
 //
 // One owner for two entrances: a row's own test button and the sweep over the first models. Both write the
 // same record, so a sweep that answers fills the rows the operator can then re-test one at a time, and a

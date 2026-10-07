@@ -152,7 +152,7 @@ export function nullableList<T extends z.ZodType>(item: T) {
 export const stringList = nullableList(z.string());
 
 // The string case of the same rule: an absent key and an explicit null both read as "no value", so
-// no caller has to handle both spellings of an optional sentence. Draft 036's auth_hint is the first
+// no caller has to handle both spellings of an optional sentence. `auth_hint` is the first
 // consumer; the device flow's optional response strings are the next.
 export const nullableText = z
 	.string()

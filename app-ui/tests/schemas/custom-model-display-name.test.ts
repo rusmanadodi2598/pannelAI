@@ -1,5 +1,5 @@
 // The display name rule for a custom model: optional on the form, filled from the model id on the wire
-// (docs/SPEC-UI/001-SPEC-UI.md §6.3, draft 019 D2).
+// (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
 // Split from `tests/schemas/custom-model.test.ts` because the rule is its own concern and the pass's cases
 // pushed that file past the panel's line warning: the reference adds a model from its id alone

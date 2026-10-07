@@ -1,6 +1,6 @@
 <script lang="ts">
-	// The quota cards (docs/SPEC-UI/001-SPEC-UI.md §6.6; card-per-provider reshape 2026-09-26,
-	// docs/PORT/005-PORT-QUOTA-CARDS.md; server-driven paging docs/PORT/006-PORT-QUOTA-PAGING.md):
+	// The quota cards (docs/SPEC-UI/001-SPEC-UI.md §6.6; card-per-provider per PORT 005,
+	// server-driven paging per PORT 006):
 	// one card per provider in first-seen order, its connections listed inside a body that scrolls, a
 	// header that folds, a checkbox that feeds the bulk fold bar, and a pager that walks pages the gateway
 	// performs: the windows prop is already the page's groups, five to a page. The cards are grouped from the

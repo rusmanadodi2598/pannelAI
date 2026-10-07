@@ -8,7 +8,7 @@
 // page of provider groups, five to a page, and the pager walks server pages. The tests here lock the parts
 // an operator can act on: folding, the bulk bar, the paged reads, and what the operator reads inside a card.
 //
-// Since the provider-first reshape (2026-10-02) the counted windows are one summary line per connection
+// Since the provider-first reshape the counted windows are one summary line per connection
 // rather than a row set, so the assertions that named a window on its own now name the line it belongs to.
 // The provider's own numbers are driven in `quota-published.test.ts`.
 

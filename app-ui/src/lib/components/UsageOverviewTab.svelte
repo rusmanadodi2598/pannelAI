@@ -13,7 +13,7 @@
 	// their captions say so. `latency_ms` is returned by the API and deliberately not shown, because it is a
 	// sum of per-request latencies rather than a mean, and §6.5 asks for p50 and p95 rather than a total.
 	//
-	// The breakdown table is on screen from the first read (draft 014 F1): the API's group block arrives
+	// The breakdown table is on screen from the first read: the API's group block arrives
 	// with the same response, and "which models consumed this window" is the first question it answers.
 	// Turning it off is an explicit choice the URL names.
 	import { goto } from '$app/navigation';
@@ -43,7 +43,7 @@
 	// The provider names resolve a provider key to its name, which is a second read and not a dependency: a
 	// registry that cannot be read leaves the breakdown table and the provider chart rendering the ids, with
 	// one line saying so. It runs on every load, because the provider chart is on screen whatever dimension
-	// the breakdown table is showing (draft 016 F1); before this pass only the provider dimension needed it.
+	// the breakdown table is showing.
 	let providerNames = $state<Map<string, string> | null>(null);
 	let namesNotice = $state<string | null>(null);
 

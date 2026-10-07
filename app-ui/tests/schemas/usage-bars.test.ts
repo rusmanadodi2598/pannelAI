@@ -1,4 +1,4 @@
-// Bar derivation tests (src/lib/schemas/usage-bars.ts, draft 016 F1 and F2).
+// Bar derivation tests (src/lib/schemas/usage-bars.ts).
 //
 // The two charts are arithmetic over groups the API returned: which groups are drawn, in what order, how
 // long each bar is, and the sentence that states the same facts in words. The rows here are the ones a

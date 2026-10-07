@@ -1,4 +1,4 @@
-// Quota Tracker layout tests (owner directive, 2026-09-25; docs/SPEC-UI/001-SPEC-UI.md §6.6).
+// Quota Tracker layout tests.
 //
 // The owner asked for a compact, symmetric layout on this screen, the same directive the combos
 // toolbar answered. The measurable halves here: the status sentence shares one row with the two

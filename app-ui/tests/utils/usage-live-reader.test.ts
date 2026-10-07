@@ -1,4 +1,4 @@
-// Live frame reader tests (src/lib/usage-live-reader.ts, draft 012 F2).
+// Live frame reader tests (src/lib/usage-live-reader.ts).
 //
 // The subject is read boundaries and frame shapes, so the reader is driven directly with a body and a
 // recorder. The rows cover the ways a stream can arrive and end: a frame, a frame split across reads, a

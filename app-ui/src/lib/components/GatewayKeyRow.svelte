@@ -6,7 +6,7 @@
 	// which is the reference's own name for it (`EndpointPageClient.js`); it calls the terminal
 	// DELETE route of SPEC-API §7.3, which the domain calls revocation.
 	//
-	// Every action is icon-only (owner directive, 2026-09-24): the glyph comes from the one icon map and
+	// Every action is icon-only: the glyph comes from the one icon map and
 	// the button carries the action's name as its accessible name and its title, so the control reads the
 	// same to a screen reader as the text button it replaced. The edit state is part of the same cell, so
 	// its Save and Cancel are icons too.
@@ -37,7 +37,7 @@
 	// One target size and one hover wash for every action, so the row reads as a set rather than as
 	// three differently styled controls. Each variant carries exactly one text colour: two competing
 	// `text-*` utilities resolve by stylesheet order, and the muted one silently won the destructive
-	// button's colour (measured live 2026-09-24: rgb(95, 87, 78) instead of the danger token).
+	// button's colour (rgb(95, 87, 78) instead of the danger token).
 	const actionBase =
 		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
 	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;
