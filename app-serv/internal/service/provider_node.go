@@ -194,17 +194,12 @@ func (s *NodeService) Update(ctx context.Context, id string, patch NodePatch) (d
 	return node, nil
 }
 
-// Delete removes a node together with the endpoints that reference it, because an
-// endpoint routed by a base URL that no longer exists cannot answer anything and
-// cannot be moved: `provider_id` is not writable on an endpoint. The stored keys go
-// with their endpoints through the cascade the schema declares, and the provider's own
-// model rows go with it because they key on the id rather than reference it. A combo
-// naming the node, or an alias targeting one of its models, is refused instead (CONFLICT,
-// naming the referrer), because silently dropping either would change routing the operator
-// did not ask about, and both would keep answering about a model nobody named. The
-// reference is by provider id string rather than by foreign key (a built-in provider
-// has no node row at all), so the erases and both guards have to run here rather than
-// be declared in the schema.
+// Delete removes a node, the endpoints that reference it, and the model rows stored under
+// its id. An endpoint is routed by the base URL on this row and `provider_id` is not
+// writable on it, so its rows cannot outlive the node usefully and cannot be moved first;
+// keys follow the schema's own cascade. A combo naming the node or an alias targeting its
+// models is refused by name, before anything is erased. These references are id strings
+// rather than foreign keys, so no schema constraint can carry any of it.
 func (s *NodeService) Delete(ctx context.Context, id string) error {
 	node, err := s.store.GetByID(ctx, id)
 	if err != nil {
