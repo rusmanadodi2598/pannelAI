@@ -93,9 +93,6 @@ func buildManagement(
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: providers: %w", err)
 	}
-	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: providers: %w", err)
-	}
 
 	endpointSvc, err := service.NewEndpointService(service.EndpointServiceDeps{
 		Store: endpointRepo, Index: runtimeIndex, Sealer: sealer, Prober: prober,
