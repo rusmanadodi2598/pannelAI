@@ -24,6 +24,20 @@ import (
 // cards are complete for every account count the deployment realistically holds.
 const quotaMaxRowsPerPage = 1000
 
+// quotaRowProbe reads one row past the ceiling, which is what tells a page that
+// exactly fills it apart from one the ceiling cut. The extra row costs one more row
+// on the wire, where knowing the difference any other way costs a second count
+// statement on a screen path (AGENTS.md §1.7).
+const quotaRowProbe = quotaMaxRowsPerPage + 1
+
+// trimQuotaRows drops the probe row and reports whether the ceiling was reached.
+func trimQuotaRows[T any](rows []T) ([]T, bool) {
+	if len(rows) <= quotaMaxRowsPerPage {
+		return rows, false
+	}
+	return rows[:quotaMaxRowsPerPage], true
+}
+
 // quotaAccountSource is every (provider, endpoint) pair the quota screen knows
 // about: the configured accounts, plus the window rows' own endpoints, so the
 // credential-free virtual lane and an endpoint deleted after being counted still
@@ -59,17 +73,19 @@ const quotaPageCTE = `WITH page AS (
 )`
 
 // PageWindowsByProvider returns one page of the collection read: every window of
-// the page's provider groups, with the total group count. The count and the page
-// are two statements: a window written between them shifts a boundary at worst
-// and never loses a group the count promised.
+// the page's provider groups, the total group count, and whether the row ceiling cut
+// the page. The count and the page are two statements: a window written between them
+// shifts a boundary at worst and never loses a group the count promised.
 // The row ceiling is separate from the group ceiling: paging by group bounds the
 // providers per round trip, not the rows they hold, and the LIMIT is what §1.7
-// asks of a request-serving read. A group beyond the ceiling is served in key
-// order and truncated: a visible gap in one card, not an unbounded read.
-func (r *QuotaRepository) PageWindowsByProvider(ctx context.Context, page, perPage int) ([]domain.QuotaWindow, int64, error) {
+// asks of a request-serving read. A group beyond the ceiling is served in key order
+// and cut, and the flag is how the caller learns the page is not the whole group.
+func (r *QuotaRepository) PageWindowsByProvider(
+	ctx context.Context, page, perPage int,
+) ([]domain.QuotaWindow, int64, bool, error) {
 	var total int64
 	if err := r.pool.QueryRow(ctx, quotaGroupCount).Scan(&total); err != nil {
-		return nil, 0, translateQuotaError(err)
+		return nil, 0, false, translateQuotaError(err)
 	}
 
 	pageQ := quotaPageCTE + `
@@ -80,9 +96,9 @@ func (r *QuotaRepository) PageWindowsByProvider(ctx context.Context, page, perPa
    ORDER BY w.endpoint_id ASC, w."window" ASC
    LIMIT $3::int`
 
-	rows, err := r.pool.Query(ctx, pageQ, perPage, (page-1)*perPage, quotaMaxRowsPerPage)
+	rows, err := r.pool.Query(ctx, pageQ, perPage, (page-1)*perPage, quotaRowProbe)
 	if err != nil {
-		return nil, 0, translateQuotaError(err)
+		return nil, 0, false, translateQuotaError(err)
 	}
 	defer rows.Close()
 
@@ -90,27 +106,30 @@ func (r *QuotaRepository) PageWindowsByProvider(ctx context.Context, page, perPa
 	for rows.Next() {
 		window, err := scanQuotaWindow(rows)
 		if err != nil {
-			return nil, 0, err
+			return nil, 0, false, err
 		}
 		windows = append(windows, window)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, translateQuotaError(err)
+		return nil, 0, false, translateQuotaError(err)
 	}
-	return windows, total, nil
+	kept, truncated := trimQuotaRows(windows)
+	return kept, total, truncated, nil
 }
 
 // PageAccountsByProvider returns every account in the page's provider groups, in
-// group order then endpoint id, with the same total group count the window page
-// reports. Listing accounts rather than implying them from counted rows is what
-// makes a card exist for an endpoint that has served nothing: the screen cannot
-// show a provider's published quota for an account it never learns about. The
-// group ceiling bounds the round trips and quotaMaxRowsPerPage bounds the rows,
-// which is what §1.7 asks of a request-serving read.
-func (r *QuotaRepository) PageAccountsByProvider(ctx context.Context, page, perPage int) ([]domain.QuotaAccount, int64, error) {
+// group order then endpoint id, the same total group count the window page reports,
+// and whether the row ceiling cut the page. Listing accounts rather than implying them
+// from counted rows is what makes a card exist for an endpoint that has served
+// nothing: the screen cannot show a provider's published quota for an account it never
+// learns about. The group ceiling bounds the round trips and quotaMaxRowsPerPage
+// bounds the rows, which is what §1.7 asks of a request-serving read.
+func (r *QuotaRepository) PageAccountsByProvider(
+	ctx context.Context, page, perPage int,
+) ([]domain.QuotaAccount, int64, bool, error) {
 	var total int64
 	if err := r.pool.QueryRow(ctx, quotaGroupCount).Scan(&total); err != nil {
-		return nil, 0, translateQuotaError(err)
+		return nil, 0, false, translateQuotaError(err)
 	}
 
 	pageQ := quotaPageCTE + `
@@ -120,9 +139,9 @@ func (r *QuotaRepository) PageAccountsByProvider(ctx context.Context, page, perP
    ORDER BY p.first_endpoint ASC, u.endpoint_id ASC
    LIMIT $3::int`
 
-	rows, err := r.pool.Query(ctx, pageQ, perPage, (page-1)*perPage, quotaMaxRowsPerPage)
+	rows, err := r.pool.Query(ctx, pageQ, perPage, (page-1)*perPage, quotaRowProbe)
 	if err != nil {
-		return nil, 0, translateQuotaError(err)
+		return nil, 0, false, translateQuotaError(err)
 	}
 	defer rows.Close()
 
@@ -130,15 +149,16 @@ func (r *QuotaRepository) PageAccountsByProvider(ctx context.Context, page, perP
 	for rows.Next() {
 		var account domain.QuotaAccount
 		if err := rows.Scan(&account.EndpointID, &account.ProviderID); err != nil {
-			return nil, 0, translateQuotaError(err)
+			return nil, 0, false, translateQuotaError(err)
 		}
 		if err := account.Validate(); err != nil {
-			return nil, 0, err
+			return nil, 0, false, err
 		}
 		accounts = append(accounts, account)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, 0, translateQuotaError(err)
+		return nil, 0, false, translateQuotaError(err)
 	}
-	return accounts, total, nil
+	kept, truncated := trimQuotaRows(accounts)
+	return kept, total, truncated, nil
 }

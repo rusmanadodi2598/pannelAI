@@ -11,7 +11,7 @@ Pass ini memverifikasi 17 klaim, membatalkan 4 di antaranya dengan bukti, dan me
 
 | | |
 | --- | --- |
-| **Status** | **Grup A landed (F1, F4, F7, F8, F11). Grup B dan C belum.** Semua temuan di bawah terverifikasi terhadap kode, dan untuk F1, F4, F7 dan F9 dibuktikan dengan menjalankan kodenya langsung, bukan dengan membaca saja. Dua butir review dibatalkan dan alasannya ada di bagiannya sendiri |
+| **Status** | **Grup A landed (F1, F4, F7, F8, F11) `07b2497`. Grup B landed (F2, F3, F5, F6, F10).** Semua temuan di bawah terverifikasi terhadap kode, dan untuk F1, F2, F3, F4, F7 dan F9 dibuktikan dengan menjalankan kodenya: merah sebelum perbaikan, hijau sesudah. Dua butir review dibatalkan dan alasannya ada di bagiannya sendiri |
 | **Mechanism** | DURING: tulisan baru mengikuti R-02 dan R-31, dan setiap klaim harus bisa dibuktikan oleh perintah yang tertulis di dokumennya sendiri |
 | **Scope** | **Bukan comment-only.** F1 sampai F3 menyentuh `scrypts/`, `app-serv` repository, service dan provider. Keluar dari guardrail antislop-code, atas izin eksplisit owner, seperti F1 dan F2 pada 046 |
 | **Sumber temuan** | Daftar review owner, lalu pengukuran terhadap pohon kode, gerbang yang dijalankan dengan `GATES_BASE_REF` rusak, `go run` untuk semantik `net/url` dan `fmt`, dan `git show ab1a4c4^` untuk test yang hilang |
@@ -456,4 +456,108 @@ Satu hal yang tidak ikut berubah dan perlu disebut karena ia adalah batasan yang
 memperlakukan golangci-lint yang hilang sebagai `gate_skip`, sementara staticcheck yang hilang sebagai `gate_fail`
 (§1.4). Asimetri itu keputusan yang sudah ditulis di komentar `:8-10`, dan F8 tidak menyentuhnya.
 
-Grup B dan C belum dikerjakan pada bagian ini.
+Grup C belum dikerjakan pada bagian ini.
+
+### Grup B (F2, F3, F5, F6, F10), landed
+
+Setiap butir dimulai dari test yang gagal, dan pesan Kegagalannya dicatat di sini apa adanya, karena itu bukti
+bahwa test-nya menguji hal yang ia klaim.
+
+**F2.** `TestIntegration_UpdateIfUnchangedLeavesAnOperatorsEditAlone` ditulis lebih dulu terhadap `ab1a4c4` yang
+masih ada, dan merah:
+
+```
+stored status = "active", want the operator's "disabled": the rotation wrote the status it loaded
+```
+
+Perbaikannya bukan mengubah `updateEndpoint` jadi token-only, karena statement itu juga dipakai
+`Update` dan `ImportOAuthBatch` dan bagi kedua jalur itu menulis baris penuh memang benar. Jalur CAS
+mendapat statement sendiri (`updateEndpointTokens`) yang hanya menulis `oauth` dan `updated_at`, dan
+`updateEndpoint` kehilangan parameter `loaded` yang sekarang tidak dipakai siapa pun. Dua test CAS yang
+sudah ada tetap hijau, termasuk `..._SurvivesAStoredWrite`, karena guard credential-nya tidak berubah.
+
+**F3.** Tiga test isolasi, masing-masing untuk satu dari tiga kebocoran, semuanya merah sebelum perubahan:
+
+```
+B was served a model only account A is listed for: the cached document travelled
+A's refusal was remembered against B
+B joined A's in-flight fetch            (context deadline exceeded, 2s)
+```
+
+Cakupan key diambil dari `Credential.EndpointID()`, bukan dari materi credential, dan berlaku untuk ketiga map
+sekaligus (`entries`, `inflight`, `misses`) lewat satu `catalogTarget{base, scope}`: `base` untuk menghubungkan,
+`scope` untuk menyimpan. Test pertama dan kedua hitam-box penuh; test ketiga menahan slot fetch akun A lewat
+kanal agar deterministik, bukan balapan. Bentuknya diverifikasi dua arah: dengan akun di luar scope ketiga test
+itu merah, dengan akun di dalam scope ketiganya hijau, dan lima test stampede yang lama tetap hijau, jadi
+satu-fetch-per-akun masih terbukti menyatukan pembaca konkuren.
+
+Satu perbaikan ikutan: test ketiga semula menunggu 15 detik, karena `defer close(release)` baru berjalan
+setelah test menunggu goroutine A, dan yang menunggu itu adalah timeout fetch-nya sendiri.Perbaikannya: melepas A sebelum menunggu, dan paket `provider` turun dari 18,4 detik ke 1,1 detik.
+
+**F5.** Kedua test kembali sebagai port, bukan revert: harness-nya (`newPublishedRepo`, `seedPublishedEndpoint`,
+`statementCounter`) masih hidup, tetapi header berkas lama melanggar §2.7 dan §2.1 sehingga tidak bisa
+dikembalikan apa adanya. Yang counted-statement masih menjawab **2 statements** setelah F6 ikut masuk, dan itu
+bukan kebetulan: plafon dibaca lewat satu baris probe pada statement yang sama, sehingga mengenal pemotongan
+tidak menambah query.
+
+**F6.** `truncated` masuk ke `QuotaWindowList`, dan ke kedua bacaan. Alasannya disebut di sini karena ini
+keputusan, bukan routine: kalau hanya akun yang diberi flag, halaman bisa menjawab `truncated: false` sementara
+baris `data` yang menggambar kartu justru yang terpotong. Flag itu hasil OR dari dua bacaan. Nilainya diambil
+dari `LIMIT ceiling+1` lalu satu baris dibuang, jadi halaman yang persis memenuhi plafon tidak salah lapor.
+Kontrak YAML, `openapi.json` (regenerasi, gate byte-compare PASS), SPEC-API §7.12, schema panel, dan
+`SYSTEM_MAP.md` ikut; `skipped` untuk §7.4 dengan jalan yang sama.
+
+**F10.** Penyapu due tidak lagi membatalkan batch. Yang berubah hanya jalur tanpa `endpoint_id`: satu akun yang
+galat masuk `skipped[]` dengan alasan dari `domain.AsAppError(err).Message`, yang merupakan sanitiser yang sama
+dengan yang dipakai `WriteError`, sehingga tidak ada rantai galat internal yang ikut ke klien. Jalur satu akun
+yang disebut namanya tetap fail-fast, dan itu diuji eksplisit
+(`TestOAuthRefresh_OneNamedAccountStillReportsItsConflict`) supaya keputusan review yang lama tidak ikut
+tergerus. `oauth_flow_refresh.go` dipecah ke `oauth_flow_refresh_sweep.go` karena ia sudah 216 baris dan
+§1.1 memperingatkan pada 220.
+
+Refill: `Refresh` doc comment yang menyatakan "fails fast on the first refusal" memang pernyataan sengaja,
+bukan slip; yang dipertahankan adalah sebabnya (alasan konkret untuk aksi yang diminta), dan bentuknya yang
+berubah untuk jalur batch, yaitu alasan itu sekarang sampai per akun dan bukan hanya yang pertama.
+
+Ukuran selesai: `go test -race ./...` exit 0 (20 paket, nol DATA RACE), suite ber-tag `integration` terhadap
+scratch PostgreSQL dan scratch Redis berjalan bersih (exit 0, 21 paket, nol kegagalan, nol race),
+`contract-openapi` PASS, 101 test skema panel hijau, prettier dan eslint pada berkas yang berubah bersih.
+
+Dan gerbang grup A menangkap satu pelanggaran dari grup B sendiri, yang layak dicatat karena itulah fungsi
+gerbangnya: `quota_paging_integration_test.go` hasil port mencapai 284 baris dan `go-lint.sh` menjawab
+
+```
+FAIL app-serv/internal/repository/postgres/quota_paging_integration_test.go has 284 lines (AGENTS.md §1.1 max 250)
+```
+
+Ia dipecah menjadi `quota_paging_integration_test.go` (138) dan
+`quota_paging_accounts_integration_test.go` (169), dan pemecahannya bukan demi angka: seeder hanya dipakai sisi
+akun, jadi ia ikut ke sana, dan `seedPagingAccounts` bersama ketiga test akun kini berada di satu berkas yang
+`@for`-nya menyebut sisi akun. Keempat test tetap hijau setelahnya.
+
+**F9 ikut landed di commit ini**, bukan di grup C, karena berkas yang sama bergerak oleh F3 dan pemindahan dua
+fungsi justru menyelesaikan §1.1 di tempat yang sama: `qoder_catalog.go` mencapai 224 baris setelah key per akun
+masuk, melewati ambang peringatan 220, sementara `inferenceBase` dan `originOf` ternyata hanya dipakai jalur
+lookup. Keduanya pindah ke `qoder_catalog_lookup.go` (187 dan 203 sesudahnya, dua-duanya di bawah ambang), dan
+itu pemisahan yang berdiri sendiri benar, bukan akrobat angka.
+
+Branch nil-nya diuji dua arah. Test `TestOriginOfKeepsAURLItCannotParse` hijau pada bentuk yang benar, dan
+terhadap bentuk lama ia panic persis seperti yang diukur di Diagnosa:
+
+```
+panic: runtime error: invalid memory address or nil pointer dereference
+--- FAIL: TestOriginOfKeepsAURLItCannotParse/an_escape_it_cannot_read
+```
+
+Nilai yang diharapkan untuk setiap bentuk yang gagal di-parse adalah URL itu sendiri, apa adanya: membiarkannya
+lewati membuat `http.NewRequest` yang menolak, dan itu satu panggilan yang gagal dengan pesan yang bisa dibaca,
+bukan proses yang berhenti.
+
+Catatan operasional yang perlu berdiri sendiri: percobaan pertama suite ber-tag dijalankan dengan
+`PANNELAI_TEST_REDIS_ADDR=127.0.0.1:6379` tanpa kredensial, dan 37 test gagal pada `NOAUTH`. Itu bukan regresi,
+dan keberuntungan itu sendiri yang harus dicatat: port 6379 di mesin ini adalah Redis yang dipakai gateway
+pengembang, dan draft `026` mendokumentasikan suite ini memanggil `FlushDB` pada keyspace itu, yang pernah
+mengusir operator dari sesinya. Tidak ada satu pun test yang sempat menulis, karena semuanya gagal pada
+langkah flush pertama. Run berikutnya memakai Redis buang sendiri di port 6399 dan `go-test.sh` menuntut `-p 1`
+untuk alasan yang sama. Menjalankan suite ber-tag di mesin pengembang tanpa Redis scratch adalah aksi yang
+tidak boleh dianggap enteng, dan dokumen ini tidak akan merekomendasikannya.

@@ -65,11 +65,19 @@ export type QuotaWindow = z.infer<typeof schemaQuotaWindow>;
 //
 // `published_note` arrives only when that cache could not be read at all. The counted windows are still
 // true and still land, so the note is a sentence beside real data rather than a failed read.
+//
+// `truncated` says the row ceiling cut this page, so the cards are not everything the page's provider groups
+// hold. Paging bounds the groups and a separate ceiling bounds the rows; without the flag a cut page reads as
+// accounts that routed nothing. A gateway that predates the key answers without it, which means no cut.
 export const schemaQuotaWindowList = z.object({
 	data: nullableList(schemaQuotaWindow),
 	meta: pageMeta,
 	published: nullableList(schemaPublishedQuotaUsage),
-	published_note: z.string().nullish()
+	published_note: z.string().nullish(),
+	truncated: z
+		.boolean()
+		.nullish()
+		.transform((value) => value ?? false)
 });
 
 export type QuotaWindowList = z.infer<typeof schemaQuotaWindowList>;

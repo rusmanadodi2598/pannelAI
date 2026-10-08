@@ -2,7 +2,7 @@
 //
 // @file      internal/service/oauth_flow_refresh.go
 // @for       Reporting per-endpoint token state and refreshing tokens, forced or due (SPEC-API-001 §7.4 GET .../oauth/status, POST .../oauth/refresh).
-// @uses      context, strings, time, internal/domain, internal/registry, internal/repository.
+// @uses      context, strings, time, internal/domain, internal/registry.
 // @reason    Status is the panel's view of credential health and refresh is the operator's manual override of the worker; both derive "due" from the same domain rule so they can never disagree, and both write through the aggregate so a rotated token set replaces the sealed pair atomically.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -17,12 +17,7 @@ import (
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
-	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/repository"
 )
-
-// oauthListPerPage bounds one page of the endpoint listing behind Status and
-// the due sweep; the loop pages until the store's total is covered.
-const oauthListPerPage = 100
 
 // OAuthEndpointState is one OAuth endpoint's report: lifecycle status, token
 // expiry, last refresh, and the derived refresh state.
@@ -43,11 +38,21 @@ type OAuthStatus struct {
 	Endpoints  []OAuthEndpointState
 }
 
+// OAuthRefreshSkipped is one account the bulk sweep passed over, named with the
+// reason it stopped there so the operator can act on that account alone.
+type OAuthRefreshSkipped struct {
+	EndpointID string
+	Reason     string
+}
+
 // OAuthRefreshOutcome reports what a forced refresh did.
 type OAuthRefreshOutcome struct {
 	Refreshed   int
 	EndpointIDs []string
 	ExpiresAt   *time.Time
+	// Skipped is only ever filled by the sweep. Refreshing one named account reports
+	// its failure as an error instead, which is the answer a forced action needs.
+	Skipped []OAuthRefreshSkipped
 }
 
 // Status reports every OAuth endpoint of the provider with its derived
@@ -79,9 +84,11 @@ func (s *OAuthFlowService) Status(ctx context.Context, providerID string) (OAuth
 	return OAuthStatus{ProviderID: name, Flow: flowKind(entry.OAuth), Endpoints: states}, nil
 }
 
-// Refresh forces one endpoint's token refresh, or every due endpoint of the
-// provider when no endpoint id is given. It fails fast on the first refusal:
-// a forced action should surface the concrete reason, not average over it.
+// Refresh forces one endpoint's token refresh, or every due endpoint of the provider
+// when no endpoint id is given. Naming one account fails fast on its refusal, because
+// the concrete reason is the answer that action was asked for; the sweep of a whole
+// provider finishes and names what it passed over, because its work is already
+// committed one account at a time.
 func (s *OAuthFlowService) Refresh(ctx context.Context, providerID, endpointID string) (OAuthRefreshOutcome, error) {
 	name := strings.TrimSpace(providerID)
 	entry, ok := s.index.Provider(name)
@@ -107,27 +114,7 @@ func (s *OAuthFlowService) Refresh(ctx context.Context, providerID, endpointID s
 		return OAuthRefreshOutcome{Refreshed: 1, EndpointIDs: []string{target}, ExpiresAt: expires}, nil
 	}
 
-	endpoints, err := s.listOAuthEndpoints(ctx, name)
-	if err != nil {
-		return OAuthRefreshOutcome{}, err
-	}
-	now := s.clock()
-	outcome := OAuthRefreshOutcome{EndpointIDs: []string{}}
-	for _, endpoint := range endpoints {
-		if domain.OAuthRefreshState(endpoint.OAuth(), refreshLead(entry.OAuth), now) != domain.RefreshDue {
-			continue
-		}
-		expires, err := s.refreshEndpoint(ctx, entry.OAuth, endpoint)
-		if err != nil {
-			return OAuthRefreshOutcome{}, err
-		}
-		outcome.Refreshed++
-		outcome.EndpointIDs = append(outcome.EndpointIDs, endpoint.ID())
-		if expires != nil {
-			outcome.ExpiresAt = expires
-		}
-	}
-	return outcome, nil
+	return s.sweepProvider(ctx, entry)
 }
 
 // refreshEndpoint opens the stored refresh token, performs the refresh grant,
@@ -191,26 +178,4 @@ func (s *OAuthFlowService) MarkRefreshDeadLetter(ctx context.Context, endpointID
 	}
 	endpoint.MarkUnhealthy(message, s.clock())
 	return s.store.Update(ctx, endpoint)
-}
-
-// listOAuthEndpoints pages through the provider's endpoints and keeps only the
-// OAuth ones, under the AGENTS.md §1.7 bounded-query rule.
-func (s *OAuthFlowService) listOAuthEndpoints(ctx context.Context, providerID string) ([]domain.UpstreamEndpoint, error) {
-	filter := repository.EndpointFilter{ProviderID: providerID}
-	var collected []domain.UpstreamEndpoint
-	for page := 1; page <= 50; page++ {
-		endpoints, total, err := s.store.List(ctx, filter, repository.PageQuery{Page: page, PerPage: oauthListPerPage})
-		if err != nil {
-			return nil, err
-		}
-		for _, endpoint := range endpoints {
-			if endpoint.AuthType() == domain.UpstreamAuthOAuth {
-				collected = append(collected, endpoint)
-			}
-		}
-		if int64(page*oauthListPerPage) >= total {
-			break
-		}
-	}
-	return collected, nil
 }

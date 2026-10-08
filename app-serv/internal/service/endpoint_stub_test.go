@@ -42,6 +42,9 @@ type memEndpointStore struct {
 	// when the row moved under the caller.
 	casLoadedCredential domain.OAuthCredential
 	casReject           bool
+	// casRejectFor loses the compare-and-swap for the named endpoints only, which is
+	// what lets a batch test single out one account.
+	casRejectFor map[string]bool
 	// healthWrites counts the key-health writes a caller made, so a test can pin
 	// that an outcome which must not touch the circuit really wrote nothing.
 	healthWrites int
@@ -141,7 +144,7 @@ func (s *memEndpointStore) UpdateIfUnchanged(_ context.Context, endpoint domain.
 		return domain.ErrEndpointNotFound
 	}
 	s.casLoadedCredential = loaded
-	if s.casReject || !sameSealedCredential(stored.OAuth(), loaded) {
+	if s.casReject || s.casRejectFor[endpoint.ID()] || !sameSealedCredential(stored.OAuth(), loaded) {
 		return domain.NewConflictError("the endpoint changed during this refresh")
 	}
 	s.store(endpoint)

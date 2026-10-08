@@ -2519,11 +2519,16 @@
           "published_note": {
             "type": "string",
             "description": "Present only when the provider cache could not be read at all. The\ncounted windows are still true and still arrive, so the alternative\nto naming the gap is a page of cards that look like accounts whose\nproviders published nothing.\n"
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when the row ceiling cut this page, so the rows below are not\neverything the page's provider groups hold. Paging bounds the groups\nper round trip, and a separate ceiling bounds the rows, which AGENTS.md\n§1.7 requires of a screen read. Without the flag a cut page reads as\naccounts that routed nothing, the same misstatement published_note\nnames. Either of the page's two reads can be cut; the page is\nincomplete when either was.\n"
           }
         },
         "required": [
           "data",
-          "meta"
+          "meta",
+          "truncated"
         ],
         "additionalProperties": false
       },
@@ -5044,6 +5049,13 @@
               "type": "string"
             }
           },
+          "skipped": {
+            "type": "array",
+            "description": "The accounts a provider-wide sweep passed over, each with its reason. Refreshing one named endpoint answers its refusal as an error instead, so this is empty on that path.",
+            "items": {
+              "$ref": "#/components/schemas/OAuthRefreshSkipped"
+            }
+          },
           "expires_at": {
             "type": "string",
             "format": "date-time"
@@ -5051,7 +5063,26 @@
         },
         "required": [
           "refreshed",
-          "endpoint_ids"
+          "endpoint_ids",
+          "skipped"
+        ],
+        "additionalProperties": false
+      },
+      "OAuthRefreshSkipped": {
+        "type": "object",
+        "properties": {
+          "endpoint_id": {
+            "type": "string",
+            "description": "The account the sweep left alone."
+          },
+          "reason": {
+            "type": "string",
+            "description": "The refusal that account received, in the same English client-facing text the error would have produced on its own."
+          }
+        },
+        "required": [
+          "endpoint_id",
+          "reason"
         ],
         "additionalProperties": false
       },

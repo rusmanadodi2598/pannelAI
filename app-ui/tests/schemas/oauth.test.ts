@@ -241,6 +241,22 @@ describe('the read schemas', () => {
 		expect(parsed.success && parsed.data.endpoint_ids).toEqual([]);
 	});
 
+	it('treats an absent skip list as nobody being passed over', () => {
+		const parsed = schemaOAuthRefresh.safeParse({ refreshed: 1, endpoint_ids: ['ep_1'] });
+		expect(parsed.success && parsed.data.skipped).toEqual([]);
+	});
+
+	it('keeps the account a sweep skipped beside the reason it stopped there', () => {
+		const parsed = schemaOAuthRefresh.safeParse({
+			refreshed: 1,
+			endpoint_ids: ['ep_clean'],
+			skipped: [{ endpoint_id: 'ep_race', reason: 'the endpoint changed during this refresh' }]
+		});
+		expect(parsed.success && parsed.data.skipped).toEqual([
+			{ endpoint_id: 'ep_race', reason: 'the endpoint changed during this refresh' }
+		]);
+	});
+
 	it('refuses a refresh body with a field the API does not read', () => {
 		expect(schemaOAuthRefreshBody.safeParse({ endpoint_id: 'ep_1', force: true }).success).toBe(
 			false

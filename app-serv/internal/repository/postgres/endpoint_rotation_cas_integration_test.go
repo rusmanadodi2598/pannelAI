@@ -127,6 +127,55 @@ func TestIntegration_UpdateIfUnchangedSurvivesAServedWrite(t *testing.T) {
 	}
 }
 
+// TestIntegration_UpdateIfUnchangedLeavesAnOperatorsEditAlone pins what the
+// rotation owns: the credential, and nothing else. An operator's status and priority
+// edit lands after the rotation loaded its aggregate, so a write that sends the whole
+// loaded row puts the values back the operator had just changed. The CAS cannot catch
+// that, because the guard compares the two token ciphertexts and the operator touched
+// neither.
+func TestIntegration_UpdateIfUnchangedLeavesAnOperatorsEditAlone(t *testing.T) {
+	repo := newEndpointRepo(t)
+	ctx := context.Background()
+	first := time.Now().UTC().Truncate(time.Microsecond).Add(time.Second)
+	operatorAt := first.Add(2 * time.Second)
+	rotatedAt := operatorAt.Add(time.Second)
+
+	loaded := storeOAuthEndpoint(t, repo, ctx, "ep-cas-operator", "sealed-shared", first)
+	loadedCred := *loaded.OAuth()
+
+	edited := loaded
+	if err := edited.Update("label-edited", 7, string(domain.UpstreamEndpointDisabled), operatorAt); err != nil {
+		t.Fatalf("operator edit: %v", err)
+	}
+	if err := repo.Update(ctx, edited); err != nil {
+		t.Fatalf("storing the operator edit: %v", err)
+	}
+
+	rotation := loaded
+	rotation.SetOAuth(sealedCredential(t, "sealed-rotated"), rotatedAt)
+	if err := repo.UpdateIfUnchanged(ctx, rotation, loadedCred); err != nil {
+		t.Fatalf("UpdateIfUnchanged() over an operator edit: %v", err)
+	}
+
+	stored, err := repo.GetByID(ctx, "ep-cas-operator")
+	if err != nil {
+		t.Fatalf("reloading: %v", err)
+	}
+	if got := stored.OAuth().AccessTokenEncrypted(); got != "sealed-rotated" {
+		t.Fatalf("stored token = %q, want the rotation's", got)
+	}
+	if got := stored.Status(); got != domain.UpstreamEndpointDisabled {
+		t.Fatalf("stored status = %q, want the operator's %q: the rotation wrote the status it loaded",
+			got, domain.UpstreamEndpointDisabled)
+	}
+	if got := stored.Priority(); got != 7 {
+		t.Fatalf("stored priority = %d, want the operator's 7: the rotation wrote the priority it loaded", got)
+	}
+	if got := stored.Label(); got != "label-edited" {
+		t.Fatalf("stored label = %q, want the operator's", got)
+	}
+}
+
 func isConflict(err error) bool {
 	return err != nil && domain.AsAppError(err).Code == "CONFLICT"
 }

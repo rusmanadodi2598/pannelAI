@@ -79,6 +79,10 @@ type QuotaWindowList struct {
 	// to naming the gap is a page of cards that look like accounts whose providers
 	// published nothing, which is a lie about data the gateway did not lose.
 	PublishedNote string `json:"published_note,omitempty"`
+	// Truncated says the page's rows were cut by the read ceiling, so the cards below
+	// are not everything the page's provider groups hold. Without it a gap looks like
+	// an account that routed nothing, which is the same lie PublishedNote names.
+	Truncated bool `json:"truncated"`
 }
 
 // QuotaEndpointDetail is the body of GET /api/v1/quotas/{endpoint_id}: that

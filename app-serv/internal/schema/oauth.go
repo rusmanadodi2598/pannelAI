@@ -65,11 +65,22 @@ type OAuthRefreshRequest struct {
 	EndpointID string `json:"endpoint_id,omitempty" validate:"omitempty,max=64"`
 }
 
-// OAuthRefreshResponse reports what a forced refresh did.
+// OAuthRefreshSkipped names one account a provider-wide sweep passed over, with the
+// reason it stopped there.
+type OAuthRefreshSkipped struct {
+	EndpointID string `json:"endpoint_id" validate:"required,max=64"`
+	Reason     string `json:"reason" validate:"required,max=512"`
+}
+
+// OAuthRefreshResponse reports what a forced refresh did. Skipped is only ever filled
+// by the sweep of a whole provider: refreshing one account named by the caller answers
+// its refusal as an error instead, so the sweep is the only path with more than one
+// outcome to account for.
 type OAuthRefreshResponse struct {
-	Refreshed   int      `json:"refreshed"`
-	EndpointIDs []string `json:"endpoint_ids"`
-	ExpiresAt   *string  `json:"expires_at,omitempty"`
+	Refreshed   int                   `json:"refreshed"`
+	EndpointIDs []string              `json:"endpoint_ids"`
+	Skipped     []OAuthRefreshSkipped `json:"skipped"`
+	ExpiresAt   *string               `json:"expires_at,omitempty"`
 }
 
 // OAuthDevicePollRequest is the body of POST .../oauth/device/poll. The device

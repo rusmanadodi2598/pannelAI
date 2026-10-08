@@ -22,6 +22,9 @@ import (
 type oauthStubStore struct {
 	mu   sync.Mutex
 	byID map[string]domain.UpstreamEndpoint
+	// rejectCompareAndSwap loses the compare-and-swap for the named accounts only, so
+	// a test can give a sweep one account to trip over.
+	rejectCompareAndSwap map[string]bool
 }
 
 func newOAuthStubStore() *oauthStubStore {
@@ -89,7 +92,7 @@ func (s *oauthStubStore) UpdateIfUnchanged(_ context.Context, endpoint domain.Up
 	if !ok {
 		return domain.ErrEndpointNotFound
 	}
-	if stored.OAuth() == nil ||
+	if s.rejectCompareAndSwap[endpoint.ID()] || stored.OAuth() == nil ||
 		stored.OAuth().AccessTokenEncrypted() != loaded.AccessTokenEncrypted() ||
 		stored.OAuth().RefreshTokenEncrypted() != loaded.RefreshTokenEncrypted() {
 		return domain.NewConflictError("the endpoint changed during this refresh")

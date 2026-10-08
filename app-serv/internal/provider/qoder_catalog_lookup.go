@@ -3,7 +3,7 @@
 //
 // @file      internal/provider/qoder_catalog_lookup.go
 // @for       The model lookup path over the cached catalogue, with one fetch per host.
-// @uses      encoding/json, fmt, sync, time
+// @uses      context, encoding/json, fmt, net/url, strings, time.
 // @reason    The model key is client-supplied, so a name the vendor does not list used to turn every request into a fresh full-catalogue read: several concurrent requests read the same 4 MiB document at once, and a repeated unknown name never learns to stop asking.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -15,6 +15,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -32,26 +34,74 @@ type catalogFetch struct {
 	err   error
 }
 
-// beginFetch returns the fetch for this host and whether the caller must run it.
-// A false second return means somebody is already reading.
-func (c *qoderCatalog) beginFetch(base string) (*catalogFetch, bool) {
+// beginFetch returns the fetch for this account and host and whether the caller must
+// run it. A false second return means somebody is already reading for the same
+// account; no other account joins it, because the answer it would join is signed for
+// somebody else.
+func (c *qoderCatalog) beginFetch(target catalogTarget) (*catalogFetch, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if running, ok := c.inflight[base]; ok {
+	if running, ok := c.inflight[target.scope]; ok {
 		return running, false
 	}
 	fetch := &catalogFetch{ready: make(chan struct{})}
-	c.inflight[base] = fetch
+	c.inflight[target.scope] = fetch
 	return fetch, true
 }
 
 // completeFetch publishes one fetch's answer and drops it from the inflight set.
-func (c *qoderCatalog) completeFetch(base string, fetch *catalogFetch, raw []byte, err error) {
+func (c *qoderCatalog) completeFetch(target catalogTarget, fetch *catalogFetch, raw []byte, err error) {
 	c.mu.Lock()
-	delete(c.inflight, base)
+	delete(c.inflight, target.scope)
 	c.mu.Unlock()
 	fetch.raw, fetch.err = raw, err
 	close(fetch.ready)
+}
+
+// inferenceBase is the host this account's traffic is served from, without the chat
+// path: the catalogue lives on the same gateway as the chat endpoint it describes.
+func (c *Qoder) inferenceBase(cred Credential) (string, error) {
+	chatURL := strings.TrimSpace(c.entry.Transport.BaseURL)
+	if chatURL == "" {
+		return "", fmt.Errorf("provider %s: the chat base url is not declared", c.entry.ID)
+	}
+	value, err := c.credential(cred)
+	if err != nil {
+		return "", err
+	}
+	moved := chatURL
+	if isQoderJobCredential(value) {
+		moved, err = qoderSwapHost(chatURL, qoderChatBaseIntlDevice, qoderChatBaseIntlJob)
+		if err != nil {
+			return "", err
+		}
+	}
+	return originOf(moved), nil
+}
+
+// originOf reduces a URL to scheme and host, the part a path-less endpoint like
+// the catalogue shares with the chat call it describes. A URL net/url cannot parse
+// comes back unchanged rather than reduced: `url.Parse` returns a nil URL together
+// with the error for shapes like "%zz" and ":::", and reading a field off it panics
+// inside request shaping, where the only thing that broke is one registry entry.
+func originOf(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed == nil {
+		return rawURL
+	}
+	if parsed.Host == "" {
+		return strings.TrimSuffix(rawURL, parsed.Path)
+	}
+	return parsed.Scheme + "://" + parsed.Host
+}
+
+// catalogTargetFor resolves where and for whom this account's catalogue is read.
+func (c *Qoder) catalogTargetFor(cred Credential) (catalogTarget, error) {
+	base, err := c.inferenceBase(cred)
+	if err != nil {
+		return catalogTarget{}, err
+	}
+	return catalogTarget{base: base, scope: base + "|" + cred.EndpointID()}, nil
 }
 
 // modelConfig returns the vendor's configuration for one model key, reading the
@@ -63,11 +113,11 @@ func (c *qoderCatalog) completeFetch(base string, fetch *catalogFetch, raw []byt
 // waiting. A request whose client went away stops paying for a document it will no
 // longer deliver.
 func (c *Qoder) modelConfig(ctx context.Context, cred Credential, modelKey string) (json.RawMessage, error) {
-	base, err := c.inferenceBase(cred)
+	target, err := c.catalogTargetFor(cred)
 	if err != nil {
 		return nil, err
 	}
-	key := base + "|" + modelKey
+	key := target.scope + "|" + modelKey
 	now := c.catalog.now()
 	if cached, ok := c.catalog.read(key, now); ok {
 		return cached, nil
@@ -76,9 +126,9 @@ func (c *Qoder) modelConfig(ctx context.Context, cred Credential, modelKey strin
 		return nil, fmt.Errorf("provider %s: the vendor does not list model %q", c.entry.ID, modelKey)
 	}
 
-	fetch, leader := c.catalog.beginFetch(base)
+	fetch, leader := c.catalog.beginFetch(target)
 	if leader {
-		c.runFetch(ctx, cred, base, fetch)
+		c.runFetch(ctx, cred, target, fetch)
 	} else {
 		select {
 		case <-fetch.ready:
@@ -101,19 +151,19 @@ func (c *Qoder) modelConfig(ctx context.Context, cred Credential, modelKey strin
 
 // runFetch is the leader's catalogue read. It publishes the answer from a defer
 // because a read that panics must still close the slot it opened: a slot left open
-// parks every later caller on that host on a channel nobody will ever close. The
+// parks every later caller of that account on a channel nobody will ever close. The
 // panic travels on, because the goroutine boundary is what decides what a panic
 // costs, and a swallowed one would answer "no catalogue" to a host that crashed.
-func (c *Qoder) runFetch(ctx context.Context, cred Credential, base string, fetch *catalogFetch) {
+func (c *Qoder) runFetch(ctx context.Context, cred Credential, target catalogTarget, fetch *catalogFetch) {
 	defer func() {
 		if panicked := recover(); panicked != nil {
-			c.catalog.completeFetch(base, fetch, nil, fmt.Errorf(
+			c.catalog.completeFetch(target, fetch, nil, fmt.Errorf(
 				"provider %s: the model catalogue read panicked: %v", c.entry.ID, panicked))
 			panic(panicked)
 		}
 	}()
-	raw, fetchErr := c.fetchCatalog(ctx, cred, base)
-	c.catalog.completeFetch(base, fetch, raw, fetchErr)
+	raw, fetchErr := c.fetchCatalog(ctx, cred, target.base)
+	c.catalog.completeFetch(target, fetch, raw, fetchErr)
 }
 
 // isMiss reports a model key refused recently, so an unknown name costs one

@@ -96,8 +96,8 @@ func (r *recordingQuotaRepo) ListWindows(context.Context, string) ([]domain.Quot
 	return nil, nil
 }
 
-func (r *recordingQuotaRepo) PageWindowsByProvider(context.Context, int, int) ([]domain.QuotaWindow, int64, error) {
-	return nil, 0, nil
+func (r *recordingQuotaRepo) PageWindowsByProvider(context.Context, int, int) ([]domain.QuotaWindow, int64, bool, error) {
+	return nil, 0, false, nil
 }
 
 func (r *recordingQuotaRepo) GetCap(context.Context, string) (domain.QuotaCap, error) {
@@ -125,6 +125,6 @@ func testPolicy() QuotaFlushPolicy {
 	}
 }
 
-func (r *recordingQuotaRepo) PageAccountsByProvider(context.Context, int, int) ([]domain.QuotaAccount, int64, error) {
-	return nil, 0, nil
+func (r *recordingQuotaRepo) PageAccountsByProvider(context.Context, int, int) ([]domain.QuotaAccount, int64, bool, error) {
+	return nil, 0, false, nil
 }

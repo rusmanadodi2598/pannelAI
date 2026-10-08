@@ -76,3 +76,29 @@ func TestFindQoderModelConfig(t *testing.T) {
 		t.Fatal("a non-object answer matched")
 	}
 }
+
+// TestOriginOfKeepsAURLItCannotParse pins the branch net/url forces. url.Parse hands
+// back a nil URL together with the error for several shapes, and reading a field off
+// that nil panics inside request shaping, where the only thing that broke is one
+// registry entry's base URL.
+func TestOriginOfKeepsAURLItCannotParse(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{name: "a signed host with a path", in: "https://api.qoder.com/v1/chat", want: "https://api.qoder.com"},
+		{name: "a host with no path", in: "https://api.qoder.com", want: "https://api.qoder.com"},
+		{name: "an escape it cannot read", in: "%zz", want: "%zz"},
+		{name: "a colon run with no scheme", in: ":::", want: ":::"},
+		{name: "an invalid port", in: "http://[::1]:9x/", want: "http://[::1]:9x/"},
+		{name: "a space in the host name", in: "https://exa mple.com/p", want: "https://exa mple.com/p"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := originOf(tc.in); got != tc.want {
+				t.Fatalf("originOf(%q) = %q, want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+}

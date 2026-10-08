@@ -295,6 +295,16 @@ refreshable**: the vendor refuses the refresh the panel's worker would attempt, 
 (`docs/DRAFT/036-QODER-AUTH-READINESS.md` §3, reference `src/lib/oauth/services/qoder.js`,
 `src/lib/oauth/providers/qoder.js`).
 
+`POST .../oauth/refresh` has two shapes and they answer differently. Naming an `endpoint_id` fails fast:
+the refusal is the concrete reason that action was asked for, and it reaches the caller as the error the
+account actually got. Omitting it sweeps every due account of the provider, and there one account's refusal
+must not cancel the rest, because each account that did rotate is already committed by the time the sweep
+stops; aborting the batch would report work that happened as though none of it had. The sweep therefore
+answers `200` with `refreshed`, `endpoint_ids`, and `skipped[]`, one entry per account it passed over
+carrying `{endpoint_id, reason}`. The reason is the same English client-facing text that account's error
+would have produced on its own, so the operator can act on one account without the batch being re-run for
+everybody.
+
 **Custom endpoints (owner requirement).** Besides the embedded registry, an operator defines their
 own OpenAI-compatible or Anthropic-compatible base URL. A provider node is that definition: it is
 not an endpoint, because a node has no credential of its own. Its id carries the type prefix
@@ -671,6 +681,13 @@ of the contract:
 
 When the cache itself cannot be read, the counted windows still answer with `published_note` naming
 the gap, because their truth is independent of it.
+
+`truncated` says the page's **rows** were cut by the read ceiling, and it is always present. Paging walks
+provider groups, so one group is one unit of the walk; a second ceiling bounds the rows inside the page
+because a single provider holding many accounts would otherwise make one screen read unbounded (§9). The two
+ceilings are different numbers and only the second can be reached without the page looking wrong: without the
+flag a cut page reads as accounts that routed nothing, which is the same misstatement `published_note` exists
+to avoid. Either of the page's two reads can be cut, and the page is incomplete when either was.
 
 The cache is not `quota_windows`, and the two are never merged. A `quota_windows` row is this
 gateway's own count of traffic it routed, over a closed set of window kinds with integer units and no
@@ -1235,3 +1252,14 @@ Eleven data-plane paths gained the 404 response, which is every path whose model
 _Changelog 2026-10-07: §7.4's node DELETE changes from a refusal to a cascade (draft `046`). An operator could not delete a custom provider that held a connection: the route answered `CONFLICT`, the panel told them to move its endpoints, and no route can move one, because `provider_id` is absent from every endpoint update shape on both sides of the wire. The node's endpoints now go with it, and their credentials go through the `ON DELETE CASCADE` the schema already declares on `upstream_keys.endpoint_id`, together with the published-quota cache rows that cascade the same way. Usage history is untouched: rows recording traffic that actually happened are not the node's to lose. The combo guard stays, and it now runs before the erase, because a member that outlives its provider is attempted on every request and answers about a model the client never named: that refusal is a fact only the operator can resolve, by editing the combo, and a refused delete erases nothing at all. `ErrNodeInUse` is gone with the rule it served._
 
 _Changelog 2026-10-08: §7.4's node DELETE now takes the provider's model rows with it, and a model alias is a second reason a delete is refused (draft `046`, owner decision: nothing may accumulate under a provider that no longer exists). `models_custom` and `models_disabled` key on the provider id rather than reference it, so no database cascade clears them and every delete of a node that had declared models left rows no read path reaches; they are now erased in one transaction by that exact id, which is also why the erase is not a shape match: `opencode`, a registry provider, stores rows in the same two columns. The refusal side grew the same pass. An alias resolves on every request, so deleting the provider under one leaves a client-facing name answering failures; the endpoint refusal had blocked that by accident rather than by rule, and taking the endpoints away made it reachable. A combo naming the node and an alias targeting one of its models are now both refused, each named in the message, both checked before anything is erased. One dereference level is why the two checks together cover every stored target._
+
+_Changelog 2026-10-08: two contract additions from draft `047`, both about a page or a batch saying what it
+did not carry. §7.4's `POST .../oauth/refresh` answers `skipped[]` on the provider-wide sweep: a sweep that
+hit a refusal used to abort and return nothing, which reported a batch whose earlier accounts had already
+committed as though none of it had happened, and the most common reason for one is an account losing a
+compare-and-swap to a writer that got there first, a benign race that says nothing about the others. Naming an
+`endpoint_id` keeps failing fast, because on that path the refusal is the answer the operator asked for.
+§7.12's `GET /api/v1/quotas` answers `truncated`, always present: the page walks provider groups while a
+separate ceiling bounds the rows inside it, so a cut page previously read as accounts that routed nothing.
+Neither field replaces a count that was already honest, and neither costs a query: the ceiling is read as one
+probe row on the statement that was already running._

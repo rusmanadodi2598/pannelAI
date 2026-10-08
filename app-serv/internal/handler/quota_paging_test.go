@@ -28,7 +28,7 @@ import (
 // the way the SQL does: distinct provider ids ordered by their smallest
 // endpoint id, sliced to the page, with the total group count. The no-provider
 // lane (empty provider id) is one group like any other.
-func (r *stubQuotaRepo) PageWindowsByProvider(_ context.Context, page, perPage int) ([]domain.QuotaWindow, int64, error) {
+func (r *stubQuotaRepo) PageWindowsByProvider(_ context.Context, page, perPage int) ([]domain.QuotaWindow, int64, bool, error) {
 	order := []string{}
 	first := map[string]string{}
 	for _, window := range r.windows {
@@ -46,7 +46,7 @@ func (r *stubQuotaRepo) PageWindowsByProvider(_ context.Context, page, perPage i
 	total := int64(len(order))
 	start := (page - 1) * perPage
 	if start >= len(order) {
-		return []domain.QuotaWindow{}, total, nil
+		return []domain.QuotaWindow{}, total, false, nil
 	}
 	end := start + perPage
 	if end > len(order) {
@@ -62,7 +62,7 @@ func (r *stubQuotaRepo) PageWindowsByProvider(_ context.Context, page, perPage i
 			out = append(out, window)
 		}
 	}
-	return out, total, nil
+	return out, total, r.windowsCut, nil
 }
 
 // TestQuotaHandler_ListPaging covers the collection read as a page walk over
@@ -181,6 +181,9 @@ func TestQuotaHandler_ListPaging(t *testing.T) {
 				if got[i] != tc.wantProviders[i] {
 					t.Fatalf("List data groups = %v, want %v", got, tc.wantProviders)
 				}
+			}
+			if list.Truncated {
+				t.Fatal("truncated = true on a page the stub never cut")
 			}
 		})
 	}

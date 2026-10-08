@@ -2,7 +2,7 @@
 //
 // @file      internal/provider/qoder_catalog.go
 // @for       The model configuration Qoder publishes to an authenticated account, and the hour of reuse that keeps it off every request.
-// @uses      bytes, context, encoding/json, fmt, io, net/http, strings, sync, time.
+// @uses      bytes, context, encoding/json, fmt, io, net/http, sync, time.
 // @reason    Qoder's chat body carries the vendor's own `model_config` object, and the endpoint silently answers with a different model when the object it is handed is wrong (the reference states this outright). The list is also the only place a model that joined the vendor's catalogue after the registry was generated can be named, so it is read from the service rather than copied into a table.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
@@ -16,8 +16,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"strings"
 	"sync"
 	"time"
 )
@@ -40,19 +38,30 @@ type qoderCatalogEntry struct {
 }
 
 // qoderCatalog is the per-connector cache. It is safe for concurrent use, and it
-// holds no per-request state: the key names both the account's gateway and the
-// model, which is the widest scope that is still correct.
+// holds no per-request state: its key names the account, the gateway and the model,
+// which is the narrowest scope the vendor's own answer supports.
 //
-// inflight carries a read already running for a host, so eight concurrent chats
-// against a cold cache cost one document rather than eight. misses carries the
-// model names the vendor refused, so an unknown name costs one lookup instead of
-// a full re-read per request.
+// inflight carries a read already running for one account on one host, so eight
+// concurrent chats on a cold cache cost that account one document rather than eight,
+// and no other account joins it. misses carries the model names the vendor refused
+// to that account, so an unknown name costs one lookup instead of a full re-read per
+// request.
 type qoderCatalog struct {
 	mu       sync.Mutex
 	entries  map[string]qoderCatalogEntry
 	inflight map[string]*catalogFetch
 	misses   map[string]time.Time
 	now      func() time.Time
+}
+
+// catalogTarget is one account's catalogue: the gateway to dial, and the scope its
+// answer is cached under. Qoder publishes the model list per account, so the gateway
+// alone is not a scope. Keying on it served one account the entitlements of the next,
+// refused a model the next account is listed for because somebody else had asked, and
+// handed one account's failed read to callers that never signed for it.
+type catalogTarget struct {
+	base  string
+	scope string
 }
 
 func newQoderCatalog() *qoderCatalog {
@@ -152,37 +161,6 @@ func qoderCatalogGroupOrder(groups map[string]json.RawMessage) []string {
 		return append([]string{"chat"}, names...)
 	}
 	return names
-}
-
-// inferenceBase is the host this account's traffic is served from, without the chat
-// path: the catalogue lives on the same gateway as the chat endpoint it describes.
-func (c *Qoder) inferenceBase(cred Credential) (string, error) {
-	chatURL := strings.TrimSpace(c.entry.Transport.BaseURL)
-	if chatURL == "" {
-		return "", fmt.Errorf("provider %s: the chat base url is not declared", c.entry.ID)
-	}
-	value, err := c.credential(cred)
-	if err != nil {
-		return "", err
-	}
-	moved := chatURL
-	if isQoderJobCredential(value) {
-		moved, err = qoderSwapHost(chatURL, qoderChatBaseIntlDevice, qoderChatBaseIntlJob)
-		if err != nil {
-			return "", err
-		}
-	}
-	return originOf(moved), nil
-}
-
-// originOf reduces a URL to scheme and host, the part a path-less endpoint like
-// the catalogue shares with the chat call it describes.
-func originOf(rawURL string) string {
-	parsed, err := url.Parse(rawURL)
-	if err != nil || parsed.Host == "" {
-		return strings.TrimSuffix(rawURL, parsed.Path)
-	}
-	return parsed.Scheme + "://" + parsed.Host
 }
 
 func (c *qoderCatalog) read(key string, now time.Time) (json.RawMessage, bool) {

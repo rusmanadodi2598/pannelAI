@@ -1801,9 +1801,20 @@ components:
             counted windows are still true and still arrive, so the alternative
             to naming the gap is a page of cards that look like accounts whose
             providers published nothing.
+        truncated:
+          type: boolean
+          description: |
+            True when the row ceiling cut this page, so the rows below are not
+            everything the page's provider groups hold. Paging bounds the groups
+            per round trip, and a separate ceiling bounds the rows, which AGENTS.md
+            §1.7 requires of a screen read. Without the flag a cut page reads as
+            accounts that routed nothing, the same misstatement published_note
+            names. Either of the page's two reads can be cut; the page is
+            incomplete when either was.
       required:
       - data
       - meta
+      - truncated
       additionalProperties: false
     QuotaEndpointDetail:
       type: object
@@ -3673,12 +3684,31 @@ components:
           type: array
           items:
             type: string
+        skipped:
+          type: array
+          description: The accounts a provider-wide sweep passed over, each with its reason. Refreshing one named endpoint answers its refusal as an error instead, so this is empty on that path.
+          items:
+            $ref: '#/components/schemas/OAuthRefreshSkipped'
         expires_at:
           type: string
           format: date-time
       required:
       - refreshed
       - endpoint_ids
+      - skipped
+      additionalProperties: false
+    OAuthRefreshSkipped:
+      type: object
+      properties:
+        endpoint_id:
+          type: string
+          description: The account the sweep left alone.
+        reason:
+          type: string
+          description: The refusal that account received, in the same English client-facing text the error would have produced on its own.
+      required:
+      - endpoint_id
+      - reason
       additionalProperties: false
     OAuthDeviceStartResponse:
       type: object
