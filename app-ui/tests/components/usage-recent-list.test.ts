@@ -1,4 +1,4 @@
-// The finished-requests list of the Usage live panel (draft 014 F4).
+// The finished-requests list of the Usage live panel.
 //
 // Two rules are worth more than the markup here: the time beside a row is a duration rather than an
 // instant, and it is kept fresh by a ticker, because a frozen "just now" would be a wrong figure a minute
@@ -6,7 +6,7 @@
 //
 // The component is rendered on its own rather than through the panel: the panel's own tests drive it from
 // a frame (`usage-live-drawing.test.ts`), and this file is about the list's own claims: the elapsed time,
-// its freshness, and the In/Out split (draft 016 F3), where a figure the frame never sent is stated as an
+// its freshness, and the In/Out split, where a figure the frame never sent is stated as an
 // absence rather than printed as a zero.
 
 import { cleanup, render, screen } from '@testing-library/svelte';
@@ -115,7 +115,7 @@ describe('UsageRecentList', () => {
 		});
 
 		// A zero that arrived is a measured figure, so it is printed as one; the same cell on a frame that
-		// never carried the field is an absence, and the reference's `0` there (`UsageTable.js:8`) would be
+		// never carried the field is an absence, and the reference's `0` there (`UsageTable.js`) would be
 		// a claim this list cannot make.
 		expect(squashed(row())).toContain('0 in');
 		expect(squashed(row())).toContain('1,200 out');

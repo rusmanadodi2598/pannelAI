@@ -6,11 +6,11 @@
 	// there is no control for them and no upgrade hint: the note is text.
 	//
 	// The picker offers the vision models of the providers that are configured right now, which is the
-	// reference's own rule for this adapter: it hands the same modal its connected providers
-	// (`ModelSelectModal.js:216-219`) and the `vision` capability (`combos/page.js:826-835`), and the
-	// capability filter drops a provider that answered with no such model (`:448-451`). A model that is
-	// already selected but no longer appears in that list is kept and shown, because dropping it silently
-	// would turn a capability change on the provider's side into a configuration the operator never chose.
+	// reference's own rule for this adapter: it hands the same modal its connected providers and the
+	// `vision` capability (`ModelSelectModal.js`, `combos/page.js`'s `capFilter`), and that filter drops a
+	// provider which answered with no such model. A model that is already selected but no longer appears in
+	// that list is kept and shown, because dropping it silently would turn a capability change on the
+	// provider's side into a configuration the operator never chose.
 	import { untrack } from 'svelte';
 	import FormIssues from '$lib/components/FormIssues.svelte';
 	import ModelPickerDialog from '$lib/components/ModelPickerDialog.svelte';
@@ -56,7 +56,7 @@
 	const status = $derived(visionAdapterStatusText(form));
 
 	// No placeholders and no combos: this picker was read for one capability, and the reference's own
-	// capability-filtered picker hides the combos (`ModelSelectModal.js:427`).
+	// capability-filtered picker hides the combos (`ModelSelectModal.js`).
 	const sections = $derived(
 		pickerSections({ catalog, providers, combos: [], placeholders: false })
 	);

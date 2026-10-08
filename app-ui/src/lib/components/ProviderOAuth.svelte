@@ -4,7 +4,7 @@
 	// The section appears for a provider whose registry entry says it has OAuth (`has_oauth`), which is the
 	// API's own answer to that question, and the flow the status route reports decides what it offers: the
 	// `code` flow starts an authorization the gateway finishes by callback, the `device` flow starts a round
-	// this screen polls (§6.3, draft 036). The two remaining flows get their reason instead of a control
+	// this screen polls (§6.3). The two remaining flows get their reason instead of a control
 	// that cannot act (R-26).
 	//
 	// It reads the status once per visit, as §6.3 asks, and re-reads it after a refresh or after the

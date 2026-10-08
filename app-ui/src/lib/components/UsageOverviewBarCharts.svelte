@@ -1,12 +1,11 @@
 <script lang="ts">
-	// The Overview's two bar charts, and the reads they need (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 016
-	// F1, F2, F4).
+	// The Overview's two bar charts, and the reads they need (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 	//
 	// The reference draws a chart per dimension from a single stats read that carries every dimension at
-	// once (`UsageStats.js:492-493`). This panel's summary answers for one dimension per call, so the pair
+	// once (`UsageStats.js`). This panel's summary answers for one dimension per call, so the pair
 	// reads the two dimensions it draws and reuses the tab's own response when the operator's breakdown is
 	// one of them. That is one extra read in the common case and two otherwise, and it is filed as an
-	// app-serv request rather than hidden (draft 016 F4).
+	// app-serv request rather than hidden.
 	//
 	// A failed read is not a failed tab: each chart keeps its own state and says what could not be read
 	// while the other still draws (R-27).

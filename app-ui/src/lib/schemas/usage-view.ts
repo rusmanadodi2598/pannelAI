@@ -96,7 +96,7 @@ export type UsageQueryInput = {
  * an unknown `group_by` or `granularity` outright, and an empty `group_by=` is a 400 rather than "no
  * breakdown", so sending one would turn an unset selector into a failed request.
  *
- * `none` is the screen's word for "no breakdown" (draft 014 F1) and is dropped for the same reason: the
+ * `none` is the screen's word for "no breakdown" and is dropped for the same reason: the
  * API's way of saying it is the absence of the parameter.
  */
 export function usageQuery(input: UsageQueryInput): UsageQuery {

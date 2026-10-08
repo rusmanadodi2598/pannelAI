@@ -1,4 +1,4 @@
-// The Usage Overview value chart's Tokens/Cost switch (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 014 F2).
+// The Usage Overview value chart's Tokens/Cost switch (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 //
 // One card draws one series and the switch chooses which, because a chart can draw one series at a time
 // while the table beside it shows every column at once. The switch is local state rather than a URL
@@ -9,7 +9,7 @@
 // needs a number to size it. The assertions are on the formatted figures, which is what the operator reads.
 //
 // The mode buttons are looked up inside the series card rather than on the screen: the two bar charts below
-// it carry switches of their own, and one of them is also called "Tokens" (draft 016 F1).
+// it carry switches of their own, and one of them is also called "Tokens".
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

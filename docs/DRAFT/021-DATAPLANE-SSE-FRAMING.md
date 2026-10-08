@@ -919,3 +919,29 @@ Yang terukur dari ronde ini:
 - **Catatan model, bukan gateway.** `pg-agent` menjawab `ping` untuk instruksi "balas satu kata: pong", dan muse-spark (pc-agent reasoning, pi-agent streaming) melaporkan `reasoning_tokens` tanpa teks reasoning. Keduanya perilaku model.
 
 Bukti: `/tmp/aitest-r14/` (`report.json`, `report.txt`, 20 berkas respons matrix `<ref>.<kapabilitas>.json`, plus `reasoning-high.json` dan `reasoning-suffix-high.json`). Tidak ada literal kunci di berkas bukti. Tidak ada kode yang disentuh ronde ini.
+
+## 26. Uji ulang matrix empat kapabilitas atas `codebuddy-intl/deepseek-v4.1-flash` dan empat combo (2026-10-07)
+
+Owner meminta uji ulang dengan blok yang sama seperti ronde sebelumnya: endpoint `http://127.0.0.1:9090/api/v1`, kunci gateway `sandbox` (hint `sk-…rmEu`; sha256 nilainya dicocokkan ke `gateway_keys.value_hash` sebelum panggilan pertama), model `codebuddy-intl/deepseek-v4.1-flash` saja, plus empat combo `pi-agent`, `pc-agent`, `omp-agent`, dan `pg-agent`. Gateway owner di :9090 (PID 830409, start 2026-10-07 11:59:57 WIB, biner dari cache go-build, health 200) tidak disentuh, dan tidak ada kode yang disunting ronde ini.
+
+Komposisi combo dibaca dari tabel `combos` sebelum interpretasi, dan nilainya sama dengan ronde sebelumnya: `pi-agent` (round_robin: space-bunny-free, mimo-v2.6-flash-free, muse-spark-1.3-contributor-free), `pc-agent` (round_robin: space-bunny-free, muse-spark-1.3-contributor-free), `pg-agent` (round_robin: space-bunny-free), `omp-agent` (fallback: id node TH HARBOR 1, `deepseek-v4.1-flash:free`). Kelima ref ada di `GET /api/v1/models` (113 id), jadi tidak ada yang dilewati.
+
+| Ref | Chat | Tool | Streaming | Reasoning |
+| --- | --- | --- | --- | --- |
+| `codebuddy-intl/deepseek-v4.1-flash` | `pong`, 1,29 s | `get_weather {"city":"Jakarta"}`, finish `tool_calls`, 1,63 s | 4 frame, `[DONE]`, usage 20/2 | jawab `9` |
+| `pi-agent` | `pong`, 2,09 s | `get_weather`, 23,37 s | 2 frame, `[DONE]` | `9` + `reasoning_content` 82 char, `reasoning_tokens` 22 |
+| `pc-agent` | `pong`, 7,44 s | `get_weather`, 3,79 s | 7 frame, reasoning 40 char | `9`, `reasoning_tokens` 124 tanpa teks |
+| `omp-agent` | `pong`, 2,97 s | `get_weather`, 2,02 s | 4 frame, `[DONE]` | `9` + `reasoning_content` 85 char |
+| `pg-agent` | `pong`, 2,56 s | `get_weather`, 1,10 s | 7 frame, reasoning 56 char | `9` + `reasoning_content` 71 char, `reasoning_tokens` 23 |
+
+Yang terukur dari ronde ini:
+
+- **20/20 HTTP 200**, tanpa temuan baru. Empat kapabilitas menjawab di kelima ref, dan tiap panggilan tercatat `success`.
+- **Wire stream bersih di kelima ref**: tiap stream tepat 1 frame `finish_reason` (`stop`), 1 frame `usage`, 1 baris `data: [DONE]`, dan 0 baris tanpa prefiks `data: `. Fix F1 dan F2 tetap solid di biner ini.
+- **Reasoning pada `codebuddy-intl` perlu diminta, sama seperti ronde sebelumnya.** Probe riddle polos menjawab `9` dengan `reasoning_tokens` 0 dan tanpa `reasoning_content` (usage 37/1). Dua probe lanjutan pada model yang sama: `reasoning_effort: "high"` menjawab 200 dengan `reasoning_content` 99 char dan `reasoning_tokens` 27 (62/29); bentuk suffix `deepseek-v4.1-flash(high)` menjawab 200 dengan 90 char dan 26 token (62/28), dan suffix dilepas di wire (`model` = id dasar).
+- **Akuntansi cocok persis.** 22 panggilan ronde ini (20 matrix + 2 probe reasoning) menulis 22 baris `request_logs` dan 22 baris `usage_records`, semuanya `success`; `gateway_keys` `sandbox` naik 1943 menjadi 1965. Baris streaming berisi token nyata (20/2, 571/188, 163/14, 38/22, 163/18), jadi F5 tetap tertutup. Combo tercatat di kolom `combo` dengan member yang melayani.
+- **Rotasi terbaca dari urutan member.** `pi-agent` melayani bunny, mimo, muse, bunny (indeks 0,1,2,0); `pc-agent` melayani bunny, muse, bunny, muse (0,1,0,1); tiap baris `usage_records` cocok dengan prediksi. Counter Redis `pannelai:combo:rotation:<sha256>` bernilai 4 untuk keduanya (keduanya mulai dari nol karena TTL counter ronde lalu sudah lewat). Combo satu member (`pg-agent`, `omp-agent`) tidak menulis counter, dan itu benar.
+- **Mismatch `INTERNAL_ERROR` dari ronde 13 tidak reproduce.** Stream `omp-agent` (member TH HARBOR 1) tercatat `success` 1590 ms pada binary ini.
+- **Catatan model, bukan gateway.** `pc-agent` reasoning (muse-spark) melaporkan `reasoning_tokens` 124 tanpa teks reasoning, perilaku yang sudah terukur di ronde sebelumnya.
+
+Bukti: `/tmp/aitest-r15/` (`report.json`, 20 berkas respons matrix `<ref>.<kapabilitas>.json`, plus `probes.py`, `reasoning-effort-body-high.json`, dan `reasoning-suffix-high.json`). Tidak ada literal kunci di berkas bukti. Tidak ada kode yang disentuh ronde ini.

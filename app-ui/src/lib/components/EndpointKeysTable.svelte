@@ -6,7 +6,7 @@
 	// would refuse the call, and the note beside it says why, so the operator is not left guessing at a
 	// greyed-out button (R-26).
 	//
-	// The three actions are icon-only (owner directive, 2026-09-24): each glyph comes from the one icon
+	// The three actions are icon-only: each glyph comes from the one icon
 	// map and the button carries the action's name as its accessible name and its title.
 	//
 	// `rate_limited_until` is the one field here whose value is a duration rather than a fact: §6.2 asks for
@@ -43,7 +43,7 @@
 
 	// One target size and one hover wash for every action, so the cell reads as a set. Each variant
 	// carries exactly one text colour: two competing `text-*` utilities resolve by stylesheet order, and
-	// the muted one silently won the destructive button's colour (measured live 2026-09-24).
+	// the muted one silently wins the destructive button's colour.
 	const actionBase =
 		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
 	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;

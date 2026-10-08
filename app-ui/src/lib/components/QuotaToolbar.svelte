@@ -1,7 +1,7 @@
 <script lang="ts">
 	// The quota screen's toolbar (docs/SPEC-UI/001-SPEC-UI.md §6.6, §8.6.1; PORT 006's toolbar controls).
 	//
-	// One compact row for what the operator reaches for together (owner directive, 2026-09-25): the status
+	// One compact row for what the operator reaches for together: the status
 	// sentence, the seconds to the next read, the provider filter, and the two refresh controls share one
 	// baseline, and the row wraps as a block on a narrow screen. The controls carry the icon map's glyphs
 	// beside their labels (R-04, R-31).

@@ -16,8 +16,7 @@
 	import { onMount, type Snippet } from 'svelte';
 
 	// The token layer. Imported here because this is the one component every route renders through, so
-	// there is no screen that can load without it. Before this line existed the file was written and
-	// tested but never loaded, and the whole panel rendered unstyled.
+	// there is no screen that can load without it.
 	import '../app.css';
 
 	let { children }: { children: Snippet } = $props();

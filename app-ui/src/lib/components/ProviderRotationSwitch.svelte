@@ -2,7 +2,7 @@
 	// The Connections section's credential rotation switch (docs/SPEC-UI/001-SPEC-UI.md §6.3,
 	// docs/SPEC-API/001-SPEC-API.md §7.14).
 	//
-	// This is the reference's per-provider control (`ConnectionsCard.js:405-427`) and it writes a settings
+	// This is the reference's per-provider control (`ConnectionsCard.js`) and it writes a settings
 	// key rather than a provider field, so this component reads the settings document for it. The override
 	// map is one value (§7.14): a write sends the whole map back, and a provider with no entry inherits the
 	// global default, which is what the switch reports while it is off.

@@ -16,8 +16,8 @@
 	// place a disabled model is visible.
 	//
 	// Each row shows the string a client sends, `provider/model`, with the `(level)` suffix the reasoning
-	// picker set when THIS model accepts that level (SPEC-API §7.15, the reference's `resolveThinkingSuffix`
-	// at page.js:177-182). The suffix is rendered, not only copied: a value that lived in the clipboard
+	// picker set when THIS model accepts that level (SPEC-API §7.15, the reference's `resolveThinkingSuffix`).
+	// The suffix is rendered, not only copied: a value that lived in the clipboard
 	// alone would be a state the operator cannot see.
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import ModelTestState from '$lib/components/ModelTestState.svelte';

@@ -5,7 +5,7 @@
 	// corrections the parser made are printed beside them rather than swallowed (§8.10, R-27).
 	//
 	// The group-by selector carries the four dimensions and then "No breakdown", which is the screen's own
-	// word for the API's absence of a `group_by` (draft 014 F1). It defaults to Model, so the breakdown
+	// word for the API's absence of a `group_by`. It defaults to Model, so the breakdown
 	// table is on screen from the first read.
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import {

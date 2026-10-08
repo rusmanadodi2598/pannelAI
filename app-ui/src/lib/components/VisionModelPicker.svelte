@@ -3,9 +3,9 @@
 	//
 	// The list is the vision models of the providers that are connected right now, which is the rule the
 	// caller derives (`model-picker.ts`) and the one the reference's own vision adapter follows: it opens
-	// the shared modal with its connected providers and the `vision` capability (`combos/page.js:826-835`,
-	// `capFilter` at `:834`), and the capability filter drops a provider that answered with no such model
-	// (`ModelSelectModal.js:448-451`).
+	// the shared modal with its connected providers and the `vision` capability (`combos/page.js`,
+	// `capFilter`), and the capability filter drops a provider that answered with no such model
+	// (`ModelSelectModal.js`).
 	//
 	// A reference that is already selected but not offered by the picker is kept and shown with its
 	// reason, because dropping it silently would turn a capability change on the provider's side into a

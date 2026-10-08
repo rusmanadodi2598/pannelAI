@@ -73,7 +73,7 @@ type Stub = {
 	total: number;
 	detail: Record<string, unknown>;
 	status: number;
-	/** The rows the filter bar's own two vocabularies answer with (draft 014 F3). */
+	/** The rows the filter bar's own two vocabularies answer with. */
 	providers: Record<string, unknown>[];
 	keys: Record<string, unknown>[];
 	/** The vocabularies' refusal, which is separate from the record read's so one can fail alone. */
@@ -176,7 +176,7 @@ describe('UsageRecordsTab', () => {
 
 		expect(query.get('status')).toBe('error');
 		expect(query.get('endpoint_id')).toBe('ep_9');
-		// The two id filters the panel accepted from the URL but never sent (draft 014 F3).
+		// The two id filters the panel accepted from the URL but never sent.
 		expect(query.get('provider_id')).toBe('openai');
 		expect(query.get('gateway_key_id')).toBe('gky_1');
 		expect(query.get('model')).toBe('gpt-4o');

@@ -122,7 +122,7 @@
 				: 'Add one on Endpoint & Key, then set its budget.'}
 		/>
 	{:else}
-		<!-- One compact row for the whole editor once an endpoint is chosen (owner directive, 2026-09-25):
+		<!-- One compact row for the whole editor once an endpoint is chosen:
 		     the picker, the two fields, and the save action share one baseline and the row wraps as a
 		     block on a narrow screen. Before a choice the row is the picker alone, which is the same
 		     control in the same place either way. -->

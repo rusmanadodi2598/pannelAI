@@ -4,7 +4,7 @@
 	//
 	// The concept is the reference's (`providers/[id]/AddApiKeyModal.js` at 9router origin/master): the
 	// provider screen owns a list of connections, and a key added here becomes one of them. Single mode
-	// asks for a name, the key, and a priority (`:229-403`); bulk mode takes a paste, one key per line, and
+	// asks for a name, the key, and a priority; bulk mode takes a paste, one key per line, and
 	// plans a name for each line (`shared/utils/bulkAdd.js`). A connection is what this panel's API calls
 	// an endpoint of the provider, so the single case is one `POST /endpoints` and the paste is one
 	// `POST /endpoints/bulk`: three pasted keys become three connections of this provider, never one
@@ -15,9 +15,8 @@
 	// A paste is all-or-nothing (SPEC-API §8.1), and the flow puts the server's refusal back on the line
 	// the operator pasted.
 	//
-	// The reference's Check button (`:263-266`) has no route here: app-serv probes a stored endpoint, and a
-	// credential cannot be probed before the connection carrying it exists. The gap is filed as
-	// `docs/DRAFT/017-PROVIDER-PARITY-READINESS.md §4.6` (F6).
+	// The reference's Check button has no route here: app-serv probes a stored endpoint, and a credential
+	// cannot be probed before the connection carrying it exists.
 	import { untrack } from 'svelte';
 	import FormIssues from '$lib/components/FormIssues.svelte';
 	import Modal from '$lib/components/Modal.svelte';

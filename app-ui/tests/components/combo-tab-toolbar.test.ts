@@ -1,4 +1,4 @@
-// The Combos tab's toolbar and pagination (owner directive, 2026-09-25; docs/SPEC-UI/001-SPEC-UI.md §6.4).
+// The Combos tab's toolbar and pagination.
 //
 // The owner asked for a compact, symmetric layout on this screen. The measurable half of that is the
 // toolbar: the create action and the refresh control share one row with the sentence, rather than each

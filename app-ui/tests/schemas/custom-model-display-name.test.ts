@@ -1,10 +1,11 @@
 // The display name rule for a custom model: optional on the form, filled from the model id on the wire
-// (docs/SPEC-UI/001-SPEC-UI.md §6.3, draft 019 D2).
+// (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
 // Split from `tests/schemas/custom-model.test.ts` because the rule is its own concern and the pass's cases
 // pushed that file past the panel's line warning: the reference adds a model from its id alone
-// (`CompatibleModelsSection.js:106-118`), while the wire refuses an empty name
-// (`app-serv/internal/schema/model.go:47`), so the two cases here are the seam between those two facts.
+// (`CompatibleModelsSection.js`), while the wire refuses an empty name
+// (`app-serv/internal/schema/model.go`, `CreateCustomModelRequest.DisplayName`), so the two cases here are the
+// seam between those two facts.
 
 import { describe, expect, it } from 'vitest';
 import { customModelBody, schemaCustomModelForm } from '$lib/schemas/custom-model';

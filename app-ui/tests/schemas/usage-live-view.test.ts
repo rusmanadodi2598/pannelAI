@@ -1,9 +1,9 @@
-// Usage live derivation tests (src/lib/schemas/usage-live-view.ts, draft 012 F2).
+// Usage live derivation tests (src/lib/schemas/usage-live-view.ts).
 //
 // Three subjects, one describe each: the fold that keeps the stream away from the aggregates, the guard
 // that ages out a marker the gateway never cleared, and the label rule that stops the panel calling a dead
 // socket Live. The drawing's own derivations are in `usage-topology-view.test.ts`, and the live facts that
-// the row states are in `usage-live-facts.test.ts`, split out when draft 035 F2 added them (§1.1).
+// the row states are in `usage-live-facts.test.ts`, split out on their own seam (§1.1).
 
 import { describe, expect, it } from 'vitest';
 import type { UsageLiveActive } from '$lib/schemas/usage-live';
@@ -49,7 +49,7 @@ describe('liveMerge', () => {
 
 	it('holds no field an aggregate could be written into', () => {
 		// The proof is the shape, not a value: a frame carrying totals has nowhere in this type to put them,
-		// so the stream cannot overwrite what the REST reads returned (draft 012 F2).
+		// so the stream cannot overwrite what the REST reads returned.
 		const merged = liveMerge(null, { active: [], recent: [], error_provider: '' }, NOW);
 
 		expect(Object.keys(merged).sort()).toEqual(['active', 'errorProvider', 'receivedAt', 'recent']);

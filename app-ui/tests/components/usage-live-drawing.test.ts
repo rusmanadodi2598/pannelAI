@@ -1,4 +1,4 @@
-// Live panel drawing tests (src/lib/components/UsageLivePanel.svelte, draft 012 F2 and F3).
+// Live panel drawing tests (src/lib/components/UsageLivePanel.svelte).
 //
 // The panel reads three sources, and these rows are about what the registry and the stream put on the
 // screen: the upstream nodes from the registry, the state each node is in from the frame, and the list of
@@ -31,8 +31,8 @@ describe('UsageLivePanel drawing', () => {
 		});
 		render(UsageLivePanel);
 
-		// The node labels are the record: the provider list is no longer restated in words (owner's
-		// correction, 2026-09-23), and the awaited label is what says the registry read landed.
+		// The node labels are the record: the provider list is not restated in words anywhere else on the
+		// drawing, and the awaited label is what says the registry read landed.
 		expect(await screen.findByText('OpenCode')).toBeTruthy();
 		expect(screen.getByText('OpenAI')).toBeTruthy();
 		expect(screen.queryByText('Anthropic')).toBeNull();
@@ -51,8 +51,7 @@ describe('UsageLivePanel drawing', () => {
 
 		// Awaited on the row's facts tab for the frame and on the gateway card for the drawing itself:
 		// the tab renders from the stream alone, while the motion below belongs to nodes the registry
-		// read put there, and a row about motion must not pass on an empty drawing (draft 035 F2 moved
-		// the facts await from the drawing's frame to the row).
+		// read put there, and a row about motion must not pass on an empty drawing.
 		expect(await screen.findByText('OpenAI (gpt-4o)')).toBeTruthy();
 		expect(await screen.findByText('Gateway')).toBeTruthy();
 		expect(container.querySelector('.animate-ping')).toBeTruthy();
@@ -68,8 +67,8 @@ describe('UsageLivePanel drawing', () => {
 				frame({ active: [{ provider_id: 'openai', model: 'gpt-4o', started_at: startedNow() }] })
 			)
 		);
-		// Awaited on the row's facts tab, which is where the panel states a routing frame now (draft 035
-		// F2), and on the gateway card, which only a drawing that has nodes can carry.
+		// Awaited on the row's facts tab, which is where the panel states a routing frame now, and on the
+		// gateway card, which only a drawing that has nodes can carry.
 		expect(await screen.findByText('OpenAI (gpt-4o)')).toBeTruthy();
 		expect(await screen.findByText('Gateway')).toBeTruthy();
 		expect(container.querySelector('[data-beam="core"]')).toBeTruthy();
@@ -139,8 +138,8 @@ describe('UsageLivePanel drawing', () => {
 	});
 
 	it('sets the finished list off with a tab-styled label that is not a control', async () => {
-		// Draft 023 F2: the owner asked for the separator to use the tab idiom without being a tab anyone
-		// can click, so the label carries the accent rule and nothing here is focusable.
+		// The separator uses the tab idiom without being a tab anyone can click, so the label carries the
+		// accent rule and nothing here is focusable.
 		const stub = stubPanel();
 		render(UsageLivePanel);
 		await screen.findByText('Connecting');
@@ -178,7 +177,7 @@ describe('UsageLivePanel drawing', () => {
 		expect(await screen.findByText('Live')).toBeTruthy();
 		expect(screen.queryByText('Finished requests')).toBeNull();
 		// Awaited, because the drawing's own state waits on the registry read rather than on the frame, and
-		// an idle drawing states no fact in words (owner's correction, 2026-09-23).
+		// an idle drawing states no fact in words.
 		expect(await screen.findByText('OpenAI')).toBeTruthy();
 		expect(screen.queryByText(/No request has finished/)).toBeNull();
 	});

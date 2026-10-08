@@ -1,4 +1,4 @@
-// The provider model test answer, from docs/SPEC-API/001-SPEC-API.md §7.4 and draft 017 §4.10.
+// The provider model test answer, from docs/SPEC-API/001-SPEC-API.md §7.4.
 //
 // The route asks a question the connection test cannot answer: not "does this credential reach the
 // provider" but "does this model answer". A model that failed is a ROW, not a route error, so the schema

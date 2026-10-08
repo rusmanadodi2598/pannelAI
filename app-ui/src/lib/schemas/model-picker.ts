@@ -1,17 +1,15 @@
 // The reference picker's data model (docs/SPEC-UI/001-SPEC-UI.md §6.4).
 //
-// The reference never offers its whole registry. `ModelSelectModal.js:216-219` builds the set it shows
+// The reference never offers its whole registry. `ModelSelectModal.js` builds the set it shows
 // from the providers that have a connection ("Only show connected providers") **plus** the no-auth
 // providers (`...noAuthIds`), and this module is that rule for this panel: the catalog is the whole
 // registry, and a provider that was never configured must not be offered as if it could route.
 //
 // The union is the reference's own, because a credential-free provider needs no configuration to be
-// routable: the router synthesizes a virtual endpoint for it when the operator stored none (draft 029
-// §4.8 F8, `dataplane/selection_virtual.go`), so `opencode/space-bunny-free` answers 200 with an empty
-// endpoint table. Reading only `endpoint_count > 0` was this module's earlier premise (that a no_auth
-// provider with no row answers `NO_PROVIDER_AVAILABLE` like any other) and F8 made that premise false.
-// Leaving it here hid the whole free lane from the picker, which is how a custom node came to be built
-// for a provider that needs no configuration at all.
+// routable: the router synthesizes a virtual endpoint for it when the operator stored none
+// (`dataplane/selection_virtual.go`), so `opencode/space-bunny-free` answers 200 with an empty endpoint
+// table. `endpoint_count > 0` alone is therefore the wrong test: it hides the whole free lane, and a custom
+// node then gets built for a provider that needs no configuration at all.
 //
 // A provider the catalog carries but the list does not (the registry's hidden entries, which the list
 // route excludes because their id is reachable only through another entry's alias) is dropped rather
@@ -21,7 +19,7 @@
 // Two further rules come from the same question ("could a ref this picker offers ever answer?"), and both
 // read fields the panel already has: a provider whose chat path needs a connector is dropped
 // (`routability`), and a media model is dropped (`kind`). Both are refs the write path refuses with a
-// concrete reason (draft 024 F4), so offering them would be a save that cannot succeed.
+// concrete reason, so offering them would be a save that cannot succeed.
 
 import type { CatalogModel } from './model';
 import { catalogModelLabel } from './model';
@@ -52,9 +50,9 @@ export function activeProviderIds(providers: Provider[]): Set<string> {
 	);
 }
 
-// The kinds that serve chat completions, which is the registry's own rule (`registry/types.go:131-140`):
+// The kinds that serve chat completions, which is the registry's own rule (`registry/types.go`, `IsChat`):
 // a model with no kind is chat, and so is one declared `llm` or `chat`. Every other kind is media, so the
-// write path refuses it (draft 024 F4) and the picker must not offer it.
+// write path refuses it and the picker must not offer it.
 function isChatModel(model: CatalogModel): boolean {
 	const kind = model.kind ?? '';
 	return kind === '' || kind === 'llm' || kind === 'chat';
@@ -65,7 +63,7 @@ function isChatModel(model: CatalogModel): boolean {
 // identical reads produce identical screens.
 //
 // `placeholders` is false when the catalog was read for one capability. The reference's capability filter
-// keeps only the models whose caps include it (`ModelSelectModal.js:448-451`), which drops its placeholder
+// keeps only the models whose caps include it (`ModelSelectModal.js`), which drops its placeholder
 // chip as a side effect: a placeholder's ref has no reported caps. The rule is kept as a rule rather than
 // as that accident, because a dashed entry in a "vision models" list would offer a ref whose capability
 // nothing has confirmed.
@@ -96,7 +94,7 @@ export function pickerSections({
 		if (!active.has(provider.id)) continue;
 
 		// A provider whose chat path needs a connector can be configured but never answers chat
-		// (`RoutableNeedsConnector`; draft 024 F4 refuses its refs at write time), so it is not offered.
+		// (`RoutableNeedsConnector`, whose refs the write path refuses), so it is not offered.
 		if (provider.routability !== 'native') continue;
 
 		const options = catalog
@@ -107,7 +105,7 @@ export function pickerSections({
 		if (options.length === 0 && !placeholders) continue;
 
 		// A connected provider with no rows of its own is still pickable, which is the reference's own
-		// shape (`ModelSelectModal.js:335-339`): one dashed placeholder that pre-fills a ref the operator
+		// shape (`ModelSelectModal.js`): one dashed placeholder that pre-fills a ref the operator
 		// then edits. Without it, a node whose upstream has not answered yet would vanish from the picker.
 		sections.push({
 			key: provider.id,
@@ -129,7 +127,7 @@ export function pickerSections({
 }
 
 // The dialog's search. A section whose heading matches keeps all of its options, which is the
-// reference's own behaviour (`ModelSelectModal.js:453-459`): searching a provider name is a way to see
+// reference's own behaviour (`ModelSelectModal.js`): searching a provider name is a way to see
 // everything that provider offers.
 export function filterPickerSections(sections: PickerSection[], query: string): PickerSection[] {
 	const needle = query.trim().toLowerCase();

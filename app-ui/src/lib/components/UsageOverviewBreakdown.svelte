@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The Overview tab's breakdown of the window (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 014 F1).
+	// The Overview tab's breakdown of the window (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 	//
 	// The table is on screen from the first read, because the API's group block arrives with the summary the
 	// tab already asked for and "which models consumed this window" is the first question it answers.

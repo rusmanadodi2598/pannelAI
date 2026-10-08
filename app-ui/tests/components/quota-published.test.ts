@@ -1,5 +1,5 @@
-// The provider's own quota on the card, on load (docs/SPEC-UI/001-SPEC-UI.md §6.6, docs/SPEC-API §7.12's
-// published-read block, the provider-first reshape of 2026-10-02).
+// The provider's own quota on the card, on load (docs/SPEC-UI/001-SPEC-UI.md §6.6,
+// docs/SPEC-API §7.12's published-read block).
 //
 // The measured failure this suite exists for: the screen used to read only the gateway's own counted
 // windows, and on the live gateway those rows carry no `limit` at all. An audit of a real page counted

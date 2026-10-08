@@ -1,5 +1,4 @@
-// Combo band tests for the live panel (src/lib/components/UsageLivePanel.svelte,
-// docs/DRAFT/043-USAGE-COMBO-NODE-FLOW.md F1 and F4).
+// Combo band tests for the live panel (src/lib/components/UsageLivePanel.svelte).
 //
 // Split from `usage-live-drawing.test.ts` on the same seam that file was split on: the rows there are about
 // the reads that existed when the drawing only knew providers, and these are about the third read

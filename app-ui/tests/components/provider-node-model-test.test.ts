@@ -1,4 +1,4 @@
-// Per-model test on a custom node's models (docs/SPEC-UI/001-SPEC-UI.md §6.3, draft 037 §12).
+// Per-model test on a custom node's models (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
 // A compatible node has no registry catalog: the rows its models section lists ARE the models it offers,
 // which is exactly where an operator asks "does this one answer". These cases hold the action on the row,

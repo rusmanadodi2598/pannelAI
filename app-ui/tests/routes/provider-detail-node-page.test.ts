@@ -1,9 +1,8 @@
-// The custom node's detail screen: the reference's page shape (draft 019 F5, docs/SPEC-UI/001-SPEC-UI.md
-// §6.3).
+// The custom node's detail screen: the reference's page shape (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
-// The owner's correction was about this screen's concept. The reference renders a node's page as the node
-// itself, then its connections, then its models (`providers/[id]/page.js:1447-1819`), while the panel
-// rendered the registry's blocks and put the connection list last. The cases here hold the shape in place:
+// A node's page is the node itself first, then its connections, then its models
+// (`providers/[id]/page.js`), and the registry's blocks come last because a custom node has no registry
+// blocks of its own. The cases here hold the shape in place:
 // the block order, the registry blocks that must not appear for a node, and the two places the key dialog
 // opens from. What the models section does once it is rendered is in
 // `tests/components/provider-custom-models-node.test.ts`.
@@ -32,8 +31,8 @@ let stub: ModelStub;
 beforeEach(() => {
 	stub = stubModels({
 		providers: ['openai', NODE_ID],
-		// The gateway synthesizes a node's entry with `auth_type: "api_key"` (`custom_node.go:155-160`), so
-		// the screen offers the key dialog the way the live one does.
+		// The gateway synthesizes a node's entry with `auth_type: "api_key"` (`registry/custom_node.go`,
+		// `Index.Synthesize`), so the screen offers the key dialog the way the live one does.
 		authType: 'api_key',
 		providerNode: nodeRow(),
 		custom: [
@@ -112,7 +111,7 @@ describe("a custom node's detail screen", () => {
 
 	it('carries the reasoning picker, offering the levels its declared rows accept', async () => {
 		// A node has no registry models, so the union the server answers is the whole answer: without it
-		// this screen carries no picker at all (the owner's report, 2026-09-27). The mode is stored, so the
+		// this screen carries no picker at all. The mode is stored, so the
 		// case also holds the suffix the node's own table copies.
 		stub.thinkingLevels = ['low', 'medium', 'high', 'max'];
 		stub.settings = settingsDocument({

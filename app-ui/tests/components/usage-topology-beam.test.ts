@@ -1,4 +1,4 @@
-// Beam rows for the live drawing (src/lib/components/UsageTopologyDrawing.svelte, draft 015 F1).
+// Beam rows for the live drawing (src/lib/components/UsageTopologyDrawing.svelte).
 //
 // A routing edge is the reference fork's beam: a wide halo, a dashed plasma and a dashed core, with six
 // orbs and five sparks travelling along the same line. These rows are about which of those parts are
@@ -55,7 +55,7 @@ describe('UsageTopology beam', () => {
 		);
 
 		// The widths are the reference's own pixels at the drawing's largest, which is why each is written
-		// as that value times the drawing's unit rather than as a bare pixel count (draft 018 F2).
+		// as that value times the drawing's unit rather than as a bare pixel count.
 		expect(orbs[0]).toContain('stroke-width: calc(8px*var(--u))');
 		expect(orbs[1]).toContain('stroke-width: calc(5px*var(--u))');
 		expect(sparks[0]).toContain('stroke-width: calc(3.6px*var(--u))');
@@ -83,7 +83,7 @@ describe('UsageTopology beam', () => {
 	});
 
 	it('gives every particle one dot and a bare path, so a line is a traveller, not a row of dots', () => {
-		// Six orbs each painting six dots made the edge a chain in the browser (draft 015 F2).
+		// Six orbs each painting six dots made the edge a chain in the browser.
 		const container = draw({ active: [entry('openai')] });
 		const particles = [
 			...beamAt(container, 'OpenAI', 'orb'),

@@ -1,4 +1,4 @@
-// Per-model test controls on the provider catalog (docs/SPEC-UI/001-SPEC-UI.md §6.3, draft 017 §4.10).
+// Per-model test controls on the provider catalog (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
 // The probe answers for one model, so the contract these tests hold is that an answer stays on the row it
 // names: three rows, three verdicts, and a sweep that fills exactly the rows it probed and says how many it

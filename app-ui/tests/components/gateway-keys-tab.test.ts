@@ -170,7 +170,7 @@ describe('gateway keys tab', () => {
 		await createKey('CI runner');
 		const dialog = await screen.findByRole('dialog');
 
-		// The copy control is icon-only here (owner directive, 2026-09-24), so the button carries the name
+		// The copy control is icon-only here, so the button carries the name
 		// the glyph cannot.
 		const copy = within(dialog).getByRole('button', { name: 'Copy' });
 		expectIconOnly(copy, 'Copy');

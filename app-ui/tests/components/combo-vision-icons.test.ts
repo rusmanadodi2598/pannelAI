@@ -1,4 +1,4 @@
-// Combo & Vision control icons (owner directive, 2026-09-25; docs/SPEC-UI/001-SPEC-UI.md §8.11).
+// Combo & Vision control icons.
 //
 // The contract is the same one the two Endpoint & Key tables and the provider screens hold
 // (`tests/support/icon-only.ts`): when the visible text goes, the button must still carry the action's
@@ -9,9 +9,8 @@
 //
 // The destructive action's colour is part of the same contract: it must carry exactly one `text-*`
 // utility, the danger one, because two competing utilities resolve by stylesheet order and the muted one
-// silently won the Delete button's colour on the Endpoint & Key table until it was measured live
-// (2026-09-24). jsdom has no Tailwind cascade, so the class list is the only part of that rule a unit
-// test can hold.
+// silently won the Delete button's colour. jsdom has no Tailwind cascade, so the class list is the only
+// part of that rule a unit test can hold.
 //
 // The toolbar controls keep their visible labels and gain the glyph beside them (SPEC-UI §8.11 butir 10),
 // so they are asserted the other way round: the label stays, and the glyph rides along.

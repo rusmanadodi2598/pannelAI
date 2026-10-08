@@ -38,9 +38,9 @@ export const QUOTA_SOURCE_EXPLANATIONS: Record<QuotaSource, string> = {
 };
 
 // `provider_id` is a free string rather than a required identifier: the gateway records windows for
-// the credential-free lane's virtual endpoint, and those rows carry an empty provider (measured live
-// 2026-09-25: 4 of 16 rows). Refusing one such row refused the whole list and blanked the screen, so
-// the field parses and QuotaTable states what a blank means instead.
+// the credential-free lane's virtual endpoint, and those rows carry an empty provider. Refusing one such
+// row refuses the whole list and blanks the screen, so the field parses and QuotaTable states what a
+// blank means instead.
 export const schemaQuotaWindow = z.object({
 	endpoint_id: z.string().min(1),
 	provider_id: z.string(),
@@ -119,10 +119,10 @@ export type QuotaCardGroup = { provider: string; endpoints: QuotaCardEndpoint[] 
  * The cards this page holds, grouped from the UNION of its accounts, not from its windows alone.
  *
  * The rule this exists for (the windowless-account gap): a provider with accounts but no counted window
- * used to get no card at all, because grouping walked `windows` only. The gateway now selects a provider
- * group by the accounts that exist, so `published[]` carries one entry per account on the page, including
- * accounts that never polled. Both sources must feed one grouping or the account that has not routed
- * traffic yet stays invisible, which is precisely what the operator came to see.
+ * gets no card at all if grouping walks `windows` only. The gateway selects a provider group by the
+ * accounts that exist, so `published[]` carries one entry per account on the page, including accounts that
+ * never polled. Both sources must feed one grouping or the account that has not routed traffic yet stays
+ * invisible, which is precisely what the operator came to see.
  *
  * First-seen order is the repo's convention and is what keeps a card from reshuffling between two identical
  * polls, so `windows` is walked first in wire order and `published` second in wire order: a provider or

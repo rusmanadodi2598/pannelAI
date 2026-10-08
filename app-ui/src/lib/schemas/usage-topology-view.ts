@@ -1,5 +1,4 @@
-// The live drawing's derivations (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md F3, and the request path the
-// owner asked for on 2026-10-03, drafted in docs/DRAFT/043-USAGE-COMBO-NODE-FLOW.md).
+// The live drawing's derivations, including the request path a combo names.
 //
 // Three files answer three questions about the same picture: which entities get a node at all
 // (`usage-topology-nodeset.ts`), where a node goes and how wide it may be
@@ -65,7 +64,7 @@ export type TopologyLayout = {
 	direct: TopologyTerminal;
 	/** The drawing box's height in pixels, from the node count. */
 	height: number;
-	/** The width one node may take, as a share of the drawing box's width (draft 018). */
+	/** The width one node may take, as a share of the drawing box's width. */
 	nodeShare: number;
 };
 

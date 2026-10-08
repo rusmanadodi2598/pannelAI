@@ -1,5 +1,4 @@
-// The Overview's two bar charts and the reads they need (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 016 F1,
-// F2, F4).
+// The Overview's two bar charts and the reads they need (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 //
 // The read is what this file is for: the panel's summary answers for one dimension per call, so the pair
 // reads the two dimensions it draws and reuses the tab's own response when the operator's breakdown is one

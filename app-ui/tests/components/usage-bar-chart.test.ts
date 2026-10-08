@@ -1,4 +1,4 @@
-// The Overview's bar chart card (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 016 F1 and F2).
+// The Overview's bar chart card (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 //
 // The card is rendered on its own: the pair's own file measures the reads, and this file is about what one
 // card states. Three claims matter more than the markup. A bar's length is relative to the longest bar and

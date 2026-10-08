@@ -1,8 +1,8 @@
-// The panel's owner of the Usage live connection (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md F2).
+// The panel's owner of the Usage live connection.
 //
 // It reads the stream with `fetch` rather than with `EventSource`, and the reason is the failure mode. An
-// `EventSource` retries on its own and never says why it failed: a route that does not exist (today's
-// state, draft 012 F4) and a dropped connection look identical from the panel's side, so the screen could
+// `EventSource` retries on its own and never says why it failed: a route that does not exist and a dropped
+// connection look identical from the panel's side, so the screen could
 // not state a cause. A fetch answers with a status, and the panel already reads a stream by fetch, so it
 // has one streaming technique rather than two.
 //
@@ -13,7 +13,7 @@ import { readLiveFrames } from '$lib/usage-live-reader';
 import type { UsageLiveFrame } from '$lib/schemas/usage-live';
 import { streamStatus, type StreamStatus } from '$lib/schemas/usage-live-view';
 
-/** The route draft 010 §10.3 asks the gateway to serve. Session-gated, so the request carries the cookie. */
+/** The live stream's route. Session-gated, so the request carries the cookie. */
 export const USAGE_LIVE_PATH = '/api/v1/usage/live';
 
 /**

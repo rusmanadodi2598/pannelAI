@@ -1,4 +1,4 @@
-// Beam derivation tests (src/lib/schemas/usage-beam.ts, draft 015 F1).
+// Beam derivation tests (src/lib/schemas/usage-beam.ts).
 //
 // The beam's numbers are the reference fork's own: six orbs and five sparks per routing edge, each with its
 // own width, speed and phase, and three strokes at two dash patterns. They live in the schema rather than in
@@ -47,7 +47,7 @@ describe('beamOrbs', () => {
 
 	it('tones every third orb away from the status colour, so a dot is visible against the beam', () => {
 		// The reference's yellow, cyan and white become the panel's one status colour plus its text colour;
-		// a dot in the status colour alone merged into the plasma stroke in the browser (draft 015 F2).
+		// a dot in the status colour alone merged into the plasma stroke in the browser.
 		expect(beamOrbs().map((orb) => orb.tone)).toEqual(['ok', 'ok', 'text', 'ok', 'ok', 'text']);
 	});
 });
@@ -85,7 +85,7 @@ describe('the beam dash patterns', () => {
 
 	it('paints exactly one dot per particle line, with the rest of the path left bare', () => {
 		// The row that the browser pass earned: with the count as the period, each orb line painted six
-		// dots and the edge carried a chain of them instead of six travellers (draft 015 F2).
+		// dots and the edge carried a chain of them instead of six travellers.
 		expect(BEAM_PARTICLE_DASH.startsWith('0.01 ')).toBe(true);
 		expect(period(BEAM_PARTICLE_DASH)).toBe(100);
 

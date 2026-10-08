@@ -1,11 +1,10 @@
-// The windowless-account gap (docs/SPEC-API/001-SPEC-API.md §7.12, provider-group-by-accounts reshape
-// 2026-10-02).
+// The windowless-account gap (docs/SPEC-API/001-SPEC-API.md §7.12).
 //
-// Measured on the live gateway: `opencode-zen` has 1 account and 0 counted windows, `qoder` has 3 accounts
-// but only 2 have windows. The old cards derived their groups by walking the counted rows alone, so those
-// accounts rendered no card at all: the operator could not see a provider's quota for an account that had
-// not routed traffic yet, which is the whole reason the screen exists. The backend now selects a provider
-// group by the accounts that exist and returns one `published[]` entry per account on the page; the frontend
+// An account can exist with no counted windows at all, and a provider can hold more accounts than it has
+// windows. Deriving the card groups by walking the counted rows alone renders those accounts as no card at
+// all: the operator cannot see a provider's quota for an account that has not routed traffic yet, which is
+// the whole reason the screen exists. The backend selects a provider group by the accounts that exist and
+// returns one `published[]` entry per account on the page; the frontend
 // has to group from the union and render the account that only ever appears in `published[]`.
 //
 // The account that has never been polled is the new state this file pins: one muted "Not polled yet" line,

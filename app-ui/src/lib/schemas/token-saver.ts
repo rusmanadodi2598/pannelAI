@@ -1,7 +1,7 @@
 // Token saver contract, mirroring docs/SPEC-API/001-SPEC-API.md §7.9 and the sections in
 // docs/SPEC-UI/001-SPEC-UI.md §6.7.
 //
-// Three groups ship: RTK, Headroom, and Ponytail. `caveman` is DEPRECATED (owner, 2026-09-16): the API
+// Three groups ship: RTK, Headroom, and Ponytail. `caveman` is deprecated: the API
 // keeps the key frozen for round-trip compatibility and §6.7 forbids the panel rendering a section, a
 // control, a label, or an upgrade hint for it. The delivered response does not carry the key at all, so
 // nothing here parses it and nothing can render it.
@@ -69,8 +69,9 @@ const schemaRtkGroup = z.object({
 	filters: z.array(z.string().min(1))
 });
 
-// The external compression group as the API returns it. The URL is optional because the group is usually
-// disabled; the write schema below is the one that checks its shape.
+// The external compression group as the API returns it. §7.9 serves all three keys whatever `enabled`
+// says, so an empty `url` is a stored value rather than a missing one and a plain string is the honest
+// read; the write schema below is the one that checks the shape.
 const schemaHeadroomGroup = z.object({
 	enabled: z.boolean(),
 	url: z.string(),

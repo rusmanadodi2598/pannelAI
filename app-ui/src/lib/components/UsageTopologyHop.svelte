@@ -1,9 +1,8 @@
 <script lang="ts">
-	// One hop of the live drawing's request path (docs/DRAFT/012 F3; the beam is draft 015 F1, the split
-	// from the edge list is docs/DRAFT/043 F2).
+	// One hop of the live drawing's request path.
 	//
 	// A hop is drawn one of two ways and never both: one line, in the state's own weight and colour, while
-	// nothing is travelling it; the reference fork's beam (`ProviderTopology.js:137-245`) while a request is
+	// nothing is travelling it; the reference fork's beam (`ProviderTopology.js`) while a request is
 	// moving (a wide halo, a dashed plasma and a dashed core), with six orbs and five sparks along the same
 	// line. The dots are dashes with round caps rather than circles, because a circle in this stretched box
 	// would be an ellipse of a size that depends on the box: a zero-length dash paints a dot whose diameter
@@ -17,7 +16,7 @@
 	//
 	// The unit `--u` is the drawing box's own. It is set on the drawing's root, inherited here, and every
 	// width below is written as its own pixel value times it, so the beam shrinks with a narrow box exactly
-	// as the node boxes do (draft 018 F2).
+	// as the node boxes do.
 	import {
 		BEAM_CORE_DASH,
 		BEAM_PARTICLE_DASH,
@@ -92,7 +91,7 @@
 </script>
 
 {#if routing}
-	<!-- The reference's turbulence (`ProviderTopology.js:167-172`: baseFrequency 0.9, two octaves, seed
+	<!-- The reference's turbulence (`ProviderTopology.js`: baseFrequency 0.9, two octaves, seed
 	     2), held still. It animates that frequency there with SMIL, which cannot honour a reduced-motion
 	     preference, so the wobble is a texture here and the motion comes from the dashes. The displacement
 	     is 0.4 rather than the reference's 3.5 because this path lives in a 100-unit box instead of pixel

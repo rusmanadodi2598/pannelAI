@@ -1,10 +1,10 @@
 <script lang="ts">
 	// Logs (docs/SPEC-UI/001-SPEC-UI.md §6.11).
 	//
-	// The Requests tab is the only tab now: Console was split into its own route at `/console-log`
-	// (owner, 2026-09-17) because console output is read while a request is being debugged and a tab
-	// behind the Requests list made it a second-class view. §6.11 keeps a pointer to the new home, which
-	// is the link below rather than an empty tab.
+	// The Requests tab is the only tab here. Console lives at `/console-log` on its own: console output is
+	// read while a request is being debugged, so a tab behind the Requests list would make it a
+	// second-class view. §6.11 keeps a pointer to that home, which is the link below rather than an empty
+	// tab.
 	import { resolve } from '$app/paths';
 	import { ScrollText } from '@lucide/svelte';
 	import LogsRequestsTab from '$lib/components/LogsRequestsTab.svelte';

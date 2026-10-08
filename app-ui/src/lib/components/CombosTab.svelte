@@ -5,7 +5,7 @@
 	// the editor are their own components, so this file holds the list's states and the two writes.
 	//
 	// The reference suggestions for the editor are the combos on this page and the refs of the providers
-	// that are configured right now, which is the reference's own rule (`ModelSelectModal.js:216-219`). The
+	// that are configured right now, which is the reference's own rule (`ModelSelectModal.js`). The
 	// rule and the join live in `model-picker.ts`; the reads live in `model-picker-data.ts`, and the combos
 	// half is derived here so a delete cannot leave a stale name in the picker.
 	import { untrack } from 'svelte';

@@ -2,7 +2,7 @@
 // (docs/SPEC-UI/001-SPEC-UI.md §6.3, SPEC-API §7.5).
 //
 // A connection is what this panel's API calls an endpoint of the provider, and the reference's own concept
-// is one key per connection (`providers/[id]/AddApiKeyModal.js:148-182`): the single form is one
+// is one key per connection (`providers/[id]/AddApiKeyModal.js`): the single form is one
 // `POST /endpoints`, and a paste is one `POST /endpoints/bulk` with one element per line, never one
 // endpoint holding N keys.
 //
@@ -13,7 +13,7 @@
 //
 // A refused paste stores nothing, because the batch is all-or-nothing (SPEC-API §8.1). The refusal names
 // the pasted line it belongs to, so the operator fixes that line and sends again. The reference instead
-// posts key by key and counts successes against failures (`:148-182`), which its own API allows and this
+// posts key by key and counts successes against failures, which its own API allows and this
 // one does not.
 
 import { createEndpoint, createEndpointsBulk } from '$lib/api/endpoints';

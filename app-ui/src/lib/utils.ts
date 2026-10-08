@@ -18,9 +18,9 @@ export function cn(...inputs: ClassValue[]): string {
 // The primitive layer's prop helpers. Kept from the registry version because the generated components
 // import them by name.
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- a slot holds any renderable value, and the generated primitives import this registry helper by name
 export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- same reason: the children slot is any renderable value, named by the registry contract
 export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, 'children'> : T;
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };

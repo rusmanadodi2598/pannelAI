@@ -1,14 +1,13 @@
 <script lang="ts">
 	// The combo fields whose visibility follows the strategy (docs/SPEC-UI/001-SPEC-UI.md §6.4).
 	//
-	// Split from `ComboEditor` when the §8.4.4 guard wiring pushed that file past the 220-line warning,
-	// on the seam its header already names: §6.4 requires the field a strategy ignores to be hidden
-	// rather than disabled, so both blocks exist for one reason. The values stay in the editor's form, so
-	// switching away and back still does not discard what the operator typed.
+	// Split from `ComboEditor` on the seam its header already names: §6.4 requires the field a strategy
+	// ignores to be hidden rather than disabled, so both blocks exist for one reason. The values stay in the
+	// editor's form, so switching away and back still does not discard what the operator typed.
 	//
 	// The judge is still a text field, because a ref the picker cannot offer yet is still a ref the router
 	// may resolve. Its Choose button opens the editor's picker in single-select mode, which is the
-	// reference's own shape for this field (`combos/page.js:688-698`).
+	// reference's own shape for this field (`combos/page.js`).
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { usesJudgeModel, usesStickyLimit, type ComboStrategy } from '$lib/schemas/combo';
 

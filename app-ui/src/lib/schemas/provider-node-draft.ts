@@ -3,7 +3,7 @@
 //
 // Split from `./provider-node` the way `./endpoint-write` is split from `./endpoint`: the read shapes and
 // the write shapes are different jobs, and the file holding both crosses the panel's line limit. The
-// reference keeps the same copy per variant in one table (`AddCompatibleModal.js:7-30`), which is what
+// reference keeps the same copy per variant in one table (`AddCompatibleModal.js`), which is what
 // `NODE_COPY` is: one entry per type, so the two dialogs cannot drift apart.
 //
 // Two of the rules here are the API's own and are restated rather than invented, because a save the panel
@@ -47,7 +47,7 @@ export type CustomProviderDraft = z.infer<typeof schemaCustomProviderDraft>;
 
 /**
  * The vendor URL each type is pointed at by default. It is the field's value, not its placeholder: the
- * reference pre-fills its base URL the same way (`AddCompatibleModal.js:11`, `:22`), so the common case is
+ * reference pre-fills its base URL the same way (`AddCompatibleModal.js`), so the common case is
  * a save with no typing, and a typed URL that is one segment off is still visible against the default.
  */
 export const NODE_BASE_URL_DEFAULTS: Record<NodeType, string> = {

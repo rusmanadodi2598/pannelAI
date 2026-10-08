@@ -1,7 +1,7 @@
-// The Usage live stream's frame (docs/DRAFT/010-USAGE-ENDPOINT-READINESS.md §10.3).
+// The Usage live stream's frame.
 //
-// The route this reads, `GET /api/v1/usage/live`, is not served yet (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md
-// F4), so this file is the contract the panel builds against rather than a mirror of a route that exists.
+// The route this reads, `GET /api/v1/usage/live`, is not served yet, so this file is the contract the panel
+// builds against rather than a mirror of a route that exists.
 // Two consequences shape it, and both are about surviving a gateway the panel does not control:
 //
 //   Every collection is `nullableList`, because Go marshals a nil slice as `null` rather than as `[]`.
@@ -35,7 +35,7 @@ export const schemaUsageLiveActive = z.object({
 
 export type UsageLiveActive = z.infer<typeof schemaUsageLiveActive>;
 
-// One request that finished recently. The gateway bounds this list (draft 010 §10.3 asks for the same
+// One request that finished recently. The gateway bounds this list (the same
 // twenty the reference keeps), so the screen renders it rather than paging it.
 export const schemaUsageLiveRecent = z.object({
 	request_id: z.string().min(1),

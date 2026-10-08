@@ -163,9 +163,9 @@ describe('adding a custom model', () => {
 		);
 	});
 
-	// The wire requires a non-empty display name (`schema/model.go:47`) while the reference adds a model
-	// from its id alone, so the body carries the id as the name. Blank is also the state the form opens in,
-	// which is what makes this the case an operator hits first.
+	// The wire requires a non-empty display name (`schema/model.go`, `CreateCustomModelRequest.DisplayName`)
+	// while the reference adds a model from its id alone, so the body carries the id as the name. Blank is
+	// also the state the form opens in, which is what makes this the case an operator hits first.
 	it('stores the model id as the display name when the name is left blank', async () => {
 		renderProvider();
 		await waitForCustomTable();

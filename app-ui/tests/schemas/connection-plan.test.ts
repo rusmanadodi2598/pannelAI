@@ -17,8 +17,9 @@ describe('planConnectionLines', () => {
 	});
 
 	it('names a bare line rather than storing it without a name', () => {
-		// A label is required on the wire (`app-serv/internal/schema/endpoint.go:91`), so a nameless line is
-		// not an option. The reference names it by index and this is the same base (`bulkAdd.js:60`).
+		// A label is required on the wire (`app-serv/internal/schema/endpoint.go`, `BulkEndpointInput.Label`),
+		// so a nameless line is not an option. The reference names it by index and this is the same base
+		// (`bulkAdd.js`).
 		expect(planConnectionLines('sk-abcdefgh')).toEqual([
 			{ line: 1, label: 'Key 1', value: 'sk-abcdefgh' }
 		]);
@@ -71,7 +72,7 @@ describe('planConnectionLines', () => {
 
 	it('avoids a stored name that differs only in case, as the reference planner does', () => {
 		// The index compares the stored bytes, so `Key 1` and `KEY 1` are two rows to it. The planner stays
-		// case-blind anyway, following the reference (`bulkAdd.js:80`): a name it refuses to reuse costs
+		// case-blind anyway, following the reference (`bulkAdd.js`): a name it refuses to reuse costs
 		// nothing, while a collision costs the whole paste.
 		expect(planConnectionLines('sk-abcdefgh', ['KEY 1'])).toEqual([
 			{ line: 1, label: 'Key 2', value: 'sk-abcdefgh' }

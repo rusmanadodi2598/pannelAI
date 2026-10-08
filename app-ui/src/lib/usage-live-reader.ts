@@ -1,4 +1,4 @@
-// Reading the frames out of a live Usage response body (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md F2).
+// Reading the frames out of a live Usage response body.
 //
 // Separated from the connection owner in `usage-live.ts` for the same reason the playground separates its
 // reader: this half is about read boundaries and frame shapes, and that half is about when to connect,

@@ -1,4 +1,4 @@
-// Which entities get a node (src/lib/schemas/usage-topology-nodeset.ts, draft 012 F3 and draft 043 F1).
+// Which entities get a node (src/lib/schemas/usage-topology-nodeset.ts).
 //
 // The provider rows are the difference between a provider the gateway knows and one it could route anything
 // through. The combo rows are the difference between a combo the operator defined and one the band can still

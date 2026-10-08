@@ -6,10 +6,10 @@
 	// rules out.
 	//
 	// The credential is required for the two key auth types and optional for the rest. §7.5 refuses an
-	// `api_key` endpoint with no key (`service/endpoint_create.go:53-55`) because an account that can never
-	// route is worse than a refused request, so the panel states that rule rather than letting the round trip
-	// report it. For `oauth` and the no-auth spellings the endpoint is created empty and given keys from the
-	// detail drawer, which is the same code path either way.
+	// `api_key` endpoint with no key (`service/endpoint_create.go`, `buildEndpoint`) because an account that
+	// can never route is worse than a refused request, so the panel states that rule rather than letting the
+	// round trip report it. For `oauth` and the no-auth spellings the endpoint is created empty and given
+	// keys from the detail drawer, which is the same code path either way.
 	import { createEndpoint } from '$lib/api/endpoints';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { AUTH_TYPES, AUTH_TYPE_LABELS } from '$lib/schemas/endpoint';

@@ -1,5 +1,4 @@
-// The live drawing's geometry (docs/DRAFT/018-USAGE-DRAWING-SIZING-PARITY.md, and the two bands of
-// docs/DRAFT/043-USAGE-COMBO-NODE-FLOW.md F1).
+// The live drawing's geometry, including the two bands a node sits on.
 //
 // Split from `usage-topology-view.ts` because the two answer different questions: this file is arithmetic
 // over a box (where a band's nodes land, how tall the box grows, how wide a label may be) and that file is
@@ -34,8 +33,13 @@ const HEIGHT_PER_NODE = 22;
 const HEIGHT_BASE = 120;
 
 // The node box at its largest, in the pixels the drawing's own metrics are written in: the widest node the
-// panel draws today (padding 8 + dot 8 + gap 8 + label 96 + border 2), and the node height the reference
-// fork lays its own nodes out at (`ProviderTopology.js:265` on `origin/master`, `nodeH = 30`).
+// panel draws (padding 8 + dot 8 + gap 8 + label 96 + border 2), and the node height the reference fork lays
+// its own nodes out at (`nodeH = 30` in `ProviderTopology.js`).
+//
+// Those five numbers live in `UsageTopologyDrawing.svelte` and this constant lives here, so
+// tests/schemas/usage-topology-geometry.test.ts adds them up from the drawing's own class list and compares
+// the total to this value: a metric that moves without the cap moving fails there rather than quietly
+// letting the drawing scale past the width a node ever reaches.
 //
 // `NODE_MAX_WIDTH` is exported because the drawing's unit is derived from it: `--u` is the box's width over
 // the width at which a node reaches this cap, so the drawing shrinks below the cap and never grows past it.

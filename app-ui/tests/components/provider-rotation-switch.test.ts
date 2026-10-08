@@ -1,7 +1,7 @@
 // The Connections section's credential rotation switch (docs/SPEC-UI/001-SPEC-UI.md §6.3;
 // docs/SPEC-API/001-SPEC-API.md §7.5, §7.14).
 //
-// This is the reference's per-provider control (`ConnectionsCard.js:405-427`), and what makes it 1:1 is
+// This is the reference's per-provider control (`ConnectionsCard.js`), and what makes it 1:1 is
 // the write shape: the override map is ONE settings value, so a switch sends the whole map back with this
 // provider's entry added, replaced, or deleted, and a provider with no entry inherits the global default.
 // The assertions are on the PATCH body, because that is where the rule lives: a panel that sent only its

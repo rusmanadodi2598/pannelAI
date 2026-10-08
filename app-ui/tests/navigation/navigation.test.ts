@@ -33,7 +33,7 @@ const ALL = flatten();
 const NODES = ALL.map((row) => row.node);
 const KEYS = NODES.map((node) => node.key);
 
-// The screens the owner listed for the sidebar (owner direction, 2026-09-17). This is the requirement, so
+// The screens the owner listed for the sidebar. This is the requirement, so
 // it is stated as data; the navigation tree is what has to satisfy it.
 const OWNER_ITEMS: { label: string; key: string }[] = [
 	{ key: 'endpoint-keys', label: 'Endpoint & Key' },

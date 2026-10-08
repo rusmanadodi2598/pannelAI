@@ -1,12 +1,12 @@
 <script lang="ts">
-	// One bar chart of the Overview (docs/SPEC-UI/001-SPEC-UI.md §6.5, draft 016 F1 and F2).
+	// One bar chart of the Overview (docs/SPEC-UI/001-SPEC-UI.md §6.5).
 	//
 	// Bars are laid out in CSS rather than SVG, for the reason the series chart gives: there is no axis to
 	// scale and no series to overlay, so a viewBox would add coordinate arithmetic without adding
 	// information, and a flex row inherits the theme's colours and the panel's responsive behaviour.
 	//
 	// Both charts are horizontal, unlike the reference's provider chart, which draws vertical bars and cuts
-	// the provider name at ten characters (`ProviderBarChart.js:75`). A provider or model name is long, this
+	// the provider name at ten characters (`ProviderBarChart.js`). A provider or model name is long, this
 	// card is one of two in a row, and a truncated name is a defect the panel does not need to copy: here
 	// the name column truncates with CSS, so the full name stays in the markup and in the title attribute.
 	//

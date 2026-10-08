@@ -1,5 +1,5 @@
 // Motion rows for the live drawing (src/lib/components/UsageTopology.svelte and its box,
-// UsageTopologyDrawing.svelte; draft 013 F1/F2 and draft 015 F1).
+// UsageTopologyDrawing.svelte).
 //
 // The drawing's motion is a state indicator with two conditions: the frame names the provider, and frames
 // are arriving. These rows pin both, plus the off switches: reduced motion for the reader, and a stream
@@ -117,7 +117,7 @@ describe('UsageTopology motion', () => {
 
 	it('sizes the gateway from the drawing unit too, so a narrow box cannot overlap it', () => {
 		// The gateway is a box like a node: at 390px it was 108px wide in a 228px drawing and covered part of
-		// the node beside it, so it takes the same unit (draft 018 F1).
+		// the node beside it, so it takes the same unit.
 		draw();
 
 		const card = gateway();
@@ -129,7 +129,7 @@ describe('UsageTopology motion', () => {
 	});
 
 	it('fades a card in as it joins the drawing, and turns that off for less motion', () => {
-		// Draft 043 F3: a combo node appears and disappears with the traffic, and a box that pops into place
+		// A combo node appears and disappears with the traffic, and a box that pops into place
 		// makes the operator find the change. This is not the drawing's state motion (it runs once, on
 		// entry, and says nothing about what is happening now) but it moves, so it is gated the same way.
 		const container = draw({ combos: COMBOS, active: [comboEntry('pro-tier')] });
@@ -147,7 +147,7 @@ describe('UsageTopology motion', () => {
 
 	it('grows the box instead of jumping it when the node count changes', () => {
 		// The height is what the node count decides, so a combo arriving moved the whole drawing under the
-		// operator's eyes (draft 043 F3). The transition is on the box, and off for a reader who asked for
+		// operator's eyes. The transition is on the box, and off for a reader who asked for
 		// less motion.
 		const container = draw();
 		const box = container.querySelector('div[aria-hidden="true"]') as HTMLElement;

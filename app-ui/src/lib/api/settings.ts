@@ -148,7 +148,7 @@ export async function patchProviderProxies(
  * is how the provider screen's reasoning control changes one provider's mode (SPEC-API §7.14). The
  * map is one settings value, so the change merges onto the map the server holds rather than onto the
  * copy the screen loaded: another screen may have changed its own provider's entry since (the
- * reference re-reads before it writes, page.js:419-436). A `null` next deletes the entry, which is
+ * reference re-reads before it writes). A `null` next deletes the entry, which is
  * how a provider returns to following the client's own request.
  */
 export async function patchProviderThinking(

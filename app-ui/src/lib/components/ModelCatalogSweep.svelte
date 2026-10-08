@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The bounded sweep over a provider's models (docs/SPEC-API/001-SPEC-API.md §7.4, draft 017 §4.10).
+	// The bounded sweep over a provider's models (docs/SPEC-API/001-SPEC-API.md §7.4).
 	//
 	// This is the second entrance to the same probe the catalog rows offer, so it writes into the store the
 	// table reads: a sweep that answers fills the rows, and an operator can re-test one of them without

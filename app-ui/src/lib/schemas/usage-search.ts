@@ -39,7 +39,7 @@ import { USAGE_RECORDS_PAGE_SIZE } from './usage-view';
 /** The filter state the Usage tabs read out of the URL. */
 export type UsageSearch = {
 	period: UsagePeriod;
-	/** The breakdown the table shows, or `none` when the operator turned it off (draft 014 F1). */
+	/** The breakdown the table shows, or `none` when the operator turned it off. */
 	groupBy: UsageBreakdown;
 	/** The column the breakdown table is ordered by, or empty for the API's own order. */
 	sort: UsageSort | '';

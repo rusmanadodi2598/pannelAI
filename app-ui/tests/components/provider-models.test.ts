@@ -88,7 +88,7 @@ describe('the catalog', () => {
 		renderProvider();
 		await waitForCatalog();
 
-		// Icon-only since 2026-09-25 (PORT 002 D7): the contract is shared with the key tables.
+		// Icon-only (PORT 002 D7): the contract is shared with the key tables.
 		expectIconOnly(within(rowFor('gpt-4o')).getByRole('button', { name: 'Disable' }), 'Disable');
 		expect(within(rowFor('gpt-4o-mini')).getByRole('button', { name: 'Disable' })).toBeTruthy();
 	});

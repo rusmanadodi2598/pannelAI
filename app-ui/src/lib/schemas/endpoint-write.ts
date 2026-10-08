@@ -6,12 +6,13 @@
 // shape the panel *sends*, so a field name that only exists on a form cannot leak into a request body.
 //
 // That separation is the fix this module carries. `POST /endpoints` takes `keys`, an array of
-// `{label?, value, priority?}` (app-serv `internal/schema/endpoint.go:80-95`), and its decoder sets
-// `DisallowUnknownFields` (`internal/schema/validator.go:44-48`), so a body carrying a form-only field is
-// refused outright. The form used to send `key_value`, which made every create fail.
+// `{label?, value, priority?}` (app-serv `internal/schema/endpoint.go`, `EndpointKeyInput`), and its decoder
+// sets `DisallowUnknownFields` (`internal/schema/validator.go`, `jsonDecoder`), so a body carrying a
+// form-only field is refused outright, which is the failure this catches: a field that exists on the form
+// has no place on the wire.
 //
 // The batch body is the same rule one level up: `POST /endpoints/bulk` takes one element per account
-// (`internal/schema/endpoint.go:122-136`), so a paste of N keys becomes N connections of the provider
+// (`BulkEndpointInput`), so a paste of N keys becomes N connections of the provider
 // rather than one connection holding N keys. The paste's own planner lives in `./connection-plan`.
 
 import { z } from 'zod';
@@ -29,8 +30,8 @@ export const MAX_KEYS_PER_ENDPOINT = 100;
 /**
  * The auth types whose endpoint cannot exist without a credential.
  *
- * `apikey` is the embedded registry's spelling and `api_key` the API's own; `ParseAuthType` maps the
- * first onto the second (`internal/schema/endpoint.go:56-62`), so the rule is the same rule for both
+ * `apikey` is the embedded registry's spelling and `api_key` the API's own; `ParseAuthType`
+ * (`internal/schema/endpoint.go`) maps the first onto the second, so the rule is the same rule for both
  * and the panel would be wrong to enforce it for one spelling only.
  */
 export const REQUIRES_KEY_AUTH_TYPES = new Set(['api_key', 'apikey']);
@@ -153,15 +154,16 @@ export const schemaUpdateEndpointKeyForm = z.strictObject({
 
 export type UpdateEndpointKeyForm = z.infer<typeof schemaUpdateEndpointKeyForm>;
 
-// The repeatable row mode. Capped at the API's own batch limit so a paste of a hundred rows is refused
-// in the panel with a message rather than by the server after the round trip.
+// The repeatable row mode. Bounded by the wire's per-endpoint key cap (`MAX_KEYS_PER_ENDPOINT`, inclusive),
+// not by the batch cap, so a paste beyond it is refused in the panel with a message rather than by the
+// server after the round trip.
 export const schemaBulkAddKeysForm = z.strictObject({
 	keys: keyRows.min(1)
 });
 
 export type BulkAddKeysForm = z.infer<typeof schemaBulkAddKeysForm>;
 
-/** The wire's own cap on one batch of accounts (§7.5, `internal/service/endpoint_bulk.go:33`). */
+/** The wire's own cap on one batch of accounts (§7.5, `internal/service/endpoint_bulk.go`, `maxBatchRows`). */
 export const MAX_BULK_CONNECTIONS = 50;
 
 /** One planned connection as the body states it: a name and the single key that connection carries. */
@@ -171,7 +173,7 @@ export type BulkConnectionRow = { label: string; value: string };
  * The body of `POST /endpoints/bulk`: the provider and auth type once, then one element per connection.
  *
  * Each element carries `keys` because the route's element type is the single-create shape minus the two
- * shared fields (`internal/schema/endpoint.go:130-136`); this dialog always fills exactly one, which is
+ * shared fields (`BulkEndpointInput`); this dialog always fills exactly one, which is
  * what makes the batch a set of connections rather than one connection with a pool.
  */
 export type BulkCreateEndpointsBody = {

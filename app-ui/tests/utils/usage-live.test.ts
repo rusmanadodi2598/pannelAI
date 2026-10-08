@@ -1,4 +1,4 @@
-// Usage live connection tests (src/lib/usage-live.ts, draft 012 F2).
+// Usage live connection tests (src/lib/usage-live.ts).
 //
 // The subject is the connection and its failure policy: what it asks for, what it says when the gateway
 // refuses, and how it retries. The rows are about the difference between failures an operator can act on

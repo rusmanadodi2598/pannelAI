@@ -40,7 +40,7 @@ export const schemaProvider = z.object({
 	category: z.string().min(1),
 	auth_type: z.string(),
 	auth_modes: stringList,
-	// The registry's credential-format sentence (draft 036 slice B), served verbatim and absent
+	// The registry's credential-format sentence, served verbatim and absent
 	// for providers that declare none, which Go's omitempty delivers as a missing key.
 	auth_hint: nullableText,
 	has_oauth: z.boolean(),
@@ -109,8 +109,8 @@ export type ProviderDetail = z.infer<typeof schemaProviderDetail>;
 // them when it has nothing to say, and the panel reads only `id` and `name`. `source` and `warning` state
 // where the list came from, which is not decoration: a node whose upstream could not be reached answers a
 // fallback, and a client that could not tell that from a fresh answer would present a stale list as
-// current. Both are optional because the gateway omits them when the list is the upstream's own
-// (app-serv draft 017 F2 carries them), and the panel renders whichever it receives.
+// current. Both are optional because the gateway omits them when the list is the upstream's own, and the
+// panel renders whichever it receives.
 export const schemaProviderModel = z.object({
 	id: z.string().min(1),
 	name: z.string().optional(),
@@ -135,7 +135,7 @@ export const PROVIDER_CATEGORIES = ['apikey', 'oauth', 'free', 'media', 'local']
 
 // The list query, matching exactly what the API reads: `category`, `routability`, `q`, and paging.
 //
-// `q` is the free-text search §6.3 asks for, added server-side on 2026-09-25 (PORT 002 D1): the API
+// `q` is the free-text search §6.3 asks for (PORT 002 D1): the API
 // matches it as a case-insensitive substring over the id and the display name, so the panel sends what
 // was typed rather than filtering the registry in the browser, which §6.3's pagination discipline
 // forbids. The bound lives on the API side; the panel only stops sending an empty term.

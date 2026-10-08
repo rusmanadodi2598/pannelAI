@@ -3,13 +3,13 @@
 //
 // The regression this file exists for is the mapping itself. The create form used to send its own field
 // names, `key_value` among them, and the route's decoder refuses an unknown field
-// (`internal/schema/validator.go:44-48`), so every create failed with
+// (`internal/schema/validator.go`, `jsonDecoder`), so every create failed with
 // `400 unknown field "key_value"`. The case below pins the body, not the form, which is what would have
 // caught it.
 //
 // The key-auth rule is the API's own and is measured, not assumed: an `api_key` endpoint with no key is
-// refused before any write (`internal/service/endpoint_create.go:53-55`), for both spellings, because
-// `ParseAuthType` maps the registry's `apikey` onto the API's `api_key`.
+// refused before any write (`internal/service/endpoint_create.go`, `buildEndpoint`), for both spellings,
+// because `ParseAuthType` maps the registry's `apikey` onto the API's `api_key`.
 
 import { describe, expect, it } from 'vitest';
 import { ENDPOINT_STATUS_ACTIVE } from '$lib/schemas/endpoint';

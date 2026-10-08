@@ -1,7 +1,7 @@
 <script lang="ts">
 	// The Connections section of the provider detail screen (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 	//
-	// The section is the reference's own block (`providers/[id]/page.js:1508-1741`): a heading, the
+	// The section is the reference's own block (`providers/[id]/page.js`): a heading, the
 	// rotation switch, the action that adds a connection, and the list. It is its own component because
 	// both kinds of provider screen render it and the two put it in different places: the registry
 	// screen leads with its facts and its model sections, while a custom node leads with this, because a
@@ -13,9 +13,8 @@
 	//
 	// The add action is split by auth type. A provider that takes a key gets the dialog the page owns,
 	// because a key is the credential and the reference's own Add API Key button sits here. A provider that
-	// takes none gets this section's inline endpoint form instead: since 2026-09-24 the Endpoint & Key page
-	// carries only gateway keys, so the form that used to live on its second tab renders here, next to the
-	// list it fills.
+	// takes none gets this section's inline endpoint form instead: the Endpoint & Key page carries only
+	// gateway keys, so the endpoint form belongs here, next to the list it fills.
 	//
 	// The rotation switch is its own component, because it is a self-contained control with its own read,
 	// write, and status lines; this section only decides where it sits.
@@ -102,7 +101,7 @@
 			{/if}
 		</div>
 	</div>
-	<!-- The registry's credential-format sentence (draft 036 slice B): what the key looks like and
+	<!-- The registry's credential-format sentence: what the key looks like and
 	     where the operator mints one. Text, never a link: the panel does not navigate to a third
 	     party on the operator's behalf. -->
 	{#if provider.auth_hint}

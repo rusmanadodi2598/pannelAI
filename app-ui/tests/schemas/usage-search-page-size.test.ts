@@ -1,4 +1,4 @@
-// The page size the Usage URL asks for, and the correction it gets (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md F1).
+// The page size the Usage URL asks for, and the correction it gets.
 //
 // Split from `usage-view.test.ts` when the pass that added it pushed that file further over the line
 // ceiling: the screen reads one page size while the API accepts up to 100, so a `per_page` a shared link

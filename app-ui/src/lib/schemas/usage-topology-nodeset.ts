@@ -1,5 +1,4 @@
-// Which entities the live drawing puts a node on (docs/DRAFT/012-USAGE-LIVE-UI-READINESS.md F3, and the
-// combo band of docs/DRAFT/043-USAGE-COMBO-NODE-FLOW.md).
+// Which entities the live drawing puts a node on, including the combo band.
 //
 // Split from `usage-topology-view.ts` because the two answer different questions: this one decides which
 // providers and combos deserve a node at all, that one decides where a node goes and what state it carries.
@@ -70,7 +69,7 @@ export function configuredCombos(combos: Combo[]): TopologyNodeEntry[] {
 /**
  * The registry's ids mapped to their display names, lowercased on the id.
  *
- * The breakdown table resolves a provider group key through this (draft 014 F1): the key is the id the API
+ * The breakdown table resolves a provider group key through this: the key is the id the API
  * grouped by, and `openai` is a name the operator has to translate. The full read is used rather than
  * `configuredProviders`, because a provider that has usage and no endpoint still has a name.
  */

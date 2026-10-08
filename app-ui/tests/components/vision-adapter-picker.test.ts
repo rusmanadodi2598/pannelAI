@@ -2,7 +2,7 @@
 //
 // The rule under test is the one this tab shares with the combo editor: the picker offers the vision
 // models of the providers that are connected right now, and nothing from a provider with no endpoint
-// row, because this gateway answers `NO_PROVIDER_AVAILABLE` for one that has none (draft 024 §3.7). A
+// row, because this gateway answers `NO_PROVIDER_AVAILABLE` for one that has none. A
 // ref that is already selected is kept and labelled when the picker no longer offers it.
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
@@ -140,7 +140,7 @@ describe('the vision adapter picker', () => {
 		expect(within(dialog).queryByRole('button', { name: 'MiMo v2.6' })).toBeNull();
 		expect(within(dialog).queryByRole('button', { name: 'GPT-4o audio' })).toBeNull();
 		// A vision-capable row is still not offered when it is a media model: the adapter substitutes a
-		// chat model that can read an image, and the write path refuses a media ref (draft 024 F4).
+		// chat model that can read an image, and the write path refuses a media ref.
 		expect(within(dialog).queryByRole('button', { name: 'DALL-E 4' })).toBeNull();
 		expect(catalogQueries[0]).toContain('capability=vision');
 	});

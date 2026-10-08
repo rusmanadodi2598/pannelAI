@@ -8,7 +8,7 @@
 	// rather than empty.
 	//
 	// The copied string carries the `(level)` suffix the reasoning picker set when this model accepts that
-	// level (SPEC-API §7.15, the reference's `resolveThinkingSuffix` at page.js:177-182), and the row shows
+	// level (SPEC-API §7.15, the reference's `resolveThinkingSuffix`), and the row shows
 	// the same string it copies.
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import ModelTestState from '$lib/components/ModelTestState.svelte';

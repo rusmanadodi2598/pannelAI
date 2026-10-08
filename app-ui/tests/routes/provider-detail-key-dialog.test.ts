@@ -3,7 +3,7 @@
 // What this screen owns is the concept, so that is what these cases hold: a key added here becomes a
 // connection of this provider, one row per key, and the operator is never asked to create a container
 // first. A single key is one `POST /endpoints`; a paste is one `POST /endpoints/bulk` carrying one element
-// per line, which is the reference's own shape (`providers/[id]/AddApiKeyModal.js:148-182`, one connection
+// per line, which is the reference's own shape (`providers/[id]/AddApiKeyModal.js`, one connection
 // per key).
 //
 // The dialog's modes are driven through the page rather than mounted on their own, because what has to

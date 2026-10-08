@@ -1,4 +1,4 @@
-// Usage live frame tests (src/lib/schemas/usage-live.ts, draft 010 §10.3).
+// Usage live frame tests (src/lib/schemas/usage-live.ts).
 //
 // The frame is a contract the gateway does not serve yet, so these rows are the panel's statement of what
 // it will accept. Two rules run through them: a collection spelled `null` is the same as one spelled `[]`,

@@ -7,7 +7,7 @@
 	// rewriting a group the operator did not touch. After a successful write the page re-reads the full
 	// configuration and hands it back through `loaded`.
 	//
-	// `caveman` is DEPRECATED and has no section, no control, and no label here (§6.7, owner 2026-09-16).
+	// `caveman` is deprecated and has no section, no control, and no label here (§6.7).
 	import { untrack } from 'svelte';
 	import TokenSaverBypass from '$lib/components/TokenSaverBypass.svelte';
 	import TokenSaverHeadroomFields from '$lib/components/TokenSaverHeadroomFields.svelte';

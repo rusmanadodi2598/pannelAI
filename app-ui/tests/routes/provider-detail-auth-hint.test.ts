@@ -1,5 +1,4 @@
-// The auth_hint sentence on a provider's Connections section (draft 036 slice B;
-// docs/SPEC-UI/001-SPEC-UI.md §6.3).
+// The auth_hint sentence on a provider's Connections section (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 //
 // The registry's auth_hint is the only place the operator learns what credential a provider wants
 // before any connection exists: for Qoder it names the PAT prefix and the page that mints one. The

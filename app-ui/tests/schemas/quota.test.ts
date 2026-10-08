@@ -100,9 +100,9 @@ describe('quota window', () => {
 	);
 
 	// A virtual endpoint (the credential-free lane) yields windows the gateway records without a
-	// provider: measured live 2026-09-25, 4 of 16 rows carried provider_id "". One such row used to
-	// refuse the whole list and blank the screen, so the field parses as a free string and the table
-	// states what a blank means (the provider-less group in QuotaCards).
+	// provider: those rows carry an empty `provider_id`. Refusing one such row refuses the whole list and
+	// blanks the screen, so the field parses as a free string and the table states what a blank means (the
+	// provider-less group in QuotaCards).
 	forEachCase(
 		[
 			{ name: 'accepts a named provider', provider_id: 'anthropic', ok: true },
@@ -236,10 +236,10 @@ describe("the collection read's published block", () => {
 	});
 });
 
-// The card grouping, and the fix it exists for: the windowless-account gap. A provider group is selected
-// by the accounts that exist, not the windows that happen to exist. Measured live 2026-10-02, `opencode-zen`
-// has an account and zero windows and `qoder` has three accounts with only two windows, so the old walk over
-// `windows` alone rendered those accounts as no card at all. `quotaCardGroups` is the pure half of the union
+// The card grouping, and the gap it exists for: a provider can hold an account with no counted windows at
+// all, and several accounts with fewer windows than accounts. A group selected by the windows that happen
+// to exist renders those accounts as no card at all, so a provider group is selected by the accounts that
+// exist instead. `quotaCardGroups` is the pure half of the union
 // the cards render from: it takes both sources and keys on the accounts, keeping the wire's first-seen order
 // so two identical reads cannot reshuffle a card.
 describe('quotaCardGroups', () => {

@@ -9,7 +9,7 @@
 	// says whether one is stored rather than showing a value the panel does not have.
 	//
 	// A row that was never tested reads "Not tested", which is not the same as a failure and must not
-	// look like one. The three actions are icon-only (owner directive, 2026-09-26): the glyph comes
+	// look like one. The three actions are icon-only: the glyph comes
 	// from the row-action map, and the accessible name carries the row, because "Edit / Test / Delete"
 	// repeated down a table is ambiguous to a screen reader even with tooltips. While a probe is in
 	// flight the row's Test button is disabled, which is how the other tables show the same wait.
@@ -47,7 +47,7 @@
 
 	// One target size and one hover wash for every action, so the cell reads as a set. Each variant
 	// carries exactly one text colour: two competing `text-*` utilities resolve by stylesheet order,
-	// and the muted one silently won the destructive button's colour (measured live 2026-09-24).
+	// and the muted one silently wins the destructive button's colour.
 	const actionBase =
 		'inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)] disabled:opacity-50';
 	const actionClass = `${actionBase} text-[var(--color-text-muted)] hover:text-[var(--color-text)]`;

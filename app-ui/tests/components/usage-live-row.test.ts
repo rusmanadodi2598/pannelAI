@@ -1,10 +1,10 @@
-// Live row tests (src/lib/components/UsageLivePanel.svelte, draft 035 F1 and F2).
+// Live row tests (src/lib/components/UsageLivePanel.svelte).
 //
-// The owner's correction of 2026-09-27 asked for two things on one row: every tab in the live controls
-// carries the same box (F1), and the dynamic facts sentence left the drawing's frame, where it moved the
-// node animation, to become a tab of that row (F2). The rows here pin the shape, not the pixels: what the
-// browser measures belongs to the live click-through (draft 035 §7.2), and what the DOM promises is here.
-// The tab is a statement, not a control (draft 023 F2's rule), which is why nothing in these rows can be
+// Two rules shape this row: every tab in the live controls carries the same box, and the dynamic facts
+// sentence is a tab of this row rather than a caption on the drawing, which is hidden from assistive
+// technology and moved with every frame. The rows here pin the shape, not the pixels: what the
+// browser measures belongs to the live click-through, and what the DOM promises is here.
+// The tab is a statement, not a control, which is why nothing in these rows can be
 // clicked or focused, and why only the two real controls carry the hover affordance.
 
 import { cleanup, render, screen, within } from '@testing-library/svelte';

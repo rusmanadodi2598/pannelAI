@@ -1,4 +1,4 @@
-// Live drawing derivation tests (src/lib/schemas/usage-topology-view.ts, draft 012 F3 and draft 043 F1).
+// Live drawing derivation tests (src/lib/schemas/usage-topology-view.ts).
 //
 // The layout rows pin the arithmetic (the two bands, the box height, the state precedence, the terminals)
 // because the drawing itself holds none of it. Which entities get a node at all is the other file's subject,
@@ -237,8 +237,8 @@ describe('topologyNodes', () => {
 
 	it('keeps every pair of nodes apart at every box width, for every count it is given', () => {
 		// The drawing's own rule, modelled here: a node is at most `min(share * boxWidth, 130)` wide and
-		// 30px tall at that cap, shrinking with the same unit, so its height is 30 * width / 130. The claim
-		// is the one draft 016 F8 measured as false at 390px: no two node boxes intersect, at any width.
+		// 30px tall at that cap, shrinking with the same unit, so its height is 30 * width / 130. The claim it
+		// pins: no two node boxes intersect, at any width.
 		for (const width of [180, 228, 320, 480, 650, 900, 1086]) {
 			for (let count = 2; count <= 24; count += 1) {
 				const layout = topologyNodes(many(count, 'pr'), many(count, 'cb'), IDLE);

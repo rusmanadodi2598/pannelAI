@@ -82,7 +82,7 @@ export function capabilitiesText(list: readonly string[]): string {
 
 // What an operator types. `model_id` is the one field the API requires; the display name is optional here
 // even though the wire insists on a non-empty one, because the reference adds a model with its id alone
-// (draft 019 D2) and the body fills the name from the id. Capabilities are optional, and the field is free
+// and the body fills the name from the id. Capabilities are optional, and the field is free
 // text because the API accepts any value and exposes no vocabulary.
 export const schemaCustomModelForm = z.strictObject({
 	model_id: modelSegment,
@@ -114,8 +114,8 @@ export type CreateCustomModelBody = {
 };
 
 // The display name is filled from the model id when the field was left blank: the wire refuses an empty one
-// (`schema/model.go:47`), and the id is what the row would show anyway (`customModelLabel`), so asking for a
-// second name would be a field with no consequence (draft 019 D2).
+// (`schema/model.go`, `CreateCustomModelRequest.DisplayName`), and the id is what the row would show anyway
+// (`customModelLabel`), so asking for a second name would be a field with no consequence.
 export function customModelBody(providerId: string, form: CustomModelForm): CreateCustomModelBody {
 	const name = form.display_name.trim();
 	return {

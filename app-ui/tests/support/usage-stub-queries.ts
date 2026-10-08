@@ -2,7 +2,7 @@
 //
 // They live apart from the stub because they answer a different question: the stub decides what the panel
 // gets back, and these say what it asked for. The distinction matters on this screen more than most, since
-// the tab's own summary read and the two bar charts' reads are the same route (draft 016 F4).
+// the tab's own summary read and the two bar charts' reads are the same route.
 
 import { queryOf } from './page.svelte';
 import type { UsageStub } from './usage-overview-stub';
