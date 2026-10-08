@@ -77,8 +77,8 @@ export function updateProviderNode(
 }
 
 /**
- * Removes a node and the endpoints that reference it, whose stored keys go with them. The route answers
- * 204 with no body.
+ * Removes a node, the endpoints that reference it, and the model rows stored under it. Keys go with their
+ * endpoints through the cascade the schema declares. The route answers 204 with no body.
  *
  * Refused as CONFLICT while a combo names the node or an alias targets one of its models: a reference that
  * outlives its provider is attempted on every request and answers about a model the client never named.

@@ -100,6 +100,36 @@ func (r *ModelCatalogRepository) RemoveCustom(ctx context.Context, id string) er
 	return nil
 }
 
+// DeleteForProvider removes every model row an operator stored under one provider id: the
+// custom rows and the disabled rows both key on it, and neither means anything once the
+// provider is gone. Both statements run in one transaction so a node delete cannot half-clean
+// a provider's model set. The scope is the exact id, never a shape: a registry provider stores
+// rows in these same tables, and `opencode` holds two of them today.
+func (r *ModelCatalogRepository) DeleteForProvider(ctx context.Context, providerID string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("deleting the models of %s: %w", providerID, err)
+	}
+	defer func() {
+		// A rollback after a successful commit is a no-op; its error cannot change what the
+		// caller observes.
+		_ = tx.Rollback(ctx)
+	}()
+
+	for _, statement := range []string{
+		`DELETE FROM models_custom WHERE provider_id = $1`,
+		`DELETE FROM models_disabled WHERE provider_id = $1`,
+	} {
+		if _, err := tx.Exec(ctx, statement, providerID); err != nil {
+			return translateCatalogError(err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("deleting the models of %s: %w", providerID, err)
+	}
+	return nil
+}
+
 // scanCustomModel reads one models_custom row.
 func scanCustomModel(s pgx.Rows) (domain.CustomModel, error) {
 	var (

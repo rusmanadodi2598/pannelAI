@@ -71,6 +71,16 @@ func (e *readinessEndpointErasures) DeleteByProvider(_ context.Context, provider
 	return nil
 }
 
+// readinessModelErasures records whose model rows a delete erased, so a test can tell
+// the node's own rows from another provider's, and can prove a refused delete erased
+// neither connections nor models.
+type readinessModelErasures struct{ providers []string }
+
+func (m *readinessModelErasures) DeleteForProvider(_ context.Context, providerID string) error {
+	m.providers = append(m.providers, providerID)
+	return nil
+}
+
 type readinessProviderIndex struct{ entries []registry.Provider }
 
 func (i readinessProviderIndex) Provider(id string) (registry.Provider, bool) {
@@ -96,11 +106,12 @@ func (i readinessProviderIndex) Categories() []string {
 	return out
 }
 
-func readinessNodeService(t *testing.T, store *readinessNodeStore, eraser EndpointEraser) *NodeService {
+func readinessNodeService(
+	t *testing.T, store *readinessNodeStore, eraser EndpointEraser, models ModelEraser) *NodeService {
 	t.Helper()
 	svc, err := NewNodeService(NodeServiceDeps{
 		Store: store, Index: readinessProviderIndex{entries: []registry.Provider{{ID: "openai"}}},
-		Endpoints: eraser,
+		Endpoints: eraser, Models: models,
 	})
 	if err != nil {
 		t.Fatalf("NewNodeService() error = %v", err)
@@ -111,7 +122,7 @@ func readinessNodeService(t *testing.T, store *readinessNodeStore, eraser Endpoi
 
 func TestNodeService_CreateAndUpdateRejectPrefixCollision(t *testing.T) {
 	store := newReadinessNodeStore()
-	svc := readinessNodeService(t, store, &readinessEndpointErasures{})
+	svc := readinessNodeService(t, store, &readinessEndpointErasures{}, &readinessModelErasures{})
 	_, err := svc.Create(context.Background(), CreateNodeInput{Name: "one", Prefix: "openai", Type: domain.NodeOpenAICompatible, APIType: domain.NodeAPIChat, BaseURL: "https://one.example"})
 	mustAppError(t, err, "CONFLICT")
 
@@ -130,10 +141,11 @@ func TestNodeService_CreateAndUpdateRejectPrefixCollision(t *testing.T) {
 	}
 }
 
-func TestNodeService_DeleteTakesTheNodesEndpointsWithIt(t *testing.T) {
+func TestNodeService_DeleteTakesTheNodesEndpointsAndModelRowsWithIt(t *testing.T) {
 	store := newReadinessNodeStore()
 	erasures := &readinessEndpointErasures{}
-	svc := readinessNodeService(t, store, erasures)
+	models := &readinessModelErasures{}
+	svc := readinessNodeService(t, store, erasures, models)
 	node, err := svc.Create(context.Background(), CreateNodeInput{Name: "one", Prefix: "one", Type: domain.NodeOpenAICompatible, APIType: domain.NodeAPIChat, BaseURL: "https://one.example"})
 	if err != nil {
 		t.Fatalf("create: %v", err)
@@ -147,6 +159,9 @@ func TestNodeService_DeleteTakesTheNodesEndpointsWithIt(t *testing.T) {
 	}
 	if len(erasures.providers) != 1 || erasures.providers[0] != node.ID() {
 		t.Fatalf("connections erased for %v, want exactly the deleted node", erasures.providers)
+	}
+	if len(models.providers) != 1 || models.providers[0] != node.ID() {
+		t.Fatalf("model rows erased for %v, want exactly the deleted node", models.providers)
 	}
 }
 

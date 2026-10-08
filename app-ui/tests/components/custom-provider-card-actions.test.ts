@@ -93,7 +93,7 @@ describe("the card's verb actions", () => {
 });
 
 describe('deleting a custom provider', () => {
-	it('states the connections the delete takes with it, then deletes and returns to the registry', async () => {
+	it('states what the delete takes with it, then deletes and returns to the registry', async () => {
 		const stub = stubProviderNodes({
 			nodes: [nodeRow()],
 			connections: { 'openai-compatible-01J': 3 }
@@ -108,7 +108,7 @@ describe('deleting a custom provider', () => {
 		);
 		await waitFor(() =>
 			expect(squashed(dialogOf('Delete this custom provider'))).toContain(
-				'Its 3 stored connections go with it, keys included.'
+				'Its 3 stored connections go with it, keys and custom models included.'
 			)
 		);
 		expect(stub.deletes).toHaveLength(0);
@@ -119,18 +119,22 @@ describe('deleting a custom provider', () => {
 		await waitFor(() => expect(goto).toHaveBeenCalledWith('/providers'));
 	});
 
-	// The count is the confirmation's only number, so the two states that change what the sentence may
-	// claim are both held: a node with nothing under it says nothing, and a count that could not be read
-	// drops the number rather than printing one the panel did not measure.
-	it('says nothing about connections when there are none', async () => {
+	// Every branch states something true. The connection count is the only number, so the two states that
+	// change what the sentence may claim are both held: a node with no connection still loses its model
+	// rows, and a count that could not be read drops the number rather than printing one the panel
+	// did not measure.
+	it('still names the models when the provider holds no connection', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
 		renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Delete' }).click();
 		await waitFor(() =>
-			expect(squashed(dialogOf('Delete this custom provider'))).not.toContain('stored connection')
+			expect(squashed(dialogOf('Delete this custom provider'))).toContain(
+				'Its custom models go with it.'
+			)
 		);
+		expect(squashed(dialogOf('Delete this custom provider'))).not.toContain('stored connection');
 	});
 
 	it('states the cascade without a number when the count cannot be read', async () => {
@@ -141,7 +145,7 @@ describe('deleting a custom provider', () => {
 		await screen.getByRole('button', { name: 'Delete' }).click();
 		await waitFor(() =>
 			expect(squashed(dialogOf('Delete this custom provider'))).toContain(
-				'Its stored connections go with it, keys included.'
+				'Its stored connections go with it, keys and custom models included.'
 			)
 		);
 	});

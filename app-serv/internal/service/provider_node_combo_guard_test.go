@@ -28,9 +28,10 @@ func TestNodeService_DeleteRefusesWhileAComboReferencesTheNode(t *testing.T) {
 	store := newReadinessNodeStore()
 	combos := newStubComboRepo()
 	erasures := &readinessEndpointErasures{}
+	models := &readinessModelErasures{}
 	svc, err := NewNodeService(NodeServiceDeps{
 		Store: store, Index: readinessProviderIndex{entries: []registry.Provider{{ID: "openai"}}},
-		Endpoints: erasures, Combos: combos,
+		Endpoints: erasures, Models: models, Combos: combos,
 	})
 	if err != nil {
 		t.Fatalf("NewNodeService() error = %v", err)
@@ -65,6 +66,9 @@ func TestNodeService_DeleteRefusesWhileAComboReferencesTheNode(t *testing.T) {
 	}
 	if len(erasures.providers) != 1 || erasures.providers[0] != node.ID() {
 		t.Fatalf("connections erased for %v, want exactly the deleted node", erasures.providers)
+	}
+	if len(models.providers) != 1 || models.providers[0] != node.ID() {
+		t.Fatalf("model rows erased for %v, want exactly the deleted node", models.providers)
 	}
 }
 

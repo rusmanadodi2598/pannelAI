@@ -13,9 +13,9 @@
 	// models section addresses a model as `prefix/model` and this is the read that holds it.
 	//
 	// Edit, Test, and Delete live here rather than in the list's rows, which is the reference's shape: the
-	// list is for finding a node, and this is where its state changes. Delete confirms first because it
-	// cannot be undone and it takes the node's connections with it, keys included; the API still refuses a
-	// node a combo names or an alias targets, and those answers are the only reason a confirmed delete comes
+	// list is for finding a node, and this is where its state changes. Delete confirms first because it cannot
+	// be undone and it takes the node's connections, their keys and its model rows with it. The API still refuses
+	// a node a combo names or an alias targets, and those answers are the only reason a confirmed delete comes
 	// back unchanged.
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';

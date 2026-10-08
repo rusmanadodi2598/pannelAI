@@ -43,10 +43,11 @@ func (s stubAliasLister) Aliases(context.Context) ([]domain.ModelAlias, error) {
 func TestNodeService_DeleteRefusesWhileAnAliasTargetsTheNode(t *testing.T) {
 	store := newReadinessNodeStore()
 	erasures := &readinessEndpointErasures{}
+	models := &readinessModelErasures{}
 	aliases := stubAliasLister{targets: map[string]string{}}
 	svc, err := NewNodeService(NodeServiceDeps{
 		Store: store, Index: readinessProviderIndex{entries: []registry.Provider{{ID: "openai"}}},
-		Endpoints: erasures, Aliases: aliases,
+		Endpoints: erasures, Models: models, Aliases: aliases,
 	})
 	if err != nil {
 		t.Fatalf("NewNodeService() error = %v", err)
@@ -82,6 +83,9 @@ func TestNodeService_DeleteRefusesWhileAnAliasTargetsTheNode(t *testing.T) {
 	}
 	if len(erasures.providers) != 1 || erasures.providers[0] != node.ID() {
 		t.Fatalf("connections erased for %v, want exactly the deleted node", erasures.providers)
+	}
+	if len(models.providers) != 1 || models.providers[0] != node.ID() {
+		t.Fatalf("model rows erased for %v, want exactly the deleted node", models.providers)
 	}
 }
 

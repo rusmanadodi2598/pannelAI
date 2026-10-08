@@ -1,10 +1,10 @@
 <script lang="ts">
 	// The confirmation that deletes a custom provider node (docs/SPEC-UI/001-SPEC-UI.md §6.3).
 	//
-	// The sentence about connections is the whole reason this is a component of its own: the action destroys
-	// stored credentials, so what it takes has to be stated before the button is pressed rather than after the
-	// answer arrives. `connections` is `null` when that count could not be read, and the number is then
-	// dropped instead of guessed.
+	// What the delete takes is the whole reason this is a component of its own: the action destroys stored
+	// credentials and the operator's model rows, so it has to be stated before the button is pressed rather
+	// than after the answer arrives. `connections` is `null` when that count could not be read, and the number
+	// is then dropped instead of guessed.
 	//
 	// `conflict` separates the refusals the gateway means from any other failure. Only a CONFLICT says
 	// something still points at this node, a combo member or an alias target, and the panel does not
@@ -37,14 +37,17 @@
 		oncancel: () => void;
 	} = $props();
 
+	// Every branch states something true. The model clause carries no number, so it holds for a provider that
+	// declared none, and the zero branch drops the connection count rather than the warning: a node with no
+	// connection can still have model rows, and those go too.
 	const cascade = $derived(
 		connections === null
-			? 'Its stored connections go with it, keys included.'
-			: connections === 1
-				? 'Its 1 stored connection goes with it, keys included.'
-				: connections > 1
-					? `Its ${connections} stored connections go with it, keys included.`
-					: null
+			? 'Its stored connections go with it, keys and custom models included.'
+			: connections === 0
+				? 'Its custom models go with it.'
+				: connections === 1
+					? 'Its 1 stored connection goes with it, keys and custom models included.'
+					: `Its ${connections} stored connections go with it, keys and custom models included.`
 	);
 </script>
 
@@ -54,9 +57,7 @@
 		that prefix stop resolving.
 	</p>
 
-	{#if cascade}
-		<p class="mt-3">{cascade}</p>
-	{/if}
+	<p class="mt-3">{cascade}</p>
 
 	{#if error}
 		{#if conflict}

@@ -3,7 +3,7 @@
 // @file      internal/service/provider_node.go
 // @for       The custom provider node lifecycle: create, list, inspect, patch, delete, and connectivity test (SPEC-API-001 §7.4).
 // @uses      internal/domain, internal/repository, context, strings, time.
-// @reason    §7.4 lets an operator define their own OpenAI-compatible or Anthropic-compatible base URL, and a node's prefix becomes a model-string namespace. That makes two rules the service owns: the prefix must not collide with a registry identifier or alias, and a delete has to take the node's endpoints with it while refusing a node a combo still names, both of which need the registry, the endpoints table and the combo table, not just the node row (AGENTS.md §1.5 keeps that orchestration here).
+// @reason    §7.4 lets an operator define their own OpenAI-compatible or Anthropic-compatible base URL, and a node's prefix becomes a model-string namespace. That gives the service two rules the node row itself cannot hold: a prefix must not collide with a registry identifier or alias, and a delete has to take the node's endpoints and model rows with it while refusing a node a combo or an alias still names. Both need the registry, the endpoints table, the model catalog, the combo table and the alias set, not just the node row (AGENTS.md §1.5 keeps that orchestration here).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -24,6 +24,7 @@ type NodeService struct {
 	store     repository.NodeRepository
 	index     ProviderIndex
 	endpoints EndpointEraser
+	models    ModelEraser
 	combos    ComboLister
 	aliases   AliasLister
 	prober    NodeProber
@@ -39,6 +40,14 @@ type EndpointEraser interface {
 	DeleteByProvider(ctx context.Context, providerID string) error
 }
 
+// ModelEraser removes the model rows stored under a provider id, custom and disabled
+// alike. They key on the provider rather than reference it, so no database cascade
+// clears them when the node goes, and without this every delete of a node that had
+// declared models left rows nothing can read.
+type ModelEraser interface {
+	DeleteForProvider(ctx context.Context, providerID string) error
+}
+
 // NodeServiceDeps holds the collaborators the service needs. Prober may be nil: a
 // deployment without one still serves node CRUD. Combos and Aliases may be nil: a
 // deployment without those tables skips the reference checks they stand for.
@@ -46,6 +55,7 @@ type NodeServiceDeps struct {
 	Store     repository.NodeRepository
 	Index     ProviderIndex
 	Endpoints EndpointEraser
+	Models    ModelEraser
 	Combos    ComboLister
 	Aliases   AliasLister
 	Prober    NodeProber
@@ -62,10 +72,14 @@ func NewNodeService(deps NodeServiceDeps) (*NodeService, error) {
 	if deps.Endpoints == nil {
 		return nil, domain.NewValidationError("endpoint eraser is required")
 	}
+	if deps.Models == nil {
+		return nil, domain.NewValidationError("model eraser is required")
+	}
 	return &NodeService{
 		store:     deps.Store,
 		index:     deps.Index,
 		endpoints: deps.Endpoints,
+		models:    deps.Models,
 		combos:    deps.Combos,
 		aliases:   deps.Aliases,
 		prober:    deps.Prober,
@@ -183,12 +197,13 @@ func (s *NodeService) Update(ctx context.Context, id string, patch NodePatch) (d
 // Delete removes a node together with the endpoints that reference it, because an
 // endpoint routed by a base URL that no longer exists cannot answer anything and
 // cannot be moved: `provider_id` is not writable on an endpoint. The stored keys go
-// with their endpoints through the cascade the schema declares. A combo naming the
-// node, or an alias targeting one of its models, is refused instead (CONFLICT, naming
-// the referrer), because silently dropping either would change routing the operator
+// with their endpoints through the cascade the schema declares, and the provider's own
+// model rows go with it because they key on the id rather than reference it. A combo
+// naming the node, or an alias targeting one of its models, is refused instead (CONFLICT,
+// naming the referrer), because silently dropping either would change routing the operator
 // did not ask about, and both would keep answering about a model nobody named. The
 // reference is by provider id string rather than by foreign key (a built-in provider
-// has no node row at all), so the erase and both guards have to run here rather than
+// has no node row at all), so the erases and both guards have to run here rather than
 // be declared in the schema.
 func (s *NodeService) Delete(ctx context.Context, id string) error {
 	node, err := s.store.GetByID(ctx, id)
@@ -202,6 +217,9 @@ func (s *NodeService) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	if err := s.endpoints.DeleteByProvider(ctx, node.ID()); err != nil {
+		return err
+	}
+	if err := s.models.DeleteForProvider(ctx, node.ID()); err != nil {
 		return err
 	}
 	if err := s.store.Delete(ctx, id); err != nil {

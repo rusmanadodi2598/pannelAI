@@ -38,6 +38,7 @@ func TestNodeService_MutationsInvalidateTheOverlayCache(t *testing.T) {
 	}}
 	svc, err := NewNodeService(NodeServiceDeps{
 		Store: store, Index: index, Endpoints: &readinessEndpointErasures{},
+		Models: &readinessModelErasures{},
 	})
 	if err != nil {
 		t.Fatalf("NewNodeService() error = %v", err)

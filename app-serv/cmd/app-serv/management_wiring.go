@@ -103,7 +103,7 @@ func buildManagement(
 	}
 
 	nodeSvc, err := service.NewNodeService(service.NodeServiceDeps{
-		Store: nodeRepo, Index: runtimeIndex, Endpoints: endpointRepo,
+		Store: nodeRepo, Index: runtimeIndex, Endpoints: endpointRepo, Models: catalogRepo,
 		Combos: comboRepo, Aliases: catalogSvc, Prober: prober,
 	})
 	if err != nil {
