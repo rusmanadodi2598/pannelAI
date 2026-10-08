@@ -315,8 +315,9 @@ absent.
   state and a latency rather than an HTTP failure. Delete asks first and states what the confirmation is
   about to take: the node's connections and the keys saved on them, with the count read when the dialog
   opens rather than reused from the page's provider total, which no connection write below refreshes, and
-  with the number dropped when that read fails. A `CONFLICT` answer (a combo still names the node) is
-  rendered as the gateway's own sentence, with the dialog still open and the membership screen linked from
+  with the number dropped when that read fails. A `CONFLICT` answer (a combo names the node, or an alias
+  targets one of its models) is rendered as the gateway's own sentence, with the dialog still open and the
+  screen where either is edited linked from
   it; a deleted node returns to the registry list.
 - **Model catalog** (SPEC-API §7.6): searchable list with capability filters (`vision`, `tools`), a
   "suggested" toggle, and per-model enable or disable state. Enable and disable write through

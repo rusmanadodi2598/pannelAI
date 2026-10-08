@@ -6,9 +6,10 @@
 	// answer arrives. `connections` is `null` when that count could not be read, and the number is then
 	// dropped instead of guessed.
 	//
-	// `conflict` separates the one refusal the gateway means from any other failure. Only a CONFLICT says a
-	// combo still names this node, and the panel does not paraphrase the reason: the gateway's sentence is
-	// rendered, with the screen where membership is edited beside it.
+	// `conflict` separates the refusals the gateway means from any other failure. Only a CONFLICT says
+	// something still points at this node, a combo member or an alias target, and the panel does not
+	// paraphrase the reason: the gateway's sentence is rendered, with the screen where either is edited
+	// beside it.
 	import Modal from '$lib/components/Modal.svelte';
 	import { resolve } from '$app/paths';
 
@@ -29,7 +30,7 @@
 		/** The connections this delete takes with it, or `null` when that could not be read. */
 		connections: number | null;
 		error: string | null;
-		/** The failure was the API's CONFLICT: a combo still names this node as a member. */
+		/** The failure was the API's CONFLICT: a combo or an alias still points at this node. */
 		conflict: boolean;
 		deleting: boolean;
 		onconfirm: () => void;
@@ -61,7 +62,7 @@
 		{#if conflict}
 			<p class="mt-3 text-[var(--color-danger)]" role="alert">
 				Not deleted: {error}
-				<a href={resolve('/combos')} class="underline">Combos</a> is where that membership is edited.
+				<a href={resolve('/combos')} class="underline">Combos</a> is where that member or alias is edited.
 			</p>
 		{:else}
 			<p class="mt-3 text-[var(--color-danger)]" role="alert">

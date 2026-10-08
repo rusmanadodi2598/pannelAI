@@ -80,8 +80,8 @@ export function updateProviderNode(
  * Removes a node and the endpoints that reference it, whose stored keys go with them. The route answers
  * 204 with no body.
  *
- * Refused as CONFLICT while a combo still names the node: a member that outlives its provider is attempted
- * on every request and answers about a model the client never named.
+ * Refused as CONFLICT while a combo names the node or an alias targets one of its models: a reference that
+ * outlives its provider is attempted on every request and answers about a model the client never named.
  */
 export function deleteProviderNode(id: string): Promise<ApiResult<EmptyResponse>> {
 	return apiRequest<void, EmptyResponse>({

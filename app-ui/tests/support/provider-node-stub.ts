@@ -5,10 +5,11 @@
 // about state: the panel re-reads the set after a write (§8.6.3), and a stub that answered the same
 // document no matter what was sent would let a screen that never re-reads pass.
 //
-// Two refusals the gateway makes are expressible rather than assumed, because both are answers the panel
-// has to render rather than predict: a prefix another provider already uses (CONFLICT), and a delete while
-// a combo still names the node (CONFLICT, naming the combo). The probe's answer is a state and a latency,
-// never an HTTP failure, which is what the route does with a credential it refuses.
+// Three refusals the gateway makes are expressible rather than assumed, because each is an answer the panel
+// has to render rather than predict: a prefix another provider already uses (CONFLICT on create), and a
+// delete refused while a combo still names the node or an alias still targets it (CONFLICT, naming the
+// referrer). The probe's answer is a state and a latency rather than an HTTP failure, which is what the
+// route does with a credential it refuses.
 //
 // The delete confirmation reads how many connections the node holds, so the label-only endpoint route is
 // answered here too: `connections` states that count per provider id, and a stub that left the route out
@@ -45,6 +46,8 @@ export type NodeStub = {
 	takenPrefixes: string[];
 	/** Node ids whose delete is refused because a combo still names them. */
 	comboReferenced: string[];
+	/** Node ids whose delete is refused because an alias still targets them. */
+	aliasReferenced: string[];
 	/** How many connections each provider id holds, which the delete confirmation states. */
 	connections: Record<string, number>;
 	/** When true the count read fails, which is the state the confirmation renders without a number. */
@@ -65,6 +68,7 @@ export function stubProviderNodes(overrides: Partial<NodeStub> = {}): NodeStub {
 		writeStatus: 200,
 		takenPrefixes: [],
 		comboReferenced: [],
+		aliasReferenced: [],
 		connections: {},
 		connectionsUnknown: false,
 		testState: 'ok',
@@ -175,6 +179,9 @@ export function stubProviderNodes(overrides: Partial<NodeStub> = {}): NodeStub {
 				}
 				if (stub.comboReferenced.includes(id)) {
 					return refusal('CONFLICT', 'combo "prod fallback" still references this provider', 409);
+				}
+				if (stub.aliasReferenced.includes(id)) {
+					return refusal('CONFLICT', 'alias prod-gpt still targets this provider', 409);
 				}
 				if (!row) return refusal('NOT_FOUND', 'That provider no longer exists.', 404);
 

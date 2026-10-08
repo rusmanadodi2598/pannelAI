@@ -15,7 +15,8 @@
 	// Edit, Test, and Delete live here rather than in the list's rows, which is the reference's shape: the
 	// list is for finding a node, and this is where its state changes. Delete confirms first because it
 	// cannot be undone and it takes the node's connections with it, keys included; the API still refuses a
-	// node a combo names, and that one answer is the only reason a confirmed delete comes back unchanged.
+	// node a combo names or an alias targets, and those answers are the only reason a confirmed delete comes
+	// back unchanged.
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
@@ -71,7 +72,7 @@
 	let confirming = $state(false);
 	let deleting = $state(false);
 	let deleteError = $state<string | null>(null);
-	/** The delete failure was the API's CONFLICT: a combo still names this node as a member. */
+	/** The delete failure was the API's CONFLICT: a combo or an alias still points at this node. */
 	let conflict = $state(false);
 	// The connections a confirmed delete takes with it; `null` is the count not being known.
 	let connections = $state<number | null>(null);

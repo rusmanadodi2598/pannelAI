@@ -146,7 +146,7 @@ describe('deleting a custom provider', () => {
 		);
 	});
 
-	it('renders the combo refusal as the gateway stated it, and points at where membership is edited', async () => {
+	it('renders the combo refusal as the gateway stated it, and points at where it is edited', async () => {
 		const stub = stubProviderNodes({
 			nodes: [nodeRow()],
 			comboReferenced: ['openai-compatible-01J']
@@ -161,8 +161,29 @@ describe('deleting a custom provider', () => {
 		const alert = squashed(screen.getByRole('alert'));
 		expect(alert).toContain('Not deleted');
 		expect(alert).toContain('combo "prod fallback" still references this provider');
-		expect(screen.getByRole('link', { name: 'Combos' })).toBeTruthy();
+		expect(alert).toContain('Combos is where that member or alias is edited');
 		expect(alert).not.toContain('move');
+		expect(goto).not.toHaveBeenCalled();
+	});
+
+	// Both blockers are refused by the same code and edited on the same screen, so the sentence that points
+	// at it must not name one of them.
+	it('renders the alias refusal as the gateway stated it', async () => {
+		const stub = stubProviderNodes({
+			nodes: [nodeRow()],
+			aliasReferenced: ['openai-compatible-01J']
+		});
+		renderCard(stub);
+		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
+
+		await screen.getByRole('button', { name: 'Delete' }).click();
+		await screen.getByRole('button', { name: 'Delete the provider' }).click();
+
+		await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+		const alert = squashed(screen.getByRole('alert'));
+		expect(alert).toContain('Not deleted');
+		expect(alert).toContain('alias prod-gpt still targets this provider');
+		expect(screen.getByRole('link', { name: 'Combos' })).toBeTruthy();
 		expect(goto).not.toHaveBeenCalled();
 	});
 });

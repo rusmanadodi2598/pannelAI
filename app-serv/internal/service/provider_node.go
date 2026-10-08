@@ -25,6 +25,7 @@ type NodeService struct {
 	index     ProviderIndex
 	endpoints EndpointEraser
 	combos    ComboLister
+	aliases   AliasLister
 	prober    NodeProber
 	clock     func() time.Time
 }
@@ -39,13 +40,14 @@ type EndpointEraser interface {
 }
 
 // NodeServiceDeps holds the collaborators the service needs. Prober may be nil: a
-// deployment without one still serves node CRUD. Combos may be nil: a
-// deployment without a combo table skips the member check.
+// deployment without one still serves node CRUD. Combos and Aliases may be nil: a
+// deployment without those tables skips the reference checks they stand for.
 type NodeServiceDeps struct {
 	Store     repository.NodeRepository
 	Index     ProviderIndex
 	Endpoints EndpointEraser
 	Combos    ComboLister
+	Aliases   AliasLister
 	Prober    NodeProber
 }
 
@@ -65,6 +67,7 @@ func NewNodeService(deps NodeServiceDeps) (*NodeService, error) {
 		index:     deps.Index,
 		endpoints: deps.Endpoints,
 		combos:    deps.Combos,
+		aliases:   deps.Aliases,
 		prober:    deps.Prober,
 		clock:     time.Now,
 	}, nil
@@ -180,18 +183,22 @@ func (s *NodeService) Update(ctx context.Context, id string, patch NodePatch) (d
 // Delete removes a node together with the endpoints that reference it, because an
 // endpoint routed by a base URL that no longer exists cannot answer anything and
 // cannot be moved: `provider_id` is not writable on an endpoint. The stored keys go
-// with their endpoints through the cascade the schema declares. A combo that still
-// names the node is refused instead (CONFLICT, naming the combo), since silently
-// dropping a member would change routing the operator did not ask about. The
+// with their endpoints through the cascade the schema declares. A combo naming the
+// node, or an alias targeting one of its models, is refused instead (CONFLICT, naming
+// the referrer), because silently dropping either would change routing the operator
+// did not ask about, and both would keep answering about a model nobody named. The
 // reference is by provider id string rather than by foreign key (a built-in provider
-// has no node row at all), so both the erase and the guard have to run here rather
-// than be declared in the schema.
+// has no node row at all), so the erase and both guards have to run here rather than
+// be declared in the schema.
 func (s *NodeService) Delete(ctx context.Context, id string) error {
 	node, err := s.store.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
 	if err := s.rejectComboReference(ctx, node.ID(), node.Prefix()); err != nil {
+		return err
+	}
+	if err := s.rejectAliasReference(ctx, node.ID(), node.Prefix()); err != nil {
 		return err
 	}
 	if err := s.endpoints.DeleteByProvider(ctx, node.ID()); err != nil {
