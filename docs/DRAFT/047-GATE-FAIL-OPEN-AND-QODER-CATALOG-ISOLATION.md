@@ -22,12 +22,14 @@ Pass ini memverifikasi 17 klaim, membatalkan 4 di antaranya dengan bukti, dan me
 Satu tema menghubungkan temuan yang paling serius di daftar ini: **sebuah pemeriksaan yang tidak membaca apa pun
 melaporkan hasil yang sama dengan pemeriksaan yang membaca segalanya dan menemukan tidak ada.**
 
-Gerbang `changed_files` memang mengembalikan galat ketika `GATES_BASE_REF` tidak resolve (`scrypts/lib/common.sh:146`),
+Gerbang `changed_files` memang mengembalikan galat ketika `GATES_BASE_REF` tidak resolve (di `scrypts/lib/common.sh`),
 dan menulis sebabnya ke stderr. Dua konsumennya memanggilnya di dalam process substitution:
 
 ```bash
-scrypts/gates/go-lint.sh:63   done < <(changed_files)
-scrypts/gates/antislop.sh:206 comm -12 <(text_paths | sort -u) <(changed_files | sort -u)
+# bentuk sebelum perbaikan, di dalam check_changed_line_limits (scrypts/gates/go-lint.sh)
+done < <(changed_files)
+# dan di dalam changed_text_paths (scrypts/gates/antislop.sh)
+comm -12 <(text_paths | sort -u) <(changed_files | sort -u)
 ```
 
 Bash tidak mewarisi exit code dari process substitution, dan `set -euo pipefail` tidak menjangkaunya karena perintah
@@ -56,12 +58,14 @@ PASS antislop gate
 ```
 
 Yang membuat yang kedua lebih buruk dari sekadar lolos: `scope` menjadi kosong, dan cabang kosong itu mencetak
-`no changed text files; set GATES_BASE_REF to check a diff range` (`antislop.sh:326`). Padahal `GATES_BASE_REF`
-sudah di-set; yang benar adalah bahwa nilainya tidak bisa dibaca. Pesan itu mengarahkan pembaca ke tempat yang salah,
+`no changed text files; set GATES_BASE_REF to check a diff range` (cabang kosong `report()` di
+`scrypts/gates/antislop.sh`). Padahal `GATES_BASE_REF` sudah di-set; yang benar adalah bahwa nilainya tidak bisa
+dibaca. Pesan itu mengarahkan pembaca ke tempat yang salah,
 persis seperti "move or move its endpoints first" pada 046 F1.
 
 CI sudah menutup satu kasus serupa, dan itu menunjukkan bahwa bentuk kegagalannya sudah pernah dipikirkan sekali:
-`.github/workflows/gates.yml:108-113` menolak push yang tidak punya revisi di belakangnya dengan `exit 1`. Yang
+langkah "Resolve the revision the gates diff against" di `gates.yml` menolak push yang tidak punya revisi di
+belakangnya dengan `exit 1`. Yang
 tersisa adalah sisi yang sama, di tempat lain.
 
 ## Keputusan desain
@@ -72,14 +76,14 @@ skip. Ini mengikuti aturan yang sudah ditulis `scrypts/lib/gate-scope.sh:9-19` u
 pass after inspecting nothing is the failure this file exists to avoid." Routing sudah menerapkannya; pemeriksaan
 berbasis berkas belum.
 
-**Perbaikan F2 tidak boleh menyentuh statement bersama.** `updateEndpoint` dipakai tiga jalur (`endpoint.go:140`,
-`endpoint.go:151`, `endpoint_oauth_batch.go:52`), dan untuk `ImportOAuthBatch` serta `Update` menulis baris penuh
-memang benar: import memiliki seluruh bentuk baris itu. Yang salah hanya jalur yang memuat agregat lalu menulisnya
-kembali. Karena itu kolom token mendapat statement sendiri, dan `loaded != nil` memilih statement, bukan statement
-tunggal yang ikut berubah untuk semua pemanggil.
+**Perbaikan F2 tidak boleh menyentuh statement bersama.** `updateEndpoint` dipakai tiga jalur (`Update` dan
+`UpdateIfUnchanged` di `endpoint.go`, serta `ImportOAuthBatch` di `endpoint_oauth_batch.go`), dan untuk
+`ImportOAuthBatch` serta `Update` menulis baris penuh memang benar: import memiliki seluruh bentuk baris itu. Yang
+salah hanya jalur yang memuat agregat lalu menulisnya kembali. Karena itu kolom token mendapat statement sendiri, dan
+`loaded != nil` memilih statement, bukan statement tunggal yang ikut berubah untuk semua pemanggil.
 
-**Key cache per akun memakai identitas, bukan secret.** `Credential.EndpointID()` sudah ada
-(`provider/plugin_credential.go:143`) dan merupakan pengenal stabil. Memasukkan materi credential sebagai key map
+**Key cache per akun memakai identitas, bukan secret.** `Credential.EndpointID()` sudah ada dan merupakan pengenal
+stabil. Memasukkan materi credential sebagai key map
 menyimpan secret di struktur data yang hidup satu jam demi sebuah nilai yang sudah tersedia lewat kolomnya sendiri.
 Repo ini sudah memutuskan hal yang sama di tempat lain: `qoder_identity.go:44` men-key cache identity dengan digest,
 bukan dengan bearer mentah.
@@ -91,8 +95,9 @@ perubahan yang diusulkan akan merusak sesuatu yang sengaja.
 
 ### F1 (HIGH) Benar: `changed_files` gagal, gerbang melaporkan PASS
 
-`scrypts/lib/common.sh:128-158` mengembalikan 1 untuk base ref yang tidak resolve. `go-lint.sh:63` dan
-`antislop.sh:206` menelannya lewat process substitution. Akibat terukur ada di Diagnosa: `go-lint.sh` exit 0,
+`changed_files` di `scrypts/lib/common.sh` mengembalikan 1 untuk base ref yang tidak resolve.
+`check_changed_line_limits` di `go-lint.sh` dan `changed_text_paths` di `antislop.sh` menelannya lewat process
+substitution. Akibat terukur ada di Diagnosa: `go-lint.sh` exit 0,
 `antislop.sh` mencetak `PASS antislop gate`.
 
 Diperbaiki dengan capture output ke variabel, periksa exit code, lalu fail. Satu helper di `common.sh` lebih baik dari
@@ -104,35 +109,35 @@ tetap hijau.
 
 ### F2 (HIGH) Benar: refresh OAuth menulis 16 kolom, CAS hanya menjaga dua ciphertext
 
-`oauth_flow_refresh.go:178-180` memanggil `SetOAuth` lalu `store.UpdateIfUnchanged`. Jalur itu jatuh ke
-`updateEndpoint` (`endpoint_oauth_batch.go:72`) yang SET-nya (`:85-103`) mencakup `label`, `priority`, `status`,
+`refreshEndpoint` memanggil `SetOAuth` lalu `store.UpdateIfUnchanged`. Jalur itu jatuh ke `updateEndpoint`
+(`endpoint_oauth_batch.go`) yang SET-nya mencakup `label`, `priority`, `status`,
 `test_status`, `rate_limited_until`, `global_priority`, `default_model`, `consecutive_use_count`, `last_error`,
-`last_error_at`, `error_code`, `proxy_pool_id`. Guard-nya (`:116-119`) hanya membandingkan
+`last_error_at`, `error_code`, `proxy_pool_id`. Guard di `updateEndpoint` hanya membandingkan
 `oauth->>'access_token_encrypted'` dan `oauth->>'refresh_token_encrypted'`.
 
-Jadi selang antara `listOAuthEndpoints` (`oauth_flow_refresh.go:111`) dan tulisannya: operator mengubah `status` atau
+Jadi selang antara `listOAuthEndpoints` dan tulisannya: operator mengubah `status` atau
 `priority`, oauth tidak berubah, CAS lolos, dan nilai basi dari agregat yang dimuat sebelum perubahan itu tertimpa.
 Lost update nyata, dan persis pada kolom yang keputusan review sebut.
 
 Perilaku yang dipertahankan: `updated_at` tetap ditulis, dan dua ciphertext pembanding tetap menjaga rotasi yang
-berlomba, karena alasan itu ada di komentar `endpoint.go:143-147`.
+berlomba, karena alasan itu ada di komentar `UpdateIfUnchanged`.
 
 ### F3 (HIGH) Benar: katalog Qoder tidak terisolasi per akun, dan error satu akun di-delivery ke akun lain
 
 Satu connector dibuat per registry entry (`qoder.go:60`, `catalog: newQoderCatalog()`), dan key lookup adalah
-`base + "|" + modelKey` (`qoder_catalog_lookup.go:70`). `base` dari `inferenceBase` (`qoder_catalog.go:159-175`) hanya
-bisa dua nilai: origin device atau origin job. Tidak ada identitas akun di key mana pun.
+`base + "|" + modelKey`. `base` dari `inferenceBase` hanya bisa dua nilai: origin device atau origin job. Tidak ada
+identitas akun di key mana pun.
 
 Tiga konsekuensi, semuanya nyata di kode hari ini:
 
 1. `entries` menyajikan katalog yang dipelajari atas nama akun A ke akun B. Ini bertentangan dengan baris `@for`
-   file itu sendiri (`qoder_catalog.go:4`): "the model configuration Qoder publishes to an authenticated account".
-2. `inflight` membuat satu fetch per host. Waiter yang masuk lewat cabang non-leader (`qoder_catalog_lookup.go:82-91`)
-   mengembalikan `fetch.err` milik leader apa adanya, jadi 401 akun A menjadi galat akun B.
-3. `misses` menolak nama model selama 60 detik (`:75-77`, `qoderCatalogMissTTL`) berdasarkan jawaban vendor kepada akun
-   lain, jadi model yang sebenarnya ada di akun B tetap ditolak tanpa pernah ditanyakan.
+   file itu sendiri: "the model configuration Qoder publishes to an authenticated account".
+2. `inflight` membuat satu fetch per host. Waiter yang masuk lewat cabang non-leader `beginFetch` mengembalikan
+   `fetch.err` milik leader apa adanya, jadi 401 akun A menjadi galat akun B.
+3. `misses` menolak nama model selama `qoderCatalogMissTTL`, 60 detik, berdasarkan jawaban vendor kepada akun lain,
+   jadi model yang sebenarnya ada di akun B tetap ditolak tanpa pernah ditanyakan.
 
-Komentar `qoder_catalog.go:42-44` menyatakan "the widest scope that is still correct" untuk key host-plus-model.
+Komentar di atas `qoderCatalogEntry` menyatakan "the widest scope that is still correct" untuk key host-plus-model.
 Klaim itulah yang salah, dan inkonsistensi internalnya yang menjadi bukti terkuatnya: cache identity di file
 sebelahnya sudah di-key per credential.
 
@@ -140,25 +145,25 @@ Perbaikan mencakup ketiga map dengan key yang sama, plus galat yang tidak boleh 
 
 ### F4 (MEDIUM) Benar: `cite_warn` adalah counter, dibandingkan dengan `= "1"`
 
-`antislop.sh:305` menaikkan `cite_warn` per berkas; `:313` men-set `cite_fail` ke 1 (boolean, bukan counter). Baris
-`:320` membandingkan counter itu dengan `= "1"`. Logikanya dijalankan sendiri:
+`report()` di `antislop.sh` menaikkan `cite_warn` per berkas dan men-set `cite_fail` ke 1 (boolean, bukan counter),
+lalu membandingkan `cite_warn` dengan `= "1"`. Logikanya dijalankan sendiri:
 
 ```
 cite_warn=1 -> gate_skip: warnings require review
 cite_warn=3 -> gate_pass "scratch-work citations (changed files)"     <-- salah
 ```
 
-Tiga berkas berubah yang masing-masing membawa sitasi terbaca sebagai bersih. `cite_fail` di `:318` benar adanya dan
-tidak disentuh, karena nilainya hanya 0 dan 1.
+Tiga berkas berubah yang masing-masing membawa sitasi terbaca sebagai bersih. `cite_fail` pada cabang sebelumnya benar
+adanya dan tidak disentuh, karena nilainya hanya 0 dan 1.
 
 ### F5 (MEDIUM) Benar: tepat dua test integrasi `PageAccountsByProvider` hilang
 
 Keduanya dihapus `ab1a4c4` saat file ditulis ulang:
 `TestQuotaRepository_PageAccountsIncludesAnAccountWithNoWindows` dan
-`TestQuotaRepository_PageAccountsIsCountPlusPageOnly`. Versi hari ini
-(`quota_paging_integration_test.go:32`) hanya menyisakan `TestQuotaRepository_PageWindowsByProvider_GroupsAndCounts`.
-Yang tersisa untuk fungsi itu hanyalah fake: `handler/quota_account_stub_test.go:24`, `service/quota_test.go:169`,
-`quota_flush_fixture_test.go:128`. SQL-nya tidak pernah dijalankan ke server nyata.
+`TestQuotaRepository_PageAccountsIsCountPlusPageOnly`. Versi hari ini hanya menyisakan
+`TestQuotaRepository_PageWindowsByProvider_GroupsAndCounts` di `quota_paging_integration_test.go`. Yang tersisa untuk
+fungsi itu hanyalah tiga stub `PageAccountsByProvider`: di `handler/quota_account_stub_test.go`,
+`service/quota_test.go`, dan `quota_flush_fixture_test.go`. SQL-nya tidak pernah dijalankan ke server nyata.
 
 Ini port, bukan revert. Header versi lama melanggar §2.7 (nilai `@reason` lanjut ke baris ber-indent) dan §2.1
 (mengandung satu em dash), jadi badan testnya saja yang pindah ke header yang sudah patuh.
@@ -169,12 +174,12 @@ Harness yang dibutuhkan masih hidup, dan itu membuat F5 murah: `newPublishedRepo
 
 ### F6 (MEDIUM) Benar: `LIMIT 1000` memotong tanpa sinyal ke klien
 
-`quotaMaxRowsPerPage = 1000` (`quota_paging.go:25`) dipakai sebagai `LIMIT $3::int` (`:121`). `total` yang dikembalikan
-adalah jumlah grup provider (`:43-46`), jadi tidak menggambarkan pemotongan baris sama sekali. Kode itu sendiri
-mengakui di `:66-68`: "A group beyond the ceiling is served in key order and truncated".
+`quotaMaxRowsPerPage = 1000` di `quota_paging.go` dipakai sebagai `LIMIT $3::int`. `total` yang dikembalikan adalah
+jumlah grup provider, jadi tidak menggambarkan pemotongan baris sama sekali. Kode itu sendiri mengakuinya: "A group
+beyond the ceiling is served in key order and truncated".
 
 Tidak ada tempat untuk membaca pemotongan itu: `schema.Page` hanya `page`, `per_page`, `total` (`dto.go:37-41`), dan
-`handler/quota.go:49` membuang total akun (`accounts, _, err :=`). Nuansa yang harus ikut tercatat: ini ceiling baris
+`QuotaHandler.List` membuang total akun (`accounts, _, err :=`). Nuansa yang harus ikut tercatat: ini ceiling baris
 per halaman, bukan page size, karena paging-nya per grup.
 
 ### F7 (MEDIUM) Benar sebagian: alasan sebuah suppression tidak pernah benar-benar dituntut
@@ -217,12 +222,12 @@ Terkonfirmasi persis seperti klaim, dengan nilai yang sudah diambil dari upstrea
 
 | Sekarang | Di-pin ke |
 | --- | --- |
-| `actions/checkout@v4` (`gates.yml:70`, `gates-frontend.yml:55`) | `11d5960a326750d5838078e36cf38b85af677262` (v4.4.0) |
-| `actions/setup-go@v5` (`gates.yml:116`) | `40f1582b2485089dde7abd97c1529aa768e1baff` (v5.6.0) |
-| `staticcheck@latest` (`gates.yml:124`) | `v0.8.1` |
-| `golangci-lint/v2@latest` (`gates.yml:125`) | `v2.9.0` |
-| gitleaks 8.30.1 tar.gz (`gates.yml:136-138`) | `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` |
-| bun 1.3.0 baseline zip (`gates-frontend.yml:62-64`) | `77336611905b9e876e52924f8b1a57e72669cf10541dc1e11269d2c9371f9e45` |
+| `actions/checkout@v4` (langkah checkout di `gates.yml` dan `gates-frontend.yml`) | `11d5960a326750d5838078e36cf38b85af677262` (v4.4.0) |
+| `actions/setup-go@v5` (langkah setup Go di `gates.yml`) | `40f1582b2485089dde7abd97c1529aa768e1baff` (v5.6.0) |
+| `staticcheck@latest` (langkah `Install the linters AGENTS.md §1.4 names`) | `v0.8.1` |
+| `golangci-lint/v2@latest` (langkah yang sama) | `v2.9.0` |
+| gitleaks 8.30.1 tar.gz (langkah `Install gitleaks`) | `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` |
+| bun 1.3.0 baseline zip (langkah `Install the pinned Bun`) | `77336611905b9e876e52924f8b1a57e72669cf10541dc1e11269d2c9371f9e45` |
 
 Kedua SHA action diverifikasi sebagai commit nyata lewat `GET /repos/{repo}/git/commits/{sha}`, dan sha teratas pada
 respons cocok dengan yang diminta. Kedua file checksum upstream tersedia (gitleaks `gitleaks_8.30.1_checksums.txt`,
@@ -234,12 +239,12 @@ hari ini, supaya `@latest` diganti oleh nilai yang sama dan hasil gerbang tidak 
 dibungkam. Dan `.golangci.yml` hari ini memakai `version: "2"` sebagai schema, bukan sebagai pin biner; konfigurasi
 itu tidak berubah oleh F8.
 
-`gates.yml:130-135` sudah menuliskan alasan yang bagus untuk mem-pin versi gitleaks (8.24.3 vs 8.30.1 menandai fixture
-yang berbeda). F8 menambah integritas di atas pin yang sudah bermakna itu, tidak menggantinya.
+Langkah `Install gitleaks` di `gates.yml` sudah menuliskan alasan yang bagus untuk mem-pin versi gitleaks (8.24.3 vs
+8.30.1 menandai fixture yang berbeda). F8 menambah integritas di atas pin yang sudah bermakna itu, tidak menggantinya.
 
 ### F9 (LOW) Benar, dan naiknya kategori: `originOf` panic pada URL yang gagal di-parse
 
-Klaim owner menempatkannya di prioritas "bersih-bersih". Ia bukan kosmetik. `qoder_catalog.go:180-186` menulis:
+Klaim owner menempatkannya di prioritas "bersih-bersih". Ia bukan kosmetik. `originOf` menulis:
 
 ```go
 parsed, err := url.Parse(rawURL)
@@ -259,27 +264,27 @@ in="https://exa mple.com/p" parsedNil=true -> PANIC
 ```
 
 Trigger-nya `entry.Transport.BaseURL` registry yang salah tulis, bukan input attacker, jadi ini bug robustness dan
-bukan jalur eksploitasi. Yang membuatnya layak naik: `inferenceBase` dipanggil di `modelConfig:66`, sebelum
-`beginFetch`, sehingga ia berada di jalur shaping request dan `runFetch` (`:107-117`) tidak memulihkannya. AGENTS.md
+bukan jalur eksploitasi. Yang membuatnya layak naik: `inferenceBase` dipanggil di `modelConfig`, sebelum
+`beginFetch`, sehingga ia berada di jalur shaping request dan `runFetch` tidak memulihkannya. AGENTS.md
 §1.6 melarang panic yang tidak dipulihkan bertahan, dan di sini ia bisa menghentikan proses untuk alasan satu karakter
 salah ketik.
 
 ### F10 (LOW) Benar: satu akun yang konflik membatalkan seluruh batch refresh
 
-`oauth_flow_refresh.go:120-123` mengembalikan galat langsung dari dalam loop, jadi `outcome.Refreshed` dan
-`outcome.EndpointIDs` yang sudah terkumpul dibuang. Akun yang konflik adalah akun yang refresh-nya kalah balapan,
-bukan akun yang membuat batch lain tidak boleh berhasil.
+`sweepProvider`, waktu itu masih bagian dari `Refresh`, mengembalikan galat langsung dari dalam loop, jadi
+`outcome.Refreshed` dan `outcome.EndpointIDs` yang sudah terkumpul dibuang. Akun yang konflik adalah akun yang
+refresh-nya kalah balapan, bukan akun yang membuat batch lain tidak boleh berhasil.
 
 Perilaku yang harus dipertahankan: conflict tetap terlihat oleh operator sebagai hitungan yang bisa dibedakan, bukan
-diam-diam hilang, karena `MarkRefreshDeadLetter` (`:187`) sudah menjadi jalur terminal untuk kegagalan yang lain.
+diam-diam hilang, karena `MarkRefreshDeadLetter` sudah menjadi jalur terminal untuk kegagalan yang lain.
 
 ### F11 (LOW) Benar: `<!--` dibaca untuk berkas non-svelte, dan locale tidak pernah di-set
 
-`fe_body_comments` (`antislop.sh:234-245`) memproses `<!--` dan `-->` untuk semua ekstensi yang memanggilnya, yaitu
-`ts | tsx | js | mjs | svelte` (`:308`). Di `.ts` dan `.js`, `<!--` bukan konstruk komentar. Arah kesalahannya
+`fe_body_comments` di `antislop.sh` memproses `<!--` dan `-->` untuk semua ekstensi yang memanggilnya, yaitu
+`ts | tsx | js | mjs | svelte`. Di `.ts` dan `.js`, `<!--` bukan konstruk komentar. Arah kesalahannya
 false positive, bukan lolos-check, jadi ini kebersihan, bukan lubang.
 
-`LC_ALL` dan `LANG` tidak muncul di satu pun berkas `scrypts/` (digrep, nol hasil). Pemeriksaan emoji `:338-339` dan
+`LC_ALL` dan `LANG` tidak muncul di satu pun berkas `scrypts/` (digrep, nol hasil). Pemeriksaan emoji di `report()` dan
 regex byte-oriented lainnya bergantung pada bagaimana locale menafsirkan byte, sehingga hasilnya bisa berbeda antara
 mesin developer dan runner. Satu `export LC_ALL=C.UTF-8` membuat keduanya deterministik.
 
@@ -287,8 +292,8 @@ mesin developer dan runner. Satu `export LC_ALL=C.UTF-8` membuat keduanya determ
 
 Klaim owner: "`Credential` tidak punya `GoString()` dan `LogValue()` sehingga secret bisa bocor ke log."
 
-Yang benar: `String()` **sudah ada** (`plugin_credential.go:191-198`) dan me-redact lewat `redactedWhenSet`. Yang absen
-hanya `GoString()` dan `LogValue()`. Pencarian site kebocoran di kode produksi tidak menemukan apa pun: nol `%+v` dan
+Yang benar: `String()` **sudah ada** di `Credential` dan me-redact lewat `redactedWhenSet`. Yang absen hanya
+`GoString()` dan `LogValue()`. Pencarian site kebocoran di kode produksi tidak menemukan apa pun: nol `%+v` dan
 nol `%#v` ke `Credential`, nol `slog.Any` di produksi, dan enam pemanggil `Secret()`
 (`provider/default.go:117`, `qoder.go:143`, `opencode_auth.go:37`, `dataplane/media.go:179`,
 `service/systemone_target.go:59`) semuanya hanya mengisi header.
@@ -307,9 +312,9 @@ Diukur ulang terhadap `dataplane.Call` dan `dataplane.Selection` yang sebenarnya
 %v   on unexported: bocor      <-- tidak ada struct produksi yang bentuknya begini
 ```
 
-Verifikasi terakhir itu yang menentukan: `grep` atas semua field bertipe `provider.Credential` menemukan dua di
-kode produksi (`dataplane/upstream.go:42`, `dataplane/selection.go:67`), keduanya exported, dan dua sisanya
-hanya ada di test double. Jadi `%v` dan `%+v` sudah aman hari ini; yang terbuka cuma `%#v`, dan `%#v` dibentuk
+Verifikasi terakhir itu yang menentukan: `grep` atas semua field bertipe `provider.Credential` menemukan dua di kode
+produksi, field `Credential` pada `dataplane.Call` dan `dataplane.Selection`, keduanya exported, dan dua sisanya hanya
+ada di test double. Jadi `%v` dan `%+v` sudah aman hari ini; yang terbuka cuma `%#v`, dan `%#v` dibentuk
 oleh refleksi atas field, bukan oleh method milik fieldnya, sehingga `GoString()` pada `Credential` yang
 menutupnya, bukan `String()` pada `Call`.
 
@@ -322,8 +327,8 @@ tipe nyata langsung menulis plaintext; dipasang lagi, keduanya hijau.
 --- FAIL: TestCarriedCredentialStaysRedacted/%#v_on_a_Selection
 ```
 
-Komentar `selection.go:65-66` tetap ikut dikoreksi, tapi bukan karena ia salah klaim. Ia benar bahwa selection
-tidak membocorkan apa pun; yang salah adalah alasannya, "assembled for exactly one request and never stored".
+Komentar di atas field `Credential` pada `Selection` tetap ikut dikoreksi, tapi bukan karena ia salah klaim. Ia benar
+bahwa selection tidak membocorkan apa pun; yang salah adalah alasannya, "assembled for exactly one request and never stored".
 Seumur hidup pendek sebuah nilai tidak ada hubungannya dengan apa yang dicetaknya, dan pembaca berikutnya bisa
 saja menghapus method redaksi dengan percaya alasan itu. Alasannya diganti:
 `Credential` me-redact dirinya sendiri di setiap verb fmt dan di slog.
@@ -340,36 +345,36 @@ dan `redactedWhenSet` ikut pindah karena ia bagian dari concern yang sama.
 
 Klaim owner: "hentikan HTTP dan drain stream dulu, baru hentikan worker."
 
-HTTP memang di-drain: `shutdown_drain.go:64` memanggil `srv.Shutdown`, dan `main.go:127-138` tidak memasang
+HTTP memang di-drain: `serve` di `shutdown_drain.go` memanggil `srv.Shutdown`, dan `run` di `main.go` tidak memasang
 `BaseContext`, sehingga context request tidak dibatalkan oleh sinyal dan `Shutdown` menunggu connection yang masih
 hidup. Yang salah adalah dua hal lain:
 
-1. Worker tidak pernah di-join. `worker_wiring.go:99-121` men-spawn `go runSupervised(...)` tanpa WaitGroup, jadi
-   tidak ada satu pun titik yang menunggu mereka selesai.
+1. Worker tidak pernah di-join. `runWorkers` di `worker_wiring.go` men-spawn `go runSupervised(...)` tanpa WaitGroup,
+   jadi tidak ada satu pun titik yang menunggu mereka selesai.
 2. Jalur publish keluar lebih dulu dari handler yang masih berjalan. `usage_event_publish.go:123-135` melakukan
    `case <-ctx.Done(): p.drain(ctx); return`, sehingga publisher drain lalu keluar, sementara handler in-flight masih
-   merekam event selama jendela `shutdownTimeout` 15 detik (`main.go:38`). Event itu masuk ke antrian tanpa konsumen
+   merekam event selama jendela `shutdownTimeout` 15 detik. Event itu masuk ke antrian tanpa konsumen
    dan hilang di `:109-111`.
 
 Ada satu kasus yang melebihi jendela secara eksplisit: `/api/v1/usage/live` punya `usageLiveMaxLifetime = 30 *
 time.Minute` (`usage_live.go:53`). Stream sepanjang itu tidak akan pernah selesai secara wajar pada shutdown dan akan
 dipotong.
 
-Untuk quota flush, jalur normal sudah benar dan sudah didokumentasikan: `quota_flush.go:67-79` adalah ticker loop 30
+Untuk quota flush, jalur normal sudah benar dan sudah didokumentasikan: `(*QuotaFlusher).Run` adalah ticker loop 30
 detik, dan `quota_flush_policy.go:26-28` menyatakan BatchSize memang membatasi satu flush supaya backlog habis lewat
-beberapa tick. Yang satu kali jalan adalah **drain shutdown**: `shutdown_drain.go:89` memanggil `FlushOnce` sekali,
-satu batch 500, sehingga backlog lebih dari itu tertinggal di Redis sampai boot berikutnya. Loop yang benar ada di
+beberapa tick. Yang satu kali jalan adalah **drain shutdown**: `quotaDrain` memanggil `FlushOnce` sekali, satu batch
+500, sehingga backlog lebih dari itu tertinggal di Redis sampai boot berikutnya. Loop yang benar ada di
 drain shutdown, bukan di dalam `FlushOnce`.
 
 ### F14 (LOW) Benar: regex geometry longgar, dan path dihitung dari cwd
 
-`app-ui/tests/schemas/usage-topology-geometry.test.ts:53`: `expect(nodeBlock()).toMatch(/\bborder\b/)`. `-` bukan word
+Assert `border` di `usage-topology-geometry.test.ts` membaca `expect(nodeBlock()).toMatch(/\bborder\b/)`. `-` bukan word
 character, sehingga pola itu juga cocok untuk `border-[var(--color-border)]` dan varian `border-b`, padahal yang
-dipin adalah utility width polos (`BORDER_ACROSS = 2`, `:21`; kelas polos itu memang ada di
+dipin adalah utility width polos (`BORDER_ACROSS = 2`; kelas polos itu memang ada di
 `UsageTopologyDrawing.svelte:102`). Menghapus utility width sambil menahan satu kelas `border-*` membuat test tetap
 hijau, yaitu test yang tidak lagi menguji apa yang ia klaim.
 
-Path: `resolve(process.cwd(), 'src/lib/components/UsageTopologyDrawing.svelte')` (`:18`). Pola yang sama dipakai
+Path: `resolve(process.cwd(), 'src/lib/components/UsageTopologyDrawing.svelte')`. Pola yang sama dipakai
 `tests/tokens/contrast.test.ts:146`, jadi ini konvensi repo, tapi ia salah asumsi bila vitest dijalankan dari luar
 `app-ui/`.
 
@@ -377,10 +382,10 @@ Path: `resolve(process.cwd(), 'src/lib/components/UsageTopologyDrawing.svelte')`
 
 | Dokumen | Yang basi |
 | --- | --- |
-| `antislop.sh:19` | Masih menulis "Citations are a WARNING, not a failure", padahal `:308-315` sudah `gate_fail` untuk panel dan hanya Go yang warn. Banner `# ---- citations, warning only ----` di `:283` masih berdiri tepat di atas penggantinya di `:285` |
-| `panel-check.sh:22` | "format, type check, tests, build" tidak menyebut eslint (`:96-103`) dan svelte-kit sync (`:112-119`) yang keduanya dijalankan |
+| header `antislop.sh` | Masih menulis "Citations are a WARNING, not a failure", padahal cabang sitasi di `report()` sudah `gate_fail` untuk panel dan hanya Go yang warn. Banner `# ---- citations, warning only ----` masih berdiri tepat di atas penggantinya |
+| header `panel-check.sh` | "format, type check, tests, build" tidak menyebut langkah eslint dan langkah svelte-kit sync yang keduanya dijalankan |
 | `pre-push` | Daftar bernomor 1 sampai 4 tidak mencantumkan gate antislop yang dijalankan tanpa syarat (`run_gate "antislop comment rules"`), ditambahkan `f8067e0` tanpa ikut mengubah header |
-| `docs/DRAFT/045` | Baris 20 menulis "F12 butuh test" padahal `c31ae1c` menutup F12 pada hari yang sama (baris 218 dokumen itu sendiri sudah mencatatnya), dan baris 248 menulis "MEDIUM (F4-F8) dan LOW (F9-F13) tidak disentuh" padahal `6860901`, `aa95471` dan `b012205` sudah mengerjakannya |
+| `docs/DRAFT/045` | Baris Status menulis "F12 butuh test" padahal `c31ae1c` menutup F12 pada hari yang sama (paragraf F12 di bagian Hasil dokumen itu sendiri sudah mencatatnya), dan baris Status penutup menulis "MEDIUM (F4-F8) dan LOW (F9-F13) tidak disentuh" padahal `6860901`, `aa95471` dan `b012205` sudah mengerjakannya |
 | `ANTISLOP.md §headroom.url` | **Tidak basi, klaim review salah.** `schema/settings.go:101` memang `json:"url"` tanpa `omitempty`, dan `app-ui/src/lib/schemas/token-saver.ts:77` memang `z.string()`; yang optional hanyalah section tulis di `:98`, persis seperti yang didokumentasikan |
 
 ## Yang dibatalkan, dan alasannya
@@ -430,7 +435,7 @@ Sisanya mengikuti aturan yang sudah ada di repo ini:
   terhadap scratch database seperti pada 046.
 - F14 dijalankan dengan `bun run test`, dan bentuk `border` yang dimaksud dikonfirmasi ulang terhadap kelas di
   `UsageTopologyDrawing.svelte:102`.
-- Setiap berkas `.go` yang disentuh dicek terhadap 250 baris §1.1, dengan peringatan pada 220. Yang berisiko:
+- Setiap berkas `.go` yang disentuh dicek terhadap 250 baris §1.1, dengan peringatan pada 220. Yang berisiko saat itu:
   `oauth_flow_refresh.go` 216, `main.go` 210, `endpoint.go` 211, `dto.go` 197, `qoder_catalog.go` 207. Berkas baru
   lebih baik daripada menambah ke yang sudah mendekati 220.
 - `SYSTEM_MAP.md` diubah pada commit yang menggerakkan bentuk data, bukan belakangan (§1.9).
@@ -479,9 +484,9 @@ Pin versi linter sengaja diambil pada versi terbaru hari ini, supaya mengganti `
 verdict gerbang pada commit yang sama. Itu berarti `v2.9.0` dan `v0.8.1` belum pernah berjalan pada pohon ini: bila CI
 menemukan sesuatu yang baru, itu hasil yang harus dibaca, bukan alasan untuk menurunkan angka pin.
 
-Satu hal yang tidak ikut berubah dan perlu disebut karena ia adalah batasan yang masih ada: `go-lint.sh:130-141`
-memperlakukan golangci-lint yang hilang sebagai `gate_skip`, sementara staticcheck yang hilang sebagai `gate_fail`
-(§1.4). Asimetri itu keputusan yang sudah ditulis di komentar `:8-10`, dan F8 tidak menyentuhnya.
+Satu hal yang tidak ikut berubah dan perlu disebut karena ia adalah batasan yang masih ada: `go-lint.sh` memperlakukan
+golangci-lint yang hilang sebagai `gate_skip`, sementara staticcheck yang hilang sebagai `gate_fail` (§1.4). Asimetri itu
+keputusan yang sudah ditulis di header file itu, dan F8 tidak menyentuhnya.
 
 ### Grup C (F12, F13, F14, F15), landed
 
@@ -500,13 +505,13 @@ satu pun bentuk unexported di kode produksi.
 `LogValue()` bukan penutup kebocoran. Tanpanya slog menulis `{}` untuk sebuah Credential: tidak bocor, tidak
 berguna. Ia masuk karena baris log yang tidak menyebut akun tidak bisa ditelusuri, dan itu disebut apa adanya.
 
-Komentar `selection.go:65-66` ikut dikoreksi, bukan karena klaimnya salah (selection memang tidak membocorkan
-apa pun) tapi karena alasan yang tertulis di sana salah: "assembled for exactly one request and never stored"
-tidak ada hubungannya dengan apa yang dicetak sebuah nilai, dan pembaca berikutnya bisa menghapus method redaksi
+Komentar di atas field `Credential` pada `Selection` ikut dikoreksi, bukan karena klaimnya salah (selection memang
+tidak membocorkan apa pun) tapi karena alasan yang tertulis di sana salah: "assembled for exactly one request and
+never stored" tidak ada hubungannya dengan apa yang dicetak sebuah nilai, dan pembaca berikutnya bisa menghapus method redaksi
 dengan percaya alasan itu.
 
 **F13.** Klaim review separuh benar, dan separuh yang salah justru penting untuk dicatat karena ia adalah
-sejarah: jalur HTTP **sudah** di-drain hari ini (`srv.Shutdown` di `shutdown_drain.go:64`, dan `BaseContext` tidak
+sejarah: jalur HTTP **sudah** di-drain hari ini (`srv.Shutdown` di `serve`, dan `BaseContext` tidak
 pernah di-install sehingga context request tidak dibatalkan sinyal). Yang benar dan belum ada adalah dua hal
 lain, dan keduanya sekarang punya test.
 
@@ -532,7 +537,7 @@ bacaan Pending (tiga penuh, satu pendek sebagai tanda keyspace habis); dengan bo
 ia merah pada `Pending calls = 1, want 4`.
 
 Satu konsekuensi yang sengaja tidak diubah, karena ia keputusan dan bukan slip: `/api/v1/usage/live` punya
-`usageLiveMaxLifetime` 30 menit (`usage_live.go:53`) sementara jendela shutdown 15 detik (`main.go:38`). Stream
+`usageLiveMaxLifetime` 30 menit (`usage_live.go:53`) sementara jendela `shutdownTimeout` 15 detik. Stream
 sepanjang itu akan selalu dipotong, dan memperpanjang jendela untuk alasan itu akan menunda setiap restart
 proses. Ini dicatat sebagai sisa, dengan flag `truncated` F6 sebagai teman yang membuat layar tidak membacanya
 sebagai data yang hilang.
@@ -558,7 +563,7 @@ laporkan di tempat lain.
 | `panel-check.sh` header | "format, type check, tests, build" menjadi daftar yang sama dengan tubuhnya: prettier, eslint, svelte-kit sync, svelte-check, vitest, build. Dua langkah itu ditambahkan `9751af0` tanpa ikut mengubah baris ini |
 | `pre-push` header | Daftar bernomor tidak pernah menyebut gate antislop, padahal ia jalan tanpa syarat. Urutannya sekarang benar dan kalimat routing-nya membedakan mana yang bisa di-skip (1 dan 2) dan mana yang tidak (3, 4, 5) |
 | `ANTISLOP.md` §2.5 | Dua tempat: baris tabel reach dan bullet-nya. Yang ditulis sekarang adalah apa yang gerbang lakukan setelah F7, termasuk dua hal yang review tidak sebut: penutup `-->` sebagai alasan palsu, dan direktif tanpa nama rule sebagai kegagalan tersendiri. Alasan kenapa plugin-qualified masih menjadi pemisah juga ditulis, karena itu penyebab false positive nyata di `eslint.config.js` |
-| `docs/DRAFT/045` | Baris 20 dan baris 248. Baris 248 masih menulis "MEDIUM (F4-F8) dan LOW (F9-F13) tidak disentuh" sementara dokumen itu sendiri, empat baris di bawahnya, mencatat F12 tertutup dengan test. Baris 20 ternyata basi pada **dua** klaim, bukan satu: F12 memang sudah tertutup (`c31ae1c`), dan F10 juga, dengan premisnya dibatalkan sendiri (baris 211) |
+| `docs/DRAFT/045` | Baris Status dan baris Status penutup. Penutup masih menulis "MEDIUM (F4-F8) dan LOW (F9-F13) tidak disentuh" sementara paragraf F12 di bagian Hasil dokumen itu sendiri mencatat F12 tertutup dengan test. Baris Status ternyata basi pada **dua** klaim, bukan satu: F12 memang sudah tertutup (`c31ae1c`), dan F10 juga, dengan premisnya dibatalkan sendiri di paragraf F10 |
 
 ### Ukuran penutup
 
