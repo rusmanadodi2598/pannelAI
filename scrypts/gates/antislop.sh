@@ -84,6 +84,16 @@ readonly CITATION_RE='[dD]raft [0-9]+ +[FR§]|[dD]raft [0-9]+$|audit anti-slop [
 # from being read as a violation. `eslint-enable` re-enables a rule rather than
 # suppressing one, so it is deliberately not in this pattern and needs no reason.
 readonly PANEL_SUPPRESS_RE='^[[:space:]]*(//|\*|/\*|<!--)[[:space:]]*eslint-disable(-next-line|-block)?[[:space:]]+[^[:space:]]*/'
+# eslint's own reason separator with something after it. The check used to exempt
+# a directive for containing ` -- ` anywhere, which a directive ending at the
+# separator also satisfies. Both sides of the separator must carry space, or the
+# closing `-->` of a Svelte comment reads as a reason.
+readonly PANEL_SUPPRESS_REASON_RE='[[:space:]]--+[[:space:]]+[^-[:space:]]'
+# A directive that names no rule disables every rule. Two shapes carry that: the
+# keyword ending the line, and the keyword going straight to the separator. Both
+# are matched so that eslint.config.js's prose line, which names something after
+# the keyword, still falls outside them.
+readonly PANEL_SUPPRESS_BARE_RE='^[[:space:]]*(//|\*|/\*|<!--)[[:space:]]*eslint-disable(-next-line|-block)?([[:space:]]*$|[[:space:]]+--([[:space:]]|$))'
 # The eight AGENTS.md §1.2 header fields.
 readonly FIELD_TAG_RE='^// (@(file|for|uses|reason|author|layer|stability|since))[[:space:]]+'
 # A field value continued on an indented line: what gofmt rewrites a hand-wrapped
@@ -201,9 +211,15 @@ text_paths() {
 		":(exclude)$SELF"
 }
 
-# changed_text_paths narrows that to files this change touches.
+# changed_text_paths narrows that to files this change touches. An unreadable
+# change set is a failure, not an empty one: comm over an empty right side prints
+# nothing, and the checks below would read that as a clean diff.
 changed_text_paths() {
-	comm -12 <(text_paths | sort -u) <(changed_files | sort -u)
+	local files
+	if ! files="$(change_set)"; then
+		return 1
+	fi
+	comm -12 <(text_paths | sort -u) <(printf '%s\n' "$files" | sort -u)
 }
 
 # go_body_comments prints only the comment text below a Go file's `package` line,
@@ -225,16 +241,21 @@ go_body_comments() {
 }
 
 # fe_body_comments prints the comment text of a TypeScript or Svelte file: the
-# lines that ARE a comment (`//`, a block's `*` continuation, `/*`) and the inside
-# of `<!-- ... -->` markup comments. A line that merely ends with a trailing
-# comment is not read, so `it('... draft 036')` stays out: a test naming the case
+# lines that ARE a comment (`//`, a block's `*` continuation, `/*`), plus the
+# inside of `<!-- ... -->` for Svelte only, since that markup comment does not
+# exist in TypeScript. A line that merely ends with a trailing comment is not
+# read, so `it('... draft 036')` stays out: a test naming the case
 # it asserts is not comment debt, which is the ruling audit 006 item 6 reached for
 # the Go `t.Fatalf` strings and applies here unchanged.
 fe_body_comments() {
-	local file="$1"
-	awk '
+	local file="$1" html=0
+	if [ "${file##*.}" = "svelte" ]; then
+		html=1
+	fi
+	awk -v html="$html" '
 	/^[[:space:]]*(\/\/|\*|\/\*)/ { print; next }
 	{
+		if (!html) next
 		open   = index($0, "<!--") > 0
 		closed = index($0, "-->") > 0
 		if (open && closed) { print; next }
@@ -260,7 +281,10 @@ report() {
 }
 
 failed=0
-scope="$(changed_text_paths)"
+if ! scope="$(changed_text_paths)"; then
+	gate_fail "antislop gate cannot read the change set (GATES_BASE_REF is set but does not resolve)"
+	exit 1
+fi
 
 # ---- R-02, tree-wide ----
 
@@ -317,7 +341,7 @@ else
 	done <<<"$scope"
 	if [ "$cite_fail" = "1" ]; then
 		failed=1
-	elif [ "$cite_warn" = "1" ]; then
+	elif [ "$cite_warn" -gt 0 ]; then
 		gate_skip "$cite_warn changed Go file(s) still cite a closed draft; see anti-slop/audit-005-*.md"
 	else
 		gate_pass "scratch-work citations (changed files)"
@@ -346,10 +370,15 @@ report "suppression without a reason (AGENTS.md §1.4)" "$unexplained" || failed
 # The panel suppresses with eslint directives, and §1.4 is a rule about
 # suppressions rather than about Go, so the same requirement needs a second
 # pattern or the rule reads as enforced while the panel's suppressions are
-# unread. ` -- ` is eslint's own reason separator and is what the panel's eleven
-# existing directives already use, so this fails only a bare directive.
-unexplained_panel="$(tree_scan "$PANEL_SUPPRESS_RE" | grep -v ' -- ' || true)"
+# unread. The reason must follow the separator rather than merely appear on the
+# same line: exempting any line holding ` -- ` also exempted a directive that
+# ended at it, and eleven existing directives all write a real reason.
+panel_directives="$(tree_scan "$PANEL_SUPPRESS_RE")"
+unexplained_panel="$(printf '%s\n' "$panel_directives" |
+	grep -vE -e "$PANEL_SUPPRESS_REASON_RE" || true)"
 report "panel suppression without a reason (AGENTS.md §1.4)" "$unexplained_panel" || failed=1
+report "panel suppression naming no rule (AGENTS.md §1.4)" \
+	"$(tree_scan "$PANEL_SUPPRESS_BARE_RE")" || failed=1
 
 # ---- doc block length, on changed Go files only ----
 

@@ -67,7 +67,10 @@ jobs:
       PANNELAI_TEST_REDIS_ADDR: 127.0.0.1:6379
 
     steps:
-      - uses: actions/checkout@v4
+      # Actions are pinned by commit, not by tag: a tag is movable, and a workflow
+      # that trusts one executes whatever its owner points it at next time. The
+      # trailing version comment is what makes the pin bumpable by a human.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
@@ -113,7 +116,7 @@ jobs:
           fi
           echo "GATES_BASE_REF=$base" >> "$GITHUB_ENV"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: app-serv/go.mod
           cache: true
@@ -121,8 +124,11 @@ jobs:
       - name: Install the linters AGENTS.md §1.4 names
         run: |
           set -euo pipefail
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+          # Pinned, because `@latest` makes yesterday's green run say nothing about
+          # today's code: the gate's verdict would change without a commit here.
+          # Bump deliberately and expect new findings, since that is the point.
+          go install honnef.co/go/tools/cmd/staticcheck@v0.8.1
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.9.0
 
       - name: Install gitleaks
         run: |
@@ -133,8 +139,12 @@ jobs:
           # key and 8.30.1 does not, so a pipeline on the older binary fails on code the
           # local gate passes. Bumping this pin is a ruleset change, so review it as one.
           version=8.30.1
+          # The artifact hash, not the upstream checksums.txt: fetching both from the
+          # same place an attacker may have already reached proves nothing on its own.
+          sha256=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
           curl -sSfL -o /tmp/gitleaks.tgz \
             "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz"
+          printf '%s  %s\n' "$sha256" /tmp/gitleaks.tgz | sha256sum --check --quiet
           tar -xzf /tmp/gitleaks.tgz -C /tmp
           install -m 755 /tmp/gitleaks /usr/local/bin/gitleaks
           gitleaks version

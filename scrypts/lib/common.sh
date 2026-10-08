@@ -9,6 +9,11 @@
 
 set -euo pipefail
 
+# Byte-oriented matching is what every pattern here assumes, so the locale is
+# fixed rather than inherited: a developer's LANG and the runner's differ, and the
+# emoji and dash classes would then mean different things on the two machines.
+export LC_ALL=C.UTF-8
+
 # repository
 
 # repo_root prints the absolute path of the repository root. A hook can run with
@@ -154,4 +159,19 @@ changed_files() {
 			git -C "$root" diff --name-only "${base}...HEAD"
 		fi
 	} | sort -u
+}
+
+# change_set prints the change set and fails when git could not produce one.
+#
+# A caller reading changed_files through process substitution never sees its exit
+# code, and an unreadable GATES_BASE_REF then lists no files at all, which is how
+# both go-lint.sh and antislop.sh reported a pass on a change set they never
+# inspected. Capture through this instead.
+change_set() {
+	local files
+	if ! files="$(changed_files)"; then
+		gate_fail "the change set could not be read; a gate that inspects nothing is not a pass"
+		return 1
+	fi
+	printf '%s\n' "$files"
 }
