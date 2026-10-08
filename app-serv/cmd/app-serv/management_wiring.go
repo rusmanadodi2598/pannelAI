@@ -93,9 +93,6 @@ func buildManagement(
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: providers: %w", err)
 	}
-	if err != nil {
-		return managementDeps{}, fmt.Errorf("management wiring: providers: %w", err)
-	}
 
 	endpointSvc, err := service.NewEndpointService(service.EndpointServiceDeps{
 		Store: endpointRepo, Index: runtimeIndex, Sealer: sealer, Prober: prober,
@@ -106,7 +103,8 @@ func buildManagement(
 	}
 
 	nodeSvc, err := service.NewNodeService(service.NodeServiceDeps{
-		Store: nodeRepo, Index: runtimeIndex, Counts: endpointRepo, Combos: comboRepo, Prober: prober,
+		Store: nodeRepo, Index: runtimeIndex, Endpoints: endpointRepo, Models: catalogRepo,
+		Combos: comboRepo, Aliases: catalogSvc, Prober: prober,
 	})
 	if err != nil {
 		return managementDeps{}, fmt.Errorf("management wiring: provider nodes: %w", err)

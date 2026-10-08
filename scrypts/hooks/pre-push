@@ -7,13 +7,17 @@
 #
 #   1. Go: build, vet, gofmt, staticcheck (default and integration-tagged) and the
 #      race-enabled test suite, with golangci-lint when installed
-#   2. app-ui: format, type check, tests, production build
-#   3. gitleaks across commits and the working tree
+#   2. app-ui: prettier, eslint, svelte-kit sync, svelte-check, vitest, production build
+#   3. antislop comment rules: R-02, separators and banners, the §1.2 header shape,
+#      doc block length, and suppressions without a stated reason
 #   4. contract drift between SPEC-API §8 and the panel's error enum
+#   5. gitleaks across commits and the working tree
 #
 # 1 is skipped when no pushed path lives under app-serv and 2 when none lives under
 # app-ui; the rules, including the surfaces both halves read, are in
-# scrypts/lib/gate-scope.sh. The set itself is unchanged, only its routing, and an
+# scrypts/lib/gate-scope.sh. 3, 4 and 5 run on every push: the comment rules read the
+# whole tree, and a drift or a secret is not confined to the half a change touched.
+# The set itself is unchanged, only its routing, and an
 # unclassifiable push runs all of it. gates.yml additionally runs the panel suite on
 # every pull request that touches either side, so a local skip is never the only
 # thing standing between a change and main.

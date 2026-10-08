@@ -100,10 +100,7 @@ type NodeRepository interface {
 	// Update persists a node's mutable fields.
 	Update(ctx context.Context, node domain.ProviderNode) error
 
-	// Delete removes a node.
+	// Delete removes a node, leaving the endpoints that reference it to the caller:
+	// the reference is an id string, so no database constraint can carry it.
 	Delete(ctx context.Context, id string) error
-
-	// CountEndpoints reports how many endpoints reference the node's provider id,
-	// so a delete can refuse while one still does.
-	CountEndpoints(ctx context.Context, providerID string) (int64, error)
 }

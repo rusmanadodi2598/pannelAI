@@ -36,6 +36,11 @@ function scaledPixels(block: string, utility: string): number {
 	return Number(match[1]);
 }
 
+/** One Tailwind class per entry. A class list is what the derivation is measured against, not a substring. */
+function classTokens(block: string): string[] {
+	return block.split(/[\s"'`]+/).filter(Boolean);
+}
+
 describe('the node box NODE_MAX_WIDTH is derived from', () => {
 	it('sums its own scaled metrics to the cap the unit is measured against', () => {
 		const block = nodeBlock();
@@ -49,7 +54,9 @@ describe('the node box NODE_MAX_WIDTH is derived from', () => {
 		expect(across).toBe(NODE_MAX_WIDTH);
 	});
 
-	it('keeps the border utility the derivation counts', () => {
-		expect(nodeBlock()).toMatch(/\bborder\b/);
+	// `-` is not a word character, so /\bborder\b/ also matches border-b and
+	// border-[var(--color-border)]; the derivation counts only the bare utility's 1px.
+	it('keeps the bare border utility the derivation counts', () => {
+		expect(classTokens(nodeBlock())).toContain('border');
 	});
 });

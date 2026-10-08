@@ -114,12 +114,23 @@ export const schemaOAuthStatus = z.object({
 
 export type OAuthStatus = z.infer<typeof schemaOAuthStatus>;
 
+export const schemaOAuthRefreshSkipped = z.object({
+	endpoint_id: z.string(),
+	reason: z.string()
+});
+
 // The refresh answer. `refreshed` is the count and `endpoint_ids` names what it counted, which is what lets
-// the panel say which accounts moved rather than only how many.
+// the panel say which accounts moved rather than only how many. `skipped` names the accounts a provider-wide
+// sweep passed over, each with the reason it stopped there; refreshing one named account answers its refusal
+// as an error instead, so that path leaves the list empty.
 export const schemaOAuthRefresh = z.object({
 	refreshed: z.number().int().min(0),
 	endpoint_ids: z
 		.array(z.string())
+		.nullish()
+		.transform((value) => value ?? []),
+	skipped: z
+		.array(schemaOAuthRefreshSkipped)
 		.nullish()
 		.transform((value) => value ?? []),
 	expires_at: optionalTimestamp

@@ -40,7 +40,11 @@ run_in() {
 # gate has to fire. A warning at 220 gives a change owner a split point before
 # the gate rejects a file at 251.
 check_changed_line_limits() {
-	local rel file lines failed_limit=0 warned=0
+	local rel file lines files failed_limit=0 warned=0
+	if ! files="$(change_set)"; then
+		gate_fail "line-limit check skipped its own change set (AGENTS.md §1.1)"
+		return 1
+	fi
 	while IFS= read -r rel; do
 		[ -n "$rel" ] || continue
 		case "$rel" in
@@ -60,7 +64,7 @@ check_changed_line_limits() {
 			gate_start "$rel has $lines lines (warning at 220; split before 250)"
 			warned=1
 		fi
-	done < <(changed_files)
+	done <<<"$files"
 	[ "$warned" = "1" ] && gate_skip "line-limit warnings require review"
 	return "$failed_limit"
 }

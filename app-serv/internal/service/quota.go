@@ -86,17 +86,18 @@ func (s *QuotaService) ListWindows(ctx context.Context, endpointID string) ([]do
 }
 
 // ListWindowsPaged returns one page of the collection read with the total
-// provider-group count. The page unit is the provider group
-// (docs/PORT/006-PORT-QUOTA-PAGING.md D1): one page carries every window of the
-// page's groups, so a provider's card never splits across pages.
-func (s *QuotaService) ListWindowsPaged(ctx context.Context, page, perPage int) ([]domain.QuotaWindow, int64, error) {
+// provider-group count and whether the row ceiling cut it. The page unit is the
+// provider group (docs/PORT/006-PORT-QUOTA-PAGING.md D1): one page carries every
+// window of the page's groups, so a provider's card never splits across pages.
+func (s *QuotaService) ListWindowsPaged(ctx context.Context, page, perPage int) ([]domain.QuotaWindow, int64, bool, error) {
 	return s.quotas.PageWindowsByProvider(ctx, page, perPage)
 }
 
 // ListAccountsPaged returns the accounts the same page of provider groups carries, with
-// the same group total. The screen needs it because accounts are what a card is made of,
-// and an account that has routed no traffic appears in no window row.
-func (s *QuotaService) ListAccountsPaged(ctx context.Context, page, perPage int) ([]domain.QuotaAccount, int64, error) {
+// the same group total and the same ceiling flag. The screen needs it because accounts
+// are what a card is made of, and an account that has routed no traffic appears in no
+// window row.
+func (s *QuotaService) ListAccountsPaged(ctx context.Context, page, perPage int) ([]domain.QuotaAccount, int64, bool, error) {
 	return s.quotas.PageAccountsByProvider(ctx, page, perPage)
 }
 

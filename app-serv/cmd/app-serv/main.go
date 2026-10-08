@@ -121,8 +121,9 @@ func run() error {
 	}
 	mux := router.New(deps)
 
-	// The background workers run alongside the server and stop with the context, so shutdown leaves nothing running (AGENTS.md §1.6).
-	runWorkers(ctx, mgmt)
+	// The background workers run alongside the server and are stopped by the shutdown
+	// path, not the signal, so a request still draining records into a live consumer.
+	workers := runWorkers(ctx, mgmt)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
@@ -137,7 +138,7 @@ func run() error {
 		MaxHeaderBytes: 64 << 10,
 	}
 
-	return serve(ctx, srv, quotaDrain(mgmt.QuotaFlusher), shutdownTimeout)
+	return serve(ctx, srv, workers.stopAndJoin, quotaDrain(mgmt.QuotaFlusher), shutdownTimeout)
 }
 
 // logLevel maps the validated configuration value to a slog level. Config has

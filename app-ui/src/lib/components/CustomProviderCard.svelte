@@ -13,17 +13,20 @@
 	// models section addresses a model as `prefix/model` and this is the read that holds it.
 	//
 	// Edit, Test, and Delete live here rather than in the list's rows, which is the reference's shape: the
-	// list is for finding a node, and this is where its state changes. Delete confirms first because it
-	// cannot be undone, and the API refuses it outright while an endpoint still references the node.
+	// list is for finding a node, and this is where its state changes. Delete confirms first because it cannot
+	// be undone and it takes the node's connections, their keys and its model rows with it. The API still refuses
+	// a node a combo names or an alias targets, and those answers are the only reason a confirmed delete comes
+	// back unchanged.
 	import { resolve } from '$app/paths';
 	import { goto } from '$app/navigation';
 	import { untrack } from 'svelte';
 	import CustomProviderDialog from '$lib/components/CustomProviderDialog.svelte';
 	import CustomProviderTest from '$lib/components/CustomProviderTest.svelte';
-	import Modal from '$lib/components/Modal.svelte';
+	import ProviderNodeDeleteDialog from '$lib/components/ProviderNodeDeleteDialog.svelte';
 	import ProviderNodeFacts from '$lib/components/ProviderNodeFacts.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
+	import { listEndpointLabels } from '$lib/api/endpoints';
 	import { deleteProviderNode, getProviderNode } from '$lib/api/provider-nodes';
 	import {
 		NODE_TYPE_LABELS,
@@ -69,8 +72,10 @@
 	let confirming = $state(false);
 	let deleting = $state(false);
 	let deleteError = $state<string | null>(null);
-	/** The delete failure was the API's CONFLICT: an endpoint still references this node. */
+	/** The delete failure was the API's CONFLICT: a combo or an alias still points at this node. */
 	let conflict = $state(false);
+	// The connections a confirmed delete takes with it; `null` is the count not being known.
+	let connections = $state<number | null>(null);
 
 	// The type comes from the id, which is the public contract (§7.4), and not from the node: the dialog
 	// needs it before the read lands, and a node whose read failed still has to open a usable dialog.
@@ -103,6 +108,18 @@
 
 	async function reload(): Promise<void> {
 		await load(providerId);
+	}
+
+	// Read on opening rather than reused from the page's provider total, which no connection write below
+	// refreshes: the dialog drops the number rather than state a stale one in front of a credential loss.
+	async function askDelete(): Promise<void> {
+		deleteError = null;
+		conflict = false;
+		connections = null;
+		confirming = true;
+
+		const result = await listEndpointLabels({ provider_id: providerId, page: 1, per_page: 1 });
+		connections = result.ok ? result.data.meta.total : null;
 	}
 
 	async function remove(): Promise<void> {
@@ -173,11 +190,7 @@
 					class="{iconActionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]"
 					aria-label="Delete"
 					title="Delete"
-					onclick={() => {
-						deleteError = null;
-						conflict = false;
-						confirming = true;
-					}}
+					onclick={askDelete}
 				>
 					<DeleteIcon class="size-4" aria-hidden="true" />
 				</button>
@@ -199,36 +212,15 @@
 		onclose={() => (editing = false)}
 	/>
 
-	<Modal title="Delete this custom provider" open={confirming} onclose={() => (confirming = false)}>
-		<p>
-			Delete <span class="font-medium">{node.name}</span> ({node.prefix}/model)? Requests naming a
-			model under that prefix stop resolving.
-		</p>
-
-		{#if deleteError}
-			{#if conflict}
-				<p class="mt-3 text-[var(--color-danger)]" role="alert">
-					Still referenced. {deleteError} Remove or move its endpoints first.
-				</p>
-			{:else}
-				<p class="mt-3 text-[var(--color-danger)]" role="alert">
-					This provider was not deleted. {deleteError}
-				</p>
-			{/if}
-		{/if}
-
-		{#snippet footer()}
-			<button type="button" class="min-h-11 underline" onclick={() => (confirming = false)}
-				>Keep it</button
-			>
-			<button
-				type="button"
-				class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[var(--color-accent-text)] disabled:opacity-50"
-				disabled={deleting}
-				onclick={remove}
-			>
-				{deleting ? 'Deleting' : 'Delete the provider'}
-			</button>
-		{/snippet}
-	</Modal>
+	<ProviderNodeDeleteDialog
+		open={confirming}
+		name={node.name}
+		prefix={node.prefix}
+		{connections}
+		error={deleteError}
+		{conflict}
+		{deleting}
+		onconfirm={remove}
+		oncancel={() => (confirming = false)}
+	/>
 {/if}

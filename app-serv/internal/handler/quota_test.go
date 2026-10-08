@@ -30,6 +30,10 @@ type stubQuotaRepo struct {
 	// counted through them, which is what the quota cards page over.
 	accounts []domain.QuotaAccount
 	caps     map[string]domain.QuotaCap
+	// ceilingCut answers the row ceiling: the stub slices by group and never
+	// reads a database, so a test names which read it wants reported as cut.
+	windowsCut  bool
+	accountsCut bool
 }
 
 func newStubQuotaRepo() *stubQuotaRepo {

@@ -28,8 +28,8 @@ func (r *stubCapRepo) ListWindows(context.Context, string) ([]domain.QuotaWindow
 	return nil, nil
 }
 
-func (r *stubCapRepo) PageWindowsByProvider(context.Context, int, int) ([]domain.QuotaWindow, int64, error) {
-	return nil, 0, nil
+func (r *stubCapRepo) PageWindowsByProvider(context.Context, int, int) ([]domain.QuotaWindow, int64, bool, error) {
+	return nil, 0, false, nil
 }
 
 func (r *stubCapRepo) UpsertWindows(context.Context, []domain.QuotaWindow) error { return nil }
@@ -166,6 +166,6 @@ func TestQuotaService_SetCap(t *testing.T) {
 	}
 }
 
-func (r *stubCapRepo) PageAccountsByProvider(context.Context, int, int) ([]domain.QuotaAccount, int64, error) {
-	return nil, 0, nil
+func (r *stubCapRepo) PageAccountsByProvider(context.Context, int, int) ([]domain.QuotaAccount, int64, bool, error) {
+	return nil, 0, false, nil
 }

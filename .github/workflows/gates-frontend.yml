@@ -52,7 +52,8 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - uses: actions/checkout@v4
+      # Pinned by commit for the reason named in gates.yml: a tag is movable.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install the pinned Bun
         run: |
@@ -62,8 +63,12 @@ jobs:
           # binary dies with SIGILL on a CPU without AVX2, and a gate that cannot start
           # its runner reports nothing about the code it was supposed to check.
           version=1.3.0
+          # Hashed at the same version this pin names, taken from the release's own
+          # SHASUMS256.txt and checked before the archive is unpacked.
+          sha256=77336611905b9e876e52924f8b1a57e72669cf10541dc1e11269d2c9371f9e45
           curl -sSfL -o /tmp/bun.zip \
             "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-x64-baseline.zip"
+          printf '%s  %s\n' "$sha256" /tmp/bun.zip | sha256sum --check --quiet
           unzip -q /tmp/bun.zip -d /tmp
           install -m 755 "/tmp/bun-linux-x64-baseline/bun" /usr/local/bin/bun
           bun --version

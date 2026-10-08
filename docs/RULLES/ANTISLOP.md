@@ -37,7 +37,7 @@ check that reads both, so the reach is stated per rule instead of assumed:
 | §2.2 separators and banners | tree-wide, fails | tree-wide, fails |
 | §2.3 echo | review-only (§3) | review-only (§3) |
 | §2.4 narration, end markers, emoji | tree-wide, fails | tree-wide, fails |
-| §2.5 suppression states a reason | `//nolint:` without `// reason:` fails | `eslint-disable` without ` -- ` fails |
+| §2.5 suppression states a reason | `//nolint:` without `// reason:` fails | `eslint-disable` without a reason after ` -- ` fails, and one naming no rule fails |
 | §2.6 doc block length | fails past 16, warns past 10, on changed files | not measured, review-only (§3) |
 | §2.7 §1.2 field shape | tree-wide, fails | not applicable, the panel has no §1.2 header |
 | §4 scratch citations | warns on changed files | fails on changed files |
@@ -85,10 +85,16 @@ only where the number means something, and §4 fails where the residue is actual
   unsatisfiable and the whole rule went unenforced; §1.4 was amended on 2026-10-05 to keep the part a machine can
   check and the part that carries information.
 - The rule is about suppressions, not about Go, so it reads the panel's too: an `eslint-disable` directive carries
-  its reason after ` -- `, which is eslint's own separator and what every panel directive already writes. The check
-  matches only a comment that *opens* with the directive and names a plugin-qualified rule, so a sentence in
-  `eslint.config.js` explaining leftover directives is not read as one. `eslint-enable` re-enables instead of
-  suppressing, so it needs no reason and the check does not ask for one.
+  its reason after ` -- `, which is eslint's own separator and what every panel directive already writes. The reason
+  must follow the separator rather than merely appear on the line: exempting any line that *contains* ` -- ` also
+  exempted a directive that stopped at it, and on a `.svelte` file the comment's own closing `-->` supplies a `--`,
+  so an empty reason read as a filled one. A directive naming no rule is a separate failure, because it suppresses
+  every rule at once.
+- The reason check matches only a comment that *opens* with the directive and names a plugin-qualified rule. That
+  qualifier is not decoration: `eslint.config.js` carries a sentence beginning `// eslint-disable comment is an
+  error rather than a warning.`, and a looser pattern fails a clean tree on prose. The no-rule check is bounded the
+  same way, by requiring the keyword to end the line or go straight to the separator, which prose does not do.
+  `eslint-enable` re-enables instead of suppressing, so it needs no reason and the check does not ask for one.
 
 ### 2.6 A Comment's Length Is Its Fact Count
 

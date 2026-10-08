@@ -312,9 +312,12 @@ absent.
   patches name, prefix, and base URL, and states that type and api type are identity rather than offering
   them as controls that cannot act. Test probes the base URL with a credential the operator may leave empty,
   where empty means "test without a credential" rather than "send an empty one", and the probe's answer is a
-  state and a latency rather than an HTTP failure. Delete asks first, and a `CONFLICT` answer (an endpoint
-  still references the node) is rendered as the gateway's own sentence with the dialog still open; a
-  deleted node returns to the registry list.
+  state and a latency rather than an HTTP failure. Delete asks first and states what the confirmation takes:
+  the node's connections, the keys saved on them, and its custom and disabled model rows. The connection
+  count is read when the dialog opens rather than reused from the page's provider total, which no connection
+  write below refreshes, and the number is dropped when that read fails. A `CONFLICT` answer (a combo names
+  the node, or an alias targets one of its models) is rendered as the gateway's own sentence, with the dialog
+  still open and the screen where either is edited linked from it; a deleted node returns to the registry list.
 - **Model catalog** (SPEC-API §7.6): searchable list with capability filters (`vision`, `tools`), a
   "suggested" toggle, and per-model enable or disable state. Enable and disable write through
   `PUT /api/v1/models/disabled` (phase U2). The search and the two capability filters read
@@ -2548,3 +2551,7 @@ to the Go services, so the earlier blocking note was withdrawn and a question ab
 format was opened instead. Caveman resolved the same day: marked DEPRECATED in this spec and in SPEC-API, with removal
 scheduled for `/api/v2`, replacing the earlier half-state where one document carried the key and the other
 only mentioned it._
+
+_Changelog 2026-10-07: §6.3's delete confirmation states what the action takes (draft `046`). It used to print the gateway's refusal inside its own sentence about the same refusal and then instruct the operator to move connections, a capability the product never had. The dialog now says, before the button is pressed, that the provider's stored connections and the keys saved on them go with it; the count comes from a read taken when the dialog opens rather than from the page's provider total, which no connection write below refreshes, and the sentence drops the number when that read fails rather than printing one the panel did not measure. The `CONFLICT` that remains is the combo one, rendered as the gateway's own sentence naming the combo, with the membership screen linked beside it._
+
+_Changelog 2026-10-08: §6.3's delete confirmation names the model rows too, and no longer has a silent branch. The sentence states the connection count when it has one, and drops to naming the model rows when the provider holds no connection, because a node with no connection can still have declared models and those go with it. The refusal line covers the second blocker the same screen edits: a combo member or an alias target, each rendered in the gateway's own words._

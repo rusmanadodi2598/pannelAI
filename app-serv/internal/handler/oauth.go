@@ -95,6 +95,12 @@ func (h *OAuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	resp := schema.OAuthRefreshResponse{
 		Refreshed:   outcome.Refreshed,
 		EndpointIDs: outcome.EndpointIDs,
+		Skipped:     make([]schema.OAuthRefreshSkipped, 0, len(outcome.Skipped)),
+	}
+	for _, skipped := range outcome.Skipped {
+		resp.Skipped = append(resp.Skipped, schema.OAuthRefreshSkipped{
+			EndpointID: skipped.EndpointID, Reason: skipped.Reason,
+		})
 	}
 	if outcome.ExpiresAt != nil {
 		resp.ExpiresAt = ptr(schema.Timestamp(*outcome.ExpiresAt))

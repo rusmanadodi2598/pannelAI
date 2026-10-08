@@ -21,7 +21,7 @@ import (
 // the distinct provider ids over accounts UNION counted windows, ordered by each group's
 // smallest endpoint id, sliced to the page. Windows contribute accounts too, so a stub
 // that seeds only windows still sees its accounts appear.
-func (r *stubQuotaRepo) PageAccountsByProvider(_ context.Context, page, perPage int) ([]domain.QuotaAccount, int64, error) {
+func (r *stubQuotaRepo) PageAccountsByProvider(_ context.Context, page, perPage int) ([]domain.QuotaAccount, int64, bool, error) {
 	source := append([]domain.QuotaAccount{}, r.accounts...)
 	for _, window := range r.windows {
 		source = append(source, domain.QuotaAccount{EndpointID: window.EndpointID(), ProviderID: window.ProviderID()})
@@ -47,7 +47,7 @@ func (r *stubQuotaRepo) PageAccountsByProvider(_ context.Context, page, perPage 
 	total := int64(len(order))
 	start := (page - 1) * perPage
 	if start >= len(order) {
-		return []domain.QuotaAccount{}, total, nil
+		return []domain.QuotaAccount{}, total, false, nil
 	}
 	keep := map[string]bool{}
 	for _, providerID := range order[start:min(start+perPage, len(order)) /* builtin min */] {
@@ -68,5 +68,5 @@ func (r *stubQuotaRepo) PageAccountsByProvider(_ context.Context, page, perPage 
 		sort.Slice(group, func(i, j int) bool { return group[i].EndpointID < group[j].EndpointID })
 		out = append(out, group...)
 	}
-	return out, total, nil
+	return out, total, r.accountsCut, nil
 }

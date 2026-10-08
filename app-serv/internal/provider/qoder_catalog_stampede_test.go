@@ -2,7 +2,7 @@
 // upstream provider.
 //
 // @file      internal/provider/qoder_catalog_stampede_test.go
-// @for       One catalogue read per host under concurrent lookups, and one per unknown model.
+// @for       One catalogue read per account and host under concurrent lookups, and one per unknown model.
 // @uses      sync, testing
 // @reason    The model key arrives from the client, so a name the vendor does not list used to re-read the whole catalogue on every request, and concurrent requests each ran their own read of the same multi-megabyte document.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
@@ -92,11 +92,11 @@ func TestQoderCatalog_ACancelledCallerStopsWaiting(t *testing.T) {
 	connector, lists, _ := newQoderStubVendor(t, qoderCatalogFixture)
 	cred := qoderTestCredential()
 
-	base, err := connector.inferenceBase(cred)
+	target, err := connector.catalogTargetFor(cred)
 	if err != nil {
-		t.Fatalf("inferenceBase() error = %v", err)
+		t.Fatalf("catalogTargetFor() error = %v", err)
 	}
-	fetch, leader := connector.catalog.beginFetch(base)
+	fetch, leader := connector.catalog.beginFetch(target)
 	if !leader {
 		t.Fatal("this test expected to hold the fetch slot itself")
 	}
@@ -141,18 +141,18 @@ func TestQoderCatalog_APanickingReadClosesTheSlot(t *testing.T) {
 	cred := qoderTestCredential()
 	connector.client = &http.Client{Transport: panickingRoundTripper{}}
 
-	base, err := connector.inferenceBase(cred)
+	target, err := connector.catalogTargetFor(cred)
 	if err != nil {
-		t.Fatalf("inferenceBase() error = %v", err)
+		t.Fatalf("catalogTargetFor() error = %v", err)
 	}
-	fetch, leader := connector.catalog.beginFetch(base)
+	fetch, leader := connector.catalog.beginFetch(target)
 	if !leader {
 		t.Fatal("this test expected to hold the fetch slot itself")
 	}
 
 	panicked := func() (didPanic bool) {
 		defer func() { didPanic = recover() != nil }()
-		connector.runFetch(context.Background(), cred, base, fetch)
+		connector.runFetch(context.Background(), cred, target, fetch)
 		return false
 	}()
 	if !panicked {
@@ -166,7 +166,7 @@ func TestQoderCatalog_APanickingReadClosesTheSlot(t *testing.T) {
 	if fetch.err == nil {
 		t.Fatal("the panicking read published no answer, so its callers were served an empty catalogue")
 	}
-	if held := connector.catalog.inflight[base]; held != nil {
-		t.Fatalf("host %s still holds an inflight read that nobody is running", base)
+	if held := connector.catalog.inflight[target.scope]; held != nil {
+		t.Fatalf("account %s still holds an inflight read that nobody is running", target.scope)
 	}
 }

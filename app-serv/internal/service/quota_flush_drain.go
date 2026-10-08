@@ -1,7 +1,7 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/quota_flush_drain.go
-// @for       One flush cycle: read the changed windows from Redis, write them to PostgreSQL, and settle what was written.
+// @for       One flush cycle: read the changed windows from Redis, write them to PostgreSQL, settle what was written, and report whether the batch came back full.
 // @uses      context, fmt, log/slog, sort, internal/domain.
 // @reason    The batch mechanics are the part of the flush worker whose order a review checks against AGENTS.md §1.7 (bounded batch, set-based write, settle only after durability), so they live in one file apart from the worker lifecycle (draft 005 F3). Naming the batch here is what makes retries attributable to the endpoints they belong to (draft 005 F4).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
@@ -19,18 +19,25 @@ import (
 )
 
 // drain reads one batch, writes it, and settles only what was written.
-func (f *QuotaFlusher) drain(ctx context.Context) {
+//
+// It reports whether the batch came back full. That is the only signal a caller gets
+// that a backlog may still be waiting: Pending reads live Redis state, so a short
+// batch means the keyspace ran out, and a full one means it may not have. Every
+// failure returns false, because those counters stay in Redis and are retried by the
+// next tick or the next boot, and a loop that kept going would only spend its window
+// on a batch that cannot move.
+func (f *QuotaFlusher) drain(ctx context.Context) bool {
 	callCtx, cancel := context.WithTimeout(ctx, f.policy.Timeout)
 	defer cancel()
 
 	pending, err := f.counters.Pending(callCtx, f.policy.BatchSize)
 	if err != nil {
 		f.logger.Error("membaca counter kuota gagal", "error", err)
-		return
+		return false
 	}
 	if len(pending) == 0 {
 		f.attempts, f.lastKey = 0, ""
-		return
+		return false
 	}
 
 	batchKey := batchIdentity(pending)
@@ -47,11 +54,11 @@ func (f *QuotaFlusher) drain(ctx context.Context) {
 			f.logger.Error("batch flush kuota masuk dead-letter",
 				"batch", batchKey, "windows", len(pending), "attempts", f.attempts, "error", err)
 			f.attempts, f.lastKey = 0, ""
-			return
+			return false
 		}
 		f.logger.Warn("flush kuota gagal, akan dicoba lagi",
 			"batch", batchKey, "attempts", f.attempts, "error", err)
-		return
+		return false
 	}
 
 	if err := f.counters.Settle(callCtx, pending); err != nil {
@@ -59,9 +66,10 @@ func (f *QuotaFlusher) drain(ctx context.Context) {
 		// are returned again next tick and rewritten, which is idempotent
 		// because UpsertWindows replaces rather than adds.
 		f.logger.Error("menandai counter kuota gagal", "batch", batchKey, "error", err)
-		return
+		return false
 	}
 	f.attempts, f.lastKey = 0, ""
+	return len(pending) >= f.policy.BatchSize
 }
 
 // batchIdentity names a batch by the endpoint and window kind each of its

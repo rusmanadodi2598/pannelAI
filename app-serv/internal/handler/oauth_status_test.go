@@ -160,6 +160,43 @@ func TestOAuthHandlerRefresh(t *testing.T) {
 			if got, _ := body["endpoint_ids"].([]any); len(got) != int(tc.wantCount) {
 				t.Fatalf("endpoint_ids = %v, want %d entries", got, int(tc.wantCount))
 			}
+			// The contract says skipped is always an array, so a client can read the
+			// batch answer without testing for a key an older gateway never sent.
+			if got, ok := body["skipped"].([]any); !ok || len(got) != 0 {
+				t.Fatalf("skipped = %v, want an empty array on a refresh that failed nobody", body["skipped"])
+			}
 		})
+	}
+}
+
+// TestOAuthHandlerRefreshReportsTheAccountTheSweepPassedOver pins the batch's answer:
+// one account loses its compare-and-swap, the other still refreshes, and the refusal
+// reaches the operator beside the account it belongs to rather than cancelling the
+// refresh that worked.
+func TestOAuthHandlerRefreshReportsTheAccountTheSweepPassedOver(t *testing.T) {
+	fixture := newOAuthFixture(t, "", oauthProvider("acme"))
+	seedOAuthAccount(t, fixture, "ep_due", "acme", "due@example.com", time.Now().Add(time.Minute))
+	seedOAuthAccount(t, fixture, "ep_race", "acme", "race@example.com", time.Now().Add(time.Minute))
+	fixture.store.rejectCompareAndSwap = map[string]bool{"ep_race": true}
+
+	rr := doOAuth(t, http.MethodPost, "/api/v1/providers/acme/oauth/refresh",
+		"", "acme", "", fixture.handler.Refresh)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rr.Code, rr.Body.String())
+	}
+	body := decodeBody(t, rr)
+	if got, _ := body["refreshed"].(float64); got != 1 {
+		t.Fatalf("refreshed = %v, want the one account that moved (body: %s)", got, rr.Body.String())
+	}
+	skipped, ok := body["skipped"].([]any)
+	if !ok || len(skipped) != 1 {
+		t.Fatalf("skipped = %v, want one entry naming ep_race", body["skipped"])
+	}
+	row, ok := skipped[0].(map[string]any)
+	if !ok || row["endpoint_id"] != "ep_race" {
+		t.Fatalf("skipped[0] = %v, want an entry naming ep_race", skipped[0])
+	}
+	if reason, _ := row["reason"].(string); !strings.Contains(reason, "changed during this refresh") {
+		t.Fatalf("reason = %q, want the gateway's own conflict text", reason)
 	}
 }

@@ -39,18 +39,21 @@ func (h *QuotaHandler) List(w http.ResponseWriter, r *http.Request) {
 		schema.WriteError(w, err)
 		return
 	}
-	windows, total, err := h.quotas.ListWindowsPaged(r.Context(), page, perPage)
+	windows, total, windowsCut, err := h.quotas.ListWindowsPaged(r.Context(), page, perPage)
 	if err != nil {
 		schema.WriteError(w, err)
 		return
 	}
 	// The accounts, not the counted rows, decide who gets a provider answer: an
 	// endpoint that has served nothing yet is still a card the operator needs.
-	accounts, _, err := h.quotas.ListAccountsPaged(r.Context(), page, perPage)
+	accounts, _, accountsCut, err := h.quotas.ListAccountsPaged(r.Context(), page, perPage)
 	if err != nil {
 		schema.WriteError(w, err)
 		return
 	}
+	// Either read can be cut by the row ceiling, and the page is incomplete when
+	// either was: the cards are made of both.
+	truncated := windowsCut || accountsCut
 	published, err := h.quotas.PagePublished(r.Context(), accounts)
 	if err != nil {
 		// The gateway's own counts stay true when the provider cache cannot be read,
@@ -62,6 +65,7 @@ func (h *QuotaHandler) List(w http.ResponseWriter, r *http.Request) {
 			Meta:          schema.Page{Page: page, PerPage: perPage, Total: total},
 			Published:     publishedUsageResponses(nil),
 			PublishedNote: "Provider quota could not be read; the counts below are this gateway's own.",
+			Truncated:     truncated,
 		})
 		return
 	}
@@ -69,6 +73,7 @@ func (h *QuotaHandler) List(w http.ResponseWriter, r *http.Request) {
 		Data:      windowResponses(windows),
 		Meta:      schema.Page{Page: page, PerPage: perPage, Total: total},
 		Published: publishedUsageResponses(published),
+		Truncated: truncated,
 	})
 }
 

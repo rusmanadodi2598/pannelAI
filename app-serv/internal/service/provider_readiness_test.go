@@ -3,7 +3,7 @@
 // @file      internal/service/provider_readiness_test.go
 // @for       Provider and custom-node readiness rules from SPEC-API-001 §7.4.
 // @uses      internal/domain, internal/registry, internal/repository, context, testing, time.
-// @reason    §7.4 puts prefix collision and referenced-node deletion in the service, while provider filters and endpoint summaries are also service behavior. These tests keep those contract rules proven without a database or an upstream network.
+// @reason    §7.4 puts prefix collision and the rule that deleting a node takes its endpoints with it in the service, while provider filters and endpoint summaries are also service behavior. These tests keep those contract rules proven without a database or an upstream network.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -12,6 +12,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -60,12 +61,24 @@ func (s *readinessNodeStore) Delete(_ context.Context, id string) error {
 	delete(s.nodes, id)
 	return nil
 }
-func (s *readinessNodeStore) CountEndpoints(context.Context, string) (int64, error) { return 0, nil }
 
-type readinessEndpointCounts struct{ count int64 }
+// readinessEndpointErasures records the provider ids a delete erased, so a test can
+// name whose connections went and prove a refused delete erased nothing.
+type readinessEndpointErasures struct{ providers []string }
 
-func (c readinessEndpointCounts) CountEndpoints(context.Context, string) (int64, error) {
-	return c.count, nil
+func (e *readinessEndpointErasures) DeleteByProvider(_ context.Context, providerID string) error {
+	e.providers = append(e.providers, providerID)
+	return nil
+}
+
+// readinessModelErasures records whose model rows a delete erased, so a test can tell
+// the node's own rows from another provider's, and can prove a refused delete erased
+// neither connections nor models.
+type readinessModelErasures struct{ providers []string }
+
+func (m *readinessModelErasures) DeleteForProvider(_ context.Context, providerID string) error {
+	m.providers = append(m.providers, providerID)
+	return nil
 }
 
 type readinessProviderIndex struct{ entries []registry.Provider }
@@ -93,10 +106,12 @@ func (i readinessProviderIndex) Categories() []string {
 	return out
 }
 
-func readinessNodeService(t *testing.T, store *readinessNodeStore, counts EndpointCounter) *NodeService {
+func readinessNodeService(
+	t *testing.T, store *readinessNodeStore, eraser EndpointEraser, models ModelEraser) *NodeService {
 	t.Helper()
 	svc, err := NewNodeService(NodeServiceDeps{
-		Store: store, Index: readinessProviderIndex{entries: []registry.Provider{{ID: "openai"}}}, Counts: counts,
+		Store: store, Index: readinessProviderIndex{entries: []registry.Provider{{ID: "openai"}}},
+		Endpoints: eraser, Models: models,
 	})
 	if err != nil {
 		t.Fatalf("NewNodeService() error = %v", err)
@@ -107,7 +122,7 @@ func readinessNodeService(t *testing.T, store *readinessNodeStore, counts Endpoi
 
 func TestNodeService_CreateAndUpdateRejectPrefixCollision(t *testing.T) {
 	store := newReadinessNodeStore()
-	svc := readinessNodeService(t, store, readinessEndpointCounts{})
+	svc := readinessNodeService(t, store, &readinessEndpointErasures{}, &readinessModelErasures{})
 	_, err := svc.Create(context.Background(), CreateNodeInput{Name: "one", Prefix: "openai", Type: domain.NodeOpenAICompatible, APIType: domain.NodeAPIChat, BaseURL: "https://one.example"})
 	mustAppError(t, err, "CONFLICT")
 
@@ -126,18 +141,27 @@ func TestNodeService_CreateAndUpdateRejectPrefixCollision(t *testing.T) {
 	}
 }
 
-func TestNodeService_DeleteReferencedNodeReturnsConflict(t *testing.T) {
+func TestNodeService_DeleteTakesTheNodesEndpointsAndModelRowsWithIt(t *testing.T) {
 	store := newReadinessNodeStore()
-	svc := readinessNodeService(t, store, readinessEndpointCounts{count: 1})
+	erasures := &readinessEndpointErasures{}
+	models := &readinessModelErasures{}
+	svc := readinessNodeService(t, store, erasures, models)
 	node, err := svc.Create(context.Background(), CreateNodeInput{Name: "one", Prefix: "one", Type: domain.NodeOpenAICompatible, APIType: domain.NodeAPIChat, BaseURL: "https://one.example"})
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
-	mustAppError(t, svc.Delete(context.Background(), node.ID()), "CONFLICT")
 
-	svc.counts = readinessEndpointCounts{}
 	if err := svc.Delete(context.Background(), node.ID()); err != nil {
-		t.Fatalf("unreferenced delete: %v", err)
+		t.Fatalf("delete of a node that has connections: %v", err)
+	}
+	if _, err := store.GetByID(context.Background(), node.ID()); !errors.Is(err, domain.ErrNodeNotFound) {
+		t.Fatalf("the node survived its own delete: %v", err)
+	}
+	if len(erasures.providers) != 1 || erasures.providers[0] != node.ID() {
+		t.Fatalf("connections erased for %v, want exactly the deleted node", erasures.providers)
+	}
+	if len(models.providers) != 1 || models.providers[0] != node.ID() {
+		t.Fatalf("model rows erased for %v, want exactly the deleted node", models.providers)
 	}
 }
 

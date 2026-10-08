@@ -115,10 +115,12 @@ UPDATE provider_nodes
 	return nil
 }
 
-// Delete removes a node. The caller checks CountEndpoints first, because
-// provider_nodes carries no foreign key to upstream_endpoints: an endpoint
+// Delete removes a node. It does not touch the endpoints that reference it:
+// provider_nodes carries no foreign key to upstream_endpoints, an endpoint
 // references a provider by id string, and a built-in provider has no node row at
-// all, so a constraint is not expressible here.
+// all, so a constraint is not expressible here. The service erases those rows first
+// (service.EndpointEraser), which keeps the ordering a destructive delete needs:
+// nothing is dropped until the guard that can still refuse has passed.
 func (r *NodeRepository) Delete(ctx context.Context, id string) error {
 	tag, err := r.pool.Exec(ctx, `DELETE FROM provider_nodes WHERE id = $1`, id)
 	if err != nil {
@@ -128,20 +130,6 @@ func (r *NodeRepository) Delete(ctx context.Context, id string) error {
 		return domain.ErrNodeNotFound
 	}
 	return nil
-}
-
-// CountEndpoints reports how many endpoints reference a provider id, so a delete
-// can refuse while one still does (domain.ErrNodeInUse). It reads the endpoints
-// table, not the node's, because the node id is what those rows store in
-// provider_id.
-func (r *NodeRepository) CountEndpoints(ctx context.Context, providerID string) (int64, error) {
-	var count int64
-	err := r.pool.QueryRow(ctx,
-		`SELECT count(*) FROM upstream_endpoints WHERE provider_id = $1`, providerID).Scan(&count)
-	if err != nil {
-		return 0, translateEndpointError(err)
-	}
-	return count, nil
 }
 
 // scanNode reads one provider_nodes row into a rehydrated aggregate.

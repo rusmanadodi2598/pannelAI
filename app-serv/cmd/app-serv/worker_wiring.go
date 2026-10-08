@@ -1,7 +1,7 @@
 // Command app-serv wires the background workers to the process lifecycle.
 //
 // @file      cmd/app-serv/worker_wiring.go
-// @for       Starts the quota flush, log retention, OAuth refresh, and published-quota poll workers, each with a panic boundary and a termination condition.
+// @for       Starts the quota flush, log retention, OAuth refresh, and published-quota poll workers on a context the shutdown path owns, each with a panic boundary and a joinable stop.
 // @uses      internal/repository, internal/repository/postgres, internal/repository/redis, internal/service, context, fmt, log/slog, runtime/debug, time, github.com/redis/go-redis/v9.
 // @reason    AGENTS.md §1.6 requires every goroutine to recover from a panic and to stop with the process, and SPEC-API-001 §6 gives all three workers their schedule. They live in one file because their shape is identical, construct, run until ctx is cancelled, supervise the panic, so a new worker has a pattern to follow rather than a new place to invent one.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"log/slog"
 	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -91,33 +92,84 @@ func buildWorkers(
 	return flusher, retention, nil
 }
 
+// workerGroup is the background half of the process. Its context is deliberately not
+// the signal's: a worker stopped the moment SIGTERM arrives drains its queue while
+// handlers are still running and still feeding it, so the events or counters those
+// requests produce are recorded against a consumer that already left. The stop path
+// ends the workers once the server has drained, and joins them.
+type workerGroup struct {
+	wg     sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
+// workerContext derives the context every background worker runs on. WithoutCancel is
+// the whole point: the signal's context must not reach the workers, because the stop
+// path chooses when they end, and it chooses after the server has drained.
+func workerContext(signal context.Context) (context.Context, context.CancelFunc) {
+	return context.WithCancel(context.WithoutCancel(signal))
+}
+
 // runWorkers starts every background worker the management graph returned. A nil
 // worker is a wiring gap the constructor already reported, so it is skipped here
 // rather than crashed on at shutdown.
-func runWorkers(ctx context.Context, deps managementDeps) {
+func runWorkers(parent context.Context, deps managementDeps) *workerGroup {
+	group := &workerGroup{}
+	group.ctx, group.cancel = workerContext(parent)
+
 	if deps.QuotaFlusher != nil {
-		go runSupervised("quota flusher", func() { deps.QuotaFlusher.Run(ctx) })
+		group.start("quota flusher", func() { deps.QuotaFlusher.Run(group.ctx) })
 	}
 	if deps.LogRetention != nil {
-		go runSupervised("log retention", func() { deps.LogRetention.Run(ctx) })
+		group.start("log retention", func() { deps.LogRetention.Run(group.ctx) })
 	}
 	if deps.OAuthRefresh != nil {
-		go runSupervised("oauth refresh", func() { deps.OAuthRefresh.Run(ctx, oauthRefreshInterval) })
+		group.start("oauth refresh", func() { deps.OAuthRefresh.Run(group.ctx, oauthRefreshInterval) })
 	}
 	// The usage event publisher drains the recorder's queue and the consumer
 	// mirrors each event into the console ring. Both are supervised like every
 	// other worker: the consumer owns a subscription that has to be closed on
 	// shutdown, and the publisher owns the only goroutine that can publish.
 	if deps.UsageEvents != nil {
-		go runSupervised("usage event publisher", func() { deps.UsageEvents.Run(ctx) })
+		group.start("usage event publisher", func() { deps.UsageEvents.Run(group.ctx) })
 	}
 	if deps.UsageEventConsumer != nil {
-		go runSupervised("usage event consumer", func() { deps.UsageEventConsumer.Run(ctx) })
+		group.start("usage event consumer", func() { deps.UsageEventConsumer.Run(group.ctx) })
 	}
 	// The published-quota poll worker arrives through publishedWorker rather than
 	// through deps, for the reason stated beside that var.
 	if publishedWorker != nil {
-		go runSupervised("published quota poll", func() { publishedWorker.Run(ctx, publishedPollTick) })
+		group.start("published quota poll", func() { publishedWorker.Run(group.ctx, publishedPollTick) })
+	}
+	return group
+}
+
+// start spawns one supervised worker and records it in the join.
+func (g *workerGroup) start(name string, body func()) {
+	g.wg.Add(1)
+	go func() {
+		defer g.wg.Done()
+		runSupervised(name, body)
+	}()
+}
+
+// stopAndJoin ends the workers and waits for them to return, bounded by window.
+//
+// The wait has its own bound rather than trusting the workers: Run is written to
+// return on ctx.Done(), and a worker that did not would otherwise hold the process
+// open past what an orchestrator's kill timeout allows. Leaving one is logged, not
+// hidden.
+func (g *workerGroup) stopAndJoin(window time.Duration) {
+	g.cancel()
+	done := make(chan struct{})
+	go func() {
+		g.wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(window):
+		slog.Warn("workers did not finish inside the shutdown window", "window", window.String())
 	}
 }
 

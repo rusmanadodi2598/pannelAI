@@ -143,10 +143,10 @@ describe('custom provider node client', () => {
 		expect(result.ok).toBe(true);
 	});
 
-	it('reports the refusal that keeps a referenced node alive', async () => {
+	it('reports the refusal that keeps a comboed node alive', async () => {
 		stub(() =>
 			jsonResponse(409, {
-				error: { code: 'CONFLICT', message: 'an endpoint still references this provider' }
+				error: { code: 'CONFLICT', message: 'combo "prod fallback" still references this provider' }
 			})
 		);
 
