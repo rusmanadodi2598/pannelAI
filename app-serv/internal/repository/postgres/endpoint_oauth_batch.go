@@ -114,17 +114,9 @@ UPDATE upstream_endpoints
 	return nil
 }
 
-// updateEndpointTokens writes the credential an OAuth rotation owns, and nothing
-// else. A rotation loads the aggregate, spends a vendor round trip, then stores:
-// re-sending the columns it loaded would put back any status or priority the
-// operator changed in the meantime, because the aggregate carries the values as
-// they were at load. The credential is the only field this path mutates, so it is
-// the only field the statement may write.
-//
-// loaded makes the write a compare-and-swap on the stored credential: the row is
-// written only while its oauth still carries the two ciphertexts the caller loaded
-// with, so a rotation racing another loses instead of storing a token the vendor
-// had already swapped.
+// updateEndpointTokens writes the credential an OAuth rotation owns and nothing else.
+// The rotation loaded the aggregate before it went to the vendor, so re-sending the
+// other columns would restore whatever the operator changed in the meantime.
 func updateEndpointTokens(
 	ctx context.Context, exec endpointExecer, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential,
 ) error {

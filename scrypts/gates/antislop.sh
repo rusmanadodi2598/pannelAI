@@ -16,10 +16,15 @@
 #     request. That debt is swept, so the exclusion went with it instead of
 #     staying out of habit. A rule enforced only on the diff is a rule that
 #     regrows in the files nobody touched.
-#   - Citations are a WARNING, not a failure. 146 of them are legitimate
-#     references inside the §1.2 @reason headers, and the body-comment residue is
-#     zero, so failing would hold a commit hostage to lines its author did not
-#     write.
+#   - Citations warn on Go and fail on the panel. 146 of them are legitimate
+#     references inside the §1.2 @reason headers, and Go's body-comment residue is
+#     zero, so failing there would hold a commit hostage to lines its author did
+#     not write. The panel has no @reason region and its residue is zero across
+#     every file, so a citation in a changed panel file is a line just written,
+#     which is the only case a failure catches fairly.
+#   - A changed-files check that cannot read the change set fails. An empty list is
+#     also what a clean diff looks like, and an unreadable GATES_BASE_REF produces
+#     exactly that: this gate reported PASS antislop gate while inspecting nothing.
 #   - Citations read only comment text, and only below a Go file's `package`
 #     line. Above it, AGENTS.md §1.2 mandates a @reason field and names it where
 #     a file's rationale lives, so a draft reference there is the convention
@@ -300,8 +305,6 @@ dash_hits="$(grep_files "$DASH_RE" '*.go' '*.ts' '*.tsx' '*.js' '*.mjs' '*.svelt
 	':(exclude)**/*_gen.go' ':(exclude)*.pb.go' ':(exclude)app-serv/internal/handler/openapi.json' \
 	":(exclude)$SELF")"
 report "R-02 dash" "$dash_hits" || failed=1
-
-# ---- citations, warning only ----
 
 # ---- citations, on changed files ----
 

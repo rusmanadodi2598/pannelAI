@@ -19,7 +19,7 @@
 #     https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64-baseline.zip
 #   unzip bun.zip && install -m755 bun-linux-x64-baseline/bun ~/.local/bin/bun
 #
-# Checks, in increasing cost: format, type check, tests, build.
+# Checks, in increasing cost: prettier, eslint, svelte-kit sync, svelte-check, vitest, build.
 #
 # Environment:
 #   SKIP_PANEL_BUILD=1   skip the production build (the slowest step)

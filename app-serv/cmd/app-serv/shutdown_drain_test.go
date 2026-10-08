@@ -60,7 +60,7 @@ func TestServeDrainsCountersAfterTheServerStops(t *testing.T) {
 	// serve blocks, so it runs on its own goroutine and the readiness poll stays
 	// on the test goroutine, which is the only one allowed to fail the test.
 	done := make(chan error, 1)
-	go func() { done <- serve(ctx, srv, drain, shutdownTimeout) }()
+	go func() { done <- serve(ctx, srv, nil, drain, shutdownTimeout) }()
 
 	waitServing(t, addr)
 	cancel()
@@ -83,7 +83,7 @@ func TestServeWithoutADrainStillStopsCleanly(t *testing.T) {
 	srv := &http.Server{Addr: addr, Handler: http.NewServeMux()}
 
 	done := make(chan error, 1)
-	go func() { done <- serve(ctx, srv, nil, shutdownTimeout) }()
+	go func() { done <- serve(ctx, srv, nil, nil, shutdownTimeout) }()
 
 	waitServing(t, addr)
 	cancel()
@@ -119,7 +119,7 @@ func TestServeDrainsAfterATimedOutShutdown(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	done := make(chan error, 1)
-	go func() { done <- serve(ctx, srv, drain, 50*time.Millisecond) }()
+	go func() { done <- serve(ctx, srv, nil, drain, 50*time.Millisecond) }()
 	waitServing(t, addr)
 
 	clientDone := make(chan struct{})

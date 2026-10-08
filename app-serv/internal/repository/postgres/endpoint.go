@@ -140,17 +140,13 @@ func (r *EndpointRepository) Update(ctx context.Context, endpoint domain.Upstrea
 	return updateEndpoint(ctx, r.pool, endpoint)
 }
 
-// UpdateIfUnchanged writes only the credential an OAuth rotation owns, only while
-// the stored credential still carries the two ciphertexts the caller loaded, and
-// reports a conflict when it no longer does. The OAuth rotation needs it: a forced
-// refresh racing the worker's would otherwise write the older credential over the
-// token the vendor had already swapped, and the account would be dead until the
-// operator re-authenticated.
-//
-// It leaves the row's other columns alone, and that is the second half of the guard.
-// A rotation loads the aggregate, spends a vendor round trip, then stores; re-sending
-// the loaded values would restore any status or priority the operator changed while
-// that was in flight, which the credential comparison cannot see.
+// UpdateIfUnchanged writes only the credential an OAuth rotation owns, only while the
+// stored credential still carries the two ciphertexts the caller loaded, and reports a
+// conflict when it no longer does: a forced refresh racing the worker's would otherwise
+// store the older credential over the token the vendor had already rotated, and the
+// account would stay dead until the operator re-authenticated. The narrow column set is
+// the other half of that guard, because the comparison cannot see a status or priority
+// the operator changed while the rotation was at the vendor.
 func (r *EndpointRepository) UpdateIfUnchanged(
 	ctx context.Context, endpoint domain.UpstreamEndpoint, loaded domain.OAuthCredential,
 ) error {

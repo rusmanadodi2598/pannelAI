@@ -187,7 +187,7 @@ func (c Credential) HasCredential() bool {
 // String names the account without naming the credential. The plaintext escapes
 // through a debug print, a test failure dumping the struct, or a `%+v` in a log
 // line someone adds later, so this prints the identity fields and redacts the
-// secrets.
+// secrets. `%#v` does not come through here; GoString covers that one.
 func (c Credential) String() string {
 	return "provider.Credential{EndpointID: " + c.endpointID +
 		", KeyID: " + c.keyID +
@@ -195,13 +195,6 @@ func (c Credential) String() string {
 		", ProjectID: " + c.projectID +
 		", APIKey: " + redactedWhenSet(c.apiKey) +
 		", AccessToken: " + redactedWhenSet(c.accessToken) + "}"
-}
-
-func redactedWhenSet(value string) string {
-	if value == "" {
-		return "unset"
-	}
-	return "[redacted]"
 }
 
 func ambiguousCredentialError(endpointID, keyID string) error {

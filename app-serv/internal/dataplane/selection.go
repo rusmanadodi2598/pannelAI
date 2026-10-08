@@ -62,8 +62,8 @@ func CursorKey(providerID string) string {
 type Selection struct {
 	Endpoint domain.UpstreamEndpoint
 	Key      domain.UpstreamKey
-	// Credential is assembled for exactly one request and never stored, so a
-	// logged selection cannot leak a secret.
+	// Credential stays out of logs because provider.Credential redacts itself, not
+	// because the value is short-lived: printing it is not the same as storing it.
 	Credential provider.Credential
 }
 

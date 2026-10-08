@@ -12,6 +12,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -35,6 +36,10 @@ type countingStore struct {
 	// hold lets a test keep one flush inside the store while another arrives.
 	hold    chan struct{}
 	pendErr error
+	// fullBatches scripts how many ceiling-sized batches Pending still hands out
+	// before the keyspace runs dry, which is how a test measures a drain that is
+	// supposed to keep going rather than take one batch and stop.
+	fullBatches int
 }
 
 func (s *countingStore) Add(context.Context, string, domain.QuotaWindowKind, int64, time.Time) error {
@@ -61,6 +66,20 @@ func (s *countingStore) Pending(ctx context.Context, limit int) ([]domain.QuotaW
 	}
 	if s.pendErr != nil {
 		return nil, s.pendErr
+	}
+	if s.fullBatches > 0 {
+		s.fullBatches--
+		batch := make([]domain.QuotaWindow, 0, limit)
+		for i := range limit {
+			window, err := domain.NewQuotaWindow(
+				fmt.Sprintf("ep_backlog_%d", i), "openai", domain.QuotaWindowDaily, nil, nil, time.Now())
+			if err != nil {
+				return nil, err
+			}
+			window.Add(10, time.Now())
+			batch = append(batch, window)
+		}
+		return batch, nil
 	}
 	window, err := domain.NewQuotaWindow("ep_1", "openai", domain.QuotaWindowDaily, nil, nil, time.Now())
 	if err != nil {

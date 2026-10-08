@@ -84,7 +84,35 @@ func (f *QuotaFlusher) Run(ctx context.Context) {
 // It reports whether it ran. A false result means another flush was already in
 // flight, which is not an error: the shutdown flush racing a tick is expected,
 // and the running one drains the same counters.
-func (f *QuotaFlusher) FlushOnce(ctx context.Context) bool { return f.flushOnce(ctx) }
+func (f *QuotaFlusher) FlushOnce(ctx context.Context) bool {
+	ran, _ := f.flushOnce(ctx)
+	return ran
+}
+
+// FlushUntilQuiet repeats the cycle until a batch comes back shorter than the ceiling,
+// so a backlog larger than one batch is settled before the process stops. Shutdown is
+// the only caller that needs it: the ticker deliberately takes one bounded batch per
+// tick (quota_flush_policy.go, AGENTS.md §1.7) and has a next tick to wait for.
+//
+// A failed cycle stops the loop too, because those counters stay in Redis and spinning
+// on a batch that cannot move only spends the window. The result is false when no cycle
+// of its own ever ran, which a caller reports as "a tick is already draining these".
+func (f *QuotaFlusher) FlushUntilQuiet(ctx context.Context) bool {
+	ran := false
+	for {
+		if ctx.Err() != nil {
+			return ran
+		}
+		cycleRan, more := f.flushOnce(ctx)
+		if !cycleRan {
+			return ran
+		}
+		ran = true
+		if !more {
+			return ran
+		}
+	}
+}
 
 // flushOnce drains one batch and persists it inside a panic-recovering
 // goroutine: a panic in an unrecovered goroutine kills the whole process, so the
@@ -93,9 +121,9 @@ func (f *QuotaFlusher) FlushOnce(ctx context.Context) bool { return f.flushOnce(
 // every other worker shape in this service. The running guard is claimed BEFORE
 // the goroutine starts and released by it, so a second caller is refused
 // immediately rather than after the first completes.
-func (f *QuotaFlusher) flushOnce(ctx context.Context) bool {
+func (f *QuotaFlusher) flushOnce(ctx context.Context) (ran, more bool) {
 	if !f.running.CompareAndSwap(false, true) {
-		return false
+		return false, false
 	}
 
 	done := make(chan struct{})
@@ -107,10 +135,10 @@ func (f *QuotaFlusher) flushOnce(ctx context.Context) bool {
 				f.logger.Error("panic saat flush kuota", "panic", recovered, "stack", string(debug.Stack()))
 			}
 		}()
-		f.drain(ctx)
+		more = f.drain(ctx)
 	}()
 	<-done
-	return true
+	return true, more
 }
 
 // StartQuotaFlush runs the flusher until ctx is cancelled and blocks until it

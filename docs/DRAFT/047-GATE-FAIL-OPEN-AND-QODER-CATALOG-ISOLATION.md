@@ -11,7 +11,7 @@ Pass ini memverifikasi 17 klaim, membatalkan 4 di antaranya dengan bukti, dan me
 
 | | |
 | --- | --- |
-| **Status** | **Grup A landed (F1, F4, F7, F8, F11) `07b2497`. Grup B landed (F2, F3, F5, F6, F10).** Semua temuan di bawah terverifikasi terhadap kode, dan untuk F1, F2, F3, F4, F7 dan F9 dibuktikan dengan menjalankan kodenya: merah sebelum perbaikan, hijau sesudah. Dua butir review dibatalkan dan alasannya ada di bagiannya sendiri |
+| **Status** | **Ketiga grup landed. Grup A (F1, F4, F7, F8, F11) `07b2497`. Grup B (F2, F3, F5, F6, F9, F10) `d5b8de7`. Grup C (F12, F13, F14, F15).** Semua temuan di bawah terverifikasi terhadap kode, dan untuk F1, F2, F3, F4, F7 dan F9 dibuktikan dengan menjalankan kodenya: merah sebelum perbaikan, hijau sesudah. Dua butir review dibatalkan dan alasannya ada di bagiannya sendiri |
 | **Mechanism** | DURING: tulisan baru mengikuti R-02 dan R-31, dan setiap klaim harus bisa dibuktikan oleh perintah yang tertulis di dokumennya sendiri |
 | **Scope** | **Bukan comment-only.** F1 sampai F3 menyentuh `scrypts/`, `app-serv` repository, service dan provider. Keluar dari guardrail antislop-code, atas izin eksplisit owner, seperti F1 dan F2 pada 046 |
 | **Sumber temuan** | Daftar review owner, lalu pengukuran terhadap pohon kode, gerbang yang dijalankan dengan `GATES_BASE_REF` rusak, `go run` untuk semantik `net/url` dan `fmt`, dan `git show ab1a4c4^` untuk test yang hilang |
@@ -283,7 +283,7 @@ false positive, bukan lolos-check, jadi ini kebersihan, bukan lubang.
 regex byte-oriented lainnya bergantung pada bagaimana locale menafsirkan byte, sehingga hasilnya bisa berbeda antara
 mesin developer dan runner. Satu `export LC_ALL=C.UTF-8` membuat keduanya deterministik.
 
-### F12 (LOW) Premis klaimnya salah, tapi ada bug nyata di sebelahnya
+### F12 (LOW) Premis klaimnya salah, bentuk fix-nya benar, dan lubang sebenarnya adalah `%#v`
 
 Klaim owner: "`Credential` tidak punya `GoString()` dan `LogValue()` sehingga secret bisa bocor ke log."
 
@@ -293,21 +293,48 @@ nol `%#v` ke `Credential`, nol `slog.Any` di produksi, dan enam pemanggil `Secre
 (`provider/default.go:117`, `qoder.go:143`, `opencode_auth.go:37`, `dataplane/media.go:179`,
 `service/systemone_target.go:59`) semuanya hanya mengisi header.
 
-Yang membuat butir ini tetap masuk daftar: semantik `fmt` diuji langsung, dan `String()` tidak dipanggil untuk field
-nested.
+Yang membuat butir ini tetap masuk daftar, dan yang membuat bentuk fix review justru benar: `%#v`.
+
+Probe pertama saya, terhadap tipe yang saya karang sendiri, menyimpulkan `String()` dilewati untuk field nested
+bahkan pada `%v`. Kesimpulan itu salah, dan salah karena probe-nya: field pada struct pembawa saya pakai
+unexported, dan `fmt` tidak bisa memanggil method pada `reflect.Value` read-only. Bentuk produksi berbeda.
+Diukur ulang terhadap `dataplane.Call` dan `dataplane.Selection` yang sebenarnya:
 
 ```
-nested %v  : {w {e1 SK_REAL}}                       <-- String() dilewati, token tercetak
-plain %#v  : main.cred{id:"e1", secret:"SK_REAL"}
+%v   on Call      : redacted   (String() dihormati, field-nya exported)
+%+v  on Call      : redacted
+%#v  on Call      : bocor      <-- satu-satunya verb yang menembus String()
+%v   on unexported: bocor      <-- tidak ada struct produksi yang bentuknya begini
 ```
 
-`Credential` adalah field dari `dataplane.Call.Credential` (`dataplane/upstream.go:42`) dan
-`dataplane.Selection.Credential` (`dataplane/selection.go:67`), dan keduanya tidak punya `String()`. Karena itu
-komentar `selection.go:65-66`, yang menyatakan "a logged selection cannot leak a secret", faktually salah.
+Verifikasi terakhir itu yang menentukan: `grep` atas semua field bertipe `provider.Credential` menemukan dua di
+kode produksi (`dataplane/upstream.go:42`, `dataplane/selection.go:67`), keduanya exported, dan dua sisanya
+hanya ada di test double. Jadi `%v` dan `%+v` sudah aman hari ini; yang terbuka cuma `%#v`, dan `%#v` dibentuk
+oleh refleksi atas field, bukan oleh method milik fieldnya, sehingga `GoString()` pada `Credential` yang
+menutupnya, bukan `String()` pada `Call`.
 
-Ini juga membatalkan bentuk fix yang diusulkan review. `GoString()` dan `LogValue()` pada `Credential` tidak
-menyelesaikan kasus nested `%v`. Yang menyelesaikannya adalah `String()` pada `Call` dan `Selection`. Tambah
-`LogValue()` tetap worthwhile karena ia murah dan membuat `slog` benar, tapi bukan itu yang menutup lubang.
+Bukti dua arah, tanpa menebak: `GoString()` dilepas dari kode yang sudah ada testnya, dan kasus `%#v` pada kedua
+tipe nyata langsung menulis plaintext; dipasang lagi, keduanya hijau.
+
+```
+--- FAIL: TestCarriedCredentialStaysRedacted/%#v_on_a_Call
+        %#v on a Call wrote the plaintext: dataplane.Call{... apiKey:"pt-SUPERSECRET-material" ...}
+--- FAIL: TestCarriedCredentialStaysRedacted/%#v_on_a_Selection
+```
+
+Komentar `selection.go:65-66` tetap ikut dikoreksi, tapi bukan karena ia salah klaim. Ia benar bahwa selection
+tidak membocorkan apa pun; yang salah adalah alasannya, "assembled for exactly one request and never stored".
+Seumur hidup pendek sebuah nilai tidak ada hubungannya dengan apa yang dicetaknya, dan pembaca berikutnya bisa
+saja menghapus method redaksi dengan percaya alasan itu. Alasannya diganti:
+`Credential` me-redact dirinya sendiri di setiap verb fmt dan di slog.
+
+`LogValue()` bukan penutup kebocoran dan tidak dijual begitu. Tanpa method itu slog merefleksi struct, hanya
+melihat field unexported, dan menulis objek kosong: tidak bocor, dan juga tidak menyebut akun mana pun, sehingga
+baris log yang seharusnya menelusuri satu panggilan kehilangan keduanya. Bentuknya sekarang grup berisi
+`endpoint_id`, `key_id`, `account` dan dua penanda redaksi.
+
+Metodenya ditaruh di `plugin_credential_redact.go` baru, bukan di `plugin_credential.go` yang sudah 210 baris,
+dan `redactedWhenSet` ikut pindah karena ia bagian dari concern yang sama.
 
 ### F13 (LOW) Sebagian benar, dan sebagian berbeda dari yang dinyatakan
 
@@ -456,7 +483,107 @@ Satu hal yang tidak ikut berubah dan perlu disebut karena ia adalah batasan yang
 memperlakukan golangci-lint yang hilang sebagai `gate_skip`, sementara staticcheck yang hilang sebagai `gate_fail`
 (§1.4). Asimetri itu keputusan yang sudah ditulis di komentar `:8-10`, dan F8 tidak menyentuhnya.
 
-Grup C belum dikerjakan pada bagian ini.
+### Grup C (F12, F13, F14, F15), landed
+
+**F12.** Premis review salah, bentuk fix-nya benar, dan lubang yang sebenarnya hanya `%#v`; rinciannya di bagian F12. Yang dikerjakan: `GoString()` dan `LogValue()` di `provider.Credential`, di
+`plugin_credential_redact.go` baru (210 baris pada `plugin_credential.go` tidak tempat yang baik untuk menambah
+dua method, dan `redactedWhenSet` ikut pindah karena ia bagian concern yang sama). Buktinya dua arah: `GoString()`
+dilepas dari kode yang sudah ada testnya, dan `%#v` pada `dataplane.Call` serta `dataplane.Selection` yang
+sebenarnya langsung menulis plaintext; dipasang lagi, ketiganya hijau.
+
+Satu hal yang tidak ikut dikerjakan dan harus disebut karena review memintanya: `String()` pada `Call` dan
+`Selection`. Tidak perlu, dan ukurannya yang membuktikan: field `Credential` pada kedua struct itu **exported**,
+dan fmt memanggil method sebuah field exported. Yang membuat probe pertama saya salah adalah field unexported
+pada stub karangan saya sendiri, dan `grep` atas seluruh field bertipe `provider.Credential` memastikan tidak ada
+satu pun bentuk unexported di kode produksi.
+
+`LogValue()` bukan penutup kebocoran. Tanpanya slog menulis `{}` untuk sebuah Credential: tidak bocor, tidak
+berguna. Ia masuk karena baris log yang tidak menyebut akun tidak bisa ditelusuri, dan itu disebut apa adanya.
+
+Komentar `selection.go:65-66` ikut dikoreksi, bukan karena klaimnya salah (selection memang tidak membocorkan
+apa pun) tapi karena alasan yang tertulis di sana salah: "assembled for exactly one request and never stored"
+tidak ada hubungannya dengan apa yang dicetak sebuah nilai, dan pembaca berikutnya bisa menghapus method redaksi
+dengan percaya alasan itu.
+
+**F13.** Klaim review separuh benar, dan separuh yang salah justru penting untuk dicatat karena ia adalah
+sejarah: jalur HTTP **sudah** di-drain hari ini (`srv.Shutdown` di `shutdown_drain.go:64`, dan `BaseContext` tidak
+pernah di-install sehingga context request tidak dibatalkan sinyal). Yang benar dan belum ada adalah dua hal
+lain, dan keduanya sekarang punya test.
+
+Penghenti worker tidak lagi menempel ke context sinyal. Worker berjalan pada context sendiri, dan jalur shutdown
+yang memadamkannya sesudah server selesai. Yang bikin urutan ini bukan kerapian: `usage_event_publish.go` menguras
+antreannya saat context-nya batal, sehingga berhenti pada sinyal berarti record yang dihasilkan handler selama
+jendela shutdown masuk ke antrean yang konsumennya sudah pergi. Test-nya mengukur urutan dua event, bukan
+kehadiran fungsi: sinyal datang ketika handler masih berjalan, dan stop harus terjadi **setelah** handler itu
+selesai. Diukur dua arah: dengan panggilan stop dihapus dari `serve`, test gagal dengan "the workers were never
+stopped".
+
+Join juga nyata sekarang. `runWorkers` dulu men-spawn `go runSupervised(...)` dan tidak pernah mengembalikan apa
+pun, jadi `serve` kembali sementara worker masih berjalan. `workerGroup` membawa WaitGroup dan `stopAndJoin`
+menunggunya dengan jendela sendiri, bukan tanpa batas: satu worker yang mengabaikan context-nya tidak boleh
+menahan proses melewati kill timeout orkestrator, jadi keterlambatan dilaporkan, bukan disembunyikan.
+
+Flush shutdown berhenti sebagai satu batch. `quotaDrain` memanggil `FlushUntilQuiet` yang mengulang cycle sampai
+batch datang lebih pendek dari ceiling. Kenapa ini bukan perubahan semantik worker: `quota_flush_policy.go`
+menyatakan tick sengaja satu batch supaya backlog tidak jadi satu statement tak berbatas (§1.7), dan keputusan
+itu dibiarkan utuh; loop-nya hidup di shutdown karena itu satu-satunya moment tanpa tick berikutnya. Jalur tick
+tetap diuji untuk membuktikan ia **tidak** ikut berubah. Test-nya memberi tiga batch penuh dan menuntut empat
+bacaan Pending (tiga penuh, satu pendek sebagai tanda keyspace habis); dengan body lama yang hanya sekali flush,
+ia merah pada `Pending calls = 1, want 4`.
+
+Satu konsekuensi yang sengaja tidak diubah, karena ia keputusan dan bukan slip: `/api/v1/usage/live` punya
+`usageLiveMaxLifetime` 30 menit (`usage_live.go:53`) sementara jendela shutdown 15 detik (`main.go:38`). Stream
+sepanjang itu akan selalu dipotong, dan memperpanjang jendela untuk alasan itu akan menunda setiap restart
+proses. Ini dicatat sebagai sisa, dengan flag `truncated` F6 sebagai teman yang membuat layar tidak membacanya
+sebagai data yang hilang.
+
+**F14.** Regex-nya nyata longgar dan dibuktikan dengan eksperimen, bukan dibaca: kelas `border` pada markup
+node diganti `border-0` (utility width hilang, yang lain tetap), lalu assert lama dijalankan pada markup itu.
+assert lama **lulus**, assert baru gagal. Itu false positive yang review sebut, terukur. Perbaikan: utility dibaca
+sebagai token kelas utuh, bukan substring.
+
+Bagian "path relatif ke file test, bukan cwd" **tidak dikerjakan, dan klaimnya salah sebagai cacat.** Pola itu
+bukan slip satu berkas: `grep` menemukan enam berkas `app-ui/tests/**` yang memakainya, termasuk dua modul
+support bersama (`tests/support/contrast.ts`, `tests/support/routes.ts`), dan `panel-check.sh` menjalankan vitest
+dari dalam direktori panel pada **kedua** jalurnya (`run_script()` = `(cd "$panel" && bun run …)` baris 57, dan
+fallback npm baris 73). Jadi asumsi cwd dipegang oleh cara gerbang memanggilnya, bukan oleh kebetulan. Mengubah
+satu berkas akan meninggalkan lima dengan konvensi yang berbeda, yang justru bentuk cacat yang dokumen ini
+laporkan di tempat lain.
+
+**F15.** Empat dokumen, dan hitungannya lebih dari yang review sebut.
+
+| Berkas | Yang berubah |
+| --- | --- |
+| `antislop.sh` header | Bullet "Citations are a WARNING, not a failure" diganti karena ia salah sejak `b012205`: panel gagal, Go hanya warn. Satu bullet baru ditambahkan untuk hal yang grup A ubah, yaitu perubahan set yang tidak terbaca kini gagal, bukan lolos. Banner basi `# ---- citations, warning only ----` dihapus; ia berdiri tepat di atas penggantinya yang benar |
+| `panel-check.sh` header | "format, type check, tests, build" menjadi daftar yang sama dengan tubuhnya: prettier, eslint, svelte-kit sync, svelte-check, vitest, build. Dua langkah itu ditambahkan `9751af0` tanpa ikut mengubah baris ini |
+| `pre-push` header | Daftar bernomor tidak pernah menyebut gate antislop, padahal ia jalan tanpa syarat. Urutannya sekarang benar dan kalimat routing-nya membedakan mana yang bisa di-skip (1 dan 2) dan mana yang tidak (3, 4, 5) |
+| `ANTISLOP.md` §2.5 | Dua tempat: baris tabel reach dan bullet-nya. Yang ditulis sekarang adalah apa yang gerbang lakukan setelah F7, termasuk dua hal yang review tidak sebut: penutup `-->` sebagai alasan palsu, dan direktif tanpa nama rule sebagai kegagalan tersendiri. Alasan kenapa plugin-qualified masih menjadi pemisah juga ditulis, karena itu penyebab false positive nyata di `eslint.config.js` |
+| `docs/DRAFT/045` | Baris 20 dan baris 248. Baris 248 masih menulis "MEDIUM (F4-F8) dan LOW (F9-F13) tidak disentuh" sementara dokumen itu sendiri, empat baris di bawahnya, mencatat F12 tertutup dengan test. Baris 20 ternyata basi pada **dua** klaim, bukan satu: F12 memang sudah tertutup (`c31ae1c`), dan F10 juga, dengan premisnya dibatalkan sendiri (baris 211) |
+
+### Ukuran penutup
+
+`go test -race ./...` exit 0, suite ber-tag `integration` dengan `-p 1` terhadap scratch PostgreSQL dan scratch
+Redis exit 0, `go-lint.sh` rc=0 (`go vet` dua tag, `gofmt`, `staticcheck` dua tag, `golangci-lint`), dan
+`gate-scope-test`, `go-headers`, `antislop`, `contract-drift`, `contract-openapi`, `secrets` semuanya PASS.
+Sisi panel: ketiga berkas skema dan geometri yang disentuh dijalankan sebagai satu kelompok dan rc=0, dengan
+`eslint` bersih; suite `app-ui` penuh sedang berjalan sebagai konfirmasi dan tidak mencatat kegagalan sampai
+baris ini ditulis, jadi angka akhirnya belum dinyatakan di sini.
+
+`go-lint.sh` menangkap satu temuan dari tulisannya sendiri, dan bentuk jawabannya layak dicatat karena ia
+bukan pengecualian: `staticcheck` menandai `fmt.Sprintf("%s", cred)` dengan S1025 "use String() instead".
+Kasus `%s` itu dibuang, bukan di-suppress, karena `%s`, `%v` dan `%+v` menempuh satu jalur yang sama
+(`String()`), jadi ia memang redundan di sisi `%v`; `%#v` tetap karena jalurnya berbeda (`GoString`). Set
+verb yang diuji sekarang adalah yang berbeda secara mekanisme, bukan yang banyak.
+
+`selection.go` tetap 231 baris dan gerbang memberi peringatan di angka itu, sebagaimana sebelum pass ini:
+yang berubah di sana hanya komentar dua baris, dan menjadikannya file yang benar-benar dipecah bukan
+tuntutan butir ini. Peringatan ini dibiarkan terlihat, tidak dinaikkan diam-diam menjadi lolos.
+
+F15 juga mengoreksi satu hal di dalam draft ini sendiri. Versi pertama F12 menyatakan `String()` dilewati
+untuk field nested bahkan pada `%v`. Itu salah, dan sumber kesalahannya adalah probe terhadap tipe karangan
+saya sendiri yang field-nya unexported, bentuk yang tidak ada di produksi. Bentuk yang benar sudah ditulis
+ulang di bagian F12 beserta pengukurannya, dan klaim bahwa komentar `selection.go` "factually salah" diganti:
+klaimnya benar, alasannya yang salah.
 
 ### Grup B (F2, F3, F5, F6, F10), landed
 

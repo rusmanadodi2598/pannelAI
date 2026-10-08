@@ -17,7 +17,7 @@ pembaca ke deklarasi yang salah.
 
 | | |
 | --- | --- |
-| **Status** | **HIGH (F1-F3) ter-commit `80abbaa`. MEDIUM F5-F7 ter-commit `6860901`. LOW F9, F11, F13 ter-commit `aa95471`. F4 selesai pada pass ini (gerbang + ANTISLOP.md). F8 tertutup sebagian: pengecualian primitives tercatat, sisanya masih keputusan. F10 menunggu F8, F12 butuh test. Scope pass ini bukan comment-only lagi: `scrypts/gates/antislop.sh` berubah, atas izin owner** |
+| **Status** | **HIGH (F1-F3) ter-commit `80abbaa`. MEDIUM F5-F7 ter-commit `6860901`. LOW F9, F11, F13 ter-commit `aa95471`. F4 selesai pada pass ini (gerbang + ANTISLOP.md). F8 tertutup sebagian: pengecualian primitives tercatat, sisanya masih keputusan. F10 tertutup dengan membatalkan premisnya sendiri (baris 211). F12 tertutup dengan test, `c31ae1c`, dan testnya dibuktikan lebih dulu (baris 218). Yang masih terbuka hanyalah F8 paruh kedua dan keputusan owner yang ia tunggu. Scope pass ini bukan comment-only lagi: `scrypts/gates/antislop.sh` berubah, atas izin owner** |
 | **Mechanism** | AFTER (audit 007) lalu DURING untuk tulisan baru |
 | **Scope** | Komentar di `app-ui/src/**` dan `app-ui/tests/**` untuk F1-F3, F5-F7, F9, F11, F13 (semuanya terbukti comment-only). Untuk F4: `scrypts/gates/antislop.sh` dan `docs/RULLES/ANTISLOP.md`, yang adalah perubahan alat dan tata kelola, bukan komentar, dan itu atas izin eksplisit owner karena guardrail antislop-code sendiri melarangnya |
 | **Sumber temuan** | `anti-slop/audit-007-2026-10-07.md`, terukur atas 5.879 baris komentar di 320 file `src` + 3.141 di `tests` |
@@ -245,7 +245,7 @@ file hand-carried yang eksplisit. Itu keputusan owner, bukan pekerjaan pass ini.
 
 ## Hasil
 
-Status: **F1, F2, F3 selesai.** MEDIUM (F4-F8) dan LOW (F9-F13) tidak disentuh, menunggu keputusan.
+Status baris ini ditulis pada awal pass dan sudah tidak menggambarkan isinya; dibiarkan apa adanya akan menjadi cacat bentuk F3 yang dokumen ini sendiri laporkan. Yang sebenarnya selesai: **F1-F7 dan F9-F13**. F8 tertutup sebagian (pengecualian `primitives` tercatat, sisanya keputusan owner), dan F10 tertutup dengan premisnya dibatalkan. Rinciannya ada di tiap subbagian Hasil di bawah, dan commitnya di baris Status di atas.
 
 ### F1 selesai: 16 pointer baris ke `app-serv` diganti nama deklarasi
 
