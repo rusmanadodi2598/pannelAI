@@ -181,19 +181,25 @@ Sekitar 045 F3, ini kelas "klaim perilaku yang kode tidak lakukan", hanya saja k
 
 Aturan 045 berlaku di sini juga: pointer menyebut deklarasi, bukan nomor baris.
 
-### F5 (LOW) Sisa yang diketahui, lalu dibersihkan sekali atas izin owner
+### F5 (LOW) Sisa yang diketahui, lalu ditutup sebagai aturan
 
 Baris `models_custom` dan `models_disabled` keyed by `provider_id` tetap ada setelah node hilang; tidak ada FK di
 sana, jadi tidak ada cascade yang bisa diminta. Baris itu tidak terjangkau: kuncinya id node yang sudah mati dan id
-node tidak dipakai ulang. Menuliskan ini di sini, bukan menghapusnya diam-diam, supaya audit berikutnya tahu bahwa
-sisa ini dipilih, bukan terlewat. Kalau suatu saat prefix boleh dipakai ulang, kalimat di "Keputusan desain" di atas
-salah, dan sisa ini menjadi bug sungguhan. Terukur pada ronde lanjutan: setelah node probe dihapus,
-`models_custom` untuk id node itu masih berisi 1 baris. Terukur juga pada database hari ini, dan angkanya
-bergerak dua kali: **4 baris yatim dari 10** saat pass ini dimulai, lalu **5** saat pembersihan dijalankan,
-karena satu node asli (`ApMix 2`) dihapus dari panel di antaranya, dengan 1 model kustom dan 1 koneksinya
-yang ikut. `models_disabled` dan `media_provider_settings` nol keduanya pada kedua pengukuran. Membersihkannya
-bukan pekerjaan ronde kode (lihat keputusan di bawah), dan menghapus baris milik operator butuh izin eksplisit,
-bukan inisiatif agen.
+node tidak dipakai ulang. Rencana awal menuliskannya sebagai sisa yang dipilih, bukan yang terlewat. Terukur dua
+kali dan angkanya bergerak: **4 baris yatim dari 10** saat pass ini dimulai, lalu **5** saat pembersihan dijalankan,
+karena satu node asli (`ApMix 2`) dihapus dari panel di antaranya, dengan 1 model kustom dan 1 koneksinya yang ikut.
+`models_disabled` dan `media_provider_settings` nol keduanya pada kedua pengukuran.
+
+Owner menolak posisi itu: sebuah delete tidak boleh meninggalkan model milik provider yang sudah tidak ada, supaya
+tidak menumpuk. Jadi ia sekarang aturan, bukan pembersihan sekali: `NodeService.Delete` memanggil `ModelEraser`
+(`postgres.ModelCatalogRepository.DeleteForProvider`) yang menghapus `models_custom` dan `models_disabled` milik id
+itu dalam satu transaksi, setelah endpoint dan sebelum baris node. Predikatnya id tepat, bukan bentuk, dan itu
+bukan kehati-hatian kosong: `opencode`, provider registry, menyimpan barisnya di dua kolom yang sama, dan test
+integrasinya membuktikan pasangan `opencode` bertahan sementara pasangan provider node hilang.
+
+`media_provider_settings` tidak ikut. Provider node hanya bisa berbentuk OpenAI/Anthropic-compatible dengan
+`api_type` chat atau responses, jadi tidak ada jalur yang menulis baris media untuk sebuah node; hari ini tabel itu
+kosong. Kalau suatu saat node boleh media, tabel itu masuk aturan yang sama.
 
 ## Rencana verifikasi
 
@@ -354,20 +360,53 @@ bagian bawah dokumen), dan cabang error dobel di `management_wiring.go` dihapus 
 
 
 
+### Ronde models: delete ikut membersihkan baris model provider
+
+Owner menolak posisi "sisa yang dipilih": sebuah delete tidak boleh meninggalkan model milik provider yang sudah
+tidak ada. Jadi `NodeService.Delete` sekarang memanggil `ModelEraser` sesudah endpoint dan sebelum baris node, dan
+`postgres.ModelCatalogRepository.DeleteForProvider` menghapus `models_custom` plus `models_disabled` milik id itu
+dalam satu transaksi. Predikatnya id tepat; itu bukan gaya, karena provider registry menyimpan barisnya di dua
+kolom yang sama.
+
+Terukur lewat API nyata (binary dari ronde ini, port 127.0.0.1:9100):
+
+```text
+before delete: custom=2 disabled=1 endpoints=1
+delete: 204
+after delete:  custom=0 disabled=0 endpoints=0   node rows: 0
+opencode rows: custom=2 disabled=0              nodes left: 2
+```
+
+Baris `opencode` itulah buktinya: hapus satu provider node tidak boleh menyentuh model milik provider registry,
+dan keduanya hidup di kolom yang sama. `nodes left: 2` adalah node asli owner, tidak berubah; residue probe 0.
+
+Test: `TestNodeService_DeleteTakesTheNodesEndpointsAndModelRowsWithIt` mengunci bahwa kedua erase dipanggil tepat
+sekali untuk id node itu, dan kedua guard test ikut menuntut `models` kosong ketika delete ditolak. Di sisi
+repository, `TestIntegration_DeleteForProviderClearsBothModelTablesAndNothingElse` berjalan terhadap PostgreSQL
+nyata (scratch database, di-drop sesudahnya) dan membuktikan pasangan `opencode` bertahan sementara pasangan
+provider hilang, plus provider tanpa baris bukan error.
+
+Sisi panel: kalimat konfirmasi menyebut baris model sekarang, dan tidak ada lagi cabang yang diam. Sebelumnya
+`connections === 0` berarti tidak ada kalimat sama sekali, padahal node tanpa koneksi bisa tetap punya model yang
+ikut terhapus; cabang itu kini berbunyi `Its custom models go with it.`. Angka koneksi tetap satu-satunya angka,
+karena bacaan jumlah model tidak punya `meta.total` di jalurnya dan panel tidak akan menebak angka dari panjang
+halaman pertama.
+
+Kontrak: baris DELETE §7.4, blok §6.3, satu baris README panel, dan satu entri changelog di tiap spesifikasi.
+
+
+
 ## Yang tidak dilakukan pass ini
 
 - Tidak menambah route "move endpoint" atau membuat `provider_id` bisa di-patch. Yang diminta adalah menghapus
   provider, dan kata "move" dihapus dari panel karena ia menjanjikan jalur yang tidak ada, bukan karena jalurnya
   ditolak.
 - Tidak menyentuh layar list provider. Delete tetap hidup di layar detail, tempat konteksnya ada.
-- Tidak menyentuh riwayat pemakaian (`usage_records`, `quota_windows`, `request_logs`). Yang disentuh adalah baris
-  yatim `models_custom` yang **sudah ada**, sekali, atas izin owner, lewat dump restore; menghapus yatim dari jalur
-  delete sendiri sengaja tidak dilakukan (bullet berikutnya).
-- Tidak ikut menghapus baris model milik node ketika node dihapus. Alasannya beda dari alasan alias: baris
-  model tidak dirutekan oleh siapa pun setelah node mati, jadi menghilangkannya hanya merapikan, sementara
-  menambah port penghapus lintas agregat untuk itu adalah biaya nyata. Konsekuensinya jujur: setiap node yang
-  punya model kustom dan kemudian dihapus akan meninggalkan baris yatim, dan jumlah yatim itu akan bertambah.
-  Yang berhenti adalah lubang fungsional (alias), bukan sisa kosmetik.
+- Tidak menyentuh riwayat pemakaian (`usage_records`, `quota_windows`, `request_logs`): itu bukti traffic yang
+  sungguh terjadi, dan bukan bagian dari node untuk hilang bersamanya.
+- Baris model milik node **ikut terhapus** sejak ronde ini. Dua ronde sebelumnya butir ini berbunyi lain: baris
+  model sengaja ditinggal karena tidak terjangkau, dan yatim akan terus bertambah. Owner menolak posisi itu, aturan
+  ganti, dan yatim yang terlanjur ada dibersihkan sekali lewat dump restore sebelum aturannya ada.
 
 ## Dua keputusan owner, keduanya sudah dikerjakan
 
@@ -382,7 +421,8 @@ bagian bawah dokumen), dan cabang error dobel di `management_wiring.go` dihapus 
    satu pun yang menyebut kedua id mati itu. Kenapa bukan migrasi `000016`: `down` yang jujur untuk sebuah DELETE
    menuntut tabel backup baru, dan itu perubahan struktur yang wajib masuk `SYSTEM_MAP` demi baris yang tidak
    dibaca siapa pun. Kalau yatim ini perlu dibersihkan di lebih dari satu lingkungan, migrasi jadi alat yang
-   benar; hari ini database-nya cuma satu.
+   benar; hari ini database-nya cuma satu. Ronde berikutnya membuat pertanyaan ini tidak terulang: delete sekarang
+   menghapus baris model provider itu sendiri, jadi yatim baru tidak bertambah lagi.
 2. **Cabang mati di `cmd/app-serv/management_wiring.go`: dihapus (`7874d38`).** Blok `if err != nil` setelah
    `NewProviderService` ditulis dua kali, baris demi baris identik, dari dua commit September yang berbeda, dan
    yang kedua tidak mungkin tereksekusi karena yang pertama mengembalikan error yang sama. Sisa tree
