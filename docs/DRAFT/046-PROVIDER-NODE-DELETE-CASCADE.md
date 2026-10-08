@@ -9,7 +9,10 @@ menghapus provider.
 
 | | |
 | --- | --- |
-| **Status** | **Selesai. HIGH `b41f54b`; dokumen MEDIUM `0f151b1`; ronde lanjutan `5934041` (penolakan combo terbukti lewat API hidup, dan konfirmasi delete menjadi komponen sendiri); LOW `40c0e04` (guard alias, juga terbukti lewat API hidup). F4 landed bersama commit yang menghapus aturannya, kecuali satu doc comment yang ikut `0f151b1`. F5 terukur live dan sengaja ditinggal. Butir kode tidak ada yang terbuka; dua keputusan owner tercatat di bagian akhir dokumen ini. Bukti: suite panel penuh 183 file / 2985 test lolos di atas `0f151b1`, dan `scrypts/gates/go-test.sh` di atas HEAD `0ee46f2` menjawab `PASS go test -race app-serv` dengan `SKIP integration suite: PANNELAI_TEST_POSTGRES_DSN is not set`; test ber-tag itu tetap terbukti karena ia dijalankan terpisah terhadap PostgreSQL nyata di database scratch. Ronde `5934041` hanya menyentuh panel (4 file 28 test, `svelte-check` 0/0)** |
+| **Status** | **Selesai. HIGH `b41f54b`; dokumen MEDIUM `0f151b1`; ronde lanjutan `5934041` (penolakan combo terbukti lewat API hidup, dan konfirmasi delete menjadi komponen sendiri); LOW `40c0e04` (guard alias, juga terbukti lewat API hidup). F4 landed bersama commit yang menghapus aturannya, kecuali satu doc comment yang ikut `0f151b1`. F5 terukur live dan sengaja ditinggal. Butir kode tidak ada yang terbuka; dua keputusan owner tercatat di bagian akhir dokumen ini. Bukti: suite panel penuh 183 file / 2985 test lolos di atas `0f151b1`, dan `scrypts/gates/go-test.sh` di atas HEAD `0ee46f2` menjawab `PASS go test -race app-serv` dengan `SKIP integration suite: PANNELAI_TEST_POSTGRES_DSN is not set`; test ber-tag itu tetap terbukti karena ia dijalankan terpisah terhadap PostgreSQL nyata di database scratch. Ronde `5934041` hanya menyentuh panel (4 file 28 test, `svelte-check` 0/0). Penutup: guard alias terukur lewat API
+hidup, cabang mati `management_wiring.go` dihapus pada `7874d38`, yatim `models_custom` dibersihkan dengan dump
+restore, dan delete asli pertama terjadi di database owner sendiri: `ApMix 2` beserta koneksi dan kuncinya ikut
+hilang** |
 | **Mechanism** | DURING: tulisan baru mengikuti R-02 dan R-31, dan pesan yang dikirim ke operator harus bisa dibuktikan produk |
 | **Scope** | **Bukan comment-only.** F1 mengubah `app-serv` service, repository, dan wiring; F2 mengubah komponen panel dan testnya; F3 mengubah dokumen kontrak; F4 menyunting komentar yang menuliskan aturan lama. Keluar dari guardrail antislop-code, atas izin eksplisit owner, seperti F4 dan F12 pada 045 |
 | **Sumber temuan** | Laporan owner, log `app-serv` 2026-10-07 20:47 (`DELETE /api/v1/provider-nodes/anthropic-compatible-0388PGVSAVAW7MD0VTT2X9SAYA` → `409 CONFLICT`), lalu pengukuran terhadap PostgreSQL nyata dan pohon kode saat ini |
@@ -178,17 +181,19 @@ Sekitar 045 F3, ini kelas "klaim perilaku yang kode tidak lakukan", hanya saja k
 
 Aturan 045 berlaku di sini juga: pointer menyebut deklarasi, bukan nomor baris.
 
-### F5 (LOW) Sisa yang diketahui dan sengaja tidak dibersihkan
+### F5 (LOW) Sisa yang diketahui, lalu dibersihkan sekali atas izin owner
 
 Baris `models_custom` dan `models_disabled` keyed by `provider_id` tetap ada setelah node hilang; tidak ada FK di
 sana, jadi tidak ada cascade yang bisa diminta. Baris itu tidak terjangkau: kuncinya id node yang sudah mati dan id
 node tidak dipakai ulang. Menuliskan ini di sini, bukan menghapusnya diam-diam, supaya audit berikutnya tahu bahwa
 sisa ini dipilih, bukan terlewat. Kalau suatu saat prefix boleh dipakai ulang, kalimat di "Keputusan desain" di atas
 salah, dan sisa ini menjadi bug sungguhan. Terukur pada ronde lanjutan: setelah node probe dihapus,
-`models_custom` untuk id node itu masih berisi 1 baris. Terukur juga pada database hari ini: **4 dari 10 baris
-`models_custom` sudah yatim** dari node yang dihapus sebelum pass ini dimulai, sementara `models_disabled` dan
-`media_provider_settings` nol keduanya. Membersihkannya bukan pekerjaan pass ini (lihat keputusan di bawah),
-dan menghapus baris milik operator butuh izin eksplisit, bukan inisiatif agen.
+`models_custom` untuk id node itu masih berisi 1 baris. Terukur juga pada database hari ini, dan angkanya
+bergerak dua kali: **4 baris yatim dari 10** saat pass ini dimulai, lalu **5** saat pembersihan dijalankan,
+karena satu node asli (`ApMix 2`) dihapus dari panel di antaranya, dengan 1 model kustom dan 1 koneksinya
+yang ikut. `models_disabled` dan `media_provider_settings` nol keduanya pada kedua pengukuran. Membersihkannya
+bukan pekerjaan ronde kode (lihat keputusan di bawah), dan menghapus baris milik operator butuh izin eksplisit,
+bukan inisiatif agen.
 
 ## Rencana verifikasi
 
@@ -336,27 +341,49 @@ apa adanya, bukan parafrasanya. §7.4 baris DELETE dan §6.3 menyebut kedua peno
 Kontrak §7.6 baris `models/aliases` sengaja tidak disentuh: menambahkan klausa di sana akan memecah lebar
 kolom tabel itu, dan §7.4 adalah tempat kontrak delete tinggal.
 
+### Ronde penutup: delete asli pertama terjadi di database owner
+
+Antara pengukuran pertama dan pembersihan, baris `ApMix 2` (`anthropic-compatible-0388PGVSAVAW7MD0VTT2X9SAYA`)
+hilang dari `provider_nodes` bersama 1 endpoint dan 1 kuncinya, sementara instance lama di `:9090` (PID 830409)
+sudah digantikan oleh `go run ./cmd/app-serv`. Tidak ada probe saya yang menyentuh node itu: semua probe memakai
+node sendiri dan dibersihkan sendiri. Apa pun jalur panggilnya, faktanya satu kalimat: **DELETE untuk node yang
+punya koneksi sekarang menjawab 204 dan mengambil koneksinya**, yaitu hal yang kemarin tidak bisa terjadi.
+
+Dua keputusan owner ditutup pada ronde ini: yatim `models_custom` dibersihkan dengan dump restore (angka di
+bagian bawah dokumen), dan cabang error dobel di `management_wiring.go` dihapus pada `7874d38`.
+
+
+
 ## Yang tidak dilakukan pass ini
 
 - Tidak menambah route "move endpoint" atau membuat `provider_id` bisa di-patch. Yang diminta adalah menghapus
   provider, dan kata "move" dihapus dari panel karena ia menjanjikan jalur yang tidak ada, bukan karena jalurnya
   ditolak.
 - Tidak menyentuh layar list provider. Delete tetap hidup di layar detail, tempat konteksnya ada.
-- Tidak membersihkan `models_custom`/`models_disabled` (F5), dan tidak menyentuh riwayat pemakaian.
+- Tidak menyentuh riwayat pemakaian (`usage_records`, `quota_windows`, `request_logs`). Yang disentuh adalah baris
+  yatim `models_custom` yang **sudah ada**, sekali, atas izin owner, lewat dump restore; menghapus yatim dari jalur
+  delete sendiri sengaja tidak dilakukan (bullet berikutnya).
 - Tidak ikut menghapus baris model milik node ketika node dihapus. Alasannya beda dari alasan alias: baris
   model tidak dirutekan oleh siapa pun setelah node mati, jadi menghilangkannya hanya merapikan, sementara
   menambah port penghapus lintas agregat untuk itu adalah biaya nyata. Konsekuensinya jujur: setiap node yang
   punya model kustom dan kemudian dihapus akan meninggalkan baris yatim, dan jumlah yatim itu akan bertambah.
   Yang berhenti adalah lubang fungsional (alias), bukan sisa kosmetik.
 
-## Dua hal yang butuh keputusan owner
+## Dua keputusan owner, keduanya sudah dikerjakan
 
-1. **4 baris `models_custom` yatim yang sudah ada di database.** Pilihan: satu kali `DELETE` terarah, migrasi
-   `000016` dengan `down` yang menyimpan ulang barisnya, atau dibiarkan. Tidak dikerjakan sendiri karena dua
-   alasan: itu baris yang operator tulis, dan §1.7 meminta sign-off eksplisit untuk perubahan yang membuang
-   data. Yang pass ini selesaikan adalah lubang yang bisa menyakiti klien (alias); yatim model tetap
-   bertambah, dan itu pilihan yang disadari bukan yang terlewat.
-2. **Satu cabang mati di `cmd/app-serv/management_wiring.go`.** Blok `if err != nil` setelah
-   `NewProviderService` ditulis dua kali, baris demi baris identik, dan blame menunjuk dua commit berbeda
-   (18 dan 23 September) sehingga ia bukan hasil pass ini. Tidak berbahaya, tidak terdeteksi linter, dan
-   menghapus tiga baris itu tidak ada hubungannya dengan delete provider, jadi ia tidak ikut naik di PR ini.
+1. **Baris `models_custom` yatim: dibersihkan atas izin owner, bukan sekali lewat migrasi.** Dump restore ada di
+   `backups/models_custom_orphans-2026-10-08.sql` (direktori itu di-ignore git, jadi tidak ikut naik ke repo dan
+   tidak bisa terpakai sebagai bukti di PR). Predikat penghapusan hanya menerima id berbentuk node
+   (`openai-compatible-%` / `anthropic-compatible-%`) **dan** tidak punya baris `provider_nodes`, karena id
+   registry menghuni kolom yang juga: `opencode` memegang 2 baris `models_custom` hari ini, dan sebuah predikat
+   "tidak ada node-nya" saja akan menghapus baris milik provider yang masih hidup. Terukur: 10 → 5 baris, yatim
+   tersisa 0, dan `provider_nodes` (2), `upstream_endpoints` (9), `upstream_keys` (7), `combos` (4),
+   `model_aliases` (0) tidak bergerak. Sebelum menghapus, combos dan aliases diperiksa lebih dulu: tidak ada
+   satu pun yang menyebut kedua id mati itu. Kenapa bukan migrasi `000016`: `down` yang jujur untuk sebuah DELETE
+   menuntut tabel backup baru, dan itu perubahan struktur yang wajib masuk `SYSTEM_MAP` demi baris yang tidak
+   dibaca siapa pun. Kalau yatim ini perlu dibersihkan di lebih dari satu lingkungan, migrasi jadi alat yang
+   benar; hari ini database-nya cuma satu.
+2. **Cabang mati di `cmd/app-serv/management_wiring.go`: dihapus (`7874d38`).** Blok `if err != nil` setelah
+   `NewProviderService` ditulis dua kali, baris demi baris identik, dari dua commit September yang berbeda, dan
+   yang kedua tidak mungkin tereksekusi karena yang pertama mengembalikan error yang sama. Sisa tree
+   `cmd/app-serv` dipindai untuk bentuk yang sama: hanya ini satu-satunya.
