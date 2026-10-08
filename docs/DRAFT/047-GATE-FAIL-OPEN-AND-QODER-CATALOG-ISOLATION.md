@@ -565,9 +565,9 @@ laporkan di tempat lain.
 `go test -race ./...` exit 0, suite ber-tag `integration` dengan `-p 1` terhadap scratch PostgreSQL dan scratch
 Redis exit 0, `go-lint.sh` rc=0 (`go vet` dua tag, `gofmt`, `staticcheck` dua tag, `golangci-lint`), dan
 `gate-scope-test`, `go-headers`, `antislop`, `contract-drift`, `contract-openapi`, `secrets` semuanya PASS.
-Sisi panel: ketiga berkas skema dan geometri yang disentuh dijalankan sebagai satu kelompok dan rc=0, dengan
-`eslint` bersih; suite `app-ui` penuh sedang berjalan sebagai konfirmasi dan tidak mencatat kegagalan sampai
-baris ini ditulis, jadi angka akhirnya belum dinyatakan di sini.
+Sisi panel: suite `app-ui` penuh **183 berkas, 2988 test, semuanya lolos (rc=0)** dan `bun run lint:ts` rc=0.
+Ketiga berkas yang berubah (`schemas/oauth.ts`, `schemas/quota.ts`, `tests/schemas/usage-topology-geometry.test.ts`)
+juga dijalankan sebagai kelompok tersendiri lebih dulu, supaya kegagalan lokal tidak perlu menunggu suite penuh.
 
 `go-lint.sh` menangkap satu temuan dari tulisannya sendiri, dan bentuk jawabannya layak dicatat karena ia
 bukan pengecualian: `staticcheck` menandai `fmt.Sprintf("%s", cred)` dengan S1025 "use String() instead".
