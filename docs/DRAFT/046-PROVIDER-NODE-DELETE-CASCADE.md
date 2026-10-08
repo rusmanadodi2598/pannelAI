@@ -9,7 +9,7 @@ menghapus provider.
 
 | | |
 | --- | --- |
-| **Status** | **Selesai. HIGH `b41f54b`; dokumen MEDIUM `0f151b1`; ronde lanjutan `5934041` (penolakan combo terbukti lewat API hidup, dan konfirmasi delete menjadi komponen sendiri). F4 landed bersama commit yang menghapus aturannya, kecuali satu doc comment yang ikut `0f151b1`. F5 terukur live dan sengaja ditinggal. Tidak ada butir yang terbuka di draft ini. Bukti: suite panel penuh 183 file / 2985 test lolos di atas `0f151b1`, dan `scrypts/gates/go-test.sh` di atas HEAD `0ee46f2` menjawab `PASS go test -race app-serv` dengan `SKIP integration suite: PANNELAI_TEST_POSTGRES_DSN is not set`; test ber-tag itu tetap terbukti karena ia dijalankan terpisah terhadap PostgreSQL nyata di database scratch. Ronde `5934041` hanya menyentuh panel (4 file 28 test, `svelte-check` 0/0)** |
+| **Status** | **Selesai. HIGH `b41f54b`; dokumen MEDIUM `0f151b1`; ronde lanjutan `5934041` (penolakan combo terbukti lewat API hidup, dan konfirmasi delete menjadi komponen sendiri); LOW `40c0e04` (guard alias, juga terbukti lewat API hidup). F4 landed bersama commit yang menghapus aturannya, kecuali satu doc comment yang ikut `0f151b1`. F5 terukur live dan sengaja ditinggal. Butir kode tidak ada yang terbuka; dua keputusan owner tercatat di bagian akhir dokumen ini. Bukti: suite panel penuh 183 file / 2985 test lolos di atas `0f151b1`, dan `scrypts/gates/go-test.sh` di atas HEAD `0ee46f2` menjawab `PASS go test -race app-serv` dengan `SKIP integration suite: PANNELAI_TEST_POSTGRES_DSN is not set`; test ber-tag itu tetap terbukti karena ia dijalankan terpisah terhadap PostgreSQL nyata di database scratch. Ronde `5934041` hanya menyentuh panel (4 file 28 test, `svelte-check` 0/0)** |
 | **Mechanism** | DURING: tulisan baru mengikuti R-02 dan R-31, dan pesan yang dikirim ke operator harus bisa dibuktikan produk |
 | **Scope** | **Bukan comment-only.** F1 mengubah `app-serv` service, repository, dan wiring; F2 mengubah komponen panel dan testnya; F3 mengubah dokumen kontrak; F4 menyunting komentar yang menuliskan aturan lama. Keluar dari guardrail antislop-code, atas izin eksplisit owner, seperti F4 dan F12 pada 045 |
 | **Sumber temuan** | Laporan owner, log `app-serv` 2026-10-07 20:47 (`DELETE /api/v1/provider-nodes/anthropic-compatible-0388PGVSAVAW7MD0VTT2X9SAYA` → `409 CONFLICT`), lalu pengukuran terhadap PostgreSQL nyata dan pohon kode saat ini |
@@ -185,7 +185,10 @@ sana, jadi tidak ada cascade yang bisa diminta. Baris itu tidak terjangkau: kunc
 node tidak dipakai ulang. Menuliskan ini di sini, bukan menghapusnya diam-diam, supaya audit berikutnya tahu bahwa
 sisa ini dipilih, bukan terlewat. Kalau suatu saat prefix boleh dipakai ulang, kalimat di "Keputusan desain" di atas
 salah, dan sisa ini menjadi bug sungguhan. Terukur pada ronde lanjutan: setelah node probe dihapus,
-`models_custom` untuk id node itu masih berisi 1 baris.
+`models_custom` untuk id node itu masih berisi 1 baris. Terukur juga pada database hari ini: **4 dari 10 baris
+`models_custom` sudah yatim** dari node yang dihapus sebelum pass ini dimulai, sementara `models_disabled` dan
+`media_provider_settings` nol keduanya. Membersihkannya bukan pekerjaan pass ini (lihat keputusan di bawah),
+dan menghapus baris milik operator butuh izin eksplisit, bukan inisiatif agen.
 
 ## Rencana verifikasi
 
@@ -302,6 +305,37 @@ Gerbang Go atas HEAD menjawab `PASS go test -race app-serv` dengan
 `SKIP integration suite skipped: PANNELAI_TEST_POSTGRES_DSN is not set`: skip itu justru alasan test cascade
 dijalankan sendiri terhadap PostgreSQL nyata, bukan dibiarkan tidak pernah berjalan.
 
+### LOW (ronde terakhir): sebuah alias membuat cascade ini memperlebar satu lubang
+
+F5 di atas adalah sisa yang tidak menyakiti siapa pun. Yang menyakiti adalah hal lain, dan ia ditemukan oleh
+pengukuran yang sama: sebuah `model_aliases` resolve pada setiap request, jadi node yang dihapus dari bawah
+sebuah alias meninggalkan nama itu menjawab kegagalan untuk klien yang memanggilnya dengan nama. Sebelum
+pass ini penolakan endpoint sering ikut menutup jalur itu, tapi secara kebetulan, bukan karena aturan: node
+tanpa endpoint dengan sebuah alias sudah bisa dihapus sejak dulu. Cascade membuat keadaan itu lebih mudah
+dijangkau, jadi ia sekarang dijaga oleh aturan.
+
+`provider_node_alias_guard.go` (46 baris) menolak delete sambil ada alias yang menarget node, dalam dua ejaan
+yang router terima (id node dan prefix-nya), dan berjalan **setelah** guard combo serta **sebelum** erase.
+Satu dereference level adalah alasan dua guard ini bersama-sama menutup seluruh target yang tersimpan: alias
+yang menunjuk sebuah combo ditangkap ketika combo itu menyebut node.
+
+Terukur lewat API nyata (binary dari pass ini, port 127.0.0.1:9099):
+
+```text
+delete while an alias names it: 409 {"code":"CONFLICT","message":"alias zz-alias still targets this provider"}
+  after the refusal: endpoints=1 keys=1 node=1
+delete once the alias is gone: 204
+  after: endpoints=0 keys=0 node=0
+```
+
+Sisi panel hanya satu kalimat: pointer ke layar Combos sudah benar (alias diedit di sebelah combo di
+`CombosTab.svelte`), jadi "that membership is edited" melebar menjadi "that member or alias is edited" tanpa
+bercabang. Test stub ikut membuat penolakan alias expressible, dan pesan fixture itu menyalin kalimat server
+apa adanya, bukan parafrasanya. §7.4 baris DELETE dan §6.3 menyebut kedua penolakan.
+
+Kontrak §7.6 baris `models/aliases` sengaja tidak disentuh: menambahkan klausa di sana akan memecah lebar
+kolom tabel itu, dan §7.4 adalah tempat kontrak delete tinggal.
+
 ## Yang tidak dilakukan pass ini
 
 - Tidak menambah route "move endpoint" atau membuat `provider_id` bisa di-patch. Yang diminta adalah menghapus
@@ -309,3 +343,20 @@ dijalankan sendiri terhadap PostgreSQL nyata, bukan dibiarkan tidak pernah berja
   ditolak.
 - Tidak menyentuh layar list provider. Delete tetap hidup di layar detail, tempat konteksnya ada.
 - Tidak membersihkan `models_custom`/`models_disabled` (F5), dan tidak menyentuh riwayat pemakaian.
+- Tidak ikut menghapus baris model milik node ketika node dihapus. Alasannya beda dari alasan alias: baris
+  model tidak dirutekan oleh siapa pun setelah node mati, jadi menghilangkannya hanya merapikan, sementara
+  menambah port penghapus lintas agregat untuk itu adalah biaya nyata. Konsekuensinya jujur: setiap node yang
+  punya model kustom dan kemudian dihapus akan meninggalkan baris yatim, dan jumlah yatim itu akan bertambah.
+  Yang berhenti adalah lubang fungsional (alias), bukan sisa kosmetik.
+
+## Dua hal yang butuh keputusan owner
+
+1. **4 baris `models_custom` yatim yang sudah ada di database.** Pilihan: satu kali `DELETE` terarah, migrasi
+   `000016` dengan `down` yang menyimpan ulang barisnya, atau dibiarkan. Tidak dikerjakan sendiri karena dua
+   alasan: itu baris yang operator tulis, dan §1.7 meminta sign-off eksplisit untuk perubahan yang membuang
+   data. Yang pass ini selesaikan adalah lubang yang bisa menyakiti klien (alias); yatim model tetap
+   bertambah, dan itu pilihan yang disadari bukan yang terlewat.
+2. **Satu cabang mati di `cmd/app-serv/management_wiring.go`.** Blok `if err != nil` setelah
+   `NewProviderService` ditulis dua kali, baris demi baris identik, dan blame menunjuk dua commit berbeda
+   (18 dan 23 September) sehingga ia bukan hasil pass ini. Tidak berbahaya, tidak terdeteksi linter, dan
+   menghapus tiga baris itu tidak ada hubungannya dengan delete provider, jadi ia tidak ikut naik di PR ini.
