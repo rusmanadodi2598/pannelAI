@@ -62,7 +62,7 @@
 		{#if dismissible}
 			<button
 				type="button"
-				class="ml-auto inline-flex size-9 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)]"
+				class="ml-auto inline-flex size-11 items-center justify-center rounded-[var(--radius-sm)] hover:bg-[var(--color-surface-2)]"
 				onclick={onclose}
 				aria-label="Close dialog"
 			>
