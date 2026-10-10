@@ -189,3 +189,157 @@ describe('relay and the credential', () => {
 		expect(text).toContain('[redacted]');
 	});
 });
+
+type UpstreamFailureDetail = { code: string; type: string; message: string };
+
+function upstreamFailureResponse(
+	status: number,
+	requestId: string,
+	error?: UpstreamFailureDetail
+): Response {
+	const headers = new Headers({ 'x-request-id': requestId });
+	if (error !== undefined) headers.set('content-type', 'application/json');
+	const body = error === undefined ? '<html>upstream failure</html>' : JSON.stringify({ error });
+	return new Response(body, { status, headers });
+}
+
+describe('relay request ID filtering', () => {
+	it('preserves safe IDs and omits key-bearing IDs from parsed error responses', async () => {
+		const cases: Array<{
+			name: string;
+			key: string;
+			requestId: string;
+			status: number;
+			expectedRequestId: string | undefined;
+			error: UpstreamFailureDetail;
+		}> = [
+			{
+				name: 'preserves a safe ID on a refused-key envelope',
+				key: 'panel-key-alpha-0123456789',
+				requestId: 'gateway-request-alpha-1',
+				status: 401,
+				expectedRequestId: 'gateway-request-alpha-1',
+				error: { code: 'UNAUTHORIZED', type: 'server_error', message: 'gateway refused the key' }
+			},
+			{
+				name: 'omits an exact key match and redacts an echoed code',
+				key: 'panel-key-beta-abcdefghijklmnop',
+				requestId: 'panel-key-beta-abcdefghijklmnop',
+				status: 401,
+				expectedRequestId: undefined,
+				error: {
+					code: 'UNAUTHORIZED',
+					type: 'server_error',
+					message: 'the gateway echoed panel-key-beta-abcdefghijklmnop'
+				}
+			},
+			{
+				name: 'omits a middle substring and redacts an echoed message',
+				key: 'panel-key-gamma-0123456789',
+				requestId: 'prefix-panel-key-gamma-0123456789-suffix',
+				status: 502,
+				expectedRequestId: undefined,
+				error: {
+					code: 'UPSTREAM_ERROR',
+					type: 'server_error',
+					message: 'upstream reported panel-key-gamma-0123456789'
+				}
+			},
+			{
+				name: 'omits a prefix substring and redacts an echoed type',
+				key: 'panel-key-delta-abcdefghijklmnopqrstuv',
+				requestId: 'panel-key-delta-abcdefghijklmnopqrstuv-extra',
+				status: 503,
+				expectedRequestId: undefined,
+				error: {
+					code: 'UPSTREAM_ERROR',
+					type: 'server_error',
+					message: 'upstream reported panel-key-delta-abcdefghijklmnopqrstuv'
+				}
+			},
+			{
+				name: 'preserves a case-sensitive non-match',
+				key: 'PanelKey-Epsilon-0123456789',
+				requestId: 'panelkey-epsilon-0123456789',
+				status: 502,
+				expectedRequestId: 'panelkey-epsilon-0123456789',
+				error: { code: 'UPSTREAM_ERROR', type: 'server_error', message: 'case-sensitive miss' }
+			}
+		];
+
+		for (const testCase of cases) {
+			const { impl } = recordingFetch(() =>
+				upstreamFailureResponse(testCase.status, testCase.requestId, testCase.error)
+			);
+
+			const response = await relay(TARGET, testCase.key, CHAT_PATH, request, impl);
+			const serializedBody = await response.text();
+			const body = schemaPlaygroundFailure.parse(JSON.parse(serializedBody));
+			const expectedError = {
+				code: testCase.error.code.split(testCase.key).join('[redacted]'),
+				type: testCase.error.type.split(testCase.key).join('[redacted]'),
+				message: testCase.error.message.split(testCase.key).join('[redacted]')
+			};
+
+			expect(response.status).toBe(502);
+			expect(body.error.code).toBe(
+				testCase.status === 401 ? 'GATEWAY_KEY_REFUSED' : 'GATEWAY_ERROR'
+			);
+			expect(response.headers.get('x-request-id')).toBe(testCase.expectedRequestId ?? null);
+			expect(body.error.gateway).toEqual(expectedError);
+			expect(serializedBody).not.toContain(testCase.key);
+			expect(JSON.stringify(body)).not.toContain(testCase.key);
+		}
+	});
+
+	it('filters key-bearing IDs and preserves safe IDs without an upstream error envelope', async () => {
+		const cases: Array<{
+			name: string;
+			key: string;
+			requestId: string;
+			status: number;
+			expectedRequestId: string | undefined;
+		}> = [
+			{
+				name: 'omits an exact key match after a refused key',
+				key: 'panel-key-zeta-0123456789',
+				requestId: 'panel-key-zeta-0123456789',
+				status: 401,
+				expectedRequestId: undefined
+			},
+			{
+				name: 'omits a substring match after a gateway error',
+				key: 'panel-key-eta-abcdefghijklmnop',
+				requestId: 'request-panel-key-eta-abcdefghijklmnop-tail',
+				status: 502,
+				expectedRequestId: undefined
+			},
+			{
+				name: 'preserves a safe ID after an upstream error',
+				key: 'panel-key-theta-0123456789',
+				requestId: 'gateway-request-theta',
+				status: 503,
+				expectedRequestId: 'gateway-request-theta'
+			}
+		];
+
+		for (const testCase of cases) {
+			const { impl } = recordingFetch(() =>
+				upstreamFailureResponse(testCase.status, testCase.requestId)
+			);
+
+			const response = await relay(TARGET, testCase.key, CHAT_PATH, request, impl);
+			const serializedBody = await response.text();
+			const body = schemaPlaygroundFailure.parse(JSON.parse(serializedBody));
+
+			expect(response.status).toBe(502);
+			expect(body.error.code).toBe(
+				testCase.status === 401 ? 'GATEWAY_KEY_REFUSED' : 'GATEWAY_ERROR'
+			);
+			expect(response.headers.get('x-request-id')).toBe(testCase.expectedRequestId ?? null);
+			expect(body.error.gateway).toBeUndefined();
+			expect(serializedBody).not.toContain(testCase.key);
+			expect(JSON.stringify(body)).not.toContain(testCase.key);
+		}
+	});
+});

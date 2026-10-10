@@ -66,7 +66,8 @@ async function failure(
 	fallback: string
 ): Promise<Response> {
 	const detail = await readGatewayError(upstream);
-	const requestId = upstream.headers.get('x-request-id') ?? undefined;
+	const upstreamRequestId = upstream.headers.get('x-request-id') ?? undefined;
+	const requestId = upstreamRequestId?.includes(key) ? undefined : upstreamRequestId;
 	if (detail === null) return playgroundError(code, fallback, { requestId });
 
 	const message = redact(detail.message, key);
