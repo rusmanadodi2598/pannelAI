@@ -63,9 +63,9 @@ Pencarian statis menemukan 16 komponen di `app-ui/src` yang menggabungkan `overf
 
 ## Tindak lanjut AFTER
 
-### F1 (HIGH) — RESOLVED
+### F1 (HIGH): RESOLVED
 
 - **Perubahan:** `Modal.svelte` memakai kelas `size-11`, yang menetapkan tombol penutup dialog ke 44 × 44px. Perubahan berlaku pada seluruh dialog yang berbagi komponen tersebut.
 - **Regression test:** `combo-dialog-icons.test.ts` kini mengunci `size-11` dan merujuk SPEC-UI §8.7; asumsi sebelumnya bahwa DESIGN.md §7 menetapkan 36px untuk kontrol dialog telah dihapus.
-- **Verifikasi:** `pnpm test` — 183 file dan 2.988 test lulus. `pnpm check` — 0 error dan 0 warning. `pnpm build` — berhasil; hasil CSS memuat `.size-11` untuk lebar dan tinggi target. Click-through browser dan uji perangkat sentuh nyata tidak dilakukan, jadi R-35 tidak diklaim lulus.
+- **Verifikasi:** `pnpm test`: 183 file dan 2.988 test lulus. `pnpm check`: 0 error dan 0 warning. `pnpm build`: berhasil; hasil CSS memuat `.size-11` untuk lebar dan tinggi target. Click-through browser dan uji perangkat sentuh nyata tidak dilakukan, jadi R-35 tidak diklaim lulus.
 - **Batas lingkup:** F2, F3, dan F4 tidak diubah; tidak ada perubahan pada `app-ui/pnpm-lock.yaml`.
