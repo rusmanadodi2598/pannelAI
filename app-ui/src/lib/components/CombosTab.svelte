@@ -21,6 +21,7 @@
 	import type { Combo } from '$lib/schemas/combo';
 	import type { CatalogModel } from '$lib/schemas/model';
 	import type { Provider } from '$lib/schemas/provider';
+	import type { ApiError } from '$lib/api/errors';
 
 	const AddIcon = CONTROL_ICONS.add.icon;
 	const PreviousIcon = CONTROL_ICONS.previous.icon;
@@ -33,13 +34,13 @@
 	let total = $state(0);
 	let pageNumber = $state(1);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	let editing = $state<Combo | null>(null);
 	let creating = $state(false);
 	let pendingDelete = $state<Combo | null>(null);
 	let deleting = $state<string | null>(null);
-	let deleteError = $state<string | null>(null);
+	let deleteError = $state<ApiError | null>(null);
 	// Whether the last delete failure was the API's CONFLICT, which is the only answer that means an alias
 	// still references the combo.
 	let deleteConflict = $state(false);
@@ -74,7 +75,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -119,7 +120,7 @@
 			// The code is what decides the dialog's lead sentence: only a CONFLICT means an alias still
 			// references this combo. The API's message names that alias, and the panel does not paraphrase it.
 			deleteConflict = result.error.code === 'CONFLICT';
-			deleteError = result.error.message;
+			deleteError = result.error;
 			return;
 		}
 
@@ -156,7 +157,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading combos" />
 	{:else if error}
-		<StateMessage kind="error" title="Combos could not be loaded" description={error}>
+		<StateMessage kind="error" title="Combos could not be loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="inline-flex items-center gap-2 underline" onclick={load}>
 					<RetryIcon class="size-4" aria-hidden="true" />

@@ -12,6 +12,8 @@
 	import { onMount } from 'svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { CHANGELOG_PATH, fetchChangelog } from '$lib/api/changelog';
 	import { fetchSystemInfo } from '$lib/api/system';
 	import {
@@ -26,9 +28,9 @@
 
 	let changelog = $state<Changelog | null>(null);
 	let runningVersion = $state('');
-	let versionError = $state<string | null>(null);
+	let versionError = $state<ApiError | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	onMount(load);
 
@@ -44,7 +46,7 @@
 
 		if (!list.ok) {
 			changelog = null;
-			error = list.error.message;
+			error = list.error;
 			return;
 		}
 
@@ -52,7 +54,7 @@
 
 		if (!version.ok) {
 			runningVersion = '';
-			versionError = version.error.message;
+			versionError = version.error;
 			return;
 		}
 
@@ -102,7 +104,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title={copy.loading} />
 	{:else if error}
-		<StateMessage kind="error" title={copy.error.title} description={error}>
+		<StateMessage kind="error" title={copy.error.title} apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}
 					>{copy.error.retry}</button
@@ -127,7 +129,7 @@
 		{#if versionError}
 			<p class="text-sm text-[var(--color-text-muted)]" role="status">
 				{copy.running.unreadable}
-				<span class="block">{versionError}</span>
+				<ApiErrorText error={versionError} prefix=" " />
 			</p>
 		{:else if !comparable}
 			<p class="text-sm text-[var(--color-text-muted)]" role="status">

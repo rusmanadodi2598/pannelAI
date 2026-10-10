@@ -101,6 +101,35 @@ describe('PlaygroundPage send', () => {
 		expect(screen.queryByRole('heading', { name: 'Answer' })).toBeNull();
 	});
 
+	it('shows the request ID for an INTERNAL_ERROR from the gateway inside the playground envelope', async () => {
+		const failure = {
+			error: {
+				code: 'GATEWAY_ERROR',
+				message: 'The gateway hit an unexpected error.',
+				gateway: {
+					code: 'INTERNAL_ERROR',
+					type: 'server_error',
+					message: 'The gateway hit an unexpected error.'
+				}
+			}
+		};
+		stubPlayground({
+			models: MODELS,
+			chat: () =>
+				new Response(JSON.stringify(failure), {
+					status: 502,
+					headers: { 'content-type': 'application/json', 'x-request-id': 'gateway-request-23' }
+				})
+		});
+		render(PlaygroundPage);
+
+		await sendMessage('hi');
+
+		const alert = await screen.findByRole('alert');
+		expect(alert.textContent).toContain('gateway-request-23');
+		expect(screen.getByRole('button', { name: 'Copy request ID' })).toBeTruthy();
+	});
+
 	it('keeps a partial answer on screen when the stream breaks', async () => {
 		// The frame is delivered by the first read and the break comes on the second, because a stream that
 		// errors with a frame still queued drops that frame: the point of the row is text that did arrive.

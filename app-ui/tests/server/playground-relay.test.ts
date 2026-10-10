@@ -125,6 +125,28 @@ describe('relay failures', () => {
 		expect(body.error.message).toMatch(/HTTP 500/);
 	});
 
+	it('forwards an upstream request ID when the gateway returned INTERNAL_ERROR', async () => {
+		const { impl } = recordingFetch(
+			() =>
+				new Response(
+					JSON.stringify({
+						error: { code: 'INTERNAL_ERROR', type: 'server_error', message: 'unexpected' }
+					}),
+					{
+						status: 500,
+						headers: { 'content-type': 'application/json', 'x-request-id': 'upstream-request-23' }
+					}
+				)
+		);
+
+		const response = await relay(TARGET, KEY, CHAT_PATH, request, impl);
+		const body = schemaPlaygroundFailure.parse(await response.json());
+
+		expect(body.error.code).toBe('GATEWAY_ERROR');
+		expect(body.error.gateway?.code).toBe('INTERNAL_ERROR');
+		expect(response.headers.get('x-request-id')).toBe('upstream-request-23');
+	});
+
 	it('reports a gateway it could not dial rather than a failure it imagined', async () => {
 		const { impl } = recordingFetch(() => Promise.reject(new Error('ECONNREFUSED')));
 

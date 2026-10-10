@@ -14,10 +14,12 @@
 	// Validation runs on submit rather than on every keystroke (§8.4.5), and the messages are the
 	// schema's, so the panel and the API describe a rule the same way.
 	import { untrack } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import FormIssues from '$lib/components/FormIssues.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import ProxyFormFields from '$lib/components/ProxyFormFields.svelte';
 	import { createProxy, testProxyCandidate, updateProxy } from '$lib/api/proxies';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		proxyTestStateLabel,
 		schemaProxyCandidate,
@@ -49,6 +51,8 @@
 	let saving = $state(false);
 	let testing = $state(false);
 	let result = $state<ProxyTest | null>(null);
+	let actionError = $state<ApiError | null>(null);
+	let actionErrorPrefix = $state('');
 
 	// Follows the row the page opened, so a second Edit opens that row rather than the first one's
 	// draft, and a cancel leaves nothing behind for the next open.
@@ -56,6 +60,8 @@
 		draft = proxyDraftFrom(target);
 		issues = [];
 		result = null;
+		actionError = null;
+		actionErrorPrefix = '';
 	});
 
 	const editing = $derived(target !== null && target !== 'new');
@@ -63,6 +69,8 @@
 	async function test(): Promise<void> {
 		issues = [];
 		result = null;
+		actionError = null;
+		actionErrorPrefix = 'Could not test this proxy: ';
 
 		const parsed = schemaProxyCandidate.safeParse(proxyCandidateFromDraft(draft));
 		if (!parsed.success) {
@@ -75,7 +83,7 @@
 		testing = false;
 
 		if (!answer.ok) {
-			issues = [answer.error.message];
+			actionError = answer.error;
 			return;
 		}
 
@@ -85,6 +93,8 @@
 	async function save(): Promise<void> {
 		issues = [];
 		result = null;
+		actionError = null;
+		actionErrorPrefix = 'Could not save this proxy: ';
 
 		const parsed = schemaProxyForm.safeParse(draft);
 		if (!parsed.success) {
@@ -100,7 +110,7 @@
 		saving = false;
 
 		if (!answer.ok) {
-			issues = [answer.error.message];
+			actionError = answer.error;
 			return;
 		}
 
@@ -114,6 +124,11 @@
 <Modal title={editing ? 'Edit this proxy' : 'Add a proxy'} open={target !== null} {onclose}>
 	<div class="flex flex-col gap-4">
 		<FormIssues {issues} />
+		{#if actionError}
+			<p role="alert" class="text-sm text-[var(--color-danger)]">
+				<ApiErrorText error={actionError} prefix={actionErrorPrefix} />
+			</p>
+		{/if}
 
 		<ProxyFormFields bind:value={draft} {target} />
 

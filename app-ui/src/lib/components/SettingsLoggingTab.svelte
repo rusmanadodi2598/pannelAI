@@ -10,7 +10,9 @@
 	// the submit before Zod sees the value, so the message would be the browser's rather than the
 	// schema's. The floors live in the schema and the hint text.
 	import { untrack } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { patchLoggingSettings } from '$lib/api/settings';
+	import type { ApiError } from '$lib/api/errors';
 	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
 		schemaLoggingSettingsForm,
@@ -30,7 +32,7 @@
 	let draft = $state<LoggingSettingsForm>({ ...initial });
 	let server = $state<LoggingSettingsForm>({ ...initial });
 
-	let message = $state<string | null>(null);
+	let message = $state<string | ApiError | null>(null);
 	let saving = $state(false);
 
 	const dirty = $derived(settingsGroupDirty(server, draft));
@@ -51,7 +53,7 @@
 		saving = false;
 
 		if (!result.ok) {
-			message = result.error.message;
+			message = result.error;
 			return;
 		}
 
@@ -138,7 +140,9 @@
 			<span class="text-sm font-medium text-[var(--color-text-muted)]">Unsaved changes</span>
 		{/if}
 		{#if message}
-			<p class="text-sm text-[var(--color-text-muted)]" role="status">{message}</p>
+			<p class="text-sm text-[var(--color-text-muted)]" role="status">
+				<ApiErrorText error={message} />
+			</p>
 		{/if}
 	</div>
 </div>

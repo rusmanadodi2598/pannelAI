@@ -10,7 +10,9 @@
 	// It is its own component because it is a self-contained control: its own read, its own write, and the
 	// lines that report both. The section around it only decides where it sits.
 	import { untrack } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { fetchSettings, patchProviderStrategy } from '$lib/api/settings';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		CREDENTIAL_ROTATION_LABELS,
 		type CredentialRotation,
@@ -28,8 +30,8 @@
 	// change the gateway never stored.
 	let rotationOn = $state(false);
 	let rotationLoading = $state(true);
-	let rotationError = $state<string | null>(null);
-	let rotationMessage = $state<string | null>(null);
+	let rotationError = $state<ApiError | null>(null);
+	let rotationMessage = $state<string | ApiError | null>(null);
 	let saving = $state(false);
 
 	// This provider's own entry, or null while it inherits the global default.
@@ -51,7 +53,7 @@
 		rotationLoading = false;
 		if (id !== providerId) return;
 		if (!result.ok) {
-			rotationError = result.error.message;
+			rotationError = result.error;
 			return;
 		}
 		rotationError = null;
@@ -79,7 +81,7 @@
 		const result = await patchProviderStrategy(providerId, next);
 		saving = false;
 		if (!result.ok) {
-			rotationMessage = result.error.message;
+			rotationMessage = result.error;
 			return false;
 		}
 		overrides = { ...result.data.routing.provider_strategies };
@@ -164,7 +166,7 @@
 	</div>
 	{#if rotationError}
 		<p class="text-sm text-[var(--color-text-muted)]" role="status">
-			The rotation setting could not be read: {rotationError}
+			<ApiErrorText error={rotationError} prefix="The rotation setting could not be read: " />
 		</p>
 	{:else if !rotationLoading}
 		{#if override === null}
@@ -178,6 +180,8 @@
 		{/if}
 	{/if}
 	{#if rotationMessage}
-		<p class="text-sm text-[var(--color-text-muted)]" role="status">{rotationMessage}</p>
+		<p class="text-sm text-[var(--color-text-muted)]" role="status">
+			<ApiErrorText error={rotationMessage} />
+		</p>
 	{/if}
 </div>

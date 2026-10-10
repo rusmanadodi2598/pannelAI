@@ -15,6 +15,8 @@
 	// is a place a credential would sit in clear text and unmasked, and the pool table above it
 	// deliberately shows the same thing: that one is set.
 	import { createProxy } from '$lib/api/proxies';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		parseProxyLines,
 		proxyCreateBody,
@@ -30,7 +32,7 @@
 	// the box, the numbering restarts at 1, so a number-keyed outcome would lose the reason it was
 	// holding. The raw line is stable across that rewrite, and a refused host is refused every time, so
 	// two identical lines cannot disagree about their outcome.
-	let outcomes = $state<Record<string, { ok: boolean; message: string }>>({});
+	let outcomes = $state<Record<string, { ok: boolean; message: string | ApiError }>>({});
 	let summary = $state<string | null>(null);
 
 	const parsed = $derived(parseProxyLines(text));
@@ -65,7 +67,7 @@
 				continue;
 			}
 
-			outcomes[row.raw] = { ok: false, message: answer.error.message };
+			outcomes[row.raw] = { ok: false, message: answer.error };
 			failed.push(row.raw);
 		}
 
@@ -136,8 +138,10 @@ socks5://operator:hunter2@proxy.example.com:1080`;
 	{/if}
 
 	{#if parsed.rows.length > 0}
-		<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-			<table class="w-full min-w-[48rem] border-collapse text-sm">
+		<div
+			class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+		>
+			<table class="mobile-key-value-table w-full border-collapse text-sm">
 				<caption class="sr-only">What the paste parsed into, before anything is sent</caption>
 				<thead class="bg-[var(--color-surface-2)] text-left">
 					<tr>
@@ -155,17 +159,19 @@ socks5://operator:hunter2@proxy.example.com:1080`;
 					{#each parsed.rows as row (row.line)}
 						{@const outcome = outcomes[row.raw]}
 						<tr class="border-t border-[var(--color-border)]">
-							<td class="px-3 py-2 tabular-nums">{row.line}</td>
-							<td class="px-3 py-2">{row.label}</td>
-							<td class="px-3 py-2">{PROXY_PROTOCOL_LABELS[row.protocol]}</td>
-							<td class="px-3 py-2">{row.host}</td>
-							<td class="px-3 py-2 tabular-nums">{row.port}</td>
-							<td class="px-3 py-2">{row.username || 'None'}</td>
-							<td class="px-3 py-2">{row.password === '' ? 'Not set' : 'Set'}</td>
-							<td class="px-3 py-2">
+							<td data-label="Line" class="px-3 py-2 tabular-nums">{row.line}</td>
+							<td data-label="Label" class="px-3 py-2">{row.label}</td>
+							<td data-label="Protocol" class="px-3 py-2">{PROXY_PROTOCOL_LABELS[row.protocol]}</td>
+							<td data-label="Host" class="px-3 py-2">{row.host}</td>
+							<td data-label="Port" class="px-3 py-2 tabular-nums">{row.port}</td>
+							<td data-label="Username" class="px-3 py-2">{row.username || 'None'}</td>
+							<td data-label="Password" class="px-3 py-2"
+								>{row.password === '' ? 'Not set' : 'Set'}</td
+							>
+							<td data-label="Result" class="px-3 py-2">
 								{#if outcome}
 									<span class={outcome.ok ? '' : 'text-[var(--color-danger)]'}>
-										{outcome.message}
+										<ApiErrorText error={outcome.message} />
 									</span>
 								{:else}
 									<span class="text-[var(--color-text-muted)]">Not sent</span>

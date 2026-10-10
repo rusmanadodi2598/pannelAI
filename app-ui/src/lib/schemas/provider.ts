@@ -138,7 +138,8 @@ export const PROVIDER_CATEGORIES = ['apikey', 'oauth', 'free', 'media', 'local']
 // `q` is the free-text search §6.3 asks for (PORT 002 D1): the API
 // matches it as a case-insensitive substring over the id and the display name, so the panel sends what
 // was typed rather than filtering the registry in the browser, which §6.3's pagination discipline
-// forbids. The bound lives on the API side; the panel only stops sending an empty term.
+// forbids. The panel enforces the 120-character limit before sending, and the API enforces the same bound.
+// The panel also omits an empty term.
 export const schemaProviderQuery = z.strictObject({
 	category: z.string().optional(),
 	routability: z.enum(['native', 'connector']).optional(),

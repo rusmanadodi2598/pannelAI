@@ -6,6 +6,8 @@
 	// their save, which is a self-contained unit: it validates through the shared schema, reports its own
 	// outcome, and hands the updated endpoint back so the drawer and the list can both reflect it.
 	import { updateEndpoint } from '$lib/api/endpoints';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		ENDPOINT_STATUS_ACTIVE,
 		ENDPOINT_STATUS_DISABLED,
@@ -23,7 +25,7 @@
 	let label = $state('');
 	let priority = $state('');
 	let saving = $state(false);
-	let notice = $state<string | null>(null);
+	let notice = $state<string | ApiError | null>(null);
 
 	const SaveIcon = ROW_ACTION_ICONS.save.icon;
 
@@ -50,7 +52,7 @@
 		saving = false;
 
 		if (!result.ok) {
-			notice = result.error.message;
+			notice = result.error;
 			return;
 		}
 
@@ -65,7 +67,7 @@
 		});
 
 		if (!result.ok) {
-			notice = result.error.message;
+			notice = result.error;
 			return;
 		}
 
@@ -75,7 +77,7 @@
 
 <div class="flex flex-col gap-3">
 	{#if notice}
-		<p class="text-[var(--color-text-muted)]">{notice}</p>
+		<p class="text-[var(--color-text-muted)]"><ApiErrorText error={notice} /></p>
 	{/if}
 
 	<div class="grid gap-3 sm:grid-cols-3">

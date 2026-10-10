@@ -14,6 +14,7 @@
 // this screen's tables copy no suffix rather than the previous provider's.
 
 import { fetchSettings, patchProviderThinking } from '$lib/api/settings';
+import type { ApiError } from '$lib/api/errors';
 import type { ThinkingMode } from '$lib/schemas/settings';
 
 export function createProviderThinkingStore() {
@@ -22,9 +23,9 @@ export function createProviderThinkingStore() {
 	let storedMode = $state('');
 	let storedFor = $state('');
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let saving = $state(false);
-	let outcome = $state<string | null>(null);
+	let outcome = $state<string | ApiError | null>(null);
 
 	// The id the latest read asked for, so an answer for a provider the screen has left is dropped
 	// rather than rendered as this provider's mode.
@@ -43,7 +44,7 @@ export function createProviderThinkingStore() {
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			storedMode = '';
 			storedFor = '';
 			return;
@@ -66,7 +67,7 @@ export function createProviderThinkingStore() {
 		saving = false;
 
 		if (!result.ok) {
-			outcome = result.error.message;
+			outcome = result.error;
 			return false;
 		}
 

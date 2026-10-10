@@ -6,6 +6,8 @@
 	// back in the catalog rather than leaving nothing. An operator who believed the model itself was being
 	// deleted would not press this; one who knows a registry row reappears can decide.
 	import Modal from '$lib/components/Modal.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { customModelLabel, type CustomModel } from '$lib/schemas/custom-model';
 
@@ -20,7 +22,7 @@
 		oncancel
 	}: {
 		model: CustomModel | null;
-		error: string | null;
+		error: string | ApiError | null;
 		removing: boolean;
 		onconfirm: () => void;
 		oncancel: () => void;
@@ -40,7 +42,7 @@
 
 	{#if error}
 		<p class="mt-3 text-[var(--color-danger)]" role="alert">
-			The model was not removed. {error}
+			<ApiErrorText {error} prefix="The model was not removed. " />
 		</p>
 	{/if}
 

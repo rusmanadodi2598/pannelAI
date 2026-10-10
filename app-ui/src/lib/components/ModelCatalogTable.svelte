@@ -20,6 +20,7 @@
 	// The suffix is rendered, not only copied: a value that lived in the clipboard
 	// alone would be a state the operator cannot see.
 	import CopyButton from '$lib/components/CopyButton.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import ModelTestState from '$lib/components/ModelTestState.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { catalogModelLabel, catalogSourceLabel, type CatalogModel } from '$lib/schemas/model';
@@ -76,9 +77,9 @@
 <div class="flex flex-col gap-3">
 	<!-- relative keeps the sr-only column label (position: absolute) inside this scroll box. -->
 	<div
-		class="relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+		class="mobile-key-value-frame relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
 	>
-		<table class="w-full min-w-[56rem] border-collapse text-sm">
+		<table class="mobile-key-value-table w-full border-collapse text-sm">
 			<caption class="sr-only">Model catalog for this provider</caption>
 			<thead class="bg-[var(--color-surface-2)] text-left">
 				<tr>
@@ -102,7 +103,7 @@
 					{@const routable = isChatRoutable(model.kind)}
 					{@const running = probe?.phase === 'running'}
 					<tr class="border-t border-[var(--color-border)]">
-						<td class="px-3 py-2">
+						<td data-label="Model" class="px-3 py-2">
 							<span class="font-medium">{catalogModelLabel(model)}</span>
 							<br />
 							<span class="text-[var(--color-text-muted)]">{model.model_id}</span>
@@ -111,8 +112,8 @@
 								<CopyButton value={address} />
 							</span>
 						</td>
-						<td class="px-3 py-2">{model.kind ?? 'Not declared'}</td>
-						<td class="px-3 py-2">
+						<td data-label="Kind" class="px-3 py-2">{model.kind ?? 'Not declared'}</td>
+						<td data-label="Capabilities" class="px-3 py-2">
 							{#if model.capabilities.length === 0}
 								<span class="text-[var(--color-text-muted)]">None declared</span>
 							{:else}
@@ -125,11 +126,11 @@
 								</span>
 							{/if}
 						</td>
-						<td class="px-3 py-2">{catalogSourceLabel(model.source)}</td>
-						<td class="max-w-72 px-3 py-2">
+						<td data-label="Source" class="px-3 py-2">{catalogSourceLabel(model.source)}</td>
+						<td data-label="Test" class="max-w-72 px-3 py-2">
 							<ModelTestState {probe} {routable} />
 						</td>
-						<td class="px-3 py-2 text-end">
+						<td data-label="Actions" class="px-3 py-2 text-end">
 							<div class="flex flex-wrap items-center justify-end gap-1">
 								{#if routable}
 									<button
@@ -167,7 +168,7 @@
 			class:text-[var(--color-danger)]={!outcome.ok}
 			role={outcome.ok ? 'status' : 'alert'}
 		>
-			{outcome.message}
+			<ApiErrorText error={outcome.apiError ?? outcome.message} />
 		</p>
 	{/if}
 </div>

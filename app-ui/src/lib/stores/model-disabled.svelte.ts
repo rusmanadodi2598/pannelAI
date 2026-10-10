@@ -10,6 +10,7 @@
 // narrowed view is for display only.
 
 import { listDisabledModels, replaceDisabledModels } from '$lib/api/models';
+import type { ApiError } from '$lib/api/errors';
 import {
 	disabledRefKey,
 	providerDisabledRefs,
@@ -24,12 +25,13 @@ export type DisabledOutcome = {
 	key: string;
 	ok: boolean;
 	message: string;
+	apiError?: ApiError;
 };
 
 export function createModelDisabledStore() {
 	let refs = $state<DisabledRef[]>([]);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let saving = $state<string | null>(null);
 	let outcome = $state<DisabledOutcome | null>(null);
 
@@ -44,7 +46,7 @@ export function createModelDisabledStore() {
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			ready = false;
 			return;
 		}
@@ -75,7 +77,7 @@ export function createModelDisabledStore() {
 		saving = null;
 
 		if (!result.ok) {
-			outcome = { key, ok: false, message: result.error.message };
+			outcome = { key, ok: false, message: result.error.message, apiError: result.error };
 			return false;
 		}
 

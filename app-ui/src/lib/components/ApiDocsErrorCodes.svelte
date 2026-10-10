@@ -30,8 +30,10 @@
 					</p>
 				{/if}
 
-				<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-					<table class="w-full min-w-[36rem] border-collapse text-sm">
+				<div
+					class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+				>
+					<table class="mobile-key-value-table w-full border-collapse text-sm">
 						<caption class="sr-only">Error codes in the {plane.label} plane</caption>
 						<thead class="bg-[var(--color-surface-2)] text-left">
 							<tr>
@@ -43,9 +45,9 @@
 						<tbody>
 							{#each plane.rows as row (row.code)}
 								<tr class="border-t border-[var(--color-border)] align-top">
-									<td class="px-3 py-2 font-mono text-xs">{row.code}</td>
-									<td class="px-3 py-2 tabular-nums">{row.status}</td>
-									<td class="px-3 py-2">
+									<td data-label="Code" class="px-3 py-2 font-mono text-xs">{row.code}</td>
+									<td data-label="HTTP" class="px-3 py-2 tabular-nums">{row.status}</td>
+									<td data-label="Meaning" class="px-3 py-2">
 										{#if row.description}
 											{row.description}
 										{:else}

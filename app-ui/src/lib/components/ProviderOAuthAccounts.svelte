@@ -15,6 +15,8 @@
 	// the connection list uses, so an account and an API-key connection cannot ask two different questions
 	// about the same removal.
 	import EndpointDeleteDialog from '$lib/components/EndpointDeleteDialog.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { deleteEndpoint } from '$lib/api/endpoints';
 	import { refreshProviderOAuth } from '$lib/api/providers';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
@@ -36,14 +38,14 @@
 	const DeleteIcon = ROW_ACTION_ICONS.delete.icon;
 
 	let refreshing = $state<string | null>(null);
-	let outcome = $state<{ ok: boolean; message: string } | null>(null);
+	let outcome = $state<{ ok: boolean; message: string; apiError?: ApiError } | null>(null);
 
 	// The account awaiting confirmation, held as the `{ id, label }` the shared dialog names. The row carries
 	// `endpoint_id`; the dialog speaks `id`, so it is mapped at the hand-off rather than by widening the
 	// dialog to two field names.
 	let pendingDelete = $state<OAuthEndpointStatus | null>(null);
 	let deleting = $state(false);
-	let deleteError = $state<string | null>(null);
+	let deleteError = $state<ApiError | null>(null);
 
 	// The instant the expiry column is read against. Taken once for the render rather than from a ticking
 	// clock: a live countdown would be a second clock disagreeing with the gateway's own classification.
@@ -56,7 +58,7 @@
 		refreshing = null;
 
 		if (!result.ok) {
-			outcome = { ok: false, message: result.error.message };
+			outcome = { ok: false, message: result.error.message, apiError: result.error };
 			return;
 		}
 
@@ -80,7 +82,7 @@
 		deleting = false;
 
 		if (!result.ok) {
-			deleteError = result.error.message;
+			deleteError = result.error;
 			return;
 		}
 
@@ -94,9 +96,9 @@
 <div class="flex flex-col gap-3">
 	<!-- relative keeps the sr-only column label (position: absolute) inside this scroll box. -->
 	<div
-		class="relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+		class="mobile-key-value-frame relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
 	>
-		<table class="w-full min-w-[52rem] border-collapse text-sm">
+		<table class="mobile-key-value-table w-full border-collapse text-sm">
 			<caption class="sr-only">Connected OAuth accounts for this provider</caption>
 			<thead class="bg-[var(--color-surface-2)] text-left">
 				<tr>
@@ -113,24 +115,24 @@
 			<tbody>
 				{#each endpoints as endpoint (endpoint.endpoint_id)}
 					<tr class="border-t border-[var(--color-border)]">
-						<td class="px-3 py-2">
+						<td data-label="Account" class="px-3 py-2">
 							<span class="font-medium">{endpoint.label || endpoint.endpoint_id}</span>
 							<br />
 							<span class="text-[var(--color-text-muted)]">{endpoint.endpoint_id}</span>
 						</td>
-						<td class="px-3 py-2">{endpoint.status}</td>
-						<td class="px-3 py-2">
+						<td data-label="Endpoint" class="px-3 py-2">{endpoint.status}</td>
+						<td data-label="Expires" class="px-3 py-2">
 							{endpoint.expires_at ? formatTimestamp(endpoint.expires_at) : 'No expiry known'}
 						</td>
-						<td class="px-3 py-2">
+						<td data-label="Last refresh" class="px-3 py-2">
 							{endpoint.last_refresh_at
 								? formatTimestamp(endpoint.last_refresh_at)
 								: 'No refresh recorded'}
 						</td>
-						<td class="px-3 py-2">
+						<td data-label="Token state" class="px-3 py-2">
 							{oauthTokenState(endpoint.refresh_state, endpoint.expires_at, now)}
 						</td>
-						<td class="px-3 py-2 text-end">
+						<td data-label="Actions" class="px-3 py-2 text-end">
 							<div class="flex flex-wrap items-center justify-end gap-1">
 								<button
 									type="button"
@@ -168,7 +170,7 @@
 			role={outcome.ok ? 'status' : 'alert'}
 			class:text-[var(--color-danger)]={!outcome.ok}
 		>
-			{outcome.message}
+			<ApiErrorText error={outcome.apiError ?? outcome.message} />
 		</p>
 	{/if}
 </div>

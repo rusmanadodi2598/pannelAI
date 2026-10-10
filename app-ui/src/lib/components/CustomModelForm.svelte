@@ -8,8 +8,10 @@
 	// The schema is the only validator (SPEC-UI §7.1). Its refusals are the API's own rules, so a save the
 	// panel blocks is a save the gateway would have rejected, and the messages say what to change.
 	import FormIssues from '$lib/components/FormIssues.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { createCustomModel } from '$lib/api/models';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		CAPABILITY_MAX_ENTRIES,
 		customModelBody,
@@ -25,7 +27,7 @@
 
 	let draft = $state(customModelDraftEmpty());
 	let issues = $state<string[]>([]);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let adding = $state(false);
 
 	async function submit(): Promise<void> {
@@ -42,7 +44,7 @@
 		adding = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -108,6 +110,8 @@
 	<FormIssues {issues} />
 
 	{#if error}
-		<p class="text-sm text-[var(--color-danger)]" role="alert">The model was not added. {error}</p>
+		<p class="text-sm text-[var(--color-danger)]" role="alert">
+			<ApiErrorText {error} prefix="The model was not added. " />
+		</p>
 	{/if}
 </form>

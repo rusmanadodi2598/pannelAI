@@ -9,12 +9,14 @@
 	//
 	// `caveman` is deprecated and has no section, no control, and no label here (§6.7).
 	import { untrack } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import TokenSaverBypass from '$lib/components/TokenSaverBypass.svelte';
 	import TokenSaverHeadroomFields from '$lib/components/TokenSaverHeadroomFields.svelte';
 	import TokenSaverPonytailFields from '$lib/components/TokenSaverPonytailFields.svelte';
 	import TokenSaverRtkFilters from '$lib/components/TokenSaverRtkFilters.svelte';
 	import TokenSaverSectionShell from '$lib/components/TokenSaverSectionShell.svelte';
 	import { replaceTokenSaver } from '$lib/api/token-saver';
+	import type { ApiError } from '$lib/api/errors';
 	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
 		buildTokenSaverBody,
@@ -41,7 +43,7 @@
 
 	let saving = $state<TokenSaverSection | null>(null);
 	let saved = $state<TokenSaverSection | null>(null);
-	let error = $state<string | null>(null);
+	let error = $state<string | ApiError | null>(null);
 
 	// Follows the document the page last read, so a re-read after a write is what the form shows rather
 	// than a local guess about what the API stored.
@@ -78,7 +80,7 @@
 		saving = null;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -104,7 +106,7 @@
 			role="alert"
 			class="rounded-[var(--radius-sm)] border border-[var(--color-danger)] px-3 py-2 text-sm"
 		>
-			{error}
+			<ApiErrorText {error} />
 		</p>
 	{/if}
 

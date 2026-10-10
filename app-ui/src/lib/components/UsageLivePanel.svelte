@@ -11,6 +11,8 @@
 	// and every other state says what it is instead. The panel reads the stream by `fetch`, so it knows the
 	// difference between a route that is not served and a connection that dropped, and it says which.
 	import { onMount } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import UsageRecentList from '$lib/components/UsageRecentList.svelte';
 	import UsageTopology from '$lib/components/UsageTopology.svelte';
 	import { listCombos } from '$lib/api/combos';
@@ -40,9 +42,9 @@
 		'inline-flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm';
 
 	let providers = $state<{ id: string; name: string }[]>([]);
-	let providersNotice = $state<string | null>(null);
+	let providersNotice = $state<{ text: string; apiError?: ApiError } | null>(null);
 	let combos = $state<{ id: string; name: string }[]>([]);
-	let combosNotice = $state<string | null>(null);
+	let combosNotice = $state<{ text: string; apiError?: ApiError } | null>(null);
 	let live = $state<LiveView | null>(null);
 	let report = $state<LiveReport>({ status: 'idle', reason: null, retrying: false });
 	let now = $state(Date.now());
@@ -91,14 +93,17 @@
 		const result = await listProviders({ per_page: 100 });
 
 		if (!result.ok) {
-			providersNotice = `Providers could not be read. The drawing has no nodes. ${result.error.message}`;
+			providersNotice = {
+				text: 'Providers could not be read. The drawing has no nodes. ',
+				apiError: result.error
+			};
 			return;
 		}
 
 		const { data, meta } = result.data;
 		providersNotice =
 			meta.total > data.length
-				? `Shows the first ${data.length} of ${meta.total} providers.`
+				? { text: `Shows the first ${data.length} of ${meta.total} providers.` }
 				: null;
 		providers = configuredProviders(data);
 	}
@@ -110,7 +115,10 @@
 		const result = await listCombos({ per_page: 100 });
 
 		if (!result.ok) {
-			combosNotice = `Combos could not be read. The drawing has no combo band. ${result.error.message}`;
+			combosNotice = {
+				text: 'Combos could not be read. The drawing has no combo band. ',
+				apiError: result.error
+			};
 			return;
 		}
 
@@ -118,15 +126,13 @@
 		combos = configuredCombos(data);
 		combosNotice =
 			meta.total > combos.length
-				? `Shows the first ${combos.length} of ${meta.total} combos.`
+				? { text: `Shows the first ${combos.length} of ${meta.total} combos.` }
 				: null;
 	}
 
 	// One sentence about what the drawing left out, whichever half left it out: an operator counting nodes
 	// on screen against a list they know should not have to work out which read they are looking at.
-	const nodeNotice = $derived(
-		[providersNotice, combosNotice].filter((part) => part !== null).join(' ') || null
-	);
+	const nodeNotices = $derived([providersNotice, combosNotice].filter((notice) => notice !== null));
 
 	onMount(() => {
 		void loadProviders();
@@ -203,8 +209,17 @@
 
 	<p class="text-sm text-[var(--color-text-muted)]">{statusLine}</p>
 
-	{#if nodeNotice}
-		<p role="status" class="text-sm text-[var(--color-text-muted)]">{nodeNotice}</p>
+	{#if nodeNotices.length > 0}
+		<div role="status" class="flex flex-col gap-1 text-sm text-[var(--color-text-muted)]">
+			{#each nodeNotices as notice, index (index)}
+				<p>
+					<ApiErrorText
+						error={notice.apiError ?? notice.text}
+						prefix={notice.apiError ? notice.text : ''}
+					/>
+				</p>
+			{/each}
+		</div>
 	{/if}
 
 	<!-- `live` is what the drawing needs to move: motion says "happening now", so it is reserved for a

@@ -7,13 +7,15 @@
 	// says what the delete actually does: it removes request logs older than the retention window, and it
 	// leaves the usage records alone.
 	import Modal from '$lib/components/Modal.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { purgeConfirmed, PURGE_CONFIRMATION } from '$lib/schemas/log-view';
 
 	type Props = {
 		open: boolean;
 		busy: boolean;
 		/** An error from the write, shown inside the dialog rather than over it. */
-		result: string | null;
+		result: string | ApiError | null;
 		onclose: () => void;
 		onconfirm: () => void;
 	};
@@ -44,7 +46,9 @@
 		</label>
 
 		{#if result}
-			<p class="text-sm text-[var(--color-danger)]" role="alert">{result}</p>
+			<p class="text-sm text-[var(--color-danger)]" role="alert">
+				<ApiErrorText error={result} />
+			</p>
 		{/if}
 	</div>
 

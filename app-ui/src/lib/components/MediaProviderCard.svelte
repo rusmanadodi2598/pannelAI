@@ -12,6 +12,7 @@
 	import { untrack } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { saveMediaOverride } from '$lib/api/media-providers';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		mediaBaseUrlRefusal,
 		type MediaKind,
@@ -49,6 +50,7 @@
 	let refusal = $state<string | null>(null);
 	/** The server's own refusal, which the panel could not predict. */
 	let failure = $state<string | null>(null);
+	let failureApiError = $state<ApiError | null>(null);
 	let saved = $state<string | null>(null);
 
 	// The card follows the row it renders. A save hands back a new row, and a card that kept its own
@@ -71,6 +73,7 @@
 	async function save(): Promise<void> {
 		refusal = null;
 		failure = null;
+		failureApiError = null;
 		saved = null;
 
 		const parsed = schemaMediaOverrideForm.safeParse(draft);
@@ -98,6 +101,7 @@
 
 		if (!result.ok) {
 			failure = result.error.message;
+			failureApiError = result.error;
 			return;
 		}
 
@@ -176,7 +180,12 @@
 	{#if refusal}
 		<p role="alert" class="text-sm text-[var(--color-danger)]">{refusal}</p>
 	{:else if failure}
-		<StateMessage kind="error" title="This change was not saved" description={failure} />
+		<StateMessage
+			kind="error"
+			title="This change was not saved"
+			description={failure}
+			apiError={failureApiError}
+		/>
 	{:else if saved}
 		<p role="status" class="text-sm text-[var(--color-text-muted)]">{saved}</p>
 	{/if}

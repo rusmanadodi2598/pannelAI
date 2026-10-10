@@ -17,8 +17,10 @@
 	// document and the pool), its own write, and the lines that report them. The page only decides
 	// where it sits.
 	import { untrack } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { listProxies } from '$lib/api/proxies';
 	import { fetchSettings, patchProviderProxies } from '$lib/api/settings';
+	import type { ApiError } from '$lib/api/errors';
 	import type { Proxy } from '$lib/schemas/proxy';
 	import {
 		PROXY_POOL_NONE,
@@ -43,11 +45,11 @@
 	let poolChoice = $state('');
 	let strategyChoice = $state<'' | ProviderProxyStrategy>('');
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	/** A pool list that could not be read. The binding is still usable, so this does not blank the card. */
-	let poolNotice = $state<string | null>(null);
+	let poolNotice = $state<ApiError | null>(null);
 	let saving = $state(false);
-	let message = $state<string | null>(null);
+	let message = $state<string | ApiError | null>(null);
 
 	// The strategy this provider would walk with: its own when it set one, the global one otherwise,
 	// because that is the order the engine would run.
@@ -88,12 +90,12 @@
 		if (id !== providerId) return;
 
 		if (!settings.ok) {
-			error = settings.error.message;
+			error = settings.error;
 			return;
 		}
 
 		error = null;
-		poolNotice = list.ok ? null : list.error.message;
+		poolNotice = list.ok ? null : list.error;
 		pools = list.ok ? list.data.data : [];
 		applyNetwork(settings.data.network);
 	}
@@ -149,7 +151,7 @@
 		const result = await patchProviderProxies(providerId, next);
 		saving = false;
 		if (!result.ok) {
-			message = result.error.message;
+			message = result.error;
 			return false;
 		}
 		applyNetwork(result.data.network);
@@ -200,7 +202,7 @@
 		<p class="text-sm text-[var(--color-text-muted)]" role="status">Loading the proxy binding…</p>
 	{:else if error}
 		<p class="text-sm text-[var(--color-text-muted)]" role="status">
-			The proxy binding could not be read: {error}
+			<ApiErrorText {error} prefix="The proxy binding could not be read: " />
 		</p>
 	{:else}
 		<div class="flex flex-col gap-1 text-sm">
@@ -237,11 +239,13 @@
 		<p class="text-xs text-[var(--color-text-muted)]">{summary}</p>
 		{#if poolNotice}
 			<p class="text-sm text-[var(--color-text-muted)]" role="status">
-				The pool list could not be read: {poolNotice}
+				<ApiErrorText error={poolNotice} prefix="The pool list could not be read: " />
 			</p>
 		{/if}
 		{#if message}
-			<p class="text-sm text-[var(--color-text-muted)]" role="status">{message}</p>
+			<p class="text-sm text-[var(--color-text-muted)]" role="status">
+				<ApiErrorText error={message} />
+			</p>
 		{/if}
 	{/if}
 </div>

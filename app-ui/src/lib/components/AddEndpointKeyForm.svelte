@@ -6,6 +6,8 @@
 	// off, so a browser does not offer to remember a credential it must not store, and the panel never keeps
 	// the value after the submit (SPEC-UI §4).
 	import { addEndpointKey } from '$lib/api/endpoints';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { schemaAddEndpointKeyForm } from '$lib/schemas/endpoint-write';
 
 	let { endpointId, onadded }: { endpointId: string; onadded: () => void } = $props();
@@ -13,7 +15,7 @@
 	let value = $state('');
 	let label = $state('');
 	let adding = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<string | ApiError | null>(null);
 
 	async function submit(): Promise<void> {
 		const parsed = schemaAddEndpointKeyForm.safeParse({
@@ -31,7 +33,7 @@
 		adding = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -46,7 +48,7 @@
 	<span class="font-medium">Add a key</span>
 
 	{#if error}
-		<p class="text-[var(--color-danger)]">{error}</p>
+		<p class="text-[var(--color-danger)]"><ApiErrorText {error} /></p>
 	{/if}
 
 	<div class="flex flex-wrap items-end gap-3">

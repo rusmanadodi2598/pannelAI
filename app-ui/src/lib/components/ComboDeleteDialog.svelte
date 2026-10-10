@@ -9,6 +9,8 @@
 	// combo is still referenced, so the lead sentence that says so is rendered for that code alone: a
 	// server failure that read "still referenced" would be a claim the panel cannot support.
 	import Modal from '$lib/components/Modal.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import type { Combo } from '$lib/schemas/combo';
 
@@ -24,7 +26,7 @@
 		oncancel
 	}: {
 		combo: Combo | null;
-		error: string | null;
+		error: string | ApiError | null;
 		/** The failure was the API's CONFLICT: an alias still targets this combo's name. */
 		conflict: boolean;
 		deleting: boolean;
@@ -44,11 +46,11 @@
 	{#if error}
 		{#if conflict}
 			<p class="mt-3 text-[var(--color-danger)]" role="alert">
-				This combo is still referenced. {error}
+				<ApiErrorText {error} prefix="This combo is still referenced. " />
 			</p>
 		{:else}
 			<p class="mt-3 text-[var(--color-danger)]" role="alert">
-				This combo was not deleted. {error}
+				<ApiErrorText {error} prefix="This combo was not deleted. " />
 			</p>
 		{/if}
 	{/if}

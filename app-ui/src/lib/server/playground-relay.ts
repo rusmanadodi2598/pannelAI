@@ -66,11 +66,13 @@ async function failure(
 	fallback: string
 ): Promise<Response> {
 	const detail = await readGatewayError(upstream);
-	if (detail === null) return playgroundError(code, fallback);
+	const requestId = upstream.headers.get('x-request-id') ?? undefined;
+	if (detail === null) return playgroundError(code, fallback, { requestId });
 
 	const message = redact(detail.message, key);
 	return playgroundError(code, message.trim() === '' ? fallback : message, {
-		gateway: { ...detail, message }
+		gateway: { ...detail, message },
+		requestId
 	});
 }
 

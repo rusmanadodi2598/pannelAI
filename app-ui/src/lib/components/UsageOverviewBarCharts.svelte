@@ -15,6 +15,7 @@
 	// dimension, which are the values the reads depend on. The tab unmounts this component while it loads,
 	// so a refresh remounts it and the reads run again with the new window.
 	import UsageBarChart from '$lib/components/UsageBarChart.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { getUsageSummary } from '$lib/api/usage';
 	import { usageQuery } from '$lib/schemas/usage-view';
 	import { USAGE_MODEL_BAR_LIMIT, usageBars, type UsageMeasure } from '$lib/schemas/usage-bars';
@@ -23,7 +24,7 @@
 	const DIMENSIONS = ['provider', 'model'] as const;
 	type Dimension = (typeof DIMENSIONS)[number];
 
-	type ChartState = { groups: UsageGroup[] | null; error: string | null };
+	type ChartState = { groups: UsageGroup[] | null; error: ApiError | null };
 	type Window = {
 		from: string;
 		to: string;
@@ -86,10 +87,7 @@
 			const result = results[index];
 			next[dimension] = result.ok
 				? { groups: result.data.groups, error: null }
-				: {
-						groups: null,
-						error: `The ${dimension} breakdown could not be read (${result.error.message}).`
-					};
+				: { groups: null, error: result.error };
 		});
 
 		charts = next;
@@ -131,6 +129,7 @@
 			measure={providerMeasure}
 			onmeasure={(measure) => (providerMeasure = measure)}
 			error={charts.provider.error}
+			errorPrefix="The provider breakdown could not be read"
 		/>
 		<UsageBarChart
 			title="Top models"
@@ -140,6 +139,7 @@
 			measure={modelMeasure}
 			onmeasure={(measure) => (modelMeasure = measure)}
 			error={charts.model.error}
+			errorPrefix="The model breakdown could not be read"
 		/>
 	</div>
 {/if}

@@ -52,9 +52,9 @@
 
 <!-- relative keeps the sr-only column label (position: absolute) inside this scroll box. -->
 <div
-	class="relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+	class="mobile-key-value-frame relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
 >
-	<table class="w-full min-w-[44rem] border-collapse text-sm">
+	<table class="mobile-key-value-table w-full border-collapse text-sm">
 		<caption class="sr-only">Custom models declared for this provider</caption>
 		<thead class="bg-[var(--color-surface-2)] text-left">
 			<tr>
@@ -78,7 +78,7 @@
 							)}`}
 				{@const probe = tests.row(row.provider_id, row.model_id)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td class="px-3 py-2">
+					<td data-label="Model" class="px-3 py-2">
 						<span class="font-medium">{customModelLabel(row)}</span>
 						<br />
 						<span class="text-[var(--color-text-muted)]">{row.model_id}</span>
@@ -89,7 +89,7 @@
 							</span>
 						{/if}
 					</td>
-					<td class="px-3 py-2">
+					<td data-label="Capabilities" class="px-3 py-2">
 						{#if row.capabilities.length === 0}
 							<span class="text-[var(--color-text-muted)]">None declared</span>
 						{:else}
@@ -102,11 +102,11 @@
 							</span>
 						{/if}
 					</td>
-					<td class="px-3 py-2">{formatTimestamp(row.created_at)}</td>
-					<td class="max-w-72 px-3 py-2">
+					<td data-label="Added" class="px-3 py-2">{formatTimestamp(row.created_at)}</td>
+					<td data-label="Test" class="max-w-72 px-3 py-2">
 						<ModelTestState {probe} />
 					</td>
-					<td class="px-3 py-2 text-end">
+					<td data-label="Actions" class="px-3 py-2 text-end">
 						<div class="flex flex-wrap items-center justify-end gap-1">
 							<button
 								type="button"

@@ -52,7 +52,7 @@ describe('load', () => {
 		await store.load();
 
 		expect(store.ready).toBe(false);
-		expect(store.error).toBe('The set could not be read.');
+		expect(store.error?.message).toBe('The set could not be read.');
 		expect(store.refs).toEqual([]);
 	});
 

@@ -15,6 +15,7 @@
 	import MediaProviderCard from '$lib/components/MediaProviderCard.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { listMediaProviders } from '$lib/api/media-providers';
 	import {
 		MEDIA_KINDS,
@@ -33,7 +34,7 @@
 
 	let providers = $state<MediaProvider[]>([]);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	// Reloads when the route's kind changes, so a hand-edited URL never leaves one kind's rows under
 	// another kind's heading.
@@ -56,7 +57,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			providers = [];
 			return;
 		}
@@ -109,7 +110,7 @@
 	{:else if loading}
 		<StateMessage kind="loading" title="Loading the providers for this kind" />
 	{:else if error}
-		<StateMessage kind="error" title="These providers could not be loaded" description={error}>
+		<StateMessage kind="error" title="These providers could not be loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load(kind)}>Try again</button>
 				<a href={resolve('/providers')} class="ms-3 underline">Back to the registry</a>

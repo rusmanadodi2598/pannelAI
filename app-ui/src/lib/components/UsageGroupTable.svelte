@@ -70,8 +70,10 @@
 	</div>
 {/if}
 
-<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-	<table class="w-full min-w-[44rem] border-collapse text-sm">
+<div
+	class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+>
+	<table class="mobile-key-value-table w-full border-collapse text-sm">
 		<caption class="sr-only">Usage broken down by {dimension.toLowerCase()}</caption>
 		<thead class="bg-[var(--color-surface-2)] text-left">
 			<tr>
@@ -91,15 +93,23 @@
 		<tbody>
 			{#each groups as group (group.key)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td class="px-3 py-2">{keyOf(group)}</td>
-					<td class="px-3 py-2 text-right tabular-nums">{formatCount(group.totals.requests)}</td>
-					<td class="px-3 py-2 text-right tabular-nums">{formatCount(group.totals.tokens_in)}</td>
-					<td class="px-3 py-2 text-right tabular-nums">{formatCount(group.totals.tokens_out)}</td>
-					<td class="px-3 py-2 text-right tabular-nums">{group.totals.cost_usd}</td>
-					<td class="px-3 py-2 text-right tabular-nums">
+					<td data-label={dimension} class="px-3 py-2">{keyOf(group)}</td>
+					<td data-label="Requests" class="px-3 py-2 text-right tabular-nums"
+						>{formatCount(group.totals.requests)}</td
+					>
+					<td data-label="Tokens in" class="px-3 py-2 text-right tabular-nums"
+						>{formatCount(group.totals.tokens_in)}</td
+					>
+					<td data-label="Tokens out" class="px-3 py-2 text-right tabular-nums"
+						>{formatCount(group.totals.tokens_out)}</td
+					>
+					<td data-label="Cost (USD)" class="px-3 py-2 text-right tabular-nums"
+						>{group.totals.cost_usd}</td
+					>
+					<td data-label="Errors" class="px-3 py-2 text-right tabular-nums">
 						{formatCount(group.totals.error_count)}
 					</td>
-					<td class="px-3 py-2 text-right tabular-nums">
+					<td data-label="Error rate" class="px-3 py-2 text-right tabular-nums">
 						{errorRatePercent(group.totals.error_rate)}
 					</td>
 				</tr>

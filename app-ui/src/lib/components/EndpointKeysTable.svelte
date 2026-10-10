@@ -50,8 +50,10 @@
 	const dangerClass = `${actionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]`;
 </script>
 
-<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-	<table class="w-full min-w-[46rem] border-collapse">
+<div
+	class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+>
+	<table class="mobile-key-value-table w-full border-collapse">
 		<caption class="sr-only">Keys on this endpoint</caption>
 		<thead class="bg-[var(--color-surface-2)] text-left">
 			<tr>
@@ -69,10 +71,10 @@
 				{@const blocked = isLastActiveApiKey(keys, key.id, authType)}
 				{@const isActive = key.status === ENDPOINT_STATUS_ACTIVE}
 				<tr class="border-t border-[var(--color-border)]">
-					<td class="px-3 py-2">{key.label || 'Unlabelled'}</td>
-					<td class="px-3 py-2">{key.key_hint}</td>
-					<td class="px-3 py-2 tabular-nums">{key.priority}</td>
-					<td class="px-3 py-2">
+					<td data-label="Label" class="px-3 py-2">{key.label || 'Unlabelled'}</td>
+					<td data-label="Key" class="px-3 py-2">{key.key_hint}</td>
+					<td data-label="Priority" class="px-3 py-2 tabular-nums">{key.priority}</td>
+					<td data-label="Status" class="px-3 py-2">
 						{key.status}{key.available ? '' : ', unavailable'}
 						{#if key.rate_limited_until}
 							<br />
@@ -82,9 +84,9 @@
 							</span>
 						{/if}
 					</td>
-					<td class="px-3 py-2">{key.last_used_at ?? 'Never'}</td>
-					<td class="px-3 py-2 tabular-nums">{key.consecutive_errors}</td>
-					<td class="px-3 py-2">
+					<td data-label="Last used" class="px-3 py-2">{key.last_used_at ?? 'Never'}</td>
+					<td data-label="Errors" class="px-3 py-2 tabular-nums">{key.consecutive_errors}</td>
+					<td data-label="Actions" class="px-3 py-2">
 						<div class="flex flex-wrap items-center gap-1">
 							<button
 								type="button"

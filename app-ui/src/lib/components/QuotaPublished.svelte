@@ -18,6 +18,8 @@
 	// invent places the provider never claimed. Only the bar and the percentage parse them, and both reuse
 	// the counted rows' geometry so one screen cannot hold two answers to "percent used".
 	import { getPublishedQuota } from '$lib/api/usage';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		PUBLISHED_QUOTA_NOTE,
 		publishedAmountText,
@@ -56,7 +58,7 @@
 	let override = $state<{
 		of: PublishedQuotaUsage;
 		usage: PublishedQuotaUsage | null;
-		error: string | null;
+		error: ApiError | null;
 	} | null>(null);
 	let loading = $state(false);
 
@@ -87,7 +89,7 @@
 			// The refusal is the gateway's own sentence (no such endpoint, this family publishes nothing,
 			// no credential to ask with), so it is shown rather than translated. The previous number goes
 			// with it: a stale balance under a fresh failure reads as still current.
-			override = { of: askedAgainst, usage: null, error: result.error.message };
+			override = { of: askedAgainst, usage: null, error: result.error };
 			return;
 		}
 
@@ -120,7 +122,9 @@
 	</div>
 
 	{#if error !== null}
-		<p role="alert" class="text-sm text-[var(--color-danger)]">{error}</p>
+		<p role="alert" class="text-sm text-[var(--color-danger)]">
+			<ApiErrorText {error} />
+		</p>
 	{:else if neverPolled && !loading}
 		<!-- A connection the worker has never answered shows the gap rather than an empty space, so a
 		     missing number reads as never asked instead of as asked-and-answered-with-nothing. Muted, never an

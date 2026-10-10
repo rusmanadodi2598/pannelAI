@@ -13,7 +13,9 @@
 	// The panel cannot cancel a sequential server-side loop, so Close stays available while the probes run
 	// and the dialog does not pretend to stop them. That is the other reason the spend is stated first.
 	import Modal from '$lib/components/Modal.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { testCombo } from '$lib/api/combos';
+	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import {
 		comboProbeIdentity,
@@ -30,7 +32,7 @@
 
 	let running = $state(false);
 	let answer = $state<ComboTest | null>(null);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let runToken = 0;
 
 	// A closed dialog takes its report with it, and the next open starts clean: the run that was left behind
@@ -62,7 +64,7 @@
 		running = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -86,7 +88,11 @@
 
 	{#if error}
 		<p class="mt-3 text-[var(--color-danger)]" role="alert">
-			Could not test. {error} Reload the list if it was deleted.
+			<ApiErrorText
+				{error}
+				prefix="Could not test. "
+				suffix=" Reload the list if it was deleted."
+			/>
 		</p>
 	{/if}
 

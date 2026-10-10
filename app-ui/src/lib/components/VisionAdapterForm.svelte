@@ -13,8 +13,10 @@
 	// provider's side into a configuration the operator never chose.
 	import { untrack } from 'svelte';
 	import FormIssues from '$lib/components/FormIssues.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import ModelPickerDialog from '$lib/components/ModelPickerDialog.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import VisionModelPicker from '$lib/components/VisionModelPicker.svelte';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import { loadPickerSources } from '$lib/model-picker-data';
@@ -46,9 +48,9 @@
 	let pickerOpen = $state(false);
 
 	let loading = $state(true);
-	let loadError = $state<string | null>(null);
+	let loadError = $state<ApiError | null>(null);
 	let saving = $state(false);
-	let saveError = $state<string | null>(null);
+	let saveError = $state<ApiError | null>(null);
 	let saved = $state(false);
 	let issues = $state<string[]>([]);
 
@@ -74,7 +76,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			loadError = result.error.message;
+			loadError = result.error;
 			return;
 		}
 
@@ -113,7 +115,7 @@
 		saving = false;
 
 		if (!result.ok) {
-			saveError = result.error.message;
+			saveError = result.error;
 			return;
 		}
 
@@ -135,7 +137,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the vision adapter" />
 	{:else if loadError}
-		<StateMessage kind="error" title="Could not load the vision adapter" description={loadError}>
+		<StateMessage kind="error" title="Could not load the vision adapter" apiError={loadError}>
 			{#snippet action()}
 				<button type="button" class="inline-flex items-center gap-2 underline" onclick={load}>
 					<RetryIcon class="size-4" aria-hidden="true" />
@@ -205,7 +207,7 @@
 					class="rounded-[var(--radius-sm)] border border-[var(--color-danger)] px-3 py-2 text-sm"
 					role="alert"
 				>
-					{saveError}
+					<ApiErrorText error={saveError} />
 				</p>
 			{/if}
 

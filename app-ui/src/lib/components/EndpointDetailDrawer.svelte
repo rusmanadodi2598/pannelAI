@@ -13,8 +13,10 @@
 	import EndpointFieldsForm from '$lib/components/EndpointFieldsForm.svelte';
 	import EndpointKeysTable from '$lib/components/EndpointKeysTable.svelte';
 	import Modal from '$lib/components/Modal.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		deleteEndpointKey,
 		getEndpoint,
@@ -43,8 +45,8 @@
 
 	let detail = $state<Endpoint | null>(null);
 	let loading = $state(false);
-	let error = $state<string | null>(null);
-	let notice = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
+	let notice = $state<ApiError | null>(null);
 
 	let lastTest = $state<EndpointTestStatus | null>(null);
 	let testing = $state<string | null>(null);
@@ -87,7 +89,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -114,7 +116,7 @@
 		testing = null;
 
 		if (!result.ok) {
-			notice = result.error.message;
+			notice = result.error;
 			return;
 		}
 
@@ -130,7 +132,7 @@
 		if (!result.ok) {
 			// The API answers CONFLICT for the last active api_key key. The control is disabled for that
 			// case, but the state can change under the panel, so the response is handled as well.
-			notice = result.error.message;
+			notice = result.error;
 			return;
 		}
 
@@ -143,7 +145,7 @@
 		const result = await updateEndpointKey(detail.id, key.id, { status });
 
 		if (!result.ok) {
-			notice = result.error.message;
+			notice = result.error;
 			return;
 		}
 
@@ -155,11 +157,11 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the endpoint" />
 	{:else if error}
-		<StateMessage kind="error" title="The endpoint could not be loaded" description={error} />
+		<StateMessage kind="error" title="The endpoint could not be loaded" apiError={error} />
 	{:else if detail}
 		<div class="flex flex-col gap-5 text-sm">
 			{#if notice}
-				<p class="text-[var(--color-text-muted)]">{notice}</p>
+				<p class="text-[var(--color-text-muted)]"><ApiErrorText error={notice} /></p>
 			{/if}
 
 			<EndpointFieldsForm endpoint={detail} onsaved={saved} />

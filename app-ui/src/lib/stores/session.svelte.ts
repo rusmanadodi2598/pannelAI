@@ -18,7 +18,7 @@ const SIGNED_OUT: AuthStatus = {
 function createSessionStore() {
 	let status = $state<AuthStatus | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	onUnauthorized(() => {
 		status = { ...SIGNED_OUT };
@@ -36,7 +36,7 @@ function createSessionStore() {
 		}
 
 		status = { ...SIGNED_OUT };
-		error = result.error.message;
+		error = result.error;
 	}
 
 	async function signIn(password: string): Promise<ApiError | null> {
