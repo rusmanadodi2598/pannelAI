@@ -38,7 +38,7 @@ export async function relay(
 	} catch {
 		return playgroundError(
 			'GATEWAY_UNREACHABLE',
-			`The panel could not reach the gateway at ${target.origin}.`
+			redact(`The panel could not reach the gateway at ${target.origin}.`, key)
 		);
 	}
 
@@ -68,7 +68,8 @@ async function failure(
 	const detail = await readGatewayError(upstream);
 	const upstreamRequestId = upstream.headers.get('x-request-id') ?? undefined;
 	const requestId = upstreamRequestId?.includes(key) ? undefined : upstreamRequestId;
-	if (detail === null) return playgroundError(code, fallback, { requestId });
+	const safeFallback = redact(fallback, key);
+	if (detail === null) return playgroundError(code, safeFallback, { requestId });
 
 	const gateway = {
 		code: redact(detail.code, key),
@@ -76,7 +77,7 @@ async function failure(
 		message: redact(detail.message, key)
 	};
 	const message = gateway.message;
-	return playgroundError(code, message.trim() === '' ? fallback : message, {
+	return playgroundError(code, message.trim() === '' ? safeFallback : message, {
 		gateway,
 		requestId
 	});
