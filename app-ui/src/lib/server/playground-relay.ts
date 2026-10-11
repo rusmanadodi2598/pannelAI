@@ -38,7 +38,7 @@ export async function relay(
 	} catch {
 		return playgroundError(
 			'GATEWAY_UNREACHABLE',
-			`The panel could not reach the gateway at ${target.origin}.`
+			redact(`The panel could not reach the gateway at ${target.origin}.`, key)
 		);
 	}
 
@@ -66,12 +66,19 @@ async function failure(
 	fallback: string
 ): Promise<Response> {
 	const detail = await readGatewayError(upstream);
-	const requestId = upstream.headers.get('x-request-id') ?? undefined;
-	if (detail === null) return playgroundError(code, fallback, { requestId });
+	const upstreamRequestId = upstream.headers.get('x-request-id') ?? undefined;
+	const requestId = upstreamRequestId?.includes(key) ? undefined : upstreamRequestId;
+	const safeFallback = redact(fallback, key);
+	if (detail === null) return playgroundError(code, safeFallback, { requestId });
 
-	const message = redact(detail.message, key);
-	return playgroundError(code, message.trim() === '' ? fallback : message, {
-		gateway: { ...detail, message },
+	const gateway = {
+		code: redact(detail.code, key),
+		type: redact(detail.type, key),
+		message: redact(detail.message, key)
+	};
+	const message = gateway.message;
+	return playgroundError(code, message.trim() === '' ? safeFallback : message, {
+		gateway,
 		requestId
 	});
 }
@@ -90,14 +97,17 @@ async function readGatewayError(response: Response): Promise<DataPlaneErrorDetai
 }
 
 /**
- * Removes the panel's own key from a sentence before it reaches the browser.
+ * Removes the panel's own key from an upstream error string before it reaches the browser.
  *
  * The gateway does not echo a credential today (its refusal reads "the gateway key is not valid"), but
  * this module forwards the gateway's words, so "the key never enters a response" is enforced here
  * rather than trusted to the far end's wording.
  */
-function redact(message: string, key: string): string {
-	return message.split(key).join('[redacted]');
+function redact(value: string, key: string): string {
+	const marker = '[redacted]';
+	const replacement = marker.includes(key) ? '' : marker;
+	const redacted = value.split(key).join(replacement);
+	return redacted.includes(key) ? '' : redacted;
 }
 
 /**
