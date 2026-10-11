@@ -111,23 +111,35 @@ describe('/login', () => {
 	});
 
 	it('shows and offers to copy the request ID for INTERNAL_ERROR', async () => {
-		stubAuth({
-			login: {
-				status: 500,
-				body: {
-					error: { code: 'INTERNAL_ERROR', message: 'The gateway hit an unexpected error.' }
-				},
-				requestId: 'auth-request-42'
-			}
-		});
-		render(LoginPage);
+		const cases = [
+			{ message: 'The gateway hit an unexpected error.', requestId: 'auth-request-42' },
+			{
+				message: 'The login service could not read its configuration.',
+				requestId: 'auth-request-43'
+			},
+			{ message: 'The gateway could not complete sign-in.', requestId: 'auth-request-44' }
+		];
+		for (const { message, requestId } of cases) {
+			cleanup();
+			vi.unstubAllGlobals();
+			stubAuth();
+			await session.refresh();
+			stubAuth({
+				login: {
+					status: 500,
+					body: { error: { code: 'INTERNAL_ERROR', message } },
+					requestId
+				}
+			});
+			render(LoginPage);
 
-		await submitPassword('nope');
+			await submitPassword('nope');
 
-		const alert = await screen.findByRole('alert');
-		expect(alert.textContent).toContain('The gateway hit an unexpected error.');
-		expect(alert.textContent).toContain('auth-request-42');
-		expect(screen.getByRole('button', { name: 'Copy request ID' })).toBeTruthy();
+			const alert = await screen.findByRole('alert');
+			expect(alert.textContent).toContain(message);
+			expect(alert.textContent).toContain(requestId);
+			expect(screen.getByRole('button', { name: 'Copy request ID' })).toBeTruthy();
+		}
 	});
 
 	it("falls back to the rule's own window when the response carried none", async () => {
