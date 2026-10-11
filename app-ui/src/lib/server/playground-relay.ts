@@ -70,9 +70,14 @@ async function failure(
 	const requestId = upstreamRequestId?.includes(key) ? undefined : upstreamRequestId;
 	if (detail === null) return playgroundError(code, fallback, { requestId });
 
-	const message = redact(detail.message, key);
+	const gateway = {
+		code: redact(detail.code, key),
+		type: redact(detail.type, key),
+		message: redact(detail.message, key)
+	};
+	const message = gateway.message;
 	return playgroundError(code, message.trim() === '' ? fallback : message, {
-		gateway: { ...detail, message },
+		gateway,
 		requestId
 	});
 }
@@ -91,14 +96,14 @@ async function readGatewayError(response: Response): Promise<DataPlaneErrorDetai
 }
 
 /**
- * Removes the panel's own key from a sentence before it reaches the browser.
+ * Removes the panel's own key from an upstream error string before it reaches the browser.
  *
  * The gateway does not echo a credential today (its refusal reads "the gateway key is not valid"), but
  * this module forwards the gateway's words, so "the key never enters a response" is enforced here
  * rather than trusted to the far end's wording.
  */
-function redact(message: string, key: string): string {
-	return message.split(key).join('[redacted]');
+function redact(value: string, key: string): string {
+	return value.split(key).join('[redacted]');
 }
 
 /**

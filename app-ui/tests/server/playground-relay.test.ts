@@ -343,3 +343,147 @@ describe('relay request ID filtering', () => {
 		}
 	});
 });
+
+type GatewayErrorField = keyof UpstreamFailureDetail;
+
+type GatewayFieldCase = {
+	name: string;
+	key: string;
+	value: string;
+	status: number;
+};
+
+async function assertGatewayFieldRedaction(
+	field: GatewayErrorField,
+	cases: GatewayFieldCase[]
+): Promise<void> {
+	for (const testCase of cases) {
+		const requestId = `safe-request-${field}-${testCase.name}`;
+		const error: UpstreamFailureDetail = {
+			code: 'UPSTREAM_ERROR',
+			type: 'server_error',
+			message: 'upstream failure'
+		};
+		error[field] = testCase.value;
+
+		const { impl } = recordingFetch(() =>
+			upstreamFailureResponse(testCase.status, requestId, error)
+		);
+		const response = await relay(TARGET, testCase.key, CHAT_PATH, request, impl);
+		const serializedBody = await response.text();
+		const body = schemaPlaygroundFailure.parse(JSON.parse(serializedBody));
+		const expectedError: UpstreamFailureDetail = {
+			...error,
+			[field]: testCase.value.split(testCase.key).join('[redacted]')
+		};
+
+		expect(response.status).toBe(502);
+		expect(body.error.code).toBe(testCase.status === 401 ? 'GATEWAY_KEY_REFUSED' : 'GATEWAY_ERROR');
+		expect(response.headers.get('x-request-id')).toBe(requestId);
+		expect(body.error.gateway).toEqual(expectedError);
+		expect(serializedBody).not.toContain(testCase.key);
+		for (const gatewayField of ['code', 'type', 'message'] as const) {
+			expect(body.error.gateway?.[gatewayField]).not.toContain(testCase.key);
+		}
+	}
+}
+
+describe('relay gateway error code redaction', () => {
+	it('preserves safe codes and redacts exact or substring key echoes', async () => {
+		const cases: GatewayFieldCase[] = [
+			{
+				name: 'safe-alpha',
+				key: 'PanelKey-Code-Alpha-0123456789',
+				value: 'UPSTREAM_ERROR',
+				status: 503
+			},
+			{
+				name: 'exact-bravo',
+				key: 'PanelKey-Code-Bravo-abcdefghijklmnop',
+				value: 'PanelKey-Code-Bravo-abcdefghijklmnop',
+				status: 401
+			},
+			{
+				name: 'substring-charlie',
+				key: 'PanelKey-Code-Charlie-0123456789',
+				value:
+					'prefix-PanelKey-Code-Charlie-0123456789-middle-PanelKey-Code-Charlie-0123456789-suffix',
+				status: 502
+			},
+			{
+				name: 'case-mismatch-delta',
+				key: 'PanelKey-Code-Delta-abcdefghijklmnop',
+				value: 'panelkey-code-delta-abcdefghijklmnop',
+				status: 502
+			}
+		];
+
+		await assertGatewayFieldRedaction('code', cases);
+	});
+});
+
+describe('relay gateway error type redaction', () => {
+	it('preserves safe types and redacts exact or substring key echoes', async () => {
+		const cases: GatewayFieldCase[] = [
+			{
+				name: 'safe-echo',
+				key: 'PanelKey-Type-Echo-0123456789',
+				value: 'server_error',
+				status: 503
+			},
+			{
+				name: 'exact-foxtrot',
+				key: 'PanelKey-Type-Foxtrot-abcdefghijklmnop',
+				value: 'PanelKey-Type-Foxtrot-abcdefghijklmnop',
+				status: 401
+			},
+			{
+				name: 'substring-golf',
+				key: 'PanelKey-Type-Golf-0123456789',
+				value: 'type-PanelKey-Type-Golf-0123456789-upstream',
+				status: 502
+			},
+			{
+				name: 'case-mismatch-hotel',
+				key: 'PanelKey-Type-Hotel-abcdefghijklmnop',
+				value: 'panelkey-type-hotel-abcdefghijklmnop',
+				status: 502
+			}
+		];
+
+		await assertGatewayFieldRedaction('type', cases);
+	});
+});
+
+describe('relay gateway error message redaction', () => {
+	it('preserves safe messages and redacts exact or substring key echoes', async () => {
+		const cases: GatewayFieldCase[] = [
+			{
+				name: 'safe-india',
+				key: 'PanelKey-Message-India-0123456789',
+				value: 'upstream failure',
+				status: 503
+			},
+			{
+				name: 'exact-juliet',
+				key: 'PanelKey-Message-Juliet-abcdefghijklmnop',
+				value: 'PanelKey-Message-Juliet-abcdefghijklmnop',
+				status: 401
+			},
+			{
+				name: 'substring-kilo',
+				key: 'PanelKey-Message-Kilo-0123456789',
+				value: 'message-PanelKey-Message-Kilo-0123456789-from-upstream',
+				status: 502
+			},
+			{
+				name: 'case-mismatch-lima',
+				key: 'PanelKey-Message-Lima-abcdefghijklmnop',
+				value: 'panelkey-message-lima-abcdefghijklmnop',
+				status: 502
+			}
+		];
+
+		await assertGatewayFieldRedaction('message', cases);
+	});
+});
