@@ -21,6 +21,7 @@
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import UsageLivePanel from '$lib/components/UsageLivePanel.svelte';
 	import UsageOverviewBarCharts from '$lib/components/UsageOverviewBarCharts.svelte';
 	import UsageOverviewBreakdown from '$lib/components/UsageOverviewBreakdown.svelte';
@@ -39,13 +40,13 @@
 	let summary = $state<UsageSummary | null>(null);
 	let timeseries = $state<UsageTimeseries | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	// The provider names resolve a provider key to its name, which is a second read and not a dependency: a
 	// registry that cannot be read leaves the breakdown table and the provider chart rendering the ids, with
 	// one line saying so. It runs on every load, because the provider chart is on screen whatever dimension
 	// the breakdown table is showing.
 	let providerNames = $state<Map<string, string> | null>(null);
-	let namesNotice = $state<string | null>(null);
+	let namesNotice = $state<{ text: string; apiError?: ApiError } | null>(null);
 
 	const search = $derived(parseUsageSearch(page.url.searchParams));
 
@@ -72,11 +73,11 @@
 		loading = false;
 
 		if (!summaryResult.ok) {
-			error = summaryResult.error.message;
+			error = summaryResult.error;
 			return;
 		}
 		if (!seriesResult.ok) {
-			error = seriesResult.error.message;
+			error = seriesResult.error;
 			return;
 		}
 
@@ -129,7 +130,10 @@
 
 		if (!result.ok) {
 			providerNames = null;
-			namesNotice = `Provider names could not be read, so ids show. ${result.error.message}`;
+			namesNotice = {
+				text: 'Provider names could not be read, so ids show. ',
+				apiError: result.error
+			};
 			return;
 		}
 
@@ -156,7 +160,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading usage" />
 	{:else if error}
-		<StateMessage kind="error" title="Usage could not be loaded" description={error}>
+		<StateMessage kind="error" title="Usage could not be loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load(search)}>Try again</button>
 			{/snippet}

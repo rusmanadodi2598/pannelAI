@@ -34,6 +34,7 @@ import {
 import {
 	schemaProviderDetail,
 	schemaProviderList,
+	schemaProviderQuery,
 	schemaProviderModelList,
 	type ProviderDetail,
 	type ProviderList,
@@ -41,6 +42,7 @@ import {
 	type ProviderQuery
 } from '$lib/schemas/provider';
 import { apiRequest, type ApiResult } from './client';
+import { ApiError } from './errors';
 
 export type ListQuery = {
 	page?: number;
@@ -49,12 +51,27 @@ export type ListQuery = {
 
 export type ProviderListQuery = ListQuery & ProviderQuery;
 
-export function listProviders(query: ProviderListQuery = {}): Promise<ApiResult<ProviderList>> {
+export async function listProviders(
+	query: ProviderListQuery = {}
+): Promise<ApiResult<ProviderList>> {
+	const validated = schemaProviderQuery.safeParse({
+		category: query.category,
+		routability: query.routability,
+		q: query.q
+	});
+	if (!validated.success) {
+		const issue = validated.error.issues[0];
+		return {
+			ok: false,
+			error: new ApiError(0, 'VALIDATION_ERROR', issue?.message ?? 'Invalid provider search query.')
+		};
+	}
+
 	return apiRequest<void, ProviderList>({
 		method: 'GET',
 		path: '/providers',
 		schema: schemaProviderList,
-		query
+		query: { ...query, ...validated.data }
 	});
 }
 

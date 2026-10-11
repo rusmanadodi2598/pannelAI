@@ -6,6 +6,8 @@
 	// nothing. Saying that traffic would stop would be false, and an operator who believed it would
 	// avoid a delete they are entitled to make. What does go is the stored test result.
 	import Modal from '$lib/components/Modal.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import type { Proxy } from '$lib/schemas/proxy';
 
 	let {
@@ -16,7 +18,7 @@
 		oncancel
 	}: {
 		proxy: Proxy | null;
-		error: string | null;
+		error: string | ApiError | null;
 		deleting: boolean;
 		onconfirm: () => void;
 		oncancel: () => void;
@@ -36,7 +38,7 @@
 
 	{#if error}
 		<p class="mt-3 text-[var(--color-danger)]" role="alert">
-			The proxy was not deleted. {error}
+			<ApiErrorText {error} prefix="The proxy was not deleted. " />
 		</p>
 	{/if}
 

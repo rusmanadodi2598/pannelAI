@@ -25,6 +25,7 @@
 	import ProviderNodeDeleteDialog from '$lib/components/ProviderNodeDeleteDialog.svelte';
 	import ProviderNodeFacts from '$lib/components/ProviderNodeFacts.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
 	import { listEndpointLabels } from '$lib/api/endpoints';
 	import { deleteProviderNode, getProviderNode } from '$lib/api/provider-nodes';
@@ -66,12 +67,12 @@
 
 	let node = $state<ProviderNode | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	let editing = $state(false);
 	let confirming = $state(false);
 	let deleting = $state(false);
-	let deleteError = $state<string | null>(null);
+	let deleteError = $state<ApiError | null>(null);
 	/** The delete failure was the API's CONFLICT: a combo or an alias still points at this node. */
 	let conflict = $state(false);
 	// The connections a confirmed delete takes with it; `null` is the count not being known.
@@ -96,7 +97,7 @@
 
 		if (!result.ok) {
 			loading = false;
-			error = result.error.message;
+			error = result.error;
 			node = null;
 			return;
 		}
@@ -131,7 +132,7 @@
 
 		if (!result.ok) {
 			conflict = result.error.code === 'CONFLICT';
-			deleteError = result.error.message;
+			deleteError = result.error;
 			return;
 		}
 
@@ -145,7 +146,7 @@
 {#if loading}
 	<StateMessage kind="loading" title="Loading the custom provider" />
 {:else if error}
-	<StateMessage kind="error" title="This custom provider could not be loaded" description={error}>
+	<StateMessage kind="error" title="This custom provider could not be loaded" apiError={error}>
 		{#snippet action()}
 			<button type="button" class="underline" onclick={reload}>Try again</button>
 		{/snippet}

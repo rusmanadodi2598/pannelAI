@@ -30,8 +30,10 @@
 	}
 </script>
 
-<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-	<table class="w-full min-w-[52rem] border-collapse text-sm">
+<div
+	class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+>
+	<table class="mobile-key-value-table w-full border-collapse text-sm">
 		<caption class="sr-only">Upstream endpoints, ordered by routing priority</caption>
 		<thead class="bg-[var(--color-surface-2)] text-left">
 			<tr>
@@ -53,28 +55,31 @@
 		<tbody>
 			{#each endpoints as entry (entry.id)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td class="px-3 py-2">{entry.provider_name ?? entry.provider_id}</td>
-					<td class="px-3 py-2">{entry.label}</td>
-					<td class="px-3 py-2">{AUTH_TYPE_LABELS[entry.auth_type] ?? entry.auth_type}</td>
-					<td class="px-3 py-2 tabular-nums">{entry.priority}</td>
-					<td class="px-3 py-2">{statusLabel(entry.status)}</td>
-					<td class="px-3 py-2 tabular-nums">
+					<td data-label="Provider" class="px-3 py-2">{entry.provider_name ?? entry.provider_id}</td
+					>
+					<td data-label="Endpoint" class="px-3 py-2">{entry.label}</td>
+					<td data-label="Auth" class="px-3 py-2"
+						>{AUTH_TYPE_LABELS[entry.auth_type] ?? entry.auth_type}</td
+					>
+					<td data-label="Priority" class="px-3 py-2 tabular-nums">{entry.priority}</td>
+					<td data-label="Status" class="px-3 py-2">{statusLabel(entry.status)}</td>
+					<td data-label="Keys" class="px-3 py-2 tabular-nums">
 						{entry.active_key_count} of {entry.key_count} healthy
 					</td>
-					<td class="px-3 py-2">
+					<td data-label="Last test" class="px-3 py-2">
 						{#if entry.test_status}
 							{entry.test_status.state} {entry.test_status.latency_ms}ms
 						{:else}
 							Not tested
 						{/if}
 					</td>
-					<td class="px-3 py-2">
+					<td data-label="Detail" class="px-3 py-2">
 						<button type="button" class="min-h-11 underline" onclick={() => onopen(entry)}
 							>Open</button
 						>
 					</td>
 					{#if ondelete}
-						<td class="px-3 py-2 text-end">
+						<td data-label="Actions" class="px-3 py-2 text-end">
 							<button
 								type="button"
 								class="inline-flex min-h-11 items-center gap-1 text-[var(--color-danger)] underline"

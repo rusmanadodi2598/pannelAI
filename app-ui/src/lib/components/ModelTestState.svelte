@@ -9,6 +9,7 @@
 	// answer, the second says the model gave one. Rendering them alike would blame a model for a request
 	// that never reached it (R-36).
 	import { LoaderCircle } from '@lucide/svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { modelTestLine } from '$lib/schemas/model-test';
 	import type { ModelTestRow } from '$lib/stores/model-test.svelte';
 
@@ -28,7 +29,9 @@
 	<span class="text-[var(--color-danger)]" role="alert">
 		The panel could not ask
 		<br />
-		<span class="break-words text-xs">{probe.message}</span>
+		<span class="break-words text-xs">
+			<ApiErrorText error={probe.apiError ?? probe.message} />
+		</span>
 	</span>
 {:else}
 	<span

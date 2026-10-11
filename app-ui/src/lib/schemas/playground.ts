@@ -139,7 +139,7 @@ export const schemaPlaygroundFailure = z.object({
 	})
 });
 
-export type PlaygroundFailure = z.infer<typeof schemaPlaygroundFailure>;
+export type PlaygroundFailure = z.infer<typeof schemaPlaygroundFailure> & { requestId?: string };
 
 // One English line per data-plane code, so an empty message from the gateway still leaves the operator
 // with something to act on. The list mirrors the gateway's own vocabulary (app-serv

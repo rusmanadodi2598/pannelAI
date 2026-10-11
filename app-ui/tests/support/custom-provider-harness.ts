@@ -11,13 +11,14 @@
 
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import CustomProviderSection from '$lib/components/CustomProviderSection.svelte';
+import type { ApiError } from '$lib/api/errors';
 import type { ProviderNode } from '$lib/schemas/provider-node';
 import type { NodeStub } from './provider-node-stub';
 
 /** Renders the section as the page does, with a reload that re-reads through the same stub. */
 export function renderSection(
 	stub: NodeStub,
-	overrides: { loading?: boolean; error?: string | null } = {}
+	overrides: { loading?: boolean; error?: ApiError | null } = {}
 ): { reloads: () => number } {
 	let reloads = 0;
 	render(CustomProviderSection, {

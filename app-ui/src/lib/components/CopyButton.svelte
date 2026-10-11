@@ -22,7 +22,8 @@
 	//
 	// The control has two shapes and one contract. `iconOnly` drops the visible word and keeps it as the
 	// accessible name and the title, which is the shape the two modals use so the value and the outcome
-	// sentence are the only things read beside it. The sentence is not part of the shape: a copy that
+	// sentence are the only things read beside it. Callers can request a 44px target for touch layouts.
+	// The sentence is not part of the shape: a copy that
 	// reported nothing would be the dead control R-26 rejects, pressed in either shape.
 	import { CONTROL_ICONS } from '$lib/icons';
 
@@ -40,8 +41,15 @@
 		value,
 		label = DEFAULT_LABEL,
 		iconOnly = false,
-		oncopied
-	}: { value: string; label?: string; iconOnly?: boolean; oncopied?: () => void } = $props();
+		oncopied,
+		touchTarget = false
+	}: {
+		value: string;
+		label?: string;
+		iconOnly?: boolean;
+		oncopied?: () => void;
+		touchTarget?: boolean;
+	} = $props();
 
 	let state = $state<'idle' | 'copied' | 'failed'>('idle');
 
@@ -115,7 +123,9 @@
 	{#if iconOnly}
 		<button
 			type="button"
-			class="inline-flex size-9 items-center justify-center {BUTTON_BASE}"
+			class="inline-flex {touchTarget
+				? 'size-11'
+				: 'size-9'} items-center justify-center {BUTTON_BASE}"
 			aria-label={label}
 			title={label}
 			onclick={() => void write()}
@@ -125,7 +135,9 @@
 	{:else}
 		<button
 			type="button"
-			class="inline-flex min-h-9 items-center gap-1.5 {BUTTON_BASE} px-2.5 text-xs"
+			class="inline-flex {touchTarget
+				? 'min-h-11'
+				: 'min-h-9'} items-center gap-1.5 {BUTTON_BASE} px-2.5 text-xs"
 			onclick={() => void write()}
 		>
 			<CopyIcon class="size-3.5" aria-hidden="true" />

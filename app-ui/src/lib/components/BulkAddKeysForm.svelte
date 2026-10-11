@@ -9,6 +9,8 @@
 	// An outcome describes the batch that was submitted, not the rows on screen now, so any edit clears it:
 	// a message left over from a batch the operator has since changed would point at the wrong row.
 	import { addEndpointKeys } from '$lib/api/endpoints';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		MAX_KEYS_PER_ENDPOINT,
 		schemaAddEndpointKeyForm,
@@ -19,7 +21,7 @@
 	let { endpointId, onadded }: { endpointId: string; onadded: () => void } = $props();
 
 	type Row = { label: string; value: string };
-	type Outcome = { summary: string; rowMessages: Record<number, string> };
+	type Outcome = { summary: string; rowMessages: Record<number, string>; apiError?: ApiError };
 
 	const formId = $props.id();
 	const rowErrorId = (index: number): string => `${formId}-row-${index}`;
@@ -97,8 +99,9 @@
 
 		if (!result.ok) {
 			outcome = {
-				summary: `Nothing was added: ${result.error.message}`,
-				rowMessages: messagesFrom(result.refusal)
+				summary: 'Nothing was added:',
+				rowMessages: messagesFrom(result.refusal),
+				apiError: result.error
 			};
 			return;
 		}
@@ -121,7 +124,10 @@
 	<p class="text-sm text-[var(--color-text-muted)]">One submit adds all rows or none.</p>
 
 	{#if outcome}
-		<p role="status" class="text-sm">{outcome.summary}</p>
+		<p role={outcome.apiError ? 'alert' : 'status'} class="text-sm">
+			{outcome.summary}
+			{#if outcome.apiError}<ApiErrorText error={outcome.apiError} prefix=" " />{/if}
+		</p>
 	{/if}
 
 	{#each rows as row, index (index)}

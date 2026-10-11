@@ -17,7 +17,8 @@
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { listProviders } from '$lib/api/providers';
 	import { listProviderNodes } from '$lib/api/provider-nodes';
-	import { PROVIDER_CATEGORIES, type Provider } from '$lib/schemas/provider';
+	import type { ApiError } from '$lib/api/errors';
+	import { PROVIDER_CATEGORIES, schemaProviderQuery, type Provider } from '$lib/schemas/provider';
 	import type { ProviderNode } from '$lib/schemas/provider-node';
 	import { onMount } from 'svelte';
 
@@ -31,17 +32,18 @@
 	let total = $state(0);
 	let page = $state(1);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let category = $state('');
 
 	// `draft` is what the operator types; `applied` is what the API was asked. The pair keeps a half-typed
 	// word from firing a request per keystroke, the same contract the model catalog's search holds.
 	let searchDraft = $state('');
 	let searchApplied = $state('');
+	let searchError = $state<string | null>(null);
 
 	let nodes = $state<ProviderNode[]>([]);
 	let nodesLoading = $state(true);
-	let nodesError = $state<string | null>(null);
+	let nodesError = $state<ApiError | null>(null);
 
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 	const filtered = $derived(category !== '' || searchApplied !== '');
@@ -65,7 +67,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -80,7 +82,7 @@
 		nodesLoading = false;
 
 		if (!result.ok) {
-			nodesError = result.error.message;
+			nodesError = result.error;
 			return;
 		}
 
@@ -97,7 +99,15 @@
 	// The typed value is trimmed before it is asked for, so a stray space does not become a filter the
 	// operator cannot see, and a filter change always restarts the paging.
 	function applySearch(): void {
-		searchApplied = searchDraft.trim();
+		const search = searchDraft.trim();
+		const validated = schemaProviderQuery.safeParse({ q: search === '' ? undefined : search });
+		if (!validated.success) {
+			searchError = 'Search must be 120 characters or fewer.';
+			return;
+		}
+
+		searchError = null;
+		searchApplied = validated.data.q ?? '';
 		page = 1;
 		void loadProviders();
 	}
@@ -106,6 +116,7 @@
 		category = '';
 		searchDraft = '';
 		searchApplied = '';
+		searchError = null;
 		page = 1;
 		void loadProviders();
 	}
@@ -124,28 +135,37 @@
 	     re-reads both this list and the node set. Every control shares one height and one baseline, and
 	     the row wraps as a block on a narrow screen rather than stretching any single control. -->
 	<div class="flex flex-wrap items-stretch gap-2">
-		<form
-			class="flex min-w-0 flex-1 items-stretch gap-2"
-			onsubmit={(event) => {
-				event.preventDefault();
-				applySearch();
-			}}
-		>
-			<input
-				type="search"
-				bind:value={searchDraft}
-				placeholder="Search name or id"
-				aria-label="Search providers by name or id"
-				class="min-h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
-			/>
-			<button
-				type="submit"
-				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+		<div class="min-w-0 flex-1">
+			<form
+				class="flex min-w-0 items-stretch gap-2"
+				onsubmit={(event) => {
+					event.preventDefault();
+					applySearch();
+				}}
 			>
-				<SearchIcon class="size-4" aria-hidden="true" />
-				Search
-			</button>
-		</form>
+				<input
+					type="search"
+					bind:value={searchDraft}
+					placeholder="Search name or id"
+					aria-label="Search providers by name or id"
+					aria-describedby={searchError ? 'provider-search-error' : undefined}
+					aria-invalid={searchError !== null}
+					class="min-h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
+				/>
+				<button
+					type="submit"
+					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+				>
+					<SearchIcon class="size-4" aria-hidden="true" />
+					Search
+				</button>
+			</form>
+			{#if searchError}
+				<p id="provider-search-error" role="alert" class="mt-1 text-sm text-[var(--color-danger)]">
+					{searchError}
+				</p>
+			{/if}
+		</div>
 
 		<select
 			value={category}
@@ -167,7 +187,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the provider registry" />
 	{:else if error}
-		<StateMessage kind="error" title="Could not load the provider registry" description={error}>
+		<StateMessage kind="error" title="Could not load the provider registry" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={load}>Try again</button>
 			{/snippet}

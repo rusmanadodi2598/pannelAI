@@ -6,21 +6,22 @@
 	// has to state the rule and the wait: the API's message names the failure and the window travels in the
 	// response's `Retry-After`, so the screen puts the two together.
 	import { session } from '$lib/stores/session.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { schemaLoginForm } from '$lib/schemas/auth';
 	import { lockoutMinutes, LOGIN_COPY } from '$lib/strings/login';
 
 	let password = $state('');
 	let submitting = $state(false);
-	let message = $state<string | null>(null);
+	let message = $state<string | ApiError | null>(null);
 	let fieldError = $state<string | null>(null);
 
 	/** §6.1's copy for the failures it names, and the API's own sentence for anything else. */
-	function failureText(error: ApiError): string {
+	function failureText(error: ApiError): string | ApiError {
 		if (error.code === 'UNAUTHORIZED') return LOGIN_COPY.wrongPassword;
 		if (error.code === 'RATE_LIMITED')
 			return LOGIN_COPY.rateLimited(lockoutMinutes(error.retryAfterSeconds));
-		return error.message;
+		return error;
 	}
 
 	async function submit(event: SubmitEvent): Promise<void> {
@@ -72,7 +73,9 @@
 		{/if}
 
 		{#if message}
-			<p class="text-sm text-[var(--color-danger)]" role="alert">{message}</p>
+			<p class="text-sm text-[var(--color-danger)]" role="alert">
+				<ApiErrorText error={message} />
+			</p>
 		{/if}
 
 		<button

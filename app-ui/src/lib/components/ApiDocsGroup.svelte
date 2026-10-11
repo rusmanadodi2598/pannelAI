@@ -29,8 +29,10 @@
 		>
 	</h3>
 
-	<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-		<table class="w-full min-w-[40rem] border-collapse text-sm">
+	<div
+		class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+	>
+		<table class="mobile-key-value-table w-full border-collapse text-sm">
 			<caption class="sr-only"
 				>Operations in {group.name}, with the credential each one requires</caption
 			>
@@ -45,16 +47,23 @@
 			<tbody>
 				{#each group.operations as operation (`${operation.method} ${operation.path}`)}
 					<tr class="border-t border-[var(--color-border)] align-top">
-						<td class="px-3 py-2 font-mono text-xs uppercase">{operation.method}</td>
-						<td class="px-3 py-2 font-mono text-xs break-all">{operation.path}</td>
-						<td class="px-3 py-2">
+						<td
+							data-label={copy.catalog.columns.method}
+							class="px-3 py-2 font-mono text-xs uppercase">{operation.method}</td
+						>
+						<td data-label={copy.catalog.columns.path} class="px-3 py-2 font-mono text-xs break-all"
+							>{operation.path}</td
+						>
+						<td data-label={copy.catalog.columns.summary} class="px-3 py-2">
 							{#if operation.summary}
 								{operation.summary}
 							{:else}
 								<span class="text-[var(--color-text-muted)]">{copy.catalog.noSummary}</span>
 							{/if}
 						</td>
-						<td class="px-3 py-2">{credentialLabel(operation.schemes)}</td>
+						<td data-label={copy.catalog.columns.credential} class="px-3 py-2"
+							>{credentialLabel(operation.schemes)}</td
+						>
 					</tr>
 				{/each}
 			</tbody>

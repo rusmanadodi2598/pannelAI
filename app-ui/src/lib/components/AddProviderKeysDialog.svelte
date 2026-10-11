@@ -18,11 +18,13 @@
 	// The reference's Check button has no route here: app-serv probes a stored endpoint, and a credential
 	// cannot be probed before the connection carrying it exists.
 	import { untrack } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import FormIssues from '$lib/components/FormIssues.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import PanelTabs from '$lib/components/PanelTabs.svelte';
 	import ProviderKeyFields from '$lib/components/ProviderKeyFields.svelte';
 	import { addConnection, addPastedConnections } from '$lib/api/provider-keys';
+	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { listEndpointLabels } from '$lib/api/endpoints';
 	import { planConnectionLines } from '$lib/schemas/connection-plan';
@@ -80,7 +82,8 @@
 	let bulkText = $state('');
 	let issues = $state<string[]>([]);
 	let rowIssues = $state<Record<number, string>>({});
-	let error = $state<string | null>(null);
+	let error = $state<string | ApiError | null>(null);
+	let errorPrefix = $state('');
 	let saving = $state(false);
 
 	// The names already stored, so a generated name cannot collide with one of them: (provider_id, label)
@@ -124,6 +127,7 @@
 	async function submit(): Promise<void> {
 		issues = [];
 		error = null;
+		errorPrefix = '';
 
 		saving = true;
 		const outcome =
@@ -139,6 +143,7 @@
 		if (outcome.kind === 'refused') {
 			rowIssues = outcome.rowIssues;
 			error = outcome.error;
+			errorPrefix = mode === 'bulk' && outcome.error ? 'Nothing was added: ' : '';
 			return;
 		}
 
@@ -181,7 +186,9 @@
 		<FormIssues {issues} />
 
 		{#if error}
-			<p class="text-sm text-[var(--color-danger)]" role="alert">{error}</p>
+			<p class="text-sm text-[var(--color-danger)]" role="alert">
+				<ApiErrorText {error} prefix={errorPrefix} />
+			</p>
 		{/if}
 	</div>
 

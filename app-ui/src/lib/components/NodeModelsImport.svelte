@@ -12,8 +12,10 @@
 	// truth, and a control disabled by a read that never landed would hide a working action.
 	import { untrack } from 'svelte';
 	import { listEndpoints } from '$lib/api/endpoints';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { createCustomModel } from '$lib/api/models';
 	import { listProviderModels } from '$lib/api/providers';
+	import type { ApiError } from '$lib/api/errors';
 	import { customModelBody, type CustomModel } from '$lib/schemas/custom-model';
 	import { ENDPOINT_STATUS_DISABLED } from '$lib/schemas/endpoint';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
@@ -39,7 +41,8 @@
 	let notice = $state<string | null>(null);
 	// Whether the last notice was a full success, which is what the Check glyph marks.
 	let noticeOk = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
+	let refusalApiError = $state<ApiError | null>(null);
 	/** The gateway's own sentence for a list that is not the upstream's, when it sends one. */
 	let warning = $state<string | null>(null);
 
@@ -58,12 +61,13 @@
 		importing = true;
 		notice = null;
 		error = null;
+		refusalApiError = null;
 		warning = null;
 
 		const result = await listProviderModels(providerId);
 		if (!result.ok) {
 			importing = false;
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 		warning = result.data.warning ?? null;
@@ -88,7 +92,7 @@
 		// being skipped, because the next write would meet the same rule; what landed before it is kept and
 		// reported, so the operator sees the state the gateway is actually in.
 		const added: CustomModel[] = [];
-		let refusal: string | null = null;
+		let refusal: { modelId: string; error: ApiError } | null = null;
 		for (const row of fresh) {
 			const created = await createCustomModel(
 				customModelBody(providerId, {
@@ -99,7 +103,8 @@
 			);
 
 			if (!created.ok) {
-				refusal = `${row.id}: ${created.error.message}`;
+				refusal = { modelId: row.id, error: created.error };
+				refusalApiError = created.error;
 				break;
 			}
 			added.push(created.data);
@@ -112,9 +117,9 @@
 		if (refusal === null) {
 			notice = `${added.length} imported.`;
 		} else if (added.length === 0) {
-			notice = `Nothing was imported. The gateway refused ${refusal}`;
+			notice = `Nothing was imported. The gateway refused ${refusal.modelId}.`;
 		} else {
-			notice = `${added.length} imported, then the gateway refused ${refusal}`;
+			notice = `${added.length} imported, then the gateway refused ${refusal.modelId}.`;
 		}
 	}
 </script>
@@ -146,12 +151,13 @@
 				<CheckIcon class="size-4" aria-hidden="true" />
 			{/if}
 			{notice}
+			{#if refusalApiError}<ApiErrorText error={refusalApiError} />{/if}
 		</span>
 	{/if}
 
 	{#if error}
 		<span class="text-sm text-[var(--color-danger)]" role="alert">
-			The models were not imported. {error}
+			<ApiErrorText {error} prefix="The models were not imported. " />
 		</span>
 	{/if}
 </div>

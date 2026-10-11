@@ -17,6 +17,7 @@
 	import CustomProviderDialog from '$lib/components/CustomProviderDialog.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { CONTROL_ICONS } from '$lib/icons';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		nodeEndpointLabel,
 		nodeEndpointUrl,
@@ -34,7 +35,7 @@
 	}: {
 		nodes: ProviderNode[];
 		loading: boolean;
-		error: string | null;
+		error: ApiError | null;
 		/** Re-reads the node set. The screen's own refresh control calls this beside the registry read. */
 		onreload: () => Promise<void>;
 	} = $props();
@@ -82,7 +83,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the custom providers" />
 	{:else if error}
-		<StateMessage kind="error" title="Could not load the custom providers" description={error}>
+		<StateMessage kind="error" title="Could not load the custom providers" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={onreload}>Try again</button>
 			{/snippet}

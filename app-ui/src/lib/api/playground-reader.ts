@@ -43,7 +43,13 @@ export async function readStream(
 ): Promise<void> {
 	const reader = response.body?.getReader();
 	if (!reader) {
-		handlers.onFailure(localFailure('INTERNAL_ERROR', 'The answer carried no readable body.'));
+		handlers.onFailure(
+			localFailure(
+				'INTERNAL_ERROR',
+				'The answer carried no readable body.',
+				response.headers.get('x-request-id') ?? undefined
+			)
+		);
 		return;
 	}
 
@@ -101,8 +107,12 @@ function parseChunk(data: string) {
 }
 
 /** A failure the panel itself names, with no gateway object behind it. */
-export function localFailure(code: PlaygroundErrorCode, message: string): PlaygroundFailure {
-	return { error: { code, message } };
+export function localFailure(
+	code: PlaygroundErrorCode,
+	message: string,
+	requestId?: string
+): PlaygroundFailure {
+	return requestId ? { error: { code, message }, requestId } : { error: { code, message } };
 }
 
 /**

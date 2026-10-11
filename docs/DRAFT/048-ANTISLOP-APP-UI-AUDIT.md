@@ -4,14 +4,14 @@ Audit AFTER atas `app-ui` pada 2026-10-10, HEAD `e024f515eccbe90c328a067b3e74a24
 
 ## Status dan lingkup
 
-| | |
-| --- | --- |
-| **Status** | **PARTIALLY RESOLVED. F1 HIGH selesai ditindaklanjuti; F2 MEDIUM, F3 LOW, dan F4 LOW tetap OPEN.** |
-| **Mechanism** | AFTER (audit) |
-| **Scope** | `app-ui/src/**`, `app-ui/tests/**`, `DESIGN.md`, serta `docs/SPEC-UI/001-SPEC-UI.md` dan `docs/SPEC-API/001-SPEC-API.md` sebagai kontrak UI/API |
-| **Sumber temuan** | Pembacaan statis dan pencocokan kode, test, desain, dan spesifikasi; Anti Slop R-03/R-31 serta kriteria fungsional C-2/C-4 |
-| **Verifikasi pada snapshot audit** | Statis pada HEAD di atas. `bun` dan `app-ui/node_modules` tidak tersedia, jadi test, type-check, build, dan click-through browser belum dijalankan pada snapshot tersebut. Ini bukan klaim lulus R-35. |
-| **Perubahan saat audit awal** | Hanya dokumen DRAFT ini; tidak ada perubahan pada kode produk pada snapshot audit awal. Tindak lanjut F1 dicatat di bagian bawah. |
+|                                    |                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**                         | **F1 HIGH ada di PR #7 (OPEN). F2 MEDIUM dan F3 LOW ada di `feat/app-ui-fase-2`; F4 LOW tetap PARTIALLY VERIFIED/[UNVERIFIED]: bukti viewport hanya Endpoint & Key di 375/768 dengan satu baris sintetis dan mock-auth, 15 tabel lain statis, serta screen reader/AT dan sentuh nyata `[UNVERIFIED]`. Owner menerima stack aksi vertikal 768px hanya sebagai residual untuk push/PR bersyarat ke `development`; F4 tidak ditutup. Tanpa merge ke `main` atau release.** |
+| **Mechanism**                      | AFTER (audit)                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Scope**                          | `app-ui/src/**`, `app-ui/tests/**`, `DESIGN.md`, serta `docs/SPEC-UI/001-SPEC-UI.md` dan `docs/SPEC-API/001-SPEC-API.md` sebagai kontrak UI/API                                                                                                                                                                                                                                                                                                                         |
+| **Sumber temuan**                  | Pembacaan statis dan pencocokan kode, test, desain, dan spesifikasi; Anti Slop R-03/R-31 serta kriteria fungsional C-2/C-4                                                                                                                                                                                                                                                                                                                                              |
+| **Verifikasi pada snapshot audit** | Statis pada HEAD di atas. `bun` dan `app-ui/node_modules` tidak tersedia, jadi test, type-check, build, dan click-through browser belum dijalankan pada snapshot tersebut. Ini bukan klaim lulus R-35.                                                                                                                                                                                                                                                                  |
+| **Perubahan saat audit awal**      | Hanya dokumen DRAFT ini; tidak ada perubahan pada kode produk pada snapshot audit awal. Tindak lanjut F1 dicatat di bagian bawah.                                                                                                                                                                                                                                                                                                                                       |
 
 ## Temuan
 
@@ -69,3 +69,37 @@ Pencarian statis menemukan 16 komponen di `app-ui/src` yang menggabungkan `overf
 - **Regression test:** `combo-dialog-icons.test.ts` kini mengunci `size-11` dan merujuk SPEC-UI §8.7; asumsi sebelumnya bahwa DESIGN.md §7 menetapkan 36px untuk kontrol dialog telah dihapus.
 - **Verifikasi:** `pnpm test`: 183 file dan 2.988 test lulus. `pnpm check`: 0 error dan 0 warning. `pnpm build`: berhasil; hasil CSS memuat `.size-11` untuk lebar dan tinggi target. Click-through browser dan uji perangkat sentuh nyata tidak dilakukan, jadi R-35 tidak diklaim lulus.
 - **Batas lingkup:** F2, F3, dan F4 tidak diubah; tidak ada perubahan pada `app-ui/pnpm-lock.yaml`.
+
+### F2 (MEDIUM): IMPLEMENTED; menunggu review
+
+- **Cakupan API:** `StateMessage` menerima `ApiError` utuh; `ApiErrorText` dipakai pada banner inline dan hasil aksi. Route, store, dialog, serta komponen yang sebelumnya hanya menyimpan `.message` kini mempertahankan objek error. Request ID ditampilkan dan dapat disalin hanya untuk `INTERNAL_ERROR`; kode lain tetap menampilkan pesan tanpa ID.
+- **Login:** kegagalan login generik mempertahankan `ApiError`, bukan meratakannya menjadi string; regression test membuktikan ID dari header ditampilkan dan dapat disalin.
+- **Batas kontrak Playground:** SPEC-UI §8.2 merujuk ke envelope error API dari SPEC-API §8. Playground memakai envelope panel tersendiri sesuai §6.15. Relay sekarang meneruskan `x-request-id` upstream yang benar-benar ada, dan UI menampilkannya untuk `INTERNAL_ERROR` di envelope panel atau kode gateway yang bersarang. Error konfigurasi lokal Playground tidak menyediakan ID; tidak ada ID rekaan maupun klaim bahwa SPEC menetapkan field ID untuk envelope tersebut.
+- **Regression test:** komponen StateMessage/ApiErrorText, login, custom-provider, Playground model-read/chat, serta relay upstream menguji ID dan tombol salin. Respons tanpa header tetap tidak memunculkan ID.
+- **Pemulihan sesi pada chat POST (koreksi QA):** respons panel-session 401 kini diteruskan sekali ke `reportUnauthorized`; regression test memastikan hanya satu request dan satu callback, tanpa loop retry. Status 403 tidak menghapus sesi. Penolakan gateway key tetap menjadi kegagalan normal 502 `GATEWAY_KEY_REFUSED` dan tidak menghapus sesi. Ini adalah cacat pemulihan sesi, bukan bukti auth bypass.
+
+### F3 (LOW): IMPLEMENTED; menunggu review
+
+- **Perubahan:** query provider divalidasi dengan `schemaProviderQuery` di route dan helper API sebelum request. Panjang maksimum 120 karakter mendapat umpan balik inline dan request invalid tidak dikirim.
+- **Regression test:** nilai 120 karakter diterima; 121 karakter menghasilkan error inline dan tidak memanggil transport API.
+
+### F4 (LOW): PARTIALLY VERIFIED/[UNVERIFIED]; belum ditutup, residual diterima hanya untuk push/PR bersyarat
+
+- **Perubahan:** 16 tabel kandidat memakai kelas bersama `mobile-key-value-frame` / `mobile-key-value-table` yang menyusun tiap baris menjadi kartu berlabel di bawah 768px. Label sel mempertahankan konteks kolom; baris gateway key mengambil label dari `GatewayKeyRow`. Sel `Actions` tetap berupa `<td data-label="Actions">`; kelas flex berada pada wrapper di dalam sel.
+- **Pengecualian:** tidak ada tabel yang dipertahankan sebagai scroll horizontal untuk pembacaan mobile; semua kandidat mendapat representasi key-value, jadi tidak ada pengecualian kolom berdampingan yang perlu dibenarkan.
+- **Alasan desain (R-31):** tabel padat tetap menjadi tabel di desktop; pada viewport mobile kolom tidak lagi harus dibandingkan berdampingan, sehingga setiap nilai ditampilkan sebagai pasangan label-nilai agar terbaca tanpa scroll horizontal sesuai DESIGN.md §8 dan SPEC-UI §8.7 butir 2.
+- **Pemeriksaan statis:** 16 kandidat masih memiliki tabel desktop dan kelas responsive; tidak ada kombinasi `overflow-x-auto` + `min-width` yang memaksa scroll, dan sel data memiliki label (GatewayKeyRow menjadi sumber label terpisah untuk tabel gateway keys).
+- **Bukti viewport parsial dari Security:** halaman Endpoint & Key diperiksa pada viewport 375px dan 768px dengan scope satu baris sintetis dan mock-auth. Bukti ini hanya mencakup halaman tersebut, bukan semua tabel.
+- **Temuan dan cakupan visual:** pada 768px, kelompok aksi tersusun vertikal. Endpoint & Key adalah satu-satunya tabel dengan bukti viewport; 15 tabel lainnya hanya diperiksa secara statis.
+- **Keputusan owner (2026-10-11):** owner menerima stack aksi vertikal 768px sebagai residual produk dan mengizinkan push/PR bersyarat ke `development` setelah gate, scope, dan metadata lulus. Penerimaan ini terbatas pada residual tersebut; F4 tetap PARTIALLY VERIFIED/[UNVERIFIED], tidak ditutup, dan izin ini tidak mencakup merge ke `main` atau release.
+- **Accessibility tree:** pada halaman Endpoint & Key, tabel, header, cell, serta tombol bernama `Rename`, `Disable`, dan `Delete` muncul pada accessibility tree; browser console tidak melaporkan error. Ini bukan uji screen reader. Screen reader/AT dan sentuh di perangkat nyata tetap **[UNVERIFIED]**.
+
+### Verifikasi gabungan F2-F4
+
+- **Type-check:** `npm run sync && npm run check`: `svelte-check` 0 error, 0 warning.
+- **Regression suites terarah:** 14 file test, 109 test lulus (login, StateMessage/ApiErrorText, custom provider, Playground, relay, provider search, disabled models, provider thinking, bulk keys, serta model test).
+- **Full quality gate (2026-10-11; kode aplikasi sesuai commit `7eb51c1`):** `panel-check.sh` lulus: Prettier, ESLint, SvelteKit sync, `svelte-check` 0 error/0 warning, Vitest 186 file dan 3.006 test, serta production build berhasil.
+- **Gate repositori:** antislop lulus; contract drift menyatakan 13 kode error cocok; `secrets.sh --all` lulus dengan 392 commit dan working tree tanpa kebocoran. Gate panel menggunakan fallback npm/Node; jalur startup Bun `--preload` tetap belum terverifikasi.
+- **Status F4 dan batas verifikasi:** F4 tetap parsial dan belum ditutup. Bukti 375/768 hanya mencakup Endpoint & Key dengan satu baris sintetis dan mock-auth; viewport 15 tabel lainnya belum diverifikasi secara visual. Screen reader/AT dan uji sentuh di perangkat nyata tetap **[UNVERIFIED]**. R-35 tidak diklaim lulus. Owner menerima residual stack vertikal 768px hanya untuk push/PR bersyarat; acceptance ini bukan verifikasi atau penutupan F4. QA/PM telah memeriksa bukti.
+- **`app-ui/.prettierignore`:** `pnpm-lock.yaml` tetap tidak dilacak dan tidak masuk perubahan. Baris ignore diperlukan karena pemeriksaan Prettier package-wide memasukkan YAML lokal yang sudah ada; merapikannya akan mengubah artefak package manager yang tidak terkait dan tidak diminta. Alasan ini dicatat di sini dan sebagai komentar tepat di file ignore.
+- **Push/PR:** owner mengizinkan push dan PR bersyarat ke `development` setelah checks dokumentasi, scope, dan metadata lulus. Izin ini terbatas pada publikasi PR; tidak mencakup merge ke `main` atau release. F4 tetap PARTIALLY VERIFIED/[UNVERIFIED] dan belum ditutup.

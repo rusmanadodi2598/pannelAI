@@ -4,12 +4,14 @@
 	// It posts to its own endpoint rather than through a settings PATCH, and it never prefills a
 	// value, because the API does not return stored secrets and a prefilled field would be a lie.
 	import { changePassword } from '$lib/api/auth';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { schemaChangePasswordForm } from '$lib/schemas/auth';
 
 	let currentPassword = $state('');
 	let newPassword = $state('');
 	let message = $state<string | null>(null);
-	let error = $state<string | null>(null);
+	let error = $state<string | ApiError | null>(null);
 	let working = $state(false);
 
 	async function submit(event: SubmitEvent): Promise<void> {
@@ -32,7 +34,7 @@
 		working = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -70,7 +72,7 @@
 	</label>
 
 	{#if error}
-		<p class="text-sm text-[var(--color-danger)]" role="alert">{error}</p>
+		<p class="text-sm text-[var(--color-danger)]" role="alert"><ApiErrorText {error} /></p>
 	{/if}
 	{#if message}
 		<p class="text-sm text-[var(--color-text-muted)]" role="status">{message}</p>

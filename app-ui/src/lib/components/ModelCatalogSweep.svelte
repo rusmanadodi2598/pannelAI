@@ -9,6 +9,7 @@
 	// the provider account's quota (SPEC-UI §8.11, antislop R-36). The server holds the ceiling and clamps a
 	// larger request; this says the default, which is what the request sends.
 	import { LoaderCircle } from '@lucide/svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { MODEL_TEST_SWEEP_LIMIT } from '$lib/schemas/model-test';
 	import type { ModelTestStore } from '$lib/stores/model-test.svelte';
@@ -39,6 +40,8 @@
 	{/if}
 
 	{#if tests.error}
-		<p class="text-sm text-[var(--color-danger)]" role="alert">{tests.error}</p>
+		<p class="text-sm text-[var(--color-danger)]" role="alert">
+			<ApiErrorText error={tests.error} />
+		</p>
 	{/if}
 </div>

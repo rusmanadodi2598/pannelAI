@@ -24,6 +24,8 @@
 	import QuotaCards from '$lib/components/QuotaCards.svelte';
 	import QuotaToolbar from '$lib/components/QuotaToolbar.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { listEndpointLabels } from '$lib/api/endpoints';
 	import { listQuotaWindows } from '$lib/api/usage';
 	import {
@@ -50,8 +52,8 @@
 	// A press that landed while a read was in flight. Remembered rather than swallowed, so the refresh
 	// control is honest about having been pressed even when the interval read is mid-flight.
 	let rerunRequested = $state(false);
-	let error = $state<string | null>(null);
-	let labelNotice = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
+	let labelNotice = $state<string | ApiError | null>(null);
 	let paused = $state(false);
 	let now = $state(Date.now());
 	let lastLoadedAt = $state(0);
@@ -133,11 +135,11 @@
 				labelNotice = null;
 				labels = new Map(endpointResult.data.data.map((endpoint) => [endpoint.id, endpoint.label]));
 			} else {
-				labelNotice = `Endpoint labels could not be read, so ids show. ${endpointResult.error.message}`;
+				labelNotice = endpointResult.error;
 			}
 
 			if (!quotaResult.ok) {
-				error = quotaResult.error.message;
+				error = quotaResult.error;
 				return;
 			}
 
@@ -187,13 +189,15 @@
 	/>
 
 	{#if labelNotice}
-		<p role="status" class="text-sm text-[var(--color-text-muted)]">{labelNotice}</p>
+		<p role="status" class="text-sm text-[var(--color-text-muted)]">
+			<ApiErrorText error={labelNotice} prefix="Endpoint labels could not be read, so ids show. " />
+		</p>
 	{/if}
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading quota windows" />
 	{:else if error && windows.length === 0 && published.length === 0}
-		<StateMessage kind="error" title="Quota windows could not be loaded" description={error}>
+		<StateMessage kind="error" title="Quota windows could not be loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}>Try again</button>
 			{/snippet}
@@ -211,7 +215,7 @@
 	{:else}
 		{#if error}
 			<p role="alert" class="text-sm text-[var(--color-danger)]">
-				{error} Showing the last read at {formatTimestamp(readAt)}.
+				<ApiErrorText {error} suffix={` Showing the last read at ${formatTimestamp(readAt)}.`} />
 			</p>
 		{/if}
 

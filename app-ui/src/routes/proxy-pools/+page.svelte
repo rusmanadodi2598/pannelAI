@@ -17,8 +17,10 @@
 	import ProxyFormModal from '$lib/components/ProxyFormModal.svelte';
 	import ProxyOutboundSettings from '$lib/components/ProxyOutboundSettings.svelte';
 	import ProxyTable from '$lib/components/ProxyTable.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { deleteProxy, listProxies, testProxy } from '$lib/api/proxies';
 	import { proxyTestStateLabel, type Proxy } from '$lib/schemas/proxy';
@@ -28,16 +30,17 @@
 
 	let proxies = $state<Proxy[] | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	/** The row the form is open on, `'new'` for an add, or null when it is shut. */
 	let formTarget = $state<Proxy | 'new' | null>(null);
 	let deleting = $state<Proxy | null>(null);
-	let deleteError = $state<string | null>(null);
+	let deleteError = $state<ApiError | null>(null);
 	let deletingBusy = $state(false);
 
 	let testingId = $state<string | null>(null);
-	let notice = $state<string | null>(null);
+	let notice = $state<string | ApiError | null>(null);
+	let noticePrefix = $state('');
 	let showBatch = $state(false);
 
 	onMount(() => void load());
@@ -48,7 +51,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -63,7 +66,8 @@
 		testingId = null;
 
 		if (!answer.ok) {
-			notice = `${proxy.label} could not be tested: ${answer.error.message}`;
+			notice = answer.error;
+			noticePrefix = `${proxy.label} could not be tested: `;
 			return;
 		}
 
@@ -71,6 +75,7 @@
 		const state = proxyTestStateLabel(answer.data.state);
 		const reason = answer.data.message ? ` ${answer.data.message}` : '';
 		notice = `${proxy.label}: ${state} in ${answer.data.latency_ms}ms.${reason}`;
+		noticePrefix = '';
 
 		await load();
 	}
@@ -84,7 +89,7 @@
 		deletingBusy = false;
 
 		if (!answer.ok) {
-			deleteError = answer.error.message;
+			deleteError = answer.error;
 			return;
 		}
 
@@ -106,7 +111,7 @@
 	{#if loading && proxies === null}
 		<StateMessage kind="loading" title="Loading the proxy pool" />
 	{:else if error && proxies === null}
-		<StateMessage kind="error" title="Proxy pool not loaded" description={error}>
+		<StateMessage kind="error" title="Proxy pool not loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}>Try again</button>
 			{/snippet}
@@ -114,12 +119,14 @@
 	{:else if proxies}
 		{#if error}
 			<p role="alert" class="text-sm text-[var(--color-danger)]">
-				{error} The table still shows the last read.
+				<ApiErrorText {error} suffix=" The table still shows the last read." />
 			</p>
 		{/if}
 
 		{#if notice}
-			<p role="status" class="text-sm text-[var(--color-text-muted)]">{notice}</p>
+			<p role="status" class="text-sm text-[var(--color-text-muted)]">
+				<ApiErrorText error={notice} prefix={noticePrefix} />
+			</p>
 		{/if}
 
 		<div class="flex flex-wrap items-center gap-3">

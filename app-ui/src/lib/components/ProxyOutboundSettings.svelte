@@ -23,6 +23,8 @@
 	// changing shape.
 	import { onMount } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { fetchSettings, patchNetworkSettings } from '$lib/api/settings';
 	import { registerDirtyForm } from '$lib/dirty-guard';
@@ -44,10 +46,10 @@
 		outbound_proxy_strategy: 'fallback'
 	});
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let saving = $state(false);
 	/** A refusal from the schema or the server, announced assertively because it blocked the save. */
-	let refusal = $state<string | null>(null);
+	let refusal = $state<string | ApiError | null>(null);
 	let saved = $state(false);
 
 	// This card owns four keys and nothing else. `provider_proxies` belongs to the provider screen's own
@@ -82,7 +84,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -105,7 +107,7 @@
 		saving = false;
 
 		if (!result.ok) {
-			refusal = result.error.message;
+			refusal = result.error;
 			return;
 		}
 
@@ -137,14 +139,16 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the outbound proxy settings" />
 	{:else if error && server === null}
-		<StateMessage kind="error" title="Outbound settings not loaded" description={error}>
+		<StateMessage kind="error" title="Outbound settings not loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}>Try again</button>
 			{/snippet}
 		</StateMessage>
 	{:else}
 		{#if error}
-			<p role="alert" class="text-sm text-[var(--color-danger)]">{error}</p>
+			<p role="alert" class="text-sm text-[var(--color-danger)]">
+				<ApiErrorText {error} />
+			</p>
 		{/if}
 
 		{#if poolOnlyStoredState}
@@ -232,7 +236,9 @@
 		</div>
 
 		{#if refusal}
-			<p role="alert" class="text-sm text-[var(--color-danger)]">{refusal}</p>
+			<p role="alert" class="text-sm text-[var(--color-danger)]">
+				<ApiErrorText error={refusal} />
+			</p>
 		{/if}
 	{/if}
 </div>

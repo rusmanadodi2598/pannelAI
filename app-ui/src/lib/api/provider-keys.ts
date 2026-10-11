@@ -17,6 +17,7 @@
 // one does not.
 
 import { createEndpoint, createEndpointsBulk } from '$lib/api/endpoints';
+import type { ApiError } from '$lib/api/errors';
 import { planConnectionLines, type PlannedConnection } from '$lib/schemas/connection-plan';
 import {
 	MAX_BULK_CONNECTIONS,
@@ -29,7 +30,7 @@ import {
 export type KeyAddOutcome =
 	| { kind: 'added'; count: number; label: string | null }
 	| { kind: 'issues'; issues: string[] }
-	| { kind: 'refused'; rowIssues: Record<number, string>; error: string | null };
+	| { kind: 'refused'; rowIssues: Record<number, string>; error: string | ApiError | null };
 
 /** The single form's three fields, as the operator typed them. */
 export type SingleKeyDraft = { name: string; keyValue: string; priority: string };
@@ -95,7 +96,7 @@ export async function addConnection(
 	if (!parsed.success) return { kind: 'issues', issues: parsed.error.issues.map((i) => i.message) };
 
 	const result = await createEndpoint(parsed.data);
-	if (!result.ok) return { kind: 'refused', rowIssues: {}, error: result.error.message };
+	if (!result.ok) return { kind: 'refused', rowIssues: {}, error: result.error };
 
 	return { kind: 'added', count: 1, label: result.data.label };
 }
@@ -118,7 +119,7 @@ export async function addPastedConnections(
 		return {
 			kind: 'refused',
 			rowIssues: rekeyBatchRefusal(result.refusal?.results ?? [], rows),
-			error: `Nothing was added: ${result.error.message}`
+			error: result.error
 		};
 	}
 

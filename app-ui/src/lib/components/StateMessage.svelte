@@ -3,17 +3,25 @@
 	//
 	// All three live in one component so a screen cannot implement loading and forget the empty case.
 	// Copy is passed in, because the reason a view is empty belongs to the screen that owns the data.
+	import RequestIdDisplay from '$lib/components/RequestIdDisplay.svelte';
 	import { LoaderCircle, TriangleAlert } from '@lucide/svelte';
 	import type { Snippet } from 'svelte';
+	import type { ApiError } from '$lib/api/errors';
 
 	type Props = {
 		kind: 'loading' | 'empty' | 'error';
 		title: string;
 		description?: string;
+		requestId?: string;
+		apiError?: ApiError | null;
 		action?: Snippet;
 	};
 
-	let { kind, title, description, action }: Props = $props();
+	let { kind, title, description, requestId, apiError, action }: Props = $props();
+	const displayedDescription = $derived(description ?? apiError?.message);
+	const displayedRequestId = $derived(
+		requestId ?? (apiError?.code === 'INTERNAL_ERROR' ? apiError.requestId : undefined)
+	);
 </script>
 
 <div
@@ -30,8 +38,12 @@
 		<span>{title}</span>
 	</div>
 
-	{#if description}
-		<p class="text-sm text-[var(--color-text-muted)]">{description}</p>
+	{#if displayedDescription}
+		<p class="text-sm text-[var(--color-text-muted)]">{displayedDescription}</p>
+	{/if}
+
+	{#if kind === 'error'}
+		<RequestIdDisplay requestId={displayedRequestId} />
 	{/if}
 
 	{#if action}

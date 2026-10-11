@@ -18,6 +18,7 @@
 	import EndpointDetailDrawer from '$lib/components/EndpointDetailDrawer.svelte';
 	import EndpointTable from '$lib/components/EndpointTable.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { deleteEndpoint, listEndpoints } from '$lib/api/endpoints';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import type { Endpoint } from '$lib/schemas/endpoint';
@@ -33,14 +34,14 @@
 	let total = $state(0);
 	let pageNumber = $state(1);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let selected = $state<Endpoint | null>(null);
 
 	// The connection awaiting confirmation, and the outcome of the delete attempt, held here so the
 	// dialog's "Deleting" state and a refused delete both survive the round trip.
 	let pendingDelete = $state<Endpoint | null>(null);
 	let deleting = $state(false);
-	let deleteError = $state<string | null>(null);
+	let deleteError = $state<ApiError | null>(null);
 
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 
@@ -67,7 +68,7 @@
 		if (revision !== token) return;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -92,7 +93,7 @@
 		deleting = false;
 
 		if (!result.ok) {
-			deleteError = result.error.message;
+			deleteError = result.error;
 			return;
 		}
 
@@ -108,11 +109,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading this provider's connections" />
 	{:else if error}
-		<StateMessage
-			kind="error"
-			title="Could not load this provider's connections"
-			description={error}
-		>
+		<StateMessage kind="error" title="Could not load this provider's connections" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load(providerId)}>Try again</button>
 			{/snippet}

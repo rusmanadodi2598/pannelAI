@@ -9,6 +9,8 @@
 	// the result is stored nowhere: a node has no `test_status` column, so this is an answer to a question
 	// and not a state of the object.
 	import { testProviderNode } from '$lib/api/provider-nodes';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { nodeTestStateLabel, type ProviderNodeProbe } from '$lib/schemas/provider-node';
 	import { formatTimestamp } from '$lib/utils/time';
@@ -20,7 +22,7 @@
 	let credential = $state('');
 	let testing = $state(false);
 	let result = $state<ProviderNodeProbe | null>(null);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	async function run(): Promise<void> {
 		testing = true;
@@ -30,7 +32,7 @@
 		testing = false;
 
 		if (!answer.ok) {
-			error = answer.error.message;
+			error = answer.error;
 			result = null;
 			return;
 		}
@@ -66,7 +68,7 @@
 
 	{#if error}
 		<p class="text-sm text-[var(--color-danger)]" role="alert">
-			The test did not run. {error}
+			<ApiErrorText {error} prefix="The test did not run. " />
 		</p>
 	{/if}
 

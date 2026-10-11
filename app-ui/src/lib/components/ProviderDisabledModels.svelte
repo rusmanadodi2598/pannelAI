@@ -9,6 +9,7 @@
 	// A row shows the model id rather than a display name. The catalog cannot name a row it hides, and the
 	// id is what the API stores and keys on, so it is the honest thing to show.
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import type { ModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import { disabledRefKey, type DisabledRef } from '$lib/schemas/model-disabled';
@@ -46,11 +47,7 @@
 	{#if disabled.loading}
 		<StateMessage kind="loading" title="Loading the disabled models" />
 	{:else if disabled.error}
-		<StateMessage
-			kind="error"
-			title="Could not load the disabled models"
-			description={disabled.error}
-		>
+		<StateMessage kind="error" title="Could not load the disabled models" apiError={disabled.error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => disabled.load()}>Try again</button>
 			{/snippet}
@@ -64,9 +61,9 @@
 	{:else}
 		<!-- relative keeps the sr-only column label (position: absolute) inside this scroll box. -->
 		<div
-			class="relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+			class="mobile-key-value-frame relative overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
 		>
-			<table class="w-full min-w-[28rem] border-collapse text-sm">
+			<table class="mobile-key-value-table w-full border-collapse text-sm">
 				<caption class="sr-only">Models disabled for this provider</caption>
 				<thead class="bg-[var(--color-surface-2)] text-left">
 					<tr>
@@ -79,12 +76,12 @@
 				<tbody>
 					{#each mine as ref (disabledRefKey(ref))}
 						<tr class="border-t border-[var(--color-border)]">
-							<td class="px-3 py-2">
+							<td data-label="Model" class="px-3 py-2">
 								<span class="font-medium">{ref.model_id}</span>
 								<br />
 								<span class="text-[var(--color-text-muted)]">Not routable</span>
 							</td>
-							<td class="px-3 py-2 text-end">
+							<td data-label="Actions" class="px-3 py-2 text-end">
 								<button
 									type="button"
 									class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] disabled:opacity-50"
@@ -115,7 +112,7 @@
 			class:text-[var(--color-danger)]={!outcome.ok}
 			role={outcome.ok ? 'status' : 'alert'}
 		>
-			{outcome.message}
+			<ApiErrorText error={outcome.apiError ?? outcome.message} />
 		</p>
 	{/if}
 </div>

@@ -15,6 +15,8 @@
 	import OneTimeKeyModal from '$lib/components/OneTimeKeyModal.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { listGatewayKeys, revokeGatewayKey } from '$lib/api/gateway-keys';
 	import {
 		KEY_STATUS_REVOKED,
@@ -29,14 +31,14 @@
 	let total = $state(0);
 	let page = $state(1);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	let created = $state<CreatedGatewayKey | null>(null);
 	let pendingDelete = $state<GatewayKey | null>(null);
 	let deleting = $state(false);
 	// A failed delete is not a failed list read, so it gets its own line rather than replacing the table
 	// with an error state.
-	let notice = $state<string | null>(null);
+	let notice = $state<ApiError | null>(null);
 
 	const lastPage = $derived(Math.max(1, Math.ceil(total / PAGE_SIZE)));
 
@@ -48,7 +50,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -68,7 +70,7 @@
 		deleting = false;
 
 		if (!result.ok) {
-			notice = result.error.message;
+			notice = result.error;
 			return;
 		}
 
@@ -88,13 +90,15 @@
 	<RefreshControl onrefresh={load} />
 
 	{#if notice}
-		<p role="alert" class="text-sm text-[var(--color-danger)]">{notice}</p>
+		<p role="alert" class="text-sm text-[var(--color-danger)]">
+			<ApiErrorText error={notice} />
+		</p>
 	{/if}
 
 	{#if loading}
 		<StateMessage kind="loading" title="Loading gateway keys" />
 	{:else if error}
-		<StateMessage kind="error" title="Gateway keys could not be loaded" description={error}>
+		<StateMessage kind="error" title="Gateway keys could not be loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={load}>Try again</button>
 			{/snippet}
@@ -113,8 +117,10 @@
 				description="Every key on this page has been deleted."
 			/>
 		{:else}
-			<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-				<table class="w-full min-w-[44rem] border-collapse text-sm">
+			<div
+				class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+			>
+				<table class="mobile-key-value-table w-full border-collapse text-sm">
 					<caption class="sr-only">Gateway keys</caption>
 					<thead class="bg-[var(--color-surface-2)] text-left">
 						<tr>

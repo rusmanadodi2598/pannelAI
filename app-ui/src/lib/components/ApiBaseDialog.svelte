@@ -18,9 +18,11 @@
 	// loaded branch cannot be reached with nothing to show: `reading` and `failure` are what say whether an
 	// answer is in hand.
 	import CopyButton from '$lib/components/CopyButton.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import PanelTabs from '$lib/components/PanelTabs.svelte';
 	import { fetchApiBase } from '$lib/api/api-base';
+	import type { ApiError } from '$lib/api/errors';
 	import { API_BASE_COPY as copy } from '$lib/strings/api-base';
 
 	type Props = {
@@ -31,7 +33,7 @@
 	let { open, onclose }: Props = $props();
 
 	let reading = $state(true);
-	let failure = $state<string | null>(null);
+	let failure = $state<ApiError | null>(null);
 	let base = $state('');
 
 	async function load(): Promise<void> {
@@ -42,7 +44,7 @@
 		reading = false;
 
 		if (!result.ok) {
-			failure = result.error.message;
+			failure = result.error;
 			base = '';
 			return;
 		}
@@ -82,7 +84,9 @@
 			<p class="mt-4 text-sm text-[var(--color-text-muted)]">{copy.loading}</p>
 		{:else if failure}
 			<div class="mt-4 flex flex-col items-start gap-2">
-				<p class="text-sm text-[var(--color-danger)]" role="alert">{failure}</p>
+				<p class="text-sm text-[var(--color-danger)]" role="alert">
+					<ApiErrorText error={failure} />
+				</p>
 				<button type="button" class="underline" onclick={load}>{copy.retry}</button>
 			</div>
 		{:else}

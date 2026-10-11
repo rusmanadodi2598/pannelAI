@@ -9,6 +9,7 @@
 // so the panel shows what the last probe said and nothing it made up (R-36).
 
 import { testProviderModel, testProviderModels } from '$lib/api/providers';
+import type { ApiError } from '$lib/api/errors';
 import {
 	modelTestRowKey,
 	modelTestSweepSummary,
@@ -21,13 +22,13 @@ import {
 export type ModelTestRow =
 	| { phase: 'running' }
 	| { phase: 'probed'; result: ModelTestResult }
-	| { phase: 'unreachable'; message: string };
+	| { phase: 'unreachable'; message: string; apiError?: ApiError };
 
 export function createModelTestStore() {
 	let rows = $state<Record<string, ModelTestRow>>({});
 	let sweeping = $state(false);
 	let summary = $state('');
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	// A fresh read of the catalog drops the last probe's answers: the rows may no longer be the same set,
 	// and a verdict left beside a model it never named is the lie this file exists to avoid.
@@ -46,7 +47,11 @@ export function createModelTestStore() {
 		const answer = await testProviderModel(providerId, modelId);
 
 		if (!answer.ok) {
-			record(providerId, modelId, { phase: 'unreachable', message: answer.error.message });
+			record(providerId, modelId, {
+				phase: 'unreachable',
+				message: answer.error.message,
+				apiError: answer.error
+			});
 			return;
 		}
 		record(providerId, modelId, { phase: 'probed', result: answer.data });
@@ -64,7 +69,7 @@ export function createModelTestStore() {
 		sweeping = false;
 
 		if (!answer.ok) {
-			error = answer.error.message;
+			error = answer.error;
 			return;
 		}
 
@@ -93,7 +98,7 @@ export function createModelTestStore() {
 		get summary(): string {
 			return summary;
 		},
-		get error(): string | null {
+		get error(): ApiError | null {
 			return error;
 		}
 	};

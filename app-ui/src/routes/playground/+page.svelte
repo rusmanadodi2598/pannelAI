@@ -30,7 +30,11 @@
 		PlaygroundModel,
 		PlaygroundRequest
 	} from '$lib/schemas/playground';
-	import { PLAYGROUND_COPY as copy, playgroundFailureDetail } from '$lib/strings/playground';
+	import {
+		PLAYGROUND_COPY as copy,
+		playgroundFailureDetail,
+		playgroundFailureRequestId
+	} from '$lib/strings/playground';
 
 	let models = $state<PlaygroundModel[] | null>(null);
 	let loading = $state(true);
@@ -131,6 +135,7 @@
 			kind="error"
 			title={copy.models.errorTitle}
 			description={playgroundFailureDetail(loadFailure)}
+			requestId={playgroundFailureRequestId(loadFailure)}
 		>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}
@@ -160,6 +165,7 @@
 				kind="error"
 				title={copy.failure.title}
 				description={playgroundFailureDetail(sendFailure)}
+				requestId={playgroundFailureRequestId(sendFailure)}
 			/>
 		{/if}
 

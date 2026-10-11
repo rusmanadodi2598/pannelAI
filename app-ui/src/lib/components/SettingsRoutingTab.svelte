@@ -10,7 +10,9 @@
 	// message the operator reads would be the browser's and in the browser's language, which is a second
 	// validator the panel cannot keep in English.
 	import { untrack } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { patchRoutingSettings } from '$lib/api/settings';
+	import type { ApiError } from '$lib/api/errors';
 	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
 		COMBO_STRATEGIES,
@@ -50,7 +52,7 @@
 	let draft = $state<RoutingSettingsForm>({ ...initial });
 	let server = $state<RoutingSettingsForm>({ ...initial });
 
-	let message = $state<string | null>(null);
+	let message = $state<string | ApiError | null>(null);
 	let saving = $state(false);
 
 	const dirty = $derived(settingsGroupDirty(server, draft));
@@ -71,7 +73,7 @@
 		saving = false;
 
 		if (!result.ok) {
-			message = result.error.message;
+			message = result.error;
 			return;
 		}
 
@@ -175,7 +177,9 @@
 			<span class="text-sm font-medium text-[var(--color-text-muted)]">Unsaved changes</span>
 		{/if}
 		{#if message}
-			<p class="text-sm text-[var(--color-text-muted)]" role="status">{message}</p>
+			<p class="text-sm text-[var(--color-text-muted)]" role="status">
+				<ApiErrorText error={message} />
+			</p>
 		{/if}
 	</div>
 </div>

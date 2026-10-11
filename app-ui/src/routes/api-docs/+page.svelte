@@ -20,11 +20,12 @@
 	import { publicOperationCount, schemeUses } from '$lib/schemas/openapi-credentials';
 	import { errorPlanes } from '$lib/schemas/openapi-errors';
 	import type { OpenAPIDocument } from '$lib/schemas/openapi';
+	import type { ApiError } from '$lib/api/errors';
 	import { API_DOCS_COPY as copy } from '$lib/strings/api-docs';
 
 	let doc = $state<OpenAPIDocument | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	onMount(load);
 
@@ -36,7 +37,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -58,7 +59,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title={copy.document.loading} />
 	{:else if error}
-		<StateMessage kind="error" title={copy.document.errorTitle} description={error}>
+		<StateMessage kind="error" title={copy.document.errorTitle} apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}
 					>{copy.document.retry}</button

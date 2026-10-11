@@ -67,6 +67,20 @@ describe('PlaygroundPage model states', () => {
 		expect(calls.models).toBe(2);
 	});
 
+	it('shows and offers to copy an INTERNAL_ERROR request ID when the panel response includes one', async () => {
+		stubPlayground({
+			models: { error: { code: 'INTERNAL_ERROR', message: 'The panel is misconfigured.' } },
+			modelsStatus: 500,
+			modelsRequestId: 'playground-request-17'
+		});
+		render(PlaygroundPage);
+
+		const alert = await screen.findByRole('alert');
+		expect(alert.textContent).toContain('The panel is misconfigured.');
+		expect(alert.textContent).toContain('playground-request-17');
+		expect(screen.getByRole('button', { name: 'Copy request ID' })).toBeTruthy();
+	});
+
 	it('states an empty model list instead of offering a picker with nothing in it', async () => {
 		stubPlayground({ models: { data: [] } });
 		render(PlaygroundPage);

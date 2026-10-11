@@ -8,8 +8,10 @@
 	// concern across two places.
 	import { untrack } from 'svelte';
 	import Modal from '$lib/components/Modal.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import PasswordChangeForm from '$lib/components/PasswordChangeForm.svelte';
 	import { patchSecuritySettings } from '$lib/api/settings';
+	import type { ApiError } from '$lib/api/errors';
 	import { registerDirtyForm } from '$lib/dirty-guard';
 	import {
 		schemaSecuritySettingsForm,
@@ -29,7 +31,7 @@
 	let draft = $state<SecuritySettingsForm>({ ...initial });
 	let server = $state<SecuritySettingsForm>({ ...initial });
 
-	let message = $state<string | null>(null);
+	let message = $state<string | ApiError | null>(null);
 	let saving = $state(false);
 	let confirmingOpenPanel = $state(false);
 
@@ -51,7 +53,7 @@
 		saving = false;
 
 		if (!result.ok) {
-			message = result.error.message;
+			message = result.error;
 			// A refused write means the draft may not match what the gateway holds, so the draft goes
 			// back to the last confirmed value rather than staying as the operator left it.
 			draft = { ...server };
@@ -118,7 +120,9 @@
 			<span class="text-sm font-medium text-[var(--color-text-muted)]">Unsaved changes</span>
 		{/if}
 		{#if message}
-			<p class="text-sm text-[var(--color-text-muted)]" role="status">{message}</p>
+			<p class="text-sm text-[var(--color-text-muted)]" role="status">
+				<ApiErrorText error={message} />
+			</p>
 		{/if}
 	</div>
 </div>

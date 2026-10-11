@@ -14,6 +14,8 @@
 	// A registry that cannot be read leaves the select offering the value the URL carries and a line saying
 	// why, rather than silently showing "Any provider" over a filtered table.
 	import { onMount } from 'svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { listGatewayKeys } from '$lib/api/gateway-keys';
 	import { listProviders } from '$lib/api/providers';
 	import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from '$lib/schemas/primitives';
@@ -37,8 +39,8 @@
 	let synced = $state('');
 	let providers = $state<Option[]>([]);
 	let gatewayKeys = $state<Option[]>([]);
-	let providersNotice = $state<string | null>(null);
-	let keysNotice = $state<string | null>(null);
+	let providersNotice = $state<{ text: string; apiError: ApiError } | null>(null);
+	let keysNotice = $state<{ text: string; apiError: ApiError } | null>(null);
 
 	$effect(() => {
 		const key = `${search.endpointId}\n${search.model}\n${search.query}`;
@@ -74,13 +76,19 @@
 		if (providerResult.ok) {
 			providers = providerResult.data.data.map((row) => ({ id: row.id, name: row.name }));
 		} else {
-			providersNotice = `The provider list could not be read, so ids show. ${providerResult.error.message}`;
+			providersNotice = {
+				text: 'The provider list could not be read, so ids show. ',
+				apiError: providerResult.error
+			};
 		}
 
 		if (keyResult.ok) {
 			gatewayKeys = keyResult.data.data.map((row) => ({ id: row.id, name: row.name }));
 		} else {
-			keysNotice = `The key list could not be read, so ids show. ${keyResult.error.message}`;
+			keysNotice = {
+				text: 'The key list could not be read, so ids show. ',
+				apiError: keyResult.error
+			};
 		}
 	}
 
@@ -188,10 +196,14 @@
 {#if providersNotice !== null || keysNotice !== null}
 	<div role="status" aria-live="polite" class="flex flex-col gap-1 text-sm">
 		{#if providersNotice !== null}
-			<p class="text-[var(--color-text-muted)]">{providersNotice}</p>
+			<p class="text-[var(--color-text-muted)]">
+				<ApiErrorText error={providersNotice.apiError} prefix={providersNotice.text} />
+			</p>
 		{/if}
 		{#if keysNotice !== null}
-			<p class="text-[var(--color-text-muted)]">{keysNotice}</p>
+			<p class="text-[var(--color-text-muted)]">
+				<ApiErrorText error={keysNotice.apiError} prefix={keysNotice.text} />
+			</p>
 		{/if}
 	</div>
 {/if}
