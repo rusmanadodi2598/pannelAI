@@ -22,7 +22,9 @@
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import ProviderOAuthAccounts from '$lib/components/ProviderOAuthAccounts.svelte';
 	import ProviderOAuthDevice from '$lib/components/ProviderOAuthDevice.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { providerOAuthStatus, startProviderOAuth } from '$lib/api/providers';
 	import {
 		OAUTH_RETURN_KEYS,
@@ -39,14 +41,14 @@
 
 	let status = $state<OAuthStatus | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	// The one-time outcome of a round trip, held in memory so dropping it from the address does not drop the
 	// message. Cleared when the operator starts another attempt, because that attempt has no result yet.
 	let returned = $state<OAuthReturn | null>(null);
 
 	let starting = $state(false);
-	let startError = $state<string | null>(null);
+	let startError = $state<ApiError | null>(null);
 	let authorizeUrl = $state<string | null>(null);
 
 	// One read per visit. The query is read untracked so that dropping the return keys from the address does
@@ -77,7 +79,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			status = null;
 			return;
 		}
@@ -109,7 +111,7 @@
 		starting = false;
 
 		if (!result.ok) {
-			startError = result.error.message;
+			startError = result.error;
 			authorizeUrl = null;
 			return;
 		}
@@ -134,7 +136,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the OAuth state" />
 	{:else if error}
-		<StateMessage kind="error" title="Could not load the OAuth state" description={error}>
+		<StateMessage kind="error" title="Could not load the OAuth state" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load(providerId)}>Try again</button>
 			{/snippet}
@@ -166,7 +168,9 @@
 			</p>
 
 			{#if startError}
-				<p class="text-sm text-[var(--color-danger)]" role="alert">{startError}</p>
+				<p class="text-sm text-[var(--color-danger)]" role="alert">
+					<ApiErrorText error={startError} />
+				</p>
 			{/if}
 		{:else if oauthFlowDevice(status.flow)}
 			<ProviderOAuthDevice {providerId} onconnected={() => load(providerId, true)} />

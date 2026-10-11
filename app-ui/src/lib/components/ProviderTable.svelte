@@ -20,8 +20,10 @@
 	let { providers }: { providers: Provider[] } = $props();
 </script>
 
-<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-	<table class="w-full min-w-[48rem] border-collapse text-sm">
+<div
+	class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+>
+	<table class="mobile-key-value-table w-full border-collapse text-sm">
 		<caption class="sr-only">Provider registry, as the gateway sees it</caption>
 		<thead class="bg-[var(--color-surface-2)] text-left">
 			<tr>
@@ -36,16 +38,19 @@
 		<tbody>
 			{#each providers as provider (provider.id)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td class="px-3 py-2">
+					<td data-label="Provider" class="px-3 py-2">
 						<span class="font-medium">{provider.name}</span>
 						<br />
 						<span class="text-[var(--color-text-muted)]">{provider.id}</span>
 					</td>
-					<td class="px-3 py-2">{provider.category}</td>
-					<td class="px-3 py-2">{AUTH_TYPE_LABELS[provider.auth_type] ?? provider.auth_type}</td>
-					<td class="px-3 py-2 tabular-nums">{provider.endpoint_count}</td>
-					<td class="px-3 py-2">{statusSummaryText(provider.status_summary)}</td>
-					<td class="px-3 py-2">
+					<td data-label="Category" class="px-3 py-2">{provider.category}</td>
+					<td data-label="Auth" class="px-3 py-2"
+						>{AUTH_TYPE_LABELS[provider.auth_type] ?? provider.auth_type}</td
+					>
+					<td data-label="Endpoints" class="px-3 py-2 tabular-nums">{provider.endpoint_count}</td>
+					<td data-label="Status" class="px-3 py-2">{statusSummaryText(provider.status_summary)}</td
+					>
+					<td data-label="Actions" class="px-3 py-2">
 						<div class="flex flex-wrap items-center gap-2">
 							<a
 								href={resolve('/providers/[provider_id]', { provider_id: provider.id })}

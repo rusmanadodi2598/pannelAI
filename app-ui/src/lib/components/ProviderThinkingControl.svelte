@@ -24,6 +24,7 @@
 		thinkingModeLabel,
 		type ThinkingMode
 	} from '$lib/schemas/settings';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ProviderThinkingStore } from '$lib/stores/provider-thinking.svelte';
 
 	let {
@@ -96,8 +97,8 @@
 		{#if thinking.loading}
 			<p class="text-[var(--color-text-muted)]" role="status">Loading the reasoning mode…</p>
 		{:else if thinking.error}
-			<p class="text-[var(--color-text-muted)]" role="status">
-				The reasoning setting could not be read: {thinking.error}
+			<p class="text-[var(--color-danger)]" role="alert">
+				<ApiErrorText error={thinking.error} prefix="The reasoning setting could not be read: " />
 			</p>
 		{:else}
 			<select
@@ -114,7 +115,13 @@
 			</select>
 			<p class="text-xs text-[var(--color-text-muted)]">{describe()}</p>
 			{#if thinking.outcome}
-				<p class="text-sm text-[var(--color-text-muted)]" role="status">{thinking.outcome}</p>
+				<p
+					class="text-sm"
+					class:text-[var(--color-danger)]={typeof thinking.outcome !== 'string'}
+					role={typeof thinking.outcome === 'string' ? 'status' : 'alert'}
+				>
+					<ApiErrorText error={thinking.outcome} />
+				</p>
 			{/if}
 		{/if}
 	</div>

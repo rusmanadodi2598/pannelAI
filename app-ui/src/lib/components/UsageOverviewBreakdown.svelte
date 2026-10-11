@@ -9,6 +9,8 @@
 	// can fail alone: a registry that cannot be read leaves the ids on screen with one line saying so. The
 	// read belongs to the tab, because the tab is what a refresh repeats.
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import UsageGroupTable from '$lib/components/UsageGroupTable.svelte';
 	import {
 		USAGE_BREAKDOWN_NONE,
@@ -27,7 +29,7 @@
 		groups: UsageGroup[];
 		/** The registry's id-to-name map, or null when it could not be read. */
 		providerNames: Map<string, string> | null;
-		namesNotice: string | null;
+		namesNotice: { text: string; apiError?: ApiError } | null;
 		onsort: (field: UsageSort | '') => void;
 	};
 
@@ -36,7 +38,12 @@
 
 {#if breakdown !== USAGE_BREAKDOWN_NONE}
 	{#if breakdown === 'provider' && namesNotice !== null}
-		<p role="status" class="text-sm text-[var(--color-text-muted)]">{namesNotice}</p>
+		<p role="status" class="text-sm text-[var(--color-text-muted)]">
+			<ApiErrorText
+				error={namesNotice.apiError ?? namesNotice.text}
+				prefix={namesNotice.apiError ? namesNotice.text : ''}
+			/>
+		</p>
 	{/if}
 
 	{#if groups.length === 0}

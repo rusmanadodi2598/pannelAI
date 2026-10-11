@@ -12,6 +12,7 @@
 	import ModelCatalogSweep from '$lib/components/ModelCatalogSweep.svelte';
 	import ModelCatalogTable from '$lib/components/ModelCatalogTable.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { listModelCatalog } from '$lib/api/models';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import {
@@ -47,7 +48,7 @@
 
 	let models = $state<CatalogModel[]>([]);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	// `draft` is what the operator types; `applied` is what the API was asked. Keeping them apart is what
 	// lets the search box hold a half-typed word without firing a request per keystroke.
@@ -83,7 +84,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -159,7 +160,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the model catalog" />
 	{:else if error}
-		<StateMessage kind="error" title="Could not load the model catalog" description={error}>
+		<StateMessage kind="error" title="Could not load the model catalog" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load(providerId, token)}
 					>Try again</button

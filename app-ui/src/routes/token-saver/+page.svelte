@@ -9,13 +9,15 @@
 	// alternative is a form that blanks out on a transient error.
 	import { onMount } from 'svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import TokenSaverForm from '$lib/components/TokenSaverForm.svelte';
 	import { getTokenSaver } from '$lib/api/token-saver';
 	import type { TokenSaver } from '$lib/schemas/token-saver';
 
 	let config = $state<TokenSaver | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	onMount(() => void load());
 
@@ -24,7 +26,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -44,7 +46,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the token saver configuration" />
 	{:else if error && config === null}
-		<StateMessage kind="error" title="Token saver settings not loaded" description={error}>
+		<StateMessage kind="error" title="Token saver settings not loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}>Try again</button>
 			{/snippet}
@@ -52,7 +54,7 @@
 	{:else if config}
 		{#if error}
 			<p role="alert" class="text-sm text-[var(--color-danger)]">
-				{error} The form still shows the last read.
+				<ApiErrorText {error} suffix=" The form still shows the last read." />
 			</p>
 		{/if}
 

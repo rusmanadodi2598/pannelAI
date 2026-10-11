@@ -12,10 +12,12 @@
 	import { untrack } from 'svelte';
 	import LogsFilters from '$lib/components/LogsFilters.svelte';
 	import PurgeLogsDialog from '$lib/components/PurgeLogsDialog.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import RequestLogDrawer from '$lib/components/RequestLogDrawer.svelte';
 	import RequestLogTable from '$lib/components/RequestLogTable.svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { listRequestLogs, purgeRequestLogs } from '$lib/api/log';
 	import type { LogRecord } from '$lib/schemas/log';
 	import {
@@ -30,12 +32,12 @@
 	let records = $state<LogRecord[]>([]);
 	let total = $state(0);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let opened = $state<string | null>(null);
 
 	let purgeOpen = $state(false);
 	let purgeBusy = $state(false);
-	let purgeResult = $state<string | null>(null);
+	let purgeResult = $state<string | ApiError | null>(null);
 
 	const search = $derived(parseLogSearch(page.url.searchParams));
 	const lastPage = $derived(Math.max(1, Math.ceil(total / LOGS_PAGE_SIZE)));
@@ -53,7 +55,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -97,7 +99,7 @@
 		purgeBusy = false;
 
 		if (!result.ok) {
-			purgeResult = result.error.message;
+			purgeResult = result.error;
 			return;
 		}
 
@@ -126,7 +128,9 @@
 	<RefreshControl onrefresh={() => load(search)} />
 
 	{#if purgeResult}
-		<p class="text-sm text-[var(--color-text-muted)]" role="status">{purgeResult}</p>
+		<p class="text-sm text-[var(--color-text-muted)]" role="status">
+			<ApiErrorText error={purgeResult} />
+		</p>
 	{/if}
 
 	{#if search.notices.length > 0}
@@ -144,7 +148,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading requests" />
 	{:else if error}
-		<StateMessage kind="error" title="Requests could not be loaded" description={error}>
+		<StateMessage kind="error" title="Requests could not be loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load(search)}>Try again</button>
 			{/snippet}

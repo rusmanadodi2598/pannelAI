@@ -20,8 +20,10 @@
 	}
 </script>
 
-<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-	<table class="w-full min-w-[64rem] border-collapse text-sm">
+<div
+	class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+>
+	<table class="mobile-key-value-table w-full border-collapse text-sm">
 		<caption class="sr-only">Requests recorded in this window, newest first</caption>
 		<thead class="bg-[var(--color-surface-2)] text-left">
 			<tr>
@@ -42,26 +44,30 @@
 		<tbody>
 			{#each records as record (record.id)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td class="px-3 py-2">{formatTimestamp(record.ts)}</td>
-					<td class="px-3 py-2">{record.request_id}</td>
-					<td class="px-3 py-2">{record.model}</td>
-					<td class="px-3 py-2">{record.provider_id}</td>
-					<td class="px-3 py-2">{record.endpoint_id ?? 'Not recorded'}</td>
-					<td class="px-3 py-2">{record.gateway_key_id ?? 'Not recorded'}</td>
-					<td class="px-3 py-2 tabular-nums">
+					<td data-label="Timestamp" class="px-3 py-2">{formatTimestamp(record.ts)}</td>
+					<td data-label="Request ID" class="px-3 py-2">{record.request_id}</td>
+					<td data-label="Model" class="px-3 py-2">{record.model}</td>
+					<td data-label="Provider" class="px-3 py-2">{record.provider_id}</td>
+					<td data-label="Endpoint" class="px-3 py-2">{record.endpoint_id ?? 'Not recorded'}</td>
+					<td data-label="Gateway key" class="px-3 py-2"
+						>{record.gateway_key_id ?? 'Not recorded'}</td
+					>
+					<td data-label="Tokens in / out" class="px-3 py-2 tabular-nums">
 						{formatCount(record.tokens_in)} / {formatCount(record.tokens_out)}
 					</td>
-					<td class="px-3 py-2 tabular-nums">{record.cost_usd}</td>
-					<td class="px-3 py-2 tabular-nums">{formatCount(record.latency_ms)} ms</td>
-					<td class="px-3 py-2">{statusLabel(record.status)}</td>
-					<td class="px-3 py-2">
+					<td data-label="Cost (USD)" class="px-3 py-2 tabular-nums">{record.cost_usd}</td>
+					<td data-label="Latency" class="px-3 py-2 tabular-nums"
+						>{formatCount(record.latency_ms)} ms</td
+					>
+					<td data-label="Status" class="px-3 py-2">{statusLabel(record.status)}</td>
+					<td data-label="Error code" class="px-3 py-2">
 						{#if record.error_code}
 							{record.error_code}
 						{:else}
 							<span class="text-[var(--color-text-muted)]">None</span>
 						{/if}
 					</td>
-					<td class="px-3 py-2">
+					<td data-label="Detail" class="px-3 py-2">
 						<button type="button" class="min-h-11 underline" onclick={() => onopen(record)}
 							>Open</button
 						>

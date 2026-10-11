@@ -10,6 +10,7 @@
 	import CapturedBodies from '$lib/components/CapturedBodies.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { getRequestLog } from '$lib/api/log';
 	import { REQUEST_STATUS_LABELS } from '$lib/schemas/primitives';
 	import type { LogDetail } from '$lib/schemas/log';
@@ -21,7 +22,7 @@
 
 	let detail = $state<LogDetail | null>(null);
 	let loading = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	// Reloads whenever the drawer is handed a different request, so the facts and the bodies always belong
 	// to the row that was opened.
@@ -40,7 +41,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -53,7 +54,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the request" />
 	{:else if error}
-		<StateMessage kind="error" title="The request could not be loaded" description={error} />
+		<StateMessage kind="error" title="The request could not be loaded" apiError={error} />
 	{:else if detail}
 		<div class="flex flex-col gap-5 text-sm">
 			<dl class="grid grid-cols-2 gap-3">

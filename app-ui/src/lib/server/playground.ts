@@ -32,7 +32,10 @@ const ERROR_STATUS: Record<PlaygroundErrorCode, number> = {
 	INTERNAL_ERROR: 500
 };
 
-type FailureExtra = { gateway?: { code: string; type: string; message: string } };
+type FailureExtra = {
+	gateway?: { code: string; type: string; message: string };
+	requestId?: string;
+};
 
 /** A panel failure, in the panel's envelope. The only response shape the playground produces on error. */
 export function playgroundError(
@@ -40,10 +43,13 @@ export function playgroundError(
 	message: string,
 	extra: FailureExtra = {}
 ): Response {
-	const body = { error: { code, message, ...extra } };
+	const { requestId, ...bodyExtra } = extra;
+	const body = { error: { code, message, ...bodyExtra } };
+	const headers = new Headers({ 'content-type': 'application/json', 'cache-control': 'no-store' });
+	if (requestId) headers.set('x-request-id', requestId);
 	return new Response(JSON.stringify(body), {
 		status: ERROR_STATUS[code],
-		headers: { 'content-type': 'application/json', 'cache-control': 'no-store' }
+		headers
 	});
 }
 

@@ -21,6 +21,7 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import PanelTabs from '$lib/components/PanelTabs.svelte';
 	import SettingsSecurityTab from '$lib/components/SettingsSecurityTab.svelte';
 	import SettingsRoutingTab from '$lib/components/SettingsRoutingTab.svelte';
@@ -38,7 +39,7 @@
 
 	let settings = $state<PanelSettings | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	onMount(load);
 
@@ -48,7 +49,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -68,7 +69,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading settings" />
 	{:else if error}
-		<StateMessage kind="error" title="Settings could not be loaded" description={error}>
+		<StateMessage kind="error" title="Settings could not be loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={load}>Try again</button>
 			{/snippet}

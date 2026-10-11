@@ -101,6 +101,57 @@ describe('PlaygroundPage send', () => {
 		expect(screen.queryByRole('heading', { name: 'Answer' })).toBeNull();
 	});
 
+	it('shows an INTERNAL_ERROR request ID from the gateway inside the playground envelope', async () => {
+		const cases = [
+			{
+				name: 'primary upstream failure',
+				message: 'The gateway hit an unexpected error.',
+				requestId: 'gateway-request-23'
+			},
+			{
+				name: 'database failure',
+				message: 'The gateway could not read its provider state.',
+				requestId: 'gateway-request-24'
+			},
+			{
+				name: 'upstream timeout',
+				message: 'The gateway timed out while routing the request.',
+				requestId: 'gateway-request-25'
+			}
+		];
+		for (const { message, requestId } of cases) {
+			cleanup();
+			vi.unstubAllGlobals();
+			const failure = {
+				error: {
+					code: 'GATEWAY_ERROR',
+					message,
+					gateway: {
+						code: 'INTERNAL_ERROR',
+						type: 'server_error',
+						message
+					}
+				}
+			};
+			stubPlayground({
+				models: MODELS,
+				chat: () =>
+					new Response(JSON.stringify(failure), {
+						status: 502,
+						headers: { 'content-type': 'application/json', 'x-request-id': requestId }
+					})
+			});
+			render(PlaygroundPage);
+
+			await sendMessage('hi');
+
+			const alert = await screen.findByRole('alert');
+			expect(alert.textContent).toContain(message);
+			expect(alert.textContent).toContain(requestId);
+			expect(screen.getByRole('button', { name: 'Copy request ID' })).toBeTruthy();
+		}
+	});
+
 	it('keeps a partial answer on screen when the stream breaks', async () => {
 		// The frame is delivered by the first read and the break comes on the second, because a stream that
 		// errors with a frame still queued drops that frame: the point of the row is text that did arrive.

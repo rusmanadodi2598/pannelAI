@@ -34,6 +34,7 @@
 	import ProviderProxyCard from '$lib/components/ProviderProxyCard.svelte';
 	import ProviderThinkingControl from '$lib/components/ProviderThinkingControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { getProvider } from '$lib/api/providers';
 	import { createModelDisabledStore } from '$lib/stores/model-disabled.svelte';
 	import { createModelTestStore } from '$lib/stores/model-test.svelte';
@@ -58,7 +59,7 @@
 
 	let provider = $state<ProviderDetail | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	// The disabled set is global, so it is read once rather than per provider. A node does not read it: the
 	// set narrows the registry catalog, and a node's screen has no catalog to narrow.
@@ -143,7 +144,7 @@
 
 		if (!result.ok) {
 			loading = false;
-			error = result.error.message;
+			error = result.error;
 			provider = null;
 			return;
 		}
@@ -168,7 +169,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the registry entry" />
 	{:else if error}
-		<StateMessage kind="error" title="This provider could not be loaded" description={error}>
+		<StateMessage kind="error" title="This provider could not be loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load(providerId)}>Try again</button>
 				<a href={resolve('/providers')} class="ms-3 underline">Back to the registry</a>

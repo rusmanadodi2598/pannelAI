@@ -111,11 +111,8 @@ describe('the picker dialogs', () => {
 		).toBeTruthy();
 	});
 
-	it('gives the dialog close control the 36px size DESIGN.md §7 fixes for a dialog', () => {
-		// `DESIGN.md` §7 fixes 36px for a dialog's own controls and reserves 44px for the sidebar, which is a
-		// touch surface at every breakpoint, so 36px here is not the R-03 defect it looks like at a glance.
-		// A silent change to 44px would override recorded owner direction, so the size is pinned here
-		// instead, and the port document records the reading as deliberate rather than as a fix.
+	it('gives the dialog close control the 44px touch target required by SPEC-UI §8.7', () => {
+		// The shared modal close control must remain usable on touch layouts, not only with a pointer.
 		render(ModelPickerDialog, {
 			props: {
 				title: 'Add models',
@@ -129,9 +126,10 @@ describe('the picker dialogs', () => {
 		});
 
 		const close = screen.getByRole('button', { name: 'Close dialog' });
-		expect(close.className, 'the dialog close control left the 36px DESIGN.md §7 fixes').toContain(
-			'size-9'
-		);
+		expect(
+			close.className,
+			'the dialog close control meets the 44px touch target minimum'
+		).toContain('size-11');
 	});
 });
 

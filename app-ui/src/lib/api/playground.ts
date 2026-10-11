@@ -74,7 +74,8 @@ export async function fetchPlaygroundModels(): Promise<PlaygroundResult<Playgrou
 			ok: false,
 			failure: localFailure(
 				'INTERNAL_ERROR',
-				'The panel answered a shape this screen does not read.'
+				'The panel answered a shape this screen does not read.',
+				response.headers.get('x-request-id') ?? undefined
 			)
 		};
 	}
@@ -113,6 +114,8 @@ export async function streamPlaygroundChat(
 		return;
 	}
 
+	reportUnauthorized(response.status);
+
 	if (!response.ok) {
 		handlers.onFailure(await readFailure(response));
 		return;
@@ -120,7 +123,11 @@ export async function streamPlaygroundChat(
 
 	if (!(response.headers.get('content-type') ?? '').includes('text/event-stream')) {
 		handlers.onFailure(
-			localFailure('INTERNAL_ERROR', 'The panel answered a shape this screen does not read.')
+			localFailure(
+				'INTERNAL_ERROR',
+				'The panel answered a shape this screen does not read.',
+				response.headers.get('x-request-id') ?? undefined
+			)
 		);
 		return;
 	}
@@ -135,13 +142,17 @@ async function readFailure(response: Response): Promise<PlaygroundFailure> {
 
 	try {
 		const parsed = schemaPlaygroundFailure.safeParse(JSON.parse(text));
-		if (parsed.success) return parsed.data;
+		if (parsed.success) {
+			const requestId = response.headers.get('x-request-id') ?? undefined;
+			return requestId ? { ...parsed.data, requestId } : parsed.data;
+		}
 	} catch {
 		// Fall through to the sentence below: a body that is not JSON is not a failure the panel wrote.
 	}
 
 	return localFailure(
 		'GATEWAY_ERROR',
-		`The panel answered HTTP ${response.status} without a readable error.`
+		`The panel answered HTTP ${response.status} without a readable error.`,
+		response.headers.get('x-request-id') ?? undefined
 	);
 }

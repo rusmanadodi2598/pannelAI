@@ -25,9 +25,11 @@
 	// deliberately not built: the route it calls has no counterpart in app-serv yet (measured 405), and a
 	// control that calls a route nothing serves is a dead control (R-26).
 	import FormIssues from '$lib/components/FormIssues.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import Modal from '$lib/components/Modal.svelte';
 	import { createProviderNode, updateProviderNode } from '$lib/api/provider-nodes';
+	import type { ApiError } from '$lib/api/errors';
 	import {
 		NODE_API_TYPES,
 		NODE_API_TYPE_LABELS,
@@ -72,7 +74,7 @@
 
 	let draft = $state<CustomProviderDraft>(customProviderDraftNew('openai-compatible'));
 	let issues = $state<string[]>([]);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let saving = $state(false);
 
 	// The copy the dialog states for the type it is opening: the reference keeps one table per variant
@@ -121,7 +123,7 @@
 		saving = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -204,7 +206,7 @@
 
 		{#if error}
 			<p class="text-[var(--color-danger)]" role="alert">
-				The provider was not {editing ? 'saved' : 'added'}. {error}
+				<ApiErrorText {error} prefix={`The provider was not ${editing ? 'saved' : 'added'}. `} />
 			</p>
 		{/if}
 	</div>

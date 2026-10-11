@@ -45,8 +45,10 @@
 	let testing = $state<Combo | null>(null);
 </script>
 
-<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-	<table class="w-full min-w-[52rem] border-collapse text-sm">
+<div
+	class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+>
+	<table class="mobile-key-value-table w-full border-collapse text-sm">
 		<caption class="sr-only">Combos, with the models they use</caption>
 		<thead class="bg-[var(--color-surface-2)] text-left">
 			<tr>
@@ -62,19 +64,19 @@
 		<tbody>
 			{#each combos as combo (combo.id)}
 				<tr class="border-t border-[var(--color-border)]">
-					<td class="px-3 py-2 font-medium">{combo.name}</td>
-					<td class="px-3 py-2">{comboStrategyLabel(combo.strategy)}</td>
-					<td class="px-3 py-2">{comboModelSummary(combo)}</td>
-					<td class="px-3 py-2 tabular-nums">
+					<td data-label="Name" class="px-3 py-2 font-medium">{combo.name}</td>
+					<td data-label="Strategy" class="px-3 py-2">{comboStrategyLabel(combo.strategy)}</td>
+					<td data-label="Models" class="px-3 py-2">{comboModelSummary(combo)}</td>
+					<td data-label="Sticky limit" class="px-3 py-2 tabular-nums">
 						{usesStickyLimit(combo.strategy) ? combo.sticky_limit : 'Not used'}
 					</td>
-					<td class="px-3 py-2">
+					<td data-label="Judge model" class="px-3 py-2">
 						{usesJudgeModel(combo.strategy) && combo.judge_model !== ''
 							? combo.judge_model
 							: 'Not used'}
 					</td>
-					<td class="px-3 py-2">{combo.updated_at ?? 'Unknown'}</td>
-					<td class="px-3 py-2">
+					<td data-label="Updated" class="px-3 py-2">{combo.updated_at ?? 'Unknown'}</td>
+					<td data-label="Actions" class="px-3 py-2">
 						<div class="flex flex-wrap items-center gap-1">
 							<button
 								type="button"

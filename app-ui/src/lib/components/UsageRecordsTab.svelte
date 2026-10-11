@@ -15,6 +15,7 @@
 	import { untrack } from 'svelte';
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import UsageRecordDrawer from '$lib/components/UsageRecordDrawer.svelte';
 	import UsageRecordTable from '$lib/components/UsageRecordTable.svelte';
 	import UsageRecordsFilters from '$lib/components/UsageRecordsFilters.svelte';
@@ -32,7 +33,7 @@
 	let records = $state<UsageRecord[]>([]);
 	let total = $state(0);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let opened = $state<string | null>(null);
 	// A page size the screen cannot use is corrected by navigating away from it, so the notice outlives the
 	// URL that carried the value. It stays until the operator changes a filter, which is the next time the
@@ -78,7 +79,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -147,7 +148,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading requests" />
 	{:else if error}
-		<StateMessage kind="error" title="Requests could not be loaded" description={error}>
+		<StateMessage kind="error" title="Requests could not be loaded" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load(search)}>Try again</button>
 			{/snippet}

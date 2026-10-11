@@ -22,6 +22,7 @@ export type ChatAnswer = (init?: RequestInit) => Response;
 export function stubPlayground(options: {
 	models: unknown;
 	modelsStatus?: number;
+	modelsRequestId?: string;
 	/** The answer to a send. Defaults to a stream that ends immediately. */
 	chat?: ChatAnswer;
 }): PageCalls {
@@ -32,9 +33,11 @@ export function stubPlayground(options: {
 
 		if (url === '/playground/models') {
 			calls.models += 1;
+			const headers: Record<string, string> = { 'content-type': 'application/json' };
+			if (options.modelsRequestId) headers['x-request-id'] = options.modelsRequestId;
 			return new Response(JSON.stringify(options.models), {
 				status: options.modelsStatus ?? 200,
-				headers: { 'content-type': 'application/json' }
+				headers
 			});
 		}
 

@@ -20,6 +20,7 @@
 	import ModelCatalogSweep from '$lib/components/ModelCatalogSweep.svelte';
 	import NodeModelsImport from '$lib/components/NodeModelsImport.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { deleteCustomModel, listCustomModels } from '$lib/api/models';
 	import { providerCustomModels, type CustomModel } from '$lib/schemas/custom-model';
 	import { nodeTypeOfId } from '$lib/schemas/provider-node';
@@ -51,13 +52,13 @@
 
 	let rows = $state<CustomModel[]>([]);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let notice = $state<string | null>(null);
 
 	// The row awaiting confirmation, and the state of that removal.
 	let pending = $state<CustomModel | null>(null);
 	let removing = $state(false);
-	let removeError = $state<string | null>(null);
+	let removeError = $state<ApiError | null>(null);
 
 	const mine = $derived(providerCustomModels(rows, providerId));
 
@@ -76,7 +77,7 @@
 		loading = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -107,7 +108,7 @@
 		removing = false;
 
 		if (!result.ok) {
-			removeError = result.error.message;
+			removeError = result.error;
 			return;
 		}
 
@@ -130,7 +131,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the custom models" />
 	{:else if error}
-		<StateMessage kind="error" title="Could not load the custom models" description={error}>
+		<StateMessage kind="error" title="Could not load the custom models" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => load()}>Try again</button>
 			{/snippet}

@@ -54,8 +54,10 @@
 	const dangerClass = `${actionBase} text-[var(--color-danger)] hover:text-[var(--color-danger)]`;
 </script>
 
-<div class="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]">
-	<table class="w-full min-w-[62rem] border-collapse text-sm">
+<div
+	class="mobile-key-value-frame overflow-x-auto rounded-[var(--radius-md)] border border-[var(--color-border)]"
+>
+	<table class="mobile-key-value-table w-full border-collapse text-sm">
 		<caption class="sr-only">
 			Proxy pool candidates, with the last connectivity test for each
 		</caption>
@@ -75,14 +77,14 @@
 		<tbody>
 			{#each proxies as proxy (proxy.id)}
 				<tr class="border-t border-[var(--color-border)] align-top">
-					<td class="px-3 py-2 font-medium">{proxy.label}</td>
-					<td class="px-3 py-2">{protocolLabel(proxy.protocol)}</td>
-					<td class="px-3 py-2">{proxy.host}</td>
-					<td class="px-3 py-2 tabular-nums">{proxy.port}</td>
-					<td class="px-3 py-2">{proxy.username || 'None'}</td>
-					<td class="px-3 py-2">{proxy.has_password ? 'Set' : 'Not set'}</td>
-					<td class="px-3 py-2">{proxy.enabled ? 'Enabled' : 'Disabled'}</td>
-					<td class="px-3 py-2">
+					<td data-label="Label" class="px-3 py-2 font-medium">{proxy.label}</td>
+					<td data-label="Protocol" class="px-3 py-2">{protocolLabel(proxy.protocol)}</td>
+					<td data-label="Host" class="px-3 py-2">{proxy.host}</td>
+					<td data-label="Port" class="px-3 py-2 tabular-nums">{proxy.port}</td>
+					<td data-label="Username" class="px-3 py-2">{proxy.username || 'None'}</td>
+					<td data-label="Password" class="px-3 py-2">{proxy.has_password ? 'Set' : 'Not set'}</td>
+					<td data-label="Enabled" class="px-3 py-2">{proxy.enabled ? 'Enabled' : 'Disabled'}</td>
+					<td data-label="Last test" class="px-3 py-2">
 						{#if proxy.status}
 							<span>{proxyTestStateLabel(proxy.status.state)} in {proxy.status.latency_ms}ms</span>
 							{#if proxy.status.checked_at}
@@ -99,7 +101,7 @@
 							<span class="text-[var(--color-text-muted)]">Not tested</span>
 						{/if}
 					</td>
-					<td class="px-3 py-2">
+					<td data-label="Actions" class="px-3 py-2">
 						<div class="flex flex-wrap gap-x-1">
 							<button
 								type="button"

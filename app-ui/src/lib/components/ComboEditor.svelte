@@ -16,6 +16,7 @@
 	// the ordered list, a judge click sets the judge, and the typed inputs stay as they were, because a ref
 	// the picker cannot offer yet is still a ref the router may resolve.
 	import { createCombo, updateCombo } from '$lib/api/combos';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import ComboIdentityFields from '$lib/components/ComboIdentityFields.svelte';
 	import ComboModelRows from '$lib/components/ComboModelRows.svelte';
 	import ComboStrategyFields from '$lib/components/ComboStrategyFields.svelte';
@@ -32,6 +33,7 @@
 		type ComboForm
 	} from '$lib/schemas/combo-form';
 	import type { PickerSection } from '$lib/schemas/model-picker';
+	import type { ApiError } from '$lib/api/errors';
 
 	const AddIcon = CONTROL_ICONS.add.icon;
 	const SaveIcon = ROW_ACTION_ICONS.save.icon;
@@ -67,7 +69,7 @@
 	// mutated in place, and it is what the §8.4.4 guard compares against: a save or a re-seed clears it.
 	let baseline = $state<ComboForm>(empty());
 	let saving = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let issues = $state<string[]>([]);
 
 	// Refills the form when the editor is handed a different combo, or when it is switched to create mode.
@@ -139,7 +141,7 @@
 		saving = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -194,7 +196,7 @@
 			class="rounded-[var(--radius-sm)] border border-[var(--color-danger)] px-3 py-2 text-sm"
 			role="alert"
 		>
-			{error}
+			<ApiErrorText {error} />
 		</p>
 	{/if}
 

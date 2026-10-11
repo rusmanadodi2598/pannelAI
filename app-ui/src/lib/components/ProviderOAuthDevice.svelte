@@ -15,6 +15,8 @@
 	// and it stops on its own at the deadline the gateway stated. Stopping is also something the operator
 	// can do, because a round left polling is a round still asking a vendor.
 	import CopyButton from '$lib/components/CopyButton.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { pollProviderOAuthDevice, startProviderOAuthDevice } from '$lib/api/providers';
 	import {
 		oauthDeviceConnected,
@@ -32,9 +34,9 @@
 
 	let round = $state<OAuthDeviceStart | null>(null);
 	let starting = $state(false);
-	let startError = $state<string | null>(null);
+	let startError = $state<ApiError | null>(null);
 	let polling = $state(false);
-	let pollError = $state<string | null>(null);
+	let pollError = $state<string | ApiError | null>(null);
 	let expired = $state(false);
 	let connected = $state<OAuthDevicePoll | null>(null);
 
@@ -64,7 +66,7 @@
 		starting = false;
 		if (!result.ok) {
 			round = null;
-			startError = result.error.message;
+			startError = result.error;
 			return;
 		}
 
@@ -94,7 +96,7 @@
 
 		if (!result.ok) {
 			stop();
-			pollError = result.error.message;
+			pollError = result.error;
 			return;
 		}
 		if (oauthDeviceConnected(result.data)) {
@@ -127,7 +129,9 @@
 	</button>
 
 	{#if startError}
-		<p class="text-sm text-[var(--color-danger)]" role="alert">{startError}</p>
+		<p class="text-sm text-[var(--color-danger)]" role="alert">
+			<ApiErrorText error={startError} />
+		</p>
 	{/if}
 
 	{#if round}
@@ -181,7 +185,9 @@
 				This round expired before the request was approved. Start another one.
 			</p>
 		{:else if pollError}
-			<p class="text-sm text-[var(--color-danger)]" role="alert">{pollError}</p>
+			<p class="text-sm text-[var(--color-danger)]" role="alert">
+				<ApiErrorText error={pollError} />
+			</p>
 		{:else if connected}
 			<p class="text-sm" role="status">
 				Connected{connected.endpoint_id ? ` (${connected.endpoint_id})` : ''}.

@@ -14,7 +14,9 @@
 	// clears that cap. The form says so, because an operator who blanked a field to mean "leave it alone"
 	// would otherwise clear a budget without being told.
 	import FormIssues from '$lib/components/FormIssues.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { getQuotaEndpoint, replaceQuotaCap } from '$lib/api/usage';
 	import {
 		QUOTA_CAP_WARNING,
@@ -51,7 +53,7 @@
 	let saving = $state(false);
 	let saved = $state(false);
 	let issues = $state<string[]>([]);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 
 	// One read per choice, and the draft is seeded from that read, so a save replaces the cap the gateway
 	// holds rather than a value the operator could not see.
@@ -72,7 +74,7 @@
 		if (!result.ok) {
 			// Nothing is known about the stored cap after a failed read, so the fields go back to their
 			// unread state rather than showing the last answer as if it were current.
-			error = result.error.message;
+			error = result.error;
 			read = undefined;
 			draft = { cost: '', tokens: '' };
 			return;
@@ -96,7 +98,7 @@
 
 		if (!result.ok) {
 			saving = false;
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -206,7 +208,7 @@
 			{/if}
 
 			{#if error}
-				<p role="alert" class="text-sm text-[var(--color-danger)]">{error}</p>
+				<p role="alert" class="text-sm text-[var(--color-danger)]"><ApiErrorText {error} /></p>
 			{/if}
 
 			<FormIssues {issues} />

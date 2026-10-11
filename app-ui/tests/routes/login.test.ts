@@ -11,7 +11,7 @@ import LoginPage from '../../src/routes/login/+page.svelte';
 import { session } from '$lib/stores/session.svelte';
 import { LOCKOUT_RULE_MINUTES, LOGIN_COPY } from '$lib/strings/login';
 
-type Answer = { status: number; body?: unknown; retryAfter?: number };
+type Answer = { status: number; body?: unknown; retryAfter?: number; requestId?: string };
 
 type StubOptions = {
 	/** What the login call answers. Omitted when a case never gets that far. */
@@ -39,6 +39,7 @@ function stubAuth(options: StubOptions = {}): { posts: string[] } {
 			const answer = options.login ?? { status: 401 };
 			if (answer.status === 204) signedIn = true;
 			if (answer.retryAfter !== undefined) headers['retry-after'] = String(answer.retryAfter);
+			if (answer.requestId !== undefined) headers['x-request-id'] = answer.requestId;
 			if (answer.status === 204) return new Response(null, { status: 204, headers });
 			return new Response(JSON.stringify(answer.body ?? {}), {
 				status: answer.status,
@@ -107,6 +108,38 @@ describe('/login', () => {
 		// 720 seconds is twelve minutes, and the sentence is the panel's own, not the gateway's.
 		expect(await screen.findByText(LOGIN_COPY.rateLimited(12))).toBeTruthy();
 		expect(screen.queryByText('too many attempts; try again later')).toBeNull();
+	});
+
+	it('shows and offers to copy the request ID for INTERNAL_ERROR', async () => {
+		const cases = [
+			{ message: 'The gateway hit an unexpected error.', requestId: 'auth-request-42' },
+			{
+				message: 'The login service could not read its configuration.',
+				requestId: 'auth-request-43'
+			},
+			{ message: 'The gateway could not complete sign-in.', requestId: 'auth-request-44' }
+		];
+		for (const { message, requestId } of cases) {
+			cleanup();
+			vi.unstubAllGlobals();
+			stubAuth();
+			await session.refresh();
+			stubAuth({
+				login: {
+					status: 500,
+					body: { error: { code: 'INTERNAL_ERROR', message } },
+					requestId
+				}
+			});
+			render(LoginPage);
+
+			await submitPassword('nope');
+
+			const alert = await screen.findByRole('alert');
+			expect(alert.textContent).toContain(message);
+			expect(alert.textContent).toContain(requestId);
+			expect(screen.getByRole('button', { name: 'Copy request ID' })).toBeTruthy();
+		}
 	});
 
 	it("falls back to the rule's own window when the response carried none", async () => {

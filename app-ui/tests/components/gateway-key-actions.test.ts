@@ -46,6 +46,33 @@ describe('gateway key row actions', () => {
 		expect(stub.writes[0].body).toEqual({ name: 'Laptop two' });
 	});
 
+	it('keeps layout inside the semantic Actions cell for varied key names', async () => {
+		const cases = [{ name: 'Laptop' }, { name: 'Desktop' }, { name: 'CI runner' }];
+		for (const { name } of cases) {
+			cleanup();
+			vi.unstubAllGlobals();
+			stubGatewayKeys({ rows: [keyRow({ name })] });
+			render(GatewayKeysTab);
+			await screen.findByRole('table');
+
+			const cell = (await rowFor(name)).querySelector<HTMLTableCellElement>(
+				'td[data-label="Actions"]'
+			);
+			expect(cell).not.toBeNull();
+			if (!cell) return;
+
+			expect(cell.tagName).toBe('TD');
+			expect(cell.getAttribute('data-label')).toBe('Actions');
+			expect(cell.classList.contains('flex')).toBe(false);
+
+			const wrapper = cell.firstElementChild;
+			expect(wrapper?.tagName).toBe('DIV');
+			expect(wrapper?.classList.contains('flex')).toBe(true);
+			expect(wrapper?.classList.contains('flex-wrap')).toBe(true);
+			expect(within(cell).getByRole('button', { name: 'Rename' })).toBeTruthy();
+		}
+	});
+
 	it('keeps the draft and the gateway message when a rename is refused', async () => {
 		stubGatewayKeys({
 			update: {

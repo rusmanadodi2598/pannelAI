@@ -103,3 +103,11 @@ export function playgroundFailureDetail(failure: PlaygroundFailure): string {
 
 	return `${sentence} ${PLAYGROUND_COPY.failure.gateway(gateway.code, gateway.type)}`;
 }
+
+/** The playground's separate error envelope is outside §8.2; show an ID only when one arrived for INTERNAL_ERROR. */
+export function playgroundFailureRequestId(failure: PlaygroundFailure): string | undefined {
+	if (failure.error.code !== 'INTERNAL_ERROR' && failure.error.gateway?.code !== 'INTERNAL_ERROR') {
+		return undefined;
+	}
+	return failure.requestId;
+}

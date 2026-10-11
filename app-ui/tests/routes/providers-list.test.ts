@@ -28,7 +28,8 @@ describe('provider registry list', () => {
 
 		render(ProvidersPage);
 
-		expect(await screen.findByRole('table')).toBeTruthy();
+		const table = await screen.findByRole('table');
+		expect(table.classList.contains('mobile-key-value-table')).toBe(true);
 		expect(screen.getByText('OpenAI')).toBeTruthy();
 		expect(screen.getByText('openai')).toBeTruthy();
 		expect(screen.getByText('Anthropic')).toBeTruthy();
@@ -119,6 +120,59 @@ describe('provider registry list', () => {
 		expect(screen.queryByText('OpenAI')).toBeNull();
 	});
 
+	it('accepts the 120-code-point provider-search limit', async () => {
+		const cases = [
+			{ name: '120 ASCII code points', query: 'x'.repeat(120) },
+			{ name: '120 astral Unicode code points', query: '😀'.repeat(120) },
+			{ name: '120 mixed ASCII and Unicode code points', query: '😀'.repeat(60) + 'x'.repeat(60) }
+		];
+		for (const { query } of cases) {
+			cleanup();
+			vi.unstubAllGlobals();
+			const stub = stubProviders({ rows: [provider()] });
+			render(ProvidersPage);
+			await screen.findByRole('table');
+
+			const input = screen.getByLabelText('Search providers by name or id');
+			await fireEvent.input(input, { target: { value: query } });
+			await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+			await waitFor(() => expect(registryQuery(stub.queries).get('q')).toBe(query));
+			expect(screen.queryByRole('alert')).toBeNull();
+		}
+	});
+
+	it('shows inline validation and sends no provider-search term over 120 code points', async () => {
+		const cases = [
+			{ name: '121 ASCII code points', query: 'x'.repeat(121) },
+			{ name: '121 astral Unicode code points', query: '😀'.repeat(121) },
+			{ name: '121 mixed ASCII and Unicode code points', query: '😀'.repeat(60) + 'x'.repeat(61) }
+		];
+		for (const { query } of cases) {
+			cleanup();
+			vi.unstubAllGlobals();
+			const stub = stubProviders({ rows: [provider()] });
+			render(ProvidersPage);
+			await screen.findByRole('table');
+
+			const initialReads = stub.queries.filter((url) =>
+				new URL(url, 'http://panel.test').pathname.endsWith('/providers')
+			).length;
+			const input = screen.getByLabelText('Search providers by name or id');
+			await fireEvent.input(input, { target: { value: query } });
+			await fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+			const validationMessage = await screen.findByRole('alert');
+			expect(validationMessage.textContent).toContain('Search must be 120 characters or fewer.');
+			expect(input.getAttribute('aria-invalid')).toBe('true');
+			expect(
+				stub.queries.filter((url) =>
+					new URL(url, 'http://panel.test').pathname.endsWith('/providers')
+				)
+			).toHaveLength(initialReads);
+		}
+	});
+
 	it('drops the search parameter on an empty submit instead of sending it empty', async () => {
 		const stub = stubProviders({ rows: [provider()] });
 		render(ProvidersPage);
@@ -197,5 +251,24 @@ describe('provider registry list', () => {
 		expect(await screen.findByText('Could not load the provider registry')).toBeTruthy();
 		expect(screen.getByText('the registry is unavailable')).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+		expect(screen.queryByRole('button', { name: 'Copy request ID' })).toBeNull();
+	});
+
+	it('shows and exposes a copy control for an INTERNAL_ERROR request ID', async () => {
+		const cases = [
+			{ requestId: 'req_01J8Y3A8C7M2' },
+			{ requestId: 'req_01J8Y3A8C7M3' },
+			{ requestId: 'req_01J8Y3A8C7M4' }
+		];
+		for (const { requestId } of cases) {
+			cleanup();
+			vi.unstubAllGlobals();
+			stubProviders({ status: 500, requestId });
+
+			render(ProvidersPage);
+
+			expect(await screen.findByText(requestId)).toBeTruthy();
+			expect(screen.getByRole('button', { name: 'Copy request ID' })).toBeTruthy();
+		}
 	});
 });

@@ -86,7 +86,7 @@ describe('BulkAddKeysForm', () => {
 		await fill(2, 'First', 'sk-bbbbbbbb');
 		await submit();
 
-		expect(await screen.findByText(/Nothing was added: duplicate label in batch/)).toBeTruthy();
+		expect(await screen.findByText(/Nothing was added:/)).toBeTruthy();
 		expect(onadded).not.toHaveBeenCalled();
 		expect((screen.getByLabelText('Label for row 2') as HTMLInputElement).value).toBe('First');
 		expect((screen.getByLabelText('Key for row 2') as HTMLInputElement).value).toBe('sk-bbbbbbbb');

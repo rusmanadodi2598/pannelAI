@@ -67,6 +67,41 @@ describe('PlaygroundPage model states', () => {
 		expect(calls.models).toBe(2);
 	});
 
+	it('shows and offers to copy an INTERNAL_ERROR request ID when present', async () => {
+		const cases = [
+			{
+				name: 'panel configuration failure',
+				message: 'The panel is misconfigured.',
+				requestId: 'playground-request-17'
+			},
+			{
+				name: 'provider lookup failure',
+				message: 'The panel could not read its model list.',
+				requestId: 'playground-request-18'
+			},
+			{
+				name: 'unexpected panel failure',
+				message: 'The panel could not complete the request.',
+				requestId: 'playground-request-19'
+			}
+		];
+		for (const { message, requestId } of cases) {
+			cleanup();
+			vi.unstubAllGlobals();
+			stubPlayground({
+				models: { error: { code: 'INTERNAL_ERROR', message } },
+				modelsStatus: 500,
+				modelsRequestId: requestId
+			});
+			render(PlaygroundPage);
+
+			const alert = await screen.findByRole('alert');
+			expect(alert.textContent).toContain(message);
+			expect(alert.textContent).toContain(requestId);
+			expect(screen.getByRole('button', { name: 'Copy request ID' })).toBeTruthy();
+		}
+	});
+
 	it('states an empty model list instead of offering a picker with nothing in it', async () => {
 		stubPlayground({ models: { data: [] } });
 		render(PlaygroundPage);

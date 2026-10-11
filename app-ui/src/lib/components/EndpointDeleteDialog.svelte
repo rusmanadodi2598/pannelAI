@@ -7,6 +7,8 @@
 	// confirmation covers all three. An operator who believed deleting a connection left the keys behind, or
 	// that an OAuth account was something else, would press this without meaning to remove the credential.
 	import Modal from '$lib/components/Modal.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 
 	let {
 		entry,
@@ -17,7 +19,7 @@
 	}: {
 		/** The connection about to go: its id and label are what the sentence names. */
 		entry: { id: string; label: string } | null;
-		error: string | null;
+		error: string | ApiError | null;
 		deleting: boolean;
 		onconfirm: () => void;
 		oncancel: () => void;
@@ -37,7 +39,7 @@
 
 	{#if error}
 		<p class="mt-3 text-[var(--color-danger)]" role="alert">
-			The connection was not deleted. {error}
+			<ApiErrorText {error} prefix="The connection was not deleted. " />
 		</p>
 	{/if}
 

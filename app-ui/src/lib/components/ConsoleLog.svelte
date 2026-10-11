@@ -17,6 +17,7 @@
 	import RefreshControl from '$lib/components/RefreshControl.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import { clearConsoleLog, fetchConsoleLog } from '$lib/api/log';
+	import type { ApiError } from '$lib/api/errors';
 	import { CONSOLE_POLL_MS, pollDue, pollIntervalLabel, type PollState } from '$lib/polling';
 	import { consoleSummary } from '$lib/schemas/log-view';
 	import { onMount } from 'svelte';
@@ -24,7 +25,7 @@
 	let lines = $state<string[]>([]);
 	let maxRecords = $state(0);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let lastRead = $state('');
 
 	let auto = $state(true);
@@ -58,7 +59,7 @@
 		lastLoadedAt = Date.now();
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -75,7 +76,7 @@
 		busy = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -128,7 +129,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title="Loading the console log" />
 	{:else if error}
-		<StateMessage kind="error" title="Could not read the console log" description={error}>
+		<StateMessage kind="error" title="Could not read the console log" apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={load}>Try again</button>
 			{/snippet}

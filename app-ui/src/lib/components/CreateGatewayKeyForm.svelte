@@ -4,6 +4,8 @@
 	// The screen owns the list and the one-time key modal; this component owns one field and one call,
 	// so the screen file stays within the project's line limit and each piece has one job.
 	import { createGatewayKey } from '$lib/api/gateway-keys';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { schemaCreateGatewayKeyForm, type CreatedGatewayKey } from '$lib/schemas/gateway-key';
 
 	type Props = {
@@ -13,7 +15,7 @@
 	let { oncreated }: Props = $props();
 
 	let name = $state('');
-	let error = $state<string | null>(null);
+	let error = $state<string | ApiError | null>(null);
 	let working = $state(false);
 
 	async function submit(event: SubmitEvent): Promise<void> {
@@ -31,7 +33,7 @@
 		working = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -61,6 +63,6 @@
 	</button>
 
 	{#if error}
-		<p class="text-sm text-[var(--color-danger)]" role="alert">{error}</p>
+		<p class="text-sm text-[var(--color-danger)]" role="alert"><ApiErrorText {error} /></p>
 	{/if}
 </form>

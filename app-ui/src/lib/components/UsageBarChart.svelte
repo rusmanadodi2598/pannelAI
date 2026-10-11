@@ -24,6 +24,8 @@
 		type UsageBarSet,
 		type UsageMeasure
 	} from '$lib/schemas/usage-bars';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { formatCount } from '$lib/schemas/usage-view';
 
 	type Props = {
@@ -36,10 +38,20 @@
 		measure: UsageMeasure;
 		onmeasure: (measure: UsageMeasure) => void;
 		/** The read's own refusal. It replaces the bars rather than emptying them, which would be a claim. */
-		error?: string | null;
+		error?: string | ApiError | null;
+		errorPrefix?: string;
 	};
 
-	let { title, caption, noun, set, measure, onmeasure, error = null }: Props = $props();
+	let {
+		title,
+		caption,
+		noun,
+		set,
+		measure,
+		onmeasure,
+		error = null,
+		errorPrefix = ''
+	}: Props = $props();
 
 	const summary = $derived(barsSummary(set, { measure, noun }));
 	const nameHeader = $derived(noun.charAt(0).toUpperCase() + noun.slice(1));
@@ -73,7 +85,13 @@
 	</figcaption>
 
 	{#if error}
-		<p class="text-sm text-[var(--color-danger)]">{error}</p>
+		<p class="text-sm text-[var(--color-danger)]">
+			<ApiErrorText
+				{error}
+				prefix={errorPrefix ? `${errorPrefix} (` : ''}
+				suffix={errorPrefix ? ').' : ''}
+			/>
+		</p>
 	{:else if set.bars.length === 0}
 		<p class="text-sm text-[var(--color-text-muted)]">{emptyLine}</p>
 	{:else}

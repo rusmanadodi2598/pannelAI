@@ -11,6 +11,8 @@
 	// paraphrase the reason: the gateway's sentence is rendered, with the screen where either is edited
 	// beside it.
 	import Modal from '$lib/components/Modal.svelte';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { resolve } from '$app/paths';
 
 	let {
@@ -29,7 +31,7 @@
 		prefix: string;
 		/** The connections this delete takes with it, or `null` when that could not be read. */
 		connections: number | null;
-		error: string | null;
+		error: string | ApiError | null;
 		/** The failure was the API's CONFLICT: a combo or an alias still points at this node. */
 		conflict: boolean;
 		deleting: boolean;
@@ -62,12 +64,12 @@
 	{#if error}
 		{#if conflict}
 			<p class="mt-3 text-[var(--color-danger)]" role="alert">
-				Not deleted: {error}
+				<ApiErrorText {error} prefix="Not deleted: " />
 				<a href={resolve('/combos')} class="underline">Combos</a> is where that member or alias is edited.
 			</p>
 		{:else}
 			<p class="mt-3 text-[var(--color-danger)]" role="alert">
-				This provider was not deleted. {error}
+				<ApiErrorText {error} prefix="This provider was not deleted. " />
 			</p>
 		{/if}
 	{/if}

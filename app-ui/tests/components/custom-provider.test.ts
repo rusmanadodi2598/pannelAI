@@ -10,6 +10,7 @@
 
 import { cleanup, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '$lib/api/errors';
 import { nodeRow, stubProviderNodes } from '../support/provider-node-stub';
 import { renderSection } from '../support/custom-provider-harness';
 import { squashed } from '../support/dom';
@@ -75,10 +76,14 @@ describe('the custom provider list', () => {
 
 	it('renders its own error state, with a retry that re-reads', async () => {
 		const stub = stubProviderNodes({ readStatus: 500 });
-		const rendered = renderSection(stub, { error: 'The node store is unreachable.' });
+		const rendered = renderSection(stub, {
+			error: new ApiError(500, 'INTERNAL_ERROR', 'The node store is unreachable.', 'node-request-8')
+		});
 
 		expect(screen.getByText('Could not load the custom providers')).toBeTruthy();
 		expect(screen.getByText('The node store is unreachable.')).toBeTruthy();
+		expect(screen.getByText('node-request-8')).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Copy request ID' })).toBeTruthy();
 
 		await screen.getByRole('button', { name: 'Try again' }).click();
 		expect(rendered.reloads()).toBe(1);

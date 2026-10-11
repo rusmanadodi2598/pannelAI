@@ -32,6 +32,7 @@ export type StubOptions = {
 	/** The registry read's own refusal. The node read has its own, so one can fail without the other. */
 	status?: number;
 	message?: string;
+	requestId?: string;
 	nodes?: Record<string, unknown>[];
 	nodesStatus?: number;
 };
@@ -75,7 +76,13 @@ export function stubProviders(options: StubOptions = {}): ProvidersStub {
 		if (options.status && options.status !== 200) {
 			return new Response(
 				JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: options.message ?? 'boom' } }),
-				{ status: options.status, headers: { 'content-type': 'application/json' } }
+				{
+					status: options.status,
+					headers: {
+						'content-type': 'application/json',
+						...(options.requestId ? { 'x-request-id': options.requestId } : {})
+					}
+				}
 			);
 		}
 

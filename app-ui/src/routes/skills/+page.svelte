@@ -13,6 +13,7 @@
 	import SkillCard from '$lib/components/SkillCard.svelte';
 	import SkillEntryBlock from '$lib/components/SkillEntryBlock.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { fetchSkillCatalog, probeSkillSources, SKILLS_PATH } from '$lib/api/skills';
 	import { orderSkills, type SourceProbe } from '$lib/schemas/skill-source';
 	import type { SkillCatalog } from '$lib/schemas/skill';
@@ -20,7 +21,7 @@
 
 	let catalog = $state<SkillCatalog | null>(null);
 	let loading = $state(true);
-	let error = $state<string | null>(null);
+	let error = $state<ApiError | null>(null);
 	let probes = $state<Record<string, SourceProbe>>({});
 	let probing = $state(false);
 
@@ -34,7 +35,7 @@
 
 		if (!result.ok) {
 			loading = false;
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -78,7 +79,7 @@
 	{#if loading}
 		<StateMessage kind="loading" title={copy.catalog.loading} />
 	{:else if error}
-		<StateMessage kind="error" title={copy.catalog.errorTitle} description={error}>
+		<StateMessage kind="error" title={copy.catalog.errorTitle} apiError={error}>
 			{#snippet action()}
 				<button type="button" class="underline" onclick={() => void load()}
 					>{copy.catalog.retry}</button

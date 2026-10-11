@@ -11,6 +11,8 @@
 	// round trip report it. For `oauth` and the no-auth spellings the endpoint is created empty and given
 	// keys from the detail drawer, which is the same code path either way.
 	import { createEndpoint } from '$lib/api/endpoints';
+	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
+	import type { ApiError } from '$lib/api/errors';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { AUTH_TYPES, AUTH_TYPE_LABELS } from '$lib/schemas/endpoint';
 	import { REQUIRES_KEY_AUTH_TYPES, schemaCreateEndpointForm } from '$lib/schemas/endpoint-write';
@@ -24,7 +26,7 @@
 	let priority = $state('');
 	let keyValue = $state('');
 	let saving = $state(false);
-	let error = $state<string | null>(null);
+	let error = $state<string | ApiError | null>(null);
 
 	// The field's name follows the rule it carries: for a key auth type it is the credential the endpoint
 	// cannot be created without, and for the rest it is a first key that may be left blank.
@@ -49,7 +51,7 @@
 		saving = false;
 
 		if (!result.ok) {
-			error = result.error.message;
+			error = result.error;
 			return;
 		}
 
@@ -65,7 +67,7 @@
 	<span class="text-sm font-medium">Add an endpoint for {providerId}</span>
 
 	{#if error}
-		<p class="text-sm text-[var(--color-danger)]">{error}</p>
+		<p class="text-sm text-[var(--color-danger)]"><ApiErrorText {error} /></p>
 	{/if}
 
 	<div class="flex flex-wrap items-end gap-3 text-sm">
