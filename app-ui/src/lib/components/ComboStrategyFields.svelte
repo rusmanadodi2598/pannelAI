@@ -50,14 +50,14 @@
 {#if usesJudgeModel(strategy)}
 	<div class="flex flex-col gap-1 text-sm">
 		<label for="combo-judge" class="text-[var(--color-text-muted)]">Judge model</label>
-		<div class="flex items-center gap-2">
+		<div class="flex flex-wrap items-center gap-2">
 			<input
 				id="combo-judge"
 				type="text"
 				bind:value={judgeModel}
 				aria-describedby="combo-judge-hint"
 				placeholder="provider/model"
-				class="min-h-11 min-w-48 flex-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
+				class="min-h-11 w-full min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm sm:w-auto"
 			/>
 			<button
 				type="button"

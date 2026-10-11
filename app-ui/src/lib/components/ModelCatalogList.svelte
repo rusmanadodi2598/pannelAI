@@ -162,7 +162,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the model catalog" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => load(providerId, token)}
+				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={() => load(providerId, token)}
 					>Try again</button
 				>
 			{/snippet}
@@ -174,7 +174,7 @@
 			description="Clear the filters to see every model this provider offers."
 		>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={clearFilters}>Clear filters</button>
+				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={clearFilters}>Clear filters</button>
 			{/snippet}
 		</StateMessage>
 	{:else if models.length === 0}

@@ -200,18 +200,18 @@
 		</p>
 	{/if}
 
-	<div class="flex flex-wrap items-center gap-3">
+	<div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
 		<button
 			type="submit"
 			disabled={saving}
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50"
+			class="inline-flex min-h-12 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)] disabled:opacity-50"
 		>
 			<SaveIcon class="size-4" aria-hidden="true" />
 			{saving ? 'Saving' : combo === null ? 'Create the combo' : 'Save the combo'}
 		</button>
 		<button
 			type="button"
-			class="inline-flex min-h-11 items-center gap-2 underline"
+			class="inline-flex min-h-12 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 text-sm hover:bg-[var(--color-surface-2)]"
 			onclick={oncancel}
 		>
 			<CancelIcon class="size-4" aria-hidden="true" />

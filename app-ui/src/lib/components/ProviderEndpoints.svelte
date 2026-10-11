@@ -111,7 +111,7 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load this provider's connections" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => load(providerId)}>Try again</button>
+				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={() => load(providerId)}>Try again</button>
 			{/snippet}
 		</StateMessage>
 	{:else if endpoints.length === 0}

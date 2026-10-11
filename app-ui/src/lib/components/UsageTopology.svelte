@@ -52,7 +52,7 @@
 </script>
 
 <figure
-	class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-4"
+	class="flex flex-col gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-2 sm:p-4"
 >
 	{#if providers.length === 0}
 		<StateMessage
@@ -65,8 +65,13 @@
 			{/snippet}
 		</StateMessage>
 	{:else}
-		<div class="mx-12 sm:mx-16">
-			<UsageTopologyDrawing {layout} inFlight={active.length} {live} />
+		<!-- Mobile keeps the desktop drawing at its own width inside a scroller, so the page never
+		     scrolls sideways while a phone never draws a shrunken one. The inner width is the
+		     narrowest box the node caps still fill; past it the drawing stops shrinking. -->
+		<div class="mx-2 overflow-x-auto sm:mx-16">
+			<div class="min-w-[520px]">
+				<UsageTopologyDrawing {layout} inFlight={active.length} {live} />
+			</div>
 		</div>
 	{/if}
 </figure>

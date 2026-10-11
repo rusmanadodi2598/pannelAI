@@ -109,7 +109,7 @@
 							<span class="text-[var(--color-text-muted)]">{model.model_id}</span>
 							<span class="mt-1 flex flex-wrap items-center gap-2">
 								<code class="break-all text-xs">{address}</code>
-								<CopyButton value={address} />
+								<CopyButton value={address} touchTarget />
 							</span>
 						</td>
 						<td data-label="Kind" class="px-3 py-2">{model.kind ?? 'Not declared'}</td>

@@ -157,7 +157,7 @@
 
 <section class="flex flex-col gap-6">
 	<div class="flex flex-col gap-1">
-		<a href={resolve('/providers')} class="w-fit text-sm underline">Provider</a>
+		<a href={resolve('/providers')} class="inline-flex min-h-11 w-fit items-center text-sm underline">Provider</a>
 		<h1 class="text-lg font-semibold tracking-tight">
 			{provider?.name ?? providerId}
 		</h1>
@@ -171,8 +171,8 @@
 	{:else if error}
 		<StateMessage kind="error" title="This provider could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => load(providerId)}>Try again</button>
-				<a href={resolve('/providers')} class="ms-3 underline">Back to the registry</a>
+				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={() => load(providerId)}>Try again</button>
+				<a href={resolve('/providers')} class="ms-3 inline-flex min-h-11 items-center underline">Back to the registry</a>
 			{/snippet}
 		</StateMessage>
 	{:else if provider}

@@ -85,7 +85,7 @@
 						{#if prefix !== null}
 							<span class="mt-1 flex flex-wrap items-center gap-2">
 								<code class="break-all text-xs">{address}</code>
-								<CopyButton value={address} />
+								<CopyButton value={address} touchTarget />
 							</span>
 						{/if}
 					</td>

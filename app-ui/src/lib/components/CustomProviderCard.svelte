@@ -148,7 +148,7 @@
 {:else if error}
 	<StateMessage kind="error" title="This custom provider could not be loaded" apiError={error}>
 		{#snippet action()}
-			<button type="button" class="underline" onclick={reload}>Try again</button>
+			<button type="button" class="inline-flex min-h-11 items-center underline" onclick={reload}>Try again</button>
 		{/snippet}
 	</StateMessage>
 {:else if node}

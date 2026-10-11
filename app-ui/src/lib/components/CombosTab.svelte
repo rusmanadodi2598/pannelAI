@@ -175,7 +175,7 @@
 				{#if !showEditor}
 					<button
 						type="button"
-						class="inline-flex items-center gap-2 underline"
+						class="inline-flex min-h-11 items-center gap-2 px-2 underline"
 						onclick={() => {
 							editing = null;
 							creating = true;
@@ -201,10 +201,10 @@
 			}}
 		/>
 
-		<div class="flex items-center gap-3 text-sm">
+		<div class="flex flex-wrap items-center gap-3 text-sm">
 			<button
 				type="button"
-				class="inline-flex min-h-11 items-center gap-1 underline disabled:opacity-50"
+				class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
 				disabled={pageNumber <= 1}
 				onclick={() => {
 					pageNumber -= 1;
@@ -217,7 +217,7 @@
 			<span class="text-[var(--color-text-muted)]">Page {pageNumber} of {lastPage}</span>
 			<button
 				type="button"
-				class="inline-flex min-h-11 items-center gap-1 underline disabled:opacity-50"
+				class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
 				disabled={pageNumber >= lastPage}
 				onclick={() => {
 					pageNumber += 1;
