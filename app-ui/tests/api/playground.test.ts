@@ -106,70 +106,98 @@ describe('streamPlaygroundChat', () => {
 	});
 
 	it('reports a panel-session 401 from chat POST once without retrying', async () => {
-		const unauthorized = vi.fn();
-		onUnauthorized(unauthorized);
-		const mock = stubFetch(
-			() =>
-				new Response(
-					JSON.stringify({
-						error: { code: 'UNAUTHORIZED', message: 'Your session is not valid. Sign in again.' }
-					}),
-					{ status: 401, headers: { 'content-type': 'application/json' } }
-				)
-		);
-		const { handlers, recorded } = streamHandlers();
+		const cases = [
+			{ name: 'expired session', message: 'Your session is not valid. Sign in again.' },
+			{ name: 'revoked session', message: 'This session has been revoked.' },
+			{ name: 'missing session', message: 'Sign in to continue.' }
+		];
+		for (const testCase of cases) {
+			vi.unstubAllGlobals();
+			onUnauthorized(undefined);
+			const { message } = testCase;
+			const unauthorized = vi.fn();
+			onUnauthorized(unauthorized);
+			const mock = stubFetch(
+				() =>
+					new Response(JSON.stringify({ error: { code: 'UNAUTHORIZED', message } }), {
+						status: 401,
+						headers: { 'content-type': 'application/json' }
+					})
+			);
+			const { handlers, recorded } = streamHandlers();
 
-		await streamPlaygroundChat({ model: 'm', message: 'hi' }, handlers);
+			await streamPlaygroundChat({ model: 'm', message: 'hi' }, handlers);
 
-		expect(unauthorized).toHaveBeenCalledTimes(1);
-		expect(mock).toHaveBeenCalledTimes(1);
-		expect(recorded.failures).toHaveLength(1);
-		expect(recorded.failures[0]?.error.code).toBe('UNAUTHORIZED');
-		expect(recorded.ends).toEqual([]);
+			expect(unauthorized).toHaveBeenCalledTimes(1);
+			expect(mock).toHaveBeenCalledTimes(1);
+			expect(recorded.failures).toHaveLength(1);
+			expect(recorded.failures[0]?.error.code).toBe('UNAUTHORIZED');
+			expect(recorded.ends).toEqual([]);
+		}
 	});
 
 	it('does not report a 403 as panel-session expiry', async () => {
-		const unauthorized = vi.fn();
-		onUnauthorized(unauthorized);
-		const mock = stubFetch(
-			() =>
-				new Response(
-					JSON.stringify({ error: { code: 'UNAUTHORIZED', message: 'Access is forbidden.' } }),
-					{ status: 403, headers: { 'content-type': 'application/json' } }
-				)
-		);
-		const { handlers, recorded } = streamHandlers();
+		const cases = [
+			{ name: 'expired-session wording', message: 'Your session is not valid. Sign in again.' },
+			{ name: 'forbidden wording', message: 'Access is forbidden.' },
+			{ name: 'expired-session code with a different message', message: 'Session expired.' }
+		];
+		for (const testCase of cases) {
+			vi.unstubAllGlobals();
+			onUnauthorized(undefined);
+			const { message } = testCase;
+			const unauthorized = vi.fn();
+			onUnauthorized(unauthorized);
+			const mock = stubFetch(
+				() =>
+					new Response(JSON.stringify({ error: { code: 'UNAUTHORIZED', message } }), {
+						status: 403,
+						headers: { 'content-type': 'application/json' }
+					})
+			);
+			const { handlers, recorded } = streamHandlers();
 
-		await streamPlaygroundChat({ model: 'm', message: 'hi' }, handlers);
+			await streamPlaygroundChat({ model: 'm', message: 'hi' }, handlers);
 
-		expect(unauthorized).not.toHaveBeenCalled();
-		expect(mock).toHaveBeenCalledTimes(1);
-		expect(recorded.failures[0]?.error.code).toBe('UNAUTHORIZED');
+			expect(unauthorized).not.toHaveBeenCalled();
+			expect(mock).toHaveBeenCalledTimes(1);
+			expect(recorded.failures[0]?.error.code).toBe('UNAUTHORIZED');
+		}
 	});
 
 	it('keeps a gateway-key refusal as a normal failure without signing out', async () => {
-		const unauthorized = vi.fn();
-		onUnauthorized(unauthorized);
-		const mock = stubFetch(
-			() =>
-				new Response(
-					JSON.stringify({
-						error: {
-							code: 'GATEWAY_KEY_REFUSED',
-							message: 'The gateway refused the key.',
-							gateway: { code: 'UNAUTHORIZED', type: 'auth', message: 'the key is not valid' }
-						}
-					}),
-					{ status: 502, headers: { 'content-type': 'application/json' } }
-				)
-		);
-		const { handlers, recorded } = streamHandlers();
+		const cases = [
+			{ name: 'rejected key', message: 'The gateway refused the key.' },
+			{ name: 'invalid key', message: 'The configured key is not valid.' },
+			{ name: 'revoked key', message: 'The configured key has been revoked.' }
+		];
+		for (const testCase of cases) {
+			vi.unstubAllGlobals();
+			onUnauthorized(undefined);
+			const { message } = testCase;
+			const unauthorized = vi.fn();
+			onUnauthorized(unauthorized);
+			const mock = stubFetch(
+				() =>
+					new Response(
+						JSON.stringify({
+							error: {
+								code: 'GATEWAY_KEY_REFUSED',
+								message,
+								gateway: { code: 'UNAUTHORIZED', type: 'auth', message }
+							}
+						}),
+						{ status: 502, headers: { 'content-type': 'application/json' } }
+					)
+			);
+			const { handlers, recorded } = streamHandlers();
 
-		await streamPlaygroundChat({ model: 'm', message: 'hi' }, handlers);
+			await streamPlaygroundChat({ model: 'm', message: 'hi' }, handlers);
 
-		expect(unauthorized).not.toHaveBeenCalled();
-		expect(mock).toHaveBeenCalledTimes(1);
-		expect(recorded.failures[0]?.error.code).toBe('GATEWAY_KEY_REFUSED');
+			expect(unauthorized).not.toHaveBeenCalled();
+			expect(mock).toHaveBeenCalledTimes(1);
+			expect(recorded.failures[0]?.error.code).toBe('GATEWAY_KEY_REFUSED');
+		}
 	});
 
 	const failureCases = [

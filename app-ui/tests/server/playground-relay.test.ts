@@ -126,25 +126,45 @@ describe('relay failures', () => {
 	});
 
 	it('forwards an upstream request ID when the gateway returned INTERNAL_ERROR', async () => {
-		const { impl } = recordingFetch(
-			() =>
-				new Response(
-					JSON.stringify({
-						error: { code: 'INTERNAL_ERROR', type: 'server_error', message: 'unexpected' }
-					}),
-					{
-						status: 500,
-						headers: { 'content-type': 'application/json', 'x-request-id': 'upstream-request-23' }
-					}
-				)
-		);
+		const cases = [
+			{
+				name: 'internal error response',
+				status: 500,
+				message: 'unexpected',
+				requestId: 'upstream-request-23'
+			},
+			{
+				name: 'database error response',
+				status: 502,
+				message: 'provider state could not be read',
+				requestId: 'upstream-request-24'
+			},
+			{
+				name: 'timeout error response',
+				status: 503,
+				message: 'upstream request timed out',
+				requestId: 'upstream-request-25'
+			}
+		];
+		for (const { status, message, requestId } of cases) {
+			const { impl } = recordingFetch(
+				() =>
+					new Response(
+						JSON.stringify({ error: { code: 'INTERNAL_ERROR', type: 'server_error', message } }),
+						{
+							status,
+							headers: { 'content-type': 'application/json', 'x-request-id': requestId }
+						}
+					)
+			);
 
-		const response = await relay(TARGET, KEY, CHAT_PATH, request, impl);
-		const body = schemaPlaygroundFailure.parse(await response.json());
+			const response = await relay(TARGET, KEY, CHAT_PATH, request, impl);
+			const body = schemaPlaygroundFailure.parse(await response.json());
 
-		expect(body.error.code).toBe('GATEWAY_ERROR');
-		expect(body.error.gateway?.code).toBe('INTERNAL_ERROR');
-		expect(response.headers.get('x-request-id')).toBe('upstream-request-23');
+			expect(body.error.code).toBe('GATEWAY_ERROR');
+			expect(body.error.gateway?.code).toBe('INTERNAL_ERROR');
+			expect(response.headers.get('x-request-id')).toBe(requestId);
+		}
 	});
 
 	it('reports a gateway it could not dial rather than a failure it imagined', async () => {

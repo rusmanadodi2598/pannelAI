@@ -139,10 +139,14 @@ describe('CopyButton, icon-only', () => {
 		expectIconOnly(screen.getByRole('button', { name: 'Copy install line' }), 'Copy install line');
 	});
 
-	it('offers a 44px target when a caller uses it in a touch error banner', () => {
-		render(CopyButton, { props: { value: VALUE, label: 'Copy request ID', touchTarget: true } });
+	it('offers a 44px target when a caller uses it in a touch error banner', async () => {
+		const cases = ['Copy request ID', 'Copy endpoint URL', 'Copy support code'];
+		for (const label of cases) {
+			cleanup();
+			render(CopyButton, { props: { value: VALUE, label, touchTarget: true } });
 
-		expect(screen.getByRole('button', { name: 'Copy request ID' }).className).toContain('min-h-11');
+			expect((await screen.findByRole('button', { name: label })).className).toContain('min-h-11');
+		}
 	});
 
 	it('reports the outcome the same way, with the value still on screen', async () => {
