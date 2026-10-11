@@ -103,7 +103,10 @@ async function readGatewayError(response: Response): Promise<DataPlaneErrorDetai
  * rather than trusted to the far end's wording.
  */
 function redact(value: string, key: string): string {
-	return value.split(key).join('[redacted]');
+	const marker = '[redacted]';
+	const replacement = marker.includes(key) ? '' : marker;
+	const redacted = value.split(key).join(replacement);
+	return redacted.includes(key) ? '' : redacted;
 }
 
 /**
