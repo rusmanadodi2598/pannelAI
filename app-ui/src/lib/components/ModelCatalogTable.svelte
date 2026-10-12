@@ -72,6 +72,14 @@
 		)
 			onchanged();
 	}
+	import { pageOf } from '$lib/schemas/local-page';
+	import { CONTROL_ICONS } from '$lib/icons';
+	const PreviousIcon = CONTROL_ICONS.previous.icon;
+	const NextIcon = CONTROL_ICONS.next.icon;
+
+	// Ten rows a page, so a registry provider with a long catalog does not stack its whole list.
+	let requestedPage = $state(1);
+	const view = $derived(pageOf(models, requestedPage));
 </script>
 
 <div class="flex flex-col gap-3">
@@ -94,7 +102,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				{#each models as model (model.id)}
+				{#each view.rows as model (model.id)}
 					{@const address = `${model.provider_id}/${model.model_id}${thinkingSuffix(
 						model.thinking_levels,
 						thinking.modeFor(model.provider_id)
@@ -109,7 +117,6 @@
 							<span class="text-[var(--color-text-muted)]">{model.model_id}</span>
 							<span class="mt-1 flex flex-wrap items-center gap-2">
 								<code class="break-all text-xs">{address}</code>
-								<CopyButton value={address} touchTarget />
 							</span>
 						</td>
 						<td data-label="Kind" class="px-3 py-2">{model.kind ?? 'Not declared'}</td>
@@ -132,6 +139,7 @@
 						</td>
 						<td data-label="Actions" class="px-3 py-2 text-end">
 							<div class="flex flex-wrap items-center justify-end gap-1">
+								<CopyButton value={address} label="Copy model address" iconOnly touchTarget />
 								{#if routable}
 									<button
 										type="button"
@@ -161,6 +169,30 @@
 			</tbody>
 		</table>
 	</div>
+
+	{#if view.pages > 1}
+		<div class="flex flex-wrap items-center gap-3 text-sm">
+			<button
+				type="button"
+				class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
+				disabled={view.page <= 1}
+				onclick={() => (requestedPage = view.page - 1)}
+			>
+				<PreviousIcon class="size-4" aria-hidden="true" />
+				Previous
+			</button>
+			<span class="text-[var(--color-text-muted)]">Page {view.page} of {view.pages}</span>
+			<button
+				type="button"
+				class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
+				disabled={view.page >= view.pages}
+				onclick={() => (requestedPage = view.page + 1)}
+			>
+				Next
+				<NextIcon class="size-4" aria-hidden="true" />
+			</button>
+		</div>
+	{/if}
 
 	{#if outcome}
 		<p

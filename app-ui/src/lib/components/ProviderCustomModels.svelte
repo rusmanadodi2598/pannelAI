@@ -133,7 +133,11 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the custom models" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={() => load()}>Try again</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center underline"
+					onclick={() => load()}>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if mine.length === 0}

@@ -18,6 +18,7 @@ import { createProviderThinkingStore } from '$lib/stores/provider-thinking.svelt
 import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.svelte';
 import { catalogRow, stubModels, type ModelStub } from '../support/model-stub';
 import { reasoningGroup, settingsDocument } from '../support/settings-document';
+import { openAllSections } from '../support/provider-sections';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -188,15 +189,16 @@ describe('the reasoning picker', () => {
 });
 
 describe('the provider screen wiring', () => {
-	function renderPage(
+	async function renderPage(
 		overrides: { thinking?: Record<string, unknown>; levels?: string[] | null } = {}
-	): void {
+	): Promise<void> {
 		stub = stubModels({
 			catalog: [catalogRow({ thinking_levels: overrides.levels ?? LEVELS })],
 			thinkingLevels: overrides.levels === undefined ? LEVELS : overrides.levels,
 			settings: storedThinking(overrides.thinking ?? {})
 		});
 		render(ProviderDetailPage, { props: { params: { provider_id: PROVIDER }, data: {} } });
+		await openAllSections('Models');
 	}
 
 	/** The catalog table, which is where the address a row copies is rendered. */
@@ -205,7 +207,7 @@ describe('the provider screen wiring', () => {
 	}
 
 	it('shows the stored mode and appends its suffix to the string a catalog row copies', async () => {
-		renderPage({ thinking: { [PROVIDER]: { mode: 'high' } } });
+		await renderPage({ thinking: { [PROVIDER]: { mode: 'high' } } });
 
 		const select = (await screen.findByLabelText('Reasoning mode')) as HTMLSelectElement;
 		await waitFor(() => expect(select.value).toBe('high'));
@@ -230,6 +232,7 @@ describe('the provider screen wiring', () => {
 			settings: storedThinking({ [PROVIDER]: { mode: 'high' } })
 		});
 		render(ProviderDetailPage, { props: { params: { provider_id: PROVIDER }, data: {} } });
+		await openAllSections('Models');
 
 		const table = within(await catalogTable());
 		await waitFor(() => expect(table.getByText('openai/gpt-4o(high)')).toBeTruthy());
@@ -237,7 +240,7 @@ describe('the provider screen wiring', () => {
 	});
 
 	it('writes the picker choice as the whole map, and the copied string follows', async () => {
-		renderPage();
+		await renderPage();
 
 		const select = (await screen.findByLabelText('Reasoning mode')) as HTMLSelectElement;
 		await waitFor(() => expect(select.value).toBe('auto'));

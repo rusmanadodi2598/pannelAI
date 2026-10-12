@@ -12,13 +12,15 @@
 // that hardcodes one screen cannot pass the others.
 
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, vi } from 'vitest';
 import CopyButton from '../../src/lib/components/CopyButton.svelte';
 import ModelCatalogList from '../../src/lib/components/ModelCatalogList.svelte';
+import CustomProviderSection from '../../src/lib/components/CustomProviderSection.svelte';
 import ProviderCustomModels from '../../src/lib/components/ProviderCustomModels.svelte';
 import ProviderEndpoints from '../../src/lib/components/ProviderEndpoints.svelte';
 import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.svelte';
 import { ApiError } from '../../src/lib/api/errors';
+import { expectIconOnly } from '../support/icon-only';
 import { createModelDisabledStore } from '../../src/lib/stores/model-disabled.svelte';
 import { createModelTestStore } from '../../src/lib/stores/model-test.svelte';
 import { createProviderThinkingStore } from '../../src/lib/stores/provider-thinking.svelte';
@@ -127,12 +129,14 @@ describe('F1: the copy control in both model tables', () => {
 						thinking: createProviderThinkingStore(),
 						tests: createModelTestStore(),
 						onchanged: () => {}
-				}
-			});
-			const table = await screen.findByRole('table', { name: /model catalog/i });
-				expect(within(table).getByRole('button', { name: 'Copy' }).className).toContain(
-					'min-h-11'
-				);
+					}
+				});
+				const table = await screen.findByRole('table', { name: /model catalog/i });
+				const copy = within(table).getByRole('button', { name: 'Copy model address' });
+				expect(copy.className).toContain('size-11');
+				expectIconOnly(copy, 'Copy model address');
+				// The copy lives in the Actions cell beside Disable, not in the Model cell.
+				expect(copy.closest('td')?.getAttribute('data-label')).toBe('Actions');
 				return;
 			}
 
@@ -152,14 +156,18 @@ describe('F1: the copy control in both model tables', () => {
 					}
 				});
 				const table = await screen.findByRole('table', { name: /custom models declared/i });
-				expect(within(table).getByRole('button', { name: 'Copy' }).className).toContain(
-					'min-h-11'
-				);
+				const copy = within(table).getByRole('button', { name: 'Copy model address' });
+				expect(copy.className).toContain('size-11');
+				expectIconOnly(copy, 'Copy model address');
+				// The copy lives in the Actions cell beside Remove, not in the Model cell.
+				expect(copy.closest('td')?.getAttribute('data-label')).toBe('Actions');
 				return;
 			}
 
 			if (kind === 'iconOnly') {
-				render(CopyButton, { props: { value: 'openai/gpt-4o', iconOnly: true, touchTarget: true } });
+				render(CopyButton, {
+					props: { value: 'openai/gpt-4o', iconOnly: true, touchTarget: true }
+				});
 				expect(screen.getByRole('button', { name: 'Copy' }).className).toContain('size-11');
 				return;
 			}
@@ -179,6 +187,7 @@ describe('F3: retry and clear text buttons', () => {
 			{ name: 'custom models load retry', kind: 'custom-retry' },
 			{ name: 'connections load retry', kind: 'endpoints-retry' },
 			{ name: 'custom card load retry', kind: 'card-retry' },
+			{ name: 'custom provider section load retry', kind: 'section-retry' },
 			{ name: 'page breadcrumb link', kind: 'page-breadcrumb' },
 			{ name: 'page load retry', kind: 'page-retry' },
 			{ name: 'page back link', kind: 'page-back' }
@@ -249,6 +258,21 @@ describe('F3: retry and clear text buttons', () => {
 			if (kind === 'endpoints-retry') {
 				stubEndpoints({ listStatus: 500 });
 				render(ProviderEndpoints, { props: { providerId: 'openai' } });
+				const button = await screen.findByRole('button', { name: 'Try again' });
+				expectTouchTextButton(button, name);
+				return;
+			}
+
+			if (kind === 'section-retry') {
+				const onreload = vi.fn(async () => {});
+				render(CustomProviderSection, {
+					props: {
+						nodes: [],
+						loading: false,
+						error: new ApiError(500, 'INTERNAL_ERROR', 'the list is unavailable'),
+						onreload
+					}
+				});
 				const button = await screen.findByRole('button', { name: 'Try again' });
 				expectTouchTextButton(button, name);
 				return;

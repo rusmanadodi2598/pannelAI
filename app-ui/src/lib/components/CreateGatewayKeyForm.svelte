@@ -42,22 +42,29 @@
 	}
 </script>
 
-<form class="flex flex-wrap items-end gap-3" onsubmit={submit} novalidate>
-	<label class="flex flex-col gap-1.5 text-sm">
+<!-- Mobile: the field and the action stack at full width, so the three controls on this screen (the name
+     field, Create, Refresh) are one column of equal-width rows. On a phone the 256px field kept its width
+     and the Create button sat on its own line at a different width (antislop-layoutmobile, Form Row). -->
+<form
+	class="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end"
+	onsubmit={submit}
+	novalidate
+>
+	<label class="flex flex-col gap-1.5 text-sm sm:w-64">
 		<span class="font-medium">Key name</span>
 		<input
 			bind:value={name}
 			name="name"
 			placeholder="Laptop, CI runner"
 			aria-invalid={error ? 'true' : undefined}
-			class="min-h-11 w-64 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
+			class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3"
 		/>
 	</label>
 
 	<button
 		type="submit"
 		disabled={working}
-		class="min-h-11 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-60"
+		class="inline-flex min-h-11 w-full items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-60 sm:w-auto"
 	>
 		{working ? 'Creating' : 'Create gateway key'}
 	</button>

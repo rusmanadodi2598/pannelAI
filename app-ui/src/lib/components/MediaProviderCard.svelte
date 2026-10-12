@@ -119,7 +119,7 @@
 			<h2 id={`media-${provider.provider_id}`} class="text-base font-medium">
 				<a
 					href={resolve('/providers/[provider_id]', { provider_id: provider.provider_id })}
-					class="underline"
+					class="inline-flex min-h-11 items-center px-2 underline"
 				>
 					{provider.provider_name}
 				</a>

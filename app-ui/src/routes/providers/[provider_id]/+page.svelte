@@ -28,11 +28,13 @@
 	import ModelCatalogList from '$lib/components/ModelCatalogList.svelte';
 	import ProviderConnectionsSection from '$lib/components/ProviderConnectionsSection.svelte';
 	import ProviderCustomModels from '$lib/components/ProviderCustomModels.svelte';
+	import SectionFold from '$lib/components/SectionFold.svelte';
 	import ProviderDisabledModels from '$lib/components/ProviderDisabledModels.svelte';
 	import ProviderFacts from '$lib/components/ProviderFacts.svelte';
 	import ProviderOAuth from '$lib/components/ProviderOAuth.svelte';
 	import ProviderProxyCard from '$lib/components/ProviderProxyCard.svelte';
 	import ProviderThinkingControl from '$lib/components/ProviderThinkingControl.svelte';
+	import PanelTabs from '$lib/components/PanelTabs.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { getProvider } from '$lib/api/providers';
@@ -51,6 +53,19 @@
 	let { params }: PageProps = $props();
 
 	const providerId = $derived(params.provider_id);
+
+	// Tabs group the detail into three reads an operator switches between, so the page is not one long run of
+	// plain text. A registry provider and a custom node get the same three tabs with their own contents.
+	const REGISTRY_TABS = [
+		{ id: 'overview', label: 'Overview' },
+		{ id: 'models', label: 'Models' },
+		{ id: 'connections', label: 'Connections' }
+	];
+	const NODE_TABS = [
+		{ id: 'overview', label: 'Overview' },
+		{ id: 'connections', label: 'Connections' },
+		{ id: 'models', label: 'Models' }
+	];
 
 	// Read once per id, and the node card's own read is separate: a node's prefix and api type are not in
 	// the provider response, so the card reads §7.4's route for them and reports the prefix back, which is
@@ -157,7 +172,10 @@
 
 <section class="flex flex-col gap-6">
 	<div class="flex flex-col gap-1">
-		<a href={resolve('/providers')} class="inline-flex min-h-11 w-fit items-center text-sm underline">Provider</a>
+		<a
+			href={resolve('/providers')}
+			class="inline-flex min-h-11 w-fit items-center text-sm underline">Provider</a
+		>
 		<h1 class="text-lg font-semibold tracking-tight">
 			{provider?.name ?? providerId}
 		</h1>
@@ -171,100 +189,102 @@
 	{:else if error}
 		<StateMessage kind="error" title="This provider could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={() => load(providerId)}>Try again</button>
-				<a href={resolve('/providers')} class="ms-3 inline-flex min-h-11 items-center underline">Back to the registry</a>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center underline"
+					onclick={() => load(providerId)}>Try again</button
+				>
+				<a href={resolve('/providers')} class="ms-3 inline-flex min-h-11 items-center underline"
+					>Back to the registry</a
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if provider}
-		{#if custom}
-			<CustomProviderCard
-				{providerId}
-				onchanged={() => load(providerId)}
-				onaddkey={offersKeys ? openKeyDialog : undefined}
-				onprefix={(prefix) => (nodePrefix = prefix)}
-			/>
+		{@const loaded = provider}
+		<PanelTabs
+			tabs={custom ? NODE_TABS : REGISTRY_TABS}
+			label={custom ? 'Custom provider sections' : 'Provider sections'}
+		>
+			{#snippet panel(tab)}
+				{#if tab === 'overview'}
+					{#if custom}
+						<CustomProviderCard
+							{providerId}
+							onchanged={() => load(providerId)}
+							onaddkey={offersKeys ? openKeyDialog : undefined}
+							onprefix={(prefix) => (nodePrefix = prefix)}
+						/>
+					{:else}
+						<ProviderFacts provider={loaded} />
+					{/if}
+				{:else if tab === 'models'}
+					{#if custom}
+						<SectionFold title="Available Models">
+							<div class="flex flex-col gap-3">
+								<ProviderThinkingControl {providerId} levels={loaded.thinking_levels} {thinking} />
+								<ProviderCustomModels
+									{providerId}
+									{thinking}
+									tests={modelTests}
+									{nodePrefix}
+									onchanged={bumpCatalog}
+								/>
+							</div>
+						</SectionFold>
+					{:else}
+						<SectionFold title="Model catalog">
+							<div class="flex flex-col gap-3">
+								<ProviderThinkingControl
+									providerId={loaded.id}
+									levels={loaded.thinking_levels}
+									{thinking}
+								/>
+								<ModelCatalogList
+									tests={modelTests}
+									{providerId}
+									{disabled}
+									{thinking}
+									onchanged={bumpCatalog}
+									token={catalogToken}
+								/>
+							</div>
+						</SectionFold>
 
-			<ProviderConnectionsSection
-				{provider}
-				token={endpointToken}
-				notice={keyNotice}
-				onaddkey={openKeyDialog}
-			/>
+						<SectionFold title="Models this provider cannot route">
+							<ProviderDisabledModels {providerId} {disabled} onchanged={bumpCatalog} />
+						</SectionFold>
 
-			<div class="flex flex-col gap-3">
-				<h2 class="text-base font-medium">Proxy</h2>
-				<ProviderProxyCard providerId={provider.id} />
-			</div>
+						<SectionFold title="Custom models">
+							<ProviderCustomModels
+								providerId={loaded.id}
+								{thinking}
+								tests={modelTests}
+								onchanged={bumpCatalog}
+							/>
+						</SectionFold>
+					{/if}
+				{:else if tab === 'connections'}
+					<SectionFold title="Connections">
+						<ProviderConnectionsSection
+							provider={loaded}
+							token={endpointToken}
+							notice={keyNotice}
+							onaddkey={openKeyDialog}
+						/>
+					</SectionFold>
 
-			<div class="flex flex-col gap-3">
-				<h2 class="text-base font-medium">Available Models</h2>
-				<ProviderThinkingControl
-					providerId={provider.id}
-					levels={provider.thinking_levels}
-					{thinking}
-				/>
-				<ProviderCustomModels
-					providerId={provider.id}
-					{thinking}
-					tests={modelTests}
-					{nodePrefix}
-					onchanged={bumpCatalog}
-				/>
-			</div>
-		{:else}
-			<ProviderFacts {provider} />
+					<SectionFold title="Proxy">
+						<ProviderProxyCard {providerId} />
+					</SectionFold>
 
-			<div class="flex flex-col gap-3">
-				<h2 class="text-base font-medium">Model catalog</h2>
-				<ProviderThinkingControl
-					providerId={provider.id}
-					levels={provider.thinking_levels}
-					{thinking}
-				/>
-				<ModelCatalogList
-					tests={modelTests}
-					{providerId}
-					{disabled}
-					{thinking}
-					onchanged={bumpCatalog}
-					token={catalogToken}
-				/>
-			</div>
-
-			<div class="flex flex-col gap-3">
-				<h2 class="text-base font-medium">Models this provider cannot route</h2>
-				<ProviderDisabledModels {providerId} {disabled} onchanged={bumpCatalog} />
-			</div>
-
-			<div class="flex flex-col gap-3">
-				<h2 class="text-base font-medium">Custom models</h2>
-				<ProviderCustomModels
-					providerId={provider.id}
-					{thinking}
-					tests={modelTests}
-					onchanged={bumpCatalog}
-				/>
-			</div>
-
-			<ProviderConnectionsSection
-				{provider}
-				token={endpointToken}
-				notice={keyNotice}
-				onaddkey={openKeyDialog}
-			/>
-
-			<div class="flex flex-col gap-3">
-				<h2 class="text-base font-medium">Proxy</h2>
-				<ProviderProxyCard providerId={provider.id} />
-			</div>
-
-			{#if provider.has_oauth}
-				<div class="flex flex-col gap-3">
-					<h2 class="text-base font-medium">OAuth</h2>
-					<ProviderOAuth providerId={provider.id} />
-				</div>
-			{/if}
-		{/if}
+					{#if !custom && loaded.has_oauth}
+						<SectionFold title="OAuth">
+							<ProviderOAuth {providerId} />
+						</SectionFold>
+					{/if}
+				{/if}
+			{/snippet}
+		</PanelTabs>
 
 		<AddProviderKeysDialog
 			providerId={provider.id}

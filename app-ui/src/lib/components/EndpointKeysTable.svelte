@@ -13,6 +13,8 @@
 	// a countdown, and a countdown needs a clock. The drawer owns `now` and passes it in, so the table stays
 	// a renderer and the ticking lives with the thing that is open.
 	import { ENDPOINT_STATUS_ACTIVE, type EndpointKey } from '$lib/schemas/endpoint';
+	import { pageOf } from '$lib/schemas/local-page';
+	import { CONTROL_ICONS } from '$lib/icons';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { isLastActiveApiKey } from '$lib/utils/routing';
 	import { countdownText, formatTimestamp } from '$lib/utils/time';
@@ -35,6 +37,13 @@
 		onsettled: (key: EndpointKey, status: 'active' | 'disabled') => void;
 		onremove: (key: EndpointKey) => void;
 	} = $props();
+
+	const PreviousIcon = CONTROL_ICONS.previous.icon;
+	const NextIcon = CONTROL_ICONS.next.icon;
+
+	// A connection can carry 100+ keys (one per account). Ten a page keeps the drawer readable on a phone.
+	let requestedPage = $state(1);
+	const view = $derived(pageOf(keys, requestedPage));
 
 	const TestIcon = ROW_ACTION_ICONS.test.icon;
 	const DisableIcon = ROW_ACTION_ICONS.disable.icon;
@@ -67,7 +76,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each keys as key (key.id)}
+			{#each view.rows as key (key.id)}
 				{@const blocked = isLastActiveApiKey(keys, key.id, authType)}
 				{@const isActive = key.status === ENDPOINT_STATUS_ACTIVE}
 				<tr class="border-t border-[var(--color-border)]">
@@ -130,3 +139,27 @@
 		</tbody>
 	</table>
 </div>
+
+{#if view.pages > 1}
+	<div class="flex flex-wrap items-center gap-3 pt-2 text-sm">
+		<button
+			type="button"
+			class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
+			disabled={view.page <= 1}
+			onclick={() => (requestedPage = view.page - 1)}
+		>
+			<PreviousIcon class="size-4" aria-hidden="true" />
+			Previous
+		</button>
+		<span class="text-[var(--color-text-muted)]">Page {view.page} of {view.pages}</span>
+		<button
+			type="button"
+			class="inline-flex min-h-11 items-center gap-1 px-3 underline disabled:opacity-50"
+			disabled={view.page >= view.pages}
+			onclick={() => (requestedPage = view.page + 1)}
+		>
+			Next
+			<NextIcon class="size-4" aria-hidden="true" />
+		</button>
+	</div>
+{/if}

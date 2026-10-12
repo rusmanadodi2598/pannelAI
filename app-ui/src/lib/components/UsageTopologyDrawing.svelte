@@ -113,7 +113,7 @@
 			>
 			{#if inFlight > 0}
 				<span
-					class="inline-flex min-w-[calc(20px*var(--u))] justify-center rounded-[var(--radius-sm)] bg-[var(--color-ok)] px-[calc(4px*var(--u))] text-[0.857em] font-semibold text-[var(--color-surface)] shadow-[0_0_10px_color-mix(in_srgb,var(--color-ok)_45%,transparent)]"
+					class="inline-flex min-w-[max(20px,calc(20px*var(--u)))] justify-center rounded-[var(--radius-sm)] bg-[var(--color-ok)] px-[calc(4px*var(--u))] text-[max(11px,0.857em)] font-semibold text-[var(--color-surface)] shadow-[0_0_10px_color-mix(in_srgb,var(--color-ok)_45%,transparent)]"
 					>{inFlight}</span
 				>
 			{/if}

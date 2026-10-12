@@ -11,7 +11,7 @@
 	//
 	// Each row's ref is a text field rather than a picker: the editor's picker fills the list, and a ref the
 	// picker cannot offer yet (a model id an upstream has not answered with) is still typeable here.
-	import { GripVertical, Plus, Trash2 } from '@lucide/svelte';
+	import { GripVertical, Trash2 } from '@lucide/svelte';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
 	import { reorderComboModels, type ComboModelEntry } from '$lib/schemas/combo';
 
@@ -45,10 +45,6 @@
 				0
 			)
 		);
-	}
-
-	function add(): void {
-		onchange([...models, { ref: '', priority: models.length }]);
 	}
 
 	function labelFor(index: number): string {
@@ -141,12 +137,3 @@
 		</li>
 	{/each}
 </ul>
-
-<button
-	type="button"
-	class="mt-2 inline-flex min-h-11 w-fit items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
-	onclick={add}
->
-	<Plus class="size-4" aria-hidden="true" />
-	Add a model
-</button>

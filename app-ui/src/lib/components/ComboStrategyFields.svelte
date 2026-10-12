@@ -50,7 +50,7 @@
 {#if usesJudgeModel(strategy)}
 	<div class="flex flex-col gap-1 text-sm">
 		<label for="combo-judge" class="text-[var(--color-text-muted)]">Judge model</label>
-		<div class="flex flex-wrap items-center gap-2">
+		<div class="flex flex-wrap items-center gap-2 max-sm:flex-col max-sm:items-stretch">
 			<input
 				id="combo-judge"
 				type="text"
@@ -61,7 +61,7 @@
 			/>
 			<button
 				type="button"
-				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)]"
+				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm hover:bg-[var(--color-surface-2)] max-sm:min-h-12 max-sm:w-full max-sm:justify-center max-sm:px-4"
 				onclick={onchoosejudge}
 			>
 				<ChooseIcon class="size-4" aria-hidden="true" />

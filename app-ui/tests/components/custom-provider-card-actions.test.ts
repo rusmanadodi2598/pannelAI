@@ -38,7 +38,7 @@ afterEach(() => {
 describe('testing a custom provider', () => {
 	it('sends no credential when the field is empty, and renders the outcome', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
-		renderCard(stub);
+		await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Test the endpoint' }).click();
@@ -54,7 +54,7 @@ describe('testing a custom provider', () => {
 			testState: 'fail',
 			testMessage: 'the upstream answered 401'
 		});
-		renderCard(stub);
+		await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await type('Credential (optional)', 'sk-test');
@@ -67,7 +67,7 @@ describe('testing a custom provider', () => {
 
 	it('reports a test that could not run at all as a failure, not as a state', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
-		renderCard(stub);
+		await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		// The node is removed behind the screen, which is the one way this route answers 404.
@@ -84,7 +84,7 @@ describe("the card's verb actions", () => {
 	// action's name for the screen reader and the tooltip while the glyph stays decorative.
 	it('renders Edit and Delete without visible text, with their names kept', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
-		renderCard(stub);
+		await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		expectIconOnly(screen.getByRole('button', { name: 'Edit' }), 'Edit');
@@ -98,7 +98,7 @@ describe('deleting a custom provider', () => {
 			nodes: [nodeRow()],
 			connections: { 'openai-compatible-01J': 3 }
 		});
-		renderCard(stub);
+		await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Delete' }).click();
@@ -125,7 +125,7 @@ describe('deleting a custom provider', () => {
 	// did not measure.
 	it('still names the models when the provider holds no connection', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
-		renderCard(stub);
+		await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Delete' }).click();
@@ -139,7 +139,7 @@ describe('deleting a custom provider', () => {
 
 	it('states the cascade without a number when the count cannot be read', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()], connectionsUnknown: true });
-		renderCard(stub);
+		await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Delete' }).click();
@@ -155,7 +155,7 @@ describe('deleting a custom provider', () => {
 			nodes: [nodeRow()],
 			comboReferenced: ['openai-compatible-01J']
 		});
-		renderCard(stub);
+		await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Delete' }).click();
@@ -177,7 +177,7 @@ describe('deleting a custom provider', () => {
 			nodes: [nodeRow()],
 			aliasReferenced: ['openai-compatible-01J']
 		});
-		renderCard(stub);
+		await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Delete' }).click();

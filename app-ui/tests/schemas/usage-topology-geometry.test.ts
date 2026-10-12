@@ -36,6 +36,16 @@ function scaledPixels(block: string, utility: string): number {
 	return Number(match[1]);
 }
 
+/**
+ * The pixel value a utility holds at the cap. A metric held at a floor (F23: the state dot is `size-[8px]`,
+ * which never shrinks) has no `--u` term, so its width at the cap is the fixed value itself.
+ */
+function pixelsAtCap(block: string, utility: string): number {
+	const fixed = new RegExp(`${utility}-\\[(\\d+)px\\]`).exec(block);
+	if (fixed) return Number(fixed[1]);
+	return scaledPixels(block, utility);
+}
+
 /** One Tailwind class per entry. A class list is what the derivation is measured against, not a substring. */
 function classTokens(block: string): string[] {
 	return block.split(/[\s"'`]+/).filter(Boolean);
@@ -46,7 +56,7 @@ describe('the node box NODE_MAX_WIDTH is derived from', () => {
 		const block = nodeBlock();
 		const across =
 			scaledPixels(block, 'px') * 2 +
-			scaledPixels(block, 'size') +
+			pixelsAtCap(block, 'size') +
 			scaledPixels(block, 'gap') +
 			scaledPixels(block, 'max-w') +
 			BORDER_ACROSS;

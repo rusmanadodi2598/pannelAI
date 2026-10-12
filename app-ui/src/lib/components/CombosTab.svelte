@@ -10,6 +10,7 @@
 	// half is derived here so a delete cannot leave a stale name in the picker.
 	import { untrack } from 'svelte';
 	import ComboDeleteDialog from '$lib/components/ComboDeleteDialog.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 	import ComboEditor from '$lib/components/ComboEditor.svelte';
 	import ComboTable from '$lib/components/ComboTable.svelte';
 	import CombosToolbar from '$lib/components/CombosToolbar.svelte';
@@ -140,26 +141,16 @@
 		}}
 	/>
 
-	{#if showEditor}
-		<ComboEditor
-			combo={editing}
-			{sections}
-			{pickerLoading}
-			{pickerFailed}
-			onsaved={() => {
-				closeEditor();
-				void load();
-			}}
-			oncancel={closeEditor}
-		/>
-	{/if}
-
 	{#if loading}
 		<StateMessage kind="loading" title="Loading combos" />
 	{:else if error}
 		<StateMessage kind="error" title="Combos could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="inline-flex items-center gap-2 underline" onclick={load}>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center gap-2 px-2 underline"
+					onclick={load}
+				>
 					<RetryIcon class="size-4" aria-hidden="true" />
 					Try again
 				</button>
@@ -230,6 +221,28 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Rendered only while it is open: the modal keeps its children mounted either way, and a hidden editor
+     would still register a draft with the navigation guard and still hold its picker. -->
+{#if showEditor}
+	<Modal
+		title={editing === null ? 'New combo' : `Edit ${editing.name}`}
+		open={true}
+		onclose={closeEditor}
+	>
+		<ComboEditor
+			combo={editing}
+			{sections}
+			{pickerLoading}
+			{pickerFailed}
+			onsaved={() => {
+				closeEditor();
+				void load();
+			}}
+			oncancel={closeEditor}
+		/>
+	</Modal>
+{/if}
 
 <ComboDeleteDialog
 	combo={pendingDelete}

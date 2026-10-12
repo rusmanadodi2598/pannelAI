@@ -59,6 +59,27 @@ function stubCombos(total: number): void {
 	});
 }
 
+// Serves the tab's reads with a failed combos list, so the error state renders.
+function stubCombosError(): void {
+	vi.stubGlobal('fetch', async (input: unknown) => {
+		const url = String(input);
+		const json = (payload: unknown, status = 200): Response =>
+			new Response(JSON.stringify(payload), {
+				status,
+				headers: { 'content-type': 'application/json' }
+			});
+
+		if (url.includes('/models/catalog')) return json({ data: [] });
+		if (url.includes('/providers')) {
+			return json({ data: [], meta: { page: 1, per_page: 100, total: 0 } });
+		}
+		if (url.includes('/combos')) {
+			return json({ error: { code: 'INTERNAL_ERROR', message: 'the list is unavailable' } }, 500);
+		}
+		return json({ error: { code: 'NOT_FOUND', message: 'No route matches that request.' } });
+	});
+}
+
 afterEach(() => {
 	cleanup();
 	vi.unstubAllGlobals();
@@ -78,7 +99,7 @@ describe('F11 editor save and cancel', () => {
 			const save = screen.getByRole('button', { name: mode.save });
 			const cancel = screen.getByRole('button', { name: 'Cancel' });
 
-			for (const token of ['min-h-12', 'px-4']) {
+			for (const token of ['min-h-12', 'px-4', 'w-full', 'justify-center', 'sm:w-auto']) {
 				expect(save.className, `${mode.save} lost ${token}`).toContain(token);
 				expect(cancel.className, `Cancel lost ${token} in ${mode.save} mode`).toContain(token);
 			}
@@ -102,6 +123,16 @@ describe('F16 combos empty state', () => {
 		}
 		expect(create.querySelector('svg'), 'empty-state action has no glyph').toBeTruthy();
 	});
+
+	it('gives the error-state retry a 44px target with horizontal padding', async () => {
+		stubCombosError();
+		render(CombosTab);
+
+		const retry = await screen.findByRole('button', { name: 'Try again' });
+		for (const token of ['min-h-11', 'px-2', 'inline-flex', 'items-center', 'underline']) {
+			expect(retry.className, `error-state retry lost ${token}`).toContain(token);
+		}
+	});
 });
 
 describe('F17 judge row', () => {
@@ -115,10 +146,21 @@ describe('F17 judge row', () => {
 		const choose = screen.getByRole('button', { name: 'Choose' });
 		const cases = [
 			{ node: row, token: 'flex-wrap', note: 'judge row does not wrap' },
+			{ node: row, token: 'max-sm:flex-col', note: 'judge row does not collapse on mobile' },
+			{
+				node: row,
+				token: 'max-sm:items-stretch',
+				note: 'judge row does not stretch its children on mobile'
+			},
 			{ node: input, token: 'w-full', note: 'judge input is not full width on mobile' },
 			{ node: input, token: 'min-w-0', note: 'judge input keeps a fixed floor that can overflow' },
 			{ node: input, token: 'min-h-11', note: 'judge input lost its touch target' },
-			{ node: choose, token: 'min-h-11', note: 'Choose lost its touch target' }
+			{ node: choose, token: 'min-h-11', note: 'Choose lost its touch target' },
+			{ node: choose, token: 'px-3', note: 'Choose lost its desktop padding' },
+			{ node: choose, token: 'max-sm:w-full', note: 'Choose is not full width on mobile' },
+			{ node: choose, token: 'max-sm:justify-center', note: 'Choose is not centered on mobile' },
+			{ node: choose, token: 'max-sm:min-h-12', note: 'Choose lost its mobile touch target' },
+			{ node: choose, token: 'max-sm:px-4', note: 'Choose lost its mobile padding' }
 		];
 
 		for (const entry of cases) {

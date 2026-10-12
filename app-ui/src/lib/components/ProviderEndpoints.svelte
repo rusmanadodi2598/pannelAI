@@ -28,7 +28,9 @@
 	const PreviousIcon = CONTROL_ICONS.previous.icon;
 	const NextIcon = CONTROL_ICONS.next.icon;
 
-	const PAGE_SIZE = 25;
+	// Ten connections a page. A provider can hold one per account, and the server pages the read, so the
+	// page size is what keeps the list short on a phone.
+	const PAGE_SIZE = 10;
 
 	let endpoints = $state<Endpoint[]>([]);
 	let total = $state(0);
@@ -111,7 +113,11 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load this provider's connections" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={() => load(providerId)}>Try again</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center underline"
+					onclick={() => load(providerId)}>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if endpoints.length === 0}

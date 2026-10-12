@@ -15,7 +15,7 @@
 // The toolbar controls keep their visible labels and gain the glyph beside them (SPEC-UI §8.11 butir 10),
 // so they are asserted the other way round: the label stays, and the glyph rides along.
 
-import { cleanup, render, screen, within } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ComboEditor from '../../src/lib/components/ComboEditor.svelte';
 import ComboTable from '../../src/lib/components/ComboTable.svelte';
@@ -46,6 +46,8 @@ afterEach(() => {
 });
 
 describe('combo table row actions', () => {
+	// Each combo is one section: its name, its three action icons, and a detail that is closed by default.
+	// The actions sit on the title line, so they stay reachable without opening the detail.
 	function row(): HTMLElement {
 		render(ComboTable, {
 			props: {
@@ -56,7 +58,7 @@ describe('combo table row actions', () => {
 			}
 		});
 
-		return screen.getByText('daily').closest('tr') as HTMLElement;
+		return screen.getByRole('button', { name: 'Edit' }).closest('section') as HTMLElement;
 	}
 
 	// A table of the three actions, so a fourth added later has to state its own contract rather than
@@ -72,6 +74,47 @@ describe('combo table row actions', () => {
 
 		expect(button.className).toContain('text-[var(--color-danger)]');
 		expect(button.className).not.toContain('text-[var(--color-text-muted)]');
+	});
+});
+
+describe('the combo list', () => {
+	it('sorts by name and opens a combo for its detail, closed by default', async () => {
+		render(ComboTable, {
+			props: {
+				combos: [combo({ id: 'cmb_b', name: 'zulu' }), combo({ id: 'cmb_a', name: 'alpha' })],
+				deleting: null,
+				onedit: () => {},
+				ondelete: () => {}
+			}
+		});
+
+		// A-Z, whatever order the page arrived in.
+		const names = screen
+			.getAllByRole('button', { expanded: false })
+			.map((b) => b.textContent ?? '');
+		expect(names[0]).toContain('alpha');
+		expect(names[1]).toContain('zulu');
+
+		// Closed by default: the model refs are not on screen until the row is asked for.
+		expect(screen.queryByText('openai/gpt-4o')).toBeNull();
+
+		await fireEvent.click(screen.getByRole('button', { name: /alpha/ }));
+		expect(screen.getByText('openai/gpt-4o')).toBeTruthy();
+	});
+
+	it('keeps the row actions reachable while the detail is closed', () => {
+		render(ComboTable, {
+			props: {
+				combos: [combo()],
+				deleting: null,
+				onedit: () => {},
+				ondelete: () => {}
+			}
+		});
+
+		for (const name of ['Edit', 'Test', 'Delete']) {
+			expect(screen.getByRole('button', { name })).toBeTruthy();
+		}
 	});
 });
 

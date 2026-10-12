@@ -76,6 +76,7 @@ describe('UsageTopology mobile P0 Fase A', () => {
 		const node = within(container).getByText('OpenAI').parentElement as HTMLElement;
 		const dot = node.querySelector('span.relative') as HTMLElement;
 		const logo = container.querySelector('img') as HTMLElement;
+		const badge = within(gateway).getByText('1');
 
 		const cases = [
 			{
@@ -94,6 +95,14 @@ describe('UsageTopology mobile P0 Fase A', () => {
 			{
 				name: 'gateway mark never shrinks past 14px',
 				pass: logo.classList.contains('size-[max(14px,calc(16px*var(--u)))]')
+			},
+			{
+				name: 'count badge floors its width at 20px',
+				pass: badge.classList.contains('min-w-[max(20px,calc(20px*var(--u)))]')
+			},
+			{
+				name: 'count badge floors its text at 11px',
+				pass: badge.classList.contains('text-[max(11px,0.857em)]')
 			}
 		];
 

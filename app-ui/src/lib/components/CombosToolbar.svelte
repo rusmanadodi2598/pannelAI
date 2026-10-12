@@ -25,15 +25,20 @@
 	} = $props();
 </script>
 
-<div class="flex flex-wrap items-stretch justify-between gap-2">
-	<p class="flex min-w-0 flex-1 items-center text-sm text-[var(--color-text-muted)]">
+<!-- The sentence takes its own line on mobile (basis-full) and returns beside the controls past it. Without
+     that the controls claimed almost the whole row and the sentence was squeezed into a character-wide column,
+     which stretched the row and both buttons with it. -->
+<div class="flex flex-wrap items-center justify-between gap-2">
+	<p
+		class="flex min-w-0 basis-full items-center text-sm text-[var(--color-text-muted)] sm:flex-1 sm:basis-auto"
+	>
 		One model name, several upstream models.
 	</p>
-	<div class="flex flex-wrap items-stretch gap-2">
+	<div class="flex flex-wrap items-center gap-2">
 		{#if !hidden}
 			<button
 				type="button"
-				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 text-sm text-[var(--color-accent-text)]"
+				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-accent)] px-3 text-sm text-[var(--color-accent-text)]"
 				onclick={oncreate}
 			>
 				<AddIcon class="size-4" aria-hidden="true" />

@@ -19,6 +19,7 @@ import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.s
 import { endpointRow } from '../support/endpoint-stub';
 import { stubModels } from '../support/model-stub';
 import { value } from '../support/dom';
+import { openAllSections } from '../support/provider-sections';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -32,8 +33,9 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-function renderProvider(): void {
+async function renderProvider(): Promise<void> {
 	render(ProviderDetailPage, { props: { params: { provider_id: 'openai' }, data: {} } });
+	await openAllSections('Connections');
 }
 
 /** Types into a field by its label, through the event Svelte 5's `bind:value` listens for. */
@@ -55,7 +57,7 @@ async function openPaste(): Promise<void> {
 describe('the key control on a provider', () => {
 	it('is offered where the provider takes a key, under the connections heading', async () => {
 		stubModels({ authType: 'api_key' });
-		renderProvider();
+		await renderProvider();
 
 		expect(await screen.findByRole('button', { name: 'Add API Key' })).toBeTruthy();
 		expect(screen.getByRole('heading', { name: 'Connections' })).toBeTruthy();
@@ -64,7 +66,7 @@ describe('the key control on a provider', () => {
 
 	it('is absent for an OAuth provider, whose path is the endpoint form', async () => {
 		stubModels({ authType: 'oauth' });
-		renderProvider();
+		await renderProvider();
 
 		expect(await screen.findByRole('button', { name: 'Add a connection' })).toBeTruthy();
 		expect(screen.queryByRole('button', { name: 'Add API Key' })).toBeNull();
@@ -74,7 +76,7 @@ describe('the key control on a provider', () => {
 describe('adding one key', () => {
 	it('stores it as a connection of this provider and lists it without a reload', async () => {
 		const stub = stubModels({ authType: 'api_key' });
-		renderProvider();
+		await renderProvider();
 		await openDialog();
 
 		await fill('Name', 'Primary');
@@ -104,7 +106,7 @@ describe('adding one key', () => {
 
 	it("opens clean for the next key, so a second connection cannot inherit the first one's name", async () => {
 		const stub = stubModels({ authType: 'api_key' });
-		renderProvider();
+		await renderProvider();
 		await openDialog();
 
 		await fill('Name', 'Primary');
@@ -124,7 +126,7 @@ describe('adding one key', () => {
 describe('adding a pasted list', () => {
 	it('stores one connection per line, under the name that line gives it', async () => {
 		const stub = stubModels({ authType: 'api_key' });
-		renderProvider();
+		await renderProvider();
 		await openPaste();
 
 		await fill('Keys', 'production|sk-aaaaaaaa\n\nsk-bbbbbbbb');
@@ -155,7 +157,7 @@ describe('adding a pasted list', () => {
 			authType: 'api_key',
 			endpoints: [endpointRow({ id: 'ep_1', label: 'Key 1' })]
 		});
-		renderProvider();
+		await renderProvider();
 		await openPaste();
 
 		await fill('Keys', 'sk-cccccccc');
@@ -171,7 +173,7 @@ describe('adding a pasted list', () => {
 
 	it('reports a refused line by the line it came from, and sends nothing', async () => {
 		const stub = stubModels({ authType: 'api_key' });
-		renderProvider();
+		await renderProvider();
 		await openPaste();
 
 		// The blank second line is what makes the third line's number worth asserting: a message keyed to
@@ -192,7 +194,7 @@ describe('adding a pasted list', () => {
 			endpointReadStatus: 500,
 			endpoints: [endpointRow({ id: 'ep_1', label: 'production' })]
 		});
-		renderProvider();
+		await renderProvider();
 		await openPaste();
 
 		await fill('Keys', 'production|sk-aaaaaaaa');

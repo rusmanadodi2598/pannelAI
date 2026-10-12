@@ -61,7 +61,9 @@
 			description="Nothing to route yet. Open Providers to add one."
 		>
 			{#snippet action()}
-				<a href={resolve('/providers')} class="underline">Open Providers</a>
+				<a href={resolve('/providers')} class="inline-flex min-h-11 items-center px-2 underline"
+					>Open Providers</a
+				>
 			{/snippet}
 		</StateMessage>
 	{:else}

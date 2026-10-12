@@ -13,6 +13,7 @@ import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.s
 import { stubModels } from '../support/model-stub';
 import { proxyRow } from '../support/proxy-stub';
 import { nodeRow } from '../support/provider-node-stub';
+import { openAllSections } from '../support/provider-sections';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -32,19 +33,24 @@ afterEach(() => {
 
 /** The screen's own section headings, in document order, with a closed dialog's excluded. */
 function sectionHeadings(): string[] {
-	return [...document.querySelectorAll('h2')]
+	// An <h2> inside a fold repeats the fold's title, so it is read once: as the fold's button.
+	const names = [...document.querySelectorAll('h2, button[aria-expanded]')]
 		.filter((element) => element.closest('dialog') === null)
 		.map((element) => element.textContent?.replace(/\s+/g, ' ').trim() ?? '');
+	// An <h2> inside a fold repeats the fold's title and sits right before it, so a section is named once.
+	return names.filter((name, index) => name !== names[index - 1]);
 }
 
 describe('the proxy card on a provider detail screen', () => {
 	it('renders on a registry provider, after the connections it belongs beside', async () => {
 		stubModels({ proxies: [proxyRow()] });
 		render(ProviderDetailPage, { props: { params: { provider_id: 'openai' }, data: {} } });
+		await openAllSections('Connections');
 
 		expect(await screen.findByLabelText('Proxy pool')).toBeTruthy();
 		expect(screen.getByLabelText('Pool strategy')).toBeTruthy();
 
+		// Both sections live in the Connections tab, and the proxy card follows the connections.
 		const headings = sectionHeadings();
 		expect(headings.indexOf('Proxy')).toBeGreaterThan(headings.indexOf('Connections'));
 		// The pool rows the card offers are the ones the pool route answered.
@@ -59,17 +65,19 @@ describe('the proxy card on a provider detail screen', () => {
 			proxies: [proxyRow()]
 		});
 		render(ProviderDetailPage, { props: { params: { provider_id: NODE_ID }, data: {} } });
+		await openAllSections('Connections');
 
 		expect(await screen.findByLabelText('Proxy pool')).toBeTruthy();
 
+		// The node's Connections tab holds the connections and the proxy card; the models live in their own tab.
 		const headings = sectionHeadings();
 		expect(headings.indexOf('Proxy')).toBeGreaterThan(headings.indexOf('Connections'));
-		expect(headings.indexOf('Proxy')).toBeLessThan(headings.indexOf('Available Models'));
 	});
 
 	it('reports a refused binding on the page rather than silently keeping it', async () => {
 		stubModels({ proxies: [proxyRow()], settingsWriteStatus: 400 });
 		render(ProviderDetailPage, { props: { params: { provider_id: 'openai' }, data: {} } });
+		await openAllSections('Connections');
 		await screen.findByLabelText('Proxy pool');
 
 		const pool = screen.getByLabelText('Proxy pool') as HTMLSelectElement;

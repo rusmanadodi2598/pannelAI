@@ -49,7 +49,11 @@
 	{:else if disabled.error}
 		<StateMessage kind="error" title="Could not load the disabled models" apiError={disabled.error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => disabled.load()}>Try again</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => disabled.load()}>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if mine.length === 0}

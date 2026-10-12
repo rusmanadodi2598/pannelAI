@@ -65,7 +65,9 @@
 		{#if conflict}
 			<p class="mt-3 text-[var(--color-danger)]" role="alert">
 				<ApiErrorText {error} prefix="Not deleted: " />
-				<a href={resolve('/combos')} class="underline">Combos</a> is where that member or alias is edited.
+				<a href={resolve('/combos')} class="inline-flex min-h-11 items-center px-2 underline"
+					>Combos</a
+				> is where that member or alias is edited.
 			</p>
 		{:else}
 			<p class="mt-3 text-[var(--color-danger)]" role="alert">

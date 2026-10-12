@@ -27,11 +27,15 @@
 	{#snippet action()}
 		<div class="flex flex-wrap gap-3">
 			{#if period !== '60d'}
-				<button type="button" class="underline" onclick={() => onperiod('60d')}
-					>Look back 60 days</button
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => onperiod('60d')}>Look back 60 days</button
 				>
 			{/if}
-			<a href={resolve('/endpoint-keys')} class="underline">Open Endpoint &amp; Key</a>
+			<a href={resolve('/endpoint-keys')} class="inline-flex min-h-11 items-center px-2 underline"
+				>Open Endpoint &amp; Key</a
+			>
 		</div>
 	{/snippet}
 </StateMessage>
