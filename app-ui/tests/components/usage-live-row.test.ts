@@ -181,6 +181,9 @@ describe('UsageLivePanel Live activity tab', () => {
 
 		await openTab(/Last finished/);
 		const panel = openPanel();
+		// The Last finished tab carries no count, so its label is the same before and after the frame and
+		// opening it does not wait for the stream. The row is awaited, not read on the next tick.
+		await within(panel).findByText('OpenAI');
 		expect(within(panel).getByText('OpenAI').classList.contains('text-[var(--color-ok)]')).toBe(
 			false
 		);
