@@ -81,6 +81,12 @@ type EndpointResponse struct {
 	ConsecutiveUseCount int                    `json:"consecutive_use_count"`
 	ProxyPoolID         string                 `json:"proxy_pool_id"`
 	LastError           *EndpointErrorResponse `json:"last_error,omitempty"`
+
+	// The service-account fields, carried only for a service_account endpoint.
+	// They are configuration rather than secrets, so the panel renders them
+	// beside the account identity.
+	SAProjectID string `json:"sa_project_id,omitempty"`
+	SALocation  string `json:"sa_location,omitempty"`
 }
 
 // EndpointErrorResponse is the last non-test upstream failure. It is an object

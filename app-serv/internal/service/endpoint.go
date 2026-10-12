@@ -77,6 +77,11 @@ type CreateInput struct {
 	AuthType   domain.UpstreamAuthType
 	Priority   int
 	Keys       []KeyInput
+	// SAProjectID and SALocation are the project and location a
+	// service_account endpoint addresses. They are refused on any other auth
+	// type rather than ignored.
+	SAProjectID string
+	SALocation  string
 }
 
 // KeyInput is one credential to store. Value is plaintext on entry and is sealed
@@ -88,9 +93,10 @@ type KeyInput struct {
 }
 
 // Create validates and persists one account. An unknown provider_id is a
-// VALIDATION_ERROR, and an api_key endpoint with no key is refused before any
-// write: §7.5 requires at least one key for that auth type, and storing an account
-// that can never route is worse than refusing the request.
+// VALIDATION_ERROR, and an endpoint of a key-backed auth type with no key is
+// refused before any write: §7.5 requires at least one key for that auth type,
+// and storing an account that can never route is worse than refusing the
+// request.
 func (s *EndpointService) Create(ctx context.Context, in CreateInput) (domain.UpstreamEndpoint, error) {
 	endpoint, err := s.buildEndpoint(in, s.clock())
 	if err != nil {

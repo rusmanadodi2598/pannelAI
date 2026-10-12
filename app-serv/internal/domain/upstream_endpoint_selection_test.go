@@ -122,5 +122,5 @@ func endpointInBackoff(t *testing.T) UpstreamEndpoint {
 	until := keyNow.Add(5 * time.Minute)
 	return RehydrateUpstreamEndpoint("ep_1", "deepseek", "primary", UpstreamAuthAPIKey, 1,
 		UpstreamEndpointActive, nil, EndpointAccount{}, EndpointTestStatus{}, &until, nil,
-		keyNow, keyNow, []UpstreamKey{newTestKey(t, 1)}, EndpointParity{})
+		keyNow, keyNow, []UpstreamKey{newTestKey(t, 1)}, ServiceAccountRef{}, EndpointParity{})
 }

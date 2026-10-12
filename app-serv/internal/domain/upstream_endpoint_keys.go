@@ -42,15 +42,15 @@ func (e *UpstreamEndpoint) AttachKey(key UpstreamKey) {
 	e.keys = append(e.keys, key)
 }
 
-// RemoveKey deletes a key, refusing when that would leave an api_key endpoint
-// unable to route (SPEC-API-001 §7.5).
+// RemoveKey deletes a key, refusing when that would leave a key-backed
+// endpoint unable to route (SPEC-API-001 §7.5).
 func (e *UpstreamEndpoint) RemoveKey(id string, now time.Time) error {
 	index := e.keyIndex(id)
 	if index < 0 {
 		return NewNotFoundError("upstream key not found")
 	}
-	if e.authType == UpstreamAuthAPIKey && e.activeKeyCount()-activeKeys(e.keys[index]) < 1 {
-		return NewConflictError("an api_key endpoint must keep at least one active key")
+	if e.authType.UsesStoredKey() && e.activeKeyCount()-activeKeys(e.keys[index]) < 1 {
+		return NewConflictError("this endpoint must keep at least one active key")
 	}
 
 	e.keys = append(e.keys[:index], e.keys[index+1:]...)
@@ -59,14 +59,14 @@ func (e *UpstreamEndpoint) RemoveKey(id string, now time.Time) error {
 }
 
 // refusesDeactivation reports whether moving e.keys[index] to next would leave
-// an api_key endpoint without an active key. UpdateKey runs it on the status it
-// is given, and RemoveKey enforces the same invariant on the whole key.
+// a key-backed endpoint without an active key. UpdateKey runs it on the status
+// it is given, and RemoveKey enforces the same invariant on the whole key.
 func (e *UpstreamEndpoint) refusesDeactivation(index int, next UpstreamKeyStatus) error {
-	if next == UpstreamKeyActive || e.authType != UpstreamAuthAPIKey {
+	if next == UpstreamKeyActive || !e.authType.UsesStoredKey() {
 		return nil
 	}
 	if e.activeKeyCount()-activeKeys(e.keys[index]) < 1 {
-		return NewConflictError("an api_key endpoint must keep at least one active key")
+		return NewConflictError("this endpoint must keep at least one active key")
 	}
 	return nil
 }

@@ -12,6 +12,7 @@ package main
 
 import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/router"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/service"
 )
@@ -64,11 +65,21 @@ func buildMediaPlanes(in dataPlaneInputs, engine *dataplane.Engine, quotas *serv
 		return nil, nil, nil, nil, err
 	}
 
+	// A service-account credential is exchanged for a bearer before its call,
+	// which is the one outbound call such a credential makes on its own; it
+	// dials through the same guarded client as every other upstream
+	// (docs/RULLES/SSRF.md §2.1).
+	tokens, err := provider.NewVertexTokenClient(in.Client)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
 	media, err := service.NewMediaCallService(service.MediaCallServiceDeps{
 		Index:          in.MediaIndex,
 		Router:         mediaRouter{engine: engine},
 		Caller:         caller,
 		Overrides:      in.MediaOverrides,
+		Tokens:         tokens,
 		Usage:          in.Usage,
 		Logs:           in.Logs,
 		Quotas:         quotas,

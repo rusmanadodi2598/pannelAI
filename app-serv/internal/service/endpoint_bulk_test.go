@@ -89,7 +89,7 @@ func TestEndpointService_BulkCreateIsAllOrNothing(t *testing.T) {
 			}
 
 			created, err := svc.BulkCreateAccounts(context.Background(), provider,
-				domain.UpstreamAuthAPIKey, tc.accounts)
+				domain.UpstreamAuthAPIKey, domain.ServiceAccountRef{}, tc.accounts)
 			if tc.wantCode != "" {
 				mustAppError(t, err, tc.wantCode)
 				if len(created) != 0 {
@@ -113,6 +113,7 @@ func TestEndpointService_BulkCreateAttributesTheBadRow(t *testing.T) {
 	svc, _ := newEndpointSvc(t)
 
 	_, err := svc.BulkCreateAccounts(context.Background(), "deepseek", domain.UpstreamAuthAPIKey,
+		domain.ServiceAccountRef{},
 		[]BulkAccountInput{
 			{Label: "one", Keys: []KeyInput{{Value: "sk-1"}}},
 			{Label: "two", Keys: []KeyInput{{Value: "sk-2"}}},

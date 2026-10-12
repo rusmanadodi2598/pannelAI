@@ -476,7 +476,8 @@
             "enum": [
               "api_key",
               "oauth",
-              "no_auth"
+              "no_auth",
+              "service_account"
             ]
           },
           "priority": {
@@ -488,6 +489,12 @@
             "items": {
               "$ref": "#/components/schemas/EndpointKeyInput"
             }
+          },
+          "sa_project_id": {
+            "type": "string"
+          },
+          "sa_location": {
+            "type": "string"
           }
         },
         "required": [
@@ -569,8 +576,15 @@
             "enum": [
               "api_key",
               "oauth",
-              "no_auth"
+              "no_auth",
+              "service_account"
             ]
+          },
+          "sa_project_id": {
+            "type": "string"
+          },
+          "sa_location": {
+            "type": "string"
           },
           "endpoints": {
             "type": "array",
@@ -1580,6 +1594,10 @@
             "type": "string",
             "description": "The generated asset, present once the job succeeded."
           },
+          "b64_json": {
+            "type": "string",
+            "description": "The generated asset inline, present when the upstream answered bytes rather than a URL (a Vertex generation without a storage URI)."
+          },
           "progress": {
             "type": "integer",
             "description": "The upstream's own percentage, present when it reports one."
@@ -1710,7 +1728,8 @@
             "enum": [
               "api_key",
               "oauth",
-              "no_auth"
+              "no_auth",
+              "service_account"
             ]
           },
           "priority": {
@@ -1782,6 +1801,12 @@
           },
           "last_error": {
             "$ref": "#/components/schemas/EndpointError"
+          },
+          "sa_project_id": {
+            "type": "string"
+          },
+          "sa_location": {
+            "type": "string"
           }
         },
         "required": [

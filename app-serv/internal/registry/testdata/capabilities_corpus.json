@@ -5293,6 +5293,50 @@
       "thinking_effort_supported": true
     },
     {
+      "provider": "vertex",
+      "model": "veo-2.0-generate-001",
+      "vision": false,
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
+    },
+    {
+      "provider": "vertex",
+      "model": "veo-3.0-generate-001",
+      "vision": false,
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
+    },
+    {
+      "provider": "vertex",
+      "model": "veo-3.1-fast-generate-preview",
+      "vision": false,
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
+    },
+    {
+      "provider": "vertex",
+      "model": "veo-3.1-generate-preview",
+      "vision": false,
+      "tools": true,
+      "reasoning": false,
+      "thinking_format": "",
+      "thinking_can_disable": true,
+      "thinking_range": null,
+      "thinking_effort_supported": false
+    },
+    {
       "provider": "xai",
       "model": "grok-2-image-1212",
       "vision": false,

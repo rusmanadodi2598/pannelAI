@@ -70,11 +70,13 @@ func (h *EndpointHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	endpoint, err := h.endpoints.Create(r.Context(), service.CreateInput{
-		ProviderID: req.ProviderID,
-		Label:      req.Label,
-		AuthType:   authType,
-		Priority:   req.Priority,
-		Keys:       toKeyInputs(req.Keys),
+		ProviderID:  req.ProviderID,
+		Label:       req.Label,
+		AuthType:    authType,
+		Priority:    req.Priority,
+		Keys:        toKeyInputs(req.Keys),
+		SAProjectID: req.SAProjectID,
+		SALocation:  req.SALocation,
 	})
 	if err != nil {
 		schema.WriteError(w, err)

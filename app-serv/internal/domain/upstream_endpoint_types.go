@@ -26,26 +26,43 @@ const (
 )
 
 // UpstreamAuthType is how an endpoint authenticates to its provider. Every
-// provider falls into one of these three, plus the case where it accepts both a
-// key and a flow, which is expressed by the provider's auth modes rather than by
-// a fourth value here: one endpoint still authenticates exactly one way.
+// provider falls into one of these, plus the case where it accepts both a key
+// and a flow, which is expressed by the provider's auth modes rather than by a
+// value here: one endpoint still authenticates exactly one way.
 type UpstreamAuthType string
 
 const (
 	UpstreamAuthAPIKey UpstreamAuthType = "api_key"
 	UpstreamAuthOAuth  UpstreamAuthType = "oauth"
 	UpstreamAuthNone   UpstreamAuthType = "no_auth"
+	// UpstreamAuthServiceAccount is a Google service-account JSON the gateway
+	// exchanges for a bearer token before the call. It is its own type because
+	// the stored credential is neither a plain key nor a token set the refresh
+	// path can renew, even though it is held in the keys table like a key.
+	UpstreamAuthServiceAccount UpstreamAuthType = "service_account"
 )
 
 // ParseUpstreamAuthType validates an auth type before it reaches the entity.
 func ParseUpstreamAuthType(s string) (UpstreamAuthType, error) {
 	authType := UpstreamAuthType(s)
 	switch authType {
-	case UpstreamAuthAPIKey, UpstreamAuthOAuth, UpstreamAuthNone:
+	case UpstreamAuthAPIKey, UpstreamAuthOAuth, UpstreamAuthNone, UpstreamAuthServiceAccount:
 		return authType, nil
 	default:
 		return "", NewValidationError("invalid auth_type: " + s)
 	}
+}
+
+// UsesStoredKey reports whether this auth type's credential is a row in the
+// endpoint's keys table: a pasted key for api_key, a service-account JSON for
+// service_account. An oauth endpoint holds its token set in the oauth
+// credential instead, and a no_auth endpoint holds nothing.
+//
+// It is the rule behind three surfaces at once: such an endpoint cannot serve
+// without a usable key, it must keep at least one active one, and routing picks
+// a key inside it before the call.
+func (t UpstreamAuthType) UsesStoredKey() bool {
+	return t == UpstreamAuthAPIKey || t == UpstreamAuthServiceAccount
 }
 
 // ParseUpstreamEndpointStatus validates an endpoint status from the wire.

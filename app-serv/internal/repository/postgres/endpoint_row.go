@@ -21,10 +21,12 @@ import (
 // The connection-parity columns are part of the projection
 // rather than a second read: they are read on every endpoint load, and a second
 // query for five scalar columns would be the N+1 shape AGENTS.md §1.7 forbids.
+// The service-account columns are here for the same reason.
 const endpointColumns = `id, provider_id, label, auth_type, priority, status,
 	oauth, account, test_status, rate_limited_until, last_used_at, created_at, updated_at,
 	global_priority, default_model, consecutive_use_count,
-	last_error, last_error_at, error_code, proxy_pool_id`
+	last_error, last_error_at, error_code, proxy_pool_id,
+	sa_project_id, sa_location`
 
 // endpointRow is one upstream_endpoints row, kept as raw column values rather
 // than as an aggregate so the page's keys can be attached from one batched read
@@ -49,6 +51,10 @@ type endpointRow struct {
 	lastErrorAt         *time.Time
 	errorCode           *string
 	proxyPoolID         *string
+
+	// The service-account columns. Both are NOT NULL with an empty default,
+	// so a row created before migration 000016 reads back as empty.
+	saProjectID, saLocation string
 }
 
 // scanEndpointRow reads one endpoint row, including its window count when the
@@ -61,6 +67,7 @@ func scanEndpointRow(s scanner, extra ...any) (endpointRow, error) {
 		&row.rateLimitedUntil, &row.lastUsedAt, &row.createdAt, &row.updatedAt,
 		&row.globalPriority, &row.defaultModel, &row.consecutiveUseCount,
 		&row.lastError, &row.lastErrorAt, &row.errorCode, &row.proxyPoolID,
+		&row.saProjectID, &row.saLocation,
 	}
 	dest = append(dest, extra...)
 	if err := s.Scan(dest...); err != nil {
@@ -90,6 +97,7 @@ func (row endpointRow) aggregate(keys []domain.UpstreamKey) (domain.UpstreamEndp
 		domain.UpstreamAuthType(row.authType), row.priority,
 		domain.UpstreamEndpointStatus(row.status), oauth, account, test,
 		row.rateLimitedUntil, row.lastUsedAt, row.createdAt, row.updatedAt, keys,
+		domain.ServiceAccountRef{ProjectID: row.saProjectID, Location: row.saLocation},
 		row.parity(),
 	), nil
 }

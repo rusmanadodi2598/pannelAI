@@ -106,8 +106,10 @@ func TestParseUpstreamAuthType(t *testing.T) {
 		{in: "api_key"},
 		{in: "oauth"},
 		{in: "no_auth"},
+		{in: "service_account"},
 		{in: "", wantErr: true},
 		{in: "API_KEY", wantErr: true},
+		{in: "service-account", wantErr: true},
 		{in: "cookie", wantErr: true},
 		{in: "bearer", wantErr: true},
 	}

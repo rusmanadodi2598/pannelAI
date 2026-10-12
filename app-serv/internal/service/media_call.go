@@ -16,6 +16,7 @@ import (
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/dataplane"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
+	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/provider"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/registry"
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
@@ -26,6 +27,10 @@ type MediaCallServiceDeps struct {
 	Router    MediaRouter
 	Caller    dataplane.MediaCaller
 	Overrides MediaOverrideReader
+	// Tokens exchanges a service-account credential for the bearer its kind
+	// presents (vertex). Optional: a deployment that wires none refuses a
+	// service_account call rather than presenting the stored JSON as a bearer.
+	Tokens provider.VertexToken
 	// Usage and Logs write the §7.12/§7.13 accounting pair for every call that
 	// reaches an upstream. Both are optional so a deployment that wires none
 	// still serves.
@@ -50,6 +55,7 @@ type MediaCallService struct {
 	router    MediaRouter
 	caller    dataplane.MediaCaller
 	overrides MediaOverrideReader
+	tokens    provider.VertexToken
 	recorder  dataPlaneRecorder
 	active    dataplane.ActiveRequests
 }
@@ -68,6 +74,7 @@ func NewMediaCallService(deps MediaCallServiceDeps) (*MediaCallService, error) {
 	}
 	return &MediaCallService{
 		index: deps.Index, router: deps.Router, caller: deps.Caller, overrides: deps.Overrides,
+		tokens:   deps.Tokens,
 		recorder: newDataPlaneRecorder(deps.Usage, deps.Logs, deps.Quotas, deps.RequestID),
 		active:   deps.ActiveRequests,
 	}, nil
@@ -133,7 +140,7 @@ func (s *MediaCallService) Prepare(ctx context.Context, model string, kind domai
 	if err != nil {
 		return MediaCall{}, err
 	}
-	return s.bindCredential(call, selection, query)
+	return s.bindCredential(ctx, call, selection, query)
 }
 
 // resolveTarget resolves the model string, the provider's block for the kind,
@@ -167,9 +174,15 @@ func (s *MediaCallService) resolveTarget(ctx context.Context, model string, kind
 
 // bindCredential builds the target and headers around one selected account, so
 // the credential placement comes from the kind's own block whichever way that
-// account was chosen.
-func (s *MediaCallService) bindCredential(call MediaCall, selection dataplane.Selection, query map[string]string) (MediaCall, error) {
-	target, headers, err := dataplane.MediaTarget(call.Media, call.BaseURL, selection.Credential, query)
+// account was chosen. A service-account credential is exchanged for its
+// bearer first (media_service_account.go), because the kind's block places a
+// token where the account stores a JSON.
+func (s *MediaCallService) bindCredential(ctx context.Context, call MediaCall, selection dataplane.Selection, query map[string]string) (MediaCall, error) {
+	credential, err := s.mintCredential(ctx, call, selection.Credential)
+	if err != nil {
+		return MediaCall{}, err
+	}
+	target, headers, err := dataplane.MediaTarget(call.Media, call.BaseURL, credential, query)
 	if err != nil {
 		return MediaCall{}, err
 	}

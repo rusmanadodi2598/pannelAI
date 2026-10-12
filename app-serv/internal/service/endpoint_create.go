@@ -40,11 +40,20 @@ func (s *EndpointService) buildEndpoint(in CreateInput, now time.Time) (domain.U
 		return domain.UpstreamEndpoint{}, err
 	}
 
-	if in.AuthType == domain.UpstreamAuthAPIKey && len(in.Keys) == 0 {
-		return domain.UpstreamEndpoint{}, domain.NewValidationError("an api_key endpoint requires at least one key")
+	if in.AuthType.UsesStoredKey() && len(in.Keys) == 0 {
+		return domain.UpstreamEndpoint{}, domain.NewValidationError("this auth type requires at least one key")
 	}
 	if len(in.Keys) > maxKeysPerEndpoint {
 		return domain.UpstreamEndpoint{}, domain.NewValidationError("an endpoint may hold at most 100 keys")
+	}
+	if in.AuthType == domain.UpstreamAuthServiceAccount {
+		ref := domain.ServiceAccountRef{ProjectID: in.SAProjectID, Location: in.SALocation}
+		if err := endpoint.SetServiceAccount(ref, now); err != nil {
+			return domain.UpstreamEndpoint{}, err
+		}
+	} else if strings.TrimSpace(in.SAProjectID) != "" || strings.TrimSpace(in.SALocation) != "" {
+		return domain.UpstreamEndpoint{}, domain.NewValidationError(
+			"sa_project_id and sa_location belong to a service_account endpoint")
 	}
 	for _, input := range in.Keys {
 		if err := s.attachKey(&endpoint, input, now); err != nil {

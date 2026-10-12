@@ -36,11 +36,12 @@ const registryModule = await import(
 );
 const entries = registryModule.default;
 
-// KEEP_PROVIDERS is the owner's provider set (2026-09-26). The port serves
-// these and drops every other entry the reference carries, so a regeneration
-// cannot silently reintroduce a provider the owner removed. The two
-// "Compatible" nodes on the owner's list are custom node types
-// (SPEC-API-001 §7.4), not registry entries, and need no row here.
+// KEEP_PROVIDERS is the owner's provider set (2026-09-26; vertex added
+// 2026-10-12). The port serves these and drops every other entry the
+// reference carries, so a regeneration cannot silently reintroduce a provider
+// the owner removed. The two "Compatible" nodes on the owner's list are
+// custom node types (SPEC-API-001 §7.4), not registry entries, and need no
+// row here.
 const KEEP_PROVIDERS = new Set([
   "antigravity",
   "byteplus",
@@ -74,6 +75,7 @@ const KEEP_PROVIDERS = new Set([
   "qoder-cn",
   "tencent",
   "tokenrouter",
+  "vertex",
   "xai",
   "xiaomi-tokenplan",
   "zed",
@@ -363,6 +365,24 @@ const APP_SERV_MEDIA_EXTENSIONS = {
   },
 };
 
+// APP_SERV_MEDIA_OVERRIDES amends a media block the reference does declare,
+// field by field, where app-serv serves the kind with a different setting. It
+// is separate from the extensions table because the two make opposite claims:
+// an extension fills a kind the reference left empty and yields to a block the
+// reference adds later, while an override is app-serv's own declaration and
+// wins over the reference's value for the fields it names.
+//
+// vertex's videoConfig names its base URL and no credential form, because the
+// reference's video proxy always builds `Authorization: Bearer` from the
+// account token (videoCore.js:39-45). app-serv authenticates vertex with a
+// service-account JSON it exchanges for a bearer before the call, so the block
+// names service_account instead of the bearer default.
+const APP_SERV_MEDIA_OVERRIDES = {
+  vertex: {
+    video: { auth_type: "service_account" },
+  },
+};
+
 // VIDEO_AUTH is the credential placement the reference's video proxy always
 // applies: videoCore.js:39-45 builds `Authorization: Bearer` from the account's
 // token for every provider, so the reference's videoConfig blocks declare no
@@ -386,6 +406,9 @@ function mapMedia(entry) {
   }
   for (const [kind, block] of Object.entries(APP_SERV_MEDIA_EXTENSIONS[entry.id] || {})) {
     if (out[kind] === undefined) out[kind] = { ...block };
+  }
+  for (const [kind, fields] of Object.entries(APP_SERV_MEDIA_OVERRIDES[entry.id] || {})) {
+    if (out[kind] !== undefined) out[kind] = { ...out[kind], ...fields };
   }
   if (isPlainObject(out.video)) out.video = { ...VIDEO_AUTH, ...out.video };
   return Object.keys(out).length > 0 ? out : undefined;
@@ -586,6 +609,44 @@ function mapOAuth(entry) {
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
+// APP_SERV_PROVIDER_EXTENSIONS are provider-level declarations app-serv serves
+// that the reference does not state. They replace the reference's value where
+// both name the same key, because they describe what this port serves rather
+// than what the reference could serve.
+//
+// vertex is video-only here: its chat models speak the `vertex` wire, which
+// this gateway has no translator for (registry.ChatRoutability reports that
+// entry as needing a connector), so the four Veo models are the catalog that
+// answers and service_kinds names only that kind. Its credential is a
+// service-account JSON exchanged for a bearer, which is neither of the two
+// auth types the reference derives from the entry, so the type is declared by
+// name.
+const APP_SERV_PROVIDER_EXTENSIONS = {
+  vertex: {
+    auth_type: "service_account",
+    auth_modes: ["service_account"],
+    service_kinds: ["video"],
+  },
+};
+
+// APP_SERV_MODEL_KINDS narrows a provider's catalog to the model kinds this
+// port serves. vertex declares four chat models and four video models, and
+// only the video half has a wire this gateway speaks; listing a chat model the
+// router can never route would offer a request that always fails. A model that
+// declares no kind is a chat model, so a filter naming only "video" drops it,
+// which is the intended reading for vertex. A provider absent from the table
+// keeps its whole catalog.
+const APP_SERV_MODEL_KINDS = {
+  vertex: new Set(["video"]),
+};
+
+// modelsFor applies the per-provider kind filter before the allowlist pass.
+function modelsFor(entry) {
+  const kinds = APP_SERV_MODEL_KINDS[entry.id];
+  if (!kinds || !Array.isArray(entry.models)) return entry.models;
+  return entry.models.filter((model) => isPlainObject(model) && kinds.has(model.kind));
+}
+
 function mapEntry(entry) {
   const out = {
     id: entry.id,
@@ -607,7 +668,7 @@ function mapEntry(entry) {
     display: mapDisplay(entry.display),
     transport: mapTransport(entry.transport),
     oauth: mapOAuth(entry),
-    models: mapModels(entry.models),
+    models: mapModels(modelsFor(entry)),
     features: isPlainObject(entry.features) ? { ...entry.features } : undefined,
     thinking_config: isPlainObject(entry.thinkingConfig)
       ? { options: entry.thinkingConfig.options, default_mode: entry.thinkingConfig.defaultMode }
@@ -634,6 +695,12 @@ function mapEntry(entry) {
     media_priority: entry.mediaPriority,
     hidden_kinds: entry.hiddenKinds,
   };
+  // The app-serv extension replaces whatever the reference stated for the keys
+  // it names; every key it sets already exists in `out`, so the emitted order
+  // stays the struct's order rather than following the table.
+  if (APP_SERV_PROVIDER_EXTENSIONS[entry.id]) {
+    Object.assign(out, APP_SERV_PROVIDER_EXTENSIONS[entry.id]);
+  }
   for (const key of Object.keys(entry)) {
     if (!PROVIDER_KEYS.has(key) && !MEDIA_KEYS.has(key) && key !== "systemoneConfig") {
       noteDropped("provider", key);
@@ -654,11 +721,17 @@ const providers = entries
 
 const droppedProviders = entries.filter((entry) => !kept(entry)).map((entry) => entry.id);
 
-// extendedProviders names the kept providers carrying an app-serv media
-// extension, so the generated header states the deviation instead of leaving a
-// reader to compare two checkouts.
+// extendedProviders names the kept providers carrying an app-serv declaration
+// the reference does not state (a provider-level extension, a media block, or
+// a media field override), so the generated header names the deviations
+// instead of leaving a reader to compare two checkouts.
 const extendedProviders = providers
-  .filter((provider) => APP_SERV_MEDIA_EXTENSIONS[provider.id])
+  .filter(
+    (provider) =>
+      APP_SERV_PROVIDER_EXTENSIONS[provider.id] ||
+      APP_SERV_MEDIA_EXTENSIONS[provider.id] ||
+      APP_SERV_MEDIA_OVERRIDES[provider.id]
+  )
   .map((provider) => provider.id);
 
 const lines = [
@@ -668,7 +741,7 @@ const lines = [
   "# Do not edit by hand: edit the generator, or the reference, and regenerate.",
   "# Provider set: the owner's KEEP list (2026-09-26), enforced in the generator.",
   ...(extendedProviders.length > 0
-    ? [`# Media blocks app-serv declares beyond the reference: ${extendedProviders.join(", ")}.`]
+    ? [`# App-serv declarations beyond the reference: ${extendedProviders.join(", ")}.`]
     : []),
   `revision: ${scalar(revision())}`,
   "providers:",

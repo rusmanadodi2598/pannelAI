@@ -76,6 +76,7 @@ func (s *memEndpointStore) withKeys(endpoint domain.UpstreamEndpoint) domain.Ups
 		endpoint.OAuth(), endpoint.Account(), endpoint.TestStatus(),
 		endpoint.RateLimitedUntil(), endpoint.LastUsedAt(),
 		endpoint.CreatedAt(), endpoint.UpdatedAt(), keys,
+		endpoint.ServiceAccount(),
 		domain.EndpointParity{
 			GlobalPriority: endpoint.GlobalPriority(), DefaultModel: endpoint.DefaultModel(),
 			ConsecutiveUseCount: endpoint.ConsecutiveUseCount(), LastErrorCode: code,

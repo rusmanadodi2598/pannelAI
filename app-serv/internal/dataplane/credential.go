@@ -20,11 +20,13 @@ import (
 // credential assembles what the upstream call presents, decrypting the sealed
 // value exactly once for this request.
 //
-// The three auth families the domain defines decide the shape: a no_auth
-// endpoint sends nothing, an oauth endpoint presents its access token, and an
-// api_key endpoint presents the selected key's value. The endpoint's own auth
-// type always wins over the provider's default, because one account
-// authenticates exactly one way (SPEC-API-001 §8.1).
+// The domain's auth types decide the shape: a no_auth endpoint sends nothing,
+// an oauth endpoint presents its access token, and a key-backed endpoint
+// (api_key or service_account) presents the selected key's value. A
+// service-account JSON travels this way because it is stored like a key; the
+// media plane exchanges it for a bearer. The endpoint's auth type always wins
+// over the provider's default: one account authenticates exactly one way
+// (SPEC-API-001 §8.1).
 func (s *Selector) credential(endpoint domain.UpstreamEndpoint, key domain.UpstreamKey) (provider.Credential, error) {
 	account := endpoint.Account()
 	input := provider.CredentialInput{

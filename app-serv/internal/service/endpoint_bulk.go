@@ -31,13 +31,15 @@ type BulkAccountInput struct {
 }
 
 // BulkCreateAccounts creates several endpoints under one provider in one
-// transaction.
+// transaction. serviceAccount carries the project and location a
+// service_account batch addresses, stated once for the whole batch like the
+// provider and auth type; it is refused on any other auth type.
 //
 // Every row is built before the store is called, so a malformed row refuses the
 // batch without a statement running; the store then writes the whole set in a
 // single transaction, so a constraint the rows could only break together also
 // leaves nothing behind (§8.1). The refusal carries the offending index.
-func (s *EndpointService) BulkCreateAccounts(ctx context.Context, providerID string, authType domain.UpstreamAuthType, accounts []BulkAccountInput) ([]domain.UpstreamEndpoint, error) {
+func (s *EndpointService) BulkCreateAccounts(ctx context.Context, providerID string, authType domain.UpstreamAuthType, serviceAccount domain.ServiceAccountRef, accounts []BulkAccountInput) ([]domain.UpstreamEndpoint, error) {
 	if len(accounts) == 0 {
 		return nil, domain.NewValidationError("endpoints is required")
 	}
@@ -56,11 +58,13 @@ func (s *EndpointService) BulkCreateAccounts(ctx context.Context, providerID str
 	built := make([]domain.UpstreamEndpoint, 0, len(accounts))
 	for i, account := range accounts {
 		endpoint, err := s.buildEndpoint(CreateInput{
-			ProviderID: providerID,
-			Label:      account.Label,
-			AuthType:   authType,
-			Priority:   account.Priority,
-			Keys:       account.Keys,
+			ProviderID:  providerID,
+			Label:       account.Label,
+			AuthType:    authType,
+			Priority:    account.Priority,
+			Keys:        account.Keys,
+			SAProjectID: serviceAccount.ProjectID,
+			SALocation:  serviceAccount.Location,
 		}, now)
 		if err != nil {
 			return nil, rowError(i, err)

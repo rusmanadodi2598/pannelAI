@@ -73,13 +73,13 @@ func TestQuotaService_PublishedUsageRefusals(t *testing.T) {
 		},
 		{
 			name:     "an oauth account with no credential row at all is refused",
-			endpoint: domain.RehydrateUpstreamEndpoint("ep_pub", "qoder", "acct@example.com", domain.UpstreamAuthOAuth, 1, domain.UpstreamEndpointActive, nil, domain.EndpointAccount{}, domain.EndpointTestStatus{}, nil, nil, testNow, testNow, nil, domain.EndpointParity{}),
+			endpoint: domain.RehydrateUpstreamEndpoint("ep_pub", "qoder", "acct@example.com", domain.UpstreamAuthOAuth, 1, domain.UpstreamEndpointActive, nil, domain.EndpointAccount{}, domain.EndpointTestStatus{}, nil, nil, testNow, testNow, nil, domain.ServiceAccountRef{}, domain.EndpointParity{}),
 			entry:    keyEntry, id: "ep_pub",
 			wantCode: "VALIDATION_ERROR",
 		},
 		{
 			name:     "a key account with no key at all is refused",
-			endpoint: domain.RehydrateUpstreamEndpoint("ep_pub", "qoder", "empty", domain.UpstreamAuthAPIKey, 1, domain.UpstreamEndpointActive, nil, domain.EndpointAccount{}, domain.EndpointTestStatus{}, nil, nil, testNow, testNow, nil, domain.EndpointParity{}),
+			endpoint: domain.RehydrateUpstreamEndpoint("ep_pub", "qoder", "empty", domain.UpstreamAuthAPIKey, 1, domain.UpstreamEndpointActive, nil, domain.EndpointAccount{}, domain.EndpointTestStatus{}, nil, nil, testNow, testNow, nil, domain.ServiceAccountRef{}, domain.EndpointParity{}),
 			entry:    keyEntry, id: "ep_pub",
 			wantCode: "VALIDATION_ERROR",
 		},

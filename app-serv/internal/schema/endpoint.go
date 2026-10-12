@@ -3,7 +3,7 @@
 // @file      internal/schema/endpoint.go
 // @for       The request contracts for upstream endpoints, their keys, and the bulk onboarding routes (SPEC-API-001 §7.5, §8.1).
 // @uses      go-playground/validator/v10 (the documented struct-tag exception in AGENTS.md "Stack"), internal/domain for the shared vocabulary.
-// @reason    AGENTS.md §2.4 CDD requires a typed struct with validation tags before handler logic, and §8.1 settles these shapes before the endpoint DTOs exist: one create shape serves the single route and each element of the bulk route, the auth vocabulary crosses as api_key|oauth|no_auth, and a credential is write-only so responses carry a hint.
+// @reason    AGENTS.md §2.4 CDD requires a typed struct with validation tags before handler logic, and §8.1 settles these shapes before the endpoint DTOs exist: one create shape serves the single route and each element of the bulk route, the auth vocabulary crosses as api_key|oauth|no_auth|service_account, and a credential is write-only so responses carry a hint.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable
@@ -16,11 +16,13 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// The wire vocabulary for a credential's auth type is api_key|oauth|no_auth.
-// The embedded registry's own document spells two of them differently (apikey,
-// none), and a client that copies a provider's auth_type from GET /providers
-// would otherwise be rejected for using the spelling the API just showed it, so
-// both spellings are accepted and normalized here.
+// The wire vocabulary for a credential's auth type is
+// api_key|oauth|no_auth|service_account. The embedded registry's own document
+// spells two of them differently (apikey, none), and a client that copies a
+// provider's auth_type from GET /providers would otherwise be rejected for
+// using the spelling the API just showed it, so both spellings are accepted
+// and normalized here. `service_account` is spelled the same in both
+// vocabularies, so it needs no alias.
 //
 // `cookie` is deliberately not mapped: a browser-session credential has no
 // supported transport in v1 (SPEC-API-001 §2.2), so it is a rejection rather
@@ -76,9 +78,15 @@ type EndpointKeyInput struct {
 type CreateEndpointRequest struct {
 	ProviderID string             `json:"provider_id" validate:"required,min=1,max=64"`
 	Label      string             `json:"label" validate:"required,min=1,max=120"`
-	AuthType   string             `json:"auth_type" validate:"required,oneof=api_key oauth no_auth apikey none"`
+	AuthType   string             `json:"auth_type" validate:"required,oneof=api_key oauth no_auth apikey none service_account"`
 	Priority   int                `json:"priority,omitempty" validate:"omitempty,min=1,max=10000"`
 	Keys       []EndpointKeyInput `json:"keys,omitempty" validate:"omitempty,max=100,dive"`
+
+	// The service-account fields, valid only with auth_type service_account.
+	// The service refuses them on any other type rather than ignoring them, so
+	// a project id never describes a call the endpoint does not make.
+	SAProjectID string `json:"sa_project_id,omitempty" validate:"omitempty,max=200"`
+	SALocation  string `json:"sa_location,omitempty" validate:"omitempty,max=100"`
 }
 
 // UpdateEndpointRequest is the body of PATCH /api/v1/endpoints/{id} (§7.5).
@@ -114,11 +122,15 @@ type UpdateEndpointKeyRequest struct {
 }
 
 // BulkCreateEndpointsRequest is the body of POST /api/v1/endpoints/bulk (§7.5):
-// the shared provider and auth type, then one element per account.
+// the shared provider and auth type, then one element per account. The
+// service-account fields are shared like the provider: every account in one
+// batch addresses the same project and location.
 type BulkCreateEndpointsRequest struct {
-	ProviderID string              `json:"provider_id" validate:"required,min=1,max=64"`
-	AuthType   string              `json:"auth_type" validate:"required,oneof=api_key oauth no_auth apikey none"`
-	Endpoints  []BulkEndpointInput `json:"endpoints" validate:"required,min=1,max=50,dive"`
+	ProviderID  string              `json:"provider_id" validate:"required,min=1,max=64"`
+	AuthType    string              `json:"auth_type" validate:"required,oneof=api_key oauth no_auth apikey none service_account"`
+	SAProjectID string              `json:"sa_project_id,omitempty" validate:"omitempty,max=200"`
+	SALocation  string              `json:"sa_location,omitempty" validate:"omitempty,max=100"`
+	Endpoints   []BulkEndpointInput `json:"endpoints" validate:"required,min=1,max=50,dive"`
 }
 
 // BulkEndpointInput is one account inside a bulk create: the single-create body

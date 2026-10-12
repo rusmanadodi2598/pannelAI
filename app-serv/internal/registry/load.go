@@ -34,6 +34,11 @@ const (
 	AuthAPIKey = "api_key"
 	AuthOAuth  = "oauth"
 	AuthNone   = "no_auth"
+	// AuthServiceAccount names a Google service-account JSON that the
+	// gateway exchanges for a bearer token before the call. It is its own
+	// mode because the stored credential is neither a plain key nor an
+	// OAuth flow the refresh path can start.
+	AuthServiceAccount = "service_account"
 )
 
 // DefaultFormat is the wire format a provider uses when it declares none; the

@@ -24,6 +24,7 @@ func TestRehydrateUpstreamEndpoint_CarriesTheParityFields(t *testing.T) {
 		"ep_01TEST", "openai", "Primary", UpstreamAuthAPIKey, 1, UpstreamEndpointActive,
 		nil, EndpointAccount{}, EndpointTestStatus{},
 		nil, nil, parityNow, parityNow, nil,
+		ServiceAccountRef{},
 		EndpointParity{
 			GlobalPriority:      5,
 			DefaultModel:        "gpt-4o",

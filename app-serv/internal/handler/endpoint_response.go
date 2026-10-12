@@ -80,6 +80,10 @@ func toEndpointResponse(endpoint domain.UpstreamEndpoint, now time.Time, withKey
 		ConsecutiveUseCount: endpoint.ConsecutiveUseCount(),
 		ProxyPoolID:         endpoint.ProxyPoolID(),
 	}
+	if sa := endpoint.ServiceAccount(); sa.ProjectID != "" {
+		resp.SAProjectID = sa.ProjectID
+		resp.SALocation = sa.Location
+	}
 	if oauth := endpoint.OAuth(); oauth != nil {
 		resp.OAuth = toOAuthResponse(oauth)
 	}

@@ -46,6 +46,10 @@ type VideoJob struct {
 	TaskID string `json:"task_id"`
 	Status string `json:"status"`
 	URL    string `json:"url,omitempty"`
+	// B64JSON carries the asset inline when the upstream answered bytes rather
+	// than a URL, which is what a Vertex generation without a storage URI
+	// gets. It is optional: a job that answered a URL leaves it empty.
+	B64JSON string `json:"b64_json,omitempty"`
 	// Progress is the upstream's own percentage when it reports one. A pointer
 	// so a job that reports zero stays distinguishable from one that reports
 	// nothing.

@@ -44,6 +44,11 @@ type UpstreamEndpoint struct {
 	lastErrorMessage    string
 	lastErrorAt         *time.Time
 	proxyPoolID         string
+
+	// The service-account fields. Their rules live in
+	// upstream_endpoint_service_account.go.
+	saProjectID string
+	saLocation  string
 }
 
 // NewUpstreamEndpoint is the only constructor for a new endpoint.
@@ -94,6 +99,7 @@ func RehydrateUpstreamEndpoint(
 	rateLimitedUntil, lastUsedAt *time.Time,
 	createdAt, updatedAt time.Time,
 	keys []UpstreamKey,
+	serviceAccount ServiceAccountRef,
 	parity EndpointParity,
 ) UpstreamEndpoint {
 	owned := make([]UpstreamKey, len(keys))
@@ -110,6 +116,8 @@ func RehydrateUpstreamEndpoint(
 		lastErrorMessage:    parity.LastErrorMessage,
 		lastErrorAt:         parity.LastErrorAt,
 		proxyPoolID:         parity.ProxyPoolID,
+		saProjectID:         serviceAccount.ProjectID,
+		saLocation:          serviceAccount.Location,
 	}
 }
 
@@ -138,7 +146,7 @@ func (e UpstreamEndpoint) Available(now time.Time) bool {
 	// An endpoint that needs a credential but has no usable one cannot serve a
 	// request; reporting it unavailable is more useful than letting the router
 	// discover it one call later.
-	if e.authType == UpstreamAuthAPIKey {
+	if e.authType.UsesStoredKey() {
 		_, ok := e.NextKey(now)
 		return ok
 	}

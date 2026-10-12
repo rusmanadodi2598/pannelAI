@@ -70,11 +70,12 @@ func splitMediaModel(model string) (string, string, error) {
 // mediaFormatSupported reports whether the gateway speaks a provider's declared
 // media format for a kind. An empty declaration and `openai` are the OpenAI shape
 // these routes build. The named formats are ported per-provider adapters, and
-// the reference has one for each: deepgram and gemini-stt for STT, and nvidia-tts,
-// cartesia, elevenlabs, minimax-tts, inworld, playht, coqui, tortoise and
-// gemini-tts for TTS. Anything else is refused by name rather than sent a payload
-// its API does not accept, because a wrong-shaped call reads as an upstream
-// outage. Search is exempt: its shape comes from the block's own declarations.
+// the reference has one for each: deepgram and gemini-stt for STT,
+// nvidia-tts, cartesia, elevenlabs, minimax-tts, inworld, playht, coqui,
+// tortoise and gemini-tts for TTS, and vertex for video. Anything else is
+// refused by name rather than sent a payload its API does not accept, because a
+// wrong-shaped call reads as an upstream outage. Search is exempt: its shape
+// comes from the block's own declarations.
 func mediaFormatSupported(kind domain.MediaKind, format string) bool {
 	if kind == domain.MediaKindSearch {
 		return true
@@ -86,6 +87,8 @@ func mediaFormatSupported(kind domain.MediaKind, format string) bool {
 		return kind == domain.MediaKindSTT
 	case "nvidia-tts", "cartesia", "elevenlabs", "minimax-tts", "inworld", "playht", "coqui", "tortoise", "gemini-tts":
 		return kind == domain.MediaKindTTS
+	case "vertex":
+		return kind == domain.MediaKindVideo
 	default:
 		return false
 	}

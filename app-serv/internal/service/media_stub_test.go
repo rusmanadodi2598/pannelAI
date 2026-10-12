@@ -41,19 +41,43 @@ func (c *stubMediaCaller) Do(_ context.Context, request dataplane.MediaRequest) 
 type stubMediaRouter struct {
 	failure    error
 	credential provider.Credential
-	successes  int
-	failures   []string
+	// authType and serviceAccount shape the endpoint this router hands back, so
+	// a service_account provider's call is driven the way the stored row is:
+	// the project and location reach the aggregate the same way the create
+	// path attaches them.
+	authType       domain.UpstreamAuthType
+	serviceAccount domain.ServiceAccountRef
+	successes      int
+	failures       []string
 	// pinned records the endpoint ids a poll asked for, so a test can prove the
 	// account was pinned rather than selected.
 	pinned []string
+}
+
+// endpoint builds the endpoint this router hands back, defaulting the auth type
+// to the one every fixture entry declares.
+func (r *stubMediaRouter) endpoint(id, providerID, label string) (domain.UpstreamEndpoint, error) {
+	authType := r.authType
+	if authType == "" {
+		authType = domain.UpstreamAuthAPIKey
+	}
+	endpoint, err := domain.NewUpstreamEndpoint(id, providerID, label, authType, 1, time.Now().UTC())
+	if err != nil {
+		return domain.UpstreamEndpoint{}, err
+	}
+	if authType == domain.UpstreamAuthServiceAccount {
+		if err := endpoint.SetServiceAccount(r.serviceAccount, time.Now().UTC()); err != nil {
+			return domain.UpstreamEndpoint{}, err
+		}
+	}
+	return endpoint, nil
 }
 
 func (r *stubMediaRouter) Select(_ context.Context, providerID string) (dataplane.Selection, error) {
 	if r.failure != nil {
 		return dataplane.Selection{}, r.failure
 	}
-	endpoint, err := domain.NewUpstreamEndpoint("ep-"+providerID, providerID, "primary",
-		domain.UpstreamAuthAPIKey, 1, time.Now().UTC())
+	endpoint, err := r.endpoint("ep-"+providerID, providerID, "primary")
 	if err != nil {
 		return dataplane.Selection{}, err
 	}
@@ -65,8 +89,7 @@ func (r *stubMediaRouter) SelectEndpoint(_ context.Context, providerID, endpoint
 		return dataplane.Selection{}, r.failure
 	}
 	r.pinned = append(r.pinned, endpointID)
-	endpoint, err := domain.NewUpstreamEndpoint(endpointID, providerID, "pinned",
-		domain.UpstreamAuthAPIKey, 1, time.Now().UTC())
+	endpoint, err := r.endpoint(endpointID, providerID, "pinned")
 	if err != nil {
 		return dataplane.Selection{}, err
 	}
@@ -83,9 +106,10 @@ func (r *stubMediaRouter) RecordFailure(_ context.Context, _ dataplane.Selection
 	return nil
 }
 
-// mediaCallFixture builds the service over the doubles. The registry entries it
-// reads live in media_call_entries_test.go.
-func mediaCallFixture(t *testing.T) (*MediaCallService, *stubMediaCaller, *stubMediaRouter) {
+// mediaCallFixtureWithTokens builds the service over the doubles with a
+// service-account token minter wired, which the service_account kind needs
+// before its call is built.
+func mediaCallFixtureWithTokens(t *testing.T, tokens provider.VertexToken) (*MediaCallService, *stubMediaCaller, *stubMediaRouter) {
 	t.Helper()
 	caller := &stubMediaCaller{answer: dataplane.MediaResponse{Status: 200, Body: []byte(`{"ok":true}`)}}
 	router := &stubMediaRouter{}
@@ -93,9 +117,17 @@ func mediaCallFixture(t *testing.T) (*MediaCallService, *stubMediaCaller, *stubM
 		Index:  &mediaIndex{entries: mediaCallEntries()},
 		Router: router,
 		Caller: caller,
+		Tokens: tokens,
 	})
 	if err != nil {
 		t.Fatalf("NewMediaCallService() error = %v", err)
 	}
 	return svc, caller, router
+}
+
+// mediaCallFixture is the same fixture without a token minter. The registry
+// entries it reads live in media_call_entries_test.go.
+func mediaCallFixture(t *testing.T) (*MediaCallService, *stubMediaCaller, *stubMediaRouter) {
+	t.Helper()
+	return mediaCallFixtureWithTokens(t, nil)
 }

@@ -3,7 +3,7 @@
 // @file      internal/service/media_video.go
 // @for       The async video generation use cases of SPEC-API-001 §7.10: creating a job and polling one.
 // @uses      internal/dataplane, internal/domain, internal/schema, context, encoding/json, net/url, strings.
-// @reason    A video generation is an async job rather than a generated asset, so the two routes are a creation and a poll rather than one call. The reference carries a per-provider adapter for the same reason (videoProviders/index.js): the xAI shape posts to the collection's `/generations`, openrouter posts to the collection itself, and each names its job differently. The per-provider differences are one table here, and the answer reading lives in media_video_read.go (AGENTS.md §1.1).
+// @reason    A video generation is an async job rather than a generated asset, so the two routes are a creation and a poll rather than one call. The per-provider differences are one table (media_video_plan.go) and the answer reading lives in media_video_read.go, so this file is the two use cases and the rules they share (AGENTS.md §1.1).
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -21,59 +21,26 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/schema"
 )
 
-// videoPlan is one provider's video dialect: where a creation POST lands
-// relative to the block's base URL, and how its answers are read.
-type videoPlan struct {
-	// createPath is appended to the base URL for a creation POST. Empty means
-	// the base URL is the collection itself, which is how openrouter and
-	// tokenrouter declare theirs.
-	createPath string
-	// read turns one answer into the job it reports, in whichever of the two
-	// phases asked. requireTask is true for a creation, which must name the job
-	// the client polls with.
-	read videoReader
-}
-
-// videoPlans is the per-provider table. A provider the table does not name
-// speaks the xAI shape, which is the reference's own default
-// (videoProviders/index.js:3-5): the creation posts to `/generations` and the
-// poll reads `request_id`, `status`, and `video.url`.
-var videoPlans = map[string]videoPlan{
-	"openrouter":  {read: readOpenRouterVideoJob},
-	"tokenrouter": {read: readTokenRouterVideoJob},
-}
-
-// videoPlanFor answers one provider's dialect, defaulting to the xAI shape.
-func videoPlanFor(providerID string) videoPlan {
-	if plan, ok := videoPlans[strings.ToLower(strings.TrimSpace(providerID))]; ok {
-		return plan
-	}
-	return videoPlan{createPath: "/generations", read: readXAIVideoJob}
-}
-
 // GenerateVideoJob creates one async video job and normalizes the job it
 // answers with.
 //
 // The client's own body travels to the upstream with one member rewritten: the
 // model string it addressed is replaced by the id the upstream expects, and
 // every provider-specific member it sent (a duration, a resolution) is kept,
-// which is why the rewrite is the schema's and not a typed body here.
+// which is why the rewrite is the schema's and not a typed body here. A
+// provider whose dialect translates the body instead builds its own request
+// (media_video_plan.go).
 func (s *MediaCallService) GenerateVideoJob(ctx context.Context, req schema.VideoRequest, raw []byte, keyID string) (schema.VideoJob, dataplane.Outcome, error) {
 	call, err := s.prepareForCall(ctx, req.Model, domain.MediaKindVideo, nil, keyID)
 	if err != nil {
 		return schema.VideoJob{}, dataplane.Outcome{}, err
 	}
-	body, err := schema.RewriteVideoModel(raw, call.UpstreamModel)
-	if err != nil {
-		return schema.VideoJob{}, call.Outcome(), err
-	}
 	plan := videoPlanFor(call.ProviderID)
-	target, err := dataplane.MediaPath(call.Target, plan.createPath)
+	request, err := plan.creationRequest(call, raw)
 	if err != nil {
 		return schema.VideoJob{}, call.Outcome(), err
 	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", URL: target, Body: body},
-		keyID, plan.reader(true))
+	answer, err := s.Perform(ctx, call, request, keyID, plan.reader(true))
 	if err != nil {
 		return schema.VideoJob{}, call.Outcome(), err
 	}
@@ -96,12 +63,12 @@ func (s *MediaCallService) PollVideoJob(ctx context.Context, providerID, endpoin
 		return schema.VideoJob{}, dataplane.Outcome{}, err
 	}
 	call.SkipHealth = true
-	target, err := videoTaskURL(call.Target, taskID)
+	plan := videoPlanFor(call.ProviderID)
+	request, err := plan.pollRequest(call, taskID)
 	if err != nil {
 		return schema.VideoJob{}, call.Outcome(), err
 	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "GET", URL: target},
-		keyID, videoPlanFor(call.ProviderID).reader(false))
+	answer, err := s.Perform(ctx, call, request, keyID, plan.reader(false))
 	if err != nil {
 		return schema.VideoJob{}, call.Outcome(), err
 	}
@@ -132,7 +99,7 @@ func (s *MediaCallService) preparePinned(ctx context.Context, providerID, endpoi
 		s.recorder.refuse(ctx, call.Outcome(), keyID, err)
 		return MediaCall{}, err
 	}
-	bound, err := s.bindCredential(call, selection, nil)
+	bound, err := s.bindCredential(ctx, call, selection, nil)
 	if err != nil {
 		s.recorder.refuse(ctx, call.Outcome(), keyID, err)
 		return MediaCall{}, err

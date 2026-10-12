@@ -200,5 +200,17 @@ func mediaCallEntries() []registry.Provider {
 				},
 			},
 		},
+		{
+			// vertex names the project, location, and model in the path and
+			// mints a bearer from the stored service-account JSON, so its
+			// dialect needs its own request builders (media_video_vertex.go).
+			ID: "vertex", Display: registry.Display{Name: "Vertex AI"}, Priority: 16, Category: "freeTier",
+			Media: registry.MediaConfigs{
+				registry.MediaVideo: {
+					BaseURL:  "https://aiplatform.googleapis.com",
+					AuthType: registry.AuthServiceAccount, AuthHeader: "bearer", Format: "vertex",
+				},
+			},
+		},
 	}
 }

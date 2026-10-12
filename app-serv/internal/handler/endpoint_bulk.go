@@ -64,7 +64,8 @@ func (h *EndpointBulkHandler) BulkCreate(w http.ResponseWriter, r *http.Request)
 			Keys:     toKeyInputs(item.Keys),
 		})
 	}
-	created, err := h.endpoints.BulkCreateAccounts(r.Context(), req.ProviderID, authType, accounts)
+	serviceAccount := domain.ServiceAccountRef{ProjectID: req.SAProjectID, Location: req.SALocation}
+	created, err := h.endpoints.BulkCreateAccounts(r.Context(), req.ProviderID, authType, serviceAccount, accounts)
 	if err != nil {
 		writeBulkRefusal(w, err, len(accounts))
 		return

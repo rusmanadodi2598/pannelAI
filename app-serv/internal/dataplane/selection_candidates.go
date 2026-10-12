@@ -133,7 +133,7 @@ func (s *Selector) pickFrom(
 		return Selection{}, false, nil
 	}
 	var key domain.UpstreamKey
-	if endpoint.AuthType() == domain.UpstreamAuthAPIKey {
+	if endpoint.AuthType().UsesStoredKey() {
 		picked, ok := pickKey(endpoint, now, spent, policy)
 		if !ok {
 			return Selection{}, false, nil

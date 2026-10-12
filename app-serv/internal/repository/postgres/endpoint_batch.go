@@ -155,10 +155,12 @@ INSERT INTO upstream_endpoints
     (id, provider_id, label, auth_type, priority, status, oauth, account,
      test_status, rate_limited_until, last_used_at, created_at, updated_at,
      global_priority, default_model, consecutive_use_count,
-     last_error, last_error_at, error_code, proxy_pool_id)
+     last_error, last_error_at, error_code, proxy_pool_id,
+     sa_project_id, sa_location)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-        $14, $15, $16, $17, $18, $19, $20)`
+        $14, $15, $16, $17, $18, $19, $20, $21, $22)`
 
+	serviceAccount := endpoint.ServiceAccount()
 	args := []any{
 		endpoint.ID(), endpoint.ProviderID(), endpoint.Label(),
 		string(endpoint.AuthType()), endpoint.Priority(), string(endpoint.Status()),
@@ -166,6 +168,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
 		endpoint.LastUsedAt(), endpoint.CreatedAt(), endpoint.UpdatedAt(),
 	}
 	args = append(args, parityColumns(endpoint)...)
+	args = append(args, serviceAccount.ProjectID, serviceAccount.Location)
 	if _, err := tx.Exec(ctx, q, args...); err != nil {
 		return translateEndpointError(err)
 	}
