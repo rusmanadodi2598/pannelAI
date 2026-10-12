@@ -106,8 +106,10 @@
 	{:else if error}
 		<StateMessage kind="error" title={copy.error.title} apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => void load()}
-					>{copy.error.retry}</button
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => void load()}>{copy.error.retry}</button
 				>
 			{/snippet}
 		</StateMessage>

@@ -99,7 +99,10 @@
 				<ul class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
 					{#each MEDIA_KINDS as candidate (candidate)}
 						<li>
-							<a href={resolve('/media-providers/[kind]', { kind: candidate })} class="underline">
+							<a
+								href={resolve('/media-providers/[kind]', { kind: candidate })}
+								class="inline-flex min-h-11 items-center px-2 underline"
+							>
 								{mediaKindLabel(candidate)}
 							</a>
 						</li>
@@ -112,8 +115,15 @@
 	{:else if error}
 		<StateMessage kind="error" title="These providers could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => void load(kind)}>Try again</button>
-				<a href={resolve('/providers')} class="ms-3 underline">Back to the registry</a>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => void load(kind)}>Try again</button
+				>
+				<a
+					href={resolve('/providers')}
+					class="ms-2 inline-flex min-h-11 items-center px-2 underline">Back to the registry</a
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if providers.length === 0}
@@ -123,7 +133,9 @@
 			description="No provider offers this kind. Open Providers to add one."
 		>
 			{#snippet action()}
-				<a href={resolve('/providers')} class="underline">Open Providers</a>
+				<a href={resolve('/providers')} class="inline-flex min-h-11 items-center px-2 underline"
+					>Open Providers</a
+				>
 			{/snippet}
 		</StateMessage>
 	{:else}

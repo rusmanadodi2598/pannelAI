@@ -24,6 +24,12 @@
 
 	const PAGE_SIZE = 25;
 
+	// "All" plus each category the API accepts. The labels are the API's own category values.
+	const CATEGORY_FILTERS = [
+		{ value: '', label: 'All' },
+		...PROVIDER_CATEGORIES.map((value) => ({ value, label: value }))
+	];
+
 	const SearchIcon = CONTROL_ICONS.search.icon;
 	const PreviousIcon = CONTROL_ICONS.previous.icon;
 	const NextIcon = CONTROL_ICONS.next.icon;
@@ -134,10 +140,11 @@
 	     2026-09-25): the search commits on submit, the select commits on change, and the refresh
 	     re-reads both this list and the node set. Every control shares one height and one baseline, and
 	     the row wraps as a block on a narrow screen rather than stretching any single control. -->
-	<div class="flex flex-wrap items-stretch gap-2">
-		<div class="min-w-0 flex-1">
+	<!-- Row 1: the search, then the refresh. From sm the two share one line; on a phone each takes the full width. -->
+	<div class="flex flex-col gap-2 sm:flex-row sm:items-start">
+		<div class="min-w-0 sm:max-w-md sm:flex-1">
 			<form
-				class="flex min-w-0 items-stretch gap-2"
+				class="flex min-w-0 items-center gap-2"
 				onsubmit={(event) => {
 					event.preventDefault();
 					applySearch();
@@ -154,7 +161,7 @@
 				/>
 				<button
 					type="submit"
-					class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+					class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
 				>
 					<SearchIcon class="size-4" aria-hidden="true" />
 					Search
@@ -166,20 +173,30 @@
 				</p>
 			{/if}
 		</div>
-
-		<select
-			value={category}
-			onchange={(event) => applyCategory(event.currentTarget.value)}
-			aria-label="Category"
-			class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
+		<div
+			class="flex min-w-0 [&>div]:w-full [&_button]:w-full sm:w-auto sm:[&>div]:w-auto sm:[&_button]:w-auto"
 		>
-			<option value="">All categories</option>
-			{#each PROVIDER_CATEGORIES as option (option)}
-				<option value={option}>{option}</option>
-			{/each}
-		</select>
+			<RefreshControl onrefresh={load} />
+		</div>
+	</div>
 
-		<RefreshControl onrefresh={load} />
+	<!-- Row 2: the category chips span the full width, three to a row on a phone and all six on one line from sm. -->
+	<!-- The category filter is a row of chips, not a select: every option is visible at once, each is the
+	     same 44px target, and the pressed state is announced with aria-pressed. -->
+	<div role="group" aria-label="Filter by category" class="grid grid-cols-3 gap-2 sm:grid-cols-6">
+		{#each CATEGORY_FILTERS as option (option.value)}
+			<button
+				type="button"
+				aria-pressed={category === option.value}
+				onclick={() => applyCategory(option.value)}
+				class="inline-flex min-h-11 w-full min-w-0 items-center justify-center rounded-[var(--radius-sm)] border px-2 text-sm {category ===
+				option.value
+					? 'border-[var(--color-text)] font-medium text-[var(--color-text)]'
+					: 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'}"
+			>
+				{option.label}
+			</button>
+		{/each}
 	</div>
 
 	<CustomProviderSection {nodes} loading={nodesLoading} error={nodesError} onreload={loadNodes} />
@@ -189,7 +206,9 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the provider registry" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={load}>Try again</button>
+				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={load}
+					>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if providers.length === 0}
@@ -202,7 +221,11 @@
 		>
 			{#snippet action()}
 				{#if filtered}
-					<button type="button" class="underline" onclick={clearFilters}>Clear the filters</button>
+					<button
+						type="button"
+						class="inline-flex min-h-11 items-center underline"
+						onclick={clearFilters}>Clear the filters</button
+					>
 				{/if}
 			{/snippet}
 		</StateMessage>

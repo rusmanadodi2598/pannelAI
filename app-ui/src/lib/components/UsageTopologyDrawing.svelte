@@ -99,21 +99,21 @@
 	     cap R-13 asks for. -->
 	<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
 		<div
-			class={`flex items-center gap-[calc(8px*var(--u))] rounded-[var(--radius-sm)] border bg-[var(--color-surface)] px-[calc(12px*var(--u))] py-[calc(8px*var(--u))] font-medium whitespace-nowrap [font-size:calc(14px*var(--u))] animate-node-enter motion-reduce:animate-none ${
+			class={`flex items-center gap-[calc(8px*var(--u))] rounded-[var(--radius-sm)] border bg-[var(--color-surface)] px-[calc(12px*var(--u))] py-[calc(8px*var(--u))] font-medium whitespace-nowrap [font-size:max(12px,calc(14px*var(--u)))] animate-node-enter motion-reduce:animate-none ${
 				inFlight > 0 ? 'border-[var(--color-ok)]' : 'border-[var(--color-accent)]'
 			} ${inFlight > 0 && live ? 'animate-router-pulse motion-reduce:animate-none' : ''}`}
 		>
 			<img
 				src="/logo-mark@128.png"
 				alt=""
-				class={`size-[calc(16px*var(--u))] shrink-0 ${inFlight > 0 && live ? 'animate-router-shake motion-reduce:animate-none' : ''}`}
+				class={`size-[max(14px,calc(16px*var(--u)))] shrink-0 ${inFlight > 0 && live ? 'animate-router-shake motion-reduce:animate-none' : ''}`}
 			/>
 			<span class={inFlight > 0 && live ? 'animate-router-flicker motion-reduce:animate-none' : ''}
 				>Gateway</span
 			>
 			{#if inFlight > 0}
 				<span
-					class="inline-flex min-w-[calc(20px*var(--u))] justify-center rounded-[var(--radius-sm)] bg-[var(--color-ok)] px-[calc(4px*var(--u))] text-[0.857em] font-semibold text-[var(--color-surface)] shadow-[0_0_10px_color-mix(in_srgb,var(--color-ok)_45%,transparent)]"
+					class="inline-flex min-w-[max(20px,calc(20px*var(--u)))] justify-center rounded-[var(--radius-sm)] bg-[var(--color-ok)] px-[calc(4px*var(--u))] text-[max(11px,0.857em)] font-semibold text-[var(--color-surface)] shadow-[0_0_10px_color-mix(in_srgb,var(--color-ok)_45%,transparent)]"
 					>{inFlight}</span
 				>
 			{/if}
@@ -128,7 +128,7 @@
 			style={`left: ${terminal.position.x}%; top: ${terminal.position.y}%`}
 		>
 			<div
-				class={`flex items-center rounded-full border bg-[var(--color-surface)] px-[calc(10px*var(--u))] py-[calc(4px*var(--u))] font-medium whitespace-nowrap [font-size:calc(13px*var(--u))] animate-node-enter motion-reduce:animate-none ${terminalClass(terminal.state, live)}`}
+				class={`flex items-center rounded-full border bg-[var(--color-surface)] px-[calc(10px*var(--u))] py-[calc(4px*var(--u))] font-medium whitespace-nowrap [font-size:max(11px,calc(13px*var(--u)))] animate-node-enter motion-reduce:animate-none ${terminalClass(terminal.state, live)}`}
 			>
 				{terminal.label}
 			</div>
@@ -137,12 +137,12 @@
 
 	{#each layout.nodes as node (node.key)}
 		<div
-			class={`absolute flex -translate-x-1/2 -translate-y-1/2 animate-node-enter items-center gap-[calc(8px*var(--u))] rounded-[var(--radius-sm)] border bg-[var(--color-surface)] px-[calc(8px*var(--u))] py-[calc(4px*var(--u))] transition-all duration-300 [font-size:calc(14px*var(--u))] motion-reduce:animate-none ${
+			class={`absolute flex -translate-x-1/2 -translate-y-1/2 animate-node-enter items-center gap-[calc(8px*var(--u))] rounded-[var(--radius-sm)] border bg-[var(--color-surface)] px-[calc(8px*var(--u))] py-[calc(4px*var(--u))] transition-all duration-300 [font-size:max(12px,calc(14px*var(--u)))] motion-reduce:animate-none ${
 				STATE[node.state].node
 			}`}
 			style={`left: ${node.x}%; top: ${node.y}%`}
 		>
-			<span class="relative flex size-[calc(8px*var(--u))] shrink-0">
+			<span class="relative flex size-[8px] shrink-0">
 				{#if node.state === 'active' && live}
 					<span
 						class="absolute inline-flex size-full animate-ping rounded-full bg-[var(--color-ok)] opacity-75 motion-reduce:hidden"

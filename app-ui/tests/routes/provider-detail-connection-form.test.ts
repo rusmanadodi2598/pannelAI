@@ -12,6 +12,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.svelte';
 import { stubModels } from '../support/model-stub';
+import { openAllSections } from '../support/provider-sections';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -25,8 +26,9 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-function renderProvider(): void {
+async function renderProvider(): Promise<void> {
 	render(ProviderDetailPage, { props: { params: { provider_id: 'openai' }, data: {} } });
+	await openAllSections('Connections');
 }
 
 /** Types into a field by its label, through the event Svelte 5's `bind:value` listens for. */
@@ -42,7 +44,7 @@ async function openForm(): Promise<void> {
 describe('the endpoint form on a provider', () => {
 	it('opens and closes from the same control, so the section is not permanently taller', async () => {
 		stubModels({ authType: 'oauth' });
-		renderProvider();
+		await renderProvider();
 
 		await openForm();
 		expect(screen.getByLabelText('Label')).toBeTruthy();
@@ -53,7 +55,7 @@ describe('the endpoint form on a provider', () => {
 
 	it('stores the endpoint under the auth type the operator picked and lists it', async () => {
 		const stub = stubModels({ authType: 'oauth' });
-		renderProvider();
+		await renderProvider();
 		await openForm();
 
 		await fill('Label', 'Primary');
@@ -81,7 +83,7 @@ describe('the endpoint form on a provider', () => {
 
 	it('keeps the form open with the gateway message when the create is refused', async () => {
 		stubModels({ authType: 'oauth', writeStatus: 500 });
-		renderProvider();
+		await renderProvider();
 		await openForm();
 
 		await fill('Label', 'Primary');

@@ -113,7 +113,11 @@
 	{:else if error && proxies === null}
 		<StateMessage kind="error" title="Proxy pool not loaded" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => void load()}>Try again</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => void load()}>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if proxies}

@@ -87,7 +87,13 @@
 		}}
 	/>
 
-	<RefreshControl onrefresh={load} />
+	<!-- The same mobile width as the create form above: full width on a phone, so Refresh lines up with
+	     Create gateway key instead of sitting at its own size. RefreshControl is shared, so the rule lives here. -->
+	<div
+		class="flex flex-col sm:flex-row [&>div]:w-full sm:[&>div]:w-auto [&_button]:w-full sm:[&_button]:w-auto [&_button]:justify-center"
+	>
+		<RefreshControl onrefresh={load} />
+	</div>
 
 	{#if notice}
 		<p role="alert" class="text-sm text-[var(--color-danger)]">
@@ -100,7 +106,11 @@
 	{:else if error}
 		<StateMessage kind="error" title="Gateway keys could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={load}>Try again</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={load}>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if total === 0}
@@ -149,7 +159,7 @@
 		<div class="flex items-center gap-3 text-sm">
 			<button
 				type="button"
-				class="underline disabled:opacity-50"
+				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
 				disabled={page <= 1}
 				onclick={() => {
 					page -= 1;
@@ -159,7 +169,7 @@
 			<span class="text-[var(--color-text-muted)]">Page {page} of {lastPage}</span>
 			<button
 				type="button"
-				class="underline disabled:opacity-50"
+				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
 				disabled={page >= lastPage}
 				onclick={() => {
 					page += 1;

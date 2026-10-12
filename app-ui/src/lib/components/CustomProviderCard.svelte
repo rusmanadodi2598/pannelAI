@@ -24,6 +24,7 @@
 	import CustomProviderTest from '$lib/components/CustomProviderTest.svelte';
 	import ProviderNodeDeleteDialog from '$lib/components/ProviderNodeDeleteDialog.svelte';
 	import ProviderNodeFacts from '$lib/components/ProviderNodeFacts.svelte';
+	import SectionFold from '$lib/components/SectionFold.svelte';
 	import StateMessage from '$lib/components/StateMessage.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { CONTROL_ICONS, ROW_ACTION_ICONS } from '$lib/icons';
@@ -148,7 +149,9 @@
 {:else if error}
 	<StateMessage kind="error" title="This custom provider could not be loaded" apiError={error}>
 		{#snippet action()}
-			<button type="button" class="underline" onclick={reload}>Try again</button>
+			<button type="button" class="inline-flex min-h-11 items-center underline" onclick={reload}
+				>Try again</button
+			>
 		{/snippet}
 	</StateMessage>
 {:else if node}
@@ -198,9 +201,12 @@
 			</div>
 		</div>
 
-		<ProviderNodeFacts {node} />
-
-		<CustomProviderTest providerId={node.id} />
+		<SectionFold title="Facts and test">
+			<div class="flex flex-col gap-3">
+				<ProviderNodeFacts {node} />
+				<CustomProviderTest providerId={node.id} />
+			</div>
+		</SectionFold>
 	</div>
 
 	<CustomProviderDialog

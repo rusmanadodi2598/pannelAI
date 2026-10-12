@@ -150,7 +150,7 @@ describe('deleting a combo', () => {
 		within(dialog).getByRole('button', { name: 'Keep it' }).click();
 
 		await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-		expect(screen.getByText('daily')).toBeTruthy();
+		expect(screen.getAllByText('daily').length).toBeGreaterThan(0);
 	});
 
 	it('re-reads the combo list when the operator asks for it', async () => {
@@ -180,7 +180,12 @@ describe('the editor reference picker', () => {
 		await fireEvent.click(screen.getByRole('button', { name: 'New combo' }));
 		await fireEvent.click(screen.getByRole('button', { name: 'Add models' }));
 
-		const dialog = await screen.findByRole('dialog');
+		// Two dialogs are open now: the editor's modal and the picker. The picker is the one that lists models.
+		const dialog = await waitFor(() => {
+			const found = screen.getAllByRole('dialog').find((d) => d.textContent?.includes('GPT-4o'));
+			if (!found) throw new Error('picker not open');
+			return found;
+		});
 		expect(within(dialog).getByRole('button', { name: 'GPT-4o' })).toBeTruthy();
 		expect(within(dialog).getByRole('button', { name: 'daily' })).toBeTruthy();
 		// `oczen` has no endpoint row, so its 82 catalog rows are not offered: the reference's rule is

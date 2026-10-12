@@ -61,8 +61,10 @@
 	{:else if error}
 		<StateMessage kind="error" title={copy.document.errorTitle} apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => void load()}
-					>{copy.document.retry}</button
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => void load()}>{copy.document.retry}</button
 				>
 			{/snippet}
 		</StateMessage>

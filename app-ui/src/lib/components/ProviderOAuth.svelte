@@ -138,7 +138,11 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the OAuth state" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => load(providerId)}>Try again</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => load(providerId)}>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if status}

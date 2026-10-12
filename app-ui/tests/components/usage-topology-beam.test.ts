@@ -69,17 +69,22 @@ describe('UsageTopology beam', () => {
 
 	it('draws the three strokes at the reference widths scaled by the drawing unit', () => {
 		const container = draw({ active: [entry('openai')] });
-		const strokes = [
-			{ part: 'halo', width: '10' },
-			{ part: 'plasma', width: '5' },
-			{ part: 'core', width: '2.2' }
-		];
 
-		for (const stroke of strokes) {
-			const line = beamAt(container, 'OpenAI', stroke.part)[0];
-
-			expect(line.classList.contains(`[stroke-width:calc(${stroke.width}px*var(--u))]`)).toBe(true);
-		}
+		expect(
+			beamAt(container, 'OpenAI', 'halo')[0].classList.contains(
+				'[stroke-width:calc(10px*var(--u))]'
+			)
+		).toBe(true);
+		expect(
+			beamAt(container, 'OpenAI', 'plasma')[0].classList.contains(
+				'[stroke-width:max(2px,calc(5px*var(--u)))]'
+			)
+		).toBe(true);
+		expect(
+			beamAt(container, 'OpenAI', 'core')[0].classList.contains(
+				'[stroke-width:max(1.5px,calc(2.2px*var(--u)))]'
+			)
+		).toBe(true);
 	});
 
 	it('gives every particle one dot and a bare path, so a line is a traveller, not a row of dots', () => {

@@ -16,6 +16,7 @@ import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.s
 import { oauthEndpointRow, stubModels, type ModelStub } from '../support/model-stub';
 import { pageState, visit } from '../support/page.svelte';
 import { squashed } from '../support/dom';
+import { openAllSections } from '../support/provider-sections';
 
 vi.mock('$app/state', async () => {
 	const { pageState: page } = await import('../support/page.svelte');
@@ -60,8 +61,9 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-function renderProvider(): void {
+async function renderProvider(tab = 'Connections'): Promise<void> {
 	render(ProviderDetailPage, { props: { params: { provider_id: 'xai' }, data: {} } });
+	await openAllSections(tab);
 }
 
 async function waitForAccounts(): Promise<void> {
@@ -77,7 +79,7 @@ function accountsTable(): HTMLElement {
 describe('when the section appears', () => {
 	it('is absent for a provider the registry does not list as OAuth', async () => {
 		stub.hasOAuth = false;
-		renderProvider();
+		await renderProvider('Models');
 
 		await waitFor(() => expect(screen.getByText('Model catalog')).toBeTruthy());
 		expect(screen.queryByRole('button', { name: 'Start the authorization' })).toBeNull();
@@ -91,7 +93,7 @@ describe('when the section appears', () => {
 				expires_at: new Date(Date.now() - 60 * 60 * 1000).toISOString()
 			})
 		];
-		renderProvider();
+		await renderProvider();
 		await waitForAccounts();
 
 		const table = accountsTable();
@@ -102,7 +104,7 @@ describe('when the section appears', () => {
 
 	it('says no account is connected when there is none, and still offers the start', async () => {
 		stub.oauthEndpoints = [];
-		renderProvider();
+		await renderProvider();
 
 		await waitFor(() => expect(screen.getByText(/No OAuth account is connected/)).toBeTruthy());
 		expect(screen.getByRole('button', { name: 'Start the authorization' })).toBeTruthy();
@@ -110,7 +112,7 @@ describe('when the section appears', () => {
 
 	it('reports a failed read and re-reads on request', async () => {
 		stub.oauthReadStatus = 500;
-		renderProvider();
+		await renderProvider();
 
 		await waitFor(() => expect(screen.getByText(/Could not load the OAuth state/)).toBeTruthy());
 		expect(screen.queryByRole('button', { name: 'Start the authorization' })).toBeNull();
@@ -124,7 +126,7 @@ describe('when the section appears', () => {
 
 describe('the start action', () => {
 	it('sends the start and links to the authorize URL rather than navigating to it', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForAccounts();
 
 		screen.getByRole('button', { name: 'Start the authorization' }).click();
@@ -142,7 +144,7 @@ describe('the start action', () => {
 			code: 'CONFLICT',
 			message: 'an oauth state is already in flight'
 		};
-		renderProvider();
+		await renderProvider();
 		await waitForAccounts();
 
 		screen.getByRole('button', { name: 'Start the authorization' }).click();
@@ -161,7 +163,7 @@ describe('the flows the panel cannot start', () => {
 	]) {
 		it(`states the reason for ${testCase.flow} instead of offering a control`, async () => {
 			stub.oauthFlow = testCase.flow;
-			renderProvider();
+			await renderProvider();
 			await waitForAccounts();
 
 			expect(screen.getByText(new RegExp(testCase.contains))).toBeTruthy();
@@ -176,7 +178,7 @@ describe('the device round', () => {
 	});
 
 	it('shows the vendor page as a link and a code, and opens nothing itself', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForAccounts();
 
 		screen.getByRole('button', { name: 'Start the device authorization' }).click();
@@ -202,7 +204,7 @@ describe('the device round', () => {
 			expires_in: 300
 		};
 		stub.oauthDevicePollAnswers = [{ status: 'pending' }];
-		renderProvider();
+		await renderProvider();
 		await waitForAccounts();
 
 		screen.getByRole('button', { name: 'Start the device authorization' }).click();
@@ -226,7 +228,7 @@ describe('the device round', () => {
 			{ status: 'pending' },
 			{ status: 'connected', endpoint_id: 'ep_qoder_1', token_hint: 'dt-…7c2f', created: true }
 		];
-		renderProvider();
+		await renderProvider();
 		await waitForAccounts();
 
 		screen.getByRole('button', { name: 'Start the device authorization' }).click();
@@ -242,7 +244,7 @@ describe('the device round', () => {
 
 	it('reports a refused ask and stops asking', async () => {
 		stub.oauthDevicePollRefusalAt = 1;
-		renderProvider();
+		await renderProvider();
 		await waitForAccounts();
 
 		screen.getByRole('button', { name: 'Start the device authorization' }).click();
@@ -261,7 +263,7 @@ describe('the device round', () => {
 			code: 'VALIDATION_ERROR',
 			message: 'provider xai does not declare a complete device flow'
 		};
-		renderProvider();
+		await renderProvider();
 		await waitForAccounts();
 
 		screen.getByRole('button', { name: 'Start the device authorization' }).click();
@@ -276,7 +278,7 @@ describe('the device round', () => {
 describe('refreshing an account', () => {
 	it('refreshes the account the row names and re-reads the state it moved', async () => {
 		stub.oauthEndpoints = [oauthEndpointRow({ refresh_state: 'due' })];
-		renderProvider();
+		await renderProvider();
 		await waitForAccounts();
 		expect(within(accountsTable()).getByText(/inside its refresh window/)).toBeTruthy();
 
@@ -298,7 +300,7 @@ describe('refreshing an account', () => {
 			code: 'VALIDATION_ERROR',
 			message: 'the account has no refresh token'
 		};
-		renderProvider();
+		await renderProvider();
 		await waitForAccounts();
 
 		within(accountsTable()).getByRole('button', { name: 'Refresh' }).click();
@@ -309,7 +311,7 @@ describe('refreshing an account', () => {
 
 	it('offers no refresh when no account is connected, because the action belongs to a row', async () => {
 		stub.oauthEndpoints = [];
-		renderProvider();
+		await renderProvider();
 		await waitFor(() => expect(screen.getByText(/No OAuth account is connected/)).toBeTruthy());
 		expect(screen.queryByRole('button', { name: 'Refresh' })).toBeNull();
 	});
@@ -318,7 +320,7 @@ describe('refreshing an account', () => {
 describe('the callback return', () => {
 	it('reports a connected account and drops the outcome from the address', async () => {
 		visit('/providers/xai', 'oauth=connected&endpoint_id=ep_oauth_1');
-		renderProvider();
+		await renderProvider();
 
 		await waitFor(() =>
 			expect(screen.getByText('The gateway connected an account (ep_oauth_1).')).toBeTruthy()
@@ -337,7 +339,7 @@ describe('the callback return', () => {
 			'/providers/xai',
 			'oauth=error&oauth_error=the+state+is+unknown%2C+expired%2C+or+already+used'
 		);
-		renderProvider();
+		await renderProvider();
 
 		await waitFor(() =>
 			expect(screen.getByText(/the state is unknown, expired, or already used/)).toBeTruthy()
@@ -349,7 +351,7 @@ describe('the callback return', () => {
 
 	it('renders nothing about OAuth for an outcome the panel does not know, and still cleans up', async () => {
 		visit('/providers/xai', 'oauth=pending&page=2');
-		renderProvider();
+		await renderProvider();
 
 		await waitForAccounts();
 		expect(screen.queryByText(/The authorization did not complete/)).toBeNull();

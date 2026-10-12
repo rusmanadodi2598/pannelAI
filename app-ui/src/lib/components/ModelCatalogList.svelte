@@ -113,7 +113,7 @@
 <div class="flex flex-col gap-4">
 	<div class="flex flex-col gap-3">
 		<form
-			class="flex flex-wrap items-end gap-3"
+			class="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end"
 			onsubmit={(event) => {
 				event.preventDefault();
 				applySearch();
@@ -125,10 +125,13 @@
 					type="search"
 					bind:value={draft}
 					placeholder="Model id or name"
-					class="min-h-11 w-64 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm"
+					class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 text-sm sm:w-64"
 				/>
 			</label>
-			<button type="submit" class="inline-flex min-h-11 items-center gap-2 underline">
+			<button
+				type="submit"
+				class="inline-flex min-h-11 w-full items-center justify-center gap-2 underline sm:w-auto"
+			>
 				<SearchIcon class="size-4" aria-hidden="true" />
 				Search
 			</button>
@@ -162,8 +165,10 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the model catalog" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => load(providerId, token)}
-					>Try again</button
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center underline"
+					onclick={() => load(providerId, token)}>Try again</button
 				>
 			{/snippet}
 		</StateMessage>
@@ -174,7 +179,11 @@
 			description="Clear the filters to see every model this provider offers."
 		>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={clearFilters}>Clear filters</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center underline"
+					onclick={clearFilters}>Clear filters</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if models.length === 0}

@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import ProviderDetailPage from '../../src/routes/providers/[provider_id]/+page.svelte';
 import { endpointRow } from '../support/endpoint-stub';
 import { oauthEndpointRow, stubModels, type ModelStub } from '../support/model-stub';
+import { openAllSections } from '../support/provider-sections';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -29,8 +30,9 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-function renderProvider(): void {
+async function renderProvider(): Promise<void> {
 	render(ProviderDetailPage, { props: { params: { provider_id: 'qoder' }, data: {} } });
+	await openAllSections('Connections');
 }
 
 /** Confirms the open dialog and returns once the delete is on the wire. */
@@ -46,7 +48,7 @@ describe('deleting a connection from its row', () => {
 			authType: 'api_key',
 			endpoints: [endpointRow({ id: 'ep_1', label: 'Primary' })]
 		});
-		renderProvider();
+		await renderProvider();
 
 		const table = await screen.findByRole('table', { name: /Upstream endpoints/ });
 		await fireEvent.click(within(table).getByRole('button', { name: 'Delete' }));
@@ -66,7 +68,7 @@ describe('deleting a connection from its row', () => {
 			endpoints: [endpointRow({ id: 'ep_1', label: 'Primary' })],
 			endpointDeleteStatus: 500
 		});
-		renderProvider();
+		await renderProvider();
 
 		const table = await screen.findByRole('table', { name: /Upstream endpoints/ });
 		await fireEvent.click(within(table).getByRole('button', { name: 'Delete' }));
@@ -84,7 +86,7 @@ describe('deleting from the detail drawer', () => {
 			authType: 'api_key',
 			endpoints: [endpointRow({ id: 'ep_9', label: 'Secondary' })]
 		});
-		renderProvider();
+		await renderProvider();
 
 		const table = await screen.findByRole('table', { name: /Upstream endpoints/ });
 		await fireEvent.click(within(table).getByRole('button', { name: 'Open' }));
@@ -104,7 +106,7 @@ describe('deleting a connected OAuth account', () => {
 			oauthFlow: 'code',
 			oauthEndpoints: [oauthEndpointRow({ endpoint_id: 'ep_oauth_1', label: 'Owner account' })]
 		});
-		renderProvider();
+		await renderProvider();
 
 		const accounts = await screen.findByRole('table', { name: /Connected OAuth accounts/ });
 		await fireEvent.click(within(accounts).getByRole('button', { name: 'Delete' }));
@@ -117,7 +119,7 @@ describe('deleting a connected OAuth account', () => {
 describe('the two add affordances on a provider that declares both', () => {
 	it('offers the Personal Access Token dialog and the connection form side by side for Qoder', async () => {
 		stubModels({ authType: 'oauth', hasOAuth: true, authModes: ['oauth', 'apikey'] });
-		renderProvider();
+		await renderProvider();
 
 		// A key + OAuth provider's key credential is a Personal Access Token, and the affordance says so.
 		expect(await screen.findByRole('button', { name: 'Add Personal Access Token' })).toBeTruthy();
@@ -127,7 +129,7 @@ describe('the two add affordances on a provider that declares both', () => {
 
 	it('stores a pasted credential as an api_key connection, not the provider oauth type', async () => {
 		const stub = stubModels({ authType: 'oauth', hasOAuth: true, authModes: ['oauth', 'apikey'] });
-		renderProvider();
+		await renderProvider();
 
 		await fireEvent.click(await screen.findByRole('button', { name: 'Add Personal Access Token' }));
 		await screen.findByLabelText('Name');

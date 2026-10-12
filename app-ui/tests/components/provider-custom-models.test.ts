@@ -12,6 +12,7 @@ import { catalogRow, customRow, stubModels, type ModelStub } from '../support/mo
 import { expectIconOnly } from '../support/icon-only';
 import { squashed, value } from '../support/dom';
 import { forEachCase } from '../support/tables';
+import { openAllSections } from '../support/provider-sections';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -42,8 +43,9 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-function renderProvider(providerId = 'openai'): void {
+async function renderProvider(providerId = 'openai'): Promise<void> {
 	render(ProviderDetailPage, { props: { params: { provider_id: providerId }, data: {} } });
+	await openAllSections('Models');
 }
 
 /** Fills the add form. The fields are found by their label, so a renamed field fails here. */
@@ -77,7 +79,7 @@ async function waitForCustomTable(): Promise<void> {
 
 describe('the custom model list', () => {
 	it('lists this provider only, with a count that says so', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		const table = screen.getByRole('table', { name: /custom models declared/i });
@@ -94,7 +96,7 @@ describe('the custom model list', () => {
 	});
 
 	it('states the capabilities a row declares', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		const table = screen.getByRole('table', { name: /custom models declared/i });
@@ -104,7 +106,7 @@ describe('the custom model list', () => {
 
 describe('adding a custom model', () => {
 	it('sends the provider from the screen, the parsed capabilities, and shows the row', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		fillForm({
@@ -126,7 +128,7 @@ describe('adding a custom model', () => {
 	});
 
 	it('adds the new model to the catalog, because a custom row is a catalog row', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		fillForm({ model_id: 'gpt-5-mini', display_name: 'GPT-5 mini' });
@@ -139,7 +141,7 @@ describe('adding a custom model', () => {
 	});
 
 	it('clears the form after a successful add', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		fillForm({ model_id: 'gpt-5-mini', display_name: 'GPT-5 mini', capabilities: 'vision' });
@@ -152,7 +154,7 @@ describe('adding a custom model', () => {
 	});
 
 	it('names the model it added, so the list change is not the only signal', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		fillForm({ model_id: 'gpt-5-mini', display_name: 'GPT-5 mini' });
@@ -167,7 +169,7 @@ describe('adding a custom model', () => {
 	// while the reference adds a model from its id alone, so the body carries the id as the name. Blank is
 	// also the state the form opens in, which is what makes this the case an operator hits first.
 	it('stores the model id as the display name when the name is left blank', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		fillForm({ model_id: 'gpt-5-mini' });
@@ -208,7 +210,7 @@ describe('adding a custom model', () => {
 				}
 			],
 			async ({ fields, message }) => {
-				renderProvider();
+				await renderProvider();
 				await waitForCustomTable();
 
 				fillForm(fields);
@@ -222,7 +224,7 @@ describe('adding a custom model', () => {
 	});
 
 	it('reports the server refusal, including a pair that is already declared', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		// `openai/gpt-4o` is in the catalog, so the server answers 409 for the duplicate pair.
@@ -237,7 +239,7 @@ describe('adding a custom model', () => {
 
 describe('removing a custom model', () => {
 	it('names the model and what happens to a shadowed registry row before it deletes', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		expectIconOnly(screen.getByRole('button', { name: 'Remove' }), 'Remove');
@@ -250,7 +252,7 @@ describe('removing a custom model', () => {
 	});
 
 	it('deletes the row it named, and drops it from the list', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		screen.getByRole('button', { name: 'Remove' }).click();
@@ -265,7 +267,7 @@ describe('removing a custom model', () => {
 
 	it('keeps the row and reports the failure inside the dialog when the delete fails', async () => {
 		stub.writeStatus = 500;
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		screen.getByRole('button', { name: 'Remove' }).click();
@@ -282,7 +284,7 @@ describe('removing a custom model', () => {
 	});
 
 	it('cancels without a request', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCustomTable();
 
 		screen.getByRole('button', { name: 'Remove' }).click();

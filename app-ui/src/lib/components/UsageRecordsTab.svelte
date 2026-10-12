@@ -150,7 +150,11 @@
 	{:else if error}
 		<StateMessage kind="error" title="Requests could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => load(search)}>Try again</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => load(search)}>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if records.length === 0 && filtered}
@@ -160,7 +164,11 @@
 			description="The period holds records these filters exclude. Clear them."
 		>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={clearFilters}>Clear filters</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={clearFilters}>Clear filters</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if records.length === 0}
@@ -172,11 +180,15 @@
 			{#snippet action()}
 				<div class="flex flex-wrap gap-3">
 					{#if search.period !== '60d'}
-						<button type="button" class="underline" onclick={() => change('period', '60d')}
-							>Look back 60 days</button
+						<button
+							type="button"
+							class="inline-flex min-h-11 items-center px-2 underline"
+							onclick={() => change('period', '60d')}>Look back 60 days</button
 						>
 					{/if}
-					<a href={resolve('/api-docs')} class="underline">Open API Docs</a>
+					<a href={resolve('/api-docs')} class="inline-flex min-h-11 items-center px-2 underline"
+						>Open API Docs</a
+					>
 				</div>
 			{/snippet}
 		</StateMessage>
@@ -186,7 +198,7 @@
 		<div class="flex items-center gap-3 text-sm">
 			<button
 				type="button"
-				class="underline disabled:opacity-50"
+				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
 				disabled={search.page <= 1}
 				onclick={() => change('page', String(search.page - 1))}>Previous</button
 			>
@@ -196,7 +208,7 @@
 			</span>
 			<button
 				type="button"
-				class="underline disabled:opacity-50"
+				class="inline-flex min-h-11 items-center px-2 underline disabled:opacity-50"
 				disabled={search.page >= lastPage}
 				onclick={() => change('page', String(search.page + 1))}>Next</button
 			>

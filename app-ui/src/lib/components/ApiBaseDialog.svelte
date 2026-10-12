@@ -87,7 +87,11 @@
 				<p class="text-sm text-[var(--color-danger)]" role="alert">
 					<ApiErrorText error={failure} />
 				</p>
-				<button type="button" class="underline" onclick={load}>{copy.retry}</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={load}>{copy.retry}</button
+				>
 			</div>
 		{:else}
 			<PanelTabs tabs={TABS} label={copy.tabsLabel}>
