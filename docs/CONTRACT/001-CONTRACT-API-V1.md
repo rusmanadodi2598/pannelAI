@@ -303,7 +303,8 @@ List usage dan log memakai pagination. Filter waktu menggunakan RFC3339. Query t
 | POST | `/api/v1/audio/transcriptions` | Gateway key | `200` JSON atau text |
 | GET | `/api/v1/audio/voices` | Gateway key | `200 VoiceList` |
 | POST | `/api/v1/images/generations` | Gateway key | `200 MediaGenerationResponse` |
-| POST | `/api/v1/videos/generations` | Gateway key | `200` |
+| POST | `/api/v1/videos/generations` | Gateway key | `200 VideoJob` (job dibuat) |
+| GET | `/api/v1/videos/{task_id}` | Gateway key | `200 VideoJob` (poll) |
 | POST | `/api/v1/search` | Gateway key | `200 SearchResponse` |
 
 Streaming menggunakan `text/event-stream`, `X-Accel-Buffering: no`, dan format SSE provider yang telah diterjemahkan ke wire format caller. Request data plane memakai `Authorization: Bearer <gateway-key>`.

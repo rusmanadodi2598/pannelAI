@@ -150,7 +150,8 @@ Provider **registry is static config embedded in the Go binary** (YAML generated
 registry port), not a DB table. DB rows reference registry IDs; unknown provider ID ⇒ `VALIDATION_ERROR`.
 The document carries the owner's curated provider set (2026-09-26): the 34 providers on the owner's
 KEEP list, enforced by the generator's allowlist so a regeneration cannot reintroduce one the owner
-removed. A provider outside that set is unknown in every sense above.
+removed. `tokenrouter` joined the set by the owner's own request (2026-10-12), so the served set is 35. A
+provider outside that set is unknown in every sense above.
 
 ## 7. Endpoint Catalog
 
@@ -530,6 +531,7 @@ Data-plane media endpoints (OpenAI-compatible shapes, gateway-key auth, format p
 | POST   | `/api/v1/embeddings`           | P1    |
 | POST   | `/api/v1/images/generations`   | P2    |
 | POST   | `/api/v1/videos/generations`   | P2    |
+| GET    | `/api/v1/videos/{task_id}`     | P2    |
 | POST   | `/api/v1/search`               | P2    |
 
 Self-hosted media providers read `base_url` from their upstream endpoint (exact `/v1`-inclusion rule
@@ -562,6 +564,20 @@ travels inline as base64 `inline_data` with its `mime_type`, and the prompt is t
 field or the reference's transcript instruction, with `Language: <lang>.` appended when the caller set a
 language. The answer joins the first candidate's text parts into `{text}`; an answer with no candidate is
 an empty transcript rather than a refusal, because silence transcribes to nothing.
+
+`POST /videos/generations` is an async job rather than one answer. The creation rewrites the caller's
+`model` to the upstream's id (every other member travels as written, so a provider's own `duration` or
+resolution reaches it) and answers the normalized envelope `{task_id, status, url?, progress?, error?}`,
+whose `status` is `queued`, `in_progress`, `succeeded`, or `failed` whichever provider answered; a state no
+mapping knows is passed through lower-cased rather than reported as a terminal one. The endpoint the job
+was created on travels back in `X-PannelAI-Endpoint-Id`, and `GET /videos/{task_id}?provider=` reads the
+job: `provider` is required because a poll carries no model, and `?endpoint=` pins the poll to the account
+that created the job, falling back to the provider's own selection when absent. A poll records its usage
+and log rows but writes no endpoint health: a stale task id answering 404 would otherwise park a healthy
+key, the same reasoning the reference applies to its request-scoped 400s. Each provider's own id member
+and status vocabulary are mapped here: xAI's `request_id` with `pending|processing|done|failed`,
+OpenRouter's `id` with `unsigned_urls`, and TokenRouter's `data.task_id` with
+`QUEUED|SUBMITTED|IN_PROGRESS|SUCCESS|FAILURE`.
 
 A provider format without an adapter remains an explicit `PROVIDER_NOT_ROUTABLE` refusal naming the
 format; this is the incremental G5 boundary, not a claim that all reference adapters are present. Five
@@ -1263,3 +1279,21 @@ compare-and-swap to a writer that got there first, a benign race that says nothi
 separate ceiling bounds the rows inside it, so a cut page previously read as accounts that routed nothing.
 Neither field replaces a count that was already honest, and neither costs a query: the ceiling is read as one
 probe row on the statement that was already running._
+
+_Changelog 2026-10-12: §7.10's video surface becomes an async job instead of a refusal. `POST
+/api/v1/videos/generations` creates the job and answers the normalized envelope `{task_id, status, url?,
+progress?, error?}`, and the new `GET /api/v1/videos/{task_id}?provider=` reads it; the poll requires
+`provider` because it carries no model, and its optional `endpoint` pins the read to the account named in
+the creation's `X-PannelAI-Endpoint-Id` response header, falling back to the provider's own selection when
+absent. The creation forwards the caller's body with one member rewritten (`model` becomes the upstream id,
+byte-identical when it already matches), so a provider's own `duration` or resolution reaches it. Three
+dialects are mapped: xAI's `request_id` with `pending|processing|done|failed` (the default shape),
+OpenRouter's `id` with `unsigned_urls`, and TokenRouter's top-level or `data.task_id` with
+`QUEUED|SUBMITTED|IN_PROGRESS|SUCCESS|FAILURE`; a state no mapping knows is passed through lower-cased
+rather than reported as terminal, so a client polling for a terminal state is never told a job finished
+when it did not. A poll writes no endpoint health (D5): a stale task id answering 404 would otherwise park
+a healthy key, which is the reasoning the reference itself applies to request-scoped 400s. The registry now
+declares `video` for three providers (`xai`, `openrouter`, `tokenrouter`), each block carrying
+`auth_type: apikey` and `auth_header: bearer`, and `tokenrouter` joins as the 35th provider with 22 models
+and its own `thinking_format: tokenrouter`, whose dialect maps a level onto `reasoning_effort` and writes
+neither `none` nor `auto`. Recorded in `../PORT/011-PORT-VIDEO-ASYNC-JOB.md`._
