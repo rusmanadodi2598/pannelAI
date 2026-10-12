@@ -71,7 +71,11 @@
 	{:else if error}
 		<StateMessage kind="error" title="Settings could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={load}>Try again</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={load}>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if settings}

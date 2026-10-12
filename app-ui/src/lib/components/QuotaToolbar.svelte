@@ -47,8 +47,12 @@
 	const ResumeIcon = CONTROL_ICONS.resume.icon;
 </script>
 
-<div class="flex flex-wrap items-stretch justify-between gap-2">
-	<p class="flex min-w-0 flex-1 items-center text-sm text-[var(--color-text-muted)]">
+<!-- Same rule as the combo toolbar (antislop-layoutmobile, Action Pair and Tap Targets): the sentence takes
+     its own line on mobile, and the controls align center, so a tall sentence cannot stretch the buttons. -->
+<div class="flex flex-wrap items-center justify-between gap-2">
+	<p
+		class="flex min-w-0 basis-full items-center text-sm text-[var(--color-text-muted)] sm:flex-1 sm:basis-auto"
+	>
 		{#if paused}
 			Refresh is paused. Countdowns still tick.
 		{:else}
@@ -62,7 +66,7 @@
 		</p>
 	{/if}
 
-	<div class="flex flex-wrap items-stretch gap-2">
+	<div class="flex flex-wrap items-center gap-2">
 		<label class="flex items-center gap-2 text-sm">
 			<span class="text-[var(--color-text-muted)]">Provider</span>
 			<select

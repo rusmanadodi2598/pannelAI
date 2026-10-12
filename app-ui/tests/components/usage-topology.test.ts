@@ -139,10 +139,10 @@ describe('UsageTopology', () => {
 		// a font size declared on the drawing resolved against the page and the browser measured 8.4px text in
 		// 47px nodes at 390px.
 		expect(style).not.toContain('font-size');
-		expect(node.classList.contains('[font-size:calc(14px*var(--u))]')).toBe(true);
+		expect(node.classList.contains('[font-size:max(12px,calc(14px*var(--u)))]')).toBe(true);
 		expect(node.classList.contains('px-[calc(8px*var(--u))]')).toBe(true);
 		expect(node.classList.contains('gap-[calc(8px*var(--u))]')).toBe(true);
-		expect(node.querySelector('span')?.classList.contains('size-[calc(8px*var(--u))]')).toBe(true);
+		expect(node.querySelector('span')?.classList.contains('size-[8px]')).toBe(true);
 		expect(within(node).getByText('OpenAI').classList.contains('max-w-[calc(96px*var(--u))]')).toBe(
 			true
 		);

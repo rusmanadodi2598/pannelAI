@@ -29,7 +29,7 @@ afterEach(() => {
 describe('the custom provider card', () => {
 	it('states the node, the request the gateway will make, and the facts the entry does not carry', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
-		renderCard(stub);
+		await renderCard(stub);
 
 		// The heading names the node's type and the line under it is the request the gateway will make,
 		// which is the reference's own card (`providers/[id]/page.js`).
@@ -52,7 +52,7 @@ describe('the custom provider card', () => {
 				})
 			]
 		});
-		renderCard(stub, 'anthropic-compatible-01K');
+		await renderCard(stub, 'anthropic-compatible-01K');
 
 		expect(
 			await screen.findByRole('heading', { name: 'Anthropic Compatible Details' })
@@ -65,7 +65,7 @@ describe('the custom provider card', () => {
 
 	it('renders a failed read with a retry that reads again', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()], readStatus: 500 });
-		renderCard(stub);
+		await renderCard(stub);
 
 		expect(await screen.findByText('This custom provider could not be loaded')).toBeTruthy();
 		expect(screen.getByText('The node store is unreachable.')).toBeTruthy();
@@ -79,7 +79,7 @@ describe('the custom provider card', () => {
 describe('editing a custom provider', () => {
 	it('opens the dialog seeded from the stored node, then patches and re-reads', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
-		const rendered = renderCard(stub);
+		const rendered = await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Edit' }).click();
@@ -112,7 +112,7 @@ describe('editing a custom provider', () => {
 
 	it('refuses a renamed prefix that would collide, and keeps the dialog open', async () => {
 		const stub = stubProviderNodes({ nodes: [nodeRow()] });
-		renderCard(stub);
+		await renderCard(stub);
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
 
 		await screen.getByRole('button', { name: 'Edit' }).click();

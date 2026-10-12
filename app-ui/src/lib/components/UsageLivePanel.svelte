@@ -13,7 +13,7 @@
 	import { onMount } from 'svelte';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
-	import UsageRecentList from '$lib/components/UsageRecentList.svelte';
+	import UsageLiveTabs from '$lib/components/UsageLiveTabs.svelte';
 	import UsageTopology from '$lib/components/UsageTopology.svelte';
 	import { listCombos } from '$lib/api/combos';
 	import { listProviders } from '$lib/api/providers';
@@ -176,19 +176,6 @@
 		     instead of widening the page. No fact means no tab at all, which
 		     keeps the owner's rule that a screen states what happened and never what did not
 		     (2026-09-23). -->
-		{#if facts.length > 0}
-			<span class={`${TAB_BOX} min-w-0 flex-wrap gap-1`}>
-				{#each facts as fact, index (fact.label)}
-					{#if index > 0}
-						{' '}<span aria-hidden="true">·</span>{' '}
-					{/if}
-					<span class="text-[var(--color-text-muted)]">{fact.label}:</span>
-					{' '}<span class={`break-words ${fact.tone === 'status' ? 'text-[var(--color-ok)]' : ''}`}
-						>{fact.value}</span
-					>
-				{/each}
-			</span>
-		{/if}
 
 		<button
 			type="button"
@@ -230,7 +217,7 @@
 	<!-- Rendered only when the frame carries finished requests. While none has, the screen's statement of
 	     that is the drawing's colours and the status chip, not a sentence (owner's correction,
 	     2026-09-23). -->
-	{#if recent.length > 0}
-		<UsageRecentList {recent} {providerName} />
-	{/if}
+	<!-- The live facts and the request lists sit together in one tab component at the bottom of the panel,
+	     below the drawing, so the page reads Node first and the detail after it. -->
+	<UsageLiveTabs {facts} {active} {recent} {providerName} />
 </section>

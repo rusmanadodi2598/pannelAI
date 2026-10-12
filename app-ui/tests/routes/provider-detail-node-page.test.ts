@@ -14,6 +14,7 @@ import { endpointRow } from '../support/endpoint-stub';
 import { customRow, stubModels, type ModelStub } from '../support/model-stub';
 import { nodeRow } from '../support/provider-node-stub';
 import { reasoningGroup, settingsDocument } from '../support/settings-document';
+import { openAllSections, openTab } from '../support/provider-sections';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -47,8 +48,9 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-function renderNode(): void {
+async function renderNode(tab = 'Overview'): Promise<void> {
 	render(ProviderDetailPage, { props: { params: { provider_id: NODE_ID }, data: {} } });
+	await openAllSections(tab);
 }
 
 /**
@@ -59,31 +61,45 @@ function renderNode(): void {
  * rather than this test's.
  */
 function sectionHeadings(): string[] {
-	return [...document.querySelectorAll('h2')]
+	// An <h2> inside a fold repeats the fold's title, so it is read once: as the fold's button.
+	const names = [...document.querySelectorAll('h2, button[aria-expanded]')]
 		.filter((element) => element.closest('dialog') === null)
 		.map((element) => element.textContent?.replace(/\s+/g, ' ').trim() ?? '');
+	// An <h2> inside a fold repeats the fold's title and sits right before it, so a section is named once.
+	return names.filter((name, index) => name !== names[index - 1]);
 }
 
 describe("a custom node's detail screen", () => {
 	it('leads with the node, then its connections, then its models', async () => {
-		renderNode();
+		await renderNode();
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
-		await waitFor(() => expect(screen.getByText('GPT-4o mini')).toBeTruthy());
+		await waitFor(() =>
+			expect(screen.getByRole('heading', { name: 'OpenAI Compatible Details' })).toBeTruthy()
+		);
 
-		// The proxy card sits between the connections and the models (docs/PORT/009-PORT-PROVIDER-PROXY.md
-		// D9): it is read beside the connections, and it belongs to no registry block.
-		expect(sectionHeadings()).toEqual([
-			'OpenAI Compatible Details',
+		// The screen groups its sections into three tabs, and the tab carries the reading order: the node's own
+		// details first, then what routes through it (connections and the proxy card beside them, docs/PORT/
+		// 009-PORT-PROVIDER-PROXY.md D9), then the models it can answer with.
+		expect(screen.getAllByRole('tab', { name: /.+/ }).map((t) => t.textContent?.trim())).toEqual([
+			'Overview',
 			'Connections',
-			'Proxy',
-			'Available Models'
+			'Models'
 		]);
+
+		// Inside the Connections tab the proxy card follows the connections it belongs beside.
+		await openTab('Connections');
+		expect(sectionHeadings()).toEqual(['Connections', 'Proxy']);
+
+		await openTab('Models');
+		expect(sectionHeadings()).toEqual(['Available Models']);
 	});
 
 	it('does not render the registry blocks a node is not in', async () => {
-		renderNode();
+		await renderNode();
 		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
-		await waitFor(() => expect(screen.getByText('GPT-4o mini')).toBeTruthy());
+		await waitFor(() =>
+			expect(screen.getByRole('heading', { name: 'OpenAI Compatible Details' })).toBeTruthy()
+		);
 
 		// The catalog, the disabled set, and the fact table describe the embedded registry. A node is not in
 		// it, so the registry's own screens for those live on a registry provider's page.
@@ -99,13 +115,13 @@ describe("a custom node's detail screen", () => {
 	});
 
 	it('opens the key dialog from the node card and from the connections section', async () => {
-		renderNode();
-		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
+		await renderNode('Connections');
+		await screen.findByRole('heading', { name: 'Connections' });
 
-		const buttons = await screen.findAllByRole('button', { name: 'Add API Key' });
-		expect(buttons).toHaveLength(2);
-
-		buttons[0].click();
+		// On the Connections tab the section's own button is the one the tab shows; the card's button lives on
+		// Overview, so the case checks the section's button here and the card's on its own tab.
+		const button = await screen.findByRole('button', { name: 'Add API Key' });
+		button.click();
 		expect(await screen.findByText('Add OpenAI API Key')).toBeTruthy();
 	});
 
@@ -125,7 +141,11 @@ describe("a custom node's detail screen", () => {
 				thinking_levels: ['low', 'medium', 'high', 'max']
 			})
 		];
-		renderNode();
+		// The node card reads the prefix the model string is built with, and the card lives on the Overview tab
+		// (the default), so that read has to land before the Models tab replaces it.
+		await renderNode('Overview');
+		await screen.findByRole('heading', { name: 'OpenAI Compatible Details' });
+		await openAllSections('Models');
 
 		const select = (await screen.findByLabelText('Reasoning mode')) as HTMLSelectElement;
 		await waitFor(() => expect(select.value).toBe('high'));

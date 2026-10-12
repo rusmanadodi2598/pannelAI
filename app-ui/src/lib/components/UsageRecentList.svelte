@@ -55,16 +55,10 @@
 <!-- eslint-disable svelte/no-useless-mustaches -- the token split needs a literal space between a figure and
      its direction, and Svelte trims the leading whitespace of the element that holds the word, so `{' '}` is
      load-bearing here rather than useless. -->
+<!-- The list sits inside the Live activity tab, which already names it and scrolls it, so the list draws
+     no heading and no box of its own. -->
 <div class="flex flex-col gap-2">
-	<!-- The panel's tab idiom with nothing focusable in it: the finished list reads as a tab and is set
-	     off by one, but no one can click it. The
-	     label carries the accent rule the active tab carries, and the strip carries its border. -->
-	<div class="flex border-b border-[var(--color-border)]">
-		<span class="-mb-px border-b-2 border-[var(--color-accent)] px-3 py-2 text-sm font-medium"
-			>Finished requests</span
-		>
-	</div>
-	<ul class="flex max-h-48 flex-col gap-1 overflow-y-auto text-sm">
+	<ul class="flex flex-col gap-1 text-sm">
 		{#each recent as record (record.request_id)}
 			<li class="flex flex-wrap items-center gap-x-3 gap-y-1">
 				<span class="text-[var(--color-text-muted)]"

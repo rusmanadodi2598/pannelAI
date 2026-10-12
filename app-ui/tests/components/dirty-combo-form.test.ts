@@ -51,7 +51,9 @@ const CASES: FormCase[] = [
 					oncancel: vi.fn()
 				}
 			});
-			await screen.findByRole('heading', { name: 'Edit daily' });
+			// The title now belongs to the modal around the editor; the form is what the guard reads.
+			await screen.findByLabelText('Name');
+			expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('daily');
 		},
 		edit: async () => {
 			await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'daily-2' } });
@@ -73,7 +75,7 @@ const CASES: FormCase[] = [
 					oncancel: vi.fn()
 				}
 			});
-			await screen.findByRole('heading', { name: 'New combo' });
+			await screen.findByLabelText('Name');
 		},
 		edit: async () => {
 			await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'evening' } });

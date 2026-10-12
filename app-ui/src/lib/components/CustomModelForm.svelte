@@ -66,34 +66,34 @@
 		A model the registry lacks. It routes like any other.
 	</p>
 
-	<div class="flex flex-wrap items-end gap-3">
-		<label class="flex flex-col gap-1 text-sm">
+	<div class="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+		<label class="flex flex-col gap-1 text-sm sm:w-auto">
 			<span class="text-[var(--color-text-muted)]">Model id</span>
 			<input
 				bind:value={draft.model_id}
-				class="min-h-11 w-64 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
+				class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 sm:w-64"
 				placeholder="gpt-4o-mini"
 			/>
 		</label>
-		<label class="flex flex-col gap-1 text-sm">
+		<label class="flex flex-col gap-1 text-sm sm:w-auto">
 			<span class="text-[var(--color-text-muted)]">Display name (optional)</span>
 			<input
 				bind:value={draft.display_name}
-				class="min-h-11 w-56 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
+				class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 sm:w-56"
 				placeholder="GPT-4o mini"
 			/>
 		</label>
-		<label class="flex flex-col gap-1 text-sm">
+		<label class="flex flex-col gap-1 text-sm sm:w-auto">
 			<span class="text-[var(--color-text-muted)]">Capabilities (optional)</span>
 			<input
 				bind:value={draft.capabilities}
-				class="min-h-11 w-64 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
+				class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 sm:w-64"
 				placeholder="vision, tools"
 			/>
 		</label>
 		<button
 			type="submit"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50"
+			class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-4 disabled:opacity-50 sm:w-auto"
 			disabled={adding}
 		>
 			<AddIcon class="size-4" aria-hidden="true" />

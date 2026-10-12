@@ -46,18 +46,18 @@
 	<p class="text-sm">A node stores no credential, so the field is optional.</p>
 	<p class="text-sm">Leave it empty to test an upstream that needs none.</p>
 
-	<div class="flex flex-wrap items-end gap-3">
+	<div class="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end">
 		<label class="flex flex-col gap-1 text-sm">
 			<span class="text-[var(--color-text-muted)]">Credential (optional)</span>
 			<input
 				type="password"
 				bind:value={credential}
-				class="min-h-11 w-64 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
+				class="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 sm:w-64"
 			/>
 		</label>
 		<button
 			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-50"
+			class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm disabled:opacity-50 sm:w-auto"
 			disabled={testing}
 			onclick={run}
 		>

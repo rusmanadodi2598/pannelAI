@@ -63,7 +63,8 @@ describe("a node's models section", () => {
 		const table = await waitForTable();
 
 		expect(within(table).getByText(`${PREFIX}/gpt-4o-mini`)).toBeTruthy();
-		expect(within(table).getByRole('button', { name: 'Copy' })).toBeTruthy();
+		// The control is icon-only, named for what it copies so the glyph alone carries the action.
+		expect(within(table).getByRole('button', { name: 'Copy model address' })).toBeTruthy();
 	});
 
 	it('words its empty state for the node rather than for a supplement', async () => {

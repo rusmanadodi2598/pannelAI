@@ -60,10 +60,10 @@
 				<span class="font-medium">prefix/model</span>.
 			</p>
 		</div>
-		<div class="flex flex-wrap gap-2">
+		<div class="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2">
 			<button
 				type="button"
-				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+				class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
 				onclick={() => add('anthropic-compatible')}
 			>
 				<AddIcon class="size-4" aria-hidden="true" />
@@ -71,7 +71,7 @@
 			</button>
 			<button
 				type="button"
-				class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
+				class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-3 text-sm"
 				onclick={() => add('openai-compatible')}
 			>
 				<AddIcon class="size-4" aria-hidden="true" />
@@ -85,7 +85,9 @@
 	{:else if error}
 		<StateMessage kind="error" title="Could not load the custom providers" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={onreload}>Try again</button>
+				<button type="button" class="inline-flex min-h-11 items-center underline" onclick={onreload}
+					>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if sorted.length === 0}
