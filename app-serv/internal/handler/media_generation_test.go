@@ -40,17 +40,67 @@ func TestMediaHandler_Images(t *testing.T) {
 	}
 }
 
-// TestMediaHandler_Videos pins the refusal §7.10's video route owes a client
-// while no provider declares the kind.
+// TestMediaHandler_Videos pins the async job's creation: the normalized
+// envelope comes back, and the endpoint the job was created on travels in the
+// header the client pins its polls with.
 func TestMediaHandler_Videos(t *testing.T) {
-	f, _ := newMediaHandlerFixture(t)
+	f, caller := newMediaHandlerFixture(t)
+	caller.answer = dataplane.MediaResponse{Status: 200, Body: []byte(`{"request_id":"req-1"}`)}
+
 	rr := do(t, http.MethodPost, "/api/v1/videos/generations",
-		`{"model":"openai/sora","prompt":"a cat"}`, f.Videos)
+		`{"model":"xai/grok-imagine-video","prompt":"a paper boat","duration":8}`, f.Videos)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rr.Code, rr.Body.String())
+	}
+	body := decodeBody(t, rr)
+	if body["task_id"] != "req-1" || body["status"] != "queued" {
+		t.Fatalf("body = %v, want the created job", body)
+	}
+	if got := rr.Header().Get(VideoEndpointHeader); got != "ep-xai" {
+		t.Fatalf("header %s = %q, want the created endpoint", VideoEndpointHeader, got)
+	}
+	if len(caller.requests) != 1 || caller.requests[0].URL != "https://api.x.ai/v1/videos/generations" {
+		t.Fatalf("upstream requests = %+v, want one creation on the xAI collection", caller.requests)
+	}
+}
+
+// TestMediaHandler_VideoJob pins the poll: the task id comes from the path, the
+// provider from the query, and the answer is the same envelope the creation
+// served.
+func TestMediaHandler_VideoJob(t *testing.T) {
+	f, caller := newMediaHandlerFixture(t)
+	caller.answer = dataplane.MediaResponse{Status: 200, Body: []byte(
+		`{"status":"done","video":{"url":"https://cdn.x.ai/v.mp4"}}`)}
+
+	rr := do(t, http.MethodGet, "/api/v1/videos/req-1?provider=xai&endpoint=ep-xai",
+		"", withPathValue(f.VideoJob, "task_id", "req-1"))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body: %s)", rr.Code, rr.Body.String())
+	}
+	body := decodeBody(t, rr)
+	if body["task_id"] != "req-1" || body["status"] != "succeeded" || body["url"] != "https://cdn.x.ai/v.mp4" {
+		t.Fatalf("body = %v, want the polled job", body)
+	}
+	if len(caller.requests) != 1 || caller.requests[0].URL != "https://api.x.ai/v1/videos/req-1" {
+		t.Fatalf("upstream requests = %+v, want one poll of the task", caller.requests)
+	}
+}
+
+// TestMediaHandler_VideoJob_RequiresTheProvider pins the one required query
+// parameter: a poll carries no model, so nothing else could name the provider.
+func TestMediaHandler_VideoJob_RequiresTheProvider(t *testing.T) {
+	f, caller := newMediaHandlerFixture(t)
+	rr := do(t, http.MethodGet, "/api/v1/videos/req-1", "",
+		withPathValue(f.VideoJob, "task_id", "req-1"))
 	if rr.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400 (body: %s)", rr.Code, rr.Body.String())
 	}
-	if !strings.Contains(rr.Body.String(), `"PROVIDER_NOT_ROUTABLE"`) {
-		t.Fatalf("body = %s, want the PROVIDER_NOT_ROUTABLE code", rr.Body.String())
+	if !strings.Contains(rr.Body.String(), `"VALIDATION_ERROR"`) ||
+		!strings.Contains(rr.Body.String(), "provider") {
+		t.Fatalf("body = %s, want the provider refusal", rr.Body.String())
+	}
+	if len(caller.requests) != 0 {
+		t.Fatalf("upstream requests = %+v, want none", caller.requests)
 	}
 }
 

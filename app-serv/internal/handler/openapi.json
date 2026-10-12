@@ -1557,13 +1557,41 @@
           },
           "model": {
             "type": "string"
-          },
-          "size": {
-            "type": "string"
           }
         },
         "required": [
-          "prompt"
+          "prompt",
+          "model"
+        ],
+        "additionalProperties": true
+      },
+      "VideoJob": {
+        "type": "object",
+        "description": "The async video job both video routes answer with, normalized across providers. Status is one of queued, in_progress, succeeded, or failed; an upstream state no mapping knows is passed through lower-cased rather than reported as a terminal one.",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "The id the poll route takes as its path segment."
+          },
+          "status": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "description": "The generated asset, present once the job succeeded."
+          },
+          "progress": {
+            "type": "integer",
+            "description": "The upstream's own percentage, present when it reports one."
+          },
+          "error": {
+            "type": "string",
+            "description": "The upstream's own message, present once the job failed."
+          }
+        },
+        "required": [
+          "task_id",
+          "status"
         ],
         "additionalProperties": false
       },
@@ -10872,7 +10900,7 @@
     },
     "/api/v1/videos/generations": {
       "post": {
-        "summary": "Registered; refuses PROVIDER_NOT_ROUTABLE in v1",
+        "summary": "Text-to-video job creation, normalized async envelope",
         "tags": [
           "Media"
         ],
@@ -10894,11 +10922,98 @@
         },
         "responses": {
           "200": {
+            "description": "The created job. The endpoint it was created on travels back in the X-PannelAI-Endpoint-Id response header, so the client can pin its polls to the same account.",
+            "headers": {
+              "X-PannelAI-Endpoint-Id": {
+                "description": "The upstream endpoint the job was created on.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/DataPlaneBadRequestError"
+          },
+          "404": {
+            "$ref": "#/components/responses/DataPlaneNotFoundError"
+          },
+          "401": {
+            "$ref": "#/components/responses/DataPlaneUnauthorizedError"
+          },
+          "429": {
+            "$ref": "#/components/responses/DataPlaneRateLimitedError"
+          },
+          "500": {
+            "$ref": "#/components/responses/DataPlaneInternalError"
+          },
+          "502": {
+            "$ref": "#/components/responses/DataPlaneUpstreamError"
+          },
+          "503": {
+            "$ref": "#/components/responses/DataPlaneUnavailableError"
+          },
+          "504": {
+            "$ref": "#/components/responses/DataPlaneTimeoutError"
+          }
+        }
+      }
+    },
+    "/api/v1/videos/{task_id}": {
+      "get": {
+        "summary": "Poll one async video job",
+        "tags": [
+          "Media"
+        ],
+        "security": [
+          {
+            "gatewayKey": []
+          }
+        ],
+        "operationId": "getApiV1VideosByTask_Id",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "description": "The job id the creation answered with.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "required": true,
+            "description": "The provider that created the job. A poll carries no model to resolve it from.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endpoint",
+            "in": "query",
+            "required": false,
+            "description": "The endpoint the creation named in X-PannelAI-Endpoint-Id. Absent, the provider's own selection answers.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": "Successful response.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/JsonObject"
+                  "$ref": "#/components/schemas/VideoJob"
                 }
               }
             }

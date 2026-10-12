@@ -172,6 +172,32 @@ func mediaCallEntries() []registry.Provider {
 					BaseURL: "https://openrouter.ai/api/v1/chat/completions", Format: "openai",
 					DefaultModel: "openai/gpt-4o-mini-tts",
 				},
+				registry.MediaVideo: {
+					BaseURL:  "https://openrouter.ai/api/v1/videos",
+					AuthType: registry.AuthAPIKey, AuthHeader: "bearer", Format: "openai",
+				},
+			},
+		},
+		{
+			// The xAI shape is the default video plan: the creation POST lands
+			// on the collection's /generations.
+			ID: "xai", Display: registry.Display{Name: "xAI"}, Priority: 14, Category: "apikey",
+			Media: registry.MediaConfigs{
+				registry.MediaVideo: {
+					BaseURL:  "https://api.x.ai/v1/videos",
+					AuthType: registry.AuthAPIKey, AuthHeader: "bearer", Format: "openai",
+				},
+			},
+		},
+		{
+			// tokenrouter declares its collection with the action already in the
+			// base URL, so its creation posts there as it stands.
+			ID: "tokenrouter", Display: registry.Display{Name: "TokenRouter"}, Priority: 15, Category: "apikey",
+			Media: registry.MediaConfigs{
+				registry.MediaVideo: {
+					BaseURL:  "https://api.tokenrouter.com/v1/video/generations",
+					AuthType: registry.AuthAPIKey, AuthHeader: "bearer", Format: "openai",
+				},
 			},
 		},
 	}

@@ -17,7 +17,7 @@ import (
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
 )
 
-// mediaRouter adapts the engine to the three questions a media call asks. The
+// mediaRouter adapts the engine to the four questions a media call asks. The
 // adapter exists because the engine's selector is reached through a method:
 // taking the engine itself would put the resolver and the wire translators in
 // the way of every media call.
@@ -25,6 +25,10 @@ type mediaRouter struct{ engine *dataplane.Engine }
 
 func (r mediaRouter) Select(ctx context.Context, providerID string) (dataplane.Selection, error) {
 	return r.engine.Selector().Select(ctx, providerID)
+}
+
+func (r mediaRouter) SelectEndpoint(ctx context.Context, providerID, endpointID string) (dataplane.Selection, error) {
+	return r.engine.Selector().SelectEndpoint(ctx, providerID, endpointID)
 }
 
 func (r mediaRouter) RecordSuccess(ctx context.Context, selection dataplane.Selection) error {

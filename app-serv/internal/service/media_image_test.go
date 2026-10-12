@@ -1,9 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_image_test.go
-// @for       The image and video generation payloads and normalization.
-// @uses      internal/dataplane, internal/domain, internal/schema, context, encoding/json, strings, testing.
-// @reason    The normalization is the part a client depends on: whichever provider answered, `data[0].url` must be where the asset is. The cases pin that, plus the refusals §7.10 owes a client naming a provider the gateway cannot serve.
+// @for       The image generation payload and its normalization.
+// @uses      internal/dataplane, internal/schema, context, encoding/json, strings, testing.
+// @reason    The normalization is the part a client depends on: whichever provider answered, `data[0].url` must be where the asset is. The cases pin that, plus the refusals §7.10 owes a client naming a provider the gateway cannot serve. The video route's own cases live in media_video_test.go.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -89,15 +89,15 @@ func TestMediaCallService_GenerateImageEmptyData(t *testing.T) {
 	}
 }
 
-// TestMediaCallService_GenerateVideoRefusesWithoutADeclaration pins §7.10's
-// video route: no registry provider declares the kind yet, and the refusal
-// names the provider rather than looking like an upstream outage.
-func TestMediaCallService_GenerateVideoRefusesWithoutADeclaration(t *testing.T) {
+// TestMediaCallService_GenerateImageRefusesWithoutADeclaration pins §7.10's
+// refusal for a kind a provider does not declare: the refusal names the
+// provider rather than looking like an upstream outage.
+func TestMediaCallService_GenerateImageRefusesWithoutADeclaration(t *testing.T) {
 	svc, _, _ := mediaCallFixture(t)
-	_, _, err := svc.GenerateVideo(context.Background(), schema.VideoRequest{
-		Model: "openai/sora", Prompt: "a cat",
+	_, _, err := svc.GenerateImage(context.Background(), schema.ImageRequest{
+		Model: "cartesia/sonic-2", Prompt: "a cat",
 	}, "")
-	if err == nil || !strings.Contains(err.Error(), "does not offer video") {
+	if err == nil || !strings.Contains(err.Error(), "does not offer image") {
 		t.Fatalf("error = %v, want the not-routable refusal", err)
 	}
 }

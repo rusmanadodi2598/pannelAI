@@ -32,6 +32,7 @@ var dataPlaneEndpoints = map[string]bool{
 	"/audio/voices":          true,
 	"/images/generations":    true,
 	"/videos/generations":    true,
+	"/videos/{task_id}":      true,
 	"/search":                true,
 }
 

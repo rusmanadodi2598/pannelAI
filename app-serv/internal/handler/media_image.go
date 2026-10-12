@@ -1,9 +1,9 @@
 // Package handler adapts HTTP requests to service calls.
 //
 // @file      internal/handler/media_image.go
-// @for       The §7.10 image and video generation routes.
+// @for       The §7.10 image generation route.
 // @uses      internal/schema, net/http.
-// @reason    Both routes decode a JSON body, authenticate, call, and answer the normalized envelope, so they share one request path and differ only in the contract they decode into.
+// @reason    The route decodes a JSON body, authenticates, calls, and answers the normalized envelope. The video route's two files live in media_video.go, because a video generation is an async job with its own request and answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     handler
 // @stability stable
@@ -37,34 +37,6 @@ func (h *MediaHandler) Images(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response, _, err := h.media.GenerateImage(r.Context(), req, keyID)
-	if err != nil {
-		writeDataPlaneError(w, err)
-		return
-	}
-	schema.WriteJSON(w, http.StatusOK, response)
-}
-
-// Videos serves POST /api/v1/videos/generations.
-func (h *MediaHandler) Videos(w http.ResponseWriter, r *http.Request) {
-	keyID, ok := h.authorize(w, r)
-	if !ok {
-		return
-	}
-	raw, err := schema.ReadBody(r)
-	if err != nil {
-		writeDataPlaneError(w, err)
-		return
-	}
-	req, err := schema.DecodeVideoRequest(raw)
-	if err != nil {
-		writeDataPlaneError(w, err)
-		return
-	}
-	if err := schema.ValidateStruct(req); err != nil {
-		writeDataPlaneError(w, err)
-		return
-	}
-	response, _, err := h.media.GenerateVideo(r.Context(), req, keyID)
 	if err != nil {
 		writeDataPlaneError(w, err)
 		return

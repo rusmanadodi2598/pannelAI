@@ -39,6 +39,13 @@ type Call struct {
 	ModelID    string
 	ClientRaw  []byte
 	Override   *Suffix
+	// ProviderThinkingFormat is the provider entry's own transport declaration
+	// (transport.thinking_format). It is carried rather than looked up because
+	// the entry is already resolved by the caller, and it outranks the model's
+	// own format: the reference resolves the provider's declaration first
+	// (thinkingUnified.js:112-113), because the entry is authoritative about
+	// the wire its upstream speaks.
+	ProviderThinkingFormat string
 }
 
 // Applier writes the reasoning control into an outbound body.
@@ -79,7 +86,7 @@ func (a *Applier) Apply(ctx context.Context, body []byte, call Call) []byte {
 	if !ok {
 		return body
 	}
-	format := resolveFormat(call.Wire, caps)
+	format := resolveFormat(call.Wire, caps, call.ProviderThinkingFormat)
 	if format == "" {
 		return body
 	}
@@ -180,17 +187,22 @@ var nativeOnlyFormats = map[string]bool{
 	"claude-adaptive": true,
 }
 
-// resolveFormat names the shape the config is written in: the model's own
-// declared format, unless the wire cannot carry it, and the wire's native
-// format otherwise. It is the reference's resolveFormat, plus the Responses
-// wire's own rule: that wire reads one member only (reasoning:{effort,summary}),
-// so the wire decides the shape and the declared format never names the chat
-// field there, which is how the reasoning control died on muse (the upstream
-// ignores reasoning_effort; the reference's executors rewrite it into the
-// object instead).
-func resolveFormat(wire string, caps registry.CapabilitySet) string {
+// resolveFormat names the shape the config is written in: the provider entry's
+// own declaration first, then the model's declared format unless the wire cannot
+// carry it, and the wire's native format otherwise. It is the reference's
+// resolveFormat (thinkingUnified.js:110-120), plus the Responses wire's own rule:
+// that wire reads one member only (reasoning:{effort,summary}), so the wire
+// decides the shape and the declared format never names the chat field there,
+// which is how the reasoning control died on muse (the upstream ignores
+// reasoning_effort; the reference's executors rewrite it into the object
+// instead). The port carries no executor after this seam, so that wire's single
+// member outranks a declaration here as well.
+func resolveFormat(wire string, caps registry.CapabilitySet, providerFormat string) string {
 	if wire == "openai-responses" {
 		return "openai-responses"
+	}
+	if providerFormat != "" {
+		return providerFormat
 	}
 	if format := caps.ThinkingFormat; format != "" {
 		if !isOpenAIWire(wire) || !nativeOnlyFormats[format] {

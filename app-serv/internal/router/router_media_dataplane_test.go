@@ -31,7 +31,8 @@ var mediaDataPlaneRoutes = []struct {
 	{name: "images", method: http.MethodPost, path: "/api/v1/images/generations",
 		body: `{"model":"openai/gpt-image-1","prompt":"a cat"}`},
 	{name: "videos", method: http.MethodPost, path: "/api/v1/videos/generations",
-		body: `{"model":"openai/sora","prompt":"a cat"}`},
+		body: `{"model":"xai/grok-imagine-video","prompt":"a cat"}`},
+	{name: "videojob", method: http.MethodGet, path: "/api/v1/videos/req-1?provider=xai"},
 	{name: "search", method: http.MethodPost, path: "/api/v1/search",
 		body: `{"provider":"brave-search","query":"golang"}`},
 }
@@ -78,11 +79,13 @@ func TestMediaDataPlaneRoutes_HappyPath(t *testing.T) {
 			want: `"data"`,
 		},
 		{
-			// The refusal is the point: no registry provider declares video, so
-			// the route answers PROVIDER_NOT_ROUTABLE rather than 404.
 			name: "videos", method: http.MethodPost, path: "/api/v1/videos/generations",
-			body: `{"model":"openai/sora","prompt":"a cat"}`, status: http.StatusBadRequest,
-			want: `"PROVIDER_NOT_ROUTABLE"`,
+			body: `{"model":"xai/grok-imagine-video","prompt":"a cat"}`, status: http.StatusOK,
+			want: `"task_id":"req-1"`,
+		},
+		{
+			name: "videojob", method: http.MethodGet, path: "/api/v1/videos/req-1?provider=xai",
+			status: http.StatusOK, want: `"status":"in_progress"`,
 		},
 		{
 			name: "search", method: http.MethodPost, path: "/api/v1/search",
@@ -116,6 +119,8 @@ func TestMediaDataPlaneRoutes_ValidationFailure(t *testing.T) {
 	}{
 		{name: "images without a prompt", path: "/api/v1/images/generations",
 			body: `{"model":"openai/gpt-image-1"}`, status: http.StatusBadRequest},
+		{name: "videos without a prompt", path: "/api/v1/videos/generations",
+			body: `{"model":"xai/grok-imagine-video"}`, status: http.StatusBadRequest},
 		{name: "search without a query", path: "/api/v1/search",
 			body: `{"provider":"brave-search"}`, status: http.StatusBadRequest},
 	}

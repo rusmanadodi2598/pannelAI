@@ -49,6 +49,15 @@ func (stubMediaRouter) Select(_ context.Context, providerID string) (dataplane.S
 	return dataplane.Selection{Endpoint: endpoint}, nil
 }
 
+func (stubMediaRouter) SelectEndpoint(_ context.Context, providerID, endpointID string) (dataplane.Selection, error) {
+	endpoint, err := domain.NewUpstreamEndpoint(endpointID, providerID, "pinned",
+		domain.UpstreamAuthAPIKey, 1, time.Now().UTC())
+	if err != nil {
+		return dataplane.Selection{}, err
+	}
+	return dataplane.Selection{Endpoint: endpoint}, nil
+}
+
 func (stubMediaRouter) RecordSuccess(context.Context, dataplane.Selection) error { return nil }
 func (stubMediaRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass) error {
 	return nil
@@ -116,6 +125,17 @@ func handlerMediaEntries() []registry.Provider {
 				registry.MediaWebSearch: {
 					BaseURL: "https://api.search.brave.com/res/v1", Method: "GET",
 					QueryParam: "q", MaxResultsParam: "count", DefaultMaxResults: 5,
+				},
+			},
+		},
+		{
+			// The video route's provider: the xAI shape, whose creation posts
+			// to the collection's /generations.
+			ID: "xai", Display: registry.Display{Name: "xAI"}, Priority: 3, Category: "apikey",
+			Media: registry.MediaConfigs{
+				registry.MediaVideo: {
+					BaseURL:  "https://api.x.ai/v1/videos",
+					AuthType: registry.AuthAPIKey, AuthHeader: "bearer", Format: "openai",
 				},
 			},
 		},

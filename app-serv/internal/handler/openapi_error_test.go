@@ -83,6 +83,7 @@ func TestOpenAPIContract_DataPlaneRequiresGatewayKey(t *testing.T) {
 		"GET /api/v1/models", "POST /api/v1/embeddings", "POST /api/v1/messages/count_tokens",
 		"POST /api/v1/audio/speech", "POST /api/v1/audio/transcriptions", "GET /api/v1/audio/voices",
 		"POST /api/v1/images/generations", "POST /api/v1/videos/generations", "POST /api/v1/search",
+		"GET /api/v1/videos/{task_id}",
 	}
 	for _, where := range dataPlane {
 		method, path, found := strings.Cut(where, " ")

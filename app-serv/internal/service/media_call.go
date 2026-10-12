@@ -90,6 +90,13 @@ type MediaCall struct {
 	Target    string
 	Headers   map[string]string
 	Selection dataplane.Selection
+	// SkipHealth marks a call whose outcome must not reach the endpoint's
+	// circuit state. A video poll is the case it exists for: it reads a job that
+	// already exists, and a stale task id answering 404 would otherwise park a
+	// healthy key for the auth-failure window
+	// (docs/PORT/011-PORT-VIDEO-ASYNC-JOB.md D5). The call still writes its
+	// usage and log rows.
+	SkipHealth bool
 }
 
 // Outcome describes the served call for the usage and log recorders.
@@ -118,6 +125,25 @@ func (c MediaCall) accountingModel() string {
 // provider's own service, so the model string is `provider/model` and a bare
 // model id is refused by name rather than guessed at.
 func (s *MediaCallService) Prepare(ctx context.Context, model string, kind domain.MediaKind, query map[string]string) (MediaCall, error) {
+	call, err := s.resolveTarget(ctx, model, kind, true)
+	if err != nil {
+		return MediaCall{}, err
+	}
+	selection, err := s.router.Select(ctx, call.ProviderID)
+	if err != nil {
+		return MediaCall{}, err
+	}
+	return s.bindCredential(call, selection, query)
+}
+
+// resolveTarget resolves the model string, the provider's block for the kind,
+// and the effective base URL, without selecting an account: a caller that
+// already knows which account it must use (a video poll reads a job that lives
+// on the account that created it) resolves the same way and selects its own,
+// so the rotation cursor is not moved by a call that never consulted it.
+// requireModel is false for that caller, which addresses a service rather than
+// one of its models.
+func (s *MediaCallService) resolveTarget(ctx context.Context, model string, kind domain.MediaKind, requireModel bool) (MediaCall, error) {
 	providerID, upstreamModel, err := splitMediaModel(model)
 	if err != nil {
 		return MediaCall{}, err
@@ -133,22 +159,24 @@ func (s *MediaCallService) Prepare(ctx context.Context, model string, kind domai
 	if upstreamModel == "" {
 		upstreamModel = strings.TrimSpace(media.DefaultModel)
 	}
-	if upstreamModel == "" && kindNeedsModel(kind) {
+	if upstreamModel == "" && requireModel && kindNeedsModel(kind) {
 		return MediaCall{}, dataplane.ValidationError("provider " + entry.ID + " needs a model for " + string(kind))
 	}
+	return MediaCall{ProviderID: entry.ID, UpstreamModel: upstreamModel, Media: media, BaseURL: baseURL}, nil
+}
 
-	selection, err := s.router.Select(ctx, entry.ID)
+// bindCredential builds the target and headers around one selected account, so
+// the credential placement comes from the kind's own block whichever way that
+// account was chosen.
+func (s *MediaCallService) bindCredential(call MediaCall, selection dataplane.Selection, query map[string]string) (MediaCall, error) {
+	target, headers, err := dataplane.MediaTarget(call.Media, call.BaseURL, selection.Credential, query)
 	if err != nil {
 		return MediaCall{}, err
 	}
-	target, headers, err := dataplane.MediaTarget(media, baseURL, selection.Credential, query)
-	if err != nil {
-		return MediaCall{}, err
-	}
-	return MediaCall{
-		ProviderID: entry.ID, UpstreamModel: upstreamModel, Media: media,
-		BaseURL: baseURL, Target: target, Headers: headers, Selection: selection,
-	}, nil
+	call.Selection = selection
+	call.Target = target
+	call.Headers = headers
+	return call, nil
 }
 
 // Perform runs one prepared call, reads its answer, records its accounting, and

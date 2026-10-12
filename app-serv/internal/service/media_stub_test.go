@@ -43,6 +43,9 @@ type stubMediaRouter struct {
 	credential provider.Credential
 	successes  int
 	failures   []string
+	// pinned records the endpoint ids a poll asked for, so a test can prove the
+	// account was pinned rather than selected.
+	pinned []string
 }
 
 func (r *stubMediaRouter) Select(_ context.Context, providerID string) (dataplane.Selection, error) {
@@ -50,6 +53,19 @@ func (r *stubMediaRouter) Select(_ context.Context, providerID string) (dataplan
 		return dataplane.Selection{}, r.failure
 	}
 	endpoint, err := domain.NewUpstreamEndpoint("ep-"+providerID, providerID, "primary",
+		domain.UpstreamAuthAPIKey, 1, time.Now().UTC())
+	if err != nil {
+		return dataplane.Selection{}, err
+	}
+	return dataplane.Selection{Endpoint: endpoint, Credential: r.credential}, nil
+}
+
+func (r *stubMediaRouter) SelectEndpoint(_ context.Context, providerID, endpointID string) (dataplane.Selection, error) {
+	if r.failure != nil {
+		return dataplane.Selection{}, r.failure
+	}
+	r.pinned = append(r.pinned, endpointID)
+	endpoint, err := domain.NewUpstreamEndpoint(endpointID, providerID, "pinned",
 		domain.UpstreamAuthAPIKey, 1, time.Now().UTC())
 	if err != nil {
 		return dataplane.Selection{}, err

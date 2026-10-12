@@ -60,14 +60,10 @@ func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request 
 	failure := err
 	switch {
 	case err != nil:
-		// reason: the client's error is the upstream failure; a failed health
-		// write retries on the next call rather than replacing this one.
-		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream could not be reached", domain.KeyFailureTransient)
+		call.recordFailure(ctx, s.router, "the media upstream could not be reached", domain.KeyFailureTransient)
 	case answer.Status < 200 || answer.Status >= 300:
 		failure = dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
-		// reason: the upstream rejection is the client's error; the health write
-		// is bookkeeping and retries on the next call.
-		_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream rejected the request", dataplane.FailureClass(answer.Status))
+		call.recordFailure(ctx, s.router, "the media upstream rejected the request", dataplane.FailureClass(answer.Status))
 	default:
 		failure = s.served(ctx, call, read, &answer)
 	}
@@ -82,6 +78,21 @@ func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request 
 	return answer, failure
 }
 
+// recordFailure applies an upstream failure to the endpoint's circuit state,
+// unless the call is one whose outcome must not touch it (a poll).
+//
+// The client's error is the upstream failure, and a failed health write is
+// bookkeeping that retries on the next call rather than replacing this one:
+// reason for the discarded error, at each call site.
+func (c MediaCall) recordFailure(ctx context.Context, router MediaRouter, reason string, class domain.KeyFailureClass) {
+	if c.SkipHealth {
+		return
+	}
+	// reason: the upstream failure is the client's error; a failed health write
+	// retries on the next call rather than replacing this one.
+	_ = router.RecordFailure(ctx, c.Selection, reason, class)
+}
+
 // served reads a 2xx answer and applies it to the endpoint's health. A reader
 // that refuses the answer turns the 200 into the rejection the client received,
 // so the usage row cannot call a failed call served.
@@ -89,12 +100,13 @@ func (s *MediaCallService) served(ctx context.Context, call MediaCall, read medi
 	if read != nil {
 		body, err := read(answer.Status, answer.Body)
 		if err != nil {
-			// reason: the reader's error is the upstream failure the client
-			// must see; the health write is bookkeeping and retries next call.
-			_ = s.router.RecordFailure(ctx, call.Selection, "the media upstream rejected the request", domain.KeyFailureTransient)
+			call.recordFailure(ctx, s.router, "the media upstream rejected the request", domain.KeyFailureTransient)
 			return err
 		}
 		answer.Body = body
+	}
+	if call.SkipHealth {
+		return nil
 	}
 	return s.router.RecordSuccess(ctx, call.Selection)
 }

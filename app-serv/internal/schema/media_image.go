@@ -1,9 +1,9 @@
 // Package schema holds request/response DTOs and their validation rules.
 //
 // @file      internal/schema/media_image.go
-// @for       The image and video generation contracts of SPEC-API-001 §7.10.
+// @for       The image generation contract of SPEC-API-001 §7.10.
 // @uses      encoding/json, internal/domain.
-// @reason    Both routes send a prompt to a provider's generation endpoint and answer with the same OpenAI envelope the reference normalizes to, so the request bodies differ only in the knobs the reference forwards for images. §7.10's video route declares no provider yet, and the type is still written because the route is registered.
+// @reason    The image route sends a prompt to a provider's generation endpoint and answers with the OpenAI envelope the reference normalizes to. The video route's own contract lives in media_video.go, because a video generation is an async job with a different request and a different answer.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     schema
 // @stability stable
@@ -27,14 +27,6 @@ type ImageRequest struct {
 	ResponseFormat string `json:"response_format,omitempty" validate:"omitempty,oneof=url b64_json"`
 }
 
-// VideoRequest is the body of POST /api/v1/videos/generations. The reference's
-// dashboard sends a model and a prompt and reads `data[].url` back.
-type VideoRequest struct {
-	Model  string `json:"model" validate:"required,min=1,max=200"`
-	Prompt string `json:"prompt" validate:"required,min=1,max=32000"`
-	Size   string `json:"size,omitempty" validate:"omitempty,max=32"`
-}
-
 // ImageBody is the payload an OpenAI-compatible generation endpoint expects.
 type ImageBody struct {
 	Model          string `json:"model"`
@@ -46,15 +38,8 @@ type ImageBody struct {
 	ResponseFormat string `json:"response_format,omitempty"`
 }
 
-// VideoBody is the payload a video generation endpoint expects.
-type VideoBody struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
-	Size   string `json:"size,omitempty"`
-}
-
-// MediaGenerationResponse is the OpenAI envelope both generation routes answer
-// with, whichever upstream produced it.
+// MediaGenerationResponse is the OpenAI envelope the image route answers with,
+// whichever upstream produced it.
 type MediaGenerationResponse struct {
 	Created int64                   `json:"created"`
 	Data    []MediaGenerationObject `json:"data"`
@@ -73,15 +58,6 @@ func DecodeImageRequest(raw []byte) (ImageRequest, error) {
 	var req ImageRequest
 	if err := json.Unmarshal(raw, &req); err != nil {
 		return ImageRequest{}, domain.NewValidationError("invalid request body: " + jsonErrorTail(err))
-	}
-	return req, nil
-}
-
-// DecodeVideoRequest decodes a video body into its typed contract.
-func DecodeVideoRequest(raw []byte) (VideoRequest, error) {
-	var req VideoRequest
-	if err := json.Unmarshal(raw, &req); err != nil {
-		return VideoRequest{}, domain.NewValidationError("invalid request body: " + jsonErrorTail(err))
 	}
 	return req, nil
 }

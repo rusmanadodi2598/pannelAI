@@ -31,5 +31,6 @@ func registerMediaRoutes(mux *routeRecorder, deps Deps, gateway func(http.Handle
 	mux.HandleFunc("GET "+APIVersion+"/audio/voices", deps.Media.Voices)
 	mux.HandleFunc("POST "+APIVersion+"/images/generations", deps.Media.Images)
 	mux.HandleFunc("POST "+APIVersion+"/videos/generations", deps.Media.Videos)
+	mux.HandleFunc("GET "+APIVersion+"/videos/{task_id}", deps.Media.VideoJob)
 	mux.HandleFunc("POST "+APIVersion+"/search", deps.Media.Search)
 }

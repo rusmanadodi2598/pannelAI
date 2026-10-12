@@ -46,7 +46,7 @@ func TestMediaHandler_ValidationFailure(t *testing.T) {
 		},
 		{
 			name: "videos without a prompt", path: "/api/v1/videos/generations",
-			body: `{"model":"openai/sora"}`, fn: func(h *MediaHandler) http.HandlerFunc { return h.Videos },
+			body: `{"model":"xai/grok-imagine-video"}`, fn: func(h *MediaHandler) http.HandlerFunc { return h.Videos },
 		},
 		{
 			name: "search without a query", path: "/api/v1/search",
@@ -87,7 +87,8 @@ func TestMediaHandler_RequiresAKey(t *testing.T) {
 		{name: "images", method: http.MethodPost, path: "/api/v1/images/generations",
 			body: `{"model":"openai/gpt-image-1","prompt":"a cat"}`},
 		{name: "videos", method: http.MethodPost, path: "/api/v1/videos/generations",
-			body: `{"model":"openai/sora","prompt":"a cat"}`},
+			body: `{"model":"xai/grok-imagine-video","prompt":"a cat"}`},
+		{name: "videojob", method: http.MethodGet, path: "/api/v1/videos/req-1?provider=xai"},
 		{name: "search", method: http.MethodPost, path: "/api/v1/search",
 			body: `{"provider":"brave-search","query":"golang"}`},
 	}
@@ -126,6 +127,8 @@ func mediaRoute(t *testing.T, f *MediaHandler, name string) http.HandlerFunc {
 		return f.Images
 	case "videos":
 		return f.Videos
+	case "videojob":
+		return f.VideoJob
 	case "search":
 		return f.Search
 	default:

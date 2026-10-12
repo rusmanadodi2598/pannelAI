@@ -52,6 +52,7 @@ var excludedFromSessionSweep = map[string]string{
 	"GET /api/v1/audio/voices":           "media data plane: gateway key credential, not a dashboard session (§7.10)",
 	"POST /api/v1/images/generations":    "media data plane: gateway key credential, not a dashboard session (§7.10)",
 	"POST /api/v1/videos/generations":    "media data plane: gateway key credential, not a dashboard session (§7.10)",
+	"GET /api/v1/videos/{task_id}":       "media data plane: gateway key credential, not a dashboard session (§7.10)",
 	"POST /api/v1/search":                "media data plane: gateway key credential, not a dashboard session (§7.10)",
 }
 

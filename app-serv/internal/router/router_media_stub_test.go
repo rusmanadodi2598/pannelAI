@@ -74,24 +74,34 @@ func (routeMediaRouter) Select(_ context.Context, providerID string) (dataplane.
 	return dataplane.Selection{Endpoint: endpoint}, nil
 }
 
+func (routeMediaRouter) SelectEndpoint(_ context.Context, providerID, endpointID string) (dataplane.Selection, error) {
+	endpoint, err := domain.NewUpstreamEndpoint(endpointID, providerID, "pinned",
+		domain.UpstreamAuthAPIKey, 1, time.Now().UTC())
+	if err != nil {
+		return dataplane.Selection{}, err
+	}
+	return dataplane.Selection{Endpoint: endpoint}, nil
+}
+
 func (routeMediaRouter) RecordSuccess(context.Context, dataplane.Selection) error { return nil }
 func (routeMediaRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass) error {
 	return nil
 }
 
-// routeMediaCaller answers every media call with one body carrying both the
-// generation envelope and a search result list, so one double serves every
-// route: each route reads the keys its own upstream would send.
+// routeMediaCaller answers every media call with one body carrying the
+// generation envelope, a search result list, and a video job, so one double
+// serves every route: each route reads the keys its own upstream would send.
 type routeMediaCaller struct{}
 
 func (routeMediaCaller) Do(context.Context, dataplane.MediaRequest) (dataplane.MediaResponse, error) {
 	return dataplane.MediaResponse{Status: 200, Body: []byte(
 		`{"created":1,"data":[{"url":"https://img.example.com/a.png"}],` +
-			`"results":[{"title":"Go","url":"https://go.dev"}]}`)}, nil
+			`"results":[{"title":"Go","url":"https://go.dev"}],` +
+			`"request_id":"req-1","status":"processing"}`)}, nil
 }
 
 // mediaRouteIndex is the registry slice the route tests address: one provider
-// that offers two media kinds and one that offers none.
+// that offers two media kinds, one video provider, and one that offers none.
 func mediaRouteIndex() *mediaIndex {
 	return &mediaIndex{entries: []registry.Provider{
 		{
@@ -114,6 +124,15 @@ func mediaRouteIndex() *mediaIndex {
 				registry.MediaWebSearch: {
 					BaseURL: "https://api.search.brave.com/res/v1", Method: "GET",
 					QueryParam: "q", MaxResultsParam: "count", DefaultMaxResults: 5,
+				},
+			},
+		},
+		{
+			ID: "xai", Priority: 4, Category: "apikey", Display: registry.Display{Name: "xAI"},
+			Media: registry.MediaConfigs{
+				registry.MediaVideo: {
+					BaseURL:  "https://api.x.ai/v1/videos",
+					AuthType: registry.AuthAPIKey, AuthHeader: "bearer",
 				},
 			},
 		},

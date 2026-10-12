@@ -14,6 +14,7 @@ package dataplane
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/rusmanadodi2598/pannelAI/app-serv/internal/domain"
@@ -48,23 +49,7 @@ func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[
 	var credErr error
 	for i := range endpoints {
 		endpoint := endpoints[(offset+i)%len(endpoints)]
-		if !endpoint.Available(now) {
-			continue
-		}
-		if s.overBudget(ctx, endpoint.ID()) {
-			continue
-		}
-		var key domain.UpstreamKey
-		if endpoint.AuthType() == domain.UpstreamAuthAPIKey {
-			picked, ok := pickKey(endpoint, now, spent, policy)
-			if !ok {
-				continue
-			}
-			key = picked
-		} else if _, tried := spent[endpoint.ID()]; tried {
-			continue
-		}
-		credential, err := s.credential(endpoint, key)
+		selection, ok, err := s.pickFrom(ctx, endpoint, now, spent, policy)
 		if err != nil {
 			// An unreadable credential is one row's problem, not the provider's: a
 			// rotated process key leaves stale ciphertext on a single endpoint while
@@ -74,13 +59,94 @@ func (s *Selector) SelectNext(ctx context.Context, providerID string, spent map[
 			credErr = err
 			continue
 		}
-		return Selection{Endpoint: endpoint, Key: key, Credential: credential}, nil
+		if ok {
+			return selection, nil
+		}
 	}
 	if credErr != nil {
 		return Selection{}, credErr
 	}
 	return Selection{}, domain.NewNoProviderAvailableError("every upstream endpoint for provider " +
 		providerID + " is unavailable, has no usable key, or has spent its budget")
+}
+
+// SelectEndpoint returns the credential walk's pick inside one named endpoint,
+// which is what an account-bound route needs: an async video job lives on the
+// account that created it, so its poll must reach that account rather than
+// whichever one the provider's rotation would pick next.
+//
+// The pin reads no rotation cursor: a caller that named an endpoint has already
+// chosen, and advancing the cursor would move the unpinned routes on. A pin
+// naming an endpoint the provider does not have is a request defect the client
+// can fix; one that exists but is parked, out of budget, or has no usable key
+// answers the same unavailability the unpinned walk reports.
+func (s *Selector) SelectEndpoint(ctx context.Context, providerID, endpointID string) (Selection, error) {
+	now := s.clock()
+	pinned := strings.TrimSpace(endpointID)
+	endpoints, err := s.candidates(ctx, providerID)
+	if err != nil {
+		return Selection{}, err
+	}
+	policy := s.rotationPolicy(ctx, providerID)
+	found := false
+	var credErr error
+	for _, endpoint := range endpoints {
+		if endpoint.ID() != pinned {
+			continue
+		}
+		found = true
+		selection, ok, err := s.pickFrom(ctx, endpoint, now, nil, policy)
+		if err != nil {
+			credErr = err
+			continue
+		}
+		if ok {
+			return selection, nil
+		}
+	}
+	if credErr != nil {
+		return Selection{}, credErr
+	}
+	if !found {
+		return Selection{}, dataPlaneError(CodeValidation,
+			"endpoint "+pinned+" is not an active endpoint of provider "+providerID)
+	}
+	return Selection{}, domain.NewNoProviderAvailableError("endpoint " + pinned + " for provider " + providerID +
+		" is unavailable, has no usable key, or has spent its budget")
+}
+
+// pickFrom tries one endpoint and answers the selection the walk would make, or
+// false when the endpoint cannot serve this request. Both entry points above
+// differ only in which endpoints they offer it and what they say when none
+// answered, so the per-endpoint rule lives here once.
+func (s *Selector) pickFrom(
+	ctx context.Context,
+	endpoint domain.UpstreamEndpoint,
+	now time.Time,
+	spent map[string]struct{},
+	policy domain.RotationPolicy,
+) (Selection, bool, error) {
+	if !endpoint.Available(now) {
+		return Selection{}, false, nil
+	}
+	if s.overBudget(ctx, endpoint.ID()) {
+		return Selection{}, false, nil
+	}
+	var key domain.UpstreamKey
+	if endpoint.AuthType() == domain.UpstreamAuthAPIKey {
+		picked, ok := pickKey(endpoint, now, spent, policy)
+		if !ok {
+			return Selection{}, false, nil
+		}
+		key = picked
+	} else if _, tried := spent[endpoint.ID()]; tried {
+		return Selection{}, false, nil
+	}
+	credential, err := s.credential(endpoint, key)
+	if err != nil {
+		return Selection{}, false, err
+	}
+	return Selection{Endpoint: endpoint, Key: key, Credential: credential}, true, nil
 }
 
 // pickKey applies the policy's key rule inside one endpoint: the first healthy

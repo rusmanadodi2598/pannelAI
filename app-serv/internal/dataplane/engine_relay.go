@@ -48,6 +48,10 @@ func (e *Engine) relayOnce(ctx context.Context, in Request, resolution Resolutio
 			ModelID:    resolution.ModelID,
 			ClientRaw:  in.Raw,
 			Override:   in.ThinkingOverride,
+			// The entry's own declaration travels with the call: a provider
+			// that states the thinking shape its upstream reads outranks the
+			// model's family format (§7.15).
+			ProviderThinkingFormat: resolution.Provider.Transport.ThinkingFormat,
 		})
 	}
 	if e.saver != nil {

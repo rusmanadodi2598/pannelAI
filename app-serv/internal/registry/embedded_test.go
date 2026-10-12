@@ -21,8 +21,8 @@ func TestLoad_EmbeddedRegistryDecodes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if idx.Count() != 34 {
-		t.Fatalf("Count() = %d, want the owner's KEEP set of 34 providers", idx.Count())
+	if idx.Count() != 35 {
+		t.Fatalf("Count() = %d, want the owner's KEEP set of 35 providers", idx.Count())
 	}
 	if idx.Revision() == "" {
 		t.Fatal("Revision() must name the reference revision the document came from")

@@ -207,6 +207,20 @@ func applyFormat(body map[string]json.RawMessage, format string, cfg Config, cap
 		}
 		setValue(body, "reasoning_effort", level)
 
+	case "tokenrouter":
+		// TokenRouter's reasoning_effort enum is low/medium/high/xhigh/max: it
+		// rejects "none" and "auto" with a 400 and reads "max" natively, so the
+		// field is omitted rather than clamped and every level passes through
+		// as it stands. The guard reads the original mode, not the clamped
+		// one: a model that cannot disable would otherwise receive the
+		// "minimal" the enum does not list.
+		if none || eff.Mode == "auto" {
+			return
+		}
+		if level := toLevel(eff); level != "" {
+			setValue(body, "reasoning_effort", level)
+		}
+
 	case "commandcode":
 		params := ensureObject(body, "params")
 		if none && caps.canDisable {

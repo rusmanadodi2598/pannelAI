@@ -66,7 +66,7 @@ var skillCatalog = buildSkillCatalog([]struct {
 	},
 	{
 		id: "pannelai-image", name: "Image Generation", endpoint: strptr("/images/generations"),
-		description: "Text-to-image through the image-capable media providers, normalized to the OpenAI images shape.",
+		description: "Text-to-image through the image-capable media providers, normalized to the OpenAI images shape, plus the async video generation job.",
 	},
 	{
 		id: "pannelai-tts", name: "Text-to-Speech", endpoint: strptr("/audio/speech"),

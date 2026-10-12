@@ -7316,6 +7316,402 @@
       "costs": {}
     },
     {
+      "provider": "tokenrouter",
+      "model": "anthropic/claude-haiku-4.5",
+      "rates": {
+        "input": "1",
+        "output": "5",
+        "cached": "0.1",
+        "reasoning": "5",
+        "cache_creation": "1.25"
+      },
+      "costs": {
+        "plain": "0.00040500",
+        "cached": "0.00040750",
+        "reasoning": "0.00231000",
+        "input-only": "1000.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "anthropic/claude-opus-4.8",
+      "rates": {
+        "input": "5",
+        "output": "25",
+        "cached": "0.5",
+        "reasoning": "25",
+        "cache_creation": "6.25"
+      },
+      "costs": {
+        "plain": "0.00202500",
+        "cached": "0.00203750",
+        "reasoning": "0.01155000",
+        "input-only": "5000.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "anthropic/claude-opus-4.8-fast",
+      "rates": {
+        "input": "10",
+        "output": "50",
+        "cached": "1",
+        "reasoning": "50",
+        "cache_creation": "12.5"
+      },
+      "costs": {
+        "plain": "0.00405000",
+        "cached": "0.00407500",
+        "reasoning": "0.02310000",
+        "input-only": "10000.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "anthropic/claude-sonnet-4.6",
+      "rates": {
+        "input": "3",
+        "output": "15",
+        "cached": "0.3",
+        "reasoning": "15",
+        "cache_creation": "3.75"
+      },
+      "costs": {
+        "plain": "0.00121500",
+        "cached": "0.00122250",
+        "reasoning": "0.00693000",
+        "input-only": "3000.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "deepseek/deepseek-v4-flash",
+      "rates": {
+        "input": "0.14",
+        "output": "0.28",
+        "cached": "0.0028",
+        "reasoning": "0.28",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00002814",
+        "cached": "0.00003276",
+        "reasoning": "0.00020468",
+        "input-only": "140.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "deepseek/deepseek-v4-pro",
+      "rates": {
+        "input": "0.435",
+        "output": "0.87",
+        "cached": "0.003625",
+        "reasoning": "0.87",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00008744",
+        "cached": "0.00010078",
+        "reasoning": "0.00063546",
+        "input-only": "435.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "google/gemini-3.5-flash",
+      "rates": {
+        "input": "1.5",
+        "output": "9",
+        "cached": "0.15",
+        "reasoning": "9",
+        "cache_creation": "0.08333"
+      },
+      "costs": {
+        "plain": "0.00070950",
+        "cached": "0.00063250",
+        "reasoning": "0.00388500",
+        "input-only": "1500.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "google/gemini-3.6-flash",
+      "rates": {
+        "input": "1.5",
+        "output": "7.5",
+        "cached": "0.15",
+        "reasoning": "7.5",
+        "cache_creation": "0.08333"
+      },
+      "costs": {
+        "plain": "0.00060750",
+        "cached": "0.00055750",
+        "reasoning": "0.00346500",
+        "input-only": "1500.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "moonshotai/kimi-k2.7-code",
+      "rates": {
+        "input": "0.9286",
+        "output": "3.8571",
+        "cached": "0.1857",
+        "reasoning": "3.8571",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00032264",
+        "cached": "0.00035071",
+        "reasoning": "0.00193430",
+        "input-only": "928.60000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "moonshotai/kimi-k3-free",
+      "rates": {
+        "input": "3",
+        "output": "15",
+        "cached": "0.3",
+        "reasoning": "15",
+        "cache_creation": "3"
+      },
+      "costs": {
+        "plain": "0.00121500",
+        "cached": "0.00120000",
+        "reasoning": "0.00693000",
+        "input-only": "3000.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "openai/gpt-5.4",
+      "rates": {
+        "input": "2.5",
+        "output": "15",
+        "cached": "0.25",
+        "reasoning": "15",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00118250",
+        "cached": "0.00112500",
+        "reasoning": "0.00647500",
+        "input-only": "2500.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "openai/gpt-5.4-mini",
+      "rates": {
+        "input": "0.75",
+        "output": "4.5",
+        "cached": "0.075",
+        "reasoning": "4.5",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00035475",
+        "cached": "0.00033750",
+        "reasoning": "0.00194250",
+        "input-only": "750.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "openai/gpt-5.4-pro",
+      "rates": {
+        "input": "30",
+        "output": "180",
+        "cached": null,
+        "reasoning": "180",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.01419000",
+        "cached": "0.01890000",
+        "reasoning": "0.08040000",
+        "input-only": "30000.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "openai/gpt-5.5",
+      "rates": {
+        "input": "5",
+        "output": "30",
+        "cached": "0.5",
+        "reasoning": "30",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00236500",
+        "cached": "0.00225000",
+        "reasoning": "0.01295000",
+        "input-only": "5000.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "openai/gpt-5.6-sol",
+      "rates": {
+        "input": "5",
+        "output": "30",
+        "cached": "0.5",
+        "reasoning": "30",
+        "cache_creation": "6.25"
+      },
+      "costs": {
+        "plain": "0.00236500",
+        "cached": "0.00228750",
+        "reasoning": "0.01295000",
+        "input-only": "5000.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "qwen/qwen3-coder-next",
+      "rates": {
+        "input": "0.12",
+        "output": "0.75",
+        "cached": "0.06",
+        "reasoning": "0.75",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00005880",
+        "cached": "0.00006510",
+        "reasoning": "0.00032400",
+        "input-only": "120.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "qwen/qwen3.7-max",
+      "rates": {
+        "input": "1.25",
+        "output": "3.75",
+        "cached": "0.25",
+        "reasoning": "3.75",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00033625",
+        "cached": "0.00040000",
+        "reasoning": "0.00220000",
+        "input-only": "1250.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "qwen/qwen3.8-max",
+      "rates": {
+        "input": "2",
+        "output": "6",
+        "cached": "0.25",
+        "reasoning": "6",
+        "cache_creation": "2.5"
+      },
+      "costs": {
+        "plain": "0.00053800",
+        "cached": "0.00062500",
+        "reasoning": "0.00350500",
+        "input-only": "2000.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "x-ai/grok-4.5",
+      "rates": {
+        "input": "2",
+        "output": "6",
+        "cached": "0.5",
+        "reasoning": "6",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00053800",
+        "cached": "0.00066000",
+        "reasoning": "0.00353000",
+        "input-only": "2000.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "z-ai/glm-5-turbo",
+      "rates": {
+        "input": "1.2",
+        "output": "4",
+        "cached": "0.24",
+        "reasoning": "4",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00035000",
+        "cached": "0.00040400",
+        "reasoning": "0.00222400",
+        "input-only": "1200.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "z-ai/glm-5.2",
+      "rates": {
+        "input": "1.4",
+        "output": "4.4",
+        "cached": "0.26",
+        "reasoning": "4.4",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00039020",
+        "cached": "0.00045400",
+        "reasoning": "0.00251800",
+        "input-only": "1400.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
+      "provider": "tokenrouter",
+      "model": "z-ai/glm-5.3-free",
+      "rates": {
+        "input": "0",
+        "output": "0",
+        "cached": "0",
+        "reasoning": "0",
+        "cache_creation": null
+      },
+      "costs": {
+        "plain": "0.00000000",
+        "cached": "0.00000000",
+        "reasoning": "0.00000000",
+        "input-only": "0.00000000",
+        "empty": "0.00000000"
+      }
+    },
+    {
       "provider": "xai",
       "model": "grok-2-image-1212",
       "rates": {

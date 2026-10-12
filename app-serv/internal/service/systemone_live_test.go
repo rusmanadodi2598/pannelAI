@@ -96,6 +96,13 @@ type liveKeylessRouter struct {
 func (r *liveKeylessRouter) Select(context.Context, string) (dataplane.Selection, error) {
 	return dataplane.Selection{Endpoint: r.endpoint, Credential: r.credential}, nil
 }
+
+// SelectEndpoint answers a pin the same way: this stub owns exactly one
+// endpoint, so any pin resolves to it.
+func (r *liveKeylessRouter) SelectEndpoint(context.Context, string, string) (dataplane.Selection, error) {
+	return dataplane.Selection{Endpoint: r.endpoint, Credential: r.credential}, nil
+}
+
 func (r *liveKeylessRouter) RecordSuccess(context.Context, dataplane.Selection) error { return nil }
 func (r *liveKeylessRouter) RecordFailure(context.Context, dataplane.Selection, string, domain.KeyFailureClass) error {
 	return nil

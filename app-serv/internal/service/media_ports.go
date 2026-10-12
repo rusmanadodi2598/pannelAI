@@ -36,10 +36,15 @@ type MediaOverrideReader interface {
 // state the chat plane reads.
 //
 // The methods are the engine's, gathered into one port because a media call
-// asks all three of the same collaborator: taking the engine itself would drag
+// asks all four of the same collaborator: taking the engine itself would drag
 // the resolver and the wire translators into every media test.
 type MediaRouter interface {
 	Select(ctx context.Context, providerID string) (dataplane.Selection, error)
+	// SelectEndpoint selects inside one named endpoint, which is what an
+	// account-bound route needs: an async video job lives on the account that
+	// created it, so its poll must reach that account rather than whichever
+	// one the provider's rotation would pick next.
+	SelectEndpoint(ctx context.Context, providerID, endpointID string) (dataplane.Selection, error)
 	RecordSuccess(ctx context.Context, selection dataplane.Selection) error
 	RecordFailure(ctx context.Context, selection dataplane.Selection, reason string, class domain.KeyFailureClass) error
 }

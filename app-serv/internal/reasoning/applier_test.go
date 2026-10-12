@@ -102,33 +102,98 @@ func TestApplier_AStrippedClientIntentIsReapplied(t *testing.T) {
 }
 
 // TestResolveFormat pins the wire/format decision, including the guard that
-// keeps an OpenAI-wire upstream from receiving a Claude or Gemini shape.
+// keeps an OpenAI-wire upstream from receiving a Claude or Gemini shape and the
+// provider entry's own declaration outranking the model's.
 func TestResolveFormat(t *testing.T) {
 	cases := []struct {
-		name   string
-		wire   string
-		format string
-		want   string
+		name     string
+		wire     string
+		format   string
+		provider string
+		want     string
 	}{
-		{"a declared format is used as it stands", "openai", "zai", "zai"},
-		{"the commandcode wire keeps its format", "openai", "commandcode", "commandcode"},
-		{"a Claude format on the Claude wire is used", "claude", "claude-adaptive", "claude-adaptive"},
-		{"a Claude format on the OpenAI wire falls back", "openai", "claude-budget", "openai"},
-		{"a Gemini format on the OpenAI wire falls back", "openai", "gemini-level", "openai"},
-		{"the Responses wire reads its own object", "openai-responses", "openai", "openai-responses"},
-		{"a Gemini format on the Responses wire reads the object", "openai-responses", "gemini-budget", "openai-responses"},
-		{"no declared format on the OpenAI wire", "openai", "", "openai"},
-		{"no declared format on the Responses wire", "openai-responses", "", "openai-responses"},
-		{"no declared format on the Claude wire", "claude", "", "claude-budget"},
+		{"a declared format is used as it stands", "openai", "zai", "", "zai"},
+		{"the commandcode wire keeps its format", "openai", "commandcode", "", "commandcode"},
+		{"a Claude format on the Claude wire is used", "claude", "claude-adaptive", "", "claude-adaptive"},
+		{"a Claude format on the OpenAI wire falls back", "openai", "claude-budget", "", "openai"},
+		{"a Gemini format on the OpenAI wire falls back", "openai", "gemini-level", "", "openai"},
+		{"the Responses wire reads its own object", "openai-responses", "openai", "", "openai-responses"},
+		{"a Gemini format on the Responses wire reads the object", "openai-responses", "gemini-budget", "", "openai-responses"},
+		{"no declared format on the OpenAI wire", "openai", "", "", "openai"},
+		{"no declared format on the Responses wire", "openai-responses", "", "", "openai-responses"},
+		{"no declared format on the Claude wire", "claude", "", "", "claude-budget"},
+		{"the provider's declaration outranks the model's format", "openai", "claude-adaptive", "tokenrouter", "tokenrouter"},
+		{"the provider's declaration outranks a native-only model format", "openai", "gemini-level", "openai", "openai"},
+		{"the Responses wire keeps its own object over the declaration", "openai-responses", "openai", "tokenrouter", "openai-responses"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			caps := registry.CapabilitySet{ThinkingFormat: tc.format}
-			if got := resolveFormat(tc.wire, caps); got != tc.want {
-				t.Fatalf("resolveFormat(%q, format %q) = %q, want %q", tc.wire, tc.format, got, tc.want)
+			if got := resolveFormat(tc.wire, caps, tc.provider); got != tc.want {
+				t.Fatalf("resolveFormat(%q, format %q, provider %q) = %q, want %q",
+					tc.wire, tc.format, tc.provider, got, tc.want)
 			}
 		})
 	}
+}
+
+// TestApplier_TheProviderDeclarationReachesTheBody pins the end of the same
+// rule: a provider that declares its own thinking shape writes that shape,
+// because the entry's transport is authoritative about the wire it speaks. The
+// model's own family format would also write its switch beside the effort, so
+// the body the upstream receives is the discriminating evidence.
+func TestApplier_TheProviderDeclarationReachesTheBody(t *testing.T) {
+	cases := []struct {
+		name     string
+		provider string
+		want     string
+	}{
+		{
+			name:     "tokenrouter writes the effort field its enum reads",
+			provider: "tokenrouter",
+			want:     `{"model":"deepseek/deepseek-v4-pro","reasoning_effort":"high"}`,
+		},
+		{
+			name:     "the same model without the declaration keeps its family shape",
+			provider: "",
+			want:     `{"model":"deepseek/deepseek-v4-pro","thinking":{"type":"enabled"},"reasoning_effort":"high"}`,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			applier, err := NewApplier(stubSettings{settings: settingsWithThinking("tokenrouter", "high")})
+			if err != nil {
+				t.Fatalf("NewApplier() error = %v", err)
+			}
+			got := applier.Apply(context.Background(), []byte(`{"model":"deepseek/deepseek-v4-pro"}`), Call{
+				Wire:                   "openai",
+				ProviderID:             "tokenrouter",
+				ModelID:                "deepseek/deepseek-v4-pro",
+				ProviderThinkingFormat: tc.provider,
+			})
+			assertJSON(t, decodeAny(t, got), tc.want)
+		})
+	}
+}
+
+// TestApplier_TokenRouterNeverCarriesNone pins the refusal the parity exists
+// for: TokenRouter answers 400 for reasoning_effort "none", so neither a
+// client's own word nor a stored mode may reach the wire. The strip removes the
+// client's field and the format writes nothing back.
+func TestApplier_TokenRouterNeverCarriesNone(t *testing.T) {
+	applier, err := NewApplier(stubSettings{settings: settingsWithThinking("tokenrouter", "none")})
+	if err != nil {
+		t.Fatalf("NewApplier() error = %v", err)
+	}
+	got := applier.Apply(context.Background(),
+		[]byte(`{"model":"deepseek/deepseek-v4-pro","reasoning_effort":"none"}`), Call{
+			Wire:                   "openai",
+			ProviderID:             "tokenrouter",
+			ModelID:                "deepseek/deepseek-v4-pro",
+			ProviderThinkingFormat: "tokenrouter",
+			ClientRaw:              []byte(`{"reasoning_effort":"none"}`),
+		})
+	assertJSON(t, decodeAny(t, got), `{"model":"deepseek/deepseek-v4-pro"}`)
 }
 
 // TestConfigFromMode pins the stored mode's mapping, including the two states

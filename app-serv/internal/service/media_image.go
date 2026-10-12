@@ -1,9 +1,9 @@
 // Package service implements the management-plane use cases of app-serv.
 //
 // @file      internal/service/media_image.go
-// @for       The image and video generation use cases of SPEC-API-001 §7.10.
+// @for       The image generation use case of SPEC-API-001 §7.10.
 // @uses      internal/dataplane, internal/domain, internal/schema, context, encoding/json.
-// @reason    Both routes send a prompt and normalize the answer into the same OpenAI envelope, so the normalization lives here once: the reference normalizes every adapter's answer into `{created, data:[{url|b64_json}]}`, and a client that reads `data[0].url` must keep working whichever provider answered.
+// @reason    The route sends a prompt and normalizes the answer into the OpenAI envelope, so the normalization lives here once: the reference normalizes every adapter's answer into `{created, data:[{url|b64_json}]}`, and a client that reads `data[0].url` must keep working whichever provider answered. The video route's own use cases live in media_video.go, because a video generation is an async job with its own envelope.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     service
 // @stability stable
@@ -41,30 +41,8 @@ func (s *MediaCallService) GenerateImage(ctx context.Context, req schema.ImageRe
 	return normalized, call.Outcome(), err
 }
 
-// GenerateVideo performs one video generation call. §7.10 registers the route,
-// and no registry provider declares a video block yet, the same state the
-// reference is in, where `videoConfig` is a recognized key nothing defines, so
-// the route answers PROVIDER_NOT_ROUTABLE until one does.
-func (s *MediaCallService) GenerateVideo(ctx context.Context, req schema.VideoRequest, keyID string) (schema.MediaGenerationResponse, dataplane.Outcome, error) {
-	call, err := s.prepareForCall(ctx, req.Model, domain.MediaKindVideo, nil, keyID)
-	if err != nil {
-		return schema.MediaGenerationResponse{}, dataplane.Outcome{}, err
-	}
-	body, err := json.Marshal(schema.VideoBody{Model: call.UpstreamModel, Prompt: req.Prompt, Size: req.Size})
-	if err != nil {
-		return schema.MediaGenerationResponse{}, call.Outcome(),
-			dataplane.InternalError("the video request could not be built", err)
-	}
-	answer, err := s.Perform(ctx, call, dataplane.MediaRequest{Method: "POST", Body: body}, keyID, nil)
-	if err != nil {
-		return schema.MediaGenerationResponse{}, call.Outcome(), err
-	}
-	normalized, err := normalizeGeneration(answer.Body)
-	return normalized, call.Outcome(), err
-}
-
-// generationEnvelope is the upstream answer both generation routes normalize:
-// the OpenAI image envelope the reference's adapters produce.
+// generationEnvelope is the upstream answer the image route normalizes: the
+// OpenAI image envelope the reference's adapters produce.
 type generationEnvelope struct {
 	Created int64                          `json:"created"`
 	Data    []schema.MediaGenerationObject `json:"data"`
