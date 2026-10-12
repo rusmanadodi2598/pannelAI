@@ -130,16 +130,15 @@ describe('UsageLivePanel drawing', () => {
 			)
 		);
 
-		expect(await screen.findByText('Finished requests')).toBeTruthy();
-		expect(screen.getByText('gpt-4o')).toBeTruthy();
+		await screen.findByRole('tab', { name: /Finished requests \(2\)/ });
+		screen.getByRole('tab', { name: /Finished requests/ }).click();
+		expect(await screen.findByText('gpt-4o')).toBeTruthy();
 		expect(screen.getByText('claude-3-5-sonnet')).toBeTruthy();
 		expect(screen.getByText('Success')).toBeTruthy();
 		expect(screen.getByText('Error')).toBeTruthy();
 	});
 
-	it('sets the finished list off with a tab-styled label that is not a control', async () => {
-		// The separator uses the tab idiom without being a tab anyone can click, so the label carries the
-		// accent rule and nothing here is focusable.
+	it('keeps the finished requests behind a tab, with no loose heading in the page', async () => {
 		const stub = stubPanel();
 		render(UsageLivePanel);
 		await screen.findByText('Connecting');
@@ -160,14 +159,13 @@ describe('UsageLivePanel drawing', () => {
 			)
 		);
 
-		const label = await screen.findByText('Finished requests');
-
-		expect(label.closest('button')).toBeNull();
-		expect(screen.queryByRole('tab')).toBeNull();
-		expect(label.classList.contains('border-[var(--color-accent)]')).toBe(true);
+		const tab = await screen.findByRole('tab', { name: /Finished requests \(1\)/ });
+		// The list is named by its tab, not by a heading or a tab-styled strip drawn loose in the page.
+		expect(tab.getAttribute('aria-selected')).toBe('false');
+		expect(screen.queryByText('Finished requests', { selector: 'span' })).toBeNull();
 	});
 
-	it('does not render the finished list when the frame reports none', async () => {
+	it('does not count a finished request until the frame reports one', async () => {
 		const stub = stubPanel();
 		render(UsageLivePanel);
 		await screen.findByText('Connecting');
@@ -175,9 +173,7 @@ describe('UsageLivePanel drawing', () => {
 		stub.streams[0].send(frameText(frame()));
 
 		expect(await screen.findByText('Live')).toBeTruthy();
-		expect(screen.queryByText('Finished requests')).toBeNull();
-		// Awaited, because the drawing's own state waits on the registry read rather than on the frame, and
-		// an idle drawing states no fact in words.
+		expect(await screen.findByRole('tab', { name: /Finished requests \(0\)/ })).toBeTruthy();
 		expect(await screen.findByText('OpenAI')).toBeTruthy();
 		expect(screen.queryByText(/No request has finished/)).toBeNull();
 	});

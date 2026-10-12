@@ -277,10 +277,13 @@ absent.
 
 **List** (SPEC-API §7.4)
 
-- **Table:** provider name, category, auth type, endpoint count, status summary. Filters: category
-  (`apikey`, `oauth`, `free`, `media`, `local`) and a search over name and ID. Both sit in one compact
-  row with the refresh control, each the same height, and the row wraps as a block on a narrow screen
-  (owner directive, 2026-09-25); the select keeps its name in `aria-label` rather than a stacked label.
+- **Table:** provider name, category, auth type, endpoint count, status summary. Filters: a search over
+  name and ID, and a category filter (`apikey`, `oauth`, `free`, `media`, `local`, plus All). The search
+  and the refresh control share one row, which takes the full width on a phone and sits on one line from
+  `sm`. The category filter is a row of chips rather than a select, so every option is visible at once:
+  three to a row on a phone, six on one line from `sm`, each a 44px target of the same width, and the
+  chosen one is announced with `aria-pressed` (owner directive, 2026-10-12, replacing the 2026-09-25 select
+  that could not match the controls beside it).
 - **Search is server-side (landed 2026-09-25, PORT 002):** the screen sends what was typed as `?q`,
   which `GET /api/v1/providers` matches as a case-insensitive substring over the id and the display
   name, blank meaning no filter. The panel filters nothing in the browser: §6.3's pagination discipline
@@ -303,7 +306,23 @@ absent.
 
 **Detail**
 
-- **Header:** provider name, category, auth type, transport defaults, model count summary.
+- **Tabs (landed 2026-10-12):** the detail is grouped into three tabs, built on the panel's tablist
+  (`PanelTabs`, the same component as Usage), so an operator switches between the reads rather than
+  scrolling one run of plain text. A registry provider has **Overview** (the transport defaults, the
+  deprecation notice, and the website), **Models** (the catalog, the disabled set, and the custom models),
+  and **Connections** (the connections, the proxy binding, and OAuth for an OAuth provider). A custom node
+  has **Overview** (its details card), **Connections**, and **Models** (its available models). Each tab's
+  sections stay folded and closed by default, so a tab stays compact. The tab list is the reading order, and
+  a tab's panel renders only while it is selected.
+- **Overview (landed 2026-10-12):** the header facts are grouped into three cards, each answering one
+  question: **Transport** (format, URL suffix, validate URL, timeout, and the base URL with an icon-only copy control in the card heading, top right),
+  **Access** (provider id, category, auth, website), and **Models and endpoints** (model counts and the
+  endpoint summary). A status line leads the tab: it states whether the provider routes, in the words that
+  match the reason (`Routing`, `No endpoint yet`, `Endpoints failing`, or `Not routable` for a connector),
+  marked on its leading edge with the health colour (DESIGN.md §6) and always paired with that sentence,
+  so colour is never the only signal. An empty transport value reads `Not set`, and a zero timeout reads
+  `No timeout` rather than a bare `0 ms`. An endpoint count of zero is rendered in the warning colour.
+- **Header:** provider name, category, auth type, transport defaults, model count summary (Overview tab).
 - **Custom provider node (landed):** a provider whose id carries a node prefix (`openai-compatible-` or
   `anthropic-compatible-`, §7.4) is a node rather than a registry entry, and the panel tells them apart from
   the id prefix alone because the provider response carries no flag for it. The screen then states what only
@@ -475,13 +494,17 @@ absent.
 
 **Tab 1: Combos** (SPEC-API §7.7)
 
-- **Table:** name, strategy, model count, sticky limit, judge model, updated. Actions: edit, test (U2,
+- **List:** one row per combo, sorted by name A to Z. Each row shows the name, strategy, and model count, and
+  opens to show the detail (models in order, strategy, sticky limit, judge model, updated). Rows are closed by
+  default, so the list stays short on a phone. Edit, Test, and Delete sit on the row's title line.
+- **Table (superseded by List above):** name, strategy, model count, sticky limit, judge model, updated. Actions: edit, test (U2,
   landed), delete, all three icon-only with the action's name in `aria-label` and `title` (PORT 003 D5,
   §8.11 butir 9); Delete carries the danger colour and no competing text colour. The tab's toolbar is one
   row holding the sentence, the New combo action (glyph + label), and the refresh control, each the same
   height, wrapping as a block on a narrow screen (PORT 003 F2). Pagination uses the chevron controls the
   provider list uses.
-- **Editor:**
+- **Editor:** opens as a modal dialog (the same native dialog as Test and Delete), for both New combo and Edit.
+  It is mounted only while open. It is not an inline form above the list.
   - Model list is ordered and drag-reorderable, each row a `ref` with a priority. The `ref` field accepts
     `provider/model` or an existing combo name, and stays a text field: a ref the picker cannot offer yet
     (a model id an upstream has not answered with) is still typeable. Reordering ships with two paths to
@@ -490,7 +513,9 @@ absent.
     they cannot disagree about the result, and each move renumbers the priorities rather than swapping two
     of them, because the numbers are the stored form of the order. The two move buttons and Remove are
     icon-only (PORT 003 D2, §8.11 butir 9), each carrying `Move <ref> up` / `Move <ref> down` / `Remove
-<ref>` as its accessible name and title; Add models and Add a model keep their labels and gain a glyph.
+<ref>` as its accessible name and title; Add models keeps its label and gains a glyph. There is no custom
+    add-a-model row: the picker is the only way to add a model to the list (a ref the picker cannot offer is
+    typed into an existing row's field).
   - **Model picker:** one dialog serves every model choice on the screen (the combo's members, the judge),
     which is the reference's own shape. It offers the catalog ids of the providers that have an endpoint
     right now (`endpoint_count > 0`) and the names of the combos on the page, and nothing else. A provider
@@ -578,6 +603,13 @@ absent.
   table's are exact; the compact formatter is the standard one with a pinned locale, not the reference's
   hand-rolled thresholds, which print `1000.0K` for 999,999 (draft 016 F1). A chart's own read failing
   replaces that chart with its message and leaves the other one drawn (draft 016 F2).
+- **Controls band (2026-10-12):** Period, Group by, and Refresh now sit on one even row of three equal
+  columns on a phone, each 44px tall, so the band reads as one control set rather than a wrapped pair with
+  a separate refresh below it. The refresh keeps its own label beside the two selects' labels.
+- **Breakdown paging (2026-10-12):** the group-by table shows five groups per page with Previous, Next and
+  a `Page X of Y` label, because a dimension can return dozens of groups and a full dump is unreadable on
+  a phone. The sort orders the whole response before it pages, so page two is never a second sort. The
+  pager is drawn only when there is more than one page.
 - **Cost caveat:** SPEC-API §7.12 states cost figures are estimates. The cost tile carries that note.
 - **Live:** `GET /api/v1/usage/live` (server-sent events) carries the three facts a period window cannot:
   the requests in flight now, the requests that just finished, and the provider the gateway last reported an
@@ -594,8 +626,8 @@ absent.
   a shared row with no horizontal gap is a share of zero, which is a drawing with no boxes in it. Combos are
   capped at eight drawn nodes and the row states which ones the drawing left out, because the band holds
   about half as many readable labels as the full ring the drawing used before combos joined it. The facts
-  that are happening are stated in one tab of the live controls row, beside the connection
-  chip and the pause control, and never inside the drawing's frame: the sentence used to sit above the nodes
+  that are happening are stated in the Live activity tablist at the bottom of the panel, below the drawing
+  (2026-10-12: moved out of the controls row), and never inside the drawing's frame: the sentence used to sit above the nodes
   and moved the drawing every time a request started or finished, which is what the owner's correction of
   2026-09-27 (draft 035 F2) ended. The tab is a statement, not a control (nothing in it is focusable, the
   rule draft 023 F2 set for tab-idiom labels), and it carries the drawing's own colour rule: a routing
@@ -633,10 +665,12 @@ absent.
   names itself and, where the panel knows it, the cause (§8.6.1). A gateway that does not serve the route is
   stated as unavailable, not replaced by a poll under the same label. The finished list dates each row by
   how long ago it finished rather than by the instant, and keeps that reading fresh while the row is on
-  screen: the row is a claim about now, so a frozen "just now" would be a wrong figure (draft 014 F4). It
-  sits under the drawing, set off by the tab idiom's label and accent rule with nothing focusable in it,
-  because the owner asked for a separator rather than a control (owner's correction, 2026-09-23, draft 023
-  F2). Each finished row splits its tokens into in and out in the words the tiles above use, and a figure the
+  screen: the row is a claim about now, so a frozen "just now" would be a wrong figure (draft 014 F4).
+  (2026-10-12) The live detail is one tablist, Live activity, at the bottom of the panel below the drawing,
+  with three tabs: In flight (count), Last finished (with the last error beneath it), and Finished requests
+  (count). Each tab scrolls inside a box of one height (`max-h-48`, `overflow-y-auto`), so switching tabs
+  does not move the page. The tablist is the page's detail after Node, not a control over the stream; the
+  facts inside it are not focusable. Each finished row splits its tokens into in and out in the words the tiles above use, and a figure the
   frame did not send is stated as absent rather than printed as zero (draft 016 F3).
 
 **Tab 2: Records**
@@ -2255,7 +2289,8 @@ _§6.4's tab one states the shape the pass left behind: the combo table's Edit, 
 icon-only under §8.11 butir 9, the toolbar holds the sentence, the New combo action, and the refresh
 control in one row, and the pagination uses the same chevron controls as `/providers`. The editor's model
 rows follow: the two move buttons and Remove are icon-only with `Move <ref> up` / `Move <ref> down` /
-`Remove <ref>` as their names, and Add models and Add a model keep their labels and gain a glyph. The
+`Remove <ref>` as their names, and Add models keeps its label and gains a glyph (Add a model was removed; the
+picker is the only add path). The
 modals joined too (delete, test readout, model picker, vision picker, vision adapter form), which is the
 same glyph + label shape PORT 002 gave the provider screens' controls, so the two screens cannot drift
 apart on the same control._

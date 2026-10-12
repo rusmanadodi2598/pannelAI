@@ -1,11 +1,13 @@
-// Live row tests (src/lib/components/UsageLivePanel.svelte).
+// Live row tests (src/lib/components/UsageLivePanel.svelte and UsageLiveTabs.svelte).
 //
-// Two rules shape this row: every tab in the live controls carries the same box, and the dynamic facts
-// sentence is a tab of this row rather than a caption on the drawing, which is hidden from assistive
-// technology and moved with every frame. The rows here pin the shape, not the pixels: what the
-// browser measures belongs to the live click-through, and what the DOM promises is here.
-// The tab is a statement, not a control, which is why nothing in these rows can be
-// clicked or focused, and why only the two real controls carry the hover affordance.
+// The live controls row holds only the connection: the status chip, the pause control, and the retry when
+// the stream is unavailable. The live facts (requests in flight, the last finished provider, the last
+// error) and the finished requests are not in that row. They sit together in one tablist, Live activity,
+// at the bottom of the panel, below the drawing, so the page reads Node first and the detail after it.
+// Each tab scrolls in its own box.
+//
+// The tablist is a statement about the stream, not a control over it. The tabs are real tabs so a reader
+// can move between the lists, and the facts inside them are never focusable.
 
 import { cleanup, render, screen, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -15,10 +17,9 @@ import { frame, startedNow, stubPanel } from '../support/live-panel-stub';
 
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 
-// The one box every tab on the row wears: 44px minimum height (SPEC-UI §8.6 rule 3, the panel's floor
+// The one box every control on the row wears: 44px minimum height (SPEC-UI §8.6 rule 3, the panel's floor
 // for a control's touch target), the panel's chip radius, one border, and the same horizontal padding.
-// The row's own two controls already had it; F1 lifted the chip to join them.
-const TAB_BOX = [
+const CONTROL_BOX = [
 	'inline-flex',
 	'min-h-11',
 	'items-center',
@@ -29,33 +30,43 @@ const TAB_BOX = [
 	'text-sm'
 ];
 
-function rowOf(chip: HTMLElement): HTMLElement {
+/** The connection chip is the row's first control, so it names the row for the tests. */
+async function liveRow(): Promise<HTMLElement> {
+	const chip = await screen.findByText('Connecting');
 	return chip.parentElement as HTMLElement;
 }
 
-/** The connection chip is the row's first tab, so it names the row for the tests. */
-async function liveRow(): Promise<HTMLElement> {
-	const chip = await screen.findByText('Connecting');
-	return rowOf(chip);
+/** The Live activity tablist, found by its accessible name. */
+function liveTabs(): HTMLElement {
+	return screen.getByRole('tablist', { name: 'Live activity' });
 }
 
-/** One active entry the staleness guard keeps, so the facts tab renders and is awaited. */
-async function withInFlight(stub: { streams: { send: (text: string) => void }[] }): Promise<void> {
+/** Opens one tab of the Live activity tablist, the way a reader does: by clicking it. */
+async function openTab(name: RegExp): Promise<void> {
+	const tab = await screen.findByRole('tab', { name });
+	tab.click();
+}
+
+/** The panel of the tab that is open now. */
+function openPanel(): HTMLElement {
+	const selected = screen.getByRole('tab', { selected: true });
+	const panelId = selected.getAttribute('aria-controls');
+	if (panelId === null) throw new Error('the selected tab names no panel');
+	const panel = document.getElementById(panelId);
+	if (panel === null) throw new Error('the selected tab panel is not in the document');
+	return panel;
+}
+
+/** One active entry the staleness guard keeps, so the In flight tab carries it. */
+function sendInFlight(
+	stub: { streams: { send: (text: string) => void }[] },
+	providerId = 'openai'
+) {
 	stub.streams[0].send(
 		frameText(
-			frame({ active: [{ provider_id: 'openai', model: 'gpt-4o', started_at: startedNow() }] })
+			frame({ active: [{ provider_id: providerId, model: 'gpt-4o', started_at: startedNow() }] })
 		)
 	);
-	await screen.findByText('1 in flight:');
-}
-
-function tabFor(label: HTMLElement | string): HTMLElement {
-	const found =
-		typeof label === 'string' ? screen.getByText(label).parentElement : label.parentElement;
-	if (found === null) {
-		throw new Error('the fact label rendered without a parent tab');
-	}
-	return found;
 }
 
 afterEach(() => {
@@ -72,52 +83,35 @@ describe('UsageLivePanel row', () => {
 		expect(row.classList.contains('flex')).toBe(true);
 		expect(row.classList.contains('flex-wrap')).toBe(true);
 		expect(row.classList.contains('items-stretch')).toBe(true);
-		expect(rowOf(screen.getByRole('button', { name: 'Pause live updates' }))).toBe(row);
+		expect(screen.getByRole('button', { name: 'Pause live updates' }).parentElement).toBe(row);
 	});
 
-	it('gives every tab it renders, facts tab included, the same box', async () => {
-		const stub = stubPanel();
+	it('gives the chip and the pause control the same box', async () => {
+		stubPanel();
 		render(UsageLivePanel);
 		const chip = await screen.findByText('Connecting');
-		const row = rowOf(chip);
-		await withInFlight(stub);
-
-		const tab = tabFor('1 in flight:');
 		const pause = screen.getByRole('button', { name: 'Pause live updates' });
-		expect(tab.parentElement).toBe(row);
 
-		for (const element of [chip, tab, pause]) {
-			for (const token of TAB_BOX) {
+		for (const element of [chip, pause]) {
+			for (const token of CONTROL_BOX) {
 				expect(element.classList.contains(token)).toBe(true);
 			}
 		}
 	});
 
-	it('lets the facts tab shrink and wrap instead of widening the page', async () => {
-		const stub = stubPanel();
-		render(UsageLivePanel);
-		await liveRow();
-		await withInFlight(stub);
-
-		const tab = tabFor('1 in flight:');
-		expect(tab.classList.contains('min-w-0')).toBe(true);
-		expect(tab.classList.contains('flex-wrap')).toBe(true);
-		expect(within(tab).getByText('OpenAI (gpt-4o)').classList.contains('break-words')).toBe(true);
-	});
-
-	it('gives the retry tab the same box when it appears', async () => {
+	it('gives the retry control the same box when it appears', async () => {
 		stubPanel({ liveAnswers: [() => new Response('', { status: 404 })] });
 		render(UsageLivePanel);
 		const row = await liveRow();
 
 		const retry = await screen.findByRole('button', { name: 'Try again' });
 		expect(retry.parentElement).toBe(row);
-		for (const token of TAB_BOX) {
+		for (const token of CONTROL_BOX) {
 			expect(retry.classList.contains(token)).toBe(true);
 		}
 	});
 
-	it('marks only the two controls as hoverable, never the statements', async () => {
+	it('marks only the controls as hoverable, never the statements', async () => {
 		stubPanel({ liveAnswers: [() => new Response('', { status: 404 })] });
 		render(UsageLivePanel);
 		await liveRow();
@@ -133,33 +127,38 @@ describe('UsageLivePanel row', () => {
 			screen.getByText('Unavailable').classList.contains('hover:bg-[var(--color-surface-2)]')
 		).toBe(false);
 	});
+});
 
-	it('states the live facts in a tab of the row, not in the drawing frame', async () => {
-		const stub = stubPanel();
-		const container = render(UsageLivePanel).container;
-		const row = await liveRow();
+describe('UsageLivePanel Live activity tab', () => {
+	it('sits at the bottom of the panel, after the drawing', async () => {
+		stubPanel();
+		const { container } = render(UsageLivePanel);
+		await liveRow();
 
-		stub.streams[0].send(
-			frameText(
-				frame({
-					active: [{ provider_id: 'openai', model: 'gpt-4o', started_at: startedNow() }],
-					error_provider: 'openai'
-				})
-			)
-		);
-
-		const tab = tabFor(await within(row).findByText('1 in flight:'));
-		expect(tab.parentElement).toBe(row);
-		// The sentence keeps its spaces in text content even though label and value are separate spans.
-		expect((tab.textContent ?? '').replace(/\s+/g, ' ')).toContain('1 in flight: OpenAI (gpt-4o)');
-		expect(
-			within(tab).getByText('OpenAI (gpt-4o)').classList.contains('text-[var(--color-ok)]')
-		).toBe(true);
-		// The drawing's own frame carries no sentence: the paragraph that moved the beam is gone (F2).
-		expect(container.querySelector('figure')?.textContent).not.toMatch(/in flight|Last error/);
+		const figure = container.querySelector('figure');
+		expect(figure).not.toBeNull();
+		// DOCUMENT_POSITION_FOLLOWING: the tablist comes after the drawing in the page.
+		const position = (figure as Node).compareDocumentPosition(liveTabs());
+		expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 	});
 
-	it('states the finished fact plainly and separates the facts without a sentence period', async () => {
+	it('states the in-flight requests in the In flight tab, with the provider in the status colour', async () => {
+		const stub = stubPanel();
+		const { container } = render(UsageLivePanel);
+		await liveRow();
+
+		sendInFlight(stub);
+		await openTab(/In flight \(1\)/);
+
+		const panel = openPanel();
+		expect(
+			within(panel).getByText('OpenAI (gpt-4o)').classList.contains('text-[var(--color-ok)]')
+		).toBe(true);
+		// The drawing's own frame carries no sentence: the facts live in the tab, never in the figure.
+		expect(container.querySelector('figure')?.textContent).not.toMatch(/in flight/);
+	});
+
+	it('states the last finished provider in its tab, plainly', async () => {
 		const stub = stubPanel();
 		render(UsageLivePanel);
 		await liveRow();
@@ -175,18 +174,19 @@ describe('UsageLivePanel row', () => {
 							ts: '2026-09-27T09:00:00Z',
 							status: 'success'
 						}
-					],
-					error_provider: 'anthropic'
+					]
 				})
 			)
 		);
 
-		const tab = tabFor(await screen.findByText('Last finished:'));
-		expect(within(tab).getByText('OpenAI').classList.contains('text-[var(--color-ok)]')).toBe(
+		await openTab(/Last finished/);
+		const panel = openPanel();
+		// The Last finished tab carries no count, so its label is the same before and after the frame and
+		// opening it does not wait for the stream. The row is awaited, not read on the next tick.
+		await within(panel).findByText('OpenAI');
+		expect(within(panel).getByText('OpenAI').classList.contains('text-[var(--color-ok)]')).toBe(
 			false
 		);
-		expect(screen.getByText('Last error:')).toBeTruthy();
-		expect(tab.textContent).toContain('·');
 	});
 
 	it('names a provider the registry does not carry by its id', async () => {
@@ -194,36 +194,60 @@ describe('UsageLivePanel row', () => {
 		render(UsageLivePanel);
 		await liveRow();
 
-		stub.streams[0].send(
-			frameText(frame({ active: [{ provider_id: 'gone-provider', started_at: startedNow() }] }))
-		);
+		sendInFlight(stub, 'gone-provider');
+		await openTab(/In flight \(1\)/);
 
-		const tab = tabFor(await screen.findByText('1 in flight:'));
-		expect((tab.textContent ?? '').replace(/\s+/g, ' ').trim()).toBe('1 in flight: gone-provider');
+		// The in-flight fact names the provider and the model it routes, as the drawing's label does.
+		expect(openPanel().textContent?.replace(/\s+/g, ' ').trim()).toBe('gone-provider (gpt-4o)');
 	});
 
-	it('renders the facts tab as a statement no reader can click or focus', async () => {
-		const stub = stubPanel();
-		render(UsageLivePanel);
-		await liveRow();
-		await withInFlight(stub);
-
-		const tab = tabFor('1 in flight:');
-		expect(tab.closest('button')).toBeNull();
-		expect(tab.tagName).toBe('SPAN');
-		expect(tab.hasAttribute('tabindex')).toBe(false);
-		expect(screen.queryByRole('tab')).toBeNull();
-	});
-
-	it('renders no facts tab while the stream has reported nothing that happened', async () => {
+	it('lists the three tabs in order inside their own tablist, not beside the controls', async () => {
 		stubPanel();
 		render(UsageLivePanel);
 		const row = await liveRow();
 
-		expect(screen.queryByText(/in flight:/)).toBeNull();
-		expect(screen.queryByText(/Last finished:/)).toBeNull();
-		expect(screen.queryByText(/Last error:/)).toBeNull();
-		// The tab count is the positive premise of the silence: chip and pause, nothing else.
-		expect(row.children.length).toBe(2);
+		const tabs = within(liveTabs()).getAllByRole('tab');
+		expect(tabs.map((tab) => tab.textContent?.trim())).toEqual([
+			'In flight (0)',
+			'Last finished',
+			'Finished requests (0)'
+		]);
+		expect(liveTabs().parentElement).not.toBe(row);
+	});
+
+	it('gives every tab a scroll box of one height, so switching does not move the page', async () => {
+		stubPanel();
+		render(UsageLivePanel);
+		await liveRow();
+
+		for (const name of [/In flight/, /Last finished/, /Finished requests/]) {
+			await openTab(name);
+			const box = openPanel().firstElementChild as HTMLElement;
+			expect(box.classList.contains('max-h-48')).toBe(true);
+			expect(box.classList.contains('overflow-y-auto')).toBe(true);
+		}
+	});
+
+	it('states the empty tabs plainly rather than leaving them blank', async () => {
+		stubPanel();
+		render(UsageLivePanel);
+		await liveRow();
+
+		await openTab(/In flight/);
+		expect(openPanel().textContent).toContain('No request is in flight.');
+		await openTab(/Last finished/);
+		expect(openPanel().textContent).toContain('No request has finished yet.');
+	});
+
+	it('keeps the facts out of the figure and the controls row', async () => {
+		const stub = stubPanel();
+		const { container } = render(UsageLivePanel);
+		const row = await liveRow();
+
+		sendInFlight(stub);
+		await openTab(/In flight \(1\)/);
+
+		expect(row.textContent).not.toMatch(/in flight/);
+		expect(container.querySelector('figure')?.textContent).not.toMatch(/in flight/);
 	});
 });

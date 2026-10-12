@@ -44,7 +44,7 @@ describe('provider registry list', () => {
 		render(ProvidersPage);
 		await screen.findByRole('table');
 
-		await fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'media' } });
+		await fireEvent.click(screen.getByRole('button', { name: 'media' }));
 
 		await waitFor(() => expect(registryQuery(stub.queries).get('category')).toBe('media'));
 		expect(registryQuery(stub.queries).get('page')).toBe('1');
@@ -69,9 +69,14 @@ describe('provider registry list', () => {
 		render(ProvidersPage);
 		await screen.findByRole('table');
 
-		await fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'media' } });
+		await fireEvent.click(screen.getByRole('button', { name: 'media' }));
 		expect(await screen.findByText('No provider matches this filter')).toBeTruthy();
 		expect(squashed(screen.getByText(/narrow the registry/))).toContain('narrow the registry');
+
+		const clear = screen.getByRole('button', { name: 'Clear the filters' });
+		for (const token of ['min-h-11', 'inline-flex', 'items-center', 'underline']) {
+			expect(clear.className, `clear-filters lost ${token}`).toContain(token);
+		}
 
 		const before = stub.queries.length;
 		await fireEvent.click(screen.getByRole('button', { name: 'Clear the filters' }));
@@ -198,7 +203,7 @@ describe('provider registry list', () => {
 		await fireEvent.click(screen.getByRole('button', { name: 'Search' }));
 		await waitFor(() => expect(registryQuery(stub.queries).get('q')).toBe('anthropic'));
 
-		await fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'media' } });
+		await fireEvent.click(screen.getByRole('button', { name: 'media' }));
 		await waitFor(() => expect(registryQuery(stub.queries).get('category')).toBe('media'));
 		expect(registryQuery(stub.queries).get('q')).toBe('anthropic');
 	});
@@ -231,7 +236,7 @@ describe('provider registry list', () => {
 		render(ProvidersPage);
 		await screen.findByRole('table');
 
-		await fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'media' } });
+		await fireEvent.click(screen.getByRole('button', { name: 'media' }));
 		await waitFor(() => expect(registryQuery(stub.queries).get('category')).toBe('media'));
 
 		const before = stub.queries.length;
@@ -251,6 +256,12 @@ describe('provider registry list', () => {
 		expect(await screen.findByText('Could not load the provider registry')).toBeTruthy();
 		expect(screen.getByText('the registry is unavailable')).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+		for (const token of ['min-h-11', 'inline-flex', 'items-center', 'underline']) {
+			expect(
+				screen.getByRole('button', { name: 'Try again' }).className,
+				`retry lost ${token}`
+			).toContain(token);
+		}
 		expect(screen.queryByRole('button', { name: 'Copy request ID' })).toBeNull();
 	});
 

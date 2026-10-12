@@ -199,7 +199,11 @@
 	{:else if error && windows.length === 0 && published.length === 0}
 		<StateMessage kind="error" title="Quota windows could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => void load()}>Try again</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => void load()}>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if windows.length === 0 && published.length === 0}
@@ -209,7 +213,9 @@
 			description="No traffic yet. Send one request, then rows appear here."
 		>
 			{#snippet action()}
-				<a href={resolve('/endpoint-keys')} class="underline">Open Endpoint &amp; Key</a>
+				<a href={resolve('/endpoint-keys')} class="inline-flex min-h-11 items-center px-2 underline"
+					>Open Endpoint &amp; Key</a
+				>
 			{/snippet}
 		</StateMessage>
 	{:else}

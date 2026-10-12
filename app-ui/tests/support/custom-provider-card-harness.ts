@@ -7,15 +7,15 @@
 // card's own list, since the dialog mounted beside it repeats some of those values as option labels, and
 // `dialogOf` scopes a sentence to the dialog that carries its heading.
 
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import CustomProviderCard from '$lib/components/CustomProviderCard.svelte';
 import type { NodeStub } from './provider-node-stub';
 
 /** Renders the card with a page-level reload, so an edit can be shown to reach the provider read too. */
-export function renderCard(
+export async function renderCard(
 	stub: NodeStub,
 	providerId = 'openai-compatible-01J'
-): { changed: () => number } {
+): Promise<{ changed: () => number }> {
 	let changed = 0;
 	render(CustomProviderCard, {
 		props: {
@@ -25,6 +25,22 @@ export function renderCard(
 			}
 		}
 	});
+	// The card loads its node after mount, and its facts and endpoint test sit in a closed "Facts and test"
+	// fold (antislop-ui: a card is compact by default). Wait for the card, then open the fold the way an
+	// operator does, so the cases below read what the operator reads.
+	// A failed read renders its own alert instead of the card, so wait for whichever the card drew.
+	await waitFor(() => {
+		if (
+			screen.queryByRole('button', { name: /^Facts and test/ }) === null &&
+			screen.queryByRole('alert') === null
+		) {
+			throw new Error('custom provider card not rendered yet');
+		}
+	});
+	const fold = screen.queryByRole('button', { name: /^Facts and test/ });
+	if (fold && fold.getAttribute('aria-expanded') === 'false') {
+		await fireEvent.click(fold);
+	}
 	return { changed: () => changed };
 }
 

@@ -162,7 +162,11 @@
 	{:else if error}
 		<StateMessage kind="error" title="Usage could not be loaded" apiError={error}>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => load(search)}>Try again</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => load(search)}>Try again</button
+				>
 			{/snippet}
 		</StateMessage>
 	{:else if summary && timeseries && totals}

@@ -73,9 +73,9 @@
 	const HALO =
 		'stroke-[var(--color-ok)] [stroke-opacity:0.35] [stroke-width:calc(10px*var(--u))] animate-beam-halo motion-reduce:animate-none';
 	const PLASMA =
-		'stroke-[var(--color-ok)] [stroke-opacity:0.85] [stroke-width:calc(5px*var(--u))] animate-beam-plasma motion-reduce:animate-none';
+		'stroke-[var(--color-ok)] [stroke-opacity:0.85] [stroke-width:max(2px,calc(5px*var(--u)))] animate-beam-plasma motion-reduce:animate-none';
 	const CORE =
-		'stroke-[var(--color-text)] [stroke-width:calc(2.2px*var(--u))] animate-beam-core motion-reduce:animate-none';
+		'stroke-[var(--color-text)] [stroke-width:max(1.5px,calc(2.2px*var(--u)))] animate-beam-core motion-reduce:animate-none';
 
 	/** A dot's travel, and the sparks' extra blink. `motion-reduce:hidden` because a dot has no rest state. */
 	const TRAVEL = 'animate-beam-travel motion-reduce:hidden';

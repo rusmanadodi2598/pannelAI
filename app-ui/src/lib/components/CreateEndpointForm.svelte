@@ -70,7 +70,7 @@
 		<p class="text-sm text-[var(--color-danger)]"><ApiErrorText {error} /></p>
 	{/if}
 
-	<div class="flex flex-wrap items-end gap-3 text-sm">
+	<div class="flex flex-col items-stretch gap-3 text-sm sm:flex-row sm:flex-wrap sm:items-end">
 		<label class="flex flex-col gap-1">
 			<span class="text-[var(--color-text-muted)]">Label</span>
 			<input
@@ -116,7 +116,7 @@
 
 		<button
 			type="button"
-			class="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-50"
+			class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-3 font-medium text-[var(--color-accent-text)] disabled:opacity-50 sm:w-auto"
 			disabled={saving}
 			onclick={submit}
 		>

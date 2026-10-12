@@ -9,7 +9,7 @@
 // What a unit test can hold here is the structure (one row, one glyph each) and the accessible names. The
 // baseline measurement is a live click-through, which the port document records.
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import CombosTab from '../../src/lib/components/CombosTab.svelte';
 
@@ -106,6 +106,52 @@ describe('the combos toolbar', () => {
 				'min-h-11'
 			);
 		}
+	});
+
+	it('opens the editor as a modal, not inline above the list', async () => {
+		stubFetch();
+		render(CombosTab);
+		await screen.findByRole('button', { name: 'New combo' });
+
+		// Inline would put the form on the page before any click. A modal does not exist until it is asked for.
+		expect(screen.queryByLabelText('Name')).toBeNull();
+
+		await fireEvent.click(screen.getByRole('button', { name: 'New combo' }));
+
+		const dialog = await screen.findByRole('dialog');
+		expect(within(dialog).getByLabelText('Name')).toBeTruthy();
+	});
+
+	it('gives the create action and the refresh control the same height and padding', async () => {
+		stubFetch();
+		render(CombosTab);
+
+		const create = await screen.findByRole('button', { name: 'New combo' });
+		const refresh = screen.getByRole('button', { name: 'Refresh now' });
+
+		for (const control of [create, refresh]) {
+			for (const token of ['min-h-11', 'px-3', 'text-sm']) {
+				expect(control.className, `${control.textContent?.trim()} lost ${token}`).toContain(token);
+			}
+		}
+	});
+
+	it('gives the sentence its own line on mobile so the controls never stretch', async () => {
+		stubFetch();
+		render(CombosTab);
+
+		const sentence = screen.getByText('One model name, several upstream models.');
+		const create = await screen.findByRole('button', { name: 'New combo' });
+		const refresh = screen.getByRole('button', { name: 'Refresh now' });
+
+		// Mobile: the sentence takes the full row, and the controls sit on the next line with items-center,
+		// so a tall sentence cannot stretch the buttons. From sm up the sentence shares the row.
+		expect(sentence.className).toContain('basis-full');
+		expect(sentence.className).toContain('sm:basis-auto');
+		expect(sentence.parentElement?.className).toContain('items-center');
+		expect(sentence.parentElement?.parentElement?.className).not.toContain('items-stretch');
+		expect(create.parentElement?.className).toContain('items-center');
+		expect(create.parentElement?.contains(refresh)).toBe(true);
 	});
 
 	it('gives the create action and the refresh control a glyph beside the label', async () => {

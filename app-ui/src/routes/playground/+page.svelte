@@ -138,8 +138,10 @@
 			requestId={playgroundFailureRequestId(loadFailure)}
 		>
 			{#snippet action()}
-				<button type="button" class="underline" onclick={() => void load()}
-					>{copy.models.retry}</button
+				<button
+					type="button"
+					class="inline-flex min-h-11 items-center px-2 underline"
+					onclick={() => void load()}>{copy.models.retry}</button
 				>
 			{/snippet}
 		</StateMessage>

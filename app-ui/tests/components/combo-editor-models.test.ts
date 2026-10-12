@@ -135,3 +135,21 @@ describe('the combo editor model list', () => {
 		expect(document.querySelector('dialog')?.hasAttribute('open')).toBe(false);
 	});
 });
+
+describe('the editor add path', () => {
+	it('offers no custom add-a-model row: the picker is the only way to add', () => {
+		render(ComboEditor, {
+			props: {
+				combo: null,
+				sections: [],
+				pickerLoading: false,
+				pickerFailed: false,
+				onsaved: vi.fn(),
+				oncancel: vi.fn()
+			}
+		});
+
+		expect(screen.queryByRole('button', { name: 'Add a model' })).toBeNull();
+		expect(screen.getByRole('button', { name: 'Add models' })).toBeTruthy();
+	});
+});

@@ -19,6 +19,7 @@ import { catalogRow, stubModels, type ModelStub } from '../support/model-stub';
 import { expectIconOnly } from '../support/icon-only';
 import { squashed } from '../support/dom';
 import { forEachCase } from '../support/tables';
+import { openAllSections } from '../support/provider-sections';
 
 vi.mock('$app/paths', () => ({
 	resolve: (route: string, params?: Record<string, string>) =>
@@ -59,8 +60,9 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-function renderProvider(providerId = 'openai'): void {
+async function renderProvider(providerId = 'openai'): Promise<void> {
 	render(ProviderDetailPage, { props: { params: { provider_id: providerId }, data: {} } });
+	await openAllSections('Models');
 }
 
 /** The row a model id belongs to, found through its own cell rather than by table position. */
@@ -85,7 +87,7 @@ async function outcomeRegion(text: string | RegExp): Promise<HTMLElement> {
 
 describe('the catalog', () => {
 	it('offers a Disable action on every row it lists, rendered icon-only', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCatalog();
 
 		// Icon-only (PORT 002 D7): the contract is shared with the key tables.
@@ -94,14 +96,14 @@ describe('the catalog', () => {
 	});
 
 	it('lists only this provider, so another provider has no row to disable', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCatalog();
 
 		expect(screen.queryByText('claude-3-haiku')).toBeNull();
 	});
 
 	it('disables a model by sending the whole set, another provider included', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCatalog();
 
 		within(rowFor('gpt-4o')).getByRole('button', { name: 'Disable' }).click();
@@ -114,7 +116,7 @@ describe('the catalog', () => {
 	});
 
 	it('takes the disabled model out of the catalog and shows it in the disabled list', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitForCatalog();
 
 		within(rowFor('gpt-4o')).getByRole('button', { name: 'Disable' }).click();
@@ -128,7 +130,7 @@ describe('the catalog', () => {
 
 	it('reports the refusal beside the row that could not be disabled', async () => {
 		stub.writeStatus = 500;
-		renderProvider();
+		await renderProvider();
 		await waitForCatalog();
 
 		within(rowFor('gpt-4o')).getByRole('button', { name: 'Disable' }).click();
@@ -141,7 +143,7 @@ describe('the catalog', () => {
 
 	it('refuses to write when the disabled set never loaded, and says why', async () => {
 		stub.disabledReadStatus = 500;
-		renderProvider();
+		await renderProvider();
 		await waitForCatalog();
 
 		within(rowFor('gpt-4o')).getByRole('button', { name: 'Disable' }).click();
@@ -179,7 +181,7 @@ describe('the disabled list', () => {
 	});
 
 	it('renders an empty state when nothing is disabled for this provider', async () => {
-		renderProvider();
+		await renderProvider();
 		await waitFor(() =>
 			expect(screen.getByText(/No disabled models for this provider/)).toBeTruthy()
 		);
@@ -187,7 +189,7 @@ describe('the disabled list', () => {
 
 	it('reports a failed read with a retry that re-reads', async () => {
 		stub.disabledReadStatus = 500;
-		renderProvider();
+		await renderProvider();
 		await waitFor(() =>
 			expect(screen.getByText(/Could not load the disabled models/)).toBeTruthy()
 		);

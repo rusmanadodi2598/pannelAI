@@ -124,8 +124,10 @@ describe('UsageTopology motion', () => {
 
 		expect(card.classList.contains('px-[calc(12px*var(--u))]')).toBe(true);
 		expect(card.classList.contains('gap-[calc(8px*var(--u))]')).toBe(true);
-		expect(card.classList.contains('[font-size:calc(14px*var(--u))]')).toBe(true);
-		expect(card.querySelector('img')?.classList.contains('size-[calc(16px*var(--u))]')).toBe(true);
+		expect(card.classList.contains('[font-size:max(12px,calc(14px*var(--u)))]')).toBe(true);
+		expect(
+			card.querySelector('img')?.classList.contains('size-[max(14px,calc(16px*var(--u)))]')
+		).toBe(true);
 	});
 
 	it('fades a card in as it joins the drawing, and turns that off for less motion', () => {
