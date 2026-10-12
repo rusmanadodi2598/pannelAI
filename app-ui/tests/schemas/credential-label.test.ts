@@ -10,13 +10,16 @@ import {
 	keyCredentialLabel,
 	takesKeyCredential,
 	takesOAuthCredential
-} from '$lib/schemas/endpoint-write';
+} from '$lib/schemas/endpoint-credential';
 
 describe('takesKeyCredential', () => {
 	it('is true for a key auth type and for a key mode listed alongside oauth', () => {
 		expect(takesKeyCredential('api_key', [])).toBe(true);
 		expect(takesKeyCredential('apikey', [])).toBe(true); // both spellings of the key type count
 		expect(takesKeyCredential('oauth', ['oauth', 'apikey'])).toBe(true);
+	});
+	it('is true for a service account, whose credential is a row in the same keys table', () => {
+		expect(takesKeyCredential('service_account', ['service_account'])).toBe(true);
 	});
 	it('is false for a provider with neither', () => {
 		expect(takesKeyCredential('oauth', ['oauth'])).toBe(false);
@@ -37,5 +40,10 @@ describe('keyCredentialLabel', () => {
 	});
 	it('keeps the generic name for a key-only provider', () => {
 		expect(keyCredentialLabel('api_key', ['api_key'], false)).toBe('API Key');
+	});
+	it('names the JSON key file for a service account, which is a document rather than a string', () => {
+		expect(keyCredentialLabel('service_account', ['service_account'], false)).toBe(
+			'Service Account JSON'
+		);
 	});
 });

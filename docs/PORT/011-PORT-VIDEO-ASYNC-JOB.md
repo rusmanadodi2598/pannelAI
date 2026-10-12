@@ -212,6 +212,13 @@ dan tidak ada test yang membaca dokumen prosa, jadi hasil gerbang di atas tidak 
    (`engine_relay.go` 237, `applier.go` 226, `apply.go` 236, `applier_test.go` 239). Semuanya di bawah
    ambang keras 250; pemecahannya belum dikerjakan dan tidak diminta pass ini.
 
+**Tindak lanjut 2026-10-12 (PORT 012):** butir 1 di atas ditutup di pass 012 atas permintaan owner
+("Perbaiki registrasi provider vertex Veo"): `vertex` kini provider ke-36 dengan empat model Veo, tipe
+auth keempat `service_account`, dan adapter dua arah (`predictLongRunning` + `fetchPredictOperation`)
+berikut kodek job id-nya. Butir 2-6 tetap berlaku sebagai residu pass ini dan diteruskan ke §6 PORT 012
+mana yang masih hidup (butir 2 keputusan owner, butir 3 dan 4 mewarisi, butir 5 masih terbuka); butir 6
+tidak disentuh pass 012, dan keenam berkasnya masih terukur 226-239 baris.
+
 ## 7. Checklist AGENTS.md per-PR
 
 | Butir                     | Keadaan                                                                                                                                                                                                                                                                                                                                                                                                            |

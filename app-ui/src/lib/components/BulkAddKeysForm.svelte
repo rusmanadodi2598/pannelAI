@@ -15,7 +15,7 @@
 		MAX_KEYS_PER_ENDPOINT,
 		schemaAddEndpointKeyForm,
 		schemaBulkAddKeysForm
-	} from '$lib/schemas/endpoint-write';
+	} from '$lib/schemas/endpoint-credential';
 	import type { BulkRefusal } from '$lib/schemas/endpoint-bulk';
 
 	let { endpointId, onadded }: { endpointId: string; onadded: () => void } = $props();

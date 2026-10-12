@@ -249,6 +249,7 @@ function deriveAuthModes(authType: string, hasOAuth: boolean): string[] {
 	const modes: string[] = [];
 	if (authType === 'api_key' || authType === 'apikey' || authType === 'bearer')
 		modes.push('api_key');
+	if (authType === 'service_account') modes.push('service_account');
 	if (authType === 'oauth' || hasOAuth) modes.push('oauth');
 	return modes;
 }

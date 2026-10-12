@@ -9,9 +9,9 @@
 import { describe, expect, it } from 'vitest';
 import {
 	bulkCreateEndpointsBody,
-	schemaBulkAddKeysForm,
 	schemaBulkCreateEndpointsBody
 } from '$lib/schemas/endpoint-write';
+import { schemaBulkAddKeysForm } from '$lib/schemas/endpoint-credential';
 
 describe('schemaBulkAddKeysForm', () => {
 	it('accepts the API batch maximum', () => {

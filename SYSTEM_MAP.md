@@ -5,7 +5,7 @@ Diperbarui pada PR yang sama ketika topologi atau alur data berubah (AGENTS.md Â
 
 | | |
 |---|---|
-| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (35 provider, decode ketat; `tokenrouter` menyusul atas permintaan owner 2026-10-12), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (Â§7.4-Â§7.8, Â§7.12-Â§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (Â§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis â†’ PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API. **P2 CLOSED**: seluruh permukaan Â§7.4-Â§7.15 terpasang dan terverifikasi live terhadap PostgreSQL 14 + Redis nyata dengan stub upstream dan stub proxy loopback: OAuth round-trip (start, callback, status, refresh per endpoint + due sweep), combo test, proxy pools (dua rute test + guard egress), token-saver, budget caps (cap terbaca kembali), katalog model + custom/alias/disabled, media Â§7.10 (speech, transcriptions, voices, images, search), embeddings lewat node kustom, dan jalur chat + media + embeddings yang menulis usage/log. Media plane memakai satu `MediaTransport` bersama embeddings di atas satu egress guard proses (`EGRESS_ALLOWED_TARGETS`), dan `settings.network.outbound_proxy_*` kini menentukan rute tiap panggilan keluar (Â§7.11). Sebelas format media non-OpenAI sudah punya adapter (Deepgram STT; NVIDIA NIM, Cartesia, ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS, Gemini STT). Register gap P2 (`docs/DRAFT/001-P2-GAPS.md`) menutup 20 dari 21 item; yang terbuka bukan kriteria keluar fase: lima format media sisa (G21: AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device, yang butuh lebih dari satu request per panggilan) dan pemeliharaan dokumen ini (G10, baris ini). `go test -race ./...` bersih (13 paket + `cmd`), tagged integration hijau, `go-lint.sh` dan `go-headers.sh` PASS |
+| **Status** | P0 selesai: config, migrasi, health/version, auth sesi, gateway keys, Redis lockout/rate limit, dan quality gates tercover. **P1 CLOSED**: registry provider di-embed (36 provider, decode ketat; `tokenrouter` dan `vertex` menyusul atas permintaan owner 2026-10-12), seam plugin per provider, agregat `UpstreamEndpoint`/`UpstreamKey`/`ProviderNode` dengan circuit breaker per key, penyegel AES-256-GCM, dan migrasi P1 (000004-000008) terverifikasi terhadap PostgreSQL nyata. Seluruh endpoint manajemen P1 (Â§7.4-Â§7.8, Â§7.12-Â§7.14) plus data plane chat OpenAI+Anthropic dan embeddings terpasang dan teruji; multi-akun dan bulk onboarding (endpoint batch, key batch, OAuth import) lengkap dengan semantik all-or-nothing; adapter visi (Â§7.8) ikut menambah urutan model di jalur request lewat seam `dataplane.VisionAugmenter` dengan rotasi round-robin di Redis. Dua worker P1 berjalan: quota flush (Redis â†? PostgreSQL) dan log retention (purge per `retention_days`). Kriteria keluar P1 terpenuhi: `Engine.Relay` menuntaskan fallback combo end-to-end diuji di `internal/dataplane/engine_relay_test.go`, dan `go test -race ./...` bersih. Panel U0 selesai termasuk shell sidebar bertema; layar Usage dan Quota panel menyusul di atas P1 API. **P2 CLOSED**: seluruh permukaan Â§7.4-Â§7.15 terpasang dan terverifikasi live terhadap PostgreSQL 14 + Redis nyata dengan stub upstream dan stub proxy loopback: OAuth round-trip (start, callback, status, refresh per endpoint + due sweep), combo test, proxy pools (dua rute test + guard egress), token-saver, budget caps (cap terbaca kembali), katalog model + custom/alias/disabled, media Â§7.10 (speech, transcriptions, voices, images, search), embeddings lewat node kustom, dan jalur chat + media + embeddings yang menulis usage/log. Media plane memakai satu `MediaTransport` bersama embeddings di atas satu egress guard proses (`EGRESS_ALLOWED_TARGETS`), dan `settings.network.outbound_proxy_*` kini menentukan rute tiap panggilan keluar (Â§7.11). Sebelas format media non-OpenAI sudah punya adapter (Deepgram STT; NVIDIA NIM, Cartesia, ElevenLabs, MiniMax + MiniMax CN, Inworld, PlayHT, Coqui, Tortoise, Gemini TTS, Gemini STT). Register gap P2 (`docs/DRAFT/001-P2-GAPS.md`) menutup 20 dari 21 item; yang terbuka bukan kriteria keluar fase: lima format media sisa (G21: AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device, yang butuh lebih dari satu request per panggilan) dan pemeliharaan dokumen ini (G10, baris ini). `go test -race ./...` bersih (13 paket + `cmd`), tagged integration hijau, `go-lint.sh` dan `go-headers.sh` PASS |
 | **Terakhir diperbarui** | 2026-10-03 (draft 043: nama Combo ikut menyeberangi stream Usage live, dan panel menggambar jalur request penuh) |
 | **Kontrak** | `docs/SPEC-API/001-SPEC-API.md` (semantik), `docs/CONTRACT/001-CONTRACT-API-V1.yaml` (wire contract), `app-serv/internal/handler/openapi.json` (generated served artifact) |
 
@@ -54,7 +54,7 @@ flowchart LR
 Alur satu arah, dipaksakan compiler lewat import antar-package (AGENTS.md Â§1.5):
 
 ```
-schema â†’ domain â†’ repository â†’ service â†’ handler â†’ router
+schema â†? domain â†? repository â†? service â†? handler â†? router
 ```
 
 | Layer | Paket | Tanggung jawab | Tidak boleh |
@@ -63,7 +63,7 @@ schema â†’ domain â†’ repository â†’ service â†’ handler â†’ router
 | domain | `internal/domain` | Entitas, value object, transisi state, envelope error | mengimpor `net/http` |
 | repository | `internal/repository`, `.../postgres` | Kontrak penyimpanan dan implementasinya | mengimpor service atau handler |
 | service | `internal/service` | Orkestrasi use case; nol import `net/http` di paket ini sendiri, egress tinggal di subpackagenya | memuat tipe inbound `*http.Request`/`http.ResponseWriter`, dan kini juga tidak lagi memuat klien HTTP outgoing |
-| service (egress) | `internal/service/oauthhttp`, `internal/service/quotafetch` | Ronde OAuth (grant, device flow, state round, identity decode) dan pembacaan kuota terbitan provider: keduanya pembicaraan HTTP keluar dengan timeout sendiri | mengimpor `internal/service` (arah dependensinya service â†’ subpackage) |
+| service (egress) | `internal/service/oauthhttp`, `internal/service/quotafetch` | Ronde OAuth (grant, device flow, state round, identity decode) dan pembacaan kuota terbitan provider: keduanya pembicaraan HTTP keluar dengan timeout sendiri | mengimpor `internal/service` (arah dependensinya service â†? subpackage) |
 | handler | `internal/handler` | Decode, panggil service, encode | memuat SQL atau Redis langsung |
 | router | `internal/router` | Tabel route dan middleware lintas-potong | memuat logika bisnis |
 | config | `internal/config` | Konfigurasi env bertipe, validasi fail-fast saat boot | memuat logika use case atau SQL |
@@ -349,10 +349,16 @@ Tujuh rute data plane media (`/audio/speech`, `/audio/transcriptions`, `/audio/v
 `Engine.Relay`:
 
 - video adalah satu-satunya kind yang async, jadi ia sepasang route: create menjawab envelope ternormalisasi
-  `{task_id, status, url?, progress?, error?}` dan mengembalikan endpoint pembuatnya di header
+  `{task_id, status, url?, b64_json?, progress?, error?}` dan mengembalikan endpoint pembuatnya di header
   `X-PannelAI-Endpoint-Id`, poll membacanya lewat `?provider=` (wajib) + `?endpoint=` (opsional, memaku akun
   pembuat job). Poll memakai `MediaCall.SkipHealth`: ia tidak menulis health endpoint, tetapi tetap menulis
-  baris usage + log.
+  baris usage + log. Empat dialect hidup di satu tabel (`media_video_plan.go`): default xAI, `openrouter`,
+  `tokenrouter`, dan `vertex` (Veo) yang menerjemahkan dua arah ¡ª `:predictLongRunning` dengan body
+  `{instances, parameters}` di bawah project/location endpoint, poll `:fetchPredictOperation` dengan
+  `{operationName}`, dan `task_id` berupa operation name base64url satu segmen dengan decode ber-anchor.
+  `vertex` memakai kredensial `service_account`: `mintCredential` (seam `bindCredential`) menukar JSON SA
+  menjadi bearer (assertion RS256 ¡ú grant jwt-bearer, cache ber-buffer) sebelum setiap fase, lewat klien
+  egress-guard yang sama dengan upstream lain.
 
 - model string berbentuk `provider/model` (split pada slash pertama, sehingga id ber-slash seperti
   `openai/gpt-4o-mini-tts` milik openrouter tetap utuh); provider yang tidak mendeklarasikan kind-nya,
@@ -372,7 +378,8 @@ Tujuh rute data plane media (`/audio/speech`, `/audio/transcriptions`, `/audio/v
   (`mediaAnswerReader`, dipanggil `Perform` sebelum amplop dibangun), dan label output
   (`SpeechOutputFormat`). Provider yang menaruh model atau voice di path memakai `dataplane.MediaPath`;
   kredensial non-bearer (`basic`, `playht`, header yang dideklarasikan registry) ditangani
-  `media_credential.go`. Sebelas format sudah punya adapter; lima masih ditolak dengan nama karena satu
+  `media_credential.go`. Dua belas format sudah punya adapter (sebelas STT/TTS plus `vertex` untuk video);
+  lima masih ditolak dengan nama karena satu
   panggilan butuh lebih dari satu request (G21: AssemblyAI, AWS Polly, Edge TTS, Google TTS, Local Device).
 
 ### 3.7 Pembacaan kuota terbit (Â§7.12)
@@ -382,18 +389,18 @@ statement; yang menghubungi provider adalah worker:
 
 ```
 worker.QuotaPublishedWorker.Run/Sweep (tick, budget, interval per keluarga)
-  â†’ service.QuotaService.livePublishedUsage      (existence + feature gate + kredensial)
-      â†’ repository.EndpointRepository.GetByID    (baris koneksi + auth_type)
-      â†’ registry.Provider.Features               (usage, usageApikey)
-      â†’ domain.Sealer.Open                       (access token ATAU NextKey, satu sisi)
-  â†’ service/quotafetch.Fetch(family, creds)      â†’ HTTP ke endpoint kuota provider
-  â†’ repository.PublishedQuotaRepository
-      â†’ StorePublished  (quota_published_state + quota_published_window, prune label)
-      â†’ RecordAttempt   (jadwal berikutnya, run kegagalan)
+  â†? service.QuotaService.livePublishedUsage      (existence + feature gate + kredensial)
+      â†? repository.EndpointRepository.GetByID    (baris koneksi + auth_type)
+      â†? registry.Provider.Features               (usage, usageApikey)
+      â†? domain.Sealer.Open                       (access token ATAU NextKey, satu sisi)
+  â†? service/quotafetch.Fetch(family, creds)      â†? HTTP ke endpoint kuota provider
+  â†? repository.PublishedQuotaRepository
+      â†? StorePublished  (quota_published_state + quota_published_window, prune label)
+      â†? RecordAttempt   (jadwal berikutnya, run kegagalan)
 
-handler.QuotaHandler.List â†’ service.PagePublished â†’ ListPublishedByEndpointIDs (SATU query batch)
-handler.QuotaHandler.GetUsage â†’ service.PublishedUsage(force)
-      â†’ cache bila ada; `?force=1` â†’ livePublishedUsage
+handler.QuotaHandler.List â†? service.PagePublished â†? ListPublishedByEndpointIDs (SATU query batch)
+handler.QuotaHandler.GetUsage â†? service.PublishedUsage(force)
+      â†? cache bila ada; `?force=1` â†? livePublishedUsage
 ```
 
 Aturan yang berlaku untuk semua keluarga, bukan hanya Qoder:
@@ -534,7 +541,7 @@ Enam worker berjalan bersama server, semuanya dipulai lewat `cmd/app-serv/worker
 | Quota flush (`internal/service/quota_flush.go`) | tick 30 detik, batch terbatas; counter Redis memegang TOTAL BERJALAN window per endpoint (`internal/service/quota_counter.go`, rollover atomik lewat Lua di `internal/repository/redis/quota_counter_script.go`) dan flush memirror-nya ke `quota_windows`; `Settle` menandai yang sudah durable dan hanya pensiunkan window yang sudah tutup | fixed tick, `MaxAttempts: 5` | total berjalan tetap di Redis, dicoba lagi pada tick berikutnya; `FlushUntilQuiet` juga dipanggil composition root setelah server berhenti melayani request, dan ia mengulang cycle sampai batch datang lebih pendek dari ceiling: tick sengaja satu batch per tick (`quota_flush_policy.go`), sedangkan shutdown adalah satu-satunya moment tanpa tick berikutnya, sehingga backlog di atas satu batch akan tinggal di Redis dan panel membaca spend yang lebih rendah daripada yang benar-benar dibayar (`cmd/app-serv/shutdown_drain.go`) |
 | Log retention (`internal/service/log_retention.go`) | tick 1 jam, cutoff dari `settings.logging.retention_days` | fixed tick, `MaxAttempts: 3` | DELETE bersifat set-based dan atomik; baris tetap untuk percobaan berikutnya |
 | OAuth token refresh (`internal/service/oauth_refresh_worker.go`) | tick 5 menit, hanya endpoint `oauth` yang `refresh_state=due` | eksponensial dari 30 detik, jitter maksimum seperempat delay, plafon 30 menit, 5 percobaan | percobaan kelima menandai endpoint `error` lewat `MarkRefreshDeadLetter` dan berhenti di-retry |
-| Quota terbit / published quota (`internal/service/quota_published_worker.go`) | tick terjadwal; antrian = `DueForRefresh(now, budget)`, oldest-due dulu lewat index `next_attempt_at`, dengan endpoint yang masih dalam cooldown (`rate_limited_until` dari jalur data) disaring di `WHERE` sebelum `LIMIT` agar tidak memakan budget; concurrency dibatasi semaphore (bukan fan-out tak terbatas seperti `dataplane.engine_fusion.fanOut`); budget dan concurrency dibaca dari config bertipe (`QUOTA_POLL_BUDGET` default 40 maks 500, `QUOTA_POLL_CONCURRENCY` default 4 maks 16) sehingga operator memindahkannya tanpa ubah kode; setiap endpoint membawa interval per keluarga: claude 10 menit (endpoint-nya menjawab 429), google cloudcode dan grok-cli 5 menit, sisanya 2 menit; plus jitter agar seribu akun satu keluarga tidak bangun bersama | kegagalan Go dihitung lewat `consecutive_failures` dan menjadi backoff eksponensial 30 detik â†’ plafon 30 menit; jawaban lunak provider BUKAN kegagalan, ia disimpan sebagai `message` dan window baik yang sudah tersimpan dipertahankan | tidak ada dead-letter drop: endpoint yang gagal terus tetap di antrian pada interval plafon, karena tindakan operator (re-authenticate) harus memulihkannya tanpa edit baris manual |
+| Quota terbit / published quota (`internal/service/quota_published_worker.go`) | tick terjadwal; antrian = `DueForRefresh(now, budget)`, oldest-due dulu lewat index `next_attempt_at`, dengan endpoint yang masih dalam cooldown (`rate_limited_until` dari jalur data) disaring di `WHERE` sebelum `LIMIT` agar tidak memakan budget; concurrency dibatasi semaphore (bukan fan-out tak terbatas seperti `dataplane.engine_fusion.fanOut`); budget dan concurrency dibaca dari config bertipe (`QUOTA_POLL_BUDGET` default 40 maks 500, `QUOTA_POLL_CONCURRENCY` default 4 maks 16) sehingga operator memindahkannya tanpa ubah kode; setiap endpoint membawa interval per keluarga: claude 10 menit (endpoint-nya menjawab 429), google cloudcode dan grok-cli 5 menit, sisanya 2 menit; plus jitter agar seribu akun satu keluarga tidak bangun bersama | kegagalan Go dihitung lewat `consecutive_failures` dan menjadi backoff eksponensial 30 detik â†? plafon 30 menit; jawaban lunak provider BUKAN kegagalan, ia disimpan sebagai `message` dan window baik yang sudah tersimpan dipertahankan | tidak ada dead-letter drop: endpoint yang gagal terus tetap di antrian pada interval plafon, karena tindakan operator (re-authenticate) harus memulihkannya tanpa edit baris manual |
 | Usage event publisher (`internal/service/usage_event_publish.go`) | antrean bounded 256 yang diisi `UsageService.Record` (choke point akuntansi, dipakai chat dan media/embeddings) | tanpa retry terjadwal: kegagalan publish dihitung lalu dicatat, karena Pub/Sub tidak punya tujuan durable untuk di-retry | antrean penuh = event terbaru di-drop dan dihitung (`Dropped()`); baris usage adalah rekaman durabelnya |
 | Usage event consumer (`internal/service/usage_event_consume.go`) | subscribe channel `pannelai:events:usage.recorded`; tiap event dicerminkan jadi satu baris console ring | receive timeout = idle (bukan kegagalan); kegagalan transport backoff eksponensial 250ms sampai 30s, counter reset oleh receive sukses pertama | tidak ada: subscription dibangun ulang tiap percobaan, jadi tidak ada state yang perlu di-dead-letter |
 | Live Usage stream (`internal/handler/usage_live.go`) | satu goroutine per koneksi, dipicu tick baca 1 dtk dan keepalive 20 dtk; berakhir saat klien disconnect, batas umur 30 menit, gagal tulis, atau gagal baca | tanpa retry: koneksi yang gagal ditutup dan panel punya jadwal retry sendiri yang terbatas (`app-ui/src/lib/usage-live.ts`) | tidak ada: stream adalah view, bukan rekaman; rekamannya baris `usage_records` |

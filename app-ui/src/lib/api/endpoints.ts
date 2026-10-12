@@ -19,20 +19,22 @@ import {
 } from '$lib/schemas/endpoint';
 import {
 	createEndpointBody,
-	schemaAddEndpointKeyForm,
-	schemaBulkAddKeysForm,
 	schemaBulkCreateEndpointsBody,
 	schemaCreateEndpointBody,
 	schemaUpdateEndpointForm,
-	schemaUpdateEndpointKeyForm,
-	type AddEndpointKeyForm,
-	type BulkAddKeysForm,
 	type BulkCreateEndpointsBody,
 	type CreateEndpointBody,
 	type CreateEndpointForm,
-	type UpdateEndpointForm,
-	type UpdateEndpointKeyForm
+	type UpdateEndpointForm
 } from '$lib/schemas/endpoint-write';
+import {
+	schemaAddEndpointKeyForm,
+	schemaBulkAddKeysForm,
+	schemaUpdateEndpointKeyForm,
+	type AddEndpointKeyForm,
+	type BulkAddKeysForm,
+	type UpdateEndpointKeyForm
+} from '$lib/schemas/endpoint-credential';
 import {
 	schemaBulkEndpointResult,
 	schemaBulkKeyResult,

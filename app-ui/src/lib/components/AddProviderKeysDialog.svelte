@@ -23,12 +23,12 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import PanelTabs from '$lib/components/PanelTabs.svelte';
 	import ProviderKeyFields from '$lib/components/ProviderKeyFields.svelte';
-	import { addConnection, addPastedConnections } from '$lib/api/provider-keys';
+	import { addConnection, addPastedConnections, readStoredLabels } from '$lib/api/provider-keys';
 	import type { ApiError } from '$lib/api/errors';
 	import { ROW_ACTION_ICONS } from '$lib/icons';
-	import { listEndpointLabels } from '$lib/api/endpoints';
 	import { planConnectionLines } from '$lib/schemas/connection-plan';
 	import { MAX_BULK_CONNECTIONS } from '$lib/schemas/endpoint-write';
+	import { SERVICE_ACCOUNT_AUTH_TYPE } from '$lib/schemas/endpoint-credential';
 
 	let {
 		providerId,
@@ -79,12 +79,21 @@
 	let name = $state('');
 	let keyValue = $state('');
 	let priority = $state('1');
+	let projectId = $state('');
+	let location = $state('');
 	let bulkText = $state('');
 	let issues = $state<string[]>([]);
 	let rowIssues = $state<Record<number, string>>({});
 	let error = $state<string | ApiError | null>(null);
 	let errorPrefix = $state('');
 	let saving = $state(false);
+
+	// A service-account credential is a JSON document, and the paste planner reads one credential per line,
+	// so the batch tab is not offered for it. The mode is derived from the tabs actually shown, so a mode
+	// left over from another provider's dialog cannot submit through a tab that is not on screen.
+	const serviceAccount = $derived(authType === SERVICE_ACCOUNT_AUTH_TYPE);
+	const tabs = $derived(serviceAccount ? [TABS[0]] : TABS);
+	const activeMode = $derived(serviceAccount ? 'single' : mode);
 
 	// The names already stored, so a generated name cannot collide with one of them: (provider_id, label)
 	// is unique, and a collision refuses the whole paste. Read when the dialog opens rather than held by
@@ -95,11 +104,11 @@
 	const lines = $derived(planConnectionLines(bulkText, existingLabels));
 
 	const empty = $derived(
-		mode === 'single' ? name.trim() === '' || keyValue.trim() === '' : lines.length === 0
+		activeMode === 'single' ? name.trim() === '' || keyValue.trim() === '' : lines.length === 0
 	);
 
 	const submitLabel = $derived(
-		mode === 'single' ? (saving ? 'Saving' : 'Save') : saving ? 'Adding' : 'Add All Keys'
+		activeMode === 'single' ? (saving ? 'Saving' : 'Save') : saving ? 'Adding' : 'Add All Keys'
 	);
 
 	$effect(() => {
@@ -108,15 +117,13 @@
 	});
 
 	async function readLabels(): Promise<void> {
-		const result = await listEndpointLabels({ provider_id: providerId, page: 1, per_page: 100 });
-		// A failed read plans against no names. The planner then cannot see a collision, and the batch's own
-		// refusal is what catches it, on the line it belongs to.
-		existingLabels = result.ok ? result.data.data.map((row) => row.label) : [];
+		existingLabels = await readStoredLabels(providerId);
 	}
 
 	// The dialog stays mounted between opens, so anything kept is the last connection's name sitting in the
 	// next one's field. Priority stays: it is visible, and an operator adding several keys at one priority
-	// means it.
+	// means it. The service-account pair stays for the same reason: several JSON keys of one project is the
+	// ordinary case.
 	function clear(): void {
 		name = '';
 		keyValue = '';
@@ -131,8 +138,13 @@
 
 		saving = true;
 		const outcome =
-			mode === 'single'
-				? await addConnection(providerId, authType, { name, keyValue, priority })
+			activeMode === 'single'
+				? await addConnection(
+						providerId,
+						authType,
+						{ name, keyValue, priority },
+						serviceAccount ? { sa_project_id: projectId, sa_location: location } : null
+					)
 				: await addPastedConnections(providerId, authType, bulkText, existingLabels);
 		saving = false;
 
@@ -159,7 +171,7 @@
 			<p class="text-sm text-[var(--color-text-muted)]">{authHint}</p>
 		{/if}
 		<PanelTabs
-			tabs={TABS}
+			{tabs}
 			label="How many keys"
 			onchange={(id) => {
 				mode = id;
@@ -169,10 +181,13 @@
 			{#snippet panel(active)}
 				<ProviderKeyFields
 					mode={active}
+					{authType}
 					{credentialLabel}
 					bind:name
 					bind:keyValue
 					bind:priority
+					bind:projectId
+					bind:location
 					bind:pasteText={bulkText}
 					{rowIssues}
 					maxConnections={MAX_BULK_CONNECTIONS}

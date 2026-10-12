@@ -8,7 +8,7 @@
 	import { addEndpointKey } from '$lib/api/endpoints';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
-	import { schemaAddEndpointKeyForm } from '$lib/schemas/endpoint-write';
+	import { schemaAddEndpointKeyForm } from '$lib/schemas/endpoint-credential';
 
 	let { endpointId, onadded }: { endpointId: string; onadded: () => void } = $props();
 

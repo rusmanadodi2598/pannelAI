@@ -150,8 +150,10 @@ Provider **registry is static config embedded in the Go binary** (YAML generated
 registry port), not a DB table. DB rows reference registry IDs; unknown provider ID ⇒ `VALIDATION_ERROR`.
 The document carries the owner's curated provider set (2026-09-26): the 34 providers on the owner's
 KEEP list, enforced by the generator's allowlist so a regeneration cannot reintroduce one the owner
-removed. `tokenrouter` joined the set by the owner's own request (2026-10-12), so the served set is 35. A
-provider outside that set is unknown in every sense above.
+removed. `tokenrouter` joined the set by the owner's own request (2026-10-12) and `vertex` joined the same
+day (PORT 012), so the served set is 36. A provider outside that set is unknown in every sense above.
+`vertex`'s catalog is the four Veo video models only, because its chat models speak a wire this gateway has
+no translator for, and its credential is a service-account JSON (`auth_type: service_account`, §7.5).
 
 ## 7. Endpoint Catalog
 
@@ -341,7 +343,7 @@ tried (credential-first failover, §7.7). This generalizes the reference 1-conne
 | Method | Path                                   | Auth | Description                                                                                            | Phase |
 | ------ | -------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------ | ----- |
 | GET    | `/api/v1/endpoints`                    | S    | List; `?provider_id=&status=`; sorted by `priority`                                                    | P1    |
-| POST   | `/api/v1/endpoints`                    | S    | `{provider_id, label, auth_type, priority?, keys: [{label?, value}]}` (≥1 key for `auth_type=api_key`) | P1    |
+| POST   | `/api/v1/endpoints`                    | S    | `{provider_id, label, auth_type, priority?, keys: [{label?, value}]}` (≥1 key for `auth_type=api_key` or `service_account`; a `service_account` endpoint also states `sa_project_id` + `sa_location`) | P1    |
 | GET    | `/api/v1/endpoints/{id}`               | S    | Detail incl. keys summary + test status                                                                | P1    |
 | PATCH  | `/api/v1/endpoints/{id}`               | S    | `{label?, priority?, status?}`: priority change reorders siblings transactionally                      | P1    |
 | DELETE | `/api/v1/endpoints/{id}`               | S    | Delete endpoint + its keys                                                                             | P1    |
@@ -349,7 +351,7 @@ tried (credential-first failover, §7.7). This generalizes the reference 1-conne
 | POST   | `/api/v1/endpoints/{id}/keys`          | S    | Add key `{label?, value}`                                                                              | P1    |
 | GET    | `/api/v1/endpoints/{id}/keys`          | S    | List keys (hints only) with health fields                                                              | P1    |
 | PATCH  | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | `{label?, value?, priority?, status?}`: value is write-only                                            | P1    |
-| DELETE | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | Remove key (endpoint must keep ≥1 active key if `auth_type=api_key`)                                   | P1    |
+| DELETE | `/api/v1/endpoints/{id}/keys/{key_id}` | S    | Remove key (endpoint must keep ≥1 active key if the auth type stores keys: `api_key` or `service_account`) | P1    |
 
 **Multi-account and bulk onboarding (owner requirement).** Every provider is multi-account: an
 account is one endpoint, so N accounts are N endpoints under one `provider_id`, distinguished by
@@ -360,13 +362,21 @@ outcome is reported by index, which is why the response carries `results` rather
 
 | Method | Path                                         | Auth | Description                                                                                                                                                                                                                                                                                                                     | Phase |
 | ------ | -------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| POST   | `/api/v1/endpoints/bulk`                     | S    | Create several endpoints in one call. Body `{provider_id, auth_type, endpoints: [{label, priority?, keys: [{label?, value}]}]}`. Returns `{created: [...], results: [{index, id?, error?}]}`                                                                                                                                    | P1    |
+| POST   | `/api/v1/endpoints/bulk`                     | S    | Create several endpoints in one call. Body `{provider_id, auth_type, sa_project_id?, sa_location?, endpoints: [{label, priority?, keys: [{label?, value}]}]}`. Returns `{created: [...], results: [{index, id?, error?}]}`                                                                                                    | P1    |
 | POST   | `/api/v1/endpoints/{id}/keys/bulk`           | S    | Add several API keys to one endpoint. Body `{keys: [{label?, value, priority?}]}`. Duplicate labels within the batch are `VALIDATION_ERROR`                                                                                                                                                                                     | P1    |
 | POST   | `/api/v1/providers/{provider_id}/oauth/bulk` | S    | Import already-obtained OAuth credentials as endpoints (the path for accounts on a machine with no browser callback). Body `{accounts: [{label?, access_token, refresh_token?, expires_at?, scopes?, account?}]}`. `access_token` is encrypted at rest and never returned; the response carries `key_hint`-style summaries only | P1    |
 
 `POST /api/v1/endpoints` also accepts a `keys` array so a single account with several keys is one
 request; `/endpoints/bulk` is for several accounts at once. Both go through the same validation, so
 the invariant below holds whichever path is used.
+
+A **`service_account`** endpoint is Google's fourth credential shape: the JSON key file is a credential
+like any other (write-only, sealed in the keys table, hint on read), while `sa_project_id` and
+`sa_location` are the non-secret address its calls name in the path. The pair is required together with
+that auth type, refused on every other one rather than ignored, and each half must be a single plain path
+segment (`.`, `..`, and slashes are refused) because the values are spliced into the upstream URL. The
+gateway exchanges the JSON for a short-lived bearer before a call (the media plane's credential seam) and
+never presents the JSON itself; a deployment wired without a minter refuses such a call instead.
 
 Key health model (parking per key, class-aware): the first upstream failure parks the key with a
 window sized by its class: 401/402/403/404 ⇒ `rate_limited_until = now + 2m`; 429 ⇒ exponential `2s × 2^(n-1)` capped at 5m
@@ -567,17 +577,27 @@ an empty transcript rather than a refusal, because silence transcribes to nothin
 
 `POST /videos/generations` is an async job rather than one answer. The creation rewrites the caller's
 `model` to the upstream's id (every other member travels as written, so a provider's own `duration` or
-resolution reaches it) and answers the normalized envelope `{task_id, status, url?, progress?, error?}`,
-whose `status` is `queued`, `in_progress`, `succeeded`, or `failed` whichever provider answered; a state no
-mapping knows is passed through lower-cased rather than reported as a terminal one. The endpoint the job
-was created on travels back in `X-PannelAI-Endpoint-Id`, and `GET /videos/{task_id}?provider=` reads the
-job: `provider` is required because a poll carries no model, and `?endpoint=` pins the poll to the account
-that created the job, falling back to the provider's own selection when absent. A poll records its usage
-and log rows but writes no endpoint health: a stale task id answering 404 would otherwise park a healthy
-key, the same reasoning the reference applies to its request-scoped 400s. Each provider's own id member
-and status vocabulary are mapped here: xAI's `request_id` with `pending|processing|done|failed`,
+resolution reaches it) and answers the normalized envelope `{task_id, status, url?, b64_json?, progress?,
+error?}`, whose `status` is `queued`, `in_progress`, `succeeded`, or `failed` whichever provider answered;
+a state no mapping knows is passed through lower-cased rather than reported as a terminal one. The endpoint
+the job was created on travels back in `X-PannelAI-Endpoint-Id`, and `GET /videos/{task_id}?provider=`
+reads the job: `provider` is required because a poll carries no model, and `?endpoint=` pins the poll to
+the account that created the job, falling back to the provider's own selection when absent. A poll records
+its usage and log rows but writes no endpoint health: a stale task id answering 404 would otherwise park a
+healthy key, the same reasoning the reference applies to its request-scoped 400s. Each provider's own id
+member and status vocabulary are mapped here: xAI's `request_id` with `pending|processing|done|failed`,
 OpenRouter's `id` with `unsigned_urls`, and TokenRouter's `data.task_id` with
-`QUEUED|SUBMITTED|IN_PROGRESS|SUCCESS|FAILURE`.
+`QUEUED|SUBMITTED|IN_PROGRESS|SUCCESS|FAILURE`. Vertex (Veo) is the fourth dialect and the one that
+translates both directions: the creation posts to
+`…/projects/{project}/locations/{location}/publishers/google/models/{model}:predictLongRunning` under the
+endpoint's own `service_account` project and location, rebuilding the body as
+`{instances:[{prompt, image?, video?}], parameters:{…}}` (a data URL becomes `bytesBase64Encoded` +
+`mimeType`, another string a `gcsUri`, and the Vertex-native object passes through); the poll posts the
+operation name to `…/{modelPath}:fetchPredictOperation`. Its `task_id` is the operation name
+base64url-encoded so it stays one path segment, and the decode refuses any id that does not re-encode to
+itself or whose operation shape and segments are not a plain resource path, because the decoded name is
+spliced into a URL. Its credential is exchanged for a bearer before each phase. A completed generation
+whose asset came back inline (no storage URI) carries it in `b64_json` instead of `url`.
 
 A provider format without an adapter remains an explicit `PROVIDER_NOT_ROUTABLE` refusal naming the
 format; this is the incremental G5 boundary, not a claim that all reference adapters are present. Five
@@ -1297,3 +1317,25 @@ declares `video` for three providers (`xai`, `openrouter`, `tokenrouter`), each 
 `auth_type: apikey` and `auth_header: bearer`, and `tokenrouter` joins as the 35th provider with 22 models
 and its own `thinking_format: tokenrouter`, whose dialect maps a level onto `reasoning_effort` and writes
 neither `none` nor `auto`. Recorded in `../PORT/011-PORT-VIDEO-ASYNC-JOB.md`._
+
+_Changelog 2026-10-12: §7.5 gains a fourth auth type and §7.10 gains the fourth video dialect, from the
+owner's "Perbaiki registrasi provider vertex Veo" (PORT 012). `service_account` is Google's credential
+shape: the service-account JSON is stored like a key (write-only, sealed, hinted on read) while
+`sa_project_id` and `sa_location` carry the non-secret address its calls name in the path, required
+together with that auth type, refused on every other one, and each validated as a single plain path
+segment because the values are spliced into the upstream URL. A migration widens the `auth_type` CHECK
+and adds both columns `NOT NULL DEFAULT ''`, so rows that predate it read back empty rather than failing
+the scan. The gateway exchanges the JSON for a short-lived bearer before the call (RS256 assertion,
+jwt-bearer grant, cached with a five-minute buffer against the token's own expiry) in the media plane's
+credential seam, so every phase of a job mints the same way and a deployment without a minter refuses
+rather than presenting the stored JSON as a bearer. `vertex` becomes the 36th provider with the four Veo
+models only, because its chat models speak a wire this gateway has no translator for, and its video block
+names `service_account` where the reference's `videoConfig` names no credential at all. Its dialect
+translates both directions: `:predictLongRunning` with the body rebuilt as
+`{instances:[{prompt, image?, video?}], parameters:{…}}`, and `:fetchPredictOperation` with
+`{operationName}`, both under the endpoint's own project and location. Its `task_id` is the operation name
+base64url-encoded so it stays one path segment, and the decode refuses any id that does not re-encode to
+itself or whose operation shape and segments are not a plain resource path, because the decoded name is
+spliced into a URL. The envelope gains `b64_json?` for the inline-bytes answer a Veo call without a
+storage URI gets, the same member the reference's own adapter emits. Recorded in
+`../PORT/012-PORT-VERTEX-VEO.md`._

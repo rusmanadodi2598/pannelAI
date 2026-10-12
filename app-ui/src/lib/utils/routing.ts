@@ -28,12 +28,14 @@ export function routingKey(keys: readonly EndpointKey[]): EndpointKey | null {
 
 // The credential kinds whose removal the API refuses when it would leave nothing to route with. The API
 // normalizes the registry's `apikey` spelling to `api_key` before storing, but the panel reads what the
-// API returns, so both are accepted here rather than trusting one spelling.
-const API_KEY_AUTH_TYPES = new Set(['api_key', 'apikey']);
+// API returns, so both are accepted here rather than trusting one spelling. `service_account` joins them
+// because its credential is a row in the same keys table (`domain.UsesStoredKey`): deleting the last
+// active one would leave the endpoint unable to mint its bearer.
+const API_KEY_AUTH_TYPES = new Set(['api_key', 'apikey', 'service_account']);
 
 /**
  * Whether deleting this key is the case SPEC-API §7.5 refuses with CONFLICT: the endpoint authenticates
- * with a key, and this is its last active one.
+ * with a stored key, and this is its last active one.
  *
  * SPEC-UI §6.2 asks the panel to disable the delete control with an inline note rather than offer an
  * action that cannot succeed. This is a hint for the render only; the panel still handles a CONFLICT

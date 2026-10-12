@@ -44,7 +44,7 @@
 		REQUIRES_KEY_AUTH_TYPES,
 		keyCredentialLabel,
 		takesKeyCredential
-	} from '$lib/schemas/endpoint-write';
+	} from '$lib/schemas/endpoint-credential';
 	import type { ProviderDetail } from '$lib/schemas/provider';
 	import type { PageProps } from './$types';
 

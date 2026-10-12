@@ -126,7 +126,14 @@ export type EndpointKeyList = z.infer<typeof schemaEndpointKeyList>;
 
 // The auth vocabulary the API publishes plus the two registry spellings it also accepts (§7.5). One list
 // so the form, the label map, and the tests cannot drift apart.
-export const AUTH_TYPES = ['api_key', 'oauth', 'no_auth', 'apikey', 'none'] as const;
+export const AUTH_TYPES = [
+	'api_key',
+	'oauth',
+	'no_auth',
+	'apikey',
+	'none',
+	'service_account'
+] as const;
 
 // Display labels. The two registry spellings map onto the same words as their canonical form, because to
 // an operator they are the same thing and the difference is a wire detail.
@@ -135,7 +142,8 @@ export const AUTH_TYPE_LABELS: Record<string, string> = {
 	apikey: 'API key',
 	oauth: 'OAuth',
 	no_auth: 'No auth',
-	none: 'No auth'
+	none: 'No auth',
+	service_account: 'Service account'
 };
 
 export const ENDPOINT_STATUS_ACTIVE = 'active';

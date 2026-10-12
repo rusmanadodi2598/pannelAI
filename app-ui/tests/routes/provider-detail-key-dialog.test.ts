@@ -32,8 +32,8 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-function renderProvider(): void {
-	render(ProviderDetailPage, { props: { params: { provider_id: 'openai' }, data: {} } });
+function renderProvider(id = 'openai'): void {
+	render(ProviderDetailPage, { props: { params: { provider_id: id }, data: {} } });
 }
 
 /** Types into a field by its label, through the event Svelte 5's `bind:value` listens for. */
@@ -118,6 +118,61 @@ describe('adding one key', () => {
 		await openDialog();
 		expect(value(screen.getByLabelText('Name'))).toBe('');
 		expect(value(screen.getByLabelText('API Key'))).toBe('');
+	});
+});
+
+describe('adding a service-account connection', () => {
+	it('asks for the project and location beside the JSON, and stores the pair the route reads', async () => {
+		const stub = stubModels({ authType: 'service_account' });
+		renderProvider('vertex');
+
+		await fireEvent.click(await screen.findByRole('button', { name: 'Add Service Account JSON' }));
+		await screen.findByLabelText('Name');
+
+		await fill('Name', 'veo');
+		await fill('Service Account JSON', '{"type":"service_account"}');
+		await fill('Project ID', 'pannelai-prod');
+		await fill('Location', 'us-central1');
+		await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+		await waitFor(() => expect(stub.endpointCreates).toHaveLength(1));
+		// The pair is the route's own field names, and the JSON travels as the connection's key.
+		expect(stub.endpointCreates[0]).toEqual({
+			provider_id: 'vertex',
+			label: 'veo',
+			auth_type: 'service_account',
+			priority: 1,
+			sa_project_id: 'pannelai-prod',
+			sa_location: 'us-central1',
+			keys: [{ value: '{"type":"service_account"}' }]
+		});
+	});
+
+	it('refuses the create before the wire when the pair is missing', async () => {
+		const stub = stubModels({ authType: 'service_account' });
+		renderProvider('vertex');
+
+		await fireEvent.click(await screen.findByRole('button', { name: 'Add Service Account JSON' }));
+		await screen.findByLabelText('Name');
+
+		await fill('Name', 'veo');
+		await fill('Service Account JSON', '{"type":"service_account"}');
+		await fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+		expect(await screen.findByText('A service account endpoint needs a project id.')).toBeTruthy();
+		expect(await screen.findByText('A service account endpoint needs a location.')).toBeTruthy();
+		expect(stub.endpointCreates).toEqual([]);
+	});
+
+	it('offers no paste tab, because a JSON key file is not one credential per line', async () => {
+		stubModels({ authType: 'service_account' });
+		renderProvider('vertex');
+
+		await fireEvent.click(await screen.findByRole('button', { name: 'Add Service Account JSON' }));
+		await screen.findByLabelText('Name');
+
+		expect(screen.queryByRole('tab', { name: 'Bulk Add' })).toBeNull();
+		expect(screen.getByLabelText('Project ID')).toBeTruthy();
 	});
 });
 

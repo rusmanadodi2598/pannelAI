@@ -97,6 +97,13 @@ describe('isLastActiveApiKey', () => {
 		{
 			keys: [key({ id: 'uky_a' })],
 			keyId: 'uky_a',
+			authType: 'service_account',
+			expected: true,
+			why: 'the service-account JSON is the last credential the endpoint mints a bearer from'
+		},
+		{
+			keys: [key({ id: 'uky_a' })],
+			keyId: 'uky_a',
 			authType: 'oauth',
 			expected: false,
 			why: 'an OAuth endpoint has no key to be left without'

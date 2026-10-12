@@ -5,17 +5,25 @@
 	// offering a picker would mean loading the registry into a select, which §6.3's pagination discipline
 	// rules out.
 	//
-	// The credential is required for the two key auth types and optional for the rest. §7.5 refuses an
+	// The credential is required for the key auth types and optional for the rest. §7.5 refuses an
 	// `api_key` endpoint with no key (`service/endpoint_create.go`, `buildEndpoint`) because an account that
 	// can never route is worse than a refused request, so the panel states that rule rather than letting the
 	// round trip report it. For `oauth` and the no-auth spellings the endpoint is created empty and given
 	// keys from the detail drawer, which is the same code path either way.
+	//
+	// A service-account endpoint is the one shape that needs more than a key: its project and location are
+	// what its calls address, so choosing that auth type reveals the pair beside the JSON key the endpoint
+	// mints its bearer from. The pair is offered only there, because the API refuses it on every other type.
 	import { createEndpoint } from '$lib/api/endpoints';
 	import ApiErrorText from '$lib/components/ApiErrorText.svelte';
 	import type { ApiError } from '$lib/api/errors';
 	import { CONTROL_ICONS } from '$lib/icons';
 	import { AUTH_TYPES, AUTH_TYPE_LABELS } from '$lib/schemas/endpoint';
-	import { REQUIRES_KEY_AUTH_TYPES, schemaCreateEndpointForm } from '$lib/schemas/endpoint-write';
+	import {
+		REQUIRES_KEY_AUTH_TYPES,
+		SERVICE_ACCOUNT_AUTH_TYPE
+	} from '$lib/schemas/endpoint-credential';
+	import { schemaCreateEndpointForm } from '$lib/schemas/endpoint-write';
 
 	let { providerId, oncreated }: { providerId: string; oncreated: () => void } = $props();
 
@@ -25,12 +33,19 @@
 	let authType = $state<string>('api_key');
 	let priority = $state('');
 	let keyValue = $state('');
+	let projectId = $state('');
+	let location = $state('');
 	let saving = $state(false);
 	let error = $state<string | ApiError | null>(null);
 
 	// The field's name follows the rule it carries: for a key auth type it is the credential the endpoint
-	// cannot be created without, and for the rest it is a first key that may be left blank.
+	// cannot be created without, and for the rest it is a first key that may be left blank. A
+	// service-account credential is the JSON key file, and the field says so.
 	const keyRequired = $derived(REQUIRES_KEY_AUTH_TYPES.has(authType));
+	const serviceAccount = $derived(authType === SERVICE_ACCOUNT_AUTH_TYPE);
+	const keyLabel = $derived(
+		keyRequired ? (serviceAccount ? 'Service Account JSON' : 'Key') : 'First key (optional)'
+	);
 
 	async function submit(): Promise<void> {
 		const parsed = schemaCreateEndpointForm.safeParse({
@@ -38,7 +53,11 @@
 			label,
 			auth_type: authType,
 			priority: priority === '' ? undefined : priority,
-			keys: keyValue === '' ? [] : [{ value: keyValue }]
+			keys: keyValue === '' ? [] : [{ value: keyValue }],
+			// The pair travels only with the auth type that reads it, so values typed before the select
+			// changed back cannot ride along.
+			sa_project_id: serviceAccount ? projectId : undefined,
+			sa_location: serviceAccount ? location : undefined
 		});
 
 		if (!parsed.success) {
@@ -59,6 +78,8 @@
 		label = '';
 		priority = '';
 		keyValue = '';
+		projectId = '';
+		location = '';
 		oncreated();
 	}
 </script>
@@ -92,6 +113,26 @@
 			</select>
 		</label>
 
+		{#if serviceAccount}
+			<label class="flex flex-col gap-1">
+				<span class="text-[var(--color-text-muted)]">Project ID</span>
+				<input
+					bind:value={projectId}
+					placeholder="my-project"
+					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
+				/>
+			</label>
+
+			<label class="flex flex-col gap-1">
+				<span class="text-[var(--color-text-muted)]">Location</span>
+				<input
+					bind:value={location}
+					placeholder="us-central1"
+					class="min-h-11 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2"
+				/>
+			</label>
+		{/if}
+
 		<label class="flex flex-col gap-1">
 			<span class="text-[var(--color-text-muted)]">Priority (optional)</span>
 			<input
@@ -103,9 +144,7 @@
 		</label>
 
 		<label class="flex flex-col gap-1">
-			<span class="text-[var(--color-text-muted)]"
-				>{keyRequired ? 'Key' : 'First key (optional)'}</span
-			>
+			<span class="text-[var(--color-text-muted)]">{keyLabel}</span>
 			<input
 				bind:value={keyValue}
 				type="password"

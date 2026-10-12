@@ -113,7 +113,7 @@ tests/support/       shared test helpers: the seeded corpus generator and the ta
 
 ## Verification state
 
-Thirty-seven passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
+Thirty-nine passes are recorded here. The first is the U0 scaffold, measured 2026-09-16. The second is the
 shell and sidebar work, measured 2026-09-18, and it is the R-35 click-through with its outcomes per
 element. The third is the Token Saver and Proxy Pools pair, measured 2026-09-20. The fourth is the Media
 Provider screen, measured the same day. The fifth is the provider detail model writes, measured the same
@@ -230,7 +230,48 @@ written down instead of being silently changed to 44px. The thirty-eighth is the
 measured 2026-09-27: the connection chip and the two buttons beside it had been drawn at two heights, and
 the sentence stating the in-flight and finished facts sat inside the node drawing's frame and moved the
 animation every time a request started or finished, so every tab the row renders now carries one box and
-that sentence became a tab of the row itself, filed as `docs/DRAFT/035-USAGE-LIVE-ROW-TABS.md`.
+that sentence became a tab of the row itself, filed as `docs/DRAFT/035-USAGE-LIVE-ROW-TABS.md`. The
+thirty-ninth is the vertex service-account credential in the endpoint forms, measured 2026-10-12: the
+panel learns the gateway's fourth auth type, `service_account`, on both create paths (the inline form and
+the key dialog), with the project and location fields offered exactly where the API reads them and refused
+everywhere else, filed as `docs/PORT/012-PORT-VERTEX-VEO.md`.
+
+### The vertex service-account credential in the endpoint forms, 2026-10-12
+
+Run with Bun 1.3.0. This is the panel half of `docs/PORT/012-PORT-VERTEX-VEO.md`: the gateway gained a
+fourth auth type, `service_account` (Google's JSON key file, exchanged for a bearer before the call), and
+an endpoint of that type also carries the project and location its calls address. The panel learns the type
+in the one place the vocabulary lives: `AUTH_TYPES` and `AUTH_TYPE_LABELS` gain `service_account` ("Service
+account"), so the create form's auth select, the dialog's heading, and the tests all read one list.
+
+The pair is offered exactly where the API reads it. `CreateEndpointForm.svelte` renders Project ID and
+Location only when the chosen auth type is `service_account`, and the dialog path does the same through
+`ProviderKeyFields.svelte`; both submit `sa_project_id` and `sa_location` only in that case, because the
+service refuses the pair on every other type rather than ignoring it, and a form that always sent it would
+turn a keyed edit into a 400. The refusal is pinned in both directions: the form and the body each refuse a
+service-account shape without the pair, naming the missing field, and each refuse the pair on `api_key`.
+
+Two rules follow from what the credential is. The key dialog's paste tab (one credential per line) is not
+offered for a service account, because that credential is a JSON document rather than a string, and the
+active mode is derived from the tabs that render, so a mode left over from a previous open cannot submit
+through a hidden tab. And the credential field is labelled "Service Account JSON" by the same
+`keyCredentialLabel` rule the rotation-switch button reads, so the operator is not sent hunting for an API
+key that does not exist. The "last active key cannot be disabled" hint follows the same widening: the rule
+is about any auth type whose endpoint stores its credential in the keys table, which now includes this one.
+
+| Check             | Result                                                                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `bun run check`   | 0 errors, 0 warnings                                                                                                                                   |
+| Focused tests     | 14 files, 153 tests green: the schema, routing, and credential-label suites, the two route suites, and the five component suites that render the forms |
+| `bun run lint`    | Prettier reports every file conforms                                                                                                                   |
+| `bun run lint:ts` | ESLint exits 0                                                                                                                                         |
+| `bun run test`    | the whole-suite run and the production build are the panel-check gate's, on the frozen tree; the figures are in `docs/PORT/012-PORT-VERTEX-VEO.md` §5  |
+
+The evidence is a driven stub, not a live click-through: `provider-detail-key-dialog.test.ts` asserts the
+exact body the route reads (`{provider_id: 'vertex', auth_type: 'service_account', sa_project_id,
+sa_location, keys: [...]}`), and `provider-detail-connection-form.test.ts` drives the inline form the same
+way. A live pass needs a gateway booted with migration `000016` applied and a real GCP service-account
+JSON, which is PORT 012 §6 residue 1 and 5.
 
 ### The Qoder device round, 2026-09-27
 

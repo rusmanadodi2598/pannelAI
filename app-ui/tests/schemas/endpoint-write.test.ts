@@ -15,11 +15,14 @@ import { describe, expect, it } from 'vitest';
 import { ENDPOINT_STATUS_ACTIVE } from '$lib/schemas/endpoint';
 import {
 	createEndpointBody,
-	schemaAddEndpointKeyForm,
+	schemaCreateEndpointBody,
 	schemaCreateEndpointForm,
-	schemaUpdateEndpointForm,
-	schemaUpdateEndpointKeyForm
+	schemaUpdateEndpointForm
 } from '$lib/schemas/endpoint-write';
+import {
+	schemaAddEndpointKeyForm,
+	schemaUpdateEndpointKeyForm
+} from '$lib/schemas/endpoint-credential';
 
 describe('schemaCreateEndpointForm', () => {
 	// The three auth types whose endpoint carries no credential of its own.
@@ -77,6 +80,58 @@ describe('schemaCreateEndpointForm', () => {
 				keys
 			}).success
 		).toBe(false);
+	});
+
+	// The service-account pair is the one create rule that spans fields, so both directions of it are
+	// pinned: the pair is required with the auth type that reads it, and refused with every other one
+	// (`internal/service/endpoint_create.go`, `buildEndpoint`).
+	const SERVICE_ACCOUNT = {
+		provider_id: 'vertex',
+		label: 'Veo',
+		auth_type: 'service_account',
+		sa_project_id: 'pannelai-prod',
+		sa_location: 'us-central1',
+		keys: [{ value: '{"type":"service_account"}' }]
+	};
+
+	it('accepts a service_account endpoint once it carries its key, project, and location', () => {
+		expect(schemaCreateEndpointForm.safeParse(SERVICE_ACCOUNT).success).toBe(true);
+	});
+
+	it('refuses a service_account endpoint with no key, because the JSON is what it mints with', () => {
+		const result = schemaCreateEndpointForm.safeParse({ ...SERVICE_ACCOUNT, keys: [] });
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error.issues[0]?.message).toContain('at least one key');
+		}
+	});
+
+	for (const missing of ['sa_project_id', 'sa_location'] as const) {
+		it(`refuses a service_account endpoint without ${missing}, naming the field`, () => {
+			const result = schemaCreateEndpointForm.safeParse({ ...SERVICE_ACCOUNT, [missing]: '' });
+
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error.issues.some((issue) => issue.path[0] === missing)).toBe(true);
+			}
+		});
+	}
+
+	it('refuses the pair on an auth type that never reads it, rather than storing a dead project', () => {
+		const result = schemaCreateEndpointForm.safeParse({
+			provider_id: 'openai',
+			label: 'Primary',
+			auth_type: 'api_key',
+			keys: [{ value: 'sk-abcdefgh' }],
+			sa_project_id: 'pannelai-prod',
+			sa_location: 'us-central1'
+		});
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			expect(result.error.issues[0]?.message).toContain('service account endpoint');
+		}
 	});
 
 	const INVALID: { payload: Record<string, unknown>; why: string }[] = [
@@ -151,6 +206,35 @@ describe('createEndpointBody', () => {
 
 	it('keeps the priority the API would reorder siblings by', () => {
 		expect(createEndpointBody(form({ priority: 7 })).priority).toBe(7);
+	});
+
+	it('carries the service-account pair, and only when the form stated it', () => {
+		const body = createEndpointBody(
+			form({
+				provider_id: 'vertex',
+				auth_type: 'service_account',
+				sa_project_id: 'pannelai-prod',
+				sa_location: 'us-central1'
+			})
+		);
+
+		expect(body.sa_project_id).toBe('pannelai-prod');
+		expect(body.sa_location).toBe('us-central1');
+		// The body is what the pre-send gate checks and what the route decodes, so both halves are pinned.
+		expect(schemaCreateEndpointBody.safeParse(body).success).toBe(true);
+		expect('sa_project_id' in createEndpointBody(form())).toBe(false);
+	});
+
+	it('refuses a body whose pair is incomplete, the shape a dropped field would send', () => {
+		expect(
+			schemaCreateEndpointBody.safeParse({
+				provider_id: 'vertex',
+				label: 'Veo',
+				auth_type: 'service_account',
+				sa_project_id: 'pannelai-prod',
+				keys: [{ value: '{"type":"service_account"}' }]
+			}).success
+		).toBe(false);
 	});
 });
 

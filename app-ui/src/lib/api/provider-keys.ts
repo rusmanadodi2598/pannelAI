@@ -16,15 +16,18 @@
 // posts key by key and counts successes against failures, which its own API allows and this
 // one does not.
 
-import { createEndpoint, createEndpointsBulk } from '$lib/api/endpoints';
+import { createEndpoint, createEndpointsBulk, listEndpointLabels } from '$lib/api/endpoints';
 import type { ApiError } from '$lib/api/errors';
 import { planConnectionLines, type PlannedConnection } from '$lib/schemas/connection-plan';
 import {
 	MAX_BULK_CONNECTIONS,
 	bulkCreateEndpointsBody,
-	schemaAddEndpointKeyForm,
 	schemaCreateEndpointForm
 } from '$lib/schemas/endpoint-write';
+import {
+	schemaAddEndpointKeyForm,
+	type ServiceAccountPair
+} from '$lib/schemas/endpoint-credential';
 
 /** What a write flow reports back: stored, refused before the wire, or refused by the server. */
 export type KeyAddOutcome =
@@ -80,18 +83,35 @@ function rekeyBatchRefusal(
 	return byLine;
 }
 
+/**
+ * The labels this provider already stores, which the paste planner gap-fills against.
+ *
+ * A failed read plans against no names: the planner then cannot see a collision, and the batch's own
+ * refusal is what catches it, on the line it belongs to.
+ */
+export async function readStoredLabels(providerId: string): Promise<string[]> {
+	const result = await listEndpointLabels({ provider_id: providerId, page: 1, per_page: 100 });
+	return result.ok ? result.data.data.map((row) => row.label) : [];
+}
+
 /** Stores one connection for this provider: the dialog's Single tab. */
 export async function addConnection(
 	providerId: string,
 	authType: string,
-	draft: SingleKeyDraft
+	draft: SingleKeyDraft,
+	serviceAccount: ServiceAccountPair | null = null
 ): Promise<KeyAddOutcome> {
 	const parsed = schemaCreateEndpointForm.safeParse({
 		provider_id: providerId,
 		label: draft.name,
 		auth_type: authType,
 		priority: draft.priority === '' ? undefined : draft.priority,
-		keys: [{ value: draft.keyValue }]
+		keys: [{ value: draft.keyValue }],
+		// The pair travels only for a service-account connection, which is the one auth type that reads
+		// it; the form's own rule refuses it anywhere else.
+		...(serviceAccount === null
+			? {}
+			: { sa_project_id: serviceAccount.sa_project_id, sa_location: serviceAccount.sa_location })
 	});
 	if (!parsed.success) return { kind: 'issues', issues: parsed.error.issues.map((i) => i.message) };
 

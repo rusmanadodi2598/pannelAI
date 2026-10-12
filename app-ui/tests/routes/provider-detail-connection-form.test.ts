@@ -92,4 +92,49 @@ describe('the endpoint form on a provider', () => {
 		expect(screen.getByText('Add an endpoint for openai')).toBeTruthy();
 		expect(screen.queryByText('Connection added.')).toBeNull();
 	});
+
+	it('reveals the project and location when the service-account auth type is picked, and sends them', async () => {
+		const stub = stubModels({ authType: 'oauth' });
+		renderProvider();
+		await openForm();
+
+		await fill('Label', 'Veo');
+		await fireEvent.change(screen.getByLabelText('Auth type'), {
+			target: { value: 'service_account' }
+		});
+		await fill('Project ID', 'pannelai-prod');
+		await fill('Location', 'us-central1');
+		await fill('Service Account JSON', '{"type":"service_account"}');
+		await fireEvent.click(screen.getByRole('button', { name: 'Add endpoint' }));
+
+		await waitFor(() => expect(stub.endpointCreates).toHaveLength(1));
+		expect(stub.endpointCreates[0]).toEqual({
+			provider_id: 'openai',
+			label: 'Veo',
+			auth_type: 'service_account',
+			sa_project_id: 'pannelai-prod',
+			sa_location: 'us-central1',
+			keys: [{ value: '{"type":"service_account"}' }]
+		});
+	});
+
+	it('hides the pair again when the auth type changes back, so a stale project cannot ride along', async () => {
+		const stub = stubModels({ authType: 'oauth' });
+		renderProvider();
+		await openForm();
+
+		await fireEvent.change(screen.getByLabelText('Auth type'), {
+			target: { value: 'service_account' }
+		});
+		await fill('Project ID', 'pannelai-prod');
+		await fireEvent.change(screen.getByLabelText('Auth type'), { target: { value: 'oauth' } });
+
+		expect(screen.queryByLabelText('Project ID')).toBeNull();
+
+		await fill('Label', 'Primary');
+		await fireEvent.click(screen.getByRole('button', { name: 'Add endpoint' }));
+
+		await waitFor(() => expect(stub.endpointCreates).toHaveLength(1));
+		expect('sa_project_id' in stub.endpointCreates[0]).toBe(false);
+	});
 });

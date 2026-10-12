@@ -26,7 +26,7 @@
 		keyCredentialLabel,
 		takesKeyCredential,
 		takesOAuthCredential
-	} from '$lib/schemas/endpoint-write';
+	} from '$lib/schemas/endpoint-credential';
 	import type { ProviderDetail } from '$lib/schemas/provider';
 
 	let {

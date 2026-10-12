@@ -188,7 +188,7 @@ sekali, bukan string kosong. Aturan lengkapnya di `docs/SPEC-API/001-SPEC-API.md
 | PATCH | `/api/v1/endpoints/{id}/keys/{key_id}` | Session | `200 EndpointKeyResponse` |
 | DELETE | `/api/v1/endpoints/{id}/keys/{key_id}` | Session | `204` |
 
-`POST /endpoints` menerima `auth_type` `api_key`, `oauth`, atau `no_auth`. Endpoint dengan `api_key` dapat memiliki beberapa key. Nilai key bersifat write-only.
+`POST /endpoints` menerima `auth_type` `api_key`, `oauth`, `no_auth`, atau `service_account`. Endpoint dengan `api_key` dapat memiliki beberapa key; endpoint `service_account` menyimpan JSON service account di tabel key yang sama dan membawa `sa_project_id`/`sa_location` sebagai alamat panggilannya. Nilai key bersifat write-only.
 
 Bulk endpoint dan bulk key bersifat all-or-nothing. Batch divalidasi penuh lalu diterapkan dalam satu transaksi.
 
