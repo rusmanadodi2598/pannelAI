@@ -16,50 +16,65 @@ import "time"
 // KeyFailureClass is the class an upstream failure belongs to. The class decides
 // how long the key is parked (SPEC-API-001 §7.5), following the reference's
 // classification: a credential-shaped failure parks long, a rate limit backs
-// off exponentially, a transient outage parks briefly, and a request-shaped
-// refusal parks nothing because the same body would fail identically on any key.
+// off exponentially, a transient outage parks briefly, and a failure the
+// credential did not cause parks nothing.
 type KeyFailureClass int
 
 const (
-	// KeyFailureAuth covers 401/402/403/404: the credential or its account.
+	// KeyFailureAuth covers 401/402/403: the credential or its account.
 	KeyFailureAuth KeyFailureClass = iota
 	// KeyFailureRateLimit covers 429.
 	KeyFailureRateLimit
-	// KeyFailureTransient covers 5xx, network, and timeout failures.
+	// KeyFailureTransient covers an upstream 5xx: the target is unhealthy.
 	KeyFailureTransient
 	// KeyFailureRequest covers every other 4xx: the request is the cause.
 	KeyFailureRequest
+	// KeyFailureTarget covers an upstream 404 and a call that never reached the
+	// upstream: the target or the network caused it, and another credential on
+	// the same body could still succeed.
+	KeyFailureTarget
 )
 
-// keyAuthCooldown is how long a credential-shaped failure parks a key.
-const keyAuthCooldown = 2 * time.Minute
+// ImplicatesCredential reports whether a failure of this class says anything
+// about the credential that served it. A new class opts in here rather than by
+// being absent from a blacklist, because the default for a class nobody thought
+// about is to leave the credential alone.
+func (c KeyFailureClass) ImplicatesCredential() bool {
+	return c == KeyFailureAuth || c == KeyFailureRateLimit || c == KeyFailureTransient
+}
 
 // keyTransientCooldown is how long an outage-shaped failure parks a key: long
 // enough to skip the overloaded instance, short enough that a recovered one is
-// picked up by the next request.
+// picked up by the next request. It is flat on purpose: a target that answered
+// 5xx a moment ago is not a credential that is dead, and only the latter earns
+// an escalating window (draft 050 D3a).
 const keyTransientCooldown = 30 * time.Second
 
-// The rate-limit backoff ladder: the first 429 parks 2s and each consecutive
-// one doubles the window, capped at 5 minutes (the reference's BACKOFF_CONFIG).
+// The two doubling ladders. The rate-limit ladder is the reference's
+// BACKOFF_CONFIG; the credential ladder is draft 050 T5, added because a dead
+// credential was parked for the same flat 2 minutes forever and re-spent on
+// every round.
 const (
+	keyAuthBase      = 2 * time.Minute
+	keyAuthMax       = time.Hour
 	keyRateLimitBase = 2 * time.Second
 	keyRateLimitMax  = 5 * time.Minute
-	keyRateLimitMaxN = 15
+	keyLadderMaxN    = 15
 )
 
-// rateLimitBackoff reports the window the n-th consecutive rate limit parks a
+// backoff reports the window the n-th consecutive failure of a ladder parks a
 // key for. The shift is guarded: a level past the cap, or a shift that
 // overflows the duration, answers the cap rather than a negative window.
-func rateLimitBackoff(n int) time.Duration {
+func backoff(base time.Duration, n int, ceiling time.Duration) time.Duration {
 	if n < 1 {
 		n = 1
 	}
-	if n > keyRateLimitMaxN {
-		n = keyRateLimitMaxN
+	if n > keyLadderMaxN {
+		n = keyLadderMaxN
 	}
-	window := keyRateLimitBase << uint(n-1)
-	if window <= 0 || window > keyRateLimitMax {
-		return keyRateLimitMax
+	window := base << uint(n-1)
+	if window <= 0 || window > ceiling {
+		return ceiling
 	}
 	return window
 }
@@ -85,21 +100,23 @@ func (k UpstreamKey) Available(now time.Time) bool {
 
 // RecordFailure applies one upstream failure. The first failure parks the key
 // for its class's window, so a dead credential stops serving immediately
-// instead of after three strikes. A request-shaped failure records the reason
-// but parks nothing, because the request is the cause and no key can serve it.
+// instead of after three strikes. A failure the credential did not cause records
+// the reason but parks nothing, because the key is not what failed. The
+// credential and rate-limit windows grow with the streak and stop at their
+// ceilings; the transient one stays flat.
 func (k *UpstreamKey) RecordFailure(reason string, class KeyFailureClass, now time.Time) {
 	k.lastError = reason
 	k.updatedAt = now
-	if class == KeyFailureRequest {
+	if !class.ImplicatesCredential() {
 		return
 	}
 	k.consecutiveErrors++
 	window := keyTransientCooldown
 	switch class {
 	case KeyFailureAuth:
-		window = keyAuthCooldown
+		window = backoff(keyAuthBase, k.consecutiveErrors, keyAuthMax)
 	case KeyFailureRateLimit:
-		window = rateLimitBackoff(k.consecutiveErrors)
+		window = backoff(keyRateLimitBase, k.consecutiveErrors, keyRateLimitMax)
 	}
 	k.status = UpstreamKeyError
 	until := now.Add(window)

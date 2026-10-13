@@ -45,7 +45,7 @@ func (s *EmbeddingsService) perform(ctx context.Context, request dataplane.Media
 	case err != nil:
 		// reason: the client's error is the upstream failure, and reporting a
 		// bookkeeping failure instead would hide the cause it came from.
-		_ = s.router.RecordFailure(ctx, selection, "the embeddings upstream could not be reached", domain.KeyFailureTransient)
+		_ = s.router.RecordFailure(ctx, selection, "the embeddings upstream could not be reached", domain.KeyFailureTarget)
 	case answer.Status < 200 || answer.Status >= 300:
 		failure = dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
 		// reason: the upstream rejection is the client's error; a failed health

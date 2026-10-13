@@ -379,9 +379,13 @@ gateway exchanges the JSON for a short-lived bearer before a call (the media pla
 never presents the JSON itself; a deployment wired without a minter refuses such a call instead.
 
 Key health model (parking per key, class-aware): the first upstream failure parks the key with a
-window sized by its class: 401/402/403/404 ⇒ `rate_limited_until = now + 2m`; 429 ⇒ exponential `2s × 2^(n-1)` capped at 5m
-(`n` = consecutive failures, reset by a successful call); 5xx/network/timeout ⇒ 30s; any other 4xx
-records nothing because the request, not the credential, is the cause. `consecutive_errors` counts
+window sized by its class: 401/402/403 ⇒ exponential `2m × 2^(n-1)` capped at 1h (`n` = consecutive failures, reset by a successful call); 429 ⇒ exponential `2s × 2^(n-1)` capped at 5m
+(`n` = consecutive failures, reset by a successful call); an answered 5xx ⇒ 30s. A failure the credential
+did not cause parks nothing: an upstream 404 (this account does not serve that model) and a call that never
+reached the upstream (DNS, TLS, dial, deadline) are **target-shaped**, recorded on the endpoint's connection
+state while the chain keeps walking to the next credential, because another account may serve the model the
+first refused and a credential that was never sent cannot have failed. Any other 4xx records nothing because
+the request, not the credential, is the cause. `consecutive_errors` counts
 every parked failure and a successful call resets all of it. The health lives on the key row; only
 the rotation cursor is Redis-backed.
 
@@ -1339,3 +1343,25 @@ itself or whose operation shape and segments are not a plain resource path, beca
 spliced into a URL. The envelope gains `b64_json?` for the inline-bytes answer a Veo call without a
 storage URI gets, the same member the reference's own adapter emits. Recorded in
 `../PORT/012-PORT-VERTEX-VEO.md`._
+
+_Changelog 2026-10-12: §7.5's health model splits 404 out of the credential-shaped class and moves the
+network and timeout failures with it (draft `050` T3, T4). The class was derived from the status alone, so
+an upstream 404 for a model one account does not serve parked that credential for two minutes, and the
+failover chain walked on to the next credential and parked it too: one request naming a model the provider
+does not have emptied every key it touched. A call that never reached the upstream was punished the same
+way, on a 30s window, for DNS, TLS, dial and deadline faults inside the gateway's own host, the client's
+deadline included. Those two now form a class of their own: the endpoint keeps the connection state the
+panel needs, no key earns a window, and the chain keeps walking, which is the reasoning PORT 011 already
+applied to the video poll ("a stale task id answering 404 would otherwise park a healthy key"). An answered
+5xx still parks the key for 30s, because the credential did carry that request, and the endpoint-level
+window that would turn this into a target park is draft `050` T1._
+
+_Changelog 2026-10-13: §7.5's credential window becomes a ladder (draft `050` T5, owner decision D3a). A flat 2m
+was re-tried forever: a dead credential parked for 2m, the window expired, `Available()` released it, the router
+spent it again, and the cycle repeated without a strike threshold or an escalation, which for a single-key account
+meant the provider was empty for two minutes on every round. Each consecutive credential failure now doubles the
+window from 2m, capped at 1h, and a successful call returns it to the first step. The ceiling is deliberately
+finite and the state deliberately stays `error`, because §7.5 gives `disabled` to the operator and the client-facing
+status parser refuses a state the panel cannot set: an escalation that parked an account forever would be the
+one-directional grave the OAuth dead-letter already is (draft `050` T2). The transient 5xx window stays a flat 30s:
+a target that was briefly unhealthy is not a credential that is dead._

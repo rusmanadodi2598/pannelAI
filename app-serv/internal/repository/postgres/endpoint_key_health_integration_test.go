@@ -108,6 +108,93 @@ func TestIntegration_RecordKeyHealthCountsEachConcurrentFailure(t *testing.T) {
 	}
 }
 
+// TestIntegration_RecordKeyHealthNeverShortensAParkedWindow is the same race on
+// the window column: two selectors compute their backoff from the count each
+// read, so the shorter one must never release the longer park.
+func TestIntegration_RecordKeyHealthNeverShortensAParkedWindow(t *testing.T) {
+	repo := newEndpointRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Millisecond)
+
+	seedHealthKey(t, repo, 0, now)
+	long := healthKeyAt(now, now.Add(16*time.Second), 4)
+	if err := repo.RecordKeyHealth(ctx, long); err != nil {
+		t.Fatalf("RecordKeyHealth() the long window: %v", err)
+	}
+	stale := healthKeyAt(now, now.Add(2*time.Second), 1)
+	if err := repo.RecordKeyHealth(ctx, stale); err != nil {
+		t.Fatalf("RecordKeyHealth() the stale window: %v", err)
+	}
+
+	after := readHealthKey(t, repo, ctx)
+	until := after.Key(healthKeyID).RateLimitedUntil()
+	if until == nil {
+		t.Fatal("rate_limited_until = nil, want the longer window to survive the stale write")
+	}
+	if got := until.Sub(now); got < 16*time.Second {
+		t.Fatalf("park window = %v, want at least 16s: the 2s write shortened it", got)
+	}
+}
+
+// TestIntegration_RecordKeyHealthSuccessStillClearsTheWindow is the half of the
+// same statement that must NOT become monotonic: a served call is real evidence
+// and releases the key, however long the window the previous failure parked.
+func TestIntegration_RecordKeyHealthSuccessStillClearsTheWindow(t *testing.T) {
+	repo := newEndpointRepo(t)
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Millisecond)
+
+	seed := seedHealthKey(t, repo, 0, now)
+	parked := healthKeyAt(now, now.Add(time.Minute), 3)
+	if err := repo.RecordKeyHealth(ctx, parked); err != nil {
+		t.Fatalf("RecordKeyHealth() the park: %v", err)
+	}
+	// The served write comes from the aggregate's own transition, not a hand
+	// built row, because status is part of what this test asserts.
+	served, err := seed.RecordKeySuccess(healthKeyID, now)
+	if err != nil {
+		t.Fatalf("recording a success: %v", err)
+	}
+	if err := repo.RecordKeyHealth(ctx, served); err != nil {
+		t.Fatalf("RecordKeyHealth() the success: %v", err)
+	}
+
+	after := readHealthKey(t, repo, ctx)
+	if until := after.Key(healthKeyID).RateLimitedUntil(); until != nil {
+		t.Fatalf("rate_limited_until = %v, want a served call to clear the window", *until)
+	}
+	if got := after.Key(healthKeyID).Status(); got != domain.UpstreamKeyActive {
+		t.Fatalf("status = %q, want active after a served call", got)
+	}
+	if got := after.Key(healthKeyID).ConsecutiveErrors(); got != 0 {
+		t.Fatalf("consecutive_errors = %d, want 0 after a served call", got)
+	}
+}
+
+// healthKeyAt builds the aggregate one selector would hand the store: the same
+// key, its own window, and its own read of the count. A zero until means no
+// window, which is what a success writes.
+func healthKeyAt(now, until time.Time, failures int) domain.UpstreamKey {
+	var window *time.Time
+	if !until.IsZero() {
+		edge := until
+		window = &edge
+	}
+	return domain.RehydrateUpstreamKey(
+		healthKeyID, healthEndpointID, "primary", "sealed-ciphertext", "sk-****last",
+		1, domain.UpstreamKeyError, nil, "upstream refused", failures, window, now, now,
+	)
+}
+
+func readHealthKey(t *testing.T, repo *EndpointRepository, ctx context.Context) domain.UpstreamEndpoint {
+	t.Helper()
+	after, err := repo.GetByID(ctx, healthEndpointID)
+	if err != nil {
+		t.Fatalf("reading back: %v", err)
+	}
+	return after
+}
+
 func TestIntegration_RecordKeyHealthClearIsNotAnIncrement(t *testing.T) {
 	repo := newEndpointRepo(t)
 	ctx := context.Background()

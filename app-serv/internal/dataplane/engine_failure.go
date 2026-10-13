@@ -21,16 +21,19 @@ import (
 )
 
 // FailureClass maps an upstream HTTP status onto the key-health class that
-// decides its parking window, following the reference's classification: the
-// credential's own failures, rate limits, transient outages, and everything
-// else the request itself caused.
+// decides its parking window: the credential's own failures, rate limits, and
+// transient outages implicate the key, while a 404 is this target not serving
+// the model and every other 4xx is the request itself.
 func FailureClass(status int) domain.KeyFailureClass {
 	switch status {
-	case http.StatusUnauthorized, http.StatusPaymentRequired,
-		http.StatusForbidden, http.StatusNotFound:
+	case http.StatusUnauthorized, http.StatusPaymentRequired, http.StatusForbidden:
 		return domain.KeyFailureAuth
 	case http.StatusTooManyRequests:
 		return domain.KeyFailureRateLimit
+	case http.StatusNotFound:
+		// Not Auth: another credential on the same body may well serve this
+		// model, so the chain must keep walking while the key stays clean.
+		return domain.KeyFailureTarget
 	}
 	if status >= 400 && status < 500 {
 		return domain.KeyFailureRequest
@@ -39,12 +42,13 @@ func FailureClass(status int) domain.KeyFailureClass {
 }
 
 // failureClass maps a call failure onto its class. An upstream rejection
-// carries the status; a timeout or an unreachable upstream is transient.
+// carries the status; a failure that never produced an upstream answer never
+// reached the credential, so it cannot say anything about it.
 func failureClass(err error) domain.KeyFailureClass {
 	if failure, ok := AsUpstreamError(err); ok {
 		return FailureClass(failure.Status)
 	}
-	return domain.KeyFailureTransient
+	return domain.KeyFailureTarget
 }
 
 // failureReason is the text recorded against the key: the upstream's own

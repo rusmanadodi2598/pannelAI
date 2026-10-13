@@ -3,7 +3,7 @@
 // @file      internal/repository/postgres/endpoint_key_health.go
 // @for       The key's circuit-breaker write after a data-plane outcome.
 // @uses      context, internal/domain.
-// @reason    The counter has to move inside the database, because two concurrent failures that loaded one starting value would otherwise land as a single counted error and shrink the breaker's backoff. It sits apart from the key CRUD in endpoint_keys.go for the same reason endpoint_parity.go is its own file: a routing result must not rewrite a label, a priority, or a credential an operator edited.
+// @reason    The counter and the window have to move inside the database, because two concurrent failures that loaded one starting value would otherwise land as a single counted error and shorten the breaker's backoff. It sits apart from the key CRUD in endpoint_keys.go for the same reason endpoint_parity.go is its own file: a routing result must not rewrite a label, a priority, or a credential an operator edited.
 // @author    Dodi Rusmana <rusmanadodi@kentangtech.com>
 // @layer     repository
 // @stability stable
@@ -20,20 +20,23 @@ import (
 // call. It touches health columns only: a routing outcome must not rewrite a
 // label, a priority, or the credential it just failed to spend.
 //
-// The error counter is applied by the database, not written from the aggregate.
-// A concurrent pair of failures on one key each loaded the same starting value,
-// and two absolute writes would land as one error counted: the breaker would
-// under-count and its backoff would shrink. A reset is still written as a reset,
-// because clearing to zero twice is the same state as clearing once. An untouched
-// key is zero here too, so a caller that writes one clears a count already raised.
+// The counter and the window are computed by the database, not written from the
+// aggregate: concurrent selectors read one key at the same count, and absolute
+// writes would land one increment and the shorter of two backoffs. A reset stays
+// absolute, because a served call is the evidence that releases the park, and an
+// untouched key reads zero here too, so a caller that writes one clears a count
+// already raised.
 func (r *EndpointRepository) RecordKeyHealth(ctx context.Context, key domain.UpstreamKey) error {
+	// GREATEST ignores its NULL side, so an unparked key takes the new window
+	// without a COALESCE.
 	const q = `
 UPDATE upstream_keys
    SET status = $1,
        last_used_at = $2,
        last_error = $3,
        consecutive_errors = CASE WHEN $4::boolean THEN 0 ELSE consecutive_errors + 1 END,
-       rate_limited_until = $5,
+       rate_limited_until = CASE WHEN $4::boolean THEN $5::timestamptz
+                                 ELSE GREATEST(rate_limited_until, $5::timestamptz) END,
        updated_at = $6
  WHERE id = $7 AND endpoint_id = $8`
 

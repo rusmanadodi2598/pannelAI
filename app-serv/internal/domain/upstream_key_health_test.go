@@ -35,6 +35,8 @@ func TestUpstreamKey_RecordFailureParksByClass(t *testing.T) {
 			wantStatus: UpstreamKeyError, wantAvailable: false, wantBackoff: 30 * time.Second},
 		{name: "a request-shaped failure parks nothing", class: KeyFailureRequest,
 			wantStatus: UpstreamKeyActive, wantAvailable: true},
+		{name: "a target-shaped failure parks nothing", class: KeyFailureTarget,
+			wantStatus: UpstreamKeyActive, wantAvailable: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -63,36 +65,43 @@ func TestUpstreamKey_RecordFailureParksByClass(t *testing.T) {
 	}
 }
 
-// TestUpstreamKey_RateLimitLadder pins the exponential ladder: each consecutive
-// rate limit doubles the window from 2s, capped at 5 minutes.
-func TestUpstreamKey_RateLimitLadder(t *testing.T) {
+// TestKeyFailureClass_ImplicatesCredential pins the single answer the selector
+// and the aggregate share: a class that does not implicate the credential parks
+// nothing and earns no key-row write.
+func TestKeyFailureClass_ImplicatesCredential(t *testing.T) {
 	cases := []struct {
-		failures  int
-		wantDelay time.Duration
+		name  string
+		class KeyFailureClass
+		want  bool
 	}{
-		{1, 2 * time.Second},
-		{2, 4 * time.Second},
-		{3, 8 * time.Second},
-		{8, 4*time.Minute + 16*time.Second},
+		{name: "auth", class: KeyFailureAuth, want: true},
+		{name: "rate limit", class: KeyFailureRateLimit, want: true},
+		{name: "transient", class: KeyFailureTransient, want: true},
+		{name: "request", class: KeyFailureRequest, want: false},
+		{name: "target", class: KeyFailureTarget, want: false},
 	}
 	for _, tc := range cases {
-		key := newTestKey(t, 1)
-		for i := 0; i < tc.failures; i++ {
-			key.RecordFailure("rate limited", KeyFailureRateLimit, keyNow)
-		}
-		if got := key.RateLimitedUntil().Sub(keyNow); got != tc.wantDelay {
-			t.Fatalf("after %d rate limits: window = %v, want %v", tc.failures, got, tc.wantDelay)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tc.class.ImplicatesCredential(); got != tc.want {
+				t.Fatalf("ImplicatesCredential() = %v, want %v", got, tc.want)
+			}
+		})
 	}
-	// The ladder caps: a long run of rate limits never parks past five minutes,
-	// and the shift cannot overflow into a negative window.
-	for _, failures := range []int{20, 100} {
+}
+
+// TestUpstreamKey_NonCredentialFailureLeavesTheCounterAlone pins why the strike
+// ladder cannot be fed by a target-shaped failure: a credential that never
+// earned the failure must not carry it into the next window's backoff.
+func TestUpstreamKey_NonCredentialFailureLeavesTheCounterAlone(t *testing.T) {
+	for _, class := range []KeyFailureClass{KeyFailureRequest, KeyFailureTarget} {
 		key := newTestKey(t, 1)
-		for i := 0; i < failures; i++ {
-			key.RecordFailure("rate limited", KeyFailureRateLimit, keyNow)
+		key.RecordFailure("the upstream could not be reached", class, keyNow)
+		key.RecordFailure("the upstream could not be reached", class, keyNow)
+		if got := key.ConsecutiveErrors(); got != 0 {
+			t.Fatalf("consecutive errors = %d for class %d, want 0", got, class)
 		}
-		if got := key.RateLimitedUntil().Sub(keyNow); got != 5*time.Minute {
-			t.Fatalf("after %d rate limits: window = %v, want the 5m cap", failures, got)
+		if !key.Available(keyNow) {
+			t.Fatalf("a class %d failure must leave the key selectable", class)
 		}
 	}
 }

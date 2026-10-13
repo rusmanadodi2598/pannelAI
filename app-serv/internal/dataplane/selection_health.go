@@ -37,9 +37,9 @@ func (s *Selector) RecordSuccess(ctx context.Context, selection Selection) error
 }
 
 // RecordFailure applies a failed attempt to the endpoint's parity state and the
-// key's circuit. A request-shaped failure writes nothing: the request is the
-// cause, the credential is healthy, and the same body would fail identically on
-// any key, so it is not a connection state the operator needs to see. A
+// key's circuit. Request writes nothing, because the same body fails on any key
+// and no operator needs to see that as a connection state. Target writes the
+// connection state and stops there, because the credential was never sent. A
 // keyless selection still records the parity error.
 func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reason string, class domain.KeyFailureClass) error {
 	if class == domain.KeyFailureRequest {
@@ -48,7 +48,7 @@ func (s *Selector) RecordFailure(ctx context.Context, selection Selection, reaso
 	now := s.clock()
 	endpoint := selection.Endpoint
 	endpoint.RecordUpstreamError(parityCode(class), reason, now)
-	if selection.Key.ID() != "" {
+	if selection.Key.ID() != "" && class.ImplicatesCredential() {
 		updated, err := endpoint.RecordKeyFailure(selection.Key.ID(), reason, class, now)
 		if err != nil {
 			return err

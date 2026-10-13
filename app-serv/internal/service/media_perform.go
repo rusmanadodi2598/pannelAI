@@ -60,7 +60,7 @@ func (s *MediaCallService) Perform(ctx context.Context, call MediaCall, request 
 	failure := err
 	switch {
 	case err != nil:
-		call.recordFailure(ctx, s.router, "the media upstream could not be reached", domain.KeyFailureTransient)
+		call.recordFailure(ctx, s.router, "the media upstream could not be reached", domain.KeyFailureTarget)
 	case answer.Status < 200 || answer.Status >= 300:
 		failure = dataplane.UpstreamRejected(answer.Status, upstreamMessageOf(answer.Body))
 		call.recordFailure(ctx, s.router, "the media upstream rejected the request", dataplane.FailureClass(answer.Status))
@@ -100,7 +100,7 @@ func (s *MediaCallService) served(ctx context.Context, call MediaCall, read medi
 	if read != nil {
 		body, err := read(answer.Status, answer.Body)
 		if err != nil {
-			call.recordFailure(ctx, s.router, "the media upstream rejected the request", domain.KeyFailureTransient)
+			call.recordFailure(ctx, s.router, "the media upstream rejected the request", domain.KeyFailureTarget)
 			return err
 		}
 		answer.Body = body
